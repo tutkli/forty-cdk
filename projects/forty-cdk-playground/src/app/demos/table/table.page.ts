@@ -12,7 +12,7 @@ import { TableSelectionExample } from './examples/selection.example';
 import { TableSortingExample } from './examples/sorting.example';
 import { TableVirtualizedExample } from './examples/virtualized.example';
 import { SOURCES } from './sources.generated';
-import readmeContent from '../../../../../forty-cdk/table/README.md';
+import { DOC } from '../../../generated/docs/primitives/table.generated';
 
 @Component({
   selector: 'app-table-page',
@@ -31,7 +31,7 @@ import readmeContent from '../../../../../forty-cdk/table/README.md';
   ],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
-    <primitive-page slug="table" [readme]="readme">
+    <primitive-page slug="table" [doc]="doc">
       <playground-demo hero sourcePath="table/examples/grid.example.ts">
         <app-table-grid-example />
       </playground-demo>
@@ -95,5 +95,5 @@ import readmeContent from '../../../../../forty-cdk/table/README.md';
   `,
 })
 export class TablePage {
-  protected readonly readme = readmeContent;
+  protected readonly doc = DOC;
 }

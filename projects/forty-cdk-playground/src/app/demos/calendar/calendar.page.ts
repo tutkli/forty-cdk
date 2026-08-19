@@ -11,7 +11,7 @@ import { CalendarRangeExample } from './examples/range.example';
 import { CalendarReadOnlyExample } from './examples/read-only.example';
 import { CalendarViewSwitchingExample } from './examples/views.example';
 import { SOURCES } from './sources.generated';
-import readmeContent from '../../../../../forty-cdk/calendar/README.md';
+import { DOC } from '../../../generated/docs/primitives/calendar.generated';
 
 @Component({
   selector: 'app-calendar-page',
@@ -29,7 +29,7 @@ import readmeContent from '../../../../../forty-cdk/calendar/README.md';
   ],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
-    <primitive-page slug="calendar" [readme]="readme">
+    <primitive-page slug="calendar" [doc]="doc">
       <playground-demo hero sourcePath="calendar/examples/default.example.ts">
         <app-calendar-default-example />
       </playground-demo>
@@ -85,5 +85,5 @@ import readmeContent from '../../../../../forty-cdk/calendar/README.md';
   `,
 })
 export class CalendarPage {
-  protected readonly readme = readmeContent;
+  protected readonly doc = DOC;
 }

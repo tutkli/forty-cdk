@@ -7,7 +7,7 @@ import { VirtualizationDynamicExample } from './examples/dynamic.example';
 import { VirtualizationInfiniteScrollExample } from './examples/infinite-scroll.example';
 import { VirtualizationViewportExample } from './examples/viewport.example';
 import { SOURCES } from './sources.generated';
-import readmeContent from '../../../../../forty-cdk/virtualization/README.md';
+import { DOC } from '../../../generated/docs/primitives/virtualization.generated';
 
 @Component({
   selector: 'app-virtualization-page',
@@ -21,7 +21,7 @@ import readmeContent from '../../../../../forty-cdk/virtualization/README.md';
   ],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
-    <primitive-page slug="virtualization" [readme]="readme">
+    <primitive-page slug="virtualization" [doc]="doc">
       <playground-demo hero sourcePath="virtualization/examples/viewport.example.ts">
         <app-virtualization-viewport-example />
       </playground-demo>
@@ -45,5 +45,5 @@ import readmeContent from '../../../../../forty-cdk/virtualization/README.md';
   `,
 })
 export class VirtualizationPage {
-  protected readonly readme = readmeContent;
+  protected readonly doc = DOC;
 }

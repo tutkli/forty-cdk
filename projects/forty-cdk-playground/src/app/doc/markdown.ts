@@ -1,47 +1,10 @@
 import { Marked, type Tokens } from 'marked';
 
 import { escapeHtml } from '../../../../../scripts/lib/html.mjs';
-import {
-  isFenceLine,
-  isTableDelimiter,
-  slugify,
-  Slugger,
-} from '../../../../../scripts/lib/readme-slug.mjs';
+import type { DocProseBlock } from './doc-model';
 import { highlightCodeBlock } from './highlighter';
 
-export { slugify };
-
-export interface DocTableData {
-  readonly columns: readonly string[];
-  readonly rows: readonly (readonly DocTableCell[])[];
-}
-
-export interface DocTableCell {
-  readonly html: string;
-  readonly text: string;
-}
-
-export type DocBlock =
-  | { readonly kind: 'html'; readonly html: string }
-  | { readonly kind: 'table'; readonly table: DocTableData };
-
-export interface DocSubsection {
-  readonly title: string;
-  readonly slug: string;
-}
-
-export interface DocSectionData {
-  readonly title: string;
-  readonly slug: string;
-  readonly subsections: readonly DocSubsection[];
-  readonly blocks: readonly DocBlock[];
-}
-
-export interface ParsedDoc {
-  readonly intro: string;
-  readonly sections: readonly DocSectionData[];
-}
-
+/** A link the site resolved, and the route it navigates to in-app if any. */
 export interface DocLinkTarget {
   readonly href: string;
   readonly route: string | null;
@@ -49,18 +12,45 @@ export interface DocLinkTarget {
 
 export type DocLinkResolver = (href: string, sourcePath: string) => DocLinkTarget | null;
 
+/** What a rendered document needs beyond its own content to resolve links. */
 export interface DocRenderContext {
   readonly sourcePath: string;
   readonly resolveLink: DocLinkResolver;
 }
 
-const headingSlugger = new Slugger();
+/** A table cell rendered once: markup to bind, and text for labels. */
+export interface DocRenderedCell {
+  readonly html: string;
+  readonly text: string;
+}
 
-let activeContext: DocRenderContext | null = null;
+interface RenderState {
+  readonly context: DocRenderContext | null;
+  readonly headingSlugs: readonly string[];
+  consumed: number;
+}
+
+let state: RenderState | null = null;
+
+function nextHeadingSlug(text: string): string {
+  if (state === null) {
+    throw new Error(`[playground] heading rendered outside a document block: ${text}`);
+  }
+  const slug = state.headingSlugs[state.consumed];
+  state.consumed += 1;
+  if (slug === undefined) {
+    throw new Error(
+      `[playground] the compiled model carries ${state.headingSlugs.length} heading anchor(s) ` +
+        `for a block holding more — no anchor for ${JSON.stringify(text)}`,
+    );
+  }
+  return slug;
+}
 
 function renderLink(href: string, title: string | null, inner: string): string {
   const titleAttr = title ? ` title="${escapeHtml(title)}"` : '';
-  const target = activeContext?.resolveLink(href, activeContext.sourcePath) ?? null;
+  const context = state?.context ?? null;
+  const target = context?.resolveLink(href, context.sourcePath) ?? null;
   if (target === null) {
     return `<a href="${escapeHtml(href)}"${titleAttr}>${inner}</a>`;
   }
@@ -74,7 +64,7 @@ const marked = new Marked({ gfm: true });
 marked.use({
   renderer: {
     heading(token: Tokens.Heading) {
-      const id = headingSlugger.unique(slugify(token.text));
+      const id = nextHeadingSlug(token.text);
       return `<h${token.depth} id="${id}">${renderInline(token.text)}</h${token.depth}>\n`;
     },
     code(token: Tokens.Code) {
@@ -89,16 +79,56 @@ marked.use({
   },
 });
 
-function renderMarkdown(md: string): string {
-  return marked.parse(md, { async: false });
-}
-
 function renderInline(md: string): string {
   return marked.parseInline(md, { async: false });
 }
 
-export function renderInlineMarkdown(md: string): string {
-  return renderInline(md);
+/**
+ * Render one prose block of a compiled document.
+ *
+ * Heading anchors are **read from the block**, in document order, rather than
+ * derived here: the compiler minted them once, against the whole document, so a
+ * page's anchors are a function of its content and of nothing this renderer has
+ * been handed before it.
+ */
+export function renderDocProse(block: DocProseBlock, context: DocRenderContext | null): string {
+  state = { context, headingSlugs: block.headingSlugs, consumed: 0 };
+  try {
+    const html = marked.parse(block.markdown, { async: false });
+    if (state.consumed !== block.headingSlugs.length) {
+      throw new Error(
+        `[playground] the compiled model carries ${block.headingSlugs.length} heading anchor(s) ` +
+          `for a block rendering ${state.consumed}`,
+      );
+    }
+    return html;
+  } finally {
+    state = null;
+  }
+}
+
+/** Render an inline fragment — a table cell, a heading, a demo subtitle. */
+export function renderInlineMarkdown(md: string, context?: DocRenderContext): string {
+  state = { context: context ?? null, headingSlugs: [], consumed: 0 };
+  try {
+    return renderInline(md);
+  } finally {
+    state = null;
+  }
+}
+
+/**
+ * A heading's text with its inline markup resolved away — what the table of
+ * contents shows, where `` `ForButton` `` reads as ForButton.
+ */
+export function headingText(markdown: string): string {
+  return stripText(renderInlineMarkdown(markdown));
+}
+
+/** Render a table cell once, keeping the text its labels and popovers need. */
+export function renderDocCell(md: string, context?: DocRenderContext): DocRenderedCell {
+  const html = renderInlineMarkdown(md, context);
+  return { html, text: stripText(html) };
 }
 
 export function stripText(html: string): string {
@@ -110,143 +140,4 @@ export function stripText(html: string): string {
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
     .trim();
-}
-
-function splitCells(row: string): string[] {
-  const trimmed = row.trim().replace(/^\|/, '').replace(/\|$/, '');
-  return trimmed.split(/(?<!\\)\|/).map((cell) => cell.trim().replace(/\\\|/g, '|'));
-}
-
-function parseTable(lines: readonly string[]): DocTableData {
-  const columns = splitCells(lines[0]!).map((cell) => renderInline(cell));
-  const rows = lines.slice(2).map((line) =>
-    splitCells(line).map((cell) => {
-      const html = renderInline(cell);
-      return { html, text: stripText(html) };
-    }),
-  );
-  return { columns, rows };
-}
-
-function splitBlocks(body: string): DocBlock[] {
-  const lines = body.split('\n');
-  const blocks: DocBlock[] = [];
-  let prose: string[] = [];
-  let inFence = false;
-
-  const flushProse = (): void => {
-    if (prose.some((line) => line.trim() !== '')) {
-      blocks.push({ kind: 'html', html: renderMarkdown(prose.join('\n')) });
-    }
-    prose = [];
-  };
-
-  let i = 0;
-  while (i < lines.length) {
-    const line = lines[i]!;
-
-    if (isFenceLine(line)) {
-      inFence = !inFence;
-      prose.push(line);
-      i += 1;
-      continue;
-    }
-
-    if (!inFence && line.includes('|') && line.trim() !== '' && isTableDelimiter(lines[i + 1])) {
-      flushProse();
-      const tableLines: string[] = [];
-      while (i < lines.length && lines[i]!.includes('|') && lines[i]!.trim() !== '') {
-        tableLines.push(lines[i]!);
-        i += 1;
-      }
-      blocks.push({ kind: 'table', table: parseTable(tableLines) });
-      continue;
-    }
-
-    prose.push(line);
-    i += 1;
-  }
-
-  flushProse();
-  return blocks;
-}
-
-const SUBSECTION_RE = /<h3 id="([^"]+)">([\s\S]*?)<\/h3>/g;
-
-function collectSubsections(blocks: readonly DocBlock[]): DocSubsection[] {
-  const subsections: DocSubsection[] = [];
-  for (const block of blocks) {
-    if (block.kind !== 'html') {
-      continue;
-    }
-    for (const match of block.html.matchAll(SUBSECTION_RE)) {
-      subsections.push({ title: stripText(match[2]!), slug: match[1]! });
-    }
-  }
-  return subsections;
-}
-
-function stripLeadingHeading(lines: string[]): string[] {
-  const result = [...lines];
-  while (result.length > 0 && result[0]!.trim() === '') {
-    result.shift();
-  }
-  if (result.length > 0 && /^#\s/.test(result[0]!)) {
-    result.shift();
-  }
-  while (result.length > 0 && result[0]!.trim() === '') {
-    result.shift();
-  }
-  return result;
-}
-
-export function parseDoc(md: string, context?: DocRenderContext): ParsedDoc {
-  activeContext = context ?? null;
-  try {
-    return parseDocSections(md);
-  } finally {
-    activeContext = null;
-  }
-}
-
-function parseDocSections(md: string): ParsedDoc {
-  const lines = md.split('\n');
-  const slugger = new Slugger();
-  const introLines: string[] = [];
-  const rawSections: { title: string; slug: string; bodyLines: string[] }[] = [];
-  let current: { title: string; slug: string; bodyLines: string[] } | null = null;
-  let inFence = false;
-
-  for (const line of lines) {
-    if (isFenceLine(line)) {
-      inFence = !inFence;
-    }
-
-    if (!inFence && /^## /.test(line)) {
-      const title = line.slice(3).trim();
-      current = { title, slug: slugger.unique(slugify(title)), bodyLines: [] };
-      rawSections.push(current);
-      continue;
-    }
-
-    if (current) {
-      current.bodyLines.push(line);
-    } else {
-      introLines.push(line);
-    }
-  }
-
-  headingSlugger.reset();
-  const intro = renderMarkdown(stripLeadingHeading(introLines).join('\n'));
-  const sections = rawSections.map((section) => {
-    const blocks = splitBlocks(section.bodyLines.join('\n'));
-    return {
-      title: section.title,
-      slug: section.slug,
-      subsections: collectSubsections(blocks),
-      blocks,
-    };
-  });
-
-  return { intro, sections };
 }

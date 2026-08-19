@@ -6,7 +6,7 @@ import { PrimitivePage } from '../../ui/primitive-page';
 import { ButtonDefaultExample } from './examples/default.example';
 import { ButtonDisabledExample } from './examples/disabled.example';
 import { SOURCES } from './sources.generated';
-import readmeContent from '../../../../../forty-cdk/button/README.md';
+import { DOC } from '../../../generated/docs/primitives/button.generated';
 
 @Component({
   selector: 'app-button-page',
@@ -14,7 +14,7 @@ import readmeContent from '../../../../../forty-cdk/button/README.md';
   imports: [PrimitivePage, DemoLayout, ButtonDefaultExample, ButtonDisabledExample],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
-    <primitive-page slug="button" [readme]="readme">
+    <primitive-page slug="button" [doc]="doc">
       <playground-demo hero sourcePath="button/examples/default.example.ts">
         <app-button-default-example />
       </playground-demo>
@@ -30,5 +30,5 @@ import readmeContent from '../../../../../forty-cdk/button/README.md';
   `,
 })
 export class ButtonPage {
-  protected readonly readme = readmeContent;
+  protected readonly doc = DOC;
 }

@@ -10,7 +10,7 @@ import { DragDropMixedGridExample } from './examples/mixed-grid.example';
 import { DragDropSortableExample } from './examples/sortable.example';
 import { DragDropTransferExample } from './examples/transfer.example';
 import { SOURCES } from './sources.generated';
-import readmeContent from '../../../../../forty-cdk/drag-drop/README.md';
+import { DOC } from '../../../generated/docs/primitives/drag-drop.generated';
 
 @Component({
   selector: 'app-drag-drop-page',
@@ -27,7 +27,7 @@ import readmeContent from '../../../../../forty-cdk/drag-drop/README.md';
   ],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
-    <primitive-page slug="drag-drop" [readme]="readme">
+    <primitive-page slug="drag-drop" [doc]="doc">
       <playground-demo hero sourcePath="drag-drop/examples/sortable.example.ts">
         <app-drag-drop-sortable-example />
       </playground-demo>
@@ -75,5 +75,5 @@ import readmeContent from '../../../../../forty-cdk/drag-drop/README.md';
   `,
 })
 export class DragDropPage {
-  protected readonly readme = readmeContent;
+  protected readonly doc = DOC;
 }

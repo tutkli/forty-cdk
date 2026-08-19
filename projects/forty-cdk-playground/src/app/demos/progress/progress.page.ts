@@ -7,7 +7,7 @@ import { ProgressDefaultExample } from './examples/default.example';
 import { ProgressIndeterminateExample } from './examples/indeterminate.example';
 import { ProgressValueLabelExample } from './examples/value-label.example';
 import { SOURCES } from './sources.generated';
-import readmeContent from '../../../../../forty-cdk/progress/README.md';
+import { DOC } from '../../../generated/docs/primitives/progress.generated';
 
 @Component({
   selector: 'app-progress-page',
@@ -21,7 +21,7 @@ import readmeContent from '../../../../../forty-cdk/progress/README.md';
   ],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
-    <primitive-page slug="progress" [readme]="readme">
+    <primitive-page slug="progress" [doc]="doc">
       <playground-demo hero sourcePath="progress/examples/default.example.ts">
         <app-progress-default-example />
       </playground-demo>
@@ -45,5 +45,5 @@ import readmeContent from '../../../../../forty-cdk/progress/README.md';
   `,
 })
 export class ProgressPage {
-  protected readonly readme = readmeContent;
+  protected readonly doc = DOC;
 }

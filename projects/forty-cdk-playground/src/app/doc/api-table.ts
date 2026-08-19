@@ -1,21 +1,9 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
-import { DomSanitizer, type SafeHtml } from '@angular/platform-browser';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 
 import { DocTablePopover } from './doc-table-popover';
-import type { DocTableData } from './markdown';
+import type { RenderedApiTable } from './doc-table';
 
-interface ApiRow {
-  readonly property: SafeHtml;
-  readonly propText: string;
-  readonly typeKind: string;
-  readonly typeFull: string;
-  readonly hasDetail: boolean;
-  readonly detailLabel: string;
-  readonly defaultValue: SafeHtml;
-  readonly hasDefaultValue: boolean;
-  readonly description: SafeHtml;
-  readonly hasDescription: boolean;
-}
+export type { RenderedApiTable } from './doc-table';
 
 @Component({
   selector: 'api-table',
@@ -26,22 +14,22 @@ interface ApiRow {
       <table class="pg-doc-table api-table">
         <thead>
           <tr>
-            <th class="api-col-prop">{{ columns()[0] }}</th>
-            <th class="api-col-type">{{ columns()[1] }}</th>
-            @if (hasDefault()) {
-              <th class="api-col-default">{{ columns()[2] }}</th>
+            <th class="api-col-prop">{{ table().property }}</th>
+            <th class="api-col-type">{{ table().type }}</th>
+            @if (defaultColumn(); as defaultColumn) {
+              <th class="api-col-default">{{ defaultColumn }}</th>
             }
-            <th class="api-col-desc">{{ descriptionColumn() }}</th>
+            <th class="api-col-desc">{{ table().description }}</th>
           </tr>
         </thead>
         <tbody>
-          @for (row of rows(); track $index) {
+          @for (row of table().rows; track $index) {
             <tr>
               <td class="api-col-prop" [innerHTML]="row.property"></td>
               <td class="api-col-type">
                 <doc-table-popover
                   hostClass="api-type"
-                  [ariaLabel]="'Type of ' + row.propText"
+                  [ariaLabel]="'Type of ' + row.propertyText"
                   [detail]="row.hasDetail"
                   [triggerLabel]="row.detailLabel"
                 >
@@ -50,7 +38,7 @@ interface ApiRow {
                     <code class="api-pop-type">{{ row.typeFull }}</code>
                     @if (row.hasDefaultValue) {
                       <div class="api-pop-default">
-                        <span class="api-pop-label">{{ columns()[2] }}</span>
+                        <span class="api-pop-label">{{ defaultColumn() }}</span>
                         <div class="api-pop-value" [innerHTML]="row.defaultValue"></div>
                       </div>
                     }
@@ -60,7 +48,7 @@ interface ApiRow {
                   </ng-container>
                 </doc-table-popover>
               </td>
-              @if (hasDefault()) {
+              @if (defaultColumn()) {
                 <td class="api-col-default" [innerHTML]="row.defaultValue"></td>
               }
               <td class="api-col-desc" [innerHTML]="row.description"></td>
@@ -72,38 +60,7 @@ interface ApiRow {
   `,
 })
 export class ApiTable {
-  readonly #sanitizer = inject(DomSanitizer);
+  readonly table = input.required<RenderedApiTable>();
 
-  readonly table = input.required<DocTableData>();
-
-  protected readonly columns = computed(() => this.table().columns);
-
-  protected readonly hasDefault = computed(() => this.columns().length === 4);
-
-  protected readonly descriptionColumn = computed(() => this.columns().at(-1) ?? '');
-
-  protected readonly rows = computed<readonly ApiRow[]>(() => {
-    const withDefault = this.hasDefault();
-    const empty = { html: '', text: '' };
-    return this.table().rows.map((cells) => {
-      const property = cells[0] ?? empty;
-      const type = cells[1] ?? empty;
-      const defaultValue = withDefault ? (cells[2] ?? empty) : empty;
-      const description = (withDefault ? cells[3] : cells[2]) ?? empty;
-      const typeFull = type.text.trim();
-      const typeKind = typeFull.split('<')[0]!.trim() || typeFull;
-      return {
-        property: this.#sanitizer.bypassSecurityTrustHtml(property.html),
-        propText: property.text,
-        typeKind,
-        typeFull,
-        hasDetail: typeFull !== '' && typeKind !== typeFull,
-        detailLabel: `Show full type${withDefault ? ', default' : ''} and description for ${property.text}`,
-        defaultValue: this.#sanitizer.bypassSecurityTrustHtml(defaultValue.html),
-        hasDefaultValue: defaultValue.text.trim() !== '',
-        description: this.#sanitizer.bypassSecurityTrustHtml(description.html),
-        hasDescription: description.text.trim() !== '',
-      };
-    });
-  });
+  protected readonly defaultColumn = computed(() => this.table().default);
 }

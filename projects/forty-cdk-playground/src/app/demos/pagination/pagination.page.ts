@@ -6,7 +6,7 @@ import { PrimitivePage } from '../../ui/primitive-page';
 import { PaginationDataExample } from './examples/data.example';
 import { PaginationDefaultExample } from './examples/default.example';
 import { SOURCES } from './sources.generated';
-import readmeContent from '../../../../../forty-cdk/pagination/README.md';
+import { DOC } from '../../../generated/docs/primitives/pagination.generated';
 
 @Component({
   selector: 'app-pagination-page',
@@ -14,7 +14,7 @@ import readmeContent from '../../../../../forty-cdk/pagination/README.md';
   imports: [PrimitivePage, DemoLayout, PaginationDefaultExample, PaginationDataExample],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
-    <primitive-page slug="pagination" [readme]="readme">
+    <primitive-page slug="pagination" [doc]="doc">
       <playground-demo hero sourcePath="pagination/examples/default.example.ts">
         <app-pagination-default-example />
       </playground-demo>
@@ -30,5 +30,5 @@ import readmeContent from '../../../../../forty-cdk/pagination/README.md';
   `,
 })
 export class PaginationPage {
-  protected readonly readme = readmeContent;
+  protected readonly doc = DOC;
 }

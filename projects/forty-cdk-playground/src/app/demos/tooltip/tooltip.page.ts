@@ -7,7 +7,7 @@ import { TooltipDefaultExample } from './examples/default.example';
 import { TooltipHoverableExample } from './examples/hoverable.example';
 import { TooltipOverflowExample } from './examples/overflow.example';
 import { SOURCES } from './sources.generated';
-import readmeContent from '../../../../../forty-cdk/tooltip/README.md';
+import { DOC } from '../../../generated/docs/primitives/tooltip.generated';
 
 @Component({
   selector: 'app-tooltip-page',
@@ -21,7 +21,7 @@ import readmeContent from '../../../../../forty-cdk/tooltip/README.md';
   ],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
-    <primitive-page slug="tooltip" [readme]="readme">
+    <primitive-page slug="tooltip" [doc]="doc">
       <playground-demo hero sourcePath="tooltip/examples/default.example.ts">
         <app-tooltip-default-example />
       </playground-demo>
@@ -45,5 +45,5 @@ import readmeContent from '../../../../../forty-cdk/tooltip/README.md';
   `,
 })
 export class TooltipPage {
-  protected readonly readme = readmeContent;
+  protected readonly doc = DOC;
 }

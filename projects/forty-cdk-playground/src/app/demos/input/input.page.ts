@@ -8,7 +8,7 @@ import { InputDefaultExample } from './examples/default.example';
 import { InputStatesExample } from './examples/states.example';
 import { InputValidationExample } from './examples/validation.example';
 import { SOURCES } from './sources.generated';
-import readmeContent from '../../../../../forty-cdk/input/README.md';
+import { DOC } from '../../../generated/docs/primitives/input.generated';
 
 @Component({
   selector: 'app-input-page',
@@ -23,7 +23,7 @@ import readmeContent from '../../../../../forty-cdk/input/README.md';
   ],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
-    <primitive-page slug="input" [readme]="readme">
+    <primitive-page slug="input" [doc]="doc">
       <playground-demo hero sourcePath="input/examples/default.example.ts">
         <app-input-default-example />
       </playground-demo>
@@ -55,5 +55,5 @@ import readmeContent from '../../../../../forty-cdk/input/README.md';
   `,
 })
 export class InputPage {
-  protected readonly readme = readmeContent;
+  protected readonly doc = DOC;
 }

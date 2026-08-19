@@ -6,7 +6,7 @@ import { PrimitivePage } from '../../ui/primitive-page';
 import { MeterDefaultExample } from './examples/default.example';
 import { MeterValueLabelExample } from './examples/value-label.example';
 import { SOURCES } from './sources.generated';
-import readmeContent from '../../../../../forty-cdk/meter/README.md';
+import { DOC } from '../../../generated/docs/primitives/meter.generated';
 
 @Component({
   selector: 'app-meter-page',
@@ -14,7 +14,7 @@ import readmeContent from '../../../../../forty-cdk/meter/README.md';
   imports: [PrimitivePage, DemoLayout, MeterDefaultExample, MeterValueLabelExample],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
-    <primitive-page slug="meter" [readme]="readme">
+    <primitive-page slug="meter" [doc]="doc">
       <playground-demo hero sourcePath="meter/examples/default.example.ts">
         <app-meter-default-example />
       </playground-demo>
@@ -30,5 +30,5 @@ import readmeContent from '../../../../../forty-cdk/meter/README.md';
   `,
 })
 export class MeterPage {
-  protected readonly readme = readmeContent;
+  protected readonly doc = DOC;
 }

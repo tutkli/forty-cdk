@@ -14,10 +14,6 @@ const DOC_ROUTES = buildDocRoutes({
   guideSlugs: GUIDES.map((guide) => guide.slug),
 });
 
-export function primitiveSourcePath(slug: string): string {
-  return `projects/forty-cdk/${slug}/README.md`;
-}
-
 export function injectDocLinkResolver(): DocLinkResolver {
   const locationStrategy = inject(LocationStrategy);
   return (href, sourcePath) =>

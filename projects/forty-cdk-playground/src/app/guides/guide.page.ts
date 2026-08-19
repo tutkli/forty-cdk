@@ -7,9 +7,10 @@ import { DocLinks } from '../doc/doc-links';
 import { injectDocLinkResolver } from '../doc/doc-routes';
 import { DocSection } from '../doc/doc-section';
 import { DocToc, type TocItem } from '../doc/doc-toc';
-import { GUIDE_CONTENT } from '../doc/guide-content.generated';
+import type { DocSection as DocSectionModel } from '../doc/doc-model';
 import { guideBySlug } from '../doc/guides';
-import { type DocSectionData, parseDoc } from '../doc/markdown';
+import { headingText, renderDocProse, type DocRenderContext } from '../doc/markdown';
+import { GUIDE_DOCS } from '../../generated/guide-docs.generated';
 
 @Component({
   selector: 'guide-page',
@@ -33,7 +34,7 @@ import { type DocSectionData, parseDoc } from '../doc/markdown';
         }
 
         @for (section of sections(); track section.slug) {
-          <doc-section [section]="section" />
+          <doc-section [section]="section" [context]="context()" />
         }
       </div>
 
@@ -127,33 +128,41 @@ export class GuidePage {
 
   protected readonly guide = computed(() => guideBySlug(this.slug()));
 
-  readonly #parsed = computed(() => {
+  readonly #doc = computed(() => {
     const guide = this.guide();
-    const content = GUIDE_CONTENT[guide.slug];
-    if (content === undefined) {
-      throw new Error(`[playground] no content bundled for guide: ${guide.slug}`);
+    const doc = GUIDE_DOCS[guide.slug];
+    if (doc === undefined) {
+      throw new Error(`[playground] no compiled document for guide: ${guide.slug}`);
     }
-    return parseDoc(content, {
-      sourcePath: guide.sourcePath,
-      resolveLink: this.#resolveLink,
-    });
+    return doc;
   });
 
+  protected readonly context = computed<DocRenderContext>(() => ({
+    sourcePath: this.#doc().path,
+    resolveLink: this.#resolveLink,
+  }));
+
   protected readonly introHtml = computed(() => {
-    const intro = this.#parsed().intro;
+    const context = this.context();
+    const intro = this.#doc()
+      .intro.map((block) => renderDocProse(block, context))
+      .join('');
     return intro.trim() ? this.#sanitizer.bypassSecurityTrustHtml(intro) : null;
   });
 
-  protected readonly sections = computed(() => this.#parsed().sections);
+  protected readonly sections = computed(() => this.#doc().sections);
 
   protected readonly tocItems = computed<readonly TocItem[]>(() =>
-    this.sections().map((section: DocSectionData) => ({
-      title: section.title,
-      slug: section.slug,
-      children: section.subsections.length
-        ? section.subsections.map((sub) => ({ title: sub.title, slug: sub.slug }))
-        : undefined,
-    })),
+    this.sections().map((section: DocSectionModel) => {
+      const children = section.headings
+        .filter((heading) => heading.depth === 3)
+        .map((heading) => ({ title: headingText(heading.text), slug: heading.slug }));
+      return {
+        title: section.title,
+        slug: section.slug,
+        children: children.length ? children : undefined,
+      };
+    }),
   );
 
   constructor() {

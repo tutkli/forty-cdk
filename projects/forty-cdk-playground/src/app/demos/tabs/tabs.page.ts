@@ -7,7 +7,7 @@ import { TabsDefaultExample } from './examples/default.example';
 import { TabsManualActivationExample } from './examples/manual-activation.example';
 import { TabsVerticalExample } from './examples/vertical.example';
 import { SOURCES } from './sources.generated';
-import readmeContent from '../../../../../forty-cdk/tabs/README.md';
+import { DOC } from '../../../generated/docs/primitives/tabs.generated';
 
 @Component({
   selector: 'app-tabs-page',
@@ -21,7 +21,7 @@ import readmeContent from '../../../../../forty-cdk/tabs/README.md';
   ],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
-    <primitive-page slug="tabs" [readme]="readme">
+    <primitive-page slug="tabs" [doc]="doc">
       <playground-demo hero sourcePath="tabs/examples/default.example.ts">
         <app-tabs-default-example />
       </playground-demo>
@@ -45,5 +45,5 @@ import readmeContent from '../../../../../forty-cdk/tabs/README.md';
   `,
 })
 export class TabsPage {
-  protected readonly readme = readmeContent;
+  protected readonly doc = DOC;
 }

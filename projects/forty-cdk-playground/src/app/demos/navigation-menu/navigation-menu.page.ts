@@ -6,7 +6,7 @@ import { PrimitivePage } from '../../ui/primitive-page';
 import { NavigationMenuDefaultExample } from './examples/default.example';
 import { NavigationMenuVerticalExample } from './examples/vertical.example';
 import { SOURCES } from './sources.generated';
-import readmeContent from '../../../../../forty-cdk/navigation-menu/README.md';
+import { DOC } from '../../../generated/docs/primitives/navigation-menu.generated';
 
 @Component({
   selector: 'app-navigation-menu-page',
@@ -14,7 +14,7 @@ import readmeContent from '../../../../../forty-cdk/navigation-menu/README.md';
   imports: [PrimitivePage, DemoLayout, NavigationMenuDefaultExample, NavigationMenuVerticalExample],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
-    <primitive-page slug="navigation-menu" [readme]="readme">
+    <primitive-page slug="navigation-menu" [doc]="doc">
       <playground-demo hero sourcePath="navigation-menu/examples/default.example.ts">
         <app-navigation-menu-default-example />
       </playground-demo>
@@ -30,5 +30,5 @@ import readmeContent from '../../../../../forty-cdk/navigation-menu/README.md';
   `,
 })
 export class NavigationMenuPage {
-  protected readonly readme = readmeContent;
+  protected readonly doc = DOC;
 }

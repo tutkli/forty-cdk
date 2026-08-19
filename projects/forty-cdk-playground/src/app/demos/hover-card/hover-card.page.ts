@@ -5,7 +5,7 @@ import { DemoLayout } from '../../ui/demo-layout';
 import { PrimitivePage } from '../../ui/primitive-page';
 import { HoverCardDefaultExample } from './examples/default.example';
 import { SOURCES } from './sources.generated';
-import readmeContent from '../../../../../forty-cdk/hover-card/README.md';
+import { DOC } from '../../../generated/docs/primitives/hover-card.generated';
 
 @Component({
   selector: 'app-hover-card-page',
@@ -13,7 +13,7 @@ import readmeContent from '../../../../../forty-cdk/hover-card/README.md';
   imports: [PrimitivePage, DemoLayout, HoverCardDefaultExample],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
-    <primitive-page slug="hover-card" [readme]="readme">
+    <primitive-page slug="hover-card" [doc]="doc">
       <playground-demo hero sourcePath="hover-card/examples/default.example.ts">
         <app-hover-card-default-example />
       </playground-demo>
@@ -21,5 +21,5 @@ import readmeContent from '../../../../../forty-cdk/hover-card/README.md';
   `,
 })
 export class HoverCardPage {
-  protected readonly readme = readmeContent;
+  protected readonly doc = DOC;
 }

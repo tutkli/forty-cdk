@@ -11,10 +11,11 @@ import { RouterLink } from '@angular/router';
 
 import { injectFragmentScroll } from '../doc/doc-fragment';
 import { DocLinks } from '../doc/doc-links';
-import { injectDocLinkResolver, primitiveSourcePath } from '../doc/doc-routes';
+import type { DocDocument, DocSection as DocSectionModel } from '../doc/doc-model';
+import { injectDocLinkResolver } from '../doc/doc-routes';
 import { DocSection } from '../doc/doc-section';
 import { DocToc, type TocItem } from '../doc/doc-toc';
-import { type DocSectionData, parseDoc, stripText } from '../doc/markdown';
+import { headingText, renderDocProse, stripText, type DocRenderContext } from '../doc/markdown';
 import { primitiveBySlug } from '../primitives';
 import { DemoLayout } from './demo-layout';
 import { Icon } from './icon';
@@ -53,7 +54,7 @@ function stripLeadingDescription(introHtml: string, description: string): string
         }
 
         @for (section of sectionsBefore(); track section.slug) {
-          <doc-section [section]="section" />
+          <doc-section [section]="section" [context]="context()" />
         }
 
         <section class="pg-doc-section" [id]="examplesMeta().slug">
@@ -74,7 +75,7 @@ function stripLeadingDescription(introHtml: string, description: string): string
         </section>
 
         @for (section of sectionsAfter(); track section.slug) {
-          <doc-section [section]="section" />
+          <doc-section [section]="section" [context]="context()" />
         }
       </div>
 
@@ -179,25 +180,27 @@ export class PrimitivePage {
   readonly #resolveLink = injectDocLinkResolver();
 
   readonly slug = input.required<string>();
-  readonly readme = input.required<string>();
+  readonly doc = input.required<DocDocument>();
 
   protected readonly demos = contentChildren(DemoLayout);
 
   protected readonly meta = computed(() => primitiveBySlug(this.slug()));
 
-  readonly #parsed = computed(() =>
-    parseDoc(this.readme(), {
-      sourcePath: primitiveSourcePath(this.slug()),
-      resolveLink: this.#resolveLink,
-    }),
-  );
+  protected readonly context = computed<DocRenderContext>(() => ({
+    sourcePath: this.doc().path,
+    resolveLink: this.#resolveLink,
+  }));
 
   protected readonly introHtml = computed(() => {
-    const intro = stripLeadingDescription(this.#parsed().intro, this.meta().description);
+    const context = this.context();
+    const rendered = this.doc()
+      .intro.map((block) => renderDocProse(block, context))
+      .join('');
+    const intro = stripLeadingDescription(rendered, this.meta().description);
     return intro.trim() ? this.#sanitizer.bypassSecurityTrustHtml(intro) : null;
   });
 
-  readonly #sections = computed(() => this.#parsed().sections);
+  readonly #sections = computed(() => this.doc().sections);
   readonly #examplesIndex = computed(() =>
     this.#sections().findIndex((section) => section.slug === 'examples'),
   );
@@ -222,13 +225,16 @@ export class PrimitivePage {
   });
 
   protected readonly tocItems = computed<readonly TocItem[]>(() => {
-    const toToc = (section: DocSectionData): TocItem => ({
-      title: section.title,
-      slug: section.slug,
-      children: section.subsections.length
-        ? section.subsections.map((sub) => ({ title: sub.title, slug: sub.slug }))
-        : undefined,
-    });
+    const toToc = (section: DocSectionModel): TocItem => {
+      const children = section.headings
+        .filter((heading) => heading.depth === 3)
+        .map((heading) => ({ title: headingText(heading.text), slug: heading.slug }));
+      return {
+        title: section.title,
+        slug: section.slug,
+        children: children.length ? children : undefined,
+      };
+    };
 
     const exampleChildren = this.demos()
       .filter((demo) => !demo.hero())

@@ -8,7 +8,7 @@ import { DatePickerDateTimeExample } from './examples/date-time.example';
 import { DatePickerDefaultExample } from './examples/default.example';
 import { DatePickerRangeFormExample } from './examples/range-form.example';
 import { SOURCES } from './sources.generated';
-import readmeContent from '../../../../../forty-cdk/date-picker/README.md';
+import { DOC } from '../../../generated/docs/primitives/date-picker.generated';
 
 @Component({
   selector: 'app-date-picker-page',
@@ -23,7 +23,7 @@ import readmeContent from '../../../../../forty-cdk/date-picker/README.md';
   ],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
-    <primitive-page slug="date-picker" [readme]="readme">
+    <primitive-page slug="date-picker" [doc]="doc">
       <playground-demo hero sourcePath="date-picker/examples/default.example.ts">
         <app-date-picker-default-example />
       </playground-demo>
@@ -55,5 +55,5 @@ import readmeContent from '../../../../../forty-cdk/date-picker/README.md';
   `,
 })
 export class DatePickerPage {
-  protected readonly readme = readmeContent;
+  protected readonly doc = DOC;
 }

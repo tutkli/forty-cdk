@@ -5,7 +5,7 @@ import { DemoLayout } from '../../ui/demo-layout';
 import { PrimitivePage } from '../../ui/primitive-page';
 import { MenuDefaultExample } from './examples/default.example';
 import { SOURCES } from './sources.generated';
-import readmeContent from '../../../../../forty-cdk/menu/README.md';
+import { DOC } from '../../../generated/docs/primitives/menu.generated';
 
 @Component({
   selector: 'app-menu-page',
@@ -13,7 +13,7 @@ import readmeContent from '../../../../../forty-cdk/menu/README.md';
   imports: [PrimitivePage, DemoLayout, MenuDefaultExample],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
-    <primitive-page slug="menu" [readme]="readme">
+    <primitive-page slug="menu" [doc]="doc">
       <playground-demo hero sourcePath="menu/examples/default.example.ts">
         <app-menu-default-example />
       </playground-demo>
@@ -21,5 +21,5 @@ import readmeContent from '../../../../../forty-cdk/menu/README.md';
   `,
 })
 export class MenuPage {
-  protected readonly readme = readmeContent;
+  protected readonly doc = DOC;
 }

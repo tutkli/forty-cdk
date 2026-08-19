@@ -2,7 +2,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { guideSlugOf } from './doc-links.mjs';
-import { isFenceLine, slugify, Slugger } from './readme-slug.mjs';
+import { isFenceLine } from './readme-slug.mjs';
 import { repoRoot } from './repo-path.mjs';
 
 export const DOCS_DIR = join(repoRoot, 'docs');
@@ -55,22 +55,6 @@ export function readPrimitives() {
     entries.push({ slug: match[1], title: match[2] });
   }
   return entries;
-}
-
-export function sectionsOf(md) {
-  const slugger = new Slugger();
-  const sections = [];
-  let inFence = false;
-  for (const line of md.split('\n')) {
-    if (isFenceLine(line)) {
-      inFence = !inFence;
-    }
-    if (!inFence && /^## /.test(line)) {
-      const title = line.slice(3).trim();
-      sections.push({ title, anchor: slugger.unique(slugify(title)) });
-    }
-  }
-  return sections;
 }
 
 function headingOf(md) {
@@ -181,7 +165,6 @@ export function readGuides() {
       group,
       title,
       description: ledeOf(md),
-      sections: sectionsOf(md),
     };
   });
 }

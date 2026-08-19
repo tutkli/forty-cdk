@@ -7,7 +7,7 @@ import { NumberInputDefaultExample } from './examples/default.example';
 import { NumberInputDisabledExample } from './examples/disabled.example';
 import { NumberInputFormattingExample } from './examples/formatting.example';
 import { SOURCES } from './sources.generated';
-import readmeContent from '../../../../../forty-cdk/number-input/README.md';
+import { DOC } from '../../../generated/docs/primitives/number-input.generated';
 
 @Component({
   selector: 'app-number-input-page',
@@ -21,7 +21,7 @@ import readmeContent from '../../../../../forty-cdk/number-input/README.md';
   ],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
-    <primitive-page slug="number-input" [readme]="readme">
+    <primitive-page slug="number-input" [doc]="doc">
       <playground-demo hero sourcePath="number-input/examples/default.example.ts">
         <app-number-input-default-example />
       </playground-demo>
@@ -45,5 +45,5 @@ import readmeContent from '../../../../../forty-cdk/number-input/README.md';
   `,
 })
 export class NumberInputPage {
-  protected readonly readme = readmeContent;
+  protected readonly doc = DOC;
 }

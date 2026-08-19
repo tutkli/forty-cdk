@@ -11,7 +11,7 @@ import { DateRangeFieldDateTimeExample } from './examples/range-date-time.exampl
 import { DateRangeFieldFormFieldExample } from './examples/range-form-field.example';
 import { DateRangeFieldDefaultExample } from './examples/range.example';
 import { SOURCES } from './sources.generated';
-import readmeContent from '../../../../../forty-cdk/date-field/README.md';
+import { DOC } from '../../../generated/docs/primitives/date-field.generated';
 
 @Component({
   selector: 'app-date-field-page',
@@ -29,7 +29,7 @@ import readmeContent from '../../../../../forty-cdk/date-field/README.md';
   ],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
-    <primitive-page slug="date-field" [readme]="readme">
+    <primitive-page slug="date-field" [doc]="doc">
       <playground-demo hero sourcePath="date-field/examples/default.example.ts">
         <app-date-field-default-example />
       </playground-demo>
@@ -85,5 +85,5 @@ import readmeContent from '../../../../../forty-cdk/date-field/README.md';
   `,
 })
 export class DateFieldPage {
-  protected readonly readme = readmeContent;
+  protected readonly doc = DOC;
 }

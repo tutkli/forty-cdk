@@ -21,7 +21,7 @@ import {
 
 import { GUIDE_INDEX } from '../doc/guides';
 import { buildSearchEntries, filterSearchEntries } from '../doc/search-index';
-import { README_SECTIONS } from '../doc/search-index.generated';
+import { DOC_INDEX } from '../../generated/doc-index.generated';
 import { PLAYGROUND_GROUPS } from '../primitives';
 import { Icon } from './icon';
 
@@ -87,7 +87,7 @@ export class CommandPalette {
   protected readonly selected: readonly string[] = [];
 
   protected readonly inputEl = viewChild<ElementRef<HTMLInputElement>>('input');
-  readonly #entries = buildSearchEntries(PLAYGROUND_GROUPS, README_SECTIONS, GUIDE_INDEX);
+  readonly #entries = buildSearchEntries(PLAYGROUND_GROUPS, DOC_INDEX, GUIDE_INDEX);
 
   protected readonly filtered = computed(() =>
     filterSearchEntries(this.#entries, this.query()).slice(0, MAX_RESULTS),

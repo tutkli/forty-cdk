@@ -67,9 +67,8 @@ Thumbs.db
 # Generated example-source manifests (built by scripts/gen-example-sources.mjs)
 projects/forty-cdk-playground/src/app/demos/**/sources.generated.ts
 
-# Generated README section search index (built by scripts/gen-search-index.mjs)
-projects/forty-cdk-playground/src/app/doc/search-index.generated.ts
+# Compiled document model (built by scripts/docs/gen-doc-model.mjs)
+projects/forty-cdk-playground/src/generated/
 
-# Generated guide registry and bundled guide content (built by scripts/gen-guides.mjs)
+# Generated guide registry (built by scripts/gen-guides.mjs)
 projects/forty-cdk-playground/src/app/doc/guides.generated.ts
-projects/forty-cdk-playground/src/app/doc/guide-content.generated.ts

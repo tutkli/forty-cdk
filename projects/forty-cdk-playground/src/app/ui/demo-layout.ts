@@ -16,7 +16,8 @@ import { ForTabs, ForTabsContent, ForTabsList, ForTabsTrigger } from 'forty-cdk/
 import { ForToastManager } from 'forty-cdk/toast';
 
 import { EXAMPLE_SOURCES } from '../doc/example-source';
-import { renderInlineMarkdown, slugify } from '../doc/markdown';
+import { slugify } from '../../../../../scripts/lib/readme-slug.mjs';
+import { renderInlineMarkdown } from '../doc/markdown';
 import { GITHUB_BLOB_BASE } from './github';
 import { Icon } from './icon';
 

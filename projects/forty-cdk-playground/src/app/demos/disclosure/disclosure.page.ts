@@ -6,7 +6,7 @@ import { PrimitivePage } from '../../ui/primitive-page';
 import { DisclosureDefaultExample } from './examples/default.example';
 import { DisclosureDisabledExample } from './examples/disabled.example';
 import { SOURCES } from './sources.generated';
-import readmeContent from '../../../../../forty-cdk/disclosure/README.md';
+import { DOC } from '../../../generated/docs/primitives/disclosure.generated';
 
 @Component({
   selector: 'app-disclosure-page',
@@ -14,7 +14,7 @@ import readmeContent from '../../../../../forty-cdk/disclosure/README.md';
   imports: [PrimitivePage, DemoLayout, DisclosureDefaultExample, DisclosureDisabledExample],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
-    <primitive-page slug="disclosure" [readme]="readme">
+    <primitive-page slug="disclosure" [doc]="doc">
       <playground-demo hero sourcePath="disclosure/examples/default.example.ts">
         <app-disclosure-default-example />
       </playground-demo>
@@ -30,5 +30,5 @@ import readmeContent from '../../../../../forty-cdk/disclosure/README.md';
   `,
 })
 export class DisclosurePage {
-  protected readonly readme = readmeContent;
+  protected readonly doc = DOC;
 }

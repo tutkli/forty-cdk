@@ -7,7 +7,7 @@ import { BreakpointsActiveExample } from './examples/active.example';
 import { BreakpointsMediaQueriesExample } from './examples/media-queries.example';
 import { BreakpointsResponsiveLayoutExample } from './examples/responsive-layout.example';
 import { SOURCES } from './sources.generated';
-import readmeContent from '../../../../../forty-cdk/breakpoints/README.md';
+import { DOC } from '../../../generated/docs/primitives/breakpoints.generated';
 
 @Component({
   selector: 'app-breakpoints-page',
@@ -21,7 +21,7 @@ import readmeContent from '../../../../../forty-cdk/breakpoints/README.md';
   ],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
-    <primitive-page slug="breakpoints" [readme]="readme">
+    <primitive-page slug="breakpoints" [doc]="doc">
       <playground-demo hero sourcePath="breakpoints/examples/active.example.ts">
         <app-breakpoints-active-example />
       </playground-demo>
@@ -45,5 +45,5 @@ import readmeContent from '../../../../../forty-cdk/breakpoints/README.md';
   `,
 })
 export class BreakpointsPage {
-  protected readonly readme = readmeContent;
+  protected readonly doc = DOC;
 }

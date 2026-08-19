@@ -7,7 +7,7 @@ import { TimePickerBoundsExample } from './examples/bounds.example';
 import { TimePickerDisabledExample } from './examples/disabled.example';
 import { TimePickerTimeExample } from './examples/time.example';
 import { SOURCES } from './sources.generated';
-import readmeContent from '../../../../../forty-cdk/time-picker/README.md';
+import { DOC } from '../../../generated/docs/primitives/time-picker.generated';
 
 @Component({
   selector: 'app-time-picker-page',
@@ -21,7 +21,7 @@ import readmeContent from '../../../../../forty-cdk/time-picker/README.md';
   ],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
-    <primitive-page slug="time-picker" [readme]="readme">
+    <primitive-page slug="time-picker" [doc]="doc">
       <playground-demo hero sourcePath="time-picker/examples/time.example.ts">
         <app-time-picker-time-example />
       </playground-demo>
@@ -45,5 +45,5 @@ import readmeContent from '../../../../../forty-cdk/time-picker/README.md';
   `,
 })
 export class TimePickerPage {
-  protected readonly readme = readmeContent;
+  protected readonly doc = DOC;
 }

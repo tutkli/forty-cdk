@@ -9,7 +9,7 @@ import { SliderRangeExample } from './examples/range.example';
 import { SliderStepsExample } from './examples/steps.example';
 import { SliderVerticalExample } from './examples/vertical.example';
 import { SOURCES } from './sources.generated';
-import readmeContent from '../../../../../forty-cdk/slider/README.md';
+import { DOC } from '../../../generated/docs/primitives/slider.generated';
 
 @Component({
   selector: 'app-slider-page',
@@ -25,7 +25,7 @@ import readmeContent from '../../../../../forty-cdk/slider/README.md';
   ],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
-    <primitive-page slug="slider" [readme]="readme">
+    <primitive-page slug="slider" [doc]="doc">
       <playground-demo hero sourcePath="slider/examples/default.example.ts">
         <app-slider-default-example />
       </playground-demo>
@@ -65,5 +65,5 @@ import readmeContent from '../../../../../forty-cdk/slider/README.md';
   `,
 })
 export class SliderPage {
-  protected readonly readme = readmeContent;
+  protected readonly doc = DOC;
 }

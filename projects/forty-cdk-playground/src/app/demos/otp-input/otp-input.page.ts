@@ -6,7 +6,7 @@ import { PrimitivePage } from '../../ui/primitive-page';
 import { OtpDefaultExample } from './examples/default.example';
 import { OtpMaskedExample } from './examples/masked.example';
 import { SOURCES } from './sources.generated';
-import readmeContent from '../../../../../forty-cdk/otp-input/README.md';
+import { DOC } from '../../../generated/docs/primitives/otp-input.generated';
 
 @Component({
   selector: 'app-otp-input-page',
@@ -14,7 +14,7 @@ import readmeContent from '../../../../../forty-cdk/otp-input/README.md';
   imports: [PrimitivePage, DemoLayout, OtpDefaultExample, OtpMaskedExample],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
-    <primitive-page slug="otp-input" [readme]="readme">
+    <primitive-page slug="otp-input" [doc]="doc">
       <playground-demo hero sourcePath="otp-input/examples/default.example.ts">
         <app-otp-default-example />
       </playground-demo>
@@ -30,5 +30,5 @@ import readmeContent from '../../../../../forty-cdk/otp-input/README.md';
   `,
 })
 export class OtpInputPage {
-  protected readonly readme = readmeContent;
+  protected readonly doc = DOC;
 }

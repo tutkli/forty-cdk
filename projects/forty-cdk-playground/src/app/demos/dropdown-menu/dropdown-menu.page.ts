@@ -7,7 +7,7 @@ import { DropdownMenuCheckboxRadioExample } from './examples/checkbox-radio.exam
 import { DropdownMenuDefaultExample } from './examples/default.example';
 import { DropdownMenuSubmenusExample } from './examples/submenus.example';
 import { SOURCES } from './sources.generated';
-import readmeContent from '../../../../../forty-cdk/dropdown-menu/README.md';
+import { DOC } from '../../../generated/docs/primitives/dropdown-menu.generated';
 
 @Component({
   selector: 'app-dropdown-menu-page',
@@ -21,7 +21,7 @@ import readmeContent from '../../../../../forty-cdk/dropdown-menu/README.md';
   ],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
-    <primitive-page slug="dropdown-menu" [readme]="readme">
+    <primitive-page slug="dropdown-menu" [doc]="doc">
       <playground-demo hero sourcePath="dropdown-menu/examples/default.example.ts">
         <app-dropdown-menu-default-example />
       </playground-demo>
@@ -45,5 +45,5 @@ import readmeContent from '../../../../../forty-cdk/dropdown-menu/README.md';
   `,
 })
 export class DropdownMenuPage {
-  protected readonly readme = readmeContent;
+  protected readonly doc = DOC;
 }

@@ -7,7 +7,7 @@ import { PopoverAnchorExample } from './examples/anchor.example';
 import { PopoverDefaultExample } from './examples/default.example';
 import { PopoverPositioningExample } from './examples/positioning.example';
 import { SOURCES } from './sources.generated';
-import readmeContent from '../../../../../forty-cdk/popover/README.md';
+import { DOC } from '../../../generated/docs/primitives/popover.generated';
 
 @Component({
   selector: 'app-popover-page',
@@ -21,7 +21,7 @@ import readmeContent from '../../../../../forty-cdk/popover/README.md';
   ],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
-    <primitive-page slug="popover" [readme]="readme">
+    <primitive-page slug="popover" [doc]="doc">
       <playground-demo hero sourcePath="popover/examples/default.example.ts">
         <app-popover-default-example />
       </playground-demo>
@@ -45,5 +45,5 @@ import readmeContent from '../../../../../forty-cdk/popover/README.md';
   `,
 })
 export class PopoverPage {
-  protected readonly readme = readmeContent;
+  protected readonly doc = DOC;
 }

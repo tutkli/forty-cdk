@@ -8,7 +8,7 @@ import { CheckboxDisabledExample } from './examples/disabled.example';
 import { CheckboxFormFieldExample } from './examples/form-field.example';
 import { CheckboxSelectAllExample } from './examples/select-all.example';
 import { SOURCES } from './sources.generated';
-import readmeContent from '../../../../../forty-cdk/checkbox/README.md';
+import { DOC } from '../../../generated/docs/primitives/checkbox.generated';
 
 @Component({
   selector: 'app-checkbox-page',
@@ -23,7 +23,7 @@ import readmeContent from '../../../../../forty-cdk/checkbox/README.md';
   ],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
-    <primitive-page slug="checkbox" [readme]="readme">
+    <primitive-page slug="checkbox" [doc]="doc">
       <playground-demo hero sourcePath="checkbox/examples/default.example.ts">
         <app-checkbox-default-example />
       </playground-demo>
@@ -55,5 +55,5 @@ import readmeContent from '../../../../../forty-cdk/checkbox/README.md';
   `,
 })
 export class CheckboxPage {
-  protected readonly readme = readmeContent;
+  protected readonly doc = DOC;
 }

@@ -7,7 +7,7 @@ import { FieldDefaultExample } from './examples/default.example';
 import { FieldDisabledExample } from './examples/disabled.example';
 import { FieldValidationExample } from './examples/validation.example';
 import { SOURCES } from './sources.generated';
-import readmeContent from '../../../../../forty-cdk/field/README.md';
+import { DOC } from '../../../generated/docs/primitives/field.generated';
 
 @Component({
   selector: 'app-field-page',
@@ -21,7 +21,7 @@ import readmeContent from '../../../../../forty-cdk/field/README.md';
   ],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
-    <primitive-page slug="field" [readme]="readme">
+    <primitive-page slug="field" [doc]="doc">
       <playground-demo hero sourcePath="field/examples/default.example.ts">
         <app-field-default-example />
       </playground-demo>
@@ -45,5 +45,5 @@ import readmeContent from '../../../../../forty-cdk/field/README.md';
   `,
 })
 export class FieldPage {
-  protected readonly readme = readmeContent;
+  protected readonly doc = DOC;
 }

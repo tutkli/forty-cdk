@@ -10,7 +10,7 @@ import { TimeRangeFieldBoundsExample } from './examples/range-bounds.example';
 import { TimeRangeFieldFormFieldExample } from './examples/range-form-field.example';
 import { TimeRangeFieldDefaultExample } from './examples/range.example';
 import { SOURCES } from './sources.generated';
-import readmeContent from '../../../../../forty-cdk/time-field/README.md';
+import { DOC } from '../../../generated/docs/primitives/time-field.generated';
 
 @Component({
   selector: 'app-time-field-page',
@@ -27,7 +27,7 @@ import readmeContent from '../../../../../forty-cdk/time-field/README.md';
   ],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
-    <primitive-page slug="time-field" [readme]="readme">
+    <primitive-page slug="time-field" [doc]="doc">
       <playground-demo hero sourcePath="time-field/examples/default.example.ts">
         <app-time-field-default-example />
       </playground-demo>
@@ -75,5 +75,5 @@ import readmeContent from '../../../../../forty-cdk/time-field/README.md';
   `,
 })
 export class TimeFieldPage {
-  protected readonly readme = readmeContent;
+  protected readonly doc = DOC;
 }
