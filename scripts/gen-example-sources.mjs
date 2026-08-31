@@ -86,13 +86,16 @@ for (const dir of skipped) {
     removals.push('removed the empty directory');
   }
 
-  const suffix = removals.length > 0 ? ` — ${removals.join(', ')}` : '';
-  console.warn(`[gen-example-sources] skipped demos/${dir}: no *.example.ts files${suffix}`);
+  if (removals.length > 0) {
+    console.warn(
+      `[gen-example-sources] skipped demos/${dir}: no *.example.ts files — ${removals.join(', ')}`,
+    );
+  }
 }
 
 console.log(
   `[gen-example-sources] wrote ${byPrimitive.size} manifests covering ${total} example sources` +
     (skipped.length > 0
-      ? `, skipped ${skipped.length} ${skipped.length === 1 ? 'directory' : 'directories'} with no examples`
+      ? `, and ${skipped.length} page(s) with no live demo of their own: ${skipped.join(', ')}`
       : ''),
 );

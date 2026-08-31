@@ -1,6 +1,6 @@
 ---
 title: Shared
-group: none
+group: utilities
 archetype: [headless-utility]
 ---
 

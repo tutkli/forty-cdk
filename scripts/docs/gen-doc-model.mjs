@@ -1,10 +1,11 @@
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 
-import { checkContract } from '../lib/doc-contract.mjs';
+import { checkContract, foldTargetOf } from '../lib/doc-contract.mjs';
 import { buildDocRoutes } from '../lib/doc-links.mjs';
 import { readEntryPointDocs, readGuides } from '../lib/doc-site.mjs';
 import { repoRoot } from '../lib/repo-path.mjs';
+import { foldableOf, withFold } from './doc-fold.mjs';
 import { compileDocument, DocCompileError } from './doc-model.mjs';
 import { headingText, renderDocument } from './doc-render.mjs';
 
@@ -62,9 +63,11 @@ function compileAll() {
     throw new DocCompileError(contract);
   }
 
+  const unpublished = readmes.filter((document) => document.meta.group === 'none');
   return {
     documents: compiled.filter((document) => document.meta?.group !== 'none'),
-    unpublished: readmes.filter((document) => document.meta.group === 'none'),
+    folded: unpublished.filter((document) => foldTargetOf(document.meta) !== null),
+    unpublished,
   };
 }
 
@@ -163,7 +166,7 @@ function write(files) {
   }
 }
 
-const { documents, unpublished } = compileAll();
+const { documents, folded, unpublished } = compileAll();
 const guides = documents.filter((document) => document.kind === 'guide');
 const primitives = documents.filter((document) => document.kind === 'primitive');
 
@@ -172,13 +175,54 @@ const primitives = documents.filter((document) => document.kind === 'primitive')
  * browser ([#1807](https://github.com/tutkli/forty-cdk/issues/1807)).
  *
  * The same map `pnpm check:doc-links` gates the sources against: an entry point
- * that has a README but ships no page is absent from it on purpose, so a link to
- * one resolves to its source on GitHub rather than to a route that would 404.
+ * that has a README and is neither published nor folded is absent from it on
+ * purpose, so a link to one resolves to its source on GitHub rather than to a
+ * route that would 404.
  */
 const routes = buildDocRoutes({
   primitiveSlugs: primitives.map((primitive) => primitive.slug),
   guideSlugs: guides.map((guide) => guide.slug),
+  foldedSlugs: folded.map((document) => ({
+    slug: document.slug,
+    host: foldTargetOf(document.meta).slug,
+  })),
 });
+
+const keyOf = (document) => `${document.kind}:${document.slug}`;
+
+/**
+ * The pages, with every folded README appended to the section it names
+ * ([#1809](https://github.com/tutkli/forty-cdk/issues/1809)).
+ *
+ * The fold happens over the rendered pages rather than over the compiled
+ * documents, so each half is rendered against its own source path and its
+ * relative links resolve from where they were written.
+ */
+function foldedPages() {
+  const pages = new Map(
+    documents.map((document) => [keyOf(document), renderDocument(document, { routes })]),
+  );
+  for (const document of folded) {
+    const target = foldTargetOf(document.meta);
+    const host = pages.get(`primitive:${target.slug}`);
+    if (host === undefined) {
+      throw new DocCompileError([
+        {
+          path: document.path,
+          line: 1,
+          message:
+            `foldInto names "${target.slug}", which the site publishes no page for — fold this ` +
+            'document into a published page, or give it one of its own',
+        },
+      ]);
+    }
+    const [section] = renderDocument(foldableOf(document), { routes }).sections;
+    pages.set(`primitive:${target.slug}`, withFold(host, target.section, section));
+  }
+  return pages;
+}
+
+const pages = foldedPages();
 
 write([
   ...documents.map((document) => [
@@ -187,7 +231,7 @@ write([
       document.kind === 'guide' ? 'guides' : 'primitives',
       `${document.slug}.generated.ts`,
     ),
-    pageModule(renderDocument(document, { routes })),
+    pageModule(pages.get(keyOf(document))),
   ]),
   [join(OUT_DIR, 'doc-index.generated.ts'), indexModule(documents)],
   [join(OUT_DIR, 'guide-docs.generated.ts'), guideModule(guides)],
@@ -209,9 +253,17 @@ console.log(
   `[gen-doc-model] wrote ${rel(OUT_DIR)} — ` +
     `${documents.length} documents (${guides.length} guides), ${sections} sections, ${tables} tables`,
 );
-if (unpublished.length > 0) {
+if (folded.length > 0) {
   console.log(
-    `[gen-doc-model] compiled but did not emit ${unpublished.length} entry point README(s) with no page: ` +
-      `${unpublished.map((document) => document.slug).join(', ')}`,
+    `[gen-doc-model] folded ${folded.length} entry point README(s) into another page: ` +
+      folded.map((document) => `${document.slug} → /${document.meta.foldInto}`).join(', '),
+  );
+}
+
+const unfolded = unpublished.filter((document) => document.meta.foldInto === null);
+if (unfolded.length > 0) {
+  console.log(
+    `[gen-doc-model] compiled but did not emit ${unfolded.length} entry point README(s) with no page: ` +
+      `${unfolded.map((document) => document.slug).join(', ')}`,
   );
 }

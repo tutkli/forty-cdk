@@ -2,6 +2,7 @@
 title: Table Virtualization
 group: none
 archetype: [composable-ui]
+foldInto: table#virtualized-rows
 ---
 
 # ForTableVirtualized

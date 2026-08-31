@@ -1,6 +1,6 @@
 ---
 title: Visually Hidden
-group: none
+group: utilities
 archetype: [composable-ui]
 ---
 

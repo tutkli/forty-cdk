@@ -33,6 +33,8 @@ bootstrapApplication(App, {
 
 `@internationalized/date` is a widely-used immutable date primitive; it works in every browser today with no polyfill, and its reference-equality-on-mutation makes it signal-friendly.
 
+→ **[Date adapters](../../../docs/date-adapters.md)** — picking one, the optional peer dependency, and writing your own.
+
 **Calendar system (Gregorian).** The adapter seam abstracts the date _library_ and locale-aware _formatting_, not the calendar _system_'s month structure. Both `@internationalized/date` adapters build Gregorian dates, so the grid stays Gregorian regardless of the runtime locale, and the grid, the month picker and the date field all assume a Gregorian-structured year — exactly twelve months, `month` **1-12**, the year ending at month 12. Adapters over calendars with a different month structure (e.g. a 13-month year) are not supported. The optional `compareDate` hook overrides day-only _ordering_ only — it does not make the grid non-Gregorian.
 
 ## Anatomy

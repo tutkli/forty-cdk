@@ -2,6 +2,7 @@
 title: Virtual Reorder
 group: none
 archetype: [composable-ui]
+foldInto: drag-drop#virtualized-lists
 ---
 
 # ForVirtualReorder

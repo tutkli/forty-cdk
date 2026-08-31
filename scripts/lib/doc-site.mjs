@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { readDocMeta } from './doc-contract.mjs';
+import { foldTargetOf, readDocMeta } from './doc-contract.mjs';
 import { guideSlugOf } from './doc-links.mjs';
 import { isFenceLine } from './readme-slug.mjs';
 import { repoRoot } from './repo-path.mjs';
@@ -15,6 +15,7 @@ const NOT_AN_ENTRY_POINT = 'eslint-rules-fixtures';
 export const GUIDE_GROUPS = [
   { id: 'styling', label: 'Styling' },
   { id: 'composition', label: 'Composition patterns' },
+  { id: 'dates', label: 'Dates & time' },
   { id: 'table', label: 'Table & virtualization' },
 ];
 
@@ -26,6 +27,7 @@ export const PUBLISHED_GUIDES = [
   { file: 'wrapping-non-form-roots.md', group: 'composition' },
   { file: 'wrapping-form-primitives.md', group: 'composition' },
   { file: 'selection-value-type-contract.md', group: 'composition' },
+  { file: 'date-adapters.md', group: 'dates' },
   { file: 'table-declarative-columns.md', group: 'table' },
   { file: 'table-reordering.md', group: 'table' },
   { file: 'table-virtualized-rows.md', group: 'table' },
@@ -92,6 +94,28 @@ export function readPrimitives() {
   return readEntryPointDocs()
     .map((doc) => ({ slug: doc.slug, ...readEntryPointMeta(doc) }))
     .filter((primitive) => primitive.group !== 'none');
+}
+
+/**
+ * The entry points whose README the site republishes inside another page's
+ * section rather than under a route of their own
+ * ([#1809](https://github.com/tutkli/forty-cdk/issues/1809)).
+ *
+ * They own no route, and their content is published all the same — so wherever
+ * a scan asks "what does the site serve", they belong with the primitives, and
+ * wherever it asks "which routes exist", they do not.
+ */
+export function readFoldedEntryPoints() {
+  const folded = [];
+  for (const doc of readEntryPointDocs()) {
+    const meta = readEntryPointMeta(doc);
+    const target = foldTargetOf(meta);
+    if (target === null) {
+      continue;
+    }
+    folded.push({ slug: doc.slug, title: meta.title, host: target.slug, section: target.section });
+  }
+  return folded;
 }
 
 function headingOf(md) {
@@ -206,9 +230,14 @@ export function readGuides() {
   });
 }
 
+/**
+ * Every README the site publishes the content of, keyed by repository path —
+ * the primitives with a page, and the folded entry points whose content their
+ * host's page carries.
+ */
 export function readPrimitiveReadmes() {
   const readmes = new Map();
-  for (const { slug } of readPrimitives()) {
+  for (const { slug } of [...readPrimitives(), ...readFoldedEntryPoints()]) {
     const file = join(LIBRARY_DIR, slug, 'README.md');
     if (existsSync(file)) {
       readmes.set(`projects/forty-cdk/${slug}/README.md`, readFileSync(file, 'utf8'));

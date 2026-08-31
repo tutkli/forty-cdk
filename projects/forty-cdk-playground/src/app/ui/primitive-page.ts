@@ -48,22 +48,24 @@ import { Icon } from './icon';
           <doc-section [section]="section" />
         }
 
-        <section class="pg-doc-section" [id]="examplesMeta().slug">
-          <h2 class="pg-doc-h2">
-            {{ examplesMeta().title }}
-            <a
-              class="pg-doc-anchor"
-              [routerLink]="[]"
-              [fragment]="examplesMeta().slug"
-              [attr.aria-label]="examplesMeta().title + ' permalink'"
-            >
-              <app-icon name="link" />
-            </a>
-          </h2>
-          <div class="examples">
-            <ng-content />
-          </div>
-        </section>
+        @if (examplesMeta(); as examples) {
+          <section class="pg-doc-section" [id]="examples.slug">
+            <h2 class="pg-doc-h2">
+              {{ examples.title }}
+              <a
+                class="pg-doc-anchor"
+                [routerLink]="[]"
+                [fragment]="examples.slug"
+                [attr.aria-label]="examples.title + ' permalink'"
+              >
+                <app-icon name="link" />
+              </a>
+            </h2>
+            <div class="examples">
+              <ng-content />
+            </div>
+          </section>
+        }
 
         @for (section of sectionsAfter(); track section.slug) {
           <doc-section [section]="section" />
@@ -199,10 +201,16 @@ export class PrimitivePage {
     return index < 0 ? this.#sections() : this.#sections().slice(index + 1);
   });
 
+  /**
+   * The heading the live demos render under, or `null` for a page that has
+   * neither — `forty-cdk/shared` publishes contracts and types, and an empty
+   * "Examples" would be a section the reader is invited into for nothing
+   * ([#1809](https://github.com/tutkli/forty-cdk/issues/1809)).
+   */
   protected readonly examplesMeta = computed(() => {
     const index = this.#examplesIndex();
     if (index < 0) {
-      return { title: 'Examples', slug: 'examples' };
+      return this.demos().length > 0 ? { title: 'Examples', slug: 'examples' } : null;
     }
     const section = this.#sections()[index]!;
     return { title: section.title, slug: section.slug };
@@ -220,12 +228,17 @@ export class PrimitivePage {
       };
     };
 
+    const meta = this.examplesMeta();
+    if (meta === null) {
+      return [...this.sectionsBefore().map(toToc), ...this.sectionsAfter().map(toToc)];
+    }
+
     const exampleChildren = this.demos()
       .filter((demo) => !demo.hero())
       .map((demo) => ({ title: demo.title(), slug: demo.tocSlug() }));
 
     const examples: TocItem = {
-      ...this.examplesMeta(),
+      ...meta,
       children: exampleChildren.length ? exampleChildren : undefined,
     };
 
