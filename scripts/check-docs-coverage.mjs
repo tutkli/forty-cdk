@@ -16,31 +16,30 @@ import { repoRoot } from './lib/repo-path.mjs';
  * repository.
  */
 
-const ROUTES_FILE = join(
-  repoRoot,
-  'projects',
-  'forty-cdk-playground',
-  'src',
-  'app',
-  'app.routes.ts',
-);
-
-/** Routes the site owns that are not an entry point's page. */
-const CHROME_ROUTES = new Set(['', '**', 'guides']);
+const PAGES_DIR = join(repoRoot, 'projects', 'forty-cdk-playground', 'src', 'app', 'demos');
 
 function toPosix(path) {
   return relative(repoRoot, path).split(sep).join('/');
 }
 
-function routeSlugs() {
-  const slugs = new Set();
-  for (const match of readFileSync(ROUTES_FILE, 'utf8').matchAll(/path:\s*'([^']*)'/g)) {
-    const path = match[1];
-    if (!CHROME_ROUTES.has(path) && !path.startsWith('guides/')) {
-      slugs.add(path);
-    }
-  }
-  return slugs;
+/**
+ * The slugs the site holds an authored page for — read from the content tree
+ * rather than from the router's table, which is generated from the same
+ * frontmatter this check reads
+ * ([#1811](https://github.com/tutkli/forty-cdk/issues/1811)).
+ *
+ * A directory counts only once it holds the page module its route would load: a
+ * folder of examples with no page is the omission, not the coverage.
+ */
+function pageSlugs() {
+  return new Set(
+    readdirSync(PAGES_DIR, { withFileTypes: true })
+      .filter(
+        (entry) =>
+          entry.isDirectory() && existsSync(join(PAGES_DIR, entry.name, `${entry.name}.page.ts`)),
+      )
+      .map((entry) => entry.name),
+  );
 }
 
 const entryPoints = readdirSync(LIBRARY_DIR, { withFileTypes: true })
@@ -65,8 +64,8 @@ const { problems, counts } = coverageProblems({
   entryPoints,
   documents,
   guides: new Set(readGuides().map((guide) => guide.slug)),
-  routes: routeSlugs(),
-  routesFile: toPosix(ROUTES_FILE),
+  pages: pageSlugs(),
+  pagesDir: toPosix(PAGES_DIR),
 });
 
 if (problems.length > 0) {

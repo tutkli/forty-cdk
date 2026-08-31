@@ -303,3 +303,11 @@ This reverses the earlier arrangement, in which the registry held the structured
 duplicated `title` / `description` with the README's intro on purpose. The duplication was real —
 a function existed solely to notice when the two copies were byte-identical and drop one — and
 editing one without the other printed the description twice.
+
+So is the router's table. `src/generated/routes.generated.ts` carries one lazy route per published
+primitive and one per guide, leaving `app.routes.ts` with the site's own chrome and nothing
+per-primitive ([#1811](https://github.com/tutkli/forty-cdk/issues/1811)). Publishing a page is
+therefore two things and no announcement: frontmatter declaring a nav group, and a `demos/<slug>/`
+directory holding `<slug>.page.ts`. That file must export `<Slug>Page` — the symbol the generated
+route imports — and naming it anything else fails `pnpm gen:doc-model`, which reports the class it
+found instead of leaving the site build to fail on a resolution error.

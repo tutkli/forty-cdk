@@ -15,10 +15,10 @@ export interface DocsCoverageInput {
   readonly documents: ReadonlyMap<string, DocDocument>;
   /** Slugs of the guides the site publishes. */
   readonly guides: ReadonlySet<string>;
-  /** Slugs the router serves a primitive page for. */
-  readonly routes: ReadonlySet<string>;
-  /** The path a failure names when a route is the problem. */
-  readonly routesFile: string;
+  /** Slugs the site holds an authored page component for. */
+  readonly pages: ReadonlySet<string>;
+  /** The path a failure names when a page is the problem. */
+  readonly pagesDir: string;
   /** Defaults to {@link COVERAGE_EXEMPTIONS}, the library's own list. */
   readonly exemptions?: readonly DocsCoverageExemption[];
 }
