@@ -1,5 +1,6 @@
 import { Marked } from 'marked';
 
+import { readDocMeta, ringOf } from '../lib/doc-contract.mjs';
 import { Slugger, slugify } from '../lib/readme-slug.mjs';
 
 const gfm = new Marked({ gfm: true });
@@ -402,18 +403,42 @@ function blocksOf(run) {
  * slugger that lives no longer than the call — so an anchor is a function of
  * the document and of nothing that was compiled before it.
  *
+ * An entry point's README additionally declares its registry metadata as
+ * frontmatter, and its lede paragraph is lifted out of the intro rather than
+ * left in it: the site's navigation, search and page header read that one
+ * paragraph, so the body it renders below the header cannot also hold it. A
+ * guide carries neither — the guide registry owns its metadata.
+ *
+ * A frontmatter problem is reported on its own rather than alongside the body's,
+ * which is the one place this function does not collect everything it finds: a
+ * block that never closes leaves every line below it counted from the wrong
+ * place, so pairing the two would name lines the file does not hold.
+ *
  * @param source Raw markdown, in either line ending.
  * @param location `path` is the repository-relative path the link resolver and
  * every error message name; `slug` is the route the site publishes the document
  * under; `kind` distinguishes an entry point's README from a guide.
  * @throws {DocCompileError} when the document is ambiguous rather than merely
- * unusual — a row whose cell count disagrees with its header, a table GFM would
- * not recognise, a table or heading nested where the site cannot render it, a
- * heading that slugifies to nothing, a fence in a language the site cannot
- * highlight, or a missing title.
+ * unusual — invalid or missing frontmatter, a row whose cell count disagrees
+ * with its header, a table GFM would not recognise, a table or heading nested
+ * where the site cannot render it, a heading that slugifies to nothing, a fence
+ * in a language the site cannot highlight, a missing title, or a README with no
+ * lede.
  */
 export function compileDocument(source, { path, slug, kind }) {
-  const markdown = normalize(source);
+  const normalized = normalize(source);
+  const {
+    meta,
+    body,
+    problems: metaProblems,
+  } = kind === 'primitive'
+    ? readDocMeta(normalized, path)
+    : { meta: null, body: normalized, problems: [] };
+  if (metaProblems.length > 0) {
+    throw new DocCompileError(metaProblems);
+  }
+
+  const markdown = body;
   const starts = lineIndexOf(markdown);
   const problems = [];
   const report = (line, message) => {
@@ -483,6 +508,16 @@ export function compileDocument(source, { path, slug, kind }) {
     }
   }
 
+  const ledeIndex =
+    kind === 'primitive' ? introRun.findIndex((entry) => entry.token.type === 'paragraph') : -1;
+  if (kind === 'primitive' && ledeIndex === -1) {
+    report(
+      title.line,
+      'the document has no lede paragraph above its first section — the site reads the navigation ' +
+        'and search description from it, so it cannot be left out',
+    );
+  }
+
   if (problems.length > 0) {
     throw new DocCompileError(problems);
   }
@@ -496,12 +531,15 @@ export function compileDocument(source, { path, slug, kind }) {
     path,
     slug,
     kind,
+    meta,
     title: title.token.text,
-    intro: blocksOf(introRun),
+    lede: ledeIndex === -1 ? null : introRun[ledeIndex].token.text,
+    intro: blocksOf(introRun.filter((_, index) => index !== ledeIndex)),
     introHeadings: headingsOf(introRun),
     sections: sectionRuns.map(({ heading, run }) => ({
       title: heading.token.text,
       slug: heading.slug,
+      ring: ringOf(heading.token.text),
       headings: headingsOf(run),
       blocks: blocksOf(run),
     })),

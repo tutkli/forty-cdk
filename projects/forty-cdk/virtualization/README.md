@@ -1,3 +1,9 @@
+---
+title: Virtualization
+group: utilities
+archetype: [headless-utility]
+---
+
 # injectVirtualizer
 
 A headless windowing core (injectVirtualizer) plus an ergonomic [forVirtualViewport] + \*forVirtualFor layer that render only the visible slice of huge lists. Fixed or measured item sizes, horizontal lists, scroll-to-index, and an infinite-scroll detector. List primitives (Select, Combobox, Listbox, Tree, Table) compose it directly.

@@ -1,3 +1,9 @@
+---
+title: Hover Card
+group: primitives
+archetype: [overlay]
+---
+
 # HoverCard
 
 A floating card that opens on hover to preview the content behind a link, with a pointer bridge keeping it open.

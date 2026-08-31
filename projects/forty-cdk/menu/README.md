@@ -1,3 +1,10 @@
+---
+title: Menu
+group: primitives
+archetype: [overlay]
+apgUrl: https://www.w3.org/WAI/ARIA/apg/patterns/menu/
+---
+
 # Menu (shared pieces + shared-opener root)
 
 The shared menu surface — items, checkbox / radio items, groups, separators and submenus — composed by every menu-family primitive.

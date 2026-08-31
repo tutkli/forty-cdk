@@ -1,16 +1,9 @@
-import {
-  existsSync,
-  mkdirSync,
-  readdirSync,
-  readFileSync,
-  rmSync,
-  statSync,
-  writeFileSync,
-} from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 
+import { checkContract } from '../lib/doc-contract.mjs';
 import { buildDocRoutes } from '../lib/doc-links.mjs';
-import { LIBRARY_DIR, readGuides, readPrimitives } from '../lib/doc-site.mjs';
+import { readEntryPointDocs, readGuides } from '../lib/doc-site.mjs';
 import { repoRoot } from '../lib/repo-path.mjs';
 import { compileDocument, DocCompileError } from './doc-model.mjs';
 import { headingText, renderDocument } from './doc-render.mjs';
@@ -19,29 +12,19 @@ const OUT_DIR = join(repoRoot, 'projects', 'forty-cdk-playground', 'src', 'gener
 const DOCS_DIR = join(OUT_DIR, 'docs');
 const MODEL_TYPES = '../../../app/doc/doc-model';
 
-/** Holds no entry point and ships no page — its README documents lint fixtures. */
-const NOT_AN_ENTRY_POINT = 'eslint-rules-fixtures';
-
 const rel = (file) => relative(repoRoot, file).split(sep).join('/');
 
-function entryPointReadmes() {
-  const readmes = [];
-  for (const entry of readdirSync(LIBRARY_DIR).sort()) {
-    if (entry === NOT_AN_ENTRY_POINT || !statSync(join(LIBRARY_DIR, entry)).isDirectory()) {
-      continue;
-    }
-    const file = join(LIBRARY_DIR, entry, 'README.md');
-    if (existsSync(file)) {
-      readmes.push({ slug: entry, path: `projects/forty-cdk/${entry}/README.md`, file });
-    }
-  }
-  return readmes;
-}
-
+/**
+ * Compile every document, then hold the whole corpus to the page-template
+ * contract ([#1808](https://github.com/tutkli/forty-cdk/issues/1808)).
+ *
+ * The contract check runs over every entry point README, published or not: a
+ * document with no page yet still declares an archetype, and holding it to that
+ * archetype now is what keeps it publishable later.
+ */
 function compileAll() {
-  const published = new Set(readPrimitives().map((primitive) => primitive.slug));
   const sources = [
-    ...entryPointReadmes().map((readme) => ({ ...readme, kind: 'primitive' })),
+    ...readEntryPointDocs().map((doc) => ({ ...doc, kind: 'primitive' })),
     ...readGuides().map((guide) => ({
       slug: guide.slug,
       path: `docs/${guide.file}`,
@@ -50,35 +33,39 @@ function compileAll() {
     })),
   ];
 
-  const documents = [];
-  const unpublished = [];
+  const compiled = [];
   const problems = [];
   for (const source of sources) {
-    let document;
     try {
-      document = compileDocument(readFileSync(source.file, 'utf8'), {
-        path: source.path,
-        slug: source.slug,
-        kind: source.kind,
-      });
+      compiled.push(
+        compileDocument(readFileSync(source.file, 'utf8'), {
+          path: source.path,
+          slug: source.slug,
+          kind: source.kind,
+        }),
+      );
     } catch (error) {
       if (!(error instanceof DocCompileError)) {
         throw error;
       }
       problems.push(...error.problems);
-      continue;
     }
-    if (source.kind === 'primitive' && !published.has(source.slug)) {
-      unpublished.push(document);
-      continue;
-    }
-    documents.push(document);
   }
 
   if (problems.length > 0) {
     throw new DocCompileError(problems);
   }
-  return { documents, unpublished };
+
+  const readmes = compiled.filter((document) => document.kind === 'primitive');
+  const contract = checkContract(readmes);
+  if (contract.length > 0) {
+    throw new DocCompileError(contract);
+  }
+
+  return {
+    documents: compiled.filter((document) => document.meta?.group !== 'none'),
+    unpublished: readmes.filter((document) => document.meta.group === 'none'),
+  };
 }
 
 function serialize(value) {
@@ -109,6 +96,36 @@ function indexModule(documents) {
   return (
     `import type { DocIndexEntry } from '../app/doc/doc-model';\n\n` +
     `export const DOC_INDEX: readonly DocIndexEntry[] = ${serialize(entries)};\n`
+  );
+}
+
+/**
+ * The navigation registry, derived from the frontmatter each README declares
+ * rather than hand-maintained beside it
+ * ([#1808](https://github.com/tutkli/forty-cdk/issues/1808)).
+ *
+ * `description` is the document's own lede, resolved to text — which is why the
+ * page can render its intro whole and still show a description in the header:
+ * there is one copy, and the compiler decided which part of the document it is.
+ */
+function registryModule(documents) {
+  const entryOf = (document) => ({
+    slug: document.slug,
+    title: document.meta.title,
+    description: headingText(document.lede),
+    ...(document.meta.apgUrl === null ? {} : { apgUrl: document.meta.apgUrl }),
+  });
+  const byTitle = (a, b) => a.title.localeCompare(b.title);
+  const of = (group) =>
+    documents
+      .filter((document) => document.meta.group === group)
+      .map(entryOf)
+      .sort(byTitle);
+
+  return (
+    `import type { PlaygroundPrimitive } from '../app/primitives';\n\n` +
+    `export const PRIMITIVES: readonly PlaygroundPrimitive[] = ${serialize(of('primitives'))};\n\n` +
+    `export const UTILITIES: readonly PlaygroundPrimitive[] = ${serialize(of('utilities'))};\n`
   );
 }
 
@@ -148,6 +165,7 @@ function write(files) {
 
 const { documents, unpublished } = compileAll();
 const guides = documents.filter((document) => document.kind === 'guide');
+const primitives = documents.filter((document) => document.kind === 'primitive');
 
 /**
  * Where a relative link in the markdown lands, resolved here rather than in the
@@ -158,7 +176,7 @@ const guides = documents.filter((document) => document.kind === 'guide');
  * one resolves to its source on GitHub rather than to a route that would 404.
  */
 const routes = buildDocRoutes({
-  primitiveSlugs: readPrimitives().map((primitive) => primitive.slug),
+  primitiveSlugs: primitives.map((primitive) => primitive.slug),
   guideSlugs: guides.map((guide) => guide.slug),
 });
 
@@ -173,6 +191,7 @@ write([
   ]),
   [join(OUT_DIR, 'doc-index.generated.ts'), indexModule(documents)],
   [join(OUT_DIR, 'guide-docs.generated.ts'), guideModule(guides)],
+  [join(OUT_DIR, 'primitives.generated.ts'), registryModule(primitives)],
 ]);
 
 const tables = documents.reduce(

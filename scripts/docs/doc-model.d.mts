@@ -72,14 +72,31 @@ export interface DocTableBlock {
 
 export type DocBlock = DocProseBlock | DocTableBlock;
 
+/**
+ * Which ring of the page-template contract a section belongs to: `core` and
+ * `canonical` are the headings the contract names, `specific` is everything a
+ * document has to say that no template could have anticipated.
+ */
+export type DocSectionRing = 'core' | 'canonical' | 'specific';
+
 /** A level-2 heading and everything under it, up to the next one. */
 export interface DocSection {
   /** The heading's markdown. */
   readonly title: string;
   readonly slug: string;
+  readonly ring: DocSectionRing;
   /** Every heading below this section's own, in document order. */
   readonly headings: readonly DocHeading[];
   readonly blocks: readonly DocBlock[];
+}
+
+/** The registry metadata an entry point's README declares as frontmatter. */
+export interface DocMeta {
+  /** The name the navigation, the page header and search show. */
+  readonly title: string;
+  readonly group: 'primitives' | 'utilities' | 'none';
+  readonly archetype: readonly string[];
+  readonly apgUrl: string | null;
 }
 
 /** One compiled document: an entry point's README, or a published guide. */
@@ -89,11 +106,19 @@ export interface DocDocument {
   /** The route the site publishes the document under. */
   readonly slug: string;
   readonly kind: DocKind;
+  /** Declared frontmatter for a README; `null` for a guide, which declares none. */
+  readonly meta: DocMeta | null;
   /** The level-1 heading's markdown. */
   readonly title: string;
   /**
-   * Everything above the first section, which the compiler holds to prose: a
-   * table there reaches no page, so it is an error rather than a silent drop.
+   * The opening paragraph's markdown, which the site reads as the document's
+   * description — `null` for a guide, whose intro stays whole.
+   */
+  readonly lede: string | null;
+  /**
+   * Everything above the first section bar the lede, which the compiler holds
+   * to prose: a table there reaches no page, so it is an error rather than a
+   * silent drop.
    */
   readonly intro: readonly DocProseBlock[];
   /**

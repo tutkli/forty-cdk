@@ -1,3 +1,9 @@
+---
+title: Search
+group: primitives
+archetype: [form-control]
+---
+
 # Search
 
 A role='searchbox' text input that mirrors its value to a signal and reflects validation state, paired with a clear button that self-hides while the field is empty. Reuses forInput's form-value wiring, so it auto-wires with Signal Forms and Field.

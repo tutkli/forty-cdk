@@ -1,20 +1,16 @@
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { readDocMeta } from './doc-contract.mjs';
 import { guideSlugOf } from './doc-links.mjs';
 import { isFenceLine } from './readme-slug.mjs';
 import { repoRoot } from './repo-path.mjs';
 
 export const DOCS_DIR = join(repoRoot, 'docs');
 export const LIBRARY_DIR = join(repoRoot, 'projects', 'forty-cdk');
-export const PRIMITIVES_FILE = join(
-  repoRoot,
-  'projects',
-  'forty-cdk-playground',
-  'src',
-  'app',
-  'primitives.ts',
-);
+
+/** Holds no entry point and ships no page — its README documents lint fixtures. */
+const NOT_AN_ENTRY_POINT = 'eslint-rules-fixtures';
 
 export const GUIDE_GROUPS = [
   { id: 'styling', label: 'Styling' },
@@ -46,15 +42,56 @@ export const EXCLUDED_GUIDES = [
 const SENTENCE_BREAK = /(?<=[.!?])\s+(?=[A-Z`[(])/;
 const MAX_DESCRIPTION = 260;
 
-export function readPrimitives() {
-  const source = readFileSync(PRIMITIVES_FILE, 'utf8');
-  const entries = [];
-  const re = /slug:\s*'([^']+)',\s+title:\s*'([^']+)'/g;
-  let match;
-  while ((match = re.exec(source)) !== null) {
-    entries.push({ slug: match[1], title: match[2] });
+/**
+ * Every entry point that ships a README, published or not, in slug order.
+ *
+ * The library folder is the registry: a directory holding a README is a
+ * document, and there is no list to keep in step with it.
+ */
+export function readEntryPointDocs() {
+  const docs = [];
+  for (const entry of readdirSync(LIBRARY_DIR).sort()) {
+    if (entry === NOT_AN_ENTRY_POINT || !statSync(join(LIBRARY_DIR, entry)).isDirectory()) {
+      continue;
+    }
+    const file = join(LIBRARY_DIR, entry, 'README.md');
+    if (existsSync(file)) {
+      docs.push({ slug: entry, path: `projects/forty-cdk/${entry}/README.md`, file });
+    }
   }
-  return entries;
+  return docs;
+}
+
+/**
+ * The metadata one README declares, or a thrown error naming every field that
+ * kept it from being read.
+ */
+export function readEntryPointMeta({ file, path }) {
+  const source = readFileSync(file, 'utf8').replace(/\r\n/g, '\n');
+  const { meta, problems } = readDocMeta(source, path);
+  if (meta === null) {
+    throw new Error(
+      `${problems.length} frontmatter problem(s):\n` +
+        problems
+          .map((problem) => `  ${problem.path}:${problem.line} — ${problem.message}`)
+          .join('\n'),
+    );
+  }
+  return meta;
+}
+
+/**
+ * The primitives the site publishes a page for, read from the frontmatter each
+ * README declares ([#1808](https://github.com/tutkli/forty-cdk/issues/1808)).
+ *
+ * An entry point whose README declares `group: none` is documented and
+ * unpublished on purpose, and is absent here for the same reason it is absent
+ * from the nav ([#1809](https://github.com/tutkli/forty-cdk/issues/1809)).
+ */
+export function readPrimitives() {
+  return readEntryPointDocs()
+    .map((doc) => ({ slug: doc.slug, ...readEntryPointMeta(doc) }))
+    .filter((primitive) => primitive.group !== 'none');
 }
 
 function headingOf(md) {

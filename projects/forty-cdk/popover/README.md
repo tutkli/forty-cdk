@@ -1,3 +1,10 @@
+---
+title: Popover
+group: primitives
+archetype: [overlay]
+apgUrl: https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/
+---
+
 # Popover
 
 A non-modal floating panel anchored to its trigger by floating-ui, dismissed on Escape, pointer-down outside or focus outside.

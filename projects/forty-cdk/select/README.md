@@ -1,3 +1,10 @@
+---
+title: Select
+group: primitives
+archetype: [overlay, form-control]
+apgUrl: https://www.w3.org/WAI/ARIA/apg/patterns/combobox/examples/combobox-select-only/
+---
+
 # Select
 
 A custom select: a trigger that opens a portaled listbox popup to pick one or many options, with groups and separators.

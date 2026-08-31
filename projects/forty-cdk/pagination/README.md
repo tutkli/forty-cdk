@@ -1,3 +1,10 @@
+---
+title: Pagination
+group: primitives
+archetype: [composable-ui]
+apgUrl: https://www.w3.org/WAI/ARIA/apg/patterns/landmarks/examples/navigation.html
+---
+
 # Pagination
 
 A navigation landmark that derives a visible page list with ellipsis gaps from page, count, siblingCount and boundaryCount, with previous / next buttons and aria-current='page' on the active page.

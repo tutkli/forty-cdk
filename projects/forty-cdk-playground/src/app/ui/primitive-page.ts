@@ -9,7 +9,6 @@ import {
 import { DomSanitizer } from '@angular/platform-browser';
 import { RouterLink } from '@angular/router';
 
-import { stripText } from '../../../../../scripts/lib/html.mjs';
 import { injectDocBase } from '../doc/doc-base';
 import { injectFragmentScroll } from '../doc/doc-fragment';
 import { DocLinks } from '../doc/doc-links';
@@ -19,14 +18,6 @@ import { DocToc, type TocItem } from '../doc/doc-toc';
 import { primitiveBySlug } from '../primitives';
 import { DemoLayout } from './demo-layout';
 import { Icon } from './icon';
-
-function stripLeadingDescription(introHtml: string, description: string): string {
-  const lead = /^\s*<p>([\s\S]*?)<\/p>\s*/.exec(introHtml);
-  if (lead && stripText(lead[1]!) === description.trim()) {
-    return introHtml.slice(lead[0].length);
-  }
-  return introHtml;
-}
 
 @Component({
   selector: 'primitive-page',
@@ -187,10 +178,9 @@ export class PrimitivePage {
   protected readonly meta = computed(() => primitiveBySlug(this.slug()));
 
   protected readonly introHtml = computed(() => {
-    const rendered = this.doc()
+    const intro = this.doc()
       .intro.map((block) => this.#base(block.html))
       .join('');
-    const intro = stripLeadingDescription(rendered, this.meta().description);
     return intro.trim() ? this.#sanitizer.bypassSecurityTrustHtml(intro) : null;
   });
 

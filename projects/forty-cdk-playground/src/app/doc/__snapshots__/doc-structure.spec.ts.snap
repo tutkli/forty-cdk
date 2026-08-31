@@ -1383,9 +1383,9 @@ exports[`document structure > projects/forty-cdk/calendar/README.md declares the
   },
   {
     "headings": [],
-    "slug": "scope-defaults",
+    "slug": "scoped-defaults",
     "tables": [],
-    "title": "Scope defaults",
+    "title": "Scoped defaults",
   },
   {
     "headings": [],
@@ -2190,9 +2190,9 @@ exports[`document structure > projects/forty-cdk/date-field/README.md declares t
   },
   {
     "headings": [],
-    "slug": "scope-defaults",
+    "slug": "scoped-defaults",
     "tables": [],
-    "title": "Scope defaults",
+    "title": "Scoped defaults",
   },
   {
     "headings": [
@@ -2210,7 +2210,7 @@ exports[`document structure > projects/forty-cdk/date-field/README.md declares t
       },
       {
         "depth": 3,
-        "slug": "range-scope-defaults",
+        "slug": "range-scoped-defaults",
       },
     ],
     "slug": "range-selection--fordaterangefield",
@@ -6769,9 +6769,9 @@ exports[`document structure > projects/forty-cdk/time-field/README.md declares t
   },
   {
     "headings": [],
-    "slug": "scope-defaults",
+    "slug": "scoped-defaults",
     "tables": [],
-    "title": "Scope defaults",
+    "title": "Scoped defaults",
   },
   {
     "headings": [
@@ -6793,7 +6793,7 @@ exports[`document structure > projects/forty-cdk/time-field/README.md declares t
       },
       {
         "depth": 3,
-        "slug": "range-scope-defaults",
+        "slug": "range-scoped-defaults",
       },
     ],
     "slug": "range-selection--fortimerangefield",
@@ -7721,9 +7721,9 @@ exports[`document structure > projects/forty-cdk/tree/README.md declares the sec
   },
   {
     "headings": [],
-    "slug": "scope-defaults",
+    "slug": "scoped-defaults",
     "tables": [],
-    "title": "Scope defaults",
+    "title": "Scoped defaults",
   },
   {
     "headings": [

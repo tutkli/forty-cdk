@@ -1,3 +1,10 @@
+---
+title: Calendar
+group: primitives
+archetype: [composable-ui, form-control]
+apgUrl: https://www.w3.org/WAI/ARIA/apg/patterns/grid/
+---
+
 # Calendar
 
 A single-date calendar grid implementing the APG Grid pattern over a pluggable date adapter: roving-tabindex day navigation, month / year paging, and min / max / per-date availability.
@@ -401,7 +408,7 @@ Auto-disabled when the entire previous / next page would be outside `[min, max]`
 | `[forCalendarYearCell]`  | `data-highlighted` | present \| absent                |
 | `[forCalendarYearCell]`  | `data-disabled`    | present \| absent                |
 
-## Scope defaults
+## Scoped defaults
 
 ```ts
 import { provideForCalendarDefaults } from 'forty-cdk/calendar';

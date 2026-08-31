@@ -1,6 +1,12 @@
+---
+title: Input
+group: primitives
+archetype: [form-control]
+---
+
 # Input / Textarea
 
-Attribute directives for single- and multi-line text: a string value() that auto-wires with Signal Forms and reflects every form state (empty, disabled, readonly, invalid …) as data-_ / aria-_ hooks.
+Attribute directives for single- and multi-line text: a string value() that auto-wires with Signal Forms and reflects every form state (empty, disabled, readonly, invalid …) as `data-*` / `aria-*` hooks.
 
 `ForInput` and `ForTextarea` implement Angular's `FormValueControl<string>` from `@angular/forms/signals`, so they auto-wire with `[formField]` and auto-associate inside a [`[forField]`](../field/README.md) — label, description, and error wiring — with zero extra markup. These are thin wrappers, not re-implementations: the native `<input>` / `<textarea>` keeps its own `type`, caret, IME composition, and native form submission. The directive only bridges the value to a signal and reflects validation state.
 

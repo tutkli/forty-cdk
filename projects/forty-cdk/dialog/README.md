@@ -1,3 +1,10 @@
+---
+title: Dialog
+group: primitives
+archetype: [overlay]
+apgUrl: https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/
+---
+
 # Dialog
 
 A modal window overlaid on the page, with a focus trap, scroll lock and Escape / dismiss handling. Also openable imperatively through ForDialogManager.

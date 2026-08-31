@@ -1,3 +1,9 @@
+---
+title: Internationalized Date
+group: none
+archetype: [headless-utility]
+---
+
 # forty-cdk/internationalized-date
 
 Secondary entry point holding the [`@internationalized/date`](https://react-spectrum.adobe.com/internationalized/date/) implementations of the `DateAdapter` contract:

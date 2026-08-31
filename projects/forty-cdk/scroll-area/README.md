@@ -1,3 +1,9 @@
+---
+title: Scroll Area
+group: primitives
+archetype: [composable-ui]
+---
+
 # ScrollArea
 
 A scrollable region with cross-browser, stylable synthetic scrollbars.

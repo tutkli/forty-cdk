@@ -1,3 +1,10 @@
+---
+title: Disclosure
+group: primitives
+archetype: [composable-ui]
+apgUrl: https://www.w3.org/WAI/ARIA/apg/patterns/disclosure/
+---
+
 # Disclosure
 
 A single trigger that shows or hides a related region of content.

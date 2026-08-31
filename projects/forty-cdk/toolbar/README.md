@@ -1,3 +1,10 @@
+---
+title: Toolbar
+group: primitives
+archetype: [composable-ui]
+apgUrl: https://www.w3.org/WAI/ARIA/apg/patterns/toolbar/
+---
+
 # Toolbar
 
 A container that groups a set of controls under roving-tabindex navigation.

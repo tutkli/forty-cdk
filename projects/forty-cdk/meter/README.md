@@ -1,3 +1,10 @@
+---
+title: Meter
+group: primitives
+archetype: [composable-ui]
+apgUrl: https://www.w3.org/WAI/ARIA/apg/patterns/meter/
+---
+
 # Meter
 
 A gauge that shows a scalar value within a known range, bucketed into quality bands.

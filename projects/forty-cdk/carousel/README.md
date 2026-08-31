@@ -1,3 +1,10 @@
+---
+title: Carousel
+group: primitives
+archetype: [composable-ui]
+apgUrl: https://www.w3.org/WAI/ARIA/apg/patterns/carousel/
+---
+
 # ForCarousel
 
 A slideshow of content panels with previous / next controls, an indicator group, optional looping and multi-slide views, and an accessible autoplay mode with a pause control.

@@ -1,3 +1,10 @@
+---
+title: Time Picker
+group: primitives
+archetype: [overlay, form-control]
+apgUrl: https://www.w3.org/WAI/ARIA/apg/patterns/listbox/
+---
+
 # ForTimePicker
 
 A trigger that opens a floating listbox of generated time slots over a pluggable date adapter, with a configurable step, 12 / 24-hour labels and min / max bounds. Picking a slot preserves the date, so it composes inside a date-time picker.

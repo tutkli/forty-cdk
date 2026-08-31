@@ -1,3 +1,10 @@
+---
+title: Progress
+group: primitives
+archetype: [composable-ui]
+apgUrl: https://www.w3.org/WAI/ARIA/apg/patterns/meter/
+---
+
 # Progress
 
 A bar that reflects the completion progress of a task.

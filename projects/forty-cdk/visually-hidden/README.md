@@ -1,3 +1,9 @@
+---
+title: Visually Hidden
+group: none
+archetype: [composable-ui]
+---
+
 # VisuallyHidden
 
 Hides its host visually while keeping it in the accessibility tree.

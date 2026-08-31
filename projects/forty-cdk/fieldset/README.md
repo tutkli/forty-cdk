@@ -1,6 +1,12 @@
+---
+title: Fieldset
+group: primitives
+archetype: [composable-ui]
+---
+
 # Fieldset
 
-Headless grouping that gives a set of related fields a shared accessible name — a native <fieldset> / legend, or role=group + aria-labelledby on any element — plus an optional shared disabled state that reaches custom-role controls.
+Headless grouping that gives a set of related fields a shared accessible name — a native `<fieldset>` / `<legend>`, or `role="group"` + `aria-labelledby` on any element — plus an optional shared disabled state that reaches custom-role controls.
 
 The styleless counterpart to a native `<fieldset>` + `<legend>`, and the grouping companion to [`Field`](../field/README.md). It renders nothing and imposes no layout. Use it on a real `<fieldset>` to lean on native grouping, or on any other element to get `role="group"` + `aria-labelledby` wired automatically.
 

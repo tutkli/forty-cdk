@@ -1,3 +1,10 @@
+---
+title: Number Input
+group: primitives
+archetype: [form-control]
+apgUrl: https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton/
+---
+
 # Number Input
 
 A numeric spinbutton with keyboard stepping, optional +/− buttons, min / max / step clamping and Intl number formatting for the displayed text and aria-valuetext.

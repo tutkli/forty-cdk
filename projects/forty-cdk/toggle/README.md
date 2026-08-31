@@ -1,3 +1,10 @@
+---
+title: Toggle
+group: primitives
+archetype: [form-control]
+apgUrl: https://www.w3.org/WAI/ARIA/apg/patterns/button/
+---
+
 # Toggle / ToggleGroup
 
 A two-state button that stays pressed or unpressed.

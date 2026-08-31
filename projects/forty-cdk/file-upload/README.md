@@ -1,6 +1,12 @@
+---
+title: File Upload
+group: primitives
+archetype: [composable-ui]
+---
+
 # FileUpload
 
-A headless drag-and-drop / dialog file-selection zone: a visually-hidden native <input type='file'> stays the accessible control while a trigger button opens the picker, and dropping files emits the same change. Supports multiple, accept filters and whole-folder (directory) selection.
+A headless drag-and-drop / dialog file-selection zone: a visually-hidden native `<input type="file">` stays the accessible control while a trigger button opens the picker, and dropping files emits the same change. Supports multiple, accept filters and whole-folder (directory) selection.
 
 No ARIA role is imposed on the drop zone — it is a plain container. The `<input type="file">` remains the accessible form control; the trigger is a native `<button>`.
 

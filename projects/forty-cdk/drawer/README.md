@@ -1,3 +1,10 @@
+---
+title: Drawer
+group: primitives
+archetype: [overlay]
+apgUrl: https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/
+---
+
 # Drawer
 
 A side or bottom sheet built on the modal dialog pattern, adding pointer-driven swipe-to-dismiss and snap points.

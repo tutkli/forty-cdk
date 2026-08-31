@@ -1,3 +1,10 @@
+---
+title: Checkbox
+group: primitives
+archetype: [form-control]
+apgUrl: https://www.w3.org/WAI/ARIA/apg/patterns/checkbox/
+---
+
 # Checkbox
 
 A checkbox supporting the three states checked, unchecked and indeterminate.

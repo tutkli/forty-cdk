@@ -1,3 +1,10 @@
+---
+title: Navigation Menu
+group: primitives
+archetype: [overlay]
+apgUrl: https://www.w3.org/WAI/ARIA/apg/patterns/disclosure/
+---
+
 # NavigationMenu
 
 A site-navigation header built on the disclosure pattern: buttons that expand panels of links into a shared viewport.

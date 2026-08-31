@@ -1,3 +1,10 @@
+---
+title: Pane Resizer
+group: primitives
+archetype: [composable-ui]
+apgUrl: https://www.w3.org/WAI/ARIA/apg/patterns/windowsplitter/
+---
+
 # Pane Resizer
 
 A focusable divider that resizes the panes on either side — draggable and keyboard-operable, with an optional collapse behaviour.

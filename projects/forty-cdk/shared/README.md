@@ -1,3 +1,9 @@
+---
+title: Shared
+group: none
+archetype: [headless-utility]
+---
+
 # Shared
 
 The contract surface the primitives share — imported from `forty-cdk/shared`.

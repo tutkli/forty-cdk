@@ -1,3 +1,10 @@
+---
+title: Menubar
+group: primitives
+archetype: [overlay]
+apgUrl: https://www.w3.org/WAI/ARIA/apg/patterns/menubar/
+---
+
 # Menubar
 
 A horizontal bar of menus, as in a desktop application, with roving tabindex across the triggers.

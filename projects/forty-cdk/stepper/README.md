@@ -1,3 +1,10 @@
+---
+title: Stepper
+group: primitives
+archetype: [composable-ui]
+apgUrl: https://www.w3.org/WAI/ARIA/apg/patterns/tabs/
+---
+
 # ForStepper
 
 A multi-step wizard built on the Tabs pattern: a step list with indicators and separators, a content panel per step, Next / Previous navigation, linear gating with optional Signal Forms completion, a display-only progress mode and an optional progress bar.

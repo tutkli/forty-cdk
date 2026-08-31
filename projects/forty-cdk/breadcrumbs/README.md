@@ -1,3 +1,10 @@
+---
+title: Breadcrumbs
+group: primitives
+archetype: [composable-ui]
+apgUrl: https://www.w3.org/WAI/ARIA/apg/patterns/breadcrumb/
+---
+
 # Breadcrumbs
 
 A labelled navigation landmark for a breadcrumb trail: links with aria-current='page' on the current page and decorative separators hidden from assistive technology.

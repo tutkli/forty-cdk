@@ -1,3 +1,10 @@
+---
+title: Listbox
+group: primitives
+archetype: [form-control]
+apgUrl: https://www.w3.org/WAI/ARIA/apg/patterns/listbox/
+---
+
 # Listbox
 
 A scrollable list of selectable options with roving-tabindex navigation, single or multi selection.

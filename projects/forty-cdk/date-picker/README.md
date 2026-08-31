@@ -1,3 +1,10 @@
+---
+title: Date Picker
+group: primitives
+archetype: [overlay, form-control]
+apgUrl: https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/examples/datepicker-dialog/
+---
+
 # DatePicker
 
 A trigger that opens a floating calendar to pick a date, composing ForCalendar inside a dismissible popover with min / max bounds and per-date availability.
