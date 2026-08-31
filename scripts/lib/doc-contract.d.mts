@@ -35,6 +35,14 @@ export declare const CANONICAL_SECTIONS: readonly string[];
 
 export declare const SECTION_EXEMPTIONS: readonly DocSectionExemption[];
 
+/** The page and the section of it an unpublished README's content is appended to. */
+export interface DocFoldTarget {
+  readonly slug: string;
+  readonly section: string;
+}
+
+export declare function foldTargetOf(meta: DocMeta): DocFoldTarget | null;
+
 export declare function ringOf(title: string): DocSectionRing;
 
 export declare function readDocMeta(source: string, path: string): ReadDocMeta;

@@ -239,5 +239,14 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./demos/virtualization/virtualization.page').then((m) => m.VirtualizationPage),
   },
+  {
+    path: 'visually-hidden',
+    loadComponent: () =>
+      import('./demos/visually-hidden/visually-hidden.page').then((m) => m.VisuallyHiddenPage),
+  },
+  {
+    path: 'shared',
+    loadComponent: () => import('./demos/shared/shared.page').then((m) => m.SharedPage),
+  },
   { path: '**', redirectTo: 'accordion' },
 ];

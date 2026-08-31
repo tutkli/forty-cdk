@@ -1,5 +1,59 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`document structure > docs/date-adapters.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "headings": [],
+    "slug": "pick-one-adapter-provide-it-once",
+    "tables": [
+      {
+        "columns": [
+          "Provider",
+          "Date type D",
+          "Install",
+        ],
+        "role": "plain",
+        "rows": 2,
+      },
+    ],
+    "title": "Pick one adapter, provide it once",
+  },
+  {
+    "headings": [],
+    "slug": "time-capable-adapters",
+    "tables": [
+      {
+        "columns": [
+          "Provider",
+          "Date type D",
+        ],
+        "role": "plain",
+        "rows": 2,
+      },
+    ],
+    "title": "Time-capable adapters",
+  },
+  {
+    "headings": [],
+    "slug": "why-internationalizeddate-is-a-separate-entry-point",
+    "tables": [],
+    "title": "Why \`@internationalized/date\` is a separate entry point",
+  },
+  {
+    "headings": [],
+    "slug": "writing-your-own-adapter",
+    "tables": [],
+    "title": "Writing your own adapter",
+  },
+  {
+    "headings": [],
+    "slug": "related",
+    "tables": [],
+    "title": "Related",
+  },
+]
+`;
+
 exports[`document structure > docs/selected-indicator-pattern.md declares the sections and table shapes it declared before 1`] = `
 [
   {

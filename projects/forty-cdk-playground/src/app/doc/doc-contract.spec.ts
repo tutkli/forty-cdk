@@ -2,6 +2,7 @@ import {
   ARCHETYPES,
   checkContract,
   checkSections,
+  foldTargetOf,
   readDocMeta,
   requiredSections,
   ringOf,
@@ -45,6 +46,7 @@ describe('frontmatter a README declares', () => {
       group: 'primitives',
       archetype: ['overlay', 'form-control'],
       apgUrl: 'https://www.w3.org/WAI/ARIA/apg/patterns/combobox/',
+      foldInto: null,
     });
   });
 
@@ -101,6 +103,49 @@ describe('frontmatter a README declares', () => {
 
     expect(problems).toHaveLength(1);
     expect(problems[0]!.message).toContain('apgUrls is not a frontmatter field');
+  });
+
+  it('reads foldInto as the page and section an unpublished README is folded into', () => {
+    const { meta: read, problems } = meta(
+      'title: T',
+      'group: none',
+      'archetype: [composable-ui]',
+      'foldInto: table#virtualized-rows',
+    );
+
+    expect(problems).toEqual([]);
+    expect(foldTargetOf(read!)).toEqual({ slug: 'table', section: 'virtualized-rows' });
+  });
+
+  it('refuses a foldInto that names no section, which resolves to no anchor', () => {
+    const { problems } = meta(
+      'title: T',
+      'group: none',
+      'archetype: [composable-ui]',
+      'foldInto: table',
+    );
+
+    expect(problems).toHaveLength(1);
+    expect(problems[0]!.message).toContain('as table#virtualized-rows');
+  });
+
+  it('refuses foldInto on a document that publishes a page of its own', () => {
+    const { problems } = meta(
+      'title: T',
+      'group: primitives',
+      'archetype: [composable-ui]',
+      'foldInto: table#virtualized-rows',
+    );
+
+    expect(problems).toHaveLength(1);
+    expect(problems[0]!.message).toContain('declares group "primitives"');
+  });
+
+  it('leaves foldInto null for the documents that publish a page', () => {
+    const { meta: read } = meta('title: T', 'group: primitives', 'archetype: [composable-ui]');
+
+    expect(read?.foldInto).toBeNull();
+    expect(foldTargetOf(read!)).toBeNull();
   });
 
   it('refuses an apgUrl that points anywhere but the APG', () => {
@@ -293,11 +338,17 @@ describe('holding a document to its archetypes', () => {
 
   it('takes the union of both archetypes when a document declares two', () => {
     const overlay = requiredSections(
-      { title: 'T', group: 'primitives', archetype: ['overlay'], apgUrl: null },
+      { title: 'T', group: 'primitives', archetype: ['overlay'], apgUrl: null, foldInto: null },
       'x',
     );
     const both = requiredSections(
-      { title: 'T', group: 'primitives', archetype: ['overlay', 'form-control'], apgUrl: null },
+      {
+        title: 'T',
+        group: 'primitives',
+        archetype: ['overlay', 'form-control'],
+        apgUrl: null,
+        foldInto: null,
+      },
       'x',
     );
 
@@ -310,7 +361,13 @@ describe('holding a document to its archetypes', () => {
   it('drops a requirement the document carries a written exemption for', () => {
     const exempt = SECTION_EXEMPTIONS[0]!;
     const required = requiredSections(
-      { title: 'T', group: 'primitives', archetype: [...ARCHETYPES.keys()], apgUrl: null },
+      {
+        title: 'T',
+        group: 'primitives',
+        archetype: [...ARCHETYPES.keys()],
+        apgUrl: null,
+        foldInto: null,
+      },
       exempt.slug,
     );
 

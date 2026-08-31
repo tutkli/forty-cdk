@@ -26,4 +26,4 @@ bootstrapApplication(App, {
 });
 ```
 
-See the [Calendar README](../calendar/README.md) for the full adapter table and usage examples.
+The [Date adapters](../../../docs/date-adapters.md) guide is where the site documents this entry point: which adapter to pick, what the optional peer means for your bundle, and the two limits the adapter seam does not abstract away. The [Calendar README](../calendar/README.md) carries the adapter table beside the grid that reads it.

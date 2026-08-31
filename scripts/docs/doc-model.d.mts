@@ -97,6 +97,11 @@ export interface DocMeta {
   readonly group: 'primitives' | 'utilities' | 'none';
   readonly archetype: readonly string[];
   readonly apgUrl: string | null;
+  /**
+   * `<slug>#<section>` when the site publishes this README's content inside
+   * another page rather than under a route of its own; `null` otherwise.
+   */
+  readonly foldInto: string | null;
 }
 
 /** One compiled document: an entry point's README, or a published guide. */

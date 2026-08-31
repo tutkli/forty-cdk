@@ -10,6 +10,7 @@ import {
 import {
   DOCS_DIR,
   EXCLUDED_GUIDES,
+  readFoldedEntryPoints,
   readGuides,
   readPrimitiveReadmes,
   readPrimitives,
@@ -41,11 +42,13 @@ function linksOf(md) {
 
 const primitives = readPrimitives();
 const guides = readGuides();
+const folded = readFoldedEntryPoints();
 const excluded = new Set(EXCLUDED_GUIDES.map((guide) => `docs/${guide.file}`));
 
 const routes = buildDocRoutes({
   primitiveSlugs: primitives.map((primitive) => primitive.slug),
   guideSlugs: guides.map((guide) => guide.slug),
+  foldedSlugs: folded,
 });
 
 const documents = readPrimitiveReadmes();
@@ -109,10 +112,10 @@ if (failures.length > 0) {
   process.exit(1);
 }
 
-const expectedDocuments = primitives.length + guides.length;
+const expectedDocuments = primitives.length + guides.length + folded.length;
 if (documents.size !== expectedDocuments) {
   console.error(
-    `[check-doc-links] read ${documents.size} documents for ${expectedDocuments} published pages — ` +
+    `[check-doc-links] read ${documents.size} documents for ${expectedDocuments} published documents — ` +
       'a page renders a document this scan never saw, so the run proves nothing about it',
   );
   process.exit(1);
@@ -128,6 +131,7 @@ if (relativeLinks < LINK_FLOOR) {
 }
 
 console.log(
-  `[check-doc-links] ok — ${relativeLinks} relative links across ${documents.size} documents: ` +
-    `${toRoute} resolve to a site route, ${toSource} to a GitHub blob`,
+  `[check-doc-links] ok — ${relativeLinks} relative links across ${documents.size} documents ` +
+    `(${folded.length} folded into another page): ${toRoute} resolve to a site route, ` +
+    `${toSource} to a GitHub blob`,
 );

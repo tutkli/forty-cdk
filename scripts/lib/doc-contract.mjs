@@ -2,16 +2,36 @@ import { splitFrontmatter } from './doc-frontmatter.mjs';
 
 /**
  * The nav group a document publishes under, or `none` for an entry point whose
- * README the site does not publish a page for
- * ([#1809](https://github.com/tutkli/forty-cdk/issues/1809) decides where each
- * of those lands; until then `none` is what makes the omission a declaration
- * rather than an absence).
+ * README the site publishes no route of its own for — either because its
+ * content is folded into another page (`foldInto`) or because it carries a
+ * written exemption in `scripts/lib/docs-coverage.mjs`
+ * ([#1809](https://github.com/tutkli/forty-cdk/issues/1809)).
  */
 export const DOC_GROUPS = new Map([
   ['primitives', 'Primitives'],
   ['utilities', 'Utilities'],
   ['none', null],
 ]);
+
+const FOLD_TARGET = /^([a-z0-9-]+)#([a-z0-9-]+)$/;
+
+/**
+ * Where an unpublished README's content is republished: the slug of the page
+ * that carries it, and the `##` section of that page it is appended to, or
+ * `null` for a document that declares no fold.
+ *
+ * A folded entry point keeps its README as the single source its npm package
+ * and GitHub both serve, and the site renders that same content inside its
+ * host's page rather than holding a second copy of it
+ * ([#1809](https://github.com/tutkli/forty-cdk/issues/1809)).
+ */
+export function foldTargetOf(meta) {
+  if (meta.foldInto === null) {
+    return null;
+  }
+  const match = FOLD_TARGET.exec(meta.foldInto);
+  return match === null ? null : { slug: match[1], section: match[2] };
+}
 
 /**
  * What each archetype is, and the canonical sections a document declaring it
@@ -308,7 +328,7 @@ function fieldProblems(fields, path) {
     problems.push({ path, line: at(key), message });
   };
 
-  const known = new Set(['title', 'group', 'archetype', 'apgUrl']);
+  const known = new Set(['title', 'group', 'archetype', 'apgUrl', 'foldInto']);
   for (const key of fields.keys()) {
     if (!known.has(key)) {
       report(key, `${key} is not a frontmatter field — write one of ${[...known].join(', ')}`);
@@ -353,6 +373,22 @@ function fieldProblems(fields, path) {
   const apgUrl = fields.get('apgUrl')?.value;
   if (apgUrl !== undefined && !String(apgUrl).startsWith('https://www.w3.org/WAI/ARIA/apg/')) {
     report('apgUrl', 'apgUrl must be a https://www.w3.org/WAI/ARIA/apg/ URL, or be left out');
+  }
+
+  const foldInto = fields.get('foldInto')?.value;
+  if (foldInto !== undefined) {
+    if (Array.isArray(foldInto) || !FOLD_TARGET.test(foldInto)) {
+      report(
+        'foldInto',
+        'foldInto must name the page and section its content is appended to, as table#virtualized-rows',
+      );
+    }
+    if (group !== 'none') {
+      report(
+        'foldInto',
+        `foldInto is only for a document with no page of its own, and this one declares group ${JSON.stringify(group)}`,
+      );
+    }
   }
 
   return problems;
@@ -400,6 +436,7 @@ export function readDocMeta(source, path) {
       group: fields.get('group').value,
       archetype: fields.get('archetype').value,
       apgUrl: fields.get('apgUrl')?.value ?? null,
+      foldInto: fields.get('foldInto')?.value ?? null,
     },
     body,
     problems: [],

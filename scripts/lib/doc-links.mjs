@@ -50,7 +50,16 @@ export function guideSlugOf(file) {
   return file.replace(/\.md$/, '');
 }
 
-export function buildDocRoutes({ primitiveSlugs, guideSlugs }) {
+/**
+ * Where each documented path is published.
+ *
+ * `foldedSlugs` carries the entry points whose README the site republishes inside
+ * another page ([#1809](https://github.com/tutkli/forty-cdk/issues/1809)). Their
+ * route holds the fragment their content starts at, and a link that already
+ * carried a fragment of its own is resolved against the anchors the fold minted
+ * — see {@link resolveDocLink}.
+ */
+export function buildDocRoutes({ primitiveSlugs, guideSlugs, foldedSlugs = [] }) {
   const routes = new Map();
   for (const slug of primitiveSlugs) {
     routes.set(`projects/forty-cdk/${slug}`, `/${slug}`);
@@ -59,7 +68,27 @@ export function buildDocRoutes({ primitiveSlugs, guideSlugs }) {
   for (const slug of guideSlugs) {
     routes.set(`docs/${slug}.md`, `/guides/${slug}`);
   }
+  for (const { slug, host } of foldedSlugs) {
+    routes.set(`projects/forty-cdk/${slug}`, `/${host}#${slug}`);
+    routes.set(`projects/forty-cdk/${slug}/README.md`, `/${host}#${slug}`);
+  }
   return routes;
+}
+
+/**
+ * A route and the fragment a link asked for, joined.
+ *
+ * A folded document's route already carries the anchor its content starts at,
+ * and the anchors inside it were minted under that same prefix — so a link into
+ * a folded document lands on `#<document>-<heading>` rather than on a `#heading`
+ * the host page never emitted.
+ */
+function foldedTarget(route, fragment) {
+  if (fragment === '') {
+    return route;
+  }
+  const [path, anchor] = route.split('#');
+  return anchor === undefined ? `${route}${fragment}` : `${path}#${anchor}-${fragment.slice(1)}`;
 }
 
 export function resolveDocLink(href, context) {
@@ -79,7 +108,7 @@ export function resolveDocLink(href, context) {
 
   const route = context.routes.get(repoPath);
   if (route !== undefined) {
-    const target = `${route}${fragment}`;
+    const target = foldedTarget(route, fragment);
     return {
       kind: 'route',
       repoPath,

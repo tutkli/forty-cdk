@@ -20,9 +20,16 @@ export interface ResolvedDocLink {
   readonly href: string;
 }
 
+/** An entry point whose README is republished inside `host`'s page. */
+export interface FoldedDocRoute {
+  readonly slug: string;
+  readonly host: string;
+}
+
 export interface DocRoutesInput {
   readonly primitiveSlugs: readonly string[];
   readonly guideSlugs: readonly string[];
+  readonly foldedSlugs?: readonly FoldedDocRoute[];
 }
 
 export declare function splitDocHref(href: string): { path: string; fragment: string };
