@@ -1,3 +1,10 @@
+---
+title: Radio Group
+group: primitives
+archetype: [form-control]
+apgUrl: https://www.w3.org/WAI/ARIA/apg/patterns/radio/
+---
+
 # Radio Group
 
 A set of radio buttons where only one option can be selected, with arrow-key navigation.

@@ -5,12 +5,21 @@ It defines the canonical structure every primitive `README.md` must follow so th
 render each page section-by-section, build a reliable "On this page" table of contents, and
 inject live demos in a predictable place.
 
-The README is the **single source of truth** for a primitive's prose. The site renders it; it
-is not authored twice. This template is therefore two things at once:
+The README is the **single source of truth** for a primitive's prose _and_ for the metadata the
+site's navigation is built from. It is not authored twice. This template is therefore two things at
+once:
 
 1. The **normalization checklist** for the existing 57 READMEs (rename headings to the canonical
    set, guarantee the required sections exist, move static example code into live `*.example.ts`).
 2. The **rendering contract** the site relies on (each canonical heading maps to a site region).
+
+**Most of this document is executable.** The frontmatter schema, the archetype-to-section rules and
+the exemption list live in [scripts/lib/doc-contract.mjs](../scripts/lib/doc-contract.mjs) and run
+on every build; the ring a section falls in reaches the page on the model
+([#1808](https://github.com/tutkli/forty-cdk/issues/1808)). Where this file states a rule the code
+does not check — the ordering of sections, whether a keyboard-handling primitive wrote its Keyboard
+section — it says so, because a contract that quietly mixes the two is how this document came to
+disagree with the code in three places.
 
 > Scope note: this governs per-primitive pages only. Cross-cutting guides (`docs/styling.md`,
 > `docs/your-first-overlay.md`, …) keep their own free-form structure and are rendered as plain
@@ -21,40 +30,98 @@ is not authored twice. This template is therefore two things at once:
 > a `.md` file in `docs/` that is in neither list fails `pnpm gen:guides`. This document is the one
 > excluded file — it addresses contributors rather than consumers.
 
+## Frontmatter
+
+Every entry point's `README.md` opens with the block the site's registry is built from
+([#1808](https://github.com/tutkli/forty-cdk/issues/1808)):
+
+```md
+---
+title: Select
+group: primitives
+archetype: [overlay, form-control]
+apgUrl: https://www.w3.org/WAI/ARIA/apg/patterns/combobox/examples/combobox-select-only/
+---
+```
+
+| Field       | Required | Value                                                                            |
+| ----------- | -------- | -------------------------------------------------------------------------------- |
+| `title`     | yes      | The name the navigation, page header and `⌘K` palette show                       |
+| `group`     | yes      | `primitives`, `utilities`, or `none` for a README the site publishes no page for |
+| `archetype` | yes      | A non-empty list from the table below                                            |
+| `apgUrl`    | no       | The WAI-ARIA APG pattern's URL, when one exists                                  |
+
+The format is a deliberate subset of YAML rather than YAML: one `key: value` per line, values
+either a scalar or a `[a, b]` list, no nesting, no quoting, no comments. Anything else fails the
+build naming the file and the line, and so does an unknown field — a typo is refused rather than
+dropped. `slug` is not a field: it is the entry point's directory name, and a second copy of it
+could only ever disagree.
+
+**There is no `description` field.** The document's own lede — the first paragraph under the `# `
+title — _is_ the description, lifted out of the intro at compile time. The page header shows it and
+the body below renders everything else, so there is one copy and no comparison to keep it honest.
+This replaces `stripLeadingDescription`, which existed to notice when the registry's copy and the
+README's opening paragraph were byte-identical and drop one of them.
+
 ## Archetypes
 
-Every primitive belongs to exactly one archetype. The archetype decides which **optional**
-sections are required (see the section table below).
+The archetype decides which canonical sections a document must carry, and a primitive may declare
+more than one (Select is `[overlay, form-control]`) — it then owes the union of both.
 
 | Archetype          | Examples                                   | Distinguishing trait                                              |
 | ------------------ | ------------------------------------------ | ----------------------------------------------------------------- |
 | `composable-ui`    | Accordion, Tabs, Carousel, Table           | A set of directives composed in a template; ARIA + `data-*` hooks |
-| `overlay`          | Dialog, Drawer, Popover, Toast, Select     | `composable-ui` **plus** a programmatic `For<X>Manager` API       |
+| `overlay`          | Dialog, Drawer, Popover, Toast, Select     | Renders floating or portaled content                              |
 | `form-control`     | Checkbox, Switch, Input, Slider, DateField | Implements a `@angular/forms/signals` control interface           |
 | `headless-utility` | Breakpoints, DragDrop, Virtualization      | No DOM/ARIA of its own; an `inject*` / provider API               |
 
-A primitive can be both `overlay` and `form-control` (e.g. Select, Combobox, DatePicker). When it
-is, include the union of both archetypes' required sections.
+`overlay` used to be defined as "`composable-ui` **plus** a programmatic `For<X>Manager` API", which
+only Dialog, Drawer and Toast satisfy while the example column named five more. The trait above is
+the one the corpus shows. `Programmatic API` is still required of every overlay, and the ones with
+no manager to document carry a written exemption rather than a silently relaxed rule.
+
+## Three rings
+
+Every `##` section is classified, and the ring reaches the page on `DocPageSection.ring`:
+
+| Ring        | Sections                                                                                                    | Rule                                                              |
+| ----------- | ----------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `core`      | Anatomy, API                                                                                                | Required of every archetype that has DOM at all                   |
+| `canonical` | When to choose, Examples, Programmatic API, Keyboard, Accessibility, Styling, SSR, Wrapping, Behavior notes | Required per archetype, by the table below                        |
+| `specific`  | The long tail — _Snap points_, _Mega-menu_, _Date adapter_ …                                                | Free title and content; grouped in the TOC rather than normalised |
+
+The tail is deliberate. 102 of the corpus's section titles appear exactly once, because `Select`
+genuinely has _Modal touch presentation_ to document and `Separator` does not. Normalising them
+would cost real nuance for the sake of a template, so `specific` gives them a home instead.
 
 ## Canonical sections
 
-Sections appear **in this order**. `Core` sections are required for every archetype that has the
-trait. The `Required for` column lists the archetypes that must include each optional section.
+Sections appear **in this order**. The `Required for` column is what
+[scripts/lib/doc-contract.mjs](../scripts/lib/doc-contract.mjs) enforces — a document missing one
+fails the build unless it carries a written exemption there.
 
-| Order | Canonical heading                | Level | Required for                            | Replaces these existing headings (aliases)                                  |
-| ----- | -------------------------------- | ----- | --------------------------------------- | --------------------------------------------------------------------------- |
-| 1     | _(intro)_                        | —     | all                                     | _(the lede paragraph; no heading)_                                          |
-| 2     | `## When to choose`              | `##`  | optional                                | "When to choose X vs Y", "X vs Y"                                           |
-| 3     | `## Anatomy`                     | `##`  | all except `headless-utility`           | "Pieces", "Pieces (declarative)", "Parts"                                   |
-| 4     | `## Examples`                    | `##`  | all                                     | "Example", "Usage", "Stand-alone usage", "… usage" (see Examples)           |
-| 5     | `## API`                         | `##`  | all                                     | "Inputs / outputs", "Inputs / models", "Inputs", "Outputs", "API reference" |
-| 6     | `## Programmatic API`            | `##`  | `overlay`                               | "Programmatic — …", "ForXManager"                                           |
-| 7     | `## Keyboard`                    | `##`  | any primitive with keyboard interaction | "Keyboard interaction"; or a `### Keyboard` subsection of A11y              |
-| 8     | `## Accessibility`               | `##`  | all except `headless-utility`           | "Accessibility notes", "A11y"                                               |
-| 9     | `## Styling`                     | `##`  | all except `headless-utility`           | "Styling forty-cdk"                                                         |
-| 10    | `## SSR`                         | `##`  | any primitive with server-side caveats  | "Server-side rendering"                                                     |
-| 11    | `## Wrapping in a design system` | `##`  | `form-control`                          | "Wrapping", "Design system usage"                                           |
-| 12    | `## Behavior notes`              | `##`  | optional (complex primitives)           | "Behavior", "Notes"                                                         |
+| Order | Canonical heading                | Level | Required for                           | Replaces these existing headings (aliases)                                  |
+| ----- | -------------------------------- | ----- | -------------------------------------- | --------------------------------------------------------------------------- |
+| 1     | _(intro)_                        | —     | all                                    | _(the lede paragraph; no heading)_                                          |
+| 2     | `## When to choose`              | `##`  | optional                               | "When to choose X vs Y", "X vs Y"                                           |
+| 3     | `## Anatomy`                     | `##`  | all except `headless-utility`          | "Pieces", "Pieces (declarative)", "Parts"                                   |
+| 4     | `## Examples`                    | `##`  | all except `headless-utility`          | "Example", "Usage", "Stand-alone usage", "… usage" (see Examples)           |
+| 5     | `## API`                         | `##`  | all                                    | "Inputs / outputs", "Inputs / models", "Inputs", "Outputs", "API reference" |
+| 6     | `## Programmatic API`            | `##`  | `overlay`                              | "Programmatic — …", "ForXManager"                                           |
+| 7     | `## Keyboard`                    | `##`  | `overlay`; any other with key handling | "Keyboard interaction"; or a `### Keyboard` subsection of A11y              |
+| 8     | `## Accessibility`               | `##`  | all except `headless-utility`          | "Accessibility notes", "A11y"                                               |
+| 9     | `## Styling`                     | `##`  | all except `headless-utility`          | "Styling forty-cdk"                                                         |
+| 10    | `## SSR`                         | `##`  | any primitive with server-side caveats | "Server-side rendering"                                                     |
+| 11    | `## Wrapping in a design system` | `##`  | `form-control`                         | "Wrapping", "Design system usage"                                           |
+| 12    | `## Behavior notes`              | `##`  | optional (complex primitives)          | "Behavior", "Notes"                                                         |
+
+Rows 2, 10 and 12 are canonical without being required: a primitive with nothing SSR-specific to
+say should not be made to write a section about it. Row 7 is required of `overlay` and expected of
+anything else that handles keys, which is a judgement no build can make — a keyboard-handling
+primitive that omits it is caught in review, not by the gate.
+
+`## Scoped defaults` is the one spelling. The corpus carried `Scope defaults` four times and
+`Scoped defaults` four times for the same concept, which minted two anchors for one idea.
 
 ### Section contracts
 
@@ -98,9 +165,9 @@ trait. The `Required for` column lists the archetypes that must include each opt
   `Type` in its second column; there is no other opt-in.
 
   A **`### Data attributes`** subsection (columns **Piece · Attribute · Values**) lives at the end of
-  API for every `composable-ui` / `overlay` / `form-control`. The site renders all API tables with
-  the **ForTable** primitive (sortable) — so keep them as clean GitHub-flavoured markdown tables,
-  no merged cells, no HTML.
+  API for every `composable-ui` / `overlay` / `form-control`. Keep every table clean
+  GitHub-flavoured markdown — no merged cells, no HTML — because the compiler reads it as records
+  and a cell it cannot address is a cell that reaches no page.
 
 - **`## Programmatic API`** — For `overlay` primitives with a `For<X>Manager`. Document the manager
   (`open()` signature), the per-instance `For<X>Ref`, the data token / `inject<X>Data()` accessor,
@@ -142,16 +209,20 @@ How each canonical section surfaces on the site (informs the page-shell componen
 
 | Section           | Site treatment                                                                                                         |
 | ----------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| _(intro)_         | Page header: title + description (from registry) + APG badge + import line                                             |
-| When to choose    | Callout block near the top                                                                                             |
-| Anatomy           | Rendered markdown; the Class·Selector·Role table via **ForTable**                                                      |
+| _(intro)_         | Page header: title + the lede as description + APG badge; the rest of the intro renders below it                       |
+| When to choose    | Rendered markdown                                                                                                      |
+| Anatomy           | Rendered markdown; the Class·Selector·Role table as a compact table                                                    |
 | Examples          | **Not** rendered from README — live `*.example.ts` demos with **Tabs** (Preview/Code), copy-to-clipboard via **Toast** |
-| API               | Rendered markdown; every table via sortable **ForTable**; data-attributes table likewise                               |
-| Programmatic API  | Rendered markdown + config table via **ForTable**                                                                      |
-| Keyboard          | Dedicated keyboard table                                                                                               |
+| API               | Rendered markdown; a table whose header matches the API shape gets the type chip and detail popover                    |
+| Programmatic API  | Rendered markdown; its config table is a compact table                                                                 |
+| Keyboard          | Rendered markdown; Key·Action is a compact table                                                                       |
 | Accessibility     | Rendered markdown                                                                                                      |
 | Styling           | Rendered markdown                                                                                                      |
 | All `##` headings | Feed the "On this page" TOC (right rail)                                                                               |
+
+Tables are plain `<table>` markup, not the **ForTable** primitive, and no column sorts. This
+document claimed otherwise for a year; sorting a twelve-row API reference buys a reader little, and
+the claim's only effect was to describe a site that did not exist.
 
 Every relative link a README or a guide carries is repository-relative — correct on GitHub, a 404 on
 the web — so the renderer resolves each one against the document's own path before it reaches the
@@ -184,27 +255,51 @@ alternative is a page where one sample is highlighted and the next is not, which
 corpus had drifted into twice. If a new language is genuinely needed, load its grammar in
 `scripts/docs/doc-highlight.mjs` rather than writing the fence unlabelled.
 
-The page chrome itself dogfoods the library: Navigation Menu / Drawer (mobile) for the top nav,
-Tree / Scroll Area for the sidebar, Combobox for ⌘K search, Switch for the theme toggle,
-Breadcrumbs for location.
+The page chrome itself dogfoods the library: **Drawer** for the mobile nav, **Combobox** for ⌘K
+search, **Switch** for the theme toggle, **Toast** for copy-to-clipboard feedback, **Tabs** for each
+demo's Preview / Code pair, **Popover** for an API row's detail, **Tooltip** for the inline hints,
+**Select** for the demo controls and **Scroll Area** for the sidebar. The top nav is plain anchors
+and the sidebar is a plain list — Navigation Menu, Tree and Breadcrumbs are not on the site, and
+this list is the set of primitives it actually imports.
 
 ## Per-archetype required-section checklist
 
 Use this when auditing a README.
 
 **`composable-ui`** — intro(+APG) · Anatomy · Examples · API(+data-attributes) · Keyboard† · Accessibility · Styling
-**`overlay`** — all of the above · **Programmatic API** · (Behavior notes if non-trivial)
+**`overlay`** — all of the above · **Programmatic API** · Keyboard · (Behavior notes if non-trivial)
 **`form-control`** — `composable-ui` set · Signal Forms example under Examples · **Wrapping in a design system**
-**`headless-utility`** — intro · Setup‡ · Examples(Usage) · API · SSR† _(no Anatomy / Accessibility / Styling / data-attributes)_
+**`headless-utility`** — intro · Setup‡ · Examples(Usage) · **API** · SSR† _(no Anatomy / Accessibility / Styling / data-attributes)_
 
 † include only when applicable (keyboard interaction exists / SSR caveat exists)
 ‡ `headless-utility` may use `## Setup` before `## Examples` for the provider configuration step
 
+### Deliberate omissions
+
+A document that genuinely should not carry a required section declares so in `SECTION_EXEMPTIONS`
+([scripts/lib/doc-contract.mjs](../scripts/lib/doc-contract.mjs)), with the reason written out:
+
+```js
+{
+  slug: 'menu',
+  section: 'Examples',
+  reason: 'The shared surface is never used alone; each menu-family README carries the demos.',
+},
+```
+
+This is what keeps the check blocking rather than advisory. An omission is either written down or
+it fails the build, so the next one is visible the day it appears — and an exemption for a section
+the document has since written, or for a document that no longer exists, fails too, which is what
+stops the list outliving its reasons.
+
 ## Metadata: where structured fields live
 
-Nav-level structured metadata (slug, title, description, `apgUrl`, group/archetype) stays in the
-site registry (`projects/forty-cdk-playground/src/app/primitives.ts`), which already drives nav and
-the page header — it is **typed** and easy for the build to consume. The README owns the **prose**.
-`title` / `description` are intentionally duplicated between registry and README intro; the registry
-copy is canonical for nav and SEO. (A later refinement may lift these into README frontmatter; not
-required for the first pass.)
+In the README's frontmatter, and nowhere else. `projects/forty-cdk-playground/src/app/primitives.ts`
+is generated from it: adding an entry point to the site is a frontmatter block, and there is no
+second copy of a title, a description or an APG URL to fall out of step with the document it
+describes. The README owns both its prose and its metadata; the registry is derived.
+
+This reverses the earlier arrangement, in which the registry held the structured fields and
+duplicated `title` / `description` with the README's intro on purpose. The duplication was real —
+a function existed solely to notice when the two copies were byte-identical and drop one — and
+editing one without the other printed the description twice.

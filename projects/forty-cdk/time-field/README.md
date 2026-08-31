@@ -1,3 +1,10 @@
+---
+title: Time Field
+group: primitives
+archetype: [form-control]
+apgUrl: https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton/
+---
+
 # TimeField
 
 A segmented time-of-day input over a pluggable date adapter, with 12 / 24-hour cycles, optional seconds, and min / max time clamping.
@@ -148,7 +155,7 @@ Plus the shared `FormUiControl` members from `@angular/forms/signals`: `disabled
 
 `[forTimeFieldLiteral]` carries no `data-*` hooks — it is `aria-hidden` and purely decorative; style it directly via your own class.
 
-## Scope defaults
+## Scoped defaults
 
 ```ts
 import { provideForTimeFieldDefaults } from 'forty-cdk/time-field';
@@ -238,7 +245,7 @@ Set `allowOvernight` to read a `start > end` entry as a range that **crosses mid
 
 Each endpoint is its own tab stop, so `Tab` moves start group → end group → next control; arrows move between segments **within** an endpoint. Every other key behaves as in the [Keyboard](#keyboard) table below. Roving tabindex is per endpoint, and `aria-invalid="true"` is reflected on the root when the form marks it invalid **or** when two complete endpoints are out of order; everything else matches the [Accessibility](#accessibility) notes below.
 
-### Range scope defaults
+### Range scoped defaults
 
 `provideForTimeRangeFieldDefaults` mirrors `provideForTimeFieldDefaults` and adds `startLabel` / `endLabel` for the two endpoint group `aria-label`s (`'Start time'` / `'End time'` by default). Both wrapper patterns work via `FOR_TIME_RANGE_FIELD_HOST_DIRECTIVE_INPUTS` / `FOR_TIME_RANGE_FIELD_HOST_DIRECTIVE_OUTPUTS` — see [Wrapping form primitives](../../../docs/wrapping-form-primitives.md).
 

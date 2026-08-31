@@ -8,7 +8,7 @@ import {
   type DocRenderContext,
 } from '../../../../../scripts/docs/doc-render.mjs';
 import { stripText } from '../../../../../scripts/lib/html.mjs';
-import { compile } from './testing/compile';
+import { compile, FRONTMATTER } from './testing/compile';
 
 /**
  * The renderer's half of the split
@@ -178,7 +178,7 @@ describe('rendering a whole document for its page', () => {
   ]);
 
   function render(...lines: readonly string[]) {
-    const markdown = `${lines.join('\n')}\n`;
+    const markdown = `${[...FRONTMATTER, '', ...lines].join('\n')}\n`;
     return renderDocument(
       compile({ path: 'projects/forty-cdk/thing/README.md', slug: 'thing', markdown }),
       { routes: ROUTES },
@@ -186,14 +186,14 @@ describe('rendering a whole document for its page', () => {
   }
 
   it('writes the base-href token in front of an in-app route, and the route beside it', () => {
-    const page = render('# T', '', 'See [styling](../../../docs/styling.md).');
+    const page = render('# T', '', 'Lede.', '', 'See [styling](../../../docs/styling.md).');
 
     expect(page.intro[0]!.html).toContain('href="%DOC_BASE%guides/styling"');
     expect(page.intro[0]!.html).toContain('data-doc-route="/guides/styling"');
   });
 
   it('sends a link the site publishes no route for to its source on GitHub', () => {
-    const page = render('# T', '', 'See [the source](../src/thing.ts).');
+    const page = render('# T', '', 'Lede.', '', 'See [the source](../src/thing.ts).');
 
     expect(page.intro[0]!.html).toContain(
       'href="https://github.com/tutkli/forty-cdk/blob/main/projects/forty-cdk/src/thing.ts"',
@@ -205,6 +205,8 @@ describe('rendering a whole document for its page', () => {
   it('renders every table cell once, as markup and as the text its labels read', () => {
     const page = render(
       '# T',
+      '',
+      'Lede.',
       '',
       '## API',
       '',
@@ -227,9 +229,19 @@ describe('rendering a whole document for its page', () => {
   });
 
   it('resolves inline markup out of the titles a page renders as text', () => {
-    const page = render('# T', '', '## Scope `defaults`', '', '### The `open` model', '', 'Body.');
+    const page = render(
+      '# T',
+      '',
+      'Lede.',
+      '',
+      '## Scoped `defaults`',
+      '',
+      '### The `open` model',
+      '',
+      'Body.',
+    );
 
-    expect(page.sections[0]!.title).toBe('Scope defaults');
+    expect(page.sections[0]!.title).toBe('Scoped defaults');
     expect(page.sections[0]!.headings[0]).toEqual({
       depth: 3,
       text: 'The open model',
@@ -243,6 +255,8 @@ describe('rendering a whole document for its page', () => {
       '',
       'Lede.',
       '',
+      'Intro prose.',
+      '',
       '## S',
       '',
       '| Key | Action |',
@@ -254,7 +268,7 @@ describe('rendering a whole document for its page', () => {
 
     expect(Object.keys(page)).toEqual(['intro', 'sections']);
     expect(Object.keys(page.intro[0]!)).toEqual(['kind', 'html']);
-    expect(Object.keys(page.sections[0]!)).toEqual(['title', 'slug', 'headings', 'blocks']);
+    expect(Object.keys(page.sections[0]!)).toEqual(['title', 'slug', 'ring', 'headings', 'blocks']);
     expect(Object.keys(table!.columns[0]!)).toEqual(['html', 'text']);
   });
 });

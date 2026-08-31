@@ -20,7 +20,7 @@ if (!existsSync(BROWSER)) {
 
 const primitives = readPrimitives();
 if (primitives.length === 0) {
-  fail('parsed 0 primitives from primitives.ts — the slug/title parser is stale');
+  fail('read 0 primitives from the entry point READMEs — no frontmatter declares a nav group');
 }
 
 const guides = readGuides();

@@ -1,3 +1,10 @@
+---
+title: Tooltip
+group: primitives
+archetype: [overlay]
+apgUrl: https://www.w3.org/WAI/ARIA/apg/patterns/tooltip/
+---
+
 # Tooltip
 
 A small floating label that describes its trigger on hover or focus, without ever taking focus itself.

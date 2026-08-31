@@ -1,3 +1,10 @@
+---
+title: Context Menu
+group: primitives
+archetype: [overlay]
+apgUrl: https://www.w3.org/WAI/ARIA/apg/patterns/menu/
+---
+
 # ContextMenu
 
 A menu opened by right-click or long-press, anchored to the pointer position.

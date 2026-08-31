@@ -1,3 +1,9 @@
+---
+title: Breakpoints
+group: utilities
+archetype: [headless-utility]
+---
+
 # Breakpoints
 
 A signal-first, zoneless, SSR-safe viewport breakpoint observer (injectBreakpoints). Configure the breakpoint map once via provideForBreakpointsDefaults — or use the Tailwind scale by default — then read up / down / between / only / active or any arbitrary media query, each as a live Signal&lt;boolean&gt;.

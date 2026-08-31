@@ -1,3 +1,9 @@
+---
+title: OTP Input
+group: primitives
+archetype: [form-control]
+---
+
 # OTP Input
 
 A one-time-code / PIN field on the single-input model: typed and pasted characters fill styled slots, with masking, character filtering and a complete event.

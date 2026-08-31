@@ -1,6 +1,13 @@
+---
+title: Button
+group: primitives
+archetype: [composable-ui]
+apgUrl: https://www.w3.org/WAI/ARIA/apg/patterns/button/
+---
+
 # ForButton
 
-Turns any element — a native <button> or a custom host like <div> / <span> — into an accessible button with keyboard activation. Disabled stays focusable (aria-disabled, never the native attribute) and pressed / hovered / focus-visible are reflected as data-\* hooks.
+Turns any element — a native `<button>` or a custom host like `<div>` / `<span>` — into an accessible button with keyboard activation. Disabled stays focusable (aria-disabled, never the native attribute) and pressed / hovered / focus-visible are reflected as data-\* hooks.
 
 A single `[forButton]` directive does all of this. On a native `<button>` host the platform owns Enter/Space activation and `type` handling; on any non-button host the directive adds `role="button"`, `tabindex="0"`, and keyboard activation so the contract matches.
 

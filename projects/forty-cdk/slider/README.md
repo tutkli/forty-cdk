@@ -1,3 +1,10 @@
+---
+title: Slider
+group: primitives
+archetype: [form-control]
+apgUrl: https://www.w3.org/WAI/ARIA/apg/patterns/slider/
+---
+
 # Slider
 
 A draggable thumb that picks a numeric value along a track.

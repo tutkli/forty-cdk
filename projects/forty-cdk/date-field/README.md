@@ -1,3 +1,10 @@
+---
+title: Date Field
+group: primitives
+archetype: [form-control]
+apgUrl: https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton/
+---
+
 # DateField
 
 A segmented date (and optional time) input over a pluggable date adapter — each part a spinbutton with keyboard stepping, locale-driven segment order and min / max clamping.
@@ -171,7 +178,7 @@ Set `granularity` to `'hour'`, `'minute'`, or `'second'` (`granularity > 'day'`)
 
 On the AM/PM segment, `a` / `p` set the period and ArrowUp / ArrowDown toggle it; the period is derived from the entered hour, so clearing it is a no-op (clear or step the hour instead). The value stays `null` until every visible segment — date **and** time — is filled.
 
-## Scope defaults
+## Scoped defaults
 
 ```ts
 import { provideForDateFieldDefaults } from 'forty-cdk/date-field';
@@ -256,7 +263,7 @@ The two endpoints are typed independently, so order is not guaranteed by constru
 
 Each endpoint is its own tab stop, so `Tab` moves start group → end group → next control; arrows move between segments **within** an endpoint. Every other key behaves as in the [Keyboard](#keyboard) table below. Roving tabindex is per endpoint, and `aria-invalid="true"` is reflected on the root when the form marks it invalid **or** when two complete endpoints are out of order; everything else matches the [Accessibility](#accessibility) notes below.
 
-### Range scope defaults
+### Range scoped defaults
 
 `provideForDateRangeFieldDefaults` mirrors `provideForDateFieldDefaults` and adds `startLabel` / `endLabel` for the two endpoint group `aria-label`s (`'Start date'` / `'End date'` by default). Both wrapper patterns work via `FOR_DATE_RANGE_FIELD_HOST_DIRECTIVE_INPUTS` / `FOR_DATE_RANGE_FIELD_HOST_DIRECTIVE_OUTPUTS` — see [Wrapping form primitives](../../../docs/wrapping-form-primitives.md).
 

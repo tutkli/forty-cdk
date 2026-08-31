@@ -1,4 +1,4 @@
-import type { DocDocument, DocProseBlock } from './doc-model.mjs';
+import type { DocDocument, DocProseBlock, DocSectionRing } from './doc-model.mjs';
 
 /** A link the renderer resolved, and the route it navigates to in-app if any. */
 export interface DocLinkTarget {
@@ -70,6 +70,8 @@ export interface DocPageHeading {
 export interface DocPageSection {
   readonly title: string;
   readonly slug: string;
+  /** Which ring of the page-template contract the section falls in. */
+  readonly ring: DocSectionRing;
   readonly headings: readonly DocPageHeading[];
   readonly blocks: readonly DocPageBlock[];
 }

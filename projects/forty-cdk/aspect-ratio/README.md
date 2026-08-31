@@ -1,3 +1,9 @@
+---
+title: Aspect Ratio
+group: primitives
+archetype: [composable-ui]
+---
+
 # AspectRatio
 
 A container that keeps its content at a fixed width-to-height ratio.

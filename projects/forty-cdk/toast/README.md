@@ -1,3 +1,10 @@
+---
+title: Toast
+group: primitives
+archetype: [overlay]
+apgUrl: https://www.w3.org/WAI/ARIA/apg/patterns/alert/
+---
+
 # Toast
 
 Brief, auto-dismissing notifications stacked in a corner, opened programmatically through ForToastManager.

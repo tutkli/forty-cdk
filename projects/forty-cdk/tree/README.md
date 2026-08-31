@@ -1,3 +1,10 @@
+---
+title: Tree
+group: primitives
+archetype: [composable-ui]
+apgUrl: https://www.w3.org/WAI/ARIA/apg/patterns/treeview/
+---
+
 # Tree
 
 A nested tree view for hierarchical data: expandable nodes with roving-tabindex navigation, single or multi selection, and typeahead.
@@ -379,7 +386,7 @@ Vertical, LTR (mirrored for `dir="rtl"`):
 
 Under `dir="rtl"` the expand / collapse arrows swap: **ArrowLeft** expands and **ArrowRight** collapses.
 
-## Scope defaults
+## Scoped defaults
 
 ```ts
 import { provideForTreeDefaults } from 'forty-cdk/tree';

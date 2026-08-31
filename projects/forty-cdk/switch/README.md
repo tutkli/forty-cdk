@@ -1,3 +1,10 @@
+---
+title: Switch
+group: primitives
+archetype: [form-control]
+apgUrl: https://www.w3.org/WAI/ARIA/apg/patterns/switch/
+---
+
 # Switch
 
 A binary on / off control toggled by click, Enter or Space.

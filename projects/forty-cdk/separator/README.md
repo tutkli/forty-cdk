@@ -1,3 +1,9 @@
+---
+title: Separator
+group: primitives
+archetype: [composable-ui]
+---
+
 # Separator
 
 A static, optionally semantic divider between groups of content or controls, horizontal or vertical.

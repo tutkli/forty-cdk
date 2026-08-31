@@ -182,6 +182,7 @@ export function renderDocument(document, { routes, blobBase = GITHUB_BLOB_BASE }
     sections: document.sections.map((section) => ({
       title: headingText(section.title),
       slug: section.slug,
+      ring: section.ring,
       headings: section.headings.map((heading) => ({
         depth: heading.depth,
         text: headingText(heading.text),

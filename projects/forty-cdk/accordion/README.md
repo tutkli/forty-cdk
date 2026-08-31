@@ -1,3 +1,10 @@
+---
+title: Accordion
+group: primitives
+archetype: [composable-ui]
+apgUrl: https://www.w3.org/WAI/ARIA/apg/patterns/accordion/
+---
+
 # Accordion
 
 A stack of collapsible sections, optionally allowing multiple panels open at once.

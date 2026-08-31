@@ -1,3 +1,9 @@
+---
+title: Field
+group: primitives
+archetype: [composable-ui]
+---
+
 # Field
 
 Headless wiring that ties a label, description and error region to a control, and reflects validation state as data-\* for styling. Any forty-cdk form control auto-associates; native inputs opt in with forFieldControl.

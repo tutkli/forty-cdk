@@ -1,3 +1,10 @@
+---
+title: Dropdown Menu
+group: primitives
+archetype: [overlay]
+apgUrl: https://www.w3.org/WAI/ARIA/apg/patterns/menu-button/
+---
+
 # DropdownMenu
 
 A button that opens a menu of actions, with full keyboard navigation, typeahead and submenus.

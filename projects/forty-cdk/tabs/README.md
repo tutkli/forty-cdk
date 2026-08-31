@@ -1,3 +1,10 @@
+---
+title: Tabs
+group: primitives
+archetype: [composable-ui]
+apgUrl: https://www.w3.org/WAI/ARIA/apg/patterns/tabs/
+---
+
 # Tabs
 
 A tablist that switches between panels of content.

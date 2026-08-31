@@ -1,3 +1,9 @@
+---
+title: Avatar
+group: primitives
+archetype: [composable-ui]
+---
+
 # Avatar
 
 A user image with a graceful fallback across its loading lifecycle.

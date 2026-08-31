@@ -1,3 +1,10 @@
+---
+title: Combobox
+group: primitives
+archetype: [overlay, form-control]
+apgUrl: https://www.w3.org/WAI/ARIA/apg/patterns/combobox/
+---
+
 # Combobox
 
 An editable input paired with a filterable listbox popup, supporting single or multi selection with chips.
