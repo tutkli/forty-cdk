@@ -26,8 +26,14 @@ import { foldTargetOf } from './doc-contract.mjs';
  *
  * Read backwards, the same rule is the half the audit called out as the one
  * nobody notices: an exemption naming a folder that is gone, a fold into a page
- * that publishes none, and a route the site serves for an entry point the
- * library no longer ships.
+ * that publishes none, and a page directory the site still holds for an entry
+ * point the library no longer ships.
+ *
+ * That last pair is stated over the authored page directories rather than over
+ * the router's table, which is generated from this same frontmatter
+ * ([#1811](https://github.com/tutkli/forty-cdk/issues/1811)) and would agree
+ * with it by construction. The page is the artefact a human writes, so it is the
+ * one that can be missing.
  */
 
 /**
@@ -155,8 +161,8 @@ function foldProblems(slug, document, documents, problems) {
  * @param entryPoints Folder names shipping an `ng-package.json`.
  * @param documents Compiled READMEs by slug — every entry point that has one.
  * @param guides Slugs of the guides the site publishes.
- * @param routes Slugs the router serves a primitive page for.
- * @param routesFile The path a failure names when a route is the problem.
+ * @param pages Slugs the site holds an authored page component for.
+ * @param pagesDir The path a failure names when a page is the problem.
  * @param exemptions The list to hold the corpus to; the library's own by
  * default, and a caller passes its own to state a rule over a corpus of its own.
  */
@@ -164,8 +170,8 @@ export function coverageProblems({
   entryPoints,
   documents,
   guides,
-  routes,
-  routesFile,
+  pages,
+  pagesDir,
   exemptions = COVERAGE_EXEMPTIONS,
 }) {
   const problems = [];
@@ -208,21 +214,21 @@ export function coverageProblems({
       .map(([slug]) => slug),
   );
 
-  for (const slug of routes) {
+  for (const slug of pages) {
     if (!published.has(slug)) {
       problems.push(
-        `${routesFile} serves "/${slug}", which no entry point publishes a page for — ` +
+        `${pagesDir}/${slug}/ holds a page no entry point publishes a document for — ` +
           `${known.has(slug) ? 'its README declares group: none' : 'the library ships no such entry point'}, ` +
-          'so the route renders a document nothing keeps in step',
+          'so the page renders content nothing keeps in step',
       );
     }
   }
 
   for (const slug of published) {
-    if (!routes.has(slug)) {
+    if (!pages.has(slug)) {
       problems.push(
-        `${slug} declares a nav group and ${routesFile} serves no "/${slug}" route, so the ` +
-          'navigation links to a page the router redirects away from',
+        `${slug} declares a nav group and ${pagesDir} holds no ${slug}/${slug}.page.ts, so the ` +
+          'navigation links to a page the generated routes cannot load',
       );
     }
   }

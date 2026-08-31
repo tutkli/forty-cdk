@@ -96,3 +96,29 @@ export const GUIDE_DOCS: readonly DocFile[] = guideCorpus();
 
 /** Both halves, which together are every document the site renders. */
 export const SITE_DOCS: readonly DocFile[] = [...PRIMITIVE_DOCS, ...GUIDE_DOCS];
+
+const ROUTES_FILE = import.meta.glob(
+  '/projects/forty-cdk-playground/src/generated/routes.generated.ts',
+  { query: '?raw', import: 'default', eager: true },
+);
+
+/**
+ * The route table the generator emitted, as text.
+ *
+ * Read rather than imported because the routes it declares are lazy: importing
+ * the module would ask the spec build to resolve every page component, and the
+ * unit-test builder's TypeScript program holds none of them — its AOT plugin
+ * then refuses each one as component metadata it was not asked to compile. The
+ * rule this is held to is a string equality, so text is all the case needs.
+ *
+ * The plugin decides that from a file's text on disk, which is also why nothing
+ * in the suite inlines a page's source: a raw glob over the demo tree would put
+ * a component decorator in this file's own contents and fail it the same way.
+ */
+export const GENERATED_ROUTES: string = (() => {
+  const source = ROUTES_FILE['/projects/forty-cdk-playground/src/generated/routes.generated.ts'];
+  if (source === undefined) {
+    throw new Error('src/generated/routes.generated.ts was not found — run pnpm gen:doc-model');
+  }
+  return source;
+})();

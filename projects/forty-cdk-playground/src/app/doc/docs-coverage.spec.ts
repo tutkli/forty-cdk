@@ -36,12 +36,12 @@ function check(
     entryPoints: [...bySlug.keys()].sort(),
     documents: bySlug,
     guides: new Set<string>(),
-    routes: new Set(
+    pages: new Set(
       documents
         .filter((document) => document.meta?.group !== 'none')
         .map((document) => document.slug),
     ),
-    routesFile: 'app.routes.ts',
+    pagesDir: 'demos',
     exemptions: [],
     ...overrides,
   });
@@ -127,28 +127,28 @@ describe('a fold', () => {
   });
 });
 
-describe('a route', () => {
-  it('fails when the site serves one for an entry point the library does not ship', () => {
+describe('a page', () => {
+  it('fails when the site holds one for an entry point the library does not ship', () => {
     const { problems } = check(
       [readme('real', 'group: primitives', 'archetype: [composable-ui]')],
       {
-        routes: new Set(['real', 'removed']),
+        pages: new Set(['real', 'removed']),
       },
     );
 
-    expect(only(problems)).toContain('serves "/removed"');
+    expect(only(problems)).toContain('demos/removed/ holds a page');
     expect(only(problems)).toContain('the library ships no such entry point');
   });
 
-  it('fails when a published entry point has no route to render it', () => {
+  it('fails when a published entry point has no page to render it', () => {
     const { problems } = check(
       [readme('real', 'group: primitives', 'archetype: [composable-ui]')],
       {
-        routes: new Set<string>(),
+        pages: new Set<string>(),
       },
     );
 
-    expect(only(problems)).toContain('serves no "/real" route');
+    expect(only(problems)).toContain('demos holds no real/real.page.ts');
   });
 });
 

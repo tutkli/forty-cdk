@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 
 import { checkContract, foldTargetOf } from '../lib/doc-contract.mjs';
@@ -8,6 +8,7 @@ import { repoRoot } from '../lib/repo-path.mjs';
 import { foldableOf, withFold } from './doc-fold.mjs';
 import { compileDocument, DocCompileError } from './doc-model.mjs';
 import { headingText, renderDocument } from './doc-render.mjs';
+import { pageFileOf, pageProblems, routesModule } from './doc-routes.mjs';
 
 const OUT_DIR = join(repoRoot, 'projects', 'forty-cdk-playground', 'src', 'generated');
 const DOCS_DIR = join(OUT_DIR, 'docs');
@@ -171,6 +172,31 @@ const guides = documents.filter((document) => document.kind === 'guide');
 const primitives = documents.filter((document) => document.kind === 'primitive');
 
 /**
+ * A route is only emitted for a page that exists and exports the component the
+ * route names ([#1811](https://github.com/tutkli/forty-cdk/issues/1811)).
+ *
+ * Refused here rather than left to the site build, which reports the same two
+ * mistakes as an esbuild resolution failure and a type error inside a generated
+ * file — neither of which names the README that asked for the page.
+ */
+function checkPages() {
+  const problems = pageProblems(
+    primitives.map((primitive) => {
+      const file = join(repoRoot, pageFileOf(primitive.slug));
+      return {
+        slug: primitive.slug,
+        source: existsSync(file) ? readFileSync(file, 'utf8') : null,
+      };
+    }),
+  );
+  if (problems.length > 0) {
+    throw new DocCompileError(problems);
+  }
+}
+
+checkPages();
+
+/**
  * Where a relative link in the markdown lands, resolved here rather than in the
  * browser ([#1807](https://github.com/tutkli/forty-cdk/issues/1807)).
  *
@@ -236,6 +262,13 @@ write([
   [join(OUT_DIR, 'doc-index.generated.ts'), indexModule(documents)],
   [join(OUT_DIR, 'guide-docs.generated.ts'), guideModule(guides)],
   [join(OUT_DIR, 'primitives.generated.ts'), registryModule(primitives)],
+  [
+    join(OUT_DIR, 'routes.generated.ts'),
+    routesModule({
+      primitiveSlugs: primitives.map((primitive) => primitive.slug),
+      guideSlugs: guides.map((guide) => guide.slug),
+    }),
+  ],
 ]);
 
 const tables = documents.reduce(
@@ -251,7 +284,8 @@ const sections = documents.reduce((total, document) => total + document.sections
 
 console.log(
   `[gen-doc-model] wrote ${rel(OUT_DIR)} — ` +
-    `${documents.length} documents (${guides.length} guides), ${sections} sections, ${tables} tables`,
+    `${documents.length} documents (${guides.length} guides), ${sections} sections, ${tables} tables, ` +
+    `${primitives.length + guides.length} routes`,
 );
 if (folded.length > 0) {
   console.log(
