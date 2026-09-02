@@ -218,7 +218,29 @@ How each canonical section surfaces on the site (informs the page-shell componen
 | Keyboard          | Rendered markdown; Key·Action is a compact table                                                                       |
 | Accessibility     | Rendered markdown                                                                                                      |
 | Styling           | Rendered markdown                                                                                                      |
-| All `##` headings | Feed the "On this page" TOC (right rail)                                                                               |
+| All `##` headings | Feed the "On this page" TOC (right rail); the `specific` ones nest under one group — see below                         |
+
+The rail groups by ring ([#1810](https://github.com/tutkli/forty-cdk/issues/1810)). `core` and
+`canonical` sections stay at the top level in document order; the `specific` ones nest under a single
+group so a reader looking for _Styling_ is not scanning it against _Modal touch presentation_. **Every
+anchor still resolves** — grouping moves an entry down a level and rewrites nothing — and
+`check:doc-output` fails a page whose rail stopped linking a section its document declares.
+
+Three things decide what a page gets, and all three are derived rather than declared:
+
+- **Whether it groups at all.** Three or more `specific` sections, and at least three template ones
+  left outside. Below either, the flat rail is the better one: `Separator` is untouched, and
+  `forty-cdk/shared` — seven sections, all seven specific — has nothing to separate from. Seventeen
+  of the fifty-four published primitives group today; no guide does, since a guide declares no
+  archetype and every section it writes reads as `specific`.
+- **What the group is called.** A document that declares `## Behavior notes` names its own container:
+  the group takes that section's title _and_ its anchor, and sits where the document put it. One that
+  does not borrows the title with no anchor, and the group sits where its first specific section does.
+- **Whether it starts closed.** Closed once the group holds more entries than the rest of the rail's
+  top level — a ratio, so a page that later grows two canonical sections opens again with no
+  threshold to retune. Seven pages are closed today (`/select`, `/combobox`, `/table`, `/toast`,
+  `/drawer`, `/drag-drop`, `/virtualization`), and a closed group opens on its own while the section
+  being read is inside it.
 
 Tables are plain `<table>` markup, not the **ForTable** primitive, and no column sorts. This
 document claimed otherwise for a year; sorting a twelve-row API reference buys a reader little, and

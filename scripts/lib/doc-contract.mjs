@@ -321,6 +321,64 @@ export function ringOf(title) {
   return CANONICAL_SECTIONS.includes(title) ? 'canonical' : 'specific';
 }
 
+/**
+ * The canonical section a page's specific ones nest under in the rail, and the
+ * title the rail falls back to when the document declares none.
+ *
+ * `Behavior notes` is not a name invented for the grouping: it is already the
+ * canonical heading twelve READMEs use for what a primitive does beyond the
+ * template, so a document that declares it names its own container, anchor and
+ * all. The rest borrow the title without an anchor, rather than a container
+ * being written into the site's markup.
+ */
+export const BEHAVIOR_GROUP_TITLE = 'Behavior notes';
+
+/**
+ * How many specific sections it takes before nesting them reads as an
+ * improvement.
+ *
+ * Below three, the group costs a level of indentation and a heading of its own
+ * to save one or two entries, which is a worse rail than the flat one —
+ * `Separator` and the thirty-five other documents at or under two are left
+ * exactly as they are.
+ */
+const MIN_GROUPED = 3;
+
+/**
+ * How many template sections have to stay outside the group for it to mean
+ * anything.
+ *
+ * The grouping separates what a reader expects on every page from what only
+ * this page has to say, so a document with almost nothing in the first half has
+ * nothing to separate. `forty-cdk/shared` is the case the corpus holds: seven
+ * sections, all seven specific, and grouping them would leave a rail of one.
+ */
+const MIN_TEMPLATE = 3;
+
+/**
+ * The container a document's specific sections nest under in the rail, or
+ * `null` for a document the grouping would not improve
+ * ([#1810](https://github.com/tutkli/forty-cdk/issues/1810)).
+ *
+ * Only a README is grouped. A guide declares no archetype and is held to no
+ * template, so every one of its sections reads as `specific` — the ring says
+ * nothing about a guide, and grouping on it would empty the rail rather than
+ * order it.
+ */
+export function behaviorGroupOf(document) {
+  if (document.kind !== 'primitive') {
+    return null;
+  }
+  const specific = document.sections.filter((section) => section.ring === 'specific');
+  const container =
+    document.sections.find((section) => section.title === BEHAVIOR_GROUP_TITLE) ?? null;
+  const template = document.sections.length - specific.length - (container === null ? 0 : 1);
+  if (specific.length < MIN_GROUPED || template < MIN_TEMPLATE) {
+    return null;
+  }
+  return { title: container?.title ?? BEHAVIOR_GROUP_TITLE, slug: container?.slug ?? null };
+}
+
 function fieldProblems(fields, path) {
   const problems = [];
   const at = (key) => fields.get(key)?.line ?? 1;

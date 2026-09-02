@@ -1,5 +1,8 @@
+import type { DocKind } from '../../../../../scripts/docs/doc-model.mjs';
 import {
   ARCHETYPES,
+  BEHAVIOR_GROUP_TITLE,
+  behaviorGroupOf,
   checkContract,
   checkSections,
   foldTargetOf,
@@ -289,6 +292,60 @@ describe('the three rings a section falls in', () => {
     });
 
     expect(document.sections.map((section) => section.ring)).toEqual(['core', 'specific']);
+  });
+});
+
+describe('the container a page’s specific sections nest under', () => {
+  function documentOf(kind: DocKind, ...titles: readonly string[]) {
+    const lines = [
+      '# T',
+      '',
+      'Lede.',
+      '',
+      ...titles.flatMap((title) => [`## ${title}`, '', 'Body.', '']),
+    ];
+    const primitive = kind === 'primitive';
+    return compile({
+      path: primitive ? 'projects/forty-cdk/thing/README.md' : 'docs/thing.md',
+      slug: 'thing',
+      markdown: primitive ? readme(...lines) : `${lines.join('\n')}\n`,
+    });
+  }
+
+  const SPECIFIC = ['Snap points', 'Swipe-to-dismiss', 'Nested drawers'];
+  const TEMPLATE = ['Anatomy', 'API', 'Styling'];
+
+  it('takes its title and its anchor from the section the document declares', () => {
+    const group = behaviorGroupOf(
+      documentOf('primitive', ...TEMPLATE, 'Behavior notes', ...SPECIFIC),
+    );
+
+    expect(group).toEqual({ title: 'Behavior notes', slug: 'behavior-notes' });
+  });
+
+  it('falls back to the contract’s title, with no anchor, when the document declares none', () => {
+    const group = behaviorGroupOf(documentOf('primitive', ...TEMPLATE, ...SPECIFIC));
+
+    expect(group).toEqual({ title: BEHAVIOR_GROUP_TITLE, slug: null });
+  });
+
+  it('leaves a page with two specific sections flat, where a group costs more than it saves', () => {
+    expect(
+      behaviorGroupOf(documentOf('primitive', ...TEMPLATE, ...SPECIFIC.slice(0, 2))),
+    ).toBeNull();
+    expect(behaviorGroupOf(documentOf('primitive', ...TEMPLATE, ...SPECIFIC))).not.toBeNull();
+  });
+
+  it('leaves a page with almost no template sections flat, having nothing to separate', () => {
+    expect(behaviorGroupOf(documentOf('primitive', 'Anatomy', 'API', ...SPECIFIC))).toBeNull();
+    expect(behaviorGroupOf(documentOf('primitive', ...TEMPLATE, ...SPECIFIC))).not.toBeNull();
+  });
+
+  it('groups no guide, whose every section reads as specific with no template behind it', () => {
+    const titles = [...TEMPLATE, ...SPECIFIC];
+
+    expect(behaviorGroupOf(documentOf('guide', ...titles))).toBeNull();
+    expect(behaviorGroupOf(documentOf('primitive', ...titles))).not.toBeNull();
   });
 });
 

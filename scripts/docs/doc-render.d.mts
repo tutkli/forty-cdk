@@ -76,10 +76,22 @@ export interface DocPageSection {
   readonly blocks: readonly DocPageBlock[];
 }
 
+/**
+ * The container a page's specific sections nest under in its table of contents
+ * ([#1810](https://github.com/tutkli/forty-cdk/issues/1810)).
+ */
+export interface DocPageBehaviorGroup {
+  readonly title: string;
+  /** The container section's anchor, or `null` when the document declares none. */
+  readonly slug: string | null;
+}
+
 /** One document as its page renders it, and nothing the page does not read. */
 export interface DocPage {
   /** Prose only: a table above the first section fails the compile. */
   readonly intro: readonly DocPageProse[];
+  /** `null` for a document whose rail the grouping would not improve. */
+  readonly behaviorGroup: DocPageBehaviorGroup | null;
   readonly sections: readonly DocPageSection[];
 }
 

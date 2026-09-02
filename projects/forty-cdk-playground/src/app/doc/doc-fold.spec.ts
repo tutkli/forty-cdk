@@ -125,6 +125,7 @@ describe('foldableOf', () => {
 describe('withFold', () => {
   const page = {
     intro: [],
+    behaviorGroup: null,
     sections: [
       { title: 'One', slug: 'one', ring: 'core' as const, headings: [], blocks: [] },
       { title: 'Two', slug: 'two', ring: 'core' as const, headings: [], blocks: [] },

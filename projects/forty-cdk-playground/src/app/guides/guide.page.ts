@@ -6,7 +6,8 @@ import { injectDocBase } from '../doc/doc-base';
 import { injectFragmentScroll } from '../doc/doc-fragment';
 import { DocLinks } from '../doc/doc-links';
 import { DocSection } from '../doc/doc-section';
-import { DocToc, type TocItem } from '../doc/doc-toc';
+import { DocToc } from '../doc/doc-toc';
+import { buildTocItems, type TocEntry } from '../doc/doc-toc-rail';
 import type { DocPageSection } from '../doc/doc-model';
 import { guideBySlug } from '../doc/guides';
 import { GUIDE_DOCS } from '../../generated/guide-docs.generated';
@@ -145,17 +146,23 @@ export class GuidePage {
 
   protected readonly sections = computed(() => this.#doc().sections);
 
-  protected readonly tocItems = computed<readonly TocItem[]>(() =>
-    this.sections().map((section: DocPageSection) => {
-      const children = section.headings
-        .filter((heading) => heading.depth === 3)
-        .map((heading) => ({ title: heading.text, slug: heading.slug }));
-      return {
-        title: section.title,
-        slug: section.slug,
-        children: children.length ? children : undefined,
-      };
-    }),
+  protected readonly tocItems = computed<readonly TocEntry[]>(() =>
+    buildTocItems(
+      this.sections().map((section: DocPageSection) => {
+        const children = section.headings
+          .filter((heading) => heading.depth === 3)
+          .map((heading) => ({ title: heading.text, slug: heading.slug }));
+        return {
+          ring: section.ring,
+          item: {
+            title: section.title,
+            slug: section.slug,
+            children: children.length ? children : undefined,
+          },
+        };
+      }),
+      this.#doc().behaviorGroup,
+    ),
   );
 
   constructor() {

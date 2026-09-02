@@ -1078,6 +1078,52 @@ a.pg-nav-link.active {
   border-left-color: var(--pg-primary);
 }
 
+.pg-toc-group {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0;
+}
+
+.pg-toc-grouplink {
+  flex: 1;
+  min-width: 0;
+}
+
+.pg-toc-toggle {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--pg-text-muted);
+  cursor: pointer;
+}
+
+.pg-toc-toggle:hover {
+  color: var(--pg-text);
+  background: var(--pg-surface-2);
+}
+
+.pg-toc-caret {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-right: 1.5px solid currentcolor;
+  border-bottom: 1.5px solid currentcolor;
+  rotate: 45deg;
+  translate: 0 -0.1rem;
+}
+
+.pg-toc-toggle[aria-expanded='false'] .pg-toc-caret {
+  rotate: -45deg;
+  translate: -0.1rem 0;
+}
+
 .pg-toc-sublist {
   display: flex;
   flex-direction: column;
@@ -1085,6 +1131,10 @@ a.pg-nav-link.active {
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+.pg-toc-sublist[hidden] {
+  display: none;
 }
 
 .pg-toc-sublink {

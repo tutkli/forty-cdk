@@ -266,7 +266,7 @@ describe('rendering a whole document for its page', () => {
     const block = page.sections[0]!.blocks[0]!;
     const table = block.kind === 'table' && block.table.role === 'plain' ? block.table : null;
 
-    expect(Object.keys(page)).toEqual(['intro', 'sections']);
+    expect(Object.keys(page)).toEqual(['intro', 'behaviorGroup', 'sections']);
     expect(Object.keys(page.intro[0]!)).toEqual(['kind', 'html']);
     expect(Object.keys(page.sections[0]!)).toEqual(['title', 'slug', 'ring', 'headings', 'blocks']);
     expect(Object.keys(table!.columns[0]!)).toEqual(['html', 'text']);
