@@ -14,7 +14,8 @@ import { injectFragmentScroll } from '../doc/doc-fragment';
 import { DocLinks } from '../doc/doc-links';
 import type { DocPage, DocPageSection } from '../doc/doc-model';
 import { DocSection } from '../doc/doc-section';
-import { DocToc, type TocItem } from '../doc/doc-toc';
+import { DocToc } from '../doc/doc-toc';
+import { buildTocItems, type TocEntry, type TocSection } from '../doc/doc-toc-rail';
 import { primitiveBySlug } from '../primitives';
 import { DemoLayout } from './demo-layout';
 import { Icon } from './icon';
@@ -216,33 +217,39 @@ export class PrimitivePage {
     return { title: section.title, slug: section.slug };
   });
 
-  protected readonly tocItems = computed<readonly TocItem[]>(() => {
-    const toToc = (section: DocPageSection): TocItem => {
+  protected readonly tocItems = computed<readonly TocEntry[]>(() => {
+    const toToc = (section: DocPageSection): TocSection => {
       const children = section.headings
         .filter((heading) => heading.depth === 3)
         .map((heading) => ({ title: heading.text, slug: heading.slug }));
       return {
-        title: section.title,
-        slug: section.slug,
-        children: children.length ? children : undefined,
+        ring: section.ring,
+        item: {
+          title: section.title,
+          slug: section.slug,
+          children: children.length ? children : undefined,
+        },
       };
     };
 
     const meta = this.examplesMeta();
+    const before = this.sectionsBefore().map(toToc);
+    const after = this.sectionsAfter().map(toToc);
+    const group = this.doc().behaviorGroup;
     if (meta === null) {
-      return [...this.sectionsBefore().map(toToc), ...this.sectionsAfter().map(toToc)];
+      return buildTocItems([...before, ...after], group);
     }
 
     const exampleChildren = this.demos()
       .filter((demo) => !demo.hero())
       .map((demo) => ({ title: demo.title(), slug: demo.tocSlug() }));
 
-    const examples: TocItem = {
-      ...meta,
-      children: exampleChildren.length ? exampleChildren : undefined,
+    const examples: TocSection = {
+      ring: 'canonical',
+      item: { ...meta, children: exampleChildren.length ? exampleChildren : undefined },
     };
 
-    return [...this.sectionsBefore().map(toToc), examples, ...this.sectionsAfter().map(toToc)];
+    return buildTocItems([...before, examples, ...after], group);
   });
 
   constructor() {

@@ -8,15 +8,12 @@ import {
   ElementRef,
   inject,
   input,
+  linkedSignal,
   signal,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
-export interface TocItem {
-  readonly title: string;
-  readonly slug: string;
-  readonly children?: readonly TocItem[];
-}
+import type { TocEntry } from './doc-toc-rail';
 
 @Component({
   selector: 'doc-toc',
@@ -26,17 +23,47 @@ export interface TocItem {
     <nav class="pg-toc" aria-label="On this page">
       <p class="pg-toc-title">On this page</p>
       <ul class="pg-toc-list">
-        @for (item of items(); track item.slug) {
+        @for (item of items(); track item.slug ?? item.title; let index = $index) {
           <li>
-            <a
-              class="pg-toc-link"
-              [class.active]="item.slug === activeSlug()"
-              [routerLink]="[]"
-              [fragment]="item.slug"
-              >{{ item.title }}</a
-            >
+            @if (item.disclosure) {
+              <p class="pg-toc-group">
+                @if (item.slug; as slug) {
+                  <a
+                    class="pg-toc-link pg-toc-grouplink"
+                    [class.active]="slug === activeSlug()"
+                    [routerLink]="[]"
+                    [fragment]="slug"
+                    >{{ item.title }}</a
+                  >
+                } @else {
+                  <span class="pg-toc-link pg-toc-grouplink">{{ item.title }}</span>
+                }
+                <button
+                  type="button"
+                  class="pg-toc-toggle"
+                  [attr.aria-label]="item.title"
+                  [attr.aria-expanded]="expanded()"
+                  [attr.aria-controls]="groupListId(index)"
+                  (click)="toggle()"
+                >
+                  <span class="pg-toc-caret" aria-hidden="true"></span>
+                </button>
+              </p>
+            } @else if (item.slug; as slug) {
+              <a
+                class="pg-toc-link"
+                [class.active]="slug === activeSlug()"
+                [routerLink]="[]"
+                [fragment]="slug"
+                >{{ item.title }}</a
+              >
+            }
             @if (item.children?.length) {
-              <ul class="pg-toc-sublist">
+              <ul
+                class="pg-toc-sublist"
+                [attr.id]="item.disclosure ? groupListId(index) : null"
+                [hidden]="item.disclosure !== undefined && !expanded()"
+              >
                 @for (child of item.children; track child.slug) {
                   <li>
                     <a
@@ -61,14 +88,63 @@ export class DocToc {
   readonly #destroyRef = inject(DestroyRef);
   readonly #document = inject(DOCUMENT);
 
-  readonly items = input.required<readonly TocItem[]>();
+  readonly items = input.required<readonly TocEntry[]>();
 
   protected readonly activeSlug = signal<string | null>(null);
 
-  readonly #flatItems = computed<readonly TocItem[]>(() =>
-    this.items().flatMap((item) => [item, ...(item.children ?? [])]),
+  readonly #group = computed<TocEntry | null>(
+    () => this.items().find((item) => item.disclosure !== undefined) ?? null,
   );
 
+  /** What the reader chose for this page's group, reset when the page changes. */
+  readonly #chosen = linkedSignal<readonly TocEntry[], boolean | null>({
+    source: this.items,
+    computation: () => null,
+  });
+
+  /**
+   * Whether the group lists its children.
+   *
+   * The reader's choice wins, and until they make one the group opens while the
+   * section they are reading is inside it — without that, a closed group leaves
+   * the rail highlighting nothing over most of the page it was added to help.
+   */
+  protected readonly expanded = computed(() => {
+    const group = this.#group();
+    if (group === null) {
+      return false;
+    }
+    const chosen = this.#chosen();
+    if (chosen !== null) {
+      return chosen;
+    }
+    const active = this.activeSlug();
+    return (
+      group.disclosure === 'open' ||
+      (group.children?.some((child) => child.slug === active) ?? false)
+    );
+  });
+
+  protected groupListId(index: number): string {
+    return `pg-toc-group-${index}`;
+  }
+
+  protected toggle(): void {
+    this.#chosen.set(!this.expanded());
+  }
+
+  readonly #slugs = computed<readonly string[]>(() =>
+    this.items()
+      .flatMap((item) => [item, ...(item.children ?? [])])
+      .map((item) => item.slug)
+      .filter((slug): slug is string => slug !== null),
+  );
+
+  /**
+   * The rail no longer lists its entries in the order the page renders them, so
+   * the active one is the lowest heading still above the line rather than the
+   * last one scanned before the first that is below it.
+   */
   constructor() {
     afterNextRender(() => {
       const scroller = this.#host.nativeElement.closest<HTMLElement>('.app-shell');
@@ -82,15 +158,16 @@ export class DocToc {
         frame = 0;
         const line = (scroller ? scroller.getBoundingClientRect().top : 0) + 96;
         let active: string | null = null;
-        for (const item of this.#flatItems()) {
-          const element = this.#document.getElementById(item.slug);
+        let lowest = -Infinity;
+        for (const slug of this.#slugs()) {
+          const element = this.#document.getElementById(slug);
           if (!element) {
             continue;
           }
-          if (element.getBoundingClientRect().top <= line) {
-            active = item.slug;
-          } else {
-            break;
+          const top = element.getBoundingClientRect().top;
+          if (top <= line && top > lowest) {
+            lowest = top;
+            active = slug;
           }
         }
         this.activeSlug.set(active);

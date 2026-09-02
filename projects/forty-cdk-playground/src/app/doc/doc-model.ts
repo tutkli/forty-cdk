@@ -3,6 +3,7 @@ export type {
   DocPageApiColumns,
   DocPageApiRow,
   DocPageApiTable,
+  DocPageBehaviorGroup,
   DocPageBlock,
   DocPageCell,
   DocPageHeading,

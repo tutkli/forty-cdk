@@ -45,6 +45,18 @@ export declare function foldTargetOf(meta: DocMeta): DocFoldTarget | null;
 
 export declare function ringOf(title: string): DocSectionRing;
 
+export declare const BEHAVIOR_GROUP_TITLE: string;
+
+/** The container a document's specific sections nest under in the rail. */
+export interface DocBehaviorGroup {
+  /** The container section's markdown title, or the contract's default. */
+  readonly title: string;
+  /** The container's anchor, or `null` when the document declares none. */
+  readonly slug: string | null;
+}
+
+export declare function behaviorGroupOf(document: DocDocument): DocBehaviorGroup | null;
+
 export declare function readDocMeta(source: string, path: string): ReadDocMeta;
 
 export declare function requiredSections(meta: DocMeta, slug: string): readonly string[];

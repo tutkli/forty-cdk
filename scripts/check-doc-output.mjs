@@ -3,6 +3,7 @@ import { join, relative, sep } from 'node:path';
 
 import { JSDOM } from 'jsdom';
 
+import { behaviorGroupOf } from './lib/doc-contract.mjs';
 import { DOC_BASE_TOKEN, isAbsoluteHref, splitDocHref } from './lib/doc-links.mjs';
 import { compileDocument } from './docs/doc-model.mjs';
 import { DOCS_DIR, LIBRARY_DIR, readGuides, readPrimitives } from './lib/doc-site.mjs';
@@ -48,6 +49,13 @@ import { repoRoot } from './lib/repo-path.mjs';
  *   emitted a `<section>`, and every emitted section carries at least one
  *   block" is derived from the document itself, and it is the shape that catches
  *   the parser collapsing one section into its neighbour.
+ * - **The rail is gated here rather than in a spec**
+ *   ([#1810](https://github.com/tutkli/forty-cdk/issues/1810)). Grouping a
+ *   page's specific sections is a rendering change over anchors that must keep
+ *   resolving, and the site's own unit target cannot mount `DocToc` — its
+ *   TypeScript program holds no page component, so a file carrying Angular
+ *   metadata is refused. The emitted HTML is where the claim can be made, and
+ *   it is the stronger place to make it.
  *
  * External links are deliberately not fetched: network access in a PR gate
  * trades a real failure mode for a flaky one, and that belongs in a nightly job
@@ -85,6 +93,7 @@ const PAGE_WEIGHT_WARNING = 600 * 1024;
 const ANCHOR_FLOOR = 3000;
 const FRAGMENT_FLOOR = 500;
 const TABLE_FLOOR = 150;
+const RAIL_FLOOR = 40;
 
 function fail(message) {
   console.error(`[check-doc-output] ${message}`);
@@ -132,6 +141,64 @@ function readDocumentShape(document) {
   }
 
   return { tables, exampleAnchors };
+}
+
+let groupedRails = 0;
+let closedRails = 0;
+
+/**
+ * What the rail publishes against what the document declares
+ * ([#1810](https://github.com/tutkli/forty-cdk/issues/1810)).
+ *
+ * The load-bearing claim is the last one: grouping moves an entry down a level,
+ * so every section the document declares must still be linked from somewhere in
+ * the rail. A page that quietly stopped listing its specific ones would pass
+ * every other check here — the sections themselves are still emitted, and their
+ * fragments still resolve — while having lost the navigation this gate exists
+ * to protect.
+ */
+function railFailures(at, page, document) {
+  const problems = [];
+  const rail = page.rail;
+  if (rail === null) {
+    return [`${at} — the page emits no "On this page" rail`];
+  }
+
+  const group = behaviorGroupOf(document);
+  if (group === null) {
+    if (rail.expanded !== null) {
+      problems.push(
+        `${at} — the rail groups its sections, and the document is one the contract leaves flat`,
+      );
+    }
+  } else {
+    groupedRails += 1;
+    if (rail.expanded === null) {
+      problems.push(
+        `${at} — the document's specific sections are grouped under "${group.title}" and the rail ` +
+          'emits no control to expand them',
+      );
+    } else {
+      if (rail.expanded === 'false') {
+        closedRails += 1;
+      }
+      if (!page.ids.has(rail.controls)) {
+        problems.push(
+          `${at} — the rail's group control points at "#${rail.controls}", which the page does not emit`,
+        );
+      }
+    }
+  }
+
+  for (const section of document.sections) {
+    if (!rail.fragments.has(section.slug)) {
+      problems.push(
+        `${at} — the rail no longer links "## ${section.title}", so the grouping dropped it ` +
+          'rather than nesting it',
+      );
+    }
+  }
+  return problems;
 }
 
 if (!existsSync(BROWSER)) {
@@ -193,6 +260,9 @@ for (const file of indexFiles(BROWSER)) {
     anchors.push(anchor.getAttribute('href'));
   }
 
+  const rail = doc.querySelector('nav.pg-toc');
+  const toggle = rail?.querySelector('.pg-toc-toggle') ?? null;
+
   const sections = new Map();
   for (const section of doc.querySelectorAll('section.pg-doc-section[id]')) {
     sections.set(
@@ -208,6 +278,18 @@ for (const file of indexFiles(BROWSER)) {
     ids: new Set([...doc.querySelectorAll('[id]')].map((element) => element.id)),
     anchors,
     sections,
+    rail:
+      rail === null
+        ? null
+        : {
+            fragments: new Set(
+              [...rail.querySelectorAll('a[href]')]
+                .map((anchor) => splitDocHref(anchor.getAttribute('href')).fragment.slice(1))
+                .filter((fragment) => fragment !== ''),
+            ),
+            expanded: toggle?.getAttribute('aria-expanded') ?? null,
+            controls: toggle?.getAttribute('aria-controls') ?? null,
+          },
     tables: doc.querySelectorAll('table').length,
     bytes: statSync(file).size,
   });
@@ -220,6 +302,7 @@ const warnings = [];
 let scannedAnchors = 0;
 let checkedFragments = 0;
 let declaredTables = 0;
+let checkedRails = 0;
 
 const EXPECTED_PAGES = knownRoutes.size;
 if (pages.size !== EXPECTED_PAGES) {
@@ -378,6 +461,9 @@ for (const [route, page] of pages) {
     }
   }
 
+  checkedRails += 1;
+  failures.push(...railFailures(at, page, document));
+
   const shape = readDocumentShape(document);
   declaredTables += shape.tables;
   if (page.tables < shape.tables) {
@@ -410,6 +496,13 @@ if (checkedFragments < FRAGMENT_FLOOR) {
   );
 }
 
+if (checkedRails < RAIL_FLOOR) {
+  fail(
+    `read the rail of only ${checkedRails} page(s) (floor ${RAIL_FLOOR}) — the grouping half of ` +
+      'this gate is no longer running',
+  );
+}
+
 if (declaredTables < TABLE_FLOOR) {
   fail(
     `read only ${declaredTables} declared table(s) from ${documents.size} documents (floor ` +
@@ -424,7 +517,8 @@ for (const warning of warnings) {
 console.log(
   `[check-doc-output] ok — ${pages.size} pages, ${scannedAnchors} documentation anchors ` +
     `(${excludedAnchors} inside live examples, not scanned), ${checkedFragments} fragments resolved ` +
-    `to an id, ${declaredTables} declared tables emitted across ${documents.size} documents` +
+    `to an id, ${declaredTables} declared tables emitted across ${documents.size} documents, ` +
+    `${checkedRails} rails read (${groupedRails} grouped, ${closedRails} of them closed)` +
     (warnings.length > 0
       ? `; ${warnings.length} page(s) past ${PAGE_WEIGHT_WARNING / 1024} kB`
       : ''),

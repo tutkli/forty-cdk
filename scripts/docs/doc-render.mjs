@@ -1,5 +1,6 @@
 import { Marked } from 'marked';
 
+import { behaviorGroupOf } from '../lib/doc-contract.mjs';
 import { DOC_BASE_TOKEN, GITHUB_BLOB_BASE, resolveDocLink } from '../lib/doc-links.mjs';
 import { escapeHtml, stripText } from '../lib/html.mjs';
 import { highlightCode } from './doc-highlight.mjs';
@@ -177,8 +178,10 @@ function renderBlock(block, context) {
  */
 export function renderDocument(document, { routes, blobBase = GITHUB_BLOB_BASE }) {
   const context = { sourcePath: document.path, resolveLink: resolverFor(routes, blobBase) };
+  const group = behaviorGroupOf(document);
   return {
     intro: document.intro.map((block) => renderProseBlock(block, context)),
+    behaviorGroup: group === null ? null : { title: headingText(group.title), slug: group.slug },
     sections: document.sections.map((section) => ({
       title: headingText(section.title),
       slug: section.slug,
