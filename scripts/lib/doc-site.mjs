@@ -7,6 +7,7 @@ import { isFenceLine } from './readme-slug.mjs';
 import { repoRoot } from './repo-path.mjs';
 
 export const DOCS_DIR = join(repoRoot, 'docs');
+export const SITE_DIR = join(DOCS_DIR, 'site');
 export const LIBRARY_DIR = join(repoRoot, 'projects', 'forty-cdk');
 
 /** Holds no entry point and ships no page — its README documents lint fixtures. */
@@ -31,6 +32,25 @@ export const PUBLISHED_GUIDES = [
   { file: 'table-declarative-columns.md', group: 'table' },
   { file: 'table-reordering.md', group: 'table' },
   { file: 'table-virtualized-rows.md', group: 'table' },
+];
+
+/**
+ * The pages the site publishes about itself rather than about an entry point
+ * ([#1812](https://github.com/tutkli/forty-cdk/issues/1812)).
+ *
+ * They are documents like any other — compiled, rendered and gated by the same
+ * pipeline — and differ from a guide in two ways only: they are served from the
+ * site root rather than under `/guides`, and the order below is the order the
+ * navigation shows them in, because Installation before Concepts is a reading
+ * order rather than an alphabetical one.
+ *
+ * A slug here shadows an entry point's route if the two ever collide, which is
+ * why {@link readSitePages} refuses one.
+ */
+export const SITE_PAGES = [
+  { file: 'installation.md' },
+  { file: 'getting-started.md' },
+  { file: 'concepts.md' },
 ];
 
 export const EXCLUDED_GUIDES = [
@@ -227,6 +247,60 @@ export function readGuides() {
       title,
       description: ledeOf(md),
     };
+  });
+}
+
+/**
+ * The site's own pages, in navigation order.
+ *
+ * Held to the same registry rule as the guides: a markdown file in `docs/site/`
+ * that no entry names is refused rather than silently unpublished, which is the
+ * failure [#1809](https://github.com/tutkli/forty-cdk/issues/1809) closed for
+ * entry points and this closes for the site's own content.
+ */
+export function readSitePages() {
+  const registered = SITE_PAGES.map((page) => page.file);
+  const present = existsSync(SITE_DIR)
+    ? readdirSync(SITE_DIR)
+        .filter((file) => file.endsWith('.md'))
+        .sort()
+    : [];
+
+  const unregistered = present.filter((file) => !registered.includes(file));
+  if (unregistered.length > 0) {
+    throw new Error(
+      `docs/site/ holds ${unregistered.length} file(s) no page registry names: ${unregistered.join(', ')} — ` +
+        'add each to SITE_PAGES in scripts/lib/doc-site.mjs, in the order the navigation should show it',
+    );
+  }
+
+  const missing = registered.filter((file) => !present.includes(file));
+  if (missing.length > 0) {
+    throw new Error(
+      `SITE_PAGES names ${missing.length} file(s) that no longer exist in docs/site/: ${missing.join(', ')}`,
+    );
+  }
+
+  const reserved = new Map(
+    readPrimitives().map((primitive) => [primitive.slug, `the ${primitive.slug} entry point`]),
+  );
+  reserved.set('guides', 'the guide index');
+
+  return SITE_PAGES.map(({ file }) => {
+    const slug = guideSlugOf(file);
+    const owner = reserved.get(slug);
+    if (owner !== undefined) {
+      throw new Error(
+        `docs/site/${file} would publish /${slug}, the route ${owner} already owns — a site page ` +
+          'is served from the root, so its slug cannot be one the site already routes',
+      );
+    }
+    const md = readFileSync(join(SITE_DIR, file), 'utf8');
+    const title = headingOf(md);
+    if (title === null) {
+      throw new Error(`docs/site/${file} has no "# " heading — the page title is read from it`);
+    }
+    return { file, slug, title };
   });
 }
 

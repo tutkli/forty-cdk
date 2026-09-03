@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 
-import { readGuides, readPrimitives } from './lib/doc-site.mjs';
+import { readGuides, readPrimitives, readSitePages } from './lib/doc-site.mjs';
 import { escapeHtml } from './lib/html.mjs';
 import { repoRoot } from './lib/repo-path.mjs';
 
@@ -28,7 +28,13 @@ if (guides.length === 0) {
   fail('the guide registry is empty — scripts/lib/doc-site.mjs no longer publishes any guide');
 }
 
+const sitePages = readSitePages();
+if (sitePages.length === 0) {
+  fail('the site page registry is empty — scripts/lib/doc-site.mjs publishes no landing content');
+}
+
 const routes = [
+  ...sitePages.map(({ slug, title }) => ({ path: slug, title })),
   ...primitives.map(({ slug, title }) => ({ path: slug, title })),
   { path: 'guides', title: 'Guides' },
   ...guides.map(({ slug, title }) => ({ path: `guides/${slug}`, title })),
@@ -37,12 +43,22 @@ const routes = [
 const missing = [];
 const empty = [];
 
+/**
+ * The root is a page of its own rather than a redirect
+ * ([#1812](https://github.com/tutkli/forty-cdk/issues/1812)), so it is held to
+ * rendered content like every other route. The refresh stub it used to emit
+ * would fail here, which is the point: a reader arriving at the site root has
+ * to land on something that states what forty-cdk is.
+ */
 const homeFile = join(BROWSER, 'index.html');
 if (!existsSync(homeFile)) {
   missing.push('(home)');
 } else {
   const homeHtml = readFileSync(homeFile, 'utf8');
-  if (!homeHtml.includes('<h1') && !/http-equiv=["']refresh["']/i.test(homeHtml)) {
+  if (/http-equiv=["']refresh["']/i.test(homeHtml)) {
+    fail('the home page is a redirect stub — the site root publishes a landing page of its own');
+  }
+  if (!homeHtml.includes('<h1')) {
     empty.push('(home)');
   }
 }
@@ -70,5 +86,6 @@ if (empty.length > 0) {
 
 console.log(
   `[check-prerender-output] ok — ${primitives.length} primitive routes + ` +
-    `${guides.length} guide routes + the guide index + home prerendered with content`,
+    `${guides.length} guide routes + ${sitePages.length} site pages + the guide index + ` +
+    'the landing page prerendered with content',
 );

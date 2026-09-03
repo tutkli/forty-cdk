@@ -3,7 +3,7 @@ import { join, relative, sep } from 'node:path';
 
 import { checkContract, foldTargetOf } from '../lib/doc-contract.mjs';
 import { buildDocRoutes } from '../lib/doc-links.mjs';
-import { readEntryPointDocs, readGuides } from '../lib/doc-site.mjs';
+import { readEntryPointDocs, readGuides, readSitePages, SITE_DIR } from '../lib/doc-site.mjs';
 import { repoRoot } from '../lib/repo-path.mjs';
 import { foldableOf, withFold } from './doc-fold.mjs';
 import { compileDocument, DocCompileError } from './doc-model.mjs';
@@ -13,6 +13,9 @@ import { pageFileOf, pageProblems, routesModule } from './doc-routes.mjs';
 const OUT_DIR = join(repoRoot, 'projects', 'forty-cdk-playground', 'src', 'generated');
 const DOCS_DIR = join(OUT_DIR, 'docs');
 const MODEL_TYPES = '../../../app/doc/doc-model';
+
+/** The folder each kind of document is emitted under, below {@link DOCS_DIR}. */
+const DOC_DIRS = { primitive: 'primitives', guide: 'guides', page: 'pages' };
 
 const rel = (file) => relative(repoRoot, file).split(sep).join('/');
 
@@ -32,6 +35,12 @@ function compileAll() {
       path: `docs/${guide.file}`,
       file: join(repoRoot, 'docs', guide.file),
       kind: 'guide',
+    })),
+    ...readSitePages().map((page) => ({
+      slug: page.slug,
+      path: `docs/site/${page.file}`,
+      file: join(SITE_DIR, page.file),
+      kind: 'page',
     })),
   ];
 
@@ -137,6 +146,54 @@ function identifierOf(slug) {
   return `${slug.replace(/-([a-z0-9])/g, (_, char) => char.toUpperCase())}Doc`;
 }
 
+/**
+ * The site's own pages, split into the metadata every route carries and the
+ * compiled documents only their page component reads
+ * ([#1812](https://github.com/tutkli/forty-cdk/issues/1812)).
+ *
+ * The split is the same one the guides already have, and for the same two
+ * reasons. The navigation and the `⌘K` palette are reachable from every route,
+ * so what they import is what the **initial bundle** carries — a single module
+ * holding both would put three rendered documents there to serve a title and a
+ * lede. And a generated module whose markup quotes `@Component` is a file the
+ * Angular compiler plugin then requires in its TypeScript program, which is a
+ * constraint the metadata half should not inherit.
+ *
+ * `description` is the document's own lede, which the compiler lifted out of
+ * the intro — so the header renders it and the body does not repeat it.
+ */
+function sitePagesModule(pages) {
+  const meta = serialize(
+    pages.map((page) => ({
+      slug: page.slug,
+      title: headingText(page.title),
+      description: headingText(page.lede),
+    })),
+  );
+
+  return (
+    `import type { SitePageMeta } from '../app/doc/site-pages';\n\n` +
+    `export const SITE_PAGES: readonly SitePageMeta[] = ${meta};\n`
+  );
+}
+
+function sitePageDocsModule(pages) {
+  const imports = pages
+    .map(
+      (page) =>
+        `import { DOC as ${identifierOf(page.slug)} } from './docs/pages/${page.slug}.generated';`,
+    )
+    .join('\n');
+  const entries = pages
+    .map((page) => `  ${JSON.stringify(page.slug)}: ${identifierOf(page.slug)},`)
+    .join('\n');
+
+  return (
+    `import type { DocPage } from '../app/doc/doc-model';\n${imports}\n\n` +
+    `export const SITE_PAGE_DOCS: Readonly<Record<string, DocPage>> = {\n${entries}\n};\n`
+  );
+}
+
 function guideModule(guides) {
   const imports = guides
     .map(
@@ -170,6 +227,7 @@ function write(files) {
 const { documents, folded, unpublished } = compileAll();
 const guides = documents.filter((document) => document.kind === 'guide');
 const primitives = documents.filter((document) => document.kind === 'primitive');
+const sitePages = documents.filter((document) => document.kind === 'page');
 
 /**
  * A route is only emitted for a page that exists and exports the component the
@@ -208,6 +266,7 @@ checkPages();
 const routes = buildDocRoutes({
   primitiveSlugs: primitives.map((primitive) => primitive.slug),
   guideSlugs: guides.map((guide) => guide.slug),
+  pageSlugs: sitePages.map((page) => page.slug),
   foldedSlugs: folded.map((document) => ({
     slug: document.slug,
     host: foldTargetOf(document.meta).slug,
@@ -252,21 +311,20 @@ const pages = foldedPages();
 
 write([
   ...documents.map((document) => [
-    join(
-      DOCS_DIR,
-      document.kind === 'guide' ? 'guides' : 'primitives',
-      `${document.slug}.generated.ts`,
-    ),
+    join(DOCS_DIR, DOC_DIRS[document.kind], `${document.slug}.generated.ts`),
     pageModule(pages.get(keyOf(document))),
   ]),
   [join(OUT_DIR, 'doc-index.generated.ts'), indexModule(documents)],
   [join(OUT_DIR, 'guide-docs.generated.ts'), guideModule(guides)],
+  [join(OUT_DIR, 'site-pages.generated.ts'), sitePagesModule(sitePages)],
+  [join(OUT_DIR, 'site-page-docs.generated.ts'), sitePageDocsModule(sitePages)],
   [join(OUT_DIR, 'primitives.generated.ts'), registryModule(primitives)],
   [
     join(OUT_DIR, 'routes.generated.ts'),
     routesModule({
       primitiveSlugs: primitives.map((primitive) => primitive.slug),
       guideSlugs: guides.map((guide) => guide.slug),
+      pageSlugs: sitePages.map((page) => page.slug),
     }),
   ],
 ]);
@@ -285,7 +343,7 @@ const sections = documents.reduce((total, document) => total + document.sections
 console.log(
   `[gen-doc-model] wrote ${rel(OUT_DIR)} — ` +
     `${documents.length} documents (${guides.length} guides), ${sections} sections, ${tables} tables, ` +
-    `${primitives.length + guides.length} routes`,
+    `${primitives.length + guides.length + sitePages.length} routes`,
 );
 if (folded.length > 0) {
   console.log(

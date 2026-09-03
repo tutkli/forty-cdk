@@ -143,6 +143,150 @@ exports[`document structure > docs/selection-value-type-contract.md declares the
 ]
 `;
 
+exports[`document structure > docs/site/concepts.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "headings": [],
+    "slug": "headless-and-styleless",
+    "tables": [],
+    "title": "Headless and styleless",
+  },
+  {
+    "headings": [],
+    "slug": "composition-over-configuration",
+    "tables": [],
+    "title": "Composition over configuration",
+  },
+  {
+    "headings": [],
+    "slug": "state-is-reflected-not-hidden",
+    "tables": [
+      {
+        "columns": [
+          "Values",
+          "Meaning",
+          "Where you meet it",
+        ],
+        "role": "plain",
+        "rows": 3,
+      },
+    ],
+    "title": "State is reflected, not hidden",
+  },
+  {
+    "headings": [],
+    "slug": "accessibility-is-the-api",
+    "tables": [],
+    "title": "Accessibility is the API",
+  },
+  {
+    "headings": [],
+    "slug": "one-entry-point-per-primitive",
+    "tables": [],
+    "title": "One entry point per primitive",
+  },
+  {
+    "headings": [],
+    "slug": "mounting-is-yours-portaling-is-not",
+    "tables": [],
+    "title": "Mounting is yours, portaling is not",
+  },
+  {
+    "headings": [],
+    "slug": "zoneless-ssr-safe-signals-throughout",
+    "tables": [],
+    "title": "Zoneless, SSR-safe, signals throughout",
+  },
+  {
+    "headings": [],
+    "slug": "where-to-go-next",
+    "tables": [],
+    "title": "Where to go next",
+  },
+]
+`;
+
+exports[`document structure > docs/site/getting-started.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "headings": [],
+    "slug": "what-you-need",
+    "tables": [],
+    "title": "What you need",
+  },
+  {
+    "headings": [],
+    "slug": "compose-it-in-a-template",
+    "tables": [],
+    "title": "Compose it in a template",
+  },
+  {
+    "headings": [],
+    "slug": "style-it",
+    "tables": [],
+    "title": "Style it",
+  },
+  {
+    "headings": [],
+    "slug": "wire-it-to-a-form",
+    "tables": [],
+    "title": "Wire it to a form",
+  },
+  {
+    "headings": [],
+    "slug": "where-to-go-next",
+    "tables": [],
+    "title": "Where to go next",
+  },
+]
+`;
+
+exports[`document structure > docs/site/installation.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "headings": [],
+    "slug": "install",
+    "tables": [],
+    "title": "Install",
+  },
+  {
+    "headings": [],
+    "slug": "peer-dependencies",
+    "tables": [
+      {
+        "columns": [
+          "Peer",
+          "Range",
+          "Required",
+          "What it is for",
+        ],
+        "role": "plain",
+        "rows": 4,
+      },
+    ],
+    "title": "Peer dependencies",
+  },
+  {
+    "headings": [],
+    "slug": "the-import-model",
+    "tables": [],
+    "title": "The import model",
+  },
+  {
+    "headings": [],
+    "slug": "angular-version-support",
+    "tables": [],
+    "title": "Angular version support",
+  },
+  {
+    "headings": [],
+    "slug": "next-steps",
+    "tables": [],
+    "title": "Next steps",
+  },
+]
+`;
+
 exports[`document structure > docs/styling.md declares the sections and table shapes it declared before 1`] = `
 [
   {

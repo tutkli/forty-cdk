@@ -1,14 +1,18 @@
 import type { PlaygroundGroup } from '../primitives';
 import type { DocIndexEntry, DocIndexSection } from './doc-model';
 import type { ResolvedGuideGroup } from './guides';
+import type { SitePageMeta } from './site-pages';
 
 export interface SearchEntry {
-  readonly kind: 'primitive' | 'guide' | 'section';
+  readonly kind: 'primitive' | 'guide' | 'page' | 'section';
   readonly title: string;
   readonly group: string;
   readonly path: string;
   readonly haystack: string;
 }
+
+/** The group label the palette files the site's own pages under. */
+const SITE_GROUP = 'Introduction';
 
 /**
  * The palette's entries, with every section read from the compiled document
@@ -18,16 +22,39 @@ export interface SearchEntry {
  * sections a second time, independently of the parser the pages rendered with.
  * Two traversals of one corpus drift, and when they drift the palette links at
  * anchors the page does not carry — so there is now one.
+ *
+ * The site's own pages are indexed first, because a reader typing "install" is
+ * looking for the installation page rather than for a primitive that mentions
+ * installing ([#1812](https://github.com/tutkli/forty-cdk/issues/1812)).
  */
 export function buildSearchEntries(
   groups: readonly PlaygroundGroup[],
   index: readonly DocIndexEntry[],
   guideGroups: readonly ResolvedGuideGroup[],
+  sitePages: readonly SitePageMeta[] = [],
 ): SearchEntry[] {
   const sectionsFor = (kind: DocIndexEntry['kind'], slug: string): readonly DocIndexSection[] =>
     index.find((entry) => entry.kind === kind && entry.slug === slug)?.sections ?? [];
 
   const entries: SearchEntry[] = [];
+  for (const page of sitePages) {
+    entries.push({
+      kind: 'page',
+      title: page.title,
+      group: SITE_GROUP,
+      path: `/${page.slug}`,
+      haystack: `${page.title} ${SITE_GROUP} ${page.description}`.toLowerCase(),
+    });
+    for (const section of sectionsFor('page', page.slug)) {
+      entries.push({
+        kind: 'section',
+        title: `${page.title} › ${section.title}`,
+        group: SITE_GROUP,
+        path: `/${page.slug}#${section.slug}`,
+        haystack: `${page.title} ${section.title}`.toLowerCase(),
+      });
+    }
+  }
   for (const group of guideGroups) {
     const label = `Guides · ${group.label}`;
     for (const guide of group.guides) {

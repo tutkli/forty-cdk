@@ -14,6 +14,8 @@ import {
   readGuides,
   readPrimitiveReadmes,
   readPrimitives,
+  readSitePages,
+  SITE_DIR,
 } from './lib/doc-site.mjs';
 import { isFenceLine } from './lib/readme-slug.mjs';
 import { repoRoot } from './lib/repo-path.mjs';
@@ -42,18 +44,23 @@ function linksOf(md) {
 
 const primitives = readPrimitives();
 const guides = readGuides();
+const sitePages = readSitePages();
 const folded = readFoldedEntryPoints();
 const excluded = new Set(EXCLUDED_GUIDES.map((guide) => `docs/${guide.file}`));
 
 const routes = buildDocRoutes({
   primitiveSlugs: primitives.map((primitive) => primitive.slug),
   guideSlugs: guides.map((guide) => guide.slug),
+  pageSlugs: sitePages.map((page) => page.slug),
   foldedSlugs: folded,
 });
 
 const documents = readPrimitiveReadmes();
 for (const guide of guides) {
   documents.set(`docs/${guide.file}`, readFileSync(join(DOCS_DIR, guide.file), 'utf8'));
+}
+for (const page of sitePages) {
+  documents.set(`docs/site/${page.file}`, readFileSync(join(SITE_DIR, page.file), 'utf8'));
 }
 
 const failures = [];
@@ -112,7 +119,7 @@ if (failures.length > 0) {
   process.exit(1);
 }
 
-const expectedDocuments = primitives.length + guides.length + folded.length;
+const expectedDocuments = primitives.length + guides.length + sitePages.length + folded.length;
 if (documents.size !== expectedDocuments) {
   console.error(
     `[check-doc-links] read ${documents.size} documents for ${expectedDocuments} published documents — ` +

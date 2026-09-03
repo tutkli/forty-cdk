@@ -21,16 +21,24 @@ export const FRONTMATTER = [
 ];
 
 /**
- * Compile a corpus document the way the generator does — an entry point's
- * README by its path, everything else as a guide, which is the half of the
- * corpus that declares no frontmatter.
+ * Compile a corpus document the way the generator does, reading its kind from
+ * the directory it was written in — an entry point's README, one of the site's
+ * own pages ([#1812](https://github.com/tutkli/forty-cdk/issues/1812)), or a
+ * guide. Only the first declares frontmatter and a lede.
  */
 export function compile(doc: DocFile): DocDocument {
   return compileDocument(doc.markdown, {
     path: doc.path,
     slug: doc.slug,
-    kind: doc.path.startsWith('projects/forty-cdk/') ? 'primitive' : 'guide',
+    kind: kindOf(doc.path),
   });
+}
+
+function kindOf(path: string): DocKind {
+  if (path.startsWith('projects/forty-cdk/')) {
+    return 'primitive';
+  }
+  return path.startsWith('docs/site/') ? 'page' : 'guide';
 }
 
 /**

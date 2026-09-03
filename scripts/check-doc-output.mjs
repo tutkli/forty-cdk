@@ -6,7 +6,14 @@ import { JSDOM } from 'jsdom';
 import { behaviorGroupOf } from './lib/doc-contract.mjs';
 import { DOC_BASE_TOKEN, isAbsoluteHref, splitDocHref } from './lib/doc-links.mjs';
 import { compileDocument } from './docs/doc-model.mjs';
-import { DOCS_DIR, LIBRARY_DIR, readGuides, readPrimitives } from './lib/doc-site.mjs';
+import {
+  DOCS_DIR,
+  LIBRARY_DIR,
+  readGuides,
+  readPrimitives,
+  readSitePages,
+  SITE_DIR,
+} from './lib/doc-site.mjs';
 import { repoRoot } from './lib/repo-path.mjs';
 
 /**
@@ -75,9 +82,14 @@ const EXAMPLE_FRAME = '.preview';
 const EXAMPLES_SECTION = 'examples';
 
 /**
- * Pages the site serves without a document behind them: the home redirect and
+ * Pages the site serves without a document behind them: the landing page and
  * the guide index. They own no `##` sections, so the content assertions skip
  * them — their existence is `check-prerender-output`'s question.
+ *
+ * The site's own prose pages are **not** here
+ * ([#1812](https://github.com/tutkli/forty-cdk/issues/1812)): each compiles from
+ * a document, so each is held to the same section and rail assertions a README
+ * is.
  */
 const SHELL_ROUTES = new Set(['', 'guides']);
 
@@ -209,6 +221,7 @@ if (!existsSync(BROWSER)) {
 
 const primitives = readPrimitives();
 const guides = readGuides();
+const sitePages = readSitePages();
 
 const documents = new Map();
 for (const { slug } of primitives) {
@@ -234,10 +247,21 @@ for (const guide of guides) {
     }),
   );
 }
+for (const page of sitePages) {
+  documents.set(
+    page.slug,
+    compileDocument(readFileSync(join(SITE_DIR, page.file), 'utf8'), {
+      path: `docs/site/${page.file}`,
+      slug: page.slug,
+      kind: 'page',
+    }),
+  );
+}
 
 const knownRoutes = new Set([
   '',
   'guides',
+  ...sitePages.map(({ slug }) => slug),
   ...primitives.map(({ slug }) => slug),
   ...guides.map(({ slug }) => `guides/${slug}`),
 ]);

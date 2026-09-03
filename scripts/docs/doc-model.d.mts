@@ -1,5 +1,12 @@
-/** Which half of the corpus a document belongs to. */
-export type DocKind = 'primitive' | 'guide';
+/**
+ * Which part of the corpus a document belongs to: an entry point's README, a
+ * cross-cutting guide, or one of the site's own pages
+ * ([#1812](https://github.com/tutkli/forty-cdk/issues/1812)).
+ *
+ * Only `primitive` declares frontmatter and a lede; the other two are prose the
+ * compiler reads whole.
+ */
+export type DocKind = 'primitive' | 'guide' | 'page';
 
 /** A heading below a document's title, with the anchor the compiler minted. */
 export interface DocHeading {
@@ -111,13 +118,13 @@ export interface DocDocument {
   /** The route the site publishes the document under. */
   readonly slug: string;
   readonly kind: DocKind;
-  /** Declared frontmatter for a README; `null` for a guide, which declares none. */
+  /** Declared frontmatter for a README; `null` for a guide or a site page, which declare none. */
   readonly meta: DocMeta | null;
   /** The level-1 heading's markdown. */
   readonly title: string;
   /**
    * The opening paragraph's markdown, which the site reads as the document's
-   * description — `null` for a guide, whose intro stays whole.
+   * description — `null` for a guide, the one kind whose intro stays whole.
    */
   readonly lede: string | null;
   /**

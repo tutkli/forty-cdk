@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, output } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 
 import { GUIDE_INDEX } from '../doc/guides';
+import { SITE_PAGE_INDEX } from '../doc/site-pages';
 import { PLAYGROUND_GROUPS } from '../primitives';
 
 @Component({
@@ -10,6 +11,35 @@ import { PLAYGROUND_GROUPS } from '../primitives';
   imports: [RouterLink, RouterLinkActive],
   template: `
     <nav class="nav" aria-label="Documentation">
+      <div class="nav-group">
+        <h2 class="nav-group-heading">Introduction</h2>
+        <ul class="nav-list">
+          <li>
+            <a
+              [routerLink]="['/']"
+              routerLinkActive="active"
+              [routerLinkActiveOptions]="{ exact: true }"
+              class="pg-nav-link"
+              (click)="navigate.emit()"
+            >
+              Overview
+            </a>
+          </li>
+          @for (page of sitePages; track page.slug) {
+            <li>
+              <a
+                [routerLink]="['/', page.slug]"
+                routerLinkActive="active"
+                class="pg-nav-link"
+                (click)="navigate.emit()"
+              >
+                {{ page.title }}
+              </a>
+            </li>
+          }
+        </ul>
+      </div>
+
       <div class="nav-group">
         <h2 class="nav-group-heading">Guides</h2>
         <ul class="nav-list">
@@ -66,6 +96,7 @@ import { PLAYGROUND_GROUPS } from '../primitives';
 export class AppNav {
   protected readonly groups = PLAYGROUND_GROUPS;
   protected readonly guideGroups = GUIDE_INDEX;
+  protected readonly sitePages = SITE_PAGE_INDEX;
 
   readonly navigate = output<void>();
 }

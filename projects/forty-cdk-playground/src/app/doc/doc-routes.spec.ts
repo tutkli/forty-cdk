@@ -5,7 +5,7 @@ import {
 } from '../../../../../scripts/docs/doc-routes.mjs';
 import { GUIDES } from './guides.generated';
 import { compile } from './testing/compile';
-import { GENERATED_ROUTES, PRIMITIVE_DOCS } from './testing/doc-corpus';
+import { GENERATED_ROUTES, PAGE_DOCS, PRIMITIVE_DOCS } from './testing/doc-corpus';
 
 /**
  * The route generator ([#1811](https://github.com/tutkli/forty-cdk/issues/1811)).
@@ -51,6 +51,37 @@ describe('the emitted route table', () => {
     expect(source).toContain("path: 'guides/styling',");
     expect(source).toContain("data: { slug: 'date-adapters' },");
     expect(source.match(/m\.GuidePage/g)).toHaveLength(2);
+  });
+
+  it('routes every site page through the one site page, from the root rather than a prefix', () => {
+    const source = routesModule({
+      primitiveSlugs: [],
+      guideSlugs: [],
+      pageSlugs: ['installation', 'concepts'],
+    });
+
+    expect(source).toContain("path: 'installation',");
+    expect(source).toContain("data: { slug: 'concepts' },");
+    expect(source).toContain("import('../app/pages/site.page').then((m) => m.SitePage)");
+    expect(source.match(/m\.SitePage/g)).toHaveLength(2);
+  });
+
+  /**
+   * A site page is served from the root, so its route and a primitive's are the
+   * same shape and only the order decides which answers. `readSitePages` refuses
+   * a colliding slug outright; this pins the emitter's half of that, so a page
+   * cannot be shadowed by a primitive registered before it.
+   */
+  it('emits the site pages before the primitives', () => {
+    const source = routesModule({
+      primitiveSlugs: ['accordion'],
+      guideSlugs: ['styling'],
+      pageSlugs: ['installation'],
+    });
+
+    expect(source.indexOf("path: 'installation',")).toBeLessThan(
+      source.indexOf("path: 'accordion',"),
+    );
   });
 
   it('types the table as Routes, so a route the router would reject fails typecheck', () => {
@@ -107,6 +138,7 @@ describe('the site as it stands', () => {
       routesModule({
         primitiveSlugs: published.map((document) => document.slug),
         guideSlugs: GUIDES.map((guide) => guide.slug),
+        pageSlugs: PAGE_DOCS.map((document) => document.slug),
       }),
     );
   });

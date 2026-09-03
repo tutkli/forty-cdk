@@ -25,7 +25,7 @@ export type {
  * own measurement of what it adds.
  */
 export interface DocIndexEntry {
-  readonly kind: 'primitive' | 'guide';
+  readonly kind: 'primitive' | 'guide' | 'page';
   readonly slug: string;
   readonly sections: readonly DocIndexSection[];
 }
