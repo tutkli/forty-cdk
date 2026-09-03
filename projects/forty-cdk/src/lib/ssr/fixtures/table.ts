@@ -20,6 +20,7 @@ import {
   ForTableRowDef,
   ForTableRowReorder,
   ForTableSortHeader,
+  ForTableVariantCell,
 } from 'forty-cdk/table';
 import { ForTableVirtualized } from 'forty-cdk/table-virtualization';
 
@@ -88,6 +89,35 @@ export class TableFixture {}
   `,
 })
 export class TableGridFixture {}
+
+@Component({
+  imports: [
+    ForTable,
+    ForTableHeaderRow,
+    ForTableHeaderCell,
+    ForTableRow,
+    ForTableCell,
+    ForTableVariantCell,
+  ],
+  template: `
+    <div forTable mode="grid" aria-label="People">
+      <div forTableHeaderRow>
+        <div forTableHeaderCell name="name">Name</div>
+        <div forTableHeaderCell name="role">Role</div>
+      </div>
+      <div role="rowgroup">
+        <div forTableRow>
+          <div forTableVariantCell>Engineering</div>
+        </div>
+        <div forTableRow>
+          <div forTableCell name="name">Ada</div>
+          <div forTableCell name="role">Engineer</div>
+        </div>
+      </div>
+    </div>
+  `,
+})
+export class TableGridVariantFixture {}
 
 @Component({
   imports: [ForTable, ForTableBody, ForTableColumnDef, ForTableHeaderCellDef, ForTableCellDef],

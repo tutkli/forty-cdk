@@ -109,6 +109,7 @@ import {
   TableBodyVirtualizedFixture,
   TableFixture,
   TableGridFixture,
+  TableGridVariantFixture,
   TableTreegridFixture,
   TableVirtualizedFixture,
   TableVirtualizedReorderFixture,
@@ -280,6 +281,33 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
         attributes: { role: 'gridcell', 'data-column': 'name', 'aria-colindex': '1' },
       },
       { select: '[forTableRowReorder]', attributes: { 'data-orientation': 'vertical' } },
+    ],
+  },
+  {
+    component: TableGridVariantFixture,
+    markup: [
+      {
+        select: '[forTable]',
+        attributes: { role: 'grid', 'aria-rowcount': '3', 'aria-colcount': '2' },
+      },
+      {
+        select: '[forTableVariantCell]',
+        attributes: {
+          role: 'gridcell',
+          'aria-colindex': '1',
+          'aria-colspan': '2',
+          'data-row-variant': '',
+          tabindex: null,
+        },
+      },
+      {
+        select: '[forTableHeaderCell]',
+        attributes: { role: 'columnheader', 'aria-colindex': '1', tabindex: '0' },
+      },
+      {
+        select: '[forTableCell]',
+        attributes: { role: 'gridcell', 'data-column': 'name', 'aria-colindex': '1' },
+      },
     ],
   },
   {
