@@ -124,6 +124,13 @@ export interface TablePieceContext {
    * `table` mode or when no header cells registered.
    */
   readonly headerParticipatesInRoving: Signal<boolean>;
+  /**
+   * The grid's rendered column count: the cell count of the first data row that has
+   * any, else the registered header cell count. `0` while no cell has registered.
+   * Read by `[forTableVariantCell]` for the `aria-colspan` of a full-span row, which
+   * is the same count the declarative body spans with.
+   */
+  readonly columnCount: Signal<number>;
   /** 0-based index of a data row host in DOM order, or -1 if not registered. */
   rowIndexOf(host: HTMLElement): number;
   /** Roving `tabindex` (`0` for the single tab stop, `-1` otherwise) for a data cell in grid mode. */

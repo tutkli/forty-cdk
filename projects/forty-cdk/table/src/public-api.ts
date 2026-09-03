@@ -23,6 +23,7 @@ export { ForTableHeaderRow } from './table-header-row';
 export { ForTableRow } from './table-row';
 export { ForTableHeaderCell } from './table-header-cell';
 export { ForTableCell } from './table-cell';
+export { ForTableVariantCell } from './table-variant-cell';
 export { ForTableRowSelector } from './table-row-selector';
 export { ForTableSelectAll } from './table-select-all';
 export {

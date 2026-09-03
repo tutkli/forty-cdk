@@ -171,6 +171,43 @@ The root emits `aria-rowcount` and `aria-colcount`. Per ARIA 1.2 and the APG Dat
 }
 ```
 
+### Full-span rows (group separators, section headers, summaries)
+
+A grouped list interleaves presentational rows between its data rows — a date heading, a section separator, a totals line — and those rows span every column instead of holding one cell per column. Author the span with **`[forTableVariantCell]`**, never with a single `[forTableCell]`: it stamps the same markup `<for-table-body>` stamps for a `[forTableRowCellDef]` variant row (`role="gridcell"`, `aria-colindex="1"`, an `aria-colspan` covering the grid's columns, and the `data-row-variant` hook) while registering **no** cell handle.
+
+That last part is the contract. A full-span row that registers a cell would enter the grid as a one-cell row: it would redefine the column count (collapsing a 20-column grid to a single column the moment a separator is the first row with cells — which under `[forTableVirtualized]` is whichever row the scroll window starts on), shift the row-major cell mapping every arrow key derives its position from, and drop the header row out of the composite tab stop. With `[forTableVariantCell]` the row contributes nothing to the grid: arrow keys step over it onto the next data row, the column count keeps coming from the data rows around it, and the header row still joins. The row itself is still a real row — it counts towards `aria-rowindex` / `aria-rowcount`, and it is non-selectable by contract because it carries no `[value]`.
+
+Spanning the row visually stays yours: `grid-column: 1 / -1` in a `<div>` grid, or a `colspan` attribute in a native `<table>`.
+
+```html
+<div forTable mode="grid" ariaLabel="People">
+  <div role="rowgroup">
+    <div forTableHeaderRow>
+      <div forTableHeaderCell name="name">Name</div>
+      <div forTableHeaderCell name="role">Role</div>
+    </div>
+  </div>
+  <div role="rowgroup">
+    @for (group of groups(); track group.label) {
+    <div forTableRow>
+      <div forTableVariantCell>{{ group.label }}</div>
+    </div>
+    @for (row of group.rows; track row.id) {
+    <div forTableRow [value]="row.id">
+      <div forTableCell name="name">{{ row.name }}</div>
+      <div forTableCell name="role">{{ row.role }}</div>
+    </div>
+    } }
+  </div>
+</div>
+```
+
+```css
+[data-row-variant] {
+  grid-column: 1 / -1;
+}
+```
+
 ## Treegrid mode
 
 `mode="treegrid"` sets `role="treegrid"` on the root. Rows are a flat sibling list in the DOM; hierarchy is expressed through ARIA attributes, not DOM nesting.
@@ -596,6 +633,9 @@ from the **`forty-cdk/table-virtualization`** entry point, so neither the table 
 | `aria-rowindex`                | `[forTableHeaderRow]`                           | `"1"` in grid / treegrid mode (the header is the grid's first row); absent in table mode.                                                           |
 | `aria-rowindex`                | `[forTableRow]`                                 | 1-based row index counting the header row (first data row is `2`). Absent in table mode.                                                            |
 | `aria-colindex`                | header / data cell                              | 1-based column index within the row. Absent in table mode.                                                                                          |
+| `aria-colindex`                | `[forTableVariantCell]`                         | Always `"1"` — a full-span row's only cell starts at the first column. Emitted in every mode, matching what `<for-table-body>` stamps.              |
+| `aria-colspan`                 | `[forTableVariantCell]`                         | The grid's rendered column count. Absent while no cell has registered one (an empty virtualized window with no header row).                         |
+| `data-row-variant`             | `[forTableVariantCell]` / `<for-table-body>`    | Present (`""`) on the full-span cell of a presentational row. The hook to span it in CSS.                                                           |
 | `aria-selected`                | `[forTableRow]`                                 | `"true"` / `"false"` (always-emit) on selectable rows (with a `[value]`) when `selectionMode` is not `'none'`; absent on rows without a `[value]`.  |
 | `data-selected`                | `[forTableRow]`                                 | Present (`""`) when selected; absent when not. Boolean present/absent hook.                                                                         |
 | `aria-multiselectable`         | `[forTable]`                                    | `"true"` when `selectionMode="multiple"` in `grid` / `treegrid` mode; absent otherwise (including `table` mode, where `role="table"` forbids it).   |
@@ -655,6 +695,7 @@ Implements the [WAI-ARIA Table pattern](https://www.w3.org/WAI/ARIA/apg/patterns
 - **`mode="grid"`** sets `role="grid"` with `role="gridcell"` cells. The root emits `aria-rowcount` / `aria-colcount`; the header row and every data row emit `aria-rowindex` (the header row is `1`, so data rows start at `2` and `aria-rowcount` counts the header); header and data cells emit `aria-colindex`. Header and body share one composite roving tab stop; `PageUp` / `PageDown` page by rows, and `Enter` / `F2` enter an interactive cell's widget (`Escape` exits). Override `[rowCount]` / `[colCount]` for server-paged or virtualized datasets so screen readers announce correct totals.
 - **`mode="treegrid"`** sets `role="treegrid"`. Expandable rows emit `aria-expanded="true"|"false"` and `aria-level` / `aria-posinset` / `aria-setsize`; leaf rows emit none of these, matching APG "end nodes lack `aria-expanded`".
 - **Row selection** (`selectionMode` not `'none'`): each selectable row (one with a `[value]`) emits `aria-selected="true"|"false"`; rows without a `[value]` (full-span variant rows) are non-selectable and emit no `aria-selected`; in `grid` / `treegrid` mode `'multiple'` adds `aria-multiselectable="true"` on the root (never in `table` mode, where `role="table"` forbids it). `[forTableSelectAll]` emits `aria-checked` in tri-state.
+- **Full-span rows** (group separators, section headers, summaries) use `[forTableVariantCell]`, which emits `aria-colindex="1"` and an `aria-colspan` over the grid's columns and registers no cell handle. Arrow navigation steps over the row onto the next data row, and the grid's column count and header participation are unaffected by it — the failure a hand-written `[forTableCell]` produces instead is silent and only surfaces from the keyboard.
 - **Sortable headers** emit `aria-sort="ascending"|"descending"` while sorted; the attribute is absent (not `"none"`) when unsorted, per APG.
 - **Column resizers** must be focusable elements with an `aria-label` naming the column — e.g. `aria-label="Resize Name column"`.
 - **Disabled cells** use `aria-disabled="true"` + `data-disabled`; they are skipped during grid navigation but remain focusable, consistent with the APG disabled pattern.

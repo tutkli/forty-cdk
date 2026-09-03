@@ -273,6 +273,8 @@ export class ForTable<T = unknown> implements ForTableContext {
     return dataCols > 0 ? dataCols : this.#headerCellHosts().length;
   });
 
+  private readonly columnCount = this.#cols;
+
   /**
    * The cell that owns the tab stop while nothing is roving-active — the first
    * enabled cell of the composite grid.
