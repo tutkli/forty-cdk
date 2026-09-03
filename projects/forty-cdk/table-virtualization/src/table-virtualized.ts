@@ -47,8 +47,9 @@ function injectTableRegistration(): TableRegistrationContext {
 
 /**
  * Opt-in row-virtualization companion for `[forTable]` in `<div role>` grid mode. Place it on the
- * same element as `[forTable]`; it builds the windowing core from the table's `[rowCount]` and
- * exposes the visible window for the consumer to render with their own `@for` + position transform.
+ * same element as `[forTable]`; it builds the windowing core from `[virtualRowCount]` — which
+ * defaults to the table's `[rowCount]` — and exposes the visible window for the consumer to render
+ * with their own `@for` + position transform.
  *
  * Tree-shakeable: `ForTable` never imports the virtualization core — only consumers that import
  * `ForTableVirtualized` bundle `@tanstack/virtual-core`.
@@ -84,8 +85,23 @@ export class ForTableVirtualized {
    */
   readonly scrollElement = input<HTMLElement | null>(null);
 
+  /**
+   * Count of rows the virtualizer can place: it sizes the scroll range and bounds
+   * cross-window keyboard navigation. Defaults to the table's `[rowCount]`, which is also
+   * the placeable range for an **index-addressable** dataset — any absolute index is
+   * fetchable, so the window can travel the whole server-known total.
+   *
+   * Bind it for an **append-style** infinite list, whose loaded prefix is the only range
+   * that can be rendered: leave `[rowCount]` at the server-known total `aria-rowcount`
+   * reports and set this to the loaded count, so the scroll range covers exactly the rows
+   * the virtualizer can place instead of stretching over pages only an append can reach.
+   * It is the one channel the raw-primitive shape has for that count, since
+   * `<for-table-body>` is what otherwise derives it from its dataset.
+   */
+  readonly virtualRowCount = input<number | undefined>(undefined);
+
   readonly #scrollElement = computed(() => this.scrollElement() ?? this.#rootEl);
-  readonly #rowCount = computed(() => this.#ctx.rowCount() ?? 0);
+  readonly #rowCount = computed(() => this.virtualRowCount() ?? this.#ctx.rowCount() ?? 0);
 
   readonly #virtualizer = injectVirtualizer({
     count: this.#rowCount,

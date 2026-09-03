@@ -618,6 +618,12 @@ exports[`document structure > docs/table-reordering.md declares the sections and
 exports[`document structure > docs/table-virtualized-rows.md declares the sections and table shapes it declared before 1`] = `
 [
   {
+    "headings": [],
+    "slug": "append-style-lists-virtualrowcount",
+    "tables": [],
+    "title": "Append-style lists: \`[virtualRowCount]\`",
+  },
+  {
     "headings": [
       {
         "depth": 3,
@@ -640,7 +646,7 @@ exports[`document structure > docs/table-virtualized-rows.md declares the sectio
           "Description",
         ],
         "role": "api",
-        "rows": 2,
+        "rows": 3,
       },
     ],
     "title": "\`[forTableVirtualized]\` inputs",
@@ -6709,6 +6715,12 @@ exports[`document structure > projects/forty-cdk/table-virtualization/README.md 
   },
   {
     "headings": [],
+    "slug": "two-totals-rowcount-and-virtualrowcount",
+    "tables": [],
+    "title": "Two totals: \`[rowCount]\` and \`[virtualRowCount]\`",
+  },
+  {
+    "headings": [],
     "slug": "measured-row-heights",
     "tables": [],
     "title": "Measured row heights",
@@ -6747,7 +6759,7 @@ exports[`document structure > projects/forty-cdk/table-virtualization/README.md 
           "Description",
         ],
         "role": "api",
-        "rows": 7,
+        "rows": 8,
       },
     ],
     "title": "API",

@@ -10,7 +10,7 @@ table is documented in [the table README](../projects/forty-cdk/table/README.md)
 `[forTableVirtualized]` is opt-in and works only with `<div role>` grid mode. Native `<table>` cannot omit rows mid-body (the browser recalculates all column widths when any row is missing), so virtualization requires the `<div>` structure documented in
 [the table README](../projects/forty-cdk/table/README.md#div-mode).
 
-Place `[forTableVirtualized]` on the same element as `[forTable]`. Set `[rowCount]` on `[forTable]` to the **true total** row count — this drives both `aria-rowcount` and the window size.
+Place `[forTableVirtualized]` on the same element as `[forTable]`. Set `[rowCount]` on `[forTable]` to the **true total** row count — this drives both `aria-rowcount` and the window size, and for an index-addressable dataset it is the whole configuration. An append-style infinite list splits the two: see [Append-style lists](#append-style-lists-virtualrowcount) below.
 
 ```html
 <div
@@ -63,6 +63,27 @@ afterEveryRender(() => {
 });
 ```
 
+## Append-style lists: `[virtualRowCount]`
+
+`[rowCount]` answers "how many rows does the dataset have"; `[virtualRowCount]` answers "how many rows can the virtualizer place". They default to the same number, which is correct for an **index-addressable** dataset — the window can travel to any absolute index because the page behind it is fetchable on arrival.
+
+An **append-style** infinite list (load 30, concatenate, load 30 more at the bottom) can only render its loaded prefix, so the two part ways. Keep `[rowCount]` at the server-known total and bind `[virtualRowCount]` to the loaded count:
+
+```html
+<div
+  forTable
+  forTableVirtualized
+  mode="grid"
+  [rowCount]="serverTotal()"
+  [virtualRowCount]="loaded().length"
+  #v="forTableVirtualized"
+></div>
+```
+
+Both halves matter. Raising `[rowCount]` alone inflates the scroll range with rows that will never mount — the thumb shrinks to a sliver and the viewport scrolls into empty space — while lowering it to the loaded count announces an `aria-rowcount` that is wrong on every page but the last. `[virtualRowCount]` also bounds cross-window keyboard navigation, so `Ctrl+End` lands on the last loaded row rather than stashing a focus move that only resolves when a far page appends.
+
+Raw-primitive rendering has no other channel for that count: `<for-table-body>` derives the loaded count from its own dataset (for the navigation bound), a table rendering its own rows does not.
+
 ## Scroll container (table root vs. ancestor)
 
 By default the **table root** is the scroll container — the element carrying `[forTableVirtualized]` scrolls its own rows (the `overflow: auto` element in the examples above), so `[scrollElement]` can be left unset.
@@ -108,10 +129,11 @@ Consumers of the wrapper then bind `[scrollContainer]="shell"`.
 
 ## `[forTableVirtualized]` inputs
 
-| Input             | Type                  | Default | Description                                                                                                         |
-| ----------------- | --------------------- | ------- | ------------------------------------------------------------------------------------------------------------------- |
-| `estimateRowSize` | `number`              | `44`    | Estimated row height in px. Used as the fixed size in fixed-size mode and as the initial estimate in measured mode. |
-| `scrollElement`   | `HTMLElement \| null` | `null`  | Explicit scroll container. Defaults to the table root element; bind to an ancestor when it owns the scroll.         |
+| Input             | Type                  | Default                  | Description                                                                                                                                 |
+| ----------------- | --------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `estimateRowSize` | `number`              | `44`                     | Estimated row height in px. Used as the fixed size in fixed-size mode and as the initial estimate in measured mode.                         |
+| `scrollElement`   | `HTMLElement \| null` | `null`                   | Explicit scroll container. Defaults to the table root element; bind to an ancestor when it owns the scroll.                                 |
+| `virtualRowCount` | `number \| undefined` | the table's `[rowCount]` | Count of rows the virtualizer can place: the scroll range and the cross-window navigation bound. Bind it for an append-style infinite list. |
 
 ## `[forTableVirtualized]` API (`#v="forTableVirtualized"`)
 
