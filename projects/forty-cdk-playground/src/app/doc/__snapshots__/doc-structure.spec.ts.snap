@@ -6468,7 +6468,12 @@ exports[`document structure > projects/forty-cdk/table/README.md declares the se
     "title": "Sticky header + CSS custom property",
   },
   {
-    "headings": [],
+    "headings": [
+      {
+        "depth": 3,
+        "slug": "full-span-rows-group-separators-section-headers-summaries",
+      },
+    ],
     "slug": "grid-mode",
     "tables": [],
     "title": "Grid mode",
@@ -6662,7 +6667,7 @@ exports[`document structure > projects/forty-cdk/table/README.md declares the se
           "Values / description",
         ],
         "role": "plain",
-        "rows": 26,
+        "rows": 29,
       },
     ],
     "title": "API",
