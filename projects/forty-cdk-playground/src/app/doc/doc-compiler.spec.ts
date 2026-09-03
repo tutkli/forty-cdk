@@ -17,14 +17,22 @@ function md(...lines: readonly string[]): string {
   return `${lines.join('\n')}\n`;
 }
 
+/**
+ * A fixture's title and the lede every published document owes, so that the
+ * only thing the compiler can refuse it for is the shape under test.
+ */
+function titled(title: string, ...lines: readonly string[]): string {
+  return md(`# ${title}`, '', 'What it is.', '', ...lines);
+}
+
 describe('documents the compiler refuses', () => {
   it('names the line of a row with fewer cells than its header', () => {
     const problems = problemsOf(
-      md('# Short row', '', '## API', '', '| A | B |', '| - | - |', '| one |'),
+      titled('Short row', '## API', '', '| A | B |', '| - | - |', '| one |'),
     );
 
     expect(problems).toHaveLength(1);
-    expect(problems[0]!.line).toBe(7);
+    expect(problems[0]!.line).toBe(9);
     expect(problems[0]!.message).toContain('1 cell(s) against a header of 2 column(s)');
     expect(problems[0]!.message).toContain('pads the row');
   });
@@ -37,26 +45,26 @@ describe('documents the compiler refuses', () => {
   });
 
   it('refuses a heading that slugifies to nothing', () => {
-    const problems = problemsOf(md('# Title', '', '## ***', '', 'Body.'));
+    const problems = problemsOf(titled('Title', '## ***', '', 'Body.'));
 
     expect(problems).toHaveLength(1);
-    expect(problems[0]!.line).toBe(3);
+    expect(problems[0]!.line).toBe(5);
     expect(problems[0]!.message).toContain('empty string');
   });
 
   it('refuses a table above the first section, which no page renders', () => {
     const problems = problemsOf(
-      md('# Title', '', '| A | B |', '| - | - |', '| one | two |', '', '## Section'),
+      titled('Title', '| A | B |', '| - | - |', '| one | two |', '', '## Section'),
     );
 
     expect(problems).toHaveLength(1);
-    expect(problems[0]!.line).toBe(3);
+    expect(problems[0]!.line).toBe(5);
     expect(problems[0]!.message).toContain('above the first section');
   });
 
   it('refuses a table nested in a blockquote, which the page would not show', () => {
     const problems = problemsOf(
-      md('# Title', '', '## Section', '', '> | A | B |', '> | - | - |', '> | one | two |'),
+      titled('Title', '## Section', '', '> | A | B |', '> | - | - |', '> | one | two |'),
     );
 
     expect(problems.map((problem) => problem.message)).toContain(
@@ -66,32 +74,32 @@ describe('documents the compiler refuses', () => {
 
   it('reports a table nested two blockquotes deep exactly once', () => {
     const problems = problemsOf(
-      md('# Title', '', '## Section', '', '> > | A | B |', '> > | - | - |', '> > | one | two |'),
+      titled('Title', '## Section', '', '> > | A | B |', '> > | - | - |', '> > | one | two |'),
     );
 
     expect(problems).toHaveLength(1);
-    expect(problems[0]!.line).toBe(5);
+    expect(problems[0]!.line).toBe(7);
     expect(problems[0]!.message).toContain('nested in a list item or blockquote');
   });
 
   it('refuses a heading nested in a blockquote, which carries no anchor', () => {
-    const problems = problemsOf(md('# Title', '', '## Section', '', '> ### Quoted heading'));
+    const problems = problemsOf(titled('Title', '## Section', '', '> ### Quoted heading'));
 
     expect(problems).toHaveLength(1);
     expect(problems[0]!.message).toContain('carries no anchor');
   });
 
   it('refuses a fence in a language the site has no grammar for, naming its line', () => {
-    const problems = problemsOf(md('# Title', '', '## S', '', '```json', '{}', '```'));
+    const problems = problemsOf(titled('Title', '## S', '', '```json', '{}', '```'));
 
     expect(problems).toHaveLength(1);
-    expect(problems[0]!.line).toBe(5);
+    expect(problems[0]!.line).toBe(7);
     expect(problems[0]!.message).toContain('marked "json"');
     expect(problems[0]!.message).toContain('publish unhighlighted');
   });
 
   it('names the languages a fence may be written as, so the fix is in the message', () => {
-    const problems = problemsOf(md('# Title', '', '## S', '', '```jsx', 'x', '```'));
+    const problems = problemsOf(titled('Title', '## S', '', '```jsx', 'x', '```'));
 
     expect(problems[0]!.message).toContain('ts, typescript');
     expect(problems[0]!.message).toContain('html');
@@ -101,7 +109,7 @@ describe('documents the compiler refuses', () => {
     const document = compile({
       path: 'docs/sample.md',
       slug: 'sample',
-      markdown: md('# Title', '', '## S', '', '```', 'just words', '```'),
+      markdown: titled('Title', '## S', '', '```', 'just words', '```'),
     });
 
     expect(document.sections[0]!.blocks[0]!.kind).toBe('prose');
@@ -109,7 +117,7 @@ describe('documents the compiler refuses', () => {
 
   it('sees a fence nested in a list item, which renders and would need a grammar', () => {
     const problems = problemsOf(
-      md('# Title', '', '## S', '', '1. Step:', '', '   ```json', '   {}', '   ```'),
+      titled('Title', '## S', '', '1. Step:', '', '   ```json', '   {}', '   ```'),
     );
 
     expect(problems).toHaveLength(1);
@@ -118,19 +126,10 @@ describe('documents the compiler refuses', () => {
 
   it('reports every problem in one pass rather than stopping at the first', () => {
     const problems = problemsOf(
-      md(
-        '# Title',
-        '',
-        '## API',
-        '',
-        '| A | B |',
-        '| - | - |',
-        '| one |',
-        '| two | three | four |',
-      ),
+      titled('Title', '## API', '', '| A | B |', '| - | - |', '| one |', '| two | three | four |'),
     );
 
-    expect(problems.map((problem) => problem.line)).toEqual([7, 8]);
+    expect(problems.map((problem) => problem.line)).toEqual([9, 10]);
   });
 
   it('names the path it was given, so a run over the corpus is addressable', () => {
@@ -146,18 +145,19 @@ describe('what a compiled document guarantees its renderer', () => {
   it('drops the title from the body and reports it once', () => {
     const document = compile({
       ...doc,
-      markdown: md('# The title', '', 'Lede.', '', '## Section', '', 'Body.'),
+      markdown: md('# The title', '', 'Lede.', '', 'More prose.', '', '## Section', '', 'Body.'),
     });
 
     expect(document.title).toBe('The title');
-    expect(document.intro.map((block) => block.markdown)).toEqual(['Lede.']);
+    expect(document.lede).toBe('Lede.');
+    expect(document.intro.map((block) => block.markdown)).toEqual(['More prose.']);
     expect(document.sections[0]!.blocks[0]!.kind === 'prose').toBe(true);
   });
 
   it('keeps prose as the markdown it was written as, fences included', () => {
     const document = compile({
       ...doc,
-      markdown: md('# T', '', '## S', '', 'Before.', '', '```ts', "const a = '|';", '```'),
+      markdown: titled('T', '## S', '', 'Before.', '', '```ts', "const a = '|';", '```'),
     });
     const [block] = document.sections[0]!.blocks;
 
@@ -170,9 +170,8 @@ describe('what a compiled document guarantees its renderer', () => {
   it('splits prose at a table and rejoins after it', () => {
     const document = compile({
       ...doc,
-      markdown: md(
-        '# T',
-        '',
+      markdown: titled(
+        'T',
         '## S',
         '',
         'Above.',
@@ -195,7 +194,7 @@ describe('what a compiled document guarantees its renderer', () => {
   it('lists a prose block’s heading anchors in the order it renders them', () => {
     const document = compile({
       ...doc,
-      markdown: md('# T', '', '## S', '', '### First', '', 'a', '', '### Second', '', 'b'),
+      markdown: titled('T', '## S', '', '### First', '', 'a', '', '### Second', '', 'b'),
     });
     const [block] = document.sections[0]!.blocks;
 
@@ -205,9 +204,8 @@ describe('what a compiled document guarantees its renderer', () => {
   it('resolves an API table by column, whatever the first column is called', () => {
     const document = compile({
       ...doc,
-      markdown: md(
-        '# T',
-        '',
+      markdown: titled(
+        'T',
         '## S',
         '',
         '| Member | Type | Default | Description |',
@@ -227,9 +225,8 @@ describe('what a compiled document guarantees its renderer', () => {
   it('leaves a table with no Type column as a plain one', () => {
     const document = compile({
       ...doc,
-      markdown: md(
-        '# T',
-        '',
+      markdown: titled(
+        'T',
         '## S',
         '',
         '| Data attribute | Values |',

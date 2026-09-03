@@ -3,7 +3,6 @@ import { join } from 'node:path';
 
 import { foldTargetOf, readDocMeta } from './doc-contract.mjs';
 import { guideSlugOf } from './doc-links.mjs';
-import { isFenceLine } from './readme-slug.mjs';
 import { repoRoot } from './repo-path.mjs';
 
 export const DOCS_DIR = join(repoRoot, 'docs');
@@ -60,9 +59,6 @@ export const EXCLUDED_GUIDES = [
       'Governance for contributors authoring the site itself — it specifies the page template the primitive pages are held to, and addresses nobody reading the published documentation.',
   },
 ];
-
-const SENTENCE_BREAK = /(?<=[.!?])\s+(?=[A-Z`[(])/;
-const MAX_DESCRIPTION = 260;
 
 /**
  * Every entry point that ships a README, published or not, in slug order.
@@ -143,71 +139,14 @@ function headingOf(md) {
   return match ? match[1].trim() : null;
 }
 
-function stripInlineMarkdown(text) {
-  return text
-    .replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1')
-    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
-    .replace(/`([^`]*)`/g, '$1')
-    .replace(/\*\*([^*]+)\*\*/g, '$1')
-    .replace(/(^|\s)\*([^*]+)\*/g, '$1$2')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-function ledeOf(md) {
-  const lines = md.split('\n');
-  const paragraph = [];
-  let inFence = false;
-  let seenHeading = false;
-
-  for (const line of lines) {
-    if (isFenceLine(line)) {
-      inFence = !inFence;
-      continue;
-    }
-    if (inFence) {
-      continue;
-    }
-    if (/^#{1,6}\s/.test(line)) {
-      seenHeading = true;
-      if (paragraph.length > 0) {
-        break;
-      }
-      continue;
-    }
-    if (!seenHeading) {
-      continue;
-    }
-    const trimmed = line.trim();
-    if (trimmed === '') {
-      if (paragraph.length > 0) {
-        break;
-      }
-      continue;
-    }
-    if (/^(?:[>|]|-{3,}|\*{3,}|[-*+]\s|\d+\.\s)/.test(trimmed)) {
-      if (paragraph.length > 0) {
-        break;
-      }
-      continue;
-    }
-    paragraph.push(trimmed);
-  }
-
-  const text = stripInlineMarkdown(paragraph.join(' '));
-  if (text === '') {
-    return '';
-  }
-  const [first] = text.split(SENTENCE_BREAK);
-  const candidate = first !== undefined && first.length >= 40 ? first : text;
-  if (candidate.length <= MAX_DESCRIPTION) {
-    return candidate;
-  }
-  const clipped = candidate.slice(0, MAX_DESCRIPTION);
-  const lastSpace = clipped.lastIndexOf(' ');
-  return `${(lastSpace > 0 ? clipped.slice(0, lastSpace) : clipped).trimEnd()}…`;
-}
-
+/**
+ * The guides the site publishes, in registry order.
+ *
+ * The description is deliberately absent: it is the guide's own lede, which
+ * only the content compiler can identify, and it reaches the navigation from
+ * the compiled document rather than from a second scan of the markdown here
+ * ([#1808](https://github.com/tutkli/forty-cdk/issues/1808)).
+ */
 export function readGuides() {
   const groups = new Set(GUIDE_GROUPS.map((group) => group.id));
   const published = new Set(PUBLISHED_GUIDES.map((guide) => guide.file));
@@ -240,13 +179,7 @@ export function readGuides() {
     if (title === null) {
       throw new Error(`docs/${file} has no "# " heading — the guide title is read from it`);
     }
-    return {
-      file,
-      slug: guideSlugOf(file),
-      group,
-      title,
-      description: ledeOf(md),
-    };
+    return { file, slug: guideSlugOf(file), group, title };
   });
 }
 

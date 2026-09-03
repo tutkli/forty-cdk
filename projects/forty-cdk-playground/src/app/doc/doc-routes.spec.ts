@@ -3,7 +3,7 @@ import {
   pageSymbolOf,
   routesModule,
 } from '../../../../../scripts/docs/doc-routes.mjs';
-import { GUIDES } from './guides.generated';
+import { GUIDES } from '../../generated/guides.generated';
 import { compile } from './testing/compile';
 import { GENERATED_ROUTES, PAGE_DOCS, PRIMITIVE_DOCS } from './testing/doc-corpus';
 

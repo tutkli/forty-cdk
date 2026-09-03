@@ -1,5 +1,7 @@
 # Unescaped pipe
 
+An API table whose union type carries a pipe the author did not escape.
+
 ## API
 
 | Property | Type | Description |

@@ -1,5 +1,14 @@
-import { GUIDE_GROUPS, GUIDES } from './guides.generated';
+import { GUIDE_GROUPS, GUIDES } from '../../generated/guides.generated';
 
+/**
+ * One guide the site publishes, as its registry entry rather than as its
+ * content.
+ *
+ * Only `group` is authored beside the guide: the title is the document's own
+ * `# ` heading and the description its lede, which the compiler lifts out of
+ * the intro so that the page header showing it is not quoting the body below
+ * ([#1808](https://github.com/tutkli/forty-cdk/issues/1808)).
+ */
 export interface GuideMeta {
   readonly slug: string;
   readonly title: string;

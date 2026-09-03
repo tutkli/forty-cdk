@@ -70,5 +70,3 @@ projects/forty-cdk-playground/src/app/demos/**/sources.generated.ts
 # Compiled document model (built by scripts/docs/gen-doc-model.mjs)
 projects/forty-cdk-playground/src/generated/
 
-# Generated guide registry (built by scripts/gen-guides.mjs)
-projects/forty-cdk-playground/src/app/doc/guides.generated.ts

@@ -1,5 +1,7 @@
 # Fences and escapes the splitter gets right
 
+The control fixture: every fence and escape shape the compiler reads correctly.
+
 ## Fences
 
 ````md

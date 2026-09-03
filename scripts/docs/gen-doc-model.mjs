@@ -3,7 +3,14 @@ import { join, relative, sep } from 'node:path';
 
 import { checkContract, foldTargetOf } from '../lib/doc-contract.mjs';
 import { buildDocRoutes } from '../lib/doc-links.mjs';
-import { readEntryPointDocs, readGuides, readSitePages, SITE_DIR } from '../lib/doc-site.mjs';
+import {
+  EXCLUDED_GUIDES,
+  GUIDE_GROUPS,
+  readEntryPointDocs,
+  readGuides,
+  readSitePages,
+  SITE_DIR,
+} from '../lib/doc-site.mjs';
 import { repoRoot } from '../lib/repo-path.mjs';
 import { foldableOf, withFold } from './doc-fold.mjs';
 import { compileDocument, DocCompileError } from './doc-model.mjs';
@@ -28,9 +35,10 @@ const rel = (file) => relative(repoRoot, file).split(sep).join('/');
  * archetype now is what keeps it publishable later.
  */
 function compileAll() {
+  const registeredGuides = readGuides();
   const sources = [
     ...readEntryPointDocs().map((doc) => ({ ...doc, kind: 'primitive' })),
-    ...readGuides().map((guide) => ({
+    ...registeredGuides.map((guide) => ({
       slug: guide.slug,
       path: `docs/${guide.file}`,
       file: join(repoRoot, 'docs', guide.file),
@@ -78,7 +86,23 @@ function compileAll() {
     documents: compiled.filter((document) => document.meta?.group !== 'none'),
     folded: unpublished.filter((document) => foldTargetOf(document.meta) !== null),
     unpublished,
+    guideGroups: new Map(registeredGuides.map((guide) => [guide.slug, guide.group])),
   };
+}
+
+/**
+ * The description a registry publishes for a document: its own lede, resolved
+ * to text and folded onto one line.
+ *
+ * The fold is what lets a document wrap its lede across source lines — every
+ * guide does — and still reach a `<p>` and a search haystack as one sentence.
+ * Nothing here shortens it. A description is the paragraph its author wrote,
+ * and how much of one a card shows is that card's own business: the clip this
+ * replaced cut mid-word at 260 characters, in the data, for every consumer
+ * ([#1808](https://github.com/tutkli/forty-cdk/issues/1808)).
+ */
+function descriptionOf(document) {
+  return headingText(document.lede).replace(/\s+/g, ' ').trim();
 }
 
 function serialize(value) {
@@ -125,7 +149,7 @@ function registryModule(documents) {
   const entryOf = (document) => ({
     slug: document.slug,
     title: document.meta.title,
-    description: headingText(document.lede),
+    description: descriptionOf(document),
     ...(document.meta.apgUrl === null ? {} : { apgUrl: document.meta.apgUrl }),
   });
   const byTitle = (a, b) => a.title.localeCompare(b.title);
@@ -167,13 +191,49 @@ function sitePagesModule(pages) {
     pages.map((page) => ({
       slug: page.slug,
       title: headingText(page.title),
-      description: headingText(page.lede),
+      description: descriptionOf(page),
     })),
   );
 
   return (
     `import type { SitePageMeta } from '../app/doc/site-pages';\n\n` +
     `export const SITE_PAGES: readonly SitePageMeta[] = ${meta};\n`
+  );
+}
+
+/**
+ * The guide registry, derived from the compiled documents rather than from a
+ * scan of the markdown beside them.
+ *
+ * `group` is the one field a guide does not state about itself — which section
+ * of the index it belongs under is the registry's decision — so it comes from
+ * `PUBLISHED_GUIDES` and everything else from the document. That is what closes
+ * the duplication: the header's description and the body's intro are two halves
+ * of one paragraph the compiler split, so neither can restate the other.
+ */
+function guidesModule(guides, groupOf) {
+  const inGroup = (id) => guides.filter((guide) => groupOf(guide.slug) === id);
+  const meta = serialize(
+    guides.map((guide) => ({
+      slug: guide.slug,
+      title: headingText(guide.title),
+      description: descriptionOf(guide),
+      group: groupOf(guide.slug),
+      sourcePath: guide.path,
+    })),
+  );
+  const groups = serialize(
+    GUIDE_GROUPS.filter((group) => inGroup(group.id).length > 0).map((group) => ({
+      id: group.id,
+      label: group.label,
+      slugs: inGroup(group.id).map((guide) => guide.slug),
+    })),
+  );
+
+  return (
+    `import type { GuideGroup, GuideMeta } from '../app/doc/guides';\n\n` +
+    `export const GUIDES: readonly GuideMeta[] = ${meta};\n\n` +
+    `export const GUIDE_GROUPS: readonly GuideGroup[] = ${groups};\n`
   );
 }
 
@@ -224,10 +284,23 @@ function write(files) {
   }
 }
 
-const { documents, folded, unpublished } = compileAll();
+const { documents, folded, unpublished, guideGroups } = compileAll();
 const guides = documents.filter((document) => document.kind === 'guide');
 const primitives = documents.filter((document) => document.kind === 'primitive');
 const sitePages = documents.filter((document) => document.kind === 'page');
+
+/**
+ * Every guide the compiler saw was registered with a group, so a missing one is
+ * a bug in this file rather than in the corpus — and an `undefined` written
+ * into the generated module would only surface as a type error inside it.
+ */
+function groupOf(slug) {
+  const group = guideGroups.get(slug);
+  if (group === undefined) {
+    throw new Error(`[gen-doc-model] compiled a guide no registry group names: ${slug}`);
+  }
+  return group;
+}
 
 /**
  * A route is only emitted for a page that exists and exports the component the
@@ -315,6 +388,7 @@ write([
     pageModule(pages.get(keyOf(document))),
   ]),
   [join(OUT_DIR, 'doc-index.generated.ts'), indexModule(documents)],
+  [join(OUT_DIR, 'guides.generated.ts'), guidesModule(guides, groupOf)],
   [join(OUT_DIR, 'guide-docs.generated.ts'), guideModule(guides)],
   [join(OUT_DIR, 'site-pages.generated.ts'), sitePagesModule(sitePages)],
   [join(OUT_DIR, 'site-page-docs.generated.ts'), sitePageDocsModule(sitePages)],
@@ -344,6 +418,11 @@ console.log(
   `[gen-doc-model] wrote ${rel(OUT_DIR)} — ` +
     `${documents.length} documents (${guides.length} guides), ${sections} sections, ${tables} tables, ` +
     `${primitives.length + guides.length + sitePages.length} routes`,
+);
+console.log(
+  `[gen-doc-model] guide registry: ${guides.length} guide(s) in ` +
+    `${new Set(guides.map((guide) => groupOf(guide.slug))).size} group(s), ` +
+    `${EXCLUDED_GUIDES.length} excluded`,
 );
 if (folded.length > 0) {
   console.log(

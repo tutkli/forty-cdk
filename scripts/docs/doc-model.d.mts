@@ -3,8 +3,9 @@
  * cross-cutting guide, or one of the site's own pages
  * ([#1812](https://github.com/tutkli/forty-cdk/issues/1812)).
  *
- * Only `primitive` declares frontmatter and a lede; the other two are prose the
- * compiler reads whole.
+ * Only `primitive` declares frontmatter; a guide and a site page take their
+ * group and their reading order from the registry that publishes them. Nothing
+ * else follows from the kind — all three are compiled, lede lifted, alike.
  */
 export type DocKind = 'primitive' | 'guide' | 'page';
 
@@ -124,7 +125,12 @@ export interface DocDocument {
   readonly title: string;
   /**
    * The opening paragraph's markdown, which the site reads as the document's
-   * description — `null` for a guide, the one kind whose intro stays whole.
+   * description.
+   *
+   * Never `null` for a document the compiler accepted — a document that opens
+   * with no paragraph is refused, because its navigation entry would publish a
+   * blank description. The type carries the `null` the compiler reports that
+   * refusal from.
    */
   readonly lede: string | null;
   /**

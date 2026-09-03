@@ -102,6 +102,10 @@ import { GUIDE_INDEX } from '../doc/guides';
     }
 
     .card-desc {
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 3;
+      overflow: hidden;
       font-size: 0.85rem;
       line-height: 1.5;
       color: var(--pg-text-muted);

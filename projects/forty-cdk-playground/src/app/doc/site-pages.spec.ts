@@ -1,6 +1,6 @@
 import { buildDocRoutes, resolveDocLink } from '../../../../../scripts/lib/doc-links.mjs';
 import { DOC_INDEX } from '../../generated/doc-index.generated';
-import { GUIDES } from './guides.generated';
+import { GUIDES } from '../../generated/guides.generated';
 import { buildSearchEntries } from './search-index';
 import { SITE_PAGE_INDEX } from './site-pages';
 import { compile } from './testing/compile';
@@ -78,23 +78,6 @@ describe('the site pages as they stand', () => {
     for (const page of SITE_PAGE_INDEX) {
       expect(page.title.trim()).not.toBe('');
       expect(page.description.trim()).not.toBe('');
-    }
-  });
-
-  /**
-   * The description *is* the lede, so a page that also renders it in its body
-   * publishes the same sentence twice — the duplication
-   * [#1808](https://github.com/tutkli/forty-cdk/issues/1808) found in four
-   * README pages in production. The compiler lifts it out for every kind but a
-   * guide, and this is what would notice if a site page stopped being one of
-   * them.
-   */
-  it('publishes its lede once, in the header rather than the body as well', () => {
-    for (const page of pages) {
-      expect(page.lede).not.toBeNull();
-
-      const intro = page.intro.map((block) => block.markdown).join('\n');
-      expect(intro).not.toContain(page.lede!);
     }
   });
 });

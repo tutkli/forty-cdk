@@ -24,10 +24,12 @@ disagree with the code in three places.
 > Scope note: this governs per-primitive pages only. Cross-cutting guides (`docs/styling.md`,
 > `docs/your-first-overlay.md`, …) keep their own free-form structure and are rendered as plain
 > articles at `/guides/<name>`, listed at `/guides`
-> ([#1801](https://github.com/tutkli/forty-cdk/issues/1801)). Which files in `docs/` are published,
+> ([#1801](https://github.com/tutkli/forty-cdk/issues/1801)). Free-form is about **sections**: a
+> guide owes the lede below like every other document, because its page header and its index card
+> read that paragraph. Which files in `docs/` are published,
 > which theme group each belongs to, and the written reason for every exclusion all live in
 > `PUBLISHED_GUIDES` / `EXCLUDED_GUIDES` in [scripts/lib/doc-site.mjs](../scripts/lib/doc-site.mjs);
-> a `.md` file in `docs/` that is in neither list fails `pnpm gen:guides`. This document is the one
+> a `.md` file in `docs/` that is in neither list fails `pnpm gen:doc-model`. This document is the one
 > excluded file — it addresses contributors rather than consumers.
 
 ## Frontmatter
@@ -62,6 +64,13 @@ title — _is_ the description, lifted out of the intro at compile time. The pag
 the body below renders everything else, so there is one copy and no comparison to keep it honest.
 This replaces `stripLeadingDescription`, which existed to notice when the registry's copy and the
 README's opening paragraph were byte-identical and drop one of them.
+
+**Every published document owes one, guides and the site's own pages included.** A document that
+opens with no paragraph above its first section fails the build, and the lift has no exemption: a
+kind that kept its lede in the intro is a kind whose page header has to quote the body under it,
+which is what all eleven guide pages did while the guides were exempt — the header showing a copy
+another scan had clipped at 260 characters, the body opening with the same sentence whole. How much
+of a description a card shows is that card's own business, in CSS.
 
 ## Archetypes
 
