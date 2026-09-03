@@ -12,8 +12,8 @@ import {
   SECTION_EXEMPTIONS,
 } from '../../../../../scripts/lib/doc-contract.mjs';
 import { splitFrontmatter } from '../../../../../scripts/lib/doc-frontmatter.mjs';
-import { compile, FRONTMATTER, readmeProblemsOf } from './testing/compile';
-import { PRIMITIVE_DOCS } from './testing/doc-corpus';
+import { compile, FRONTMATTER, problemsOf, readmeProblemsOf } from './testing/compile';
+import { PRIMITIVE_DOCS, SITE_DOCS } from './testing/doc-corpus';
 
 /**
  * The page-template contract as code
@@ -255,16 +255,25 @@ describe('what the compiler does with a README', () => {
     expect(problems[0]!.message).toContain('no lede paragraph');
   });
 
-  it('leaves a guide’s intro whole, lede and all', () => {
+  /**
+   * A guide declares no frontmatter and is compiled exactly like a README
+   * otherwise — the lift included. It was exempt from it until every guide page
+   * was found publishing its lede twice: the header showed the registry's copy,
+   * clipped at 260 characters by a line scan of its own, and the body opened
+   * with the same sentence whole. An exemption from the lift is a page whose
+   * header quotes its body, so there is none.
+   */
+  it('lifts a guide’s lede out of its intro too, and refuses a guide with none', () => {
     const document = compile({
       path: 'docs/styling.md',
       slug: 'styling',
-      markdown: '# Styling\n\nWhat it is.\n\n## Hooks\n',
+      markdown: '# Styling\n\nWhat it is.\n\nMore prose.\n\n## Hooks\n',
     });
 
     expect(document.meta).toBeNull();
-    expect(document.lede).toBeNull();
-    expect(document.intro[0]!.markdown).toBe('What it is.');
+    expect(document.lede).toBe('What it is.');
+    expect(document.intro.map((block) => block.markdown)).toEqual(['More prose.']);
+    expect(problemsOf('# Styling\n\n## Hooks\n')[0]!.message).toContain('no lede paragraph');
   });
 });
 
@@ -466,5 +475,33 @@ describe('the corpus the library ships', () => {
 
     expect(titles).toContain('Scoped defaults');
     expect(titles).not.toContain('Scope defaults');
+  });
+});
+
+/**
+ * The whole corpus, not the READMEs alone: the lift is what the site's page
+ * headers rely on to show a description without quoting the body under it, and
+ * it holds for an entry point's README, a guide and one of the site's own pages
+ * on the same terms.
+ *
+ * This is the sweep the exemption slipped past. The unit case above proves the
+ * compiler lifts; only a sweep over every published document can say that no
+ * document is exempt from it.
+ */
+describe('the lede every published document opens with', () => {
+  const documents = SITE_DOCS.map((doc) => compile(doc));
+
+  it('reaches the page header and is left nowhere in the body', () => {
+    expect(documents.length).toBeGreaterThanOrEqual(60);
+
+    for (const document of documents) {
+      expect(document.lede).not.toBeNull();
+
+      const body = [...document.intro, ...document.sections.flatMap((section) => section.blocks)]
+        .filter((block) => block.kind === 'prose')
+        .map((block) => block.markdown)
+        .join('\n\n');
+      expect(body).not.toContain(document.lede!);
+    }
   });
 });

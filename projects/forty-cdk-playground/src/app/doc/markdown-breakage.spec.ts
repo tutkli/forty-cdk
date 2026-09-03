@@ -83,7 +83,7 @@ describe('an unescaped pipe inside a union type', () => {
     const problems = problemsOf(markdown, 'unescaped-pipe-in-type.md');
 
     expect(problems).toHaveLength(1);
-    expect(problems[0]!.line).toBe(7);
+    expect(problems[0]!.line).toBe(9);
     expect(problems[0]!.path).toBe('unescaped-pipe-in-type.md');
     expect(problems[0]!.message).toContain('4 cell(s) against a header of 3 column(s)');
   });
@@ -93,7 +93,7 @@ describe('an unescaped pipe inside a union type', () => {
   });
 
   it('reports only the offending row, not the one below it', () => {
-    expect(problemsOf(markdown).map((problem) => problem.line)).toEqual([7]);
+    expect(problemsOf(markdown).map((problem) => problem.line)).toEqual([9]);
   });
 });
 
@@ -104,7 +104,7 @@ describe('a table indented inside a list item', () => {
     const problems = problemsOf(markdown, 'table-inside-list-item.md');
 
     expect(problems).toHaveLength(1);
-    expect(problems[0]!.line).toBe(7);
+    expect(problems[0]!.line).toBe(9);
     expect(problems[0]!.message).toContain('nested in a list item');
   });
 
@@ -120,7 +120,7 @@ describe('prose carrying a pipe above a line of dashes', () => {
     const problems = problemsOf(markdown, 'pipe-above-setext-rule.md');
 
     expect(problems).toHaveLength(1);
-    expect(problems[0]!.line).toBe(5);
+    expect(problems[0]!.line).toBe(7);
     expect(problems[0]!.message).toContain('setext heading');
   });
 

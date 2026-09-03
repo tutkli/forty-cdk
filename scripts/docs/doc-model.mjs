@@ -403,11 +403,12 @@ function blocksOf(run) {
  * slugger that lives no longer than the call — so an anchor is a function of
  * the document and of nothing that was compiled before it.
  *
- * An entry point's README additionally declares its registry metadata as
- * frontmatter, and its lede paragraph is lifted out of the intro rather than
- * left in it: the site's navigation, search and page header read that one
- * paragraph, so the body it renders below the header cannot also hold it. A
- * guide carries neither — the guide registry owns its metadata.
+ * Every document's lede paragraph is lifted out of the intro rather than left
+ * in it: the site's navigation, search and page header read that one paragraph,
+ * so the body it renders below the header cannot also hold it. An entry point's
+ * README additionally declares its registry metadata as frontmatter; a guide
+ * and a site page declare none, their registries owning the group and the
+ * reading order a document cannot state about itself.
  *
  * A frontmatter problem is reported on its own rather than alongside the body's,
  * which is the one place this function does not collect everything it finds: a
@@ -418,15 +419,15 @@ function blocksOf(run) {
  * @param location `path` is the repository-relative path the link resolver and
  * every error message name; `slug` is the route the site publishes the document
  * under; `kind` is `primitive` for an entry point's README, which declares
- * frontmatter, and `guide` or `page` for the prose that declares none — of
- * which only a guide keeps its intro whole, a page having its lede lifted out
- * as its description the way a README does.
+ * frontmatter, and `guide` or `page` for the prose that declares none. It
+ * decides how the document's metadata is read and nothing else — every kind is
+ * compiled the same way, the lede lift included.
  * @throws {DocCompileError} when the document is ambiguous rather than merely
  * unusual — invalid or missing frontmatter, a row whose cell count disagrees
  * with its header, a table GFM would not recognise, a table or heading nested
  * where the site cannot render it, a heading that slugifies to nothing, a fence
- * in a language the site cannot highlight, a missing title, or a README with no
- * lede.
+ * in a language the site cannot highlight, a missing title, or a document with
+ * no lede.
  */
 export function compileDocument(source, { path, slug, kind }) {
   const normalized = normalize(source);
@@ -512,18 +513,23 @@ export function compileDocument(source, { path, slug, kind }) {
   }
 
   /**
-   * A guide's intro stays whole; every other kind has its opening paragraph
-   * lifted out as the document's description.
+   * Every document has its opening paragraph lifted out as its description.
    *
    * The lift is what keeps a page from publishing the same sentence twice: the
    * header renders the description and the body renders the intro, so a lede
    * left in both is the duplication
    * [#1808](https://github.com/tutkli/forty-cdk/issues/1808) found in four
    * README pages in production.
+   *
+   * It is one rule for the whole corpus because the exemption was the defect:
+   * a guide kept its intro whole, its registry summarised that intro a second
+   * time through a line scan of its own, and all eleven guide pages published
+   * the same sentence twice — the header's copy clipped mid-word, the body's
+   * whole. A kind whose intro keeps its lede is a kind whose header has to
+   * quote its body, so there is no such kind.
    */
-  const ledeIndex =
-    kind === 'guide' ? -1 : introRun.findIndex((entry) => entry.token.type === 'paragraph');
-  if (kind !== 'guide' && ledeIndex === -1) {
+  const ledeIndex = introRun.findIndex((entry) => entry.token.type === 'paragraph');
+  if (ledeIndex === -1) {
     report(
       title.line,
       'the document has no lede paragraph above its first section — the site reads the navigation ' +
