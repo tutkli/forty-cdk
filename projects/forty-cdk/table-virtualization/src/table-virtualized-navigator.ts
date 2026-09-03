@@ -26,7 +26,7 @@ export interface TableVirtualizedNavigatorDeps {
   readonly scrollToRow: (index: number) => void;
   /** The scroll container's bounding rect, or `null` before it is available. */
   readonly scrollViewportRect: () => DOMRect | null;
-  /** The true total data-row count, used to clamp when stepping over variant rows. */
+  /** The count of rows the virtualizer can place (`[virtualRowCount]`, else the table's `[rowCount]`), used to clamp when stepping over variant rows. */
   readonly rowCount: () => number;
   /** The count of currently loaded data rows (the body dataset length), or `undefined` when unknown (raw-primitive rendering). Cross-window targets are clamped to this so an out-of-prefix row never stashes a pending focus move that can only resolve when a far page later loads. */
   readonly loadedRowCount?: () => number | undefined;
@@ -57,11 +57,12 @@ export interface TableVirtualizedNavigatorDeps {
  * later steal focus.
  *
  * Off-prefix targets are clamped to the last loaded row: when `loadedRowCount`
- * is smaller than the total `rowCount` (a server-paged grid whose far pages are
- * not yet loaded), a target beyond the loaded prefix restarts at the last loaded
- * row searching upward, so a Ctrl+End / Page / Arrow move can never stash a
- * pending focus that only resolves — and steals focus — when a far page later
- * mounts.
+ * is smaller than the placeable `rowCount` (a server-paged grid whose far pages
+ * are not yet loaded), a target beyond the loaded prefix restarts at the last
+ * loaded row searching upward, so a Ctrl+End / Page / Arrow move can never stash
+ * a pending focus that only resolves — and steals focus — when a far page later
+ * mounts. A raw-primitive grid registers no body dataset, so there the same bound
+ * arrives through `[virtualRowCount]` instead.
  *
  * Mirrors the 1D `ListboxVirtualizedNavigator` precedent, adapted to the table's
  * roving + focused-row-retention model. Internal — not re-exported from

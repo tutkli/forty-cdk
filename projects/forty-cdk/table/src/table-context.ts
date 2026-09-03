@@ -67,8 +67,9 @@ export interface ForTableContext {
   /** Selects all selectable rows when not all are selected; clears when all are. No-op outside `'multiple'` mode. */
   toggleSelectAll(): void;
   /**
-   * The resolved true total data-row count for `aria-rowcount` and the virtualized
-   * scroll range, in resolution order: the explicit `[rowCount]` input when set,
+   * The resolved true total data-row count for `aria-rowcount`, and the virtualized
+   * scroll range unless `[forTableVirtualized]` narrows it with its own
+   * `[virtualRowCount]`. Resolution order: the explicit `[rowCount]` input when set,
    * else the declarative `<for-table-body>`'s dataset length when a body has
    * registered one, else `undefined` (readers fall back to the rendered row count).
    */

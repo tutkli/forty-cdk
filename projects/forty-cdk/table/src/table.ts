@@ -123,8 +123,9 @@ export class ForTable<T = unknown> implements ForTableContext {
   readonly dir = injectTextDirection(this._dirInput);
 
   /**
-   * Explicit override for the true total data-row count (`aria-rowcount` and the
-   * virtualized scroll range). A declarative `<for-table-body>` supplies this
+   * Explicit override for the true total data-row count (`aria-rowcount`, and the
+   * virtualized scroll range unless `[forTableVirtualized]` narrows it with its own
+   * `[virtualRowCount]`). A declarative `<for-table-body>` supplies this
    * automatically from its `rows` dataset length, so bind `[rowCount]` only for a
    * server-known total larger than the loaded rows; when set it wins over the
    * body-derived count. Defaults to the body count, else the rendered data-row
@@ -142,8 +143,9 @@ export class ForTable<T = unknown> implements ForTableContext {
   /**
    * Resolved true total data-row count: the explicit `[rowCount]` input when set,
    * else the declarative `<for-table-body>`'s dataset length, else `undefined`
-   * (readers fall back to the rendered count). Feeds `aria-rowcount`, the
-   * cross-window navigation total, and the virtualizer's count.
+   * (readers fall back to the rendered count). Feeds `aria-rowcount` and, unless
+   * `[forTableVirtualized]` narrows it with its own `[virtualRowCount]`, the
+   * virtualizer's count and the cross-window navigation bound.
    */
   readonly rowCount = computed<number | undefined>(
     () => this._rowCountInput() ?? this.#registry.bodyRowCount()?.(),
