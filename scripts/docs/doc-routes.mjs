@@ -19,6 +19,7 @@ const EXPORTED_CLASS = /^export class (\w+)/gm;
 
 const pageModuleOf = (slug) => `../app/demos/${slug}/${slug}.page`;
 const GUIDE_MODULE = '../app/guides/guide.page';
+const SITE_MODULE = '../app/pages/site.page';
 
 /**
  * The component a primitive's page is expected to export, derived from its slug.
@@ -104,11 +105,34 @@ function guideRoute(slug) {
 }
 
 /**
- * The generated route table: one lazy route per published primitive and one per
- * guide, in the order the corpus was read.
+ * Every site page route loads the one `SitePage` the same way a guide route
+ * loads `GuidePage` — the difference is the path, which is the slug alone
+ * ([#1812](https://github.com/tutkli/forty-cdk/issues/1812)).
+ *
+ * They are emitted before the primitives so a slug that collided would produce
+ * a duplicate route rather than a shadowed one. `readSitePages` refuses the
+ * collision first; this ordering is what keeps the failure legible if one ever
+ * gets past it.
  */
-export function routesModule({ primitiveSlugs, guideSlugs }) {
-  const routes = [...primitiveSlugs.map(primitiveRoute), ...guideSlugs.map(guideRoute)].join('\n');
+function sitePageRoute(slug) {
+  return [
+    '  {',
+    `    path: '${slug}',`,
+    `    data: { slug: '${slug}' },`,
+    `    loadComponent: () => import('${SITE_MODULE}').then((m) => m.SitePage),`,
+    '  },',
+  ].join('\n');
+}
+/**
+ * The generated route table: one lazy route per site page, per published
+ * primitive and per guide, in the order the corpus was read.
+ */
+export function routesModule({ primitiveSlugs, guideSlugs, pageSlugs = [] }) {
+  const routes = [
+    ...pageSlugs.map(sitePageRoute),
+    ...primitiveSlugs.map(primitiveRoute),
+    ...guideSlugs.map(guideRoute),
+  ].join('\n');
 
   return (
     `import type { Routes } from '@angular/router';\n\n` +

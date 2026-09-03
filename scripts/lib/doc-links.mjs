@@ -53,13 +53,18 @@ export function guideSlugOf(file) {
 /**
  * Where each documented path is published.
  *
+ * `pageSlugs` carries the site's own pages, which are served from the root
+ * ([#1812](https://github.com/tutkli/forty-cdk/issues/1812)) — so a link written
+ * as `../site/installation.md` resolves to `/installation` rather than to a
+ * GitHub blob.
+ *
  * `foldedSlugs` carries the entry points whose README the site republishes inside
  * another page ([#1809](https://github.com/tutkli/forty-cdk/issues/1809)). Their
  * route holds the fragment their content starts at, and a link that already
  * carried a fragment of its own is resolved against the anchors the fold minted
  * — see {@link resolveDocLink}.
  */
-export function buildDocRoutes({ primitiveSlugs, guideSlugs, foldedSlugs = [] }) {
+export function buildDocRoutes({ primitiveSlugs, guideSlugs, pageSlugs = [], foldedSlugs = [] }) {
   const routes = new Map();
   for (const slug of primitiveSlugs) {
     routes.set(`projects/forty-cdk/${slug}`, `/${slug}`);
@@ -67,6 +72,9 @@ export function buildDocRoutes({ primitiveSlugs, guideSlugs, foldedSlugs = [] })
   }
   for (const slug of guideSlugs) {
     routes.set(`docs/${slug}.md`, `/guides/${slug}`);
+  }
+  for (const slug of pageSlugs) {
+    routes.set(`docs/site/${slug}.md`, `/${slug}`);
   }
   for (const { slug, host } of foldedSlugs) {
     routes.set(`projects/forty-cdk/${slug}`, `/${host}#${slug}`);

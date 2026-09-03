@@ -9,13 +9,25 @@ import { DOC_ROUTES } from '../generated/routes.generated';
  * Nothing per-primitive is authored here. A primitive appears because its README
  * declares a nav group and `demos/<slug>/` holds the page — the same two facts
  * the nav is derived from — so there is no third place to forget.
+ *
+ * The root serves a landing page and the fallback a 404
+ * ([#1812](https://github.com/tutkli/forty-cdk/issues/1812)). Both used to
+ * redirect to *accordion*, which answered a reader arriving from npm with an
+ * accordion's API reference and answered a mistyped URL with the same.
  */
 export const routes: Routes = [
-  { path: '', redirectTo: 'accordion', pathMatch: 'full' },
+  {
+    path: '',
+    pathMatch: 'full',
+    loadComponent: () => import('./pages/home.page').then((m) => m.HomePage),
+  },
   {
     path: 'guides',
     loadComponent: () => import('./guides/guides.page').then((m) => m.GuidesPage),
   },
   ...DOC_ROUTES,
-  { path: '**', redirectTo: 'accordion' },
+  {
+    path: '**',
+    loadComponent: () => import('./pages/not-found.page').then((m) => m.NotFoundPage),
+  },
 ];

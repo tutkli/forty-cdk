@@ -11,6 +11,8 @@ export interface DocRoutesInput {
   readonly primitiveSlugs: readonly string[];
   /** Slugs of the guides the site publishes. */
   readonly guideSlugs: readonly string[];
+  /** Slugs of the site's own pages, served from the root. */
+  readonly pageSlugs?: readonly string[];
 }
 
 export declare function pageSymbolOf(slug: string): string;

@@ -417,7 +417,10 @@ function blocksOf(run) {
  * @param source Raw markdown, in either line ending.
  * @param location `path` is the repository-relative path the link resolver and
  * every error message name; `slug` is the route the site publishes the document
- * under; `kind` distinguishes an entry point's README from a guide.
+ * under; `kind` is `primitive` for an entry point's README, which declares
+ * frontmatter, and `guide` or `page` for the prose that declares none — of
+ * which only a guide keeps its intro whole, a page having its lede lifted out
+ * as its description the way a README does.
  * @throws {DocCompileError} when the document is ambiguous rather than merely
  * unusual — invalid or missing frontmatter, a row whose cell count disagrees
  * with its header, a table GFM would not recognise, a table or heading nested
@@ -508,9 +511,19 @@ export function compileDocument(source, { path, slug, kind }) {
     }
   }
 
+  /**
+   * A guide's intro stays whole; every other kind has its opening paragraph
+   * lifted out as the document's description.
+   *
+   * The lift is what keeps a page from publishing the same sentence twice: the
+   * header renders the description and the body renders the intro, so a lede
+   * left in both is the duplication
+   * [#1808](https://github.com/tutkli/forty-cdk/issues/1808) found in four
+   * README pages in production.
+   */
   const ledeIndex =
-    kind === 'primitive' ? introRun.findIndex((entry) => entry.token.type === 'paragraph') : -1;
-  if (kind === 'primitive' && ledeIndex === -1) {
+    kind === 'guide' ? -1 : introRun.findIndex((entry) => entry.token.type === 'paragraph');
+  if (kind !== 'guide' && ledeIndex === -1) {
     report(
       title.line,
       'the document has no lede paragraph above its first section — the site reads the navigation ' +

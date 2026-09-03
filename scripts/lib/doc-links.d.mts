@@ -29,6 +29,8 @@ export interface FoldedDocRoute {
 export interface DocRoutesInput {
   readonly primitiveSlugs: readonly string[];
   readonly guideSlugs: readonly string[];
+  /** The site's own pages, published from the root rather than under /guides. */
+  readonly pageSlugs?: readonly string[];
   readonly foldedSlugs?: readonly FoldedDocRoute[];
 }
 
