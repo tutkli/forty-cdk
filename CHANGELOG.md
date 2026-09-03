@@ -5,6 +5,66 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.25.0] - 2026-09-03
+
+A release about three things a grid could not express. A full-span section row had no cell to write
+it with unless you rendered the body declaratively. Selecting a row and opening it were mutually
+exclusive, because the row click belonged to the selection. And the virtualizer sized its scroll
+range from the count `aria-rowcount` reports, so an append-style infinite list stretched over pages
+it could never place. All three are new API; the one thing that changes without you binding anything
+is `[interactiveRows]`, whose pointer half is no longer inert in `grid` / `treegrid` mode.
+
+### Added
+
+- **Table** — `[forTableVariantCell]` writes a full-span presentational row with the raw primitives
+  ([#1834](https://github.com/tutkli/forty-cdk/issues/1834)). A group separator, a section header or
+  a summary line was only authorable through the declarative body's `[forTableRowCellDef]` variant
+  row; hand-rolled with the raw primitives the same markup meant reproducing the mode-dependent
+  `role`, the `aria-colindex` and an `aria-colspan` counted by hand — and reaching for
+  `[forTableCell]` instead registered a cell handle that skewed the roving grid's column count. The
+  directive emits exactly what `<for-table-body>` stamps: `role="cell"` in `table` mode and
+  `role="gridcell"` otherwise, `aria-colindex="1"`, an `aria-colspan` covering the grid's rendered
+  columns, and the `data-row-variant` styling hook. It registers no cell handle on purpose — in
+  `grid` / `treegrid` mode the row contributes nothing to the roving grid, so arrow navigation steps
+  over it, the column count keeps coming from the data rows around it, and the header row still
+  joins the composite tab stop. Spanning the row visually stays your CSS.
+- **Table** — `selectionBehavior="none"` frees the row click from the selection
+  ([#1835](https://github.com/tutkli/forty-cdk/issues/1835)). The third behavior leaves the
+  selection untouched on a row click, so a selectable grid can also open a record: with it,
+  `[forTableRowSelector]`, `[forTableSelectAll]` and `Space` on a focused cell are the channels that
+  mutate the selection, and the click is free for `rowActivate`. The no-op also leaves the range
+  anchor where it was, so a later Shift-click on a selector still extends from the row you anchored
+  rather than from the last row you happened to click. `aria-selected` and `aria-multiselectable`
+  are unaffected — they resolve from `selectionMode` and `mode`, never from the behavior. Paired
+  with `[interactiveRows]` this is the "checkbox selects, row opens the record" shape; under
+  `'toggle'` or `'replace'` a row click in a selectable grid does both at once.
+- **Table virtualization** — `[virtualRowCount]` gives the scroll range its own count
+  ([#1836](https://github.com/tutkli/forty-cdk/issues/1836)). `[forTableVirtualized]` sized its
+  window and bounded cross-window keyboard navigation with the table's `[rowCount]`, which is the
+  server-known total `aria-rowcount` has to report. That is the right bound for an
+  **index-addressable** dataset — any absolute index is fetchable, so the window may travel the
+  whole total — and the wrong one for an **append-style** infinite list, whose loaded prefix is the
+  only range that can be rendered: the scrollbar claimed pages only an append could reach and
+  `Ctrl+End` clamped to the server total. Leave `[rowCount]` at the true total and bind this to the
+  loaded count. It sits on the virtualization companion rather than on `[forTable]` — the same host,
+  so the ergonomics are identical, but the root stays free of a virtualization-only concept and the
+  navigator inherits the bound for free. It is also the only channel the raw-primitive shape has for
+  that count, since `<for-table-body>` is what otherwise derives it from its dataset.
+
+### Changed
+
+- **Table** — `[interactiveRows]`'s pointer half is live in `grid` / `treegrid` mode
+  ([#1835](https://github.com/tutkli/forty-cdk/issues/1835)). One guard used to govern all four of
+  the tab stop, `Enter`, the click and the `contextmenu`, and it required the default `mode="table"`
+  — so a data grid that wanted "click the row to open the record" had to give up roving 2D
+  navigation to get it. A pointer click and a `contextmenu` now emit `rowActivate` /
+  `rowContextMenu` in every mode. The **keyboard** half stays scoped to `table` mode: in a grid the
+  row takes no `tabindex="0"` and `Enter` keeps its cell-entry meaning, so the roving navigation is
+  untouched — bind a cell-level affordance for the keyboard path there. Variant rows stay
+  non-interactive and interactive content inside a cell still owns its own events. **If you had
+  `[interactiveRows]` set on a grid** relying on it being ignored, a row click now emits; pair the
+  root with `selectionBehavior="none"` when that click should not mutate the selection too.
+
 ## [0.24.1] - 2026-08-18
 
 A bugfix release about letting go. The pointer's claim on `data-highlighted` outlived the pointer in
@@ -2228,6 +2288,7 @@ primitives.
 - `forty-cdk/internationalized-date` secondary entry point exposing the `@internationalized/date` adapters for the date and time primitives.
 
 [Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.24.0...HEAD
+[0.25.0]: https://github.com/tutkli/forty-cdk/compare/v0.24.1...v0.25.0
 [0.24.1]: https://github.com/tutkli/forty-cdk/compare/v0.24.0...v0.24.1
 [0.24.0]: https://github.com/tutkli/forty-cdk/compare/v0.23.0...v0.24.0
 [0.23.0]: https://github.com/tutkli/forty-cdk/compare/v0.22.0...v0.23.0
