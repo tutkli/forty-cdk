@@ -491,13 +491,20 @@ export class ForTableBody<T = unknown> {
   readonly columnWidths = model<Readonly<Record<string, number>>>({});
 
   /**
-   * Opt-in whole-row interaction for **navigation lists**, active only in the
-   * default `mode="table"`. When set, each data row becomes a focusable tab stop
-   * (`tabindex="0"`) and a pointer click or `Enter` emits `rowActivate`, while a
-   * `contextmenu` (right-click or the context-menu key) emits `rowContextMenu`.
-   * Full-span `[forTableRowDef]` variant rows stay non-interactive. Ignored in `grid`
-   * / `treegrid` mode, where roving 2D navigation and cell-entry own the keyboard
-   * and whole-row activation would conflict.
+   * Opt-in whole-row interaction for **navigation lists**. When set, a pointer click
+   * on a data row emits `rowActivate` and a `contextmenu` (right-click or the
+   * context-menu key) emits `rowContextMenu`, in every `mode`. Full-span
+   * `[forTableRowDef]` variant rows stay non-interactive.
+   *
+   * The **keyboard** half is scoped to the default `mode="table"`: there each data row
+   * also becomes a focusable tab stop (`tabindex="0"`) and `Enter` emits `rowActivate`.
+   * In `grid` / `treegrid` mode the row takes no tab stop and `Enter` keeps its
+   * cell-entry meaning, so the roving 2D navigation stays intact — bind a cell-level
+   * affordance for the keyboard path there.
+   *
+   * Pair it with `selectionBehavior="none"` on the root to get the "checkbox selects,
+   * row opens the record" shape: with any other behavior a row click in a selectable
+   * grid both activates the row and mutates the selection.
    *
    * Interactive content inside a data cell owns its own events: a click or `Enter` originating from
    * a `button`, `a[href]`, `input`, `select`, `textarea`, `summary`, `label`,
@@ -512,17 +519,16 @@ export class ForTableBody<T = unknown> {
   readonly interactiveRows = input(false, { transform: booleanAttribute });
 
   /**
-   * Fires when a data row is activated by a pointer click or `Enter`, carrying
-   * the row datum, its dataset index, and the originating event. Requires
-   * `interactiveRows` and `mode="table"`.
+   * Fires when a data row is activated by a pointer click, or by `Enter` in
+   * `mode="table"`, carrying the row datum, its dataset index, and the originating
+   * event. Requires `interactiveRows`.
    */
   readonly rowActivate = output<TableRowActivateEvent<T>>();
 
   /**
    * Fires when a data row receives a `contextmenu` event (right-click or the
    * context-menu key), carrying the row datum, its dataset index, and the event —
-   * position your own overlay from it. Requires `interactiveRows` and
-   * `mode="table"`.
+   * position your own overlay from it. Requires `interactiveRows`.
    */
   readonly rowContextMenu = output<TableRowContextMenuEvent<T>>();
 
@@ -735,14 +741,18 @@ export class ForTableBody<T = unknown> {
     return descriptor && descriptor.column === column ? descriptor.direction : 'none';
   }
 
-  /** Whether whole-row interaction is active: opted in via `interactiveRows` and in `table` mode. */
-  protected readonly rowsInteractive = computed(
+  /**
+   * Whether the keyboard half of whole-row interaction is active: opted in via
+   * `interactiveRows` and in `table` mode, the only mode where a row may own a tab
+   * stop and `Enter` without colliding with the roving grid's cell-entry.
+   */
+  protected readonly rowsKeyboardInteractive = computed(
     () => this.interactiveRows() && this.#ctx.mode() === 'table',
   );
 
-  /** The `tabindex` for a stamped row: `0` for an interactive data row, `null` otherwise. */
+  /** The `tabindex` for a stamped row: `0` for a keyboard-interactive data row, `null` otherwise. */
   protected rowTabIndex(row: RenderRow<T>): 0 | null {
-    return this.rowsInteractive() && !row.variant ? 0 : null;
+    return this.rowsKeyboardInteractive() && !row.variant ? 0 : null;
   }
 
   /** Resolves the `rowClass` hook for a stamped row, or `undefined` when unset. */
@@ -785,24 +795,26 @@ export class ForTableBody<T = unknown> {
   };
 
   protected onRowClick(row: RenderRow<T>, event: MouseEvent): void {
-    this.#activateRow(row, event);
+    if (this.interactiveRows()) {
+      this.#activateRow(row, event);
+    }
   }
 
   protected onRowEnter(row: RenderRow<T>, event: Event): void {
-    if (this.#activateRow(row, event)) {
+    if (this.rowsKeyboardInteractive() && this.#activateRow(row, event)) {
       event.preventDefault();
     }
   }
 
   protected onRowContextMenu(row: RenderRow<T>, event: MouseEvent): void {
-    if (!this.rowsInteractive() || row.variant) {
+    if (!this.interactiveRows() || row.variant) {
       return;
     }
     this.rowContextMenu.emit({ row: row.datum, index: row.index, event });
   }
 
   #activateRow(row: RenderRow<T>, event: Event): boolean {
-    if (!this.rowsInteractive() || row.variant || eventFromInteractiveDescendant(event)) {
+    if (row.variant || eventFromInteractiveDescendant(event)) {
       return false;
     }
     this.rowActivate.emit({ row: row.datum, index: row.index, event });

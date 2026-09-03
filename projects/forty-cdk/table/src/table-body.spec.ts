@@ -566,6 +566,54 @@ class InteractiveDescendantHost {
   readonly clicks = signal(0);
 }
 
+@Component({
+  imports: [
+    ForTable,
+    ForTableBody,
+    ForTableColumnDef,
+    ForTableHeaderCellDef,
+    ForTableCellDef,
+    ForTableRowSelector,
+  ],
+  template: `
+    <div
+      forTable
+      mode="grid"
+      ariaLabel="Records"
+      selectionMode="multiple"
+      selectionBehavior="none"
+      [(value)]="selection"
+    >
+      <for-table-body
+        [rows]="rows()"
+        [rowKey]="rowKey"
+        interactiveRows
+        (rowActivate)="lastActivate.set($event)"
+      >
+        <ng-container forTableColumnDef="sel">
+          <ng-template forTableHeaderCellDef>Sel</ng-template>
+          <ng-template forTableCellDef [forTableCellDefRow]="rows()" let-row>
+            <span forTableRowSelector [attr.data-testid]="'selector-' + row.id"></span>
+          </ng-template>
+        </ng-container>
+        <ng-container forTableColumnDef="name">
+          <ng-template forTableHeaderCellDef>Name</ng-template>
+          <ng-template forTableCellDef [forTableCellDefRow]="rows()" let-row>
+            <span [attr.data-testid]="'name-' + row.id">{{ row.name }}</span>
+            <button type="button" [attr.data-testid]="'action-' + row.id">Edit</button>
+          </ng-template>
+        </ng-container>
+      </for-table-body>
+    </div>
+  `,
+})
+class SelectAndActivateHost {
+  readonly rows = signal<Row[]>(buildRows());
+  readonly rowKey = (row: Row): number => row.id;
+  readonly selection = signal<readonly unknown[]>([]);
+  readonly lastActivate = signal<TableRowActivateEvent<Row> | null>(null);
+}
+
 interface FeedRow {
   id: number;
   name: string;
@@ -1979,16 +2027,82 @@ describe('ForTableBody', () => {
       expect(instance.lastContextMenu()).toBeNull();
     });
 
-    it('scopes row activation to table mode (inert in grid mode)', () => {
+    it('activates a row from a pointer click in grid mode (#1835)', () => {
+      const { instance, queryAll, fixture } = renderHost(RowInteractionHost);
+      instance.mode.set('grid');
+      fixture.detectChanges();
+      const rows = queryAll('[forTableRow]');
+
+      rows[1]!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      expect(instance.lastActivate()?.index).toBe(1);
+
+      const menu = new MouseEvent('contextmenu', { bubbles: true });
+      rows[2]!.dispatchEvent(menu);
+      expect(instance.lastContextMenu()?.event).toBe(menu);
+    });
+
+    it('keeps the keyboard half in table mode: no row tab stop and Enter stays cell-entry in grid (#1835)', () => {
       const { instance, queryAll, fixture } = renderHost(RowInteractionHost);
       instance.mode.set('grid');
       fixture.detectChanges();
       const rows = queryAll('[forTableRow]');
       expect(rows[1]!.hasAttribute('tabindex')).toBe(false);
-      rows[1]!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-      rows[1]!.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true }));
+
+      const enter = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+      rows[1]!.dispatchEvent(enter);
+      expect(instance.lastActivate()).toBeNull();
+      expect(enter.defaultPrevented).toBe(false);
+    });
+
+    it('does not activate a variant row from a pointer click in grid mode (#1835)', () => {
+      const { instance, queryAll, fixture } = renderHost(RowInteractionHost);
+      instance.mode.set('grid');
+      fixture.detectChanges();
+      const variant = queryAll('[forTableRow]')[0]!;
+      variant.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      variant.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true }));
       expect(instance.lastActivate()).toBeNull();
       expect(instance.lastContextMenu()).toBeNull();
+    });
+
+    it('selectionBehavior="none": a row click activates the row and leaves the selection alone (#1835)', async () => {
+      const { instance, query, queryAll, flush } = renderHost(SelectAndActivateHost);
+      const row1 = queryAll('[forTableRow]')[0]!;
+
+      query('[data-testid="name-1"]')!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await flush();
+
+      expect(instance.lastActivate()?.row.name).toBe('Ada');
+      expect(instance.selection()).toEqual([]);
+      expect(row1.getAttribute('aria-selected')).toBe('false');
+    });
+
+    it('selectionBehavior="none": the row selector still selects, without activating the row (#1835)', async () => {
+      const { instance, query, queryAll, flush } = renderHost(SelectAndActivateHost);
+      const row1 = queryAll('[forTableRow]')[0]!;
+
+      query('[data-testid="selector-1"]')!.dispatchEvent(
+        new MouseEvent('click', { bubbles: true, cancelable: true }),
+      );
+      await flush();
+
+      expect(instance.selection()).toEqual([1]);
+      expect(row1.getAttribute('aria-selected')).toBe('true');
+      expect(instance.lastActivate()).toBeNull();
+    });
+
+    it('selectionBehavior="none": a click on an interactive descendant neither activates nor selects (#1835)', async () => {
+      const { instance, query, queryAll, flush } = renderHost(SelectAndActivateHost);
+      const row1 = queryAll('[forTableRow]')[0]!;
+
+      query('[data-testid="action-1"]')!.dispatchEvent(
+        new MouseEvent('click', { bubbles: true, cancelable: true }),
+      );
+      await flush();
+
+      expect(instance.lastActivate()).toBeNull();
+      expect(instance.selection()).toEqual([]);
+      expect(row1.getAttribute('aria-selected')).toBe('false');
     });
 
     it('applies a string rowClass to data and variant rows in table mode', () => {

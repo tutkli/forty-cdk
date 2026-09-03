@@ -186,6 +186,10 @@ export class ForTable<T = unknown> implements ForTableContext {
    * How a row click changes the selection. `'toggle'` (default) flips the clicked
    * row. `'replace'` replaces the selection with the clicked row; Ctrl/Cmd-click
    * toggles a single row and Shift-click extends a range (multiple mode only).
+   * `'none'` leaves the selection untouched on a row click, so the row click is
+   * free for whole-row activation while `[forTableRowSelector]`,
+   * `[forTableSelectAll]` and `Space` on a focused grid cell keep driving the
+   * selection — `aria-selected` and `aria-multiselectable` are unaffected.
    */
   readonly selectionBehavior = input<TableSelectionBehavior>('toggle');
 

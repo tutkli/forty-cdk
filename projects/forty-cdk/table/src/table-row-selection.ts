@@ -23,7 +23,7 @@ export interface TableRowSelectionDeps<T> {
   readonly selection: WritableSignal<readonly T[]>;
   /** The active row-selection mode. `'none'` disables selection. */
   readonly selectionMode: Signal<TableSelectionMode>;
-  /** How a row click mutates the selection (`'toggle'` / `'replace'`). */
+  /** How a row click mutates the selection (`'toggle'` / `'replace'` / `'none'`). */
   readonly selectionBehavior: Signal<TableSelectionBehavior>;
   /** Equality comparator for row values. */
   readonly compareWith: Signal<(a: T, b: T) => boolean>;
@@ -97,14 +97,17 @@ export class TableRowSelection<T> {
   /**
    * Applies a row selection click with optional modifier keys, honoring
    * `selectionBehavior`: `'toggle'` always flips; `'replace'` replaces (Ctrl/Cmd
-   * toggles a single item, Shift extends a range in multiple mode).
+   * toggles a single item, Shift extends a range in multiple mode); `'none'` is a
+   * no-op that also leaves the range anchor where it was, so a later
+   * selector-driven range still extends from it.
    */
   select(value: T, modifiers?: TableSelectionModifiers): void {
     const mode = this.#selectionMode();
-    if (mode === 'none') {
+    const behavior = this.#selectionBehavior();
+    if (mode === 'none' || behavior === 'none') {
       return;
     }
-    if (this.#selectionBehavior() === 'toggle') {
+    if (behavior === 'toggle') {
       this.#model.toggle(value);
       this.#anchor.set(value);
       return;

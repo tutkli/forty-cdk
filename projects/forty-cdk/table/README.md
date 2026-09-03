@@ -282,6 +282,29 @@ Controls how a row click (on the row or on a cell) mutates the selection:
 
 - `'toggle'` (default) — clicking a row always flips its selected state.
 - `'replace'` — clicking a row replaces the selection with that single row. Modifier keys in `'multiple'` mode: **Ctrl/Cmd-click** toggles the clicked row without clearing others; **Shift-click** extends a range from the last anchor to the clicked row.
+- `'none'` — clicking a row never mutates the selection. The rows stay selectable, so `aria-selected` and `aria-multiselectable` are emitted exactly as before, and `[forTableRowSelector]`, `[forTableSelectAll]` and **Space** on a focused grid cell keep driving the selection. The range anchor is untouched too, so a later Shift-click still extends from where the selector left it.
+
+`'none'` is the "checkbox selects, row opens the record" shape — the common data-table on the web. It frees the row click for whole-row activation while selection keeps its legal announcement: pair it with `interactiveRows` on `<for-table-body>` (see [Whole-row navigation lists](../../../docs/table-declarative-columns.md#whole-row-navigation-lists)), or with your own `(click)` when you render the rows yourself.
+
+```html
+<div
+  forTable
+  mode="grid"
+  ariaLabel="Records"
+  selectionMode="multiple"
+  selectionBehavior="none"
+  [(value)]="selection"
+>
+  <for-table-body
+    [rows]="rows()"
+    [rowKey]="rowKey"
+    interactiveRows
+    (rowActivate)="open($event.row)"
+  >
+    <!-- a [forTableRowSelector] column plus the data columns -->
+  </for-table-body>
+</div>
+```
 
 **Interactive content in a data cell owns its click.** A click on a per-row action `<button>` (or an `<a href>`, `<input>`, `<select>`, `<textarea>`, `<summary>`, or `contenteditable` descendant) runs that control **without also** changing the row's selection — so a selectable table with a trailing actions column behaves as expected, and you never have to `stopPropagation()` on every control. A plain click anywhere else on the row — cell text, the gaps between cells, the row itself — still selects, including the `Ctrl`/`Cmd`/`Shift` modifier behaviour above. `[forTableRowSelector]` is unaffected. This mirrors the whole-row-activation guard in [Whole-row navigation lists](../../../docs/table-declarative-columns.md#whole-row-navigation-lists).
 
@@ -558,7 +581,7 @@ from the **`forty-cdk/table-virtualization`** entry point, so neither the table 
 | `rowCount`          | `number`                           | True total data-row count for `aria-rowcount`. Optional with `<for-table-body>` (its dataset length is used); bind it only for a server-known total larger than the loaded rows. Ignored in `table` mode.<br>**Default:** body dataset length, else rendered count (plus the header offset), else `-1` when virtualized |
 | `colCount`          | `number`                           | True total column count for `aria-colcount`. Ignored in `table` mode.<br>**Default:** rendered count, else `-1`                                                                                                                                                                                                         |
 | `selectionMode`     | `'none' \| 'single' \| 'multiple'` | Row selection mode.<br>**Default:** `'none'`                                                                                                                                                                                                                                                                            |
-| `selectionBehavior` | `'toggle' \| 'replace'`            | How a row click mutates selection (modifier-aware in `replace` mode).<br>**Default:** `'toggle'`                                                                                                                                                                                                                        |
+| `selectionBehavior` | `'toggle' \| 'replace' \| 'none'`  | How a row click mutates selection (modifier-aware in `replace` mode; `'none'` leaves it to the selector / select-all / Space).<br>**Default:** `'toggle'`                                                                                                                                                               |
 | `value`             | `model<readonly T[]>([])`          | Two-way bindable selected row values. Infers the row-value type `T`.<br>**Default:** `[]`                                                                                                                                                                                                                               |
 | `compareWith`       | `(a: T, b: T) => boolean`          | Equality comparator for row values. Override for object rows.<br>**Default:** `===`                                                                                                                                                                                                                                     |
 | `selectableValues`  | `readonly T[] \| null`             | Full ordered set of selectable values for total-aware aggregates under virtualization; `null` uses the rendered rows.<br>**Default:** `null`                                                                                                                                                                            |

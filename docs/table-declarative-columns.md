@@ -590,12 +590,16 @@ per-column template.
 Some tables are navigation lists: the **whole row** is the interactive target — click or `Enter` opens
 a detail view, an optional right-click opens a context menu. Because `<for-table-body>` owns the
 `[forTableRow]` element, it exposes the row-level interaction as inputs / outputs rather than letting
-you attach handlers to a row you don't author. Set `interactiveRows` and bind `(rowActivate)` — each
-data row becomes a focusable tab stop (`tabindex="0"`), and a pointer click or `Enter` emits the row
-datum, its dataset index, and the originating event. Bind `(rowContextMenu)` for the right-click / menu
-key. These are **scoped to the default `mode="table"`**: `role="grid"` announces a cell-interaction
-model a navigation list does not have, and whole-row activation would clash with grid roving navigation
-and cell-entry. Full-span `[forTableRowDef]` variant rows stay non-interactive.
+you attach handlers to a row you don't author. Set `interactiveRows` and bind `(rowActivate)` — a
+pointer click emits the row datum, its dataset index, and the originating event. Bind
+`(rowContextMenu)` for the right-click / menu key. Full-span `[forTableRowDef]` variant rows stay
+non-interactive.
+
+The **keyboard** half is scoped to the default `mode="table"`: there each data row also becomes a
+focusable tab stop (`tabindex="0"`) and `Enter` activates it. In `grid` / `treegrid` mode the row takes
+no tab stop and `Enter` keeps its cell-entry meaning, because the roving 2D navigation owns the
+keyboard — so a grid that needs a keyboard path to the same action puts an `<a href>` or a `<button>`
+in a cell, which the interactive-descendant guard below already routes correctly.
 
 ```html
 <div forTable mode="table" ariaLabel="Requests">
@@ -663,13 +667,34 @@ menu, matching native list UIs.
 </ng-container>
 ```
 
+**Selection and activation in the same grid.** A selectable `mode="grid"` announces the selection
+legally — `aria-selected` per row, `aria-multiselectable` on the root — and by default a row click
+_selects_, so pairing it with `interactiveRows` makes one click do both. Set
+[`selectionBehavior="none"`](../projects/forty-cdk/table/README.md#selectionbehavior) on `[forTable]` to
+hand the row click to `(rowActivate)` alone: the `[forTableRowSelector]` column, `[forTableSelectAll]`
+and `Space` on a focused cell keep driving the selection. That is the checkbox-selects /
+row-opens-the-record shape most data tables on the web use.
+
+```html
+<div forTable mode="grid" ariaLabel="Records" selectionMode="multiple" selectionBehavior="none">
+  <for-table-body
+    [rows]="rows()"
+    [rowKey]="rowKey"
+    interactiveRows
+    (rowActivate)="open($event.row)"
+  >
+    <!-- a [forTableRowSelector] column plus the data columns -->
+  </for-table-body>
+</div>
+```
+
 ### Styling a row from its datum (`[rowClass]` / `[rowAttrs]`)
 
 `[headerClass]` / `[cellClass]` on `[forTableColumnDef]` style a stamped **cell** by column, but a row's
 appearance often depends on its **data** — an error row, a dimmed row, the "menu-open" highlight above.
 `[rowClass]` and `[rowAttrs]` are the seam for that: both take a `(row, index) => …` function the body
-calls per stamped row, and — unlike the activation hooks — apply in **every** mode (grid tables need
-per-datum row styling just as much) and to **both** data and variant rows.
+calls per stamped row, and — unlike the activation hooks, which skip variant rows and keep their
+keyboard half in `table` mode — apply to **both** data and variant rows in **every** mode.
 
 - **`[rowClass]`** returns a class string or a `{ className: boolean }` map, applied to the row host.
 - **`[rowAttrs]`** returns an attribute map applied to the row host; a key mapped to `null` (or dropped

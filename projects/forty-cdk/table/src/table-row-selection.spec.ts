@@ -103,6 +103,48 @@ describe('TableRowSelection', () => {
     });
   });
 
+  describe('select with none behavior (#1835)', () => {
+    it('leaves the selection untouched in multiple mode, modifiers included', () => {
+      const { selection, model } = setup({ selectionBehavior: signal('none') });
+      selection.set(['a']);
+      model.select('b');
+      model.select('c', { ctrlKey: true });
+      model.select('d', { shiftKey: true });
+      expect(selection()).toEqual(['a']);
+    });
+
+    it('leaves the selection untouched in single mode', () => {
+      const { selection, model } = setup({
+        selectionMode: signal('single'),
+        selectionBehavior: signal('none'),
+      });
+      selection.set(['a']);
+      model.select('b');
+      expect(selection()).toEqual(['a']);
+    });
+
+    it('leaves the range anchor where the selector put it', () => {
+      const selectionBehavior = signal<TableSelectionBehavior>('none');
+      const { selection, model } = setup({ selectionBehavior });
+      model.toggle('b');
+      model.select('d');
+      expect(selection()).toEqual(['b']);
+
+      selectionBehavior.set('replace');
+      model.select('d', { shiftKey: true });
+      expect(selection()).toEqual(['b', 'c', 'd']);
+    });
+
+    it('keeps toggle and toggleSelectAll mutating', () => {
+      const { selection, model } = setup({ selectionBehavior: signal('none') });
+      model.toggle('a');
+      expect(selection()).toEqual(['a']);
+
+      model.toggleSelectAll();
+      expect(selection()).toEqual(['a', 'b', 'c', 'd']);
+    });
+  });
+
   describe('selectAllState', () => {
     it('is none when nothing is selected', () => {
       const { model } = setup();
