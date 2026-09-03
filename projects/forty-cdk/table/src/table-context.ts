@@ -17,8 +17,12 @@ export type TableMode = 'table' | 'grid' | 'treegrid';
 /** Row-selection mode for `ForTable`. `'none'` disables selection. */
 export type TableSelectionMode = 'none' | 'single' | 'multiple';
 
-/** How a row click mutates selection. `'toggle'` flips it; `'replace'` replaces (modifier-aware). */
-export type TableSelectionBehavior = 'toggle' | 'replace';
+/**
+ * How a row click mutates selection. `'toggle'` flips it; `'replace'` replaces
+ * (modifier-aware); `'none'` leaves it untouched, so only `[forTableRowSelector]`,
+ * `[forTableSelectAll]` and `Space` on a focused grid cell mutate the selection.
+ */
+export type TableSelectionBehavior = 'toggle' | 'replace' | 'none';
 
 /** Aggregate selection state across the table's selectable rows, for the select-all tri-state. */
 export type TableSelectAllState = 'none' | 'some' | 'all';
@@ -51,7 +55,8 @@ export interface ForTableContext {
   /**
    * Applies a row selection click with optional modifier keys, honoring `selectionBehavior`:
    * `'toggle'` always flips; `'replace'` replaces (Ctrl/Cmd toggles a single item,
-   * Shift extends a range in multiple mode).
+   * Shift extends a range in multiple mode); `'none'` is a no-op that also leaves the
+   * range anchor where it was.
    */
   selectRow(
     value: unknown,

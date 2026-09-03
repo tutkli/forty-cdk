@@ -2525,6 +2525,96 @@ describe('ForTable', () => {
     });
   });
 
+  describe('selectionBehavior="none" (#1835)', () => {
+    it('leaves the selection untouched on a row click in multiple mode, modifiers included', async () => {
+      const { el, instance, flush } = renderHost(SelectionTableHost);
+      instance.behavior.set('none');
+      await flush();
+
+      const row1 = el.querySelector<HTMLElement>('[data-testid="row-1"]')!;
+      const cell1 = el.querySelector<HTMLElement>('[data-testid="cell-name-1"]')!;
+      const cell2 = el.querySelector<HTMLElement>('[data-testid="cell-name-2"]')!;
+
+      cell1.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      cell2.dispatchEvent(
+        new MouseEvent('click', { bubbles: true, cancelable: true, ctrlKey: true }),
+      );
+      cell2.dispatchEvent(
+        new MouseEvent('click', { bubbles: true, cancelable: true, shiftKey: true }),
+      );
+      await flush();
+
+      expect(instance.selection()).toEqual([]);
+      expect(row1.getAttribute('aria-selected')).toBe('false');
+
+      instance.behavior.set('toggle');
+      await flush();
+      cell1.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      await flush();
+      expect(row1.getAttribute('aria-selected')).toBe('true');
+    });
+
+    it('leaves the selection untouched on a row click in single mode', async () => {
+      const { el, instance, flush } = renderHost(SelectionTableHost);
+      instance.selectionMode.set('single');
+      instance.behavior.set('none');
+      await flush();
+
+      const row1 = el.querySelector<HTMLElement>('[data-testid="row-1"]')!;
+      el.querySelector<HTMLElement>('[data-testid="cell-name-1"]')!.dispatchEvent(
+        new MouseEvent('click', { bubbles: true, cancelable: true }),
+      );
+      await flush();
+
+      expect(instance.selection()).toEqual([]);
+      expect(row1.getAttribute('aria-selected')).toBe('false');
+    });
+
+    it('keeps the selector, select-all and Space on a focused cell mutating the selection', async () => {
+      const { el, instance, flush } = renderHost(SelectionTableHost);
+      instance.behavior.set('none');
+      await flush();
+
+      const row1 = el.querySelector<HTMLElement>('[data-testid="row-1"]')!;
+      const row2 = el.querySelector<HTMLElement>('[data-testid="row-2"]')!;
+      const selector1 = el.querySelector<HTMLElement>('[data-testid="selector-1"]')!;
+      const selectAll = el.querySelector<HTMLElement>('[data-testid="select-all"]')!;
+
+      selector1.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      await flush();
+      expect(row1.getAttribute('aria-selected')).toBe('true');
+
+      const space = press(el.querySelector<HTMLElement>('[data-testid="cell-name-2"]')!, ' ');
+      await flush();
+      expect(space.defaultPrevented).toBe(true);
+      expect(row2.getAttribute('aria-selected')).toBe('true');
+
+      selectAll.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      await flush();
+      expect(instance.selection()).toEqual([1, 2, 3]);
+      expect(selectAll.getAttribute('aria-checked')).toBe('true');
+    });
+
+    it('does not change the emitted aria-selected / aria-multiselectable', async () => {
+      const { el, instance, flush } = renderHost(SelectionTableHost);
+      instance.behavior.set('none');
+      await flush();
+
+      const allRows = Array.from(el.querySelectorAll<HTMLElement>('[forTableRow]'));
+      expect(rootEl(el).getAttribute('aria-multiselectable')).toBe('true');
+      for (const row of allRows) {
+        expect(row.getAttribute('aria-selected')).toBe('false');
+      }
+
+      instance.selectionMode.set('single');
+      await flush();
+      expect(rootEl(el).hasAttribute('aria-multiselectable')).toBe(false);
+      for (const row of allRows) {
+        expect(row.getAttribute('aria-selected')).toBe('false');
+      }
+    });
+  });
+
   describe('interactive descendants (#1368)', () => {
     it('does not toggle row selection when a click originates from a button descendant', async () => {
       const { el, instance, flush } = renderHost(SelectionInteractiveHost);
