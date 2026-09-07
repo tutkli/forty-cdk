@@ -561,7 +561,9 @@ In `grid` / `treegrid` mode a reorderable header cell splits its keys three ways
 even when it is not sortable), Arrow / `Home` / `End` / `Page` keys move roving focus across
 the composite header + body grid, and `F2` is the cell-entry key that reaches a widget inside
 the cell (`Escape` returns focus to it). A column pinned with `[dragDisabled]` cannot be
-lifted and still owns the grid's tab stop while it is the roving cell.
+lifted and still owns the grid's tab stop while it is the roving cell; it is not announced as
+`aria-disabled` (only its lift is disabled, not the column header), and on a sortable header
+its `Space` falls back to the sort activation, since there is no lift to collide with.
 
 → **[Table: column & row reordering](../../../docs/table-reordering.md)**
 

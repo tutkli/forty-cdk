@@ -39,7 +39,9 @@ export interface TableSortDescriptor {
  * either mode — this directive also yields its `tabindex` to the draggable's roving tab
  * stop so the two never collide on the host attribute, and the keyboard activation splits
  * along WAI-ARIA lines: `Space` lifts the column for reordering while `Enter` toggles the
- * sort, so a single key press never both sorts and starts a drag-lift. The draggable is
+ * sort, so a single key press never both sorts and starts a drag-lift. A column pinned with
+ * `[dragDisabled]` has no lift for `Space` to collide with, so it sorts on both keys like a
+ * sort-only header. The draggable is
  * detected by DOM marker (the `forDraggable` / `forFreeDrag` attribute), not by a
  * drag-drop value-import.
  *
@@ -171,7 +173,10 @@ export class ForTableSortHeader {
    * activations split along WAI-ARIA lines: `Space` is reserved for the reorder
    * lift, and `Enter` while a keyboard drag is in progress (`data-dragging`)
    * for its drop, so this header only sorts on an idle `Enter`. A sort-only
-   * header (no draggable) still sorts on both keys.
+   * header (no draggable) still sorts on both keys — and so does a header whose
+   * draggable cannot lift (`data-disabled`, a column pinned with `[dragDisabled]`),
+   * since there is no lift for `Space` to collide with
+   * ([#1840](https://github.com/tutkli/forty-cdk/issues/1840)).
    */
   protected onKeyDown(event: KeyboardEvent): void {
     const isEnter = event.key === 'Enter';
@@ -182,7 +187,8 @@ export class ForTableSortHeader {
     if (eventFromInteractiveDescendant(event)) {
       return;
     }
-    if (this.#hasDraggable && (isSpace || this.#host.hasAttribute('data-dragging'))) {
+    const draggableCanLift = this.#hasDraggable && !this.#host.hasAttribute('data-disabled');
+    if (draggableCanLift && (isSpace || this.#host.hasAttribute('data-dragging'))) {
       return;
     }
     event.preventDefault();

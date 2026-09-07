@@ -38,6 +38,14 @@ export interface ForDropListContext {
 
   /** Roving tab-stop value for `el` before/after roving engages (mirror Listbox's pattern). */
   itemTabindex(el: HTMLElement): -1 | 0 | null;
+  /**
+   * Whether an external `FOR_DROP_LIST_ROVING_DELEGATE` — not this list's own roving —
+   * decides `el`'s tab order. Drives the `aria-disabled` an item emits: a disabled item
+   * whose tab order a composing widget governs is a control of that widget (a
+   * `role="columnheader"` in a grid) that merely cannot be lifted, so announcing the host
+   * as unavailable would disable the composed control instead of the drag affordance.
+   */
+  isRovingDelegated(el: HTMLElement): boolean;
   isFirstFocusableItem(el: HTMLElement): boolean;
   isItemHighlighted(el: HTMLElement): boolean;
   /**
@@ -116,7 +124,18 @@ export const FOR_DROP_LIST_CONTEXT = new InjectionToken<ForDropListContext>(
  * that is not part of any composite grid).
  */
 export interface ForDropListRovingDelegate {
-  /** Roving `tabindex` for `el` (`0` for the single tab stop, `-1` otherwise), or `null` to defer to the list's own roving. */
+  /**
+   * Roving `tabindex` for `el` (`0` for the single tab stop, `-1` otherwise), or `null` to
+   * defer to the list's own roving.
+   *
+   * A non-`null` answer is the **whole** tab-order decision for that item: it outranks the
+   * item's own disabled state, so answering `0` for a `[dragDisabled]` item makes it
+   * focusable and the group's tab stop (what a pinned column in a composite grid needs), and
+   * answering `-1` for every item leaves the group with no tab stop. A delegate that does not
+   * want that authority for an item returns `null` there. The composed widget also owns focus
+   * activation for such an item, since a disabled draggable does not claim the list's active
+   * item on focus.
+   */
   itemTabindex(el: HTMLElement): -1 | 0 | null;
   /**
    * Whether `el` is the current keyboard-highlighted candidate — drives its `data-highlighted`

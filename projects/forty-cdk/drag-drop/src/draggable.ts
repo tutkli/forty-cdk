@@ -51,7 +51,7 @@ const POINTER_ARM_THRESHOLD_PX = 5;
   host: {
     '[attr.tabindex]': 'tabindex()',
     '[attr.aria-roledescription]': 'roleDescription() || null',
-    '[attr.aria-disabled]': "effectiveDisabled() ? 'true' : null",
+    '[attr.aria-disabled]': 'ariaDisabled()',
     '[attr.data-dragging]': "dragging() ? '' : null",
     '[attr.data-disabled]': "effectiveDisabled() ? '' : null",
     '[attr.data-highlighted]': "highlighted() ? '' : null",
@@ -126,6 +126,19 @@ export class ForDraggable implements ForDraggableContext {
 
   /** `aria-roledescription` value from defaults. */
   protected readonly roleDescription = computed(() => this.#defaults.itemRoleDescription);
+
+  /**
+   * `'true'` while this item cannot be lifted, except where a roving delegate governs the
+   * host: there the element is a control of the composing widget (a `role="columnheader"` in
+   * a column-reorderable grid, which stays sortable, resizable and navigable) and only its
+   * lift is disabled, so announcing the host as unavailable would disable the wrong thing.
+   * `data-disabled` reflects the state either way.
+   */
+  protected readonly ariaDisabled = computed<'true' | null>(() =>
+    this.effectiveDisabled() && !this.#list.isRovingDelegated(this.#host.nativeElement)
+      ? 'true'
+      : null,
+  );
 
   protected readonly tabindex = computed<-1 | 0>(() => {
     const rovingTabindex = this.#list.itemTabindex(this.#host.nativeElement);

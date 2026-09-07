@@ -127,7 +127,7 @@ class ReorderTableHost {
             [name]="col"
             forDraggable
             [dragData]="col"
-            [dragDisabled]="col === 'name'"
+            [dragDisabled]="col === pinned()"
             [attr.data-testid]="'h-' + col"
           >
             {{ col }}
@@ -149,6 +149,7 @@ class ReorderTableHost {
 })
 class PinnedReorderTableHost {
   readonly columns = signal<readonly string[]>(['name', 'role', 'dept']);
+  readonly pinned = signal('name');
   readonly rows = signal([{ id: 0 }, { id: 1 }]);
 }
 
@@ -2025,6 +2026,47 @@ describe('ForTable', () => {
       await flush();
       expect(header.getAttribute('data-dragging')).toBe('');
       expect(document.activeElement).toBe(header);
+    });
+
+    it('neither Space nor Enter lifts the pinned header cell', async () => {
+      const { el, flush } = renderHost(PinnedReorderTableHost);
+      const header = headerCell(el, 'name');
+      header.focus();
+      await flush();
+
+      press(header, ' ');
+      await flush();
+      expect(header.hasAttribute('data-dragging')).toBe(false);
+
+      press(header, 'Enter');
+      await flush();
+      expect(header.hasAttribute('data-dragging')).toBe(false);
+      expect(
+        Array.from(el.querySelectorAll<HTMLElement>('[forTableHeaderCell]')).map((c) =>
+          c.getAttribute('data-column'),
+        ),
+      ).toEqual(['name', 'role', 'dept']);
+    });
+
+    it('a pinned cell that is not the first owns the tab stop while roving sits on it', async () => {
+      const { el, fixture, flush } = renderHost(PinnedReorderTableHost);
+      fixture.componentInstance.pinned.set('role');
+      await flush();
+
+      press(headerCell(el, 'name'), 'ArrowRight');
+      await flush();
+      expect(document.activeElement).toBe(headerCell(el, 'role'));
+      expect(headerCell(el, 'role').getAttribute('data-highlighted')).toBe('');
+      expect(headerCell(el, 'role').getAttribute('tabindex')).toBe('0');
+      expect(tabStops(el)).toEqual([headerCell(el, 'role')]);
+    });
+
+    it('a pinned header cell is not announced as disabled', async () => {
+      const { el, flush } = renderHost(PinnedReorderTableHost);
+      await flush();
+      const header = headerCell(el, 'name');
+      expect(header.hasAttribute('data-disabled')).toBe(true);
+      expect(header.hasAttribute('aria-disabled')).toBe(false);
     });
   });
 

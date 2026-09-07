@@ -151,10 +151,11 @@ export interface TablePieceContext {
    * Resolves grid navigation and APG cell entry for a header cell that yields its host
    * interaction to a co-located `[forDraggable]`. `[forTableColumnReorder]` calls this
    * from a capture-phase listener for idle header cells so Arrow / Home / End / Page keys
-   * move roving focus across the composite header + body grid; the header cell itself
-   * calls it for `F2` and the `Escape` that returns focus from an entered widget, while
-   * Space / Enter fall through to the draggable's lift. Returns `true` when the key was
-   * consumed, `false` otherwise (including outside a participating `grid` / `treegrid`).
+   * move roving focus across the composite header + body grid and `F2` enters the cell;
+   * the header cell itself calls it for the `Escape` that returns focus from an entered
+   * widget (targeted at the widget, which that listener never sees), while Space / Enter
+   * fall through to the draggable's lift. Returns `true` when the key was consumed,
+   * `false` otherwise (including outside a participating `grid` / `treegrid`).
    */
   handleHeaderCellKeydown(event: KeyboardEvent, host: HTMLElement): boolean;
   /** 1-based `aria-posinset` for a row host among its same-level siblings (treegrid). */

@@ -33,8 +33,8 @@ import {
  * cell still participates in that composite grid — `aria-colindex` and focus
  * activation stay on the cell — but it yields the host `tabindex`, the lift keys
  * and `data-highlighted` to the draggable, so the grid keeps a single tab stop
- * and `[forTableColumnReorder]` routes idle Arrow navigation across it. `F2`
- * cell entry and its `Escape` return stay with the cell.
+ * and `[forTableColumnReorder]` routes idle Arrow navigation and `F2` cell entry
+ * across it. The cell keeps the `Escape` that returns focus from an entered widget.
  */
 @Directive({
   selector: '[forTableHeaderCell]',
@@ -186,18 +186,19 @@ export class ForTableHeaderCell {
 
   /**
    * A plain roving grid cell resolves the whole grid keymap. A cell that yields to a
-   * co-located `[forDraggable]` gets its Arrow / Home / End / Page keys from
-   * `[forTableColumnReorder]`'s capture listener and its `Space` / `Enter` from the
-   * draggable's lift and the sort activation, so it forwards only the two cell-entry keys
-   * the draggable leaves unhandled — `F2`, and the `Escape` that returns focus from an
-   * entered widget. A lift in progress (`data-dragging`) owns every key.
+   * co-located `[forDraggable]` gets every key targeted at the cell itself — Arrow / Home /
+   * End / Page and the `F2` that enters the cell — from `[forTableColumnReorder]`'s capture
+   * listener, and its `Space` / `Enter` from the draggable's lift and the sort activation.
+   * What is left is the one key that listener cannot see: the `Escape` that returns focus
+   * from an entered widget, targeted at the widget rather than at a header cell. A lift in
+   * progress (`data-dragging`) owns every key.
    */
   protected onKeyDown(event: KeyboardEvent): void {
     if (this.#inRovingGrid()) {
       this.ctx.handleCellKeydown(event, this.#host);
       return;
     }
-    if (event.key !== 'F2' && event.key !== 'Escape') {
+    if (event.key !== 'Escape') {
       return;
     }
     if (

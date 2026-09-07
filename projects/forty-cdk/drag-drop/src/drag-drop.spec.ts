@@ -449,6 +449,39 @@ describe('ForDropList + ForDraggable', () => {
       expect(d.getAttribute('aria-disabled')).toBe('true');
       expect(d.hasAttribute('data-disabled')).toBe(true);
     });
+
+    it('the active item becoming disabled hands the tab stop to the first enabled item', async () => {
+      const { el, fixture } = renderHost(SingleListHost);
+      const second = itemEl(el, 2);
+      second.focus();
+      await flush(fixture);
+      expect(second.getAttribute('tabindex')).toBe('0');
+
+      fixture.componentInstance.rows.set([
+        { id: 1, label: 'Alpha' },
+        { id: 2, label: 'Beta', disabled: true },
+        { id: 3, label: 'Gamma' },
+      ]);
+      fixture.detectChanges();
+      await flush(fixture);
+      expect(second.getAttribute('tabindex')).toBe('-1');
+      expect(itemEl(el, 1).getAttribute('tabindex')).toBe('0');
+      expect(itemEl(el, 3).getAttribute('tabindex')).toBe('-1');
+    });
+
+    it('disabling the whole list after an item was active leaves no tab stop', async () => {
+      const { el, fixture } = renderHost(SingleListHost);
+      itemEl(el, 2).focus();
+      await flush(fixture);
+      fixture.componentInstance.listDisabled.set(true);
+      fixture.detectChanges();
+      await flush(fixture);
+      expect(draggables(el).map((item) => item.getAttribute('tabindex'))).toEqual([
+        '-1',
+        '-1',
+        '-1',
+      ]);
+    });
   });
 
   describe('roving tabindex delegate (FOR_DROP_LIST_ROVING_DELEGATE)', () => {
@@ -462,8 +495,14 @@ describe('ForDropList + ForDraggable', () => {
     it('keeps a delegate-governed tab stop on a pinned item (#1840)', () => {
       const { el } = renderHost(DelegateGovernsPinnedHost);
       expect(itemEl(el, 1).getAttribute('tabindex')).toBe('0');
-      expect(itemEl(el, 1).getAttribute('aria-disabled')).toBe('true');
       expect(itemEl(el, 2).getAttribute('tabindex')).toBe('-1');
+    });
+
+    it('a delegate-governed pinned item reflects data-disabled but not aria-disabled (#1840)', () => {
+      const { el } = renderHost(DelegateGovernsPinnedHost);
+      const pinned = itemEl(el, 1);
+      expect(pinned.hasAttribute('data-disabled')).toBe(true);
+      expect(pinned.hasAttribute('aria-disabled')).toBe(false);
     });
 
     it('falls back to the list own roving (first enabled item) when the delegate returns null', () => {
