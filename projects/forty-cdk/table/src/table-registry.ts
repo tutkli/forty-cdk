@@ -12,8 +12,8 @@ import {
 /**
  * Owns the table's piece-registration state — the header row element, the header
  * cell and data row collections, the declarative body's row count, the two
- * virtualization seams, the pointer-reordered row index, and the published
- * column-width custom properties.
+ * virtualization seams, the root's header-crossing focus resolver, the
+ * pointer-reordered row index, and the published column-width custom properties.
  *
  * It exists as its own provider rather than as methods on `ForTable` so the
  * wiring protocol never reaches the public API: `ForTable` is exported, and any
@@ -34,6 +34,7 @@ export class TableRegistry implements TableRegistrationContext {
   readonly #virtualNav = signal<TableVirtualRowNavigation | null>(null);
   readonly #virtualWindow = signal<TableVirtualWindow | null>(null);
   readonly #reorderingRow = signal<number | null>(null);
+  #headerCellFocus: ((column: number) => boolean) | null = null;
 
   /** The registered header row host, or `null` when no header row is mounted. */
   readonly headerRowEl = this.#headerRowEl.asReadonly();
@@ -81,6 +82,22 @@ export class TableRegistry implements TableRegistrationContext {
   /** 0-based index of a header cell host among registered header cells, or -1. */
   headerCellIndexOf(host: HTMLElement): number {
     return this.#headerCells.indexOfHost(host);
+  }
+
+  /**
+   * Installs (or clears, with `null`) the root's header-crossing focus resolver.
+   * `ForTable` installs it at construction: the registry owns the header cell
+   * collection, but whether that row joins the composite roving grid — and moving the
+   * grid's tab stop onto it — is the root's navigation model. Root-only, so it stays
+   * off {@link TableRegistrationContext} where the pieces read the protocol.
+   */
+  registerHeaderCellFocus(focus: ((column: number) => boolean) | null): void {
+    this.#headerCellFocus = focus;
+  }
+
+  /** Moves roving focus onto the header cell in `column`; `false` when no header row joins the roving grid. */
+  focusHeaderCell(column: number): boolean {
+    return this.#headerCellFocus?.(column) ?? false;
   }
 
   /** Registers a data row so it joins the row index space and the navigation grid. */

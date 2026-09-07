@@ -19,8 +19,11 @@ import {
   ForTableCell,
   ForTableCellDef,
   ForTableColumnDef,
+  ForTableHeaderCell,
   ForTableHeaderCellDef,
+  ForTableHeaderRow,
   ForTableRow,
+  ForTableVariantCell,
   type ForTableContext,
 } from 'forty-cdk/table';
 
@@ -250,6 +253,59 @@ class AppendCrossWindowHost {
   readonly windowIndices = signal<readonly number[]>([0, 1, 2]);
 }
 
+@Component({
+  imports: [
+    ForTable,
+    ForTableVirtualized,
+    ForTableHeaderRow,
+    ForTableHeaderCell,
+    ForTableRow,
+    ForTableCell,
+    ForTableVariantCell,
+  ],
+  template: `
+    <div
+      forTable
+      forTableVirtualized
+      mode="grid"
+      ariaLabel="Grouped feed"
+      [rowCount]="SERVER_TOTAL"
+    >
+      @if (withHeader()) {
+        <div forTableHeaderRow>
+          @for (col of COLS; track col) {
+            <div forTableHeaderCell [name]="col" [attr.data-testid]="'h-' + col">{{ col }}</div>
+          }
+        </div>
+      }
+      <div role="rowgroup">
+        @for (vi of windowIndices(); track vi) {
+          @if (variantIndices().has(vi)) {
+            <div forTableRow [virtualIndex]="vi">
+              <div forTableVariantCell [attr.data-testid]="'variant-' + vi">group {{ vi }}</div>
+            </div>
+          } @else {
+            <div forTableRow [virtualIndex]="vi">
+              @for (col of COLS; track col) {
+                <div forTableCell [name]="col" [attr.data-testid]="'cell-' + vi + '-' + col">
+                  {{ vi }}{{ col }}
+                </div>
+              }
+            </div>
+          }
+        }
+      </div>
+    </div>
+  `,
+})
+class VariantAboveDataHost {
+  protected readonly SERVER_TOTAL = SERVER_TOTAL;
+  protected readonly COLS: readonly string[] = ['a', 'b'];
+  readonly windowIndices = signal<readonly number[]>([0, 1, 2, 3]);
+  readonly variantIndices = signal<ReadonlySet<number>>(new Set([0]));
+  readonly withHeader = signal(true);
+}
+
 describe('ForTableVirtualized — [virtualRowCount] (#1836)', () => {
   let restoreObservers: () => void;
   beforeAll(() => {
@@ -345,5 +401,78 @@ describe('ForTableVirtualized — [virtualRowCount] (#1836)', () => {
 
       expect(scrollToRow).toHaveBeenCalledWith(SERVER_TOTAL - 1);
     });
+  });
+});
+
+describe('ForTableVirtualized — ArrowUp over a variant row above the dataset (#1841)', () => {
+  let restoreObservers: () => void;
+  beforeAll(() => {
+    restoreObservers = installObserverPolyfills();
+  });
+  afterAll(() => restoreObservers());
+
+  const byId = (el: HTMLElement, id: string): HTMLElement =>
+    el.querySelector<HTMLElement>(`[data-testid="${id}"]`)!;
+
+  const arrowUp = (cell: HTMLElement): void => {
+    cell.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true, cancelable: true }),
+    );
+  };
+
+  it('reaches the header cell of the same column from the first data row', async () => {
+    const { el, flush } = renderHost(VariantAboveDataHost);
+    const start = byId(el, 'cell-1-b');
+    start.focus();
+    await flush();
+
+    arrowUp(start);
+    await flush();
+
+    expect(document.activeElement).toBe(byId(el, 'h-b'));
+    expect(byId(el, 'h-b').getAttribute('tabindex')).toBe('0');
+    expect(start.getAttribute('tabindex')).toBe('-1');
+  });
+
+  it('reaches the header cell across a run of stacked variant rows', async () => {
+    const { el, instance, flush } = renderHost(VariantAboveDataHost);
+    instance.variantIndices.set(new Set([0, 1]));
+    await flush();
+    const start = byId(el, 'cell-2-a');
+    start.focus();
+    await flush();
+
+    arrowUp(start);
+    await flush();
+
+    expect(document.activeElement).toBe(byId(el, 'h-a'));
+  });
+
+  it('still reaches the header cell with no variant row above the first data row', async () => {
+    const { el, instance, flush } = renderHost(VariantAboveDataHost);
+    instance.variantIndices.set(new Set());
+    await flush();
+    const start = byId(el, 'cell-0-b');
+    start.focus();
+    await flush();
+
+    arrowUp(start);
+    await flush();
+
+    expect(document.activeElement).toBe(byId(el, 'h-b'));
+  });
+
+  it('leaves focus on the cell when a header-less grid runs out of data rows above', async () => {
+    const { el, instance, flush } = renderHost(VariantAboveDataHost);
+    instance.withHeader.set(false);
+    await flush();
+    const start = byId(el, 'cell-1-a');
+    start.focus();
+    await flush();
+
+    arrowUp(start);
+    await flush();
+
+    expect(document.activeElement).toBe(start);
   });
 });

@@ -30,6 +30,13 @@ export interface TableVirtualizedNavigatorDeps {
   readonly rowCount: () => number;
   /** The count of currently loaded data rows (the body dataset length), or `undefined` when unknown (raw-primitive rendering). Cross-window targets are clamped to this so an out-of-prefix row never stashes a pending focus move that can only resolve when a far page later loads. */
   readonly loadedRowCount?: () => number | undefined;
+  /**
+   * Hand an upward walk that exhausted the dataset to the grid's header row, focusing
+   * the header cell in the 0-based column. Answers `true` when the header row took the
+   * move; when it answers `false` — or is absent — the move is dropped, which is what a
+   * grid with no participating header row wants.
+   */
+  readonly focusHeaderCell?: (col: number) => boolean;
 }
 
 /**
@@ -55,6 +62,13 @@ export interface TableVirtualizedNavigatorDeps {
  * outside the window — and clears the target if the dataset bound is reached
  * with no landable data row in that direction, so a stale target can never
  * later steal focus.
+ *
+ * Upward that bound is not the edge of the grid: the row above absolute index
+ * `0` is the **header row**. An upward walk that exhausts the dataset therefore
+ * hands the move to `focusHeaderCell` — the crossing `ForTable` resolves through
+ * its own flat cell grid when no virtualizer is involved — and drops it only
+ * where no header row joins the composite grid. Downward the dataset bound is
+ * the end of the grid, so there the target keeps being cleared.
  *
  * Off-prefix targets are clamped to the last loaded row: when `loadedRowCount`
  * is smaller than the placeable `rowCount` (a server-paged grid whose far pages
@@ -153,7 +167,15 @@ export class TableVirtualizedNavigator {
       target += dir;
     }
     this.#pending.set(null);
-    return false;
+    return dir === -1 && target < 0 ? this.#focusHeaderRow(col) : false;
+  }
+
+  #focusHeaderRow(col: number): boolean {
+    if (this.#deps.focusHeaderCell?.(col) !== true) {
+      return false;
+    }
+    this.#deps.scrollToRow(0);
+    return true;
   }
 
   #probeCell(row: number, col: number): ProbeResult {

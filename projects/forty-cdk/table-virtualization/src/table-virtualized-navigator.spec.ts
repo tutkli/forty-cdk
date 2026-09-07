@@ -204,16 +204,19 @@ describe('TableVirtualizedNavigator', () => {
   it('clears the pending target (no later focus steal) when stepping over a variant hits the dataset bound', () => {
     const rows = signal<readonly ForTableRowHandle[]>([fakeVariantRow(2)]);
     const scrollToRow = vi.fn();
+    const focusHeaderCell = vi.fn(() => true);
     const nav = new TableVirtualizedNavigator({
       rows,
       scrollToRow,
       scrollViewportRect: () => null,
       rowCount: () => 3,
+      focusHeaderCell,
     });
 
     nav.navigateTo(2, 0, 1);
 
     expect(scrollToRow).not.toHaveBeenCalled();
+    expect(focusHeaderCell).not.toHaveBeenCalled();
     expect(nav.tryResolvePending()).toBe(false);
 
     const remounted = fakeRow(2, 2);
@@ -222,6 +225,107 @@ describe('TableVirtualizedNavigator', () => {
 
     expect(nav.tryResolvePending()).toBe(false);
     expect(focusSpy).not.toHaveBeenCalled();
+  });
+
+  it('hands an upward walk that exhausts the dataset to the header cell of the same column', () => {
+    const rows = signal<readonly ForTableRowHandle[]>([fakeVariantRow(0), fakeRow(1, 2)]);
+    const scrollToRow = vi.fn();
+    const focusHeaderCell = vi.fn(() => true);
+    const nav = new TableVirtualizedNavigator({
+      rows,
+      scrollToRow,
+      scrollViewportRect: () => null,
+      rowCount: () => 100,
+      focusHeaderCell,
+    });
+    const originSpy = vi.spyOn(rows()[1]!.cells()[1]!.host, 'focus');
+
+    nav.navigateTo(0, 1, -1);
+
+    expect(focusHeaderCell).toHaveBeenCalledWith(1);
+    expect(originSpy).not.toHaveBeenCalled();
+    expect(scrollToRow).toHaveBeenCalledWith(0);
+    expect(nav.tryResolvePending()).toBe(false);
+  });
+
+  it('walks a run of stacked variant rows above the dataset through to the header cell', () => {
+    const rows = signal<readonly ForTableRowHandle[]>([
+      fakeVariantRow(0),
+      fakeVariantRow(1),
+      fakeRow(2, 2),
+    ]);
+    const focusHeaderCell = vi.fn(() => true);
+    const nav = new TableVirtualizedNavigator({
+      rows,
+      scrollToRow: vi.fn(),
+      scrollViewportRect: () => null,
+      rowCount: () => 100,
+      focusHeaderCell,
+    });
+
+    nav.navigateTo(1, 0, -1);
+
+    expect(focusHeaderCell).toHaveBeenCalledWith(0);
+  });
+
+  it('drops an exhausted upward move when the header row cannot take it', () => {
+    const rows = signal<readonly ForTableRowHandle[]>([fakeVariantRow(0), fakeRow(1, 2)]);
+    const scrollToRow = vi.fn();
+    const focusHeaderCell = vi.fn(() => false);
+    const nav = new TableVirtualizedNavigator({
+      rows,
+      scrollToRow,
+      scrollViewportRect: () => null,
+      rowCount: () => 100,
+      focusHeaderCell,
+    });
+
+    nav.navigateTo(0, 1, -1);
+
+    expect(focusHeaderCell).toHaveBeenCalledWith(1);
+    expect(scrollToRow).not.toHaveBeenCalled();
+    expect(nav.tryResolvePending()).toBe(false);
+  });
+
+  it('drops an exhausted upward move when no header-crossing resolver is wired', () => {
+    const rows = signal<readonly ForTableRowHandle[]>([fakeVariantRow(0), fakeRow(1, 2)]);
+    const scrollToRow = vi.fn();
+    const nav = new TableVirtualizedNavigator({
+      rows,
+      scrollToRow,
+      scrollViewportRect: () => null,
+      rowCount: () => 100,
+    });
+
+    nav.navigateTo(0, 1, -1);
+
+    expect(scrollToRow).not.toHaveBeenCalled();
+    expect(nav.tryResolvePending()).toBe(false);
+  });
+
+  it('tryResolvePending hands the move to the header cell once the variant row above the dataset mounts', () => {
+    const rows = signal<readonly ForTableRowHandle[]>([fakeRow(40, 2)]);
+    const scrollToRow = vi.fn();
+    const focusHeaderCell = vi.fn(() => true);
+    const nav = new TableVirtualizedNavigator({
+      rows,
+      scrollToRow,
+      scrollViewportRect: () => null,
+      rowCount: () => 100,
+      focusHeaderCell,
+    });
+
+    nav.navigateTo(0, 0, -1);
+
+    expect(scrollToRow).toHaveBeenCalledWith(0);
+    expect(focusHeaderCell).not.toHaveBeenCalled();
+
+    rows.set([fakeVariantRow(0), fakeRow(1, 2)]);
+
+    expect(nav.tryResolvePending()).toBe(true);
+    expect(focusHeaderCell).toHaveBeenCalledWith(0);
+    expect(nav.tryResolvePending()).toBe(false);
+    expect(focusHeaderCell).toHaveBeenCalledTimes(1);
   });
 
   it('steps over a mounted disabled placeholder row onto the next data row when travelling down', () => {

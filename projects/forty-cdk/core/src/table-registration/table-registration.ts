@@ -144,6 +144,17 @@ export interface TableRegistrationContext {
   registerHeaderCell(handle: ForTableCellHandle): void;
   /** Unregisters a header cell. Reference-based. */
   unregisterHeaderCell(handle: ForTableCellHandle): void;
+  /**
+   * Moves roving focus onto the header cell in the 0-based `column`, answering `true`
+   * when the header row took the move and `false` when it does not join the composite
+   * roving grid (`mode="table"`, no header row, or an incomplete one).
+   *
+   * It is the header crossing `ForTable` resolves through its own flat cell grid when no
+   * virtualizer is involved: `[forTableVirtualized]` calls it when an upward cross-window
+   * walk steps over the last full-span variant row above the dataset, since the row above
+   * absolute index `0` is the grid's header row.
+   */
+  focusHeaderCell(column: number): boolean;
   /** Registers a data row so it joins the row index space and the navigation grid. */
   registerRow(handle: ForTableRowHandle): void;
   /** Unregisters a data row. Reference-based. */
