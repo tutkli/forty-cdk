@@ -51,7 +51,7 @@ const POINTER_ARM_THRESHOLD_PX = 5;
   host: {
     '[attr.tabindex]': 'tabindex()',
     '[attr.aria-roledescription]': 'roleDescription() || null',
-    '[attr.aria-disabled]': "effectiveDisabled() ? 'true' : null",
+    '[attr.aria-disabled]': 'ariaDisabled()',
     '[attr.data-dragging]': "dragging() ? '' : null",
     '[attr.data-disabled]': "effectiveDisabled() ? '' : null",
     '[attr.data-highlighted]': "highlighted() ? '' : null",
@@ -86,9 +86,12 @@ export class ForDraggable implements ForDraggableContext {
   readonly dragData = input.required<unknown>();
 
   /**
-   * When true, this item cannot be lifted. The item remains focusable. It also acts as a
-   * hard fence for the `liveSort` placeholder: a sibling being dragged cannot move its
-   * placeholder across a pinned item (the committed drop index is unaffected).
+   * When true, this item cannot be lifted. The item remains focusable, and where a roving
+   * delegate governs the list's tab order (`FOR_DROP_LIST_ROVING_DELEGATE`, e.g. a
+   * `[forTableColumnReorder]` header row inside a grid) it can still be the group's single
+   * tab stop. It also acts as a hard fence for the `liveSort` placeholder: a sibling being
+   * dragged cannot move its placeholder across a pinned item (the committed drop index is
+   * unaffected).
    */
   readonly dragDisabled = input(false, { transform: booleanAttribute });
 
@@ -124,13 +127,26 @@ export class ForDraggable implements ForDraggableContext {
   /** `aria-roledescription` value from defaults. */
   protected readonly roleDescription = computed(() => this.#defaults.itemRoleDescription);
 
+  /**
+   * `'true'` while this item cannot be lifted, except where a roving delegate governs the
+   * host: there the element is a control of the composing widget (a `role="columnheader"` in
+   * a column-reorderable grid, which stays sortable, resizable and navigable) and only its
+   * lift is disabled, so announcing the host as unavailable would disable the wrong thing.
+   * `data-disabled` reflects the state either way.
+   */
+  protected readonly ariaDisabled = computed<'true' | null>(() =>
+    this.effectiveDisabled() && !this.#list.isRovingDelegated(this.#host.nativeElement)
+      ? 'true'
+      : null,
+  );
+
   protected readonly tabindex = computed<-1 | 0>(() => {
-    if (this.effectiveDisabled()) {
-      return -1;
-    }
     const rovingTabindex = this.#list.itemTabindex(this.#host.nativeElement);
     if (rovingTabindex !== null) {
       return rovingTabindex;
+    }
+    if (this.effectiveDisabled()) {
+      return -1;
     }
     return this.#list.isFirstFocusableItem(this.#host.nativeElement) ? 0 : -1;
   });

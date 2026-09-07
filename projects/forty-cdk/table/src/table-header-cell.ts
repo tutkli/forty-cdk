@@ -31,9 +31,10 @@ import {
  *
  * When a `[forDraggable]` shares the cell (a `[forTableColumnReorder]` row) the
  * cell still participates in that composite grid — `aria-colindex` and focus
- * activation stay on the cell — but it yields the host `tabindex`, keydown, and
- * `data-highlighted` to the draggable, so the grid keeps a single tab stop and
- * `[forTableColumnReorder]` routes idle Arrow navigation across it.
+ * activation stay on the cell — but it yields the host `tabindex`, the lift keys
+ * and `data-highlighted` to the draggable, so the grid keeps a single tab stop
+ * and `[forTableColumnReorder]` routes idle Arrow navigation and `F2` cell entry
+ * across it. The cell keeps the `Escape` that returns focus from an entered widget.
  */
 @Directive({
   selector: '[forTableHeaderCell]',
@@ -134,7 +135,7 @@ export class ForTableHeaderCell {
    */
   readonly sticky = input(false as TableStickyValue, { transform: coerceSticky });
 
-  /** `true` when a `[forDraggable]` shares this cell and owns its host `tabindex` / keydown instead. */
+  /** `true` when a `[forDraggable]` shares this cell and owns its host `tabindex` / lift keys instead. */
   readonly #yieldsToDraggable = hostHasDraggable(this.#host);
 
   /**
@@ -183,9 +184,31 @@ export class ForTableHeaderCell {
     }
   }
 
+  /**
+   * A plain roving grid cell resolves the whole grid keymap. A cell that yields to a
+   * co-located `[forDraggable]` gets every key targeted at the cell itself — Arrow / Home /
+   * End / Page and the `F2` that enters the cell — from `[forTableColumnReorder]`'s capture
+   * listener, and its `Space` / `Enter` from the draggable's lift and the sort activation.
+   * What is left is the one key that listener cannot see: the `Escape` that returns focus
+   * from an entered widget, targeted at the widget rather than at a header cell. A lift in
+   * progress (`data-dragging`) owns every key.
+   */
   protected onKeyDown(event: KeyboardEvent): void {
     if (this.#inRovingGrid()) {
       this.ctx.handleCellKeydown(event, this.#host);
+      return;
     }
+    if (event.key !== 'Escape') {
+      return;
+    }
+    if (
+      !this.#yieldsToDraggable ||
+      !this.#participates() ||
+      event.defaultPrevented ||
+      this.#host.hasAttribute('data-dragging')
+    ) {
+      return;
+    }
+    this.ctx.handleHeaderCellKeydown(event, this.#host);
   }
 }

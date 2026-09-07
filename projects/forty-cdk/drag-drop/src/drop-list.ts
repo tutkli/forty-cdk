@@ -288,6 +288,11 @@ export class ForDropList implements ForDropListContext {
     return this.roving.hasActive() ? this.roving.tabindexFor(el) : null;
   }
 
+  isRovingDelegated(el: HTMLElement): boolean {
+    const delegated = this.#rovingDelegate?.itemTabindex(el);
+    return delegated !== undefined && delegated !== null;
+  }
+
   isFirstFocusableItem(el: HTMLElement): boolean {
     return firstEnabledHost(this.#items.items()) === el;
   }

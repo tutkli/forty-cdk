@@ -439,7 +439,7 @@ protected readonly sortedRows = computed(() => /* the consumer sorts rows() by t
 
 The direction cycles `none → ascending → descending → none`. Set `disableClear` to make the cycle skip `none`: `ascending ↔ descending`. Set `firstClickDirection="descending"` to make a freshly activated column start descending: `none → descending → ascending → none` (and with `disableClear`, `none → descending → ascending → descending` — the descending-first-with-toggle behavior a single always-active sort descriptor needs). When `sortable` is `false` the header is fully inert (no `tabindex`, no `aria-sort`, no-op handlers) — useful when sorting is conditionally enabled. In `mode="table"` a sortable header is a `tabindex="0"` tab stop; in `mode="grid"` / `mode="treegrid"` the header cell owns the roving composite tab stop instead, so the sort header adds no separate `tabindex` (the `[forTableHeaderCell]` is the single owner of the host `tabindex`). Because the directive coordinates nothing across columns, the single-`sort` descriptor pattern above is what enforces that only one column is sorted at a time.
 
-In `mode="grid"` / `mode="treegrid"`, a sortable header cell reflects `data-sortable` and takes over the cell's `Enter` key: `Enter` toggles the sort and keeps focus on the cell, while `F2` remains the APG cell-entry key that moves focus into the cell's first widget (e.g. a `[forTableColumnResizer]`). On a non-sortable header cell (no `data-sortable`), `Enter` keeps its default cell-entry behavior. This keeps a sortable + resizable header from both sorting and dropping focus onto the resize handle on a single `Enter`.
+In `mode="grid"` / `mode="treegrid"`, a sortable header cell reflects `data-sortable` and takes over the cell's `Enter` key: `Enter` toggles the sort and keeps focus on the cell, while `F2` remains the APG cell-entry key that moves focus into the cell's first widget (e.g. a `[forTableColumnResizer]`). On a non-sortable header cell (no `data-sortable`), `Enter` keeps its default cell-entry behavior — unless a `[forDraggable]` shares the cell, where `Enter` lifts the column instead (see [Column & row reordering](#column--row-reordering)). This keeps a sortable + resizable header from both sorting and dropping focus onto the resize handle on a single `Enter`.
 
 ## Column resizing
 
@@ -555,6 +555,15 @@ bundle cost of its own: `<for-table-body>` carries `forty-cdk/drag-drop` for eve
 see [Declarative columns](#declarative-columns-fortablecolumndef--for-table-body) for the measured
 figure. On the raw path you opt into drag-drop explicitly by
 importing these two directives, so a raw table that skips them pays nothing.
+
+In `grid` / `treegrid` mode a reorderable header cell splits its keys three ways: `Space` /
+`Enter` lift, move and drop the column (so a draggable header cell keeps the lift on `Enter`
+even when it is not sortable), Arrow / `Home` / `End` / `Page` keys move roving focus across
+the composite header + body grid, and `F2` is the cell-entry key that reaches a widget inside
+the cell (`Escape` returns focus to it). A column pinned with `[dragDisabled]` cannot be
+lifted and still owns the grid's tab stop while it is the roving cell; it is not announced as
+`aria-disabled` (only its lift is disabled, not the column header), and on a sortable header
+its `Space` falls back to the sort activation, since there is no lift to collide with.
 
 → **[Table: column & row reordering](../../../docs/table-reordering.md)**
 

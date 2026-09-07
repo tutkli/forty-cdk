@@ -375,6 +375,35 @@ test.describe('table reorder live-sort placeholder', () => {
   });
 });
 
+test.describe('table reorder pinned column keyboard entry (#1840)', () => {
+  test('Tab reaches the grid when its first column is pinned', async ({ page }) => {
+    await gotoFixture(page, 'table-reorder', { pinned: 'name' });
+
+    await el(page, 'before').focus();
+    await page.keyboard.press('Tab');
+
+    await expectRovingFocus(page, 'header-name');
+  });
+
+  test('arrow navigation onto a pinned middle column takes the tab stop with it', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'table-reorder', { pinned: 'role' });
+
+    await el(page, 'before').focus();
+    await page.keyboard.press('Tab');
+    await expectRovingFocus(page, 'header-name');
+
+    await page.keyboard.press('ArrowRight');
+    await expectRovingFocus(page, 'header-role');
+
+    await page.keyboard.press('Shift+Tab');
+    await expectFocused(el(page, 'before'));
+    await page.keyboard.press('Tab');
+    await expectRovingFocus(page, 'header-role');
+  });
+});
+
 test.describe('table reorder live-sort placeholder fence (dragDisabled)', () => {
   test('placeholder cannot cross a pinned (dragDisabled) column', async ({ page }) => {
     await gotoFixture(page, 'table-reorder', { liveSort: 'true', pinned: 'name' });

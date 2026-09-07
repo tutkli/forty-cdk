@@ -429,9 +429,23 @@ export class ForTable<T = unknown> implements ForTableContext {
     return this.#registry.rowIndexOf(host);
   }
 
+  /**
+   * Roving tab-stop value for a cell: the active cell owns `0`, and before anything is
+   * active the first enabled cell does.
+   *
+   * The gate is `active()` rather than `hasActive()` on purpose. `#roving` is built over
+   * `#flatCells()`, so it already reconciles an active host away from a cell whose
+   * **handle** reports disabled; `hasActive()` additionally discounts a host carrying
+   * `aria-disabled`, which on a `[forTableColumnReorder]` header cell is owned by the
+   * co-located `[forDraggable]` and means "cannot be lifted", not "not a grid cell". Going
+   * through `hasActive()` therefore left a pinned column that is not `#firstEnabledCell()`
+   * highlighted but with `tabindex="-1"`, and the tab stop stranded on column 1
+   * ([#1840](https://github.com/tutkli/forty-cdk/issues/1840)).
+   */
   private cellTabIndex(host: HTMLElement): 0 | -1 {
-    if (this.#roving.hasActive()) {
-      return this.#roving.tabindexFor(host);
+    const active = this.#roving.active();
+    if (active !== null) {
+      return active === host ? 0 : -1;
     }
     return this.#firstEnabledCell() === host ? 0 : -1;
   }
@@ -489,36 +503,61 @@ export class ForTable<T = unknown> implements ForTableContext {
     if (this.mode() === 'table') {
       return;
     }
-    this.#registry.virtualRowNavigation()?.clearPending();
-    if (this.#handleCellEntryKeydown(event, host)) {
-      return;
-    }
-    if (event.target !== host) {
-      return;
-    }
-    if (this.#handleSelectionKeydown(event, host)) {
-      return;
-    }
-    if (this.#handleExpansionKeydown(event, host)) {
-      return;
-    }
-    this.#handleGridNavigationKeydown(event, host);
+    this.#resolveCellKeydown(event, host, { rowActions: true, enterEntersCell: true });
   }
 
   /**
-   * Resolves grid navigation for a header cell that yields its host interaction to a
-   * co-located `[forDraggable]` (a `[forTableColumnReorder]` row). `[forTableColumnReorder]`
-   * calls this from a capture-phase listener for idle (not-lifted) header cells, so Arrow /
-   * Home / End / Page keys move roving focus across the composite header + body grid while
-   * Space / Enter still fall through to the draggable's lift. Returns `true` when the key
-   * resolved to a grid action (and was consumed), `false` otherwise. No-op (returns `false`)
-   * outside `grid` / `treegrid` mode or when the header row does not join the composite grid.
+   * Resolves grid navigation and APG cell entry for a header cell that yields its host
+   * interaction to a co-located `[forDraggable]` (a `[forTableColumnReorder]` row).
+   * `[forTableColumnReorder]` calls this from a capture-phase listener for idle (not-lifted)
+   * header cells, so Arrow / Home / End / Page keys move roving focus across the composite
+   * header + body grid and `F2` moves focus into the cell's first widget. `ForTableHeaderCell`
+   * calls it from its own bubbling keydown for the one key that listener cannot see — the
+   * `Escape` that returns focus from an entered widget, which is targeted at the widget rather
+   * than at a header cell. Space / Enter still fall through to the draggable's lift and the
+   * sort activation. Returns `true` when the key was consumed, `false` otherwise. No-op
+   * (returns `false`) outside `grid` / `treegrid` mode or when the header row does not join
+   * the composite grid.
    */
   private handleHeaderCellKeydown(event: KeyboardEvent, host: HTMLElement): boolean {
     if (this.mode() === 'table' || !this.#headerParticipates()) {
       return false;
     }
+    return this.#resolveCellKeydown(event, host, { rowActions: false, enterEntersCell: false });
+  }
+
+  /**
+   * The grid keymap both cell entries resolve against, so a key added to one reaches the
+   * other: cell entry, then — for a key targeted at the cell host itself — the row actions
+   * a data cell owns, then 2D grid navigation. Returns `true` when the key was consumed.
+   *
+   * `rowActions` adds the selection / expansion keys a data cell owns and a header cell has
+   * no row for. `enterEntersCell` is `false` where a co-located `[forDraggable]` owns
+   * `Enter` for the lift and the sort activation.
+   */
+  #resolveCellKeydown(
+    event: KeyboardEvent,
+    host: HTMLElement,
+    options: { rowActions: boolean; enterEntersCell: boolean },
+  ): boolean {
     this.#registry.virtualRowNavigation()?.clearPending();
+    if (
+      (options.enterEntersCell || event.key !== 'Enter') &&
+      this.#handleCellEntryKeydown(event, host)
+    ) {
+      return true;
+    }
+    if (event.target !== host) {
+      return false;
+    }
+    if (options.rowActions) {
+      if (this.#handleSelectionKeydown(event, host)) {
+        return true;
+      }
+      if (this.#handleExpansionKeydown(event, host)) {
+        return true;
+      }
+    }
     return this.#handleGridNavigationKeydown(event, host);
   }
 
