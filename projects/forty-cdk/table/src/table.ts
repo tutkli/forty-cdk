@@ -477,7 +477,9 @@ export class ForTable<T = unknown> implements ForTableContext {
 
   /**
    * Moves roving focus onto the header cell in the 0-based `column`, answering `false`
-   * when the header row does not join the composite grid and so cannot take the move.
+   * when the header row does not join the composite grid, carries no such column, or
+   * holds a disabled cell there — the same cells {@link moveGridIndex} refuses to land
+   * on, so the two crossings stay equivalent.
    *
    * Registered with the registry rather than resolved by it: the registry owns the
    * header cell collection, but the header row's participation and the roving tab stop
@@ -491,7 +493,7 @@ export class ForTable<T = unknown> implements ForTableContext {
       return false;
     }
     const cell = this.#headerCellHosts()[column];
-    if (cell === undefined) {
+    if (cell === undefined || cell.disabled()) {
       return false;
     }
     this.#roving.focusActive(cell.host);

@@ -227,6 +227,51 @@ describe('TableVirtualizedNavigator', () => {
     expect(focusSpy).not.toHaveBeenCalled();
   });
 
+  it('never crosses into the header when a downward move clamped to the loaded prefix exhausts it', () => {
+    const rows = signal<readonly ForTableRowHandle[]>([
+      fakeSkeletonRow(0, 2),
+      fakeSkeletonRow(1, 2),
+      fakeSkeletonRow(2, 2),
+    ]);
+    const scrollToRow = vi.fn();
+    const focusHeaderCell = vi.fn(() => true);
+    const nav = new TableVirtualizedNavigator({
+      rows,
+      scrollToRow,
+      scrollViewportRect: () => null,
+      rowCount: () => 100,
+      loadedRowCount: () => 3,
+      focusHeaderCell,
+    });
+
+    nav.navigateTo(20, 0, 1);
+
+    expect(focusHeaderCell).not.toHaveBeenCalled();
+    expect(scrollToRow).not.toHaveBeenCalled();
+    expect(nav.tryResolvePending()).toBe(false);
+  });
+
+  it('still crosses into the header when a Ctrl+End clamped to the loaded prefix exhausts it', () => {
+    const rows = signal<readonly ForTableRowHandle[]>([
+      fakeSkeletonRow(0, 2),
+      fakeSkeletonRow(1, 2),
+      fakeSkeletonRow(2, 2),
+    ]);
+    const focusHeaderCell = vi.fn(() => true);
+    const nav = new TableVirtualizedNavigator({
+      rows,
+      scrollToRow: vi.fn(),
+      scrollViewportRect: () => null,
+      rowCount: () => 100,
+      loadedRowCount: () => 3,
+      focusHeaderCell,
+    });
+
+    nav.navigateTo(99, 1, -1);
+
+    expect(focusHeaderCell).toHaveBeenCalledWith(1);
+  });
+
   it('hands an upward walk that exhausts the dataset to the header cell of the same column', () => {
     const rows = signal<readonly ForTableRowHandle[]>([fakeVariantRow(0), fakeRow(1, 2)]);
     const scrollToRow = vi.fn();

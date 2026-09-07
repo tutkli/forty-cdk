@@ -27,7 +27,7 @@ import {
   type ForTableContext,
 } from 'forty-cdk/table';
 
-import { flush, installObserverPolyfills, renderHost } from '../../src/test-utils';
+import { flush, installObserverPolyfills, pressKey, renderHost } from '../../src/test-utils';
 import { ForTableVirtualized } from './table-virtualized';
 
 describe('ForTableVirtualized', () => {
@@ -414,24 +414,38 @@ describe('ForTableVirtualized — ArrowUp over a variant row above the dataset (
   const byId = (el: HTMLElement, id: string): HTMLElement =>
     el.querySelector<HTMLElement>(`[data-testid="${id}"]`)!;
 
-  const arrowUp = (cell: HTMLElement): void => {
-    cell.dispatchEvent(
-      new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true, cancelable: true }),
-    );
-  };
-
   it('reaches the header cell of the same column from the first data row', async () => {
     const { el, flush } = renderHost(VariantAboveDataHost);
     const start = byId(el, 'cell-1-b');
     start.focus();
     await flush();
 
-    arrowUp(start);
+    pressKey(start, 'ArrowUp');
     await flush();
 
     expect(document.activeElement).toBe(byId(el, 'h-b'));
     expect(byId(el, 'h-b').getAttribute('tabindex')).toBe('0');
     expect(start.getAttribute('tabindex')).toBe('-1');
+  });
+
+  it('reaches the header cell once the variant row above the dataset scrolls into the window', async () => {
+    const { el, instance, flush } = renderHost(VariantAboveDataHost);
+    instance.windowIndices.set([1, 2, 3]);
+    await flush();
+    const start = byId(el, 'cell-1-b');
+    start.focus();
+    await flush();
+
+    pressKey(start, 'ArrowUp');
+    await flush();
+
+    expect(document.activeElement).toBe(start);
+
+    instance.windowIndices.set([0, 1, 2, 3]);
+    await flush();
+
+    expect(document.activeElement).toBe(byId(el, 'h-b'));
+    expect(byId(el, 'h-b').getAttribute('tabindex')).toBe('0');
   });
 
   it('reaches the header cell across a run of stacked variant rows', async () => {
@@ -442,7 +456,7 @@ describe('ForTableVirtualized — ArrowUp over a variant row above the dataset (
     start.focus();
     await flush();
 
-    arrowUp(start);
+    pressKey(start, 'ArrowUp');
     await flush();
 
     expect(document.activeElement).toBe(byId(el, 'h-a'));
@@ -456,7 +470,7 @@ describe('ForTableVirtualized — ArrowUp over a variant row above the dataset (
     start.focus();
     await flush();
 
-    arrowUp(start);
+    pressKey(start, 'ArrowUp');
     await flush();
 
     expect(document.activeElement).toBe(byId(el, 'h-b'));
@@ -470,9 +484,10 @@ describe('ForTableVirtualized — ArrowUp over a variant row above the dataset (
     start.focus();
     await flush();
 
-    arrowUp(start);
+    const event = pressKey(start, 'ArrowUp');
     await flush();
 
     expect(document.activeElement).toBe(start);
+    expect(event.defaultPrevented).toBe(true);
   });
 });

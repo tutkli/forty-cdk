@@ -85,13 +85,16 @@ export class TableRegistry implements TableRegistrationContext {
   }
 
   /**
-   * Installs (or clears, with `null`) the root's header-crossing focus resolver.
-   * `ForTable` installs it at construction: the registry owns the header cell
-   * collection, but whether that row joins the composite roving grid — and moving the
-   * grid's tab stop onto it — is the root's navigation model. Root-only, so it stays
-   * off {@link TableRegistrationContext} where the pieces read the protocol.
+   * Installs the root's header-crossing focus resolver. `ForTable` installs it at
+   * construction: the registry owns the header cell collection, but whether that row
+   * joins the composite roving grid — and moving the grid's tab stop onto it — is the
+   * root's navigation model. Root-only, so it stays off
+   * {@link TableRegistrationContext} where the pieces read the protocol.
+   *
+   * Takes no `null`, unlike the virtualization seams: registry and root share a
+   * lifetime, so there is no teardown to clear it from.
    */
-  registerHeaderCellFocus(focus: ((column: number) => boolean) | null): void {
+  registerHeaderCellFocus(focus: (column: number) => boolean): void {
     this.#headerCellFocus = focus;
   }
 

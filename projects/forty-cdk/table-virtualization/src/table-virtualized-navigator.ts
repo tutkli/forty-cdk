@@ -1,4 +1,4 @@
-import { signal, type Signal } from '@angular/core';
+import { signal, untracked, type Signal } from '@angular/core';
 
 import { type ForTableRowHandle } from 'forty-cdk/core';
 
@@ -68,7 +68,11 @@ export interface TableVirtualizedNavigatorDeps {
  * hands the move to `focusHeaderCell` — the crossing `ForTable` resolves through
  * its own flat cell grid when no virtualizer is involved — and drops it only
  * where no header row joins the composite grid. Downward the dataset bound is
- * the end of the grid, so there the target keeps being cleared.
+ * the end of the grid, so there the target keeps being cleared. The gate is the
+ * **requested** direction, not the direction the walk ends up travelling: a
+ * downward move clamped to the loaded prefix searches upward from there, and
+ * exhausting that search means the grid has no landable row to move down onto,
+ * never that the move should cross into the header.
  *
  * Off-prefix targets are clamped to the last loaded row: when `loadedRowCount`
  * is smaller than the placeable `rowCount` (a server-paged grid whose far pages
@@ -167,15 +171,34 @@ export class TableVirtualizedNavigator {
       target += dir;
     }
     this.#pending.set(null);
-    return dir === -1 && target < 0 ? this.#focusHeaderRow(col) : false;
+    return direction === -1 && target < 0 ? this.#focusHeaderRow(col) : false;
   }
 
+  /**
+   * Hand the exhausted upward walk to the grid's header row, answering whether it
+   * took the move.
+   *
+   * Focus moves **before** the scroll, unlike the sibling crossing in `ForTable`
+   * (which scrolls first, then moves the tab stop): there the header's participation
+   * is known up front, here the hand-off's own answer is the participation query, so
+   * scrolling first would drag a header-less grid to the top of the dataset on a move
+   * it then drops. The scroll is kept for the same reason `ForTable` performs it —
+   * the grid must never sit focused on its header with the window further down the
+   * dataset — even though the walk can only exhaust with row `0` already mounted,
+   * which makes it a no-op on every path reachable today.
+   *
+   * The hand-off runs untracked: `tryResolvePending` is called from the companion's
+   * bridge effect, and moving roving focus reads and writes the root's roving pointer,
+   * which would otherwise join that effect's tracked set and dirty it in the same run.
+   */
   #focusHeaderRow(col: number): boolean {
-    if (this.#deps.focusHeaderCell?.(col) !== true) {
-      return false;
-    }
-    this.#deps.scrollToRow(0);
-    return true;
+    return untracked(() => {
+      if (this.#deps.focusHeaderCell?.(col) !== true) {
+        return false;
+      }
+      this.#deps.scrollToRow(0);
+      return true;
+    });
   }
 
   #probeCell(row: number, col: number): ProbeResult {
