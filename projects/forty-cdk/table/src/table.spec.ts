@@ -120,6 +120,50 @@ class ReorderTableHost {
   ],
   template: `
     <div forTable mode="grid">
+      <div forTableHeaderRow forTableColumnReorder>
+        @for (col of columns(); track col) {
+          <div
+            forTableHeaderCell
+            [name]="col"
+            forDraggable
+            [dragData]="col"
+            [dragDisabled]="col === 'name'"
+            [attr.data-testid]="'h-' + col"
+          >
+            {{ col }}
+            <button type="button" [attr.data-testid]="'w-' + col">resize</button>
+          </div>
+        }
+      </div>
+      <div role="rowgroup">
+        @for (row of rows(); track row.id) {
+          <div forTableRow [value]="row.id" [attr.data-testid]="'row-' + row.id">
+            @for (col of columns(); track col) {
+              <div forTableCell [name]="col">{{ row.id }}-{{ col }}</div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  `,
+})
+class PinnedReorderTableHost {
+  readonly columns = signal<readonly string[]>(['name', 'role', 'dept']);
+  readonly rows = signal([{ id: 0 }, { id: 1 }]);
+}
+
+@Component({
+  imports: [
+    ForTable,
+    ForTableHeaderRow,
+    ForTableRow,
+    ForTableHeaderCell,
+    ForTableCell,
+    ForTableColumnReorder,
+    ForDraggable,
+  ],
+  template: `
+    <div forTable mode="grid">
       <div forTableHeaderRow forTableColumnReorder (columnReorder)="last = $event">
         <div forTableHeaderCell name="name" forDraggable [dragData]="'name'" data-testid="h-name">
           Name
@@ -1906,6 +1950,81 @@ describe('ForTable', () => {
       const zeros = tabStops(el);
       expect(zeros.length).toBe(1);
       expect(zeros[0]).toBe(el.querySelector('[data-testid="h-name"]'));
+    });
+  });
+
+  describe('grid + column-reorder with a pinned column (#1840)', () => {
+    const headerCell = (el: HTMLElement, col: string) =>
+      el.querySelector<HTMLElement>(`[data-testid="h-${col}"]`)!;
+    const widget = (el: HTMLElement, col: string) =>
+      el.querySelector<HTMLElement>(`[data-testid="w-${col}"]`)!;
+    const tabStops = (el: HTMLElement) =>
+      Array.from(el.querySelectorAll<HTMLElement>('[forTableHeaderCell], [forTableCell]')).filter(
+        (c) => c.getAttribute('tabindex') === '0',
+      );
+
+    afterEach(() => {
+      document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
+    });
+
+    it('keeps the composite tab stop on a pinned first header cell', () => {
+      const { el } = renderHost(PinnedReorderTableHost);
+      const zeros = tabStops(el);
+      expect(zeros.length).toBe(1);
+      expect(zeros[0]).toBe(headerCell(el, 'name'));
+    });
+
+    it('moves the tab stop back onto the pinned cell when roving returns to it', async () => {
+      const { el, flush } = renderHost(PinnedReorderTableHost);
+      press(headerCell(el, 'name'), 'ArrowRight');
+      await flush();
+      expect(headerCell(el, 'role').getAttribute('tabindex')).toBe('0');
+
+      press(headerCell(el, 'role'), 'ArrowLeft');
+      await flush();
+      expect(headerCell(el, 'name').getAttribute('tabindex')).toBe('0');
+      expect(tabStops(el).length).toBe(1);
+    });
+
+    it('F2 on a draggable header cell moves focus into its widget', async () => {
+      const { el, flush } = renderHost(PinnedReorderTableHost);
+      const header = headerCell(el, 'role');
+      header.focus();
+      press(header, 'F2');
+      await flush();
+      expect(document.activeElement).toBe(widget(el, 'role'));
+    });
+
+    it('F2 works on a pinned header cell too', async () => {
+      const { el, flush } = renderHost(PinnedReorderTableHost);
+      const header = headerCell(el, 'name');
+      header.focus();
+      press(header, 'F2');
+      await flush();
+      expect(document.activeElement).toBe(widget(el, 'name'));
+    });
+
+    it('Escape from inside the widget returns focus to the header cell', async () => {
+      const { el, flush } = renderHost(PinnedReorderTableHost);
+      const header = headerCell(el, 'role');
+      header.focus();
+      press(header, 'F2');
+      await flush();
+      expect(document.activeElement).toBe(widget(el, 'role'));
+
+      press(widget(el, 'role'), 'Escape');
+      await flush();
+      expect(document.activeElement).toBe(header);
+    });
+
+    it('Enter still lifts a draggable header cell that holds a widget', async () => {
+      const { el, flush } = renderHost(PinnedReorderTableHost);
+      const header = headerCell(el, 'role');
+      header.focus();
+      press(header, 'Enter');
+      await flush();
+      expect(header.getAttribute('data-dragging')).toBe('');
+      expect(document.activeElement).toBe(header);
     });
   });
 

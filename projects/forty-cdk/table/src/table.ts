@@ -506,19 +506,28 @@ export class ForTable<T = unknown> implements ForTableContext {
   }
 
   /**
-   * Resolves grid navigation for a header cell that yields its host interaction to a
-   * co-located `[forDraggable]` (a `[forTableColumnReorder]` row). `[forTableColumnReorder]`
-   * calls this from a capture-phase listener for idle (not-lifted) header cells, so Arrow /
-   * Home / End / Page keys move roving focus across the composite header + body grid while
-   * Space / Enter still fall through to the draggable's lift. Returns `true` when the key
-   * resolved to a grid action (and was consumed), `false` otherwise. No-op (returns `false`)
-   * outside `grid` / `treegrid` mode or when the header row does not join the composite grid.
+   * Resolves grid navigation and APG cell entry for a header cell that yields its host
+   * interaction to a co-located `[forDraggable]` (a `[forTableColumnReorder]` row).
+   * `[forTableColumnReorder]` calls this from a capture-phase listener for idle (not-lifted)
+   * header cells, so Arrow / Home / End / Page keys move roving focus across the composite
+   * header + body grid; `ForTableHeaderCell` calls it from its own bubbling keydown for the
+   * keys the draggable leaves alone, so `F2` reaches the cell's first widget and `Escape`
+   * returns focus from it. Space / Enter still fall through to the draggable's lift and the
+   * sort activation. Returns `true` when the key was consumed, `false` otherwise. No-op
+   * (returns `false`) outside `grid` / `treegrid` mode or when the header row does not join
+   * the composite grid.
    */
   private handleHeaderCellKeydown(event: KeyboardEvent, host: HTMLElement): boolean {
     if (this.mode() === 'table' || !this.#headerParticipates()) {
       return false;
     }
     this.#registry.virtualRowNavigation()?.clearPending();
+    if (event.key !== 'Enter' && this.#handleCellEntryKeydown(event, host)) {
+      return true;
+    }
+    if (event.target !== host) {
+      return false;
+    }
     return this.#handleGridNavigationKeydown(event, host);
   }
 

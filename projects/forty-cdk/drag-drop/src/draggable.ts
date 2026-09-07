@@ -86,9 +86,12 @@ export class ForDraggable implements ForDraggableContext {
   readonly dragData = input.required<unknown>();
 
   /**
-   * When true, this item cannot be lifted. The item remains focusable. It also acts as a
-   * hard fence for the `liveSort` placeholder: a sibling being dragged cannot move its
-   * placeholder across a pinned item (the committed drop index is unaffected).
+   * When true, this item cannot be lifted. The item remains focusable, and where a roving
+   * delegate governs the list's tab order (`FOR_DROP_LIST_ROVING_DELEGATE`, e.g. a
+   * `[forTableColumnReorder]` header row inside a grid) it can still be the group's single
+   * tab stop. It also acts as a hard fence for the `liveSort` placeholder: a sibling being
+   * dragged cannot move its placeholder across a pinned item (the committed drop index is
+   * unaffected).
    */
   readonly dragDisabled = input(false, { transform: booleanAttribute });
 
@@ -125,12 +128,12 @@ export class ForDraggable implements ForDraggableContext {
   protected readonly roleDescription = computed(() => this.#defaults.itemRoleDescription);
 
   protected readonly tabindex = computed<-1 | 0>(() => {
-    if (this.effectiveDisabled()) {
-      return -1;
-    }
     const rovingTabindex = this.#list.itemTabindex(this.#host.nativeElement);
     if (rovingTabindex !== null) {
       return rovingTabindex;
+    }
+    if (this.effectiveDisabled()) {
+      return -1;
     }
     return this.#list.isFirstFocusableItem(this.#host.nativeElement) ? 0 : -1;
   });

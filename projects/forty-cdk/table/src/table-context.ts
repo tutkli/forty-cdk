@@ -148,12 +148,13 @@ export interface TablePieceContext {
   /** Resolves and applies a keydown originating on a data cell: 2D move + focus. */
   handleCellKeydown(event: KeyboardEvent, host: HTMLElement): void;
   /**
-   * Resolves grid navigation for a header cell that yields its host interaction to a
-   * co-located `[forDraggable]`. `[forTableColumnReorder]` calls this from a
-   * capture-phase listener for idle header cells so Arrow / Home / End / Page keys move
-   * roving focus across the composite header + body grid, while Space / Enter fall
-   * through to the draggable's lift. Returns `true` when the key was consumed as a grid
-   * action, `false` otherwise (including outside a participating `grid` / `treegrid`).
+   * Resolves grid navigation and APG cell entry for a header cell that yields its host
+   * interaction to a co-located `[forDraggable]`. `[forTableColumnReorder]` calls this
+   * from a capture-phase listener for idle header cells so Arrow / Home / End / Page keys
+   * move roving focus across the composite header + body grid; the header cell itself
+   * calls it for `F2` and the `Escape` that returns focus from an entered widget, while
+   * Space / Enter fall through to the draggable's lift. Returns `true` when the key was
+   * consumed, `false` otherwise (including outside a participating `grid` / `treegrid`).
    */
   handleHeaderCellKeydown(event: KeyboardEvent, host: HTMLElement): boolean;
   /** 1-based `aria-posinset` for a row host among its same-level siblings (treegrid). */

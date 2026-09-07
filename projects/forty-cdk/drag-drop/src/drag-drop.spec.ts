@@ -294,6 +294,25 @@ class DelegateGovernsHost {}
   imports: [...DND_IMPORTS],
   template: `
     <ul forDropList>
+      <li forDraggable [dragData]="1" dragDisabled data-test-id="1" data-tab-stop>Alpha</li>
+      <li forDraggable [dragData]="2" data-test-id="2">Beta</li>
+    </ul>
+  `,
+  providers: [
+    {
+      provide: FOR_DROP_LIST_ROVING_DELEGATE,
+      useValue: {
+        itemTabindex: (el: HTMLElement) => (el.hasAttribute('data-tab-stop') ? 0 : -1),
+      } satisfies ForDropListRovingDelegate,
+    },
+  ],
+})
+class DelegateGovernsPinnedHost {}
+
+@Component({
+  imports: [...DND_IMPORTS],
+  template: `
+    <ul forDropList>
       <li forDraggable [dragData]="1" data-test-id="1">Alpha</li>
       <li forDraggable [dragData]="2" data-test-id="2">Beta</li>
     </ul>
@@ -438,6 +457,13 @@ describe('ForDropList + ForDraggable', () => {
       expect(itemEl(el, 1).getAttribute('tabindex')).toBe('-1');
       expect(itemEl(el, 2).getAttribute('tabindex')).toBe('0');
       expect(itemEl(el, 3).getAttribute('tabindex')).toBe('-1');
+    });
+
+    it('keeps a delegate-governed tab stop on a pinned item (#1840)', () => {
+      const { el } = renderHost(DelegateGovernsPinnedHost);
+      expect(itemEl(el, 1).getAttribute('tabindex')).toBe('0');
+      expect(itemEl(el, 1).getAttribute('aria-disabled')).toBe('true');
+      expect(itemEl(el, 2).getAttribute('tabindex')).toBe('-1');
     });
 
     it('falls back to the list own roving (first enabled item) when the delegate returns null', () => {
