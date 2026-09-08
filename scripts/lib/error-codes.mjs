@@ -265,21 +265,30 @@ function areaOf(code) {
 }
 
 /**
+ * The `scope` a shared check publishes, which is resolved only when it runs.
+ *
+ * `FORCDK-CORE-*` covers infrastructure no primitive owns, so the prefix a
+ * consumer saw names their own entry point rather than `core`, and anything
+ * reading the roster has to say that instead of naming one.
+ */
+export const RUNTIME_SCOPE = '{primitive}';
+
+/**
  * The entry point the `[forty-cdk/<scope>]` prefix names.
  *
  * Derived from the code's area unless the call site overrides it, which nine
  * `FORCDK-CORE-*` checks do: a shared check reports under the primitive that ran
  * it, and reads that name from a field only the running library has. The three
  * expressions they read it from are one thing to a reader, so every override
- * resolved at runtime answers `{primitive}` rather than publishing whichever
- * field name the call site happened to use.
+ * resolved at runtime answers {@link RUNTIME_SCOPE} rather than publishing
+ * whichever field name the call site happened to use.
  */
 function scopeOf(fields, code) {
   const declared = fields.scope;
   if (declared === undefined) {
     return areaOf(code);
   }
-  return declared.startsWith('{') ? '{primitive}' : declared;
+  return declared.startsWith('{') ? RUNTIME_SCOPE : declared;
 }
 
 function proseOf(emitter, fields, shapes) {
