@@ -6,7 +6,9 @@ import {
   effect,
   type ElementRef,
   inject,
+  linkedSignal,
   model,
+  resource,
   signal,
   viewChild,
 } from '@angular/core';
@@ -19,14 +21,17 @@ import {
   ForComboboxOption,
 } from 'forty-cdk/combobox';
 
+import type { DocIndexEntry } from '../doc/doc-model';
 import { GUIDE_INDEX } from '../doc/guides';
-import { buildSearchEntries, filterSearchEntries } from '../doc/search-index';
+import { buildSearchEntries, loadSearchIndex, searchEntries } from '../doc/search-index';
 import { SITE_PAGE_INDEX } from '../doc/site-pages';
-import { DOC_INDEX } from '../../generated/doc-index.generated';
 import { PLAYGROUND_GROUPS } from '../primitives';
 import { Icon } from './icon';
 
 const MAX_RESULTS = 50;
+
+/** What the palette searches before the body index arrives: documents only. */
+const NO_INDEX: readonly DocIndexEntry[] = [];
 
 @Component({
   selector: 'command-palette',
@@ -64,10 +69,28 @@ const MAX_RESULTS = 50;
             <kbd class="cmdk-kbd">Esc</kbd>
           </div>
           <div forComboboxContent class="cmdk-content" animate.enter="pg-pop-in">
-            @for (entry of filtered(); track entry.path) {
-              <div forComboboxOption [value]="entry.path" [label]="entry.title" class="cmdk-option">
-                <span class="cmdk-option-title">{{ entry.title }}</span>
-                <span class="cmdk-option-group">{{ entry.group }}</span>
+            @for (result of results(); track result.entry.path) {
+              <div
+                forComboboxOption
+                [value]="result.entry.path"
+                [label]="result.entry.title"
+                class="cmdk-option"
+              >
+                <span class="cmdk-option-head">
+                  <span class="cmdk-option-title">
+                    @for (part of result.title; track $index) {
+                      <span [class.cmdk-match]="part.match">{{ part.text }}</span>
+                    }
+                  </span>
+                  <span class="cmdk-option-group">{{ result.entry.group }}</span>
+                </span>
+                @if (result.snippet.length > 0) {
+                  <span class="cmdk-option-snippet">
+                    @for (part of result.snippet; track $index) {
+                      <span [class.cmdk-match]="part.match">{{ part.text }}</span>
+                    }
+                  </span>
+                }
               </div>
             }
             <div forComboboxEmpty class="cmdk-empty">No results for "{{ query() }}".</div>
@@ -88,15 +111,36 @@ export class CommandPalette {
   protected readonly selected: readonly string[] = [];
 
   protected readonly inputEl = viewChild<ElementRef<HTMLInputElement>>('input');
-  readonly #entries = buildSearchEntries(
-    PLAYGROUND_GROUPS,
-    DOC_INDEX,
-    GUIDE_INDEX,
-    SITE_PAGE_INDEX,
+
+  /**
+   * Stays true once the palette has been opened, so closing it does not put the
+   * index back in flight and reopening does not flash the documents-only list.
+   */
+  readonly #requested = linkedSignal<boolean, boolean>({
+    source: this.open,
+    computation: (open, previous) => open || previous?.value === true,
+  });
+
+  /**
+   * The body index, fetched the first time the palette opens
+   * ([#1813](https://github.com/tutkli/forty-cdk/issues/1813)).
+   *
+   * Idle until then — a `params` of `undefined` is what keeps the loader from
+   * running — which is what keeps the chunk out of every route that merely
+   * renders the header's ⌘K hint, and out of the prerender.
+   */
+  readonly #index = resource({
+    params: () => (this.#requested() ? true : undefined),
+    loader: () => loadSearchIndex(),
+    defaultValue: NO_INDEX,
+  });
+
+  readonly #entries = computed(() =>
+    buildSearchEntries(PLAYGROUND_GROUPS, this.#index.value(), GUIDE_INDEX, SITE_PAGE_INDEX),
   );
 
-  protected readonly filtered = computed(() =>
-    filterSearchEntries(this.#entries, this.query()).slice(0, MAX_RESULTS),
+  protected readonly results = computed(() =>
+    searchEntries(this.#entries(), this.query()).slice(0, MAX_RESULTS),
   );
 
   #wasOpen = false;

@@ -234,7 +234,11 @@ describe('the rail the published corpus renders', () => {
         {
           kind: 'primitive',
           slug: 'select',
-          sections: page.sections.map((entry) => ({ title: entry.title, slug: entry.slug })),
+          sections: page.sections.map((entry) => ({
+            title: entry.title,
+            slug: entry.slug,
+            text: '',
+          })),
         },
       ],
       [],

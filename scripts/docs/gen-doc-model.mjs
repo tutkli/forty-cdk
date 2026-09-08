@@ -17,6 +17,7 @@ import { foldableOf, withFold } from './doc-fold.mjs';
 import { compileDocument, DocCompileError } from './doc-model.mjs';
 import { headingText, renderDocument } from './doc-render.mjs';
 import { pageFileOf, pageProblems, routesModule } from './doc-routes.mjs';
+import { searchTextOf } from './doc-search.mjs';
 
 const OUT_DIR = join(repoRoot, 'projects', 'forty-cdk-playground', 'src', 'generated');
 const DOCS_DIR = join(OUT_DIR, 'docs');
@@ -118,22 +119,37 @@ function pageModule(page) {
 }
 
 /**
- * Section titles reach the palette resolved, the same way the page renders them:
- * `## Shared \`disabled\`` is one heading, and a reader searching for it should
- * not have to type the backticks the page does not show.
+ * The `⌘K` index, read off the pages the site publishes
+ * ([#1813](https://github.com/tutkli/forty-cdk/issues/1813)).
+ *
+ * Rendered pages rather than compiled documents, because the palette should
+ * reach what a reader can reach: a section's anchor as its page emits it, its
+ * title with inline markup resolved — `## Shared \`disabled\`` is one heading,
+ * and nobody searching for it types the backticks the page does not show — and
+ * a folded README's sections under the host page that republishes them.
+ *
+ * Serialized compactly rather than indented: this is the one generated module
+ * whose size is the point, and two spaces per line of a 570-section index is
+ * weight the bundler strips but every regeneration writes.
+ *
+ * Indexing body text is also what first put prose about `@Component` in this
+ * module, so it takes the same `@` escape the error roster does — see
+ * {@link METADATA_TEXT}.
  */
-function indexModule(documents) {
+function indexModule(documents, pages) {
   const entries = documents.map((document) => ({
     kind: document.kind,
     slug: document.slug,
-    sections: document.sections.map((section) => ({
-      title: headingText(section.title),
+    sections: pages.get(keyOf(document)).sections.map((section) => ({
+      title: section.title,
       slug: section.slug,
+      text: searchTextOf(section),
     })),
   }));
   return (
     `import type { DocIndexEntry } from '../app/doc/doc-model';\n\n` +
-    `export const DOC_INDEX: readonly DocIndexEntry[] = ${serialize(entries)};\n`
+    `export const DOC_INDEX: readonly DocIndexEntry[] = ` +
+    `${JSON.stringify(entries).replace(METADATA_TEXT, '\\u0040')};\n`
   );
 }
 
@@ -426,7 +442,7 @@ write([
     join(DOCS_DIR, DOC_DIRS[document.kind], `${document.slug}.generated.ts`),
     pageModule(pages.get(keyOf(document))),
   ]),
-  [join(OUT_DIR, 'doc-index.generated.ts'), indexModule(documents)],
+  [join(OUT_DIR, 'doc-index.generated.ts'), indexModule(documents, pages)],
   [join(OUT_DIR, 'guides.generated.ts'), guidesModule(guides, groupOf)],
   [join(OUT_DIR, 'guide-docs.generated.ts'), guideModule(guides)],
   [join(OUT_DIR, 'site-pages.generated.ts'), sitePagesModule(sitePages)],
