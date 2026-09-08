@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { markdownLinksOf } from './docs/doc-markdown.mjs';
 import {
   buildDocRoutes,
   GITHUB_BLOB_BASE,
@@ -17,30 +18,7 @@ import {
   readSitePages,
   SITE_DIR,
 } from './lib/doc-site.mjs';
-import { isFenceLine } from './lib/readme-slug.mjs';
 import { repoRoot } from './lib/repo-path.mjs';
-
-const LINK_RE = /\[(?:[^[\]]|\[[^\]]*\])*\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g;
-
-function linksOf(md) {
-  const links = [];
-  let inFence = false;
-  let lineNumber = 0;
-  for (const line of md.split('\n')) {
-    lineNumber += 1;
-    if (isFenceLine(line)) {
-      inFence = !inFence;
-      continue;
-    }
-    if (inFence) {
-      continue;
-    }
-    for (const match of line.matchAll(LINK_RE)) {
-      links.push({ href: match[1], line: lineNumber });
-    }
-  }
-  return links;
-}
 
 const primitives = readPrimitives();
 const guides = readGuides();
@@ -69,7 +47,7 @@ let toSource = 0;
 let relativeLinks = 0;
 
 for (const [sourcePath, md] of documents) {
-  for (const { href, line } of linksOf(md)) {
+  for (const { href, line } of markdownLinksOf(md)) {
     if (href.startsWith('#') || isAbsoluteHref(href)) {
       continue;
     }

@@ -1,4 +1,4 @@
-import { DOCUMENT, isPlatformBrowser } from '@angular/common';
+import { DOCUMENT, isPlatformBrowser, LocationStrategy } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -78,6 +78,15 @@ function readInitialTheme(): Theme {
             <span class="search-btn-text">Search</span>
             <kbd class="search-btn-kbd">⌘K</kbd>
           </button>
+          <a
+            class="llms-link"
+            [href]="llmsTxt"
+            target="_blank"
+            rel="noreferrer noopener"
+            title="The documentation as markdown, for AI assistants"
+          >
+            llms.txt
+          </a>
           <a
             class="icon-btn"
             [href]="repo"
@@ -241,6 +250,26 @@ function readInitialTheme(): Theme {
       color: var(--pg-text-muted);
     }
 
+    .llms-link {
+      flex: none;
+      display: inline-flex;
+      align-items: center;
+      height: 34px;
+      padding: 0 0.6rem;
+      font-family: var(--pg-font-mono);
+      font-size: 0.72rem;
+      text-decoration: none;
+      color: var(--pg-text-muted);
+      background: var(--pg-surface);
+      border: 1px solid var(--pg-border-strong);
+      border-radius: var(--pg-radius-sm);
+    }
+
+    .llms-link:hover {
+      background: var(--pg-surface-2);
+      color: var(--pg-text);
+    }
+
     .icon-btn {
       flex: none;
       width: 34px;
@@ -294,7 +323,8 @@ function readInitialTheme(): Theme {
         display: grid;
       }
 
-      .search-btn-text {
+      .search-btn-text,
+      .llms-link {
         display: none;
       }
 
@@ -320,6 +350,14 @@ export class App {
   protected readonly shell = viewChild<ElementRef<HTMLElement>>('shell');
 
   protected readonly repo = GITHUB_REPO;
+
+  /**
+   * The llms.txt index ([#1816](https://github.com/tutkli/forty-cdk/issues/1816)),
+   * prepared against the base href for the same reason a document's links are:
+   * the site is served from `/forty-cdk/` on Pages and from `/` on a dev
+   * server, and only the running app can say which.
+   */
+  protected readonly llmsTxt = inject(LocationStrategy).prepareExternalUrl('/llms.txt');
   protected readonly theme = signal<Theme>(readInitialTheme());
   protected readonly navOpen = signal(false);
   protected readonly paletteOpen = signal(false);

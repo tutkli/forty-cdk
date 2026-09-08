@@ -4,6 +4,9 @@ export declare const GITHUB_REPO: string;
 
 export declare const GITHUB_BLOB_BASE: string;
 
+/** Where the documentation site is published, trailing slash included. */
+export declare const SITE_URL: string;
+
 export declare const DOC_BASE_TOKEN: string;
 
 export interface DocLinkContext {

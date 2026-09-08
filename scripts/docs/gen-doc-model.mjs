@@ -1,20 +1,14 @@
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 
-import { checkContract, foldTargetOf } from '../lib/doc-contract.mjs';
+import { foldTargetOf } from '../lib/doc-contract.mjs';
+import { compileCorpus } from '../lib/doc-corpus.mjs';
 import { buildDocRoutes } from '../lib/doc-links.mjs';
 import { readErrorCodes } from '../lib/error-codes.mjs';
-import {
-  EXCLUDED_GUIDES,
-  GUIDE_GROUPS,
-  readEntryPointDocs,
-  readGuides,
-  readSitePages,
-  SITE_DIR,
-} from '../lib/doc-site.mjs';
+import { EXCLUDED_GUIDES, GUIDE_GROUPS } from '../lib/doc-site.mjs';
 import { repoRoot } from '../lib/repo-path.mjs';
 import { foldableOf, withFold } from './doc-fold.mjs';
-import { compileDocument, DocCompileError } from './doc-model.mjs';
+import { DocCompileError } from './doc-model.mjs';
 import { headingText, renderDocument } from './doc-render.mjs';
 import { pageFileOf, pageProblems, routesModule } from './doc-routes.mjs';
 import { searchTextOf } from './doc-search.mjs';
@@ -27,70 +21,6 @@ const MODEL_TYPES = '../../../app/doc/doc-model';
 const DOC_DIRS = { primitive: 'primitives', guide: 'guides', page: 'pages' };
 
 const rel = (file) => relative(repoRoot, file).split(sep).join('/');
-
-/**
- * Compile every document, then hold the whole corpus to the page-template
- * contract ([#1808](https://github.com/tutkli/forty-cdk/issues/1808)).
- *
- * The contract check runs over every entry point README, published or not: a
- * document with no page yet still declares an archetype, and holding it to that
- * archetype now is what keeps it publishable later.
- */
-function compileAll() {
-  const registeredGuides = readGuides();
-  const sources = [
-    ...readEntryPointDocs().map((doc) => ({ ...doc, kind: 'primitive' })),
-    ...registeredGuides.map((guide) => ({
-      slug: guide.slug,
-      path: `docs/${guide.file}`,
-      file: join(repoRoot, 'docs', guide.file),
-      kind: 'guide',
-    })),
-    ...readSitePages().map((page) => ({
-      slug: page.slug,
-      path: `docs/site/${page.file}`,
-      file: join(SITE_DIR, page.file),
-      kind: 'page',
-    })),
-  ];
-
-  const compiled = [];
-  const problems = [];
-  for (const source of sources) {
-    try {
-      compiled.push(
-        compileDocument(readFileSync(source.file, 'utf8'), {
-          path: source.path,
-          slug: source.slug,
-          kind: source.kind,
-        }),
-      );
-    } catch (error) {
-      if (!(error instanceof DocCompileError)) {
-        throw error;
-      }
-      problems.push(...error.problems);
-    }
-  }
-
-  if (problems.length > 0) {
-    throw new DocCompileError(problems);
-  }
-
-  const readmes = compiled.filter((document) => document.kind === 'primitive');
-  const contract = checkContract(readmes);
-  if (contract.length > 0) {
-    throw new DocCompileError(contract);
-  }
-
-  const unpublished = readmes.filter((document) => document.meta.group === 'none');
-  return {
-    documents: compiled.filter((document) => document.meta?.group !== 'none'),
-    folded: unpublished.filter((document) => foldTargetOf(document.meta) !== null),
-    unpublished,
-    guideGroups: new Map(registeredGuides.map((guide) => [guide.slug, guide.group])),
-  };
-}
 
 /**
  * The description a registry publishes for a document: its own lede, resolved
@@ -334,7 +264,7 @@ function write(files) {
   }
 }
 
-const { documents, folded, unpublished, guideGroups } = compileAll();
+const { documents, folded, unpublished, guideGroups } = compileCorpus();
 const guides = documents.filter((document) => document.kind === 'guide');
 const primitives = documents.filter((document) => document.kind === 'primitive');
 const sitePages = documents.filter((document) => document.kind === 'page');

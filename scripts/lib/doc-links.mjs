@@ -9,6 +9,19 @@ export const GITHUB_REPO = 'https://github.com/tutkli/forty-cdk';
 export const GITHUB_BLOB_BASE = `${GITHUB_REPO}/blob/main/`;
 
 /**
+ * Where the documentation site is published, trailing slash included.
+ *
+ * The only place in the pipeline that needs it: a page resolves its own links
+ * against the base href it was served from, while a markdown artifact is read
+ * on its own — pasted into a conversation, fetched by an agent — and has no
+ * base to resolve a relative href against
+ * ([#1816](https://github.com/tutkli/forty-cdk/issues/1816)). Its path half is
+ * the `baseHref` the production build emits, which `pnpm check:llms` asserts
+ * against the emitted HTML rather than trusting this constant.
+ */
+export const SITE_URL = 'https://tutkli.github.io/forty-cdk/';
+
+/**
  * The stand-in a build-time resolver writes where the site's base href belongs.
  *
  * A document is rendered once, before anything knows which path the site will
