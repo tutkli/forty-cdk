@@ -5,6 +5,60 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.25.1] - 2026-09-08
+
+A bugfix release about the header row. Both defects left a `mode="grid"` table's header cells
+unreachable, from opposite directions. A header cell that shares its host with `[forDraggable]` —
+the `[forTableColumnReorder]` shape, and the only way to reorder columns — yields its tab stop and
+its keys to that draggable and got neither back, so a single pinned column left the whole grid at
+`tabindex="-1"` with no way in, and `F2` never reached the widgets inside a header cell. In a
+virtualized grid, an upward move that stepped over a full-span variant row was dropped instead of
+crossing into the header row above absolute index `0` — the row the same move reaches with no
+virtualizer in play. Nothing to migrate.
+
+### Fixed
+
+- **Table / Drag & drop** — a draggable header cell keeps the grid's tab stop, its sort and `F2`
+  ([#1840](https://github.com/tutkli/forty-cdk/issues/1840)). In `grid` mode a header cell that
+  shares its host with `[forDraggable]` yields its `tabindex`, its keys and `data-highlighted` to
+  that draggable, and the draggable returned neither: it answered `-1` for a `[dragDisabled]` item
+  before consulting the roving delegate `[forTableColumnReorder]` provides for exactly this case,
+  so a table with a pinned first column rendered every `columnheader` and every `gridcell` at
+  `tabindex="-1"` and `Tab` could not enter the grid at all — silently, with ARIA still correct,
+  and with no consumer-side workaround short of duplicating the header template. A pinned column
+  that was not the first enabled cell hit a second shape of the same bug: it stayed highlighted
+  with `tabindex="-1"` while the tab stop was stranded on column 1, because the table discounted a
+  host carrying `aria-disabled` when it resolved which cell owns the stop. Three further halves
+  fall out of that. The pinned cell no longer emits `aria-disabled` at all — the attribute was the
+  draggable's, and on a `role="columnheader"` that stays sortable, resizable and navigable it
+  announced the composed control as unavailable when only the lift is; `data-disabled` is
+  unchanged, and a new `isRovingDelegated` on the drop-list context is how a draggable tells the
+  two apart. `Space` on a pinned sortable header now sorts, where it used to activate nothing — no
+  lift (correct) and no sort (wrong) — since the sort header yields the key only to a draggable
+  that can actually lift. And `F2`, the APG cell-entry key the table README documents for
+  `[forTableColumnResizer]`, reaches the cell's first widget again: the cell had yielded its whole
+  keydown to a draggable that implements lift and list navigation but no cell entry, so in `grid`
+  mode the header's in-cell widgets were unreachable from the keyboard — a regression from
+  `mode="table"`, where the resize handle was a plain tab stop. The cell keeps only the `Escape`
+  that returns focus from an entered widget, the one key `[forTableColumnReorder]`'s capture
+  listener cannot see.
+- **Table virtualization** — an upward move reaches the header row
+  ([#1841](https://github.com/tutkli/forty-cdk/issues/1841)). In a virtualized `mode="grid"`
+  table, `ArrowUp` from the first data row moved focus nowhere when a full-span
+  `[forTableVariantCell]` row sat above it: the cross-window walk probed the variant row, stepped
+  past absolute index `0` and dropped the move. Dropping it is right at the bottom bound — there
+  is nothing below the dataset — but upward the row above index `0` is the grid's header row,
+  which is exactly where `ForTable` sends the same move when no virtualizer is involved. The walk
+  now hands off through a `focusHeaderCell` on the table's registration context, installed by the
+  root, which answers `false` when the header row does not join the composite roving grid
+  (`mode="table"`, no header row, or an incomplete one) and refuses a disabled header cell, as the
+  non-virtualized crossing already did. The hand-off gates on the **requested** direction rather
+  than on the direction the walk ended up travelling: a downward move whose target lies beyond the
+  loaded prefix is clamped to the last loaded row and re-searches upward, so gating on the mutated
+  one sent a `PageDown` over a prefix of variant or skeleton rows onto the header cell and
+  scrolled the grid to the top. `Ctrl+End` legitimately arrives asking to travel up and still
+  crosses.
+
 ## [0.25.0] - 2026-09-03
 
 A release about three things a grid could not express. A full-span section row had no cell to write
@@ -2287,7 +2341,8 @@ primitives.
 - **Display** — avatar, progress, meter, tree.
 - `forty-cdk/internationalized-date` secondary entry point exposing the `@internationalized/date` adapters for the date and time primitives.
 
-[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.24.0...HEAD
+[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.25.1...HEAD
+[0.25.1]: https://github.com/tutkli/forty-cdk/compare/v0.25.0...v0.25.1
 [0.25.0]: https://github.com/tutkli/forty-cdk/compare/v0.24.1...v0.25.0
 [0.24.1]: https://github.com/tutkli/forty-cdk/compare/v0.24.0...v0.24.1
 [0.24.0]: https://github.com/tutkli/forty-cdk/compare/v0.23.0...v0.24.0
