@@ -234,22 +234,6 @@ function errorCodesModule(codes) {
   );
 }
 
-function guideModule(guides) {
-  const imports = guides
-    .map(
-      (guide) =>
-        `import { DOC as ${identifierOf(guide.slug)} } from './docs/guides/${guide.slug}.generated';`,
-    )
-    .join('\n');
-  const entries = guides
-    .map((guide) => `  ${JSON.stringify(guide.slug)}: ${identifierOf(guide.slug)},`)
-    .join('\n');
-  return (
-    `import type { DocPage } from '../app/doc/doc-model';\n${imports}\n\n` +
-    `export const GUIDE_DOCS: Readonly<Record<string, DocPage>> = {\n${entries}\n};\n`
-  );
-}
-
 /**
  * The generated tree is rewritten from scratch on every run, so a document that
  * stops being published leaves nothing behind — the failure mode
@@ -374,7 +358,6 @@ write([
   ]),
   [join(OUT_DIR, 'doc-index.generated.ts'), indexModule(documents, pages)],
   [join(OUT_DIR, 'guides.generated.ts'), guidesModule(guides, groupOf)],
-  [join(OUT_DIR, 'guide-docs.generated.ts'), guideModule(guides)],
   [join(OUT_DIR, 'site-pages.generated.ts'), sitePagesModule(sitePages)],
   [join(OUT_DIR, 'site-page-docs.generated.ts'), sitePageDocsModule(sitePages)],
   [join(OUT_DIR, 'primitives.generated.ts'), registryModule(primitives)],

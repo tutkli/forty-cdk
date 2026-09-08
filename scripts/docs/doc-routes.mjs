@@ -18,6 +18,7 @@
 const EXPORTED_CLASS = /^export class (\w+)/gm;
 
 const pageModuleOf = (slug) => `../app/demos/${slug}/${slug}.page`;
+const guideDocModuleOf = (slug) => `./docs/guides/${slug}.generated`;
 const GUIDE_MODULE = '../app/guides/guide.page';
 const SITE_MODULE = '../app/pages/site.page';
 
@@ -93,12 +94,25 @@ function primitiveRoute(slug) {
  * Every guide route loads the one `GuidePage` and hands it its slug through
  * route data, which `withComponentInputBinding()` binds to the component's
  * `slug` input.
+ *
+ * Its compiled document arrives the same way, resolved by the route rather than
+ * read out of a map the component imports
+ * ([#1825](https://github.com/tutkli/forty-cdk/issues/1825)): one map importing
+ * every guide by value put all eleven documents in the one page chunk, so a
+ * reader of the shortest guide downloaded the longest one too. The `import()`
+ * per route is what splits them — the same thing a primitive's page does with
+ * its own document — and resolving it before activation is what keeps the page
+ * synchronous below its inputs, so a fragment in the URL still finds its anchor
+ * on the first render.
  */
 function guideRoute(slug) {
   return [
     '  {',
     `    path: 'guides/${slug}',`,
     `    data: { slug: '${slug}' },`,
+    '    resolve: {',
+    `      doc: () => import('${guideDocModuleOf(slug)}').then((m) => m.DOC),`,
+    '    },',
     `    loadComponent: () => import('${GUIDE_MODULE}').then((m) => m.GuidePage),`,
     '  },',
   ].join('\n');

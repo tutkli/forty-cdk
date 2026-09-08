@@ -8,9 +8,8 @@ import { DocLinks } from '../doc/doc-links';
 import { DocSection } from '../doc/doc-section';
 import { DocToc } from '../doc/doc-toc';
 import { buildTocItems, type TocEntry } from '../doc/doc-toc-rail';
-import type { DocPageSection } from '../doc/doc-model';
+import type { DocPage, DocPageSection } from '../doc/doc-model';
 import { guideBySlug } from '../doc/guides';
-import { GUIDE_DOCS } from '../../generated/guide-docs.generated';
 
 @Component({
   selector: 'guide-page',
@@ -126,25 +125,27 @@ export class GuidePage {
 
   readonly slug = input.required<string>();
 
+  /**
+   * The compiled guide, resolved by the route this page is served under so that
+   * each document keeps a chunk of its own
+   * ([#1825](https://github.com/tutkli/forty-cdk/issues/1825)).
+   *
+   * Bound by `withComponentInputBinding()` out of the route's resolved data, and
+   * resolved before activation — so it is here on the first render, like the
+   * slug beside it.
+   */
+  readonly doc = input.required<DocPage>();
+
   protected readonly guide = computed(() => guideBySlug(this.slug()));
 
-  readonly #doc = computed(() => {
-    const guide = this.guide();
-    const doc = GUIDE_DOCS[guide.slug];
-    if (doc === undefined) {
-      throw new Error(`[playground] no compiled document for guide: ${guide.slug}`);
-    }
-    return doc;
-  });
-
   protected readonly introHtml = computed(() => {
-    const intro = this.#doc()
+    const intro = this.doc()
       .intro.map((block) => this.#base(block.html))
       .join('');
     return intro.trim() ? this.#sanitizer.bypassSecurityTrustHtml(intro) : null;
   });
 
-  protected readonly sections = computed(() => this.#doc().sections);
+  protected readonly sections = computed(() => this.doc().sections);
 
   protected readonly tocItems = computed<readonly TocEntry[]>(() =>
     buildTocItems(
@@ -161,7 +162,7 @@ export class GuidePage {
           },
         };
       }),
-      this.#doc().behaviorGroup,
+      this.doc().behaviorGroup,
     ),
   );
 

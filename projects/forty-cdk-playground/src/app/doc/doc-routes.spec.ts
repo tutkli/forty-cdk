@@ -53,6 +53,30 @@ describe('the emitted route table', () => {
     expect(source.match(/m\.GuidePage/g)).toHaveLength(2);
   });
 
+  /**
+   * The half that splits the guides apart
+   * ([#1825](https://github.com/tutkli/forty-cdk/issues/1825)). One map imported
+   * all eleven documents by value, so the one page chunk carried every guide;
+   * the specifier has to be a literal here for the same reason the page module's
+   * is, and there has to be exactly one of them per guide — a route resolving
+   * two, or resolving another guide's document, is the shape that merges the
+   * chunks back together.
+   */
+  it('resolves each guide document through a literal specifier of its own', () => {
+    const source = routesModule({
+      primitiveSlugs: [],
+      guideSlugs: ['styling', 'date-adapters'],
+    });
+
+    expect(source).toContain(
+      "doc: () => import('./docs/guides/styling.generated').then((m) => m.DOC),",
+    );
+    expect(source).toContain(
+      "doc: () => import('./docs/guides/date-adapters.generated').then((m) => m.DOC),",
+    );
+    expect(source.match(/import\('\.\/docs\/guides\//g)).toHaveLength(2);
+  });
+
   it('routes every site page through the one site page, from the root rather than a prefix', () => {
     const source = routesModule({
       primitiveSlugs: [],
