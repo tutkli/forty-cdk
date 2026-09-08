@@ -69,6 +69,11 @@ export interface DocPageHeading {
 
 export interface DocPageSection {
   readonly title: string;
+  /**
+   * The title's markup, present only when it carries a tag — a `##` naming a
+   * class, a selector or an HTML element. Absent, `title` is the whole of it.
+   */
+  readonly titleHtml?: string;
   readonly slug: string;
   /** Which ring of the page-template contract the section falls in. */
   readonly ring: DocSectionRing;

@@ -103,6 +103,29 @@ export function renderDocCell(md, context) {
   return { html, text: stripText(html) };
 }
 
+/** What separates a title carrying markup from one carrying an escape. */
+const INLINE_TAG = /<[^>]+>/;
+
+/**
+ * A section's title, rendered once: the text every label reads, and the markup
+ * its `<h2>` binds when there is any
+ * ([#1826](https://github.com/tutkli/forty-cdk/issues/1826)).
+ *
+ * Three of the four consumers of a title want text — the permalink's
+ * `aria-label`, the rail and the `⌘K` palette, where a `<code>` span would be
+ * noise inside a link label — so the text stays the field they read and the
+ * markup arrives beside it. Emitted only when a title holds a tag, because 539
+ * of the corpus's 572 section titles are their own markup already and five more
+ * differ from it by an escaped `&` or `'`, which a text interpolation publishes
+ * identically. That leaves one extra string per heading that needs one, and it
+ * makes the model say which headings carry markup.
+ */
+function renderTitle(md, context) {
+  const html = renderInlineMarkdown(md, context);
+  const title = stripText(html);
+  return INLINE_TAG.test(html) ? { title, titleHtml: html } : { title };
+}
+
 /**
  * The link resolver a document is rendered under.
  *
@@ -183,7 +206,7 @@ export function renderDocument(document, { routes, blobBase = GITHUB_BLOB_BASE }
     intro: document.intro.map((block) => renderProseBlock(block, context)),
     behaviorGroup: group === null ? null : { title: headingText(group.title), slug: group.slug },
     sections: document.sections.map((section) => ({
-      title: headingText(section.title),
+      ...renderTitle(section.title, context),
       slug: section.slug,
       ring: section.ring,
       headings: section.headings.map((heading) => ({
