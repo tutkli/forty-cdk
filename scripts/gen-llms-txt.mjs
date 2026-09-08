@@ -10,6 +10,7 @@ import {
   SITE_URL,
   splitDocHref,
 } from './lib/doc-links.mjs';
+import { readErrorCodes, RUNTIME_SCOPE } from './lib/error-codes.mjs';
 import { repoRoot } from './lib/repo-path.mjs';
 
 /**
@@ -18,7 +19,7 @@ import { repoRoot } from './lib/repo-path.mjs';
  * document, an [llms.txt](https://llmstxt.org/) index over them, and
  * `llms-full.txt` for indexers.
  *
- * Three decisions are load-bearing.
+ * Four decisions are load-bearing.
  *
  * - **It is a consumer of the document model, not a generator of its own.**
  *   Compiled through {@link compileCorpus}, the same call `gen-doc-model.mjs`
@@ -45,6 +46,14 @@ import { repoRoot } from './lib/repo-path.mjs';
  *   whose README a host page folds in — get `<site>/<entry point>.md` all the
  *   same: each is an entry point a consumer imports from, and a model working
  *   on one wants its README rather than the page that republishes part of it.
+ * - **The `FORCDK-*` roster is the one artifact that departs from it**
+ *   ([#1848](https://github.com/tutkli/forty-cdk/issues/1848)). It is published
+ *   whole at `/errors.md`, and the site's per-code pages get no markdown sibling
+ *   — each code is a handful of lines, and an assistant handed one out of a
+ *   console wants the roster in a single load rather than 126 near-empty
+ *   artifacts beside 71 substantial ones. A departure the index states is a
+ *   convention a reader can still follow and a silent one is not, so `llms.txt`
+ *   says it where it states the convention.
  */
 
 const BROWSER = join(repoRoot, 'dist', 'forty-cdk-playground', 'browser');
@@ -56,6 +65,7 @@ const OWNED = /(?:\.md|^llms(?:-full)?\.txt)$/;
 
 const INDEX_FILE = 'llms.txt';
 const FULL_FILE = 'llms-full.txt';
+const ERRORS_FILE = 'errors.md';
 
 function fail(message) {
   console.error(`[gen-llms-txt] ${message}`);
@@ -121,6 +131,84 @@ function entryOf(document, resolveHref) {
 
 function section(heading, entries) {
   return `## ${heading}\n\n${entries.join('\n')}`;
+}
+
+/**
+ * One `FORCDK-*` code, in the order a reader diagnosing it needs: the console
+ * line they are matching, who reports it, why, and what to do.
+ *
+ * The headline goes in a fence because it is the string the library prints, and
+ * because the prose beside it is full of `[forAccordion]`-shaped selectors that
+ * a renderer would otherwise be free to read as a reference link.
+ */
+function codeMarkdown(entry) {
+  const reported = entry.severity === 'warning' ? 'Warned' : 'Thrown';
+  const gating = entry.severity === 'warning' ? ', in development builds only' : '';
+  const by =
+    entry.scope === RUNTIME_SCOPE
+      ? `a shared \`forty-cdk/${entry.area}\` check, which reports under the primitive that ran it`
+      : `\`forty-cdk/${entry.scope}\``;
+  const parts = [
+    `### ${entry.code}`,
+    '```\n' + `[forty-cdk/${entry.scope}] ${entry.code}: ${entry.message}` + '\n```',
+    `${reported} by ${by}${gating}.`,
+  ];
+  if (entry.cause !== null) {
+    parts.push(`**Cause.** ${entry.cause}`);
+  }
+  if (entry.fix !== null) {
+    parts.push(`**Fix.** ${entry.fix}`);
+  }
+  parts.push(
+    `Emitted at [${entry.source}:${entry.line}](${GITHUB_BLOB_BASE}${entry.source}#L${entry.line}).`,
+  );
+  return parts;
+}
+
+/**
+ * The whole roster as one artifact, grouped by the entry point each code's area
+ * names.
+ *
+ * This is the one stage allowed to render markdown of its own. Every other
+ * artifact is a `DocDocument` serialised by `documentMarkdown`, and the roster
+ * cannot be: it comes from {@link readErrorCodes}, an AST scan of the emitter
+ * call sites, which is a second source of content and deliberately kept to a
+ * single narrow path rather than generalised into "render anything as
+ * markdown". A third source wanting an artifact is the point to reconsider the
+ * shape.
+ *
+ * `areaDocumentation` links an area to the markdown of the entry point it
+ * names. It is built over the artifacts rather than over the site's routes, so
+ * the two entry points whose README a host page folds in are reachable here
+ * too — they own a `.md` of their own, which is the thing a reader following an
+ * error code wants. Only `core` resolves to nothing, being infrastructure no
+ * entry point documents, so a missing link is a case to handle rather than a
+ * defect.
+ */
+function rosterMarkdown(codes, areaDocumentation) {
+  const areas = [...new Set(codes.map((entry) => entry.area))].sort((a, b) => a.localeCompare(b));
+  const warnings = codes.filter((entry) => entry.severity === 'warning').length;
+  const parts = [
+    '# Error codes',
+    `Every message forty-cdk reports carries a \`FORCDK-<AREA>-<NNN>\` code naming one concrete ` +
+      `mistake. This is the whole roster — ${codes.length} codes across ${areas.length} entry ` +
+      `points, ${warnings} of them warnings — read from the library's own source, so a code here ` +
+      `carries the sentence the console did. A value in braces, like \`{piece}\`, is filled in ` +
+      `when the message is reported.`,
+    `The site publishes a page per code under [/errors](${SITE_URL}errors). This file is that ` +
+      `roster in a single load, and those pages have no markdown sibling of their own.`,
+  ];
+  for (const area of areas) {
+    parts.push(`## forty-cdk/${area}`);
+    const documentation = areaDocumentation.get(area);
+    if (documentation !== undefined) {
+      parts.push(`Documentation: [${documentation.title}](${documentation.url}).`);
+    }
+    for (const entry of codes.filter((code) => code.area === area)) {
+      parts.push(...codeMarkdown(entry));
+    }
+  }
+  return `${parts.join('\n\n')}\n`;
 }
 
 /**
@@ -261,14 +349,35 @@ const pages = ordered.map((document) => ({
   markdown: documentMarkdown(document, resolveHref),
 }));
 
+const { codes: errorCodes, problems: codeProblems } = readErrorCodes();
+if (codeProblems.length > 0) {
+  fail(
+    `${codeProblems.length} emitter call(s) cannot be read, so the roster would be published ` +
+      `short of the codes the library emits:\n` +
+      codeProblems.map(({ path, line, message }) => `  ${path}:${line} — ${message}`).join('\n'),
+  );
+}
+
+const areaDocumentation = new Map(
+  all
+    .filter((document) => document.kind === 'primitive')
+    .map((document) => [
+      document.slug,
+      { title: titleOf(document), url: markdownUrl(routeOf(document)) },
+    ]),
+);
+const roster = rosterMarkdown(errorCodes, areaDocumentation);
+
 const removed = sweep(BROWSER);
 const full =
   `# forty-cdk — the full documentation\n\n` +
-  `Every document the documentation site publishes, concatenated. Each is also published on its ` +
-  `own at the URL its page is served from plus \`.md\`; see ${SITE_URL}${INDEX_FILE}.\n\n` +
-  pages.map((page) => page.markdown).join('\n---\n\n');
+  `Every document the documentation site publishes, concatenated, with the \`FORCDK-*\` error ` +
+  `roster after them. Each is also published on its own at the URL its page is served from plus ` +
+  `\`.md\`; see ${SITE_URL}${INDEX_FILE}.\n\n` +
+  [...pages.map((page) => page.markdown), roster].join('\n---\n\n');
 
 const pageBytes = pages.map((page) => write(page.file, page.markdown));
+const rosterBytes = write(ERRORS_FILE, roster);
 const fullBytes = write(FULL_FILE, full);
 
 const peers = peersOf(manifest);
@@ -285,7 +394,7 @@ const index = [
   '',
   `**The package root exports nothing.** \`import { ForDialog } from '${manifest.name}'\` resolves to an empty barrel and does not compile. Every primitive ships as its own secondary entry point, named after its folder, and the entry point specifier is published before each description below.`,
   '',
-  `Each page of the documentation site is published as markdown at that page's own URL plus \`.md\` — the page at ${SITE_URL}select is ${SITE_URL}select.md. Load the one page you need; \`${FULL_FILE}\` is every document at once and is listed under Optional for indexers.`,
+  `Each page of the documentation site is published as markdown at that page's own URL plus \`.md\` — the page at ${SITE_URL}select is ${SITE_URL}select.md. The error roster is the one departure: ${SITE_URL}${ERRORS_FILE} carries every \`FORCDK-*\` code in a single file, and the per-code pages under ${SITE_URL}errors have no markdown sibling of their own. Load the one page you need; \`${FULL_FILE}\` is every document at once and is listed under Optional for indexers.`,
   '',
   section(
     'Getting started',
@@ -312,8 +421,15 @@ const index = [
     additional.map((document) => entryOf(document, resolveHref)),
   ),
   '',
+  section('Reference', [
+    `- [Error codes](${SITE_URL}${ERRORS_FILE}): Every \`FORCDK-*\` message the library can ` +
+      `report — ${errorCodes.length} codes across ` +
+      `${new Set(errorCodes.map((entry) => entry.area)).size} entry points, each with the console ` +
+      `line it prints, its cause, its fix and the source it is emitted from.`,
+  ]),
+  '',
   section('Optional', [
-    `- [${FULL_FILE}](${SITE_URL}${FULL_FILE}): Every document above concatenated, ${Math.round(fullBytes / 1024)} kB. Published for indexers — load the individual pages instead.`,
+    `- [${FULL_FILE}](${SITE_URL}${FULL_FILE}): Every document above concatenated, error roster included, ${Math.round(fullBytes / 1024)} kB. Published for indexers — load the individual pages instead.`,
   ]),
   '',
 ].join('\n');
@@ -325,7 +441,9 @@ console.log(
     `(${Math.round(pageBytes.reduce((total, bytes) => total + bytes, 0) / 1024)} kB), ` +
     `${INDEX_FILE} (${(indexBytes / 1024).toFixed(1)} kB, ${primitives.length} primitives + ` +
     `${utilities.length} utilities + ${guides.length} guides + ${sitePages.length} site pages + ` +
-    `${additional.length} entry points with no page), ${FULL_FILE} ` +
+    `${additional.length} entry points with no page), ${ERRORS_FILE} ` +
+    `(${(rosterBytes / 1024).toFixed(1)} kB, ${errorCodes.length} FORCDK-* code(s) across ` +
+    `${new Set(errorCodes.map((entry) => entry.area)).size} area(s)), ${FULL_FILE} ` +
     `(${Math.round(fullBytes / 1024)} kB)` +
     (removed > 0 ? `; swept ${removed} artifact(s) from a previous run` : ''),
 );

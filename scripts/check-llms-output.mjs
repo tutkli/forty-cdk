@@ -4,6 +4,7 @@ import { join, relative, sep } from 'node:path';
 import { markdownLinksOf } from './docs/doc-markdown.mjs';
 import { GITHUB_BLOB_BASE, isAbsoluteHref, SITE_URL, splitDocHref } from './lib/doc-links.mjs';
 import { readEntryPointDocs, readGuides, readPrimitives, readSitePages } from './lib/doc-site.mjs';
+import { readErrorCodes } from './lib/error-codes.mjs';
 import { repoRoot } from './lib/repo-path.mjs';
 
 /**
@@ -21,14 +22,22 @@ import { repoRoot } from './lib/repo-path.mjs';
  * the generator is asked. A generator that stopped emitting a document, or an
  * index that stopped listing one, fails here.
  *
+ * The `FORCDK-*` roster is held to the same standard from the other side
+ * ([#1848](https://github.com/tutkli/forty-cdk/issues/1848)): it is the one
+ * artifact no document backs, so it is read against {@link readErrorCodes} —
+ * the call the generator rendered it from and the one
+ * `check-prerender-output.mjs` holds the HTML pages to — rather than against
+ * itself.
+ *
  * Two exclusions are deliberate:
  *
  * - **A GitHub blob URL to a file the site does not publish is allowed** —
  *   `forty-cdk/shared` and `forty-cdk/time-picker` link four core modules and a
- *   date adapter by file, and the installation page links the CHANGELOG. That is
- *   where each of those is read, it is what the site's own pages publish for
- *   them, and the count is reported so it cannot grow unseen. A blob URL to a
- *   document the site *does* publish is refused: that is the
+ *   date adapter by file, the installation page links the CHANGELOG, and the
+ *   roster links the call site each code is emitted from. That is where each of
+ *   those is read, it is what the site's own pages publish for them, and the
+ *   count is reported so it cannot grow unseen. A blob URL to a document the
+ *   site *does* publish is refused: that is the
  *   [#1800](https://github.com/tutkli/forty-cdk/issues/1800) failure, a
  *   reference that hands an assistant the repository instead of the docs.
  * - **A bare `#fragment` is left as written.** It names a heading of the
@@ -44,14 +53,28 @@ const BROWSER = join(repoRoot, 'dist', 'forty-cdk-playground', 'browser');
 
 const INDEX_FILE = 'llms.txt';
 const FULL_FILE = 'llms-full.txt';
+const ERRORS_FILE = 'errors.md';
 
 /**
  * Floors that keep a green run from being a vacuous one. Each sits far below
- * today's measurement (73 artifacts, 1 086 links) and fails the scan that
- * stopped finding anything rather than reporting "0 links, ok".
+ * today's measurement (74 artifacts, 1 435 links, 126 codes) and fails the scan
+ * that stopped finding anything rather than reporting "0 links, ok".
+ *
+ * {@link CODE_FLOOR} is the one the roster needs: "every code the library emits
+ * is published" is satisfied by an empty roster and an empty artifact, so
+ * without it the strongest-sounding assertion in this file is the easiest one to
+ * pass by accident.
  */
 const ARTIFACT_FLOOR = 60;
 const LINK_FLOOR = 500;
+const CODE_FLOOR = 100;
+
+/**
+ * How many missing codes the roster failure names before it reports the rest as
+ * a count. A generator that stopped emitting the roster would otherwise print
+ * every code in it, which buries the one number that says what happened.
+ */
+const MISSING_NAMED = 8;
 
 const failures = [];
 
@@ -171,6 +194,51 @@ for (const [file, source] of expected) {
   }
 }
 
+const { codes: errorCodes, problems: codeProblems } = readErrorCodes();
+if (codeProblems.length > 0) {
+  fail(
+    `${codeProblems.length} emitter call(s) cannot be read, so the roster is short of the codes ` +
+      `the library emits before anything is asserted against it:\n` +
+      codeProblems.map(({ path, line, message }) => `  ${path}:${line} — ${message}`).join('\n'),
+  );
+}
+if (errorCodes.length < CODE_FLOOR) {
+  fail(
+    `the scan reports only ${errorCodes.length} FORCDK-* code(s) (floor ${CODE_FLOOR}) — it has ` +
+      'stopped finding the emitter calls, so holding the roster to it proves nothing',
+  );
+}
+
+const rosterContents = read(ERRORS_FILE);
+if (rosterContents === null) {
+  failures.push(
+    `the emit publishes no /${ERRORS_FILE}, so ${errorCodes.length} error code(s) reach no ` +
+      'markdown at all and an assistant handed one has the message and nothing else',
+  );
+} else {
+  if (!rosterContents.startsWith('# ')) {
+    failures.push(
+      `/${ERRORS_FILE} does not open with a title, so it published a body with no heading`,
+    );
+  }
+  const missing = errorCodes.filter((entry) => !rosterContents.includes(entry.code));
+  if (missing.length > 0) {
+    const named = missing.slice(0, MISSING_NAMED).map((entry) => entry.code);
+    failures.push(
+      `/${ERRORS_FILE} publishes ${errorCodes.length - missing.length} of ${errorCodes.length} ` +
+        `code(s) the library emits — missing ${named.join(', ')}` +
+        (missing.length > named.length ? ` and ${missing.length - named.length} more` : ''),
+    );
+  }
+}
+
+if (!servesPath('errors')) {
+  failures.push(
+    `/${ERRORS_FILE} points a reader at the per-code pages under /errors, which the emit no ` +
+      'longer serves',
+  );
+}
+
 const indexContents = read(INDEX_FILE);
 if (indexContents === null) {
   fail(`the emit publishes no /${INDEX_FILE}, which is the index every other artifact hangs off`);
@@ -201,7 +269,8 @@ function artifacts(dir, found = []) {
 
 const published = artifacts(BROWSER);
 const unexpected = published.filter(
-  (file) => !expected.has(file) && file !== INDEX_FILE && file !== FULL_FILE,
+  (file) =>
+    !expected.has(file) && file !== INDEX_FILE && file !== FULL_FILE && file !== ERRORS_FILE,
 );
 if (unexpected.length > 0) {
   failures.push(
@@ -284,6 +353,15 @@ for (const [file, source] of expected) {
 if (!listed.has(FULL_FILE)) {
   failures.push(`/${INDEX_FILE} does not list /${FULL_FILE}`);
 }
+if (!listed.has(ERRORS_FILE)) {
+  failures.push(
+    `/${INDEX_FILE} does not list /${ERRORS_FILE}, so the error surface is reachable from no ` +
+      'index an assistant is handed',
+  );
+}
+if (rosterContents !== null && !fullContents.includes(rosterContents.split('\n')[0])) {
+  failures.push(`/${FULL_FILE} is missing the roster published at /${ERRORS_FILE}`);
+}
 
 /**
  * `llms-full.txt` holds every document rather than a subset of them, asserted
@@ -322,6 +400,7 @@ if (scannedLinks < LINK_FLOOR) {
 console.log(
   `[check-llms-output] ok — ${expected.size} documents published as markdown, all listed in ` +
     `/${INDEX_FILE} and concatenated into /${FULL_FILE} ` +
-    `(${Math.round(Buffer.byteLength(fullContents, 'utf8') / 1024)} kB); ${scannedLinks} links ` +
+    `(${Math.round(Buffer.byteLength(fullContents, 'utf8') / 1024)} kB); /${ERRORS_FILE} carries ` +
+    `all ${errorCodes.length} FORCDK-* code(s) the library emits; ${scannedLinks} links ` +
     `resolved (${sourceLinks} to repository source on GitHub, which is where those files are read)`,
 );
