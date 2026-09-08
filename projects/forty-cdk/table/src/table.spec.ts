@@ -2,6 +2,7 @@ import {
   Component,
   computed,
   Directive,
+  ElementRef,
   provideZonelessChangeDetection,
   signal,
   viewChild,
@@ -14,6 +15,7 @@ import { ForDraggable, moveItemInArray } from 'forty-cdk/drag-drop';
 import { TABLE_REGISTRATION_CONTEXT, type TableRegistrationContext } from 'forty-cdk/core';
 
 import { ForTable } from './table';
+import { TableRegistry } from './table-registry';
 import { ForTableCell } from './table-cell';
 import { ForTableHeaderCell } from './table-header-cell';
 import { ForTableHeaderRow } from './table-header-row';
@@ -4744,6 +4746,7 @@ describe('context / registration split (#1399)', () => {
     'registerBodyRowCount',
     'registerVirtualNavigation',
     'registerVirtualWindow',
+    'focusHeaderCell',
     'setReorderingRow',
     'setColumnWidth',
     'removeColumnWidth',
@@ -4794,6 +4797,104 @@ describe('context / registration split (#1399)', () => {
     expect(root.style.getPropertyValue('--for-table-col-a-width')).toBe('120px');
     registration.removeColumnWidth('a');
     expect(root.style.getPropertyValue('--for-table-col-a-width')).toBe('');
+  });
+});
+
+describe('focusHeaderCell — the header-crossing resolver (#1841)', () => {
+  let restoreObservers: () => void;
+  beforeAll(() => {
+    restoreObservers = installObserverPolyfills();
+  });
+  afterAll(() => restoreObservers());
+
+  @Component({
+    imports: [ForTable, ForTableHeaderRow, ForTableHeaderCell, ForTableRow, ForTableCell],
+    template: `
+      <div forTable [mode]="mode()">
+        @if (headerCells() > 0) {
+          <div forTableHeaderRow>
+            @for (name of headerNames(); track name) {
+              <div forTableHeaderCell [name]="name" [attr.data-testid]="'h-' + name">
+                {{ name }}
+              </div>
+            }
+          </div>
+        }
+        <div forTableRow [value]="'r1'"><div forTableCell name="a">1</div></div>
+      </div>
+    `,
+  })
+  class CrossingHost {
+    readonly mode = signal<TableMode>('grid');
+    readonly headerCells = signal(1);
+    readonly headerNames = computed(() =>
+      Array.from({ length: this.headerCells() }, (_, i) => String.fromCharCode(97 + i)),
+    );
+  }
+
+  function mount(): {
+    el: HTMLElement;
+    instance: CrossingHost;
+    registration: TableRegistrationContext;
+    flush: () => Promise<void>;
+  } {
+    const { el, instance, fixture, flush } = renderHost(CrossingHost);
+    const node = fixture.debugElement.query(By.directive(ForTable));
+    return { el, instance, registration: node.injector.get(TABLE_REGISTRATION_CONTEXT), flush };
+  }
+
+  it('focuses the header cell and hands it the tab stop in a participating grid', async () => {
+    const { el, registration } = mount();
+    const header = el.querySelector<HTMLElement>('[data-testid="h-a"]')!;
+
+    expect(registration.focusHeaderCell(0)).toBe(true);
+    expect(document.activeElement).toBe(header);
+    expect(header.getAttribute('tabindex')).toBe('0');
+  });
+
+  it('refuses the crossing in mode="table"', async () => {
+    const { instance, registration, flush } = mount();
+    instance.mode.set('table');
+    await flush();
+
+    expect(registration.focusHeaderCell(0)).toBe(false);
+  });
+
+  it('refuses the crossing when the header row is incomplete', async () => {
+    const { instance, registration, flush } = mount();
+    instance.headerCells.set(2);
+    await flush();
+
+    expect(registration.focusHeaderCell(0)).toBe(false);
+  });
+
+  it('refuses the crossing for a column the header row does not carry', async () => {
+    const { registration } = mount();
+
+    expect(registration.focusHeaderCell(1)).toBe(false);
+  });
+
+  it('refuses the crossing onto a disabled header cell, as moveGridIndex does', async () => {
+    const { instance, registration, flush } = mount();
+    instance.headerCells.set(0);
+    await flush();
+    const host = document.createElement('div');
+    registration.registerHeaderCell({ host, disabled: signal(true) });
+    await flush();
+
+    expect(registration.focusHeaderCell(0)).toBe(false);
+  });
+
+  it('answers false while no root has installed a resolver', () => {
+    TestBed.configureTestingModule({
+      providers: [
+        provideZonelessChangeDetection(),
+        TableRegistry,
+        { provide: ElementRef, useValue: new ElementRef(document.createElement('div')) },
+      ],
+    });
+
+    expect(TestBed.inject(TableRegistry).focusHeaderCell(0)).toBe(false);
   });
 });
 

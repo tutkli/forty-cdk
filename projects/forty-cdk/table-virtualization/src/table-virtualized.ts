@@ -115,6 +115,7 @@ export class ForTableVirtualized {
     scrollViewportRect: () => this.#scrollElement().getBoundingClientRect(),
     rowCount: this.#rowCount,
     loadedRowCount: () => this.#ctx.loadedRowCount(),
+    focusHeaderCell: (col) => this.#registration.focusHeaderCell(col),
   });
 
   constructor() {

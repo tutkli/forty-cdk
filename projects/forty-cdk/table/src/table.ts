@@ -407,6 +407,10 @@ export class ForTable<T = unknown> implements ForTableContext {
     return rendered === 0 ? UNKNOWN_COUNT : rendered;
   });
 
+  constructor() {
+    this.#registry.registerHeaderCellFocus((column) => this.#focusHeaderCell(column));
+  }
+
   isRowExpanded(value: T): boolean {
     return this.#expansion.isExpanded(value);
   }
@@ -469,6 +473,31 @@ export class ForTable<T = unknown> implements ForTableContext {
     if (this.mode() !== 'table') {
       this.#roving.setActive(host);
     }
+  }
+
+  /**
+   * Moves roving focus onto the header cell in the 0-based `column`, answering `false`
+   * when the header row does not join the composite grid, carries no such column, or
+   * holds a disabled cell there — the same cells {@link moveGridIndex} refuses to land
+   * on, so the two crossings stay equivalent.
+   *
+   * Registered with the registry rather than resolved by it: the registry owns the
+   * header cell collection, but the header row's participation and the roving tab stop
+   * are the root's model. `[forTableVirtualized]` calls it when an upward cross-window
+   * walk steps over the last variant row above the dataset — the crossing this root
+   * resolves through {@link moveGridIndex} when no virtualizer is involved
+   * ([#1841](https://github.com/tutkli/forty-cdk/issues/1841)).
+   */
+  #focusHeaderCell(column: number): boolean {
+    if (!this.#headerParticipates()) {
+      return false;
+    }
+    const cell = this.#headerCellHosts()[column];
+    if (cell === undefined || cell.disabled()) {
+      return false;
+    }
+    this.#roving.focusActive(cell.host);
+    return true;
   }
 
   isRowSelected(value: T): boolean {

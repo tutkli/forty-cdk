@@ -157,6 +157,20 @@ test.describe('ForTableBody — row variants (virtualized body only)', () => {
     await expectFocused(dataCell(page, LAST - 1, 'name'));
   });
 
+  test('ArrowUp from the first data row crosses the leading group variant into the header cell', async ({
+    page,
+  }) => {
+    const start = dataCell(page, 1, 'name');
+    await expect(start).toBeAttached();
+    await start.click();
+    await expectFocused(start);
+
+    await page.keyboard.press('ArrowUp');
+
+    await expectFocused(headerCell(page, 'name'));
+    await expect(el(page, 'root')).toHaveJSProperty('scrollTop', 0);
+  });
+
   test('Ctrl+Home lands on the first header cell when the header participates in roving', async ({
     page,
   }) => {
