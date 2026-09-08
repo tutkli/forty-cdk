@@ -3,6 +3,7 @@ import { join, relative, sep } from 'node:path';
 
 import { checkContract, foldTargetOf } from '../lib/doc-contract.mjs';
 import { buildDocRoutes } from '../lib/doc-links.mjs';
+import { readErrorCodes } from '../lib/error-codes.mjs';
 import {
   EXCLUDED_GUIDES,
   GUIDE_GROUPS,
@@ -254,6 +255,39 @@ function sitePageDocsModule(pages) {
   );
 }
 
+/**
+ * What the Angular compiler plugin reads as a file that must be part of its
+ * TypeScript program: `POTENTIAL_METADATA_REGEX`, matched against a file's raw
+ * text rather than its syntax.
+ *
+ * One `Cause` in the roster explains that "a subclass declaring its own
+ * `@Component` replaces the providers it would have inherited" — inside a string
+ * literal, which the regex cannot tell from a decorator. The plugin then refuses
+ * the generated module outright under the unit-test builder, whose program holds
+ * none of the site's files. Escaping the `@` keeps the value byte-identical at
+ * runtime and takes the text out of the regex's way; nothing else in the module
+ * changes.
+ */
+const METADATA_TEXT = /@(?=angular\/core|Component|Directive|Injectable|Pipe|NgModule)/g;
+
+/**
+ * The `FORCDK-*` roster the site publishes a page per
+ * ([#1736](https://github.com/tutkli/forty-cdk/issues/1736)).
+ *
+ * Emitted from the same generator as the documents so it cannot fall behind
+ * them: there is one `rmSync` and one run, and a code that stops being emitted
+ * loses its page in the same pass. A call the reader could not make sense of is
+ * a `DocCompileError` rather than a code quietly missing from the index —
+ * `check-prerender-output.mjs` then holds the emit to the roster this returns.
+ */
+function errorCodesModule(codes) {
+  return (
+    `import type { ErrorCodeEntry } from '../app/doc/error-codes';\n\n` +
+    `export const ERROR_CODES: readonly ErrorCodeEntry[] = ` +
+    `${serialize(codes).replace(METADATA_TEXT, '\\u0040')};\n`
+  );
+}
+
 function guideModule(guides) {
   const imports = guides
     .map(
@@ -346,6 +380,11 @@ const routes = buildDocRoutes({
   })),
 });
 
+const { codes: errorCodes, problems: codeProblems } = readErrorCodes();
+if (codeProblems.length > 0) {
+  throw new DocCompileError(codeProblems);
+}
+
 const keyOf = (document) => `${document.kind}:${document.slug}`;
 
 /**
@@ -393,6 +432,7 @@ write([
   [join(OUT_DIR, 'site-pages.generated.ts'), sitePagesModule(sitePages)],
   [join(OUT_DIR, 'site-page-docs.generated.ts'), sitePageDocsModule(sitePages)],
   [join(OUT_DIR, 'primitives.generated.ts'), registryModule(primitives)],
+  [join(OUT_DIR, 'error-codes.generated.ts'), errorCodesModule(errorCodes)],
   [
     join(OUT_DIR, 'routes.generated.ts'),
     routesModule({
@@ -418,6 +458,11 @@ console.log(
   `[gen-doc-model] wrote ${rel(OUT_DIR)} — ` +
     `${documents.length} documents (${guides.length} guides), ${sections} sections, ${tables} tables, ` +
     `${primitives.length + guides.length + sitePages.length} routes`,
+);
+console.log(
+  `[gen-doc-model] error codes: ${errorCodes.length} FORCDK-* code(s) across ` +
+    `${new Set(errorCodes.map((entry) => entry.area)).size} area(s), ` +
+    `${errorCodes.filter((entry) => entry.severity === 'warning').length} of them warnings`,
 );
 console.log(
   `[gen-doc-model] guide registry: ${guides.length} guide(s) in ` +

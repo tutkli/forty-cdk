@@ -14,6 +14,11 @@ import { DOC_ROUTES } from '../generated/routes.generated';
  * ([#1812](https://github.com/tutkli/forty-cdk/issues/1812)). Both used to
  * redirect to *accordion*, which answered a reader arriving from npm with an
  * accordion's API reference and answered a mistyped URL with the same.
+ *
+ * `errors/:code` is the one parameterised route the site has
+ * ([#1736](https://github.com/tutkli/forty-cdk/issues/1736)): a page per
+ * `FORCDK-*` code, prerendered from the roster in `app.routes.server.ts`
+ * because a static host cannot resolve a parameter the emit does not carry.
  */
 export const routes: Routes = [
   {
@@ -24,6 +29,15 @@ export const routes: Routes = [
   {
     path: 'guides',
     loadComponent: () => import('./guides/guides.page').then((m) => m.GuidesPage),
+  },
+  {
+    path: 'errors',
+    pathMatch: 'full',
+    loadComponent: () => import('./pages/errors.page').then((m) => m.ErrorsPage),
+  },
+  {
+    path: 'errors/:code',
+    loadComponent: () => import('./pages/error-code.page').then((m) => m.ErrorCodePage),
   },
   ...DOC_ROUTES,
   {
