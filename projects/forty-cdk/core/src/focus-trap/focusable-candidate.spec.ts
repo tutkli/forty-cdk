@@ -389,6 +389,22 @@ describe('focusable-candidate filter', () => {
       expect(stepFocusableCycle(root, inner, 'forward')?.id).toBe('two');
     });
 
+    it('steps from the inner candidate when one candidate nests inside another', () => {
+      root.innerHTML =
+        '<details open><summary id="outer">label <button id="inner">menu</button></summary></details>' +
+        '<button id="after">after</button>';
+      const inner = root.querySelector<HTMLElement>('#inner')!;
+      expect(stepFocusableCycle(root, inner, 'forward')?.id).toBe('after');
+      expect(stepFocusableCycle(root, inner, 'backward')?.id).toBe('outer');
+    });
+
+    it('steps from the wrapper when `from` is the wrapping candidate itself', () => {
+      root.innerHTML =
+        '<details open><summary id="outer">label <button id="inner">menu</button></summary></details>';
+      const outer = root.querySelector<HTMLElement>('#outer')!;
+      expect(stepFocusableCycle(root, outer, 'forward')?.id).toBe('inner');
+    });
+
     it('starts at the first candidate going forward when `from` is null', () => {
       const { one } = pair();
       expect(stepFocusableCycle(root, null, 'forward')).toBe(one);

@@ -194,19 +194,29 @@ export class ForTableHeaderCell {
    * widget rather than at a header cell: the `Tab` that cycles between the cell's widgets
    * and the `Escape` that returns focus from one. A lift in progress (`data-dragging`) owns
    * every key.
+   *
+   * `Tab` is therefore routed only while it is targeted at a widget, never at the cell host,
+   * where it is the ordinary tab stop out of the grid and routing it would put a whole grid
+   * keymap resolution — `clearPending()` on the virtual row navigation included — behind a key
+   * this cell has nothing to do with. It is also the one key exempt from the `defaultPrevented`
+   * bail: an ancestor `FocusTrap` handles `Tab` from a `document` capture listener, so it runs
+   * *before* this one and has already prevented the default whenever the entered widget sits on
+   * one of the trap's edges. Bailing there would leave the cycle silently absent inside every
+   * dialog, and the cell's own `preventDefault` + focus move is what settles where focus lands.
    */
   protected onKeyDown(event: KeyboardEvent): void {
     if (this.#inRovingGrid()) {
       this.ctx.handleCellKeydown(event, this.#host);
       return;
     }
-    if (event.key !== 'Escape' && event.key !== 'Tab') {
+    const escape = event.key === 'Escape';
+    if (!escape && !(event.key === 'Tab' && event.target !== this.#host)) {
       return;
     }
     if (
       !this.#yieldsToDraggable ||
       !this.#participates() ||
-      event.defaultPrevented ||
+      (escape && event.defaultPrevented) ||
       this.#host.hasAttribute('data-dragging')
     ) {
       return;

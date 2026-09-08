@@ -2366,6 +2366,108 @@ describe('ForTable', () => {
       expect(document.activeElement).toBe(other);
     });
 
+    it('a window blur leaves interaction mode standing, so it survives the return', async () => {
+      const { el, flush } = renderHost(CellEntryTwoWidgetHost);
+      const cell = entryCell(el);
+      const first = firstWidget(el);
+      cell.focus();
+      press(cell, 'F2');
+      await flush();
+      expect(document.activeElement).toBe(first);
+
+      const hasFocus = vi.spyOn(document, 'hasFocus').mockReturnValue(false);
+      first.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: null }));
+      await flush();
+      hasFocus.mockRestore();
+
+      const tab = press(first, 'Tab');
+      await flush();
+      expect(tab.defaultPrevented).toBe(true);
+      expect(document.activeElement).toBe(secondWidget(el));
+    });
+
+    it('focus dropped to nothing while the page keeps focus still ends interaction mode', async () => {
+      const { el, flush } = renderHost(CellEntryTwoWidgetHost);
+      const cell = entryCell(el);
+      const first = firstWidget(el);
+      cell.focus();
+      press(cell, 'F2');
+      await flush();
+
+      first.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: null }));
+      await flush();
+
+      const esc = press(first, 'Escape');
+      await flush();
+      expect(esc.defaultPrevented).toBe(false);
+    });
+
+    it('a relatedTarget retargeted to an ancestor of the cell keeps interaction mode', async () => {
+      const { el, flush } = renderHost(CellEntryTwoWidgetHost);
+      const cell = entryCell(el);
+      const first = firstWidget(el);
+      cell.focus();
+      press(cell, 'F2');
+      await flush();
+
+      const row = cell.parentElement!;
+      first.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: row }));
+      await flush();
+
+      const tab = press(first, 'Tab');
+      await flush();
+      expect(tab.defaultPrevented).toBe(true);
+      expect(document.activeElement).toBe(secondWidget(el));
+    });
+
+    it('interaction mode returns with the focus a widget lends to an overlay of its own', async () => {
+      const { el, flush } = renderHost(CellEntryTwoWidgetHost);
+      const cell = entryCell(el);
+      const first = firstWidget(el);
+      const overlay = document.createElement('button');
+      document.body.appendChild(overlay);
+      cell.focus();
+      press(cell, 'F2');
+      await flush();
+      expect(document.activeElement).toBe(first);
+
+      overlay.focus();
+      await flush();
+      expect(press(first, 'Tab').defaultPrevented).toBe(false);
+
+      first.focus();
+      await flush();
+
+      const tab = press(first, 'Tab');
+      await flush();
+      expect(tab.defaultPrevented).toBe(true);
+      expect(document.activeElement).toBe(secondWidget(el));
+      overlay.remove();
+    });
+
+    it('focus returning to the cell host retires the parked cell instead of resuming', async () => {
+      const { el, flush } = renderHost(CellEntryTwoWidgetHost);
+      const cell = entryCell(el);
+      const first = firstWidget(el);
+      const outside = document.createElement('button');
+      document.body.appendChild(outside);
+      cell.focus();
+      press(cell, 'F2');
+      await flush();
+
+      outside.focus();
+      await flush();
+      cell.focus();
+      await flush();
+      first.focus();
+      await flush();
+
+      const tab = press(first, 'Tab');
+      await flush();
+      expect(tab.defaultPrevented).toBe(false);
+      outside.remove();
+    });
+
     it('a header cell holding a button and a resizer reaches the resizer, which then resizes', async () => {
       const { el, instance, flush } = renderHost(CellEntryResizerHeaderHost);
       const cell = el.querySelector<HTMLElement>('[data-testid="h-name"]')!;
@@ -2403,23 +2505,21 @@ describe('ForTable', () => {
       expect(document.activeElement).toBe(resize);
     });
 
-    it('a keyboard lift in progress keeps Tab, so the cycle never disturbs a column drag', async () => {
+    it('Tab during a keyboard lift is left alone and the lift survives it', async () => {
       const { el, flush } = renderHost(CellEntryReorderHeaderHost);
       const cell = el.querySelector<HTMLElement>('[data-testid="h-name"]')!;
-      const menu = el.querySelector<HTMLElement>('[data-testid="menu-name"]')!;
       cell.focus();
-      press(cell, 'F2');
       await flush();
-      expect(document.activeElement).toBe(menu);
 
       press(cell, ' ');
       await flush();
       expect(cell.getAttribute('data-dragging')).toBe('');
 
-      const tab = press(menu, 'Tab');
+      const tab = press(cell, 'Tab');
       await flush();
       expect(tab.defaultPrevented).toBe(false);
-      expect(document.activeElement).toBe(menu);
+      expect(document.activeElement).toBe(cell);
+      expect(cell.getAttribute('data-dragging')).toBe('');
     });
   });
 

@@ -154,15 +154,21 @@ export function findTabbableEdges(container: HTMLElement): TabbableEdges {
  * caller cycling a bounded set never runs out. `null` only when `container` has no focusable
  * descendant at all.
  *
- * `from` is matched against the candidate set through composed containment, so an event target
- * nested inside a candidate (a `<span>` within a `<button>`) steps from that candidate. A `from`
+ * `from` is matched against the candidate set through composed containment, resolving to the
+ * *innermost* candidate that contains it: an event target nested inside a candidate (a `<span>`
+ * within a `<button>`) steps from that candidate, and a candidate nested inside another (a
+ * `<button>` inside a `<summary>`) steps from the inner one rather than from its wrapper. A `from`
  * that is `null`, outside `container`, or no longer a candidate yields the first candidate going
  * forward and the last going backward — the step stays inside `container` either way.
  *
  * This is the *focusable* set, not the Tab cycle: a candidate carrying `tabindex="-1"` takes part,
- * so the cycle reaches exactly what {@link findFirstFocusable} would enter. Unlike
- * {@link findTabbableEdges} it resolves the whole filtered set, which is what makes it suitable
- * for a small bounded container (a grid cell) rather than for a whole trapped surface.
+ * so the cycle reaches exactly what {@link findFirstFocusable} would enter.
+ *
+ * Like {@link findTabbableEdges} it filters lazily, walking outwards from `from` and stopping on
+ * the first candidate that qualifies, so a keystroke costs the O(depth) style reads of a single
+ * `isFocusableCandidate` call rather than the O(N × depth) of filtering the whole set up front.
+ * Only a container whose every candidate is hidden walks all of them, which is the case that
+ * returns `null`.
  *
  * Reads `getComputedStyle`, so callers must gate it behind `isPlatformBrowser`.
  */
@@ -171,18 +177,36 @@ export function stepFocusableCycle(
   from: Element | null,
   direction: 'forward' | 'backward',
 ): HTMLElement | null {
-  const candidates = queryFocusableCandidates(container).filter((el) =>
-    isFocusableCandidate(el, container),
-  );
+  const candidates = queryFocusableCandidates(container);
   if (candidates.length === 0) {
     return null;
   }
   const step = direction === 'forward' ? 1 : -1;
-  const current = from === null ? -1 : candidates.findIndex((el) => composedContains(el, from));
-  if (current === -1) {
-    return step === 1 ? candidates[0]! : candidates[candidates.length - 1]!;
+  const current = from === null ? -1 : indexOfInnermostContaining(candidates, from);
+  const start = current === -1 ? (step === 1 ? 0 : candidates.length - 1) : current + step;
+  for (let i = 0; i < candidates.length; i++) {
+    const offset = (start + i * step) % candidates.length;
+    const candidate = candidates[(offset + candidates.length) % candidates.length]!;
+    if (isFocusableCandidate(candidate, container)) {
+      return candidate;
+    }
   }
-  return candidates[(current + step + candidates.length) % candidates.length]!;
+  return null;
+}
+
+/**
+ * The index of the innermost candidate containing `from`, or `-1` when none does. The candidates
+ * that contain `from` are its ancestors-or-self, so document order lists them outermost first and
+ * the last match is the innermost — the one that actually holds the focus, rather than a wrapper
+ * whose next step would land back on it.
+ */
+function indexOfInnermostContaining(candidates: readonly HTMLElement[], from: Element): number {
+  for (let i = candidates.length - 1; i >= 0; i--) {
+    if (composedContains(candidates[i]!, from)) {
+      return i;
+    }
+  }
+  return -1;
 }
 
 const FOCUSABLE_LOCAL_NAMES = new Set(Object.keys(FOCUSABLE_LOCAL_NAME_QUALIFIERS));
