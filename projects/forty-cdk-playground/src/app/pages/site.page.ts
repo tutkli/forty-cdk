@@ -4,12 +4,11 @@ import { DomSanitizer } from '@angular/platform-browser';
 import { injectDocBase } from '../doc/doc-base';
 import { injectFragmentScroll } from '../doc/doc-fragment';
 import { DocLinks } from '../doc/doc-links';
-import type { DocPageSection } from '../doc/doc-model';
+import type { DocPage, DocPageSection } from '../doc/doc-model';
 import { DocSection } from '../doc/doc-section';
 import { DocToc } from '../doc/doc-toc';
 import { buildTocItems, type TocEntry } from '../doc/doc-toc-rail';
 import { sitePageBySlug } from '../doc/site-pages';
-import { SITE_PAGE_DOCS } from '../../generated/site-page-docs.generated';
 
 @Component({
   selector: 'site-page',
@@ -107,25 +106,27 @@ export class SitePage {
 
   readonly slug = input.required<string>();
 
+  /**
+   * The compiled document, resolved by the route this page is served under so
+   * that each site page keeps a chunk of its own
+   * ([#1852](https://github.com/tutkli/forty-cdk/issues/1852)).
+   *
+   * Bound by `withComponentInputBinding()` out of the route's resolved data, and
+   * resolved before activation — so it is here on the first render, like the
+   * slug beside it.
+   */
+  readonly doc = input.required<DocPage>();
+
   protected readonly page = computed(() => sitePageBySlug(this.slug()));
 
-  readonly #doc = computed(() => {
-    const page = this.page();
-    const doc = SITE_PAGE_DOCS[page.slug];
-    if (doc === undefined) {
-      throw new Error(`[playground] no compiled document for site page: ${page.slug}`);
-    }
-    return doc;
-  });
-
   protected readonly introHtml = computed(() => {
-    const intro = this.#doc()
+    const intro = this.doc()
       .intro.map((block) => this.#base(block.html))
       .join('');
     return intro.trim() ? this.#sanitizer.bypassSecurityTrustHtml(intro) : null;
   });
 
-  protected readonly sections = computed(() => this.#doc().sections);
+  protected readonly sections = computed(() => this.doc().sections);
 
   protected readonly tocItems = computed<readonly TocEntry[]>(() =>
     buildTocItems(
@@ -142,7 +143,7 @@ export class SitePage {
           },
         };
       }),
-      this.#doc().behaviorGroup,
+      this.doc().behaviorGroup,
     ),
   );
 
