@@ -5,6 +5,55 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.25.2] - 2026-09-08
+
+A bugfix release about interaction mode. Cell entry in a `mode="grid"` table handed the keyboard the
+cell's _first_ widget and nothing else: `Tab` kept its document-wide meaning and walked straight out
+into another cell's widget, from where `Escape` no longer returned focus either. So a header cell
+holding a column-menu button and a `[forTableColumnResizer]` — the README's own header as soon as
+you add a menu for sort, hide or filter — surrendered only whichever of the two came first in the
+DOM. `Tab` and `Shift+Tab` now cycle between the entered cell's widgets and wrap at both ends. The
+one thing that changes without you binding anything is a cell that holds a single widget: it wraps
+back to that widget, so `Tab` there moves nothing and `Escape` is the only way out.
+
+### Fixed
+
+- **Table** — `Tab` cycles between the entered cell's widgets
+  ([#1844](https://github.com/tutkli/forty-cdk/issues/1844)). Cell entry focused the cell's first
+  focusable and then listened for `Escape` alone, with no `Tab` branch at all — so in a grid the key
+  walked to the next document tab stop, usually a widget in a **different** cell, and `Escape`
+  stopped working from there too: the keydown bubbled through another host, so the root's
+  entered-cell check failed and the event went unconsumed while the recorded cell still pointed at a
+  host that had lost the focus. `Tab` / `Shift+Tab` now step the **focusable** set of the entered
+  cell, wrapping at both ends, which is the same set `Enter` / `F2` enters: a natively focusable
+  element counts while grid mode holds it at `tabindex="-1"` — that is what makes a
+  `[forTableColumnResizer]` handle reachable — but an element focusable _only_ because you gave it a
+  `tabindex` does not, so a `<span forTableSelectAll>` is in the cycle in `mode="table"` and not in
+  a grid; put it on a `<button type="button">` there. The table's grid keymap claimed otherwise and
+  has been corrected. Interaction mode is also no longer a one-way channel: a real departure now
+  parks the entered cell and a `focusin` restores it when focus returns to one of its widgets, so
+  the round trip a column-menu button makes around its own overlay — portalled to `<body>`, then
+  handing focus back to the trigger on close — resumes interaction mode instead of re-creating this
+  very defect; focus landing anywhere else, the cell host included, retires the parked cell. Two
+  further shapes of "not actually a departure" are honoured: a `relatedTarget` the browser
+  retargeted to a shadow host between the table root and the cell (bounded to the table's own
+  subtree, so `<body>` or a tabbable ancestor stays a departure), and a `null` `relatedTarget` while
+  the document itself has lost focus, which is a window blur the widget survives. And inside a
+  `ForDialog` the cycle is no longer silently absent: `Tab` is exempt from the header cell's
+  `defaultPrevented` bail, which the dialog's focus trap trips from a document capture listener
+  before the keydown ever reaches the cell.
+
+### Changed
+
+- **Table** — a cell holding one widget wraps `Tab` back to it
+  ([#1844](https://github.com/tutkli/forty-cdk/issues/1844)). `Tab` from inside an entered cell used
+  to leave for the next document tab stop; it now stays in the cell in every case, and a cell with a
+  single focusable therefore cycles to itself — the keystroke moves nothing and `Escape` is the only
+  way out of interaction mode. This is a deliberate reading of the APG grid pattern, whose `Tab`
+  "may wrap inside a single cell", applied uniformly rather than only to the cells that happen to
+  hold two. **If you relied on `Tab` to leave an entered cell**, use `Escape` (or any other focus
+  move, which ends interaction mode too).
+
 ## [0.25.1] - 2026-09-08
 
 A bugfix release about the header row. Both defects left a `mode="grid"` table's header cells
@@ -2341,7 +2390,8 @@ primitives.
 - **Display** — avatar, progress, meter, tree.
 - `forty-cdk/internationalized-date` secondary entry point exposing the `@internationalized/date` adapters for the date and time primitives.
 
-[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.25.1...HEAD
+[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.25.2...HEAD
+[0.25.2]: https://github.com/tutkli/forty-cdk/compare/v0.25.1...v0.25.2
 [0.25.1]: https://github.com/tutkli/forty-cdk/compare/v0.25.0...v0.25.1
 [0.25.0]: https://github.com/tutkli/forty-cdk/compare/v0.24.1...v0.25.0
 [0.24.1]: https://github.com/tutkli/forty-cdk/compare/v0.24.0...v0.24.1
