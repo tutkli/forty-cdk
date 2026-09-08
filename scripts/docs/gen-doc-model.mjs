@@ -113,13 +113,9 @@ function registryModule(documents) {
   );
 }
 
-function identifierOf(slug) {
-  return `${slug.replace(/-([a-z0-9])/g, (_, char) => char.toUpperCase())}Doc`;
-}
-
 /**
  * The site's own pages, split into the metadata every route carries and the
- * compiled documents only their page component reads
+ * compiled documents only their own route resolves
  * ([#1812](https://github.com/tutkli/forty-cdk/issues/1812)).
  *
  * The split is the same one the guides already have, and for the same two
@@ -181,23 +177,6 @@ function guidesModule(guides, groupOf) {
     `import type { GuideGroup, GuideMeta } from '../app/doc/guides';\n\n` +
     `export const GUIDES: readonly GuideMeta[] = ${meta};\n\n` +
     `export const GUIDE_GROUPS: readonly GuideGroup[] = ${groups};\n`
-  );
-}
-
-function sitePageDocsModule(pages) {
-  const imports = pages
-    .map(
-      (page) =>
-        `import { DOC as ${identifierOf(page.slug)} } from './docs/pages/${page.slug}.generated';`,
-    )
-    .join('\n');
-  const entries = pages
-    .map((page) => `  ${JSON.stringify(page.slug)}: ${identifierOf(page.slug)},`)
-    .join('\n');
-
-  return (
-    `import type { DocPage } from '../app/doc/doc-model';\n${imports}\n\n` +
-    `export const SITE_PAGE_DOCS: Readonly<Record<string, DocPage>> = {\n${entries}\n};\n`
   );
 }
 
@@ -359,7 +338,6 @@ write([
   [join(OUT_DIR, 'doc-index.generated.ts'), indexModule(documents, pages)],
   [join(OUT_DIR, 'guides.generated.ts'), guidesModule(guides, groupOf)],
   [join(OUT_DIR, 'site-pages.generated.ts'), sitePagesModule(sitePages)],
-  [join(OUT_DIR, 'site-page-docs.generated.ts'), sitePageDocsModule(sitePages)],
   [join(OUT_DIR, 'primitives.generated.ts'), registryModule(primitives)],
   [join(OUT_DIR, 'error-codes.generated.ts'), errorCodesModule(errorCodes)],
   [

@@ -19,6 +19,7 @@ const EXPORTED_CLASS = /^export class (\w+)/gm;
 
 const pageModuleOf = (slug) => `../app/demos/${slug}/${slug}.page`;
 const guideDocModuleOf = (slug) => `./docs/guides/${slug}.generated`;
+const sitePageDocModuleOf = (slug) => `./docs/pages/${slug}.generated`;
 const GUIDE_MODULE = '../app/guides/guide.page';
 const SITE_MODULE = '../app/pages/site.page';
 
@@ -127,12 +128,22 @@ function guideRoute(slug) {
  * a duplicate route rather than a shadowed one. `readSitePages` refuses the
  * collision first; this ordering is what keeps the failure legible if one ever
  * gets past it.
+ *
+ * Its document is resolved per route for the reason {@link guideRoute} records,
+ * in the one family that change left alone
+ * ([#1852](https://github.com/tutkli/forty-cdk/issues/1852)): the map that held
+ * all three imported every one of them by value, so `/installation` — the
+ * smallest document the site publishes outside the error roster — downloaded
+ * `concepts` to render a `pnpm add` command.
  */
 function sitePageRoute(slug) {
   return [
     '  {',
     `    path: '${slug}',`,
     `    data: { slug: '${slug}' },`,
+    '    resolve: {',
+    `      doc: () => import('${sitePageDocModuleOf(slug)}').then((m) => m.DOC),`,
+    '    },',
     `    loadComponent: () => import('${SITE_MODULE}').then((m) => m.SitePage),`,
     '  },',
   ].join('\n');

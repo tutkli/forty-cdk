@@ -91,6 +91,29 @@ describe('the emitted route table', () => {
   });
 
   /**
+   * The same split, in the family [#1825](https://github.com/tutkli/forty-cdk/issues/1825)
+   * left alone ([#1852](https://github.com/tutkli/forty-cdk/issues/1852)). One
+   * map imported all three documents by value, so the one page chunk carried
+   * every site page; a route resolving two of them, or resolving another page's
+   * document, is the shape that merges the chunks back together.
+   */
+  it('resolves each site page document through a literal specifier of its own', () => {
+    const source = routesModule({
+      primitiveSlugs: [],
+      guideSlugs: [],
+      pageSlugs: ['installation', 'concepts'],
+    });
+
+    expect(source).toContain(
+      "doc: () => import('./docs/pages/installation.generated').then((m) => m.DOC),",
+    );
+    expect(source).toContain(
+      "doc: () => import('./docs/pages/concepts.generated').then((m) => m.DOC),",
+    );
+    expect(source.match(/import\('\.\/docs\/pages\//g)).toHaveLength(2);
+  });
+
+  /**
    * A site page is served from the root, so its route and a primitive's are the
    * same shape and only the order decides which answers. `readSitePages` refuses
    * a colliding slug outright; this pins the emitter's half of that, so a page
