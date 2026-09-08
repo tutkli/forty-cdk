@@ -94,6 +94,11 @@ own README with anatomy, API, keyboard map and styling hooks.
 
 - [**Documentation site**](https://tutkli.github.io/forty-cdk/) — every primitive with live,
   editable examples.
+- [**llms.txt**](https://tutkli.github.io/forty-cdk/llms.txt) — the documentation as markdown, for
+  AI assistants: an [llmstxt.org](https://llmstxt.org/) index over one clean `.md` per page, each
+  published at that page's own URL plus `.md` (so `/select` is also
+  [`/select.md`](https://tutkli.github.io/forty-cdk/select.md)). Point your assistant at the page
+  it needs — the root package name exports nothing, and that is the fact a model guesses wrong.
 - [**Library README**](projects/forty-cdk/README.md) — installation, peer dependencies and the full
   primitive catalog.
 - [**Your first overlay**](docs/your-first-overlay.md) — one Popover from empty markup to
