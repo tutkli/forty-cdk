@@ -1261,9 +1261,8 @@ a.pg-nav-link.active {
 
 .cmdk-option {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
+  flex-direction: column;
+  gap: 0.15rem;
   padding: 0.5rem 0.65rem;
   border-radius: var(--pg-radius-sm);
   color: var(--pg-text);
@@ -1274,11 +1273,33 @@ a.pg-nav-link.active {
   background: var(--pg-surface-2);
 }
 
+.cmdk-option-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-width: 0;
+}
+
 .cmdk-option-title {
   font-size: 0.875rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.cmdk-option-snippet {
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: var(--pg-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cmdk-match {
+  font-weight: 700;
+  color: var(--pg-primary);
 }
 
 .cmdk-option-group {

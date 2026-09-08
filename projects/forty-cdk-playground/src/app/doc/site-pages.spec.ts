@@ -1,7 +1,7 @@
 import { buildDocRoutes, resolveDocLink } from '../../../../../scripts/lib/doc-links.mjs';
 import { DOC_INDEX } from '../../generated/doc-index.generated';
 import { GUIDES } from '../../generated/guides.generated';
-import { buildSearchEntries } from './search-index';
+import { buildSearchEntries, searchEntries } from './search-index';
 import { SITE_PAGE_INDEX } from './site-pages';
 import { compile } from './testing/compile';
 import { APP_ROUTES, PAGE_DOCS, PRIMITIVE_DOCS } from './testing/doc-corpus';
@@ -168,10 +168,12 @@ describe('the ⌘K palette', () => {
 
   /**
    * A reader typing "install" wants the installation page, not the first
-   * primitive whose README mentions installing — and `filterSearchEntries`
-   * preserves insertion order, so ordering the index is the whole mechanism.
+   * primitive whose README mentions installing. Ranking is the mechanism now
+   * ([#1813](https://github.com/tutkli/forty-cdk/issues/1813)): a title match
+   * outscores a body match, and the site's own pages carry the highest of the
+   * per-kind bonuses that break a tie.
    */
-  it('offers a site page before a primitive that merely mentions the same word', () => {
+  it('answers "install" with the installation page, above every body mention', () => {
     const withPrimitives = buildSearchEntries(
       [{ label: 'Primitives', primitives: [{ slug: 'switch', title: 'Switch', description: '' }] }],
       DOC_INDEX,
@@ -179,10 +181,9 @@ describe('the ⌘K palette', () => {
       SITE_PAGE_INDEX,
     );
 
-    const first = withPrimitives.findIndex((entry) => entry.kind === 'page');
-    const primitive = withPrimitives.findIndex((entry) => entry.kind === 'primitive');
+    const results = searchEntries(withPrimitives, 'install');
 
-    expect(first).toBeGreaterThanOrEqual(0);
-    expect(primitive).toBeGreaterThan(first);
+    expect(results[0]?.entry.path).toBe('/installation');
+    expect(results.length).toBeGreaterThan(1);
   });
 });
