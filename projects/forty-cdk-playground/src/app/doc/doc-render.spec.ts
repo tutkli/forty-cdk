@@ -249,6 +249,64 @@ describe('rendering a whole document for its page', () => {
     });
   });
 
+  /**
+   * A section title reaches four consumers and three of them want text — the
+   * permalink's `aria-label`, the rail and the `⌘K` palette — so the markup
+   * arrives beside the text rather than in place of it, and only for the titles
+   * that hold any ([#1826](https://github.com/tutkli/forty-cdk/issues/1826)).
+   */
+  it('carries a title’s markup beside the text, for the h2 to bind', () => {
+    const page = render('# T', '', 'Lede.', '', '## Shared `disabled`', '', 'Body.');
+
+    expect(page.sections[0]!.title).toBe('Shared disabled');
+    expect(page.sections[0]!.titleHtml).toBe('Shared <code>disabled</code>');
+    expect(Object.keys(page.sections[0]!)).toEqual([
+      'title',
+      'titleHtml',
+      'slug',
+      'ring',
+      'headings',
+      'blocks',
+    ]);
+  });
+
+  it('escapes a tag a title writes as code, rather than emitting it', () => {
+    const page = render('# T', '', 'Lede.', '', '## Native `<table>` mode', '', 'Body.');
+
+    expect(page.sections[0]!.title).toBe('Native <table> mode');
+    expect(page.sections[0]!.titleHtml).toBe('Native <code>&lt;table&gt;</code> mode');
+  });
+
+  it('leaves the markup off a title that carries none', () => {
+    const page = render('# T', '', 'Lede.', '', '## Shared state', '', 'Body.');
+
+    expect(page.sections[0]!.title).toBe('Shared state');
+    expect(page.sections[0]!.titleHtml).toBeUndefined();
+  });
+
+  it('leaves it off a title that differs from its text by an escape alone', () => {
+    const page = render('# T', '', 'Lede.', '', '## Column & row reordering', '', 'Body.');
+
+    expect(page.sections[0]!.title).toBe('Column & row reordering');
+    expect(page.sections[0]!.titleHtml).toBeUndefined();
+  });
+
+  it('resolves a link in a title through the base-href token, like any other', () => {
+    const page = render(
+      '# T',
+      '',
+      'Lede.',
+      '',
+      '## See [styling](../../../docs/styling.md)',
+      '',
+      'Body.',
+    );
+
+    expect(page.sections[0]!.title).toBe('See styling');
+    expect(page.sections[0]!.titleHtml).toContain('href="%DOC_BASE%guides/styling"');
+    expect(page.sections[0]!.titleHtml).toContain('data-doc-route="/guides/styling"');
+  });
+
   it('carries nothing the page does not read, markdown included', () => {
     const page = render(
       '# T',

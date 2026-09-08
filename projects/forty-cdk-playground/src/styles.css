@@ -671,7 +671,8 @@ a.pg-nav-link.active {
   scroll-margin-top: 4.5rem;
 }
 
-.pg-doc-prose h3 code {
+.pg-doc-prose h3 code,
+.pg-doc-h2 code {
   padding: 0.1rem 0.5rem;
   font-size: 0.95em;
   background: var(--pg-code-title-bg);

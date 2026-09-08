@@ -164,6 +164,21 @@ describe('the index the site ships', () => {
 
     expect(section?.text).toContain('forTableVirtualized');
   });
+
+  /**
+   * The page renders a title's markup as of
+   * [#1826](https://github.com/tutkli/forty-cdk/issues/1826) and the palette
+   * does not: nobody searching for `` `disabled` `` types the backticks, and a
+   * `<code>` span inside a result label is noise. Stated over the shipped index
+   * because that is where a title reaching it as markup would show up.
+   */
+  it('names a section by its text, markup and all resolved away', () => {
+    const titles = DOC_INDEX.flatMap((entry) => entry.sections.map((section) => section.title));
+
+    expect(titles).toContain('Shared disabled');
+    expect(titles).toContain('Native <table> mode');
+    expect(titles.filter((title) => title.includes('<code>'))).toEqual([]);
+  });
 });
 
 describe('searching the documentation', () => {

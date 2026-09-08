@@ -26,7 +26,11 @@ type RenderedBlock =
   template: `
     <section class="pg-doc-section" [id]="section().slug">
       <h2 class="pg-doc-h2">
-        {{ section().title }}
+        @if (titleHtml(); as title) {
+          <span [innerHTML]="title"></span>
+        } @else {
+          {{ section().title }}
+        }
         <a
           class="pg-doc-anchor"
           [routerLink]="[]"
@@ -57,6 +61,18 @@ export class DocSection {
   readonly #base = injectDocBase();
 
   readonly section = input.required<DocPageSection>();
+
+  /**
+   * The heading's markup, for the titles that carry any
+   * ([#1826](https://github.com/tutkli/forty-cdk/issues/1826)).
+   *
+   * `null` for the rest, which the `<h2>` interpolates as text — the same
+   * string its permalink label reads.
+   */
+  protected readonly titleHtml = computed<SafeHtml | null>(() => {
+    const html = this.section().titleHtml;
+    return html === undefined ? null : this.#sanitizer.bypassSecurityTrustHtml(this.#base(html));
+  });
 
   protected readonly blocks = computed<readonly RenderedBlock[]>(() =>
     this.section().blocks.map((block): RenderedBlock => {
