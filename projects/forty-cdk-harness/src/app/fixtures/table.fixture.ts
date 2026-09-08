@@ -128,6 +128,11 @@ import {
               <span forTableSelectAll ariaLabel="Select all" data-testid="select-all"></span>
             }
             <span forTableColumnLabel data-testid="label-name">{{ nameLabel() }}</span>
+            @if (cellMenu()) {
+              <button type="button" data-testid="menu-name" aria-label="Name column options">
+                options
+              </button>
+            }
             @if (resizable()) {
               <button
                 class="resize-handle"
@@ -245,6 +250,9 @@ export class TableFixture {
   );
   protected readonly longHeader = signal(
     this.route.snapshot.queryParamMap.get('longHeader') === 'true',
+  );
+  protected readonly cellMenu = signal(
+    this.route.snapshot.queryParamMap.get('cellMenu') === 'true',
   );
   protected readonly nameLabel = computed(() =>
     this.longHeader() ? 'Full Legal Name of the Employee' : 'Name',

@@ -152,9 +152,10 @@ export interface TablePieceContext {
    * interaction to a co-located `[forDraggable]`. `[forTableColumnReorder]` calls this
    * from a capture-phase listener for idle header cells so Arrow / Home / End / Page keys
    * move roving focus across the composite header + body grid and `F2` enters the cell;
-   * the header cell itself calls it for the `Escape` that returns focus from an entered
-   * widget (targeted at the widget, which that listener never sees), while Space / Enter
-   * fall through to the draggable's lift. Returns `true` when the key was consumed,
+   * the header cell itself calls it for the two keys targeted at an entered widget, which
+   * that listener never sees — the `Tab` that cycles between the cell's widgets and the
+   * `Escape` that returns focus from one — while Space / Enter fall through to the
+   * draggable's lift. Returns `true` when the key was consumed,
    * `false` otherwise (including outside a participating `grid` / `treegrid`).
    */
   handleHeaderCellKeydown(event: KeyboardEvent, host: HTMLElement): boolean;

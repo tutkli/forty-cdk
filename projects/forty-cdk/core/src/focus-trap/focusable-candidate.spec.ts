@@ -4,6 +4,7 @@ import {
   isFocusableCandidate,
   isTabbableCandidate,
   queryFocusableCandidates,
+  stepFocusableCycle,
 } from './focusable-candidate';
 
 describe('focusable-candidate filter', () => {
@@ -325,6 +326,114 @@ describe('focusable-candidate filter', () => {
       expect(first?.id).toBe('t1');
       expect(last?.id).toBe('t2');
       expect(computed).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('stepFocusableCycle', () => {
+    function pair(): { one: HTMLElement; two: HTMLElement } {
+      root.innerHTML = '<button id="one">one</button><button id="two">two</button>';
+      return {
+        one: root.querySelector<HTMLElement>('#one')!,
+        two: root.querySelector<HTMLElement>('#two')!,
+      };
+    }
+
+    it('steps forward to the next candidate', () => {
+      const { one, two } = pair();
+      expect(stepFocusableCycle(root, one, 'forward')).toBe(two);
+    });
+
+    it('steps backward to the previous candidate', () => {
+      const { one, two } = pair();
+      expect(stepFocusableCycle(root, two, 'backward')).toBe(one);
+    });
+
+    it('wraps forward from the last candidate to the first', () => {
+      const { one, two } = pair();
+      expect(stepFocusableCycle(root, two, 'forward')).toBe(one);
+    });
+
+    it('wraps backward from the first candidate to the last', () => {
+      const { one, two } = pair();
+      expect(stepFocusableCycle(root, one, 'backward')).toBe(two);
+    });
+
+    it('returns the sole candidate again when the container holds only one', () => {
+      root.innerHTML = '<button id="only">one</button>';
+      const only = root.querySelector<HTMLElement>('#only')!;
+      expect(stepFocusableCycle(root, only, 'forward')).toBe(only);
+      expect(stepFocusableCycle(root, only, 'backward')).toBe(only);
+    });
+
+    it('includes a tabindex="-1" candidate the Tab cycle would skip', () => {
+      root.innerHTML =
+        '<button id="one">one</button><button id="roving" tabindex="-1">roving</button>';
+      const one = root.querySelector<HTMLElement>('#one')!;
+      expect(stepFocusableCycle(root, one, 'forward')?.id).toBe('roving');
+    });
+
+    it('skips a CSS-hidden candidate', () => {
+      root.innerHTML = `
+        <button id="one">one</button>
+        <button id="gone" style="display:none">gone</button>
+        <button id="two">two</button>
+      `;
+      const one = root.querySelector<HTMLElement>('#one')!;
+      expect(stepFocusableCycle(root, one, 'forward')?.id).toBe('two');
+    });
+
+    it('steps from the candidate that contains `from` when the target is nested inside it', () => {
+      root.innerHTML =
+        '<button id="one"><span id="inner">one</span></button><button id="two">two</button>';
+      const inner = root.querySelector<HTMLElement>('#inner')!;
+      expect(stepFocusableCycle(root, inner, 'forward')?.id).toBe('two');
+    });
+
+    it('steps from the inner candidate when one candidate nests inside another', () => {
+      root.innerHTML =
+        '<details open><summary id="outer">label <button id="inner">menu</button></summary></details>' +
+        '<button id="after">after</button>';
+      const inner = root.querySelector<HTMLElement>('#inner')!;
+      expect(stepFocusableCycle(root, inner, 'forward')?.id).toBe('after');
+      expect(stepFocusableCycle(root, inner, 'backward')?.id).toBe('outer');
+    });
+
+    it('steps from the wrapper when `from` is the wrapping candidate itself', () => {
+      root.innerHTML =
+        '<details open><summary id="outer">label <button id="inner">menu</button></summary></details>';
+      const outer = root.querySelector<HTMLElement>('#outer')!;
+      expect(stepFocusableCycle(root, outer, 'forward')?.id).toBe('inner');
+    });
+
+    it('starts at the first candidate going forward when `from` is null', () => {
+      const { one } = pair();
+      expect(stepFocusableCycle(root, null, 'forward')).toBe(one);
+    });
+
+    it('starts at the last candidate going backward when `from` is null', () => {
+      const { two } = pair();
+      expect(stepFocusableCycle(root, null, 'backward')).toBe(two);
+    });
+
+    it('falls back to an end when `from` lives outside the container', () => {
+      const { one, two } = pair();
+      const outside = document.createElement('button');
+      document.body.appendChild(outside);
+      expect(stepFocusableCycle(root, outside, 'forward')).toBe(one);
+      expect(stepFocusableCycle(root, outside, 'backward')).toBe(two);
+    });
+
+    it('returns null when the container holds no candidate', () => {
+      root.innerHTML = '<span>text</span><button tabindex="-1" hidden>hidden</button>';
+      expect(stepFocusableCycle(root, null, 'forward')).toBe(null);
+    });
+
+    it('steps into an open shadow root, in composed candidate order', () => {
+      root.innerHTML = '<button id="light">light</button><shadow-widget id="host"></shadow-widget>';
+      const host = root.querySelector<HTMLElement>('#host')!;
+      host.attachShadow({ mode: 'open' }).innerHTML = '<button id="nested">nested</button>';
+      const light = root.querySelector<HTMLElement>('#light')!;
+      expect(stepFocusableCycle(root, light, 'forward')?.id).toBe('nested');
     });
   });
 

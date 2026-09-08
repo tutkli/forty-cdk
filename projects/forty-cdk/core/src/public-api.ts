@@ -163,6 +163,7 @@ export {
 } from './field/field-wiring';
 export { FOR_FIELDSET_CONTEXT, type ForFieldsetContext } from './field/fieldset-context';
 export { findFirstFocusable, injectFocusTrap } from './focus-trap/focus-trap';
+export { stepFocusableCycle } from './focus-trap/focusable-candidate';
 export { injectHasFocusableContent } from './focus-trap/focusable-content';
 export { FormUiControlBase } from './form-ui-control/form-ui-control-base';
 export { injectHiddenInput } from './form-ui-control/hidden-input';

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { el, expectFocused, expectRovingFocus, gotoFixture } from './_helpers';
+import { boxOf, el, expectFocused, expectRovingFocus, gotoFixture } from './_helpers';
 import { rowAt, rows } from './_table-helpers';
 
 test.describe('Table (roles + sticky header)', () => {
@@ -253,6 +253,61 @@ test.describe('Table (grid keyboard navigation)', () => {
     await el(page, 'after').focus();
     await page.keyboard.press('Shift+Tab');
     await expectFocused(el(page, 'cell-0-role'));
+  });
+});
+
+test.describe('Table (grid cell entry)', () => {
+  const cellEntryQuery = {
+    resizable: 'true',
+    cellMenu: 'true',
+    selectionMode: 'none',
+    sortable: 'true',
+  };
+
+  test('F2 enters the header cell and Tab cycles its widgets without leaving the cell', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'table', cellEntryQuery);
+    const headerName = el(page, 'header-name');
+    const menu = el(page, 'menu-name');
+    const resizer = el(page, 'resizer-name');
+
+    await headerName.focus();
+    await page.keyboard.press('F2');
+    await expectFocused(menu);
+
+    await page.keyboard.press('Tab');
+    await expectFocused(resizer);
+
+    await page.keyboard.press('Tab');
+    await expectFocused(menu);
+
+    await page.keyboard.press('Shift+Tab');
+    await expectFocused(resizer);
+
+    await page.keyboard.press('Escape');
+    await expectFocused(headerName);
+  });
+
+  test('the resize handle reached with Tab resizes on ArrowRight', async ({ page }) => {
+    await gotoFixture(page, 'table', cellEntryQuery);
+    const headerName = el(page, 'header-name');
+    const resizer = el(page, 'resizer-name');
+
+    const beforeWidth = (await boxOf(headerName)).width;
+
+    await headerName.focus();
+    await page.keyboard.press('F2');
+    await page.keyboard.press('Tab');
+    await expectFocused(resizer);
+
+    await page.keyboard.press('ArrowRight');
+    await page.keyboard.press('ArrowRight');
+    await page.keyboard.press('ArrowRight');
+
+    await expect
+      .poll(() => headerName.boundingBox().then((b) => b?.width ?? 0))
+      .toBeGreaterThan(beforeWidth);
   });
 });
 

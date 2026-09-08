@@ -1,6 +1,7 @@
 import {
   computed,
   Directive,
+  ElementRef,
   inject,
   input,
   model,
@@ -12,7 +13,9 @@ import {
 
 import {
   injectElementSize,
+  composedContains,
   findFirstFocusable,
+  stepFocusableCycle,
   firstEnabledHost,
   type ForTableCellHandle,
   type ForTableRowHandle,
@@ -92,6 +95,8 @@ const ROW_CROSSING_ACTIONS: ReadonlySet<GridNavigationAction> = new Set([
     '[attr.aria-colcount]': 'colCountAttr()',
     '[attr.aria-multiselectable]':
       'mode() !== "table" && selectionMode() === "multiple" ? "true" : null',
+    '(focusout)': 'onFocusOut($event)',
+    '(focusin)': 'onFocusIn($event)',
   },
   providers: provideForTable(ForTable),
 })
@@ -139,6 +144,7 @@ export class ForTable<T = unknown> implements ForTableContext {
   readonly _rowCountInput = input<number | undefined>(undefined, { alias: 'rowCount' });
 
   readonly #registry = inject(TableRegistry);
+  readonly #host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 
   /**
    * Resolved true total data-row count: the explicit `[rowCount]` input when set,
@@ -229,6 +235,13 @@ export class ForTable<T = unknown> implements ForTableContext {
 
   readonly #roving = new RovingTabindex(() => this.#flatCells());
   readonly #enteredCell = signal<HTMLElement | null>(null);
+
+  /**
+   * The cell interaction mode was last suspended from, held only between the focusout that left
+   * it and the next focusin. Plain state, not a signal: nothing derives from it, and the focus
+   * pair that owns it reads and clears it in the same turn.
+   */
+  #restoreCell: HTMLElement | null = null;
 
   readonly #headerCellHosts = this.#registry.headerCells;
   readonly #dataCells = computed(() => this.#registry.rows().flatMap((row) => row.cells()));
@@ -528,6 +541,78 @@ export class ForTable<T = unknown> implements ForTableContext {
     return undefined;
   }
 
+  /**
+   * Drops the entered-cell state as soon as focus leaves the cell it points at, by whatever
+   * route — a pointer press elsewhere, a widget handing focus to an overlay of its own, or
+   * focus leaving the table. The Tab cycle and the `Escape` return then only ever answer for
+   * a cell that really holds the focus.
+   *
+   * Two hops that look like departures are not. A `relatedTarget` the browser retargeted to a
+   * shadow host *above* the cell hides a destination that may well be inside it, so an ambiguous
+   * hop keeps the state ({@link #retargeted}) — otherwise a cell rendered inside an open shadow
+   * root would lose interaction mode on the very focus move that enters it.
+   * And a `null` `relatedTarget` while the document itself has lost focus is a window blur rather
+   * than a departure: the widget gets its focus back when the user returns, so interaction mode
+   * has to survive with it.
+   *
+   * A real departure parks the cell instead of forgetting it, so {@link onFocusIn} can hand
+   * interaction mode back when focus returns to one of its widgets.
+   */
+  protected onFocusOut(event: FocusEvent): void {
+    const entered = this.#enteredCell();
+    if (!entered) {
+      return;
+    }
+    const next = event.relatedTarget;
+    if (
+      next instanceof Node &&
+      (composedContains(entered, next) || this.#retargeted(next, entered))
+    ) {
+      return;
+    }
+    if (next === null && !entered.ownerDocument.hasFocus()) {
+      return;
+    }
+    this.#enteredCell.set(null);
+    this.#restoreCell = entered;
+  }
+
+  /**
+   * Whether `next` is a shadow host the browser retargeted a destination inside `entered` to: an
+   * element strictly between this table's root and the entered cell, which a focus move can only
+   * be reported as when the real target sits in a shadow tree below it. Bounding it to the table's
+   * own subtree is what keeps focus moving to `<body>` — or to any tabbable ancestor of the table —
+   * a departure rather than an ambiguous hop.
+   */
+  #retargeted(next: Node, entered: HTMLElement): boolean {
+    return (
+      next !== this.#host && composedContains(this.#host, next) && composedContains(next, entered)
+    );
+  }
+
+  /**
+   * Restores interaction mode when focus returns to a widget of the cell {@link onFocusOut} last
+   * parked — the round trip a widget makes around an overlay of its own, such as a column-menu
+   * button whose menu returns focus to it on close. Without it the widget comes back focused
+   * inside a cell the grid no longer counts as entered, which is the state this whole keymap
+   * exists to prevent.
+   *
+   * Focus landing anywhere else retires the parked cell, the cell host itself included: entry
+   * resumes only where it left off, and Tab reaching a widget from outside the grid stays a plain
+   * tab stop rather than silently becoming interaction mode.
+   */
+  protected onFocusIn(event: FocusEvent): void {
+    const restore = this.#restoreCell;
+    if (!restore) {
+      return;
+    }
+    this.#restoreCell = null;
+    const target = event.target;
+    if (target instanceof Node && target !== restore && composedContains(restore, target)) {
+      this.#enteredCell.set(restore);
+    }
+  }
+
   private handleCellKeydown(event: KeyboardEvent, host: HTMLElement): void {
     if (this.mode() === 'table') {
       return;
@@ -541,12 +626,12 @@ export class ForTable<T = unknown> implements ForTableContext {
    * `[forTableColumnReorder]` calls this from a capture-phase listener for idle (not-lifted)
    * header cells, so Arrow / Home / End / Page keys move roving focus across the composite
    * header + body grid and `F2` moves focus into the cell's first widget. `ForTableHeaderCell`
-   * calls it from its own bubbling keydown for the one key that listener cannot see — the
-   * `Escape` that returns focus from an entered widget, which is targeted at the widget rather
-   * than at a header cell. Space / Enter still fall through to the draggable's lift and the
-   * sort activation. Returns `true` when the key was consumed, `false` otherwise. No-op
-   * (returns `false`) outside `grid` / `treegrid` mode or when the header row does not join
-   * the composite grid.
+   * calls it from its own bubbling keydown for the two keys that listener cannot see, both
+   * targeted at an entered widget rather than at a header cell — the `Tab` that cycles between
+   * the cell's widgets and the `Escape` that returns focus from one. Space / Enter still fall
+   * through to the draggable's lift and the sort activation. Returns `true` when the key was
+   * consumed, `false` otherwise. No-op (returns `false`) outside `grid` / `treegrid` mode or
+   * when the header row does not join the composite grid.
    */
   private handleHeaderCellKeydown(event: KeyboardEvent, host: HTMLElement): boolean {
     if (this.mode() === 'table' || !this.#headerParticipates()) {
@@ -592,14 +677,22 @@ export class ForTable<T = unknown> implements ForTableContext {
 
   /**
    * APG grid cell-entry mode: Enter or F2 on a focused cell moves focus into the
-   * cell's first interactive widget; Escape returns focus to the owning cell.
-   * Returns `true` when the event was consumed.
+   * cell's first interactive widget; Tab / Shift+Tab then move between that cell's
+   * widgets, and Escape returns focus to the owning cell. Returns `true` when the
+   * event was consumed.
    *
    * A cell whose host carries an active sort affordance (`[forTableSortHeader]`
    * with `sortable`, marked by `data-sortable`) defers `Enter` to the sort
    * activation — `Enter` toggles the sort and focus stays on the cell — while
    * `F2` remains the cell-entry key, so a sortable + resizable header does not
    * both sort and drop focus onto the resize handle.
+   *
+   * The Tab cycle wraps at both ends and is `preventDefault`ed, so focus cannot leave the
+   * entered cell for another cell's widget or the next document tab stop while the cell is
+   * in interaction mode — Escape is the way out. It cycles the same *focusable* set `F2`
+   * enters, so a widget the grid gives `tabindex="-1"` (`[forTableColumnResizer]`,
+   * `[forTableSelectAll]`) is reached rather than skipped. A cell holding a single widget
+   * cycles back to it. Tab targeted at the cell host itself keeps its document-wide meaning.
    */
   #handleCellEntryKeydown(event: KeyboardEvent, host: HTMLElement): boolean {
     if ((event.key === 'Enter' || event.key === 'F2') && event.target === host) {
@@ -613,6 +706,16 @@ export class ForTable<T = unknown> implements ForTableContext {
       event.preventDefault();
       this.#enteredCell.set(host);
       target.focus();
+      return true;
+    }
+    if (event.key === 'Tab' && this.#enteredCell() === host && event.target !== host) {
+      const from = event.target instanceof Element ? event.target : null;
+      const next = stepFocusableCycle(host, from, event.shiftKey ? 'backward' : 'forward');
+      if (!next) {
+        return false;
+      }
+      event.preventDefault();
+      next.focus();
       return true;
     }
     if (event.key === 'Escape' && this.#enteredCell() === host && event.target !== host) {

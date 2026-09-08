@@ -34,7 +34,8 @@ import {
  * activation stay on the cell — but it yields the host `tabindex`, the lift keys
  * and `data-highlighted` to the draggable, so the grid keeps a single tab stop
  * and `[forTableColumnReorder]` routes idle Arrow navigation and `F2` cell entry
- * across it. The cell keeps the `Escape` that returns focus from an entered widget.
+ * across it. The cell keeps the two keys targeted at an entered widget: the `Tab` that
+ * cycles between the cell's widgets and the `Escape` that returns focus from one.
  */
 @Directive({
   selector: '[forTableHeaderCell]',
@@ -189,22 +190,33 @@ export class ForTableHeaderCell {
    * co-located `[forDraggable]` gets every key targeted at the cell itself — Arrow / Home /
    * End / Page and the `F2` that enters the cell — from `[forTableColumnReorder]`'s capture
    * listener, and its `Space` / `Enter` from the draggable's lift and the sort activation.
-   * What is left is the one key that listener cannot see: the `Escape` that returns focus
-   * from an entered widget, targeted at the widget rather than at a header cell. A lift in
-   * progress (`data-dragging`) owns every key.
+   * What is left are the two keys that listener cannot see, both targeted at an entered
+   * widget rather than at a header cell: the `Tab` that cycles between the cell's widgets
+   * and the `Escape` that returns focus from one. A lift in progress (`data-dragging`) owns
+   * every key.
+   *
+   * `Tab` is therefore routed only while it is targeted at a widget, never at the cell host,
+   * where it is the ordinary tab stop out of the grid and routing it would put a whole grid
+   * keymap resolution — `clearPending()` on the virtual row navigation included — behind a key
+   * this cell has nothing to do with. It is also the one key exempt from the `defaultPrevented`
+   * bail: an ancestor `FocusTrap` handles `Tab` from a `document` capture listener, so it runs
+   * *before* this one and has already prevented the default whenever the entered widget sits on
+   * one of the trap's edges. Bailing there would leave the cycle silently absent inside every
+   * dialog, and the cell's own `preventDefault` + focus move is what settles where focus lands.
    */
   protected onKeyDown(event: KeyboardEvent): void {
     if (this.#inRovingGrid()) {
       this.ctx.handleCellKeydown(event, this.#host);
       return;
     }
-    if (event.key !== 'Escape') {
+    const escape = event.key === 'Escape';
+    if (!escape && !(event.key === 'Tab' && event.target !== this.#host)) {
       return;
     }
     if (
       !this.#yieldsToDraggable ||
       !this.#participates() ||
-      event.defaultPrevented ||
+      (escape && event.defaultPrevented) ||
       this.#host.hasAttribute('data-dragging')
     ) {
       return;
