@@ -34,7 +34,8 @@ import {
  * activation stay on the cell — but it yields the host `tabindex`, the lift keys
  * and `data-highlighted` to the draggable, so the grid keeps a single tab stop
  * and `[forTableColumnReorder]` routes idle Arrow navigation and `F2` cell entry
- * across it. The cell keeps the `Escape` that returns focus from an entered widget.
+ * across it. The cell keeps the two keys targeted at an entered widget: the `Tab` that
+ * cycles between the cell's widgets and the `Escape` that returns focus from one.
  */
 @Directive({
   selector: '[forTableHeaderCell]',
@@ -189,16 +190,17 @@ export class ForTableHeaderCell {
    * co-located `[forDraggable]` gets every key targeted at the cell itself — Arrow / Home /
    * End / Page and the `F2` that enters the cell — from `[forTableColumnReorder]`'s capture
    * listener, and its `Space` / `Enter` from the draggable's lift and the sort activation.
-   * What is left is the one key that listener cannot see: the `Escape` that returns focus
-   * from an entered widget, targeted at the widget rather than at a header cell. A lift in
-   * progress (`data-dragging`) owns every key.
+   * What is left are the two keys that listener cannot see, both targeted at an entered
+   * widget rather than at a header cell: the `Tab` that cycles between the cell's widgets
+   * and the `Escape` that returns focus from one. A lift in progress (`data-dragging`) owns
+   * every key.
    */
   protected onKeyDown(event: KeyboardEvent): void {
     if (this.#inRovingGrid()) {
       this.ctx.handleCellKeydown(event, this.#host);
       return;
     }
-    if (event.key !== 'Escape') {
+    if (event.key !== 'Escape' && event.key !== 'Tab') {
       return;
     }
     if (

@@ -1,4 +1,4 @@
-import { composedParentElement } from '../composed-tree/composed-tree';
+import { composedContains, composedParentElement } from '../composed-tree/composed-tree';
 
 /**
  * The ten local names {@link FOCUSABLE_SELECTOR} anchors a clause on, each
@@ -146,6 +146,43 @@ export function findTabbableEdges(container: HTMLElement): TabbableEdges {
     }
   }
   return { first, last: first };
+}
+
+/**
+ * The focusable descendant of `container` one step from `from` in candidate order — the next
+ * one for `'forward'`, the previous for `'backward'` — wrapping around at either end, so a
+ * caller cycling a bounded set never runs out. `null` only when `container` has no focusable
+ * descendant at all.
+ *
+ * `from` is matched against the candidate set through composed containment, so an event target
+ * nested inside a candidate (a `<span>` within a `<button>`) steps from that candidate. A `from`
+ * that is `null`, outside `container`, or no longer a candidate yields the first candidate going
+ * forward and the last going backward — the step stays inside `container` either way.
+ *
+ * This is the *focusable* set, not the Tab cycle: a candidate carrying `tabindex="-1"` takes part,
+ * so the cycle reaches exactly what {@link findFirstFocusable} would enter. Unlike
+ * {@link findTabbableEdges} it resolves the whole filtered set, which is what makes it suitable
+ * for a small bounded container (a grid cell) rather than for a whole trapped surface.
+ *
+ * Reads `getComputedStyle`, so callers must gate it behind `isPlatformBrowser`.
+ */
+export function stepFocusableCycle(
+  container: HTMLElement,
+  from: Element | null,
+  direction: 'forward' | 'backward',
+): HTMLElement | null {
+  const candidates = queryFocusableCandidates(container).filter((el) =>
+    isFocusableCandidate(el, container),
+  );
+  if (candidates.length === 0) {
+    return null;
+  }
+  const step = direction === 'forward' ? 1 : -1;
+  const current = from === null ? -1 : candidates.findIndex((el) => composedContains(el, from));
+  if (current === -1) {
+    return step === 1 ? candidates[0]! : candidates[candidates.length - 1]!;
+  }
+  return candidates[(current + step + candidates.length) % candidates.length]!;
 }
 
 const FOCUSABLE_LOCAL_NAMES = new Set(Object.keys(FOCUSABLE_LOCAL_NAME_QUALIFIERS));

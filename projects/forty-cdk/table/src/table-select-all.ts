@@ -15,9 +15,10 @@ import { injectTableContext } from './table-context';
  * In `mode="table"` it is a standalone tab stop (`tabindex="0"`) and can sit on any
  * focusable element (a `<span>` you make tabbable, or a `<button type="button">`).
  * In `mode="grid"` / `"treegrid"` it yields its tab stop to the composite roving grid
- * (`tabindex="-1"`) and is reached via cell-entry (Enter / F2), so it must sit on a
- * natively-focusable element (a `<button type="button">`) — a `tabindex`-only `<span>`
- * is cell-entry-reachable only in `mode="table"`.
+ * (`tabindex="-1"`) and is reached via cell-entry (Enter / F2, then `Tab` when it is not
+ * the cell's first widget), so it must sit on a natively-focusable element (a
+ * `<button type="button">`) — a `tabindex`-only `<span>` is cell-entry-reachable only in
+ * `mode="table"`.
  */
 @Directive({
   selector: '[forTableSelectAll]',

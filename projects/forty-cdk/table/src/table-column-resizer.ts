@@ -54,10 +54,10 @@ export interface TableResizeDescriptor {
  * current value; an explicit `[width]` always takes precedence.
  *
  * In `mode="grid"` / `"treegrid"` it yields its tab stop to the composite roving grid
- * (`tabindex="-1"`) and is reached via cell-entry (Enter / F2 focuses the first focusable
- * inside the header cell), so it must sit on a natively-focusable element (a `<button>`)
- * to stay cell-entry-reachable. In `mode="table"` it is a standalone tab stop
- * (`tabindex="0"`).
+ * (`tabindex="-1"`) and is reached via cell-entry: Enter / F2 focuses the first focusable
+ * inside the header cell, and `Tab` cycles on to the rest, so it stays reachable behind a
+ * column-menu button. It must sit on a natively-focusable element (a `<button>`) for either
+ * to find it. In `mode="table"` it is a standalone tab stop (`tabindex="0"`).
  *
  * Opt in to size-to-content with `[autoFit]`: double-clicking the handle then fits the
  * column to its widest data-cell content via `fitToContent()` (also callable imperatively

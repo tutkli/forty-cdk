@@ -628,6 +628,75 @@ class CellEntryGridHost {
 class CellEntryHiddenWidgetHost {}
 
 @Component({
+  imports: [ForTable, ForTableRow, ForTableCell],
+  template: `
+    <table forTable mode="grid">
+      <tbody>
+        <tr forTableRow>
+          <td forTableCell name="a" data-testid="c-a-0">
+            <button type="button" data-testid="btn-first">first</button>
+            <button type="button" data-testid="btn-second">second</button>
+          </td>
+          <td forTableCell name="b" data-testid="c-b-0">plain</td>
+        </tr>
+      </tbody>
+    </table>
+  `,
+})
+class CellEntryTwoWidgetHost {}
+
+@Component({
+  imports: [ForTable, ForTableHeaderRow, ForTableHeaderCell, ForTableColumnResizer],
+  template: `
+    <div forTable mode="grid">
+      <div forTableHeaderRow>
+        <div forTableHeaderCell name="name" data-testid="h-name">
+          Name
+          <button type="button" data-testid="h-menu">options</button>
+          <button
+            forTableColumnResizer
+            column="name"
+            [(width)]="width"
+            (resizeCommit)="lastResize = $event"
+            data-testid="h-resizer"
+          ></button>
+        </div>
+      </div>
+    </div>
+  `,
+})
+class CellEntryResizerHeaderHost {
+  readonly width = signal<number>(100);
+  lastResize: TableResizeDescriptor | null = null;
+}
+
+@Component({
+  imports: [ForTable, ForTableHeaderRow, ForTableHeaderCell, ForTableColumnReorder, ForDraggable],
+  template: `
+    <div forTable mode="grid">
+      <div forTableHeaderRow forTableColumnReorder>
+        @for (col of columns(); track col) {
+          <div
+            forTableHeaderCell
+            [name]="col"
+            forDraggable
+            [dragData]="col"
+            [attr.data-testid]="'h-' + col"
+          >
+            {{ col }}
+            <button type="button" [attr.data-testid]="'menu-' + col">menu</button>
+            <button type="button" [attr.data-testid]="'resize-' + col">resize</button>
+          </div>
+        }
+      </div>
+    </div>
+  `,
+})
+class CellEntryReorderHeaderHost {
+  readonly columns = signal<readonly string[]>(['name', 'role']);
+}
+
+@Component({
   imports: [
     ForTable,
     ForTableHeaderRow,
@@ -2176,6 +2245,181 @@ describe('ForTable', () => {
       await flush();
       expect(ev.defaultPrevented).toBe(true);
       expect(document.activeElement).toBe(visible);
+    });
+  });
+
+  describe('grid cell-entry Tab cycle (#1844)', () => {
+    const entryCell = (el: HTMLElement) => el.querySelector<HTMLElement>('[data-testid="c-a-0"]')!;
+    const firstWidget = (el: HTMLElement) =>
+      el.querySelector<HTMLElement>('[data-testid="btn-first"]')!;
+    const secondWidget = (el: HTMLElement) =>
+      el.querySelector<HTMLElement>('[data-testid="btn-second"]')!;
+
+    it('Tab moves to the second widget of the entered cell, Shift+Tab back to the first', async () => {
+      const { el, flush } = renderHost(CellEntryTwoWidgetHost);
+      const cell = entryCell(el);
+      const first = firstWidget(el);
+      const second = secondWidget(el);
+      cell.focus();
+      press(cell, 'F2');
+      await flush();
+      expect(document.activeElement).toBe(first);
+
+      const forward = press(first, 'Tab');
+      await flush();
+      expect(forward.defaultPrevented).toBe(true);
+      expect(document.activeElement).toBe(second);
+
+      const backward = press(second, 'Tab', { shiftKey: true });
+      await flush();
+      expect(backward.defaultPrevented).toBe(true);
+      expect(document.activeElement).toBe(first);
+    });
+
+    it('Tab from the last widget wraps inside the cell instead of leaving it', async () => {
+      const { el, flush } = renderHost(CellEntryTwoWidgetHost);
+      const cell = entryCell(el);
+      const second = secondWidget(el);
+      cell.focus();
+      press(cell, 'F2');
+      await flush();
+      second.focus();
+      await flush();
+
+      const wrapped = press(second, 'Tab');
+      await flush();
+      expect(wrapped.defaultPrevented).toBe(true);
+      expect(document.activeElement).toBe(firstWidget(el));
+    });
+
+    it('Shift+Tab from the first widget wraps to the last', async () => {
+      const { el, flush } = renderHost(CellEntryTwoWidgetHost);
+      const cell = entryCell(el);
+      cell.focus();
+      press(cell, 'F2');
+      await flush();
+
+      const wrapped = press(firstWidget(el), 'Tab', { shiftKey: true });
+      await flush();
+      expect(wrapped.defaultPrevented).toBe(true);
+      expect(document.activeElement).toBe(secondWidget(el));
+    });
+
+    it('Escape from the second widget returns focus to the owning cell', async () => {
+      const { el, flush } = renderHost(CellEntryTwoWidgetHost);
+      const cell = entryCell(el);
+      cell.focus();
+      press(cell, 'F2');
+      await flush();
+      press(firstWidget(el), 'Tab');
+      await flush();
+      expect(document.activeElement).toBe(secondWidget(el));
+
+      const esc = press(secondWidget(el), 'Escape');
+      await flush();
+      expect(esc.defaultPrevented).toBe(true);
+      expect(document.activeElement).toBe(cell);
+    });
+
+    it('a single-widget cell cycles Tab back to that widget', async () => {
+      const { el, flush } = renderHost(CellEntryGridHost);
+      const cell = el.querySelector<HTMLElement>('[data-testid="c-a-0"]')!;
+      const btn = el.querySelector<HTMLElement>('[data-testid="btn-0"]')!;
+      cell.focus();
+      press(cell, 'F2');
+      await flush();
+
+      const tab = press(btn, 'Tab');
+      await flush();
+      expect(tab.defaultPrevented).toBe(true);
+      expect(document.activeElement).toBe(btn);
+    });
+
+    it('Tab on a focused cell outside cell-entry mode keeps its document-wide meaning', async () => {
+      const { el, flush } = renderHost(CellEntryTwoWidgetHost);
+      const cell = entryCell(el);
+      cell.focus();
+      await flush();
+
+      const tab = press(cell, 'Tab');
+      await flush();
+      expect(tab.defaultPrevented).toBe(false);
+      expect(document.activeElement).toBe(cell);
+    });
+
+    it('focus leaving the cell ends cell-entry mode, so Escape is no longer consumed', async () => {
+      const { el, flush } = renderHost(CellEntryTwoWidgetHost);
+      const cell = entryCell(el);
+      const first = firstWidget(el);
+      const other = el.querySelector<HTMLElement>('[data-testid="c-b-0"]')!;
+      cell.focus();
+      press(cell, 'F2');
+      await flush();
+      expect(document.activeElement).toBe(first);
+
+      other.focus();
+      await flush();
+
+      const esc = press(first, 'Escape');
+      await flush();
+      expect(esc.defaultPrevented).toBe(false);
+      expect(document.activeElement).toBe(other);
+    });
+
+    it('a header cell holding a button and a resizer reaches the resizer, which then resizes', async () => {
+      const { el, instance, flush } = renderHost(CellEntryResizerHeaderHost);
+      const cell = el.querySelector<HTMLElement>('[data-testid="h-name"]')!;
+      const menu = el.querySelector<HTMLElement>('[data-testid="h-menu"]')!;
+      const resizer = el.querySelector<HTMLElement>('[data-testid="h-resizer"]')!;
+      cell.focus();
+      press(cell, 'F2');
+      await flush();
+      expect(document.activeElement).toBe(menu);
+
+      const tab = press(menu, 'Tab');
+      await flush();
+      expect(tab.defaultPrevented).toBe(true);
+      expect(document.activeElement).toBe(resizer);
+
+      press(resizer, 'ArrowRight');
+      await flush();
+      expect(instance.width()).toBe(110);
+      expect(instance.lastResize).toEqual({ column: 'name', width: 110 });
+    });
+
+    it('a draggable header cell cycles Tab between its own widgets', async () => {
+      const { el, flush } = renderHost(CellEntryReorderHeaderHost);
+      const cell = el.querySelector<HTMLElement>('[data-testid="h-name"]')!;
+      const menu = el.querySelector<HTMLElement>('[data-testid="menu-name"]')!;
+      const resize = el.querySelector<HTMLElement>('[data-testid="resize-name"]')!;
+      cell.focus();
+      press(cell, 'F2');
+      await flush();
+      expect(document.activeElement).toBe(menu);
+
+      const tab = press(menu, 'Tab');
+      await flush();
+      expect(tab.defaultPrevented).toBe(true);
+      expect(document.activeElement).toBe(resize);
+    });
+
+    it('a keyboard lift in progress keeps Tab, so the cycle never disturbs a column drag', async () => {
+      const { el, flush } = renderHost(CellEntryReorderHeaderHost);
+      const cell = el.querySelector<HTMLElement>('[data-testid="h-name"]')!;
+      const menu = el.querySelector<HTMLElement>('[data-testid="menu-name"]')!;
+      cell.focus();
+      press(cell, 'F2');
+      await flush();
+      expect(document.activeElement).toBe(menu);
+
+      press(cell, ' ');
+      await flush();
+      expect(cell.getAttribute('data-dragging')).toBe('');
+
+      const tab = press(menu, 'Tab');
+      await flush();
+      expect(tab.defaultPrevented).toBe(false);
+      expect(document.activeElement).toBe(menu);
     });
   });
 
