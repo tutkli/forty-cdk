@@ -5,6 +5,7 @@ import { JSDOM } from 'jsdom';
 
 import { behaviorGroupOf } from './lib/doc-contract.mjs';
 import { DOC_BASE_TOKEN, isAbsoluteHref, splitDocHref } from './lib/doc-links.mjs';
+import { readErrorCodes } from './lib/error-codes.mjs';
 import { compileDocument } from './docs/doc-model.mjs';
 import {
   DOCS_DIR,
@@ -92,6 +93,18 @@ const EXAMPLES_SECTION = 'examples';
  * is.
  */
 const SHELL_ROUTES = new Set(['', 'guides']);
+
+/**
+ * The `FORCDK-*` roster, whose pages are the site's other content without a
+ * document behind them ([#1736](https://github.com/tutkli/forty-cdk/issues/1736)).
+ *
+ * They are generated from library source rather than compiled from markdown, so
+ * the section and rail assertions have nothing to hold them to — what this file
+ * checks instead is that the index links every code, which is the way a page
+ * could go unreachable while still being emitted.
+ */
+const errorCodes = readErrorCodes().codes;
+const errorRoutes = new Set(['errors', ...errorCodes.map(({ code }) => `errors/${code}`)]);
 
 /** Prerendered HTML above this is worth surfacing, not failing ([#1807](https://github.com/tutkli/forty-cdk/issues/1807)). */
 const PAGE_WEIGHT_WARNING = 600 * 1024;
@@ -264,6 +277,7 @@ const knownRoutes = new Set([
   ...sitePages.map(({ slug }) => slug),
   ...primitives.map(({ slug }) => slug),
   ...guides.map(({ slug }) => `guides/${slug}`),
+  ...errorRoutes,
 ]);
 
 /** One entry per prerendered page: its ids, its documentation anchors, its emitted sections. */
@@ -461,7 +475,7 @@ for (const [route, page] of pages) {
     }
   }
 
-  if (SHELL_ROUTES.has(route)) {
+  if (SHELL_ROUTES.has(route) || errorRoutes.has(route)) {
     continue;
   }
 
@@ -495,6 +509,30 @@ for (const [route, page] of pages) {
       `${at} — the document declares ${shape.tables} table(s) and the page emits ${page.tables}; ` +
         'a table the parser dropped loses its rows silently',
     );
+  }
+}
+
+/**
+ * Every code the library emits is reachable from the index it is listed under.
+ *
+ * `check-prerender-output.mjs` asserts each code emitted a page; this asserts
+ * the reader can get to it without already knowing the URL, which is the half
+ * that would fail silently — a page nothing links to is exactly the state
+ * [#1736](https://github.com/tutkli/forty-cdk/issues/1736) was opened about.
+ */
+const errorIndex = pages.get('errors');
+if (errorIndex === undefined) {
+  fail('the error code index was not prerendered, so no code is reachable from the site');
+}
+const indexedCodes = new Set(
+  errorIndex.anchors
+    .map((href) => splitDocHref(href).path.replace(/\/$/, ''))
+    .filter((path) => path.startsWith(`${siteBaseHref}errors/`))
+    .map((path) => path.slice(`${siteBaseHref}errors/`.length)),
+);
+for (const { code } of errorCodes) {
+  if (!indexedCodes.has(code)) {
+    failures.push(`/errors — the index does not link ${code}, so its page is unreachable`);
   }
 }
 
@@ -542,7 +580,8 @@ console.log(
   `[check-doc-output] ok — ${pages.size} pages, ${scannedAnchors} documentation anchors ` +
     `(${excludedAnchors} inside live examples, not scanned), ${checkedFragments} fragments resolved ` +
     `to an id, ${declaredTables} declared tables emitted across ${documents.size} documents, ` +
-    `${checkedRails} rails read (${groupedRails} grouped, ${closedRails} of them closed)` +
+    `${checkedRails} rails read (${groupedRails} grouped, ${closedRails} of them closed), ` +
+    `${errorCodes.length} error codes linked from their index` +
     (warnings.length > 0
       ? `; ${warnings.length} page(s) past ${PAGE_WEIGHT_WARNING / 1024} kB`
       : ''),

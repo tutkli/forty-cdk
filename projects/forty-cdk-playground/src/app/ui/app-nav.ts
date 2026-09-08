@@ -37,6 +37,16 @@ import { PLAYGROUND_GROUPS } from '../primitives';
               </a>
             </li>
           }
+          <li>
+            <a
+              [routerLink]="['/errors']"
+              routerLinkActive="active"
+              class="pg-nav-link"
+              (click)="navigate.emit()"
+            >
+              Error codes
+            </a>
+          </li>
         </ul>
       </div>
 

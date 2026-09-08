@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 
 import { readGuides, readPrimitives, readSitePages } from './lib/doc-site.mjs';
+import { readErrorCodes } from './lib/error-codes.mjs';
 import { escapeHtml } from './lib/html.mjs';
 import { repoRoot } from './lib/repo-path.mjs';
 
@@ -33,11 +34,35 @@ if (sitePages.length === 0) {
   fail('the site page registry is empty — scripts/lib/doc-site.mjs publishes no landing content');
 }
 
+/**
+ * The `FORCDK-*` roster, read from library source the same way the generator
+ * read it ([#1736](https://github.com/tutkli/forty-cdk/issues/1736)).
+ *
+ * This is the half that makes a code with no page a build failure: the roster
+ * comes from the emitter call sites, and every one of them has to have reached
+ * the emit as a page carrying its own code. A code added to source and never
+ * regenerated fails here rather than 404ing for the reader who searched for it.
+ */
+const { codes: errorCodes, problems: codeProblems } = readErrorCodes();
+if (codeProblems.length > 0) {
+  fail(
+    `${codeProblems.length} FORCDK-* call site(s) could not be read:\n` +
+      codeProblems
+        .map((problem) => `  ${problem.path}:${problem.line} — ${problem.message}`)
+        .join('\n'),
+  );
+}
+if (errorCodes.length === 0) {
+  fail('read 0 FORCDK-* codes from library source — the scan no longer sees the emitter calls');
+}
+
 const routes = [
   ...sitePages.map(({ slug, title }) => ({ path: slug, title })),
   ...primitives.map(({ slug, title }) => ({ path: slug, title })),
   { path: 'guides', title: 'Guides' },
   ...guides.map(({ slug, title }) => ({ path: `guides/${slug}`, title })),
+  { path: 'errors', title: 'Error codes' },
+  ...errorCodes.map(({ code }) => ({ path: `errors/${code}`, title: code })),
 ];
 
 const missing = [];
@@ -86,6 +111,7 @@ if (empty.length > 0) {
 
 console.log(
   `[check-prerender-output] ok — ${primitives.length} primitive routes + ` +
-    `${guides.length} guide routes + ${sitePages.length} site pages + the guide index + ` +
-    'the landing page prerendered with content',
+    `${guides.length} guide routes + ${sitePages.length} site pages + ${errorCodes.length} ` +
+    'error code pages + the error index + the guide index + the landing page prerendered ' +
+    'with content',
 );
