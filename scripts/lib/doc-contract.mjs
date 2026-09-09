@@ -111,8 +111,8 @@ export const CANONICAL_SECTIONS = [
   'Accessibility',
   'Styling',
   'SSR',
-  'Wrapping in a design system',
   'Behavior notes',
+  'Wrapping in a design system',
 ];
 
 /**
