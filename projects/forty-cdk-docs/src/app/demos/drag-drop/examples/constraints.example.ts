@@ -57,6 +57,7 @@ interface Swatch {
       padding: 1.25rem;
       border: 2px dashed var(--pg-border-strong);
       border-radius: var(--pg-radius);
+      corner-shape: squircle;
       background: var(--pg-surface-2);
     }
 

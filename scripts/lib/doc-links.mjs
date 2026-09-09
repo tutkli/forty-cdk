@@ -4,7 +4,9 @@ export function isAbsoluteHref(href) {
   return ABSOLUTE_HREF.test(href);
 }
 
-export const GITHUB_REPO = 'https://github.com/tutkli/forty-cdk';
+export const GITHUB_OWNER = 'https://github.com/tutkli';
+
+export const GITHUB_REPO = `${GITHUB_OWNER}/forty-cdk`;
 
 export const GITHUB_BLOB_BASE = `${GITHUB_REPO}/blob/main/`;
 

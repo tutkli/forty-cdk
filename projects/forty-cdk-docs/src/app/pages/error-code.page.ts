@@ -134,6 +134,7 @@ import {
       white-space: pre-wrap;
       border: 1px solid var(--pg-border);
       border-radius: var(--pg-radius);
+      corner-shape: squircle;
       background: var(--pg-surface-2);
     }
 

@@ -17,13 +17,11 @@ import { guideBySlug } from '../doc/guides';
   imports: [DocSection, DocToc, DocLinks, RouterLink],
   template: `
     <header class="head">
-      <div class="head-text">
-        <a class="crumb" [routerLink]="['/guides']">Guides</a>
-        <h1>{{ guide().title }}</h1>
-        @if (guide().description) {
-          <p>{{ guide().description }}</p>
-        }
-      </div>
+      <a class="crumb pg-doc-eyebrow" [routerLink]="['/guides']">Guides</a>
+      <h1 class="pg-doc-title">{{ guide().title }}</h1>
+      @if (guide().description) {
+        <p class="pg-doc-lede">{{ guide().description }}</p>
+      }
     </header>
 
     <div class="layout">
@@ -49,34 +47,16 @@ import { guideBySlug } from '../doc/guides';
 
     .head {
       max-width: 1180px;
-      margin: 0 auto 2.5rem;
+      margin: 0 auto 2.75rem;
     }
 
     .crumb {
       display: inline-block;
-      margin-bottom: 0.5rem;
-      font-size: 0.78rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: var(--pg-text-muted);
       text-decoration: none;
     }
 
     .crumb:hover {
       color: var(--pg-primary);
-    }
-
-    .head h1 {
-      margin: 0;
-      font-size: 1.6rem;
-      letter-spacing: -0.01em;
-    }
-
-    .head p {
-      margin: 0.5rem 0 0;
-      max-width: 65ch;
-      color: var(--pg-text-muted);
     }
 
     .layout {
@@ -110,11 +90,7 @@ import { guideBySlug } from '../doc/guides';
 
     @media (max-width: 820px) {
       .head {
-        margin-bottom: 1.75rem;
-      }
-
-      .head h1 {
-        font-size: 1.35rem;
+        margin-bottom: 2rem;
       }
     }
   `,

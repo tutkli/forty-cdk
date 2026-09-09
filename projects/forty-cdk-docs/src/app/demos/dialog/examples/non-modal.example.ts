@@ -93,6 +93,7 @@ import { ForDialog, ForDialogClose } from 'forty-cdk/dialog';
       color: var(--pg-text);
       border: 1px solid var(--pg-border);
       border-radius: var(--pg-radius-lg);
+      corner-shape: squircle;
       box-shadow: var(--pg-shadow);
     }
 

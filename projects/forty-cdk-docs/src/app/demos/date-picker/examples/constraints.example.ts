@@ -164,6 +164,7 @@ import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized
       color: var(--pg-text);
       border: 1px solid var(--pg-border);
       border-radius: var(--pg-radius);
+      corner-shape: squircle;
       box-shadow: var(--pg-shadow);
     }
 

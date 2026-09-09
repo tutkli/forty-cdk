@@ -57,6 +57,7 @@ import {
       overflow: auto;
       border: 1px dashed var(--pg-border-strong);
       border-radius: var(--pg-radius);
+      corner-shape: squircle;
     }
 
     .pos-trigger {
@@ -80,6 +81,7 @@ import {
       color: var(--pg-text);
       border: 1px solid var(--pg-border);
       border-radius: var(--pg-radius);
+      corner-shape: squircle;
       box-shadow: var(--pg-shadow);
     }
 

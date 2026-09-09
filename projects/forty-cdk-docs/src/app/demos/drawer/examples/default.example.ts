@@ -150,6 +150,7 @@ import {
       bottom: 0;
       max-height: 85vh;
       border-radius: var(--pg-radius) var(--pg-radius) 0 0;
+      corner-shape: squircle;
     }
 
     .drawer[data-side='top'] {
@@ -158,6 +159,7 @@ import {
       top: 0;
       max-height: 85vh;
       border-radius: 0 0 var(--pg-radius) var(--pg-radius);
+      corner-shape: squircle;
     }
 
     .drawer[data-side='left'] {
@@ -166,6 +168,7 @@ import {
       left: 0;
       width: min(420px, 92vw);
       border-radius: 0 var(--pg-radius) var(--pg-radius) 0;
+      corner-shape: squircle;
     }
 
     .drawer[data-side='right'] {
@@ -174,6 +177,7 @@ import {
       right: 0;
       width: min(420px, 92vw);
       border-radius: var(--pg-radius) 0 0 var(--pg-radius);
+      corner-shape: squircle;
     }
 
     .drawer-handle {

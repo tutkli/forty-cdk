@@ -134,6 +134,7 @@ import {
       height: var(--pg-sheet-full);
       max-height: var(--pg-sheet-full);
       border-radius: var(--pg-radius) var(--pg-radius) 0 0;
+      corner-shape: squircle;
     }
 
     .snap-drawer[data-active-snap-point] {

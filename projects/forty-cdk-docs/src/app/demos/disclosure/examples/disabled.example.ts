@@ -31,6 +31,7 @@ import { ForDisclosure, ForDisclosureContent, ForDisclosureTrigger } from 'forty
       background: var(--pg-surface);
       border: 1px solid var(--pg-border);
       border-radius: var(--pg-radius);
+      corner-shape: squircle;
       overflow: hidden;
     }
 

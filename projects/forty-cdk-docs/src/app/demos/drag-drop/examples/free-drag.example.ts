@@ -29,6 +29,7 @@ import { ForDragHandle, ForFreeDrag } from 'forty-cdk/drag-drop';
       height: 280px;
       border: 2px dashed var(--pg-border-strong);
       border-radius: var(--pg-radius);
+      corner-shape: squircle;
       background: var(--pg-surface-2);
       overflow: hidden;
     }

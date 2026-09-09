@@ -75,6 +75,7 @@ import { ForFileUpload, ForFileUploadInput, ForFileUploadTrigger } from 'forty-c
       background: var(--pg-surface);
       border: 2px dashed var(--pg-border-strong);
       border-radius: var(--pg-radius);
+      corner-shape: squircle;
       transition:
         border-color 0.15s ease,
         background 0.15s ease;

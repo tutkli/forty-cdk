@@ -163,6 +163,7 @@ import {
       bottom: 0;
       max-height: 85vh;
       border-radius: var(--pg-radius) var(--pg-radius) 0 0;
+      corner-shape: squircle;
     }
 
     .nested-drawer::after {

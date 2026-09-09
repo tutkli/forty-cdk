@@ -113,6 +113,7 @@ import {
       bottom: 0;
       height: 85vh;
       border-radius: var(--pg-radius);
+      corner-shape: squircle;
     }
 
     .scale-drawer-handle {

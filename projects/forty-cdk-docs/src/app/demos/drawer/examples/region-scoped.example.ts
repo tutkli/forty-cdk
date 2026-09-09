@@ -95,6 +95,7 @@ import {
       min-height: 300px;
       box-shadow: inset 0 0 0 1px var(--pg-border);
       border-radius: var(--pg-radius);
+      corner-shape: squircle;
       background: var(--pg-surface-2);
     }
 

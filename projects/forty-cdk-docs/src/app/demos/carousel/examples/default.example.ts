@@ -109,6 +109,7 @@ interface Slide {
     .car-viewport {
       overflow: hidden;
       border-radius: var(--pg-radius);
+      corner-shape: squircle;
     }
 
     .car-track {
@@ -130,6 +131,7 @@ interface Slide {
       align-items: center;
       justify-content: center;
       border-radius: var(--pg-radius);
+      corner-shape: squircle;
     }
 
     .car-slide--1 {

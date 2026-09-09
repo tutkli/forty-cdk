@@ -36,6 +36,7 @@ import { LiveAnnouncer } from 'forty-cdk/visually-hidden';
       background: var(--pg-surface);
       border: 1px solid var(--pg-border);
       border-radius: var(--pg-radius);
+      corner-shape: squircle;
     }
 
     .row {
@@ -48,6 +49,7 @@ import { LiveAnnouncer } from 'forty-cdk/visually-hidden';
       padding: 0.4rem 0.8rem;
       border: 1px solid var(--pg-border);
       border-radius: var(--pg-radius);
+      corner-shape: squircle;
       background: transparent;
       color: inherit;
       cursor: pointer;

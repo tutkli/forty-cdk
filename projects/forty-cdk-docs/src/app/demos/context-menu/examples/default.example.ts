@@ -45,6 +45,7 @@ import { ForMenuContent, ForMenuItem, ForMenuSeparator } from 'forty-cdk/menu';
       background: var(--pg-surface-2);
       border: 2px dashed var(--pg-border-strong);
       border-radius: var(--pg-radius);
+      corner-shape: squircle;
       user-select: none;
     }
 

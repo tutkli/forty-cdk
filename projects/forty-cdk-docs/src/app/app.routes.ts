@@ -15,6 +15,11 @@ import { DOC_ROUTES } from '../generated/routes.generated';
  * redirect to *accordion*, which answered a reader arriving from npm with an
  * accordion's API reference and answered a mistyped URL with the same.
  *
+ * The landing sits outside `DocsLayout` rather than inside it: it is a page
+ * about the library, not a document, so it carries its own header and no
+ * navigation rail. Every document is a child of the layout, which is why the
+ * rail no longer lists the root as an entry of its own.
+ *
  * `errors/:code` is the one parameterised route the site has
  * ([#1736](https://github.com/tutkli/forty-cdk/issues/1736)): a page per
  * `FORCDK-*` code, prerendered from the roster in `app.routes.server.ts`
@@ -27,21 +32,27 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/home.page').then((m) => m.HomePage),
   },
   {
-    path: 'guides',
-    loadComponent: () => import('./guides/guides.page').then((m) => m.GuidesPage),
-  },
-  {
-    path: 'errors',
-    pathMatch: 'full',
-    loadComponent: () => import('./pages/errors.page').then((m) => m.ErrorsPage),
-  },
-  {
-    path: 'errors/:code',
-    loadComponent: () => import('./pages/error-code.page').then((m) => m.ErrorCodePage),
-  },
-  ...DOC_ROUTES,
-  {
-    path: '**',
-    loadComponent: () => import('./pages/not-found.page').then((m) => m.NotFoundPage),
+    path: '',
+    loadComponent: () => import('./ui/docs-layout').then((m) => m.DocsLayout),
+    children: [
+      {
+        path: 'guides',
+        loadComponent: () => import('./guides/guides.page').then((m) => m.GuidesPage),
+      },
+      {
+        path: 'errors',
+        pathMatch: 'full',
+        loadComponent: () => import('./pages/errors.page').then((m) => m.ErrorsPage),
+      },
+      {
+        path: 'errors/:code',
+        loadComponent: () => import('./pages/error-code.page').then((m) => m.ErrorCodePage),
+      },
+      ...DOC_ROUTES,
+      {
+        path: '**',
+        loadComponent: () => import('./pages/not-found.page').then((m) => m.NotFoundPage),
+      },
+    ],
   },
 ];

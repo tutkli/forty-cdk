@@ -109,6 +109,7 @@ interface Slide {
     .dcar-viewport {
       overflow: hidden;
       border-radius: var(--pg-radius);
+      corner-shape: squircle;
       cursor: grab;
     }
 
@@ -142,6 +143,7 @@ interface Slide {
       align-items: center;
       justify-content: center;
       border-radius: var(--pg-radius);
+      corner-shape: squircle;
     }
 
     .dcar-slide--1 {

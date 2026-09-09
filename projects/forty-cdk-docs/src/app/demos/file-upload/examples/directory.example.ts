@@ -70,6 +70,7 @@ interface FolderEntry {
       background: var(--pg-surface);
       border: 2px dashed var(--pg-border-strong);
       border-radius: var(--pg-radius);
+      corner-shape: squircle;
     }
 
     .zone-text {

@@ -70,12 +70,14 @@ import { ForVisuallyHidden } from 'forty-cdk/visually-hidden';
       background: var(--pg-surface);
       border: 1px solid var(--pg-border);
       border-radius: var(--pg-radius);
+      corner-shape: squircle;
     }
 
     .skip:focus {
       align-self: flex-start;
       padding: 0.35rem 0.7rem;
       border-radius: var(--pg-radius);
+      corner-shape: squircle;
       background: var(--pg-primary);
       color: var(--pg-surface);
       text-decoration: none;
@@ -101,6 +103,7 @@ import { ForVisuallyHidden } from 'forty-cdk/visually-hidden';
       padding: 0;
       border: 1px solid var(--pg-border);
       border-radius: var(--pg-radius);
+      corner-shape: squircle;
       background: transparent;
       color: inherit;
       cursor: pointer;
