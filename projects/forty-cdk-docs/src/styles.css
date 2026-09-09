@@ -111,6 +111,28 @@ h3 {
   background: color-mix(in srgb, var(--pg-primary) 24%, transparent);
 }
 
+.pg-icon-btn {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--pg-radius-sm);
+  border: 1px solid var(--pg-border-strong);
+  background: var(--pg-surface);
+  color: var(--pg-text);
+  cursor: pointer;
+}
+
+.pg-icon-btn app-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.pg-icon-btn:hover {
+  background: var(--pg-surface-2);
+}
+
 .pg-field {
   display: flex;
   flex-direction: column;

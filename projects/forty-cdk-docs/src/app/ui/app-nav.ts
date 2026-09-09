@@ -14,17 +14,6 @@ import { DOCS_GROUPS } from '../primitives';
       <div class="nav-group">
         <h2 class="nav-group-heading">Introduction</h2>
         <ul class="nav-list">
-          <li>
-            <a
-              [routerLink]="['/']"
-              routerLinkActive="active"
-              [routerLinkActiveOptions]="{ exact: true }"
-              class="pg-nav-link"
-              (click)="navigate.emit()"
-            >
-              Overview
-            </a>
-          </li>
           @for (page of sitePages; track page.slug) {
             <li>
               <a

@@ -26,6 +26,10 @@ export const DOCS_GROUPS: readonly DocsGroup[] = [
   { label: 'Utilities', primitives: UTILITIES },
 ];
 
+export { PRIMITIVES, UTILITIES } from '../generated/primitives.generated';
+
+export const FIRST_PRIMITIVE_SLUG = DOCS_GROUPS[0]?.primitives[0]?.slug ?? 'accordion';
+
 export function primitiveBySlug(slug: string): DocsPrimitive {
   for (const group of DOCS_GROUPS) {
     const found = group.primitives.find((primitive) => primitive.slug === slug);

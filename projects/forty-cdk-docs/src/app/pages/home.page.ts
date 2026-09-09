@@ -1,138 +1,190 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { DOCUMENT } from '@angular/common';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  DestroyRef,
+  inject,
+  signal,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { ForSwitch } from 'forty-cdk/switch';
 
-import { DOCS_GROUPS } from '../primitives';
-import { GITHUB_REPO } from '../ui/github';
+import { FIRST_PRIMITIVE_SLUG, PRIMITIVES, UTILITIES } from '../primitives';
+import { Icon } from '../ui/icon';
+import { LandingFooter } from '../ui/landing-footer';
+import { LandingHeader } from '../ui/landing-header';
+import { LandingIndex } from '../ui/landing-index';
+import { LandingSpecimen } from '../ui/landing-specimen';
 
-interface Trait {
-  readonly title: string;
-  readonly body: string;
-}
+const INSTALL_COMMAND = 'npm install forty-cdk';
 
 @Component({
   selector: 'home-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, ForSwitch],
+  imports: [RouterLink, Icon, LandingHeader, LandingFooter, LandingIndex, LandingSpecimen],
   template: `
-    <section class="hero">
-      <div class="hero-text">
-        <h1>Headless UI primitives for modern Angular.</h1>
-        <p class="lede">
-          forty-cdk ships the part that is hard to get right — roles, keyboard interaction, focus
-          management and state — and none of the part that is yours. No styles, no theme to
-          override, no <code>NgModule</code>.
-        </p>
-        <div class="cta">
-          <a class="btn btn--primary" [routerLink]="['/getting-started']">Get started</a>
-          <a class="btn" [routerLink]="['/', firstPrimitive]">Browse primitives</a>
-        </div>
-        <p class="install"><code>npm install forty-cdk</code></p>
-      </div>
+    <landing-header />
 
-      <div class="hero-demo">
-        <div class="demo-card">
-          <span class="demo-label">Live · <code>forty-cdk/switch</code></span>
-          <div class="demo-row">
-            <button forSwitch class="switch" [(checked)]="enabled" aria-label="Notifications">
-              <span class="switch__thumb"></span>
-            </button>
-            <span class="demo-state">
-              data-state="<strong>{{ enabled() ? 'checked' : 'unchecked' }}</strong
-              >"
-            </span>
-          </div>
-          <p class="demo-note">
-            One directive on your own <code>&lt;button&gt;</code>. It carries
-            <code>role="switch"</code>, keeps <code>aria-checked</code> in step, toggles on
-            <kbd>Space</kbd> and <kbd>Enter</kbd>, and reflects its state for your CSS. The
-            appearance above is thirty lines of ordinary CSS.
+    <main class="landing">
+      <section class="hero">
+        <div class="hero-text">
+          <h1>Headless UI primitives for modern Angular<span class="dot">.</span></h1>
+          <p class="lede">
+            forty-cdk ships the part that is hard to get right — roles, keyboard interaction, focus
+            management and state — and none of the part that is yours. No styles, no theme to
+            override, no <code>NgModule</code>.
           </p>
+          <div class="cta">
+            <a class="btn btn--primary" [routerLink]="['/getting-started']">Get started</a>
+            <a class="btn" [routerLink]="['/', firstPrimitive]">Browse all {{ entryPointCount }}</a>
+          </div>
+          <div class="install">
+            <span class="install-sigil">$</span>
+            <code>{{ install }}</code>
+            <button
+              type="button"
+              class="install-copy"
+              (click)="copyInstall()"
+              [attr.aria-label]="copyLabel()"
+            >
+              <app-icon [name]="copied() ? 'check' : 'clipboard'" />
+            </button>
+          </div>
         </div>
-      </div>
-    </section>
 
-    <section class="traits" aria-labelledby="why">
-      <h2 id="why">Why forty-cdk</h2>
-      <ul class="trait-grid">
-        @for (trait of traits; track trait.title) {
-          <li class="trait">
-            <h3>{{ trait.title }}</h3>
-            <p>{{ trait.body }}</p>
-          </li>
-        }
-      </ul>
-    </section>
+        <landing-specimen />
+      </section>
 
-    <section class="next" aria-labelledby="next-heading">
-      <h2 id="next-heading">Where to go next</h2>
-      <ul class="next-grid">
-        <li>
-          <a class="card" [routerLink]="['/installation']">
-            <span class="card-title">Installation</span>
-            <span class="card-desc">
+      <section class="why" aria-labelledby="why-heading">
+        <h2 id="why-heading">Why forty-cdk</h2>
+        <div class="why-grid">
+          <div class="why-item">
+            <h3>Accessibility is the API</h3>
+            <p>
+              Every primitive names the WAI-ARIA APG pattern it implements: roles, live ARIA, the
+              full keyboard map, focus management and RTL.
+            </p>
+          </div>
+          <div class="why-item">
+            <h3>Styleless by design</h3>
+            <p>
+              No CSS ships. You style your own class against the <code>data-*</code> state each
+              piece reflects and the <code>--for-*</code> properties it measures.
+            </p>
+          </div>
+          <div class="why-item">
+            <h3>Signals, not ceremony</h3>
+            <p>
+              <code>input()</code>, <code>output()</code>, <code>model()</code>,
+              <code>inject()</code>, standalone directives. State is a signal you read, not an
+              observable you unsubscribe from.
+            </p>
+          </div>
+          <div class="why-item">
+            <h3>Zoneless and SSR-safe</h3>
+            <p>
+              Works under <code>provideZonelessChangeDetection()</code>; Zone.js is never required.
+              Every primitive carries a server-render smoke test.
+            </p>
+          </div>
+          <div class="why-item">
+            <h3>One entry point each</h3>
+            <p>
+              Import <code>forty-cdk/dialog</code> and your bundle never sees Table. The isolation
+              is structural, not a tree-shaking result.
+            </p>
+          </div>
+          <div class="why-item">
+            <h3>Composed, not configured</h3>
+            <p>
+              A primitive is a set of directives you arrange in your own markup. They find each
+              other through DI, so you can wrap any of them.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="start" aria-labelledby="start-heading">
+        <h2 id="start-heading">Start here</h2>
+        <div class="start-rows">
+          <a class="row" [routerLink]="['/installation']">
+            <span class="row-title">Installation</span>
+            <span class="row-desc">
               Peer dependencies, supported Angular versions, and the import model.
             </span>
+            <app-icon name="chevron-right" />
           </a>
-        </li>
-        <li>
-          <a class="card" [routerLink]="['/getting-started']">
-            <span class="card-title">Getting started</span>
-            <span class="card-desc">
-              One primitive from install to styled and bound to a form.
-            </span>
+          <a class="row" [routerLink]="['/getting-started']">
+            <span class="row-title">Getting started</span>
+            <span class="row-desc">One primitive from install to styled and bound to a form.</span>
+            <app-icon name="chevron-right" />
           </a>
-        </li>
-        <li>
-          <a class="card" [routerLink]="['/concepts']">
-            <span class="card-title">Concepts</span>
-            <span class="card-desc">
+          <a class="row" [routerLink]="['/concepts']">
+            <span class="row-title">Concepts</span>
+            <span class="row-desc">
               The composition model, the <code>data-*</code> vocabulary, entry points.
             </span>
+            <app-icon name="chevron-right" />
           </a>
-        </li>
-        <li>
-          <a class="card" [routerLink]="['/guides']">
-            <span class="card-title">Guides</span>
-            <span class="card-desc">
+          <a class="row" [routerLink]="['/guides']">
+            <span class="row-title">Guides</span>
+            <span class="row-desc">
               Styling, overlays, design-system wrappers and the table compositions.
             </span>
+            <app-icon name="chevron-right" />
           </a>
-        </li>
-      </ul>
-      <p class="repo">
-        {{ primitiveCount }} primitives, each its own entry point ·
-        <a [href]="repo" target="_blank" rel="noreferrer noopener">Source on GitHub</a>
-      </p>
-    </section>
+        </div>
+      </section>
+
+      <section aria-labelledby="index-heading">
+        <landing-index />
+      </section>
+    </main>
+
+    <landing-footer />
   `,
   styles: `
     :host {
-      display: block;
-      max-width: 1180px;
+      flex: 1 0 auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .landing {
+      flex: 1 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 5rem;
+      width: 100%;
+      max-width: 1200px;
       margin: 0 auto;
+      padding: 4.5rem 2rem 5rem;
     }
 
     .hero {
       display: grid;
-      grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
-      align-items: center;
+      grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
       gap: 3rem;
-      padding: 1rem 0 3.5rem;
+      align-items: start;
     }
 
     .hero h1 {
       margin: 0;
-      font-size: 2.4rem;
-      line-height: 1.15;
-      letter-spacing: -0.02em;
+      font-size: clamp(2.3rem, 4.6vw, 3.85rem);
+      line-height: 1.03;
+      letter-spacing: -0.035em;
+      text-wrap: balance;
+    }
+
+    .dot {
+      color: var(--pg-primary);
     }
 
     .lede {
-      margin: 1rem 0 0;
-      max-width: 55ch;
-      font-size: 1.05rem;
-      line-height: 1.6;
+      margin: 1.6rem 0 0;
+      max-width: 47ch;
+      font-size: 1.15rem;
+      line-height: 1.55;
       color: var(--pg-text-muted);
     }
 
@@ -140,20 +192,20 @@ interface Trait {
       display: flex;
       flex-wrap: wrap;
       gap: 0.75rem;
-      margin-top: 1.75rem;
+      margin-top: 2rem;
     }
 
     .btn {
       display: inline-flex;
       align-items: center;
-      height: 42px;
-      padding: 0 1.25rem;
+      height: 50px;
+      padding: 0 1.6rem;
       font-weight: 700;
       text-decoration: none;
       color: var(--pg-text);
-      background: var(--pg-surface);
       border: 1px solid var(--pg-border-strong);
-      border-radius: var(--pg-radius-sm);
+      border-radius: var(--pg-radius);
+      corner-shape: squircle;
     }
 
     .btn:hover {
@@ -172,217 +224,217 @@ interface Trait {
     }
 
     .install {
-      margin: 1.25rem 0 0;
-      font-size: 0.9rem;
-      color: var(--pg-text-muted);
-    }
-
-    .demo-card {
-      padding: 1.5rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.7rem;
+      height: 46px;
+      margin-top: 1.25rem;
+      padding: 0 0.5rem 0 1rem;
       background: var(--pg-surface);
       border: 1px solid var(--pg-border);
-      border-radius: var(--pg-radius);
-      corner-shape: squircle;
-      box-shadow: var(--pg-shadow);
+      border-radius: var(--pg-radius-sm);
     }
 
-    .demo-label {
-      display: block;
-      font-size: 0.78rem;
-      font-weight: 700;
+    .install-sigil {
+      font-family: var(--pg-font-mono);
+      font-size: 0.85rem;
+      color: var(--pg-secondary);
+    }
+
+    .install code {
+      padding: 0;
+      background: none;
+      font-size: 0.88rem;
+    }
+
+    .install-copy {
+      display: grid;
+      place-items: center;
+      width: 30px;
+      height: 30px;
+      border: 0;
+      border-radius: var(--pg-radius-xs);
+      background: none;
+      color: var(--pg-text-muted);
+      cursor: pointer;
+    }
+
+    .install-copy:hover {
+      background: var(--pg-surface-2);
       color: var(--pg-text);
     }
 
-    .demo-row {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      margin: 1.25rem 0;
+    .install-copy app-icon {
+      width: 16px;
+      height: 16px;
     }
 
-    .switch {
-      flex: none;
-      width: 52px;
-      height: 30px;
-      padding: 3px;
-      border: none;
-      border-radius: 999px;
-      background: var(--pg-border-strong);
-      cursor: pointer;
-      transition: background 150ms;
-    }
-
-    .switch__thumb {
-      display: block;
-      width: 24px;
-      height: 24px;
-      border-radius: 50%;
-      background: #fff;
-      transition: transform 150ms var(--pg-ease-spring);
-    }
-
-    .switch[data-state='checked'] {
-      background: var(--pg-primary);
-    }
-
-    .switch[data-state='checked'] .switch__thumb {
-      transform: translateX(22px);
-    }
-
-    .demo-state {
-      font-family: var(--pg-font-mono);
-      font-size: 0.8rem;
-      color: var(--pg-text-muted);
-    }
-
-    .demo-note {
+    h2 {
       margin: 0;
-      font-size: 0.85rem;
+      font-size: 1.9rem;
+      letter-spacing: -0.02em;
+    }
+
+    .why-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0 2.5rem;
+      margin-top: 0.5rem;
+    }
+
+    .why-item {
+      padding: 1.6rem 0 1.75rem;
+      border-top: 1px solid var(--pg-border);
+    }
+
+    .why-item h3 {
+      margin: 0 0 0.5rem;
+      font-size: 1.3rem;
+      letter-spacing: -0.015em;
+    }
+
+    .why-item p {
+      margin: 0;
+      font-size: 0.97rem;
       line-height: 1.6;
       color: var(--pg-text-muted);
     }
 
-    .traits h2,
-    .next h2 {
-      margin: 0 0 1.25rem;
-      font-size: 1.5rem;
-      color: var(--pg-text);
-    }
-
-    .trait-grid,
-    .next-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-      gap: 0.75rem;
-      margin: 0;
-      padding: 0;
-      list-style: none;
-    }
-
-    .trait {
-      padding: 1.1rem 1.25rem;
-      background: var(--pg-surface);
-      border: 1px solid var(--pg-border);
-      border-radius: var(--pg-radius-sm);
-    }
-
-    .trait h3 {
-      margin: 0 0 0.4rem;
-      font-size: 0.95rem;
-    }
-
-    .trait p {
-      margin: 0;
-      font-size: 0.87rem;
-      line-height: 1.55;
-      color: var(--pg-text-muted);
-    }
-
-    .next {
-      margin-top: 3rem;
-      padding-bottom: 1rem;
-    }
-
-    .card {
+    .start-rows {
       display: flex;
       flex-direction: column;
-      gap: 0.35rem;
-      height: 100%;
-      padding: 0.9rem 1rem;
-      background: var(--pg-surface);
-      border: 1px solid var(--pg-border);
-      border-radius: var(--pg-radius-sm);
+      margin-top: 1rem;
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+      padding: 1.3rem 1.25rem 1.3rem 0;
+      border-top: 1px solid var(--pg-border);
+      color: var(--pg-text);
       text-decoration: none;
     }
 
-    .card:hover {
-      border-color: var(--pg-border-strong);
-      background: var(--pg-surface-2);
+    .row:last-child {
+      border-bottom: 1px solid var(--pg-border);
     }
 
-    .card-title {
+    .row:hover .row-title {
+      color: var(--pg-primary);
+    }
+
+    .row:hover app-icon {
+      color: var(--pg-text-muted);
+    }
+
+    .row-title {
+      flex: none;
+      width: 250px;
+      font-family: var(--pg-font-display);
+      font-size: 1.3rem;
       font-weight: 700;
-      color: var(--pg-text);
+      letter-spacing: -0.015em;
     }
 
-    .card-desc {
-      font-size: 0.85rem;
-      line-height: 1.5;
+    .row-desc {
+      font-size: 0.97rem;
       color: var(--pg-text-muted);
     }
 
-    .repo {
-      margin: 1.5rem 0 0;
-      font-size: 0.85rem;
-      color: var(--pg-text-muted);
+    .row app-icon {
+      flex: none;
+      width: 20px;
+      height: 20px;
+      margin-left: auto;
+      color: var(--pg-border-strong);
     }
 
     code {
       font-family: var(--pg-font-mono);
-      font-size: 0.9em;
+      font-size: 0.86em;
       padding: 0.05em 0.35em;
-      border-radius: 6px;
+      border-radius: var(--pg-radius-xs);
       background: var(--pg-code-inline-bg);
       color: var(--pg-code-inline-fg);
     }
 
-    kbd {
-      font-family: var(--pg-font-mono);
-      font-size: 0.8em;
-      padding: 0.1em 0.4em;
-      border-radius: 6px;
-      background: var(--pg-surface-2);
-      border: 1px solid var(--pg-border-strong);
-    }
-
-    @media (max-width: 980px) {
+    @media (max-width: 1080px) {
       .hero {
         grid-template-columns: minmax(0, 1fr);
-        gap: 2rem;
-        padding-bottom: 2.5rem;
+        gap: 2.5rem;
       }
 
-      .hero h1 {
-        font-size: 1.9rem;
+      .why-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 820px) {
+      .landing {
+        gap: 3.5rem;
+        padding: 2.5rem 1rem 3.5rem;
+      }
+
+      .why-grid {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 0;
+      }
+
+      .row {
+        flex-wrap: wrap;
+        gap: 0.35rem 1rem;
+      }
+
+      .row-title {
+        width: auto;
+      }
+
+      .row-desc {
+        flex: 1 0 100%;
       }
     }
   `,
 })
 export class HomePage {
-  protected readonly repo = GITHUB_REPO;
-  protected readonly enabled = signal(true);
+  readonly #document = inject(DOCUMENT);
+  readonly #destroyRef = inject(DestroyRef);
 
-  protected readonly primitiveCount = DOCS_GROUPS.reduce(
-    (total, group) => total + group.primitives.length,
-    0,
+  protected readonly copied = signal(false);
+
+  protected readonly entryPointCount = PRIMITIVES.length + UTILITIES.length;
+  protected readonly firstPrimitive = FIRST_PRIMITIVE_SLUG;
+
+  protected readonly install = INSTALL_COMMAND;
+
+  protected readonly copyLabel = computed(() =>
+    this.copied() ? 'Install command copied' : 'Copy the install command',
   );
 
-  protected readonly firstPrimitive = DOCS_GROUPS[0]?.primitives[0]?.slug ?? 'accordion';
+  #resetTimer: ReturnType<typeof setTimeout> | null = null;
 
-  protected readonly traits: readonly Trait[] = [
-    {
-      title: 'Accessibility is the API',
-      body: 'Every primitive names the WAI-ARIA APG pattern it implements: roles, live ARIA, the full keyboard map, focus management and RTL.',
-    },
-    {
-      title: 'Styleless by design',
-      body: 'No CSS ships. You style your own class against the data-* state each piece reflects and the --for-* properties it measures.',
-    },
-    {
-      title: 'Signals, not ceremony',
-      body: 'input() / output() / model(), inject(), standalone directives. State is a signal you read, not an observable you unsubscribe from.',
-    },
-    {
-      title: 'Zoneless and SSR-safe',
-      body: 'Works under provideZonelessChangeDetection(); Zone.js is never required. Every primitive carries a server-render smoke test.',
-    },
-    {
-      title: 'One entry point each',
-      body: 'Import forty-cdk/dialog and your bundle never sees Table. The isolation is structural, not a tree-shaking result.',
-    },
-    {
-      title: 'Composed, not configured',
-      body: 'A primitive is a set of directives you arrange in your own markup. They find each other through DI, so you can wrap any of them.',
-    },
-  ];
+  constructor() {
+    this.#destroyRef.onDestroy(() => {
+      if (this.#resetTimer !== null) {
+        clearTimeout(this.#resetTimer);
+      }
+    });
+  }
+
+  protected copyInstall(): void {
+    const clipboard = this.#document.defaultView?.navigator.clipboard;
+    if (!clipboard) {
+      return;
+    }
+    clipboard.writeText(INSTALL_COMMAND).then(
+      () => {
+        this.copied.set(true);
+        if (this.#resetTimer !== null) {
+          clearTimeout(this.#resetTimer);
+        }
+        this.#resetTimer = setTimeout(() => this.copied.set(false), 2000);
+      },
+      () => undefined,
+    );
+  }
 }
