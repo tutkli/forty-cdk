@@ -109,6 +109,7 @@ interface Slide {
     .mcar-viewport {
       overflow: hidden;
       border-radius: var(--pg-radius);
+      corner-shape: squircle;
     }
 
     .mcar-track {

@@ -39,6 +39,7 @@ import { ForInput } from 'forty-cdk/input';
       padding: 1.1rem 1.2rem 1.3rem;
       border: 1px solid var(--pg-border);
       border-radius: var(--pg-radius);
+      corner-shape: squircle;
     }
 
     .legend {

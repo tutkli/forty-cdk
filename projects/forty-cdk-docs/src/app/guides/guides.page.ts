@@ -63,11 +63,8 @@ import { GUIDE_INDEX } from '../doc/guides';
 
     .group h2 {
       margin: 0 0 1rem;
-      font-size: 0.78rem;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: var(--pg-text-muted);
+      font-size: 1.15rem;
+      color: var(--pg-text);
     }
 
     .cards {

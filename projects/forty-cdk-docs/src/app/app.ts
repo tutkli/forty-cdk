@@ -198,10 +198,8 @@ function readInitialTheme(): Theme {
     }
 
     .brand-tag {
-      font-size: 0.66rem;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
+      font-size: 0.72rem;
+      font-weight: 700;
       color: var(--pg-secondary);
       background: color-mix(in srgb, var(--pg-secondary) 16%, transparent);
       padding: 0.1rem 0.45rem;

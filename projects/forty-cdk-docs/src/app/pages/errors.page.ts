@@ -104,6 +104,7 @@ import { ERROR_CODE_AREAS, ERROR_CODE_INDEX } from '../doc/error-codes';
       padding: 0.5rem 0.75rem;
       border: 1px solid var(--pg-border);
       border-radius: var(--pg-radius);
+      corner-shape: squircle;
       background: var(--pg-surface);
     }
 
@@ -125,9 +126,8 @@ import { ERROR_CODE_AREAS, ERROR_CODE_INDEX } from '../doc/error-codes';
     }
 
     .warning {
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
+      font-size: 0.78rem;
+      font-weight: 700;
       color: var(--pg-warning);
     }
 

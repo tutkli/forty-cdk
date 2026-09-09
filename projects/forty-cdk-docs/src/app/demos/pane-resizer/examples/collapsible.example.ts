@@ -52,6 +52,7 @@ import { ForPaneResizer } from 'forty-cdk/pane-resizer';
       height: 200px;
       border: 1px solid var(--pg-border);
       border-radius: var(--pg-radius);
+      corner-shape: squircle;
       overflow: hidden;
     }
 

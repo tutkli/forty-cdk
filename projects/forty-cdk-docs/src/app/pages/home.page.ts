@@ -182,16 +182,15 @@ interface Trait {
       background: var(--pg-surface);
       border: 1px solid var(--pg-border);
       border-radius: var(--pg-radius);
+      corner-shape: squircle;
       box-shadow: var(--pg-shadow);
     }
 
     .demo-label {
       display: block;
-      font-size: 0.7rem;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: var(--pg-text-muted);
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--pg-text);
     }
 
     .demo-row {
@@ -246,11 +245,8 @@ interface Trait {
     .traits h2,
     .next h2 {
       margin: 0 0 1.25rem;
-      font-size: 0.78rem;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: var(--pg-text-muted);
+      font-size: 1.5rem;
+      color: var(--pg-text);
     }
 
     .trait-grid,

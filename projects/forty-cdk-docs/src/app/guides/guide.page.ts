@@ -56,9 +56,6 @@ import { guideBySlug } from '../doc/guides';
       display: inline-block;
       margin-bottom: 0.5rem;
       font-size: 0.78rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
       color: var(--pg-text-muted);
       text-decoration: none;
     }
