@@ -225,12 +225,6 @@ Implements the [WAI-ARIA Button pattern](https://www.w3.org/WAI/ARIA/apg/pattern
 - **A disabled item stays focusable** (per APG): it reflects `aria-disabled="true"` + `data-disabled=""` rather than native `disabled`, so assistive tech still announces it while interaction is a no-op.
 - **`readonly` has no ARIA channel here.** WAI-ARIA supports `aria-readonly` on neither `role="button"` nor `role="group"`, so a read-only toggle / group reflects the boolean `data-readonly` styling hook only and interaction is blocked in the handler.
 
-## Behavior notes
-
-- **`data-state`** uses the form-control vocabulary `"checked" | "unchecked"` (per `CLAUDE.md` cross-primitive convention), even though ARIA uses `aria-pressed` — the data attribute mirrors the logical "is this option active" state, not the ARIA term.
-- **Single mode** lets the user reach the `[]` state by clicking the currently pressed item again. Use `[forRadioGroup]` if you need to enforce one-of-N.
-- **Roving tabindex** follows focus: once any item is focused, that item becomes the tab stop so re-entry restores it. Before any focus, the entry point is computed from the group's value — with at least one selection the first selected item, otherwise the first enabled item in DOM order. The consumer never sets `tabindex` manually.
-
 ## Styling
 
 forty-cdk ships no styles. Add your own class to each piece — the for\* selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected data-\* attributes listed per piece in the [API](#api) section.
@@ -249,6 +243,12 @@ forty-cdk ships no styles. Add your own class to each piece — the for\* select
   cursor: not-allowed;
 }
 ```
+
+## Behavior notes
+
+- **`data-state`** uses the form-control vocabulary `"checked" | "unchecked"` (per `CLAUDE.md` cross-primitive convention), even though ARIA uses `aria-pressed` — the data attribute mirrors the logical "is this option active" state, not the ARIA term.
+- **Single mode** lets the user reach the `[]` state by clicking the currently pressed item again. Use `[forRadioGroup]` if you need to enforce one-of-N.
+- **Roving tabindex** follows focus: once any item is focused, that item becomes the tab stop so re-entry restores it. Before any focus, the entry point is computed from the group's value — with at least one selection the first selected item, otherwise the first enabled item in DOM order. The consumer never sets `tabindex` manually.
 
 ## Wrapping in a design system
 

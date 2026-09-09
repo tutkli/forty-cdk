@@ -92,8 +92,33 @@ export const ARCHETYPES = new Map([
 ]);
 
 /**
- * The canonical headings, in the order the page template gives them, split into
- * the two rings that carry a rule.
+ * Every heading the page template names, in the order it gives them.
+ *
+ * The sequence is the half of the contract nothing used to check: the two ring
+ * lists below were membership tests with no order between them, so a document
+ * could carry every section its archetype requires and still write them in an
+ * order no other page uses
+ * ([#1862](https://github.com/tutkli/forty-cdk/issues/1862)). A heading this
+ * list does not name is `specific`, and where it sits is its own question —
+ * {@link checkSectionOrder} passes over it.
+ */
+export const TEMPLATE_ORDER = [
+  'When to choose',
+  'Anatomy',
+  'Examples',
+  'API',
+  'Programmatic API',
+  'Keyboard',
+  'Accessibility',
+  'Styling',
+  'SSR',
+  'Behavior notes',
+  'Wrapping in a design system',
+];
+
+/**
+ * The two rings that carry a rule, derived from the sequence above rather than
+ * written out a second time beside it.
  *
  * `core` is required of every archetype that has DOM at all; `canonical` is
  * required per archetype, by the table above. Everything else a document writes
@@ -103,17 +128,7 @@ export const ARCHETYPES = new Map([
  */
 export const CORE_SECTIONS = ['Anatomy', 'API'];
 
-export const CANONICAL_SECTIONS = [
-  'When to choose',
-  'Examples',
-  'Programmatic API',
-  'Keyboard',
-  'Accessibility',
-  'Styling',
-  'SSR',
-  'Behavior notes',
-  'Wrapping in a design system',
-];
+export const CANONICAL_SECTIONS = TEMPLATE_ORDER.filter((title) => !CORE_SECTIONS.includes(title));
 
 /**
  * A required section a document deliberately omits, with the reason it does.
@@ -571,7 +586,52 @@ export function checkExemptions(documents) {
   return problems;
 }
 
+/**
+ * Every document that carries the right sections in the wrong order.
+ *
+ * Read as a subsequence rather than a sequence: only the headings
+ * {@link TEMPLATE_ORDER} names take part, so a document stays free to write a
+ * specific section wherever its content belongs and the long tail keeps the
+ * position it earned. The problem is reported against the heading that arrived
+ * early — the one a contributor moves — and names the section it should follow,
+ * because a rule restated where it failed is a fix and a rule restated in prose
+ * is a lookup.
+ */
+export function checkSectionOrder(documents) {
+  const problems = [];
+  for (const document of documents) {
+    const placed = [];
+    for (const section of document.sections) {
+      const at = TEMPLATE_ORDER.indexOf(section.title);
+      if (at === -1) {
+        continue;
+      }
+      const furthest = placed.at(-1);
+      if (furthest === undefined || at >= furthest.at) {
+        placed.push({ title: section.title, at });
+        continue;
+      }
+      const anchor = placed.findLast((entry) => entry.at < at);
+      problems.push({
+        path: document.path,
+        line: section.line,
+        message:
+          `"## ${section.title}" is written after "## ${furthest.title}", which the page template ` +
+          `orders below it — ` +
+          (anchor === undefined
+            ? `move it above "## ${furthest.title}"`
+            : `move it up to follow "## ${anchor.title}"`),
+      });
+    }
+  }
+  return problems;
+}
+
 /** Every way a compiled corpus disagrees with the contract. */
 export function checkContract(documents) {
-  return [...checkSections(documents), ...checkExemptions(documents)];
+  return [
+    ...checkSections(documents),
+    ...checkExemptions(documents),
+    ...checkSectionOrder(documents),
+  ];
 }

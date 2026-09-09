@@ -558,6 +558,7 @@ export function compileDocument(source, { path, slug, kind }) {
     sections: sectionRuns.map(({ heading, run }) => ({
       title: heading.token.text,
       slug: heading.slug,
+      line: heading.line,
       ring: ringOf(heading.token.text),
       headings: headingsOf(run),
       blocks: blocksOf(run),
