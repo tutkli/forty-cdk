@@ -15,6 +15,7 @@ import { filter } from 'rxjs';
 
 import { AppNav } from './ui/app-nav';
 import { CommandPalette } from './ui/command-palette';
+import { SectionSwitcher } from './ui/section-switcher';
 import { SiteChrome } from './ui/site-chrome';
 
 @Component({
@@ -28,6 +29,7 @@ import { SiteChrome } from './ui/site-chrome';
     ForToastViewport,
     AppNav,
     CommandPalette,
+    SectionSwitcher,
   ],
   host: {
     '(document:keydown.meta.k)': 'chrome.openPalette($event)',
@@ -43,7 +45,7 @@ import { SiteChrome } from './ui/site-chrome';
         forDrawer
         class="pg-nav-drawer"
         side="left"
-        ariaLabel="Primitives navigation"
+        ariaLabel="Site navigation"
         (dismiss)="chrome.navOpen.set(false)"
         animate.enter="pg-drawer-in-left"
         animate.leave="pg-drawer-out-left"
@@ -54,6 +56,7 @@ import { SiteChrome } from './ui/site-chrome';
           animate.enter="pg-backdrop-in"
           animate.leave="pg-backdrop-out"
         ></div>
+        <section-switcher class="drawer-sections" />
         <app-nav (navigate)="chrome.navOpen.set(false)" />
       </div>
     }
@@ -87,6 +90,12 @@ import { SiteChrome } from './ui/site-chrome';
 
     router-outlet {
       display: none;
+    }
+
+    .drawer-sections {
+      margin: 0 0.75rem 0.9rem;
+      padding-bottom: 0.9rem;
+      border-bottom: 1px solid var(--pg-border);
     }
   `,
 })

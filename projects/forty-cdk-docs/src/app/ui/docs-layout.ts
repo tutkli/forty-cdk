@@ -6,13 +6,14 @@ import { AppNav } from './app-nav';
 import { GITHUB_REPO } from './github';
 import { Icon } from './icon';
 import { ScrollPane } from './scroll-pane';
+import { SectionSwitcher } from './section-switcher';
 import { SiteChrome } from './site-chrome';
 import { ThemeToggle } from './theme-toggle';
 
 @Component({
   selector: 'docs-layout',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, RouterLink, AppNav, ScrollPane, Icon, ThemeToggle],
+  imports: [RouterOutlet, RouterLink, AppNav, ScrollPane, Icon, SectionSwitcher, ThemeToggle],
   template: `
     <header class="topbar">
       <button
@@ -28,6 +29,8 @@ import { ThemeToggle } from './theme-toggle';
         <span class="brand-name">forty-cdk</span>
         <span class="brand-tag">docs</span>
       </a>
+
+      <section-switcher class="sections" />
 
       <div class="topbar-actions">
         <button type="button" class="search-btn" (click)="chrome.openPalette()" aria-label="Search">
@@ -114,6 +117,10 @@ import { ThemeToggle } from './theme-toggle';
       background: color-mix(in srgb, var(--pg-secondary) 16%, transparent);
       padding: 0.1rem 0.45rem;
       border-radius: 999px;
+    }
+
+    .sections {
+      margin-left: 1.25rem;
     }
 
     .topbar-actions {
@@ -206,6 +213,10 @@ import { ThemeToggle } from './theme-toggle';
     @media (max-width: 820px) {
       .menu-btn {
         display: grid;
+      }
+
+      .sections {
+        display: none;
       }
 
       .search-btn-text,

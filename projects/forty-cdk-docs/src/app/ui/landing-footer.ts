@@ -1,15 +1,18 @@
 import { LocationStrategy } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { RouterLink } from '@angular/router';
 
 import { GITHUB_REPO } from './github';
 
 @Component({
   selector: 'landing-footer',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [RouterLink],
   template: `
     <div class="bar">
       <span class="note">MIT-licensed · built for Angular 22+</span>
       <div class="links">
+        <a [routerLink]="['/errors']">Error codes</a>
         <a [href]="repo" target="_blank" rel="noreferrer noopener">GitHub</a>
         <a [href]="npm" target="_blank" rel="noreferrer noopener">npm</a>
         <a class="mono" [href]="llmsTxt" target="_blank" rel="noreferrer noopener">llms.txt</a>

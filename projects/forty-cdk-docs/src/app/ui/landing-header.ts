@@ -1,9 +1,9 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
-import { FIRST_PRIMITIVE_SLUG } from '../primitives';
 import { GITHUB_REPO } from './github';
 import { Icon } from './icon';
+import { LANDING_LINKS } from './site-sections';
 import { ThemeToggle } from './theme-toggle';
 
 @Component({
@@ -18,10 +18,9 @@ import { ThemeToggle } from './theme-toggle';
       </div>
 
       <nav class="links" aria-label="Sections">
-        <a [routerLink]="['/installation']">Docs</a>
-        <a [routerLink]="['/guides']">Guides</a>
-        <a [routerLink]="['/', firstPrimitive]">Primitives</a>
-        <a [routerLink]="['/errors']">Error codes</a>
+        @for (link of links; track link.path) {
+          <a [routerLink]="link.path">{{ link.label }}</a>
+        }
       </nav>
 
       <div class="actions">
@@ -111,5 +110,5 @@ import { ThemeToggle } from './theme-toggle';
 })
 export class LandingHeader {
   protected readonly repo = GITHUB_REPO;
-  protected readonly firstPrimitive = FIRST_PRIMITIVE_SLUG;
+  protected readonly links = LANDING_LINKS;
 }
