@@ -217,6 +217,35 @@ Draggable thumb, sized and translated automatically. Mirrors its scrollbar's ori
 
 Filler in the corner where horizontal and vertical scrollbars meet. Shows only when both scrollbars are visible (or always, under `type="always"`), self-removing via the `hidden` attribute plus an inline `display: none` otherwise. Carries no `data-*` attributes.
 
+## Accessibility
+
+The synthetic scrollbars are pointer affordances only — they carry no ARIA roles, are not focusable, and neither a thumb drag nor a track press moves focus (mirroring a native scrollbar). The corner element is removed from the accessibility tree via the `hidden` attribute when not visible.
+
+`[forScrollAreaViewport]` is focusable by default (`tabindex="0"`), so keyboard users can Tab to the scroll container and scroll it with the arrow keys / PageUp / PageDown / Home / End / Space in every browser — including Safari, which does not make a non-focusable overflow container keyboard-scrollable. Because the viewport is now a tab stop, **recommend** giving it `role="region"` plus an accessible label so screen-reader users know what the focusable container is:
+
+```html
+<div forScrollAreaViewport role="region" aria-label="Release notes">
+  <div forScrollAreaContent>… long content …</div>
+</div>
+```
+
+The label may instead point at a visible heading with `aria-labelledby`. The library does not force a `role` on the viewport: a `role="region"` without an accessible name is itself an accessibility anti-pattern, and only the consumer knows the content's name — so the role and label stay opt-in. If the projected content is already a labelled, keyboard-focusable region, set `[focusable]="false"` on the viewport to avoid a redundant tab stop.
+
+## Styling
+
+forty-cdk ships no styles. Add your own class to each piece — the for\* selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected data-\* attributes listed per piece in the [API](#api) section.
+
+```css
+.scroll-area-scrollbar[data-state='hidden'] {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.scroll-area-scrollbar[data-orientation='vertical'] {
+  width: 8px;
+}
+```
+
 ## Behavior notes
 
 - **`type="always"` keeps a stable, always-painted track.** Unlike `auto` / `scroll` / `hover` — which render a scrollbar only for an axis that actually overflows and self-hide otherwise — `always` keeps both scrollbars (and the corner) mounted and `data-state="visible"` regardless of overflow. When the axis does not overflow the thumb fills the full track and dragging it is a no-op, so the track never appears/disappears as content crosses the overflow boundary.
@@ -281,35 +310,6 @@ Filler in the corner where horizontal and vertical scrollbars meet. Shows only w
 - **For reliable touch track presses, give the scrollbar `touch-action: none`.** The library adds no inline `touch-action` (on the track or the thumb), so on touch a press-and-drag on the track can also pan the page. Add the rule in your own CSS on `[forScrollAreaScrollbar]` when you want the gesture to belong to the scrollbar.
 - **The corner only shows when both scrollbars are visible** (or always, under `type="always"`, where both tracks are permanently present). Otherwise the directive hides it with an inline `display: none` in addition to the `hidden` attribute that removes it from the accessibility tree (the only place the rule "primitives never apply `[hidden]`" doesn't apply — the corner has no logical presence without two scrollbars). Because the inline style beats any author selector rule, you can give `[forScrollAreaCorner]` a custom `display` without a `.x[hidden] { display: none }` workaround — the directive's `display: none` still wins while the corner is hidden, and your `display` applies once both scrollbars show.
 - **Content observation is opt-in**: the viewport observes its own size automatically, but only observes the content element when the consumer tags it with `[forScrollAreaContent]`. Skipping the directive is allowed (the viewport still scrolls and the scrollbars still render); the scrollbars just won't react to content reflows. The library never guesses `firstElementChild`, since that silently breaks when content is wrapped in a layer or split across siblings.
-
-## Accessibility
-
-The synthetic scrollbars are pointer affordances only — they carry no ARIA roles, are not focusable, and neither a thumb drag nor a track press moves focus (mirroring a native scrollbar). The corner element is removed from the accessibility tree via the `hidden` attribute when not visible.
-
-`[forScrollAreaViewport]` is focusable by default (`tabindex="0"`), so keyboard users can Tab to the scroll container and scroll it with the arrow keys / PageUp / PageDown / Home / End / Space in every browser — including Safari, which does not make a non-focusable overflow container keyboard-scrollable. Because the viewport is now a tab stop, **recommend** giving it `role="region"` plus an accessible label so screen-reader users know what the focusable container is:
-
-```html
-<div forScrollAreaViewport role="region" aria-label="Release notes">
-  <div forScrollAreaContent>… long content …</div>
-</div>
-```
-
-The label may instead point at a visible heading with `aria-labelledby`. The library does not force a `role` on the viewport: a `role="region"` without an accessible name is itself an accessibility anti-pattern, and only the consumer knows the content's name — so the role and label stay opt-in. If the projected content is already a labelled, keyboard-focusable region, set `[focusable]="false"` on the viewport to avoid a redundant tab stop.
-
-## Styling
-
-forty-cdk ships no styles. Add your own class to each piece — the for\* selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected data-\* attributes listed per piece in the [API](#api) section.
-
-```css
-.scroll-area-scrollbar[data-state='hidden'] {
-  opacity: 0;
-  pointer-events: none;
-}
-
-.scroll-area-scrollbar[data-orientation='vertical'] {
-  width: 8px;
-}
-```
 
 ## Wrapping in a design system
 

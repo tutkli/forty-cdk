@@ -92,6 +92,8 @@ export interface DocSection {
   /** The heading's markdown. */
   readonly title: string;
   readonly slug: string;
+  /** The file line the heading is written on, so a contract problem can address it. */
+  readonly line: number;
   readonly ring: DocSectionRing;
   /** Every heading below this section's own, in document order. */
   readonly headings: readonly DocHeading[];

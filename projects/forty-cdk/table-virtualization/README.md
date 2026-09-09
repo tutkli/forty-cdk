@@ -94,10 +94,6 @@ readonly detector = injectInfiniteScroll({
 });
 ```
 
-## Accessibility
-
-Virtualization renders only a window of rows, so the table must keep announcing the real totals: bind `[rowCount]` on `[forTable]` (it drives `aria-rowcount`) and `[virtualIndex]` on each rendered row (it drives `aria-rowindex`). An append-style list keeps `[rowCount]` at the server total and narrows the scroll range with `[virtualRowCount]` instead of lowering the announced total. Focus management is handled for you — the focused row is retained in the window so roving focus is never lost to an unmounted cell.
-
 ## API
 
 ### `ForTableVirtualized`
@@ -112,6 +108,10 @@ Virtualization renders only a window of rows, so the table must keep announcing 
 | `range`           | `Signal<readonly [number, number]>` | The true `[firstIndex, lastIndex + 1)` window, unaffected by retained rows.                                                                                                                                                                                    |
 | `scrollToRow`     | method                              | Scroll the container so the row at `index` is in view.                                                                                                                                                                                                         |
 | `measureRow`      | method                              | Record the measured size of a rendered row element; `null` sweeps an evicted row.                                                                                                                                                                              |
+
+## Accessibility
+
+Virtualization renders only a window of rows, so the table must keep announcing the real totals: bind `[rowCount]` on `[forTable]` (it drives `aria-rowcount`) and `[virtualIndex]` on each rendered row (it drives `aria-rowindex`). An append-style list keeps `[rowCount]` at the server total and narrows the scroll range with `[virtualRowCount]` instead of lowering the announced total. Focus management is handled for you — the focused row is retained in the window so roving focus is never lost to an unmounted cell.
 
 ## Related
 

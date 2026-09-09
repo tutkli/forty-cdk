@@ -3,13 +3,17 @@ import {
   ARCHETYPES,
   BEHAVIOR_GROUP_TITLE,
   behaviorGroupOf,
+  CANONICAL_SECTIONS,
   checkContract,
+  checkSectionOrder,
   checkSections,
+  CORE_SECTIONS,
   foldTargetOf,
   readDocMeta,
   requiredSections,
   ringOf,
   SECTION_EXEMPTIONS,
+  TEMPLATE_ORDER,
 } from '../../../../../scripts/lib/doc-contract.mjs';
 import { splitFrontmatter } from '../../../../../scripts/lib/doc-frontmatter.mjs';
 import { compile, FRONTMATTER, problemsOf, readmeProblemsOf } from './testing/compile';
@@ -448,6 +452,70 @@ describe('holding a document to its archetypes', () => {
   });
 });
 
+describe('the order the page template gives those sections', () => {
+  const markdownOf = (titles: readonly string[]) =>
+    readme('# T', '', 'Lede.', '', ...titles.flatMap((title) => [`## ${title}`, '', 'Body.', '']));
+
+  const documentOf = (...titles: readonly string[]) =>
+    compile({
+      path: 'projects/forty-cdk/thing/README.md',
+      slug: 'thing',
+      markdown: markdownOf(titles),
+    });
+
+  const lineOf = (titles: readonly string[], title: string) =>
+    markdownOf(titles).split('\n').indexOf(`## ${title}`) + 1;
+
+  it('fails the heading that arrived early, at the line it is written on', () => {
+    const titles = ['Anatomy', 'API', 'Keyboard', 'Behavior notes', 'Accessibility'];
+
+    expect(checkSectionOrder([documentOf(...titles)])).toEqual([
+      {
+        path: 'projects/forty-cdk/thing/README.md',
+        line: lineOf(titles, 'Accessibility'),
+        message:
+          '"## Accessibility" is written after "## Behavior notes", which the page template ' +
+          'orders below it — move it up to follow "## Keyboard"',
+      },
+    ]);
+  });
+
+  it('names the section to move above when nothing the template orders first precedes it', () => {
+    const [problem] = checkSectionOrder([documentOf('Styling', 'Anatomy')]);
+
+    expect(problem?.message).toBe(
+      '"## Anatomy" is written after "## Styling", which the page template orders below it — ' +
+        'move it above "## Styling"',
+    );
+  });
+
+  it('passes over a specific section, whose position is the long tail’s own question', () => {
+    const problems = checkSectionOrder([
+      documentOf('Anatomy', 'Snap points', 'API', 'Mega-menu', 'Keyboard', 'Accessibility'),
+    ]);
+
+    expect(problems).toEqual([]);
+  });
+
+  it('reports the same problem through the contract check the corpus runs', () => {
+    const problems = checkContract([documentOf('Anatomy', 'API', 'Styling', 'Keyboard')]);
+
+    expect(problems.filter((problem) => problem.message.startsWith('"## Keyboard"'))).toEqual([
+      {
+        path: 'projects/forty-cdk/thing/README.md',
+        line: lineOf(['Anatomy', 'API', 'Styling', 'Keyboard'], 'Keyboard'),
+        message:
+          '"## Keyboard" is written after "## Styling", which the page template orders below it ' +
+          '— move it up to follow "## API"',
+      },
+    ]);
+  });
+
+  it('orders every section the two rings hold, and nothing they do not', () => {
+    expect([...TEMPLATE_ORDER].sort()).toEqual([...CORE_SECTIONS, ...CANONICAL_SECTIONS].sort());
+  });
+});
+
 describe('the corpus the library ships', () => {
   const documents = PRIMITIVE_DOCS.map((doc) => compile(doc));
 
@@ -466,6 +534,10 @@ describe('the corpus the library ships', () => {
 
   it('meets every section its declared archetypes require of it', () => {
     expect(checkContract(documents)).toEqual([]);
+  });
+
+  it('writes those sections in the order the page template gives them', () => {
+    expect(checkSectionOrder(documents)).toEqual([]);
   });
 
   it('spells the scoped-defaults section one way across the library', () => {

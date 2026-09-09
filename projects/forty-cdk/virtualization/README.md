@@ -172,20 +172,6 @@ item moves even when the lifted row scrolls out of the rendered window. It compo
 
 → **[`forty-cdk/virtual-reorder`](../virtual-reorder/README.md)**
 
-## Accessibility
-
-Virtual lists render only a window of items, so screen readers see a shorter list
-than the true total. Bind the full list size so assistive technology announces
-the real count:
-
-- `aria-setsize` — the total number of items in the full (non-windowed) list.
-- `aria-posinset` — the 1-based position of the item in that full list
-  (`item.index + 1`).
-
-```html
-<div [attr.aria-setsize]="items().length" [attr.aria-posinset]="item.index + 1"></div>
-```
-
 ## API
 
 ### Options
@@ -209,6 +195,20 @@ the real count:
 | `scrollToIndex`  | method                              | Scroll the container so the item at `index` is in view.                                                            |
 | `scrollToOffset` | method                              | Scroll to an absolute pixel offset.                                                                                |
 | `measureElement` | method                              | Record the measured size of a rendered item element.                                                               |
+
+## Accessibility
+
+Virtual lists render only a window of items, so screen readers see a shorter list
+than the true total. Bind the full list size so assistive technology announces
+the real count:
+
+- `aria-setsize` — the total number of items in the full (non-windowed) list.
+- `aria-posinset` — the 1-based position of the item in that full list
+  (`item.index + 1`).
+
+```html
+<div [attr.aria-setsize]="items().length" [attr.aria-posinset]="item.index + 1"></div>
+```
 
 ## Infinite scroll
 

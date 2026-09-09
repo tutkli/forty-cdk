@@ -13,13 +13,14 @@ once:
    set, guarantee the required sections exist, move static example code into live `*.example.ts`).
 2. The **rendering contract** the site relies on (each canonical heading maps to a site region).
 
-**Most of this document is executable.** The frontmatter schema, the archetype-to-section rules and
-the exemption list live in [scripts/lib/doc-contract.mjs](../scripts/lib/doc-contract.mjs) and run
-on every build; the ring a section falls in reaches the page on the model
+**Most of this document is executable.** The frontmatter schema, the archetype-to-section rules, the
+order those sections are written in and the exemption list live in
+[scripts/lib/doc-contract.mjs](../scripts/lib/doc-contract.mjs) and run on every build; the ring a
+section falls in reaches the page on the model
 ([#1808](https://github.com/tutkli/forty-cdk/issues/1808)). Where this file states a rule the code
-does not check — the ordering of sections, whether a keyboard-handling primitive wrote its Keyboard
-section — it says so, because a contract that quietly mixes the two is how this document came to
-disagree with the code in three places.
+does not check — whether a keyboard-handling primitive wrote its Keyboard section — it says so,
+because a contract that quietly mixes the two is how this document came to disagree with the code in
+three places.
 
 > Scope note: this governs per-primitive pages only. Cross-cutting guides (`docs/styling.md`,
 > `docs/your-first-overlay.md`, …) keep their own free-form structure and are rendered as plain
@@ -105,9 +106,13 @@ would cost real nuance for the sake of a template, so `specific` gives them a ho
 
 ## Canonical sections
 
-Sections appear **in this order**. The `Required for` column is what
-[scripts/lib/doc-contract.mjs](../scripts/lib/doc-contract.mjs) enforces — a document missing one
-fails the build unless it carries a written exemption there.
+Sections appear **in this order**, and both halves of that sentence are enforced by
+[scripts/lib/doc-contract.mjs](../scripts/lib/doc-contract.mjs). The `Required for` column decides
+which sections a document owes — one missing fails the build unless it carries a written exemption
+there — and `TEMPLATE_ORDER` decides the sequence, failing a document that writes one of these
+headings above a heading the table puts before it
+([#1862](https://github.com/tutkli/forty-cdk/issues/1862)). The order is read as a subsequence, so a
+`specific` section may still sit between any two canonical ones.
 
 | Order | Canonical heading                | Level | Required for                           | Replaces these existing headings (aliases)                                  |
 | ----- | -------------------------------- | ----- | -------------------------------------- | --------------------------------------------------------------------------- |

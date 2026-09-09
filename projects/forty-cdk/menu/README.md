@@ -74,28 +74,6 @@ Every item type emits a vetoable `(activate)` event — handlers receive a `Veto
 </button>
 ```
 
-## Keyboard
-
-- **ArrowDown / ArrowUp** — move focus to the next / previous enabled item, wrapping by default.
-- **Home / End** — jump to first / last enabled item.
-- **Enter / click** — activate the focused item via native `<button>` semantics. Closes the menu unless the consumer calls `event.preventDefault()` on `(activate)`.
-- **Space** — activates the focused item:
-  - On a plain `[forMenuItem]`, behaves like Enter / click (closes the menu).
-  - On `[forMenuCheckboxItem]` and `[forMenuRadioItem]`, toggles `checked` / sets the group `value`, emits `(activate)`, and **never closes** the menu — per APG, so users can flip several options before dismissing. Calling `event.preventDefault()` on `(activate)` is unnecessary for Space (the menu already stays open) but is still respected on Enter / click.
-- **Tab / Shift+Tab** — close the menu and return focus to the trigger. Inside a submenu, propagates upward and tears down the entire chain.
-- **Escape** — close the menu and return focus to the trigger. Inside a submenu, closes only that level (parent stays open).
-- **ArrowRight** (on a `[forMenuSubTrigger]`) — open the submenu and focus its first item. (LTR.)
-- **ArrowLeft** (on an item inside a submenu) — close the submenu and return focus to the `[forMenuSubTrigger]`.
-- **Typeahead** — single printable characters move focus to the first item whose text starts with the buffered string. Disabled items are skipped. By default the match is run against the item's `textContent`; pass `textValue="…"` on `[forMenuItem]`, `[forMenuCheckboxItem]`, or `[forMenuRadioItem]` to override the matched string when the DOM contains icons, kbd hints, or badges that would otherwise bleed into it.
-
-  ```html
-  <!-- Without textValue, prefix-match would compare against "3 Archive" -->
-  <button forMenuItem class="menu-item" textValue="Archive">
-    <span class="badge">3</span>
-    Archive
-  </button>
-  ```
-
 ## Submenu
 
 A nested menu is opened by a `[forMenuSubTrigger]` — itself a `menuitem` in the parent menu. The `[forMenuSub]` root owns the submenu's open state, item collection, and dismissible layer.
@@ -286,6 +264,28 @@ Outputs match the other trigger-anchored overlays: `(escapeKeyDown)`, `(pointerD
 | `[forMenuSubTrigger]`                      | `data-state`       | `open` \| `closed`         |
 | `[forMenuSubTrigger]`                      | `data-disabled`    | present \| absent          |
 | `[forMenuSeparator]`                       | `data-orientation` | `horizontal` \| `vertical` |
+
+## Keyboard
+
+- **ArrowDown / ArrowUp** — move focus to the next / previous enabled item, wrapping by default.
+- **Home / End** — jump to first / last enabled item.
+- **Enter / click** — activate the focused item via native `<button>` semantics. Closes the menu unless the consumer calls `event.preventDefault()` on `(activate)`.
+- **Space** — activates the focused item:
+  - On a plain `[forMenuItem]`, behaves like Enter / click (closes the menu).
+  - On `[forMenuCheckboxItem]` and `[forMenuRadioItem]`, toggles `checked` / sets the group `value`, emits `(activate)`, and **never closes** the menu — per APG, so users can flip several options before dismissing. Calling `event.preventDefault()` on `(activate)` is unnecessary for Space (the menu already stays open) but is still respected on Enter / click.
+- **Tab / Shift+Tab** — close the menu and return focus to the trigger. Inside a submenu, propagates upward and tears down the entire chain.
+- **Escape** — close the menu and return focus to the trigger. Inside a submenu, closes only that level (parent stays open).
+- **ArrowRight** (on a `[forMenuSubTrigger]`) — open the submenu and focus its first item. (LTR.)
+- **ArrowLeft** (on an item inside a submenu) — close the submenu and return focus to the `[forMenuSubTrigger]`.
+- **Typeahead** — single printable characters move focus to the first item whose text starts with the buffered string. Disabled items are skipped. By default the match is run against the item's `textContent`; pass `textValue="…"` on `[forMenuItem]`, `[forMenuCheckboxItem]`, or `[forMenuRadioItem]` to override the matched string when the DOM contains icons, kbd hints, or badges that would otherwise bleed into it.
+
+  ```html
+  <!-- Without textValue, prefix-match would compare against "3 Archive" -->
+  <button forMenuItem class="menu-item" textValue="Archive">
+    <span class="badge">3</span>
+    Archive
+  </button>
+  ```
 
 ## Accessibility
 

@@ -211,19 +211,6 @@ For an **instant, unconditional** open or close that ignores the delays and both
 - **Tab** away → closes after `closeDelay`.
 - **Escape** while open → closes immediately, regardless of `closeDelay`.
 
-## Behavior notes
-
-- **Activating the trigger dismisses the tooltip.** A press (`pointerdown`) on the trigger closes an open tooltip immediately — the user is acting on the control, not asking for its description, so the bubble shouldn't cover the result of the click. This mirrors Radix and Base UI. The focus the same press induces does **not** reopen it (see below); the tooltip stays dismissed until the pointer leaves and re-enters, or the trigger is focused again from the keyboard. To keep the tooltip open across a click, drive `[(open)]` yourself.
-- **Only keyboard focus opens via the focus path.** Open-on-focus fires only when focus arrives **without** a preceding pointer interaction — i.e. a real keyboard `Tab`. A mouse, pen, or touch press that focuses the trigger never opens (or reopens) the tooltip, because hover already covers pointer users. This generalises the original touch-only guard to every pointer type.
-- **Portal**: the content element is moved to `document.body` on first render. Any styles you scope to the wrapper won't reach it — style the bubble globally or via a class on the content directive itself.
-- **`pointer-events: none`** is applied only when `hoverableContent` is set to `false`. By default (`hoverableContent` is `true`) the pointer may rest over the bubble (WCAG 2.1 SC 1.4.13 "Hoverable"), and clicks land on the bubble rather than passing through to whatever is behind. Set `hoverableContent` to `false` (per-instance or via `provideForTooltipDefaults`) to restore the pass-through behavior, and keep the content non-interactive per APG regardless.
-- **Keep content non-interactive**. Tooltips don't trap focus and won't survive a click into them — APG explicitly forbids interactive children.
-- **`hoverableContent`** lets the pointer move into the bubble without dismissing it — useful for descriptive text the user may want to select. It drops the default `pointer-events: none` while open and bridges the trigger / content gap with a pointer-grace "safe triangle" so a slow diagonal traversal doesn't close the tooltip. The content must still stay non-interactive per APG.
-- **`showOnOverflow`** gates the tooltip on the trigger being truncated (`scrollWidth > clientWidth`) — the common pattern for ellipsized labels, where the tooltip adds nothing once the full text already fits. When the trigger's text fits, hover and focus are ignored.
-- **Closes on scroll.** When an ancestor scroll container moves content under a stationary cursor (wheel / trackpad scrolling a virtualized or overflow-scroll list), an open tooltip closes immediately and hover opens stay suppressed for a short window while the scroll is in flight — so tooltips on rows sliding past the pointer don't linger or flicker open. This is always on; a genuine pointer move after scrolling settles opens the tooltip normally again.
-- **Touch**: APG flags tooltips as problematic on touch devices (no hover, no separate focus, no obvious dismiss). The trigger filters touch pointers out of both the hover-open and focus-open paths, so a tap does **not** open the tooltip — only mouse hover and keyboard focus do. For touch-first UI where the descriptive content must be reachable on tap, consider a Popover.
-- **Arrow offset**: `[forTooltipArrow]` writes `position: absolute`, the floating-ui-resolved `left` / `top`, and `var(--for-floating-arrow-offset, 0px)` on the side opposite the bubble. Set `--for-floating-arrow-offset` on the arrow (or any ancestor) to control how far the arrow pokes out — typically a negative `px` value such as `-4px`. Defaults to `0px`.
-
 ## Accessibility
 
 Implements the [WAI-ARIA Tooltip pattern](https://www.w3.org/WAI/ARIA/apg/patterns/tooltip/).
@@ -306,6 +293,19 @@ export class MyTooltipButton {
 ```
 
 While `disabled` is `true`, hover and focus are ignored and an already-open tooltip force-closes — no empty bubble, no stale `aria-describedby`.
+
+## Behavior notes
+
+- **Activating the trigger dismisses the tooltip.** A press (`pointerdown`) on the trigger closes an open tooltip immediately — the user is acting on the control, not asking for its description, so the bubble shouldn't cover the result of the click. This mirrors Radix and Base UI. The focus the same press induces does **not** reopen it (see below); the tooltip stays dismissed until the pointer leaves and re-enters, or the trigger is focused again from the keyboard. To keep the tooltip open across a click, drive `[(open)]` yourself.
+- **Only keyboard focus opens via the focus path.** Open-on-focus fires only when focus arrives **without** a preceding pointer interaction — i.e. a real keyboard `Tab`. A mouse, pen, or touch press that focuses the trigger never opens (or reopens) the tooltip, because hover already covers pointer users. This generalises the original touch-only guard to every pointer type.
+- **Portal**: the content element is moved to `document.body` on first render. Any styles you scope to the wrapper won't reach it — style the bubble globally or via a class on the content directive itself.
+- **`pointer-events: none`** is applied only when `hoverableContent` is set to `false`. By default (`hoverableContent` is `true`) the pointer may rest over the bubble (WCAG 2.1 SC 1.4.13 "Hoverable"), and clicks land on the bubble rather than passing through to whatever is behind. Set `hoverableContent` to `false` (per-instance or via `provideForTooltipDefaults`) to restore the pass-through behavior, and keep the content non-interactive per APG regardless.
+- **Keep content non-interactive**. Tooltips don't trap focus and won't survive a click into them — APG explicitly forbids interactive children.
+- **`hoverableContent`** lets the pointer move into the bubble without dismissing it — useful for descriptive text the user may want to select. It drops the default `pointer-events: none` while open and bridges the trigger / content gap with a pointer-grace "safe triangle" so a slow diagonal traversal doesn't close the tooltip. The content must still stay non-interactive per APG.
+- **`showOnOverflow`** gates the tooltip on the trigger being truncated (`scrollWidth > clientWidth`) — the common pattern for ellipsized labels, where the tooltip adds nothing once the full text already fits. When the trigger's text fits, hover and focus are ignored.
+- **Closes on scroll.** When an ancestor scroll container moves content under a stationary cursor (wheel / trackpad scrolling a virtualized or overflow-scroll list), an open tooltip closes immediately and hover opens stay suppressed for a short window while the scroll is in flight — so tooltips on rows sliding past the pointer don't linger or flicker open. This is always on; a genuine pointer move after scrolling settles opens the tooltip normally again.
+- **Touch**: APG flags tooltips as problematic on touch devices (no hover, no separate focus, no obvious dismiss). The trigger filters touch pointers out of both the hover-open and focus-open paths, so a tap does **not** open the tooltip — only mouse hover and keyboard focus do. For touch-first UI where the descriptive content must be reachable on tap, consider a Popover.
+- **Arrow offset**: `[forTooltipArrow]` writes `position: absolute`, the floating-ui-resolved `left` / `top`, and `var(--for-floating-arrow-offset, 0px)` on the side opposite the bubble. Set `--for-floating-arrow-offset` on the arrow (or any ancestor) to control how far the arrow pokes out — typically a negative `px` value such as `-4px`. Defaults to `0px`.
 
 ## Wrapping in a design system
 

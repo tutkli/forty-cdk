@@ -3742,12 +3742,6 @@ exports[`document structure > projects/forty-cdk/hover-card/README.md declares t
   },
   {
     "headings": [],
-    "slug": "behavior-notes",
-    "tables": [],
-    "title": "Behavior notes",
-  },
-  {
-    "headings": [],
     "slug": "accessibility",
     "tables": [],
     "title": "Accessibility",
@@ -3778,6 +3772,12 @@ exports[`document structure > projects/forty-cdk/hover-card/README.md declares t
       },
     ],
     "title": "Styling",
+  },
+  {
+    "headings": [],
+    "slug": "behavior-notes",
+    "tables": [],
+    "title": "Behavior notes",
   },
   {
     "headings": [],
@@ -4171,12 +4171,6 @@ exports[`document structure > projects/forty-cdk/menu/README.md declares the sec
     "title": "Item activation contract",
   },
   {
-    "headings": [],
-    "slug": "keyboard",
-    "tables": [],
-    "title": "Keyboard",
-  },
-  {
     "headings": [
       {
         "depth": 3,
@@ -4236,6 +4230,12 @@ exports[`document structure > projects/forty-cdk/menu/README.md declares the sec
       },
     ],
     "title": "API",
+  },
+  {
+    "headings": [],
+    "slug": "keyboard",
+    "tables": [],
+    "title": "Keyboard",
   },
   {
     "headings": [],
@@ -5524,12 +5524,6 @@ exports[`document structure > projects/forty-cdk/scroll-area/README.md declares 
   },
   {
     "headings": [],
-    "slug": "behavior-notes",
-    "tables": [],
-    "title": "Behavior notes",
-  },
-  {
-    "headings": [],
     "slug": "accessibility",
     "tables": [],
     "title": "Accessibility",
@@ -5539,6 +5533,12 @@ exports[`document structure > projects/forty-cdk/scroll-area/README.md declares 
     "slug": "styling",
     "tables": [],
     "title": "Styling",
+  },
+  {
+    "headings": [],
+    "slug": "behavior-notes",
+    "tables": [],
+    "title": "Behavior notes",
   },
   {
     "headings": [],
@@ -6738,12 +6738,6 @@ exports[`document structure > projects/forty-cdk/table-virtualization/README.md 
     "title": "Infinite scroll",
   },
   {
-    "headings": [],
-    "slug": "accessibility",
-    "tables": [],
-    "title": "Accessibility",
-  },
-  {
     "headings": [
       {
         "depth": 3,
@@ -6763,6 +6757,12 @@ exports[`document structure > projects/forty-cdk/table-virtualization/README.md 
       },
     ],
     "title": "API",
+  },
+  {
+    "headings": [],
+    "slug": "accessibility",
+    "tables": [],
+    "title": "Accessibility",
   },
   {
     "headings": [],
@@ -7483,15 +7483,15 @@ exports[`document structure > projects/forty-cdk/toggle/README.md declares the s
   },
   {
     "headings": [],
-    "slug": "behavior-notes",
-    "tables": [],
-    "title": "Behavior notes",
-  },
-  {
-    "headings": [],
     "slug": "styling",
     "tables": [],
     "title": "Styling",
+  },
+  {
+    "headings": [],
+    "slug": "behavior-notes",
+    "tables": [],
+    "title": "Behavior notes",
   },
   {
     "headings": [],
@@ -7750,12 +7750,6 @@ exports[`document structure > projects/forty-cdk/tooltip/README.md declares the 
   },
   {
     "headings": [],
-    "slug": "behavior-notes",
-    "tables": [],
-    "title": "Behavior notes",
-  },
-  {
-    "headings": [],
     "slug": "accessibility",
     "tables": [],
     "title": "Accessibility",
@@ -7786,6 +7780,12 @@ exports[`document structure > projects/forty-cdk/tooltip/README.md declares the 
       },
     ],
     "title": "Styling",
+  },
+  {
+    "headings": [],
+    "slug": "behavior-notes",
+    "tables": [],
+    "title": "Behavior notes",
   },
   {
     "headings": [],
@@ -8236,12 +8236,6 @@ exports[`document structure > projects/forty-cdk/virtualization/README.md declar
     "title": "Drag-reorder",
   },
   {
-    "headings": [],
-    "slug": "accessibility",
-    "tables": [],
-    "title": "Accessibility",
-  },
-  {
     "headings": [
       {
         "depth": 3,
@@ -8274,6 +8268,12 @@ exports[`document structure > projects/forty-cdk/virtualization/README.md declar
       },
     ],
     "title": "API",
+  },
+  {
+    "headings": [],
+    "slug": "accessibility",
+    "tables": [],
+    "title": "Accessibility",
   },
   {
     "headings": [

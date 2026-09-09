@@ -29,6 +29,9 @@ export declare const DOC_GROUPS: ReadonlyMap<string, string | null>;
 
 export declare const ARCHETYPES: ReadonlyMap<string, DocArchetype>;
 
+/** Every heading the page template names, in the order it gives them. */
+export declare const TEMPLATE_ORDER: readonly string[];
+
 export declare const CORE_SECTIONS: readonly string[];
 
 export declare const CANONICAL_SECTIONS: readonly string[];
@@ -64,6 +67,10 @@ export declare function requiredSections(meta: DocMeta, slug: string): readonly 
 export declare function checkSections(documents: readonly DocDocument[]): readonly DocMetaProblem[];
 
 export declare function checkExemptions(
+  documents: readonly DocDocument[],
+): readonly DocMetaProblem[];
+
+export declare function checkSectionOrder(
   documents: readonly DocDocument[],
 ): readonly DocMetaProblem[];
 
