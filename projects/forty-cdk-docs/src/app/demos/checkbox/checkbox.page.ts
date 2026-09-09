@@ -24,33 +24,33 @@ import { DOC } from '../../../generated/docs/primitives/checkbox.generated';
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="checkbox" [doc]="doc">
-      <playground-demo hero sourcePath="checkbox/examples/default.example.ts">
+      <demo-layout hero sourcePath="checkbox/examples/default.example.ts">
         <app-checkbox-default-example />
-      </playground-demo>
+      </demo-layout>
 
-      <playground-demo
+      <demo-layout
         title="Tri-state (select all)"
         subtitle="A parent checkbox reflects <code>indeterminate</code> when only some children are selected. Activating it selects or clears them all at once, matching native inputs."
         sourcePath="checkbox/examples/select-all.example.ts"
       >
         <app-checkbox-select-all-example />
-      </playground-demo>
+      </demo-layout>
 
-      <playground-demo
+      <demo-layout
         title="Disabled"
         subtitle="<code>disabled</code> keeps the checkbox focusable and announced (per APG) but makes click a no-op, and reflects <code>data-disabled</code>."
         sourcePath="checkbox/examples/disabled.example.ts"
       >
         <app-checkbox-disabled-example />
-      </playground-demo>
+      </demo-layout>
 
-      <playground-demo
+      <demo-layout
         title="Signal Forms"
         subtitle="<code>forCheckbox</code> implements <code>FormCheckboxControl</code>, so a single <code>[formField]</code> binding wires the binary <code>checked</code> value into the form and pulls validity back out. The box is required: blur it unchecked and it reflects <code>data-invalid</code> / <code>data-touched</code>."
         sourcePath="checkbox/examples/form-field.example.ts"
       >
         <app-checkbox-form-field-example />
-      </playground-demo>
+      </demo-layout>
     </primitive-page>
   `,
 })

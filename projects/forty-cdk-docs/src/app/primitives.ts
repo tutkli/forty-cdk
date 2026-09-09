@@ -1,15 +1,15 @@
 import { PRIMITIVES, UTILITIES } from '../generated/primitives.generated';
 
-export interface PlaygroundPrimitive {
+export interface DocsPrimitive {
   readonly slug: string;
   readonly title: string;
   readonly description: string;
   readonly apgUrl?: string;
 }
 
-export interface PlaygroundGroup {
+export interface DocsGroup {
   readonly label: string;
-  readonly primitives: readonly PlaygroundPrimitive[];
+  readonly primitives: readonly DocsPrimitive[];
 }
 
 /**
@@ -21,17 +21,17 @@ export interface PlaygroundGroup {
  * entry point to the site is therefore a frontmatter block, and there is no
  * second copy of a title or a description to fall out of step.
  */
-export const PLAYGROUND_GROUPS: readonly PlaygroundGroup[] = [
+export const DOCS_GROUPS: readonly DocsGroup[] = [
   { label: 'Primitives', primitives: PRIMITIVES },
   { label: 'Utilities', primitives: UTILITIES },
 ];
 
-export function primitiveBySlug(slug: string): PlaygroundPrimitive {
-  for (const group of PLAYGROUND_GROUPS) {
+export function primitiveBySlug(slug: string): DocsPrimitive {
+  for (const group of DOCS_GROUPS) {
     const found = group.primitives.find((primitive) => primitive.slug === slug);
     if (found) {
       return found;
     }
   }
-  throw new Error(`[playground] unknown primitive slug: ${slug}`);
+  throw new Error(`[docs] unknown primitive slug: ${slug}`);
 }

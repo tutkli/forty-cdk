@@ -107,9 +107,9 @@ function registryModule(documents) {
       .sort(byTitle);
 
   return (
-    `import type { PlaygroundPrimitive } from '../app/primitives';\n\n` +
-    `export const PRIMITIVES: readonly PlaygroundPrimitive[] = ${serialize(of('primitives'))};\n\n` +
-    `export const UTILITIES: readonly PlaygroundPrimitive[] = ${serialize(of('utilities'))};\n`
+    `import type { DocsPrimitive } from '../app/primitives';\n\n` +
+    `export const PRIMITIVES: readonly DocsPrimitive[] = ${serialize(of('primitives'))};\n\n` +
+    `export const UTILITIES: readonly DocsPrimitive[] = ${serialize(of('utilities'))};\n`
   );
 }
 

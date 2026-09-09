@@ -22,25 +22,25 @@ import { DOC } from '../../../generated/docs/primitives/tabs.generated';
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="tabs" [doc]="doc">
-      <playground-demo hero sourcePath="tabs/examples/default.example.ts">
+      <demo-layout hero sourcePath="tabs/examples/default.example.ts">
         <app-tabs-default-example />
-      </playground-demo>
+      </demo-layout>
 
-      <playground-demo
+      <demo-layout
         title="Manual activation"
         subtitle="<code>activationMode='manual'</code> lets the arrow keys move focus without selecting; the user presses <kbd>Space</kbd> or <kbd>Enter</kbd> to activate — better when panel content is expensive."
         sourcePath="tabs/examples/manual-activation.example.ts"
       >
         <app-tabs-manual-activation-example />
-      </playground-demo>
+      </demo-layout>
 
-      <playground-demo
+      <demo-layout
         title="Vertical"
         subtitle="<code>orientation='vertical'</code> stacks the tablist beside the panel and switches roving navigation to <kbd>ArrowUp</kbd> / <kbd>ArrowDown</kbd>. It is reflected as <code>data-orientation</code> for styling."
         sourcePath="tabs/examples/vertical.example.ts"
       >
         <app-tabs-vertical-example />
-      </playground-demo>
+      </demo-layout>
     </primitive-page>
   `,
 })

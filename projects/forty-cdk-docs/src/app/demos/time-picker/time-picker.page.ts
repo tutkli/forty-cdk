@@ -22,25 +22,25 @@ import { DOC } from '../../../generated/docs/primitives/time-picker.generated';
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="time-picker" [doc]="doc">
-      <playground-demo hero sourcePath="time-picker/examples/time.example.ts">
+      <demo-layout hero sourcePath="time-picker/examples/time.example.ts">
         <app-time-picker-time-example />
-      </playground-demo>
+      </demo-layout>
 
-      <playground-demo
+      <demo-layout
         title="Disabled"
         subtitle="<code>disabled</code> removes the trigger from the tab order and reflects <code>data-disabled</code>. The listbox can no longer be opened."
         sourcePath="time-picker/examples/disabled.example.ts"
       >
         <app-time-picker-disabled-example />
-      </playground-demo>
+      </demo-layout>
 
-      <playground-demo
+      <demo-layout
         title="Bounded slots"
         subtitle="<code>minTime</code> and <code>maxTime</code> fence the selectable time-of-day. Slots outside the window are not removed — they stay in the listbox as disabled options (<code>data-disabled</code>), skipped by keyboard navigation, so the full timeline stays visible. Open the listbox and scroll past <code>17:00</code> to see the late slots dimmed out."
         sourcePath="time-picker/examples/bounds.example.ts"
       >
         <app-time-picker-bounds-example />
-      </playground-demo>
+      </demo-layout>
     </primitive-page>
   `,
 })

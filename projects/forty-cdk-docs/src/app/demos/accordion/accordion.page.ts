@@ -24,33 +24,33 @@ import { DOC } from '../../../generated/docs/primitives/accordion.generated';
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="accordion" [doc]="doc">
-      <playground-demo hero sourcePath="accordion/examples/default.example.ts">
+      <demo-layout hero sourcePath="accordion/examples/default.example.ts">
         <app-accordion-default-example />
-      </playground-demo>
+      </demo-layout>
 
-      <playground-demo
+      <demo-layout
         title="Multiple"
         subtitle="<code>multiple</code> lets several sections stay open at once, so <code>value</code> holds an array of every open item."
         sourcePath="accordion/examples/multiple.example.ts"
       >
         <app-accordion-multiple-example />
-      </playground-demo>
+      </demo-layout>
 
-      <playground-demo
+      <demo-layout
         title="Horizontal"
         subtitle="<code>orientation='horizontal'</code> lays the sections out in a row and switches roving navigation to <kbd>ArrowLeft</kbd> / <kbd>ArrowRight</kbd>. It is reflected as <code>data-orientation</code> for styling."
         sourcePath="accordion/examples/horizontal.example.ts"
       >
         <app-accordion-horizontal-example />
-      </playground-demo>
+      </demo-layout>
 
-      <playground-demo
+      <demo-layout
         title="Disabled item"
         subtitle="A disabled item cannot be toggled and is skipped by the arrow keys, while staying in the DOM for screen readers."
         sourcePath="accordion/examples/disabled-item.example.ts"
       >
         <app-accordion-disabled-item-example />
-      </playground-demo>
+      </demo-layout>
     </primitive-page>
   `,
 })

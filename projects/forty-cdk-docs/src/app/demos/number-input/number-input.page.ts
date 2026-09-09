@@ -22,25 +22,25 @@ import { DOC } from '../../../generated/docs/primitives/number-input.generated';
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="number-input" [doc]="doc">
-      <playground-demo hero sourcePath="number-input/examples/default.example.ts">
+      <demo-layout hero sourcePath="number-input/examples/default.example.ts">
         <app-number-input-default-example />
-      </playground-demo>
+      </demo-layout>
 
-      <playground-demo
+      <demo-layout
         title="Disabled"
         subtitle="<code>disabled</code> reflects <code>data-disabled</code> on the spinbutton and both stepper buttons, removes the control from the tab order, and ignores the keyboard."
         sourcePath="number-input/examples/disabled.example.ts"
       >
         <app-number-input-disabled-example />
-      </playground-demo>
+      </demo-layout>
 
-      <playground-demo
+      <demo-layout
         title="Formatting & precision"
         subtitle="<code>formatOptions</code> feeds an <code>Intl.NumberFormat</code> that renders the displayed text and <code>aria-valuetext</code>, while <code>value()</code> stays a raw number. The <code>locale</code> drives both formatting and parsing; a hidden input submits the raw number, not the formatted string."
         sourcePath="number-input/examples/formatting.example.ts"
       >
         <app-number-input-formatting-example />
-      </playground-demo>
+      </demo-layout>
     </primitive-page>
   `,
 })

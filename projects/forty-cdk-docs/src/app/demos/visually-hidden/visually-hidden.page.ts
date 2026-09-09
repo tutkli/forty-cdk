@@ -20,17 +20,17 @@ import { SOURCES } from './sources.generated';
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="visually-hidden" [doc]="doc">
-      <playground-demo hero sourcePath="visually-hidden/examples/default.example.ts">
+      <demo-layout hero sourcePath="visually-hidden/examples/default.example.ts">
         <app-visually-hidden-default-example />
-      </playground-demo>
+      </demo-layout>
 
-      <playground-demo
+      <demo-layout
         title="Announcing an event"
         subtitle="An event with no visible text of its own goes through <code>LiveAnnouncer</code> instead — there is no element to hide, so there is nothing for <code>[forVisuallyHidden]</code> to mark. The two politeness levels are independent regions, so an <code>assertive</code> message never cancels a <code>polite</code> one in flight."
         sourcePath="visually-hidden/examples/announcer.example.ts"
       >
         <app-visually-hidden-announcer-example />
-      </playground-demo>
+      </demo-layout>
     </primitive-page>
   `,
 })

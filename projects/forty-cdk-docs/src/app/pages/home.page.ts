@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ForSwitch } from 'forty-cdk/switch';
 
-import { PLAYGROUND_GROUPS } from '../primitives';
+import { DOCS_GROUPS } from '../primitives';
 import { GITHUB_REPO } from '../ui/github';
 
 interface Trait {
@@ -356,12 +356,12 @@ export class HomePage {
   protected readonly repo = GITHUB_REPO;
   protected readonly enabled = signal(true);
 
-  protected readonly primitiveCount = PLAYGROUND_GROUPS.reduce(
+  protected readonly primitiveCount = DOCS_GROUPS.reduce(
     (total, group) => total + group.primitives.length,
     0,
   );
 
-  protected readonly firstPrimitive = PLAYGROUND_GROUPS[0]?.primitives[0]?.slug ?? 'accordion';
+  protected readonly firstPrimitive = DOCS_GROUPS[0]?.primitives[0]?.slug ?? 'accordion';
 
   protected readonly traits: readonly Trait[] = [
     {

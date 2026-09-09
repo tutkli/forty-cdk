@@ -15,17 +15,17 @@ import { DOC } from '../../../generated/docs/primitives/button.generated';
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="button" [doc]="doc">
-      <playground-demo hero sourcePath="button/examples/default.example.ts">
+      <demo-layout hero sourcePath="button/examples/default.example.ts">
         <app-button-default-example />
-      </playground-demo>
+      </demo-layout>
 
-      <playground-demo
+      <demo-layout
         title="Disabled stays focusable"
         subtitle="Per the APG, a disabled button must stay reachable so assistive tech can announce it. <code>forButton</code> never sets the native <code>disabled</code> attribute — it reflects <code>aria-disabled='true'</code> + <code>data-disabled</code> and makes activation a no-op. The native disabled button is skipped entirely."
         sourcePath="button/examples/disabled.example.ts"
       >
         <app-button-disabled-example />
-      </playground-demo>
+      </demo-layout>
     </primitive-page>
   `,
 })

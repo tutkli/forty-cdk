@@ -1,7 +1,7 @@
 import { renderDocument } from '../../../../../scripts/docs/doc-render.mjs';
 import { searchTextOf } from '../../../../../scripts/docs/doc-search.mjs';
 import { DOC_INDEX } from '../../generated/doc-index.generated';
-import { PLAYGROUND_GROUPS } from '../primitives';
+import { DOCS_GROUPS } from '../primitives';
 import { GUIDE_INDEX } from './guides';
 import {
   buildSearchEntries,
@@ -25,7 +25,7 @@ const ROUTES = new Map<string, string>();
  * against the real index rather than a fixture: what matters is that a reader
  * of *this* corpus finds these sections, which a fixture cannot claim.
  */
-const ENTRIES = buildSearchEntries(PLAYGROUND_GROUPS, DOC_INDEX, GUIDE_INDEX, SITE_PAGE_INDEX);
+const ENTRIES = buildSearchEntries(DOCS_GROUPS, DOC_INDEX, GUIDE_INDEX, SITE_PAGE_INDEX);
 
 function textOf(parts: readonly SearchTextPart[]): string {
   return parts.map((part) => part.text).join('');

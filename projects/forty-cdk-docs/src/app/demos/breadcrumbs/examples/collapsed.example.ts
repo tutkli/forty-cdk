@@ -173,8 +173,8 @@ export class BreadcrumbsCollapsedExample {
     { label: 'Workspace', href: '/workspace' },
     { label: 'Projects', href: '/workspace/projects' },
     { label: 'forty-cdk', href: '/workspace/projects/forty-cdk' },
-    { label: 'Playground', href: '/workspace/projects/forty-cdk/playground' },
-    { label: 'Breadcrumbs', href: '/workspace/projects/forty-cdk/playground/breadcrumbs' },
+    { label: 'Docs', href: '/workspace/projects/forty-cdk/docs' },
+    { label: 'Breadcrumbs', href: '/workspace/projects/forty-cdk/docs/breadcrumbs' },
   ]);
 
   protected readonly visible = computed<readonly Crumb[]>(() => {

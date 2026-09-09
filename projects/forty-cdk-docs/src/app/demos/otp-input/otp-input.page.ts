@@ -15,17 +15,17 @@ import { DOC } from '../../../generated/docs/primitives/otp-input.generated';
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="otp-input" [doc]="doc">
-      <playground-demo hero sourcePath="otp-input/examples/default.example.ts">
+      <demo-layout hero sourcePath="otp-input/examples/default.example.ts">
         <app-otp-default-example />
-      </playground-demo>
+      </demo-layout>
 
-      <playground-demo
+      <demo-layout
         title="Masked PIN with paste transform"
         subtitle="<code>mask</code> obscures the slots while <code>value()</code> stays raw, and a <code>pasteTransformer</code> strips spaces and dashes before filtering — so pasting “12 34 56” fills cleanly. <code>type</code> still rejects anything outside the numeric character class as you type."
         sourcePath="otp-input/examples/masked.example.ts"
       >
         <app-otp-masked-example />
-      </playground-demo>
+      </demo-layout>
     </primitive-page>
   `,
 })

@@ -14,9 +14,9 @@ import { DOC } from '../../../generated/docs/primitives/hover-card.generated';
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="hover-card" [doc]="doc">
-      <playground-demo hero sourcePath="hover-card/examples/default.example.ts">
+      <demo-layout hero sourcePath="hover-card/examples/default.example.ts">
         <app-hover-card-default-example />
-      </playground-demo>
+      </demo-layout>
     </primitive-page>
   `,
 })
