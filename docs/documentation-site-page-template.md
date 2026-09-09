@@ -96,7 +96,7 @@ Every `##` section is classified, and the ring reaches the page on `DocPageSecti
 | Ring        | Sections                                                                                                    | Rule                                                              |
 | ----------- | ----------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
 | `core`      | Anatomy, API                                                                                                | Required of every archetype that has DOM at all                   |
-| `canonical` | When to choose, Examples, Programmatic API, Keyboard, Accessibility, Styling, SSR, Wrapping, Behavior notes | Required per archetype, by the table below                        |
+| `canonical` | When to choose, Examples, Programmatic API, Keyboard, Accessibility, Styling, SSR, Behavior notes, Wrapping | Required per archetype, by the table below                        |
 | `specific`  | The long tail — _Snap points_, _Mega-menu_, _Date adapter_ …                                                | Free title and content; grouped in the TOC rather than normalised |
 
 The tail is deliberate. 102 of the corpus's section titles appear exactly once, because `Select`
@@ -121,10 +121,10 @@ fails the build unless it carries a written exemption there.
 | 8     | `## Accessibility`               | `##`  | all except `headless-utility`          | "Accessibility notes", "A11y"                                               |
 | 9     | `## Styling`                     | `##`  | all except `headless-utility`          | "Styling forty-cdk"                                                         |
 | 10    | `## SSR`                         | `##`  | any primitive with server-side caveats | "Server-side rendering"                                                     |
-| 11    | `## Wrapping in a design system` | `##`  | `form-control`                         | "Wrapping", "Design system usage"                                           |
-| 12    | `## Behavior notes`              | `##`  | optional (complex primitives)          | "Behavior", "Notes"                                                         |
+| 11    | `## Behavior notes`              | `##`  | optional (complex primitives)          | "Behavior", "Notes"                                                         |
+| 12    | `## Wrapping in a design system` | `##`  | `form-control`                         | "Wrapping", "Design system usage"                                           |
 
-Rows 2, 10 and 12 are canonical without being required: a primitive with nothing SSR-specific to
+Rows 2, 10 and 11 are canonical without being required: a primitive with nothing SSR-specific to
 say should not be made to write a section about it. Row 7 is required of `overlay` and expected of
 anything else that handles keys, which is a judgement no build can make — a keyboard-handling
 primitive that omits it is caught in review, not by the gate.
@@ -197,11 +197,13 @@ primitive that omits it is caught in review, not by the gate.
   `matchMedia`, a `document` access behind `isPlatformBrowser`, "every query reads false on the
   server"). Skip for primitives with nothing SSR-specific to say.
 
-- **`## Wrapping in a design system`** — For `form-control` primitives: the `hostDirectives`
-  name-tuple pattern and subclassing, linking [Wrapping form primitives](wrapping-form-primitives.md).
-
 - **`## Behavior notes`** — Escape hatch for complex primitives (Dialog's mount-equals-open, portal,
   scroll-lock, inert-siblings). Use sparingly; prefer folding detail into the relevant section above.
+  It closes a page only when the document carries no `## Wrapping in a design system`.
+
+- **`## Wrapping in a design system`** — For `form-control` primitives: the `hostDirectives`
+  name-tuple pattern and subclassing, linking [Wrapping form primitives](wrapping-form-primitives.md).
+  The closing section: "now go wrap this in your design system" is the last thing a page says.
 
 ## Heading rules (so the renderer can split deterministically)
 
@@ -295,7 +297,9 @@ this list is the set of primitives it actually imports.
 
 ## Per-archetype required-section checklist
 
-Use this when auditing a README.
+Use this when auditing a README. Each line is a set rather than a sequence: a document declaring
+two archetypes owes the union, written in the order of the table above — which puts `## Behavior notes`
+before `## Wrapping in a design system`.
 
 **`composable-ui`** — intro(+APG) · Anatomy · Examples · API(+data-attributes) · Keyboard† · Accessibility · Styling
 **`overlay`** — all of the above · **Programmatic API** · Keyboard · (Behavior notes if non-trivial)
