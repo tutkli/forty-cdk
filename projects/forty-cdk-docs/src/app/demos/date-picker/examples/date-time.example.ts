@@ -68,13 +68,7 @@ import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/international
 
       @if (picker.open()) {
         <div forDatePickerContent class="dp-date-time-popover" animate.enter="dp-date-time-pop-in">
-          <div
-            forCalendar
-            class="dp-date-time-cal"
-            [value]="picker.value()"
-            [min]="min"
-            [max]="max"
-          >
+          <div forCalendar [value]="picker.value()" [min]="min" [max]="max">
             <header class="dp-date-time-head">
               <button forCalendarPrevButton class="dp-date-time-nav" [ariaLabel]="'Previous month'">
                 ‹
@@ -157,11 +151,8 @@ import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/international
       cursor: pointer;
     }
 
-    .dp-date-time-trigger:hover:not([disabled]) {
-      background: var(--pg-surface-2);
-    }
-
-    .dp-date-time-value[data-placeholder] {
+    .dp-date-time-value[data-placeholder],
+    .dp-date-time-seg[data-placeholder] {
       color: var(--pg-text-muted);
     }
 
@@ -187,10 +178,6 @@ import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/international
       border-radius: var(--pg-radius);
       corner-shape: squircle;
       box-shadow: var(--pg-shadow);
-    }
-
-    .dp-date-time-cal {
-      width: 100%;
     }
 
     .dp-date-time-head {
@@ -226,10 +213,6 @@ import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/international
       transition: background 0.15s ease;
     }
 
-    .dp-date-time-nav:hover:not([disabled]) {
-      background: var(--pg-surface-2);
-    }
-
     .dp-date-time-nav[disabled] {
       opacity: 0.4;
       cursor: not-allowed;
@@ -261,6 +244,8 @@ import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/international
       transition: background 0.12s ease;
     }
 
+    .dp-date-time-trigger:hover:not([disabled]),
+    .dp-date-time-nav:hover:not([disabled]),
     .dp-date-time-cell:hover:not([aria-disabled]) {
       background: var(--pg-surface-2);
     }
@@ -332,10 +317,6 @@ import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/international
       padding: 0.05rem 0.15rem;
       border-radius: 4px;
       outline: none;
-    }
-
-    .dp-date-time-seg[data-placeholder] {
-      color: var(--pg-text-muted);
     }
 
     .dp-date-time-seg[data-highlighted],
