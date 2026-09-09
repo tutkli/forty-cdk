@@ -49,7 +49,7 @@ import { repoRoot } from './lib/repo-path.mjs';
  * pasted into a conversation is nowhere at all.
  */
 
-const BROWSER = join(repoRoot, 'dist', 'forty-cdk-playground', 'browser');
+const BROWSER = join(repoRoot, 'dist', 'forty-cdk-docs', 'browser');
 
 const INDEX_FILE = 'llms.txt';
 const FULL_FILE = 'llms-full.txt';

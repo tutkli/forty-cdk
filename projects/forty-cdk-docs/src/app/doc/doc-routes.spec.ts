@@ -149,7 +149,7 @@ describe('the page a generated route loads', () => {
     const [problem] = pageProblems([{ slug: 'time-picker', source: null }]);
 
     expect(problem?.path).toBe(
-      'projects/forty-cdk-playground/src/app/demos/time-picker/time-picker.page.ts',
+      'projects/forty-cdk-docs/src/app/demos/time-picker/time-picker.page.ts',
     );
     expect(problem?.message).toContain('ships no page component to render it');
     expect(problem?.message).toContain('write TimePickerPage here');

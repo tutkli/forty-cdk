@@ -16,7 +16,7 @@ import { repoRoot } from './lib/repo-path.mjs';
  * repository.
  */
 
-const PAGES_DIR = join(repoRoot, 'projects', 'forty-cdk-playground', 'src', 'app', 'demos');
+const PAGES_DIR = join(repoRoot, 'projects', 'forty-cdk-docs', 'src', 'app', 'demos');
 
 function toPosix(path) {
   return relative(repoRoot, path).split(sep).join('/');

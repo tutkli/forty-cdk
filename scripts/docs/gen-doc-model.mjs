@@ -13,7 +13,7 @@ import { headingText, renderDocument } from './doc-render.mjs';
 import { pageFileOf, pageProblems, routesModule } from './doc-routes.mjs';
 import { searchTextOf } from './doc-search.mjs';
 
-const OUT_DIR = join(repoRoot, 'projects', 'forty-cdk-playground', 'src', 'generated');
+const OUT_DIR = join(repoRoot, 'projects', 'forty-cdk-docs', 'src', 'generated');
 const DOCS_DIR = join(OUT_DIR, 'docs');
 const MODEL_TYPES = '../../../app/doc/doc-model';
 

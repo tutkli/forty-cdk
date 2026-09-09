@@ -48,9 +48,7 @@ const specTsconfig = readJsonc(join(LIB_DIR, 'tsconfig.spec.json'));
 const harnessTsconfig = readJsonc(
   join(repoRoot, 'projects', 'forty-cdk-harness', 'tsconfig.app.json'),
 );
-const playgroundTsconfig = readJsonc(
-  join(repoRoot, 'projects', 'forty-cdk-playground', 'tsconfig.app.json'),
-);
+const docsTsconfig = readJsonc(join(repoRoot, 'projects', 'forty-cdk-docs', 'tsconfig.app.json'));
 const angularJson = JSON.parse(readFileSync(join(repoRoot, 'angular.json'), 'utf8'));
 const angularTestInclude =
   angularJson.projects?.['forty-cdk']?.architect?.test?.options?.include ?? [];
@@ -82,8 +80,8 @@ const lists = [
     found: pathKeys(harnessTsconfig),
   },
   {
-    name: 'projects/forty-cdk-playground/tsconfig.app.json → compilerOptions.paths',
-    found: pathKeys(playgroundTsconfig),
+    name: 'projects/forty-cdk-docs/tsconfig.app.json → compilerOptions.paths',
+    found: pathKeys(docsTsconfig),
   },
 ];
 

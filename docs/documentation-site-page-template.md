@@ -150,7 +150,7 @@ primitive that omits it is caught in review, not by the gate.
   runnable demos are **live components**, not fenced code blocks — they come from the primitive's
   `*.example.ts` files and the site renders each with a Preview / Code tab pair. **Action for the
   audit:** move every meaningful runnable snippet currently fenced in the README (standalone,
-  tri-state, Signal Forms, etc.) into a named `*.example.ts` under the playground demo folder, so
+  tri-state, Signal Forms, etc.) into a named `*.example.ts` under the docs-site demo folder, so
   the site shows it live with copyable source. Keep tiny illustrative fences (a 3-line CSS hook, a
   single binding) inline where a full live demo would be overkill.
 
@@ -325,7 +325,7 @@ stops the list outliving its reasons.
 
 ## Metadata: where structured fields live
 
-In the README's frontmatter, and nowhere else. `projects/forty-cdk-playground/src/app/primitives.ts`
+In the README's frontmatter, and nowhere else. `projects/forty-cdk-docs/src/app/primitives.ts`
 is generated from it: adding an entry point to the site is a frontmatter block, and there is no
 second copy of a title, a description or an APG URL to fall out of step with the document it
 describes. The README owns both its prose and its metadata; the registry is derived.

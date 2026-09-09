@@ -20,7 +20,7 @@ import { slugify } from '../../../../../scripts/lib/readme-slug.mjs';
 import { GITHUB_BLOB_BASE } from './github';
 import { Icon } from './icon';
 
-const DEMOS_SOURCE_PREFIX = 'projects/forty-cdk-playground/src/app/demos/';
+const DEMOS_SOURCE_PREFIX = 'projects/forty-cdk-docs/src/app/demos/';
 
 @Component({
   selector: 'playground-demo',

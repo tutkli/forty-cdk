@@ -12,7 +12,7 @@ import { join, relative, sep } from 'node:path';
 import { highlightCode } from './docs/doc-highlight.mjs';
 import { repoRoot } from './lib/repo-path.mjs';
 
-const DEMOS = join(repoRoot, 'projects', 'forty-cdk-playground', 'src', 'app', 'demos');
+const DEMOS = join(repoRoot, 'projects', 'forty-cdk-docs', 'src', 'app', 'demos');
 
 function walk(dir, out) {
   for (const entry of readdirSync(dir)) {

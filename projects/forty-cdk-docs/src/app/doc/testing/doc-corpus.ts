@@ -125,10 +125,11 @@ export const PAGE_DOCS: readonly DocFile[] = sitePageCorpus();
 /** All three parts, which together are every document the site renders. */
 export const SITE_DOCS: readonly DocFile[] = [...PRIMITIVE_DOCS, ...GUIDE_DOCS, ...PAGE_DOCS];
 
-const ROUTES_FILE = import.meta.glob(
-  '/projects/forty-cdk-playground/src/generated/routes.generated.ts',
-  { query: '?raw', import: 'default', eager: true },
-);
+const ROUTES_FILE = import.meta.glob('/projects/forty-cdk-docs/src/generated/routes.generated.ts', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+});
 
 /**
  * The route table the generator emitted, as text.
@@ -144,14 +145,14 @@ const ROUTES_FILE = import.meta.glob(
  * a component decorator in this file's own contents and fail it the same way.
  */
 export const GENERATED_ROUTES: string = (() => {
-  const source = ROUTES_FILE['/projects/forty-cdk-playground/src/generated/routes.generated.ts'];
+  const source = ROUTES_FILE['/projects/forty-cdk-docs/src/generated/routes.generated.ts'];
   if (source === undefined) {
     throw new Error('src/generated/routes.generated.ts was not found — run pnpm gen:doc-model');
   }
   return source;
 })();
 
-const APP_ROUTES_FILE = import.meta.glob('/projects/forty-cdk-playground/src/app/app.routes.ts', {
+const APP_ROUTES_FILE = import.meta.glob('/projects/forty-cdk-docs/src/app/app.routes.ts', {
   query: '?raw',
   import: 'default',
   eager: true,
@@ -163,7 +164,7 @@ const APP_ROUTES_FILE = import.meta.glob('/projects/forty-cdk-playground/src/app
  * components its lazy routes name.
  */
 export const APP_ROUTES: string = (() => {
-  const source = APP_ROUTES_FILE['/projects/forty-cdk-playground/src/app/app.routes.ts'];
+  const source = APP_ROUTES_FILE['/projects/forty-cdk-docs/src/app/app.routes.ts'];
   if (source === undefined) {
     throw new Error('src/app/app.routes.ts was not found');
   }

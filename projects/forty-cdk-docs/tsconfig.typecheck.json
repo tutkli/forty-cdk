@@ -2,7 +2,7 @@
   "extends": "./tsconfig.app.json",
   "compilerOptions": {
     "rootDir": "../..",
-    "outDir": "../../out-tsc/playground-typecheck",
+    "outDir": "../../out-tsc/docs-typecheck",
     "noEmit": true,
     "declaration": false
   },

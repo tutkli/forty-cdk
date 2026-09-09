@@ -266,7 +266,7 @@ describe('searching the documentation', () => {
 });
 
 describe('the index chunk', () => {
-  const SOURCE = import.meta.glob('/projects/forty-cdk-playground/src/app/doc/search-index.ts', {
+  const SOURCE = import.meta.glob('/projects/forty-cdk-docs/src/app/doc/search-index.ts', {
     query: '?raw',
     import: 'default',
     eager: true,
@@ -279,7 +279,7 @@ describe('the index chunk', () => {
    * never opens the palette.
    */
   it('is reached through a dynamic import and no static one', () => {
-    const source = SOURCE['/projects/forty-cdk-playground/src/app/doc/search-index.ts'];
+    const source = SOURCE['/projects/forty-cdk-docs/src/app/doc/search-index.ts'];
 
     expect(source).toBeDefined();
     expect(source).toContain("await import('../../generated/doc-index.generated')");

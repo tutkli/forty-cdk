@@ -4,7 +4,7 @@
   "extends": "./tsconfig.app.json",
   "compilerOptions": {
     "rootDir": "../..",
-    "outDir": "../../out-tsc/playground-spec",
+    "outDir": "../../out-tsc/docs-spec",
     "noEmit": true,
     "declaration": false,
     "types": ["vitest/globals"]

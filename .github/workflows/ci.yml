@@ -41,7 +41,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
-      # `build:docs` rather than `build:playground`: it is the same project in
+      # `build:docs` rather than `build:docs:dev`: it is the same project in
       # its *production* configuration plus the prerender and its output check,
       # so it detects everything the development build does and, additionally,
       # the SSG failures that only appear when routes are rendered without a

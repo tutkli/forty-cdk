@@ -1,7 +1,7 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "outDir": "../../out-tsc/playground",
+    "outDir": "../../out-tsc/docs",
     "types": [],
     "paths": {
       "forty-cdk/drag-drop": ["../forty-cdk/drag-drop/src/public-api.ts"],

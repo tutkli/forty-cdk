@@ -6,7 +6,7 @@ import { readErrorCodes } from './lib/error-codes.mjs';
 import { escapeHtml } from './lib/html.mjs';
 import { repoRoot } from './lib/repo-path.mjs';
 
-const BROWSER = join(repoRoot, 'dist', 'forty-cdk-playground', 'browser');
+const BROWSER = join(repoRoot, 'dist', 'forty-cdk-docs', 'browser');
 
 function fail(message) {
   console.error(`[check-prerender-output] ${message}`);

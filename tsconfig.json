@@ -246,10 +246,10 @@
       "path": "./projects/forty-cdk-harness/tsconfig.app.json"
     },
     {
-      "path": "./projects/forty-cdk-playground/tsconfig.app.json"
+      "path": "./projects/forty-cdk-docs/tsconfig.app.json"
     },
     {
-      "path": "./projects/forty-cdk-playground/tsconfig.spec.json"
+      "path": "./projects/forty-cdk-docs/tsconfig.spec.json"
     }
   ]
 }
