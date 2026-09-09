@@ -23,7 +23,7 @@ import { Icon } from './icon';
 const DEMOS_SOURCE_PREFIX = 'projects/forty-cdk-docs/src/app/demos/';
 
 @Component({
-  selector: 'playground-demo',
+  selector: 'demo-layout',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [Icon, ForTabs, ForTabsList, ForTabsTrigger, ForTabsContent],
   host: { '[id]': 'hostId()', '[class.is-hero]': 'hero()' },
@@ -281,7 +281,7 @@ export class DemoLayout {
     if (isDevMode()) {
       effect(() => {
         if (this.#sources && this.#source() === null) {
-          console.warn(`[playground-demo] Unresolved example source: ${this.fullSourcePath()}`);
+          console.warn(`[demo-layout] Unresolved example source: ${this.fullSourcePath()}`);
         }
       });
     }

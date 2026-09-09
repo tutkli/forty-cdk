@@ -3,7 +3,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
 
 import { GUIDE_INDEX } from '../doc/guides';
 import { SITE_PAGE_INDEX } from '../doc/site-pages';
-import { PLAYGROUND_GROUPS } from '../primitives';
+import { DOCS_GROUPS } from '../primitives';
 
 @Component({
   selector: 'app-nav',
@@ -104,7 +104,7 @@ import { PLAYGROUND_GROUPS } from '../primitives';
   `,
 })
 export class AppNav {
-  protected readonly groups = PLAYGROUND_GROUPS;
+  protected readonly groups = DOCS_GROUPS;
   protected readonly guideGroups = GUIDE_INDEX;
   protected readonly sitePages = SITE_PAGE_INDEX;
 

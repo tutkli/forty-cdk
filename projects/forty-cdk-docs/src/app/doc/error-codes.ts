@@ -1,4 +1,4 @@
-import { PLAYGROUND_GROUPS } from '../primitives';
+import { DOCS_GROUPS } from '../primitives';
 import { GITHUB_BLOB_BASE } from '../ui/github';
 import { ERROR_CODES } from '../../generated/error-codes.generated';
 
@@ -97,7 +97,7 @@ export function errorCodeSourceUrl(entry: ErrorCodeEntry): string {
  * therefore the normal case rather than an error.
  */
 export function publishedAreaSlug(area: string): string | null {
-  for (const group of PLAYGROUND_GROUPS) {
+  for (const group of DOCS_GROUPS) {
     if (group.primitives.some((primitive) => primitive.slug === area)) {
       return area;
     }

@@ -1,4 +1,4 @@
-import type { PlaygroundGroup } from '../primitives';
+import type { DocsGroup } from '../primitives';
 import type { DocIndexEntry, DocIndexSection } from './doc-model';
 import type { ResolvedGuideGroup } from './guides';
 import type { SitePageMeta } from './site-pages';
@@ -94,7 +94,7 @@ const SNIPPET_LEAD = 40;
  * between equally-scored entries.
  */
 export function buildSearchEntries(
-  groups: readonly PlaygroundGroup[],
+  groups: readonly DocsGroup[],
   index: readonly DocIndexEntry[],
   guideGroups: readonly ResolvedGuideGroup[],
   sitePages: readonly SitePageMeta[] = [],

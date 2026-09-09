@@ -14,9 +14,9 @@ import { DOC } from '../../../generated/docs/primitives/toolbar.generated';
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="toolbar" [doc]="doc">
-      <playground-demo hero sourcePath="toolbar/examples/default.example.ts">
+      <demo-layout hero sourcePath="toolbar/examples/default.example.ts">
         <app-toolbar-default-example />
-      </playground-demo>
+      </demo-layout>
     </primitive-page>
   `,
 })

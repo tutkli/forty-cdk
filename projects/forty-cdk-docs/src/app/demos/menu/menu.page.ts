@@ -14,9 +14,9 @@ import { DOC } from '../../../generated/docs/primitives/menu.generated';
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="menu" [doc]="doc">
-      <playground-demo hero sourcePath="menu/examples/default.example.ts">
+      <demo-layout hero sourcePath="menu/examples/default.example.ts">
         <app-menu-default-example />
-      </playground-demo>
+      </demo-layout>
     </primitive-page>
   `,
 })

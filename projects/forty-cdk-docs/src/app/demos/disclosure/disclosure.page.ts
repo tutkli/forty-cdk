@@ -15,17 +15,17 @@ import { DOC } from '../../../generated/docs/primitives/disclosure.generated';
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="disclosure" [doc]="doc">
-      <playground-demo hero sourcePath="disclosure/examples/default.example.ts">
+      <demo-layout hero sourcePath="disclosure/examples/default.example.ts">
         <app-disclosure-default-example />
-      </playground-demo>
+      </demo-layout>
 
-      <playground-demo
+      <demo-layout
         title="Disabled"
         subtitle="<code>disabled</code> drops the trigger from the tab order and blocks toggling, so the panel stays in its current state."
         sourcePath="disclosure/examples/disabled.example.ts"
       >
         <app-disclosure-disabled-example />
-      </playground-demo>
+      </demo-layout>
     </primitive-page>
   `,
 })

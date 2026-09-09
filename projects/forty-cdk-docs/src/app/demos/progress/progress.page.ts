@@ -22,25 +22,25 @@ import { DOC } from '../../../generated/docs/primitives/progress.generated';
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="progress" [doc]="doc">
-      <playground-demo hero sourcePath="progress/examples/default.example.ts">
+      <demo-layout hero sourcePath="progress/examples/default.example.ts">
         <app-progress-default-example />
-      </playground-demo>
+      </demo-layout>
 
-      <playground-demo
+      <demo-layout
         title="Indeterminate"
         subtitle="A <code>null</code> value puts the bar in indeterminate mode — <code>aria-valuenow</code> is omitted and <code>data-state</code> reflects <code>indeterminate</code>, for loading states whose duration cannot be predicted."
         sourcePath="progress/examples/indeterminate.example.ts"
       >
         <app-progress-indeterminate-example />
-      </playground-demo>
+      </demo-layout>
 
-      <playground-demo
+      <demo-layout
         title="Custom value label"
         subtitle="<code>getValueLabel</code> maps value and max to a human string used for <code>aria-valuetext</code>, so screen readers announce '84 MB of 200 MB' instead of a bare number. The same function feeds the visible caption."
         sourcePath="progress/examples/value-label.example.ts"
       >
         <app-progress-value-label-example />
-      </playground-demo>
+      </demo-layout>
     </primitive-page>
   `,
 })

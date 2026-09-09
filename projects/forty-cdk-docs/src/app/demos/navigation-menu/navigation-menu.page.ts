@@ -15,17 +15,17 @@ import { DOC } from '../../../generated/docs/primitives/navigation-menu.generate
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="navigation-menu" [doc]="doc">
-      <playground-demo hero sourcePath="navigation-menu/examples/default.example.ts">
+      <demo-layout hero sourcePath="navigation-menu/examples/default.example.ts">
         <app-navigation-menu-default-example />
-      </playground-demo>
+      </demo-layout>
 
-      <playground-demo
+      <demo-layout
         title="Vertical orientation"
         subtitle="<code>orientation='vertical'</code> stacks the triggers into a sidebar and swaps the keyboard axis: <kbd>ArrowUp</kbd> / <kbd>ArrowDown</kbd> move focus across triggers, <kbd>ArrowRight</kbd> opens the focused panel. Each panel flies out beside its trigger and the indicator becomes a vertical bar tracking the active row."
         sourcePath="navigation-menu/examples/vertical.example.ts"
       >
         <app-navigation-menu-vertical-example />
-      </playground-demo>
+      </demo-layout>
     </primitive-page>
   `,
 })

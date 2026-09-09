@@ -22,25 +22,25 @@ import { DOC } from '../../../generated/docs/primitives/field.generated';
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="field" [doc]="doc">
-      <playground-demo hero sourcePath="field/examples/default.example.ts">
+      <demo-layout hero sourcePath="field/examples/default.example.ts">
         <app-field-default-example />
-      </playground-demo>
+      </demo-layout>
 
-      <playground-demo
+      <demo-layout
         title="Disabled"
         subtitle="A disabled native control reflects <code>data-disabled</code> on the <code>[forField]</code> host, so the whole block can dim in one rule. The control stays announced as disabled to assistive tech."
         sourcePath="field/examples/disabled.example.ts"
       >
         <app-field-disabled-example />
-      </playground-demo>
+      </demo-layout>
 
-      <playground-demo
+      <demo-layout
         title="Validation with Signal Forms"
         subtitle="<code>[forFieldError]</code> reads the control's Signal Forms errors automatically — you render <code>err.messages()</code>, the field wires <code>aria-errormessage</code> and folds the id into <code>aria-describedby</code> while invalid. The <code>[forCheckbox]</code> auto-associates because it extends the shared form base. Tick then untick to surface the required error."
         sourcePath="field/examples/validation.example.ts"
       >
         <app-field-validation-example />
-      </playground-demo>
+      </demo-layout>
     </primitive-page>
   `,
 })

@@ -15,17 +15,17 @@ import { DOC } from '../../../generated/docs/primitives/avatar.generated';
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="avatar" [doc]="doc">
-      <playground-demo hero sourcePath="avatar/examples/default.example.ts">
+      <demo-layout hero sourcePath="avatar/examples/default.example.ts">
         <app-avatar-default-example />
-      </playground-demo>
+      </demo-layout>
 
-      <playground-demo
+      <demo-layout
         title="Failed load"
         subtitle="When the image errors, the directive flips <code>shouldShowFallback()</code> and the initials render in its place — an error shows the fallback at once, skipping the <code>fallbackDelayMs</code> wait."
         sourcePath="avatar/examples/fallback.example.ts"
       >
         <app-avatar-fallback-example />
-      </playground-demo>
+      </demo-layout>
     </primitive-page>
   `,
 })

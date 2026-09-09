@@ -15,17 +15,17 @@ import { DOC } from '../../../generated/docs/primitives/menubar.generated';
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="menubar" [doc]="doc">
-      <playground-demo hero sourcePath="menubar/examples/default.example.ts">
+      <demo-layout hero sourcePath="menubar/examples/default.example.ts">
         <app-menubar-default-example />
-      </playground-demo>
+      </demo-layout>
 
-      <playground-demo
+      <demo-layout
         title="Vertical & RTL"
         subtitle="The same menubar laid out as a vertical sidebar (<code>orientation='vertical'</code> makes <kbd>Up</kbd> / <kbd>Down</kbd> move between triggers) with <code>dir='rtl'</code>. RTL swaps the cross-menu arrow keys and floats each menu out of the opposite edge — the directive resolves the writing direction and positioning for you."
         sourcePath="menubar/examples/vertical-rtl.example.ts"
       >
         <app-menubar-vertical-rtl-example />
-      </playground-demo>
+      </demo-layout>
     </primitive-page>
   `,
 })

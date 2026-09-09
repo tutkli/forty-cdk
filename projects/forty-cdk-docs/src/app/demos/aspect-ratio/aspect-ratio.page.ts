@@ -15,17 +15,17 @@ import { DOC } from '../../../generated/docs/primitives/aspect-ratio.generated';
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="aspect-ratio" [doc]="doc">
-      <playground-demo hero sourcePath="aspect-ratio/examples/default.example.ts">
+      <demo-layout hero sourcePath="aspect-ratio/examples/default.example.ts">
         <app-aspect-ratio-default-example />
-      </playground-demo>
+      </demo-layout>
 
-      <playground-demo
+      <demo-layout
         title="Square (1 / 1)"
         subtitle="Set <code>ratio</code> to <code>1</code> to keep a box perfectly square at any width — handy for avatars, thumbnails, or uniform grid cards."
         sourcePath="aspect-ratio/examples/square.example.ts"
       >
         <app-aspect-ratio-square-example />
-      </playground-demo>
+      </demo-layout>
     </primitive-page>
   `,
 })

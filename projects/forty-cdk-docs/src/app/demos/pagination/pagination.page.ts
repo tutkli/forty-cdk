@@ -15,17 +15,17 @@ import { DOC } from '../../../generated/docs/primitives/pagination.generated';
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="pagination" [doc]="doc">
-      <playground-demo hero sourcePath="pagination/examples/default.example.ts">
+      <demo-layout hero sourcePath="pagination/examples/default.example.ts">
         <app-pagination-default-example />
-      </playground-demo>
+      </demo-layout>
 
-      <playground-demo
+      <demo-layout
         title="Driving a data list"
         subtitle="Pagination is headless state — derive <code>count</code> from your data, then slice the visible rows from <code>page()</code>. Changing the page re-slices the list; the <code>page</code> model is the single source of truth shared by the rows and the controls."
         sourcePath="pagination/examples/data.example.ts"
       >
         <app-pagination-data-example />
-      </playground-demo>
+      </demo-layout>
     </primitive-page>
   `,
 })
