@@ -37,7 +37,7 @@ export function pageSymbolOf(slug) {
 
 /** The repository path the route generated for `slug` resolves to. */
 export function pageFileOf(slug) {
-  return `projects/forty-cdk-playground/src/app/demos/${slug}/${slug}.page.ts`;
+  return `projects/forty-cdk-docs/src/app/demos/${slug}/${slug}.page.ts`;
 }
 
 /**

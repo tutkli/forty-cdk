@@ -32,7 +32,7 @@ jobs:
       - run: pnpm build:docs
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: dist/forty-cdk-playground/browser
+          path: dist/forty-cdk-docs/browser
 
   deploy:
     name: Deploy to GitHub Pages

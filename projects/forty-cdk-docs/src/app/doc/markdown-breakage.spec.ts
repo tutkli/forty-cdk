@@ -37,15 +37,16 @@ import { headingIds } from './testing/heading-ids';
  * asserting against TypeScript's escaping rather than against the markdown a
  * contributor writes. They are `.prettierignore`d for the same reason.
  */
-const FIXTURES = import.meta.glob(
-  '/projects/forty-cdk-playground/src/app/doc/testing/fixtures/*.md',
-  { query: '?raw', import: 'default', eager: true },
-);
+const FIXTURES = import.meta.glob('/projects/forty-cdk-docs/src/app/doc/testing/fixtures/*.md', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+});
 
 const gfm = new Marked({ gfm: true });
 
 function fixture(name: string): string {
-  const markdown = FIXTURES[`/projects/forty-cdk-playground/src/app/doc/testing/fixtures/${name}`];
+  const markdown = FIXTURES[`/projects/forty-cdk-docs/src/app/doc/testing/fixtures/${name}`];
   if (markdown === undefined) {
     throw new Error(`fixture ${name} was not found`);
   }

@@ -70,7 +70,7 @@ import { repoRoot } from './lib/repo-path.mjs';
  * if it is ever wanted.
  */
 
-const BROWSER = join(repoRoot, 'dist', 'forty-cdk-playground', 'browser');
+const BROWSER = join(repoRoot, 'dist', 'forty-cdk-docs', 'browser');
 
 /** Selects the frame a live demo renders inside — see the second decision. */
 const EXAMPLE_FRAME = '.preview';

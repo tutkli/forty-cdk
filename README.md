@@ -113,8 +113,8 @@ own README with anatomy, API, keyboard map and styling hooks.
 ## Development
 
 This is an Angular CLI workspace with the `forty-cdk` library plus two dev-only apps:
-`forty-cdk-harness` (drives the Playwright E2E suite) and `forty-cdk-playground` (the documentation
-site). The repo uses [pnpm](https://pnpm.io/), pinned via Corepack.
+`forty-cdk-harness` (drives the Playwright E2E suite) and `forty-cdk-docs` (the documentation site,
+deployed to GitHub Pages). The repo uses [pnpm](https://pnpm.io/), pinned via Corepack.
 
 ```bash
 pnpm build        # ng build forty-cdk (production, ng-packagr → dist/forty-cdk)
@@ -124,7 +124,7 @@ pnpm test:e2e     # playwright test (Chromium + WebKit; spins up the harness)
 pnpm lint         # eslint (flat config)
 pnpm typecheck    # library + both apps
 pnpm format       # prettier --write .
-pnpm playground   # serve the documentation site locally
+pnpm docs         # serve the documentation site locally
 ```
 
 A [lefthook](https://github.com/evilmartians/lefthook) `pre-commit` hook lints and formats the

@@ -25,7 +25,7 @@ import { ScrollPane } from './ui/scroll-pane';
 
 type Theme = 'light' | 'dark';
 
-const THEME_KEY = 'forty-cdk-playground-theme';
+const THEME_KEY = 'forty-cdk-docs-theme';
 
 function readInitialTheme(): Theme {
   const stored = globalThis.localStorage?.getItem(THEME_KEY);

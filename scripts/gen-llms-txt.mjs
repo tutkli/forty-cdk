@@ -56,7 +56,7 @@ import { repoRoot } from './lib/repo-path.mjs';
  *   says it where it states the convention.
  */
 
-const BROWSER = join(repoRoot, 'dist', 'forty-cdk-playground', 'browser');
+const BROWSER = join(repoRoot, 'dist', 'forty-cdk-docs', 'browser');
 const LIBRARY_PACKAGE = join(repoRoot, 'projects', 'forty-cdk', 'package.json');
 const ROOT_BARREL = join(repoRoot, 'projects', 'forty-cdk', 'src', 'public-api.ts');
 

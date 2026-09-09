@@ -181,7 +181,7 @@
         }
       }
     },
-    "forty-cdk-playground": {
+    "forty-cdk-docs": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -211,21 +211,21 @@
           "skipTests": true
         }
       },
-      "root": "projects/forty-cdk-playground",
-      "sourceRoot": "projects/forty-cdk-playground/src",
+      "root": "projects/forty-cdk-docs",
+      "sourceRoot": "projects/forty-cdk-docs/src",
       "prefix": "app",
       "architect": {
         "build": {
           "builder": "@angular/build:application",
           "options": {
-            "browser": "projects/forty-cdk-playground/src/main.ts",
-            "tsConfig": "projects/forty-cdk-playground/tsconfig.app.json",
-            "styles": ["projects/forty-cdk-playground/src/styles.css"]
+            "browser": "projects/forty-cdk-docs/src/main.ts",
+            "tsConfig": "projects/forty-cdk-docs/tsconfig.app.json",
+            "styles": ["projects/forty-cdk-docs/src/styles.css"]
           },
           "configurations": {
             "production": {
               "outputMode": "static",
-              "server": "projects/forty-cdk-playground/src/main.server.ts",
+              "server": "projects/forty-cdk-docs/src/main.server.ts",
               "baseHref": "/forty-cdk/",
               "budgets": [
                 {
@@ -253,10 +253,10 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "forty-cdk-playground:build:production"
+              "buildTarget": "forty-cdk-docs:build:production"
             },
             "development": {
-              "buildTarget": "forty-cdk-playground:build:development"
+              "buildTarget": "forty-cdk-docs:build:development"
             }
           },
           "defaultConfiguration": "development"
@@ -264,7 +264,7 @@
         "test": {
           "builder": "@angular/build:unit-test",
           "options": {
-            "tsConfig": "projects/forty-cdk-playground/tsconfig.spec.json",
+            "tsConfig": "projects/forty-cdk-docs/tsconfig.spec.json",
             "runnerConfig": true,
             "setupFiles": ["projects/forty-cdk/src/test-utils/vitest-invariants-setup.ts"],
             "include": ["**/*.spec.ts"]

@@ -3687,7 +3687,7 @@ module.exports = tseslint.config(
   },
 
   {
-    files: ['projects/forty-cdk-playground/**/*.ts'],
+    files: ['projects/forty-cdk-docs/**/*.ts'],
     rules: {
       '@angular-eslint/component-selector': 'off',
       '@angular-eslint/directive-selector': 'off',
