@@ -131,7 +131,7 @@ const DOCS_RAIL_SIZE = DOCS_RAIL.reduce((count, group) => count + group.entries.
       top: 0;
       z-index: 1;
       padding-bottom: 0.5rem;
-      background: var(--pg-surface);
+      background: var(--pg-bg);
     }
 
     .filter-field {
@@ -140,14 +140,13 @@ const DOCS_RAIL_SIZE = DOCS_RAIL.reduce((count, group) => count + group.entries.
       gap: 0.45rem;
       height: 36px;
       padding: 0 0.35rem 0 0.6rem;
-      background: var(--pg-surface-2);
+      background: var(--pg-surface);
       border: 1px solid var(--pg-border);
       border-radius: var(--pg-radius-sm);
     }
 
     .filter-field:focus-within {
       border-color: var(--pg-border-strong);
-      background: var(--pg-surface);
     }
 
     .filter-icon {

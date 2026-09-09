@@ -16,9 +16,9 @@ import { sitePageBySlug } from '../doc/site-pages';
   imports: [DocSection, DocToc, DocLinks],
   template: `
     <header class="head">
-      <h1>{{ page().title }}</h1>
+      <h1 class="pg-doc-title">{{ page().title }}</h1>
       @if (page().description) {
-        <p>{{ page().description }}</p>
+        <p class="pg-doc-lede">{{ page().description }}</p>
       }
     </header>
 
@@ -45,19 +45,7 @@ import { sitePageBySlug } from '../doc/site-pages';
 
     .head {
       max-width: 1180px;
-      margin: 0 auto 2.5rem;
-    }
-
-    .head h1 {
-      margin: 0;
-      font-size: 1.6rem;
-      letter-spacing: -0.01em;
-    }
-
-    .head p {
-      margin: 0.5rem 0 0;
-      max-width: 65ch;
-      color: var(--pg-text-muted);
+      margin: 0 auto 2.75rem;
     }
 
     .layout {
@@ -91,11 +79,7 @@ import { sitePageBySlug } from '../doc/site-pages';
 
     @media (max-width: 820px) {
       .head {
-        margin-bottom: 1.75rem;
-      }
-
-      .head h1 {
-        font-size: 1.35rem;
+        margin-bottom: 2rem;
       }
     }
   `,

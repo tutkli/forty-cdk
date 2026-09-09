@@ -12,6 +12,7 @@ export type IconName =
   | 'clipboard'
   | 'link'
   | 'magnifying-glass'
+  | 'arrow-up-right'
   | 'x-mark';
 
 const ICON_PATHS: Record<IconName, string> = {
@@ -30,6 +31,7 @@ const ICON_PATHS: Record<IconName, string> = {
   link: 'M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244',
   'magnifying-glass':
     'm21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z',
+  'arrow-up-right': 'M6 18 18 6m0 0H9.75M18 6v8.25',
   'x-mark': 'M6 18 18 6M6 6l12 12',
 };
 

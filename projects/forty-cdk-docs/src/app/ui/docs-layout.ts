@@ -78,7 +78,7 @@ import { ThemeToggle } from './theme-toggle';
       min-height: 0;
       display: flex;
       flex-direction: column;
-      background: var(--pg-surface);
+      background: var(--pg-bg);
     }
 
     .topbar {
@@ -91,7 +91,7 @@ import { ThemeToggle } from './theme-toggle';
       gap: 1rem;
       height: var(--pg-header-height);
       padding: 0 1.25rem;
-      background: color-mix(in srgb, var(--pg-surface) 88%, transparent);
+      background: color-mix(in srgb, var(--pg-bg) 88%, transparent);
       backdrop-filter: blur(8px);
       border-bottom: 1px solid var(--pg-border);
     }
@@ -139,14 +139,14 @@ import { ThemeToggle } from './theme-toggle';
       font: inherit;
       font-size: 0.85rem;
       color: var(--pg-text-muted);
-      background: var(--pg-surface-2);
+      background: var(--pg-surface);
       border: 1px solid var(--pg-border);
       border-radius: var(--pg-radius-sm);
       cursor: pointer;
     }
 
     .search-btn:hover {
-      background: var(--pg-surface);
+      background: var(--pg-surface-2);
       border-color: var(--pg-border-strong);
     }
 
@@ -160,7 +160,7 @@ import { ThemeToggle } from './theme-toggle';
       font-size: 0.7rem;
       padding: 0.1rem 0.35rem;
       border-radius: var(--pg-radius-xs);
-      background: var(--pg-surface);
+      background: var(--pg-surface-2);
       border: 1px solid var(--pg-border-strong);
       color: var(--pg-text-muted);
     }
@@ -207,7 +207,9 @@ import { ThemeToggle } from './theme-toggle';
 
     .content {
       min-width: 0;
-      padding: 2.25rem 2rem 4rem;
+      min-height: calc(100dvh - var(--pg-header-height));
+      padding: 2.5rem 2.75rem 4rem;
+      background: var(--pg-surface);
     }
 
     @media (max-width: 820px) {

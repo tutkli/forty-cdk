@@ -78,7 +78,9 @@ import { SiteChrome } from './ui/site-chrome';
      * sidebar scale uniformly with the shell instead of escaping it. The shell
      * is also the scroll container (see styles.css for why + the
      * BodyScrollLock bridge), and it stays unpainted so a layout decides its
-     * own ground: paper on the landing, a sheet in the documentation.
+     * own ground. Both paint paper: on the landing it is the whole page, and
+     * in the documentation it is what the rail sits on, with the reading
+     * column raised onto a sheet.
      */
     .app-shell {
       height: 100dvh;

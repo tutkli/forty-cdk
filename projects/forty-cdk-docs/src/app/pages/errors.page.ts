@@ -9,7 +9,7 @@ import { ERROR_CODE_AREAS, ERROR_CODE_INDEX } from '../doc/error-codes';
   imports: [RouterLink],
   template: `
     <header class="head">
-      <h1>Error codes</h1>
+      <h1 class="pg-doc-title">Error codes</h1>
       <p>
         Every message forty-cdk reports carries a <code>FORCDK-&lt;AREA&gt;-&lt;NNN&gt;</code> code
         naming one concrete mistake. This is the whole roster — {{ total }} codes across
@@ -48,12 +48,6 @@ import { ERROR_CODE_AREAS, ERROR_CODE_INDEX } from '../doc/error-codes';
 
     .head {
       margin-bottom: 2.5rem;
-    }
-
-    h1 {
-      margin: 0;
-      font-size: 1.6rem;
-      letter-spacing: -0.01em;
     }
 
     .head p {
@@ -105,7 +99,7 @@ import { ERROR_CODE_AREAS, ERROR_CODE_INDEX } from '../doc/error-codes';
       border: 1px solid var(--pg-border);
       border-radius: var(--pg-radius);
       corner-shape: squircle;
-      background: var(--pg-surface);
+      background: var(--pg-surface-2);
     }
 
     .codes a {
@@ -132,10 +126,6 @@ import { ERROR_CODE_AREAS, ERROR_CODE_INDEX } from '../doc/error-codes';
     }
 
     @media (max-width: 820px) {
-      h1 {
-        font-size: 1.35rem;
-      }
-
       .codes li {
         grid-template-columns: minmax(0, 1fr);
         gap: 0.25rem;

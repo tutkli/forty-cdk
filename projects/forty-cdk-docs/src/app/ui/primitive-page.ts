@@ -16,7 +16,7 @@ import type { DocPage, DocPageSection } from '../doc/doc-model';
 import { DocSection } from '../doc/doc-section';
 import { DocToc } from '../doc/doc-toc';
 import { buildTocItems, type TocEntry, type TocSection } from '../doc/doc-toc-rail';
-import { primitiveBySlug } from '../primitives';
+import { groupLabelBySlug, primitiveBySlug } from '../primitives';
 import { DemoLayout } from './demo-layout';
 import { Icon } from './icon';
 
@@ -26,15 +26,19 @@ import { Icon } from './icon';
   imports: [DocSection, DocToc, DocLinks, RouterLink, Icon],
   template: `
     <header class="head">
-      <div class="head-text">
-        <h1>{{ meta().title }}</h1>
-        <p>{{ meta().description }}</p>
+      <p class="pg-doc-eyebrow">{{ group() }}</p>
+      <h1 class="pg-doc-title">{{ meta().title }}</h1>
+      <p class="pg-doc-lede">{{ meta().description }}</p>
+
+      <div class="meta">
+        <code class="entry">forty-cdk/{{ slug() }}</code>
+        @if (meta().apgUrl; as apgUrl) {
+          <a class="apg" [href]="apgUrl" target="_blank" rel="noreferrer noopener">
+            WAI-ARIA APG
+            <app-icon name="arrow-up-right" />
+          </a>
+        }
       </div>
-      @if (meta().apgUrl; as apgUrl) {
-        <a class="apg" [href]="apgUrl" target="_blank" rel="noreferrer noopener">
-          WAI-ARIA APG ↗
-        </a>
-      }
     </header>
 
     <div class="layout">
@@ -84,37 +88,49 @@ import { Icon } from './icon';
     }
 
     .head {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 1rem;
       max-width: 1180px;
-      margin: 0 auto 2.5rem;
+      margin: 0 auto 2.75rem;
     }
 
-    .head h1 {
-      margin: 0;
-      font-size: 1.6rem;
-      letter-spacing: -0.01em;
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.6rem;
+      margin-top: 1.4rem;
     }
 
-    .head p {
-      margin: 0.5rem 0 0;
-      max-width: 65ch;
-      color: var(--pg-text-muted);
+    .entry {
+      font-family: var(--pg-font-mono);
+      font-size: 0.78rem;
+      padding: 0.35rem 0.65rem;
+      border-radius: var(--pg-radius-xs);
+      background: var(--pg-surface-2);
+      border: 1px solid var(--pg-border);
+      color: var(--pg-text);
     }
 
     .apg {
-      flex: none;
-      font-size: 0.82rem;
-      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.35rem 0.65rem;
+      border-radius: var(--pg-radius-xs);
+      font-size: 0.84rem;
+      font-weight: 700;
       white-space: nowrap;
       color: var(--pg-primary);
+      background: color-mix(in srgb, var(--pg-primary) 12%, transparent);
       text-decoration: none;
     }
 
     .apg:hover {
-      text-decoration: underline;
+      background: color-mix(in srgb, var(--pg-primary) 20%, transparent);
+    }
+
+    .apg app-icon {
+      width: 12px;
+      height: 12px;
     }
 
     .layout {
@@ -154,13 +170,11 @@ import { Icon } from './icon';
 
     @media (max-width: 820px) {
       .head {
-        flex-direction: column;
-        gap: 0.5rem;
-        margin-bottom: 1.75rem;
+        margin-bottom: 2rem;
       }
 
-      .head h1 {
-        font-size: 1.35rem;
+      .meta {
+        margin-top: 1.1rem;
       }
 
       .examples {
@@ -179,6 +193,7 @@ export class PrimitivePage {
   protected readonly demos = contentChildren(DemoLayout);
 
   protected readonly meta = computed(() => primitiveBySlug(this.slug()));
+  protected readonly group = computed(() => groupLabelBySlug(this.slug()));
 
   protected readonly introHtml = computed(() => {
     const intro = this.doc()

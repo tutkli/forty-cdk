@@ -6,7 +6,7 @@ import { RouterLink } from '@angular/router';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink],
   template: `
-    <h1>Page not found</h1>
+    <h1 class="pg-doc-title">Page not found</h1>
     <p>
       That URL does not match a primitive, a guide or one of this site's own pages. It may have
       moved — the library is pre-1.0 and entry points still get renamed.
@@ -24,12 +24,6 @@ import { RouterLink } from '@angular/router';
       max-width: 65ch;
       margin: 0 auto;
       padding: 3rem 0;
-    }
-
-    h1 {
-      margin: 0;
-      font-size: 1.6rem;
-      letter-spacing: -0.01em;
     }
 
     p {

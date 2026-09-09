@@ -39,3 +39,10 @@ export function primitiveBySlug(slug: string): DocsPrimitive {
   }
   throw new Error(`[docs] unknown primitive slug: ${slug}`);
 }
+
+export function groupLabelBySlug(slug: string): string {
+  const group = DOCS_GROUPS.find((candidate) =>
+    candidate.primitives.some((primitive) => primitive.slug === slug),
+  );
+  return group?.label ?? DOCS_GROUPS[0]?.label ?? 'Primitives';
+}
