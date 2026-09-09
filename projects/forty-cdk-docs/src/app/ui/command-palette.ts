@@ -25,7 +25,7 @@ import type { DocIndexEntry } from '../doc/doc-model';
 import { GUIDE_INDEX } from '../doc/guides';
 import { buildSearchEntries, loadSearchIndex, searchEntries } from '../doc/search-index';
 import { SITE_PAGE_INDEX } from '../doc/site-pages';
-import { PLAYGROUND_GROUPS } from '../primitives';
+import { DOCS_GROUPS } from '../primitives';
 import { Icon } from './icon';
 
 const MAX_RESULTS = 50;
@@ -136,7 +136,7 @@ export class CommandPalette {
   });
 
   readonly #entries = computed(() =>
-    buildSearchEntries(PLAYGROUND_GROUPS, this.#index.value(), GUIDE_INDEX, SITE_PAGE_INDEX),
+    buildSearchEntries(DOCS_GROUPS, this.#index.value(), GUIDE_INDEX, SITE_PAGE_INDEX),
   );
 
   protected readonly results = computed(() =>

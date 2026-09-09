@@ -17,7 +17,7 @@ export interface SitePageMeta {
 export function sitePageBySlug(slug: string): SitePageMeta {
   const found = SITE_PAGES.find((page) => page.slug === slug);
   if (!found) {
-    throw new Error(`[playground] unknown site page slug: ${slug}`);
+    throw new Error(`[docs] unknown site page slug: ${slug}`);
   }
   return found;
 }

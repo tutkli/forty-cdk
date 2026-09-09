@@ -16,25 +16,25 @@ import { DOC } from '../../../generated/docs/primitives/toast.generated';
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="toast" [doc]="doc">
-      <playground-demo hero sourcePath="toast/examples/default.example.ts">
+      <demo-layout hero sourcePath="toast/examples/default.example.ts">
         <app-toast-default-example />
-      </playground-demo>
+      </demo-layout>
 
-      <playground-demo
+      <demo-layout
         title="Action & live update"
         subtitle="An action toast carries a <code>[forToastAction]</code> button that runs your handler and closes with reason <code>'action'</code>. The save flow shows <code>ref.update()</code> mutating a toast in place — 'Saving…' becomes 'Saved' with a new <code>variant</code> and <code>duration</code>, re-announced automatically when the text changes."
         sourcePath="toast/examples/action.example.ts"
       >
         <app-toast-action-example />
-      </playground-demo>
+      </demo-layout>
 
-      <playground-demo
+      <demo-layout
         title="Swipe to dismiss"
         subtitle="Opt in with <code>swipeDirection</code> on the viewport. Drag a toast with mouse or touch: the directive clamps pointer travel to the active half-line and exposes it as the <code>--for-toast-swipe-movement-x/y</code> variables, which the CSS turns into a live <code>translate3d</code>. Release past <code>swipeThreshold</code> to dismiss with reason <code>'swipe'</code>; release short and <code>data-swipe='cancel'</code> springs it back."
         sourcePath="toast/examples/swipe-to-dismiss.example.ts"
       >
         <app-toast-swipe-example />
-      </playground-demo>
+      </demo-layout>
     </primitive-page>
   `,
 })

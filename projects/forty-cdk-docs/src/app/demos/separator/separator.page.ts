@@ -14,9 +14,9 @@ import { DOC } from '../../../generated/docs/primitives/separator.generated';
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="separator" [doc]="doc">
-      <playground-demo hero sourcePath="separator/examples/default.example.ts">
+      <demo-layout hero sourcePath="separator/examples/default.example.ts">
         <app-separator-default-example />
-      </playground-demo>
+      </demo-layout>
     </primitive-page>
   `,
 })

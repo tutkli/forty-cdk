@@ -15,17 +15,17 @@ import { DOC } from '../../../generated/docs/primitives/context-menu.generated';
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="context-menu" [doc]="doc">
-      <playground-demo hero sourcePath="context-menu/examples/default.example.ts">
+      <demo-layout hero sourcePath="context-menu/examples/default.example.ts">
         <app-context-menu-default-example />
-      </playground-demo>
+      </demo-layout>
 
-      <playground-demo
+      <demo-layout
         title="Rich content"
         subtitle="The same menu vocabulary the Dropdown Menu exposes, anchored to the pointer on right-click: plain <code>forMenuItem</code> actions, a <code>forMenuCheckboxItem</code> toggle, a <code>forMenuRadioGroup</code>, a <code>forMenuSub</code> submenu, and grouped labels with separators. Checkbox and radio items call <code>preventDefault()</code> on <code>(activate)</code> to stay open; plain items close the menu and bubble up through any open submenu."
         sourcePath="context-menu/examples/rich-content.example.ts"
       >
         <app-context-menu-rich-content-example />
-      </playground-demo>
+      </demo-layout>
     </primitive-page>
   `,
 })

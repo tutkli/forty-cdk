@@ -15,17 +15,17 @@ import { DOC } from '../../../generated/docs/primitives/breadcrumbs.generated';
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="breadcrumbs" [doc]="doc">
-      <playground-demo hero sourcePath="breadcrumbs/examples/default.example.ts">
+      <demo-layout hero sourcePath="breadcrumbs/examples/default.example.ts">
         <app-breadcrumbs-default-example />
-      </playground-demo>
+      </demo-layout>
 
-      <playground-demo
+      <demo-layout
         title="Collapsing a long trail"
         subtitle="The primitive renders whatever items you give it, so collapsing a deep path is a consumer decision. Here the middle is folded into an expandable ellipsis button that reveals the hidden crumbs — the trail stays a single accessible navigation landmark either way."
         sourcePath="breadcrumbs/examples/collapsed.example.ts"
       >
         <app-breadcrumbs-collapsed-example />
-      </playground-demo>
+      </demo-layout>
     </primitive-page>
   `,
 })

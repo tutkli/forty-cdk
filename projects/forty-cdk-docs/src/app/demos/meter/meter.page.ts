@@ -15,17 +15,17 @@ import { DOC } from '../../../generated/docs/primitives/meter.generated';
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="meter" [doc]="doc">
-      <playground-demo hero sourcePath="meter/examples/default.example.ts">
+      <demo-layout hero sourcePath="meter/examples/default.example.ts">
         <app-meter-default-example />
-      </playground-demo>
+      </demo-layout>
 
-      <playground-demo
+      <demo-layout
         title="Custom value label"
         subtitle="<code>getValueLabel</code> receives the clamped value, <code>min</code> and <code>max</code> and returns <code>aria-valuetext</code>, so AT announces 'Disk: 200 GB used · 312 GB free' instead of the bare number."
         sourcePath="meter/examples/value-label.example.ts"
       >
         <app-meter-value-label-example />
-      </playground-demo>
+      </demo-layout>
     </primitive-page>
   `,
 })

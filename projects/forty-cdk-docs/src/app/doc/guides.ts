@@ -33,7 +33,7 @@ export interface ResolvedGuideGroup {
 export function guideBySlug(slug: string): GuideMeta {
   const found = GUIDES.find((guide) => guide.slug === slug);
   if (!found) {
-    throw new Error(`[playground] unknown guide slug: ${slug}`);
+    throw new Error(`[docs] unknown guide slug: ${slug}`);
   }
   return found;
 }

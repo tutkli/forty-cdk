@@ -24,33 +24,33 @@ import { DOC } from '../../../generated/docs/primitives/file-upload.generated';
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="file-upload" [doc]="doc">
-      <playground-demo hero sourcePath="file-upload/examples/default.example.ts">
+      <demo-layout hero sourcePath="file-upload/examples/default.example.ts">
         <app-file-upload-default-example />
-      </playground-demo>
+      </demo-layout>
 
-      <playground-demo
+      <demo-layout
         title="Multiple files"
         subtitle="<code>multiple</code> lets the picker (and a drop) accept more than one file at once, and <code>accept</code> narrows the chooser to the MIME types you list."
         sourcePath="file-upload/examples/multiple.example.ts"
       >
         <app-file-upload-multiple-example />
-      </playground-demo>
+      </demo-layout>
 
-      <playground-demo
+      <demo-layout
         title="Disabled"
         subtitle="<code>disabled</code> blocks the dialog and drops and reflects <code>data-disabled</code> on the zone, so you can dim it and ignore pointer events without removing the input from the DOM."
         sourcePath="file-upload/examples/disabled.example.ts"
       >
         <app-file-upload-disabled-example />
-      </playground-demo>
+      </demo-layout>
 
-      <playground-demo
+      <demo-layout
         title="Folder selection"
         subtitle="Set <code>directory</code> to switch the native picker into folder mode (mirrored as <code>webkitdirectory</code> on the input). The emitted <code>FileList</code> then contains every file inside the chosen folder, each carrying a <code>webkitRelativePath</code> the consumer reads to reconstruct the tree."
         sourcePath="file-upload/examples/directory.example.ts"
       >
         <app-file-upload-directory-example />
-      </playground-demo>
+      </demo-layout>
     </primitive-page>
   `,
 })
