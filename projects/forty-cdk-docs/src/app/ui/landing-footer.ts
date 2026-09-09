@@ -1,18 +1,18 @@
 import { LocationStrategy } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { RouterLink } from '@angular/router';
 
-import { GITHUB_REPO } from './github';
+import { GITHUB_OWNER, GITHUB_REPO } from './github';
 
 @Component({
   selector: 'landing-footer',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink],
   template: `
     <div class="bar">
-      <span class="note">MIT-licensed · built for Angular 22+</span>
+      <span class="note">
+        MIT-licensed · built with ❤️ by
+        <a [href]="owner" target="_blank" rel="noreferrer noopener">tutkli</a>
+      </span>
       <div class="links">
-        <a [routerLink]="['/errors']">Error codes</a>
         <a [href]="repo" target="_blank" rel="noreferrer noopener">GitHub</a>
         <a [href]="npm" target="_blank" rel="noreferrer noopener">npm</a>
         <a class="mono" [href]="llmsTxt" target="_blank" rel="noreferrer noopener">llms.txt</a>
@@ -39,6 +39,16 @@ import { GITHUB_REPO } from './github';
 
     .note {
       color: var(--pg-text-muted);
+    }
+
+    .note a {
+      font-weight: 700;
+      color: var(--pg-text);
+      text-decoration: none;
+    }
+
+    .note a:hover {
+      color: var(--pg-primary);
     }
 
     .links {
@@ -74,6 +84,7 @@ import { GITHUB_REPO } from './github';
   `,
 })
 export class LandingFooter {
+  protected readonly owner = GITHUB_OWNER;
   protected readonly repo = GITHUB_REPO;
   protected readonly npm = 'https://www.npmjs.com/package/forty-cdk';
   protected readonly llmsTxt = inject(LocationStrategy).prepareExternalUrl('/llms.txt');

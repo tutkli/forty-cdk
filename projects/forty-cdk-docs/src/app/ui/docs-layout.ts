@@ -25,10 +25,7 @@ import { ThemeToggle } from './theme-toggle';
         <app-icon name="bars-3" />
       </button>
 
-      <a class="brand" [routerLink]="['/']">
-        <span class="brand-name">forty-cdk</span>
-        <span class="brand-tag">docs</span>
-      </a>
+      <a class="brand-name" [routerLink]="['/']">forty-cdk</a>
 
       <section-switcher class="sections" />
 
@@ -96,31 +93,18 @@ import { ThemeToggle } from './theme-toggle';
       border-bottom: 1px solid var(--pg-border);
     }
 
-    .brand {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      text-decoration: none;
-      color: var(--pg-text);
-    }
-
     .brand-name {
-      font-weight: 800;
-      letter-spacing: -0.01em;
-      white-space: nowrap;
-    }
-
-    .brand-tag {
-      font-size: 0.72rem;
+      font-family: var(--pg-font-display);
+      font-size: 1.3rem;
       font-weight: 700;
-      color: var(--pg-secondary);
-      background: color-mix(in srgb, var(--pg-secondary) 16%, transparent);
-      padding: 0.1rem 0.45rem;
-      border-radius: 999px;
+      letter-spacing: -0.03em;
+      white-space: nowrap;
+      color: var(--pg-text);
+      text-decoration: none;
     }
 
     .sections {
-      margin-left: 1.25rem;
+      margin-left: 1rem;
     }
 
     .topbar-actions {
