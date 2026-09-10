@@ -91,6 +91,12 @@ const EXAMPLE_FRAME = '.preview';
 const EXAMPLES_SECTION = 'examples';
 
 /**
+ * The parts list the synthesised Examples block renders below
+ * ([#1865](https://github.com/tutkli/forty-cdk/issues/1865)).
+ */
+const ANATOMY_SECTION = 'anatomy';
+
+/**
  * Pages the site serves without a document behind them: the landing page and
  * the guide index. They own no `##` sections, so the content assertions skip
  * them — their existence is `check-prerender-output`'s question.
@@ -128,6 +134,7 @@ const FRAGMENT_FLOOR = 500;
 const TABLE_FLOOR = 150;
 const RAIL_FLOOR = 40;
 const RAIL_LINK_FLOOR = 300;
+const SYNTHESISED_EXAMPLES_FLOOR = 5;
 
 function fail(message) {
   console.error(`[check-doc-output] ${message}`);
@@ -180,6 +187,7 @@ function readDocumentShape(document) {
 let groupedRails = 0;
 let closedRails = 0;
 let railLinks = 0;
+let synthesisedExamples = 0;
 
 /**
  * What the rail publishes against what the document declares
@@ -259,6 +267,40 @@ function railFailures(at, page, document) {
     previous = fragment;
   }
   return problems;
+}
+
+/**
+ * Where a page renders the demos of a document that declares no `## Examples`
+ * ([#1865](https://github.com/tutkli/forty-cdk/issues/1865)).
+ *
+ * The site synthesises that heading for the six published documents carrying a
+ * written exemption from it, and its position is the page template's rather than index
+ * 0: `## Anatomy` is the "what directives exist" reference a demo means nothing
+ * without, so the block follows it. The claim is read off the emitted DOM for
+ * the same reason the rail's order is — the body and the rail take the split
+ * from one place, and this is the page a reader scrolls.
+ *
+ * A page whose document declares no `## Anatomy` is out of scope here: the
+ * block follows that document's prelude instead, which is a fact about the
+ * rings rather than about an id, and `doc-section-layout.spec.ts` is where it
+ * is stated.
+ */
+function examplesSlotFailures(at, page, document) {
+  if (document.sections.some((section) => section.slug === EXAMPLES_SECTION)) {
+    return [];
+  }
+  const demos = page.order.get(EXAMPLES_SECTION);
+  const anatomy = page.order.get(ANATOMY_SECTION);
+  if (demos === undefined || anatomy === undefined) {
+    return [];
+  }
+  synthesisedExamples += 1;
+  return demos > anatomy
+    ? []
+    : [
+        `${at} — the page synthesises "#${EXAMPLES_SECTION}" above "#${ANATOMY_SECTION}", so it ` +
+          'opens with its live demos and states the pieces they compose below them',
+      ];
 }
 
 if (!existsSync(BROWSER)) {
@@ -545,6 +587,8 @@ for (const [route, page] of pages) {
     }
   }
 
+  failures.push(...examplesSlotFailures(at, page, document));
+
   checkedRails += 1;
   failures.push(...railFailures(at, page, document));
 
@@ -618,6 +662,13 @@ if (railLinks < RAIL_LINK_FLOOR) {
   );
 }
 
+if (synthesisedExamples < SYNTHESISED_EXAMPLES_FLOOR) {
+  fail(
+    `placed the synthesised Examples block on only ${synthesisedExamples} page(s) (floor ` +
+      `${SYNTHESISED_EXAMPLES_FLOOR}) — the demos-placement half of this gate is no longer running`,
+  );
+}
+
 if (declaredTables < TABLE_FLOOR) {
   fail(
     `read only ${declaredTables} declared table(s) from ${documents.size} documents (floor ` +
@@ -635,6 +686,7 @@ console.log(
     `to an id, ${declaredTables} declared tables emitted across ${documents.size} documents, ` +
     `${checkedRails} rails read (${groupedRails} grouped, ${closedRails} of them closed) with ` +
     `${railLinks} links in page order, ` +
+    `${synthesisedExamples} synthesised Examples block(s) below their parts list, ` +
     `${errorCodes.length} error codes linked from their index` +
     (warnings.length > 0
       ? `; ${warnings.length} page(s) past ${PAGE_WEIGHT_WARNING / 1024} kB`
