@@ -153,7 +153,7 @@ interface Stage {
     .stp-indicator[data-state='completed'] {
       border-color: var(--pg-primary);
       background: var(--pg-primary);
-      color: var(--pg-on-primary, #fff);
+      color: var(--pg-primary-contrast);
     }
 
     .stp-label {
@@ -200,10 +200,16 @@ interface Stage {
       cursor: not-allowed;
     }
 
-    .btn-next {
+    .btn-next,
+    .btn-next:hover {
       background: var(--pg-primary);
       border-color: var(--pg-primary);
-      color: var(--pg-on-primary, #fff);
+      color: var(--pg-primary-contrast);
+    }
+
+    .btn-next:hover {
+      background: var(--pg-primary-hover);
+      border-color: var(--pg-primary-hover);
     }
   `,
 })

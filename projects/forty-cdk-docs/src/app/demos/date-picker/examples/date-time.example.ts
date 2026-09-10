@@ -246,7 +246,7 @@ import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/international
 
     .dp-date-time-trigger:hover:not([disabled]),
     .dp-date-time-nav:hover:not([disabled]),
-    .dp-date-time-cell:hover:not([aria-disabled]) {
+    .dp-date-time-cell:hover:not([aria-disabled]):not([data-selected]) {
       background: var(--pg-surface-2);
     }
 
@@ -263,6 +263,10 @@ import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/international
       background: var(--pg-primary);
       color: var(--pg-primary-contrast);
       font-weight: 600;
+    }
+
+    .dp-date-time-cell[data-selected]:hover:not([aria-disabled]) {
+      background: var(--pg-primary-hover);
     }
 
     .dp-date-time-grid:focus-within .dp-date-time-cell[data-highlighted],
