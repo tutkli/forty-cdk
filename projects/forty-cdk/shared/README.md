@@ -191,7 +191,7 @@ onKeyDown(event: KeyboardEvent): void {
 
 A closed shadow root exposes neither `activeElement` nor `shadowRoot`, so nothing above can see into one: its controls are neither initial-focus candidates nor edges of a `Tab` cycle. The walk sees only the host, and only when the host is focusable in its own right. Give such a host a tab stop of its own (`tabindex="0"`, paired with `delegatesFocus: true` so the browser forwards focus to the right control inside), or keep closed roots out of a trapped surface.
 
-## Notes
+## Behavior notes
 
 - **Not a primitive.** There are no directives here and nothing to add to `imports`.
 - **Not `forty-cdk/core`.** `core` stays resolvable — the primitives import it by specifier, which is what keeps `LiveAnnouncer`, the focus-trap and dismissible-layer stacks, and the id-generator salt single-instance — but it carries no semver guarantee. If a symbol you need is not exported here, it is internal by design; open an issue rather than importing from `core`.

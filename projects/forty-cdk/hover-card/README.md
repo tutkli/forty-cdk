@@ -118,7 +118,7 @@ Angular resolves `ng-template` DI at the template's **declaration** site, not wh
 | ----------------------- | ---------------- |
 | `data-hover-card-arrow` | present (always) |
 
-## Defaults
+## Scoped defaults
 
 `provideForHoverCardDefaults` configures defaults for an injector subtree — at the application root or in any component's `providers` array. Partial overrides inherit unspecified keys from the parent scope (or the library fallbacks at the root). Each call also establishes a fresh skip-delay coordinator scope: peer cards inside the scope share a skip-delay window (the next open is instant within `skipDelayDuration` after a peer closed); cards in other scopes don't.
 

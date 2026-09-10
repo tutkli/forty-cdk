@@ -61,34 +61,7 @@ standalone `[forSearch]` (no clear button) needs no group.
 
 When the search box **is** the overlay's only content, `[clearOnEscape]="false"`
 makes the first `Escape` dismiss the palette instead of clearing the query
-first — see [Keyboard interaction](#keyboard-interaction) below.
-
-## Keyboard interaction
-
-| Key      | Behaviour                                                                         |
-| -------- | --------------------------------------------------------------------------------- |
-| `Escape` | Clears a non-empty value, matching the native `<input type="search">` affordance. |
-
-`Escape` is consumed (`preventDefault()` + `stopPropagation()`) **only** when it
-clears. When the field is already empty — or disabled / read-only, where
-clearing is a no-op — the key is left to propagate, so a `[forSearch]` placed
-inside a Dialog, Popover, or Combobox panel does not swallow that overlay's own
-Escape dismissal. A non-empty search box inside an overlay therefore takes two
-presses: the first clears the field, the second closes the overlay.
-
-That is the right default for a searchbox alongside other content, and the wrong
-one for a **command palette**, where the search box is the dialog's only content
-and one `Escape` should close it. Opt out with `[clearOnEscape]="false"`: the
-directive then neither acts on nor consumes `Escape`, so the enclosing
-dismissible layer sees it on the first press even with a non-empty query.
-
-```html
-<input forSearch [(value)]="query" [clearOnEscape]="false" />
-```
-
-The propagation rule for an empty, disabled, or read-only field is unchanged —
-`Escape` passes through untouched in all three cases regardless of
-`clearOnEscape`.
+first — see [Keyboard](#keyboard) below.
 
 ## API
 
@@ -129,6 +102,33 @@ the value is empty and refocuses the input on activation.
 | Input       | Type             | Default                            | Description                                                                    |
 | ----------- | ---------------- | ---------------------------------- | ------------------------------------------------------------------------------ |
 | `ariaLabel` | `string \| null` | scope `clearAriaLabel` (`'Clear'`) | Accessible name for the icon-only button. Set to `null` to drop the attribute. |
+
+## Keyboard
+
+| Key      | Behaviour                                                                         |
+| -------- | --------------------------------------------------------------------------------- |
+| `Escape` | Clears a non-empty value, matching the native `<input type="search">` affordance. |
+
+`Escape` is consumed (`preventDefault()` + `stopPropagation()`) **only** when it
+clears. When the field is already empty — or disabled / read-only, where
+clearing is a no-op — the key is left to propagate, so a `[forSearch]` placed
+inside a Dialog, Popover, or Combobox panel does not swallow that overlay's own
+Escape dismissal. A non-empty search box inside an overlay therefore takes two
+presses: the first clears the field, the second closes the overlay.
+
+That is the right default for a searchbox alongside other content, and the wrong
+one for a **command palette**, where the search box is the dialog's only content
+and one `Escape` should close it. Opt out with `[clearOnEscape]="false"`: the
+directive then neither acts on nor consumes `Escape`, so the enclosing
+dismissible layer sees it on the first press even with a non-empty query.
+
+```html
+<input forSearch [(value)]="query" [clearOnEscape]="false" />
+```
+
+The propagation rule for an empty, disabled, or read-only field is unchanged —
+`Escape` passes through untouched in all three cases regardless of
+`clearOnEscape`.
 
 ## Accessibility
 

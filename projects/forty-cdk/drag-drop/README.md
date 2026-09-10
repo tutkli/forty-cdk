@@ -42,6 +42,44 @@ whole dialog around by its header — see [`[forFreeDrag]`](#free-drag).
 `onDrop` applies `moveItemInArray` (or `transferArrayItem`) to your own signal: **the primitive never
 mutates the consumer's data**, in either the pointer or the keyboard flow.
 
+## API
+
+There is no single table of every input here: each piece is introduced with the flow that uses it —
+the sortable-list surface under [Pointer dragging](#pointer-dragging), the standalone one under
+[Free drag](#free-drag) — because listing nine directives in one place would introduce every one of
+them out of context. What every flow shares is the attribute surface below.
+
+### Data attributes
+
+| Attribute               | Element           | Meaning                                                                              |
+| ----------------------- | ----------------- | ------------------------------------------------------------------------------------ |
+| `data-orientation`      | `[forDropList]`   | `"vertical"`, `"horizontal"`, or `"mixed"`                                           |
+| `data-disabled`         | both              | Present when the item or list is disabled                                            |
+| `data-disabled`         | `[forFreeDrag]`   | Present when the free-drag element is disabled                                       |
+| `data-dragging`         | `[forDropList]`   | Present while a drag originates here                                                 |
+| `data-dragging`         | `[forDraggable]`  | Present while this item is lifted                                                    |
+| `data-dragging`         | `[forFreeDrag]`   | Present while a free-drag pointer gesture is armed                                   |
+| `data-drag-over`        | `[forDropList]`   | Present while this list is the drop target                                           |
+| `data-drag-handle`      | `[forDragHandle]` | Present on every registered drag handle                                              |
+| `data-for-drag-preview` | preview element   | Present on the default clone preview **or** the `[forDragPreview]` template wrapper  |
+| `data-drag-animating`   | `[forDraggable]`  | Present while the item's FLIP reorder transition plays (requires `[animateReorder]`) |
+| `data-settling`         | preview element   | Present while the drop-settle transition plays (requires `[animateReorder]`)         |
+
+Both `data-dragging` rows hold for a drag a **coordinator** composing the list owns rather
+than starting through `[forDraggable]` itself — the keyboard lift of `[forVirtualReorder]`, and
+the virtualized branch of `[forTableRowReorder]`. Those intercept the lift key before the item
+sees it, so the list carries no lift state for the gesture, and the coordinator marks the item
+instead. Styling keyed off either attribute therefore behaves the same whether the collection is
+windowed or not.
+
+The `data-for-drag-preview` row is also the supported hook for **keeping the clone out of element
+queries**. The default preview is a `cloneNode(true)` copy appended to `document.body`, so for the
+whole gesture — and past the drop, while a settle transition runs — it answers the item's own
+selector (`[forDraggable]`, or a composed one such as `[forTableRow]`) and repeats its `data-index`.
+`id` and `data-testid` are stripped from the clone and its whole subtree, so a hook that identifies
+a single element stays unambiguous; anything that **enumerates** items by attribute selector during
+a drag must filter the preview out with `:not([data-for-drag-preview])`.
+
 ## Keyboard
 
 | State  | Key         | Action                                                         |
@@ -378,37 +416,6 @@ for the duration of the drag, and step the keyboard target over the true total
 count. Miss any one of the three and the failure is silent — an index that
 addresses the wrong row, a lifted row recycled mid-drag, or a keyboard move that
 stops at the window edge.
-
-## Data attributes
-
-| Attribute               | Element           | Meaning                                                                              |
-| ----------------------- | ----------------- | ------------------------------------------------------------------------------------ |
-| `data-orientation`      | `[forDropList]`   | `"vertical"`, `"horizontal"`, or `"mixed"`                                           |
-| `data-disabled`         | both              | Present when the item or list is disabled                                            |
-| `data-disabled`         | `[forFreeDrag]`   | Present when the free-drag element is disabled                                       |
-| `data-dragging`         | `[forDropList]`   | Present while a drag originates here                                                 |
-| `data-dragging`         | `[forDraggable]`  | Present while this item is lifted                                                    |
-| `data-dragging`         | `[forFreeDrag]`   | Present while a free-drag pointer gesture is armed                                   |
-| `data-drag-over`        | `[forDropList]`   | Present while this list is the drop target                                           |
-| `data-drag-handle`      | `[forDragHandle]` | Present on every registered drag handle                                              |
-| `data-for-drag-preview` | preview element   | Present on the default clone preview **or** the `[forDragPreview]` template wrapper  |
-| `data-drag-animating`   | `[forDraggable]`  | Present while the item's FLIP reorder transition plays (requires `[animateReorder]`) |
-| `data-settling`         | preview element   | Present while the drop-settle transition plays (requires `[animateReorder]`)         |
-
-Both `data-dragging` rows hold for a drag a **coordinator** composing the list owns rather
-than starting through `[forDraggable]` itself — the keyboard lift of `[forVirtualReorder]`, and
-the virtualized branch of `[forTableRowReorder]`. Those intercept the lift key before the item
-sees it, so the list carries no lift state for the gesture, and the coordinator marks the item
-instead. Styling keyed off either attribute therefore behaves the same whether the collection is
-windowed or not.
-
-The `data-for-drag-preview` row is also the supported hook for **keeping the clone out of element
-queries**. The default preview is a `cloneNode(true)` copy appended to `document.body`, so for the
-whole gesture — and past the drop, while a settle transition runs — it answers the item's own
-selector (`[forDraggable]`, or a composed one such as `[forTableRow]`) and repeats its `data-index`.
-`id` and `data-testid` are stripped from the clone and its whole subtree, so a hook that identifies
-a single element stays unambiguous; anything that **enumerates** items by attribute selector during
-a drag must filter the preview out with `:not([data-for-drag-preview])`.
 
 ## Sortable list
 

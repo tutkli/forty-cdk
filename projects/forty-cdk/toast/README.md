@@ -382,7 +382,9 @@ Outputs:
 
 The **Announced** column is the politeness a screen reader hears. It is delivered through a shared off-screen live region (see [Live updates and announcements](#live-updates-and-announcements)), so the host's own `aria-live` is `off` for every variant except a bare `error`. `data-variant` is reflected on the host so consumers can paint per-variant icons / colors purely from CSS.
 
-## Global defaults
+## Scoped defaults
+
+`provideForToastDefaults` configures defaults for an injector subtree — at the application root, or in any component's `providers` array, where a partial override inherits the keys it does not name.
 
 ```ts
 import { provideForToastDefaults } from 'forty-cdk/toast';

@@ -18,6 +18,13 @@ export interface DocSectionExemption {
   readonly reason: string;
 }
 
+/** An alias a document keeps, and the reason the rename is not available to it. */
+export interface DocAliasExemption {
+  readonly slug: string;
+  readonly section: string;
+  readonly reason: string;
+}
+
 export interface ReadDocMeta {
   /** `null` when any problem was found — the caller reports rather than publishes. */
   readonly meta: DocMeta | null;
@@ -35,6 +42,11 @@ export declare const TEMPLATE_ORDER: readonly string[];
 export declare const CORE_SECTIONS: readonly string[];
 
 export declare const CANONICAL_SECTIONS: readonly string[];
+
+/** A heading no document may write, mapped to the one it means. */
+export declare const HEADING_ALIASES: ReadonlyMap<string, string>;
+
+export declare const ALIAS_EXEMPTIONS: readonly DocAliasExemption[];
 
 export declare const SECTION_EXEMPTIONS: readonly DocSectionExemption[];
 
@@ -67,6 +79,10 @@ export declare function requiredSections(meta: DocMeta, slug: string): readonly 
 export declare function checkSections(documents: readonly DocDocument[]): readonly DocMetaProblem[];
 
 export declare function checkExemptions(
+  documents: readonly DocDocument[],
+): readonly DocMetaProblem[];
+
+export declare function checkHeadingAliases(
   documents: readonly DocDocument[],
 ): readonly DocMetaProblem[];
 

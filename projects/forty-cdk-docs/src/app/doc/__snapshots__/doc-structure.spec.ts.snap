@@ -2905,6 +2905,27 @@ exports[`document structure > projects/forty-cdk/drag-drop/README.md declares th
     "title": "Anatomy",
   },
   {
+    "headings": [
+      {
+        "depth": 3,
+        "slug": "data-attributes",
+      },
+    ],
+    "slug": "api",
+    "tables": [
+      {
+        "columns": [
+          "Attribute",
+          "Element",
+          "Meaning",
+        ],
+        "role": "plain",
+        "rows": 11,
+      },
+    ],
+    "title": "API",
+  },
+  {
     "headings": [],
     "slug": "keyboard",
     "tables": [
@@ -2999,22 +3020,6 @@ exports[`document structure > projects/forty-cdk/drag-drop/README.md declares th
     "slug": "virtualized-lists",
     "tables": [],
     "title": "Virtualized lists",
-  },
-  {
-    "headings": [],
-    "slug": "data-attributes",
-    "tables": [
-      {
-        "columns": [
-          "Attribute",
-          "Element",
-          "Meaning",
-        ],
-        "role": "plain",
-        "rows": 11,
-      },
-    ],
-    "title": "Data attributes",
   },
   {
     "headings": [],
@@ -3188,9 +3193,9 @@ exports[`document structure > projects/forty-cdk/drawer/README.md declares the s
   },
   {
     "headings": [],
-    "slug": "defaults-provider",
+    "slug": "scoped-defaults",
     "tables": [],
-    "title": "Defaults provider",
+    "title": "Scoped defaults",
   },
   {
     "headings": [],
@@ -3714,7 +3719,7 @@ exports[`document structure > projects/forty-cdk/hover-card/README.md declares t
   },
   {
     "headings": [],
-    "slug": "defaults",
+    "slug": "scoped-defaults",
     "tables": [
       {
         "columns": [
@@ -3726,7 +3731,7 @@ exports[`document structure > projects/forty-cdk/hover-card/README.md declares t
         "rows": 8,
       },
     ],
-    "title": "Defaults",
+    "title": "Scoped defaults",
   },
   {
     "headings": [],
@@ -5577,21 +5582,6 @@ exports[`document structure > projects/forty-cdk/search/README.md declares the s
     "title": "Examples",
   },
   {
-    "headings": [],
-    "slug": "keyboard-interaction",
-    "tables": [
-      {
-        "columns": [
-          "Key",
-          "Behaviour",
-        ],
-        "role": "plain",
-        "rows": 1,
-      },
-    ],
-    "title": "Keyboard interaction",
-  },
-  {
     "headings": [
       {
         "depth": 3,
@@ -5638,6 +5628,21 @@ exports[`document structure > projects/forty-cdk/search/README.md declares the s
       },
     ],
     "title": "API",
+  },
+  {
+    "headings": [],
+    "slug": "keyboard",
+    "tables": [
+      {
+        "columns": [
+          "Key",
+          "Behaviour",
+        ],
+        "role": "plain",
+        "rows": 1,
+      },
+    ],
+    "title": "Keyboard",
   },
   {
     "headings": [],
@@ -6029,9 +6034,9 @@ exports[`document structure > projects/forty-cdk/shared/README.md declares the s
   },
   {
     "headings": [],
-    "slug": "notes",
+    "slug": "behavior-notes",
     "tables": [],
-    "title": "Notes",
+    "title": "Behavior notes",
   },
 ]
 `;
@@ -6567,18 +6572,6 @@ exports[`document structure > projects/forty-cdk/table/README.md declares the se
     "title": "Virtualized rows",
   },
   {
-    "headings": [],
-    "slug": "wrapping-the-root",
-    "tables": [],
-    "title": "Wrapping the root",
-  },
-  {
-    "headings": [],
-    "slug": "wrapping-the-declarative-body",
-    "tables": [],
-    "title": "Wrapping the declarative body",
-  },
-  {
     "headings": [
       {
         "depth": 3,
@@ -6701,6 +6694,21 @@ exports[`document structure > projects/forty-cdk/table/README.md declares the se
     "slug": "styling",
     "tables": [],
     "title": "Styling",
+  },
+  {
+    "headings": [
+      {
+        "depth": 3,
+        "slug": "wrapping-the-root",
+      },
+      {
+        "depth": 3,
+        "slug": "wrapping-the-declarative-body",
+      },
+    ],
+    "slug": "wrapping-in-a-design-system",
+    "tables": [],
+    "title": "Wrapping in a design system",
   },
 ]
 `;
@@ -7317,9 +7325,9 @@ exports[`document structure > projects/forty-cdk/toast/README.md declares the se
   },
   {
     "headings": [],
-    "slug": "global-defaults",
+    "slug": "scoped-defaults",
     "tables": [],
-    "title": "Global defaults",
+    "title": "Scoped defaults",
   },
   {
     "headings": [],
@@ -8163,19 +8171,7 @@ exports[`document structure > projects/forty-cdk/virtual-reorder/README.md decla
   },
   {
     "headings": [],
-    "slug": "what-it-adds-over-a-bare-fordroplist",
-    "tables": [],
-    "title": "What it adds over a bare \`[forDropList]\`",
-  },
-  {
-    "headings": [],
-    "slug": "windowed-scrub",
-    "tables": [],
-    "title": "Windowed scrub",
-  },
-  {
-    "headings": [],
-    "slug": "keyboard-interaction",
+    "slug": "keyboard",
     "tables": [
       {
         "columns": [
@@ -8186,7 +8182,19 @@ exports[`document structure > projects/forty-cdk/virtual-reorder/README.md decla
         "rows": 5,
       },
     ],
-    "title": "Keyboard interaction",
+    "title": "Keyboard",
+  },
+  {
+    "headings": [],
+    "slug": "what-it-adds-over-a-bare-fordroplist",
+    "tables": [],
+    "title": "What it adds over a bare \`[forDropList]\`",
+  },
+  {
+    "headings": [],
+    "slug": "windowed-scrub",
+    "tables": [],
+    "title": "Windowed scrub",
   },
   {
     "headings": [],

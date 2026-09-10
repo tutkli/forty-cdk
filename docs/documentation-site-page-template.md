@@ -14,9 +14,9 @@ once:
 2. The **rendering contract** the site relies on (each canonical heading maps to a site region).
 
 **Most of this document is executable.** The frontmatter schema, the archetype-to-section rules, the
-order those sections are written in and the exemption list live in
-[scripts/lib/doc-contract.mjs](../scripts/lib/doc-contract.mjs) and run on every build; the ring a
-section falls in reaches the page on the model
+order those sections are written in, the headings they may not be written under and the exemption
+lists live in [scripts/lib/doc-contract.mjs](../scripts/lib/doc-contract.mjs) and run on every
+build; the ring a section falls in reaches the page on the model
 ([#1808](https://github.com/tutkli/forty-cdk/issues/1808)). Where this file states a rule the code
 does not check — whether a keyboard-handling primitive wrote its Keyboard section — it says so,
 because a contract that quietly mixes the two is how this document came to disagree with the code in
@@ -139,28 +139,44 @@ headings above a heading the table puts before it
 the specific run may sit between any two canonical ones — where it may sit is the previous section's
 rule.
 
-| Order | Canonical heading                | Level | Required for                           | Replaces these existing headings (aliases)                                  |
-| ----- | -------------------------------- | ----- | -------------------------------------- | --------------------------------------------------------------------------- |
-| 1     | _(intro)_                        | —     | all                                    | _(the lede paragraph; no heading)_                                          |
-| 2     | `## When to choose`              | `##`  | optional                               | "When to choose X vs Y", "X vs Y"                                           |
-| 3     | `## Anatomy`                     | `##`  | all except `headless-utility`          | "Pieces", "Pieces (declarative)", "Parts"                                   |
-| 4     | `## Examples`                    | `##`  | all except `headless-utility`          | "Example", "Usage", "Stand-alone usage", "… usage" (see Examples)           |
-| 5     | `## API`                         | `##`  | all                                    | "Inputs / outputs", "Inputs / models", "Inputs", "Outputs", "API reference" |
-| 6     | `## Programmatic API`            | `##`  | `overlay`                              | "Programmatic — …", "ForXManager"                                           |
-| 7     | `## Keyboard`                    | `##`  | `overlay`; any other with key handling | "Keyboard interaction"; or a `### Keyboard` subsection of A11y              |
-| 8     | `## Accessibility`               | `##`  | all except `headless-utility`          | "Accessibility notes", "A11y"                                               |
-| 9     | `## Styling`                     | `##`  | all except `headless-utility`          | "Styling forty-cdk"                                                         |
-| 10    | `## SSR`                         | `##`  | any primitive with server-side caveats | "Server-side rendering"                                                     |
-| 11    | `## Behavior notes`              | `##`  | optional (complex primitives)          | "Behavior", "Notes"                                                         |
-| 12    | `## Wrapping in a design system` | `##`  | `form-control`                         | "Wrapping", "Design system usage"                                           |
+| Order | Canonical heading                | Level | Required for                           | Replaces these existing headings (aliases)                                              |
+| ----- | -------------------------------- | ----- | -------------------------------------- | --------------------------------------------------------------------------------------- |
+| 1     | _(intro)_                        | —     | all                                    | _(the lede paragraph; no heading)_                                                      |
+| 2     | `## When to choose`              | `##`  | optional                               | "When to choose X vs Y", "X vs Y"                                                       |
+| 3     | `## Anatomy`                     | `##`  | all except `headless-utility`          | "Pieces", "Pieces (declarative)", "Parts"                                               |
+| 4     | `## Examples`                    | `##`  | all except `headless-utility`          | "Example", "Usage", "Stand-alone usage", "Declarative usage"                            |
+| 5     | `## API`                         | `##`  | all                                    | "Inputs / outputs", "Inputs / models", "Inputs", "Outputs", "API reference"             |
+| 6     | `## Programmatic API`            | `##`  | `overlay`                              | "Programmatic — …", "ForXManager"                                                       |
+| 7     | `## Keyboard`                    | `##`  | `overlay`; any other with key handling | "Keyboard interaction"; or a `### Keyboard` subsection of A11y                          |
+| 8     | `## Accessibility`               | `##`  | all except `headless-utility`          | "Accessibility notes", "A11y"                                                           |
+| 9     | `## Styling`                     | `##`  | all except `headless-utility`          | "Styling forty-cdk"                                                                     |
+| 10    | `## SSR`                         | `##`  | any primitive with server-side caveats | "Server-side rendering"                                                                 |
+| 11    | `## Behavior notes`              | `##`  | optional (complex primitives)          | "Behavior", "Notes"                                                                     |
+| 12    | `## Wrapping in a design system` | `##`  | `form-control`                         | "Wrapping", "Design system usage", "Wrapping the root", "Wrapping the declarative body" |
 
 Rows 2, 10 and 11 are canonical without being required: a primitive with nothing SSR-specific to
 say should not be made to write a section about it. Row 7 is required of `overlay` and expected of
 anything else that handles keys, which is a judgement no build can make — a keyboard-handling
 primitive that omits it is caught in review, not by the gate.
 
-`## Scoped defaults` is the one spelling. The corpus carried `Scope defaults` four times and
-`Scoped defaults` four times for the same concept, which minted two anchors for one idea.
+The alias column is executable: `HEADING_ALIASES` in
+[scripts/lib/doc-contract.mjs](../scripts/lib/doc-contract.mjs) carries it, and a `##` matching one
+fails the build naming the canonical heading to write instead
+([#1864](https://github.com/tutkli/forty-cdk/issues/1864)). It matches exact titles, so the cells
+written as patterns — row 2's two, and row 6's — are review's business rather than the gate's, as is
+the long tail of free titles the `specific` ring holds. A document that cannot take the rename says
+so in `ALIAS_EXEMPTIONS` with the reason, on the same terms as `SECTION_EXEMPTIONS` below.
+
+Row 5 covers the depth question too: a primitive's attribute reference is a `### Data attributes`
+under `## API`, never a section of its own. That one the gate does not hold — it reads what a
+heading is called, not how deep it sits.
+
+`## Scoped defaults` is the one spelling, and the alias list holds it even though no row above names
+it: the section is `specific`, and the spelling rule still has to exist because the corpus carried
+the one `provideForXDefaults` concept four ways — `Scoped defaults` eight times, and `Defaults`,
+`Defaults provider` and `Global defaults` once each — which minted four anchors for one idea. The
+rule stated here before named the wrong pair; `Scope defaults`, the spelling an earlier pass
+removed, stays in the alias list so it cannot come back.
 
 ### Section contracts
 
@@ -361,6 +377,9 @@ This is what keeps the check blocking rather than advisory. An omission is eithe
 it fails the build, so the next one is visible the day it appears — and an exemption for a section
 the document has since written, or for a document that no longer exists, fails too, which is what
 stops the list outliving its reasons.
+
+`ALIAS_EXEMPTIONS` is the same list for the other half: a document that keeps a retired heading
+writes down why, and the entry fails the build once the heading is finally renamed.
 
 ## Metadata: where structured fields live
 
