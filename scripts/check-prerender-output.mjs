@@ -69,6 +69,7 @@ const missing = [];
 const empty = [];
 const themed = [];
 const unbootstrapped = [];
+const deferredStyles = [];
 
 /**
  * The `localStorage` key the site persists the theme under, read from the source
@@ -94,6 +95,12 @@ const themeKey = readThemeKey();
  * beat the `prefers-color-scheme` fallback the stylesheet ends with. What
  * decides the first painted frame instead is the blocking bootstrap, which has
  * to reach every page rather than only the ones someone remembered.
+ *
+ * The stylesheet has to be blocking for the same reason. Critical-CSS
+ * extraction keeps the rules whose selectors match the prerendered markup, and
+ * with no baked attribute neither `[data-theme='dark']` nor the fallback
+ * matches any page — so a deferred stylesheet leaves the first frame with the
+ * light palette alone, whatever the bootstrap stamped.
  */
 function checkTheme(label, html) {
   const openTag = /<html[^>]*>/i.exec(html);
@@ -102,6 +109,12 @@ function checkTheme(label, html) {
   }
   if (!html.includes(themeKey)) {
     unbootstrapped.push(label);
+  }
+
+  const head = html.slice(0, html.indexOf('</head>'));
+  const sheets = [...head.matchAll(/<link[^>]*rel="stylesheet"[^>]*>/gi)].map((match) => match[0]);
+  if (!sheets.some((sheet) => !/\bmedia=/i.test(sheet))) {
+    deferredStyles.push(label);
   }
 }
 
@@ -260,6 +273,14 @@ if (unbootstrapped.length > 0) {
   fail(
     `${unbootstrapped.length} prerendered page(s) ship no inline theme bootstrap reading ` +
       `'${themeKey}', so their first painted frame is the light palette: ${unbootstrapped.join(', ')}`,
+  );
+}
+if (deferredStyles.length > 0) {
+  fail(
+    `${deferredStyles.length} prerendered page(s) carry no blocking stylesheet in <head>, so ` +
+      'their first frame paints with whatever critical CSS was extracted — and the dark palette ' +
+      'is not in it, because its selector matches no prerendered page: ' +
+      deferredStyles.join(', '),
   );
 }
 
