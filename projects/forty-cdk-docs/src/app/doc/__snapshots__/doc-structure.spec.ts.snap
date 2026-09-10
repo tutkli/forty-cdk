@@ -6684,6 +6684,74 @@ exports[`document structure > projects/forty-cdk/table/README.md declares the se
     "title": "API",
   },
   {
+    "headings": [
+      {
+        "depth": 3,
+        "slug": "static-tab-stops",
+      },
+      {
+        "depth": 3,
+        "slug": "cell-navigation",
+      },
+      {
+        "depth": 3,
+        "slug": "cell-entry",
+      },
+      {
+        "depth": 3,
+        "slug": "selection-and-expansion",
+      },
+      {
+        "depth": 3,
+        "slug": "sorting-resizing-and-reordering",
+      },
+    ],
+    "slug": "keyboard",
+    "tables": [
+      {
+        "columns": [
+          "Key",
+          "Action",
+        ],
+        "role": "plain",
+        "rows": 3,
+      },
+      {
+        "columns": [
+          "Key",
+          "Action",
+        ],
+        "role": "plain",
+        "rows": 6,
+      },
+      {
+        "columns": [
+          "Key",
+          "Action",
+        ],
+        "role": "plain",
+        "rows": 4,
+      },
+      {
+        "columns": [
+          "Key",
+          "Action",
+        ],
+        "role": "plain",
+        "rows": 4,
+      },
+      {
+        "columns": [
+          "Key",
+          "Action",
+        ],
+        "role": "plain",
+        "rows": 7,
+      },
+    ],
+    "title": "Keyboard",
+  },
+  {
     "headings": [],
     "slug": "accessibility",
     "tables": [],

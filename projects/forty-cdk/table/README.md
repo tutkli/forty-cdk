@@ -134,11 +134,7 @@ End-edge sticky cells use `sticky="end"` on the directive:
 
 ## Grid mode
 
-`mode="grid"` (or `mode="treegrid"`) turns the header **and** data cells into a single-tab-stop roving group with 2D keyboard navigation. The header row is the grid's first row: `Tab` reaches the whole grid once, and Arrow keys move focus between cells and cross between the header row and the body. `Home` / `End` jump to the first / last cell of the current row; `Ctrl+Home` / `Ctrl+End` jump to the first / last cell of the entire grid; `PageUp` / `PageDown` page up / down by one screenful of rows (the rendered row count; in a virtualized grid, the visible window) while keeping the current column — they do **not** jump to the grid ends. All horizontal movement is RTL-mirrored when the resolved writing direction is `rtl`. Disabled cells (set via the cell's `disabled` input) are skipped during navigation.
-
-Because the header row **is** the grid's first row, `Ctrl+Home` lands on the first **header** cell whenever the header joins the roving grid, and one `ArrowDown` moves into the first data cell. `ArrowUp` from the first data row crosses up into the header cell of the same column, and `PageUp` from within the first screenful of data rows clamps to the header row for the same reason. All three hold identically in a virtualized grid, which also scrolls the virtual window back to row 0 so the grid is never left focused on its header while the window sits at the bottom of the dataset. When the header does not join the grid (`mode="table"`, or an incomplete header row), `Ctrl+Home` lands on the first data cell instead and `ArrowUp` / `PageUp` stop there.
-
-`Enter` or `F2` on a focused cell that contains an interactive widget moves focus **into** that widget (cell-entry mode); `Escape` returns focus to the owning cell. While focus is inside a cell's widget, Arrow keys act on the widget, not the grid, and `Tab` / `Shift+Tab` move between **that cell's** widgets, wrapping at both ends — focus cannot leave the cell for another cell's widget or the next document tab stop until `Escape` leaves interaction mode (or something else moves focus out, which ends it too). The cycle reaches every focusable in the cell, `tabindex="-1"` included, so a header cell holding a column-menu button **and** a `[forTableColumnResizer]` resize handle is fully keyboard-operable. "Focusable" is the same set `Enter` / `F2` enters: a natively-focusable element still counts while grid mode holds it at `tabindex="-1"`, but an element that is focusable _only_ because you gave it a `tabindex` does not — so a `<span forTableSelectAll>` is reachable in `mode="table"` and not in a grid, where the directive emits `tabindex="-1"`; put it on a `<button type="button">` to keep it in the cycle. A cell holding one widget wraps back to that widget, so `Tab` there moves nothing and `Escape` is the only way out — a deliberate reading of the APG grid pattern, whose `Tab` "may wrap inside a single cell", applied uniformly rather than only to cells that happen to hold two.
+`mode="grid"` (or `mode="treegrid"`) turns the header **and** data cells into a single-tab-stop roving group with 2D keyboard navigation. The header row **is** the grid's first row: `Tab` reaches the whole grid once, Arrow keys cross between the header row and the body, and `Enter` / `F2` reach a widget rendered inside a cell. Disabled cells (set via the cell's `disabled` input) are skipped during navigation, and all horizontal movement is RTL-mirrored when the resolved writing direction is `rtl`. The whole keymap — cell navigation, cell entry and its `Tab` cycle, selection, expansion and the reordering lifts — is collected under [Keyboard](#keyboard).
 
 The root emits `aria-rowcount` and `aria-colcount`. Per ARIA 1.2 and the APG Data Grid example, the header row counts as the grid's first row: it carries `aria-rowindex="1"`, the first data row is `aria-rowindex="2"`, and `aria-rowcount` includes the header row (defaulting to the rendered data-row count + 1). Override the data-row total for server-paged or virtualized tables via the `rowCount` input (the header offset is still added); override the column total via `colCount`. When no channel knows a total, the attribute reports `-1`, the value ARIA reserves for an unknown total, rather than the `0` that would claim the grid has no columns (or no rows) at all — and the two channels reach that state differently. `aria-rowcount` reports `-1` only in a **virtualized** grid rendering no data row, where the total is genuinely unknowable until the first window resolves (so it is also what the server-rendered markup carries); a non-virtualized grid's rendered rows _are_ all its rows, so an empty one with a header row reports `aria-rowcount="1"` and one with no header at all reports `0`. `aria-colcount` reports `-1` whenever no cell has registered, virtualized or not: rows without cells (or no markup at all) is degenerate either way, so `0` would never be a resolved answer there. An explicit `[rowCount]` / `[colCount]` is emitted verbatim, including `0`. Data cells emit `aria-colindex` (1-based) and `data-highlighted` on the currently focused cell; header cells joining the roving grid emit `aria-colindex` too.
 
@@ -216,8 +212,7 @@ Spanning the row visually stays yours: `grid-column: 1 / -1` in a `<div>` grid, 
 - **`[expandable]`** — marks a row as a parent; emits `aria-expanded="true"|"false"` and `data-state="open"|"closed"`. Leaf rows emit neither.
 - **`[(expanded)]`** — two-way bindable `readonly T[]` of open parent-row values (keyed by row `[value]`), the same shape `ForTree.expanded` uses for its open nodes. Use `compareWith` for object values.
 - **`aria-posinset` / `aria-setsize`** — auto-recomputed from the rendered flat list on every expand/collapse.
-- **ArrowRight** — expands a collapsed parent (RTL: collapses); if already expanded or the row is a leaf, falls through to grid cell navigation.
-- **ArrowLeft** — collapses an expanded parent (RTL: expands); otherwise navigates left.
+- **ArrowRight / ArrowLeft** — expand / collapse the focused parent row, falling through to grid cell navigation on a leaf or a row already in that state; RTL-mirrored. See [Keyboard](#keyboard).
 - Consumer mounts/unmounts child rows with `@if` driven by `expanded()`. A `#r="forTableRow"` template ref exposes `r.toggleExpanded()` for pointer-driven expand buttons.
 
 ```html
@@ -439,7 +434,7 @@ protected readonly sortedRows = computed(() => /* the consumer sorts rows() by t
 
 The direction cycles `none → ascending → descending → none`. Set `disableClear` to make the cycle skip `none`: `ascending ↔ descending`. Set `firstClickDirection="descending"` to make a freshly activated column start descending: `none → descending → ascending → none` (and with `disableClear`, `none → descending → ascending → descending` — the descending-first-with-toggle behavior a single always-active sort descriptor needs). When `sortable` is `false` the header is fully inert (no `tabindex`, no `aria-sort`, no-op handlers) — useful when sorting is conditionally enabled. In `mode="table"` a sortable header is a `tabindex="0"` tab stop; in `mode="grid"` / `mode="treegrid"` the header cell owns the roving composite tab stop instead, so the sort header adds no separate `tabindex` (the `[forTableHeaderCell]` is the single owner of the host `tabindex`). Because the directive coordinates nothing across columns, the single-`sort` descriptor pattern above is what enforces that only one column is sorted at a time.
 
-In `mode="grid"` / `mode="treegrid"`, a sortable header cell reflects `data-sortable` and takes over the cell's `Enter` key: `Enter` toggles the sort and keeps focus on the cell, while `F2` remains the APG cell-entry key that moves focus into the cell's first widget (e.g. a `[forTableColumnResizer]`). On a non-sortable header cell (no `data-sortable`), `Enter` keeps its default cell-entry behavior — unless a `[forDraggable]` shares the cell, where `Enter` lifts the column instead (see [Column & row reordering](#column--row-reordering)). This keeps a sortable + resizable header from both sorting and dropping focus onto the resize handle on a single `Enter`.
+In `mode="grid"` / `mode="treegrid"` a sortable header cell reflects `data-sortable` — the marker that hands it the cell's `Enter` key while `F2` stays the APG cell-entry key, so a sortable + resizable header never both sorts and drops focus onto the resize handle on one press. How `Enter` and `Space` split three ways once a `[forDraggable]` shares the cell is in [Keyboard](#keyboard).
 
 ## Column resizing
 
@@ -556,15 +551,12 @@ see [Declarative columns](#declarative-columns-fortablecolumndef--for-table-body
 figure. On the raw path you opt into drag-drop explicitly by
 importing these two directives, so a raw table that skips them pays nothing.
 
-In `grid` / `treegrid` mode a reorderable header cell splits its keys three ways: `Space` /
-`Enter` lift, move and drop the column (so a draggable header cell keeps the lift on `Enter`
-even when it is not sortable), Arrow / `Home` / `End` / `Page` keys move roving focus across
-the composite header + body grid, and `F2` is the cell-entry key that reaches a widget inside
-the cell — from where `Tab` cycles between that cell's widgets and `Escape` returns focus to
-it. A column pinned with `[dragDisabled]` cannot be
-lifted and still owns the grid's tab stop while it is the roving cell; it is not announced as
-`aria-disabled` (only its lift is disabled, not the column header), and on a sortable header
-its `Space` falls back to the sort activation, since there is no lift to collide with.
+In `grid` / `treegrid` mode a reorderable header cell shares the composite header + body tab
+stop rather than taking one of its own, and its keys split three ways between the column lift,
+grid navigation and cell entry — see [Keyboard](#keyboard). A column pinned with
+`[dragDisabled]` cannot be lifted and still owns the grid's tab stop while it is the roving
+cell; it is not announced as `aria-disabled` — only its lift is disabled, not the column
+header the consumer can still sort, resize and navigate.
 
 → **[Table: column & row reordering](../../../docs/table-reordering.md)**
 
@@ -685,13 +677,80 @@ neither the table nor `@tanstack/virtual-core` reaches a bundle that does not im
 | `--for-table-col-<name>-width` | `[forTable]` (set by `[forTableColumnResizer]`) | Resolved column width in px; apply it to your layout.                                                                                               |
 | `data-resizing`                | `[forTableColumnResizer]`                       | Present (`""`) while a pointer drag is active.                                                                                                      |
 
+## Keyboard
+
+Two regimes, chosen by `mode`. The default `mode="table"` adds no navigation of its own: every focusable piece keeps its own tab stop, reached with `Tab` and activated with `Enter` / `Space`. `mode="grid"` and `mode="treegrid"` replace those stops with one composite roving tab stop over the header **and** the data cells — `Tab` reaches the whole grid once — and every key below fires on the focused cell. All horizontal keys are mirrored when the resolved writing direction is `rtl`, and cells marked `disabled` are skipped by navigation.
+
+### Static tab stops
+
+`mode="table"`. No roving group and no cell entry — the table is a sequence of ordinary tab stops.
+
+| Key               | Action                                                                                                                                                                                                                                                                                                     |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Tab`             | Move to the next focusable piece: a sortable `[forTableSortHeader]`, a `[forTableSelectAll]`, each `[forTableRowSelector]`, each `[forTableColumnResizer]`, the one roving tab stop a `[forTableRowReorder]` gives its draggable rows, and — with `interactiveRows` on `<for-table-body>` — each data row. |
+| `Enter` / `Space` | Activate the focused piece: cycle the sort on a sortable header, toggle the row on a `[forTableRowSelector]`, toggle the tri-state on a `[forTableSelectAll]`, lift the roving `[forDraggable]` row of a `[forTableRowReorder]`.                                                                           |
+| `Enter`           | On a data row `interactiveRows` made a tab stop, emit `rowActivate`. A press originating from an interactive descendant runs that control instead and emits nothing.                                                                                                                                       |
+
+### Cell navigation
+
+`grid` / `treegrid`. The header row is the grid's **first row**, so the arrows cross between it and the body.
+
+| Key                        | Action                                                                                                                                                                      |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Tab`                      | Enter and leave the whole grid in one stop. Inside an entered cell it cycles that cell's widgets instead, and while a row or column is lifted it cancels the drag.          |
+| `ArrowRight` / `ArrowLeft` | Next / previous cell in the current row. On an expandable `treegrid` row they expand / collapse first — see [Selection and expansion](#selection-and-expansion).            |
+| `ArrowDown` / `ArrowUp`    | The cell one row down / up, keeping the column. `ArrowUp` from the first data row crosses into the header cell of the same column.                                          |
+| `Home` / `End`             | First / last cell of the current row.                                                                                                                                       |
+| `Ctrl+Home` / `Ctrl+End`   | First / last cell of the whole grid. `Ctrl+Home` lands on the first **header** cell whenever the header joins the grid, and one `ArrowDown` moves into the first data cell. |
+| `PageUp` / `PageDown`      | One screenful of rows up / down, keeping the column — a page is the rendered row count, so a virtualized grid pages by its visible window. Neither jumps to the grid ends.  |
+
+`PageUp` from within the first screenful of data rows clamps to the header row, for the same reason `ArrowUp` crosses into it. Under [`[forTableVirtualized]`](../table-virtualization/README.md) a move resolving a row outside the rendered window scrolls that row into view and lands focus on the target cell once it mounts; a move onto the header row also scrolls the window back to row 0, so the grid is never left focused on its header while the window sits at the end of the dataset. When the header does not join the grid — an incomplete header row — `Ctrl+Home` lands on the first data cell instead and `ArrowUp` / `PageUp` stop there.
+
+### Cell entry
+
+`grid` / `treegrid`. The APG cell-entry mode that reaches a widget rendered inside a cell.
+
+| Key                 | Action                                                                                                                                                                 |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `F2`                | Move focus **into** the focused cell's first focusable widget. No-op on a cell holding none.                                                                           |
+| `Enter`             | The same entry, on a cell whose keys no other affordance owns — see [Sorting, resizing and reordering](#sorting-resizing-and-reordering) for the two that do.          |
+| `Tab` / `Shift+Tab` | While inside an entered cell: move between **that cell's** widgets, wrapping at both ends. Focus cannot leave the cell for another cell or the next document tab stop. |
+| `Escape`            | While inside an entered cell: return focus to the owning cell and leave interaction mode.                                                                              |
+
+The cycle reaches every focusable in the cell, `tabindex="-1"` included, so a header cell holding a column-menu button **and** a `[forTableColumnResizer]` resize handle is fully keyboard-operable. "Focusable" is the same set `Enter` / `F2` enters: a natively-focusable element still counts while grid mode holds it at `tabindex="-1"`, but an element focusable _only_ because you gave it a `tabindex` does not — so a `<span forTableSelectAll>` is reachable in `mode="table"` and not in a grid; put it on a `<button type="button">` to keep it in the cycle. While focus is inside a cell's widget, Arrow keys act on the widget rather than on the grid, and anything else that moves focus out of the cell ends interaction mode too. A cell holding one widget wraps back to that widget, so `Tab` there moves nothing and `Escape` is the only way out — a deliberate reading of the APG grid pattern, whose `Tab` "may wrap inside a single cell", applied uniformly rather than only to cells that happen to hold two.
+
+### Selection and expansion
+
+| Key           | Action                                                                                                                                                                                                                                             |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Space`       | On a focused data cell in `grid` / `treegrid` with a `selectionMode` other than `'none'`: toggle the enclosing row's selection and prevent the page scroll. The row needs a `[value]`, and a `Space` originating from a nested element is ignored. |
+| `ArrowRight`  | `treegrid` only: expand the focused collapsed parent row (RTL: collapse). On a leaf, or a row already in that state, it falls through to cell navigation.                                                                                          |
+| `ArrowLeft`   | `treegrid` only: collapse the focused expanded parent row (RTL: expand). Otherwise it navigates.                                                                                                                                                   |
+| `ContextMenu` | With `interactiveRows`, emits `rowContextMenu` on the row it fires over, in every mode — the keyboard half of the right-click. Unguarded, so it still offers the row's menu over an inner control.                                                 |
+
+### Sorting, resizing and reordering
+
+Three affordances contend for `Enter` and `Space` on a header cell, and the split follows WAI-ARIA lines so a single press never both sorts and lifts.
+
+| Key                        | Action                                                                                                                                                                   |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `Enter` / `Space`          | On a sortable header cell with no `[forDraggable]`: cycle the sort direction, keeping focus on the cell.                                                                 |
+| `Enter`                    | On a header cell that is both sortable and draggable: cycle the sort. `F2` still enters the cell.                                                                        |
+| `Space`                    | On a header cell that is both sortable and draggable: lift the column. On one pinned with `[dragDisabled]` there is no lift to collide with, so it sorts on both keys.   |
+| `Enter` / `Space`          | On a draggable header cell that is not sortable: lift the column.                                                                                                        |
+| `Ctrl+Space` / `Cmd+Space` | On any data cell inside a `[forTableRowReorder]` in `grid` / `treegrid`: lift the enclosing row. The plain `Space` stays selection and idle arrows stay grid navigation. |
+| `ArrowLeft` / `ArrowRight` | On a focused `[forTableColumnResizer]`: resize the column by `[step]` pixels, clamped to `[min]` / `[max]`, emitting one `resizeCommit` per press. RTL-mirrored.         |
+| `Escape`                   | During a pointer resize drag: restore the pre-drag width and emit no `resizeCommit`.                                                                                     |
+
+While a **column** is lifted, `ArrowLeft` / `ArrowRight` move it one position (RTL-mirrored), `Home` / `End` move it to the first / last position, `Enter` / `Space` drop it and `Escape` / `Tab` cancel. While a **row** is lifted, `ArrowUp` / `ArrowDown` move the target one row, `Home` / `End` move it to the first / last row of the dataset, `PageUp` / `PageDown` move by one rendered window under `[forTableVirtualized]` (and to the first / last row without it), `Enter` / `Space` drop and `Escape` / `Tab` cancel. Focus leaving the reorder container cancels an in-flight lift too.
+
 ## Accessibility
 
 Implements the [WAI-ARIA Table pattern](https://www.w3.org/WAI/ARIA/apg/patterns/table/) and the [WAI-ARIA Grid pattern](https://www.w3.org/WAI/ARIA/apg/patterns/grid/).
 
 - **Label the table** via the reactive `[ariaLabel]` input or a native `aria-labelledby` pointing at a visible caption / heading.
 - **`mode="table"`** sets `role="table"` with semantic `role="columnheader"` / `role="cell"` cells. Screen readers announce row and column counts from native semantics.
-- **`mode="grid"`** sets `role="grid"` with `role="gridcell"` cells. The root emits `aria-rowcount` / `aria-colcount`; the header row and every data row emit `aria-rowindex` (the header row is `1`, so data rows start at `2` and `aria-rowcount` counts the header); header and data cells emit `aria-colindex`. Header and body share one composite roving tab stop; `PageUp` / `PageDown` page by rows, and `Enter` / `F2` enter an interactive cell's widget, where `Tab` cycles between that cell's widgets (`Escape` exits). Override `[rowCount]` / `[colCount]` for server-paged or virtualized datasets so screen readers announce correct totals.
+- **`mode="grid"`** sets `role="grid"` with `role="gridcell"` cells. The root emits `aria-rowcount` / `aria-colcount`; the header row and every data row emit `aria-rowindex` (the header row is `1`, so data rows start at `2` and `aria-rowcount` counts the header); header and data cells emit `aria-colindex`. Header and body share one composite roving tab stop, whose full keymap is collected under [Keyboard](#keyboard). Override `[rowCount]` / `[colCount]` for server-paged or virtualized datasets so screen readers announce correct totals.
 - **`mode="treegrid"`** sets `role="treegrid"`. Expandable rows emit `aria-expanded="true"|"false"` and `aria-level` / `aria-posinset` / `aria-setsize`; leaf rows emit none of these, matching APG "end nodes lack `aria-expanded`".
 - **Row selection** (`selectionMode` not `'none'`): each selectable row (one with a `[value]`) emits `aria-selected="true"|"false"`; rows without a `[value]` (full-span variant rows) are non-selectable and emit no `aria-selected`; in `grid` / `treegrid` mode `'multiple'` adds `aria-multiselectable="true"` on the root (never in `table` mode, where `role="table"` forbids it). `[forTableSelectAll]` emits `aria-checked` in tri-state.
 - **Full-span rows** (group separators, section headers, summaries) use `[forTableVariantCell]`, which emits `aria-colindex="1"` and an `aria-colspan` over the grid's columns and registers no cell handle. Arrow navigation steps over the row onto the next data row, and the grid's column count and header participation are unaffected by it — the failure a hand-written `[forTableCell]` produces instead is silent and only surfaces from the keyboard.
