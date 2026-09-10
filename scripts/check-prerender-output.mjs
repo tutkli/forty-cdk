@@ -70,6 +70,8 @@ const empty = [];
 const themed = [];
 const unbootstrapped = [];
 const deferredStyles = [];
+const attributed = [];
+let demoBlocks = 0;
 
 /**
  * The `localStorage` key the site persists the theme under, read from the source
@@ -115,6 +117,42 @@ function checkTheme(label, html) {
   const sheets = [...head.matchAll(/<link[^>]*rel="stylesheet"[^>]*>/gi)].map((match) => match[0]);
   if (!sheets.some((sheet) => !/\bmedia=/i.test(sheet))) {
     deferredStyles.push(label);
+  }
+}
+
+/**
+ * The inputs an example block must not publish as DOM attributes
+ * ([#1879](https://github.com/tutkli/forty-cdk/issues/1879)).
+ *
+ * `demo-layout` takes its heading as an input named `title`, and every call
+ * site passes it as a static attribute — which a template writes to the DOM as
+ * well as binding to the input. `title` is a global HTML attribute, so the
+ * browser paints a native tooltip over the whole example repeating the `<h2>`
+ * one line above it, and the host takes an accessible name nobody gave it;
+ * `subtitle` is inert but publishes the escaped subtitle markup a second time.
+ * The component drops both through host attribute bindings, and the emitted
+ * page is the only place a dropped binding is visible — the inputs go on
+ * working either way.
+ */
+const DEMO_ATTRIBUTES = ['title', 'subtitle'];
+const DEMO_TAG = /<demo-layout(?=[\s>])[^>]*>/gi;
+
+function attributeNames(tag) {
+  return [...tag.matchAll(/(?:^|\s)([a-z][a-z0-9_.-]*)=/gi)].map((match) => match[1].toLowerCase());
+}
+
+function checkDemoAttributes(label, html) {
+  const leaked = new Set();
+  for (const [tag] of html.matchAll(DEMO_TAG)) {
+    demoBlocks += 1;
+    for (const name of attributeNames(tag)) {
+      if (DEMO_ATTRIBUTES.includes(name)) {
+        leaked.add(name);
+      }
+    }
+  }
+  if (leaked.size > 0) {
+    attributed.push(`${label} (${[...leaked].join(', ')})`);
   }
 }
 
@@ -240,6 +278,7 @@ if (!existsSync(homeFile)) {
     empty.push('(home)');
   }
   checkTheme('(home)', homeHtml);
+  checkDemoAttributes('(home)', homeHtml);
 }
 
 for (const { path, title } of routes) {
@@ -253,6 +292,7 @@ for (const { path, title } of routes) {
     empty.push(path);
   }
   checkTheme(path, html);
+  checkDemoAttributes(path, html);
 }
 
 if (missing.length > 0) {
@@ -284,10 +324,22 @@ if (deferredStyles.length > 0) {
   );
 }
 
+if (demoBlocks === 0) {
+  fail('the prerendered output renders no <demo-layout> element — the example scan reads nothing');
+}
+if (attributed.length > 0) {
+  fail(
+    `${attributed.length} prerendered page(s) render a demo-layout input as a DOM attribute, so ` +
+      'every example paints a native tooltip repeating its own heading: ' +
+      attributed.join(', '),
+  );
+}
+
 console.log(
   `[check-prerender-output] ok — ${primitives.length} primitive routes + ` +
     `${guides.length} guide routes + ${sitePages.length} site pages + ${errorCodes.length} ` +
     'error code pages + the error index + the guide index + the landing page prerendered ' +
     'with content, none of them baking a theme and all of them bootstrapping one, over ' +
-    `${fallbackRules} dark rule(s) each mirrored by a prefers-color-scheme fallback`,
+    `${fallbackRules} dark rule(s) each mirrored by a prefers-color-scheme fallback and ` +
+    `${demoBlocks} example block(s) publishing none of their inputs as attributes`,
 );
