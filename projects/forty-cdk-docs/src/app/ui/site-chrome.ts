@@ -1,5 +1,5 @@
-import { DOCUMENT } from '@angular/common';
-import { computed, effect, inject, Injectable, signal } from '@angular/core';
+import { DOCUMENT, isPlatformBrowser } from '@angular/common';
+import { computed, effect, inject, Injectable, PLATFORM_ID, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router } from '@angular/router';
 import { filter, map } from 'rxjs';
@@ -8,7 +8,14 @@ import { sectionForUrl } from './site-sections';
 
 type Theme = 'light' | 'dark';
 
-const THEME_KEY = 'forty-cdk-docs-theme';
+/**
+ * The `localStorage` key the chosen theme persists under.
+ *
+ * The inline bootstrap in `projects/forty-cdk-docs/src/index.html` stamps
+ * `data-theme` from this same key before the first paint, so the two have to
+ * name it identically — `theme-bootstrap.spec.ts` fails when they drift.
+ */
+export const THEME_KEY = 'forty-cdk-docs-theme';
 
 function readInitialTheme(): Theme {
   const stored = globalThis.localStorage?.getItem(THEME_KEY);
@@ -22,6 +29,7 @@ function readInitialTheme(): Theme {
 export class SiteChrome {
   readonly #document = inject(DOCUMENT);
   readonly #router = inject(Router);
+  readonly #browser = isPlatformBrowser(inject(PLATFORM_ID));
 
   readonly theme = signal<Theme>(readInitialTheme());
   readonly navOpen = signal(false);
@@ -43,11 +51,13 @@ export class SiteChrome {
   );
 
   constructor() {
-    effect(() => {
-      const theme = this.theme();
-      this.#document.documentElement.setAttribute('data-theme', theme);
-      globalThis.localStorage?.setItem(THEME_KEY, theme);
-    });
+    if (this.#browser) {
+      effect(() => {
+        const theme = this.theme();
+        this.#document.documentElement.setAttribute('data-theme', theme);
+        globalThis.localStorage?.setItem(THEME_KEY, theme);
+      });
+    }
   }
 
   setDark(dark: boolean): void {
