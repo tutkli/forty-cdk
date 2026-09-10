@@ -695,16 +695,16 @@ Two regimes, chosen by `mode`. The default `mode="table"` adds no navigation of 
 
 `grid` / `treegrid`. The header row is the grid's **first row**, so the arrows cross between it and the body.
 
-| Key                        | Action                                                                                                                                                                      |
-| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Tab`                      | Enter and leave the whole grid in one stop. Inside an entered cell it cycles that cell's widgets instead, and while a row or column is lifted it cancels the drag.          |
-| `ArrowRight` / `ArrowLeft` | Next / previous cell in the current row. On an expandable `treegrid` row they expand / collapse first — see [Selection and expansion](#selection-and-expansion).            |
-| `ArrowDown` / `ArrowUp`    | The cell one row down / up, keeping the column. `ArrowUp` from the first data row crosses into the header cell of the same column.                                          |
-| `Home` / `End`             | First / last cell of the current row.                                                                                                                                       |
-| `Ctrl+Home` / `Ctrl+End`   | First / last cell of the whole grid. `Ctrl+Home` lands on the first **header** cell whenever the header joins the grid, and one `ArrowDown` moves into the first data cell. |
-| `PageUp` / `PageDown`      | One screenful of rows up / down, keeping the column — a page is the rendered row count, so a virtualized grid pages by its visible window. Neither jumps to the grid ends.  |
+| Key                              | Action                                                                                                                                                                          |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Tab`                            | Enter and leave the whole grid in one stop. Inside an entered cell it cycles that cell's widgets instead, and while a row or column is lifted it cancels the drag.              |
+| `ArrowRight` / `ArrowLeft`       | Next / previous cell in the current row. On an expandable `treegrid` row they expand / collapse first — see [Selection and expansion](#selection-and-expansion).                |
+| `ArrowDown` / `ArrowUp`          | The cell one row down / up, keeping the column. `ArrowUp` from the first data row crosses into the header cell of the same column.                                              |
+| `Home` / `End`                   | First / last cell of the current row.                                                                                                                                           |
+| `Ctrl/Cmd+Home` / `Ctrl/Cmd+End` | First / last cell of the whole grid. `Ctrl/Cmd+Home` lands on the first **header** cell whenever the header joins the grid, and one `ArrowDown` moves into the first data cell. |
+| `PageUp` / `PageDown`            | One screenful of rows up / down, keeping the column — a page is the rendered row count, so a virtualized grid pages by its visible window. Neither jumps to the grid ends.      |
 
-`PageUp` from within the first screenful of data rows clamps to the header row, for the same reason `ArrowUp` crosses into it. Under [`[forTableVirtualized]`](../table-virtualization/README.md) a move resolving a row outside the rendered window scrolls that row into view and lands focus on the target cell once it mounts; a move onto the header row also scrolls the window back to row 0, so the grid is never left focused on its header while the window sits at the end of the dataset. When the header does not join the grid — an incomplete header row — `Ctrl+Home` lands on the first data cell instead and `ArrowUp` / `PageUp` stop there.
+`PageUp` from within the first screenful of data rows clamps to the header row, for the same reason `ArrowUp` crosses into it. Under [`[forTableVirtualized]`](../table-virtualization/README.md) a move resolving a row outside the rendered window scrolls that row into view and lands focus on the target cell once it mounts; a move onto the header row also scrolls the window back to row 0, so the grid is never left focused on its header while the window sits at the end of the dataset. When the header does not join the grid — an incomplete header row — `Ctrl/Cmd+Home` lands on the first data cell instead and `ArrowUp` / `PageUp` stop there.
 
 ### Cell entry
 
