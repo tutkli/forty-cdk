@@ -184,20 +184,22 @@ export const HEADING_ALIASES = new Map([
  * An alias a document keeps, and the reason the rename is not available to it.
  *
  * `## Declarative usage` is Toast's example set, and Toast is exempt from
- * `## Examples` for exactly that reason — so renaming it to the canonical form
- * would collide with the synthetic `Examples` entry the site inserts for a page
- * that declares none. That is a demo-placement question rather than a naming
- * one, and #1865 is where it is settled; this entry is what keeps the alias
- * check blocking until then, and what fails the build the day the heading is
- * finally renamed and the reason outlives it.
+ * `## Examples` for exactly that reason. The placement half of that is settled
+ * — the block the site synthesises for such a page renders where the template
+ * orders it ([#1865](https://github.com/tutkli/forty-cdk/issues/1865)) — and
+ * the rename is still unavailable, because the site replaces a declared
+ * `## Examples` body with the live demos: called by its canonical name, the
+ * section's snippet would stop being published at all. The canonical heading
+ * becomes available the day that snippet is a live example of its own, and this
+ * entry fails the build then rather than outliving its reason.
  */
 export const ALIAS_EXEMPTIONS = [
   {
     slug: 'toast',
     section: 'Declarative usage',
     reason:
-      'The example set of a page exempt from ## Examples — renaming it collides with the entry ' +
-      'the site synthesises for that page, which #1865 places the demos of.',
+      'The example set of a page exempt from ## Examples, and the site replaces a declared ' +
+      'Examples body with its live demos — so the canonical name would unpublish this snippet.',
   },
 ];
 

@@ -277,6 +277,15 @@ How each canonical section surfaces on the site (informs the page-shell componen
 | Styling           | Rendered markdown                                                                                                      |
 | All `##` headings | Feed the "On this page" TOC (right rail); the `specific` ones nest under one group — see below                         |
 
+A document that declares no `## Examples` — the six carrying a written exemption, plus one
+`headless-utility` the table never required the section of — still gets it: the site synthesises
+the heading and places it where the table above orders it, after `## Anatomy`, and after the
+prelude on a page whose document declares no `## Anatomy` at all
+([#1865](https://github.com/tutkli/forty-cdk/issues/1865)). It used to be emitted first, so those
+seven pages opened with their demos and stated the pieces those demos compose below them, `/table`
+in ninth place. `check:doc-output` fails a page whose parts list follows the block again, and the
+placement itself is stated over the compiled model in `doc-section-layout.spec.ts`.
+
 The rail groups by ring ([#1810](https://github.com/tutkli/forty-cdk/issues/1810)). `core` and
 `canonical` sections stay at the top level in document order; the `specific` ones nest under a single
 group so a reader looking for _Styling_ is not scanning it against _Modal touch presentation_. **Every
@@ -379,7 +388,11 @@ the document has since written, or for a document that no longer exists, fails t
 stops the list outliving its reasons.
 
 `ALIAS_EXEMPTIONS` is the same list for the other half: a document that keeps a retired heading
-writes down why, and the entry fails the build once the heading is finally renamed.
+writes down why, and the entry fails the build once the heading is finally renamed. Its one entry is
+Toast's `## Declarative usage`, and the reason is the Examples row above: the site replaces a
+declared `## Examples` body with the live demos, so renaming that section would unpublish the
+snippet it holds. The canonical heading becomes available the day the snippet is a live example of
+its own.
 
 ## Metadata: where structured fields live
 

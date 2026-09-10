@@ -1,4 +1,5 @@
 import type { DocPageBehaviorGroup, DocPageSection } from './doc-model';
+import { preludeIndexOf } from './doc-section-layout';
 
 /** A section or heading the rail links to. */
 export interface TocItem {
@@ -25,21 +26,6 @@ export interface TocEntry {
 export interface TocSection {
   readonly ring: DocPageSection['ring'];
   readonly item: TocItem;
-}
-
-/**
- * The one specific section a document may write above its first core one, which
- * the rail keeps at the top level where the document put it.
- *
- * Read off the rings rather than off the index, so the demos entry a page
- * inserts for a README that declares no `## Examples` cannot hide the prelude
- * behind it. The contract states the same rule over the document itself, in
- * `preludeIndexOf` in `scripts/lib/doc-contract.mjs`.
- */
-function preludeIndexOf(sections: readonly TocSection[]): number {
-  const first = sections.findIndex((section) => section.ring === 'specific');
-  const core = sections.findIndex((section) => section.ring === 'core');
-  return first !== -1 && (core === -1 || first < core) ? first : -1;
 }
 
 /**

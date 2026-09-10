@@ -14,6 +14,7 @@ import { injectFragmentScroll } from '../doc/doc-fragment';
 import { DocLinks } from '../doc/doc-links';
 import type { DocPage, DocPageSection } from '../doc/doc-model';
 import { DocSection } from '../doc/doc-section';
+import { splitAtExamples } from '../doc/doc-section-layout';
 import { DocToc } from '../doc/doc-toc';
 import { buildTocItems, type TocEntry, type TocSection } from '../doc/doc-toc-rail';
 import { groupLabelBySlug, primitiveBySlug } from '../primitives';
@@ -202,20 +203,11 @@ export class PrimitivePage {
     return intro.trim() ? this.#sanitizer.bypassSecurityTrustHtml(intro) : null;
   });
 
-  readonly #sections = computed(() => this.doc().sections);
-  readonly #examplesIndex = computed(() =>
-    this.#sections().findIndex((section) => section.slug === 'examples'),
-  );
+  readonly #slot = computed(() => splitAtExamples(this.doc().sections));
 
-  protected readonly sectionsBefore = computed(() => {
-    const index = this.#examplesIndex();
-    return index < 0 ? [] : this.#sections().slice(0, index);
-  });
+  protected readonly sectionsBefore = computed(() => this.#slot().before);
 
-  protected readonly sectionsAfter = computed(() => {
-    const index = this.#examplesIndex();
-    return index < 0 ? this.#sections() : this.#sections().slice(index + 1);
-  });
+  protected readonly sectionsAfter = computed(() => this.#slot().after);
 
   /**
    * The heading the live demos render under, or `null` for a page that has
@@ -224,12 +216,11 @@ export class PrimitivePage {
    * ([#1809](https://github.com/tutkli/forty-cdk/issues/1809)).
    */
   protected readonly examplesMeta = computed(() => {
-    const index = this.#examplesIndex();
-    if (index < 0) {
+    const declared = this.#slot().declared;
+    if (declared === null) {
       return this.demos().length > 0 ? { title: 'Examples', slug: 'examples' } : null;
     }
-    const section = this.#sections()[index]!;
-    return { title: section.title, slug: section.slug };
+    return { title: declared.title, slug: declared.slug };
   });
 
   protected readonly tocItems = computed<readonly TocEntry[]>(() => {
