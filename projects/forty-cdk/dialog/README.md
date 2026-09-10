@@ -356,16 +356,6 @@ Implements the [WAI-ARIA Modal Dialog pattern](https://www.w3.org/WAI/ARIA/apg/p
 - `alert: true` interrupts assistive tech aggressively — only for genuine alerts (lost connection, unsaved changes warning), not for general confirms.
 - Don't put interactive overlays (popovers, menus) outside the focus trap while a modal dialog is open — they won't be reachable. For a non-modal floating surface anchored to a trigger, use `[forPopover]` instead.
 
-## Known limitations
-
-Two shapes are correct by design and still break something a consumer can only discover by hitting it. Both live in markup a design system produces routinely, and neither shows up in devtools: every role and `aria-*` stays correct, so the symptom is a keyboard or screen-reader one. The library-wide statement, with the same detail for every primitive, is [Shadow DOM](../shared/README.md#shadow-dom) in `forty-cdk/shared`.
-
-**A shadow host that renders a focusable after its `<slot>` breaks the trap's `Tab` cycle.** The trap resolves its first / last pair by walking the surface's composed tree, and that walk visits slotted content after the host's whole shadow tree, whereas the browser sequences it at the `<slot>`'s position. Initial focus can land on a control that is not the visually first one, and a `Tab` at the dialog's real last control is not recognised as the cycle's end — focus leaves the surface (with the page `inert`, usually onto the browser's own UI) and the next `Tab` is pulled back to whichever control the walk thinks is first. That is the configuration you are in whenever you wrap a third-party web component, or your own `ViewEncapsulation.ShadowDom` component, inside the dialog. **Workaround:** render a host's own focusables before its `<slot>`, or project them instead of shadowing them; `initialFocus="container"` fixes the initial-focus half only, since the cycle's edges are re-resolved on every `Tab` press. Details and markup: [Focusable order](../shared/README.md#focusable-order-is-composed-only-for-a-host-that-renders-no-slot).
-
-**A `keydown` handler inside the dialog that calls `stopPropagation()` swallows Escape.** The dismissible-layer stack observes `Escape` on `document` in the bubble phase — a deliberate trade-off recorded on `DismissibleLayerStack` — so an event stopped inside the surface never arrives, and `Escape` silently stops dismissing while the backdrop click and `[forDialogClose]` keep working. **Workaround:** narrow the `stopPropagation()` to the keys you actually handle. Keeping the dialog open on `Escape` is the separate, supported job of the vetoable `(escapeKeyDown)` output. Details: [Escape is observed on the bubble phase](../shared/README.md#escape-is-observed-on-the-bubble-phase).
-
-A third known limit does not apply to this primitive but is easy to hit inside one: a [Tabs](../tabs) or [Stepper](../stepper) panel rendered in a dialog cannot re-measure its focusable content across a shadow boundary, so its own tab stop can go stale — see [that entry](../shared/README.md#a-panels-focusable-content-measurement-does-not-re-measure-across-a-boundary).
-
 ## Styling
 
 forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
@@ -390,6 +380,27 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 }
 ```
 
+## Behavior notes
+
+- **Mount equals open**. The directive does not manage `[hidden]` or any visibility attribute. The consumer's `@if (open())` controls presence, and `animate.enter` / `animate.leave` handle the visual transition.
+- **Portal**: the dialog box is moved to `document.body` on first render (or to `container` when set). The backdrop portals alongside the dialog (to the same `container`, `document.body` by default). CSS scoped to ancestors won't apply — use global styles or classes.
+- **Body scroll lock** is refcounted: stacking dialogs (or a dialog + a future overlay using the same lock) only restore on the last unlock.
+- **Focus trap** scopes Tab inside the dialog box while `modal`. It does NOT itself mark the rest of the page `inert` — that's the inert-siblings utility's job (next bullet).
+- **Inert siblings**. When `modal`, every direct child of `document.body` other than the dialog box (and its backdrop) gets `inert` and `aria-hidden="true"` while open, and is restored on close. This is what `aria-modal="true"` alone is missing — Safari + VoiceOver and several other AT pairings still announce siblings of an aria-modal node otherwise. Stacking is order-safe: when a second modal opens on top, the first becomes inert; closing the top dialog re-activates the underlying one.
+- **Vetoable dismissals**. Each of `(escapeKeyDown)`, `(pointerDownOutside)`, `(focusOutside)`, `(interactOutside)` fires before the corresponding `(dismiss)`. Call `preventDefault()` on the event to keep the dialog open (e.g. to ask "are you sure?" first).
+- **The close button** (`[forDialogClose]`) always requests close, regardless of `dismissible`. Reason emitted is `'closeButton'`.
+- **Both flows share the same engine** — the focus trap, scroll lock, dismissible layer, and portal in `ForDialogManager.open()` use the same `_internal/` utilities as the directive. Behavior is identical.
+
+## Known limitations
+
+Two shapes are correct by design and still break something a consumer can only discover by hitting it. Both live in markup a design system produces routinely, and neither shows up in devtools: every role and `aria-*` stays correct, so the symptom is a keyboard or screen-reader one. The library-wide statement, with the same detail for every primitive, is [Shadow DOM](../shared/README.md#shadow-dom) in `forty-cdk/shared`.
+
+**A shadow host that renders a focusable after its `<slot>` breaks the trap's `Tab` cycle.** The trap resolves its first / last pair by walking the surface's composed tree, and that walk visits slotted content after the host's whole shadow tree, whereas the browser sequences it at the `<slot>`'s position. Initial focus can land on a control that is not the visually first one, and a `Tab` at the dialog's real last control is not recognised as the cycle's end — focus leaves the surface (with the page `inert`, usually onto the browser's own UI) and the next `Tab` is pulled back to whichever control the walk thinks is first. That is the configuration you are in whenever you wrap a third-party web component, or your own `ViewEncapsulation.ShadowDom` component, inside the dialog. **Workaround:** render a host's own focusables before its `<slot>`, or project them instead of shadowing them; `initialFocus="container"` fixes the initial-focus half only, since the cycle's edges are re-resolved on every `Tab` press. Details and markup: [Focusable order](../shared/README.md#focusable-order-is-composed-only-for-a-host-that-renders-no-slot).
+
+**A `keydown` handler inside the dialog that calls `stopPropagation()` swallows Escape.** The dismissible-layer stack observes `Escape` on `document` in the bubble phase — a deliberate trade-off recorded on `DismissibleLayerStack` — so an event stopped inside the surface never arrives, and `Escape` silently stops dismissing while the backdrop click and `[forDialogClose]` keep working. **Workaround:** narrow the `stopPropagation()` to the keys you actually handle. Keeping the dialog open on `Escape` is the separate, supported job of the vetoable `(escapeKeyDown)` output. Details: [Escape is observed on the bubble phase](../shared/README.md#escape-is-observed-on-the-bubble-phase).
+
+A third known limit does not apply to this primitive but is easy to hit inside one: a [Tabs](../tabs) or [Stepper](../stepper) panel rendered in a dialog cannot re-measure its focusable content across a shadow boundary, so its own tab stop can go stale — see [that entry](../shared/README.md#a-panels-focusable-content-measurement-does-not-re-measure-across-a-boundary).
+
 ## Scoped / contained dialog
 
 Pass `[container]` to portal the dialog surface into a specific element instead of `document.body`. Pair it with `[modal]="false"` for a dialog scoped to a region of the page.
@@ -408,17 +419,6 @@ Pass `[container]` to portal the dialog surface into a specific element instead 
 **CSS contract.** The container must be positioned (`position: relative`); the dialog surface must use `position: absolute` (not `fixed`) so it is bounded to the container's box. `[forDialogBackdrop]` portals to the same container — use `position: absolute` on the backdrop too so it fills the container rather than the viewport.
 
 **`[container]` + `[modal]="true"` — region-isolating modal.** When both are set, the dialog isolates **within the container**: focus trap stays scoped to the dialog surface; inert siblings are applied to the container's other children only (body-level siblings outside the container stay interactive); and scroll lock targets the container's own `overflow`, not `<body>`. Programmatically: `ForDialogManager.open(Cmp, { modal: true, container: panelEl })`.
-
-## Behavior notes
-
-- **Mount equals open**. The directive does not manage `[hidden]` or any visibility attribute. The consumer's `@if (open())` controls presence, and `animate.enter` / `animate.leave` handle the visual transition.
-- **Portal**: the dialog box is moved to `document.body` on first render (or to `container` when set). The backdrop portals alongside the dialog (to the same `container`, `document.body` by default). CSS scoped to ancestors won't apply — use global styles or classes.
-- **Body scroll lock** is refcounted: stacking dialogs (or a dialog + a future overlay using the same lock) only restore on the last unlock.
-- **Focus trap** scopes Tab inside the dialog box while `modal`. It does NOT itself mark the rest of the page `inert` — that's the inert-siblings utility's job (next bullet).
-- **Inert siblings**. When `modal`, every direct child of `document.body` other than the dialog box (and its backdrop) gets `inert` and `aria-hidden="true"` while open, and is restored on close. This is what `aria-modal="true"` alone is missing — Safari + VoiceOver and several other AT pairings still announce siblings of an aria-modal node otherwise. Stacking is order-safe: when a second modal opens on top, the first becomes inert; closing the top dialog re-activates the underlying one.
-- **Vetoable dismissals**. Each of `(escapeKeyDown)`, `(pointerDownOutside)`, `(focusOutside)`, `(interactOutside)` fires before the corresponding `(dismiss)`. Call `preventDefault()` on the event to keep the dialog open (e.g. to ask "are you sure?" first).
-- **The close button** (`[forDialogClose]`) always requests close, regardless of `dismissible`. Reason emitted is `'closeButton'`.
-- **Both flows share the same engine** — the focus trap, scroll lock, dismissible layer, and portal in `ForDialogManager.open()` use the same `_internal/` utilities as the directive. Behavior is identical.
 
 ## Wrapping in a design system
 

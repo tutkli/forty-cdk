@@ -94,15 +94,39 @@ no manager to document carry a written exemption rather than a silently relaxed 
 
 Every `##` section is classified, and the ring reaches the page on `DocPageSection.ring`:
 
-| Ring        | Sections                                                                                                    | Rule                                                              |
-| ----------- | ----------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| `core`      | Anatomy, API                                                                                                | Required of every archetype that has DOM at all                   |
-| `canonical` | When to choose, Examples, Programmatic API, Keyboard, Accessibility, Styling, SSR, Behavior notes, Wrapping | Required per archetype, by the table below                        |
-| `specific`  | The long tail — _Snap points_, _Mega-menu_, _Date adapter_ …                                                | Free title and content; grouped in the TOC rather than normalised |
+| Ring        | Sections                                                                                                    | Rule                                                                                     |
+| ----------- | ----------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `core`      | Anatomy, API                                                                                                | Required of every archetype that has DOM at all                                          |
+| `canonical` | When to choose, Examples, Programmatic API, Keyboard, Accessibility, Styling, SSR, Behavior notes, Wrapping | Required per archetype, by the table below                                               |
+| `specific`  | The long tail — _Snap points_, _Mega-menu_, _Date adapter_ …                                                | Free title and content, in one contiguous run; grouped in the TOC rather than normalised |
 
 The tail is deliberate. 102 of the corpus's section titles appear exactly once, because `Select`
 genuinely has _Modal touch presentation_ to document and `Separator` does not. Normalising them
 would cost real nuance for the sake of a template, so `specific` gives them a home instead.
+
+### Where the specific ring goes
+
+The tail has a **position**, not only a classification and a rail treatment: a document writes its
+`specific` sections in **one contiguous run**, and one of them may sit above the first `core` section
+as a **prelude**. Both halves are checked, and a second run fails the build naming the file and the
+heading that starts it ([#1863](https://github.com/tutkli/forty-cdk/issues/1863)).
+
+The run is free to sit anywhere among the canonical sections — after `## Examples` on `/listbox`,
+after `## Programmatic API` on `/toast`, below `## Behavior notes` on `/dialog` — because the rail
+puts the group where the run is. Contiguity is what makes those two the same place: the rail nests
+the whole ring under one group, so a ring written in two runs got a group at one of them and dragged
+the rest of the tail to it. That is how twelve of the fifty-four published pages came to list their
+sections in an order the page does not use, with `## Wrapping the root` and
+`## Wrapping the declarative body` ending up inside `/table`'s closed drawer.
+
+The prelude is the exception thirteen documents already needed, under seven titles. `## Date adapter`
+states the provider `calendar`, `date-field`, `date-picker` and `time-field` need installed before
+any of them does anything; `## Two flows, one engine` opens `dialog` and `drawer`,
+`## Mount the viewport once` opens `toast`, and `## Why this exists` / `## How it works` /
+`## Setup` / `## Ergonomic layer` open the six others. Content a reader needs _before_ the anatomy
+belongs above it, so the rail keeps a prelude at its top level with its own anchor instead of nesting
+it — without that, five rails opened with a **non-clickable** _Behavior notes_ above `Anatomy`. One
+section, though, not a leading block: a second one is the tail spreading back out.
 
 ## Canonical sections
 
@@ -111,8 +135,9 @@ Sections appear **in this order**, and both halves of that sentence are enforced
 which sections a document owes — one missing fails the build unless it carries a written exemption
 there — and `TEMPLATE_ORDER` decides the sequence, failing a document that writes one of these
 headings above a heading the table puts before it
-([#1862](https://github.com/tutkli/forty-cdk/issues/1862)). The order is read as a subsequence, so a
-`specific` section may still sit between any two canonical ones.
+([#1862](https://github.com/tutkli/forty-cdk/issues/1862)). The order is read as a subsequence, so
+the specific run may sit between any two canonical ones — where it may sit is the previous section's
+rule.
 
 | Order | Canonical heading                | Level | Required for                           | Replaces these existing headings (aliases)                                  |
 | ----- | -------------------------------- | ----- | -------------------------------------- | --------------------------------------------------------------------------- |
@@ -251,12 +276,16 @@ Three things decide what a page gets, and all three are derived rather than decl
   archetype and every section it writes reads as `specific`.
 - **What the group is called.** A document that declares `## Behavior notes` names its own container:
   the group takes that section's title _and_ its anchor, and sits where the document put it. One that
-  does not borrows the title with no anchor, and the group sits where its first specific section does.
+  does not borrows the title with no anchor, and the group sits where its first grouped section does.
+  Either way that is where the page renders the run, so the rail's flattened order is the page's —
+  which `check:doc-output` asserts per page rather than leaves to the placement rule
+  ([#1863](https://github.com/tutkli/forty-cdk/issues/1863)). A **prelude** is not grouped: it keeps
+  its top-level entry and its anchor.
 - **Whether it starts closed.** Closed once the group holds more entries than the rest of the rail's
   top level — a ratio, so a page that later grows two canonical sections opens again with no
-  threshold to retune. Seven pages are closed today (`/select`, `/combobox`, `/table`, `/toast`,
-  `/drawer`, `/drag-drop`, `/virtualization`), and a closed group opens on its own while the section
-  being read is inside it.
+  threshold to retune. Six pages are closed today (`/select`, `/combobox`, `/table`, `/drawer`,
+  `/drag-drop`, `/virtualization`), and a closed group opens on its own while the section being read
+  is inside it.
 
 Tables are plain `<table>` markup, not the **ForTable** primitive, and no column sorts. This
 document claimed otherwise for a year; sorting a twelve-row API reference buys a reader little, and
@@ -276,11 +305,12 @@ That gate reads the links a document _writes_; `pnpm check:doc-output` reads the
 _serves_ ([#1802](https://github.com/tutkli/forty-cdk/issues/1802)). Over the prerendered HTML it
 fails on an anchor that still points at repository source, on one outside the site's base href, on an
 internal href that is not a route, and on any fragment with no matching `id` on its target page —
-plus, per document, on a `##` section the page never emitted and on a section that rendered no
-content block. Anchors inside a live example are excluded: a demo's markup is data, not
-documentation. One rule follows from the Examples row above and is worth stating on its own: **a
-fragment link to a heading nested under `## Examples` resolves on GitHub and cannot resolve on the
-site**, because the site replaces that section's body with its live demos. Link to `#examples`
+plus, per document, on a `##` section the page never emitted, on a section that rendered no content
+block, and on a rail whose links do not arrive in the order the page renders their targets. Anchors
+inside a live example are excluded: a demo's markup is data, not documentation. One rule follows
+from the Examples row above and is worth stating on its own: **a fragment link to a heading nested
+under `## Examples` resolves on GitHub and cannot resolve on the site**, because the site replaces
+that section's body with its live demos. Link to `#examples`
 instead — it is valid in both places.
 
 **Every fenced code block is highlighted at build time**, from the same two themes the example

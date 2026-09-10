@@ -6,9 +6,11 @@ import {
   CANONICAL_SECTIONS,
   checkContract,
   checkSectionOrder,
+  checkSectionRuns,
   checkSections,
   CORE_SECTIONS,
   foldTargetOf,
+  preludeIndexOf,
   readDocMeta,
   requiredSections,
   ringOf,
@@ -489,7 +491,7 @@ describe('the order the page template gives those sections', () => {
     );
   });
 
-  it('passes over a specific section, whose position is the long tail’s own question', () => {
+  it('passes over a specific section, whose position the run rule below holds instead', () => {
     const problems = checkSectionOrder([
       documentOf('Anatomy', 'Snap points', 'API', 'Mega-menu', 'Keyboard', 'Accessibility'),
     ]);
@@ -516,6 +518,86 @@ describe('the order the page template gives those sections', () => {
   });
 });
 
+describe('the one run the specific ring is written in', () => {
+  const markdownOf = (titles: readonly string[]) =>
+    readme('# T', '', 'Lede.', '', ...titles.flatMap((title) => [`## ${title}`, '', 'Body.', '']));
+
+  const documentOf = (...titles: readonly string[]) =>
+    compile({
+      path: 'projects/forty-cdk/thing/README.md',
+      slug: 'thing',
+      markdown: markdownOf(titles),
+    });
+
+  const lineOf = (titles: readonly string[], title: string) =>
+    markdownOf(titles).split('\n').indexOf(`## ${title}`) + 1;
+
+  it('fails the heading that opens the second run, at the line it is written on', () => {
+    const titles = ['Anatomy', 'Snap points', 'API', 'Mega-menu', 'Keyboard'];
+
+    expect(checkSectionRuns([documentOf(...titles)])).toEqual([
+      {
+        path: 'projects/forty-cdk/thing/README.md',
+        line: lineOf(titles, 'Mega-menu'),
+        message:
+          '"## Mega-menu" opens a second run of specific sections, and the page template gives ' +
+          'the ring one contiguous run — one section may still precede the first core one, as a ' +
+          'prelude — so move it beside "## Snap points", or move that run down to it',
+      },
+    ]);
+  });
+
+  it('passes a document that writes the whole ring in one run', () => {
+    const problems = checkSectionRuns([
+      documentOf('Anatomy', 'Snap points', 'Mega-menu', 'API', 'Keyboard'),
+    ]);
+
+    expect(problems).toEqual([]);
+  });
+
+  it('lets one section precede the first core one, as the prelude', () => {
+    const problems = checkSectionRuns([
+      documentOf('Date adapter', 'Anatomy', 'API', 'Snap points', 'Mega-menu', 'Keyboard'),
+    ]);
+
+    expect(problems).toEqual([]);
+  });
+
+  it('reads only the first of two sections above the first core one as that prelude', () => {
+    const titles = ['Date adapter', 'When to choose', 'Snap points', 'Anatomy', 'Mega-menu'];
+    const [problem] = checkSectionRuns([documentOf(...titles)]);
+
+    expect(problem?.line).toBe(lineOf(titles, 'Mega-menu'));
+    expect(problem?.message).toContain('move it beside "## Snap points"');
+  });
+
+  it('names the prelude of a document that writes one, and nothing of one that does not', () => {
+    expect(preludeIndexOf(documentOf('Date adapter', 'Anatomy', 'API').sections)).toBe(0);
+    expect(preludeIndexOf(documentOf('Anatomy', 'Snap points', 'API').sections)).toBe(-1);
+    expect(preludeIndexOf(documentOf('Anatomy', 'API').sections)).toBe(-1);
+  });
+
+  it('reports every run past the first rather than only the second', () => {
+    const titles = ['Anatomy', 'Snap points', 'API', 'Mega-menu', 'Keyboard', 'Modal presentation'];
+    const problems = checkSectionRuns([documentOf(...titles)]);
+
+    expect(problems.map((problem) => problem.line)).toEqual([
+      lineOf(titles, 'Mega-menu'),
+      lineOf(titles, 'Modal presentation'),
+    ]);
+  });
+
+  it('reports the same problem through the contract check the corpus runs', () => {
+    const problems = checkContract([
+      documentOf('Anatomy', 'Snap points', 'API', 'Mega-menu', 'Keyboard'),
+    ]);
+
+    expect(problems.filter((problem) => problem.message.startsWith('"## Mega-menu"'))).toHaveLength(
+      1,
+    );
+  });
+});
+
 describe('the corpus the library ships', () => {
   const documents = PRIMITIVE_DOCS.map((doc) => compile(doc));
 
@@ -538,6 +620,19 @@ describe('the corpus the library ships', () => {
 
   it('writes those sections in the order the page template gives them', () => {
     expect(checkSectionOrder(documents)).toEqual([]);
+  });
+
+  it('writes its specific ones in one run, a prelude aside', () => {
+    expect(checkSectionRuns(documents)).toEqual([]);
+  });
+
+  it('opens thirteen documents with a prelude, which is the shape the rule protects', () => {
+    const preludes = documents.filter((document) => preludeIndexOf(document.sections) !== -1);
+
+    expect(preludes.length).toBeGreaterThanOrEqual(13);
+    expect(
+      preludes.map((document) => document.sections[preludeIndexOf(document.sections)]!.title),
+    ).toContain('Date adapter');
   });
 
   it('spells the scoped-defaults section one way across the library', () => {

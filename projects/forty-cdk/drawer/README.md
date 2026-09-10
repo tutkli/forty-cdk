@@ -11,26 +11,6 @@ A side or bottom sheet built on the modal dialog pattern, adding pointer-driven 
 
 It shares the same focus trap, scroll lock, Escape-to-close, dismissible-layer, and portal behaviors as `ForDialog`, plus a pointer-driven drag engine.
 
-## Anatomy
-
-```html
-<button forDrawerTrigger [(open)]="open" controls="filters">Filters</button>
-
-<!-- rendered only while open() is true -->
-<div forDrawer id="filters" side="bottom" (dismiss)="open.set(false)">
-  <div forDrawerBackdrop></div>
-  <div forDrawerHandle aria-hidden="true"></div>
-  <h2 forDrawerTitle>Filters</h2>
-  <p forDrawerDescription>Apply filters to the listing.</p>
-  <button forDrawerClose>Close</button>
-</div>
-
-<!-- only when a [scaleBackground] drawer should scale the app shell -->
-<div forDrawerWrapper>
-  <!-- app shell -->
-</div>
-```
-
 ## Two flows, one engine
 
 Same engine as Dialog: the directive composes focus trap + scroll lock + dismissible layer + portal + (additionally) swipe-dismiss. Pick declarative or programmatic.
@@ -241,6 +221,26 @@ this.#drawers.open(ConfirmDrawer, {
 ```
 
 Declaratively the same recipe is the four vetoable outputs on `[forDrawer]`: `(interactOutside)="$event.preventDefault()"` suppresses the outside-click close while Escape (its own channel) still closes; veto `(escapeKeyDown)` instead to suppress Escape. Each callback's / output's `event.event` carries the originating DOM event. The callbacks behave identically to the outputs — same events, same veto semantics — and are torn down with the drawer.
+
+## Anatomy
+
+```html
+<button forDrawerTrigger [(open)]="open" controls="filters">Filters</button>
+
+<!-- rendered only while open() is true -->
+<div forDrawer id="filters" side="bottom" (dismiss)="open.set(false)">
+  <div forDrawerBackdrop></div>
+  <div forDrawerHandle aria-hidden="true"></div>
+  <h2 forDrawerTitle>Filters</h2>
+  <p forDrawerDescription>Apply filters to the listing.</p>
+  <button forDrawerClose>Close</button>
+</div>
+
+<!-- only when a [scaleBackground] drawer should scale the app shell -->
+<div forDrawerWrapper>
+  <!-- app shell -->
+</div>
+```
 
 ## API
 
@@ -582,12 +582,6 @@ The directive deliberately does **not** apply `[hidden]` to its surface. Wrap wi
 }
 ```
 
-## Accessibility
-
-Implements the [WAI-ARIA Modal Dialog pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/). `role="dialog"` (or `"alertdialog"` when `alert`), `aria-modal="true"` in modal mode, `aria-labelledby` / `aria-describedby` auto-wired by `[forDrawerTitle]` / `[forDrawerDescription]`. Modal mode applies `inert` and `aria-hidden="true"` to body siblings so AT cannot reach them. The handle is `aria-hidden="true"` because keyboard users dismiss via Escape or `[forDrawerClose]`.
-
-Keyboard: **Escape** closes the topmost drawer when `dismissible`; **Tab / Shift+Tab** cycles focus inside the drawer when `modal`; **Click** on `[forDrawerBackdrop]` closes when `dismissible`.
-
 ## Known limitations
 
 Two shapes are correct by design and still break something a consumer can only discover by hitting it. Both live in markup a design system produces routinely, and neither shows up in devtools: every role and `aria-*` stays correct, so the symptom is a keyboard or screen-reader one. The library-wide statement, with the same detail for every primitive, is [Shadow DOM](../shared/README.md#shadow-dom) in `forty-cdk/shared`.
@@ -597,6 +591,12 @@ Two shapes are correct by design and still break something a consumer can only d
 **A `keydown` handler inside the drawer that calls `stopPropagation()` swallows Escape.** The dismissible-layer stack observes `Escape` on `document` in the bubble phase — a deliberate trade-off recorded on `DismissibleLayerStack` — so an event stopped inside the surface never arrives, and `Escape` silently stops dismissing while swipe-to-dismiss, the backdrop click and `[forDrawerClose]` keep working. Only the topmost drawer's `Escape` is affected; see [Nested drawers](#nested-drawers) for the stacking contract. **Workaround:** narrow the `stopPropagation()` to the keys you actually handle. Keeping the drawer open on `Escape` is the separate, supported job of the vetoable `(escapeKeyDown)` output. Details: [Escape is observed on the bubble phase](../shared/README.md#escape-is-observed-on-the-bubble-phase).
 
 A third known limit does not apply to this primitive but is easy to hit inside one: a [Tabs](../tabs) or [Stepper](../stepper) panel rendered in a drawer cannot re-measure its focusable content across a shadow boundary, so its own tab stop can go stale — see [that entry](../shared/README.md#a-panels-focusable-content-measurement-does-not-re-measure-across-a-boundary).
+
+## Accessibility
+
+Implements the [WAI-ARIA Modal Dialog pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/). `role="dialog"` (or `"alertdialog"` when `alert`), `aria-modal="true"` in modal mode, `aria-labelledby` / `aria-describedby` auto-wired by `[forDrawerTitle]` / `[forDrawerDescription]`. Modal mode applies `inert` and `aria-hidden="true"` to body siblings so AT cannot reach them. The handle is `aria-hidden="true"` because keyboard users dismiss via Escape or `[forDrawerClose]`.
+
+Keyboard: **Escape** closes the topmost drawer when `dismissible`; **Tab / Shift+Tab** cycles focus inside the drawer when `modal`; **Click** on `[forDrawerBackdrop]` closes when `dismissible`.
 
 ## Styling
 
