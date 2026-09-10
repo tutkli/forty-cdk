@@ -273,17 +273,20 @@ function railFailures(at, page, document) {
  * Where a page renders the demos of a document that declares no `## Examples`
  * ([#1865](https://github.com/tutkli/forty-cdk/issues/1865)).
  *
- * The site synthesises that heading for the six published documents carrying a
- * written exemption from it, and its position is the page template's rather than index
+ * The site synthesises that heading for a page projecting a demo into the
+ * block, and its position is the page template's rather than index
  * 0: `## Anatomy` is the "what directives exist" reference a demo means nothing
  * without, so the block follows it. The claim is read off the emitted DOM for
  * the same reason the rail's order is — the body and the rail take the split
  * from one place, and this is the page a reader scrolls.
  *
- * A page whose document declares no `## Anatomy` is out of scope here: the
- * block follows that document's prelude instead, which is a fact about the
- * rings rather than about an id, and `doc-section-layout.spec.ts` is where it
- * is stated.
+ * Two kinds of page are out of scope here. One whose document declares no
+ * `## Anatomy` follows that document's prelude instead, which is a fact about
+ * the rings rather than about an id; and one whose only demo is its hero
+ * renders it above the intro, so it synthesises no block at all
+ * ([#1872](https://github.com/tutkli/forty-cdk/issues/1872)) — `/menu` is that
+ * page, which is why five of the seven documents declaring no `## Examples` are
+ * counted here. `doc-section-layout.spec.ts` is where both rules are stated.
  */
 function examplesSlotFailures(at, page, document) {
   if (document.sections.some((section) => section.slug === EXAMPLES_SECTION)) {

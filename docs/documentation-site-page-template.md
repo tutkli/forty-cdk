@@ -278,13 +278,22 @@ How each canonical section surfaces on the site (informs the page-shell componen
 | All `##` headings | Feed the "On this page" TOC (right rail); the `specific` ones nest under one group — see below                         |
 
 A document that declares no `## Examples` — the six carrying a written exemption, plus one
-`headless-utility` the table never required the section of — still gets it: the site synthesises
-the heading and places it where the table above orders it, after `## Anatomy`, and after the
-prelude on a page whose document declares no `## Anatomy` at all
-([#1865](https://github.com/tutkli/forty-cdk/issues/1865)). It used to be emitted first, so those
-seven pages opened with their demos and stated the pieces those demos compose below them, `/table`
-in ninth place. `check:doc-output` fails a page whose parts list follows the block again, and the
-placement itself is stated over the compiled model in `doc-section-layout.spec.ts`.
+`headless-utility` the table never required the section of — still gets it as long as its page
+projects a demo into the block: the site synthesises the heading and places it where the table
+above orders it, after `## Anatomy`, and after the prelude on a page whose document declares no
+`## Anatomy` at all ([#1865](https://github.com/tutkli/forty-cdk/issues/1865)). It used to be
+emitted first, so those seven pages opened with their demos and stated the pieces those demos
+compose below them, `/table` in ninth place. `check:doc-output` fails a page whose parts list
+follows the block again, and the placement itself is stated over the compiled model in
+`doc-section-layout.spec.ts`.
+
+A page whose only demo is its **hero** synthesises nothing
+([#1872](https://github.com/tutkli/forty-cdk/issues/1872)). A hero renders above the intro rather
+than in the block, so the heading would carry its permalink and an empty body — the state
+`forty-cdk/shared` is spared by declaring no demos at all
+([#1809](https://github.com/tutkli/forty-cdk/issues/1809)), and the question the rail already asks
+when it lists the block's children. `/menu` is that page, and it is the reason the rule is the
+demos a page projects rather than the demos it declares.
 
 The rail groups by ring ([#1810](https://github.com/tutkli/forty-cdk/issues/1810)). `core` and
 `canonical` sections stay at the top level in document order; the `specific` ones nest under a single

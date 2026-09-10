@@ -6,7 +6,11 @@ type Ringed = { readonly ring: DocPageSection['ring'] };
 /** A section as the demos slot addresses it: its anchor, and the ring above. */
 type Anchored = Ringed & { readonly slug: string };
 
+/** A demo as the slot addresses it: whether the page projects it above the intro. */
+type Projected = { readonly hero: boolean };
+
 const EXAMPLES = 'examples';
+const EXAMPLES_TITLE = 'Examples';
 const ANATOMY = 'anatomy';
 
 /**
@@ -31,6 +35,12 @@ export function preludeIndexOf(sections: readonly Ringed[]): number {
   return first !== -1 && (core === -1 || first < core) ? first : -1;
 }
 
+/** The heading a page renders its live demos under. */
+export interface DocExamplesHeading {
+  readonly title: string;
+  readonly slug: string;
+}
+
 /** A page's sections, split at the point its live demos render. */
 export interface DocExamplesSlot<T> {
   /** The sections rendered above the demos. */
@@ -51,10 +61,11 @@ export interface DocExamplesSlot<T> {
  * A document that declares `## Examples` keeps the position it wrote it in, and
  * the site replaces that section's body with the demos. One that carries a
  * written exemption from it — six today, plus `virtualization`, whose archetype
- * never required the section — has the heading synthesised instead, and this is
- * the rule that gives it the template's position: after `## Anatomy`, which is
- * the "what directives exist" reference a demo means nothing without, and after
- * the prelude for a document that declares no `## Anatomy` at all.
+ * never required the section — has the heading synthesised by
+ * {@link examplesHeadingOf} instead, and this is the rule that gives it the
+ * template's position: after `## Anatomy`, which is the "what directives exist"
+ * reference a demo means nothing without, and after the prelude for a document
+ * that declares no `## Anatomy` at all.
  *
  * The placement had been an accident of a `-1`: the index of the declared
  * section was also the split point, so a document with none put the demos, the
@@ -75,4 +86,28 @@ export function splitAtExamples<T extends Anchored>(sections: readonly T[]): Doc
   const anatomy = sections.findIndex((section) => section.slug === ANATOMY);
   const at = anatomy !== -1 ? anatomy + 1 : preludeIndexOf(sections) + 1;
   return { before: sections.slice(0, at), after: sections.slice(at), declared: null };
+}
+
+/**
+ * The heading a page renders its live demos under, or `null` for a page with
+ * nothing to render there.
+ *
+ * A document that declares the section owns its heading, and the site replaces
+ * that section's body with the demos. One that does not has the heading
+ * synthesised — but only when a demo renders inside the block. A hero is
+ * projected above the intro instead, so a page whose only demo is its hero
+ * would emit a heading, its permalink and an empty body
+ * ([#1872](https://github.com/tutkli/forty-cdk/issues/1872)): the state
+ * `forty-cdk/shared` is already spared by declaring no demos at all
+ * ([#1809](https://github.com/tutkli/forty-cdk/issues/1809)), and the question
+ * the rail already asks when it lists the block's children.
+ */
+export function examplesHeadingOf(
+  declared: DocExamplesHeading | null,
+  demos: readonly Projected[],
+): DocExamplesHeading | null {
+  if (declared !== null) {
+    return { title: declared.title, slug: declared.slug };
+  }
+  return demos.some((demo) => !demo.hero) ? { title: EXAMPLES_TITLE, slug: EXAMPLES } : null;
 }
