@@ -461,7 +461,7 @@ Each drawer also reflects its position in the stack as `data-depth` (`"0"` for t
 
 Always nest the child's `@if` inside the parent's `@if`. That guarantees Angular's bottom-up destroy order tears the child down before the parent — the topology stack throws otherwise so the bug is loud at dev time. If both drawers opt into `[scaleBackground]="true"`, the wrapper effect composes with the parent's nested transform automatically.
 
-## Defaults provider
+## Scoped defaults
 
 ```ts
 import { provideForDrawerDefaults } from 'forty-cdk/drawer';

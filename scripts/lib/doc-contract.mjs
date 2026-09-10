@@ -131,6 +131,77 @@ export const CORE_SECTIONS = ['Anatomy', 'API'];
 export const CANONICAL_SECTIONS = TEMPLATE_ORDER.filter((title) => !CORE_SECTIONS.includes(title));
 
 /**
+ * A heading no document may write, and the one it means.
+ *
+ * The page template carried this as a prose column — "Replaces these existing
+ * headings" — and prose is what let seven of them survive the normalisation it
+ * was written for ([#1864](https://github.com/tutkli/forty-cdk/issues/1864)).
+ * An alias is not a cosmetic difference: {@link ringOf} classifies by exact
+ * title, so `## Keyboard interaction` is read as `specific` and its primitive
+ * has no keyboard section as far as any check or any reader scanning the rail
+ * can tell.
+ *
+ * `Scoped defaults` is here for the same reason under a different name: it is
+ * no template heading, and four spellings of it minted four anchors for the one
+ * concept every `provideForXDefaults` scope documents.
+ *
+ * Exact titles only. A free heading is the tail this contract deliberately
+ * leaves alone, and judging one is not this check's business — the aliases are
+ * the headings the corpus actually wrote for a canonical idea, and the list
+ * grows the day another one does.
+ */
+export const HEADING_ALIASES = new Map([
+  ['Pieces', 'Anatomy'],
+  ['Pieces (declarative)', 'Anatomy'],
+  ['Parts', 'Anatomy'],
+  ['Example', 'Examples'],
+  ['Usage', 'Examples'],
+  ['Stand-alone usage', 'Examples'],
+  ['Declarative usage', 'Examples'],
+  ['Inputs', 'API'],
+  ['Outputs', 'API'],
+  ['Inputs / outputs', 'API'],
+  ['Inputs / models', 'API'],
+  ['API reference', 'API'],
+  ['Keyboard interaction', 'Keyboard'],
+  ['Accessibility notes', 'Accessibility'],
+  ['A11y', 'Accessibility'],
+  ['Styling forty-cdk', 'Styling'],
+  ['Server-side rendering', 'SSR'],
+  ['Behavior', 'Behavior notes'],
+  ['Notes', 'Behavior notes'],
+  ['Wrapping', 'Wrapping in a design system'],
+  ['Design system usage', 'Wrapping in a design system'],
+  ['Wrapping the root', 'Wrapping in a design system'],
+  ['Wrapping the declarative body', 'Wrapping in a design system'],
+  ['Scope defaults', 'Scoped defaults'],
+  ['Defaults', 'Scoped defaults'],
+  ['Defaults provider', 'Scoped defaults'],
+  ['Global defaults', 'Scoped defaults'],
+]);
+
+/**
+ * An alias a document keeps, and the reason the rename is not available to it.
+ *
+ * `## Declarative usage` is Toast's example set, and Toast is exempt from
+ * `## Examples` for exactly that reason — so renaming it to the canonical form
+ * would collide with the synthetic `Examples` entry the site inserts for a page
+ * that declares none. That is a demo-placement question rather than a naming
+ * one, and #1865 is where it is settled; this entry is what keeps the alias
+ * check blocking until then, and what fails the build the day the heading is
+ * finally renamed and the reason outlives it.
+ */
+export const ALIAS_EXEMPTIONS = [
+  {
+    slug: 'toast',
+    section: 'Declarative usage',
+    reason:
+      'The example set of a page exempt from ## Examples — renaming it collides with the entry ' +
+      'the site synthesises for that page, which #1865 places the demos of.',
+  },
+];
+
+/**
  * A required section a document deliberately omits, with the reason it does.
  *
  * This is the mechanism that keeps the check blocking rather than advisory: an
@@ -175,13 +246,6 @@ export const SECTION_EXEMPTIONS = [
     section: 'Examples',
     reason:
       'Its live demos carry the section; ## Two flows, one engine is the prose the examples need.',
-  },
-  {
-    slug: 'drag-drop',
-    section: 'API',
-    reason:
-      'Documented per flow rather than in one place — each section introduces its pieces with ' +
-      'their own table, because a single API section would list nine directives out of context.',
   },
   {
     slug: 'drag-drop',
@@ -587,6 +651,61 @@ export function checkExemptions(documents) {
 }
 
 /**
+ * Every document that writes a heading the template retired, and every alias
+ * exemption that no longer earns its place.
+ *
+ * Only `##` headings take part, which is what makes the drag-drop half of
+ * [#1864](https://github.com/tutkli/forty-cdk/issues/1864) expressible: the
+ * data-attribute reference is canonical as a `### Data attributes` under
+ * `## API`, and this check is about what a section is called rather than how
+ * deep it sits.
+ *
+ * The staleness half is stated over the whole corpus for the same reason
+ * {@link checkExemptions} is — an exemption can only be called stale against
+ * every document there is.
+ */
+export function checkHeadingAliases(documents) {
+  const problems = [];
+  const exempt = (slug, title) =>
+    ALIAS_EXEMPTIONS.some((one) => one.slug === slug && one.section === title);
+
+  for (const document of documents) {
+    for (const section of document.sections) {
+      const canonical = HEADING_ALIASES.get(section.title);
+      if (canonical === undefined || exempt(document.slug, section.title)) {
+        continue;
+      }
+      problems.push({
+        path: document.path,
+        line: section.line,
+        message:
+          `"## ${section.title}" is an alias the page template retired — write ` +
+          `"## ${canonical}", the one spelling the corpus and its anchors carry`,
+      });
+    }
+  }
+
+  const bySlug = new Map(documents.map((document) => [document.slug, document]));
+  const at = (message) => ({ path: 'scripts/lib/doc-contract.mjs', line: 1, message });
+  for (const exemption of ALIAS_EXEMPTIONS) {
+    const document = bySlug.get(exemption.slug);
+    if (document === undefined) {
+      problems.push(at(`ALIAS_EXEMPTIONS names ${exemption.slug}, which compiles no document`));
+      continue;
+    }
+    if (!document.sections.some((section) => section.title === exemption.section)) {
+      problems.push(
+        at(
+          `${exemption.slug} keeps the alias "## ${exemption.section}" by exemption and no longer ` +
+            'writes it — drop the exemption',
+        ),
+      );
+    }
+  }
+  return problems;
+}
+
+/**
  * Every document that carries the right sections in the wrong order.
  *
  * Read as a subsequence rather than a sequence: only the headings
@@ -701,6 +820,7 @@ export function checkContract(documents) {
   return [
     ...checkSections(documents),
     ...checkExemptions(documents),
+    ...checkHeadingAliases(documents),
     ...checkSectionOrder(documents),
     ...checkSectionRuns(documents),
   ];

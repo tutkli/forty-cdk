@@ -1,15 +1,18 @@
-import type { DocKind } from '../../../../../scripts/docs/doc-model.mjs';
+import type { DocDocument, DocKind } from '../../../../../scripts/docs/doc-model.mjs';
 import {
+  ALIAS_EXEMPTIONS,
   ARCHETYPES,
   BEHAVIOR_GROUP_TITLE,
   behaviorGroupOf,
   CANONICAL_SECTIONS,
   checkContract,
+  checkHeadingAliases,
   checkSectionOrder,
   checkSectionRuns,
   checkSections,
   CORE_SECTIONS,
   foldTargetOf,
+  HEADING_ALIASES,
   preludeIndexOf,
   readDocMeta,
   requiredSections,
@@ -454,6 +457,133 @@ describe('holding a document to its archetypes', () => {
   });
 });
 
+/**
+ * The alias column of the page template, made executable
+ * ([#1864](https://github.com/tutkli/forty-cdk/issues/1864)).
+ *
+ * Prose is what let seven of these survive the normalisation the column was
+ * written for, and an alias is not cosmetic: `ringOf` classifies by exact
+ * title, so `## Keyboard interaction` reads as `specific` and its primitive has
+ * no keyboard section as far as any check can tell.
+ */
+describe('the headings the page template retired', () => {
+  const markdownOf = (titles: readonly string[]) =>
+    readme('# T', '', 'Lede.', '', ...titles.flatMap((title) => [`## ${title}`, '', 'Body.', '']));
+
+  const documentOf = (slug: string, ...titles: readonly string[]) =>
+    compile({
+      path: `projects/forty-cdk/${slug}/README.md`,
+      slug,
+      markdown: markdownOf(titles),
+    });
+
+  const lineOf = (titles: readonly string[], title: string) =>
+    markdownOf(titles).split('\n').indexOf(`## ${title}`) + 1;
+
+  const aliasesOf = (...documents: readonly DocDocument[]) =>
+    checkHeadingAliases(documents).filter(
+      (problem) => problem.path !== 'scripts/lib/doc-contract.mjs',
+    );
+
+  it('fails an alias at the line it is written on, naming the canonical heading', () => {
+    const titles = ['Anatomy', 'API', 'Notes'];
+
+    expect(aliasesOf(documentOf('thing', ...titles))).toEqual([
+      {
+        path: 'projects/forty-cdk/thing/README.md',
+        line: lineOf(titles, 'Notes'),
+        message:
+          '"## Notes" is an alias the page template retired — write "## Behavior notes", the one ' +
+          'spelling the corpus and its anchors carry',
+      },
+    ]);
+  });
+
+  it('names the one spelling for a concept the template gives no row', () => {
+    const [problem] = aliasesOf(documentOf('thing', 'Anatomy', 'API', 'Global defaults'));
+
+    expect(problem?.message).toContain('write "## Scoped defaults"');
+  });
+
+  it('reads a `##` heading only, which is what leaves the attribute reference a `###`', () => {
+    const document = compile({
+      path: 'projects/forty-cdk/thing/README.md',
+      slug: 'thing',
+      markdown: readme(
+        '# T',
+        '',
+        'Lede.',
+        '',
+        '## Wrapping in a design system',
+        '',
+        '### Wrapping the root',
+        '',
+        'Body.',
+        '',
+      ),
+    });
+
+    expect(aliasesOf(document)).toEqual([]);
+  });
+
+  it('keeps the alias a document carries a written exemption for', () => {
+    const [exemption] = ALIAS_EXEMPTIONS;
+
+    expect(exemption).toBeDefined();
+    expect(HEADING_ALIASES.has(exemption!.section)).toBe(true);
+    expect(exemption!.reason.length).toBeGreaterThan(0);
+    expect(
+      checkHeadingAliases([documentOf(exemption!.slug, 'Anatomy', 'API', exemption!.section)]),
+    ).toEqual([]);
+  });
+
+  it('fails an exemption whose document no longer writes the alias', () => {
+    const [exemption] = ALIAS_EXEMPTIONS;
+
+    expect(checkHeadingAliases([documentOf(exemption!.slug, 'Anatomy', 'API')])).toEqual([
+      {
+        path: 'scripts/lib/doc-contract.mjs',
+        line: 1,
+        message:
+          `${exemption!.slug} keeps the alias "## ${exemption!.section}" by exemption and no ` +
+          'longer writes it — drop the exemption',
+      },
+    ]);
+  });
+
+  it('fails an exemption naming a document that compiles nothing', () => {
+    const problems = checkHeadingAliases([documentOf('thing', 'Anatomy', 'API')]);
+
+    expect(problems.some((problem) => problem.message.includes('ALIAS_EXEMPTIONS names'))).toBe(
+      true,
+    );
+  });
+
+  it('reports the same problem through the contract check the corpus runs', () => {
+    const problems = checkContract([documentOf('thing', 'Anatomy', 'Keyboard interaction')]);
+
+    expect(
+      problems.filter((problem) => problem.message.startsWith('"## Keyboard interaction"')),
+    ).toHaveLength(1);
+  });
+
+  it('resolves every alias to a heading the template names or the corpus writes', () => {
+    const titles = new Set(
+      PRIMITIVE_DOCS.flatMap((doc) => compile(doc).sections.map((section) => section.title)),
+    );
+
+    for (const canonical of new Set(HEADING_ALIASES.values())) {
+      expect(TEMPLATE_ORDER.includes(canonical) || titles.has(canonical)).toBe(true);
+    }
+  });
+
+  it('maps no canonical heading to another one, so a rename is never two hops', () => {
+    for (const canonical of HEADING_ALIASES.values()) {
+      expect(HEADING_ALIASES.has(canonical)).toBe(false);
+    }
+  });
+});
+
 describe('the order the page template gives those sections', () => {
   const markdownOf = (titles: readonly string[]) =>
     readme('# T', '', 'Lede.', '', ...titles.flatMap((title) => [`## ${title}`, '', 'Body.', '']));
@@ -635,13 +765,19 @@ describe('the corpus the library ships', () => {
     ).toContain('Date adapter');
   });
 
+  it('writes no heading the page template retired, one written exemption aside', () => {
+    expect(checkHeadingAliases(documents)).toEqual([]);
+  });
+
   it('spells the scoped-defaults section one way across the library', () => {
     const titles = documents.flatMap((document) =>
       document.sections.map((section) => section.title),
     );
 
     expect(titles).toContain('Scoped defaults');
-    expect(titles).not.toContain('Scope defaults');
+    for (const spelling of ['Scope defaults', 'Defaults', 'Defaults provider', 'Global defaults']) {
+      expect(titles).not.toContain(spelling);
+    }
   });
 });
 
