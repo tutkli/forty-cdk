@@ -1762,6 +1762,18 @@ describe('ForTable', () => {
       expect(allCells[0]!.getAttribute('data-highlighted')).toBe('');
     });
 
+    it('Cmd+End / Cmd+Home reach the same grid extremes as the Ctrl pair', async () => {
+      const { el, flush } = renderHost(GridTableHost);
+      const allCells = cells(el);
+      press(allCells[0]!, 'End', { metaKey: true });
+      await flush();
+      expect(allCells[8]!.getAttribute('data-highlighted')).toBe('');
+
+      press(allCells[8]!, 'Home', { metaKey: true });
+      await flush();
+      expect(allCells[0]!.getAttribute('data-highlighted')).toBe('');
+    });
+
     it('PageDown pages down by rows preserving the column; PageUp pages back up', async () => {
       const { el, flush } = renderHost(GridTableHost);
       const allCells = cells(el);
@@ -1923,6 +1935,16 @@ describe('ForTable', () => {
       const lastCell = el.querySelector<HTMLElement>('[data-testid="c-c2"]')!;
       const headerA = el.querySelector<HTMLElement>('[data-testid="h-a"]')!;
       press(lastCell, 'Home', { ctrlKey: true });
+      await flush();
+      expect(document.activeElement).toBe(headerA);
+      expect(headerA.getAttribute('data-highlighted')).toBe('');
+    });
+
+    it('Cmd+Home lands on the first header cell as well', async () => {
+      const { el, flush } = renderHost(GridWithHeaderHost);
+      const lastCell = el.querySelector<HTMLElement>('[data-testid="c-c2"]')!;
+      const headerA = el.querySelector<HTMLElement>('[data-testid="h-a"]')!;
+      press(lastCell, 'Home', { metaKey: true });
       await flush();
       expect(document.activeElement).toBe(headerA);
       expect(headerA.getAttribute('data-highlighted')).toBe('');

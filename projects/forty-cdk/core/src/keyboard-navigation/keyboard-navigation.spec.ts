@@ -115,11 +115,13 @@ describe('resolveGridNavigation', () => {
     expect(resolveGridNavigation(key('ArrowRight'), opts)).toBe('next');
   });
 
-  it('Home / End = row extremes; Ctrl+Home / Ctrl+End = grid extremes', () => {
+  it('Home / End = row extremes; Ctrl/Cmd+Home / Ctrl/Cmd+End = grid extremes', () => {
     expect(resolveGridNavigation(key('Home'), opts)).toBe('first-in-row');
     expect(resolveGridNavigation(key('End'), opts)).toBe('last-in-row');
     expect(resolveGridNavigation(key('Home', { ctrlKey: true }), opts)).toBe('first');
     expect(resolveGridNavigation(key('End', { ctrlKey: true }), opts)).toBe('last');
+    expect(resolveGridNavigation(key('Home', { metaKey: true }), opts)).toBe('first');
+    expect(resolveGridNavigation(key('End', { metaKey: true }), opts)).toBe('last');
   });
 
   it('RTL swaps left/right', () => {

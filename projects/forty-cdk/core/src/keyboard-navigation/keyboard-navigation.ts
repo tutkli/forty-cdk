@@ -89,7 +89,8 @@ export interface GridNavigationOptions {
  * Maps a keyboard event to a 2D grid navigation action.
  *
  * APG: `Ctrl+Home` / `Ctrl+End` jump to the first / last cell of the entire
- * grid. Plain `Home` / `End` go to the first / last cell of the current row.
+ * grid, with `Cmd` accepted as the macOS alias for `Ctrl`. Plain `Home` / `End`
+ * go to the first / last cell of the current row.
  * `PageUp` / `PageDown` (when `pageKeys` is enabled) page up / down by whole
  * rows while preserving the current column — they do not jump to the grid ends.
  */
@@ -109,9 +110,9 @@ export function resolveGridNavigation(
     case 'ArrowRight':
       return dir === 'rtl' ? 'prev' : 'next';
     case 'Home':
-      return event.ctrlKey ? 'first' : 'first-in-row';
+      return event.ctrlKey || event.metaKey ? 'first' : 'first-in-row';
     case 'End':
-      return event.ctrlKey ? 'last' : 'last-in-row';
+      return event.ctrlKey || event.metaKey ? 'last' : 'last-in-row';
     case 'PageUp':
       return pageKeys ? 'page-up' : null;
     case 'PageDown':
