@@ -239,7 +239,7 @@ import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized
       font-size: 0.9rem;
     }
 
-    .calendar-cell:hover:not([aria-disabled]) {
+    .calendar-cell:hover:not([aria-disabled]):not([data-selected]) {
       background: var(--pg-surface-2);
     }
 
@@ -251,6 +251,10 @@ import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized
       background: var(--pg-primary);
       color: var(--pg-primary-contrast);
       font-weight: 600;
+    }
+
+    .calendar-cell[data-selected]:hover:not([aria-disabled]) {
+      background: var(--pg-primary-hover);
     }
 
     .calendar-cell[data-outside-month] {

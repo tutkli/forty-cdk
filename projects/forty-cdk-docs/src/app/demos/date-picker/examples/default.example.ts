@@ -229,7 +229,7 @@ import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized
       transition: background 0.12s ease;
     }
 
-    .date-picker-cell:hover:not([aria-disabled]):not([data-in-range]):not([data-range-preview]) {
+    .date-picker-cell:hover:not([aria-disabled]):not([data-selected]) {
       background: var(--pg-surface-2);
     }
 
@@ -246,6 +246,10 @@ import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized
       background: var(--pg-primary);
       color: var(--pg-primary-contrast);
       font-weight: 600;
+    }
+
+    .date-picker-cell[data-selected]:hover:not([aria-disabled]) {
+      background: var(--pg-primary-hover);
     }
 
     .date-picker-grid:focus-within .date-picker-cell[data-highlighted],

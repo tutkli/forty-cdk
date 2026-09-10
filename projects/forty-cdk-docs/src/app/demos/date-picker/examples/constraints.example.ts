@@ -240,7 +240,7 @@ import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized
       transition: background 0.12s ease;
     }
 
-    .dp-constraints-cell:hover:not([aria-disabled]) {
+    .dp-constraints-cell:hover:not([aria-disabled]):not([data-selected]) {
       background: var(--pg-surface-2);
     }
 
@@ -257,6 +257,10 @@ import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized
       background: var(--pg-primary);
       color: var(--pg-primary-contrast);
       font-weight: 600;
+    }
+
+    .dp-constraints-cell[data-selected]:hover:not([aria-disabled]) {
+      background: var(--pg-primary-hover);
     }
 
     .dp-constraints-grid:focus-within .dp-constraints-cell[data-highlighted],

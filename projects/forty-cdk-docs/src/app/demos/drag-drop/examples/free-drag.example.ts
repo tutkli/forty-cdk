@@ -43,7 +43,7 @@ import { ForDragHandle, ForFreeDrag } from 'forty-cdk/drag-drop';
       width: 96px;
       height: 96px;
       background: var(--pg-primary);
-      color: var(--pg-on-primary, #fff);
+      color: var(--pg-primary-contrast);
       border-radius: var(--pg-radius-sm);
       box-shadow: var(--pg-shadow);
       font-size: 0.85rem;
