@@ -26,7 +26,12 @@ const DEMOS_SOURCE_PREFIX = 'projects/forty-cdk-docs/src/app/demos/';
   selector: 'demo-layout',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [Icon, ForTabs, ForTabsList, ForTabsTrigger, ForTabsContent],
-  host: { '[id]': 'hostId()', '[class.is-hero]': 'hero()' },
+  host: {
+    '[id]': 'hostId()',
+    '[class.is-hero]': 'hero()',
+    '[attr.title]': 'null',
+    '[attr.subtitle]': 'null',
+  },
   template: `
     @if (!hero()) {
       <header class="head">
