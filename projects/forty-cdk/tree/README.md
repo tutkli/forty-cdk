@@ -305,87 +305,6 @@ ancestorsOf = (id: string): readonly string[] => { /* walk roots, return the pat
 
 `expandToReveal` accepts any `Iterable<T>` (array, `Set`, generator) of node values. Root-level matches contribute nothing — a root has no ancestors to expand.
 
-## API
-
-### `ForTree`
-
-| Property                | Type                                | Description                                                                                                                                                                                                                                                |
-| ----------------------- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `value`                 | `model<readonly T[]>`               | Two-way bindable. Selected node values. Single mode keeps 0 or 1; multi any number.<br>**Default:** `[]`                                                                                                                                                   |
-| `expanded`              | `model<readonly T[]>`               | Two-way bindable. Open (expanded) parent node values. Always multi.<br>**Default:** `[]`                                                                                                                                                                   |
-| `selected`              | `Signal<T \| null>`                 | Read-only single-select convenience view of `value`: the sole selected value, or `null` when none / many are selected.<br>**Default:** —                                                                                                                   |
-| `compareWith`           | `input<(a: T, b: T) => boolean>`    | Equality comparator for node values — selection and expansion membership, cascade descendants, the range anchor, and drag-drop resolution all route through it.<br>**Default:** `(a, b) => a === b`                                                        |
-| `multiple`              | `input<boolean>`                    | When true, multiple nodes can be selected.<br>**Default:** `false`                                                                                                                                                                                         |
-| `disabled`              | `input<boolean>`                    | Disables the whole tree. Reflected as `aria-disabled` / `data-disabled`.<br>**Default:** —                                                                                                                                                                 |
-| `orientation`           | `input<'vertical' \| 'horizontal'>` | Navigation axis. `'vertical'` (ArrowUp/Down move; ArrowLeft/Right expand/collapse). Reflected as `aria-orientation` / `data-orientation`.<br>**Default:** `'vertical'`                                                                                     |
-| `ariaLabel`             | `input<string \| null>`             | Reactive accessible name, reflected as `aria-label`. Prefer native `aria-labelledby` when a visible label exists.<br>**Default:** `null` (and empty) emits no attribute                                                                                    |
-| `dir`                   | `input<'ltr' \| 'rtl' \| null>`     | Writing direction. `null` resolves the inherited ambient direction; an explicit value wins. Reflected to the host `dir` attribute and mirrors the expand/collapse arrows in RTL.<br>**Default:** `null`                                                    |
-| `selectionFollowsFocus` | `input<boolean>`                    | Single-mode only. When true, arrow navigation also selects the focused node.<br>**Default:** from `provideForTreeDefaults`                                                                                                                                 |
-| `selectionMode`         | `input<'highlight' \| 'checkbox'>`  | Selection presentation. `'highlight'` uses `aria-selected`; `'checkbox'` uses `aria-checked` and renders the checkbox anatomy (inherently multi-select).<br>**Default:** `'highlight'`                                                                     |
-| `cascade`               | `input<boolean>`                    | Enables cascade selection in `selectionMode="checkbox"`: checking / unchecking a node propagates to all descendants, and a parent reports `aria-checked="mixed"` when only some descendants are checked. Requires `descendantsOf`.<br>**Default:** `false` |
-| `descendantsOf`         | `input<(value: T) => readonly T[]>` | Returns the selectable descendant values of a node (excluding the node itself). Required when `cascade` is `true`; the tree throws a `[forty-cdk/tree]` error otherwise.<br>**Default:** —                                                                 |
-
-| Data attribute     | Values                     |
-| ------------------ | -------------------------- |
-| `data-orientation` | `vertical` \| `horizontal` |
-| `data-disabled`    | present \| absent          |
-
-### `ForTreeItem`
-
-| Property    | Type                | Description                                                                                                |
-| ----------- | ------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `value`     | `input.required<T>` | The node's value. Must be unique within the tree.<br>**Default:** —                                        |
-| `disabled`  | `input<boolean>`    | Disables this node: not selectable, skipped by keyboard navigation.<br>**Default:** —                      |
-| `textValue` | `input<string>`     | Typeahead text override. Falls back to the `[forTreeItemLabel]` text content when empty.<br>**Default:** — |
-
-| Data attribute     | Values                                                  |
-| ------------------ | ------------------------------------------------------- |
-| `data-state`       | `open` \| `closed` (parent items only)                  |
-| `data-selected`    | present \| absent                                       |
-| `data-highlighted` | present \| absent                                       |
-| `data-disabled`    | present \| absent                                       |
-| `data-checked`     | `"true"` \| `"false"` \| `"mixed"` (checkbox mode only) |
-
-A `[forTreeItem]` emits `data-state` only when it is a parent (a `[forTreeItemToggle]` is registered inside it); leaves carry neither `data-state` nor `aria-expanded`. Expansion (`data-state`) and selection (`data-selected`) are independent hooks because a node can be both expandable and selected at once.
-
-### `ForTreeItemToggle`
-
-| Data attribute | Values             |
-| -------------- | ------------------ |
-| `data-state`   | `open` \| `closed` |
-
-### `ForTreeItemCheckbox`
-
-| Data attribute | Values                                      |
-| -------------- | ------------------------------------------- |
-| `data-state`   | `checked` \| `unchecked` \| `indeterminate` |
-
-### `ForTreeItemCheckboxIndicator`
-
-| Data attribute | Values                                      |
-| -------------- | ------------------------------------------- |
-| `data-state`   | `checked` \| `unchecked` \| `indeterminate` |
-
-## Keyboard
-
-Vertical, LTR (mirrored for `dir="rtl"`):
-
-| Key                     | Behavior                                                                                      |
-| ----------------------- | --------------------------------------------------------------------------------------------- |
-| **ArrowDown / ArrowUp** | Move focus to the next / previous visible node (no wrap; collapsed subtrees are skipped).     |
-| **ArrowRight**          | Closed parent → expand (focus stays); open parent → focus first child; leaf → no-op.          |
-| **ArrowLeft**           | Open parent → collapse (focus stays); otherwise → focus the parent node; closed root → no-op. |
-| **Home / End**          | First / last visible node.                                                                    |
-| **Enter**               | Select / activate the focused node.                                                           |
-| **Space**               | Single: select. Multi: toggle the focused node's selection.                                   |
-| **\***                  | Expand every sibling parent at the focused node's level.                                      |
-| **type a character**    | Typeahead: focus the next visible node whose label starts with the buffer.                    |
-| **Shift+ArrowUp/Down**  | Multi: move focus and toggle the new node's selection.                                        |
-| **Shift+Space**         | Multi: select the contiguous range from the anchor to the focused node.                       |
-| **Ctrl/Cmd+A**          | Multi: select every visible enabled node (toggles off when all are already selected).         |
-
-Under `dir="rtl"` the expand / collapse arrows swap: **ArrowLeft** expands and **ArrowRight** collapses.
-
 ## Scoped defaults
 
 ```ts
@@ -782,6 +701,87 @@ provideForTreeDefaults({
 | `dragAnnounceDrop`    | `(label: string, parentLabel: string \| null, position: number, total: number) => string` | Announced when a node is committed to its new position.            |
 | `dragAnnounceCancel`  | `(label: string) => string`                                                               | Announced when a lift is cancelled and the node returns to origin. |
 | `dragAnnounceInvalid` | `(label: string) => string`                                                               | Announced when a `canDrop` veto rejects the attempted drop.        |
+
+## API
+
+### `ForTree`
+
+| Property                | Type                                | Description                                                                                                                                                                                                                                                |
+| ----------------------- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`                 | `model<readonly T[]>`               | Two-way bindable. Selected node values. Single mode keeps 0 or 1; multi any number.<br>**Default:** `[]`                                                                                                                                                   |
+| `expanded`              | `model<readonly T[]>`               | Two-way bindable. Open (expanded) parent node values. Always multi.<br>**Default:** `[]`                                                                                                                                                                   |
+| `selected`              | `Signal<T \| null>`                 | Read-only single-select convenience view of `value`: the sole selected value, or `null` when none / many are selected.<br>**Default:** —                                                                                                                   |
+| `compareWith`           | `input<(a: T, b: T) => boolean>`    | Equality comparator for node values — selection and expansion membership, cascade descendants, the range anchor, and drag-drop resolution all route through it.<br>**Default:** `(a, b) => a === b`                                                        |
+| `multiple`              | `input<boolean>`                    | When true, multiple nodes can be selected.<br>**Default:** `false`                                                                                                                                                                                         |
+| `disabled`              | `input<boolean>`                    | Disables the whole tree. Reflected as `aria-disabled` / `data-disabled`.<br>**Default:** —                                                                                                                                                                 |
+| `orientation`           | `input<'vertical' \| 'horizontal'>` | Navigation axis. `'vertical'` (ArrowUp/Down move; ArrowLeft/Right expand/collapse). Reflected as `aria-orientation` / `data-orientation`.<br>**Default:** `'vertical'`                                                                                     |
+| `ariaLabel`             | `input<string \| null>`             | Reactive accessible name, reflected as `aria-label`. Prefer native `aria-labelledby` when a visible label exists.<br>**Default:** `null` (and empty) emits no attribute                                                                                    |
+| `dir`                   | `input<'ltr' \| 'rtl' \| null>`     | Writing direction. `null` resolves the inherited ambient direction; an explicit value wins. Reflected to the host `dir` attribute and mirrors the expand/collapse arrows in RTL.<br>**Default:** `null`                                                    |
+| `selectionFollowsFocus` | `input<boolean>`                    | Single-mode only. When true, arrow navigation also selects the focused node.<br>**Default:** from `provideForTreeDefaults`                                                                                                                                 |
+| `selectionMode`         | `input<'highlight' \| 'checkbox'>`  | Selection presentation. `'highlight'` uses `aria-selected`; `'checkbox'` uses `aria-checked` and renders the checkbox anatomy (inherently multi-select).<br>**Default:** `'highlight'`                                                                     |
+| `cascade`               | `input<boolean>`                    | Enables cascade selection in `selectionMode="checkbox"`: checking / unchecking a node propagates to all descendants, and a parent reports `aria-checked="mixed"` when only some descendants are checked. Requires `descendantsOf`.<br>**Default:** `false` |
+| `descendantsOf`         | `input<(value: T) => readonly T[]>` | Returns the selectable descendant values of a node (excluding the node itself). Required when `cascade` is `true`; the tree throws a `[forty-cdk/tree]` error otherwise.<br>**Default:** —                                                                 |
+
+| Data attribute     | Values                     |
+| ------------------ | -------------------------- |
+| `data-orientation` | `vertical` \| `horizontal` |
+| `data-disabled`    | present \| absent          |
+
+### `ForTreeItem`
+
+| Property    | Type                | Description                                                                                                |
+| ----------- | ------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `value`     | `input.required<T>` | The node's value. Must be unique within the tree.<br>**Default:** —                                        |
+| `disabled`  | `input<boolean>`    | Disables this node: not selectable, skipped by keyboard navigation.<br>**Default:** —                      |
+| `textValue` | `input<string>`     | Typeahead text override. Falls back to the `[forTreeItemLabel]` text content when empty.<br>**Default:** — |
+
+| Data attribute     | Values                                                  |
+| ------------------ | ------------------------------------------------------- |
+| `data-state`       | `open` \| `closed` (parent items only)                  |
+| `data-selected`    | present \| absent                                       |
+| `data-highlighted` | present \| absent                                       |
+| `data-disabled`    | present \| absent                                       |
+| `data-checked`     | `"true"` \| `"false"` \| `"mixed"` (checkbox mode only) |
+
+A `[forTreeItem]` emits `data-state` only when it is a parent (a `[forTreeItemToggle]` is registered inside it); leaves carry neither `data-state` nor `aria-expanded`. Expansion (`data-state`) and selection (`data-selected`) are independent hooks because a node can be both expandable and selected at once.
+
+### `ForTreeItemToggle`
+
+| Data attribute | Values             |
+| -------------- | ------------------ |
+| `data-state`   | `open` \| `closed` |
+
+### `ForTreeItemCheckbox`
+
+| Data attribute | Values                                      |
+| -------------- | ------------------------------------------- |
+| `data-state`   | `checked` \| `unchecked` \| `indeterminate` |
+
+### `ForTreeItemCheckboxIndicator`
+
+| Data attribute | Values                                      |
+| -------------- | ------------------------------------------- |
+| `data-state`   | `checked` \| `unchecked` \| `indeterminate` |
+
+## Keyboard
+
+Vertical, LTR (mirrored for `dir="rtl"`):
+
+| Key                     | Behavior                                                                                      |
+| ----------------------- | --------------------------------------------------------------------------------------------- |
+| **ArrowDown / ArrowUp** | Move focus to the next / previous visible node (no wrap; collapsed subtrees are skipped).     |
+| **ArrowRight**          | Closed parent → expand (focus stays); open parent → focus first child; leaf → no-op.          |
+| **ArrowLeft**           | Open parent → collapse (focus stays); otherwise → focus the parent node; closed root → no-op. |
+| **Home / End**          | First / last visible node.                                                                    |
+| **Enter**               | Select / activate the focused node.                                                           |
+| **Space**               | Single: select. Multi: toggle the focused node's selection.                                   |
+| **\***                  | Expand every sibling parent at the focused node's level.                                      |
+| **type a character**    | Typeahead: focus the next visible node whose label starts with the buffer.                    |
+| **Shift+ArrowUp/Down**  | Multi: move focus and toggle the new node's selection.                                        |
+| **Shift+Space**         | Multi: select the contiguous range from the anchor to the focused node.                       |
+| **Ctrl/Cmd+A**          | Multi: select every visible enabled node (toggles off when all are already selected).         |
+
+Under `dir="rtl"` the expand / collapse arrows swap: **ArrowLeft** expands and **ArrowRight** collapses.
 
 ## Accessibility
 

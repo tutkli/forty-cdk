@@ -30,7 +30,7 @@ import { repoRoot } from './lib/repo-path.mjs';
  * links a document *writes*. This closes the other one: what the site actually
  * serves.
  *
- * Five decisions are load-bearing:
+ * Seven decisions are load-bearing:
  *
  * - **It reads the DOM, not the HTML text.** The two questions that matter —
  *   does this fragment have an element to land on, and is this anchor part of
@@ -64,6 +64,14 @@ import { repoRoot } from './lib/repo-path.mjs';
  *   TypeScript program holds no page component, so a file carrying Angular
  *   metadata is refused. The emitted HTML is where the claim can be made, and
  *   it is the stronger place to make it.
+ * - **The rail's order is read against the page's own, not against the
+ *   document's** ([#1863](https://github.com/tutkli/forty-cdk/issues/1863)).
+ *   Every anchor still resolving is what the check above asks; that they resolve
+ *   in the sequence the reader scrolls through is the claim the rail exists to
+ *   make, and it had been false on twelve of the fifty-four pages. Ranking each
+ *   link by where its target `id` appears in the emitted DOM measures the page a
+ *   browser renders — demos, folded content and the synthetic Examples entry
+ *   included — rather than the section list the compiler handed it.
  *
  * External links are deliberately not fetched: network access in a PR gate
  * trades a real failure mode for a flaky one, and that belongs in a nightly job
@@ -119,6 +127,7 @@ const ANCHOR_FLOOR = 3000;
 const FRAGMENT_FLOOR = 500;
 const TABLE_FLOOR = 150;
 const RAIL_FLOOR = 40;
+const RAIL_LINK_FLOOR = 300;
 
 function fail(message) {
   console.error(`[check-doc-output] ${message}`);
@@ -170,17 +179,24 @@ function readDocumentShape(document) {
 
 let groupedRails = 0;
 let closedRails = 0;
+let railLinks = 0;
 
 /**
  * What the rail publishes against what the document declares
  * ([#1810](https://github.com/tutkli/forty-cdk/issues/1810)).
  *
- * The load-bearing claim is the last one: grouping moves an entry down a level,
- * so every section the document declares must still be linked from somewhere in
- * the rail. A page that quietly stopped listing its specific ones would pass
- * every other check here — the sections themselves are still emitted, and their
- * fragments still resolve — while having lost the navigation this gate exists
- * to protect.
+ * Two claims are load-bearing, and neither is checked anywhere else. Grouping
+ * moves an entry down a level, so every section the document declares must
+ * still be linked from somewhere in the rail: a page that quietly stopped
+ * listing its specific ones would pass every other check here — the sections
+ * themselves are still emitted, and their fragments still resolve — while
+ * having lost the navigation this gate exists to protect. And the rail's
+ * flattened links must arrive in the order the page renders their targets,
+ * which is the sentence the component's own heading makes and the one the
+ * grouping had been breaking
+ * ([#1863](https://github.com/tutkli/forty-cdk/issues/1863)): a reader who
+ * trusts a rail that lies navigates to the wrong place, and one who stops
+ * trusting it has lost the rail on every page rather than on this one.
  */
 function railFailures(at, page, document) {
   const problems = [];
@@ -222,6 +238,25 @@ function railFailures(at, page, document) {
           'rather than nesting it',
       );
     }
+  }
+
+  let furthest = -1;
+  let previous = null;
+  for (const fragment of rail.links) {
+    const rank = page.order.get(fragment);
+    if (rank === undefined) {
+      continue;
+    }
+    railLinks += 1;
+    if (rank < furthest) {
+      problems.push(
+        `${at} — the rail links "#${fragment}" below "#${previous}" and the page renders it ` +
+          'above, so the rail states an order the page does not use',
+      );
+      break;
+    }
+    furthest = rank;
+    previous = fragment;
   }
   return problems;
 }
@@ -300,6 +335,19 @@ for (const file of indexFiles(BROWSER)) {
 
   const rail = doc.querySelector('nav.pg-toc');
   const toggle = rail?.querySelector('.pg-toc-toggle') ?? null;
+  const links =
+    rail === null
+      ? []
+      : [...rail.querySelectorAll('a[href]')]
+          .map((anchor) => splitDocHref(anchor.getAttribute('href')).fragment.slice(1))
+          .filter((fragment) => fragment !== '');
+
+  const order = new Map();
+  for (const element of doc.querySelectorAll('[id]')) {
+    if (!order.has(element.id)) {
+      order.set(element.id, order.size);
+    }
+  }
 
   const sections = new Map();
   for (const section of doc.querySelectorAll('section.pg-doc-section[id]')) {
@@ -313,18 +361,16 @@ for (const file of indexFiles(BROWSER)) {
     file,
     baseHref: doc.querySelector('base')?.getAttribute('href') ?? null,
     isRedirect: doc.querySelector('meta[http-equiv="refresh" i]') !== null,
-    ids: new Set([...doc.querySelectorAll('[id]')].map((element) => element.id)),
+    ids: new Set(order.keys()),
+    order,
     anchors,
     sections,
     rail:
       rail === null
         ? null
         : {
-            fragments: new Set(
-              [...rail.querySelectorAll('a[href]')]
-                .map((anchor) => splitDocHref(anchor.getAttribute('href')).fragment.slice(1))
-                .filter((fragment) => fragment !== ''),
-            ),
+            links,
+            fragments: new Set(links),
             expanded: toggle?.getAttribute('aria-expanded') ?? null,
             controls: toggle?.getAttribute('aria-controls') ?? null,
           },
@@ -565,6 +611,13 @@ if (checkedRails < RAIL_FLOOR) {
   );
 }
 
+if (railLinks < RAIL_LINK_FLOOR) {
+  fail(
+    `ranked only ${railLinks} rail link(s) against the page's own order (floor ${RAIL_LINK_FLOOR}) ` +
+      '— the order half of this gate is no longer running',
+  );
+}
+
 if (declaredTables < TABLE_FLOOR) {
   fail(
     `read only ${declaredTables} declared table(s) from ${documents.size} documents (floor ` +
@@ -580,7 +633,8 @@ console.log(
   `[check-doc-output] ok — ${pages.size} pages, ${scannedAnchors} documentation anchors ` +
     `(${excludedAnchors} inside live examples, not scanned), ${checkedFragments} fragments resolved ` +
     `to an id, ${declaredTables} declared tables emitted across ${documents.size} documents, ` +
-    `${checkedRails} rails read (${groupedRails} grouped, ${closedRails} of them closed), ` +
+    `${checkedRails} rails read (${groupedRails} grouped, ${closedRails} of them closed) with ` +
+    `${railLinks} links in page order, ` +
     `${errorCodes.length} error codes linked from their index` +
     (warnings.length > 0
       ? `; ${warnings.length} page(s) past ${PAGE_WEIGHT_WARNING / 1024} kB`

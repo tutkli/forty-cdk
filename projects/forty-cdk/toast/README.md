@@ -14,25 +14,6 @@ The visible toast renders with `role="status"` (`'info'` / `'success'` / `'warni
 - **Programmatic** (the common path): inject `ForToastManager` and call `show({ title, … })` from anywhere.
 - **Declarative**: drop `<div forToast>` directly in any template, controlling mount/unmount with `@if`.
 
-## Anatomy
-
-Mount one viewport near the app root and drive it programmatically through `ForToastManager`:
-
-```html
-<for-toast-viewport [maxVisible]="5" />
-```
-
-The viewport renders each toast in this shape (the declarative path composes the same pieces by hand inside a `<div forToast>`):
-
-```html
-<div forToast variant="success" [duration]="5000">
-  <div forToastTitle>Saved</div>
-  <div forToastDescription>Your changes were saved.</div>
-  <button forToastAction altText="Undo (Cmd+Z)">Undo</button>
-  <button forToastClose>×</button>
-</div>
-```
-
 ## Mount the viewport once
 
 In your `app.html`:
@@ -57,56 +38,24 @@ Position it from CSS — the directive doesn't impose layout:
 }
 ```
 
-## Toasts over a modal dialog / drawer
+## Anatomy
 
-Showing a confirmation or error toast from a flow inside a modal `ForDialog` / `ForDrawer` works out of the box. The viewport host carries `data-for-modal-exempt`, so an open modal automatically:
-
-- leaves the viewport out of its inert pass (the toast stays interactive instead of being disabled with the rest of the background), and
-- treats a click on a toast as "inside" — clicking a toast never dismisses the modal.
-
-No wiring is needed on your side — no manual `data-for-modal-peer` stamping, no `(pointerDownOutside)` veto. The one thing you control is layout: for the toast to stay interactive over the modal, mount the viewport as a child of `document.body` (or `position: fixed` it there) rather than nested inside a region that the modal inerts.
-
-### Sitting behind the modal instead
-
-The coexist-by-default above is right for confirmation / error toasts raised by the flow inside the modal. For a low-priority or system viewport that should _not_ steal attention from a critical dialog, opt out with `provideForToastDefaults({ overModal: 'inert' })`:
-
-```ts
-provideForToastDefaults({ overModal: 'inert' });
-```
-
-The viewport then drops `data-for-modal-exempt`, so an open modal inerts it like any other background sibling and a click on a toast dismisses the modal. `overModal` resolves per injector scope, so you can keep the global default `'peer'` and scope `'inert'` to one viewport's subtree (or the reverse). Default is `'peer'` — existing setups are unchanged.
-
-## Multiple regions
-
-A viewport renders only the toasts whose `region` matches its `[region]` input. Omit `region` everywhere and everything flows through the default region — that's the single-viewport setup above. To run independent regions (e.g. system notifications top-right, action confirmations bottom-center) mount one viewport per region and tag each `show()`:
+Mount one viewport near the app root and drive it programmatically through `ForToastManager`:
 
 ```html
-<for-toast-viewport region="system" />
-<!-- styled top-right -->
-<for-toast-viewport region="confirmations" />
-<!-- styled bottom-center -->
+<for-toast-viewport [maxVisible]="5" />
 ```
 
-```ts
-this.toasts.show({ region: 'system', title: 'New version available' });
-this.toasts.show({ region: 'confirmations', title: 'Saved' });
+The viewport renders each toast in this shape (the declarative path composes the same pieces by hand inside a `<div forToast>`):
+
+```html
+<div forToast variant="success" [duration]="5000">
+  <div forToastTitle>Saved</div>
+  <div forToastDescription>Your changes were saved.</div>
+  <button forToastAction altText="Undo (Cmd+Z)">Undo</button>
+  <button forToastClose>×</button>
+</div>
 ```
-
-Each region resolves to the host `data-region` attribute, so you can position / theme regions purely from CSS:
-
-```css
-[forToastViewport][data-region='system'] {
-  top: 1rem;
-  right: 1rem;
-}
-[forToastViewport][data-region='confirmations'] {
-  bottom: 1rem;
-  left: 50%;
-  transform: translateX(-50%);
-}
-```
-
-If two viewports share the same region, only the first one mounted renders it; the rest stay inactive (and warn in dev) so a stray second viewport — a lazy route, a shared layout — never silently duplicates toasts. A single `show()` always produces exactly one toast node.
 
 ## API
 
@@ -165,6 +114,57 @@ class SomeComponent {
 - `ref.config()` — reactive config snapshot.
 
 Calling `show({ id })` with the id of a live toast updates it in place (dedupe) **and** restarts its auto-dismiss countdown from the full `duration` — the same as calling `ref.resetTimer()`. So a recurring identical toast (e.g. repeated "Message sent") stays visible for a fresh `duration` after each occurrence rather than expiring on the first one's timer.
+
+## Toasts over a modal dialog / drawer
+
+Showing a confirmation or error toast from a flow inside a modal `ForDialog` / `ForDrawer` works out of the box. The viewport host carries `data-for-modal-exempt`, so an open modal automatically:
+
+- leaves the viewport out of its inert pass (the toast stays interactive instead of being disabled with the rest of the background), and
+- treats a click on a toast as "inside" — clicking a toast never dismisses the modal.
+
+No wiring is needed on your side — no manual `data-for-modal-peer` stamping, no `(pointerDownOutside)` veto. The one thing you control is layout: for the toast to stay interactive over the modal, mount the viewport as a child of `document.body` (or `position: fixed` it there) rather than nested inside a region that the modal inerts.
+
+### Sitting behind the modal instead
+
+The coexist-by-default above is right for confirmation / error toasts raised by the flow inside the modal. For a low-priority or system viewport that should _not_ steal attention from a critical dialog, opt out with `provideForToastDefaults({ overModal: 'inert' })`:
+
+```ts
+provideForToastDefaults({ overModal: 'inert' });
+```
+
+The viewport then drops `data-for-modal-exempt`, so an open modal inerts it like any other background sibling and a click on a toast dismisses the modal. `overModal` resolves per injector scope, so you can keep the global default `'peer'` and scope `'inert'` to one viewport's subtree (or the reverse). Default is `'peer'` — existing setups are unchanged.
+
+## Multiple regions
+
+A viewport renders only the toasts whose `region` matches its `[region]` input. Omit `region` everywhere and everything flows through the default region — that's the single-viewport setup above. To run independent regions (e.g. system notifications top-right, action confirmations bottom-center) mount one viewport per region and tag each `show()`:
+
+```html
+<for-toast-viewport region="system" />
+<!-- styled top-right -->
+<for-toast-viewport region="confirmations" />
+<!-- styled bottom-center -->
+```
+
+```ts
+this.toasts.show({ region: 'system', title: 'New version available' });
+this.toasts.show({ region: 'confirmations', title: 'Saved' });
+```
+
+Each region resolves to the host `data-region` attribute, so you can position / theme regions purely from CSS:
+
+```css
+[forToastViewport][data-region='system'] {
+  top: 1rem;
+  right: 1rem;
+}
+[forToastViewport][data-region='confirmations'] {
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+}
+```
+
+If two viewports share the same region, only the first one mounted renders it; the rest stay inactive (and warn in dev) so a stray second viewport — a lazy route, a shared layout — never silently duplicates toasts. A single `show()` always produces exactly one toast node.
 
 ## Composition + styling model
 

@@ -1,4 +1,4 @@
-import type { DocDocument, DocMeta, DocSectionRing } from '../docs/doc-model.mjs';
+import type { DocDocument, DocMeta, DocSection, DocSectionRing } from '../docs/doc-model.mjs';
 import type { FrontmatterProblem } from './doc-frontmatter.mjs';
 
 /** A frontmatter problem, addressed by the file it was written in. */
@@ -71,6 +71,13 @@ export declare function checkExemptions(
 ): readonly DocMetaProblem[];
 
 export declare function checkSectionOrder(
+  documents: readonly DocDocument[],
+): readonly DocMetaProblem[];
+
+/** The index of the document's prelude section, or `-1` when it writes none. */
+export declare function preludeIndexOf(sections: readonly Pick<DocSection, 'ring'>[]): number;
+
+export declare function checkSectionRuns(
   documents: readonly DocDocument[],
 ): readonly DocMetaProblem[];
 

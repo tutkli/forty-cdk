@@ -2757,27 +2757,27 @@ exports[`document structure > projects/forty-cdk/dialog/README.md declares the s
   },
   {
     "headings": [],
-    "slug": "known-limitations",
-    "tables": [],
-    "title": "Known limitations",
-  },
-  {
-    "headings": [],
     "slug": "styling",
     "tables": [],
     "title": "Styling",
   },
   {
     "headings": [],
-    "slug": "scoped--contained-dialog",
-    "tables": [],
-    "title": "Scoped / contained dialog",
-  },
-  {
-    "headings": [],
     "slug": "behavior-notes",
     "tables": [],
     "title": "Behavior notes",
+  },
+  {
+    "headings": [],
+    "slug": "known-limitations",
+    "tables": [],
+    "title": "Known limitations",
+  },
+  {
+    "headings": [],
+    "slug": "scoped--contained-dialog",
+    "tables": [],
+    "title": "Scoped / contained dialog",
   },
   {
     "headings": [],
@@ -3052,12 +3052,6 @@ exports[`document structure > projects/forty-cdk/drag-drop/README.md declares th
 exports[`document structure > projects/forty-cdk/drawer/README.md declares the sections and table shapes it declared before 1`] = `
 [
   {
-    "headings": [],
-    "slug": "anatomy",
-    "tables": [],
-    "title": "Anatomy",
-  },
-  {
     "headings": [
       {
         "depth": 3,
@@ -3075,6 +3069,12 @@ exports[`document structure > projects/forty-cdk/drawer/README.md declares the s
     "slug": "two-flows-one-engine",
     "tables": [],
     "title": "Two flows, one engine",
+  },
+  {
+    "headings": [],
+    "slug": "anatomy",
+    "tables": [],
+    "title": "Anatomy",
   },
   {
     "headings": [
@@ -3206,15 +3206,15 @@ exports[`document structure > projects/forty-cdk/drawer/README.md declares the s
   },
   {
     "headings": [],
-    "slug": "accessibility",
-    "tables": [],
-    "title": "Accessibility",
-  },
-  {
-    "headings": [],
     "slug": "known-limitations",
     "tables": [],
     "title": "Known limitations",
+  },
+  {
+    "headings": [],
+    "slug": "accessibility",
+    "tables": [],
+    "title": "Accessibility",
   },
   {
     "headings": [
@@ -4037,6 +4037,12 @@ exports[`document structure > projects/forty-cdk/listbox/README.md declares the 
     "title": "Self-hiding pieces",
   },
   {
+    "headings": [],
+    "slug": "pointer-highlight",
+    "tables": [],
+    "title": "Pointer highlight",
+  },
+  {
     "headings": [
       {
         "depth": 3,
@@ -4098,12 +4104,6 @@ exports[`document structure > projects/forty-cdk/listbox/README.md declares the 
       },
     ],
     "title": "API",
-  },
-  {
-    "headings": [],
-    "slug": "pointer-highlight",
-    "tables": [],
-    "title": "Pointer highlight",
   },
   {
     "headings": [
@@ -6567,6 +6567,18 @@ exports[`document structure > projects/forty-cdk/table/README.md declares the se
     "title": "Virtualized rows",
   },
   {
+    "headings": [],
+    "slug": "wrapping-the-root",
+    "tables": [],
+    "title": "Wrapping the root",
+  },
+  {
+    "headings": [],
+    "slug": "wrapping-the-declarative-body",
+    "tables": [],
+    "title": "Wrapping the declarative body",
+  },
+  {
     "headings": [
       {
         "depth": 3,
@@ -6680,18 +6692,6 @@ exports[`document structure > projects/forty-cdk/table/README.md declares the se
   },
   {
     "headings": [],
-    "slug": "wrapping-the-root",
-    "tables": [],
-    "title": "Wrapping the root",
-  },
-  {
-    "headings": [],
-    "slug": "wrapping-the-declarative-body",
-    "tables": [],
-    "title": "Wrapping the declarative body",
-  },
-  {
-    "headings": [],
     "slug": "accessibility",
     "tables": [],
     "title": "Accessibility",
@@ -6712,30 +6712,6 @@ exports[`document structure > projects/forty-cdk/table-virtualization/README.md 
     "slug": "anatomy",
     "tables": [],
     "title": "Anatomy",
-  },
-  {
-    "headings": [],
-    "slug": "two-totals-rowcount-and-virtualrowcount",
-    "tables": [],
-    "title": "Two totals: \`[rowCount]\` and \`[virtualRowCount]\`",
-  },
-  {
-    "headings": [],
-    "slug": "measured-row-heights",
-    "tables": [],
-    "title": "Measured row heights",
-  },
-  {
-    "headings": [],
-    "slug": "keyboard-navigation-across-the-window",
-    "tables": [],
-    "title": "Keyboard navigation across the window",
-  },
-  {
-    "headings": [],
-    "slug": "infinite-scroll",
-    "tables": [],
-    "title": "Infinite scroll",
   },
   {
     "headings": [
@@ -6766,6 +6742,30 @@ exports[`document structure > projects/forty-cdk/table-virtualization/README.md 
   },
   {
     "headings": [],
+    "slug": "two-totals-rowcount-and-virtualrowcount",
+    "tables": [],
+    "title": "Two totals: \`[rowCount]\` and \`[virtualRowCount]\`",
+  },
+  {
+    "headings": [],
+    "slug": "measured-row-heights",
+    "tables": [],
+    "title": "Measured row heights",
+  },
+  {
+    "headings": [],
+    "slug": "keyboard-navigation-across-the-window",
+    "tables": [],
+    "title": "Keyboard navigation across the window",
+  },
+  {
+    "headings": [],
+    "slug": "infinite-scroll",
+    "tables": [],
+    "title": "Infinite scroll",
+  },
+  {
+    "headings": [],
     "slug": "related",
     "tables": [],
     "title": "Related",
@@ -6792,6 +6792,12 @@ exports[`document structure > projects/forty-cdk/tabs/README.md declares the sec
     "slug": "manual-activation",
     "tables": [],
     "title": "Manual activation",
+  },
+  {
+    "headings": [],
+    "slug": "known-limitations",
+    "tables": [],
+    "title": "Known limitations",
   },
   {
     "headings": [
@@ -6887,12 +6893,6 @@ exports[`document structure > projects/forty-cdk/tabs/README.md declares the sec
     "slug": "accessibility",
     "tables": [],
     "title": "Accessibility",
-  },
-  {
-    "headings": [],
-    "slug": "known-limitations",
-    "tables": [],
-    "title": "Known limitations",
   },
   {
     "headings": [],
@@ -7182,32 +7182,15 @@ exports[`document structure > projects/forty-cdk/toast/README.md declares the se
 [
   {
     "headings": [],
-    "slug": "anatomy",
-    "tables": [],
-    "title": "Anatomy",
-  },
-  {
-    "headings": [],
     "slug": "mount-the-viewport-once",
     "tables": [],
     "title": "Mount the viewport once",
   },
   {
-    "headings": [
-      {
-        "depth": 3,
-        "slug": "sitting-behind-the-modal-instead",
-      },
-    ],
-    "slug": "toasts-over-a-modal-dialog--drawer",
-    "tables": [],
-    "title": "Toasts over a modal dialog / drawer",
-  },
-  {
     "headings": [],
-    "slug": "multiple-regions",
+    "slug": "anatomy",
     "tables": [],
-    "title": "Multiple regions",
+    "title": "Anatomy",
   },
   {
     "headings": [
@@ -7246,6 +7229,23 @@ exports[`document structure > projects/forty-cdk/toast/README.md declares the se
     "slug": "programmatic-api",
     "tables": [],
     "title": "Programmatic API",
+  },
+  {
+    "headings": [
+      {
+        "depth": 3,
+        "slug": "sitting-behind-the-modal-instead",
+      },
+    ],
+    "slug": "toasts-over-a-modal-dialog--drawer",
+    "tables": [],
+    "title": "Toasts over a modal dialog / drawer",
+  },
+  {
+    "headings": [],
+    "slug": "multiple-regions",
+    "tables": [],
+    "title": "Multiple regions",
   },
   {
     "headings": [
@@ -7834,107 +7834,6 @@ exports[`document structure > projects/forty-cdk/tree/README.md declares the sec
     "title": "Filtering",
   },
   {
-    "headings": [
-      {
-        "depth": 3,
-        "slug": "fortree",
-      },
-      {
-        "depth": 3,
-        "slug": "fortreeitem",
-      },
-      {
-        "depth": 3,
-        "slug": "fortreeitemtoggle",
-      },
-      {
-        "depth": 3,
-        "slug": "fortreeitemcheckbox",
-      },
-      {
-        "depth": 3,
-        "slug": "fortreeitemcheckboxindicator",
-      },
-    ],
-    "slug": "api",
-    "tables": [
-      {
-        "columns": [
-          "Property",
-          "Type",
-          "Description",
-        ],
-        "role": "api",
-        "rows": 13,
-      },
-      {
-        "columns": [
-          "Data attribute",
-          "Values",
-        ],
-        "role": "plain",
-        "rows": 2,
-      },
-      {
-        "columns": [
-          "Property",
-          "Type",
-          "Description",
-        ],
-        "role": "api",
-        "rows": 3,
-      },
-      {
-        "columns": [
-          "Data attribute",
-          "Values",
-        ],
-        "role": "plain",
-        "rows": 5,
-      },
-      {
-        "columns": [
-          "Data attribute",
-          "Values",
-        ],
-        "role": "plain",
-        "rows": 1,
-      },
-      {
-        "columns": [
-          "Data attribute",
-          "Values",
-        ],
-        "role": "plain",
-        "rows": 1,
-      },
-      {
-        "columns": [
-          "Data attribute",
-          "Values",
-        ],
-        "role": "plain",
-        "rows": 1,
-      },
-    ],
-    "title": "API",
-  },
-  {
-    "headings": [],
-    "slug": "keyboard",
-    "tables": [
-      {
-        "columns": [
-          "Key",
-          "Behavior",
-        ],
-        "role": "plain",
-        "rows": 11,
-      },
-    ],
-    "title": "Keyboard",
-  },
-  {
     "headings": [],
     "slug": "scoped-defaults",
     "tables": [],
@@ -8099,6 +7998,107 @@ exports[`document structure > projects/forty-cdk/tree/README.md declares the sec
     "title": "Drag & drop",
   },
   {
+    "headings": [
+      {
+        "depth": 3,
+        "slug": "fortree",
+      },
+      {
+        "depth": 3,
+        "slug": "fortreeitem",
+      },
+      {
+        "depth": 3,
+        "slug": "fortreeitemtoggle",
+      },
+      {
+        "depth": 3,
+        "slug": "fortreeitemcheckbox",
+      },
+      {
+        "depth": 3,
+        "slug": "fortreeitemcheckboxindicator",
+      },
+    ],
+    "slug": "api",
+    "tables": [
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "role": "api",
+        "rows": 13,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "role": "plain",
+        "rows": 2,
+      },
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "role": "api",
+        "rows": 3,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "role": "plain",
+        "rows": 5,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "role": "plain",
+        "rows": 1,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "role": "plain",
+        "rows": 1,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "role": "plain",
+        "rows": 1,
+      },
+    ],
+    "title": "API",
+  },
+  {
+    "headings": [],
+    "slug": "keyboard",
+    "tables": [
+      {
+        "columns": [
+          "Key",
+          "Behavior",
+        ],
+        "role": "plain",
+        "rows": 11,
+      },
+    ],
+    "title": "Keyboard",
+  },
+  {
     "headings": [],
     "slug": "accessibility",
     "tables": [],
@@ -8126,33 +8126,6 @@ exports[`document structure > projects/forty-cdk/virtual-reorder/README.md decla
     "slug": "anatomy",
     "tables": [],
     "title": "Anatomy",
-  },
-  {
-    "headings": [],
-    "slug": "what-it-adds-over-a-bare-fordroplist",
-    "tables": [],
-    "title": "What it adds over a bare \`[forDropList]\`",
-  },
-  {
-    "headings": [],
-    "slug": "windowed-scrub",
-    "tables": [],
-    "title": "Windowed scrub",
-  },
-  {
-    "headings": [],
-    "slug": "keyboard-interaction",
-    "tables": [
-      {
-        "columns": [
-          "Key",
-          "Behaviour",
-        ],
-        "role": "plain",
-        "rows": 5,
-      },
-    ],
-    "title": "Keyboard interaction",
   },
   {
     "headings": [
@@ -8187,6 +8160,33 @@ exports[`document structure > projects/forty-cdk/virtual-reorder/README.md decla
       },
     ],
     "title": "API",
+  },
+  {
+    "headings": [],
+    "slug": "what-it-adds-over-a-bare-fordroplist",
+    "tables": [],
+    "title": "What it adds over a bare \`[forDropList]\`",
+  },
+  {
+    "headings": [],
+    "slug": "windowed-scrub",
+    "tables": [],
+    "title": "Windowed scrub",
+  },
+  {
+    "headings": [],
+    "slug": "keyboard-interaction",
+    "tables": [
+      {
+        "columns": [
+          "Key",
+          "Behaviour",
+        ],
+        "role": "plain",
+        "rows": 5,
+      },
+    ],
+    "title": "Keyboard interaction",
   },
   {
     "headings": [],
@@ -8239,6 +8239,38 @@ exports[`document structure > projects/forty-cdk/virtualization/README.md declar
     "headings": [
       {
         "depth": 3,
+        "slug": "shape-a--endreached-output",
+      },
+      {
+        "depth": 3,
+        "slug": "shape-b--injectinfinitescroll",
+      },
+    ],
+    "slug": "infinite-scroll",
+    "tables": [
+      {
+        "columns": [
+          "Option",
+          "Type",
+          "Default",
+          "Description",
+        ],
+        "role": "api",
+        "rows": 5,
+      },
+    ],
+    "title": "Infinite scroll",
+  },
+  {
+    "headings": [],
+    "slug": "composing-into-a-list-primitive",
+    "tables": [],
+    "title": "Composing into a list primitive",
+  },
+  {
+    "headings": [
+      {
+        "depth": 3,
         "slug": "options",
       },
       {
@@ -8274,38 +8306,6 @@ exports[`document structure > projects/forty-cdk/virtualization/README.md declar
     "slug": "accessibility",
     "tables": [],
     "title": "Accessibility",
-  },
-  {
-    "headings": [
-      {
-        "depth": 3,
-        "slug": "shape-a--endreached-output",
-      },
-      {
-        "depth": 3,
-        "slug": "shape-b--injectinfinitescroll",
-      },
-    ],
-    "slug": "infinite-scroll",
-    "tables": [
-      {
-        "columns": [
-          "Option",
-          "Type",
-          "Default",
-          "Description",
-        ],
-        "role": "api",
-        "rows": 5,
-      },
-    ],
-    "title": "Infinite scroll",
-  },
-  {
-    "headings": [],
-    "slug": "composing-into-a-list-primitive",
-    "tables": [],
-    "title": "Composing into a list primitive",
   },
   {
     "headings": [],

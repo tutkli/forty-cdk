@@ -37,6 +37,23 @@ onReorder({ from, to }: ForVirtualReorderEvent): void {
 }
 ```
 
+## API
+
+### `ForVirtualReorder`
+
+| Member        | Type                             | Description                                                                 |
+| ------------- | -------------------------------- | --------------------------------------------------------------------------- |
+| `itemReorder` | `output<ForVirtualReorderEvent>` | Fires once per committed gesture with `{ from, to }` absolute item indices. |
+
+It re-exposes `[forDropList]`'s `dir`, `disabled`, `autoScroll`, `animateReorder`, `liveSort`, `boundary` and `lockAxis` inputs through `hostDirectives`.
+
+### `ForVirtualReorderEvent`
+
+| Property | Type     | Description                                                    |
+| -------- | -------- | -------------------------------------------------------------- |
+| `from`   | `number` | Previous absolute (dataset) index of the lifted item, 0-based. |
+| `to`     | `number` | New absolute (dataset) index — pass both to `moveItemInArray`. |
+
 ## What it adds over a bare `[forDropList]`
 
 - **Absolute-index translation** — each rendered row's absolute index is read from the `data-index` attribute `*forVirtualFor` emits, so `itemReorder` carries dataset indices and `moveItemInArray` over the full array moves the right item.
@@ -60,23 +77,6 @@ Hold **Shift** during a pointer drag to map the viewport onto the whole dataset 
 Every lift, move, drop and cancel is announced through the live announcer using the `provideForDragDropDefaults` message builders, so a scope override localizes them centrally.
 
 The lifted row carries drag-drop's `data-dragging` hook for the whole gesture — the coordinator owns the keyboard lift, so it marks the row on the drop list's behalf — and the viewport carries it too. Style either exactly as you would in a non-windowed `[forDropList]`.
-
-## API
-
-### `ForVirtualReorder`
-
-| Member        | Type                             | Description                                                                 |
-| ------------- | -------------------------------- | --------------------------------------------------------------------------- |
-| `itemReorder` | `output<ForVirtualReorderEvent>` | Fires once per committed gesture with `{ from, to }` absolute item indices. |
-
-It re-exposes `[forDropList]`'s `dir`, `disabled`, `autoScroll`, `animateReorder`, `liveSort`, `boundary` and `lockAxis` inputs through `hostDirectives`.
-
-### `ForVirtualReorderEvent`
-
-| Property | Type     | Description                                                    |
-| -------- | -------- | -------------------------------------------------------------- |
-| `from`   | `number` | Previous absolute (dataset) index of the lifted item, 0-based. |
-| `to`     | `number` | New absolute (dataset) index — pass both to `moveItemInArray`. |
 
 ## Related
 

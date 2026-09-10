@@ -38,6 +38,8 @@ const SPECIFIC = [
   section('specific', 'Nested drawers', 'nested-drawers'),
 ];
 
+const PRELUDE = section('specific', 'Date adapter', 'date-adapter');
+
 const NO_CONTAINER: DocPageBehaviorGroup = { title: 'Behavior notes', slug: null };
 
 function titlesOf(items: readonly TocEntry[]): readonly string[] {
@@ -117,6 +119,43 @@ describe('grouping a page’s rail', () => {
 
     expect(titlesOf(groupOf(items).children!)).not.toContain('Behavior notes');
     expect(titlesOf(items).filter((title) => title === 'Behavior notes')).toHaveLength(1);
+  });
+
+  it('leaves the prelude at the top level instead of nesting it', () => {
+    const items = buildTocItems([PRELUDE, ...TEMPLATE, ...SPECIFIC], NO_CONTAINER);
+
+    expect(titlesOf(items)).toEqual([
+      'Date adapter',
+      'Anatomy',
+      'API',
+      'Styling',
+      'Behavior notes',
+    ]);
+    expect(titlesOf(groupOf(items).children!)).not.toContain('Date adapter');
+  });
+
+  it('finds that prelude behind the demos entry a page inserts above it', () => {
+    const examples = section('canonical', 'Examples', 'examples');
+    const items = buildTocItems([examples, PRELUDE, ...TEMPLATE, ...SPECIFIC], NO_CONTAINER);
+
+    expect(titlesOf(items).slice(0, 2)).toEqual(['Examples', 'Date adapter']);
+    expect(titlesOf(groupOf(items).children!)).not.toContain('Date adapter');
+  });
+
+  it('nests a specific section the document wrote below its first core one', () => {
+    const items = buildTocItems(
+      [TEMPLATE[0]!, PRELUDE, ...SPECIFIC, TEMPLATE[1]!, TEMPLATE[2]!],
+      NO_CONTAINER,
+    );
+
+    expect(titlesOf(items)).toEqual(['Anatomy', 'Behavior notes', 'API', 'Styling']);
+    expect(titlesOf(groupOf(items).children!)).toContain('Date adapter');
+  });
+
+  it('counts the prelude with the rail rather than with the group it stays out of', () => {
+    const items = buildTocItems([PRELUDE, TEMPLATE[0]!, TEMPLATE[1]!, ...SPECIFIC], NO_CONTAINER);
+
+    expect(groupOf(items).disclosure).toBe('open');
   });
 
   it('opens a group the rest of the rail still outweighs', () => {
@@ -217,6 +256,38 @@ describe('the rail the published corpus renders', () => {
 
     expect(lost).toEqual([]);
     expect(grouped).toBeGreaterThanOrEqual(1);
+  });
+
+  it('lists every entry in the order the document writes it, across every one', () => {
+    const backwards: string[] = [];
+    let ranked = 0;
+    for (const doc of SITE_DOCS) {
+      const page = renderDocument(compile(doc), { routes });
+      const sections = page.sections.map((entry) => ({
+        ring: entry.ring,
+        item: { title: entry.title, slug: entry.slug },
+      }));
+      const rank = new Map(sections.map((entry, index) => [entry.item.slug, index]));
+      let furthest = -1;
+      let previous: string | null = null;
+      for (const item of buildTocItems(sections, page.behaviorGroup)) {
+        for (const entry of [item, ...(item.children ?? [])]) {
+          const at = entry.slug === null ? undefined : rank.get(entry.slug);
+          if (at === undefined) {
+            continue;
+          }
+          ranked += 1;
+          if (at < furthest) {
+            backwards.push(`${doc.slug}: #${entry.slug} listed below #${previous}`);
+          }
+          furthest = at;
+          previous = entry.slug;
+        }
+      }
+    }
+
+    expect(backwards).toEqual([]);
+    expect(ranked).toBeGreaterThanOrEqual(400);
   });
 
   it('leaves the ⌘K index reaching every section, grouped or not', () => {

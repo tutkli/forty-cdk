@@ -172,44 +172,6 @@ item moves even when the lifted row scrolls out of the rendered window. It compo
 
 → **[`forty-cdk/virtual-reorder`](../virtual-reorder/README.md)**
 
-## API
-
-### Options
-
-| Property        | Type                                  | Description                                                                                  |
-| --------------- | ------------------------------------- | -------------------------------------------------------------------------------------------- |
-| `count`         | `Signal<number>`                      | Reactive total number of items.<br>**Default:** required                                     |
-| `estimateSize`  | `(index: number) => number`           | Estimated pixel size along the scroll axis for the item at `index`.<br>**Default:** required |
-| `scrollElement` | `Signal<HTMLElement \| null>`         | Reactive scroll container.<br>**Default:** required                                          |
-| `orientation`   | `'vertical' \| 'horizontal'`          | Scroll axis.<br>**Default:** `'vertical'`                                                    |
-| `overscan`      | `number`                              | Extra items to render beyond the visible window on each side.<br>**Default:** `5`            |
-| `getItemKey`    | `(index: number) => string \| number` | Stable key per item; used by `@for (track item.key)`.<br>**Default:** `(i) => i`             |
-
-### Returned handle
-
-| Member           | Type                                | Description                                                                                                        |
-| ---------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `virtualItems`   | `Signal<readonly VirtualItem[]>`    | Items in the current visible window plus overscan.                                                                 |
-| `totalSize`      | `Signal<number>`                    | Total scroll size in pixels (drives the spacer element).                                                           |
-| `range`          | `Signal<readonly [number, number]>` | The `[firstIndex, lastIndex + 1)` rendered window, `[0, 0]` when empty. Feeds a list primitive's `[visibleRange]`. |
-| `scrollToIndex`  | method                              | Scroll the container so the item at `index` is in view.                                                            |
-| `scrollToOffset` | method                              | Scroll to an absolute pixel offset.                                                                                |
-| `measureElement` | method                              | Record the measured size of a rendered item element.                                                               |
-
-## Accessibility
-
-Virtual lists render only a window of items, so screen readers see a shorter list
-than the true total. Bind the full list size so assistive technology announces
-the real count:
-
-- `aria-setsize` — the total number of items in the full (non-windowed) list.
-- `aria-posinset` — the 1-based position of the item in that full list
-  (`item.index + 1`).
-
-```html
-<div [attr.aria-setsize]="items().length" [attr.aria-posinset]="item.index + 1"></div>
-```
-
 ## Infinite scroll
 
 Two shapes are available: a turnkey output on `[forVirtualViewport]` (Shape A) and a
@@ -270,6 +232,44 @@ the fetch, deduplication, and retry — Angular `resource()` / `httpResource()` 
 ```
 
 See the [Combobox README](../combobox/README.md#virtualization) for the complete worked example wiring `[forCombobox]` with `injectVirtualizer` over a 100k-item list.
+
+## API
+
+### Options
+
+| Property        | Type                                  | Description                                                                                  |
+| --------------- | ------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `count`         | `Signal<number>`                      | Reactive total number of items.<br>**Default:** required                                     |
+| `estimateSize`  | `(index: number) => number`           | Estimated pixel size along the scroll axis for the item at `index`.<br>**Default:** required |
+| `scrollElement` | `Signal<HTMLElement \| null>`         | Reactive scroll container.<br>**Default:** required                                          |
+| `orientation`   | `'vertical' \| 'horizontal'`          | Scroll axis.<br>**Default:** `'vertical'`                                                    |
+| `overscan`      | `number`                              | Extra items to render beyond the visible window on each side.<br>**Default:** `5`            |
+| `getItemKey`    | `(index: number) => string \| number` | Stable key per item; used by `@for (track item.key)`.<br>**Default:** `(i) => i`             |
+
+### Returned handle
+
+| Member           | Type                                | Description                                                                                                        |
+| ---------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `virtualItems`   | `Signal<readonly VirtualItem[]>`    | Items in the current visible window plus overscan.                                                                 |
+| `totalSize`      | `Signal<number>`                    | Total scroll size in pixels (drives the spacer element).                                                           |
+| `range`          | `Signal<readonly [number, number]>` | The `[firstIndex, lastIndex + 1)` rendered window, `[0, 0]` when empty. Feeds a list primitive's `[visibleRange]`. |
+| `scrollToIndex`  | method                              | Scroll the container so the item at `index` is in view.                                                            |
+| `scrollToOffset` | method                              | Scroll to an absolute pixel offset.                                                                                |
+| `measureElement` | method                              | Record the measured size of a rendered item element.                                                               |
+
+## Accessibility
+
+Virtual lists render only a window of items, so screen readers see a shorter list
+than the true total. Bind the full list size so assistive technology announces
+the real count:
+
+- `aria-setsize` — the total number of items in the full (non-windowed) list.
+- `aria-posinset` — the 1-based position of the item in that full list
+  (`item.index + 1`).
+
+```html
+<div [attr.aria-setsize]="items().length" [attr.aria-posinset]="item.index + 1"></div>
+```
 
 ## Wrapping in a design system
 

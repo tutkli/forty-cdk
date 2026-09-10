@@ -627,11 +627,81 @@ export function checkSectionOrder(documents) {
   return problems;
 }
 
+/**
+ * The one specific section a document may write above its first core one, or
+ * `-1` for a document that writes none.
+ *
+ * `## Date adapter` states the provider the four date primitives need before
+ * any of them does anything, and pushing it below `## Anatomy` would make those
+ * four documents worse to read. So the ring gets a position rather than none: a
+ * prelude, and then one contiguous run wherever its content belongs. Thirteen
+ * documents open this way, under seven titles. The allowance is one section and
+ * not a leading block — a second one is the tail spreading back out, which is the
+ * state this rule closes
+ * ([#1863](https://github.com/tutkli/forty-cdk/issues/1863)).
+ */
+export function preludeIndexOf(sections) {
+  const first = sections.findIndex((section) => section.ring === 'specific');
+  const core = sections.findIndex((section) => section.ring === 'core');
+  return first !== -1 && (core === -1 || first < core) ? first : -1;
+}
+
+/**
+ * Every document that writes its specific sections in more than one run.
+ *
+ * This is the half of the ring's position {@link checkSectionOrder} leaves open
+ * on purpose: the canonical sections have a sequence, and a specific one is free
+ * to sit between any two of them. Free of a *position*, though, it was also free
+ * of a *neighbour* — and the rail nests the whole ring under one group, so a
+ * document whose specific sections came in two runs got a group placed at one of
+ * them, dragging the rest of the ring to it. Twelve of the fifty-four published
+ * pages listed their sections in an order the page did not use, and the table of
+ * contents is the one component whose entire job is to state that order.
+ *
+ * A contiguous run is the rule rather than a fixed slot, because the group lands
+ * where the run is: contiguity is what makes the rail's order the page's order,
+ * and it leaves every document free to say where its own tail belongs.
+ */
+export function checkSectionRuns(documents) {
+  const problems = [];
+  for (const document of documents) {
+    const prelude = preludeIndexOf(document.sections);
+    let previous = null;
+    let last = null;
+    let runs = 0;
+    for (const [index, section] of document.sections.entries()) {
+      if (section.ring !== 'specific' || index === prelude) {
+        continue;
+      }
+      if (previous === null || index !== previous + 1) {
+        runs += 1;
+        if (runs > 1) {
+          problems.push({
+            path: document.path,
+            line: section.line,
+            message:
+              `"## ${section.title}" opens a second run of specific sections, and the page ` +
+              'template gives the ring one contiguous run — one section may still precede the ' +
+              `first core one, as a prelude — so move it beside "## ${last.title}", or move ` +
+              'that run down to it',
+          });
+        }
+      }
+      if (runs === 1) {
+        last = section;
+      }
+      previous = index;
+    }
+  }
+  return problems;
+}
+
 /** Every way a compiled corpus disagrees with the contract. */
 export function checkContract(documents) {
   return [
     ...checkSections(documents),
     ...checkExemptions(documents),
     ...checkSectionOrder(documents),
+    ...checkSectionRuns(documents),
   ];
 }
