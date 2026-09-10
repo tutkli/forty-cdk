@@ -67,6 +67,159 @@ const routes = [
 
 const missing = [];
 const empty = [];
+const themed = [];
+const unbootstrapped = [];
+const deferredStyles = [];
+
+/**
+ * The `localStorage` key the site persists the theme under, read from the source
+ * the running application reads it from
+ * ([#1880](https://github.com/tutkli/forty-cdk/issues/1880)) — the inline
+ * bootstrap in `index.html` is only worth its blocking script if it names the
+ * same key.
+ */
+function readThemeKey() {
+  const site = join(repoRoot, 'projects', 'forty-cdk-docs', 'src', 'app', 'ui', 'site-chrome.ts');
+  const found = /export const THEME_KEY = '([^']+)'/.exec(readFileSync(site, 'utf8'));
+  if (found === null) {
+    fail('site-chrome.ts exports no THEME_KEY — the inline theme bootstrap cannot be verified');
+  }
+  return found[1];
+}
+
+const themeKey = readThemeKey();
+
+/**
+ * A prerendered page must carry no `data-theme`: the server knows nothing about
+ * the visitor, so a baked value is a wrong one for half of them, and it would
+ * beat the `prefers-color-scheme` fallback the stylesheet ends with. What
+ * decides the first painted frame instead is the blocking bootstrap, which has
+ * to reach every page rather than only the ones someone remembered.
+ *
+ * The stylesheet has to be blocking for the same reason. Critical-CSS
+ * extraction keeps the rules whose selectors match the prerendered markup, and
+ * with no baked attribute neither `[data-theme='dark']` nor the fallback
+ * matches any page — so a deferred stylesheet leaves the first frame with the
+ * light palette alone, whatever the bootstrap stamped.
+ */
+function checkTheme(label, html) {
+  const openTag = /<html[^>]*>/i.exec(html);
+  if (openTag !== null && /\bdata-theme\b/i.test(openTag[0])) {
+    themed.push(label);
+  }
+  if (!html.includes(themeKey)) {
+    unbootstrapped.push(label);
+  }
+
+  const head = html.slice(0, html.indexOf('</head>'));
+  const sheets = [...head.matchAll(/<link[^>]*rel="stylesheet"[^>]*>/gi)].map((match) => match[0]);
+  if (!sheets.some((sheet) => !/\bmedia=/i.test(sheet))) {
+    deferredStyles.push(label);
+  }
+}
+
+const DARK_ATTRIBUTE = "[data-theme='dark']";
+const DARK_FALLBACK = ":root:not([data-theme='light'])";
+const DARK_MEDIA = '@media (prefers-color-scheme: dark)';
+
+function parseRules(css) {
+  const rules = [];
+  let index = 0;
+  while (index < css.length) {
+    const open = css.indexOf('{', index);
+    if (open === -1) {
+      break;
+    }
+    let depth = 1;
+    let cursor = open + 1;
+    while (cursor < css.length && depth > 0) {
+      if (css[cursor] === '{') {
+        depth += 1;
+      } else if (css[cursor] === '}') {
+        depth -= 1;
+      }
+      cursor += 1;
+    }
+    rules.push({ selector: css.slice(index, open).trim(), body: css.slice(open + 1, cursor - 1) });
+    index = cursor;
+  }
+  return rules;
+}
+
+function collapse(text) {
+  return text.replace(/\s+/g, ' ').trim();
+}
+
+function normalizeSelector(selector) {
+  return selector
+    .split(',')
+    .map((part) => collapse(part))
+    .join(', ');
+}
+
+function declarations(body) {
+  return body
+    .split(';')
+    .map((declaration) => collapse(declaration))
+    .filter((declaration) => declaration.length > 0)
+    .join('; ');
+}
+
+/**
+ * The stylesheet's fallback for a visitor whose JavaScript never runs
+ * ([#1880](https://github.com/tutkli/forty-cdk/issues/1880)): every rule keyed
+ * on the dark attribute owes a `prefers-color-scheme` twin keyed on
+ * `:root:not([data-theme='light'])`, so a stored `light` still wins while a
+ * system preference no script read still lands.
+ *
+ * Declaration parity is checked rather than mere presence, because the failure
+ * this guards against is the half-copied block — a token added to the attribute
+ * rule and forgotten in the twin paints part of the page in the other theme,
+ * and nothing about that is visible in a light-preferring browser.
+ */
+function checkThemeFallback() {
+  const file = join(repoRoot, 'projects', 'forty-cdk-docs', 'src', 'styles.css');
+  const rules = parseRules(readFileSync(file, 'utf8').replace(/\/\*[\s\S]*?\*\//g, ''));
+  const dark = rules.filter((rule) => rule.selector.includes(DARK_ATTRIBUTE));
+  const fallbacks = rules
+    .filter((rule) => normalizeSelector(rule.selector) === DARK_MEDIA)
+    .flatMap((rule) => parseRules(rule.body));
+
+  if (dark.length === 0) {
+    fail('styles.css keys no rule on the dark attribute — the fallback scan reads nothing');
+  }
+
+  const unguarded = fallbacks
+    .filter((rule) => !rule.selector.includes(DARK_FALLBACK))
+    .map((rule) => normalizeSelector(rule.selector));
+  if (unguarded.length > 0) {
+    fail(
+      `${unguarded.length} rule(s) under ${DARK_MEDIA} are not guarded by ${DARK_FALLBACK}, so a ` +
+        `stored light preference loses to the system one: ${unguarded.join(' / ')}`,
+    );
+  }
+
+  const problems = [];
+  for (const rule of dark) {
+    const owed = normalizeSelector(rule.selector.replaceAll(DARK_ATTRIBUTE, DARK_FALLBACK));
+    const twin = fallbacks.find((candidate) => normalizeSelector(candidate.selector) === owed);
+    if (twin === undefined) {
+      problems.push(`${normalizeSelector(rule.selector)} — no ${DARK_MEDIA} twin`);
+    } else if (declarations(twin.body) !== declarations(rule.body)) {
+      problems.push(`${normalizeSelector(rule.selector)} — its twin states other declarations`);
+    }
+  }
+  if (problems.length > 0) {
+    fail(
+      `${problems.length} dark rule(s) have no equivalent ${DARK_MEDIA} fallback, so a visitor ` +
+        `without JavaScript gets part of the light theme:\n  ${problems.join('\n  ')}`,
+    );
+  }
+
+  return dark.length;
+}
+
+const fallbackRules = checkThemeFallback();
 
 /**
  * The root is a page of its own rather than a redirect
@@ -86,6 +239,7 @@ if (!existsSync(homeFile)) {
   if (!homeHtml.includes('<h1')) {
     empty.push('(home)');
   }
+  checkTheme('(home)', homeHtml);
 }
 
 for (const { path, title } of routes) {
@@ -98,6 +252,7 @@ for (const { path, title } of routes) {
   if (!html.includes('<h1') || !html.includes(escapeHtml(title))) {
     empty.push(path);
   }
+  checkTheme(path, html);
 }
 
 if (missing.length > 0) {
@@ -108,10 +263,31 @@ if (empty.length > 0) {
     `prerendered HTML is missing rendered content for ${empty.length} route(s): ${empty.join(', ')}`,
   );
 }
+if (themed.length > 0) {
+  fail(
+    `${themed.length} prerendered page(s) bake data-theme onto <html>, which flashes for a ` +
+      `visitor whose theme differs: ${themed.join(', ')}`,
+  );
+}
+if (unbootstrapped.length > 0) {
+  fail(
+    `${unbootstrapped.length} prerendered page(s) ship no inline theme bootstrap reading ` +
+      `'${themeKey}', so their first painted frame is the light palette: ${unbootstrapped.join(', ')}`,
+  );
+}
+if (deferredStyles.length > 0) {
+  fail(
+    `${deferredStyles.length} prerendered page(s) carry no blocking stylesheet in <head>, so ` +
+      'their first frame paints with whatever critical CSS was extracted — and the dark palette ' +
+      'is not in it, because its selector matches no prerendered page: ' +
+      deferredStyles.join(', '),
+  );
+}
 
 console.log(
   `[check-prerender-output] ok — ${primitives.length} primitive routes + ` +
     `${guides.length} guide routes + ${sitePages.length} site pages + ${errorCodes.length} ` +
     'error code pages + the error index + the guide index + the landing page prerendered ' +
-    'with content',
+    'with content, none of them baking a theme and all of them bootstrapping one, over ' +
+    `${fallbackRules} dark rule(s) each mirrored by a prefers-color-scheme fallback`,
 );
