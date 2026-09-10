@@ -14,7 +14,7 @@ import { injectFragmentScroll } from '../doc/doc-fragment';
 import { DocLinks } from '../doc/doc-links';
 import type { DocPage, DocPageSection } from '../doc/doc-model';
 import { DocSection } from '../doc/doc-section';
-import { splitAtExamples } from '../doc/doc-section-layout';
+import { examplesHeadingOf, splitAtExamples } from '../doc/doc-section-layout';
 import { DocToc } from '../doc/doc-toc';
 import { buildTocItems, type TocEntry, type TocSection } from '../doc/doc-toc-rail';
 import { groupLabelBySlug, primitiveBySlug } from '../primitives';
@@ -209,19 +209,12 @@ export class PrimitivePage {
 
   protected readonly sectionsAfter = computed(() => this.#slot().after);
 
-  /**
-   * The heading the live demos render under, or `null` for a page that has
-   * neither — `forty-cdk/shared` publishes contracts and types, and an empty
-   * "Examples" would be a section the reader is invited into for nothing
-   * ([#1809](https://github.com/tutkli/forty-cdk/issues/1809)).
-   */
-  protected readonly examplesMeta = computed(() => {
-    const declared = this.#slot().declared;
-    if (declared === null) {
-      return this.demos().length > 0 ? { title: 'Examples', slug: 'examples' } : null;
-    }
-    return { title: declared.title, slug: declared.slug };
-  });
+  protected readonly examplesMeta = computed(() =>
+    examplesHeadingOf(
+      this.#slot().declared,
+      this.demos().map((demo) => ({ hero: demo.hero() })),
+    ),
+  );
 
   protected readonly tocItems = computed<readonly TocEntry[]>(() => {
     const toToc = (section: DocPageSection): TocSection => {

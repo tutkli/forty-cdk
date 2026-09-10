@@ -1,5 +1,5 @@
 import type { DocSection } from '../../../../../scripts/docs/doc-model.mjs';
-import { preludeIndexOf, splitAtExamples } from './doc-section-layout';
+import { examplesHeadingOf, preludeIndexOf, splitAtExamples } from './doc-section-layout';
 import { compile, FRONTMATTER } from './testing/compile';
 import { PRIMITIVE_DOCS } from './testing/doc-corpus';
 
@@ -117,5 +117,30 @@ describe('the slot over the corpus', () => {
     });
 
     expect(placed).toEqual(synthesised.map(({ slug }) => [slug, true, false]));
+  });
+});
+
+describe('the heading a page renders its live demos under', () => {
+  it('synthesises the block for a page that projects a demo into it', () => {
+    expect(examplesHeadingOf(null, [{ hero: true }, { hero: false }])).toEqual({
+      title: 'Examples',
+      slug: 'examples',
+    });
+  });
+
+  it('synthesises nothing for a page whose only demo is its hero', () => {
+    expect(examplesHeadingOf(null, [{ hero: true }])).toBeNull();
+  });
+
+  it('synthesises nothing for a page that declares no demo at all', () => {
+    expect(examplesHeadingOf(null, [])).toBeNull();
+  });
+
+  it('keeps the heading a document declares, whatever the page projects', () => {
+    const { declared } = slotOf('Anatomy', 'Examples', 'API');
+    const heading = { title: 'Examples', slug: 'examples' };
+
+    expect(examplesHeadingOf(declared, [{ hero: true }])).toEqual(heading);
+    expect(examplesHeadingOf(declared, [])).toEqual(heading);
   });
 });
