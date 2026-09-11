@@ -13,6 +13,18 @@ export interface DocsGroup {
 }
 
 /**
+ * What the published package states about itself, read from
+ * `projects/forty-cdk/package.json` when the registry is generated.
+ */
+export interface DocsLibrary {
+  /** The npm version the site was built from. */
+  readonly version: string;
+  /** The Angular core peer range the package declares. */
+  readonly angular: string;
+  readonly license: string;
+}
+
+/**
  * The navigation registry, generated from the frontmatter each entry point's
  * README declares ([#1808](https://github.com/tutkli/forty-cdk/issues/1808)).
  *
@@ -26,9 +38,13 @@ export const DOCS_GROUPS: readonly DocsGroup[] = [
   { label: 'Utilities', primitives: UTILITIES },
 ];
 
-export { PRIMITIVES, UTILITIES } from '../generated/primitives.generated';
+export { LIBRARY, PRIMITIVES, UTILITIES } from '../generated/primitives.generated';
 
-export const FIRST_PRIMITIVE_SLUG = DOCS_GROUPS[0]?.primitives[0]?.slug ?? 'accordion';
+/** Every entry point the site publishes a page for, across all groups. */
+export const ENTRY_POINT_COUNT = DOCS_GROUPS.reduce(
+  (count, group) => count + group.primitives.length,
+  0,
+);
 
 export function primitiveBySlug(slug: string): DocsPrimitive {
   for (const group of DOCS_GROUPS) {

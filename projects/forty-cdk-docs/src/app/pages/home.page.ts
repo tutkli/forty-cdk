@@ -9,7 +9,9 @@ import {
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
-import { FIRST_PRIMITIVE_SLUG, PRIMITIVES, UTILITIES } from '../primitives';
+import { injectFragmentScroll } from '../doc/doc-fragment';
+import { ENTRY_POINT_COUNT, LIBRARY } from '../primitives';
+import { GITHUB_BLOB_BASE } from '../ui/github';
 import { Icon } from '../ui/icon';
 import { LandingFooter } from '../ui/landing-footer';
 import { LandingHeader } from '../ui/landing-header';
@@ -34,9 +36,15 @@ const INSTALL_COMMAND = 'npm install forty-cdk';
             management and state — and none of the part that is yours. No styles, no theme to
             override, no <code>NgModule</code>.
           </p>
+          <p class="lede positioning">
+            Not a component library: nothing here is painted, so there is nothing to theme — you
+            build your own design system on top of behaviour that is already accessible.
+          </p>
           <div class="cta">
             <a class="btn btn--primary" [routerLink]="['/getting-started']">Get started</a>
-            <a class="btn" [routerLink]="['/', firstPrimitive]">Browse all {{ entryPointCount }}</a>
+            <a class="btn" [routerLink]="[]" fragment="index-heading">
+              Browse all {{ entryPointCount }}
+            </a>
           </div>
           <div class="install">
             <span class="install-sigil">$</span>
@@ -50,6 +58,17 @@ const INSTALL_COMMAND = 'npm install forty-cdk';
               <app-icon [name]="copied() ? 'check' : 'clipboard'" />
             </button>
           </div>
+          <p class="maturity">
+            <span>v{{ library.version }}</span>
+            <span aria-hidden="true">·</span>
+            <span>Angular {{ library.angular }}</span>
+            <span aria-hidden="true">·</span>
+            <span>{{ library.license }}</span>
+            @if (preRelease) {
+              <span aria-hidden="true">·</span>
+              <a [href]="changelog" target="_blank" rel="noreferrer noopener">pre-1.0</a>
+            }
+          </p>
         </div>
 
         <landing-specimen />
@@ -59,13 +78,6 @@ const INSTALL_COMMAND = 'npm install forty-cdk';
         <h2 id="why-heading">Why forty-cdk</h2>
         <div class="why-grid">
           <div class="why-item">
-            <h3>Accessibility is the API</h3>
-            <p>
-              Every primitive names the WAI-ARIA APG pattern it implements: roles, live ARIA, the
-              full keyboard map, focus management and RTL.
-            </p>
-          </div>
-          <div class="why-item">
             <h3>Styleless by design</h3>
             <p>
               No CSS ships. You style your own class against the <code>data-*</code> state each
@@ -73,7 +85,21 @@ const INSTALL_COMMAND = 'npm install forty-cdk';
             </p>
           </div>
           <div class="why-item">
-            <h3>Signals, not ceremony</h3>
+            <h3>Composed, not configured</h3>
+            <p>
+              A primitive is a set of directives you arrange in your own markup. They find each
+              other through DI, so you can wrap any of them.
+            </p>
+          </div>
+          <div class="why-item">
+            <h3>Accessibility is the API</h3>
+            <p>
+              Every primitive names the WAI-ARIA APG pattern it implements: roles, live ARIA, the
+              full keyboard map, focus management and RTL.
+            </p>
+          </div>
+          <div class="why-item">
+            <h3>Nothing to unsubscribe from</h3>
             <p>
               <code>input()</code>, <code>output()</code>, <code>model()</code>,
               <code>inject()</code>, standalone directives. State is a signal you read, not an
@@ -88,17 +114,10 @@ const INSTALL_COMMAND = 'npm install forty-cdk';
             </p>
           </div>
           <div class="why-item">
-            <h3>One entry point each</h3>
+            <h3>Pay only for what you import</h3>
             <p>
-              Import <code>forty-cdk/dialog</code> and your bundle never sees Table. The isolation
-              is structural, not a tree-shaking result.
-            </p>
-          </div>
-          <div class="why-item">
-            <h3>Composed, not configured</h3>
-            <p>
-              A primitive is a set of directives you arrange in your own markup. They find each
-              other through DI, so you can wrap any of them.
+              Import <code>forty-cdk/dialog</code> and your bundle never sees Table. Each primitive
+              is its own entry point, so the isolation is structural, not a tree-shaking result.
             </p>
           </div>
         </div>
@@ -188,6 +207,11 @@ const INSTALL_COMMAND = 'npm install forty-cdk';
       color: var(--pg-text-muted);
     }
 
+    .positioning {
+      margin-top: 1rem;
+      font-size: 1.02rem;
+    }
+
     .cta {
       display: flex;
       flex-wrap: wrap;
@@ -267,6 +291,26 @@ const INSTALL_COMMAND = 'npm install forty-cdk';
     .install-copy app-icon {
       width: 16px;
       height: 16px;
+    }
+
+    .maturity {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin: 0.9rem 0 0;
+      font-family: var(--pg-font-mono);
+      font-size: 0.78rem;
+      color: var(--pg-text-muted);
+    }
+
+    .maturity a {
+      color: var(--pg-secondary);
+      text-decoration: none;
+    }
+
+    .maturity a:hover {
+      text-decoration: underline;
+      text-underline-offset: 3px;
     }
 
     h2 {
@@ -402,10 +446,12 @@ export class HomePage {
 
   protected readonly copied = signal(false);
 
-  protected readonly entryPointCount = PRIMITIVES.length + UTILITIES.length;
-  protected readonly firstPrimitive = FIRST_PRIMITIVE_SLUG;
+  protected readonly entryPointCount = ENTRY_POINT_COUNT;
 
   protected readonly install = INSTALL_COMMAND;
+  protected readonly library = LIBRARY;
+  protected readonly preRelease = LIBRARY.version.startsWith('0.');
+  protected readonly changelog = `${GITHUB_BLOB_BASE}CHANGELOG.md`;
 
   protected readonly copyLabel = computed(() =>
     this.copied() ? 'Install command copied' : 'Copy the install command',
@@ -414,6 +460,7 @@ export class HomePage {
   #resetTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
+    injectFragmentScroll();
     this.#destroyRef.onDestroy(() => {
       if (this.#resetTimer !== null) {
         clearTimeout(this.#resetTimer);
