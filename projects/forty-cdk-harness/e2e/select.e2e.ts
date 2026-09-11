@@ -344,13 +344,11 @@ test.describe('Select', () => {
         .toMatch(/^-?\d+px -?\d+px$/);
     });
 
-    // #1888 — the middleware used to measure the listbox and the target option
-    // with `getBoundingClientRect()`, which is transform-inclusive, so a
-    // consumer's `scale(0.9)` enter animation skewed the *first* resolved
-    // position by the scale delta. `?popin=1` gives the surface that animation;
-    // `?selected=date` anchors on the fourth option so the skew is ~11px rather
-    // than a sub-pixel difference, and `?spacer=1` keeps the result clear of
-    // the top viewport clamp, which would mask it.
+    // `?popin=1` gives the surface a `scale(0.9)` enter animation, so the
+    // position resolves while it is transformed. `?selected=date` anchors on
+    // the fourth option, where a transform-inclusive measurement is off by
+    // ~11px rather than by a sub-pixel amount, and `?spacer=1` keeps the result
+    // clear of the top viewport clamp, which would mask the difference.
     test.describe('scaled by an enter animation (#1888)', () => {
       const openWithQuery = async (page: Page, query: Record<string, string>) => {
         await gotoFixture(page, 'select', {
@@ -395,8 +393,8 @@ test.describe('Select', () => {
         const animated = await openWithQuery(page, { popin: '1' });
         const plain = await openWithQuery(page, {});
 
-        // The position the user sees painted — the anti-flash clip is dropped
-        // on this very pass — must not depend on the consumer's animation.
+        // The anti-flash clip is dropped on the first resolved position, so
+        // that one is what the user sees painted.
         expect(animated[0]).toBe(plain[0]);
       });
 

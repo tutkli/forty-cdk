@@ -189,11 +189,10 @@ describe('injectItemAlignedPositioner', () => {
 });
 
 /**
- * The middleware's arithmetic, extracted as a pure function so it can be
- * asserted without faking a layout — the geometry is the function's argument
- * rather than a stubbed measurement, which is the `buildFlipOptions` precedent
- * from [#1306](https://github.com/tutkli/forty-cdk/issues/1306). What the
- * numbers *mean* against real layout stays `select.e2e.ts`'s claim.
+ * The middleware's arithmetic, asserted directly: the geometry is the
+ * function's argument rather than a stubbed measurement, so no layout is
+ * faked here. What the numbers mean against real layout is `select.e2e.ts`'s
+ * claim.
  */
 describe('resolveItemAlignedY', () => {
   const trigger = { triggerTop: 260, triggerHeight: 32 };
@@ -209,30 +208,6 @@ describe('resolveItemAlignedY', () => {
     });
 
     expect(y + targetCenter).toBe(trigger.triggerTop + trigger.triggerHeight / 2);
-  });
-
-  it('misaligns by the scale delta when fed geometry measured through a transform (#1888)', () => {
-    // The same surface measured at 90% — what `getBoundingClientRect()` reports
-    // while a `scale(0.9)` enter animation runs. Both the height and the
-    // option's offset within it shrink, so the option lands below the trigger
-    // center by the delta. This is the defect the middleware's switch to
-    // offset geometry removes, stated as arithmetic so the direction and the
-    // size of the error are pinned rather than described.
-    const targetCenter = 113;
-    const aligned = resolveItemAlignedY({
-      ...trigger,
-      ...viewport,
-      listboxHeight: 223,
-      targetCenter,
-    });
-    const skewed = resolveItemAlignedY({
-      ...trigger,
-      ...viewport,
-      listboxHeight: 223 * 0.9,
-      targetCenter: targetCenter * 0.9,
-    });
-
-    expect(skewed - aligned).toBeCloseTo(targetCenter * 0.1, 10);
   });
 
   it('clamps to the top padding rather than pushing the listbox off-screen', () => {
@@ -260,9 +235,7 @@ describe('resolveItemAlignedY', () => {
   });
 
   it('pins a listbox taller than the viewport to the top padding', () => {
-    // No offset satisfies both edges, so the clamp collapses onto `minY`. The
-    // height is the untransformed one, which is what makes this hold for a
-    // surface that is mid-animation: a scaled height could report as fitting.
+    // No offset satisfies both edges, so the clamp collapses onto `minY`.
     const y = resolveItemAlignedY({
       ...trigger,
       ...viewport,
@@ -286,13 +259,11 @@ describe('resolveItemAlignedY', () => {
 });
 
 /**
- * The measurement half of the same fix. jsdom runs no layout, so the offset
- * geometry here is declared rather than measured — what the cases assert is the
- * `offsetParent` walk (the listbox's own offset cancels out, nested wrappers
- * accumulate) and, in the last one, that a client rect cannot influence the
- * answer: the stubbed rects are the ones a `scale(0.9)` surface would report,
- * and the assertion is that the result is *unchanged* by them, never a value
- * they produced.
+ * jsdom runs no layout, so the offset geometry here is declared rather than
+ * measured — what the cases assert is the `offsetParent` walk (the listbox's
+ * own offset cancels out, nested wrappers accumulate) and, in the last one,
+ * that a client rect cannot influence the answer: the assertion there is that
+ * the result is *unchanged* by the stubbed rects, never a value they produced.
  */
 describe('offsetCenterWithinListbox', () => {
   function declareOffsets(
@@ -350,8 +321,7 @@ describe('offsetCenterWithinListbox', () => {
     const untransformed = offsetCenterWithinListbox(option, listbox);
 
     // Same layout, `scale(0.9)` about the surface center: every client rect
-    // shrinks and shifts, the offset geometry does not. Measuring through the
-    // rects would return 101.7 here instead.
+    // shrinks and shifts, the offset geometry does not.
     stubScaledRect(listbox, 111.3, 200.7);
     stubScaledRect(option, 210.6, 28.8);
 

@@ -41,9 +41,8 @@ import { queryFlag } from './_query-flag';
         max-height: var(--for-floating-available-height);
         overflow-y: auto;
       }
-      /* The scale-in enter animation the documentation site recommends for
-         overlays. It runs long enough for a spec to sample the position the
-         positioner resolves while the surface is still transformed. */
+      /* Deliberately long: a spec has to sample the resolved position while
+         the surface is still transformed. */
       [forSelectContent].pop-in {
         animation: select-pop-in 1000ms ease-out;
       }
@@ -168,8 +167,7 @@ export class SelectFixture {
   protected readonly anchor = queryFlag('anchor');
 
   // `?popin=1` gives [forSelectContent] a scale-in enter animation so e2e specs
-  // can assert the item-aligned position is resolved from untransformed
-  // geometry rather than from the rect the running animation reports (#1888).
+  // can exercise the item-aligned positioner against a transformed surface.
   protected readonly popin = queryFlag('popin');
 
   protected readonly many = queryFlag('many');

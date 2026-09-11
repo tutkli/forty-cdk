@@ -67,16 +67,10 @@ function findFirstEnabledOption(listbox: HTMLElement): HTMLElement | null {
   return null;
 }
 
-/**
- * Vertical geometry an item-aligned position is resolved from. Every length is
- * untransformed layout geometry in CSS pixels, except `triggerTop` /
- * `triggerHeight`, which are viewport coordinates of the anchor.
- */
 export interface ItemAlignedGeometry {
   /** Viewport-relative top edge of the anchor. */
   readonly triggerTop: number;
 
-  /** Height of the anchor. */
   readonly triggerHeight: number;
 
   /** Border-box height of the listbox, excluding any CSS transform. */
@@ -89,7 +83,6 @@ export interface ItemAlignedGeometry {
    */
   readonly targetCenter: number | null;
 
-  /** Height of the viewport the listbox is clamped inside. */
   readonly viewportHeight: number;
 
   /** Distance the listbox keeps from the viewport's top and bottom edges. */
@@ -100,10 +93,6 @@ export interface ItemAlignedGeometry {
  * Resolves the listbox's vertical offset so the target option's center lines up
  * with the trigger's center, clamped inside the viewport. A listbox taller than
  * the band the padding leaves cannot satisfy both edges and pins to the top.
- *
- * Pure arithmetic over untransformed geometry: a caller measuring a surface
- * that is animating in must pass its layout size, not its transformed rect, or
- * the result is off by the scale delta.
  */
 export function resolveItemAlignedY(geometry: ItemAlignedGeometry): number {
   const { triggerTop, triggerHeight, listboxHeight, targetCenter, viewportHeight, padding } =
@@ -133,12 +122,9 @@ function offsetTopWithinChain(el: HTMLElement): number {
 
 /**
  * Distance from `listbox`'s top border edge to `target`'s vertical center, read
- * from offset geometry so a CSS transform on either element — a consumer's
- * enter animation, typically — cannot skew it.
- *
+ * from offset geometry so a CSS transform on either element cannot skew it.
  * Offset geometry is integer-rounded, so the result is accurate to about a
- * pixel; the alternative, a difference of two client rects, is transform-
- * inclusive and skews by the whole scale delta.
+ * pixel.
  */
 export function offsetCenterWithinListbox(target: HTMLElement, listbox: HTMLElement): number {
   return offsetTopWithinChain(target) + target.offsetHeight / 2 - offsetTopWithinChain(listbox);
