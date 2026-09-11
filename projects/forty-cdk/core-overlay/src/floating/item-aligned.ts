@@ -68,6 +68,83 @@ function findFirstEnabledOption(listbox: HTMLElement): HTMLElement | null {
 }
 
 /**
+ * Vertical geometry an item-aligned position is resolved from. Every length is
+ * untransformed layout geometry in CSS pixels, except `triggerTop` /
+ * `triggerHeight`, which are viewport coordinates of the anchor.
+ */
+export interface ItemAlignedGeometry {
+  /** Viewport-relative top edge of the anchor. */
+  readonly triggerTop: number;
+
+  /** Height of the anchor. */
+  readonly triggerHeight: number;
+
+  /** Border-box height of the listbox, excluding any CSS transform. */
+  readonly listboxHeight: number;
+
+  /**
+   * Distance from the listbox's top border edge to the vertical center of the
+   * option to anchor over the trigger, or `null` when the listbox holds no
+   * anchorable option — the listbox then aligns to the trigger's top edge.
+   */
+  readonly targetCenter: number | null;
+
+  /** Height of the viewport the listbox is clamped inside. */
+  readonly viewportHeight: number;
+
+  /** Distance the listbox keeps from the viewport's top and bottom edges. */
+  readonly padding: number;
+}
+
+/**
+ * Resolves the listbox's vertical offset so the target option's center lines up
+ * with the trigger's center, clamped inside the viewport. A listbox taller than
+ * the band the padding leaves cannot satisfy both edges and pins to the top.
+ *
+ * Pure arithmetic over untransformed geometry: a caller measuring a surface
+ * that is animating in must pass its layout size, not its transformed rect, or
+ * the result is off by the scale delta.
+ */
+export function resolveItemAlignedY(geometry: ItemAlignedGeometry): number {
+  const { triggerTop, triggerHeight, listboxHeight, targetCenter, viewportHeight, padding } =
+    geometry;
+  const minY = padding;
+  const maxY = viewportHeight - listboxHeight - padding;
+
+  if (targetCenter == null) {
+    return Math.max(minY, Math.min(triggerTop, maxY));
+  }
+
+  const desiredY = triggerTop + triggerHeight / 2 - targetCenter;
+  return maxY > minY ? Math.max(minY, Math.min(desiredY, maxY)) : minY;
+}
+
+function offsetTopWithinChain(el: HTMLElement): number {
+  const view = el.ownerDocument.defaultView;
+  let top = 0;
+  let node: HTMLElement | null = el;
+  while (node) {
+    top += node.offsetTop;
+    const parent: Element | null = node.offsetParent;
+    node = view && parent instanceof view.HTMLElement ? parent : null;
+  }
+  return top;
+}
+
+/**
+ * Distance from `listbox`'s top border edge to `target`'s vertical center, read
+ * from offset geometry so a CSS transform on either element — a consumer's
+ * enter animation, typically — cannot skew it.
+ *
+ * Offset geometry is integer-rounded, so the result is accurate to about a
+ * pixel; the alternative, a difference of two client rects, is transform-
+ * inclusive and skews by the whole scale delta.
+ */
+export function offsetCenterWithinListbox(target: HTMLElement, listbox: HTMLElement): number {
+  return offsetTopWithinChain(target) + target.offsetHeight / 2 - offsetTopWithinChain(listbox);
+}
+
+/**
  * Custom floating-ui middleware. Computes raw `x`/`y` so the *target option's
  * vertical center* lines up with the *trigger's vertical center*, then clamps
  * the listbox inside the viewport with `padding`. Cross-axis: listbox left
@@ -86,29 +163,21 @@ function itemAligned(
       const reference = state.elements.reference;
       const floating = state.elements.floating;
       const triggerRect = reference.getBoundingClientRect();
-      const listboxRect = floating.getBoundingClientRect();
       const target = selectedOption() ?? findFirstEnabledOption(floating);
-      const padding = paddingFn();
       // Read the viewport height through the floating element's own
       // window so the middleware works in iframes / multiple-document
       // contexts and stays SSR-safe (the middleware itself only runs
       // inside a `computePosition` callback, which is browser-only).
       const viewportHeight = floating.ownerDocument.defaultView?.innerHeight ?? 0;
 
-      let y: number;
-      if (target) {
-        const optRect = target.getBoundingClientRect();
-        const targetCenterRelToListbox = optRect.top - listboxRect.top + optRect.height / 2;
-        const desiredY = triggerRect.top + triggerRect.height / 2 - targetCenterRelToListbox;
-        const minY = padding;
-        const maxY = viewportHeight - listboxRect.height - padding;
-        y = maxY > minY ? Math.max(minY, Math.min(desiredY, maxY)) : minY;
-      } else {
-        y = Math.max(
-          padding,
-          Math.min(triggerRect.top, viewportHeight - listboxRect.height - padding),
-        );
-      }
+      const y = resolveItemAlignedY({
+        triggerTop: triggerRect.top,
+        triggerHeight: triggerRect.height,
+        listboxHeight: floating.offsetHeight,
+        targetCenter: target ? offsetCenterWithinListbox(target, floating) : null,
+        viewportHeight,
+        padding: paddingFn(),
+      });
 
       return { x: triggerRect.left, y };
     },

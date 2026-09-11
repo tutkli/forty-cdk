@@ -41,6 +41,20 @@ import { queryFlag } from './_query-flag';
         max-height: var(--for-floating-available-height);
         overflow-y: auto;
       }
+      /* The scale-in enter animation the documentation site recommends for
+         overlays. It runs long enough for a spec to sample the position the
+         positioner resolves while the surface is still transformed. */
+      [forSelectContent].pop-in {
+        animation: select-pop-in 1000ms ease-out;
+      }
+      @keyframes select-pop-in {
+        from {
+          transform: scale(0.9);
+        }
+        to {
+          transform: scale(1);
+        }
+      }
       /* The decorated field box is deliberately wider than the inner trigger
          so anchor-vs-trigger positioning is distinguishable by width. */
       [forSelectAnchor] {
@@ -86,7 +100,12 @@ import { queryFlag } from './_query-flag';
         </button>
       }
       @if (open()) {
-        <div forSelectContent data-testid="content" [class.scrollable]="many">
+        <div
+          forSelectContent
+          data-testid="content"
+          [class.scrollable]="many"
+          [class.pop-in]="popin"
+        >
           @if (many) {
             @for (i of manyOptions; track i) {
               <button [attr.data-testid]="'opt-item-' + i" forSelectOption [value]="'item-' + i">
@@ -147,6 +166,11 @@ export class SelectFixture {
   // e2e specs can assert the listbox is positioned / sized against the box
   // (`--for-floating-anchor-width` ≈ 280px) rather than the inner trigger (160px).
   protected readonly anchor = queryFlag('anchor');
+
+  // `?popin=1` gives [forSelectContent] a scale-in enter animation so e2e specs
+  // can assert the item-aligned position is resolved from untransformed
+  // geometry rather than from the rect the running animation reports (#1888).
+  protected readonly popin = queryFlag('popin');
 
   protected readonly many = queryFlag('many');
   protected readonly manyOptions = Array.from({ length: 60 }, (_, i) => i);
