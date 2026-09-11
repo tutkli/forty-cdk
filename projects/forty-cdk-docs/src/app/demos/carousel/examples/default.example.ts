@@ -39,8 +39,30 @@ interface Slide {
       ariaLabel="Featured slides"
     >
       <div class="car-controls-row">
-        <button forCarouselPrevious class="car-btn" aria-label="Previous slide">‹</button>
-        <button forCarouselNext class="car-btn" aria-label="Next slide">›</button>
+        <button forCarouselPrevious class="car-btn" aria-label="Previous slide">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="m15.75 19.5-7.5-7.5 7.5-7.5"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.75"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
+        <button forCarouselNext class="car-btn" aria-label="Next slide">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="m8.25 4.5 7.5 7.5-7.5 7.5"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.75"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
       </div>
 
       <div forCarouselViewport class="car-viewport">
@@ -95,6 +117,11 @@ interface Slide {
       font-size: 1.2rem;
       line-height: 1;
       cursor: pointer;
+    }
+
+    .car-btn svg {
+      width: 1em;
+      height: 1em;
     }
 
     .car-btn:hover:not([data-disabled]) {
