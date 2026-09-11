@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 
 import { readGuides, readPrimitives, readSitePages } from './lib/doc-site.mjs';
@@ -71,7 +71,9 @@ const themed = [];
 const unbootstrapped = [];
 const deferredStyles = [];
 const attributed = [];
+const statefulToggles = [];
 let demoBlocks = 0;
+let themeToggles = 0;
 
 /**
  * The `localStorage` key the site persists the theme under, read from the source
@@ -81,10 +83,20 @@ let demoBlocks = 0;
  * same key.
  */
 function readThemeKey() {
-  const site = join(repoRoot, 'projects', 'forty-cdk-docs', 'src', 'app', 'ui', 'site-chrome.ts');
+  const site = join(
+    repoRoot,
+    'projects',
+    'forty-cdk-docs',
+    'src',
+    'app',
+    'ui',
+    'theme-preference.ts',
+  );
   const found = /export const THEME_KEY = '([^']+)'/.exec(readFileSync(site, 'utf8'));
   if (found === null) {
-    fail('site-chrome.ts exports no THEME_KEY — the inline theme bootstrap cannot be verified');
+    fail(
+      'theme-preference.ts exports no THEME_KEY — the inline theme bootstrap cannot be verified',
+    );
   }
   return found[1];
 }
@@ -117,6 +129,35 @@ function checkTheme(label, html) {
   const sheets = [...head.matchAll(/<link[^>]*rel="stylesheet"[^>]*>/gi)].map((match) => match[0]);
   if (!sheets.some((sheet) => !/\bmedia=/i.test(sheet))) {
     deferredStyles.push(label);
+  }
+}
+
+/**
+ * The state the theme control must not be prerendered in
+ * ([#1896](https://github.com/tutkli/forty-cdk/issues/1896)).
+ *
+ * The server knows nothing about the visitor, so a prerendered switch ships its
+ * off state onto a page the inline bootstrap may well have painted dark:
+ * `aria-checked="false"` and a label promising the opposite of what pressing it
+ * does, in a channel assistive technology reads, until the client bundle
+ * hydrates. The control renders in the browser alone, so what the emitted page
+ * carries in its place is an inert same-size placeholder.
+ */
+const TOGGLE_TAG = /<theme-toggle(?=[\s>])[^>]*>([\s\S]*?)<\/theme-toggle>/gi;
+const TOGGLE_STATE = ['aria-checked', 'data-state', 'aria-label'];
+
+function checkThemeToggle(label, html) {
+  const leaked = new Set();
+  for (const [, content] of html.matchAll(TOGGLE_TAG)) {
+    themeToggles += 1;
+    for (const name of TOGGLE_STATE) {
+      if (content.includes(name)) {
+        leaked.add(name);
+      }
+    }
+  }
+  if (leaked.size > 0) {
+    statefulToggles.push(`${label} (${[...leaked].join(', ')})`);
   }
 }
 
@@ -260,6 +301,80 @@ function checkThemeFallback() {
 const fallbackRules = checkThemeFallback();
 
 /**
+ * The reach the rule above is worth
+ * ([#1897](https://github.com/tutkli/forty-cdk/issues/1897)): parity is checked
+ * over one stylesheet, so the attribute has to be that stylesheet's alone.
+ *
+ * A component style keyed on `[data-theme='dark']` owes the same
+ * `prefers-color-scheme` twin and would be gated by nothing — it reaches the
+ * first painted frame all the same, and a visitor whose script never ran gets
+ * the light rule on a page their system preference painted dark. The site's
+ * palette states every themed colour as a `--pg-*` token, which a component
+ * consumes without naming the attribute at all.
+ */
+const SITE_APP = join(repoRoot, 'projects', 'forty-cdk-docs', 'src', 'app');
+const COMPONENT_STYLES = /\bstyles:\s*`([^`]*)`/g;
+const UNREAD_STYLES = /\bstyleUrls?:|\bstyles:\s*\[/;
+
+function collectStyleBlocks(dir, found) {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      collectStyleBlocks(path, found);
+      continue;
+    }
+    if (
+      !entry.name.endsWith('.ts') ||
+      entry.name.endsWith('.spec.ts') ||
+      entry.name.endsWith('.generated.ts')
+    ) {
+      continue;
+    }
+    const source = readFileSync(path, 'utf8');
+    const label = relative(repoRoot, path).split(sep).join('/');
+    if (UNREAD_STYLES.test(source)) {
+      found.unreadable.push(label);
+    }
+    for (const [, css] of source.matchAll(COMPONENT_STYLES)) {
+      found.blocks.push({ path: label, css });
+    }
+  }
+  return found;
+}
+
+function checkComponentStyles() {
+  const { blocks, unreadable } = collectStyleBlocks(SITE_APP, { blocks: [], unreadable: [] });
+  if (blocks.length === 0) {
+    fail('read 0 component style blocks from the site source — the dark-attribute scan is blind');
+  }
+  if (unreadable.length > 0) {
+    fail(
+      `${unreadable.length} component(s) declare their styles in a form this scan does not read ` +
+        '(a separate file, or an array), so the rule below would pass over them unseen — state ' +
+        `them as one inline template literal: ${unreadable.join(', ')}`,
+    );
+  }
+
+  const keyed = [
+    ...new Set(
+      blocks.filter((block) => block.css.includes('[data-theme=')).map((block) => block.path),
+    ),
+  ];
+  if (keyed.length > 0) {
+    fail(
+      `${keyed.length} component stylesheet(s) key a rule on the theme attribute, which only the ` +
+        'inline bootstrap sets — so the rule is dead for a visitor without JavaScript and the ' +
+        'parity check above never reads it. State the colour as a --pg-* palette token instead: ' +
+        keyed.join(', '),
+    );
+  }
+
+  return blocks.length;
+}
+
+const styleBlocks = checkComponentStyles();
+
+/**
  * The root is a page of its own rather than a redirect
  * ([#1812](https://github.com/tutkli/forty-cdk/issues/1812)), so it is held to
  * rendered content like every other route. The refresh stub it used to emit
@@ -278,6 +393,7 @@ if (!existsSync(homeFile)) {
     empty.push('(home)');
   }
   checkTheme('(home)', homeHtml);
+  checkThemeToggle('(home)', homeHtml);
   checkDemoAttributes('(home)', homeHtml);
 }
 
@@ -292,6 +408,7 @@ for (const { path, title } of routes) {
     empty.push(path);
   }
   checkTheme(path, html);
+  checkThemeToggle(path, html);
   checkDemoAttributes(path, html);
 }
 
@@ -324,6 +441,17 @@ if (deferredStyles.length > 0) {
   );
 }
 
+if (themeToggles === 0) {
+  fail('the prerendered output renders no <theme-toggle> element — the toggle scan reads nothing');
+}
+if (statefulToggles.length > 0) {
+  fail(
+    `${statefulToggles.length} prerendered page(s) bake the theme toggle's own state, which the ` +
+      'server cannot know: the control reads as off, and its label promises the opposite of what ' +
+      `pressing it does, on a page already painted dark: ${statefulToggles.join(', ')}`,
+  );
+}
+
 if (demoBlocks === 0) {
   fail('the prerendered output renders no <demo-layout> element — the example scan reads nothing');
 }
@@ -340,6 +468,8 @@ console.log(
     `${guides.length} guide routes + ${sitePages.length} site pages + ${errorCodes.length} ` +
     'error code pages + the error index + the guide index + the landing page prerendered ' +
     'with content, none of them baking a theme and all of them bootstrapping one, over ' +
-    `${fallbackRules} dark rule(s) each mirrored by a prefers-color-scheme fallback and ` +
+    `${fallbackRules} dark rule(s) each mirrored by a prefers-color-scheme fallback, ` +
+    `${styleBlocks} component style block(s) keying none of their rules on the theme attribute, ` +
+    `${themeToggles} theme toggle(s) prerendered without a state and ` +
     `${demoBlocks} example block(s) publishing none of their inputs as attributes`,
 );

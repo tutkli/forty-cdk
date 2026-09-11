@@ -78,30 +78,23 @@ import {
     }
 
     .overflow-tooltip {
-      --overflow-tooltip-bg: #1b1f24;
-      --overflow-tooltip-fg: #ffffff;
       z-index: 70;
       max-width: 220px;
       padding: 0.4rem 0.6rem;
       font-size: 0.8rem;
       font-weight: 500;
       line-height: 1.3;
-      color: var(--overflow-tooltip-fg);
-      background: var(--overflow-tooltip-bg);
+      color: var(--pg-tooltip-fg);
+      background: var(--pg-tooltip-bg);
       border-radius: var(--pg-radius-sm);
       box-shadow: var(--pg-shadow);
       pointer-events: none;
     }
 
-    [data-theme='dark'] .overflow-tooltip {
-      --overflow-tooltip-bg: #e6e9ee;
-      --overflow-tooltip-fg: #0e1116;
-    }
-
     .overflow-tooltip-arrow {
       width: 9px;
       height: 9px;
-      background: var(--overflow-tooltip-bg);
+      background: var(--pg-tooltip-bg);
       transform: rotate(45deg);
       --for-floating-arrow-offset: -4px;
     }

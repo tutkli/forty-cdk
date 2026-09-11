@@ -1,3 +1,5 @@
+import { THEME_KEY } from './theme-preference';
+
 /**
  * The blocking theme bootstrap ([#1880](https://github.com/tutkli/forty-cdk/issues/1880)).
  *
@@ -19,27 +21,12 @@ const INDEX_HTML = import.meta.glob('/projects/forty-cdk-docs/src/index.html', {
   eager: true,
 });
 
-const SITE_CHROME = import.meta.glob('/projects/forty-cdk-docs/src/app/ui/site-chrome.ts', {
-  query: '?raw',
-  import: 'default',
-  eager: true,
-});
-
 function source(files: Record<string, string>, path: string): string {
   const text = files[path];
   if (text === undefined || text.length === 0) {
     throw new Error(`${path} read back empty — the theme bootstrap cannot be asserted`);
   }
   return text;
-}
-
-function themeKey(): string {
-  const chrome = source(SITE_CHROME, '/projects/forty-cdk-docs/src/app/ui/site-chrome.ts');
-  const found = /export const THEME_KEY = '([^']+)'/.exec(chrome);
-  if (found === null) {
-    throw new Error('site-chrome.ts exports no THEME_KEY — the site persists the theme elsewhere');
-  }
-  return found[1]!;
 }
 
 function bootstrapScript(): string {
@@ -131,7 +118,7 @@ describe('the inline theme bootstrap', () => {
   });
 
   it('reads the same storage key the site persists the theme under', () => {
-    expect(run({ prefersDark: false }).key).toBe(themeKey());
+    expect(run({ prefersDark: false }).key).toBe(THEME_KEY);
   });
 
   it('asks for the dark colour-scheme preference', () => {
