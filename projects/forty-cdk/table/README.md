@@ -38,6 +38,196 @@ The library sets roles, `aria-label`, writing direction, `data-column`, sticky h
 
 Opt-in companions compose on the same elements: [`[forTableVirtualized]`](../table-virtualization/README.md) on `[forTable]` for windowed rows (its own `forty-cdk/table-virtualization` entry point), and `[forTableColumnReorder]` / `[forTableRowReorder]` on the header row / data rowgroup for drag reordering.
 
+## API
+
+### `ForTable`
+
+| Property            | Type                               | Description                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ------------------- | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `mode`              | `'table' \| 'grid' \| 'treegrid'`  | ARIA role emitted on the host.<br>**Default:** `'table'`                                                                                                                                                                                                                                                                                                                                                                                 |
+| `ariaLabel`         | `string \| null`                   | Reactive accessible label.<br>**Default:** `null`                                                                                                                                                                                                                                                                                                                                                                                        |
+| `dir`               | `'ltr' \| 'rtl' \| null`           | Writing direction; resolves ambient when unset.<br>**Default:** `null`                                                                                                                                                                                                                                                                                                                                                                   |
+| `rowCount`          | `number`                           | True total data-row count for `aria-rowcount`. Optional with `<for-table-body>` (its dataset length is used); bind it only for a server-known total larger than the loaded rows. It also sizes the virtualized scroll range unless `[forTableVirtualized]` narrows that with `[virtualRowCount]`. Ignored in `table` mode.<br>**Default:** body dataset length, else rendered count (plus the header offset), else `-1` when virtualized |
+| `colCount`          | `number`                           | True total column count for `aria-colcount`. Ignored in `table` mode.<br>**Default:** rendered count, else `-1`                                                                                                                                                                                                                                                                                                                          |
+| `selectionMode`     | `'none' \| 'single' \| 'multiple'` | Row selection mode.<br>**Default:** `'none'`                                                                                                                                                                                                                                                                                                                                                                                             |
+| `selectionBehavior` | `'toggle' \| 'replace' \| 'none'`  | How a row click mutates selection (modifier-aware in `replace` mode; `'none'` leaves it to the selector / select-all / Space).<br>**Default:** `'toggle'`                                                                                                                                                                                                                                                                                |
+| `value`             | `model<readonly T[]>([])`          | Two-way bindable selected row values. Infers the row-value type `T`.<br>**Default:** `[]`                                                                                                                                                                                                                                                                                                                                                |
+| `compareWith`       | `(a: T, b: T) => boolean`          | Equality comparator for row values. Override for object rows.<br>**Default:** `===`                                                                                                                                                                                                                                                                                                                                                      |
+| `selectableValues`  | `readonly T[] \| null`             | Full ordered set of selectable values for total-aware aggregates under virtualization; `null` uses the rendered rows.<br>**Default:** `null`                                                                                                                                                                                                                                                                                             |
+| `expanded`          | `model<readonly T[]>([])`          | Two-way bindable open parent-row values for `mode="treegrid"`. Ignored in other modes.<br>**Default:** `[]`                                                                                                                                                                                                                                                                                                                              |
+
+### `ForTableHeaderCell`
+
+| Property | Type                | Description                                                      |
+| -------- | ------------------- | ---------------------------------------------------------------- |
+| `name`   | `string` (required) | Column identifier, reflected as `data-column`.<br>**Default:** — |
+| `sticky` | `boolean \| 'end'`  | Sticky edge; reflected as `data-sticky`.<br>**Default:** `false` |
+
+### `ForTableCell`
+
+| Property   | Type                | Description                                                                                    |
+| ---------- | ------------------- | ---------------------------------------------------------------------------------------------- |
+| `name`     | `string` (required) | Column identifier, reflected as `data-column`.<br>**Default:** —                               |
+| `sticky`   | `boolean \| 'end'`  | Sticky edge; reflected as `data-sticky`.<br>**Default:** `false`                               |
+| `disabled` | `boolean`           | Skipped during navigation; reflects `aria-disabled` / `data-disabled`.<br>**Default:** `false` |
+
+### `ForTableRow`
+
+| Property     | Type      | Description                                                                                           |
+| ------------ | --------- | ----------------------------------------------------------------------------------------------------- |
+| `value`      | `unknown` | Selection identity for this row. Leave unset for non-selectable rows.<br>**Default:** `undefined`     |
+| `level`      | `number`  | 1-based tree depth for `aria-level` in `mode="treegrid"`. Ignored in other modes.<br>**Default:** `1` |
+| `expandable` | `boolean` | Marks this row as an expandable parent; emits `aria-expanded` + `data-state`.<br>**Default:** `false` |
+
+### `ForTableSelectAll`
+
+| Property    | Type             | Description                                                                                     |
+| ----------- | ---------------- | ----------------------------------------------------------------------------------------------- |
+| `ariaLabel` | `string \| null` | Accessible label for the select-all checkbox (e.g. `"Select all rows"`).<br>**Default:** `null` |
+
+### `ForTableSortHeader`
+
+| Property              | Type                                    | Description                                                                                                                  |
+| --------------------- | --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `column`              | `string` (required)                     | Column identity included in the `sortChange` payload.<br>**Default:** —                                                      |
+| `direction`           | `'ascending' \| 'descending' \| 'none'` | Current sort direction (two-way bindable via `[(direction)]`).<br>**Default:** `'none'`                                      |
+| `disableClear`        | `boolean`                               | Skip the `'none'` step: cycle becomes `ascending ↔ descending`.<br>**Default:** `false`                                      |
+| `firstClickDirection` | `'ascending' \| 'descending'`           | Direction a previously-unsorted column enters on its first activation (the `'none' → ?` step).<br>**Default:** `'ascending'` |
+| `sortable`            | `boolean`                               | When `false`, the header is fully inert (no tabindex, no aria-sort).<br>**Default:** `true`                                  |
+
+### `ForTableColumnResizer`
+
+| Property            | Type                                                         | Description                                                                                                                                                                                                                                   |
+| ------------------- | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `column`            | `string` (required)                                          | Column identity; included in the `resizeCommit` payload and the CSS var name.<br>**Default:** —                                                                                                                                               |
+| `width`             | `model<number>()`                                            | Current column width in pixels. Two-way bindable via `[(width)]`. Fires `widthChange` on every live update.<br>**Default:** —                                                                                                                 |
+| `min`               | `number`                                                     | Minimum width in pixels.<br>**Default:** `0`                                                                                                                                                                                                  |
+| `max`               | `number`                                                     | Maximum width in pixels. No upper bound by default.<br>**Default:** `Infinity`                                                                                                                                                                |
+| `step`              | `number`                                                     | Pixels applied per `ArrowLeft` / `ArrowRight` press.<br>**Default:** `10`                                                                                                                                                                     |
+| `autoFit`           | `boolean`                                                    | Opt-in: `dblclick` on the handle fits the column to its content width via `fitToContent()`. No behaviour change when unset.<br>**Default:** `false`                                                                                           |
+| `fitIncludesHeader` | `boolean`                                                    | Opt-in: auto-fit also accounts for the header label (marked with a sibling `[forTableColumnLabel]`), fitting to `max(header label, …data cells)`. Degrades to data-cells-only with no marker present.<br>**Default:** `false`                 |
+| `widthRevert`       | `((descriptor: TableResizeDescriptor) => void) \| undefined` | Teardown-only revert callback, bound as a function reference. Called with the pre-drag width when the handle is destroyed mid-drag, where `[(width)]` can no longer emit. Silent on the `Escape` / `pointercancel` reverts.<br>**Default:** — |
+
+### Data attributes
+
+| Token / attribute              | Emitted by                                      | Values / description                                                                                                                                |
+| ------------------------------ | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--for-table-header-height`    | `[forTable]`                                    | Header row height in px. Updated on resize.                                                                                                         |
+| `data-mode`                    | `[forTable]`                                    | `'table' \| 'grid' \| 'treegrid'`                                                                                                                   |
+| `data-column`                  | header / data cell                              | Column name from the `name` input.                                                                                                                  |
+| `data-sticky`                  | header / data cell                              | `''` (start-edge) or `'end'` when sticky; absent otherwise.                                                                                         |
+| `data-highlighted`             | header / data cell                              | Present on the currently roving-focused cell in grid / treegrid mode.                                                                               |
+| `aria-expanded`                | `[forTableRow]`                                 | `"true"` / `"false"` (always-emit) on expandable rows in `treegrid` mode; absent on leaves.                                                         |
+| `data-state`                   | `[forTableRow]`                                 | `"open"` / `"closed"` on expandable rows in `treegrid` mode; absent on leaves.                                                                      |
+| `aria-level`                   | `[forTableRow]`                                 | 1-based depth in `treegrid` mode; absent otherwise.                                                                                                 |
+| `aria-posinset`                | `[forTableRow]`                                 | 1-based position among same-level siblings in `treegrid` mode; absent otherwise.                                                                    |
+| `aria-setsize`                 | `[forTableRow]`                                 | Total same-level sibling count in `treegrid` mode; absent otherwise.                                                                                |
+| `aria-rowindex`                | `[forTableHeaderRow]`                           | `"1"` in grid / treegrid mode (the header is the grid's first row); absent in table mode.                                                           |
+| `aria-rowindex`                | `[forTableRow]`                                 | 1-based row index counting the header row (first data row is `2`). Absent in table mode.                                                            |
+| `aria-colindex`                | header / data cell                              | 1-based column index within the row. Absent in table mode.                                                                                          |
+| `aria-colindex`                | `[forTableVariantCell]`                         | Always `"1"` — a full-span row's only cell starts at the first column. Emitted in every mode, matching what `<for-table-body>` stamps.              |
+| `aria-colspan`                 | `[forTableVariantCell]`                         | The grid's rendered column count. Absent while no cell has registered one (an empty virtualized window with no header row).                         |
+| `data-row-variant`             | `[forTableVariantCell]` / `<for-table-body>`    | Present (`""`) on the full-span cell of a presentational row. The hook to span it in CSS.                                                           |
+| `aria-selected`                | `[forTableRow]`                                 | `"true"` / `"false"` (always-emit) on selectable rows (with a `[value]`) when `selectionMode` is not `'none'`; absent on rows without a `[value]`.  |
+| `data-selected`                | `[forTableRow]`                                 | Present (`""`) when selected; absent when not. Boolean present/absent hook.                                                                         |
+| `aria-multiselectable`         | `[forTable]`                                    | `"true"` when `selectionMode="multiple"` in `grid` / `treegrid` mode; absent otherwise (including `table` mode, where `role="table"` forbids it).   |
+| `aria-checked`                 | `[forTableRowSelector]`                         | `"true"` / `"false"` (always-emit) reflecting the row's selection. The selector is `role="checkbox"`; the enclosing row still owns `aria-selected`. |
+| `tabindex`                     | `[forTableRowSelector]`                         | `"0"` in table mode (focusable keyboard selection path); `"-1"` in grid / treegrid mode (yields to the roving grid).                                |
+| `data-state`                   | `[forTableRowSelector]`                         | `"checked"` or `"unchecked"`. Styling hook alongside `aria-checked`.                                                                                |
+| `aria-checked`                 | `[forTableSelectAll]`                           | `"true"` / `"false"` / `"mixed"` (tri-state).                                                                                                       |
+| `data-state`                   | `[forTableSelectAll]`                           | `"checked"` / `"unchecked"` / `"indeterminate"`.                                                                                                    |
+| `aria-sort`                    | `[forTableSortHeader]`                          | `"ascending"` or `"descending"` while sorted; absent (`null`) when unsorted. Truthy-only.                                                           |
+| `data-sorted`                  | `[forTableSortHeader]`                          | Same value as `aria-sort` — a CSS styling hook (e.g. for a sort arrow glyph).                                                                       |
+| `data-sortable`                | `[forTableSortHeader]`                          | Present (`""`) while `sortable`; absent otherwise. Styling hook, and the marker that makes `Enter` sort (not enter) a grid header cell.             |
+| `--for-table-col-<name>-width` | `[forTable]` (set by `[forTableColumnResizer]`) | Resolved column width in px; apply it to your layout.                                                                                               |
+| `data-resizing`                | `[forTableColumnResizer]`                       | Present (`""`) while a pointer drag is active.                                                                                                      |
+
+## Keyboard
+
+Two regimes, chosen by `mode`. The default `mode="table"` adds no navigation of its own: every focusable piece keeps its own tab stop, reached with `Tab` and activated with `Enter` / `Space`. `mode="grid"` and `mode="treegrid"` replace those stops with one composite roving tab stop over the header **and** the data cells — `Tab` reaches the whole grid once — and every key below fires on the focused cell. All horizontal keys are mirrored when the resolved writing direction is `rtl`, and cells marked `disabled` are skipped by navigation.
+
+### Static tab stops
+
+`mode="table"`. No roving group and no cell entry — the table is a sequence of ordinary tab stops.
+
+| Key               | Action                                                                                                                                                                                                                                                                                                     |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Tab`             | Move to the next focusable piece: a sortable `[forTableSortHeader]`, a `[forTableSelectAll]`, each `[forTableRowSelector]`, each `[forTableColumnResizer]`, the one roving tab stop a `[forTableRowReorder]` gives its draggable rows, and — with `interactiveRows` on `<for-table-body>` — each data row. |
+| `Enter` / `Space` | Activate the focused piece: cycle the sort on a sortable header, toggle the row on a `[forTableRowSelector]`, toggle the tri-state on a `[forTableSelectAll]`, lift the roving `[forDraggable]` row of a `[forTableRowReorder]`.                                                                           |
+| `Enter`           | On a data row `interactiveRows` made a tab stop, emit `rowActivate`. A press originating from an interactive descendant runs that control instead and emits nothing.                                                                                                                                       |
+
+### Cell navigation
+
+`grid` / `treegrid`. The header row is the grid's **first row**, so the arrows cross between it and the body.
+
+| Key                              | Action                                                                                                                                                                          |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Tab`                            | Enter and leave the whole grid in one stop. Inside an entered cell it cycles that cell's widgets instead, and while a row or column is lifted it cancels the drag.              |
+| `ArrowRight` / `ArrowLeft`       | Next / previous cell in the current row. On an expandable `treegrid` row they expand / collapse first — see [Selection and expansion](#selection-and-expansion).                |
+| `ArrowDown` / `ArrowUp`          | The cell one row down / up, keeping the column. `ArrowUp` from the first data row crosses into the header cell of the same column.                                              |
+| `Home` / `End`                   | First / last cell of the current row.                                                                                                                                           |
+| `Ctrl/Cmd+Home` / `Ctrl/Cmd+End` | First / last cell of the whole grid. `Ctrl/Cmd+Home` lands on the first **header** cell whenever the header joins the grid, and one `ArrowDown` moves into the first data cell. |
+| `PageUp` / `PageDown`            | One screenful of rows up / down, keeping the column — a page is the rendered row count, so a virtualized grid pages by its visible window. Neither jumps to the grid ends.      |
+
+`PageUp` from within the first screenful of data rows clamps to the header row, for the same reason `ArrowUp` crosses into it. Under [`[forTableVirtualized]`](../table-virtualization/README.md) a move resolving a row outside the rendered window scrolls that row into view and lands focus on the target cell once it mounts; a move onto the header row also scrolls the window back to row 0, so the grid is never left focused on its header while the window sits at the end of the dataset. When the header does not join the grid — an incomplete header row — `Ctrl/Cmd+Home` lands on the first data cell instead and `ArrowUp` / `PageUp` stop there.
+
+### Cell entry
+
+`grid` / `treegrid`. The APG cell-entry mode that reaches a widget rendered inside a cell.
+
+| Key                 | Action                                                                                                                                                                 |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `F2`                | Move focus **into** the focused cell's first focusable widget. No-op on a cell holding none.                                                                           |
+| `Enter`             | The same entry, on a cell whose keys no other affordance owns — see [Sorting, resizing and reordering](#sorting-resizing-and-reordering) for the two that do.          |
+| `Tab` / `Shift+Tab` | While inside an entered cell: move between **that cell's** widgets, wrapping at both ends. Focus cannot leave the cell for another cell or the next document tab stop. |
+| `Escape`            | While inside an entered cell: return focus to the owning cell and leave interaction mode.                                                                              |
+
+The cycle reaches every focusable in the cell, `tabindex="-1"` included, so a header cell holding a column-menu button **and** a `[forTableColumnResizer]` resize handle is fully keyboard-operable. "Focusable" is the same set `Enter` / `F2` enters: a natively-focusable element still counts while grid mode holds it at `tabindex="-1"`, but an element focusable _only_ because you gave it a `tabindex` does not — so a `<span forTableSelectAll>` is reachable in `mode="table"` and not in a grid; put it on a `<button type="button">` to keep it in the cycle. While focus is inside a cell's widget, Arrow keys act on the widget rather than on the grid, and anything else that moves focus out of the cell ends interaction mode too. A cell holding one widget wraps back to that widget, so `Tab` there moves nothing and `Escape` is the only way out — a deliberate reading of the APG grid pattern, whose `Tab` "may wrap inside a single cell", applied uniformly rather than only to cells that happen to hold two.
+
+### Selection and expansion
+
+| Key           | Action                                                                                                                                                                                                                                             |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Space`       | On a focused data cell in `grid` / `treegrid` with a `selectionMode` other than `'none'`: toggle the enclosing row's selection and prevent the page scroll. The row needs a `[value]`, and a `Space` originating from a nested element is ignored. |
+| `ArrowRight`  | `treegrid` only: expand the focused collapsed parent row (RTL: collapse). On a leaf, or a row already in that state, it falls through to cell navigation.                                                                                          |
+| `ArrowLeft`   | `treegrid` only: collapse the focused expanded parent row (RTL: expand). Otherwise it navigates.                                                                                                                                                   |
+| `ContextMenu` | With `interactiveRows`, emits `rowContextMenu` on the row it fires over, in every mode — the keyboard half of the right-click. Unguarded, so it still offers the row's menu over an inner control.                                                 |
+
+### Sorting, resizing and reordering
+
+Three affordances contend for `Enter` and `Space` on a header cell, and the split follows WAI-ARIA lines so a single press never both sorts and lifts.
+
+| Key                        | Action                                                                                                                                                                   |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `Enter` / `Space`          | On a sortable header cell with no `[forDraggable]`: cycle the sort direction, keeping focus on the cell.                                                                 |
+| `Enter`                    | On a header cell that is both sortable and draggable: cycle the sort. `F2` still enters the cell.                                                                        |
+| `Space`                    | On a header cell that is both sortable and draggable: lift the column. On one pinned with `[dragDisabled]` there is no lift to collide with, so it sorts on both keys.   |
+| `Enter` / `Space`          | On a draggable header cell that is not sortable: lift the column.                                                                                                        |
+| `Ctrl+Space` / `Cmd+Space` | On any data cell inside a `[forTableRowReorder]` in `grid` / `treegrid`: lift the enclosing row. The plain `Space` stays selection and idle arrows stay grid navigation. |
+| `ArrowLeft` / `ArrowRight` | On a focused `[forTableColumnResizer]`: resize the column by `[step]` pixels, clamped to `[min]` / `[max]`, emitting one `resizeCommit` per press. RTL-mirrored.         |
+| `Escape`                   | During a pointer resize drag: restore the pre-drag width and emit no `resizeCommit`.                                                                                     |
+
+While a **column** is lifted, `ArrowLeft` / `ArrowRight` move it one position (RTL-mirrored), `Home` / `End` move it to the first / last position, `Enter` / `Space` drop it and `Escape` / `Tab` cancel. While a **row** is lifted, `ArrowUp` / `ArrowDown` move the target one row, `Home` / `End` move it to the first / last row of the dataset, `PageUp` / `PageDown` move by one rendered window under `[forTableVirtualized]` (and to the first / last row without it), `Enter` / `Space` drop and `Escape` / `Tab` cancel. Focus leaving the reorder container cancels an in-flight lift too.
+
+## Accessibility
+
+Implements the [WAI-ARIA Table pattern](https://www.w3.org/WAI/ARIA/apg/patterns/table/) and the [WAI-ARIA Grid pattern](https://www.w3.org/WAI/ARIA/apg/patterns/grid/).
+
+- **Label the table** via the reactive `[ariaLabel]` input or a native `aria-labelledby` pointing at a visible caption / heading.
+- **`mode="table"`** sets `role="table"` with semantic `role="columnheader"` / `role="cell"` cells. Screen readers announce row and column counts from native semantics.
+- **`mode="grid"`** sets `role="grid"` with `role="gridcell"` cells. The root emits `aria-rowcount` / `aria-colcount`; the header row and every data row emit `aria-rowindex` (the header row is `1`, so data rows start at `2` and `aria-rowcount` counts the header); header and data cells emit `aria-colindex`. Header and body share one composite roving tab stop, whose full keymap is collected under [Keyboard](#keyboard). Override `[rowCount]` / `[colCount]` for server-paged or virtualized datasets so screen readers announce correct totals.
+- **`mode="treegrid"`** sets `role="treegrid"`. Expandable rows emit `aria-expanded="true"|"false"` and `aria-level` / `aria-posinset` / `aria-setsize`; leaf rows emit none of these, matching APG "end nodes lack `aria-expanded`".
+- **Row selection** (`selectionMode` not `'none'`): each selectable row (one with a `[value]`) emits `aria-selected="true"|"false"`; rows without a `[value]` (full-span variant rows) are non-selectable and emit no `aria-selected`; in `grid` / `treegrid` mode `'multiple'` adds `aria-multiselectable="true"` on the root (never in `table` mode, where `role="table"` forbids it). `[forTableSelectAll]` emits `aria-checked` in tri-state.
+- **Full-span rows** (group separators, section headers, summaries) use `[forTableVariantCell]`, which emits `aria-colindex="1"` and an `aria-colspan` over the grid's columns and registers no cell handle. Arrow navigation steps over the row onto the next data row, and the grid's column count and header participation are unaffected by it — the failure a hand-written `[forTableCell]` produces instead is silent and only surfaces from the keyboard.
+- **Sortable headers** emit `aria-sort="ascending"|"descending"` while sorted; the attribute is absent (not `"none"`) when unsorted, per APG.
+- **Column resizers** must be focusable elements with an `aria-label` naming the column — e.g. `aria-label="Resize Name column"`.
+- **Disabled cells** use `aria-disabled="true"` + `data-disabled`; they are skipped during grid navigation but remain focusable, consistent with the APG disabled pattern.
+- All horizontal keyboard navigation is RTL-mirrored when the resolved writing direction is `rtl`.
+
+## Styling
+
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the `data-*` attributes and CSS custom properties listed under [Data attributes](#data-attributes).
+
 ## Native `<table>` mode
 
 ```html
@@ -601,196 +791,6 @@ neither the table nor `@tanstack/virtual-core` reaches a bundle that does not im
 
 → **[`forty-cdk/table-virtualization`](../table-virtualization/README.md)**
 → **[Table: virtualized rows](../../../docs/table-virtualized-rows.md)**
-
-## API
-
-### `ForTable`
-
-| Property            | Type                               | Description                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| ------------------- | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `mode`              | `'table' \| 'grid' \| 'treegrid'`  | ARIA role emitted on the host.<br>**Default:** `'table'`                                                                                                                                                                                                                                                                                                                                                                                 |
-| `ariaLabel`         | `string \| null`                   | Reactive accessible label.<br>**Default:** `null`                                                                                                                                                                                                                                                                                                                                                                                        |
-| `dir`               | `'ltr' \| 'rtl' \| null`           | Writing direction; resolves ambient when unset.<br>**Default:** `null`                                                                                                                                                                                                                                                                                                                                                                   |
-| `rowCount`          | `number`                           | True total data-row count for `aria-rowcount`. Optional with `<for-table-body>` (its dataset length is used); bind it only for a server-known total larger than the loaded rows. It also sizes the virtualized scroll range unless `[forTableVirtualized]` narrows that with `[virtualRowCount]`. Ignored in `table` mode.<br>**Default:** body dataset length, else rendered count (plus the header offset), else `-1` when virtualized |
-| `colCount`          | `number`                           | True total column count for `aria-colcount`. Ignored in `table` mode.<br>**Default:** rendered count, else `-1`                                                                                                                                                                                                                                                                                                                          |
-| `selectionMode`     | `'none' \| 'single' \| 'multiple'` | Row selection mode.<br>**Default:** `'none'`                                                                                                                                                                                                                                                                                                                                                                                             |
-| `selectionBehavior` | `'toggle' \| 'replace' \| 'none'`  | How a row click mutates selection (modifier-aware in `replace` mode; `'none'` leaves it to the selector / select-all / Space).<br>**Default:** `'toggle'`                                                                                                                                                                                                                                                                                |
-| `value`             | `model<readonly T[]>([])`          | Two-way bindable selected row values. Infers the row-value type `T`.<br>**Default:** `[]`                                                                                                                                                                                                                                                                                                                                                |
-| `compareWith`       | `(a: T, b: T) => boolean`          | Equality comparator for row values. Override for object rows.<br>**Default:** `===`                                                                                                                                                                                                                                                                                                                                                      |
-| `selectableValues`  | `readonly T[] \| null`             | Full ordered set of selectable values for total-aware aggregates under virtualization; `null` uses the rendered rows.<br>**Default:** `null`                                                                                                                                                                                                                                                                                             |
-| `expanded`          | `model<readonly T[]>([])`          | Two-way bindable open parent-row values for `mode="treegrid"`. Ignored in other modes.<br>**Default:** `[]`                                                                                                                                                                                                                                                                                                                              |
-
-### `ForTableHeaderCell`
-
-| Property | Type                | Description                                                      |
-| -------- | ------------------- | ---------------------------------------------------------------- |
-| `name`   | `string` (required) | Column identifier, reflected as `data-column`.<br>**Default:** — |
-| `sticky` | `boolean \| 'end'`  | Sticky edge; reflected as `data-sticky`.<br>**Default:** `false` |
-
-### `ForTableCell`
-
-| Property   | Type                | Description                                                                                    |
-| ---------- | ------------------- | ---------------------------------------------------------------------------------------------- |
-| `name`     | `string` (required) | Column identifier, reflected as `data-column`.<br>**Default:** —                               |
-| `sticky`   | `boolean \| 'end'`  | Sticky edge; reflected as `data-sticky`.<br>**Default:** `false`                               |
-| `disabled` | `boolean`           | Skipped during navigation; reflects `aria-disabled` / `data-disabled`.<br>**Default:** `false` |
-
-### `ForTableRow`
-
-| Property     | Type      | Description                                                                                           |
-| ------------ | --------- | ----------------------------------------------------------------------------------------------------- |
-| `value`      | `unknown` | Selection identity for this row. Leave unset for non-selectable rows.<br>**Default:** `undefined`     |
-| `level`      | `number`  | 1-based tree depth for `aria-level` in `mode="treegrid"`. Ignored in other modes.<br>**Default:** `1` |
-| `expandable` | `boolean` | Marks this row as an expandable parent; emits `aria-expanded` + `data-state`.<br>**Default:** `false` |
-
-### `ForTableSelectAll`
-
-| Property    | Type             | Description                                                                                     |
-| ----------- | ---------------- | ----------------------------------------------------------------------------------------------- |
-| `ariaLabel` | `string \| null` | Accessible label for the select-all checkbox (e.g. `"Select all rows"`).<br>**Default:** `null` |
-
-### `ForTableSortHeader`
-
-| Property              | Type                                    | Description                                                                                                                  |
-| --------------------- | --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `column`              | `string` (required)                     | Column identity included in the `sortChange` payload.<br>**Default:** —                                                      |
-| `direction`           | `'ascending' \| 'descending' \| 'none'` | Current sort direction (two-way bindable via `[(direction)]`).<br>**Default:** `'none'`                                      |
-| `disableClear`        | `boolean`                               | Skip the `'none'` step: cycle becomes `ascending ↔ descending`.<br>**Default:** `false`                                      |
-| `firstClickDirection` | `'ascending' \| 'descending'`           | Direction a previously-unsorted column enters on its first activation (the `'none' → ?` step).<br>**Default:** `'ascending'` |
-| `sortable`            | `boolean`                               | When `false`, the header is fully inert (no tabindex, no aria-sort).<br>**Default:** `true`                                  |
-
-### `ForTableColumnResizer`
-
-| Property            | Type                                                         | Description                                                                                                                                                                                                                                   |
-| ------------------- | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `column`            | `string` (required)                                          | Column identity; included in the `resizeCommit` payload and the CSS var name.<br>**Default:** —                                                                                                                                               |
-| `width`             | `model<number>()`                                            | Current column width in pixels. Two-way bindable via `[(width)]`. Fires `widthChange` on every live update.<br>**Default:** —                                                                                                                 |
-| `min`               | `number`                                                     | Minimum width in pixels.<br>**Default:** `0`                                                                                                                                                                                                  |
-| `max`               | `number`                                                     | Maximum width in pixels. No upper bound by default.<br>**Default:** `Infinity`                                                                                                                                                                |
-| `step`              | `number`                                                     | Pixels applied per `ArrowLeft` / `ArrowRight` press.<br>**Default:** `10`                                                                                                                                                                     |
-| `autoFit`           | `boolean`                                                    | Opt-in: `dblclick` on the handle fits the column to its content width via `fitToContent()`. No behaviour change when unset.<br>**Default:** `false`                                                                                           |
-| `fitIncludesHeader` | `boolean`                                                    | Opt-in: auto-fit also accounts for the header label (marked with a sibling `[forTableColumnLabel]`), fitting to `max(header label, …data cells)`. Degrades to data-cells-only with no marker present.<br>**Default:** `false`                 |
-| `widthRevert`       | `((descriptor: TableResizeDescriptor) => void) \| undefined` | Teardown-only revert callback, bound as a function reference. Called with the pre-drag width when the handle is destroyed mid-drag, where `[(width)]` can no longer emit. Silent on the `Escape` / `pointercancel` reverts.<br>**Default:** — |
-
-### Data attributes
-
-| Token / attribute              | Emitted by                                      | Values / description                                                                                                                                |
-| ------------------------------ | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--for-table-header-height`    | `[forTable]`                                    | Header row height in px. Updated on resize.                                                                                                         |
-| `data-mode`                    | `[forTable]`                                    | `'table' \| 'grid' \| 'treegrid'`                                                                                                                   |
-| `data-column`                  | header / data cell                              | Column name from the `name` input.                                                                                                                  |
-| `data-sticky`                  | header / data cell                              | `''` (start-edge) or `'end'` when sticky; absent otherwise.                                                                                         |
-| `data-highlighted`             | header / data cell                              | Present on the currently roving-focused cell in grid / treegrid mode.                                                                               |
-| `aria-expanded`                | `[forTableRow]`                                 | `"true"` / `"false"` (always-emit) on expandable rows in `treegrid` mode; absent on leaves.                                                         |
-| `data-state`                   | `[forTableRow]`                                 | `"open"` / `"closed"` on expandable rows in `treegrid` mode; absent on leaves.                                                                      |
-| `aria-level`                   | `[forTableRow]`                                 | 1-based depth in `treegrid` mode; absent otherwise.                                                                                                 |
-| `aria-posinset`                | `[forTableRow]`                                 | 1-based position among same-level siblings in `treegrid` mode; absent otherwise.                                                                    |
-| `aria-setsize`                 | `[forTableRow]`                                 | Total same-level sibling count in `treegrid` mode; absent otherwise.                                                                                |
-| `aria-rowindex`                | `[forTableHeaderRow]`                           | `"1"` in grid / treegrid mode (the header is the grid's first row); absent in table mode.                                                           |
-| `aria-rowindex`                | `[forTableRow]`                                 | 1-based row index counting the header row (first data row is `2`). Absent in table mode.                                                            |
-| `aria-colindex`                | header / data cell                              | 1-based column index within the row. Absent in table mode.                                                                                          |
-| `aria-colindex`                | `[forTableVariantCell]`                         | Always `"1"` — a full-span row's only cell starts at the first column. Emitted in every mode, matching what `<for-table-body>` stamps.              |
-| `aria-colspan`                 | `[forTableVariantCell]`                         | The grid's rendered column count. Absent while no cell has registered one (an empty virtualized window with no header row).                         |
-| `data-row-variant`             | `[forTableVariantCell]` / `<for-table-body>`    | Present (`""`) on the full-span cell of a presentational row. The hook to span it in CSS.                                                           |
-| `aria-selected`                | `[forTableRow]`                                 | `"true"` / `"false"` (always-emit) on selectable rows (with a `[value]`) when `selectionMode` is not `'none'`; absent on rows without a `[value]`.  |
-| `data-selected`                | `[forTableRow]`                                 | Present (`""`) when selected; absent when not. Boolean present/absent hook.                                                                         |
-| `aria-multiselectable`         | `[forTable]`                                    | `"true"` when `selectionMode="multiple"` in `grid` / `treegrid` mode; absent otherwise (including `table` mode, where `role="table"` forbids it).   |
-| `aria-checked`                 | `[forTableRowSelector]`                         | `"true"` / `"false"` (always-emit) reflecting the row's selection. The selector is `role="checkbox"`; the enclosing row still owns `aria-selected`. |
-| `tabindex`                     | `[forTableRowSelector]`                         | `"0"` in table mode (focusable keyboard selection path); `"-1"` in grid / treegrid mode (yields to the roving grid).                                |
-| `data-state`                   | `[forTableRowSelector]`                         | `"checked"` or `"unchecked"`. Styling hook alongside `aria-checked`.                                                                                |
-| `aria-checked`                 | `[forTableSelectAll]`                           | `"true"` / `"false"` / `"mixed"` (tri-state).                                                                                                       |
-| `data-state`                   | `[forTableSelectAll]`                           | `"checked"` / `"unchecked"` / `"indeterminate"`.                                                                                                    |
-| `aria-sort`                    | `[forTableSortHeader]`                          | `"ascending"` or `"descending"` while sorted; absent (`null`) when unsorted. Truthy-only.                                                           |
-| `data-sorted`                  | `[forTableSortHeader]`                          | Same value as `aria-sort` — a CSS styling hook (e.g. for a sort arrow glyph).                                                                       |
-| `data-sortable`                | `[forTableSortHeader]`                          | Present (`""`) while `sortable`; absent otherwise. Styling hook, and the marker that makes `Enter` sort (not enter) a grid header cell.             |
-| `--for-table-col-<name>-width` | `[forTable]` (set by `[forTableColumnResizer]`) | Resolved column width in px; apply it to your layout.                                                                                               |
-| `data-resizing`                | `[forTableColumnResizer]`                       | Present (`""`) while a pointer drag is active.                                                                                                      |
-
-## Keyboard
-
-Two regimes, chosen by `mode`. The default `mode="table"` adds no navigation of its own: every focusable piece keeps its own tab stop, reached with `Tab` and activated with `Enter` / `Space`. `mode="grid"` and `mode="treegrid"` replace those stops with one composite roving tab stop over the header **and** the data cells — `Tab` reaches the whole grid once — and every key below fires on the focused cell. All horizontal keys are mirrored when the resolved writing direction is `rtl`, and cells marked `disabled` are skipped by navigation.
-
-### Static tab stops
-
-`mode="table"`. No roving group and no cell entry — the table is a sequence of ordinary tab stops.
-
-| Key               | Action                                                                                                                                                                                                                                                                                                     |
-| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Tab`             | Move to the next focusable piece: a sortable `[forTableSortHeader]`, a `[forTableSelectAll]`, each `[forTableRowSelector]`, each `[forTableColumnResizer]`, the one roving tab stop a `[forTableRowReorder]` gives its draggable rows, and — with `interactiveRows` on `<for-table-body>` — each data row. |
-| `Enter` / `Space` | Activate the focused piece: cycle the sort on a sortable header, toggle the row on a `[forTableRowSelector]`, toggle the tri-state on a `[forTableSelectAll]`, lift the roving `[forDraggable]` row of a `[forTableRowReorder]`.                                                                           |
-| `Enter`           | On a data row `interactiveRows` made a tab stop, emit `rowActivate`. A press originating from an interactive descendant runs that control instead and emits nothing.                                                                                                                                       |
-
-### Cell navigation
-
-`grid` / `treegrid`. The header row is the grid's **first row**, so the arrows cross between it and the body.
-
-| Key                              | Action                                                                                                                                                                          |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Tab`                            | Enter and leave the whole grid in one stop. Inside an entered cell it cycles that cell's widgets instead, and while a row or column is lifted it cancels the drag.              |
-| `ArrowRight` / `ArrowLeft`       | Next / previous cell in the current row. On an expandable `treegrid` row they expand / collapse first — see [Selection and expansion](#selection-and-expansion).                |
-| `ArrowDown` / `ArrowUp`          | The cell one row down / up, keeping the column. `ArrowUp` from the first data row crosses into the header cell of the same column.                                              |
-| `Home` / `End`                   | First / last cell of the current row.                                                                                                                                           |
-| `Ctrl/Cmd+Home` / `Ctrl/Cmd+End` | First / last cell of the whole grid. `Ctrl/Cmd+Home` lands on the first **header** cell whenever the header joins the grid, and one `ArrowDown` moves into the first data cell. |
-| `PageUp` / `PageDown`            | One screenful of rows up / down, keeping the column — a page is the rendered row count, so a virtualized grid pages by its visible window. Neither jumps to the grid ends.      |
-
-`PageUp` from within the first screenful of data rows clamps to the header row, for the same reason `ArrowUp` crosses into it. Under [`[forTableVirtualized]`](../table-virtualization/README.md) a move resolving a row outside the rendered window scrolls that row into view and lands focus on the target cell once it mounts; a move onto the header row also scrolls the window back to row 0, so the grid is never left focused on its header while the window sits at the end of the dataset. When the header does not join the grid — an incomplete header row — `Ctrl/Cmd+Home` lands on the first data cell instead and `ArrowUp` / `PageUp` stop there.
-
-### Cell entry
-
-`grid` / `treegrid`. The APG cell-entry mode that reaches a widget rendered inside a cell.
-
-| Key                 | Action                                                                                                                                                                 |
-| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `F2`                | Move focus **into** the focused cell's first focusable widget. No-op on a cell holding none.                                                                           |
-| `Enter`             | The same entry, on a cell whose keys no other affordance owns — see [Sorting, resizing and reordering](#sorting-resizing-and-reordering) for the two that do.          |
-| `Tab` / `Shift+Tab` | While inside an entered cell: move between **that cell's** widgets, wrapping at both ends. Focus cannot leave the cell for another cell or the next document tab stop. |
-| `Escape`            | While inside an entered cell: return focus to the owning cell and leave interaction mode.                                                                              |
-
-The cycle reaches every focusable in the cell, `tabindex="-1"` included, so a header cell holding a column-menu button **and** a `[forTableColumnResizer]` resize handle is fully keyboard-operable. "Focusable" is the same set `Enter` / `F2` enters: a natively-focusable element still counts while grid mode holds it at `tabindex="-1"`, but an element focusable _only_ because you gave it a `tabindex` does not — so a `<span forTableSelectAll>` is reachable in `mode="table"` and not in a grid; put it on a `<button type="button">` to keep it in the cycle. While focus is inside a cell's widget, Arrow keys act on the widget rather than on the grid, and anything else that moves focus out of the cell ends interaction mode too. A cell holding one widget wraps back to that widget, so `Tab` there moves nothing and `Escape` is the only way out — a deliberate reading of the APG grid pattern, whose `Tab` "may wrap inside a single cell", applied uniformly rather than only to cells that happen to hold two.
-
-### Selection and expansion
-
-| Key           | Action                                                                                                                                                                                                                                             |
-| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Space`       | On a focused data cell in `grid` / `treegrid` with a `selectionMode` other than `'none'`: toggle the enclosing row's selection and prevent the page scroll. The row needs a `[value]`, and a `Space` originating from a nested element is ignored. |
-| `ArrowRight`  | `treegrid` only: expand the focused collapsed parent row (RTL: collapse). On a leaf, or a row already in that state, it falls through to cell navigation.                                                                                          |
-| `ArrowLeft`   | `treegrid` only: collapse the focused expanded parent row (RTL: expand). Otherwise it navigates.                                                                                                                                                   |
-| `ContextMenu` | With `interactiveRows`, emits `rowContextMenu` on the row it fires over, in every mode — the keyboard half of the right-click. Unguarded, so it still offers the row's menu over an inner control.                                                 |
-
-### Sorting, resizing and reordering
-
-Three affordances contend for `Enter` and `Space` on a header cell, and the split follows WAI-ARIA lines so a single press never both sorts and lifts.
-
-| Key                        | Action                                                                                                                                                                   |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `Enter` / `Space`          | On a sortable header cell with no `[forDraggable]`: cycle the sort direction, keeping focus on the cell.                                                                 |
-| `Enter`                    | On a header cell that is both sortable and draggable: cycle the sort. `F2` still enters the cell.                                                                        |
-| `Space`                    | On a header cell that is both sortable and draggable: lift the column. On one pinned with `[dragDisabled]` there is no lift to collide with, so it sorts on both keys.   |
-| `Enter` / `Space`          | On a draggable header cell that is not sortable: lift the column.                                                                                                        |
-| `Ctrl+Space` / `Cmd+Space` | On any data cell inside a `[forTableRowReorder]` in `grid` / `treegrid`: lift the enclosing row. The plain `Space` stays selection and idle arrows stay grid navigation. |
-| `ArrowLeft` / `ArrowRight` | On a focused `[forTableColumnResizer]`: resize the column by `[step]` pixels, clamped to `[min]` / `[max]`, emitting one `resizeCommit` per press. RTL-mirrored.         |
-| `Escape`                   | During a pointer resize drag: restore the pre-drag width and emit no `resizeCommit`.                                                                                     |
-
-While a **column** is lifted, `ArrowLeft` / `ArrowRight` move it one position (RTL-mirrored), `Home` / `End` move it to the first / last position, `Enter` / `Space` drop it and `Escape` / `Tab` cancel. While a **row** is lifted, `ArrowUp` / `ArrowDown` move the target one row, `Home` / `End` move it to the first / last row of the dataset, `PageUp` / `PageDown` move by one rendered window under `[forTableVirtualized]` (and to the first / last row without it), `Enter` / `Space` drop and `Escape` / `Tab` cancel. Focus leaving the reorder container cancels an in-flight lift too.
-
-## Accessibility
-
-Implements the [WAI-ARIA Table pattern](https://www.w3.org/WAI/ARIA/apg/patterns/table/) and the [WAI-ARIA Grid pattern](https://www.w3.org/WAI/ARIA/apg/patterns/grid/).
-
-- **Label the table** via the reactive `[ariaLabel]` input or a native `aria-labelledby` pointing at a visible caption / heading.
-- **`mode="table"`** sets `role="table"` with semantic `role="columnheader"` / `role="cell"` cells. Screen readers announce row and column counts from native semantics.
-- **`mode="grid"`** sets `role="grid"` with `role="gridcell"` cells. The root emits `aria-rowcount` / `aria-colcount`; the header row and every data row emit `aria-rowindex` (the header row is `1`, so data rows start at `2` and `aria-rowcount` counts the header); header and data cells emit `aria-colindex`. Header and body share one composite roving tab stop, whose full keymap is collected under [Keyboard](#keyboard). Override `[rowCount]` / `[colCount]` for server-paged or virtualized datasets so screen readers announce correct totals.
-- **`mode="treegrid"`** sets `role="treegrid"`. Expandable rows emit `aria-expanded="true"|"false"` and `aria-level` / `aria-posinset` / `aria-setsize`; leaf rows emit none of these, matching APG "end nodes lack `aria-expanded`".
-- **Row selection** (`selectionMode` not `'none'`): each selectable row (one with a `[value]`) emits `aria-selected="true"|"false"`; rows without a `[value]` (full-span variant rows) are non-selectable and emit no `aria-selected`; in `grid` / `treegrid` mode `'multiple'` adds `aria-multiselectable="true"` on the root (never in `table` mode, where `role="table"` forbids it). `[forTableSelectAll]` emits `aria-checked` in tri-state.
-- **Full-span rows** (group separators, section headers, summaries) use `[forTableVariantCell]`, which emits `aria-colindex="1"` and an `aria-colspan` over the grid's columns and registers no cell handle. Arrow navigation steps over the row onto the next data row, and the grid's column count and header participation are unaffected by it — the failure a hand-written `[forTableCell]` produces instead is silent and only surfaces from the keyboard.
-- **Sortable headers** emit `aria-sort="ascending"|"descending"` while sorted; the attribute is absent (not `"none"`) when unsorted, per APG.
-- **Column resizers** must be focusable elements with an `aria-label` naming the column — e.g. `aria-label="Resize Name column"`.
-- **Disabled cells** use `aria-disabled="true"` + `data-disabled`; they are skipped during grid navigation but remain focusable, consistent with the APG disabled pattern.
-- All horizontal keyboard navigation is RTL-mirrored when the resolved writing direction is `rtl`.
-
-## Styling
-
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the `data-*` attributes and CSS custom properties listed under [Data attributes](#data-attributes).
 
 ## Wrapping in a design system
 

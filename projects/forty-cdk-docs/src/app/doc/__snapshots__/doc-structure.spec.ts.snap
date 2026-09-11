@@ -2615,24 +2615,7 @@ exports[`document structure > projects/forty-cdk/date-picker/README.md declares 
 exports[`document structure > projects/forty-cdk/dialog/README.md declares the sections and table shapes it declared before 1`] = `
 [
   {
-    "headings": [
-      {
-        "depth": 3,
-        "slug": "declarative--fordialog",
-      },
-      {
-        "depth": 3,
-        "slug": "the-dismiss-contract--consumer-owns-unmount",
-      },
-      {
-        "depth": 3,
-        "slug": "trigger--surface-id-wiring",
-      },
-      {
-        "depth": 3,
-        "slug": "programmatic--fordialogmanageropen",
-      },
-    ],
+    "headings": [],
     "slug": "two-flows-one-engine",
     "tables": [],
     "title": "Two flows, one engine",
@@ -2651,15 +2634,7 @@ exports[`document structure > projects/forty-cdk/dialog/README.md declares the s
       },
       {
         "depth": 3,
-        "slug": "per-channel-dismissal-escape-only-dialogs",
-      },
-      {
-        "depth": 3,
         "slug": "inputs--focus-callbacks",
-      },
-      {
-        "depth": 3,
-        "slug": "open-without-stealing-focus",
       },
       {
         "depth": 3,
@@ -2777,7 +2752,16 @@ exports[`document structure > projects/forty-cdk/dialog/README.md declares the s
     "title": "Styling",
   },
   {
-    "headings": [],
+    "headings": [
+      {
+        "depth": 3,
+        "slug": "per-channel-dismissal-escape-only-dialogs",
+      },
+      {
+        "depth": 3,
+        "slug": "open-without-stealing-focus",
+      },
+    ],
     "slug": "behavior-notes",
     "tables": [],
     "title": "Behavior notes",
@@ -6470,123 +6454,6 @@ exports[`document structure > projects/forty-cdk/table/README.md declares the se
     "title": "Anatomy",
   },
   {
-    "headings": [],
-    "slug": "native-table-mode",
-    "tables": [],
-    "title": "Native \`<table>\` mode",
-  },
-  {
-    "headings": [],
-    "slug": "div-mode",
-    "tables": [],
-    "title": "\`<div>\` mode",
-  },
-  {
-    "headings": [],
-    "slug": "declarative-columns-fortablecolumndef--for-table-body",
-    "tables": [],
-    "title": "Declarative columns (\`ForTableColumnDef\` + \`<for-table-body>\`)",
-  },
-  {
-    "headings": [],
-    "slug": "sticky-header--css-custom-property",
-    "tables": [],
-    "title": "Sticky header + CSS custom property",
-  },
-  {
-    "headings": [
-      {
-        "depth": 3,
-        "slug": "full-span-rows-group-separators-section-headers-summaries",
-      },
-    ],
-    "slug": "grid-mode",
-    "tables": [],
-    "title": "Grid mode",
-  },
-  {
-    "headings": [],
-    "slug": "treegrid-mode",
-    "tables": [],
-    "title": "Treegrid mode",
-  },
-  {
-    "headings": [
-      {
-        "depth": 3,
-        "slug": "selectionmode",
-      },
-      {
-        "depth": 3,
-        "slug": "selectionbehavior",
-      },
-      {
-        "depth": 3,
-        "slug": "value",
-      },
-      {
-        "depth": 3,
-        "slug": "comparewith",
-      },
-      {
-        "depth": 3,
-        "slug": "space-to-select-on-a-focused-grid-cell",
-      },
-      {
-        "depth": 3,
-        "slug": "fortablerowselector",
-      },
-      {
-        "depth": 3,
-        "slug": "fortableselectall",
-      },
-      {
-        "depth": 3,
-        "slug": "total-aware-aggregates-under-virtualization-selectablevalues",
-      },
-      {
-        "depth": 3,
-        "slug": "minimal-multiple-select-example",
-      },
-    ],
-    "slug": "row-selection",
-    "tables": [],
-    "title": "Row selection",
-  },
-  {
-    "headings": [],
-    "slug": "sortable-headers",
-    "tables": [],
-    "title": "Sortable headers",
-  },
-  {
-    "headings": [
-      {
-        "depth": 3,
-        "slug": "size-to-content-auto-fit",
-      },
-      {
-        "depth": 4,
-        "slug": "include-the-header-label",
-      },
-    ],
-    "slug": "column-resizing",
-    "tables": [],
-    "title": "Column resizing",
-  },
-  {
-    "headings": [],
-    "slug": "column--row-reordering",
-    "tables": [],
-    "title": "Column & row reordering",
-  },
-  {
-    "headings": [],
-    "slug": "virtualized-rows",
-    "tables": [],
-    "title": "Virtualized rows",
-  },
-  {
     "headings": [
       {
         "depth": 3,
@@ -6606,7 +6473,7 @@ exports[`document structure > projects/forty-cdk/table/README.md declares the se
       },
       {
         "depth": 3,
-        "slug": "fortableselectall-1",
+        "slug": "fortableselectall",
       },
       {
         "depth": 3,
@@ -6777,6 +6644,123 @@ exports[`document structure > projects/forty-cdk/table/README.md declares the se
     "slug": "styling",
     "tables": [],
     "title": "Styling",
+  },
+  {
+    "headings": [],
+    "slug": "native-table-mode",
+    "tables": [],
+    "title": "Native \`<table>\` mode",
+  },
+  {
+    "headings": [],
+    "slug": "div-mode",
+    "tables": [],
+    "title": "\`<div>\` mode",
+  },
+  {
+    "headings": [],
+    "slug": "declarative-columns-fortablecolumndef--for-table-body",
+    "tables": [],
+    "title": "Declarative columns (\`ForTableColumnDef\` + \`<for-table-body>\`)",
+  },
+  {
+    "headings": [],
+    "slug": "sticky-header--css-custom-property",
+    "tables": [],
+    "title": "Sticky header + CSS custom property",
+  },
+  {
+    "headings": [
+      {
+        "depth": 3,
+        "slug": "full-span-rows-group-separators-section-headers-summaries",
+      },
+    ],
+    "slug": "grid-mode",
+    "tables": [],
+    "title": "Grid mode",
+  },
+  {
+    "headings": [],
+    "slug": "treegrid-mode",
+    "tables": [],
+    "title": "Treegrid mode",
+  },
+  {
+    "headings": [
+      {
+        "depth": 3,
+        "slug": "selectionmode",
+      },
+      {
+        "depth": 3,
+        "slug": "selectionbehavior",
+      },
+      {
+        "depth": 3,
+        "slug": "value",
+      },
+      {
+        "depth": 3,
+        "slug": "comparewith",
+      },
+      {
+        "depth": 3,
+        "slug": "space-to-select-on-a-focused-grid-cell",
+      },
+      {
+        "depth": 3,
+        "slug": "fortablerowselector",
+      },
+      {
+        "depth": 3,
+        "slug": "fortableselectall-1",
+      },
+      {
+        "depth": 3,
+        "slug": "total-aware-aggregates-under-virtualization-selectablevalues",
+      },
+      {
+        "depth": 3,
+        "slug": "minimal-multiple-select-example",
+      },
+    ],
+    "slug": "row-selection",
+    "tables": [],
+    "title": "Row selection",
+  },
+  {
+    "headings": [],
+    "slug": "sortable-headers",
+    "tables": [],
+    "title": "Sortable headers",
+  },
+  {
+    "headings": [
+      {
+        "depth": 3,
+        "slug": "size-to-content-auto-fit",
+      },
+      {
+        "depth": 4,
+        "slug": "include-the-header-label",
+      },
+    ],
+    "slug": "column-resizing",
+    "tables": [],
+    "title": "Column resizing",
+  },
+  {
+    "headings": [],
+    "slug": "column--row-reordering",
+    "tables": [],
+    "title": "Column & row reordering",
+  },
+  {
+    "headings": [],
+    "slug": "virtualized-rows",
+    "tables": [],
+    "title": "Virtualized rows",
   },
   {
     "headings": [

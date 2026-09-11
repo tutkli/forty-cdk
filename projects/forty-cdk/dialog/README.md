@@ -13,96 +13,107 @@ A modal window overlaid on the page, with a focus trap, scroll lock and Escape /
 
 ## Two flows, one engine
 
-The same focus trap, scroll lock, portal, and dismissible-layer behaviors run under both APIs. Pick the one that fits the call site.
-
-### Declarative — `[forDialog]`
-
-The dialog is an overlay: **mount equals open**. The consumer's signal drives `@if`, and the directive emits `(dismiss)` when it wants to be unmounted (Escape, backdrop, outside-pointer, outside-focus, close button). There is no `[(open)]` two-way binding on `[forDialog]` — the directive never opens itself, only requests close.
+The same focus trap, scroll lock, portal, and dismissible-layer behaviors run under both APIs. Pick the one that fits the call site: declaratively, `[forDialog]` is an overlay where **mount equals open** — the consumer's signal drives `@if`, and the directive emits `(dismiss)` when it wants to be unmounted (Escape, backdrop, outside-pointer, outside-focus, close button). There is no `[(open)]` two-way binding on `[forDialog]` — the directive never opens itself, only requests close. Imperatively, `ForDialogManager.open()` creates the surface for you and hands back a `ForDialogRef` — see [Programmatic API](#programmatic-api).
 
 For the open side, drop `[forDialogTrigger]` on a `<button>`. It two-way binds `[(open)]` to the same signal that gates the surrounding `@if`, and wires `aria-haspopup="dialog"`, `aria-expanded`, `aria-controls`, and `data-state` automatically.
 
 ```ts
 import { Component, signal } from '@angular/core';
-import {
-  ForDialog,
-  ForDialogBackdrop,
-  ForDialogClose,
-  ForDialogDescription,
-  ForDialogTitle,
-  ForDialogTrigger,
-} from 'forty-cdk/dialog';
+import { ForDialog, ForDialogClose, ForDialogTitle, ForDialogTrigger } from 'forty-cdk/dialog';
 
 @Component({
-  selector: 'demo-confirm',
-  imports: [
-    ForDialog,
-    ForDialogTrigger,
-    ForDialogTitle,
-    ForDialogDescription,
-    ForDialogClose,
-    ForDialogBackdrop,
-  ],
+  imports: [ForDialog, ForDialogTrigger, ForDialogTitle, ForDialogClose],
   template: `
     <button forDialogTrigger [(open)]="open" controls="confirm-delete">Delete account</button>
 
     @if (open()) {
       <div forDialog id="confirm-delete" (dismiss)="open.set(false)" animate.leave="fade-out">
-        <div forDialogBackdrop class="my-backdrop" animate.leave="fade-out"></div>
         <h2 forDialogTitle>Delete account?</h2>
-        <p forDialogDescription>This permanently removes your data.</p>
         <button forDialogClose>Cancel</button>
-        <button (click)="confirm()">Delete</button>
       </div>
     }
   `,
 })
 export class DemoConfirm {
   readonly open = signal(false);
-  confirm() {
-    /* ... */ this.open.set(false);
-  }
 }
 ```
 
 Wrapping with `@if` is what makes Angular's native `animate.enter` / `animate.leave` work — they fire on real mount / unmount, not on attribute toggling.
 
-### The `(dismiss)` contract — consumer owns unmount
-
-`(dismiss)` reports the dialog's **intent** to be unmounted; it does not flip the consumer's signal. The consumer must call `open.set(false)` (or equivalent) inside the handler. If the handler is omitted or does not update the signal, Escape, backdrop-click, and outside-pointer-down all emit `(dismiss)` but the dialog stays mounted.
-
-```html
-<!-- correct: (dismiss) drives the @if gate -->
-<div forDialog id="my-dialog" (dismiss)="open.set(false)">…</div>
-
-<!-- broken: `(dismiss)` is missing — Escape fires but the dialog never unmounts -->
-<div forDialog id="my-dialog">…</div>
-```
-
-This is different from trigger-anchored overlays (Popover, DropdownMenu, etc.) where the wrapper directive owns `[(open)]` and round-trips it automatically on close. Dialog is **flat**: there is no wrapper, so the consumer's `@if` is the sole lifecycle gate.
-
-The payload is a `ForDialogCloseReason` string (`'escape'`, `'backdrop'`, `'pointerDownOutside'`, `'focusOutside'`, `'closeButton'`, `'programmatic'`) — use it if you need to branch on why the dialog closed, for example to show a "save changes?" prompt before dismissing. Emitting `(dismiss)` without acting on it is always safe: you can call `preventDefault()` on the preceding dismiss outputs (`(escapeKeyDown)`, `(pointerDownOutside)`, `(focusOutside)`, `(interactOutside)`) to suppress the `(dismiss)` entirely.
-
-> **The declarative and imperative surfaces spell this differently, on purpose.** The output is `(dismiss)` — an output named `close` would collide with the native DOM event and break any wrapper re-exposing it through `hostDirectives`. Nothing else changes name: the imperative handle method is `ForDialogRef.close()`, the directive selector is `[forDialogClose]`, and the payload type is `ForDialogCloseReason`.
-
-### Trigger / surface id wiring
-
-The trigger (`[forDialogTrigger]`) and the dialog surface (`[forDialog]`) are **separate, unrelated elements**. They wire to each other via a shared id that the consumer keeps in sync:
+## Anatomy
 
 ```html
 <!-- trigger: controls="<id>" tells it which dialog it opens -->
 <button forDialogTrigger [(open)]="open" controls="my-dialog">Open</button>
 
 <!-- surface: id="<id>" must match controls above -->
-@if (open()) {
-<div forDialog id="my-dialog" (dismiss)="open.set(false)">…</div>
-}
+<!-- rendered only while open() is true, so animate.enter / animate.leave fire on real mount -->
+<div forDialog id="my-dialog" (dismiss)="open.set(false)" animate.leave="fade-out">
+  <div forDialogBackdrop class="my-backdrop"></div>
+  <h2 forDialogTitle>Delete account?</h2>
+  <p forDialogDescription>This action is permanent.</p>
+  <button forDialogClose>Cancel</button>
+  <button (click)="confirm()">Delete</button>
+</div>
 ```
 
-`[forDialogTrigger]` always reflects `aria-haspopup="dialog"` and `aria-expanded` (`"true"` / `"false"`, from the trigger's own `open` state) — these do not depend on `controls`. The `controls` value is what gets reflected as `aria-controls="my-dialog"`, and only while the dialog is open; omit `controls` and the trigger never gets an `aria-controls`, silently breaking assistive technology that announces "opens dialog X".
+The trigger (`[forDialogTrigger]`) and the dialog surface (`[forDialog]`) are **separate, unrelated elements**. They wire to each other via a shared id that the consumer keeps in sync: `[forDialogTrigger]` always reflects `aria-haspopup="dialog"` and `aria-expanded` (`"true"` / `"false"`, from the trigger's own `open` state) — these do not depend on `controls`. The `controls` value is what gets reflected as `aria-controls="my-dialog"`, and only while the dialog is open; omit `controls` and the trigger never gets an `aria-controls`, silently breaking assistive technology that announces "opens dialog X". Popover is different: `[forPopover]` wraps both the trigger and content in a single parent directive, so ids are auto-generated and kept in sync internally. Dialog is flat — trigger and surface can live anywhere in the template — so the wiring is manual.
 
-> **Popover is different.** `[forPopover]` wraps both the trigger and content in a single parent directive, so ids are auto-generated and kept in sync internally. Dialog is flat — trigger and surface can live anywhere in the template — so the wiring is manual.
+## API
 
-### Programmatic — `ForDialogManager.open()`
+### `ForDialog`
+
+`(dismiss)` is the main signal — wire it to flip the `@if` gate. The four dismiss outputs are vetoable: each receives a `VetoableNativeEvent<E>` carrying the underlying DOM event. Call `preventDefault()` on the emitted veto to suppress the directive's default action; the original DOM event is on `.event`.
+
+| Property             | Type                                                                | Description                                                                                                                                                                                                                                                       |
+| -------------------- | ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `dismissible`        | —                                                                   | When `false`, Escape, backdrop, outside-pointer, and outside-focus do not request close. The close button still does.<br>**Default:** `true`                                                                                                                      |
+| `modal`              | —                                                                   | When `false`, no `aria-modal`, no scroll lock, no focus trap.<br>**Default:** `true`                                                                                                                                                                              |
+| `alert`              | —                                                                   | Switches role to `alertdialog`.<br>**Default:** `false`                                                                                                                                                                                                           |
+| `returnFocus`        | —                                                                   | Focus returns to the previously focused element on close.<br>**Default:** `true`                                                                                                                                                                                  |
+| `initialFocus`       | —                                                                   | `'first'` (first focusable inside) or `'container'` (the dialog host).<br>**Default:** `'first'`                                                                                                                                                                  |
+| `ariaLabel`          | —                                                                   | Manual `aria-label` if no `[forDialogTitle]` is rendered.<br>**Default:** `null`                                                                                                                                                                                  |
+| `dismiss`            | `OutputEmitterRef<ForDialogCloseReason>`                            | Output. Dialog wants to be unmounted. Reasons: `'escape'`, `'backdrop'`, `'pointerDownOutside'`, `'focusOutside'`, `'closeButton'`, `'programmatic'`. Spelled `dismiss` rather than `close` on purpose — see [Behavior notes](#behavior-notes).<br>**Default:** — |
+| `escapeKeyDown`      | `OutputEmitterRef<VetoableNativeEvent<KeyboardEvent>>`              | Output. Escape while this dialog is the topmost dismissible layer.<br>**Default:** —                                                                                                                                                                              |
+| `pointerDownOutside` | `OutputEmitterRef<VetoableNativeEvent<PointerEvent>>`               | Output. Pointer-down outside the dialog.<br>**Default:** —                                                                                                                                                                                                        |
+| `focusOutside`       | `OutputEmitterRef<VetoableNativeEvent<FocusEvent>>`                 | Output. Focus moves outside the dialog.<br>**Default:** —                                                                                                                                                                                                         |
+| `interactOutside`    | `OutputEmitterRef<VetoableNativeEvent<PointerEvent \| FocusEvent>>` | Output. Composite: fires alongside both of the above (and shares their veto state).<br>**Default:** —                                                                                                                                                             |
+
+| Data attribute | Values                                                                         |
+| -------------- | ------------------------------------------------------------------------------ |
+| `data-state`   | `open` (always — the host is only mounted while open, so it is never `closed`) |
+
+### Inputs — focus callbacks
+
+The auto-focus pair is bound as **function references** (input callbacks), not as event listeners. Each callback receives a `VetoableEvent` whose `preventDefault()` suppresses the directive's default focus action.
+
+| Property           | Type                             | Description                                                                                                                                                                                                                                                          |
+| ------------------ | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `autoFocusOnOpen`  | `(event: VetoableEvent) => void` | Just before focus moves into the dialog on mount. Call `event.preventDefault()` to skip the imperative initial focus.<br>**Default:** —                                                                                                                              |
+| `autoFocusOnClose` | `(event: VetoableEvent) => void` | Just before focus returns to the trigger on unmount. Fires on every close path regardless of mode; in non-modal mode the directive doesn't move focus, so the veto is informational. Call `event.preventDefault()` to skip the modal return-focus.<br>**Default:** — |
+
+### `ForDialogTrigger`
+
+| Data attribute  | Values             |
+| --------------- | ------------------ |
+| `data-state`    | `open` \| `closed` |
+| `data-disabled` | present / absent   |
+
+### `ForDialogBackdrop`
+
+| Data attribute             | Values                                                                                   |
+| -------------------------- | ---------------------------------------------------------------------------------------- |
+| `data-state`               | `open` (always — mounted alongside the dialog)                                           |
+| `data-for-dialog-backdrop` | present (stable marker; portaled alongside the dialog, so use it to select the backdrop) |
+
+### `ForDialogClose`
+
+| Data attribute | Values                                         |
+| -------------- | ---------------------------------------------- |
+| `data-state`   | `open` (always — mounted alongside the dialog) |
+
+## Programmatic API
 
 ```ts
 import { Component, inject } from '@angular/core';
@@ -185,138 +196,6 @@ this.dialogs.open(ConfirmDialog, {
 
 Set them once for a scope with `provideForDialogDefaults({ animateEnter, animateLeave })`; a per-`open()` value always wins over the scope default.
 
-## Anatomy
-
-```html
-<button forDialogTrigger [(open)]="open" controls="my-dialog">Open</button>
-
-<!-- rendered only while open() is true, so animate.enter / animate.leave fire on real mount -->
-<div forDialog id="my-dialog" (dismiss)="open.set(false)" animate.leave="fade-out">
-  <div forDialogBackdrop class="my-backdrop"></div>
-  <h2 forDialogTitle>Delete account?</h2>
-  <p forDialogDescription>This action is permanent.</p>
-  <button forDialogClose>Cancel</button>
-  <button (click)="confirm()">Delete</button>
-</div>
-```
-
-## API
-
-### `ForDialog`
-
-`(dismiss)` is the main signal — wire it to flip the `@if` gate. The four dismiss outputs are vetoable: each receives a `VetoableNativeEvent<E>` carrying the underlying DOM event. Call `preventDefault()` on the emitted veto to suppress the directive's default action; the original DOM event is on `.event`.
-
-| Property             | Type                                                                | Description                                                                                                                                                             |
-| -------------------- | ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `dismissible`        | —                                                                   | When `false`, Escape, backdrop, outside-pointer, and outside-focus do not request close. The close button still does.<br>**Default:** `true`                            |
-| `modal`              | —                                                                   | When `false`, no `aria-modal`, no scroll lock, no focus trap.<br>**Default:** `true`                                                                                    |
-| `alert`              | —                                                                   | Switches role to `alertdialog`.<br>**Default:** `false`                                                                                                                 |
-| `returnFocus`        | —                                                                   | Focus returns to the previously focused element on close.<br>**Default:** `true`                                                                                        |
-| `initialFocus`       | —                                                                   | `'first'` (first focusable inside) or `'container'` (the dialog host).<br>**Default:** `'first'`                                                                        |
-| `ariaLabel`          | —                                                                   | Manual `aria-label` if no `[forDialogTitle]` is rendered.<br>**Default:** `null`                                                                                        |
-| `dismiss`            | `OutputEmitterRef<ForDialogCloseReason>`                            | Output. Dialog wants to be unmounted. Reasons: `'escape'`, `'backdrop'`, `'pointerDownOutside'`, `'focusOutside'`, `'closeButton'`, `'programmatic'`.<br>**Default:** — |
-| `escapeKeyDown`      | `OutputEmitterRef<VetoableNativeEvent<KeyboardEvent>>`              | Output. Escape while this dialog is the topmost dismissible layer.<br>**Default:** —                                                                                    |
-| `pointerDownOutside` | `OutputEmitterRef<VetoableNativeEvent<PointerEvent>>`               | Output. Pointer-down outside the dialog.<br>**Default:** —                                                                                                              |
-| `focusOutside`       | `OutputEmitterRef<VetoableNativeEvent<FocusEvent>>`                 | Output. Focus moves outside the dialog.<br>**Default:** —                                                                                                               |
-| `interactOutside`    | `OutputEmitterRef<VetoableNativeEvent<PointerEvent \| FocusEvent>>` | Output. Composite: fires alongside both of the above (and shares their veto state).<br>**Default:** —                                                                   |
-
-| Data attribute | Values                                                                         |
-| -------------- | ------------------------------------------------------------------------------ |
-| `data-state`   | `open` (always — the host is only mounted while open, so it is never `closed`) |
-
-### Per-channel dismissal (Escape-only dialogs)
-
-`dismissible` is **not** all-or-nothing. The four dismiss channels — Escape, pointer-down-outside, focus-outside, and the composite outside-interaction — are independently vetoable, so you can keep some live and suppress others. The canonical case is a **floater** (an update banner, a devtools panel) that should close on Escape but stay put when the user clicks elsewhere. Floaters are usually non-modal (`[modal]="false"`), so the rest of the page stays interactive.
-
-**Declarative** — veto the outside channel, leave Escape alone:
-
-```html
-@if (open()) {
-<div
-  forDialog
-  [modal]="false"
-  (interactOutside)="$event.preventDefault()"
-  (dismiss)="open.set(false)"
->
-  …
-</div>
-}
-```
-
-`(interactOutside)` fires for both pointer-down-outside and focus-outside and shares their veto, so one handler covers every outside interaction. Escape keeps closing because its channel was never vetoed — to suppress Escape instead, veto `(escapeKeyDown)`.
-
-**Programmatic** — the same four channels are callbacks on the open config, mirroring the `autoFocusOn*` shape:
-
-<!-- snippet: fragment -->
-
-```ts
-this.dialogs.open(FloaterComponent, {
-  modal: false,
-  // dismissible: true is the default — Escape stays live.
-  interactOutside: (event) => event.preventDefault(), // ignore outside interaction
-  // escapeKeyDown / pointerDownOutside / focusOutside are available too.
-});
-```
-
-Keep `dismissible: true` (the default) so Escape still closes, and veto only the channels you want to keep open. `event.event` carries the originating DOM event for inspection.
-
-### Inputs — focus callbacks
-
-The auto-focus pair is bound as **function references** (input callbacks), not as event listeners. Each callback receives a `VetoableEvent` whose `preventDefault()` suppresses the directive's default focus action. This shape mirrors `ForDialogManager`'s `config.autoFocusOn*` callbacks and guarantees the `autoFocusOnClose` callback fires reliably on every close path — including a direct `open.set(false)` that bypasses the `(dismiss)` output. The trigger-anchored overlays (Popover, DropdownMenu, Select, …) expose the same pair as **outputs** instead, because every close transition there runs through their own `[(open)]` model, so no path can bypass the emitter.
-
-| Property           | Type                             | Description                                                                                                                                                                                                                                                          |
-| ------------------ | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `autoFocusOnOpen`  | `(event: VetoableEvent) => void` | Just before focus moves into the dialog on mount. Call `event.preventDefault()` to skip the imperative initial focus.<br>**Default:** —                                                                                                                              |
-| `autoFocusOnClose` | `(event: VetoableEvent) => void` | Just before focus returns to the trigger on unmount. Fires on every close path regardless of mode; in non-modal mode the directive doesn't move focus, so the veto is informational. Call `event.preventDefault()` to skip the modal return-focus.<br>**Default:** — |
-
-### Open without stealing focus
-
-```html
-<input #q type="search" placeholder="Search…" />
-
-@if (open()) {
-<div forDialog (dismiss)="open.set(false)" [autoFocusOnOpen]="keepSearchFocused">
-  <h2 forDialogTitle>Results</h2>
-  …
-</div>
-}
-```
-
-<!-- snippet: fragment -->
-
-```ts
-readonly keepSearchFocused = (event: VetoableEvent): void => {
-  event.preventDefault();
-  this.q().nativeElement.focus();
-};
-```
-
-The dialog still installs the focus trap (so Tab cycles inside once focus enters), but the imperative initial focus move is suppressed and the search input keeps focus.
-
-### `ForDialogTrigger`
-
-| Data attribute  | Values             |
-| --------------- | ------------------ |
-| `data-state`    | `open` \| `closed` |
-| `data-disabled` | present / absent   |
-
-### `ForDialogBackdrop`
-
-| Data attribute             | Values                                                                                   |
-| -------------------------- | ---------------------------------------------------------------------------------------- |
-| `data-state`               | `open` (always — mounted alongside the dialog)                                           |
-| `data-for-dialog-backdrop` | present (stable marker; portaled alongside the dialog, so use it to select the backdrop) |
-
-### `ForDialogClose`
-
-| Data attribute | Values                                         |
-| -------------- | ---------------------------------------------- |
-| `data-state`   | `open` (always — mounted alongside the dialog) |
-
-`[forDialog]`, `[forDialogBackdrop]`, and `[forDialogClose]` carry a static `data-state="open"`: because mount equals open (the host only exists inside `@if (open())`), the element is present iff the dialog is open, so the attribute can never be `closed`. Exit styling is the consumer's `animate.leave`, not a `[data-state="closed"]` selector. Only `[forDialogTrigger]`, which stays mounted, toggles `open` / `closed`.
-
-## Programmatic API
-
 | Symbol                  | Description                                                                                                                                                   |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `ForDialogManager`      | Injectable. `open(component, config?)` returns a `ForDialogRef<R>`.                                                                                           |
@@ -390,14 +269,88 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 
 ## Behavior notes
 
-- **Mount equals open**. The directive does not manage `[hidden]` or any visibility attribute. The consumer's `@if (open())` controls presence, and `animate.enter` / `animate.leave` handle the visual transition.
+- **The `(dismiss)` contract — consumer owns unmount.** `(dismiss)` reports the dialog's **intent** to be unmounted; it does not flip the consumer's signal. The consumer must call `open.set(false)` (or equivalent) inside the handler. If the handler is omitted or does not update the signal, Escape, backdrop-click, and outside-pointer-down all emit `(dismiss)` but the dialog stays mounted.
+
+  ```html
+  <!-- correct: (dismiss) drives the @if gate -->
+  <div forDialog id="my-dialog" (dismiss)="open.set(false)">…</div>
+
+  <!-- broken: `(dismiss)` is missing — Escape fires but the dialog never unmounts -->
+  <div forDialog id="my-dialog">…</div>
+  ```
+
+  This is different from trigger-anchored overlays (Popover, DropdownMenu, etc.) where the wrapper directive owns `[(open)]` and round-trips it automatically on close. Dialog is **flat**: there is no wrapper, so the consumer's `@if` is the sole lifecycle gate. The payload is a `ForDialogCloseReason` string (`'escape'`, `'backdrop'`, `'pointerDownOutside'`, `'focusOutside'`, `'closeButton'`, `'programmatic'`) — use it if you need to branch on why the dialog closed, for example to show a "save changes?" prompt before dismissing. Emitting `(dismiss)` without acting on it is always safe: you can call `preventDefault()` on the preceding dismiss outputs (`(escapeKeyDown)`, `(pointerDownOutside)`, `(focusOutside)`, `(interactOutside)`) to suppress the `(dismiss)` entirely.
+
+- **The declarative and imperative surfaces spell this differently, on purpose.** The output is `(dismiss)` — an output named `close` would collide with the native DOM event and break any wrapper re-exposing it through `hostDirectives`. Nothing else changes name: the imperative handle method is `ForDialogRef.close()`, the directive selector is `[forDialogClose]`, and the payload type is `ForDialogCloseReason`.
+- **Mount equals open**. The directive does not manage `[hidden]` or any visibility attribute. The consumer's `@if (open())` controls presence, and `animate.enter` / `animate.leave` handle the visual transition. That is why `[forDialog]`, `[forDialogBackdrop]`, and `[forDialogClose]` carry a static `data-state="open"`: because the host only exists inside `@if (open())`, the element is present iff the dialog is open, so the attribute can never be `closed`. Exit styling is the consumer's `animate.leave`, not a `[data-state="closed"]` selector. Only `[forDialogTrigger]`, which stays mounted, toggles `open` / `closed`.
 - **Portal**: the dialog box is moved to `document.body` on first render (or to `container` when set). The backdrop portals alongside the dialog (to the same `container`, `document.body` by default). CSS scoped to ancestors won't apply — use global styles or classes.
 - **Body scroll lock** is refcounted: stacking dialogs (or a dialog + a future overlay using the same lock) only restore on the last unlock.
 - **Focus trap** scopes Tab inside the dialog box while `modal`. It does NOT itself mark the rest of the page `inert` — that's the inert-siblings utility's job (next bullet).
 - **Inert siblings**. When `modal`, every direct child of `document.body` other than the dialog box (and its backdrop) gets `inert` and `aria-hidden="true"` while open, and is restored on close. This is what `aria-modal="true"` alone is missing — Safari + VoiceOver and several other AT pairings still announce siblings of an aria-modal node otherwise. Stacking is order-safe: when a second modal opens on top, the first becomes inert; closing the top dialog re-activates the underlying one.
 - **Vetoable dismissals**. Each of `(escapeKeyDown)`, `(pointerDownOutside)`, `(focusOutside)`, `(interactOutside)` fires before the corresponding `(dismiss)`. Call `preventDefault()` on the event to keep the dialog open (e.g. to ask "are you sure?" first).
+- **Focus callbacks are inputs, not outputs.** The `autoFocusOnOpen` / `autoFocusOnClose` shape mirrors `ForDialogManager`'s `config.autoFocusOn*` callbacks and guarantees the `autoFocusOnClose` callback fires reliably on every close path — including a direct `open.set(false)` that bypasses the `(dismiss)` output. The trigger-anchored overlays (Popover, DropdownMenu, Select, …) expose the same pair as **outputs** instead, because every close transition there runs through their own `[(open)]` model, so no path can bypass the emitter.
 - **The close button** (`[forDialogClose]`) always requests close, regardless of `dismissible`. Reason emitted is `'closeButton'`.
 - **Both flows share the same engine** — the focus trap, scroll lock, dismissible layer, and portal in `ForDialogManager.open()` use the same `_internal/` utilities as the directive. Behavior is identical.
+
+### Per-channel dismissal (Escape-only dialogs)
+
+`dismissible` is **not** all-or-nothing. The four dismiss channels — Escape, pointer-down-outside, focus-outside, and the composite outside-interaction — are independently vetoable, so you can keep some live and suppress others. The canonical case is a **floater** (an update banner, a devtools panel) that should close on Escape but stay put when the user clicks elsewhere. Floaters are usually non-modal (`[modal]="false"`), so the rest of the page stays interactive.
+
+**Declarative** — veto the outside channel, leave Escape alone:
+
+```html
+@if (open()) {
+<div
+  forDialog
+  [modal]="false"
+  (interactOutside)="$event.preventDefault()"
+  (dismiss)="open.set(false)"
+>
+  …
+</div>
+}
+```
+
+`(interactOutside)` fires for both pointer-down-outside and focus-outside and shares their veto, so one handler covers every outside interaction. Escape keeps closing because its channel was never vetoed — to suppress Escape instead, veto `(escapeKeyDown)`.
+
+**Programmatic** — the same four channels are callbacks on the open config, mirroring the `autoFocusOn*` shape:
+
+<!-- snippet: fragment -->
+
+```ts
+this.dialogs.open(FloaterComponent, {
+  modal: false,
+  // dismissible: true is the default — Escape stays live.
+  interactOutside: (event) => event.preventDefault(), // ignore outside interaction
+  // escapeKeyDown / pointerDownOutside / focusOutside are available too.
+});
+```
+
+Keep `dismissible: true` (the default) so Escape still closes, and veto only the channels you want to keep open. `event.event` carries the originating DOM event for inspection.
+
+### Open without stealing focus
+
+```html
+<input #q type="search" placeholder="Search…" />
+
+@if (open()) {
+<div forDialog (dismiss)="open.set(false)" [autoFocusOnOpen]="keepSearchFocused">
+  <h2 forDialogTitle>Results</h2>
+  …
+</div>
+}
+```
+
+<!-- snippet: fragment -->
+
+```ts
+readonly keepSearchFocused = (event: VetoableEvent): void => {
+  event.preventDefault();
+  this.q().nativeElement.focus();
+};
+```
+
+The dialog still installs the focus trap (so Tab cycles inside once focus enters), but the imperative initial focus move is suppressed and the search input keeps focus.
 
 ## Known limitations
 
