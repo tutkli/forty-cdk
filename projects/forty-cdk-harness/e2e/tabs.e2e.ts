@@ -1,5 +1,12 @@
 import { expect, test } from '@playwright/test';
-import { el, expectFocused, focusRovingItem, gotoFixture, rovingFirst } from './_helpers';
+import {
+  el,
+  expectFocused,
+  expectRovingTabStop,
+  focusRovingItem,
+  gotoFixture,
+  rovingFirst,
+} from './_helpers';
 
 /**
  * Real-browser coverage for the Tabs roving-tabindex keyboard journey. The
@@ -115,8 +122,8 @@ test.describe('Tabs (roving self-heal)', () => {
     await el(page, 'trigger-a').focus();
     await el(page, 'remove-active').click();
 
-    await expect(page.locator('[role="tab"][tabindex="0"]')).toHaveCount(1);
     // Re-entry from the control lands on the first surviving enabled trigger.
+    await expectRovingTabStop(page, 'trigger-b', '[role="tab"][tabindex="0"]');
     await el(page, 'disable-active').focus();
     await expectFocused(el(page, 'disable-active'));
     await page.keyboard.press('Tab');
@@ -128,8 +135,8 @@ test.describe('Tabs (roving self-heal)', () => {
     await el(page, 'trigger-a').focus();
     await el(page, 'disable-active').click();
 
-    await expect(page.locator('[role="tab"][tabindex="0"]')).toHaveCount(1);
     await expect(el(page, 'trigger-a')).toHaveAttribute('tabindex', '-1');
+    await expectRovingTabStop(page, 'trigger-b', '[role="tab"][tabindex="0"]');
     await el(page, 'disable-active').focus();
     await expectFocused(el(page, 'disable-active'));
     await page.keyboard.press('Tab');

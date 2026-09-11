@@ -3,6 +3,7 @@ import {
   el,
   expectFocused,
   expectRovingFocus,
+  expectRovingTabStop,
   focusRovingItem,
   gotoFixture,
   rovingFirst,
@@ -148,8 +149,8 @@ test.describe('Toolbar', () => {
     await el(page, 'btn-1').focus();
     await el(page, 'remove-active').click();
 
-    await expect(page.locator('[data-testid="toolbar"] [tabindex="0"]')).toHaveCount(1);
     // Re-entry from the control lands on the next enabled item (toggle).
+    await expectRovingTabStop(page, 'toggle', '[data-testid="toolbar"] [tabindex="0"]');
     await el(page, 'disable-active').focus();
     await expectFocused(el(page, 'disable-active'));
     await page.keyboard.press('Tab');
@@ -163,8 +164,8 @@ test.describe('Toolbar', () => {
     await el(page, 'btn-1').focus();
     await el(page, 'disable-active').click();
 
-    await expect(page.locator('[data-testid="toolbar"] [tabindex="0"]')).toHaveCount(1);
     await expect(el(page, 'btn-1')).toHaveAttribute('tabindex', '-1');
+    await expectRovingTabStop(page, 'toggle', '[data-testid="toolbar"] [tabindex="0"]');
     await el(page, 'disable-active').focus();
     await expectFocused(el(page, 'disable-active'));
     await page.keyboard.press('Tab');
