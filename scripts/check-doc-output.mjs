@@ -56,7 +56,10 @@ import { repoRoot } from './lib/repo-path.mjs';
  *   would have to be a number someone picked; "every `##` the document declares
  *   emitted a `<section>`, and every emitted section carries at least one
  *   block" is derived from the document itself, and it is the shape that catches
- *   the parser collapsing one section into its neighbour.
+ *   the parser collapsing one section into its neighbour. The Examples block is
+ *   the one section whose body is demos rather than prose, so a
+ *   {@link EXAMPLE_FRAME} counts for it — and it has to carry one or the other
+ *   ([#1878](https://github.com/tutkli/forty-cdk/issues/1878)).
  * - **The rail is gated here rather than in a spec**
  *   ([#1810](https://github.com/tutkli/forty-cdk/issues/1810)). Grouping a
  *   page's specific sections is a rendering change over anchors that must keep
@@ -84,9 +87,10 @@ const BROWSER = join(repoRoot, 'dist', 'forty-cdk-docs', 'browser');
 const EXAMPLE_FRAME = '.preview';
 
 /**
- * The section whose body the site replaces with its live demos. Anything a
- * README nests under it is published on GitHub and absent from the site, which
- * is the mechanism behind two of the three anchors this gate first found.
+ * The section whose body the site replaces with its live demos, on a page that
+ * projects one into the block. Anything a README nests under it is then
+ * published on GitHub and absent from the site, which is the mechanism behind
+ * two of the three anchors this gate first found.
  */
 const EXAMPLES_SECTION = 'examples';
 
@@ -396,10 +400,10 @@ for (const file of indexFiles(BROWSER)) {
 
   const sections = new Map();
   for (const section of doc.querySelectorAll('section.pg-doc-section[id]')) {
-    sections.set(
-      section.id,
-      section.querySelectorAll('.pg-doc-prose, api-table, compact-table').length,
-    );
+    sections.set(section.id, {
+      blocks: section.querySelectorAll('.pg-doc-prose, api-table, compact-table').length,
+      frames: section.querySelectorAll(EXAMPLE_FRAME).length,
+    });
   }
 
   pages.set(route, {
@@ -432,6 +436,7 @@ let scannedAnchors = 0;
 let checkedFragments = 0;
 let declaredTables = 0;
 let checkedRails = 0;
+let checkedExamples = 0;
 
 const EXPECTED_PAGES = knownRoutes.size;
 if (pages.size !== EXPECTED_PAGES) {
@@ -584,8 +589,18 @@ for (const [route, page] of pages) {
     }
   }
 
-  for (const [id, blocks] of page.sections) {
-    if (blocks === 0 && id !== EXAMPLES_SECTION) {
+  for (const [id, { blocks, frames }] of page.sections) {
+    if (id === EXAMPLES_SECTION) {
+      checkedExamples += 1;
+      if (blocks === 0 && frames === 0) {
+        failures.push(
+          `${at} — the "#${id}" block renders neither a demo frame nor a content block, so the ` +
+            'heading and its rail entry lead the reader to an empty section',
+        );
+      }
+      continue;
+    }
+    if (blocks === 0) {
       failures.push(`${at} — section "#${id}" rendered no content block, so its body collapsed`);
     }
   }
@@ -688,7 +703,8 @@ console.log(
     `(${excludedAnchors} inside live examples, not scanned), ${checkedFragments} fragments resolved ` +
     `to an id, ${declaredTables} declared tables emitted across ${documents.size} documents, ` +
     `${checkedRails} rails read (${groupedRails} grouped, ${closedRails} of them closed) with ` +
-    `${railLinks} links in page order, ` +
+    `${railLinks} links in page order, ${checkedExamples} Examples block(s) carrying a demo frame ` +
+    'or a body, ' +
     `${synthesisedExamples} synthesised Examples block(s) below their parts list, ` +
     `${errorCodes.length} error codes linked from their index` +
     (warnings.length > 0
