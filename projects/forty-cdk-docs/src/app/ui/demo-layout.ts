@@ -27,10 +27,12 @@ const DEMOS_SOURCE_PREFIX = 'projects/forty-cdk-docs/src/app/demos/';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [Icon, ForTabs, ForTabsList, ForTabsTrigger, ForTabsContent],
   host: {
-    '[id]': 'hostId()',
+    '[attr.id]': 'hostId()',
     '[class.is-hero]': 'hero()',
     '[attr.title]': 'null',
     '[attr.subtitle]': 'null',
+    '[attr.sourcepath]': 'null',
+    '[attr.hero]': 'null',
   },
   template: `
     @if (!hero()) {

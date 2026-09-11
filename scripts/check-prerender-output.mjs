@@ -71,6 +71,7 @@ const themed = [];
 const unbootstrapped = [];
 const deferredStyles = [];
 const attributed = [];
+const nullIds = [];
 const statefulToggles = [];
 let demoBlocks = 0;
 let themeToggles = 0;
@@ -163,37 +164,67 @@ function checkThemeToggle(label, html) {
 
 /**
  * The inputs an example block must not publish as DOM attributes
- * ([#1879](https://github.com/tutkli/forty-cdk/issues/1879)).
+ * ([#1879](https://github.com/tutkli/forty-cdk/issues/1879),
+ * [#1900](https://github.com/tutkli/forty-cdk/issues/1900)).
  *
  * `demo-layout` takes its heading as an input named `title`, and every call
  * site passes it as a static attribute — which a template writes to the DOM as
  * well as binding to the input. `title` is a global HTML attribute, so the
  * browser paints a native tooltip over the whole example repeating the `<h2>`
  * one line above it, and the host takes an accessible name nobody gave it;
- * `subtitle` is inert but publishes the escaped subtitle markup a second time.
- * The component drops both through host attribute bindings, and the emitted
- * page is the only place a dropped binding is visible — the inputs go on
- * working either way.
+ * `subtitle`, `sourcepath` and `hero` are inert, but each publishes component
+ * state as DOM state nothing reads. The component drops all four through host
+ * attribute bindings, and the emitted page is the only place a dropped binding
+ * is visible — the inputs go on working either way.
+ *
+ * What a host keeps is what it renders with: its `class`, and the `id` the
+ * on-page table of contents links to.
  */
-const DEMO_ATTRIBUTES = ['title', 'subtitle'];
+const DEMO_ATTRIBUTES = ['title', 'subtitle', 'sourcepath', 'hero'];
 const DEMO_TAG = /<demo-layout(?=[\s>])[^>]*>/gi;
+const ATTRIBUTE = /([a-z][a-z0-9_.:-]*)(?:\s*=\s*("[^"]*"|'[^']*'|[^\s"'>]+))?/gi;
 
-function attributeNames(tag) {
-  return [...tag.matchAll(/(?:^|\s)([a-z][a-z0-9_.-]*)=/gi)].map((match) => match[1].toLowerCase());
+/**
+ * The tag's own attributes, as `[name, value]` pairs.
+ *
+ * The value is consumed by the same match as its name, so the scan never reads
+ * a `word=` out of a subtitle's escaped markup and reports it as an attribute.
+ */
+function attributes(tag) {
+  const body = tag.slice(tag.indexOf('demo-layout') + 'demo-layout'.length, -1);
+  return [...body.matchAll(ATTRIBUTE)].map(([, name, value = '']) => [
+    name.toLowerCase(),
+    value.replace(/^(["'])([\s\S]*)\1$/, '$2'),
+  ]);
 }
 
+/**
+ * The host id, when there is one, is written as an attribute binding
+ * ([#1899](https://github.com/tutkli/forty-cdk/issues/1899)) — a property
+ * binding assigns to `HTMLElement.id`, which coerces the `null` the hero block
+ * resolves to into the string `"null"` instead of removing the attribute. A
+ * hero example then answers to `getElementById('null')` and to the `#null`
+ * fragment, under an id it was never meant to carry.
+ */
 function checkDemoAttributes(label, html) {
   const leaked = new Set();
+  let nulled = 0;
   for (const [tag] of html.matchAll(DEMO_TAG)) {
     demoBlocks += 1;
-    for (const name of attributeNames(tag)) {
+    for (const [name, value] of attributes(tag)) {
       if (DEMO_ATTRIBUTES.includes(name)) {
         leaked.add(name);
+      }
+      if (name === 'id' && value === 'null') {
+        nulled += 1;
       }
     }
   }
   if (leaked.size > 0) {
     attributed.push(`${label} (${[...leaked].join(', ')})`);
+  }
+  if (nulled > 0) {
+    nullIds.push(`${label} (${nulled})`);
   }
 }
 
@@ -458,8 +489,16 @@ if (demoBlocks === 0) {
 if (attributed.length > 0) {
   fail(
     `${attributed.length} prerendered page(s) render a demo-layout input as a DOM attribute, so ` +
-      'every example paints a native tooltip repeating its own heading: ' +
+      'an example publishes state nothing reads — and, for the global ones, paints a native ' +
+      'tooltip repeating its own heading: ' +
       attributed.join(', '),
+  );
+}
+if (nullIds.length > 0) {
+  fail(
+    `${nullIds.length} prerendered page(s) render a demo-layout with id="null", so the hero ` +
+      'example answers to a fragment and a getElementById nobody aimed at it — bind the host id ' +
+      `as [attr.id], which removes it instead of stringifying null: ${nullIds.join(', ')}`,
   );
 }
 
@@ -471,5 +510,6 @@ console.log(
     `${fallbackRules} dark rule(s) each mirrored by a prefers-color-scheme fallback, ` +
     `${styleBlocks} component style block(s) keying none of their rules on the theme attribute, ` +
     `${themeToggles} theme toggle(s) prerendered without a state and ` +
-    `${demoBlocks} example block(s) publishing none of their inputs as attributes`,
+    `${demoBlocks} example block(s) publishing none of their inputs as attributes and none of ` +
+    'them an id of "null"',
 );
