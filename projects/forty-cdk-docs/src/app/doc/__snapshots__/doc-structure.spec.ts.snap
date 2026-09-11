@@ -1357,6 +1357,21 @@ exports[`document structure > projects/forty-cdk/button/README.md declares the s
   },
   {
     "headings": [],
+    "slug": "keyboard",
+    "tables": [
+      {
+        "columns": [
+          "Key",
+          "Action",
+        ],
+        "role": "plain",
+        "rows": 4,
+      },
+    ],
+    "title": "Keyboard",
+  },
+  {
+    "headings": [],
     "slug": "accessibility",
     "tables": [],
     "title": "Accessibility",
