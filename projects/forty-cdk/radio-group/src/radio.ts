@@ -22,7 +22,7 @@ import { type ForRadioGroupContext, injectRadioGroupContext } from './radio-grou
  * decoupled from the concrete `ForRadio` class. `ForRadio` provides itself
  * under this token, so a design system wrapping the radio by subclassing
  * re-points it at the subclass with a single provider
- * (`{ provide: FOR_RADIO, useExisting: MtxRadio }`) and the indicator keeps
+ * (`{ provide: FOR_RADIO, useExisting: MyRadio }`) and the indicator keeps
  * resolving — see `docs/wrapping-form-primitives.md`.
  */
 export const FOR_RADIO = new InjectionToken<ForRadio>('FOR_RADIO');

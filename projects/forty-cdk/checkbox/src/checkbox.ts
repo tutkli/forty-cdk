@@ -13,7 +13,7 @@ import {
  * checkbox, decoupled from the concrete `ForCheckbox` class. `ForCheckbox`
  * provides itself under this token, so a design system wrapping the checkbox
  * by subclassing re-points it at the subclass with a single provider
- * (`{ provide: FOR_CHECKBOX, useExisting: MtxCheckbox }`) and the indicator
+ * (`{ provide: FOR_CHECKBOX, useExisting: MyCheckbox }`) and the indicator
  * keeps resolving — see `docs/wrapping-form-primitives.md`.
  */
 export const FOR_CHECKBOX = new InjectionToken<ForCheckbox>('FOR_CHECKBOX');

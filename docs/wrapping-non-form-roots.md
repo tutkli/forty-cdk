@@ -22,10 +22,10 @@ import { Directive } from '@angular/core';
 import { ForAccordion } from 'forty-cdk/accordion';
 
 @Directive({
-  selector: '[mtxAccordion]',
-  host: { class: 'mtx-accordion' },
+  selector: '[myAccordion]',
+  host: { class: 'my-accordion' },
 })
-export class MtxAccordion extends ForAccordion {}
+export class MyAccordion extends ForAccordion {}
 ```
 
 `hostDirectives` — the other pattern the form guide documents — is available too, but it is a worse
@@ -62,12 +62,12 @@ import { Directive } from '@angular/core';
 import { FOR_POPOVER_CONTEXT, ForPopover } from 'forty-cdk/popover';
 
 @Directive({
-  selector: '[mtxPopover]',
-  exportAs: 'mtxPopover',
-  host: { class: 'mtx-popover' },
-  providers: [{ provide: FOR_POPOVER_CONTEXT, useExisting: MtxPopover }],
+  selector: '[myPopover]',
+  exportAs: 'myPopover',
+  host: { class: 'my-popover' },
+  providers: [{ provide: FOR_POPOVER_CONTEXT, useExisting: MyPopover }],
 })
-export class MtxPopover extends ForPopover {}
+export class MyPopover extends ForPopover {}
 ```
 
 Every non-form root that needs a plain re-provide, and the token to name. `ForTable` is the one root
@@ -141,11 +141,11 @@ import { Directive } from '@angular/core';
 import { ForTable, provideForTable } from 'forty-cdk/table';
 
 @Directive({
-  selector: '[mtxTable]',
-  exportAs: 'mtxTable',
-  providers: provideForTable(MtxTable),
+  selector: '[myTable]',
+  exportAs: 'myTable',
+  providers: provideForTable(MyTable),
 })
-export class MtxTable<T> extends ForTable<T> {}
+export class MyTable<T> extends ForTable<T> {}
 ```
 
 `<for-table-body>` has a public `provideForTableDefRegistry()` for the same reachability reason, but

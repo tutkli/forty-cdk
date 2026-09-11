@@ -802,7 +802,7 @@ import { booleanAttribute, ChangeDetectionStrategy, Component, input } from '@an
 import { ForTableColumnDef, ForTableCellDef, ForTableHeaderCellDef } from 'forty-cdk/table';
 
 @Component({
-  selector: 'ds-text-column',
+  selector: 'my-text-column',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ForTableColumnDef, ForTableHeaderCellDef, ForTableCellDef],
   template: `
@@ -812,7 +812,7 @@ import { ForTableColumnDef, ForTableCellDef, ForTableHeaderCellDef } from 'forty
     </ng-container>
   `,
 })
-export class DsTextColumn<T> {
+export class MyTextColumn<T> {
   readonly name = input.required<string>();
   readonly header = input.required<string>();
   readonly value = input.required<(row: T) => unknown>();
@@ -824,8 +824,8 @@ export class DsTextColumn<T> {
 ```html
 <div forTable mode="grid" ariaLabel="People">
   <for-table-body [rows]="rows()" [rowKey]="rowKey">
-    <ds-text-column name="code" header="Code" [value]="pickCode" width="8rem" />
-    <ds-text-column name="name" header="Name" [value]="pickName" sortable />
+    <my-text-column name="code" header="Code" [value]="pickCode" width="8rem" />
+    <my-text-column name="name" header="Name" [value]="pickName" sortable />
   </for-table-body>
 </div>
 ```
@@ -847,7 +847,7 @@ import {
 } from 'forty-cdk/table';
 
 @Component({
-  selector: 'ds-data-table',
+  selector: 'my-data-table',
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: provideForTableDefRegistry(),
   imports: [ForTable, ForTableBody],
@@ -859,7 +859,7 @@ import {
     </div>
   `,
 })
-export class DsDataTable<T> {
+export class MyDataTable<T> {
   readonly rows = input.required<readonly T[]>();
   readonly rowKey = input<(row: T, index: number) => unknown>();
   readonly ariaLabel = input.required<string>();
@@ -868,12 +868,12 @@ export class DsDataTable<T> {
 ```
 
 ```html
-<ds-data-table [rows]="rows()" [rowKey]="rowKey" ariaLabel="People">
+<my-data-table [rows]="rows()" [rowKey]="rowKey" ariaLabel="People">
   <ng-container forTableColumnDef="name" sortable>
     <ng-template forTableHeaderCellDef>Name</ng-template>
     <ng-template forTableCellDef [forTableCellDefRow]="rows()" let-row>{{ row.name }}</ng-template>
   </ng-container>
-</ds-data-table>
+</my-data-table>
 ```
 
 Three rules for the scaffold shape:

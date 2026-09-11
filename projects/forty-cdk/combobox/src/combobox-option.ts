@@ -23,7 +23,7 @@ import { injectComboboxContext } from './combobox-context';
  * option, decoupled from the concrete `ForComboboxOption` class.
  * `ForComboboxOption` provides itself under this token, so a design system
  * wrapping the option by subclassing re-points it at the subclass with a
- * single provider (`{ provide: FOR_COMBOBOX_OPTION, useExisting: MtxComboboxOption }`)
+ * single provider (`{ provide: FOR_COMBOBOX_OPTION, useExisting: MyComboboxOption }`)
  * and the indicator keeps resolving — see `docs/wrapping-form-primitives.md`.
  */
 export const FOR_COMBOBOX_OPTION = new InjectionToken<ForComboboxOption>('FOR_COMBOBOX_OPTION');

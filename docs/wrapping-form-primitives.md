@@ -28,10 +28,10 @@ import {
 } from 'forty-cdk/input';
 
 @Component({
-  selector: 'input[mtxInput]',
+  selector: 'input[myInput]',
   template: '',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'mtx-input' },
+  host: { class: 'my-input' },
   hostDirectives: [
     {
       directive: ForInput,
@@ -40,7 +40,7 @@ import {
     },
   ],
 })
-export class MtxInput {}
+export class MyInput {}
 ```
 
 The wrapper now accepts every `ForInput` binding by its original name — `[(value)]`,
@@ -48,7 +48,7 @@ The wrapper now accepts every `ForInput` binding by its original name — `[(val
 bare primitive:
 
 ```html
-<input mtxInput [formField]="profile.name" />
+<input myInput [formField]="profile.name" />
 ```
 
 An anti-drift spec in the library fails whenever a tuple stops matching the directive's
@@ -79,10 +79,10 @@ import {
 } from 'forty-cdk/listbox';
 
 @Component({
-  selector: 'ul[mtxListbox]',
+  selector: 'ul[myListbox]',
   template: '<ng-content />',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'mtx-listbox' },
+  host: { class: 'my-listbox' },
   hostDirectives: [
     {
       directive: ForListbox,
@@ -91,11 +91,11 @@ import {
     },
   ],
 })
-export class MtxListbox {}
+export class MyListbox {}
 ```
 
 ```html
-<ul mtxListbox [(value)]="picked" ariaLabel="Fruit">
+<ul myListbox [(value)]="picked" ariaLabel="Fruit">
   <li><button type="button" forListboxOption value="apple">Apple</button></li>
 </ul>
 ```
@@ -128,10 +128,10 @@ import { Directive } from '@angular/core';
 import { ForInput } from 'forty-cdk/input';
 
 @Directive({
-  selector: 'input[mtxInput]',
-  host: { class: 'mtx-input' },
+  selector: 'input[myInput]',
+  host: { class: 'my-input' },
 })
-export class MtxInput extends ForInput {}
+export class MyInput extends ForInput {}
 ```
 
 ### Decorator `providers` are not inherited
@@ -148,11 +148,11 @@ import { Directive } from '@angular/core';
 import { FOR_LISTBOX_CONTEXT, ForListbox } from 'forty-cdk/listbox';
 
 @Directive({
-  selector: 'ul[mtxListbox]',
-  host: { class: 'mtx-listbox' },
-  providers: [{ provide: FOR_LISTBOX_CONTEXT, useExisting: MtxListbox }],
+  selector: 'ul[myListbox]',
+  host: { class: 'my-listbox' },
+  providers: [{ provide: FOR_LISTBOX_CONTEXT, useExisting: MyListbox }],
 })
-export class MtxListbox extends ForListbox {}
+export class MyListbox extends ForListbox {}
 ```
 
 Primitives whose **root** provides a context token (and therefore needs the re-provide):
@@ -164,7 +164,7 @@ controls — `ForInput`, `ForTextarea`, `ForSwitch`, `ForToggle`, `ForNumberInpu
 providers, so a bare subclass is enough.
 
 A wrapper that also wants `inject(ForSelect)` to resolve adds
-`{ provide: ForSelect, useExisting: MtxSelect }` alongside the context re-provide.
+`{ provide: ForSelect, useExisting: MySelect }` alongside the context re-provide.
 
 ### A split context does not change the re-provide
 
@@ -186,11 +186,11 @@ import { Directive } from '@angular/core';
 import { FOR_SELECT_CONTEXT, ForSelect } from 'forty-cdk/select';
 
 @Directive({
-  selector: '[mtxSelect]',
-  exportAs: 'mtxSelect',
-  providers: [{ provide: FOR_SELECT_CONTEXT, useExisting: MtxSelect }],
+  selector: '[mySelect]',
+  exportAs: 'mySelect',
+  providers: [{ provide: FOR_SELECT_CONTEXT, useExisting: MySelect }],
 })
-export class MtxSelect<T> extends ForSelect<T> {}
+export class MySelect<T> extends ForSelect<T> {}
 ```
 
 `useExisting` pointing at the root's class (or a subclass of it) is a precondition rather than a
@@ -217,11 +217,11 @@ import { Directive } from '@angular/core';
 import { FOR_SELECT_OPTION, ForSelectOption } from 'forty-cdk/select';
 
 @Directive({
-  selector: 'button[mtxSelectOption]',
-  host: { class: 'mtx-select-option' },
-  providers: [{ provide: FOR_SELECT_OPTION, useExisting: MtxSelectOption }],
+  selector: 'button[mySelectOption]',
+  host: { class: 'my-select-option' },
+  providers: [{ provide: FOR_SELECT_OPTION, useExisting: MySelectOption }],
 })
-export class MtxSelectOption extends ForSelectOption {}
+export class MySelectOption extends ForSelectOption {}
 ```
 
 | Subclassed part       | Indicator that resolves it    | Token to re-provide      |
@@ -235,7 +235,7 @@ export class MtxSelectOption extends ForSelectOption {}
 | `ForMenuRadioItem`    | `[forMenuItemIndicator]`      | `FOR_MENU_RADIO_ITEM`    |
 
 `ForCheckbox` is the one part that is both a leaf form control and an indicator parent: a bare
-`MtxCheckbox extends ForCheckbox` is enough on its own, and the re-provide is only needed when
+`MyCheckbox extends ForCheckbox` is enough on its own, and the re-provide is only needed when
 the wrapper projects `[forCheckboxIndicator]` into it. The other parts always carry their
 indicator inside the same wrapper, so re-provide the token whenever you subclass them.
 
@@ -254,11 +254,11 @@ import { FOR_TIME_VALUE_SOURCE } from 'forty-cdk/core';
 import { ForTimeField } from 'forty-cdk/time-field';
 
 @Directive({
-  selector: '[mtxTimeField]',
-  exportAs: 'mtxTimeField',
-  providers: [{ provide: FOR_TIME_VALUE_SOURCE, useExisting: MtxTimeField }],
+  selector: '[myTimeField]',
+  exportAs: 'myTimeField',
+  providers: [{ provide: FOR_TIME_VALUE_SOURCE, useExisting: MyTimeField }],
 })
-export class MtxTimeField extends ForTimeField {}
+export class MyTimeField extends ForTimeField {}
 ```
 
 | Subclassed primitive | Bridge that resolves it                      | Token to re-provide     |

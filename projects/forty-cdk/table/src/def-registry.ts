@@ -32,7 +32,7 @@ import type { ForTableRowDef } from './row-def';
  * and the body renders them exactly as if they had been declared inside its own
  * tags. See the table README for the full recipe.
  *
- * A **preset column component** (`<ds-text-column name="code" …>` collapsing a
+ * A **preset column component** (`<my-text-column name="code" …>` collapsing a
  * column's header / data templates into one line) needs none of this: the preset
  * host is declared inside the body's tags, so the def in the preset's view
  * resolves the body's registry through the element-injector chain.

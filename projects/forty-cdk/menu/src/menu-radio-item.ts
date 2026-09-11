@@ -22,7 +22,7 @@ import { injectMenuRadioGroupContext } from './menu-radio-group-context';
  * item, decoupled from the concrete `ForMenuRadioItem` class.
  * `ForMenuRadioItem` provides itself under this token, so a design system
  * wrapping the item by subclassing re-points it at the subclass with a single
- * provider (`{ provide: FOR_MENU_RADIO_ITEM, useExisting: MtxMenuRadioItem }`)
+ * provider (`{ provide: FOR_MENU_RADIO_ITEM, useExisting: MyMenuRadioItem }`)
  * and the indicator keeps resolving — see `docs/wrapping-form-primitives.md`.
  */
 export const FOR_MENU_RADIO_ITEM = new InjectionToken<ForMenuRadioItem>('FOR_MENU_RADIO_ITEM');
