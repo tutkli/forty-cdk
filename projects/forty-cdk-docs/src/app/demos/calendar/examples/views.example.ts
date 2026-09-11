@@ -193,6 +193,7 @@ import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized
 
     .calendar-nav {
       appearance: none;
+      padding: 0;
       flex: none;
       width: 32px;
       height: 32px;

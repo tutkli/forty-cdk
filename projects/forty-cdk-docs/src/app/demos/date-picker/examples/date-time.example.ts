@@ -52,9 +52,9 @@ import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/international
       placeholder="Pick a date & time"
       ariaLabel="Choose a date and time"
     >
-      <button forDatePickerTrigger type="button" class="dp-date-time-trigger">
-        <span forDatePickerValue class="dp-date-time-value"></span>
-        <svg class="dp-date-time-chevron" viewBox="0 0 24 24" aria-hidden="true">
+      <button forDatePickerTrigger type="button" class="dpdt-trigger">
+        <span forDatePickerValue class="dpdt-value"></span>
+        <svg class="dpdt-chevron" viewBox="0 0 24 24" aria-hidden="true">
           <path
             d="m19.5 8.25-7.5 7.5-7.5-7.5"
             fill="none"
@@ -67,10 +67,10 @@ import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/international
       </button>
 
       @if (picker.open()) {
-        <div forDatePickerContent class="dp-date-time-popover" animate.enter="dp-date-time-pop-in">
+        <div forDatePickerContent class="dpdt-popover" animate.enter="dpdt-pop-in">
           <div forCalendar [value]="picker.value()" [min]="min" [max]="max">
-            <header class="dp-date-time-head">
-              <button forCalendarPrevButton class="dp-date-time-nav" [ariaLabel]="'Previous month'">
+            <header class="dpdt-head">
+              <button forCalendarPrevButton class="dpdt-nav" [ariaLabel]="'Previous month'">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path
                     d="m15.75 19.5-7.5-7.5 7.5-7.5"
@@ -82,10 +82,10 @@ import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/international
                   />
                 </svg>
               </button>
-              <h2 forCalendarHeading #heading="forCalendarHeading" class="dp-date-time-title">
+              <h2 forCalendarHeading #heading="forCalendarHeading" class="dpdt-title">
                 {{ heading.label() }}
               </h2>
-              <button forCalendarNextButton class="dp-date-time-nav" [ariaLabel]="'Next month'">
+              <button forCalendarNextButton class="dpdt-nav" [ariaLabel]="'Next month'">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path
                     d="m8.25 4.5 7.5 7.5-7.5 7.5"
@@ -99,11 +99,11 @@ import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/international
               </button>
             </header>
 
-            <table forCalendarGrid #grid="forCalendarGrid" class="dp-date-time-grid">
+            <table forCalendarGrid #grid="forCalendarGrid" class="dpdt-grid">
               <thead forCalendarGridHeader>
                 <tr>
                   @for (day of grid.weekDays(); track day.key) {
-                    <th scope="col" class="dp-date-time-weekday" [attr.aria-label]="day.long">
+                    <th scope="col" class="dpdt-weekday" [attr.aria-label]="day.long">
                       {{ day.narrow }}
                     </th>
                   }
@@ -113,7 +113,7 @@ import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/international
                 @for (week of grid.weeks(); track week.key) {
                   <tr>
                     @for (cell of week.days; track cell.key) {
-                      <td forCalendarCell class="dp-date-time-cell" [date]="cell.date">
+                      <td forCalendarCell class="dpdt-cell" [date]="cell.date">
                         {{ cell.label }}
                       </td>
                     }
@@ -123,21 +123,21 @@ import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/international
             </table>
           </div>
 
-          <div class="dp-date-time-time">
-            <span class="dp-date-time-time-label">Time</span>
+          <div class="dpdt-time">
+            <span class="dpdt-time-label">Time</span>
             <div
               forTimeField
               #tf="forTimeField"
-              class="dp-date-time-seg-field"
+              class="dpdt-seg-field"
               [value]="picker.value()"
               [hourCycle]="hourCycle"
               ariaLabel="Time"
             >
               @for (seg of tf.segments(); track seg.id) {
                 @if (seg.isLiteral) {
-                  <span forTimeFieldLiteral class="dp-date-time-seg-literal">{{ seg.text }}</span>
+                  <span forTimeFieldLiteral class="dpdt-seg-literal">{{ seg.text }}</span>
                 } @else {
-                  <span forTimeFieldSegment class="dp-date-time-seg" [segment]="seg.type!">
+                  <span forTimeFieldSegment class="dpdt-seg" [segment]="seg.type!">
                     {{ seg.text }}
                   </span>
                 }
@@ -153,7 +153,7 @@ import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/international
       display: contents;
     }
 
-    .dp-date-time-trigger {
+    .dpdt-trigger {
       display: inline-flex;
       align-items: center;
       justify-content: space-between;
@@ -169,12 +169,12 @@ import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/international
       cursor: pointer;
     }
 
-    .dp-date-time-value[data-placeholder],
-    .dp-date-time-seg[data-placeholder] {
+    .dpdt-value[data-placeholder],
+    .dpdt-seg[data-placeholder] {
       color: var(--pg-text-muted);
     }
 
-    .dp-date-time-chevron {
+    .dpdt-chevron {
       flex: none;
       width: 14px;
       height: 14px;
@@ -182,11 +182,11 @@ import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/international
       transition: transform 0.15s ease;
     }
 
-    .dp-date-time-trigger[aria-expanded='true'] .dp-date-time-chevron {
+    .dpdt-trigger[aria-expanded='true'] .dpdt-chevron {
       transform: rotate(180deg);
     }
 
-    .dp-date-time-popover {
+    .dpdt-popover {
       z-index: 60;
       width: min(280px, calc(100vw - 1.5rem));
       padding: 0.85rem;
@@ -198,7 +198,7 @@ import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/international
       box-shadow: var(--pg-shadow);
     }
 
-    .dp-date-time-head {
+    .dpdt-head {
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -206,15 +206,16 @@ import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/international
       margin-bottom: 0.6rem;
     }
 
-    .dp-date-time-title {
+    .dpdt-title {
       margin: 0;
       font-size: 0.9rem;
       font-weight: 600;
       letter-spacing: -0.01em;
     }
 
-    .dp-date-time-nav {
+    .dpdt-nav {
       appearance: none;
+      padding: 0;
       flex: none;
       width: 30px;
       height: 30px;
@@ -231,23 +232,23 @@ import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/international
       transition: background 0.15s ease;
     }
 
-    .dp-date-time-nav svg {
+    .dpdt-nav svg {
       width: 1em;
       height: 1em;
     }
 
-    .dp-date-time-nav[disabled] {
+    .dpdt-nav[disabled] {
       opacity: 0.4;
       cursor: not-allowed;
     }
 
-    .dp-date-time-grid {
+    .dpdt-grid {
       width: 100%;
       table-layout: fixed;
       border-collapse: collapse;
     }
 
-    .dp-date-time-weekday {
+    .dpdt-weekday {
       padding: 0.3rem 0;
       font-size: 0.65rem;
       font-weight: 600;
@@ -256,7 +257,7 @@ import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/international
       color: var(--pg-text-muted);
     }
 
-    .dp-date-time-cell {
+    .dpdt-cell {
       height: 34px;
       text-align: center;
       vertical-align: middle;
@@ -267,45 +268,45 @@ import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/international
       transition: background 0.12s ease;
     }
 
-    .dp-date-time-trigger:hover:not([disabled]),
-    .dp-date-time-nav:hover:not([disabled]),
-    .dp-date-time-cell:hover:not([aria-disabled]):not([data-selected]) {
+    .dpdt-trigger:hover:not([disabled]),
+    .dpdt-nav:hover:not([disabled]),
+    .dpdt-cell:hover:not([aria-disabled]):not([data-selected]) {
       background: var(--pg-surface-2);
     }
 
-    .dp-date-time-cell[data-outside-month] {
+    .dpdt-cell[data-outside-month] {
       color: var(--pg-text-muted);
       opacity: 0.5;
     }
 
-    .dp-date-time-cell[data-today] {
+    .dpdt-cell[data-today] {
       box-shadow: inset 0 0 0 1px var(--pg-border-strong);
     }
 
-    .dp-date-time-cell[data-selected] {
+    .dpdt-cell[data-selected] {
       background: var(--pg-primary);
       color: var(--pg-primary-contrast);
       font-weight: 600;
     }
 
-    .dp-date-time-cell[data-selected]:hover:not([aria-disabled]) {
+    .dpdt-cell[data-selected]:hover:not([aria-disabled]) {
       background: var(--pg-primary-hover);
     }
 
-    .dp-date-time-grid:focus-within .dp-date-time-cell[data-highlighted],
-    .dp-date-time-cell:focus-visible {
+    .dpdt-grid:focus-within .dpdt-cell[data-highlighted],
+    .dpdt-cell:focus-visible {
       outline: 2px solid var(--pg-primary);
       outline-offset: -2px;
     }
 
-    .dp-date-time-cell[aria-disabled] {
+    .dpdt-cell[aria-disabled] {
       color: var(--pg-text-muted);
       opacity: 0.4;
       cursor: not-allowed;
       text-decoration: line-through;
     }
 
-    .dp-date-time-time {
+    .dpdt-time {
       margin-top: 0.85rem;
       padding-top: 0.85rem;
       border-top: 1px solid var(--pg-border);
@@ -314,13 +315,13 @@ import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/international
       gap: 0.65rem;
     }
 
-    .dp-date-time-time-label {
+    .dpdt-time-label {
       font-size: 0.78rem;
       font-weight: 600;
       color: var(--pg-text-muted);
     }
 
-    .dp-date-time-seg-field {
+    .dpdt-seg-field {
       display: inline-flex;
       align-items: center;
       font-size: 1rem;
@@ -335,34 +336,34 @@ import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/international
         box-shadow 0.15s ease;
     }
 
-    .dp-date-time-seg-field:focus-within {
+    .dpdt-seg-field:focus-within {
       border-color: var(--pg-primary);
       box-shadow: 0 0 0 1px var(--pg-primary);
     }
 
-    .dp-date-time-seg {
+    .dpdt-seg {
       padding: 0.05rem 0.15rem;
       border-radius: 4px;
       outline: none;
     }
 
-    .dp-date-time-seg[data-highlighted],
-    .dp-date-time-seg:focus {
+    .dpdt-seg[data-highlighted],
+    .dpdt-seg:focus {
       background: var(--pg-primary);
       color: var(--pg-primary-contrast);
     }
 
-    .dp-date-time-seg-literal {
+    .dpdt-seg-literal {
       padding: 0 0.05rem;
       color: var(--pg-text-muted);
     }
 
-    .dp-date-time-pop-in {
+    .dpdt-pop-in {
       transform-origin: var(--for-floating-content-transform-origin, center);
-      animation: dp-date-time-pop-in 0.2s var(--pg-ease-spring) both;
+      animation: dpdt-pop-in 0.2s var(--pg-ease-spring) both;
     }
 
-    @keyframes dp-date-time-pop-in {
+    @keyframes dpdt-pop-in {
       from {
         opacity: 0;
         scale: 0.9;
@@ -370,14 +371,14 @@ import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/international
     }
 
     @media (prefers-reduced-motion: reduce) {
-      .dp-date-time-chevron,
-      .dp-date-time-nav,
-      .dp-date-time-cell,
-      .dp-date-time-seg-field {
+      .dpdt-chevron,
+      .dpdt-nav,
+      .dpdt-cell,
+      .dpdt-seg-field {
         transition: none;
       }
 
-      .dp-date-time-pop-in {
+      .dpdt-pop-in {
         animation-duration: 0.01ms;
       }
     }
