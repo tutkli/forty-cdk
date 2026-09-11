@@ -103,9 +103,31 @@ import {
             [isDateUnavailable]="picker.isDateUnavailable()"
           >
             <header>
-              <button forCalendarPrevButton [ariaLabel]="'Previous month'">‹</button>
+              <button forCalendarPrevButton [ariaLabel]="'Previous month'">
+                <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                  <path
+                    d="m15.75 19.5-7.5-7.5 7.5-7.5"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.75"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </button>
               <h2 forCalendarHeading #heading="forCalendarHeading">{{ heading.label() }}</h2>
-              <button forCalendarNextButton [ariaLabel]="'Next month'">›</button>
+              <button forCalendarNextButton [ariaLabel]="'Next month'">
+                <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                  <path
+                    d="m8.25 4.5 7.5 7.5-7.5 7.5"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.75"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </button>
             </header>
 
             <table forCalendarGrid #grid="forCalendarGrid">

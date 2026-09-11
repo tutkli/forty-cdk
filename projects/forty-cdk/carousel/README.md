@@ -15,7 +15,18 @@ Headless and styleless: it ships slide tracking, keyboard navigation, focus mana
 
 ```html
 <div forCarousel [(activeIndex)]="index" loop ariaLabel="Featured products">
-  <button forCarouselPrevious aria-label="Previous slide">‹</button>
+  <button forCarouselPrevious aria-label="Previous slide">
+    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+      <path
+        d="m15.75 19.5-7.5-7.5 7.5-7.5"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.75"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    </svg>
+  </button>
 
   <div forCarouselViewport>
     <div forCarouselTrack>
@@ -24,7 +35,18 @@ Headless and styleless: it ships slide tracking, keyboard navigation, focus mana
     </div>
   </div>
 
-  <button forCarouselNext aria-label="Next slide">›</button>
+  <button forCarouselNext aria-label="Next slide">
+    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+      <path
+        d="m8.25 4.5 7.5 7.5-7.5 7.5"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.75"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    </svg>
+  </button>
 
   <div forCarouselIndicators ariaLabel="Choose slide to display">
     <!-- one [forCarouselIndicator] per slide, same order -->
@@ -45,7 +67,18 @@ Headless and styleless: it ships slide tracking, keyboard navigation, focus mana
   orientation="horizontal"
   ariaLabel="Featured products"
 >
-  <button forCarouselPrevious aria-label="Previous slide">‹</button>
+  <button forCarouselPrevious aria-label="Previous slide">
+    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+      <path
+        d="m15.75 19.5-7.5-7.5 7.5-7.5"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.75"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    </svg>
+  </button>
 
   <div forCarouselViewport>
     <div forCarouselTrack>
@@ -55,7 +88,18 @@ Headless and styleless: it ships slide tracking, keyboard navigation, focus mana
     </div>
   </div>
 
-  <button forCarouselNext aria-label="Next slide">›</button>
+  <button forCarouselNext aria-label="Next slide">
+    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+      <path
+        d="m8.25 4.5 7.5 7.5-7.5 7.5"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.75"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    </svg>
+  </button>
 
   <div forCarouselIndicators ariaLabel="Choose slide to display">
     @for (product of products(); track product.id; let i = $index) {
@@ -82,11 +126,38 @@ focusable child** of the carousel to enable automatic slide rotation.
 ```html
 <div forCarousel autoplay [autoplayInterval]="4000" ariaLabel="Featured products">
   <button forCarouselRotationControl>
-    <!-- swap icon with [data-playing] in your CSS -->
+    <svg class="icon-play" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+      <path d="M6.75 5.25 17.25 12 6.75 18.75z" fill="currentColor" />
+    </svg>
+    <svg class="icon-pause" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+      <path d="M8.25 5.25h3v13.5h-3zM12.75 5.25h3v13.5h-3z" fill="currentColor" />
+    </svg>
   </button>
-  <button forCarouselPrevious aria-label="Previous slide">‹</button>
+  <button forCarouselPrevious aria-label="Previous slide">
+    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+      <path
+        d="m15.75 19.5-7.5-7.5 7.5-7.5"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.75"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    </svg>
+  </button>
   <div forCarouselViewport>…</div>
-  <button forCarouselNext aria-label="Next slide">›</button>
+  <button forCarouselNext aria-label="Next slide">
+    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+      <path
+        d="m8.25 4.5 7.5 7.5-7.5 7.5"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.75"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    </svg>
+  </button>
   <div forCarouselIndicators ariaLabel="Choose slide to display">…</div>
 </div>
 ```
@@ -376,12 +447,16 @@ children, unless noted otherwise:
 
 ### Autoplay styling hooks
 
+Render both icons inside the control and let `data-playing` pick which one shows — the
+control keeps its own accessible name either way, so the icons stay `aria-hidden`.
+
 ```css
-[forCarouselRotationControl]::before {
-  content: '▶';
+[forCarouselRotationControl] .icon-pause,
+[forCarouselRotationControl][data-playing] .icon-play {
+  display: none;
 }
-[forCarouselRotationControl][data-playing]::before {
-  content: '⏸';
+[forCarouselRotationControl][data-playing] .icon-pause {
+  display: revert;
 }
 ```
 

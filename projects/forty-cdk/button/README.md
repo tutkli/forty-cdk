@@ -78,12 +78,25 @@ The directive reflects boolean `data-*` attributes (present with an empty-string
 
 `data-pressed` is present while the primary pointer is held down or Enter/Space is held. `data-hovered` is present while a mouse/pen pointer is over the element. `data-focus-visible` is present when focused via keyboard (keyboard modality active).
 
+## Keyboard
+
+On a native `<button>` host the platform owns activation: every key handler the directive binds returns immediately, and nothing in this table is its doing. On any other host (`<div forButton>`, `<span forButton>`) it synthesizes the activation itself, through the same `(click)` path a pointer takes — on a deliberately asymmetric split, because that is what a native button does.
+
+| Key                         | Action                                                                                                                                                                                                                                       |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Enter` — native `<button>` | The platform synthesizes the click; the directive adds nothing.                                                                                                                                                                              |
+| `Enter` — any other host    | Activates on `keydown`, so `(activate)` fires while the key is still held. While disabled the event is left alone entirely — not even its default is prevented.                                                                              |
+| `Space` — native `<button>` | The platform synthesizes the click on release and suppresses the page scroll itself.                                                                                                                                                         |
+| `Space` — any other host    | Activates on `keyup`, and only when the matching `keydown` reached the same host — focus leaving mid-press drops the press. Its `keydown` always calls `preventDefault()` to stop the page scrolling, **even while the button is disabled**. |
+
+Both keys drive `data-pressed` on every host: present from `keydown` until `keyup`, until focus leaves, or until the pointer is released. `data-focus-visible` instead follows the keyboard modality, so a `keydown` carrying `Meta` / `Control` / `Alt` is read as a shortcut and does not turn it on, while `Shift` does.
+
 ## Accessibility
 
 Implements the [WAI-ARIA Button pattern](https://www.w3.org/WAI/ARIA/apg/patterns/button/).
 
-- **Native `<button>` semantics are preserved.** On a native host, no extra ARIA is added; the browser's built-in button role, Enter/Space activation, and `type` handling all apply.
-- **Non-button hosts get `role="button"` and `tabindex="0"`** plus keyboard activation (Enter/Space), matching the native button contract.
+- **Native `<button>` semantics are preserved.** On a native host, no extra ARIA is added; the browser's built-in button role, keyboard activation, and `type` handling all apply.
+- **Non-button hosts get `role="button"` and `tabindex="0"`**, and the directive synthesizes the activation the platform would have — see [Keyboard](#keyboard).
 - **Disabled buttons stay focusable.** `aria-disabled="true"` is used instead of the native `disabled` attribute so assistive technology can still announce the control's purpose.
 
 ## Styling

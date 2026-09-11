@@ -13,14 +13,36 @@ A navigation landmark that derives a visible page list with ellipsis gaps from p
 
 ```html
 <nav forPagination [(page)]="page" [count]="20" ariaLabel="Pagination" #pg="forPagination">
-  <button forPaginationPrevious ariaLabel="Previous page">‹</button>
+  <button forPaginationPrevious ariaLabel="Previous page">
+    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+      <path
+        d="m15.75 19.5-7.5-7.5 7.5-7.5"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.75"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    </svg>
+  </button>
 
   <!-- one item per entry in pg.items() — a page button per 'page' entry -->
   <button forPaginationItem [page]="item.value!">{{ item.value }}</button>
   <!-- an aria-hidden gap per 'ellipsis' entry -->
   <span aria-hidden="true">…</span>
 
-  <button forPaginationNext ariaLabel="Next page">›</button>
+  <button forPaginationNext ariaLabel="Next page">
+    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+      <path
+        d="m8.25 4.5 7.5 7.5-7.5 7.5"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.75"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    </svg>
+  </button>
 </nav>
 ```
 
@@ -40,7 +62,18 @@ import {
   imports: [ForPagination, ForPaginationItem, ForPaginationPrevious, ForPaginationNext],
   template: `
     <nav forPagination [(page)]="page" [count]="20" ariaLabel="Pagination" #pg="forPagination">
-      <button forPaginationPrevious ariaLabel="Previous page">‹</button>
+      <button forPaginationPrevious ariaLabel="Previous page">
+        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+          <path
+            d="m15.75 19.5-7.5-7.5 7.5-7.5"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.75"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
       @for (item of pg.items(); track $index) {
         @if (item.type === 'page') {
           <button forPaginationItem [page]="item.value!">{{ item.value }}</button>
@@ -48,7 +81,18 @@ import {
           <span aria-hidden="true">…</span>
         }
       }
-      <button forPaginationNext ariaLabel="Next page">›</button>
+      <button forPaginationNext ariaLabel="Next page">
+        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+          <path
+            d="m8.25 4.5 7.5 7.5-7.5 7.5"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.75"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
     </nav>
   `,
 })

@@ -228,7 +228,23 @@ Spanning the row visually stays yours: `grid-column: 1 / -1` in a `<div>` grid, 
     >
       <div forTableCell name="name">
         @if (row.expandable) {
-        <button type="button" (click)="r.toggleExpanded()">▶</button>
+        <button
+          type="button"
+          class="row-toggle"
+          [attr.aria-label]="'Toggle ' + row.name"
+          (click)="r.toggleExpanded()"
+        >
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+            <path
+              d="m8.25 4.5 7.5 7.5-7.5 7.5"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.75"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
         } {{ row.name }}
       </div>
     </div>
@@ -256,6 +272,9 @@ Style hooks:
 }
 [forTableRow][aria-level='2'] {
   padding-left: 2rem;
+}
+[forTableRow][data-state='open'] .row-toggle svg {
+  transform: rotate(90deg);
 }
 ```
 
