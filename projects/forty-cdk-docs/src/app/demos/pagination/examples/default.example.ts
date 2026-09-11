@@ -21,7 +21,18 @@ import {
       [siblingCount]="1"
       [boundaryCount]="1"
     >
-      <button forPaginationPrevious class="pgn-btn" ariaLabel="Previous page">‹</button>
+      <button forPaginationPrevious class="pgn-btn pgn-nav" ariaLabel="Previous page">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            d="m15.75 19.5-7.5-7.5 7.5-7.5"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.75"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
 
       @for (item of pg.items(); track $index) {
         @if (item.type === 'page') {
@@ -33,7 +44,18 @@ import {
         }
       }
 
-      <button forPaginationNext class="pgn-btn" ariaLabel="Next page">›</button>
+      <button forPaginationNext class="pgn-btn pgn-nav" ariaLabel="Next page">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            d="m8.25 4.5 7.5 7.5-7.5 7.5"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.75"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
     </nav>
   `,
   styles: `
@@ -63,6 +85,17 @@ import {
       transition:
         background 0.15s ease,
         border-color 0.15s ease;
+    }
+
+    .pgn-nav {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .pgn-nav svg {
+      width: 1em;
+      height: 1em;
     }
 
     .pgn-btn:hover:not(:disabled):not([aria-current='page']) {

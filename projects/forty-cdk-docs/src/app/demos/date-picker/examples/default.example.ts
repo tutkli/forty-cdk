@@ -62,13 +62,31 @@ import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized
           <div forCalendar class="date-picker-cal" [(value)]="date">
             <header class="date-picker-head">
               <button forCalendarPrevButton class="date-picker-nav" [ariaLabel]="'Previous month'">
-                ‹
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="m15.75 19.5-7.5-7.5 7.5-7.5"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.75"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
               </button>
               <h2 forCalendarHeading #heading="forCalendarHeading" class="date-picker-title">
                 {{ heading.label() }}
               </h2>
               <button forCalendarNextButton class="date-picker-nav" [ariaLabel]="'Next month'">
-                ›
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="m8.25 4.5 7.5 7.5-7.5 7.5"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.75"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
               </button>
             </header>
 
@@ -192,6 +210,11 @@ import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized
       line-height: 1;
       cursor: pointer;
       transition: background 0.15s ease;
+    }
+
+    .date-picker-nav svg {
+      width: 1em;
+      height: 1em;
     }
 
     .date-picker-nav:hover:not([disabled]) {

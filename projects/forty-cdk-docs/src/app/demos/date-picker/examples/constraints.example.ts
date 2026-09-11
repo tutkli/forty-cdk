@@ -78,13 +78,31 @@ import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized
                 class="dp-constraints-nav"
                 [ariaLabel]="'Previous month'"
               >
-                ‹
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="m15.75 19.5-7.5-7.5 7.5-7.5"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.75"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
               </button>
               <h2 forCalendarHeading #heading="forCalendarHeading" class="dp-constraints-title">
                 {{ heading.label() }}
               </h2>
               <button forCalendarNextButton class="dp-constraints-nav" [ariaLabel]="'Next month'">
-                ›
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="m8.25 4.5 7.5 7.5-7.5 7.5"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.75"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
               </button>
             </header>
 
@@ -203,6 +221,11 @@ import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized
       line-height: 1;
       cursor: pointer;
       transition: background 0.15s ease;
+    }
+
+    .dp-constraints-nav svg {
+      width: 1em;
+      height: 1em;
     }
 
     .dp-constraints-nav:hover:not([disabled]) {

@@ -28,11 +28,33 @@ import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized
   template: `
     <div forCalendar class="calendar" selectionMode="range" [(range)]="dateRange">
       <header class="calendar-header">
-        <button forCalendarPrevButton class="calendar-nav" [ariaLabel]="'Previous month'">‹</button>
+        <button forCalendarPrevButton class="calendar-nav" [ariaLabel]="'Previous month'">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="m15.75 19.5-7.5-7.5 7.5-7.5"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.75"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
         <h2 forCalendarHeading #heading="forCalendarHeading" class="calendar-title">
           {{ heading.label() }}
         </h2>
-        <button forCalendarNextButton class="calendar-nav" [ariaLabel]="'Next month'">›</button>
+        <button forCalendarNextButton class="calendar-nav" [ariaLabel]="'Next month'">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="m8.25 4.5 7.5 7.5-7.5 7.5"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.75"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
       </header>
 
       <table forCalendarGrid #grid="forCalendarGrid" class="calendar-grid">
@@ -102,6 +124,11 @@ import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized
       line-height: 1;
       cursor: pointer;
       transition: background 0.15s ease;
+    }
+
+    .calendar-nav svg {
+      width: 1em;
+      height: 1em;
     }
 
     .calendar-nav:hover:not([disabled]) {

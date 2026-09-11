@@ -39,8 +39,30 @@ interface Slide {
       ariaLabel="Draggable gallery"
     >
       <div class="dcar-controls-row">
-        <button forCarouselPrevious class="dcar-btn" aria-label="Previous slide">‹</button>
-        <button forCarouselNext class="dcar-btn" aria-label="Next slide">›</button>
+        <button forCarouselPrevious class="dcar-btn" aria-label="Previous slide">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="m15.75 19.5-7.5-7.5 7.5-7.5"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.75"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
+        <button forCarouselNext class="dcar-btn" aria-label="Next slide">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="m8.25 4.5 7.5 7.5-7.5 7.5"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.75"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
       </div>
 
       <div forCarouselViewport forCarouselDrag class="dcar-viewport">
@@ -95,6 +117,11 @@ interface Slide {
       font-size: 1.2rem;
       line-height: 1;
       cursor: pointer;
+    }
+
+    .dcar-btn svg {
+      width: 1em;
+      height: 1em;
     }
 
     .dcar-btn:hover:not([data-disabled]) {

@@ -45,7 +45,18 @@ import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized
       #cal="forCalendar"
     >
       <header class="calendar-header">
-        <button forCalendarPrevButton class="calendar-nav" [ariaLabel]="'Previous'">‹</button>
+        <button forCalendarPrevButton class="calendar-nav" [ariaLabel]="'Previous'">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="m15.75 19.5-7.5-7.5 7.5-7.5"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.75"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
         <button
           forCalendarViewTrigger
           #vt="forCalendarViewTrigger"
@@ -53,7 +64,18 @@ import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized
         >
           {{ vt.label() }}
         </button>
-        <button forCalendarNextButton class="calendar-nav" [ariaLabel]="'Next'">›</button>
+        <button forCalendarNextButton class="calendar-nav" [ariaLabel]="'Next'">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="m8.25 4.5 7.5 7.5-7.5 7.5"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.75"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
         <h2 forCalendarHeading #heading="forCalendarHeading" class="calendar-sr-only">
           {{ heading.label() }}
         </h2>
@@ -185,6 +207,11 @@ import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized
       line-height: 1;
       cursor: pointer;
       transition: background 0.15s ease;
+    }
+
+    .calendar-nav svg {
+      width: 1em;
+      height: 1em;
     }
 
     .calendar-nav:hover:not([disabled]) {

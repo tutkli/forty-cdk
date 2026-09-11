@@ -48,11 +48,42 @@ interface Slide {
         stopLabel="Stop automatic slide show"
       >
         <span class="sr-only">Toggle autoplay</span>
+        @if (car.playing()) {
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M8.25 5.25h3v13.5h-3zM12.75 5.25h3v13.5h-3z" fill="currentColor" />
+          </svg>
+        } @else {
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M6.75 5.25 17.25 12 6.75 18.75z" fill="currentColor" />
+          </svg>
+        }
       </button>
 
       <div class="acar-nav-row">
-        <button forCarouselPrevious class="acar-btn" aria-label="Previous slide">‹</button>
-        <button forCarouselNext class="acar-btn" aria-label="Next slide">›</button>
+        <button forCarouselPrevious class="acar-btn" aria-label="Previous slide">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="m15.75 19.5-7.5-7.5 7.5-7.5"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.75"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
+        <button forCarouselNext class="acar-btn" aria-label="Next slide">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="m8.25 4.5 7.5 7.5-7.5 7.5"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.75"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
       </div>
 
       <div forCarouselViewport class="acar-viewport">
@@ -100,20 +131,17 @@ interface Slide {
       border: 1px solid var(--pg-border-strong);
       background: var(--pg-surface);
       color: var(--pg-text);
-      font-size: 0.9rem;
+      font-size: 1.1rem;
       cursor: pointer;
+    }
+
+    .acar-rotation-btn svg {
+      width: 1em;
+      height: 1em;
     }
 
     .acar-rotation-btn:hover {
       background: var(--pg-surface-2);
-    }
-
-    .acar-rotation-btn::before {
-      content: '▶';
-    }
-
-    .acar-rotation-btn[data-playing]::before {
-      content: '⏸';
     }
 
     .sr-only {
@@ -147,6 +175,11 @@ interface Slide {
       font-size: 1.2rem;
       line-height: 1;
       cursor: pointer;
+    }
+
+    .acar-btn svg {
+      width: 1em;
+      height: 1em;
     }
 
     .acar-btn:hover:not([data-disabled]) {

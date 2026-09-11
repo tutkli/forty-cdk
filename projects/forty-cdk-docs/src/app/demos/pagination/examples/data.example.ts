@@ -44,7 +44,18 @@ const INVOICES: readonly Invoice[] = Array.from({ length: 23 }, (_, i) => ({
         [(page)]="page"
         [count]="pageCount()"
       >
-        <button forPaginationPrevious class="pgn-btn" ariaLabel="Previous page">‹</button>
+        <button forPaginationPrevious class="pgn-btn pgn-nav" ariaLabel="Previous page">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="m15.75 19.5-7.5-7.5 7.5-7.5"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.75"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
         @for (item of pg.items(); track $index) {
           @if (item.type === 'page') {
             <button forPaginationItem class="pgn-btn pgn-page" [page]="item.value!">
@@ -54,7 +65,18 @@ const INVOICES: readonly Invoice[] = Array.from({ length: 23 }, (_, i) => ({
             <span class="pgn-gap" aria-hidden="true">…</span>
           }
         }
-        <button forPaginationNext class="pgn-btn" ariaLabel="Next page">›</button>
+        <button forPaginationNext class="pgn-btn pgn-nav" ariaLabel="Next page">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="m8.25 4.5 7.5 7.5-7.5 7.5"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.75"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
       </nav>
 
       <p class="range">{{ rangeLabel() }} of {{ total }} invoices</p>
@@ -136,6 +158,17 @@ const INVOICES: readonly Invoice[] = Array.from({ length: 23 }, (_, i) => ({
       border: 1px solid var(--pg-border);
       border-radius: var(--pg-radius-sm);
       cursor: pointer;
+    }
+
+    .pgn-nav {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .pgn-nav svg {
+      width: 1em;
+      height: 1em;
     }
 
     .pgn-btn:hover:not(:disabled):not([aria-current='page']) {
