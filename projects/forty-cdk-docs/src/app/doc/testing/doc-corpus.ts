@@ -140,9 +140,12 @@ const ROUTES_FILE = import.meta.glob('/projects/forty-cdk-docs/src/generated/rou
  * then refuses each one as component metadata it was not asked to compile. The
  * rule this is held to is a string equality, so text is all the case needs.
  *
- * The plugin decides that from a file's text on disk, which is also why nothing
- * in the suite inlines a page's source: a raw glob over the demo tree would put
- * a component decorator in this file's own contents and fail it the same way.
+ * The plugin decides that from a file's own text on disk, so what it rules out
+ * is a spec that *inlines* a page's source — pasted in, or asserted against a
+ * literal copy. A raw glob over the demo tree is a different thing and works:
+ * `eager: true` emits one `import … from '<path>?raw'` per matched file, so no
+ * component decorator lands in the importing module's own contents.
+ * `doc/demo-icons.spec.ts` reads every `*.example.ts` under `demos/` that way.
  */
 export const GENERATED_ROUTES: string = (() => {
   const source = ROUTES_FILE['/projects/forty-cdk-docs/src/generated/routes.generated.ts'];
