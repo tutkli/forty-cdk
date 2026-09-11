@@ -106,6 +106,7 @@ interface Crumb {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
+      justify-content: center;
       gap: 0.5rem;
       margin: 0;
       padding: 0;
