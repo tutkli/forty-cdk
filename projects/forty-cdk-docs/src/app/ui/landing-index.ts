@@ -1,5 +1,11 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import {
+  ForTooltip,
+  ForTooltipArrow,
+  ForTooltipContent,
+  ForTooltipTrigger,
+} from 'forty-cdk/tooltip';
 
 import { DOCS_GROUPS, type DocsGroup, ENTRY_POINT_COUNT } from '../primitives';
 
@@ -15,11 +21,11 @@ const GROUPS: readonly IndexGroup[] = DOCS_GROUPS.map((group) => ({
 @Component({
   selector: 'landing-index',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink],
+  imports: [RouterLink, ForTooltip, ForTooltipTrigger, ForTooltipContent, ForTooltipArrow],
   template: `
     <div class="head">
       <h2 id="index-heading">Every primitive</h2>
-      <span class="count">{{ count }} entry points</span>
+      <span class="count">{{ count }} entry points · hover one for what it is</span>
     </div>
     @for (group of groups; track group.id) {
       <section class="group" [attr.aria-labelledby]="group.id">
@@ -27,11 +33,18 @@ const GROUPS: readonly IndexGroup[] = DOCS_GROUPS.map((group) => ({
           {{ group.label }}
           <span class="group-count">{{ group.primitives.length }}</span>
         </h3>
-        <ul class="list">
+        <ul class="grid">
           @for (item of group.primitives; track item.slug) {
-            <li class="entry">
-              <a [routerLink]="['/', item.slug]">{{ item.title }}</a>
-              <span class="desc">{{ item.description }}</span>
+            <li>
+              <span forTooltip #tip="forTooltip" side="top" [openDelay]="300" [closeDelay]="0">
+                <a forTooltipTrigger [routerLink]="['/', item.slug]">{{ item.title }}</a>
+                @if (tip.open()) {
+                  <div forTooltipContent class="pg-tooltip tip" animate.enter="pg-pop-in">
+                    {{ item.description }}
+                    <span forTooltipArrow class="pg-tooltip-arrow"></span>
+                  </div>
+                }
+              </span>
             </li>
           }
         </ul>
@@ -48,7 +61,7 @@ const GROUPS: readonly IndexGroup[] = DOCS_GROUPS.map((group) => ({
       flex-wrap: wrap;
       align-items: baseline;
       gap: 1rem;
-      margin-bottom: 0.75rem;
+      margin-bottom: 0.5rem;
     }
 
     h2 {
@@ -65,7 +78,7 @@ const GROUPS: readonly IndexGroup[] = DOCS_GROUPS.map((group) => ({
     }
 
     .group {
-      padding: 1.5rem 0 0.75rem;
+      padding: 1.25rem 0 0.5rem;
       border-top: 1px solid var(--pg-border);
     }
 
@@ -73,51 +86,35 @@ const GROUPS: readonly IndexGroup[] = DOCS_GROUPS.map((group) => ({
       display: flex;
       align-items: baseline;
       gap: 0.6rem;
-      margin: 0 0 1.1rem;
-      font-size: 1.3rem;
+      margin: 0 0 0.9rem;
+      font-size: 1.15rem;
       letter-spacing: -0.015em;
     }
 
-    .list {
+    .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 1.1rem 2.5rem;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 0.55rem 2rem;
       margin: 0;
       padding: 0;
       list-style: none;
+      font-size: 0.9rem;
     }
 
-    .entry {
-      display: flex;
-      flex-direction: column;
-      gap: 0.2rem;
-      min-width: 0;
-    }
-
-    .entry a {
-      align-self: flex-start;
-      font-family: var(--pg-font-display);
-      font-size: 1.05rem;
-      font-weight: 700;
-      letter-spacing: -0.01em;
+    a {
       color: var(--pg-text);
       text-decoration: none;
     }
 
-    .entry a:hover {
+    a:hover,
+    a:focus-visible {
       color: var(--pg-primary);
       text-decoration: underline;
       text-underline-offset: 3px;
     }
 
-    .desc {
-      display: -webkit-box;
-      -webkit-box-orient: vertical;
-      -webkit-line-clamp: 2;
-      overflow: hidden;
-      font-size: 0.88rem;
-      line-height: 1.5;
-      color: var(--pg-text-muted);
+    .tip {
+      max-width: 320px;
     }
   `,
 })

@@ -410,9 +410,12 @@ const styleBlocks = checkComponentStyles();
  * ([#1919](https://github.com/tutkli/forty-cdk/issues/1919)), read back from
  * the sources they were derived from: the registry module `pnpm gen:doc-model`
  * emitted — the same one the rail and every page header read — and the package
- * manifest. A description the page shortened, a group it dropped, an entry it
- * stopped linking or a version it hand-wrote fails here rather than on the
- * published site.
+ * manifest. A group the page dropped, an entry it stopped linking, a link that
+ * lost the tooltip carrying its description, or a version it hand-wrote fails
+ * here rather than on the published site. The description text itself is not
+ * in the emit — a tooltip renders only while open — so the link is held to
+ * being a tooltip trigger, and the docs suite holds the tooltip's content to
+ * the registry.
  */
 const REGISTRY_MODULE = join(
   repoRoot,
@@ -472,21 +475,30 @@ function checkLanding(html) {
     problems.push(`shows no group labelled ${ungrouped.map((label) => `"${label}"`).join(', ')}`);
   }
 
-  const unlinked = entries.filter((entry) => !html.includes(`/${entry.slug}"`));
+  const index = /<landing-index[\s>][\s\S]*?<\/landing-index>/.exec(html)?.[0];
+  if (index === undefined) {
+    fail('the landing page renders no <landing-index> — the catalogue scan reads nothing');
+  }
+  const unlinked = [];
+  const undescribed = [];
+  for (const entry of entries) {
+    const link = new RegExp(`<a\\b[^>]*\\bhref="[^"]*/${entry.slug}"[^>]*>`).exec(index)?.[0];
+    if (link === undefined) {
+      unlinked.push(entry.slug);
+    } else if (!link.includes('data-state=')) {
+      undescribed.push(entry.slug);
+    }
+  }
   if (unlinked.length > 0) {
     problems.push(
-      `links ${unlinked.length} published entry point(s) nowhere: ` +
-        unlinked.map((entry) => entry.slug).join(', '),
+      `links ${unlinked.length} published entry point(s) nowhere in its catalogue: ` +
+        unlinked.join(', '),
     );
   }
-
-  const undescribed = entries.filter(
-    (entry) => !text.includes(entry.description.replace(/\s+/g, ' ').trim()),
-  );
   if (undescribed.length > 0) {
     problems.push(
-      `describes ${undescribed.length} entry point(s) with something other than the lede ` +
-        `its own page header shows: ${undescribed.map((entry) => entry.slug).join(', ')}`,
+      `links ${undescribed.length} entry point(s) without the tooltip trigger that carries ` +
+        `its description: ${undescribed.join(', ')}`,
     );
   }
 
@@ -605,5 +617,5 @@ console.log(
     `${themeToggles} theme toggle(s) prerendered without a state and ` +
     `${demoBlocks} example block(s) publishing none of their inputs as attributes and none of ` +
     `them an id of "null", and a landing page cataloguing all ${catalogued} published entry ` +
-    'points with the descriptions their own headers show and the version the manifest states',
+    'points, each linked with its description tooltip, and stating the version the manifest states',
 );

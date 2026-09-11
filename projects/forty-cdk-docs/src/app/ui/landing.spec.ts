@@ -85,8 +85,11 @@ describe('the landing catalogue', () => {
     expect(index).toContain('@for (item of group.primitives; track item.slug)');
   });
 
-  it('describes each entry with the lede its own page header shows', () => {
-    expect(index).toContain('{{ item.description }}');
+  it('describes each entry, in a tooltip on its link, with the lede its own page header shows', () => {
+    expect(index).toMatch(
+      /<a forTooltipTrigger \[routerLink\]="\['\/', item\.slug\]">\{\{ item\.title \}\}<\/a>/,
+    );
+    expect(index).toMatch(/<div forTooltipContent[^>]*>\s*\{\{ item\.description \}\}/);
 
     const accordion = primitiveBySlug('accordion');
     const breakpoints = primitiveBySlug('breakpoints');
