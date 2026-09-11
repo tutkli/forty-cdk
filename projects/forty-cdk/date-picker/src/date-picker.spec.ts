@@ -1248,14 +1248,14 @@ describe('ForDatePicker', () => {
 
   describe('date-time bridge resolves a subclassed time source', () => {
     @Directive({
-      selector: '[mtxTimeField]',
-      exportAs: 'mtxTimeField',
+      selector: '[myTimeField]',
+      exportAs: 'myTimeField',
       providers: [
-        { provide: FOR_TIME_FIELD_CONTEXT, useExisting: MtxTimeField },
-        { provide: FOR_TIME_VALUE_SOURCE, useExisting: MtxTimeField },
+        { provide: FOR_TIME_FIELD_CONTEXT, useExisting: MyTimeField },
+        { provide: FOR_TIME_VALUE_SOURCE, useExisting: MyTimeField },
       ],
     })
-    class MtxTimeField extends ForTimeField<Date> {}
+    class MyTimeField extends ForTimeField<Date> {}
 
     @Component({
       imports: [
@@ -1263,7 +1263,7 @@ describe('ForDatePicker', () => {
         ForDatePickerTrigger,
         ForDatePickerContent,
         ForDatePickerValue,
-        MtxTimeField,
+        MyTimeField,
         ForTimeFieldSegment,
         ForTimeFieldLiteral,
       ],
@@ -1276,11 +1276,11 @@ describe('ForDatePicker', () => {
           @if (open()) {
             <div forDatePickerContent>
               <div
-                mtxTimeField
+                myTimeField
                 [value]="value()"
                 [hourCycle]="24"
                 [locale]="'en-US'"
-                #tf="mtxTimeField"
+                #tf="myTimeField"
               >
                 @for (seg of tf.segments(); track seg.id) {
                   @if (seg.isLiteral) {

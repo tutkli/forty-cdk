@@ -26,7 +26,7 @@ import { injectSelectContext } from './select-context';
  * decoupled from the concrete `ForSelectOption` class. `ForSelectOption`
  * provides itself under this token, so a design system wrapping the option by
  * subclassing re-points it at the subclass with a single provider
- * (`{ provide: FOR_SELECT_OPTION, useExisting: MtxSelectOption }`) and the
+ * (`{ provide: FOR_SELECT_OPTION, useExisting: MySelectOption }`) and the
  * indicator keeps resolving — see `docs/wrapping-form-primitives.md`.
  */
 export const FOR_SELECT_OPTION = new InjectionToken<ForSelectOption>('FOR_SELECT_OPTION');

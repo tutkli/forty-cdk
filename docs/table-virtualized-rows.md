@@ -114,7 +114,7 @@ A design-system wrapper that re-exposes `ForTableVirtualized` through `hostDirec
 
 ```ts
 @Component({
-  selector: 'app-data-grid',
+  selector: 'my-data-grid',
   hostDirectives: [
     {
       directive: ForTableVirtualized,
@@ -122,7 +122,7 @@ A design-system wrapper that re-exposes `ForTableVirtualized` through `hostDirec
     },
   ],
 })
-export class DataGrid {}
+export class MyDataGrid {}
 ```
 
 Consumers of the wrapper then bind `[scrollContainer]="shell"`.

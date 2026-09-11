@@ -56,7 +56,7 @@ class ComboboxInputHost {
 }
 
 /**
- * Mirrors the mtx-combobox single-select dismiss UX: the listbox is driven
+ * Mirrors a design system's single-select dismiss UX: the listbox is driven
  * one-way and `(openChange)` restores the committed label whenever it closes
  * without a selection. The committed label write must reach the DOM even
  * though Escape leaves focus in the input.

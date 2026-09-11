@@ -22,7 +22,7 @@ import { createMenuItemInteraction } from './menu-item-interaction';
  * checkbox item, decoupled from the concrete `ForMenuCheckboxItem` class.
  * `ForMenuCheckboxItem` provides itself under this token, so a design system
  * wrapping the item by subclassing re-points it at the subclass with a single
- * provider (`{ provide: FOR_MENU_CHECKBOX_ITEM, useExisting: MtxMenuCheckboxItem }`)
+ * provider (`{ provide: FOR_MENU_CHECKBOX_ITEM, useExisting: MyMenuCheckboxItem }`)
  * and the indicator keeps resolving — see `docs/wrapping-form-primitives.md`.
  */
 export const FOR_MENU_CHECKBOX_ITEM = new InjectionToken<ForMenuCheckboxItem>(
