@@ -121,6 +121,7 @@ interface Slide {
 
     .acar-rotation-btn {
       appearance: none;
+      padding: 0;
       align-self: flex-start;
       width: 36px;
       height: 36px;
@@ -163,6 +164,7 @@ interface Slide {
 
     .acar-btn {
       appearance: none;
+      padding: 0;
       width: 32px;
       height: 32px;
       display: inline-flex;

@@ -57,11 +57,6 @@ import { ForMenubar, ForMenubarTrigger } from 'forty-cdk/menubar';
       box-shadow: var(--pg-shadow);
     }
 
-    .menubar-menu[data-orientation='vertical'] {
-      flex-direction: column;
-      align-items: stretch;
-    }
-
     .menubar-menu[data-disabled] {
       opacity: 0.6;
     }

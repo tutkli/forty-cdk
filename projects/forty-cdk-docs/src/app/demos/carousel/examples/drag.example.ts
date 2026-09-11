@@ -105,6 +105,7 @@ interface Slide {
 
     .dcar-btn {
       appearance: none;
+      padding: 0;
       width: 32px;
       height: 32px;
       display: inline-flex;

@@ -207,6 +207,7 @@ import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized
 
     .dp-constraints-nav {
       appearance: none;
+      padding: 0;
       flex: none;
       width: 30px;
       height: 30px;

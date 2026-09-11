@@ -114,7 +114,7 @@ import { PEOPLE } from './people';
       border-bottom: 2px solid var(--pg-border-strong);
     }
 
-    .tbl-row:last-child .tbl-cell {
+    .tbl-row:not(.tbl-head):last-child .tbl-cell {
       border-bottom: 0;
     }
 

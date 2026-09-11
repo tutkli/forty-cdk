@@ -106,18 +106,9 @@ import {
       box-shadow: var(--pg-shadow);
     }
 
-    .toolbar[data-orientation='vertical'] {
-      flex-direction: column;
-      align-items: stretch;
-    }
-
     .toolbar-grp {
       display: inline-flex;
       gap: 0.15rem;
-    }
-
-    .toolbar[data-orientation='vertical'] .toolbar-grp {
-      flex-direction: column;
     }
 
     .toolbar-btn {
@@ -157,12 +148,6 @@ import {
       width: 1px;
       margin: 0 0.2rem;
       background: var(--pg-border-strong);
-    }
-
-    .toolbar[data-orientation='vertical'] .toolbar-sep {
-      width: auto;
-      height: 1px;
-      margin: 0.2rem 0;
     }
 
     .toolbar-link {

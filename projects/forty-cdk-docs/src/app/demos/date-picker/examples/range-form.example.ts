@@ -229,6 +229,7 @@ interface Booking {
 
     .dp-range-form-nav {
       appearance: none;
+      padding: 0;
       flex: none;
       width: 30px;
       height: 30px;
