@@ -230,9 +230,9 @@ providers: [
   <button forStepperTrigger>
     <span forStepperIndicator>
       @if (step.resolvedState() === 'completed') {
-      <svg><!-- checkmark --></svg>
+      <svg aria-hidden="true"><!-- checkmark --></svg>
       } @else if (step.resolvedState() === 'error') {
-      <svg><!-- exclamation --></svg>
+      <svg aria-hidden="true"><!-- exclamation --></svg>
       } @else { {{ step.index() + 1 }} }
     </span>
     Step label

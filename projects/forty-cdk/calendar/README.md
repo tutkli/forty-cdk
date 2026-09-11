@@ -42,9 +42,31 @@ bootstrapApplication(App, {
 ```html
 <div forCalendar [(value)]="date">
   <header>
-    <button forCalendarPrevButton [ariaLabel]="'Previous month'">‹</button>
+    <button forCalendarPrevButton [ariaLabel]="'Previous month'">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+        <path
+          d="m15.75 19.5-7.5-7.5 7.5-7.5"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.75"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </button>
     <h2 forCalendarHeading #heading="forCalendarHeading">{{ heading.label() }}</h2>
-    <button forCalendarNextButton [ariaLabel]="'Next month'">›</button>
+    <button forCalendarNextButton [ariaLabel]="'Next month'">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+        <path
+          d="m8.25 4.5 7.5 7.5-7.5 7.5"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.75"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </button>
   </header>
 
   <table forCalendarGrid #grid="forCalendarGrid">
@@ -95,9 +117,31 @@ import {
   template: `
     <div forCalendar [(value)]="date">
       <header>
-        <button forCalendarPrevButton [ariaLabel]="'Previous month'">‹</button>
+        <button forCalendarPrevButton [ariaLabel]="'Previous month'">
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+            <path
+              d="m15.75 19.5-7.5-7.5 7.5-7.5"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.75"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
         <h2 forCalendarHeading #heading="forCalendarHeading">{{ heading.label() }}</h2>
-        <button forCalendarNextButton [ariaLabel]="'Next month'">›</button>
+        <button forCalendarNextButton [ariaLabel]="'Next month'">
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+            <path
+              d="m8.25 4.5 7.5 7.5-7.5 7.5"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.75"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
       </header>
 
       <table forCalendarGrid #grid="forCalendarGrid">
@@ -251,7 +295,18 @@ The recommended path is `[forCalendarMonthSelect]` and `[forCalendarYearSelect]`
 ```html
 <div forCalendar [(value)]="date">
   <header>
-    <button forCalendarPrevButton [ariaLabel]="'Previous month'">‹</button>
+    <button forCalendarPrevButton [ariaLabel]="'Previous month'">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+        <path
+          d="m15.75 19.5-7.5-7.5 7.5-7.5"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.75"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </button>
     <select forCalendarMonthSelect #m="forCalendarMonthSelect">
       @for (opt of m.options(); track opt.value) {
       <option [value]="opt.value" [disabled]="opt.disabled">{{ opt.label }}</option>
@@ -262,7 +317,18 @@ The recommended path is `[forCalendarMonthSelect]` and `[forCalendarYearSelect]`
       <option [value]="opt.value" [disabled]="opt.disabled">{{ opt.value }}</option>
       }
     </select>
-    <button forCalendarNextButton [ariaLabel]="'Next month'">›</button>
+    <button forCalendarNextButton [ariaLabel]="'Next month'">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+        <path
+          d="m8.25 4.5 7.5 7.5-7.5 7.5"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.75"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </button>
     <h2 forCalendarHeading class="sr-only" #h="forCalendarHeading">{{ h.label() }}</h2>
   </header>
   <table forCalendarGrid>
@@ -317,9 +383,31 @@ The lower-level hooks (`visibleMonthNumber()`, `visibleYear()`, `monthOptions()`
 ```html
 <div forCalendar [(value)]="date" #cal="forCalendar">
   <header>
-    <button forCalendarPrevButton [ariaLabel]="'Previous'">‹</button>
+    <button forCalendarPrevButton [ariaLabel]="'Previous'">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+        <path
+          d="m15.75 19.5-7.5-7.5 7.5-7.5"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.75"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </button>
     <button forCalendarViewTrigger #vt="forCalendarViewTrigger">{{ vt.label() }}</button>
-    <button forCalendarNextButton [ariaLabel]="'Next'">›</button>
+    <button forCalendarNextButton [ariaLabel]="'Next'">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+        <path
+          d="m8.25 4.5 7.5 7.5-7.5 7.5"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.75"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </button>
     <!-- keep a visually-hidden heading so the grid stays labelled -->
     <h2 forCalendarHeading #h="forCalendarHeading" class="sr-only">{{ h.label() }}</h2>
   </header>
