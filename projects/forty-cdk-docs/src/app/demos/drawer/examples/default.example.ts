@@ -191,6 +191,11 @@ import {
       touch-action: none;
     }
 
+    .drawer[data-side='top'] .drawer-handle {
+      order: 1;
+      margin: 0.3rem auto 0;
+    }
+
     .drawer-handle:active {
       cursor: grabbing;
     }
