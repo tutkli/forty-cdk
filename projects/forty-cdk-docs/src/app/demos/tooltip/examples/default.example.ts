@@ -84,30 +84,23 @@ import {
     }
 
     .tooltip-bubble {
-      --tooltip-bg: #1b1f24;
-      --tooltip-fg: #ffffff;
       z-index: 70;
       max-width: 220px;
       padding: 0.4rem 0.6rem;
       font-size: 0.8rem;
       font-weight: 500;
       line-height: 1.3;
-      color: var(--tooltip-fg);
-      background: var(--tooltip-bg);
+      color: var(--pg-tooltip-fg);
+      background: var(--pg-tooltip-bg);
       border-radius: var(--pg-radius-sm);
       box-shadow: var(--pg-shadow);
       pointer-events: none;
     }
 
-    [data-theme='dark'] .tooltip-bubble {
-      --tooltip-bg: #e6e9ee;
-      --tooltip-fg: #0e1116;
-    }
-
     .tooltip-bubble-arrow {
       width: 9px;
       height: 9px;
-      background: var(--tooltip-bg);
+      background: var(--pg-tooltip-bg);
       transform: rotate(45deg);
       --for-floating-arrow-offset: -4px;
     }

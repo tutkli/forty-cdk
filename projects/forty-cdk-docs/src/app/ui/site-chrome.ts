@@ -1,28 +1,35 @@
 import { DOCUMENT, isPlatformBrowser } from '@angular/common';
-import { computed, effect, inject, Injectable, PLATFORM_ID, signal } from '@angular/core';
+import {
+  computed,
+  effect,
+  inject,
+  Injectable,
+  PLATFORM_ID,
+  signal,
+  type Signal,
+} from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router } from '@angular/router';
-import { filter, map } from 'rxjs';
+import { filter, fromEvent, map } from 'rxjs';
 
 import { sectionForUrl } from './site-sections';
+import {
+  darkMediaQuery,
+  readStoredTheme,
+  resolveTheme,
+  type Theme,
+  writeStoredTheme,
+} from './theme-preference';
 
-type Theme = 'light' | 'dark';
-
-/**
- * The `localStorage` key the chosen theme persists under.
- *
- * The inline bootstrap in `projects/forty-cdk-docs/src/index.html` stamps
- * `data-theme` from this same key before the first paint, so the two have to
- * name it identically — `theme-bootstrap.spec.ts` fails when they drift.
- */
-export const THEME_KEY = 'forty-cdk-docs-theme';
-
-function readInitialTheme(): Theme {
-  const stored = globalThis.localStorage?.getItem(THEME_KEY);
-  if (stored === 'light' || stored === 'dark') {
-    return stored;
+function systemDark(): Signal<boolean> {
+  const query = darkMediaQuery();
+  if (query === undefined) {
+    return signal(false);
   }
-  return globalThis.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  return toSignal(
+    fromEvent<MediaQueryListEvent>(query, 'change').pipe(map((event) => event.matches)),
+    { initialValue: query.matches },
+  );
 }
 
 @Injectable({ providedIn: 'root' })
@@ -31,7 +38,16 @@ export class SiteChrome {
   readonly #router = inject(Router);
   readonly #browser = isPlatformBrowser(inject(PLATFORM_ID));
 
-  readonly theme = signal<Theme>(readInitialTheme());
+  readonly #chosen = signal<Theme | null>(readStoredTheme());
+  readonly #systemDark = systemDark();
+
+  /**
+   * The theme the site paints with: the visitor's explicit choice where they
+   * made one, and the system preference — live, so a scheduled switch lands
+   * without a reload — where they did not.
+   */
+  readonly theme = computed(() => resolveTheme(this.#chosen(), this.#systemDark()));
+
   readonly navOpen = signal(false);
   readonly paletteOpen = signal(false);
 
@@ -53,15 +69,20 @@ export class SiteChrome {
   constructor() {
     if (this.#browser) {
       effect(() => {
-        const theme = this.theme();
-        this.#document.documentElement.setAttribute('data-theme', theme);
-        globalThis.localStorage?.setItem(THEME_KEY, theme);
+        this.#document.documentElement.setAttribute('data-theme', this.theme());
       });
     }
   }
 
+  /**
+   * Records the visitor's choice, which is the only thing ever persisted — a
+   * theme that came from nothing but the system preference stays unstored, so
+   * the site keeps following it.
+   */
   setDark(dark: boolean): void {
-    this.theme.set(dark ? 'dark' : 'light');
+    const theme: Theme = dark ? 'dark' : 'light';
+    writeStoredTheme(theme);
+    this.#chosen.set(theme);
   }
 
   openPalette(event?: Event): void {

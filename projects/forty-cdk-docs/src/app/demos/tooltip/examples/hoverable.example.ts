@@ -67,30 +67,23 @@ import {
     }
 
     .hoverable-tooltip {
-      --hoverable-tooltip-bg: #1b1f24;
-      --hoverable-tooltip-fg: #ffffff;
       z-index: 70;
       max-width: 220px;
       padding: 0.4rem 0.6rem;
       font-size: 0.8rem;
       font-weight: 500;
       line-height: 1.3;
-      color: var(--hoverable-tooltip-fg);
-      background: var(--hoverable-tooltip-bg);
+      color: var(--pg-tooltip-fg);
+      background: var(--pg-tooltip-bg);
       border-radius: var(--pg-radius-sm);
       box-shadow: var(--pg-shadow);
       user-select: text;
     }
 
-    [data-theme='dark'] .hoverable-tooltip {
-      --hoverable-tooltip-bg: #e6e9ee;
-      --hoverable-tooltip-fg: #0e1116;
-    }
-
     .hoverable-tooltip-arrow {
       width: 9px;
       height: 9px;
-      background: var(--hoverable-tooltip-bg);
+      background: var(--pg-tooltip-bg);
       transform: rotate(45deg);
       --for-floating-arrow-offset: -4px;
     }
