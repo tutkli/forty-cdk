@@ -156,6 +156,8 @@ No inputs of its own — coordinates via the `ForTooltip` context.
 
 Per-instance inputs always win over the scope defaults.
 
+<!-- snippet: fragment -->
+
 ```ts
 import { provideForTooltipDefaults } from 'forty-cdk/tooltip';
 

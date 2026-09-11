@@ -27,6 +27,8 @@ It returns the sole element when the array holds exactly one entry, otherwise `n
 
 Bind `[formField]` to a field you model as `readonly T[]` and keep at length ≤ 1 — in single mode exactly as in multi mode. There is no adapter to insert: `[formField]` pushes `disabled`, `readonly`, `required`, `invalid`, `errors` and `touched` into the control and routes `focus()` to the primitive's real focus target (the listbox option, the select trigger, the combobox input) on its own.
 
+<!-- snippet: fragment -->
+
 ```ts
 readonly model = signal({ country: [] as readonly string[] });
 readonly profile = form(this.model);

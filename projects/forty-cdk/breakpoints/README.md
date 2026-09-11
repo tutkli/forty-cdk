@@ -15,6 +15,7 @@ It is a headless reactive utility, not a UI primitive: no DOM, no ARIA, no templ
 Configuring is optional — without a provider the Tailwind scale (`sm` 640, `md` 768, `lg` 1024, `xl` 1280, `2xl` 1536) is used. To define your own:
 
 ```ts
+import { ApplicationConfig } from '@angular/core';
 import { provideForBreakpointsDefaults } from 'forty-cdk/breakpoints';
 
 export const appConfig: ApplicationConfig = {
@@ -50,6 +51,8 @@ export class Layout {
 ```
 
 The returned handle captures its injection context, so the query methods can be called lazily from a `computed()` or a template, not only during construction:
+
+<!-- snippet: fragment -->
 
 ```ts
 protected columns = computed(() => (this.bp.up('xl')() ? 4 : this.bp.up('md')() ? 2 : 1));

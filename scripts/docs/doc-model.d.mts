@@ -172,6 +172,19 @@ export declare const FENCE_LANGUAGE_NAMES: readonly string[];
 
 export declare function resolveFenceLanguage(lang: string | undefined): string | null;
 
+/** One fenced code block, addressed by the line its opening fence is written on. */
+export interface DocFence {
+  readonly line: number;
+  /** The info string as written, trimmed; empty for a bare fence. */
+  readonly lang: string;
+  /** The grammar the info string resolves to, or `null` if the site has none. */
+  readonly language: string | null;
+  /** The fence's body, without the fence lines or a list item's indentation. */
+  readonly code: string;
+}
+
+export declare function fencesOf(source: string): readonly DocFence[];
+
 export declare function compileDocument(source: string, location: DocLocation): DocDocument;
 
 export declare function anchorsOf(document: DocDocument): readonly string[];

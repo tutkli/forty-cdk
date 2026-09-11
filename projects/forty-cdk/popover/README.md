@@ -203,6 +203,8 @@ The popover opens / closes alongside the input but never steals focus from it â€
 
 Per-instance inputs always win over the scope defaults.
 
+<!-- snippet: fragment -->
+
 ```ts
 import { provideForPopoverDefaults } from 'forty-cdk/popover';
 

@@ -79,6 +79,8 @@ The viewport renders each toast in this shape (the declarative path composes the
 
 ## Programmatic API
 
+<!-- snippet: fragment -->
+
 ```ts
 import { ForToastManager } from 'forty-cdk/toast';
 
@@ -128,6 +130,8 @@ No wiring is needed on your side — no manual `data-for-modal-peer` stamping, n
 
 The coexist-by-default above is right for confirmation / error toasts raised by the flow inside the modal. For a low-priority or system viewport that should _not_ steal attention from a critical dialog, opt out with `provideForToastDefaults({ overModal: 'inert' })`:
 
+<!-- snippet: fragment -->
+
 ```ts
 provideForToastDefaults({ overModal: 'inert' });
 ```
@@ -144,6 +148,8 @@ A viewport renders only the toasts whose `region` matches its `[region]` input. 
 <for-toast-viewport region="confirmations" />
 <!-- styled bottom-center -->
 ```
+
+<!-- snippet: fragment -->
 
 ```ts
 this.toasts.show({ region: 'system', title: 'New version available' });
@@ -174,6 +180,8 @@ Toast is "bring your own markup + classes", like every other primitive — even 
 
 Pass `class` (a single token or a space-separated string) or `classList` (a string or an array of tokens) in the `show()` config. They are applied to the rendered toast root (the `[forToast]` element), merged with the directive's own host attributes — they never clobber `data-state` / `data-variant` / the swipe CSS hooks.
 
+<!-- snippet: fragment -->
+
 ```ts
 this.toasts.show({ title: 'Saved', variant: 'success', class: 'toast toast--success' });
 this.toasts.show({ title: 'Failed', classList: ['toast', 'toast--error'] });
@@ -197,6 +205,8 @@ Declarative toasts (`<div forToast class="toast">`) take consumer classes the na
 ### Exit / enter animations (programmatic)
 
 On the programmatic path the toast root is rendered for you inside `<for-toast-viewport>`'s `@for`, so — unlike a declarative `<div forToast>` — you have no node to put `animate.leave` on. Pass `animateLeave` (and, for symmetry, `animateEnter`) in the `show()` config instead, or set a viewport-wide default with `[animateLeave]` / `[animateEnter]`. The viewport binds them through Angular's native `animate.leave` / `animate.enter` on the rendered toast, so the toast stays mounted until its exit animation settles before it leaves the DOM:
+
+<!-- snippet: fragment -->
 
 ```ts
 this.toasts.show({ title: 'Saved', variant: 'success', animateLeave: 'toast-out' });
@@ -265,6 +275,8 @@ If the default title / description / action / close shape isn't enough, pass a `
 </ng-template>
 ```
 
+<!-- snippet: fragment -->
+
 ```ts
 this.toasts.show({ template: this.toastTpl, data: { user, post } });
 ```
@@ -272,6 +284,8 @@ this.toasts.show({ template: this.toastTpl, data: { user, post } });
 The template context is `{ $implicit: ForToastInstance, data: T }`. Use `toast.dismiss()` to close from inside the template.
 
 **The helper directives work inside a custom `template`.** The viewport renders the template with the `[forToast]` injection context in scope, so `[forToastTitle]`, `[forToastDescription]`, `[forToastAction]`, and `[forToastClose]` keep their automatic `aria-labelledby` / `aria-describedby` / close-reason wiring — exactly as in the default shape. Just import the directives into the component that declares the `<ng-template>`:
+
+<!-- snippet: fragment -->
 
 ```ts
 @Component({
@@ -386,6 +400,8 @@ The **Announced** column is the politeness a screen reader hears. It is delivere
 
 `provideForToastDefaults` configures defaults for an injector subtree — at the application root, or in any component's `providers` array, where a partial override inherits the keys it does not name.
 
+<!-- snippet: fragment -->
+
 ```ts
 import { provideForToastDefaults } from 'forty-cdk/toast';
 
@@ -431,6 +447,8 @@ A toast announces on one of two paths, picked automatically:
 - **Host `role="alert"` (bare error).** An `error` toast with no action `altText` keeps its own host as the live region (`role="alert"`, `aria-live="assertive"`): `alert` is the one live role screen readers read reliably on insertion. As soon as such a toast carries an `altText`, it joins the `LiveAnnouncer` (assertive) path so the recovery hint — absent from the visible DOM — is still voiced.
 
 The `LiveAnnouncer` path is reactive. A late-bound `altText` (set after first render) and any `ref.update()` that changes the title, description, or `altText` re-announces — the composed message is tracked, and an unchanged message never re-fires. This is why the contract is "drive announcements explicitly", not "trust `aria-atomic`": `aria-atomic` does nothing on the `LiveAnnouncer` path, so the directive owns the re-announce.
+
+<!-- snippet: fragment -->
 
 ```ts
 const ref = this.toasts.show({ title: 'Saving…', duration: 0 });

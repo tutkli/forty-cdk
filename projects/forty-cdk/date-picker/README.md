@@ -306,6 +306,8 @@ For date-range selection use the dedicated `ForDateRangePicker` root (selector `
 
 It reuses the same pieces — `[forDatePickerTrigger]`, `[forDatePickerContent]`, `[forDatePickerValue]`, `[forDatePickerAnchor]` — through a shared base, and provides `FOR_DATE_PICKER_CONTEXT` so they resolve under it. Project a `[forCalendar]` in `selectionMode="range"` and bind its range to the picker's `value`; the two-click anchor → commit flow keeps `value` `null` until both endpoints are chosen (the form never sees a half-entered range), and `start <= end` is an invariant. Range is day-granular (no time composition).
 
+<!-- snippet: fragment -->
+
 ```ts
 import { ForDateRangePicker } from 'forty-cdk/date-picker';
 import type { DateRange } from 'forty-cdk/shared';

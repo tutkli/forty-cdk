@@ -22,6 +22,8 @@ Pick one (required). All date math goes through the same pluggable `DateAdapter<
 | `provideInternationalizedDateAdapter()` | `CalendarDate` (`@internationalized/date`) | **Recommended.** From `forty-cdk/internationalized-date`; needs `@internationalized/date` (optional peer) |
 | `provideNativeDateAdapter()`            | `Date`                                     | None (zero-dependency fallback)                                                                           |
 
+<!-- snippet: fragment -->
+
 ```ts
 import { bootstrapApplication } from '@angular/platform-browser';
 import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized-date';
@@ -220,6 +222,8 @@ The pieces are the range-specific `[forDateRangeFieldStart]` / `[forDateRangeFie
   </div>
 </div>
 ```
+
+<!-- snippet: fragment -->
 
 ```ts
 import {

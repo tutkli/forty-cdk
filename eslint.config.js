@@ -3355,6 +3355,7 @@ module.exports = tseslint.config(
   {
     ignores: [
       'dist/**',
+      'out-tsc/**',
       'node_modules/**',
       '.angular/**',
       'coverage/**',

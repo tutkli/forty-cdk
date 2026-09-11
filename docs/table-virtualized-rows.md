@@ -52,6 +52,8 @@ Key points:
 - The **focused row stays mounted** even when scrolled out of the window. The roving-focused `gridcell` is never unmounted; roving navigation is unchanged.
 - For measured (variable) row heights, call `v.measureRow(el)` per rendered row in `afterEveryRender`.
 
+<!-- snippet: fragment -->
+
 ```ts
 import { afterEveryRender } from '@angular/core';
 import { ForTableVirtualized } from 'forty-cdk/table-virtualization';
@@ -113,6 +115,9 @@ When the element that actually scrolls is an **ancestor** of the table — e.g. 
 A design-system wrapper that re-exposes `ForTableVirtualized` through `hostDirectives` can surface `scrollElement` directly, or rename it, via input aliasing — no bridging `effect` is needed because the value flows straight through:
 
 ```ts
+import { Component } from '@angular/core';
+import { ForTableVirtualized } from 'forty-cdk/table-virtualization';
+
 @Component({
   selector: 'my-data-grid',
   hostDirectives: [

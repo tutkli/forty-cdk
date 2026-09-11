@@ -58,8 +58,7 @@ export class DemoToggle {
 
 ```ts
 import { Component, signal } from '@angular/core';
-import { form, required } from '@angular/forms/signals';
-import { Field } from '@angular/forms';
+import { form, FormField, required } from '@angular/forms/signals';
 import { ForSwitch } from 'forty-cdk/switch';
 
 interface Settings {
@@ -69,7 +68,7 @@ interface Settings {
 
 @Component({
   selector: 'demo-settings',
-  imports: [ForSwitch /* , FormField from @angular/forms */],
+  imports: [ForSwitch, FormField],
   template: `
     <button forSwitch [formField]="settings.notifications"></button>
     <button forSwitch [formField]="settings.termsAccepted"></button>

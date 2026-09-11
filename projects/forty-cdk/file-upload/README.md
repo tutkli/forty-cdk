@@ -50,6 +50,8 @@ With `multiple` off the zone keeps the first accepted file and surfaces the extr
 
 ### Handling rejections
 
+<!-- snippet: fragment -->
+
 ```ts
 onRejected(rejections: ForFileUploadRejection[]): void {
   for (const { file, reason } of rejections) {
@@ -68,6 +70,8 @@ Set `directory` to switch the native picker into folder-selection mode (mirrored
   <button forFileUploadTrigger>Choose folder</button>
 </div>
 ```
+
+<!-- snippet: fragment -->
 
 ```ts
 onFolder(files: FileList): void {

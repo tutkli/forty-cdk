@@ -40,6 +40,8 @@ different base class.
 
 A composed primitive coordinates its pieces through an `InjectionToken` its root provides:
 
+<!-- snippet: fragment -->
+
 ```ts
 @Directive({
   selector: '[forDisclosure]',

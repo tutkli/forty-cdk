@@ -195,6 +195,8 @@ It also owns the axis geometry (the thumb renders from it) and the scroll comman
 </div>
 ```
 
+<!-- snippet: fragment -->
+
 ```ts
 onTrackPress(event: PointerEvent, bar: ForScrollAreaScrollbar): void {
   if (event.pointerType === 'mouse' && event.button !== 0) return;

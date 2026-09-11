@@ -153,6 +153,8 @@ manager creates the overlay host for you, so there is no template element to add
 to. Pass `class` (or `classList`) on the open/show config and the tokens land on the real
 overlay root alongside `data-state` / `data-side`:
 
+<!-- snippet: fragment -->
+
 ```ts
 this.dialogs.open(ConfirmDialog, { data, class: 'dialog dialog--danger' });
 ```

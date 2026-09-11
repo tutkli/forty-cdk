@@ -13,6 +13,8 @@ An adapter is required — the date primitives resolve it through `injectDateAda
 | `provideInternationalizedDateAdapter()` | `CalendarDate` (`@internationalized/date`) | `@internationalized/date` — an optional peer you add yourself |
 | `provideNativeDateAdapter()`            | `Date`                                     | Nothing; it ships with `forty-cdk/calendar`                   |
 
+<!-- snippet: fragment -->
+
 ```ts
 import { bootstrapApplication } from '@angular/platform-browser';
 import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized-date';

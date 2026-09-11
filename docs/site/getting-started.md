@@ -101,8 +101,7 @@ Form primitives implement an `@angular/forms/signals` control interface, so `[fo
 
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
-import { Field } from '@angular/forms';
-import { form, required } from '@angular/forms/signals';
+import { form, FormField, required } from '@angular/forms/signals';
 import { ForSwitch } from 'forty-cdk/switch';
 
 interface Settings {
@@ -113,7 +112,7 @@ interface Settings {
 @Component({
   selector: 'app-settings-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ForSwitch, Field],
+  imports: [ForSwitch, FormField],
   template: `
     <button forSwitch class="switch" [formField]="settings.notifications">
       <span class="switch__thumb"></span>

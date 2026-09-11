@@ -141,6 +141,8 @@ The propagation rule for an empty, disabled, or read-only field is unchanged —
   button has an accessible name. Override it per-instance with `[ariaLabel]`, or
   centrally (and for localization) with `provideForSearchDefaults`:
 
+  <!-- snippet: fragment -->
+
   ```ts
   providers: [provideForSearchDefaults({ clearAriaLabel: 'Limpiar' })];
   ```

@@ -135,6 +135,8 @@ the seeded width immediately — and folds every live change (pointer drag, keyb
 back into the map immutably. The map is JSON-serializable, so persisting a user's column layout is one
 two-way binding plus one storage write:
 
+<!-- snippet: fragment -->
+
 ```ts
 @Component({
   /* … */
@@ -262,6 +264,8 @@ re-emits every committed reorder — pointer drop **or** keyboard drop — throu
   </for-table-body>
 </div>
 ```
+
+<!-- snippet: fragment -->
 
 ```ts
 protected readonly order = signal<readonly string[]>(['name', 'role']);
@@ -443,6 +447,8 @@ Three requirements when a table mixes row variants with selection or virtualizat
 </div>
 ```
 
+<!-- snippet: fragment -->
+
 ```ts
 interface Row {
   id: number;
@@ -525,6 +531,8 @@ A `[forTableRowDef]` must declare **exactly one** of a `[forTableRowCellDef]` te
   <ng-container forTableRowDef [when]="isPlaceholder" placeholderCells />
 </for-table-body>
 ```
+
+<!-- snippet: fragment -->
 
 ```ts
 interface Row {
@@ -627,6 +635,8 @@ in a cell, which the interactive-descendant guard below already routes correctly
 </div>
 ```
 
+<!-- snippet: fragment -->
+
 ```ts
 protected openDetail(row: Row): void {
   this.router.navigate(['/requests', row.id]);
@@ -706,6 +716,8 @@ keyboard half in `table` mode — apply to **both** data and variant rows in **e
 </for-table-body>
 ```
 
+<!-- snippet: fragment -->
+
 ```ts
 protected readonly rowClass = (row: Row): Record<string, boolean> => ({
   'row-error': row.status === 'error',
@@ -732,6 +744,8 @@ Both are read only by the compiler, exactly like `[forTableCellDefRow]` / `[forT
 leaves `let-row` as the full row type (no behavioural or type change for existing tables). This
 replaces the filtered-computed-per-template workaround (`dataRows()` / `separatorRows()` copies of
 `rows()` kept only to satisfy the compiler) — bind `rows()` directly and let the guard narrow.
+
+<!-- snippet: fragment -->
 
 ```ts
 interface DataRow {

@@ -31,6 +31,8 @@ Apply `[forVirtualReorder]` on the same element as `[forVirtualViewport]` and ma
 </div>
 ```
 
+<!-- snippet: fragment -->
+
 ```ts
 onReorder({ from, to }: ForVirtualReorderEvent): void {
   this.rows.update((rows) => moveItemInArray(rows, from, to));

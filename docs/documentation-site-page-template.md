@@ -363,6 +363,20 @@ alternative is a page where one sample is highlighted and the next is not, which
 corpus had drifted into twice. If a new language is genuinely needed, load its grammar in
 `scripts/docs/doc-highlight.mjs` rather than writing the fence unlabelled.
 
+**Every TypeScript fence is type-checked**, by `scripts/check-doc-snippets.mjs` under
+`pnpm test:docs` ([#1918](https://github.com/tutkli/forty-cdk/issues/1918)). The fence roster is the
+compiler's own — whatever `resolveFenceLanguage()` reads as TypeScript is written to a file and run
+through `tsc` with the workspace `paths`, so `forty-cdk/<entry>` resolves to source and a renamed
+symbol fails the gate at the document and line the fence sits on. Inline templates are not checked;
+imports and symbol names are, which is the drift the corpus actually produced. Two shapes opt out,
+each with an HTML comment on the line above the fence (a blank line between the two is fine, Prettier
+inserts one): `<!-- snippet: fragment -->` for a fence that is deliberately not a whole module — a
+lone class member, a `providers: […]` array, a call on `this.` — which is never compiled; and
+`<!-- snippet: expect-error -->` for a fence that makes its point by failing, which the gate then
+requires to fail. A marker above anything other than a TypeScript fence is an error, so a stale one
+cannot linger, and the run reports how many fences carry each marker so a sweep can be reviewed.
+Prefer a fence that compiles: a snippet complete enough to paste is worth the two import lines.
+
 The page chrome itself dogfoods the library: **Drawer** for the mobile nav, **Combobox** for ⌘K
 search, **Switch** for the theme toggle, **Toast** for copy-to-clipboard feedback, **Tabs** for each
 demo's Preview / Code pair, **Popover** for an API row's detail, **Tooltip** for the inline hints,

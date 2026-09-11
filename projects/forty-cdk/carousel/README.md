@@ -199,6 +199,8 @@ an `aria-label` overriding it.
 <div forCarousel #car="forCarousel" autoplay>…</div>
 ```
 
+<!-- snippet: fragment -->
+
 ```ts
 car.play(); // start (explicit, sticky)
 car.pause(); // stop (explicit, sticky)
@@ -284,6 +286,8 @@ indicator's is `"Go to slide N"`, and the rotation control's swaps between
 `"Start automatic slide show"` and `"Stop automatic slide show"`. Localize them
 all centrally with `provideForCarouselDefaults` instead of setting `ariaLabel` on
 every slide and indicator:
+
+<!-- snippet: fragment -->
 
 ```ts
 providers: [

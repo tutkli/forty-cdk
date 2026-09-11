@@ -144,6 +144,8 @@ export class DemoHost {
 
 **Styling the programmatic overlay root.** Declaratively you write the surface yourself (`<div forDialog class="my-dialog">`), so the class lands on the same element that carries `data-state` / `role`. The manager creates that host for you and it is class-less, so pass `class` / `classList` to style it.
 
+<!-- snippet: fragment -->
+
 ```ts
 this.dialogs.open(ConfirmDialog, { data, alert: true, class: 'my-dialog my-dialog--pop' });
 ```
@@ -151,6 +153,8 @@ this.dialogs.open(ConfirmDialog, { data, alert: true, class: 'my-dialog my-dialo
 The tokens go on the real `[forDialog]` host alongside `data-state` / `role` / `aria-modal`, merged and de-duped, never clobbering those attributes.
 
 **Enter / exit animations.** A programmatic dialog is portaled to `document.body` and torn down imperatively, so the consumer can't attach `animate.leave` to the host the way a declarative `@if` block can. Pass `animateEnter` / `animateLeave` (CSS class names) instead: the manager applies `animateEnter` on mount (via `animate.enter`) and, on `close()`, keeps the host mounted with `animateLeave` until its CSS animations / transitions finish before tearing down. `close()` still resolves its promise and flips `isClosed()` immediately — only the visual teardown waits. With no class (or under `prefers-reduced-motion`, if your CSS disables the animation) close is immediate.
+
+<!-- snippet: fragment -->
 
 ```ts
 this.dialogs.open(ConfirmDialog, {
@@ -243,6 +247,8 @@ Set them once for a scope with `provideForDialogDefaults({ animateEnter, animate
 
 **Programmatic** — the same four channels are callbacks on the open config, mirroring the `autoFocusOn*` shape:
 
+<!-- snippet: fragment -->
+
 ```ts
 this.dialogs.open(FloaterComponent, {
   modal: false,
@@ -275,6 +281,8 @@ The auto-focus pair is bound as **function references** (input callbacks), not a
 </div>
 }
 ```
+
+<!-- snippet: fragment -->
 
 ```ts
 readonly keepSearchFocused = (event: VetoableEvent): void => {

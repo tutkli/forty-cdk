@@ -253,6 +253,8 @@ Spanning the row visually stays yours: `grid-column: 1 / -1` in a `<div>` grid, 
 </div>
 ```
 
+<!-- snippet: fragment -->
+
 ```ts
 readonly expanded = signal<readonly string[]>([]);
 readonly visibleRows = computed(() => {
@@ -330,6 +332,8 @@ A two-way-bindable `model<readonly T[]>()`. `ForTable<T>` infers the row-value t
 
 An equality comparator `(a: T, b: T) => boolean` used for membership checks. Defaults to `===`. Supply an id-based comparator when rows carry objects:
 
+<!-- snippet: fragment -->
+
 ```ts
 protected readonly idEquals = (a: Person, b: Person) => a.id === b.id;
 ```
@@ -390,6 +394,8 @@ Per-row selection (`[forTableRowSelector]`, row click, Space) is unaffected — 
 </div>
 ```
 
+<!-- snippet: fragment -->
+
 ```ts
 protected readonly peopleIds = computed(() => this.people().map((p) => p.id));
 ```
@@ -439,6 +445,8 @@ The directive is self-contained: it owns only its own `direction` state. The "on
   </div>
 </div>
 ```
+
+<!-- snippet: fragment -->
 
 ```ts
 protected readonly sort = signal<TableSortDescriptor>({ column: '', direction: 'none' });
@@ -506,6 +514,8 @@ Arrow-key resize (`ArrowLeft` / `ArrowRight`) moves the width by `[step]` pixels
   aria-label="Resize Name column"
 ></button>
 ```
+
+<!-- snippet: fragment -->
 
 ```ts
 readonly onWidthRevert = ({ column, width }: TableResizeDescriptor): void => {

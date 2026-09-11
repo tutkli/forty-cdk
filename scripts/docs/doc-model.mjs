@@ -350,6 +350,60 @@ export function resolveFenceLanguage(lang) {
   return FENCE_LANGUAGES.get((lang ?? '').trim().toLowerCase()) ?? null;
 }
 
+/**
+ * Every fenced code block a document holds, nested ones included, each with
+ * the line its opening fence is written on and the grammar its info string
+ * resolves to.
+ *
+ * Lexed from the raw source rather than from the body `compileDocument` reads,
+ * so the line is the line in the file whatever the document declares above its
+ * title. This is the one roster of fences the tooling has: a gate that wants
+ * "every TypeScript fence" asks for `language === 'angular-ts'` here rather than
+ * matching info strings with a regex of its own.
+ */
+export function fencesOf(source) {
+  const markdown = normalize(source);
+  const starts = lineIndexOf(markdown);
+  const lines = markdown.split('\n');
+  const fences = [];
+  let searchFrom = 1;
+  walk(gfm.lexer(markdown), 0, (token, offset) => {
+    if (token.type !== 'code') {
+      return;
+    }
+    const lang = (token.lang ?? '').trim();
+    let line = lineAt(starts, offset);
+    if (token.codeBlockStyle !== 'indented') {
+      line = fenceLineFrom(lines, Math.max(line, searchFrom), lang);
+      searchFrom = line + token.text.split('\n').length + 2;
+    }
+    fences.push({ line, lang, language: resolveFenceLanguage(token.lang), code: token.text });
+  });
+  return fences;
+}
+
+/**
+ * The line a fence opens on, found by scanning the source from the first line
+ * it could be on.
+ *
+ * A top-level token's offset is exact, so the scan finds it at once. A token
+ * nested in a list item or blockquote reports an offset counted over `raw` text
+ * with the container's indentation stripped, which lands at or before the fence
+ * rather than on it — so the scan starts there and walks forward to the first
+ * opening fence that declares the same info string.
+ */
+function fenceLineFrom(lines, from, lang) {
+  const opening = new RegExp(
+    `^\\s*(?:>\\s*)*(?:\`{3,}|~{3,})\\s*${lang.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*$`,
+  );
+  for (let index = from - 1; index < lines.length; index += 1) {
+    if (opening.test(lines[index])) {
+      return index + 1;
+    }
+  }
+  return from;
+}
+
 function checkFenceLanguages(entries, report) {
   for (const { token, line } of entries) {
     if (token.type !== 'code' || resolveFenceLanguage(token.lang) !== null) {

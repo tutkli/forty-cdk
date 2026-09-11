@@ -43,6 +43,8 @@ Eight blessed symbols are **not** here, because a primitive is their semantic ho
 
 Reach for it whenever your own code has to reason about that same text — a truncation tooltip that shows a cell's full label, a filter that matches what the user actually perceives:
 
+<!-- snippet: fragment -->
+
 ```ts
 import { accessibleTextContent } from 'forty-cdk/shared';
 
@@ -58,6 +60,8 @@ Primitives generate the ids that wire `aria-labelledby`, `aria-controls`, and `a
 Angular's default `APP_ID` is the literal `'ng'`. Two forty-cdk apps mounted side-by-side on the same page therefore start from the same salt **and** the same counter, and emit identical id sequences — duplicate DOM ids. `aria-labelledby` resolves to whichever element appears first in the document, so a screen reader can announce app A's label for app B's control. Nothing looks wrong on screen; the failure is only audible.
 
 Give each app its own salt:
+
+<!-- snippet: fragment -->
 
 ```ts
 import { provideForIdSalt } from 'forty-cdk/shared';
@@ -175,6 +179,8 @@ The same staleness applies to a purely CSS-driven visibility flip: the observer 
 **Markup.** Any `keydown` handler on content **inside** the overlay that calls `stopPropagation()`. The layer stack listens on `document` in the bubble phase, so an event stopped inside the surface never arrives. The phase is a deliberate trade-off, recorded on [`DismissibleLayerStack`](../core-overlay/src/dismissible-layer/dismissible-layer.ts) together with why the pointer and focus channels do not share it.
 
 **Workaround.** Do not stop `keydown` propagation unconditionally inside overlay content — narrow it to the keys you actually handle:
+
+<!-- snippet: fragment -->
 
 ```ts
 onKeyDown(event: KeyboardEvent): void {

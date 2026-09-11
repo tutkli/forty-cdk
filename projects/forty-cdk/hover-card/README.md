@@ -137,6 +137,8 @@ Per-instance inputs always win over the scope defaults.
 
 The HoverCard coordinator is **independent** from `TooltipCoordinator` — the two patterns have different cadences and shouldn't share their skip-delay windows.
 
+<!-- snippet: fragment -->
+
 ```ts
 import { provideForHoverCardDefaults } from 'forty-cdk/hover-card';
 

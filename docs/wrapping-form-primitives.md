@@ -107,6 +107,8 @@ expressions over the tuples — `.filter(...)`, `.map(...)`, and friends fail wi
 Value could not be determined statically`. A wrapper that wants to withhold some inputs
 lists its subset literally instead of spreading:
 
+<!-- snippet: fragment -->
+
 ```ts
 inputs: ['value', 'disabled', 'touched'],
 ```
@@ -258,7 +260,7 @@ import { ForTimeField } from 'forty-cdk/time-field';
   exportAs: 'myTimeField',
   providers: [{ provide: FOR_TIME_VALUE_SOURCE, useExisting: MyTimeField }],
 })
-export class MyTimeField extends ForTimeField {}
+export class MyTimeField<D> extends ForTimeField<D> {}
 ```
 
 | Subclassed primitive | Bridge that resolves it                      | Token to re-provide     |

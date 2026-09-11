@@ -393,6 +393,8 @@ In RTL the chip cluster lays out right-to-left, so **ArrowRight** moves to the v
 
 `[forComboboxChipRemove]` is a click-only target (also out of Tab cycle) with auto-generated `aria-label="Remove <chip label>"`. The name is computed per chip, so the piece takes no `[ariaLabel]` input and ignores a static `aria-label` attribute — localize it centrally by overriding the scope's builder:
 
+<!-- snippet: fragment -->
+
 ```ts
 @Component({
   providers: [provideForComboboxDefaults({ chipRemoveLabel: (label) => `Quitar ${label}` })],
@@ -488,6 +490,8 @@ c.name.toLowerCase().includes(q));
 </div>
 ```
 
+<!-- snippet: fragment -->
+
 ```ts
 interface City {
   id: string;
@@ -560,6 +564,8 @@ Inline autocomplete matches against the most recently rendered window overlaid w
   }
 </div>
 ```
+
+<!-- snippet: fragment -->
 
 ```ts
 readonly query = signal('');

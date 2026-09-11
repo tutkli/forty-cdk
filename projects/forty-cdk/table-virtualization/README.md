@@ -105,6 +105,8 @@ Arrow / `Page` / `Ctrl+Home` / `Ctrl+End` grid actions that resolve a row outsid
 
 `range` is the true rendered window as an inclusive-exclusive `[firstIndex, lastIndex + 1)` range, sourced from the underlying virtualizer rather than from `virtualRows()` (which is augmented with the focused and reordering rows). It plugs straight into `injectInfiniteScroll`:
 
+<!-- snippet: fragment -->
+
 ```ts
 readonly detector = injectInfiniteScroll({
   range: this.v().range,
