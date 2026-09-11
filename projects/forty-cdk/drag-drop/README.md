@@ -138,6 +138,8 @@ The feature is **on by default**. Opt out with `[autoScroll]="false"`:
 
 Configure the edge zone and max speed via `provideForDragDropDefaults`:
 
+<!-- snippet: fragment -->
+
 ```ts
 providers: [
   provideForDragDropDefaults({
@@ -313,6 +315,8 @@ A wrapper can default the orientation for every `[forDropList]` in its scope via
 `FOR_DROP_LIST_DEFAULT_ORIENTATION` token (the same mechanism `ForTableColumnReorder` uses for
 `"horizontal"`):
 
+<!-- snippet: fragment -->
+
 ```ts
 providers: [{ provide: FOR_DROP_LIST_DEFAULT_ORIENTATION, useValue: 'mixed' }];
 ```
@@ -403,6 +407,8 @@ lifted row at an arbitrary far item without auto-scroll having to reach it.
 </div>
 ```
 
+<!-- snippet: fragment -->
+
 ```ts
 onReorder({ from, to }: ForVirtualReorderEvent): void {
   this.rows.update((rows) => moveItemInArray(rows, from, to));
@@ -426,6 +432,8 @@ stops at the window edge.
   }
 </ul>
 ```
+
+<!-- snippet: fragment -->
 
 ```ts
 onDrop(event: ForDragDropEvent): void {
@@ -451,6 +459,8 @@ onDrop(event: ForDragDropEvent): void {
   </ul>
 </div>
 ```
+
+<!-- snippet: fragment -->
 
 ```ts
 onDrop(event: ForDragDropEvent): void {
@@ -485,6 +495,8 @@ onDrop(event: ForDragDropEvent): void {
 ## Announcement customisation
 
 Override the default ARIA live-region messages at any injector scope:
+
+<!-- snippet: fragment -->
 
 ```ts
 providers: [

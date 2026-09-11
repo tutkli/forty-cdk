@@ -144,6 +144,8 @@ In multi mode `Space` toggles the focused node; `Shift+ArrowUp/Down` extends; `S
 
 `selectionMode="checkbox"` switches each `treeitem` to `aria-checked` (instead of `aria-selected`) and makes every node toggle independently — `multiple` is not required. Place `[forTreeItemCheckbox]` and `[forTreeItemCheckboxIndicator]` inside the label for a visible checkbox surface.
 
+<!-- snippet: fragment -->
+
 ```ts
 import {
   ForTree,
@@ -226,6 +228,8 @@ export class Categories {
 
 Add `cascade` and `[descendantsOf]` to enable tri-state propagation. Checking a parent selects it and all its descendants atomically (including collapsed / unmounted ones), and a parent derives `aria-checked="mixed"` / `data-checked="mixed"` when only some descendants are checked. The `descendantsOf` function must return every selectable descendant id of the given node (not just direct children).
 
+<!-- snippet: fragment -->
+
 ```ts
 @Component({
   selector: 'app-categories',
@@ -280,6 +284,8 @@ forty-cdk ships no filtering machinery — matching stays consumer-owned. The li
 1. **Filter your own data and re-render.** Derive a filtered node list with `computed()` and drive the tree's `@for` off that signal. The library adds no filtering engine, empty-state pieces, or snapshot logic.
 2. **Expand ancestors with `expandToReveal`.** Call `expandToReveal(matches, ancestorsOf)` to get the unique ancestor values to merge into `[(expanded)]`. The helper is pure — it has no Angular reactivity, no DOM, and no side effects.
 3. **Highlight matched text with consumer CSS.** Wrap matched text in a `<mark>` element or apply a `.match` class while rendering filtered labels. No new data attribute is emitted by the library.
+
+<!-- snippet: fragment -->
 
 ```ts
 import { linkedSignal } from '@angular/core';
@@ -493,6 +499,8 @@ Add `[forTreeNodeDrag]` on the same element as `[forTree]` to enable pointer and
 
 `ForTreeNodeDrag<T = string>` is generic over the same node value type as `ForTree`, but — unlike the root, which infers `T` from `[(value)]` / `[(expanded)]` — it has **no input that carries `T` on its own** except `[canDrop]`. So if your node values are not `string`, bind it, typed at the node value:
 
+<!-- snippet: fragment -->
+
 ```ts
 readonly canDrop = (event: ForTreeDragDropEvent<FileNode>): boolean => true;
 ```
@@ -530,7 +538,7 @@ Annotating a `viewChild` / `@ViewChild` reference (`ForTreeNodeDrag<FileNode>`) 
 ### Minimal example
 
 ```ts
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, signal } from '@angular/core';
 import {
   ForTree,
   type ForTreeDragDropEvent,

@@ -22,6 +22,8 @@ All date math goes through a `DateAdapter<D>`, so the library hard-depends on **
 | `provideInternationalizedDateAdapter()` | `CalendarDate` (`@internationalized/date`) | **Recommended.** From `forty-cdk/internationalized-date`; needs `@internationalized/date` (optional peer) |
 | `provideNativeDateAdapter()`            | `Date`                                     | None (zero-dependency fallback)                                                                           |
 
+<!-- snippet: fragment -->
+
 ```ts
 import { bootstrapApplication } from '@angular/platform-browser';
 import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized-date';

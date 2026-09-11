@@ -33,6 +33,8 @@ If you are choosing a date adapter, the [Date adapters](../date-adapters.md) gui
 
 **`forty-cdk` itself exports nothing.** This is deliberate, and it is the one thing about the package that surprises people:
 
+<!-- snippet: expect-error -->
+
 ```ts
 import { ForDialog } from 'forty-cdk';
 ```
@@ -40,7 +42,7 @@ import { ForDialog } from 'forty-cdk';
 That import resolves to an empty barrel and fails to compile. Every primitive is imported from its own entry point instead:
 
 ```ts
-import { ForDialog, ForDialogContent, ForDialogTrigger } from 'forty-cdk/dialog';
+import { ForDialog, ForDialogTitle, ForDialogTrigger } from 'forty-cdk/dialog';
 import { ForSwitch } from 'forty-cdk/switch';
 ```
 

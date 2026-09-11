@@ -116,6 +116,8 @@ Additive to the click / keyboard behaviour, a `[forMenuSubTrigger]` also opens i
 
 Tune the timings per injector scope with `provideForMenuDefaults` (applies to every submenu in the surrounding scope, across DropdownMenu / ContextMenu / Menubar):
 
+<!-- snippet: fragment -->
+
 ```ts
 import { provideForMenuDefaults } from 'forty-cdk/menu';
 
@@ -142,6 +144,8 @@ A submenu opens beside its parent item (`side="right"` in LTR, `side="left"` in 
 `'start'` prefers the top side when it falls back, `'end'` prefers the bottom. The lever is a pure opt-in — the default `'none'` reproduces today's beside-parent behaviour exactly. `[forDropdownMenu]` and `[forContextMenu]` expose the same input for their own content surface.
 
 Whether a clipped surface may drop to a perpendicular side is usually an app-wide policy rather than a per-submenu decision, so the input's default is seeded from `provideForMenuDefaults` — declare it once and every `[forMenuSub]` and `[forMenu]` root in the scope picks it up with no template binding:
+
+<!-- snippet: fragment -->
 
 ```ts
 import { provideForMenuDefaults } from 'forty-cdk/menu';

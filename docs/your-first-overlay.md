@@ -80,6 +80,8 @@ That is the complete working overlay. Click the button to open, click it again (
 
 When the component class needs to read or drive open state — open programmatically, persist it, or react to it from a method — bind a signal explicitly:
 
+<!-- snippet: fragment -->
+
 ```ts
 readonly open = signal(false);
 ```

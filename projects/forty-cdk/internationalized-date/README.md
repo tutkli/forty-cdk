@@ -17,6 +17,8 @@ It exists so no other entry point references `@internationalized/date`: the pack
 npm install @internationalized/date
 ```
 
+<!-- snippet: fragment -->
+
 ```ts
 import { bootstrapApplication } from '@angular/platform-browser';
 import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized-date';

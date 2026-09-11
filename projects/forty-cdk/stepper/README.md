@@ -214,6 +214,8 @@ The `aria-valuetext` string (`"Step N of M"` on the `index` basis, `"P% complete
 `completed` basis) is verbalized by screen readers, so it is localizable centrally via
 `provideForStepperDefaults` — override the `stepValueText` / `progressValueText` builders:
 
+<!-- snippet: fragment -->
+
 ```ts
 providers: [
   provideForStepperDefaults({

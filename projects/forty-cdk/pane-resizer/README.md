@@ -101,6 +101,8 @@ The press also **focuses the divider**. Starting a drag calls `preventDefault()`
 <div forPaneResizer [(value)]="size" [valueRevert]="onValueRevert"></div>
 ```
 
+<!-- snippet: fragment -->
+
 ```ts
 readonly onValueRevert = (value: number): void => {
   this.persistedSize.set(value);

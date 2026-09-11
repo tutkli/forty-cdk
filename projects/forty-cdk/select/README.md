@@ -143,6 +143,8 @@ Input tables are not yet tabulated for this primitive. See the feature sections 
 
 Per-instance inputs always win over the scope defaults. `side` / `align` / `sideOffset` are no-ops under `position="item-aligned"`, where only `collisionPadding` is honored, and every one of the four is a no-op in modal mode — see [macOS-style alignment](#macos-style-alignment) and [Modal touch presentation](#modal-touch-presentation).
 
+<!-- snippet: fragment -->
+
 ```ts
 import { provideForSelectDefaults } from 'forty-cdk/select';
 
@@ -372,6 +374,8 @@ Supply `[itemToLabel]` to resolve the label directly from the value, independent
 </div>
 ```
 
+<!-- snippet: fragment -->
+
 ```ts
 readonly toName = (c: City) => c.name;
 ```
@@ -402,6 +406,8 @@ Keeping `[forSelectContent]` mounted (dropping the `@if`) also gets the option `
   }
 </div>
 ```
+
+<!-- snippet: fragment -->
 
 ```ts
 interface City {
@@ -484,6 +490,8 @@ On open, `[forSelectContent]` seeds `aria-activedescendant` to the committed opt
   }
 </div>
 ```
+
+<!-- snippet: fragment -->
 
 ```ts
 readonly scrollRef = viewChild<ElementRef<HTMLElement>>('scroll');

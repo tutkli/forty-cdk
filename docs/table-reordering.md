@@ -44,6 +44,8 @@ In `mode="grid"` / `mode="treegrid"` the draggable rows **yield their tab stop**
 </div>
 ```
 
+<!-- snippet: fragment -->
+
 ```ts
 import { ForDraggable, moveItemInArray } from 'forty-cdk/drag-drop';
 import { ForTableRowReorder } from 'forty-cdk/table';
@@ -117,6 +119,8 @@ Supported today:
   </div>
 </div>
 ```
+
+<!-- snippet: fragment -->
 
 ```ts
 onReorder(d: TableRowReorderDescriptor): void {

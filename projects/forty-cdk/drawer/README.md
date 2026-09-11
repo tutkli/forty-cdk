@@ -151,6 +151,8 @@ Drawers opened by the manager join the same `ForDrawerStack` as declarative ones
 
 **Styling the programmatic overlay root.** The manager creates the `[forDrawer]` host for you and it is class-less. Pass `class` / `classList` to style it — the tokens land on the real host alongside `data-side` / `data-state` / the `--for-drawer-swipe-movement-x` / `-y` custom properties, so positioning CSS keyed on `data-side` works:
 
+<!-- snippet: fragment -->
+
 ```ts
 this.#drawers.open(ConfirmDrawer, { data, side: 'bottom', class: 'my-drawer' });
 ```
@@ -162,6 +164,8 @@ this.#drawers.open(ConfirmDrawer, { data, side: 'bottom', class: 'my-drawer' });
 ```
 
 **Enter / exit animations.** A programmatic drawer is portaled to `document.body` and torn down imperatively, so the consumer can't attach `animate.leave` to the host the way a declarative `@if` block can. Pass `animateEnter` / `animateLeave` (CSS class names) instead: the manager applies `animateEnter` on mount (via `animate.enter`) and, on `close()`, keeps the host mounted with `animateLeave` until its CSS animations / transitions finish before tearing down. `close()` still resolves its promise and flips `isClosed()` immediately — only the visual teardown waits. Set them once for a scope with `provideForDrawerDefaults({ animateEnter, animateLeave })`; a per-`open()` value wins over the scope default.
+
+<!-- snippet: fragment -->
 
 ```ts
 this.#drawers.open(ConfirmDrawer, {
@@ -176,6 +180,8 @@ this.#drawers.open(ConfirmDrawer, {
 `class` is a single or space-separated string; `classList` is an array or space-separated string; both merge and de-dup and never clobber the host attributes. This replaces the old `inject(FOR_DRAWER_CONTEXT).hostElement.classList.add('my-drawer')` workaround.
 
 **Observing the swipe gesture / active snap point.** A snap-point drawer opened imperatively has the same observability as the declarative `(swipeStart)` / `(swipeMove)` / `(swipeEnd)` / `(swipeCancel)` / `(activeSnapPointChange)` outputs, via config callbacks of the same name:
+
+<!-- snippet: fragment -->
 
 ```ts
 this.#drawers.open(ConfirmDrawer, {
@@ -194,6 +200,8 @@ this.#drawers.open(ConfirmDrawer, {
 
 **Driving the active snap point.** `ForDrawerRef.setActiveSnapPoint(snap)` moves a snap-point drawer to a new snap after open — the programmatic equivalent of _writing_ `[(activeSnapPoint)]` on the declarative `[forDrawer]`. `ref.activeSnapPoint()` is the matching reactive read (it also reflects the drawer's own internal transitions — the mount-time default and every swipe release):
 
+<!-- snippet: fragment -->
+
 ```ts
 const ref = this.#drawers.open(ConfirmDrawer, {
   data,
@@ -209,6 +217,8 @@ Like the declarative model it does not validate the argument against `snapPoints
 ### Per-channel dismissal (Escape-only drawers)
 
 `dismissible` is **not** all-or-nothing. The four dismiss channels — Escape, pointer-down-outside, focus-outside, and the composite outside-interaction — are independently vetoable on both APIs, so you can keep some live and suppress others (e.g. a non-modal floater that closes on Escape but stays put on an outside click). Programmatically the channels are callbacks on the open config, mirroring the `autoFocusOn*` shape:
+
+<!-- snippet: fragment -->
 
 ```ts
 this.#drawers.open(ConfirmDrawer, {
@@ -328,12 +338,16 @@ Three accepted shapes:
 
 Pass them in **strictly increasing** order (closest-to-edge first); the directive throws `FORCDK-DRAWER-009` otherwise. Mixed units (`'200px'` next to `0.5`) can only be ordered against the live drawer size, so they are re-checked on first measurement and fail with `FORCDK-DRAWER-010`, which names the offending point and the dimension it resolved against. `fadeFromIndex` must be a valid index into `snapPoints`.
 
-```ts
-[snapPoints] =
-  "['148px', '50%', 1]"[activeSnapPoint] = // peek → mid → full
-  'snap'[fadeFromIndex] = // current snap; written on swipe release
-    '1'; // backdrop fades once we cross the second snap
+```html
+<div
+  forDrawer
+  [snapPoints]="['148px', '50%', 1]"
+  [(activeSnapPoint)]="snap"
+  [fadeFromIndex]="1"
+></div>
 ```
+
+The three snaps read peek → mid → full; `snap` is the current one, written on every swipe release; the backdrop fades once the active snap reaches the second index.
 
 The `model<>()` change emitter (`(activeSnapPointChange)`) fires on internal transitions (the mount-time default and every swipe release), and stays silent on consumer writes through `[(activeSnapPoint)]`.
 
@@ -463,6 +477,8 @@ Always nest the child's `@if` inside the parent's `@if`. That guarantees Angular
 
 ## Scoped defaults
 
+<!-- snippet: fragment -->
+
 ```ts
 import { provideForDrawerDefaults } from 'forty-cdk/drawer';
 
@@ -483,6 +499,8 @@ bootstrapApplication(App, {
 ```
 
 Per-component overrides nest:
+
+<!-- snippet: fragment -->
 
 ```ts
 @Component({

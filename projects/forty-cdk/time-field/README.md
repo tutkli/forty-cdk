@@ -24,6 +24,8 @@ Pick a time-capable one (required). All time math goes through the same pluggabl
 
 > The day-only `provideInternationalizedDateAdapter()` (`CalendarDate`) cannot carry a time — `ForTimeField` throws a descriptive error if it is the active adapter.
 
+<!-- snippet: fragment -->
+
 ```ts
 import { bootstrapApplication } from '@angular/platform-browser';
 import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/internationalized-date';
@@ -197,6 +199,8 @@ The pieces are the range-specific `[forTimeRangeFieldStart]` / `[forTimeRangeFie
   </div>
 </div>
 ```
+
+<!-- snippet: fragment -->
 
 ```ts
 import {

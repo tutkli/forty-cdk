@@ -34,6 +34,8 @@ core, and `*forVirtualFor` renders the visible window with the position transfor
 </div>
 ```
 
+<!-- snippet: fragment -->
+
 ```ts
 readonly rows = signal(Array.from({ length: 10000 }, (_, i) => ({ label: `Row ${i}` })));
 ```
@@ -68,6 +70,8 @@ headless `injectVirtualizer` core directly, documented below.
   </div>
 </div>
 ```
+
+<!-- snippet: fragment -->
 
 ```ts
 readonly items = signal(Array.from({ length: 10000 }, (_, i) => `Row ${i}`));
@@ -110,6 +114,8 @@ element belongs to:
 }
 ```
 
+<!-- snippet: fragment -->
+
 ```ts
 readonly rows = viewChildren<ElementRef<HTMLElement>>('row');
 
@@ -145,6 +151,8 @@ The `totalSize()` drives the spacer's `width` rather than `height`:
 </div>
 ```
 
+<!-- snippet: fragment -->
+
 ```ts
 readonly v = injectVirtualizer({
   count: computed(() => this.items().length),
@@ -155,6 +163,8 @@ readonly v = injectVirtualizer({
 ```
 
 ## Jumping to an item
+
+<!-- snippet: fragment -->
 
 ```ts
 this.v.scrollToIndex(500, { align: 'start' });
@@ -197,6 +207,8 @@ Wire directly onto `[forVirtualViewport]`; the viewport builds the detector inte
 
 Compose with the headless core when you need `pending` state or custom `threshold`/`disabled`.
 The consumer owns the fetch and the data accumulation; the library decides _when_ to ask:
+
+<!-- snippet: fragment -->
 
 ```ts
 readonly v = injectVirtualizer({ count: this.count, estimateSize: () => 40, scrollElement: this.scrollEl });

@@ -149,6 +149,8 @@ A hover on a disabled slot is ignored, and the highlight falls back to the focus
 
 Per-instance inputs always win over the scope defaults. All four are no-ops when `modal` is set: `[forTimePickerContent]` mounts the modal shell instead of the anchored positioner, so the surface is never positioned against the trigger and the consumer's own CSS places it.
 
+<!-- snippet: fragment -->
+
 ```ts
 import { provideForTimePickerDefaults } from 'forty-cdk/time-picker';
 
@@ -245,6 +247,7 @@ Implements the [WAI-ARIA Listbox pattern](https://www.w3.org/WAI/ARIA/apg/patter
 Both supported wrapper patterns — `hostDirectives` with the exported `FOR_TIME_PICKER_HOST_DIRECTIVE_INPUTS` / `FOR_TIME_PICKER_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing — are documented in [Wrapping form primitives](../../../docs/wrapping-form-primitives.md).
 
 ```typescript
+import { Component } from '@angular/core';
 import {
   FOR_TIME_PICKER_HOST_DIRECTIVE_INPUTS,
   FOR_TIME_PICKER_HOST_DIRECTIVE_OUTPUTS,
