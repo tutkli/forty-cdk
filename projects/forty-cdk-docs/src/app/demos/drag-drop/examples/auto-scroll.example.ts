@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import {
   type ForDragDropEvent,
   ForDragHandle,
+  ForDragPlaceholder,
   ForDraggable,
   ForDropList,
   moveItemInArray,
@@ -26,14 +27,17 @@ const ARTISTS = [
   selector: 'app-drag-drop-auto-scroll-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [provideForDragDropDefaults({ autoScrollEdgeSize: 72, autoScrollMaxSpeed: 18 })],
-  imports: [ForDropList, ForDraggable, ForDragHandle],
+  imports: [ForDropList, ForDraggable, ForDragHandle, ForDragPlaceholder],
   template: `
-    <ul forDropList class="list" (dragDrop)="onDrop($event)">
+    <ul forDropList class="list" [liveSort]="true" (dragDrop)="onDrop($event)">
       @for (track of tracks(); track track.id) {
         <li forDraggable [dragData]="track" class="item">
           <span forDragHandle class="handle" aria-hidden="true">⠿</span>
           <span class="num">{{ $index + 1 }}</span>
           <span class="title">{{ track.title }}</span>
+          <ng-template forDragPlaceholder>
+            <div class="placeholder"></div>
+          </ng-template>
         </li>
       }
     </ul>
@@ -94,6 +98,14 @@ const ARTISTS = [
 
     .title {
       flex: 1;
+    }
+
+    .placeholder {
+      flex: none;
+      height: 2.65rem;
+      border: 2px dashed var(--pg-primary);
+      border-radius: var(--pg-radius-sm);
+      background: color-mix(in srgb, var(--pg-primary) 10%, transparent);
     }
 
     .item[data-dragging] {

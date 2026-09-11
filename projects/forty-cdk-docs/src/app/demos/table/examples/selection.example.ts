@@ -82,7 +82,6 @@ import { PEOPLE } from './people';
     .tbl-row {
       display: grid;
       grid-template-columns: 2.6rem 1.5fr 1fr 1fr;
-      align-items: center;
     }
 
     .tbl-head {
@@ -120,6 +119,9 @@ import { PEOPLE } from './people';
     }
 
     .tbl-cell--sel {
+      display: flex;
+      align-items: center;
+      justify-content: center;
       padding-inline: 0.6rem;
     }
 

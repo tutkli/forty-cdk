@@ -158,7 +158,6 @@ const FALLBACK_WIDTH: Record<PersonColumn, number> = {
 
     .ctbl-row {
       display: grid;
-      align-items: center;
     }
 
     .ctbl-head {
