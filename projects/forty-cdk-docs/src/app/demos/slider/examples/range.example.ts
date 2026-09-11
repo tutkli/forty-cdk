@@ -49,7 +49,7 @@ import { ForSlider, ForSliderRange, ForSliderThumb, ForSliderTrack } from 'forty
       flex: 1;
       height: 6px;
       border-radius: 999px;
-      background: var(--pg-surface-2);
+      background: var(--pg-border-strong);
       cursor: pointer;
     }
 

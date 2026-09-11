@@ -47,7 +47,7 @@ import { ForProgress, ForProgressIndicator } from 'forty-cdk/progress';
     .track {
       height: 10px;
       border-radius: 999px;
-      background: var(--pg-surface-2);
+      background: var(--pg-border-strong);
       overflow: hidden;
     }
 

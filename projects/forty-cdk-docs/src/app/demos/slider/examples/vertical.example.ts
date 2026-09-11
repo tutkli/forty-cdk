@@ -40,7 +40,7 @@ import { ForSlider, ForSliderRange, ForSliderThumb, ForSliderTrack } from 'forty
       width: 6px;
       height: 100%;
       border-radius: 999px;
-      background: var(--pg-surface-2);
+      background: var(--pg-border-strong);
       cursor: pointer;
     }
 

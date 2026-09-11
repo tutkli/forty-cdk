@@ -58,7 +58,7 @@ import { ForMeter, ForMeterIndicator } from 'forty-cdk/meter';
     .track {
       height: 14px;
       border-radius: 999px;
-      background: var(--pg-surface-2);
+      background: var(--pg-border-strong);
       overflow: hidden;
     }
 
@@ -66,7 +66,7 @@ import { ForMeter, ForMeterIndicator } from 'forty-cdk/meter';
       height: 100%;
       width: var(--for-meter-percentage, 0%);
       border-radius: 999px;
-      background: var(--pg-border-strong);
+      background: var(--pg-primary);
       transition:
         width 0.3s ease,
         background 0.3s ease;
