@@ -343,6 +343,90 @@ test.describe('Select', () => {
         .poll(async () => content.evaluate((c) => (c as HTMLElement).style.translate))
         .toMatch(/^-?\d+px -?\d+px$/);
     });
+
+    // `?popin=1` gives the surface a `scale(0.9)` enter animation, so the
+    // position resolves while it is transformed. `?selected=date` anchors on
+    // the fourth option, where a transform-inclusive measurement is off by
+    // ~11px rather than by a sub-pixel amount, and `?spacer=1` keeps the result
+    // clear of the top viewport clamp, which would mask the difference.
+    test.describe('scaled by an enter animation (#1888)', () => {
+      const openWithQuery = async (page: Page, query: Record<string, string>) => {
+        await gotoFixture(page, 'select', {
+          position: 'item-aligned',
+          selected: 'date',
+          spacer: '1',
+          ...query,
+        });
+        // Record every `translate` the positioner writes, from before the
+        // surface exists — polling could miss the first one.
+        await page.evaluate(() => {
+          const bucket: string[] = [];
+          (window as unknown as { __translates: string[] }).__translates = bucket;
+          new MutationObserver((records) => {
+            for (const record of records) {
+              const target = record.target as HTMLElement;
+              if (target.dataset['testid'] !== 'content') continue;
+              const written = target.style.translate;
+              if (written && bucket[bucket.length - 1] !== written) bucket.push(written);
+            }
+          }).observe(document.body, {
+            subtree: true,
+            childList: true,
+            attributes: true,
+            attributeFilter: ['style'],
+          });
+        });
+
+        await el(page, 'trigger').click();
+        await expect(el(page, 'content')).toBeVisible();
+        await expect
+          .poll(async () =>
+            page.evaluate(
+              () => (window as unknown as { __translates: string[] }).__translates.length,
+            ),
+          )
+          .toBeGreaterThan(0);
+        return page.evaluate(() => (window as unknown as { __translates: string[] }).__translates);
+      };
+
+      test('resolves the same first position as an un-animated surface', async ({ page }) => {
+        const animated = await openWithQuery(page, { popin: '1' });
+        const plain = await openWithQuery(page, {});
+
+        // The anti-flash clip is dropped on the first resolved position, so
+        // that one is what the user sees painted.
+        expect(animated[0]).toBe(plain[0]);
+      });
+
+      test('centers the selected option on the trigger with no later correction', async ({
+        page,
+      }) => {
+        const translates = await openWithQuery(page, { popin: '1' });
+        const content = el(page, 'content');
+
+        await content.evaluate(async (c) => {
+          await Promise.all(c.getAnimations().map((animation) => animation.finished));
+        });
+
+        const measured = await page.evaluate(() => {
+          const rect = (testid: string) =>
+            document.querySelector(`[data-testid="${testid}"]`)!.getBoundingClientRect();
+          const trigger = rect('trigger');
+          const option = rect('opt-date');
+          return {
+            triggerCenter: trigger.top + trigger.height / 2,
+            optionCenter: option.top + option.height / 2,
+            translate:
+              document.querySelector<HTMLElement>('[data-testid="content"]')!.style.translate,
+          };
+        });
+
+        expect(Math.abs(measured.optionCenter - measured.triggerCenter)).toBeLessThanOrEqual(2);
+        // Nothing scrolled or resized, so `autoUpdate` has nothing to correct:
+        // the position written before the animation is the one that survives.
+        expect(measured.translate).toBe(translates[0]);
+      });
+    });
   });
 
   // #673 — `[forSelectAnchor]` swaps the floating-ui reference to a decorated

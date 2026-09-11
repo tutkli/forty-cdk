@@ -8,7 +8,11 @@ import {
 import { TestBed } from '@angular/core/testing';
 
 import { flushPositioning, installObserverPolyfills } from '../../../src/test-utils';
-import { injectItemAlignedPositioner } from './item-aligned';
+import {
+  injectItemAlignedPositioner,
+  offsetCenterWithinListbox,
+  resolveItemAlignedY,
+} from './item-aligned';
 
 @Component({
   selector: 'item-aligned-listbox',
@@ -181,5 +185,146 @@ describe('injectItemAlignedPositioner', () => {
     await flushPositioning(fixture);
     expect(lbEl.dataset['position']).toBe('item-aligned');
     expect(lbEl.style.translate).toMatch(/^-?\d+px -?\d+px$/);
+  });
+});
+
+/**
+ * The middleware's arithmetic, asserted directly: the geometry is the
+ * function's argument rather than a stubbed measurement, so no layout is
+ * faked here. What the numbers mean against real layout is `select.e2e.ts`'s
+ * claim.
+ */
+describe('resolveItemAlignedY', () => {
+  const trigger = { triggerTop: 260, triggerHeight: 32 };
+  const viewport = { viewportHeight: 900, padding: 8 };
+
+  it('lands the target option center exactly on the trigger center', () => {
+    const targetCenter = 113;
+    const y = resolveItemAlignedY({
+      ...trigger,
+      ...viewport,
+      listboxHeight: 130,
+      targetCenter,
+    });
+
+    expect(y + targetCenter).toBe(trigger.triggerTop + trigger.triggerHeight / 2);
+  });
+
+  it('clamps to the top padding rather than pushing the listbox off-screen', () => {
+    const y = resolveItemAlignedY({
+      triggerTop: 20,
+      triggerHeight: 32,
+      ...viewport,
+      listboxHeight: 130,
+      targetCenter: 113,
+    });
+
+    expect(y).toBe(viewport.padding);
+  });
+
+  it('clamps to the bottom padding for a trigger near the viewport floor', () => {
+    const y = resolveItemAlignedY({
+      triggerTop: 880,
+      triggerHeight: 32,
+      ...viewport,
+      listboxHeight: 130,
+      targetCenter: 16,
+    });
+
+    expect(y).toBe(viewport.viewportHeight - 130 - viewport.padding);
+  });
+
+  it('pins a listbox taller than the viewport to the top padding', () => {
+    // No offset satisfies both edges, so the clamp collapses onto `minY`.
+    const y = resolveItemAlignedY({
+      ...trigger,
+      ...viewport,
+      listboxHeight: 1200,
+      targetCenter: 600,
+    });
+
+    expect(y).toBe(viewport.padding);
+  });
+
+  it('aligns to the trigger top edge when the listbox holds no anchorable option', () => {
+    const y = resolveItemAlignedY({
+      ...trigger,
+      ...viewport,
+      listboxHeight: 130,
+      targetCenter: null,
+    });
+
+    expect(y).toBe(trigger.triggerTop);
+  });
+});
+
+/**
+ * jsdom runs no layout, so the offset geometry here is declared rather than
+ * measured — what the cases assert is the `offsetParent` walk (the listbox's
+ * own offset cancels out, nested wrappers accumulate) and, in the last one,
+ * that a client rect cannot influence the answer: the assertion there is that
+ * the result is *unchanged* by the stubbed rects, never a value they produced.
+ */
+describe('offsetCenterWithinListbox', () => {
+  function declareOffsets(
+    el: HTMLElement,
+    offsets: { top: number; height: number; parent: HTMLElement | null },
+  ): void {
+    Object.defineProperty(el, 'offsetTop', { configurable: true, value: offsets.top });
+    Object.defineProperty(el, 'offsetHeight', { configurable: true, value: offsets.height });
+    Object.defineProperty(el, 'offsetParent', { configurable: true, value: offsets.parent });
+  }
+
+  function stubScaledRect(el: HTMLElement, top: number, height: number): void {
+    Object.defineProperty(el, 'getBoundingClientRect', {
+      configurable: true,
+      value: () => ({ top, height, bottom: top + height, left: 0, right: 0, width: 0 }) as DOMRect,
+    });
+  }
+
+  let listbox: HTMLElement;
+
+  beforeEach(() => {
+    listbox = document.createElement('div');
+    document.body.appendChild(listbox);
+  });
+
+  afterEach(() => listbox.remove());
+
+  it('measures the option center relative to the listbox top border edge', () => {
+    const option = document.createElement('div');
+    listbox.appendChild(option);
+    declareOffsets(listbox, { top: 420, height: 223, parent: null });
+    declareOffsets(option, { top: 97, height: 32, parent: listbox });
+
+    expect(offsetCenterWithinListbox(option, listbox)).toBe(113);
+  });
+
+  it('accumulates the offset chain when the option sits inside a group', () => {
+    const group = document.createElement('div');
+    const option = document.createElement('div');
+    group.appendChild(option);
+    listbox.appendChild(group);
+    declareOffsets(listbox, { top: 420, height: 223, parent: null });
+    declareOffsets(group, { top: 25, height: 128, parent: listbox });
+    declareOffsets(option, { top: 72, height: 32, parent: group });
+
+    expect(offsetCenterWithinListbox(option, listbox)).toBe(113);
+  });
+
+  it('resolves the same center while the surface is scaled by an enter animation (#1888)', () => {
+    const option = document.createElement('div');
+    listbox.appendChild(option);
+    declareOffsets(listbox, { top: 420, height: 223, parent: null });
+    declareOffsets(option, { top: 97, height: 32, parent: listbox });
+
+    const untransformed = offsetCenterWithinListbox(option, listbox);
+
+    // Same layout, `scale(0.9)` about the surface center: every client rect
+    // shrinks and shifts, the offset geometry does not.
+    stubScaledRect(listbox, 111.3, 200.7);
+    stubScaledRect(option, 210.6, 28.8);
+
+    expect(offsetCenterWithinListbox(option, listbox)).toBe(untransformed);
   });
 });
