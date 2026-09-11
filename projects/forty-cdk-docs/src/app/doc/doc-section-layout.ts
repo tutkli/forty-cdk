@@ -48,32 +48,38 @@ export interface DocExamplesSlot<T> {
   /** The sections rendered below them. */
   readonly after: readonly T[];
   /**
-   * The section whose body the demos replace, or `null` for a document that
-   * declares none and has the heading synthesised for it.
+   * The section whose body the demos replace, or `null` when they replace none
+   * — a document declaring no `## Examples`, or a page projecting no demo into
+   * the block.
    */
   readonly declared: T | null;
 }
 
+/** Whether a page projects a demo into the block — a hero renders above the intro instead. */
+function rendersInBlock(demos: readonly Projected[]): boolean {
+  return demos.some((demo) => !demo.hero);
+}
+
 /**
- * Where a page renders its live demos
- * ([#1865](https://github.com/tutkli/forty-cdk/issues/1865)).
+ * Where a page renders its live demos.
  *
  * A document that declares `## Examples` keeps the position it wrote it in, and
- * the site replaces that section's body with the demos. One that carries a
- * written exemption from it — six today, plus `virtualization`, whose archetype
- * never required the section — has the heading synthesised by
- * {@link examplesHeadingOf} instead, and this is the rule that gives it the
- * template's position: after `## Anatomy`, which is the "what directives exist"
- * reference a demo means nothing without, and after the prelude for a document
- * that declares no `## Anatomy` at all.
+ * the site replaces that section's body with the demos. One that declares none
+ * gets the block after `## Anatomy`, and after the prelude when it declares no
+ * `## Anatomy` at all.
  *
- * The placement had been an accident of a `-1`: the index of the declared
- * section was also the split point, so a document with none put the demos, the
- * heading and its anchor at index 0. Seven published pages opened with their
- * demos, `/table` reaching `## Anatomy` in ninth place, while the forty-six
- * that declare the section put it where the page template does.
+ * A page that projects no demo into the block gets no slot: every section stays
+ * in `before`, a declared `## Examples` among them, so its markdown renders like
+ * any other section rather than being replaced by nothing.
  */
-export function splitAtExamples<T extends Anchored>(sections: readonly T[]): DocExamplesSlot<T> {
+export function splitAtExamples<T extends Anchored>(
+  sections: readonly T[],
+  demos: readonly Projected[],
+): DocExamplesSlot<T> {
+  if (!rendersInBlock(demos)) {
+    return { before: sections, after: [], declared: null };
+  }
+
   const declared = sections.findIndex((section) => section.slug === EXAMPLES);
   if (declared !== -1) {
     return {
@@ -89,25 +95,20 @@ export function splitAtExamples<T extends Anchored>(sections: readonly T[]): Doc
 }
 
 /**
- * The heading a page renders its live demos under, or `null` for a page with
- * nothing to render there.
+ * The heading a page renders its live demos under, or `null` for a page that
+ * projects none into the block.
  *
- * A document that declares the section owns its heading, and the site replaces
- * that section's body with the demos. One that does not has the heading
- * synthesised — but only when a demo renders inside the block. A hero is
- * projected above the intro instead, so a page whose only demo is its hero
- * would emit a heading, its permalink and an empty body
- * ([#1872](https://github.com/tutkli/forty-cdk/issues/1872)): the state
- * `forty-cdk/shared` is already spared by declaring no demos at all
- * ([#1809](https://github.com/tutkli/forty-cdk/issues/1809)), and the question
- * the rail already asks when it lists the block's children.
+ * A document that declares the section owns the title and anchor; one that
+ * declares none has `Examples` synthesised.
  */
 export function examplesHeadingOf(
   declared: DocExamplesHeading | null,
   demos: readonly Projected[],
 ): DocExamplesHeading | null {
-  if (declared !== null) {
-    return { title: declared.title, slug: declared.slug };
+  if (!rendersInBlock(demos)) {
+    return null;
   }
-  return demos.some((demo) => !demo.hero) ? { title: EXAMPLES_TITLE, slug: EXAMPLES } : null;
+  return declared === null
+    ? { title: EXAMPLES_TITLE, slug: EXAMPLES }
+    : { title: declared.title, slug: declared.slug };
 }

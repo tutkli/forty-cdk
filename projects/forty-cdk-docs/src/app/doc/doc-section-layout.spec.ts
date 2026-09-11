@@ -28,8 +28,11 @@ function sectionsOf(...titles: readonly string[]): readonly DocSection[] {
     .sections;
 }
 
+const IN_BLOCK = [{ hero: true }, { hero: false }];
+const HERO_ONLY = [{ hero: true }];
+
 function slotOf(...titles: readonly string[]) {
-  return splitAtExamples(sectionsOf(...titles));
+  return splitAtExamples(sectionsOf(...titles), IN_BLOCK);
 }
 
 function slugsOf(sections: readonly DocSection[]): readonly string[] {
@@ -43,6 +46,17 @@ describe('the slot a page renders its live demos in', () => {
     expect(declared?.slug).toBe('examples');
     expect(slugsOf(before)).toEqual(['anatomy']);
     expect(slugsOf(after)).toEqual(['api']);
+  });
+
+  it('returns a declared ## Examples to the normal flow when the page projects no demo', () => {
+    const { before, after, declared } = splitAtExamples(
+      sectionsOf('Anatomy', 'Examples', 'API'),
+      HERO_ONLY,
+    );
+
+    expect(declared).toBeNull();
+    expect(slugsOf(before)).toEqual(['anatomy', 'examples', 'api']);
+    expect(slugsOf(after)).toEqual([]);
   });
 
   it('gives a synthesised block the position the page template orders it in', () => {
@@ -87,6 +101,7 @@ describe('the slot a page renders its live demos in', () => {
  */
 const README_FLOOR = 50;
 const SYNTHESISED_FLOOR = 6;
+const DECLARED_FLOOR = 40;
 
 describe('the slot over the corpus', () => {
   const compiled = PRIMITIVE_DOCS.map((doc) => ({ slug: doc.slug, document: compile(doc) }));
@@ -94,13 +109,29 @@ describe('the slot over the corpus', () => {
   it('loses no section and reorders none, on every entry point README', () => {
     expect(compiled.length).toBeGreaterThanOrEqual(README_FLOOR);
 
-    const moved = compiled.filter(({ document }) => {
-      const { before, after, declared } = splitAtExamples(document.sections);
-      const rejoined = [...before, ...(declared === null ? [] : [declared]), ...after];
-      return slugsOf(rejoined).join('|') !== slugsOf(document.sections).join('|');
-    });
+    const moved = compiled.filter(({ document }) =>
+      [IN_BLOCK, HERO_ONLY, []].some((demos) => {
+        const { before, after, declared } = splitAtExamples(document.sections, demos);
+        const rejoined = [...before, ...(declared === null ? [] : [declared]), ...after];
+        return slugsOf(rejoined).join('|') !== slugsOf(document.sections).join('|');
+      }),
+    );
 
     expect(moved.map(({ slug }) => slug)).toEqual([]);
+  });
+
+  it('renders every section a hero-only page declares, the ## Examples one included', () => {
+    const declaring = compiled.filter(({ document }) =>
+      document.sections.some((section) => section.slug === 'examples'),
+    );
+    expect(declaring.length).toBeGreaterThanOrEqual(DECLARED_FLOOR);
+
+    const dropped = declaring.filter(({ document }) => {
+      const { before, declared } = splitAtExamples(document.sections, HERO_ONLY);
+      return declared !== null || !slugsOf(before).includes('examples');
+    });
+
+    expect(dropped.map(({ slug }) => slug)).toEqual([]);
   });
 
   it('renders the parts list above the demos on every page that synthesises the block', () => {
@@ -112,7 +143,7 @@ describe('the slot over the corpus', () => {
     expect(synthesised.length).toBeGreaterThanOrEqual(SYNTHESISED_FLOOR);
 
     const placed = synthesised.map(({ slug, document }) => {
-      const { before, after } = splitAtExamples(document.sections);
+      const { before, after } = splitAtExamples(document.sections, IN_BLOCK);
       return [slug, before.length > 0, slugsOf(after).includes('anatomy')] as const;
     });
 
@@ -136,11 +167,16 @@ describe('the heading a page renders its live demos under', () => {
     expect(examplesHeadingOf(null, [])).toBeNull();
   });
 
-  it('keeps the heading a document declares, whatever the page projects', () => {
+  it('keeps the heading a document declares when the page projects a demo into it', () => {
     const { declared } = slotOf('Anatomy', 'Examples', 'API');
-    const heading = { title: 'Examples', slug: 'examples' };
 
-    expect(examplesHeadingOf(declared, [{ hero: true }])).toEqual(heading);
-    expect(examplesHeadingOf(declared, [])).toEqual(heading);
+    expect(examplesHeadingOf(declared, IN_BLOCK)).toEqual({ title: 'Examples', slug: 'examples' });
+  });
+
+  it('renders no block for a hero-only page, whatever the document declares', () => {
+    const { declared } = slotOf('Anatomy', 'Examples', 'API');
+
+    expect(examplesHeadingOf(declared, HERO_ONLY)).toBeNull();
+    expect(examplesHeadingOf(declared, [])).toBeNull();
   });
 });

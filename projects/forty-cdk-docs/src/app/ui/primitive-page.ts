@@ -203,17 +203,16 @@ export class PrimitivePage {
     return intro.trim() ? this.#sanitizer.bypassSecurityTrustHtml(intro) : null;
   });
 
-  readonly #slot = computed(() => splitAtExamples(this.doc().sections));
+  readonly #projected = computed(() => this.demos().map((demo) => ({ hero: demo.hero() })));
+
+  readonly #slot = computed(() => splitAtExamples(this.doc().sections, this.#projected()));
 
   protected readonly sectionsBefore = computed(() => this.#slot().before);
 
   protected readonly sectionsAfter = computed(() => this.#slot().after);
 
   protected readonly examplesMeta = computed(() =>
-    examplesHeadingOf(
-      this.#slot().declared,
-      this.demos().map((demo) => ({ hero: demo.hero() })),
-    ),
+    examplesHeadingOf(this.#slot().declared, this.#projected()),
   );
 
   protected readonly tocItems = computed<readonly TocEntry[]>(() => {

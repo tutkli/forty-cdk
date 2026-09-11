@@ -264,18 +264,18 @@ removed, stays in the alias list so it cannot come back.
 
 How each canonical section surfaces on the site (informs the page-shell components, not the audit):
 
-| Section           | Site treatment                                                                                                         |
-| ----------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| _(intro)_         | Page header: title + the lede as description + APG badge; the rest of the intro renders below it                       |
-| When to choose    | Rendered markdown                                                                                                      |
-| Anatomy           | Rendered markdown; the Class·Selector·Role table as a compact table                                                    |
-| Examples          | **Not** rendered from README — live `*.example.ts` demos with **Tabs** (Preview/Code), copy-to-clipboard via **Toast** |
-| API               | Rendered markdown; a table whose header matches the API shape gets the type chip and detail popover                    |
-| Programmatic API  | Rendered markdown; its config table is a compact table                                                                 |
-| Keyboard          | Rendered markdown; Key·Action is a compact table                                                                       |
-| Accessibility     | Rendered markdown                                                                                                      |
-| Styling           | Rendered markdown                                                                                                      |
-| All `##` headings | Feed the "On this page" TOC (right rail); the `specific` ones nest under one group — see below                         |
+| Section           | Site treatment                                                                                                                                                         |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| _(intro)_         | Page header: title + the lede as description + APG badge; the rest of the intro renders below it                                                                       |
+| When to choose    | Rendered markdown                                                                                                                                                      |
+| Anatomy           | Rendered markdown; the Class·Selector·Role table as a compact table                                                                                                    |
+| Examples          | **Not** rendered from README — live `*.example.ts` demos with **Tabs** (Preview/Code), copy-to-clipboard via **Toast**; rendered markdown on a page projecting no demo |
+| API               | Rendered markdown; a table whose header matches the API shape gets the type chip and detail popover                                                                    |
+| Programmatic API  | Rendered markdown; its config table is a compact table                                                                                                                 |
+| Keyboard          | Rendered markdown; Key·Action is a compact table                                                                                                                       |
+| Accessibility     | Rendered markdown                                                                                                                                                      |
+| Styling           | Rendered markdown                                                                                                                                                      |
+| All `##` headings | Feed the "On this page" TOC (right rail); the `specific` ones nest under one group — see below                                                                         |
 
 A document that declares no `## Examples` — the six carrying a written exemption, plus one
 `headless-utility` the table never required the section of — still gets it as long as its page
@@ -287,13 +287,17 @@ compose below them, `/table` in ninth place. `check:doc-output` fails a page who
 follows the block again, and the placement itself is stated over the compiled model in
 `doc-section-layout.spec.ts`.
 
-A page whose only demo is its **hero** synthesises nothing
-([#1872](https://github.com/tutkli/forty-cdk/issues/1872)). A hero renders above the intro rather
+A page whose only demo is its **hero** gets no block at all
+([#1872](https://github.com/tutkli/forty-cdk/issues/1872),
+[#1878](https://github.com/tutkli/forty-cdk/issues/1878)). A hero renders above the intro rather
 than in the block, so the heading would carry its permalink and an empty body — the state
 `forty-cdk/shared` is spared by declaring no demos at all
 ([#1809](https://github.com/tutkli/forty-cdk/issues/1809)), and the question the rail already asks
-when it lists the block's children. `/menu` is that page, and it is the reason the rule is the
-demos a page projects rather than the demos it declares.
+when it lists the block's children. `/menu` is that page on the synthesised half; on the declared
+one — `/hover-card`, `/separator` and `/toolbar` — the section returns to the normal flow and the
+site publishes the markdown its README writes under the heading, nested `###` anchors included.
+That is why the rule is the demos a page projects rather than the demos it declares, and why
+`check:doc-output` fails an emitted `#examples` carrying neither a demo frame nor a content block.
 
 The rail groups by ring ([#1810](https://github.com/tutkli/forty-cdk/issues/1810)). `core` and
 `canonical` sections stay at the top level in document order; the `specific` ones nest under a single
@@ -340,12 +344,14 @@ _serves_ ([#1802](https://github.com/tutkli/forty-cdk/issues/1802)). Over the pr
 fails on an anchor that still points at repository source, on one outside the site's base href, on an
 internal href that is not a route, and on any fragment with no matching `id` on its target page —
 plus, per document, on a `##` section the page never emitted, on a section that rendered no content
-block, and on a rail whose links do not arrive in the order the page renders their targets. Anchors
+block, on an `#examples` block carrying neither a demo frame nor a content block, and on a rail
+whose links do not arrive in the order the page renders their targets. Anchors
 inside a live example are excluded: a demo's markup is data, not documentation. One rule follows
 from the Examples row above and is worth stating on its own: **a fragment link to a heading nested
-under `## Examples` resolves on GitHub and cannot resolve on the site**, because the site replaces
-that section's body with its live demos. Link to `#examples`
-instead — it is valid in both places.
+under `## Examples` resolves on GitHub and cannot resolve on the site whenever the page projects a
+demo into that block**, because the site then replaces the section's body with its live demos. Link
+to `#examples` instead — it is valid in both places, and it stays valid on a page that later grows
+a demo.
 
 **Every fenced code block is highlighted at build time**, from the same two themes the example
 sources use, so nothing about a page's markup is decided in the browser
