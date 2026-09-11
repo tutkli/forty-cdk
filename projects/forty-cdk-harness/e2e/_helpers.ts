@@ -563,6 +563,24 @@ export async function expectRovingFocus(page: Page, testid: string): Promise<voi
 }
 
 /**
+ * Assert that `testid` owns its roving group's single tab stop without holding
+ * focus, where `tabbableSelector` enumerates the group's tab stops
+ * (`'[role="option"][tabindex="0"]'`, `'[data-testid="toolbar"] [tabindex="0"]'`).
+ * Use this — never a bare count — before a `Tab` re-entering a group whose
+ * previous owner was just removed or disabled: `toHaveCount(1)` is already
+ * satisfied while the stop has left the removed item but not yet reached its
+ * final owner.
+ */
+export async function expectRovingTabStop(
+  page: Page,
+  testid: string,
+  tabbableSelector: string,
+): Promise<void> {
+  await expect(el(page, testid)).toHaveAttribute('tabindex', '0');
+  await expect(page.locator(tabbableSelector)).toHaveCount(1);
+}
+
+/**
  * Thin wrapper around `expect(locator).toBeFocused()` so specs can write
  * `await expectFocused(el(page, 'first'))` rather than the longer form. The
  * caller awaits the returned promise; this function does not await

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { el, focusRovingItem, gotoFixture, rovingFirst } from './_helpers';
+import { el, expectRovingTabStop, focusRovingItem, gotoFixture, rovingFirst } from './_helpers';
 
 test.describe('Listbox', () => {
   test('Tab into the listbox lands on the first enabled option', async ({ page }) => {
@@ -63,7 +63,7 @@ test.describe('Listbox', () => {
 
     // Exactly one option remains tabbable, and Tab from the control re-enters
     // the listbox at the next enabled option (banana is disabled → cherry).
-    await expect(page.locator('[role="option"][tabindex="0"]')).toHaveCount(1);
+    await expectRovingTabStop(page, 'opt-cherry', '[role="option"][tabindex="0"]');
     await el(page, 'disable-active').focus();
     await expect(el(page, 'disable-active')).toBeFocused();
     await page.keyboard.press('Tab');
@@ -77,8 +77,8 @@ test.describe('Listbox', () => {
     await el(page, 'opt-apple').focus();
     await el(page, 'disable-active').click();
 
-    await expect(page.locator('[role="option"][tabindex="0"]')).toHaveCount(1);
     await expect(el(page, 'opt-apple')).toHaveAttribute('tabindex', '-1');
+    await expectRovingTabStop(page, 'opt-cherry', '[role="option"][tabindex="0"]');
     await el(page, 'disable-active').focus();
     await expect(el(page, 'disable-active')).toBeFocused();
     await page.keyboard.press('Tab');
