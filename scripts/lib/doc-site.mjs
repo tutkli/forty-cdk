@@ -8,6 +8,7 @@ import { repoRoot } from './repo-path.mjs';
 export const DOCS_DIR = join(repoRoot, 'docs');
 export const SITE_DIR = join(DOCS_DIR, 'site');
 export const LIBRARY_DIR = join(repoRoot, 'projects', 'forty-cdk');
+export const LIBRARY_MANIFEST = join(LIBRARY_DIR, 'package.json');
 
 /** Holds no entry point and ships no page — its README documents lint fixtures. */
 const NOT_AN_ENTRY_POINT = 'eslint-rules-fixtures';
@@ -59,6 +60,31 @@ export const EXCLUDED_GUIDES = [
       'Governance for contributors authoring the site itself — it specifies the page template the primitive pages are held to, and addresses nobody reading the published documentation.',
   },
 ];
+
+/**
+ * What the published package states about itself — the version, the
+ * `@angular/core` peer range and the licence — read from the manifest ng-packagr
+ * publishes, so the landing page's maturity line is the release's own record
+ * rather than a sentence someone has to remember to update.
+ */
+export function readLibraryMeta() {
+  const manifest = JSON.parse(readFileSync(LIBRARY_MANIFEST, 'utf8'));
+  const fields = {
+    version: manifest.version,
+    angular: manifest.peerDependencies?.['@angular/core'],
+    license: manifest.license,
+  };
+  const missing = Object.entries(fields)
+    .filter(([, value]) => typeof value !== 'string' || value.trim() === '')
+    .map(([name]) => name);
+  if (missing.length > 0) {
+    throw new Error(
+      `projects/forty-cdk/package.json states no ${missing.join(', ')} — the landing page reads ` +
+        'its maturity line from the version, the @angular/core peer range and the license there',
+    );
+  }
+  return fields;
+}
 
 /**
  * Every entry point that ships a README, published or not, in slug order.

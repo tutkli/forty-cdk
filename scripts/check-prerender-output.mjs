@@ -1,9 +1,9 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 
-import { readGuides, readPrimitives, readSitePages } from './lib/doc-site.mjs';
+import { readGuides, readLibraryMeta, readPrimitives, readSitePages } from './lib/doc-site.mjs';
 import { readErrorCodes } from './lib/error-codes.mjs';
-import { escapeHtml } from './lib/html.mjs';
+import { escapeHtml, stripText } from './lib/html.mjs';
 import { repoRoot } from './lib/repo-path.mjs';
 
 const BROWSER = join(repoRoot, 'dist', 'forty-cdk-docs', 'browser');
@@ -406,6 +406,109 @@ function checkComponentStyles() {
 const styleBlocks = checkComponentStyles();
 
 /**
+ * The catalogue and the maturity line the landing page derives
+ * ([#1919](https://github.com/tutkli/forty-cdk/issues/1919)), read back from
+ * the sources they were derived from: the registry module `pnpm gen:doc-model`
+ * emitted — the same one the rail and every page header read — and the package
+ * manifest. A group the page dropped, an entry it stopped linking, a link that
+ * lost the tooltip carrying its description, or a version it hand-wrote fails
+ * here rather than on the published site. The description text itself is not
+ * in the emit — a tooltip renders only while open — so the link is held to
+ * being a tooltip trigger, and the docs suite holds the tooltip's content to
+ * the registry.
+ */
+const REGISTRY_MODULE = join(
+  repoRoot,
+  'projects',
+  'forty-cdk-docs',
+  'src',
+  'generated',
+  'primitives.generated.ts',
+);
+const GROUPS_MODULE = join(repoRoot, 'projects', 'forty-cdk-docs', 'src', 'app', 'primitives.ts');
+
+function readRegistry() {
+  const source = readFileSync(REGISTRY_MODULE, 'utf8');
+  const arrayOf = (name) => {
+    const found = new RegExp(`export const ${name}\\b[^=]*= (\\[[\\s\\S]*?\\]);\\n`).exec(source);
+    if (found === null) {
+      fail(`primitives.generated.ts exports no ${name} — run pnpm gen:doc-model`);
+    }
+    return JSON.parse(found[1]);
+  };
+  const labels = [...readFileSync(GROUPS_MODULE, 'utf8').matchAll(/label: '([^']+)'/g)].map(
+    (match) => match[1],
+  );
+  if (labels.length === 0) {
+    fail('primitives.ts declares no DOCS_GROUPS label — the catalogue scan reads no group');
+  }
+  return { entries: [...arrayOf('PRIMITIVES'), ...arrayOf('UTILITIES')], labels };
+}
+
+function collapseText(html) {
+  return stripText(html)
+    .replace(/&nbsp;/g, ' ')
+    .replace(/\s+/g, ' ');
+}
+
+function checkLanding(html) {
+  const text = collapseText(html);
+  const library = readLibraryMeta();
+  const { entries, labels } = readRegistry();
+  const problems = [];
+
+  for (const [name, value] of [
+    ['version', `v${library.version}`],
+    ['@angular/core peer range', `Angular ${library.angular}`],
+    ['license', library.license],
+  ]) {
+    if (!text.includes(value)) {
+      problems.push(
+        `states no "${value}" — its maturity line has fallen behind the ${name} in ` +
+          'projects/forty-cdk/package.json',
+      );
+    }
+  }
+
+  const ungrouped = labels.filter((label) => !text.includes(label));
+  if (ungrouped.length > 0) {
+    problems.push(`shows no group labelled ${ungrouped.map((label) => `"${label}"`).join(', ')}`);
+  }
+
+  const index = /<landing-index[\s>][\s\S]*?<\/landing-index>/.exec(html)?.[0];
+  if (index === undefined) {
+    fail('the landing page renders no <landing-index> — the catalogue scan reads nothing');
+  }
+  const unlinked = [];
+  const undescribed = [];
+  for (const entry of entries) {
+    const link = new RegExp(`<a\\b[^>]*\\bhref="[^"]*/${entry.slug}"[^>]*>`).exec(index)?.[0];
+    if (link === undefined) {
+      unlinked.push(entry.slug);
+    } else if (!link.includes('data-state=')) {
+      undescribed.push(entry.slug);
+    }
+  }
+  if (unlinked.length > 0) {
+    problems.push(
+      `links ${unlinked.length} published entry point(s) nowhere in its catalogue: ` +
+        unlinked.join(', '),
+    );
+  }
+  if (undescribed.length > 0) {
+    problems.push(
+      `links ${undescribed.length} entry point(s) without the tooltip trigger that carries ` +
+        `its description: ${undescribed.join(', ')}`,
+    );
+  }
+
+  if (problems.length > 0) {
+    fail(`the landing page\n  ${problems.join('\n  ')}`);
+  }
+  return entries.length;
+}
+
+/**
  * The root is a page of its own rather than a redirect
  * ([#1812](https://github.com/tutkli/forty-cdk/issues/1812)), so it is held to
  * rendered content like every other route. The refresh stub it used to emit
@@ -413,6 +516,7 @@ const styleBlocks = checkComponentStyles();
  * to land on something that states what forty-cdk is.
  */
 const homeFile = join(BROWSER, 'index.html');
+let catalogued = 0;
 if (!existsSync(homeFile)) {
   missing.push('(home)');
 } else {
@@ -426,6 +530,7 @@ if (!existsSync(homeFile)) {
   checkTheme('(home)', homeHtml);
   checkThemeToggle('(home)', homeHtml);
   checkDemoAttributes('(home)', homeHtml);
+  catalogued = checkLanding(homeHtml);
 }
 
 for (const { path, title } of routes) {
@@ -511,5 +616,6 @@ console.log(
     `${styleBlocks} component style block(s) keying none of their rules on the theme attribute, ` +
     `${themeToggles} theme toggle(s) prerendered without a state and ` +
     `${demoBlocks} example block(s) publishing none of their inputs as attributes and none of ` +
-    'them an id of "null"',
+    `them an id of "null", and a landing page cataloguing all ${catalogued} published entry ` +
+    'points, each linked with its description tooltip, and stating the version the manifest states',
 );

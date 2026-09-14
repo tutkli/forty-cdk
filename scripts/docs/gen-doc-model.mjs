@@ -5,7 +5,7 @@ import { foldTargetOf } from '../lib/doc-contract.mjs';
 import { compileCorpus } from '../lib/doc-corpus.mjs';
 import { buildDocRoutes } from '../lib/doc-links.mjs';
 import { readErrorCodes } from '../lib/error-codes.mjs';
-import { EXCLUDED_GUIDES, GUIDE_GROUPS } from '../lib/doc-site.mjs';
+import { EXCLUDED_GUIDES, GUIDE_GROUPS, readLibraryMeta } from '../lib/doc-site.mjs';
 import { repoRoot } from '../lib/repo-path.mjs';
 import { foldableOf, withFold } from './doc-fold.mjs';
 import { DocCompileError } from './doc-model.mjs';
@@ -91,8 +91,14 @@ function indexModule(documents, pages) {
  * `description` is the document's own lede, resolved to text — which is why the
  * page can render its intro whole and still show a description in the header:
  * there is one copy, and the compiler decided which part of the document it is.
+ *
+ * `LIBRARY` rides in the same module for the same reason
+ * ([#1919](https://github.com/tutkli/forty-cdk/issues/1919)): the landing page
+ * states the version, the Angular range and the licence beside the catalogue,
+ * and reading them from the package manifest at the same moment the catalogue
+ * is derived is what keeps that line from outliving a release.
  */
-function registryModule(documents) {
+function registryModule(documents, library) {
   const entryOf = (document) => ({
     slug: document.slug,
     title: document.meta.title,
@@ -107,9 +113,10 @@ function registryModule(documents) {
       .sort(byTitle);
 
   return (
-    `import type { DocsPrimitive } from '../app/primitives';\n\n` +
+    `import type { DocsLibrary, DocsPrimitive } from '../app/primitives';\n\n` +
     `export const PRIMITIVES: readonly DocsPrimitive[] = ${serialize(of('primitives'))};\n\n` +
-    `export const UTILITIES: readonly DocsPrimitive[] = ${serialize(of('utilities'))};\n`
+    `export const UTILITIES: readonly DocsPrimitive[] = ${serialize(of('utilities'))};\n\n` +
+    `export const LIBRARY: DocsLibrary = ${serialize(library)};\n`
   );
 }
 
@@ -338,7 +345,7 @@ write([
   [join(OUT_DIR, 'doc-index.generated.ts'), indexModule(documents, pages)],
   [join(OUT_DIR, 'guides.generated.ts'), guidesModule(guides, groupOf)],
   [join(OUT_DIR, 'site-pages.generated.ts'), sitePagesModule(sitePages)],
-  [join(OUT_DIR, 'primitives.generated.ts'), registryModule(primitives)],
+  [join(OUT_DIR, 'primitives.generated.ts'), registryModule(primitives, readLibraryMeta())],
   [join(OUT_DIR, 'error-codes.generated.ts'), errorCodesModule(errorCodes)],
   [
     join(OUT_DIR, 'routes.generated.ts'),
