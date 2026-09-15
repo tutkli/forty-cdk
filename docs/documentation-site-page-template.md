@@ -200,6 +200,18 @@ removed, stays in the alias list so it cannot come back.
   the site shows it live with copyable source. Keep tiny illustrative fences (a 3-line CSS hook, a
   single binding) inline where a full live demo would be overkill.
 
+  **The section's opening TypeScript fence is generated and must not be edited by hand**
+  ([#1934](https://github.com/tutkli/forty-cdk/issues/1934)). `pnpm gen:hero-fences` writes it from
+  the demo the page projects above its intro — the hero, minus its `styles` and the
+  `ViewEncapsulation` those need — and `pnpm check:hero-fences` fails when a committed fence is no
+  longer that demo. Which fence it owns: the first one the section holds, when that fence is
+  TypeScript; otherwise a new one below the caption, above everything else. A reader on npm is
+  therefore shown the same composition the site renders live, which the compiler could not
+  guarantee on its own — a hand-written fence drifts from its demo while still type-checking. The
+  later fences under their own `###` headings stay hand-written, and none of them may carry a
+  `<!-- snippet: … -->` marker where the generated one sits: the hero is a whole module, so it
+  compiles under `pnpm check:doc-snippets` with no exemption.
+
 - **`## API`** — One `### ForX` subsection per piece, each with an **Inputs / Outputs / Models**
   table (merge "Inputs" and "Outputs" tables under the piece; mark outputs in the Description or a
   Kind column). Canonical columns for new content: **Property · Type · Default · Description**,

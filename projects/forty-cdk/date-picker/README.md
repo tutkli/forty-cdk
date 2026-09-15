@@ -53,7 +53,7 @@ Open the popover from the trigger and pick a day — the trigger keeps `data-pla
 
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
-import { CalendarDate } from '@internationalized/date';
+import { type CalendarDate } from '@internationalized/date';
 import {
   ForCalendar,
   ForCalendarCell,
@@ -69,9 +69,10 @@ import {
   ForDatePickerTrigger,
   ForDatePickerValue,
 } from 'forty-cdk/date-picker';
+import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized-date';
 
 @Component({
-  selector: 'app-dob',
+  selector: 'app-date-picker-default-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     ForDatePicker,
@@ -86,33 +87,35 @@ import {
     ForCalendarGridHeader,
     ForCalendarCell,
   ],
+  providers: [...provideInternationalizedDateAdapter()],
   template: `
     <div
       forDatePicker
-      [(value)]="date"
-      [(open)]="open"
-      [minDate]="min"
-      [maxDate]="max"
-      name="dob"
-      [ariaLabel]="'Choose date'"
       #picker="forDatePicker"
+      [(value)]="date"
+      placeholder="Pick a date"
+      ariaLabel="Choose a date"
     >
-      <button forDatePickerTrigger class="date-picker-trigger">
-        <span forDatePickerValue class="date-picker-value" [placeholder]="'Pick a date'"></span>
+      <button forDatePickerTrigger type="button" class="date-picker-trigger">
+        <span forDatePickerValue class="date-picker-value"></span>
+        <svg class="date-picker-chevron" viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            d="m19.5 8.25-7.5 7.5-7.5-7.5"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.75"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
       </button>
 
-      @if (open()) {
-        <div forDatePickerContent animate.leave="fade-out">
-          <div
-            forCalendar
-            [(value)]="date"
-            [min]="picker.minDate()"
-            [max]="picker.maxDate()"
-            [isDateUnavailable]="picker.isDateUnavailable()"
-          >
-            <header>
-              <button forCalendarPrevButton [ariaLabel]="'Previous month'">
-                <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+      @if (picker.open()) {
+        <div forDatePickerContent class="date-picker-popover" animate.enter="date-picker-pop-in">
+          <div forCalendar class="date-picker-cal" [(value)]="date">
+            <header class="date-picker-head">
+              <button forCalendarPrevButton class="date-picker-nav" [ariaLabel]="'Previous month'">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path
                     d="m15.75 19.5-7.5-7.5 7.5-7.5"
                     fill="none"
@@ -123,9 +126,11 @@ import {
                   />
                 </svg>
               </button>
-              <h2 forCalendarHeading #heading="forCalendarHeading">{{ heading.label() }}</h2>
-              <button forCalendarNextButton [ariaLabel]="'Next month'">
-                <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+              <h2 forCalendarHeading #heading="forCalendarHeading" class="date-picker-title">
+                {{ heading.label() }}
+              </h2>
+              <button forCalendarNextButton class="date-picker-nav" [ariaLabel]="'Next month'">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path
                     d="m8.25 4.5 7.5 7.5-7.5 7.5"
                     fill="none"
@@ -138,11 +143,13 @@ import {
               </button>
             </header>
 
-            <table forCalendarGrid #grid="forCalendarGrid">
+            <table forCalendarGrid #grid="forCalendarGrid" class="date-picker-grid">
               <thead forCalendarGridHeader>
                 <tr>
                   @for (day of grid.weekDays(); track day.key) {
-                    <th scope="col" [attr.aria-label]="day.long">{{ day.short }}</th>
+                    <th scope="col" class="date-picker-weekday" [attr.aria-label]="day.long">
+                      {{ day.narrow }}
+                    </th>
                   }
                 </tr>
               </thead>
@@ -150,7 +157,9 @@ import {
                 @for (week of grid.weeks(); track week.key) {
                   <tr>
                     @for (cell of week.days; track cell.key) {
-                      <td forCalendarCell [date]="cell.date">{{ cell.label }}</td>
+                      <td forCalendarCell class="date-picker-cell" [date]="cell.date">
+                        {{ cell.label }}
+                      </td>
                     }
                   </tr>
                 }
@@ -162,11 +171,8 @@ import {
     </div>
   `,
 })
-export class DobPage {
-  readonly date = signal<CalendarDate | null>(null);
-  readonly open = signal(false);
-  readonly min: CalendarDate | null = null;
-  readonly max: CalendarDate | null = null;
+export class DatePickerDefaultExample {
+  protected readonly date = signal<CalendarDate | null>(null);
 }
 ```
 

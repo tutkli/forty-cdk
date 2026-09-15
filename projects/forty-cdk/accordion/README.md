@@ -34,7 +34,7 @@ A stack of collapsible sections, optionally allowing multiple panels open at onc
 Open a panel with the pointer or `Enter`, move between headers with the arrow keys, and watch `data-state` flip on the item, its trigger and its content together.
 
 ```ts
-import { Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import {
   ForAccordion,
   ForAccordionContent,
@@ -42,28 +42,56 @@ import {
   ForAccordionTrigger,
 } from 'forty-cdk/accordion';
 
+interface AccordionEntry {
+  readonly value: string;
+  readonly title: string;
+  readonly body: string;
+}
+
 @Component({
-  selector: 'demo-faq',
+  selector: 'app-accordion-default-example',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ForAccordion, ForAccordionItem, ForAccordionTrigger, ForAccordionContent],
   template: `
-    <div forAccordion [(value)]="open" collapsible>
-      <div forAccordionItem value="shipping">
-        <h3>
-          <button type="button" forAccordionTrigger class="accordion-trigger">Shipping</button>
-        </h3>
-        <section forAccordionContent>Ships in 24h.</section>
-      </div>
-      <div forAccordionItem value="returns">
-        <h3>
-          <button type="button" forAccordionTrigger class="accordion-trigger">Returns</button>
-        </h3>
-        <section forAccordionContent>Free 30-day returns.</section>
-      </div>
+    <div forAccordion class="acc-root" [(value)]="value" collapsible>
+      @for (item of items; track item.value) {
+        <div forAccordionItem class="acc-item" [value]="item.value">
+          <h3 class="acc-heading">
+            <button type="button" forAccordionTrigger class="acc-trigger">
+              <span>{{ item.title }}</span>
+              <span class="chevron" aria-hidden="true"></span>
+            </button>
+          </h3>
+          <section forAccordionContent class="acc-content">
+            <div class="acc-inner">
+              <p>{{ item.body }}</p>
+            </div>
+          </section>
+        </div>
+      }
     </div>
   `,
 })
-export class DemoFaq {
-  readonly open = signal<readonly string[]>([]);
+export class AccordionDefaultExample {
+  protected readonly items: readonly AccordionEntry[] = [
+    {
+      value: 'a',
+      title: 'What is forty-cdk?',
+      body: 'A library of headless UI primitives with built-in WAI-ARIA accessibility.',
+    },
+    {
+      value: 'b',
+      title: 'Does it ship styles?',
+      body: 'No. It exposes state, behavior, focus and ARIA; you apply the styles yourself.',
+    },
+    {
+      value: 'c',
+      title: 'Does it work without Zone.js?',
+      body: 'Yes, it is designed to run under provideZonelessChangeDetection().',
+    },
+  ];
+
+  protected readonly value = signal<readonly string[]>(['a']);
 }
 ```
 

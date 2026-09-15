@@ -62,16 +62,25 @@ Focus a segment and type, or step it with the arrow keys — hour, minute and me
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { CalendarDateTime } from '@internationalized/date';
 import { ForTimeField, ForTimeFieldLiteral, ForTimeFieldSegment } from 'forty-cdk/time-field';
+import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/internationalized-date';
 
 @Component({
-  selector: 'app-appt-time',
+  selector: 'app-time-field-default-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ForTimeField, ForTimeFieldSegment, ForTimeFieldLiteral],
+  providers: [...provideInternationalizedDateTimeAdapter()],
   template: `
-    <div forTimeField [(value)]="time" [ariaLabel]="'Appointment time'" #field="forTimeField">
+    <div
+      forTimeField
+      class="time-field"
+      [(value)]="value"
+      [hourCycle]="12"
+      ariaLabel="Appointment time"
+      #field="forTimeField"
+    >
       @for (seg of field.segments(); track seg.id) {
         @if (seg.isLiteral) {
-          <span forTimeFieldLiteral>{{ seg.text }}</span>
+          <span forTimeFieldLiteral class="time-field-literal">{{ seg.text }}</span>
         } @else {
           <span forTimeFieldSegment class="time-field-segment" [segment]="seg.type!">{{
             seg.text
@@ -81,8 +90,10 @@ import { ForTimeField, ForTimeFieldLiteral, ForTimeFieldSegment } from 'forty-cd
     </div>
   `,
 })
-export class ApptTime {
-  readonly time = signal<CalendarDateTime | null>(null);
+export class TimeFieldDefaultExample {
+  protected readonly value = signal<CalendarDateTime | null>(
+    new CalendarDateTime(2024, 6, 15, 9, 30),
+  );
 }
 ```
 

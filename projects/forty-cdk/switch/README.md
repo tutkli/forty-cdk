@@ -36,21 +36,24 @@ Toggle it with the pointer, `Space` or `Enter`, and watch `data-state` follow.
 ### Stand-alone
 
 ```ts
-import { Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { ForSwitch } from 'forty-cdk/switch';
 
 @Component({
-  selector: 'demo-toggle',
+  selector: 'app-switch-default-example',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ForSwitch],
   template: `
-    <button forSwitch class="switch" [(checked)]="enabled">
-      <span class="thumb"></span>
-    </button>
-    <p>Notifications: {{ enabled() ? 'on' : 'off' }}</p>
+    <div class="row">
+      <button forSwitch class="switch" [(checked)]="enabled">
+        <span class="thumb"></span>
+      </button>
+      <span class="text">Notifications {{ enabled() ? 'on' : 'off' }}</span>
+    </div>
   `,
 })
-export class DemoToggle {
-  readonly enabled = signal(false);
+export class SwitchDefaultExample {
+  protected readonly enabled = signal(false);
 }
 ```
 

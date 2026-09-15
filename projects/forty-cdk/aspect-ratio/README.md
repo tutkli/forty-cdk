@@ -42,43 +42,20 @@ If your ratio is a literal constant, prefer the CSS property directly and keep t
 Resize the preview and watch the frame hold its 16 / 9 ratio — the primitive writes the ratio and nothing else, so every border, colour and inset below is your own CSS.
 
 ```ts
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { ForAspectRatio } from 'forty-cdk/aspect-ratio';
 
 @Component({
-  selector: 'demo-aspect-ratio',
+  selector: 'app-aspect-ratio-default-example',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ForAspectRatio],
   template: `
-    <div forAspectRatio [ratio]="16 / 9" class="card-cover">
-      <img src="cover.jpg" alt="" />
-    </div>
-
-    <div forAspectRatio ratio="1" class="avatar">
-      <img src="me.jpg" alt="Me" />
-    </div>
-
-    <div forAspectRatio [ratio]="21 / 9" class="hero">
-      <video src="hero.mp4" autoplay loop muted></video>
+    <div forAspectRatio class="box" [ratio]="16 / 9">
+      <span class="label">16 / 9</span>
     </div>
   `,
-  styles: [
-    `
-      .card-cover,
-      .avatar,
-      .hero {
-        width: 100%;
-      }
-      .card-cover img,
-      .avatar img,
-      .hero video {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-      }
-    `,
-  ],
 })
-export class DemoAspectRatio {}
+export class AspectRatioDefaultExample {}
 ```
 
 ## API

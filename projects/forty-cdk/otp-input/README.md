@@ -47,16 +47,17 @@ Type or paste a code — focus advances a slot at a time, the active slot carrie
 ### Stand-alone
 
 ```ts
-import { Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { ForOtpInput, ForOtpInputSlot } from 'forty-cdk/otp-input';
 
 @Component({
-  selector: 'demo-otp',
+  selector: 'app-otp-default-example',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ForOtpInput, ForOtpInputSlot],
   template: `
     <div
       forOtpInput
-      class="otp-input"
+      class="otp"
       [(value)]="code"
       [length]="6"
       type="numeric"
@@ -64,41 +65,40 @@ import { ForOtpInput, ForOtpInputSlot } from 'forty-cdk/otp-input';
       #otp="forOtpInput"
     >
       @for (i of otp.slots(); track i) {
-        <div forOtpInputSlot [index]="i" #s="forOtpInputSlot" class="slot otp-input-slot">
+        <div forOtpInputSlot [index]="i" #s="forOtpInputSlot" class="otp-slot">
           {{ s.char() }}
           @if (s.hasFakeCaret()) {
-            <span class="caret"></span>
+            <span class="otp-caret"></span>
           }
         </div>
       }
     </div>
-    <p>{{ code() }}</p>
   `,
 })
-export class DemoOtp {
-  readonly code = signal('');
+export class OtpDefaultExample {
+  protected readonly code = signal('');
 }
 ```
 
 The styling is yours. The key rule: make the injected `<input>` overlay the slots so it stays the interactive surface, e.g.
 
 ```css
-.slot {
+.otp-slot {
   position: relative;
   width: 2.5rem;
   height: 3rem; /* ... */
 }
-.otp-input {
+.otp {
   position: relative;
   display: flex;
   gap: 0.5rem;
 }
-.otp-input > input {
+.otp > input {
   position: absolute;
   inset: 0;
   opacity: 0;
 }
-.caret {
+.otp-caret {
   /* style + animate; gate the blink on prefers-reduced-motion */
 }
 ```

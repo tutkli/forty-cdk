@@ -45,7 +45,7 @@ Popover is the one floating surface that opens on activation, takes focus and st
 Open the popover from the trigger — `Escape` and an outside click close it, focus returns to the trigger, and `data-side` says which side it landed on.
 
 ```ts
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import {
   ForPopover,
   ForPopoverArrow,
@@ -57,7 +57,8 @@ import {
 } from 'forty-cdk/popover';
 
 @Component({
-  selector: 'demo-popover',
+  selector: 'app-popover-default-example',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     ForPopover,
     ForPopoverTrigger,
@@ -68,22 +69,26 @@ import {
     ForPopoverArrow,
   ],
   template: `
-    <div forPopover #popover="forPopover" side="bottom" align="start">
-      <button forPopoverTrigger>Settings</button>
+    <div forPopover #popover="forPopover" side="bottom" align="center">
+      <button forPopoverTrigger class="popover-trigger">Display settings</button>
 
       @if (popover.open()) {
-        <div forPopoverContent class="popover" animate.leave="fade-out">
-          <h2 forPopoverTitle>Display</h2>
-          <p forPopoverDescription>Adjust theme and density.</p>
-          <!-- your content -->
-          <button forPopoverClose>Close</button>
-          <span forPopoverArrow class="arrow"></span>
+        <div forPopoverContent class="popover" animate.enter="popover-enter">
+          <h3 forPopoverTitle class="popover-title">Display</h3>
+          <p forPopoverDescription class="popover-desc">
+            A non-modal panel anchored to its trigger. Escape, pointer-down outside or focus outside
+            dismisses it and returns focus to the trigger.
+          </p>
+          <div class="popover-actions">
+            <button class="popover-close" type="button" forPopoverClose>Done</button>
+          </div>
+          <span forPopoverArrow class="popover-arrow"></span>
         </div>
       }
     </div>
   `,
 })
-export class DemoPopover {}
+export class PopoverDefaultExample {}
 ```
 
 `[forPopoverContent]` portals to `document.body` and is positioned with floating-ui — it must be wrapped with `@if` so mount and unmount drive `animate.enter` / `animate.leave`.

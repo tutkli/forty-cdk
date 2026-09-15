@@ -63,32 +63,48 @@ import {
   ForTreeItemToggle,
 } from 'forty-cdk/tree';
 
-interface Node {
-  id: string;
-  name: string;
-  children?: Node[];
+interface TreeNodeData {
+  readonly id: string;
+  readonly name: string;
+  readonly children?: readonly TreeNodeData[];
 }
 
 @Component({
   selector: 'app-tree-node',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ForTreeItem, ForTreeItemLabel, ForTreeItemToggle, ForTreeGroup, TreeNode],
-  // `display: contents` keeps this wrapper out of layout and the a11y tree, so
-  // the <li role="treeitem"> stays a direct child of <ul role="group">.
   host: { style: 'display: contents' },
   template: `
-    <li forTreeItem class="tree-item" [value]="node().id">
-      <div forTreeItemLabel>
+    <li
+      forTreeItem
+      class="tree-item"
+      [value]="node().id"
+      [disabled]="disabledIds().includes(node().id)"
+    >
+      <div forTreeItemLabel class="tree-label">
         @if (node().children?.length) {
-          <span forTreeItemToggle class="tree-toggle">▸</span>
+          <span forTreeItemToggle class="tree-toggle">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+            </svg>
+          </span>
+        } @else {
+          <span class="tree-toggle"></span>
         }
-        {{ node().name }}
+        <span class="tree-name">{{ node().name }}</span>
+        <svg class="tree-check" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="m4.5 12.75 6 6 9-13.5" />
+        </svg>
       </div>
 
-      @if (node().children?.length && expanded().includes(node().id)) {
-        <ul forTreeGroup>
+      @if (node().children?.length && expandedIds().includes(node().id)) {
+        <ul forTreeGroup class="tree-group">
           @for (child of node().children ?? []; track child.id) {
-            <app-tree-node [node]="child" [expanded]="expanded()" />
+            <app-tree-node
+              [node]="child"
+              [expandedIds]="expandedIds()"
+              [disabledIds]="disabledIds()"
+            />
           }
         </ul>
       }
@@ -96,35 +112,62 @@ interface Node {
   `,
 })
 export class TreeNode {
-  readonly node = input.required<Node>();
-  readonly expanded = input.required<readonly string[]>();
+  readonly node = input.required<TreeNodeData>();
+  readonly expandedIds = input.required<readonly string[]>();
+  readonly disabledIds = input<readonly string[]>([]);
 }
 
 @Component({
-  selector: 'app-files',
+  selector: 'app-tree-default-example',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ForTree, TreeNode],
   template: `
-    <ul forTree [(value)]="selected" [(expanded)]="expanded" aria-label="File system">
-      @for (n of roots; track n.id) {
-        <app-tree-node [node]="n" [expanded]="expanded()" />
+    <ul
+      forTree
+      class="tree"
+      [(value)]="value"
+      [(expanded)]="expanded"
+      [ariaLabel]="'Project files'"
+    >
+      @for (node of nodes; track node.id) {
+        <app-tree-node [node]="node" [expandedIds]="expanded()" />
       }
     </ul>
   `,
 })
-export class Files {
-  readonly selected = signal<readonly string[]>([]);
-  readonly expanded = signal<readonly string[]>([]);
-  readonly roots: Node[] = [
+export class TreeDefaultExample {
+  protected readonly nodes: readonly TreeNodeData[] = [
     {
-      id: 'documents',
-      name: 'Documents',
+      id: 'src',
+      name: 'src',
       children: [
-        { id: 'resume', name: 'Resume' },
-        { id: 'projects', name: 'Projects', children: [{ id: 'alpha', name: 'Alpha' }] },
+        {
+          id: 'app',
+          name: 'app',
+          children: [
+            { id: 'app.ts', name: 'app.ts' },
+            { id: 'app.html', name: 'app.html' },
+            { id: 'app.css', name: 'app.css' },
+          ],
+        },
+        { id: 'main.ts', name: 'main.ts' },
+        { id: 'styles.css', name: 'styles.css' },
       ],
     },
-    { id: 'readme', name: 'Readme' },
+    {
+      id: 'public',
+      name: 'public',
+      children: [
+        { id: 'favicon.ico', name: 'favicon.ico' },
+        { id: 'logo.svg', name: 'logo.svg' },
+      ],
+    },
+    { id: 'readme.md', name: 'README.md' },
+    { id: 'package.json', name: 'package.json' },
   ];
+
+  protected readonly value = signal<readonly string[]>([]);
+  protected readonly expanded = signal<readonly string[]>(['src', 'app']);
 }
 ```
 

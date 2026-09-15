@@ -38,7 +38,7 @@ Use it for profile snapshots, link previews, definition cards — any complement
 Hover or focus the trigger and wait out the delay — the card opens with `data-state="open"`, and leaving both the trigger and the card closes it again.
 
 ```ts
-import { Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import {
   ForHoverCard,
   ForHoverCardArrow,
@@ -47,23 +47,40 @@ import {
 } from 'forty-cdk/hover-card';
 
 @Component({
-  selector: 'demo-profile-link',
+  selector: 'app-hover-card-default-example',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ForHoverCard, ForHoverCardTrigger, ForHoverCardContent, ForHoverCardArrow],
   template: `
-    <span forHoverCard #card="forHoverCard">
-      <a forHoverCardTrigger href="/users/ada">Ada Lovelace</a>
-      @if (card.open()) {
-        <div forHoverCardContent animate.enter="card-in" animate.leave="card-out">
-          <img src="/api/avatar/ada" alt="" width="64" height="64" />
-          <h3>Ada Lovelace</h3>
-          <p>Mathematician — designed the first algorithm.</p>
-          <span forHoverCardArrow class="arrow"></span>
-        </div>
-      }
-    </span>
+    <p class="hovercard-lead">
+      Article by
+      <span forHoverCard #card="forHoverCard" side="top">
+        <a forHoverCardTrigger class="hovercard-trigger" href="#ada">&#64;ada</a>
+        @if (card.open()) {
+          <div forHoverCardContent class="hovercard" animate.enter="hovercard-pop-in">
+            <div class="hovercard-head">
+              <span class="hovercard-avatar" aria-hidden="true">AL</span>
+              <div class="hovercard-id">
+                <strong>Ada Lovelace</strong>
+                <span class="hovercard-handle">&#64;ada</span>
+              </div>
+            </div>
+            <p class="hovercard-bio">
+              Mathematician and writer — wrote the first algorithm intended for a machine.
+            </p>
+            <div class="hovercard-stats">
+              <span><b>128</b> notes</span>
+              <span><b>1.8k</b> followers</span>
+            </div>
+            <button class="hovercard-follow" type="button">Follow</button>
+            <span forHoverCardArrow class="hovercard-arrow"></span>
+          </div>
+        }
+      </span>
+      on the analytical engine.
+    </p>
   `,
 })
-export class DemoProfileLink {}
+export class HoverCardDefaultExample {}
 ```
 
 ### Triggers stamped from outside-declared templates

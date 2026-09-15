@@ -30,37 +30,42 @@ A button toggles the visibility of a content region, wired with `aria-expanded` 
 Toggle the panel with the pointer or `Enter` and watch `data-state` flip on the trigger and the content together, so one rule animates both.
 
 ```ts
-import { Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { ForDisclosure, ForDisclosureContent, ForDisclosureTrigger } from 'forty-cdk/disclosure';
 
 @Component({
-  selector: 'demo-faq',
+  selector: 'app-disclosure-default-example',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ForDisclosure, ForDisclosureTrigger, ForDisclosureContent],
   template: `
-    <div forDisclosure class="disclosure" [(open)]="isOpen">
-      <button type="button" forDisclosureTrigger class="disclosure-trigger">
-        {{ isOpen() ? 'Hide' : 'Show' }} details
+    <div forDisclosure class="dis" [(open)]="open">
+      <button type="button" forDisclosureTrigger class="dis-trigger">
+        <span>What is inside the box?</span>
+        <span class="chevron" aria-hidden="true"></span>
       </button>
-      @if (isOpen()) {
-        <div forDisclosureContent class="disclosure-content">
-          <p>Hidden content goes here.</p>
+      <div forDisclosureContent class="dis-content">
+        <div class="dis-inner">
+          <p>
+            One headless primitive, a styleless trigger, and the panel you are reading. Behavior,
+            ARIA and focus are handled for you; the styling is entirely yours.
+          </p>
         </div>
-      }
+      </div>
     </div>
   `,
 })
-export class DemoFaq {
-  readonly isOpen = signal(false);
+export class DisclosureDefaultExample {
+  protected readonly open = signal(true);
 }
 ```
 
 The library ships no styles. Hide animations / transitions can be driven off `data-state` on the trigger and content:
 
 ```css
-.disclosure-content[data-state='closed'] {
+.dis-content[data-state='closed'] {
   /* … */
 }
-.disclosure-content[data-state='open'] {
+.dis-content[data-state='open'] {
   /* … */
 }
 ```

@@ -40,7 +40,7 @@ Hover / focus delays, Escape-to-dismiss, portal rendering, and `@floating-ui/dom
 Hover or focus the trigger and wait out the delay — the tip opens with `data-state`, and `Escape` closes it without moving focus.
 
 ```ts
-import { Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import {
   ForTooltip,
   ForTooltipArrow,
@@ -49,37 +49,41 @@ import {
 } from 'forty-cdk/tooltip';
 
 @Component({
-  selector: 'demo-save',
+  selector: 'app-tooltip-default-example',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent, ForTooltipArrow],
   template: `
-    <span forTooltip #tip="forTooltip" side="top" [openDelay]="400">
-      <button type="button" forTooltipTrigger aria-label="Save">💾</button>
-      @if (tip.open()) {
-        <div forTooltipContent class="my-tooltip">
-          Save changes
-          <span forTooltipArrow class="my-tooltip-arrow"></span>
-        </div>
-      }
-    </span>
-  `,
-  styles: `
-    .my-tooltip {
-      background: #111;
-      color: white;
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-size: 12px;
-    }
-    .my-tooltip-arrow {
-      width: 8px;
-      height: 8px;
-      background: #111;
-      transform: rotate(45deg);
-      --for-floating-arrow-offset: -4px;
-    }
+    <div class="tooltip-demo">
+      <span forTooltip #tip="forTooltip" side="top" [openDelay]="200">
+        <button forTooltipTrigger type="button" class="tooltip-trigger" aria-label="More info">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.75"
+            aria-hidden="true"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.853l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"
+            />
+          </svg>
+        </button>
+
+        @if (tip.open()) {
+          <div forTooltipContent class="tooltip-bubble" animate.enter="tooltip-pop-in">
+            Appears on hover or focus
+            <span forTooltipArrow class="tooltip-bubble-arrow"></span>
+          </div>
+        }
+      </span>
+
+      <p class="tooltip-hint">Hover the button, or Tab to it — focus opens the tooltip too.</p>
+    </div>
   `,
 })
-export class DemoSave {}
+export class TooltipDefaultExample {}
 ```
 
 ### Triggers stamped from outside-declared templates

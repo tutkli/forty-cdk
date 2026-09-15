@@ -48,44 +48,52 @@ The menu surface, items, separators, groups, and submenus come from the [`menu/`
 Move along the bar with the left / right arrows and open a menu with the down arrow — once one is open, moving the pointer to another opens it without a click.
 
 ```ts
-import { Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { ForMenuContent, ForMenuItem, ForMenuSeparator } from 'forty-cdk/menu';
 import { ForMenubar, ForMenubarTrigger } from 'forty-cdk/menubar';
 
 @Component({
-  selector: 'demo-menubar',
+  selector: 'app-menubar-default-example',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ForMenubar, ForMenubarTrigger, ForMenuContent, ForMenuItem, ForMenuSeparator],
   template: `
-    <div forMenubar [(value)]="open" aria-label="Main">
-      <button forMenubarTrigger value="file">File</button>
-      @if (open() === 'file') {
-        <div forMenuContent animate.leave="fade-out">
-          <button forMenuItem (activate)="newDoc()">New</button>
-          <button forMenuItem (activate)="openDoc()">Open…</button>
-          <hr forMenuSeparator />
-          <button forMenuItem (activate)="quit()">Quit</button>
+    <div forMenubar [(value)]="openMenu" ariaLabel="Application" class="menubar-menu">
+      <button forMenubarTrigger value="file" class="menubar-menu-trigger">File</button>
+      @if (openMenu() === 'file') {
+        <div forMenuContent class="menubar-menu-content" animate.enter="menubar-menu-pop-in">
+          <button forMenuItem class="menubar-menu-item">New file</button>
+          <button forMenuItem class="menubar-menu-item">Open…</button>
+          <button forMenuItem class="menubar-menu-item">Save</button>
+          <hr forMenuSeparator class="menubar-menu-separator" />
+          <button forMenuItem class="menubar-menu-item">Quit</button>
         </div>
       }
 
-      <button forMenubarTrigger value="edit">Edit</button>
-      @if (open() === 'edit') {
-        <div forMenuContent>
-          <button forMenuItem (activate)="undo()">Undo</button>
-          <button forMenuItem (activate)="redo()">Redo</button>
+      <button forMenubarTrigger value="edit" class="menubar-menu-trigger">Edit</button>
+      @if (openMenu() === 'edit') {
+        <div forMenuContent class="menubar-menu-content" animate.enter="menubar-menu-pop-in">
+          <button forMenuItem class="menubar-menu-item">Undo</button>
+          <button forMenuItem class="menubar-menu-item" disabled>Redo</button>
+          <hr forMenuSeparator class="menubar-menu-separator" />
+          <button forMenuItem class="menubar-menu-item">Cut</button>
+          <button forMenuItem class="menubar-menu-item">Copy</button>
+          <button forMenuItem class="menubar-menu-item">Paste</button>
         </div>
       }
 
-      <button forMenubarTrigger value="view" disabled>View</button>
+      <button forMenubarTrigger value="view" class="menubar-menu-trigger">View</button>
+      @if (openMenu() === 'view') {
+        <div forMenuContent class="menubar-menu-content" animate.enter="menubar-menu-pop-in">
+          <button forMenuItem class="menubar-menu-item">Zoom in</button>
+          <button forMenuItem class="menubar-menu-item">Zoom out</button>
+          <button forMenuItem class="menubar-menu-item">Reset zoom</button>
+        </div>
+      }
     </div>
   `,
 })
-export class DemoMenubar {
-  readonly open = signal<string | null>(null);
-  newDoc() {}
-  openDoc() {}
-  quit() {}
-  undo() {}
-  redo() {}
+export class MenubarDefaultExample {
+  protected readonly openMenu = signal<string | null>(null);
 }
 ```
 

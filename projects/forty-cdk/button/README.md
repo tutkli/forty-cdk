@@ -25,6 +25,24 @@ A single `[forButton]` directive does all of this. On a native `<button>` host t
 
 Press and hold either control — a native `<button>` and a `<span>` — and watch `data-pressed`, `data-hovered` and `data-focus-visible` appear on both, so one rule styles the pair.
 
+```ts
+import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ForButton } from 'forty-cdk/button';
+
+@Component({
+  selector: 'app-button-default-example',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [ForButton],
+  template: `
+    <div class="stage">
+      <button forButton class="btn btn--primary">Native &lt;button&gt;</button>
+      <span forButton class="btn">Custom &lt;span&gt;</span>
+    </div>
+  `,
+})
+export class ButtonDefaultExample {}
+```
+
 ### Basic usage
 
 ```html

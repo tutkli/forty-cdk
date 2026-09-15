@@ -29,27 +29,56 @@ Headless, with a selectable activation mode (automatic vs manual), configurable 
 Move between triggers with the arrow keys and activate with `Space` — the active trigger and its panel share `data-state="active"`.
 
 ```ts
-import { Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { ForTabs, ForTabsContent, ForTabsList, ForTabsTrigger } from 'forty-cdk/tabs';
 
+interface TabEntry {
+  readonly value: string;
+  readonly label: string;
+  readonly body: string;
+}
+
 @Component({
-  selector: 'demo-settings',
+  selector: 'app-tabs-default-example',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ForTabs, ForTabsList, ForTabsTrigger, ForTabsContent],
   template: `
-    <div forTabs [(value)]="active">
-      <div forTabsList aria-label="Settings sections">
-        <button type="button" forTabsTrigger class="tabs-trigger" value="profile">Profile</button>
-        <button type="button" forTabsTrigger class="tabs-trigger" value="security">Security</button>
-        <button type="button" forTabsTrigger class="tabs-trigger" value="billing">Billing</button>
+    <div forTabs class="tb" [(value)]="value">
+      <div forTabsList class="tb-list" aria-label="Account settings">
+        @for (tab of tabs; track tab.value) {
+          <button type="button" forTabsTrigger class="tb-trigger" [value]="tab.value">
+            {{ tab.label }}
+          </button>
+        }
       </div>
-      <div forTabsContent class="tabs-content" value="profile">…profile…</div>
-      <div forTabsContent class="tabs-content" value="security">…security…</div>
-      <div forTabsContent class="tabs-content" value="billing">…billing…</div>
+      @for (tab of tabs; track tab.value) {
+        <div forTabsContent class="tb-content" [value]="tab.value">
+          <p>{{ tab.body }}</p>
+        </div>
+      }
     </div>
   `,
 })
-export class DemoSettings {
-  readonly active = signal('profile');
+export class TabsDefaultExample {
+  protected readonly tabs: readonly TabEntry[] = [
+    {
+      value: 'profile',
+      label: 'Profile',
+      body: 'Your public name, avatar and bio. Anyone visiting your page can see these.',
+    },
+    {
+      value: 'security',
+      label: 'Security',
+      body: 'Password, two-factor authentication and the list of active sessions.',
+    },
+    {
+      value: 'billing',
+      label: 'Billing',
+      body: 'Plan, payment method and invoices, all in one place.',
+    },
+  ];
+
+  protected readonly value = signal<string | null>('profile');
 }
 ```
 

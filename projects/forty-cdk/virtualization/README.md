@@ -53,6 +53,71 @@ headless `injectVirtualizer` core directly, documented below.
 
 Scroll the list and watch the DOM: only the rows in view exist, each carrying its own `data-index`, while the sizer keeps the scrollbar honest.
 
+```ts
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ForVirtualFor, ForVirtualViewport } from 'forty-cdk/virtualization';
+
+interface Row {
+  readonly id: number;
+  readonly label: string;
+  readonly meta: string;
+}
+
+const TICKERS = ['AAPL', 'MSFT', 'GOOG', 'AMZN', 'NVDA', 'META', 'TSLA', 'NFLX'];
+
+@Component({
+  selector: 'app-virtualization-viewport-example',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [ForVirtualViewport, ForVirtualFor],
+  template: `
+    <div class="demo">
+      <div class="toolbar">
+        <button type="button" class="jump-btn" (click)="vp.scrollToIndex(0, { align: 'start' })">
+          Top
+        </button>
+        <button
+          type="button"
+          class="jump-btn"
+          (click)="vp.scrollToIndex(5000, { align: 'center' })"
+        >
+          Jump to 5,000
+        </button>
+        <button
+          type="button"
+          class="jump-btn"
+          (click)="vp.scrollToIndex(rows().length - 1, { align: 'end' })"
+        >
+          Bottom
+        </button>
+      </div>
+
+      <div
+        forVirtualViewport
+        #vp="forVirtualViewport"
+        class="viewport"
+        [virtualCount]="rows().length"
+        [estimateSize]="46"
+      >
+        <div *forVirtualFor="let row of rows(); let item = virtualItem" class="row">
+          <span class="index">{{ item.index + 1 }}</span>
+          <span class="label">{{ row.label }}</span>
+          <span class="meta">{{ row.meta }}</span>
+        </div>
+      </div>
+    </div>
+  `,
+})
+export class VirtualizationViewportExample {
+  protected readonly rows = signal<readonly Row[]>(
+    Array.from({ length: 10000 }, (_, i) => ({
+      id: i,
+      label: `${TICKERS[i % TICKERS.length]} order ${String(i + 1).padStart(5, '0')}`,
+      meta: `$${(40 + ((i * 37) % 9600) / 10).toFixed(2)}`,
+    })),
+  );
+}
+```
+
 ## Vertical list
 
 ```html

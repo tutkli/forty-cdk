@@ -59,6 +59,109 @@ Headless and styleless: it ships slide tracking, keyboard navigation, focus mana
 
 Page through the slides with the buttons, the arrow keys or a drag — `data-dragging` is on while a pointer holds the track, and the root carries `data-orientation`.
 
+```ts
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import {
+  ForCarousel,
+  ForCarouselIndicator,
+  ForCarouselIndicators,
+  ForCarouselNext,
+  ForCarouselPrevious,
+  ForCarouselSlide,
+  ForCarouselTrack,
+  ForCarouselViewport,
+} from 'forty-cdk/carousel';
+
+interface Slide {
+  readonly id: number;
+  readonly label: string;
+}
+
+@Component({
+  selector: 'app-carousel-default-example',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [
+    ForCarousel,
+    ForCarouselViewport,
+    ForCarouselTrack,
+    ForCarouselSlide,
+    ForCarouselPrevious,
+    ForCarouselNext,
+    ForCarouselIndicators,
+    ForCarouselIndicator,
+  ],
+  template: `
+    <div
+      forCarousel
+      class="car"
+      [(activeIndex)]="activeIndex"
+      loop
+      orientation="horizontal"
+      align="start"
+      ariaLabel="Featured slides"
+    >
+      <div class="car-controls-row">
+        <button forCarouselPrevious class="car-btn" aria-label="Previous slide">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="m15.75 19.5-7.5-7.5 7.5-7.5"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.75"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
+        <button forCarouselNext class="car-btn" aria-label="Next slide">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="m8.25 4.5 7.5 7.5-7.5 7.5"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.75"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
+      </div>
+
+      <div forCarouselViewport class="car-viewport">
+        <div forCarouselTrack class="car-track">
+          @for (slide of slides; track slide.id; let i = $index) {
+            <div forCarouselSlide class="car-slide" [class]="'car-slide--' + (i + 1)">
+              <span class="car-slide-label">{{ slide.label }}</span>
+            </div>
+          }
+        </div>
+      </div>
+
+      <div forCarouselIndicators class="car-indicators" ariaLabel="Choose slide to display">
+        @for (slide of slides; track slide.id; let i = $index) {
+          <button
+            forCarouselIndicator
+            class="car-dot"
+            [attr.aria-label]="'Go to slide ' + (i + 1)"
+          ></button>
+        }
+      </div>
+    </div>
+  `,
+})
+export class CarouselDefaultExample {
+  protected readonly slides: readonly Slide[] = [
+    { id: 1, label: 'Slide 1' },
+    { id: 2, label: 'Slide 2' },
+    { id: 3, label: 'Slide 3' },
+    { id: 4, label: 'Slide 4' },
+    { id: 5, label: 'Slide 5' },
+  ];
+
+  protected readonly activeIndex = signal(0);
+}
+```
+
 ### Basic carousel
 
 ```html

@@ -32,7 +32,7 @@ Hides native scrollbars on the inner viewport and exposes synthetic `scrollbar` 
 Scroll the pane and watch the custom scrollbar follow — the thumb is sized from the content, and `data-state` says whether the bar is showing.
 
 ```ts
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import {
   ForScrollArea,
   ForScrollAreaContent,
@@ -43,7 +43,8 @@ import {
 } from 'forty-cdk/scroll-area';
 
 @Component({
-  selector: 'demo-scroll',
+  selector: 'app-scroll-area-default-example',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     ForScrollArea,
     ForScrollAreaViewport,
@@ -53,68 +54,30 @@ import {
     ForScrollAreaCorner,
   ],
   template: `
-    <div forScrollArea class="scroll-area">
-      <div forScrollAreaViewport class="scroll-area-viewport">
-        <div forScrollAreaContent class="content">…lots of stuff…</div>
+    <div forScrollArea type="hover" class="sa">
+      <div forScrollAreaViewport class="sa-viewport">
+        <div forScrollAreaContent class="sa-content">
+          @for (row of rows; track row) {
+            <p class="sa-row">
+              <b>Row {{ row }}</b> — headless primitives expose state and behavior; you bring the
+              styles.
+            </p>
+          }
+        </div>
       </div>
-      <div forScrollAreaScrollbar class="scroll-area-scrollbar" orientation="vertical">
-        <div forScrollAreaThumb class="scroll-area-thumb"></div>
+      <div forScrollAreaScrollbar orientation="vertical" class="sa-scrollbar sa-scrollbar--v">
+        <div forScrollAreaThumb class="sa-thumb"></div>
       </div>
-      <div forScrollAreaScrollbar class="scroll-area-scrollbar" orientation="horizontal">
-        <div forScrollAreaThumb class="scroll-area-thumb"></div>
+      <div forScrollAreaScrollbar orientation="horizontal" class="sa-scrollbar sa-scrollbar--h">
+        <div forScrollAreaThumb class="sa-thumb"></div>
       </div>
-      <div forScrollAreaCorner class="scroll-area-corner"></div>
+      <div forScrollAreaCorner class="sa-corner"></div>
     </div>
   `,
-  styles: [
-    `
-      .scroll-area {
-        position: relative;
-        width: 240px;
-        height: 240px;
-      }
-      .scroll-area-viewport {
-        position: absolute;
-        inset: 0;
-      }
-      .scroll-area-scrollbar[orientation='vertical'] {
-        position: absolute;
-        top: 0;
-        right: 0;
-        width: 8px;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.04);
-        transition: opacity 0.2s;
-      }
-      .scroll-area-scrollbar[orientation='horizontal'] {
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        height: 8px;
-        width: 100%;
-        background: rgba(0, 0, 0, 0.04);
-        transition: opacity 0.2s;
-      }
-      .scroll-area-scrollbar[data-state='hidden'] {
-        opacity: 0;
-        pointer-events: none;
-      }
-      .scroll-area-thumb {
-        background: rgba(0, 0, 0, 0.4);
-        border-radius: 4px;
-      }
-      .scroll-area-corner {
-        position: absolute;
-        right: 0;
-        bottom: 0;
-        width: 8px;
-        height: 8px;
-        background: rgba(0, 0, 0, 0.04);
-      }
-    `,
-  ],
 })
-export class DemoScroll {}
+export class ScrollAreaDefaultExample {
+  protected readonly rows = Array.from({ length: 16 }, (_, index) => index + 1);
+}
 ```
 
 ## API

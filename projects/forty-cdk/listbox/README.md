@@ -43,28 +43,61 @@ Move the highlight with the arrow keys and select with `Space` — one tab stop 
 ### Stand-alone (single select)
 
 ```ts
-import { Component, signal } from '@angular/core';
-import { ForListbox, ForListboxOption } from 'forty-cdk/listbox';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ForListbox, ForListboxOption, ForListboxOptionIndicator } from 'forty-cdk/listbox';
+
+interface Option {
+  readonly value: string;
+  readonly label: string;
+  readonly disabled?: boolean;
+}
 
 @Component({
-  selector: 'demo-fruit',
-  imports: [ForListbox, ForListboxOption],
+  selector: 'app-listbox-default-example',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [ForListbox, ForListboxOption, ForListboxOptionIndicator],
   template: `
-    <ul forListbox [(value)]="picked" aria-label="Fruit">
-      <li>
-        <button type="button" forListboxOption class="listbox-option" value="apple">Apple</button>
-      </li>
-      <li>
-        <button type="button" forListboxOption class="listbox-option" value="banana">Banana</button>
-      </li>
-      <li>
-        <button type="button" forListboxOption class="listbox-option" value="cherry">Cherry</button>
-      </li>
+    <ul forListbox class="listbox" [(value)]="value" aria-label="Languages">
+      @for (opt of options; track opt.value) {
+        <li>
+          <button
+            type="button"
+            forListboxOption
+            class="listbox-option"
+            [value]="opt.value"
+            [disabled]="opt.disabled ?? false"
+          >
+            {{ opt.label }}
+            <span forListboxOptionIndicator class="listbox-indicator">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="m4.5 12.75 6 6 9-13.5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.75"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </span>
+          </button>
+        </li>
+      }
     </ul>
   `,
 })
-export class DemoFruit {
-  readonly picked = signal<readonly string[]>([]);
+export class ListboxDefaultExample {
+  protected readonly options: readonly Option[] = [
+    { value: 'ts', label: 'TypeScript' },
+    { value: 'js', label: 'JavaScript' },
+    { value: 'py', label: 'Python' },
+    { value: 'rust', label: 'Rust' },
+    { value: 'go', label: 'Go' },
+    { value: 'ruby', label: 'Ruby', disabled: true },
+    { value: 'kotlin', label: 'Kotlin' },
+  ];
+
+  protected readonly value = signal<readonly string[]>([]);
 }
 ```
 

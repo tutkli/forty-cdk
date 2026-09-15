@@ -57,6 +57,170 @@ Open the menu and walk the items with the arrow keys — the surface is shared, 
 
 The surface is never used alone, so the compositions live with their openers: [Dropdown Menu](../dropdown-menu/README.md), [Context Menu](../context-menu/README.md) and [Menubar](../menubar/README.md) each carry the demos for their own.
 
+```ts
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ForDropdownMenu, ForDropdownMenuTrigger } from 'forty-cdk/dropdown-menu';
+import {
+  ForMenuCheckboxItem,
+  ForMenuContent,
+  ForMenuGroup,
+  ForMenuGroupLabel,
+  ForMenuItem,
+  ForMenuItemIndicator,
+  ForMenuRadioGroup,
+  ForMenuRadioItem,
+  ForMenuSeparator,
+  ForMenuSub,
+  ForMenuSubTrigger,
+} from 'forty-cdk/menu';
+
+@Component({
+  selector: 'app-menu-default-example',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [
+    ForDropdownMenu,
+    ForDropdownMenuTrigger,
+    ForMenuContent,
+    ForMenuItem,
+    ForMenuCheckboxItem,
+    ForMenuRadioGroup,
+    ForMenuRadioItem,
+    ForMenuItemIndicator,
+    ForMenuSeparator,
+    ForMenuGroup,
+    ForMenuGroupLabel,
+    ForMenuSub,
+    ForMenuSubTrigger,
+  ],
+  template: `
+    <div forDropdownMenu #menu="forDropdownMenu">
+      <button forDropdownMenuTrigger class="menu-trigger">View options</button>
+      @if (menu.open()) {
+        <div forMenuContent class="menu menu--wide" animate.enter="menu-pop-in">
+          <div forMenuGroup>
+            <div forMenuGroupLabel class="menu-label">Appearance</div>
+            <button
+              forMenuCheckboxItem
+              class="menu-item menu-item--check"
+              [(checked)]="showToolbar"
+              (activate)="$event.preventDefault()"
+            >
+              <span forMenuItemIndicator [forceMount]="true" class="menu-indicator">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="1.75"
+                    d="m4.5 12.75 6 6 9-13.5"
+                  />
+                </svg>
+              </span>
+              Show toolbar
+            </button>
+            <button
+              forMenuCheckboxItem
+              class="menu-item menu-item--check"
+              [(checked)]="showSidebar"
+              (activate)="$event.preventDefault()"
+            >
+              <span forMenuItemIndicator [forceMount]="true" class="menu-indicator">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="1.75"
+                    d="m4.5 12.75 6 6 9-13.5"
+                  />
+                </svg>
+              </span>
+              Show sidebar
+            </button>
+          </div>
+
+          <hr forMenuSeparator class="menu-separator" />
+
+          <div forMenuGroup>
+            <div forMenuGroupLabel class="menu-label">Sort by</div>
+            <div forMenuRadioGroup [(value)]="sortBy">
+              <button
+                forMenuRadioItem
+                value="name"
+                class="menu-item menu-item--check"
+                (activate)="$event.preventDefault()"
+              >
+                <span forMenuItemIndicator [forceMount]="true" class="menu-indicator">
+                  <svg viewBox="0 0 16 16" width="7" height="7" aria-hidden="true">
+                    <circle cx="8" cy="8" r="8" fill="currentColor" />
+                  </svg>
+                </span>
+                Name
+              </button>
+              <button
+                forMenuRadioItem
+                value="date"
+                class="menu-item menu-item--check"
+                (activate)="$event.preventDefault()"
+              >
+                <span forMenuItemIndicator [forceMount]="true" class="menu-indicator">
+                  <svg viewBox="0 0 16 16" width="7" height="7" aria-hidden="true">
+                    <circle cx="8" cy="8" r="8" fill="currentColor" />
+                  </svg>
+                </span>
+                Date modified
+              </button>
+              <button
+                forMenuRadioItem
+                value="size"
+                class="menu-item menu-item--check"
+                (activate)="$event.preventDefault()"
+              >
+                <span forMenuItemIndicator [forceMount]="true" class="menu-indicator">
+                  <svg viewBox="0 0 16 16" width="7" height="7" aria-hidden="true">
+                    <circle cx="8" cy="8" r="8" fill="currentColor" />
+                  </svg>
+                </span>
+                Size
+              </button>
+            </div>
+          </div>
+
+          <hr forMenuSeparator class="menu-separator" />
+
+          <div forMenuSub #more="forMenuSub">
+            <button forMenuSubTrigger class="menu-item menu-item--check">
+              <span class="menu-indicator"></span>
+              More tools
+              <span class="menu-sub-arrow" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="1.75"
+                    d="m8.25 4.5 7.5 7.5-7.5 7.5"
+                  />
+                </svg>
+              </span>
+            </button>
+            @if (more.open()) {
+              <div forMenuSubContent class="menu" animate.enter="menu-pop-in">
+                <button forMenuItem class="menu-item">Developer tools</button>
+                <button forMenuItem class="menu-item">Extensions</button>
+                <button forMenuItem class="menu-item">Task manager</button>
+              </div>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  `,
+})
+export class MenuDefaultExample {
+  protected readonly showToolbar = signal(true);
+  protected readonly showSidebar = signal(false);
+  protected readonly sortBy = signal<string | null>('name');
+}
+```
+
 ## Mount/visibility convention
 
 `[forMenuContent]` follows the floating-overlay convention: the consumer's signal drives `@if`, the directive emits `(close)` (forwarded by the root primitive) when it wants to be unmounted. No `[hidden]`. See `[forDropdownMenu]` and `[forContextMenu]` for end-to-end examples.

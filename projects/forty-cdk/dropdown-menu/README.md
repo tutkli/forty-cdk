@@ -44,55 +44,35 @@ The menu items, content surface, radio groups, separators, and groups come from 
 Open the menu from the trigger and walk the items with the arrow keys — the highlighted item carries `data-highlighted`, and typing jumps to the first match.
 
 ```ts
-import { Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { ForDropdownMenu, ForDropdownMenuTrigger } from 'forty-cdk/dropdown-menu';
-import {
-  ForMenuContent,
-  ForMenuItem,
-  ForMenuRadioGroup,
-  ForMenuRadioItem,
-  ForMenuSeparator,
-} from 'forty-cdk/menu';
+import { ForMenuContent, ForMenuItem, ForMenuSeparator } from 'forty-cdk/menu';
 
 @Component({
-  selector: 'demo-options',
-  imports: [
-    ForDropdownMenu,
-    ForDropdownMenuTrigger,
-    ForMenuContent,
-    ForMenuItem,
-    ForMenuSeparator,
-    ForMenuRadioGroup,
-    ForMenuRadioItem,
-  ],
+  selector: 'app-dropdown-menu-default-example',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [ForDropdownMenu, ForDropdownMenuTrigger, ForMenuContent, ForMenuItem, ForMenuSeparator],
   template: `
-    <div forDropdownMenu #menu="forDropdownMenu">
-      <button forDropdownMenuTrigger class="dropdown-menu-trigger">Options</button>
+    <div forDropdownMenu #menu="forDropdownMenu" side="bottom" align="start" [sideOffset]="4">
+      <button forDropdownMenuTrigger class="dropdown-menu-trigger">Actions</button>
       @if (menu.open()) {
-        <div forMenuContent animate.leave="fade-out">
-          <button forMenuItem (activate)="cut()">Cut</button>
-          <button forMenuItem (activate)="copy()">Copy</button>
-          <button forMenuItem disabled>Paste</button>
-          <hr forMenuSeparator />
-          <div forMenuRadioGroup [(value)]="alignment">
-            <button forMenuRadioItem value="left">Left</button>
-            <button forMenuRadioItem value="center">Center</button>
-            <button forMenuRadioItem value="right">Right</button>
-          </div>
+        <div forMenuContent class="dropdown-menu" animate.enter="dropdown-menu-pop-in">
+          <button forMenuItem class="dropdown-menu-item">New tab</button>
+          <button forMenuItem class="dropdown-menu-item">New window</button>
+          <hr forMenuSeparator class="dropdown-menu-separator" />
+          <button forMenuItem class="dropdown-menu-item">Downloads</button>
+          <button forMenuItem class="dropdown-menu-item">Bookmarks</button>
+          <button forMenuItem class="dropdown-menu-item" disabled>Sync (signed out)</button>
+          <hr forMenuSeparator class="dropdown-menu-separator" />
+          <button forMenuItem class="dropdown-menu-item dropdown-menu-item--danger">
+            Clear browsing data
+          </button>
         </div>
       }
     </div>
   `,
 })
-export class DemoOptions {
-  readonly alignment = signal<string | null>('left');
-  cut() {
-    /* ... */
-  }
-  copy() {
-    /* ... */
-  }
-}
+export class DropdownMenuDefaultExample {}
 ```
 
 `@if` is what makes Angular's `animate.enter` / `animate.leave` work — they fire on real mount / unmount.

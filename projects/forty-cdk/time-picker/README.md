@@ -43,6 +43,77 @@ Requires a time-capable adapter:
 
 Open the listbox from the trigger and pick a slot — the arrow keys walk the timeline, and the trigger keeps `data-placeholder` until something is chosen.
 
+```ts
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { CalendarDateTime } from '@internationalized/date';
+import {
+  ForTimePicker,
+  ForTimePickerContent,
+  ForTimePickerOption,
+  ForTimePickerTrigger,
+  ForTimePickerValue,
+} from 'forty-cdk/time-picker';
+import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/internationalized-date';
+
+@Component({
+  selector: 'app-time-picker-time-example',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [
+    ForTimePicker,
+    ForTimePickerTrigger,
+    ForTimePickerValue,
+    ForTimePickerContent,
+    ForTimePickerOption,
+  ],
+  providers: [...provideInternationalizedDateTimeAdapter()],
+  template: `
+    <div
+      forTimePicker
+      #picker="forTimePicker"
+      class="time-picker-field"
+      [(value)]="value"
+      [step]="30"
+      [hourCycle]="24"
+      [ariaLabel]="'Meeting time'"
+    >
+      <button forTimePickerTrigger type="button" class="time-picker-trigger">
+        <span forTimePickerValue placeholder="Pick a time"></span>
+        <svg class="time-picker-chevron" viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            d="m19.5 8.25-7.5 7.5-7.5-7.5"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.75"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
+
+      @if (picker.open()) {
+        <div forTimePickerContent class="time-picker-content" animate.enter="time-picker-pop-in">
+          @for (slot of picker.slots(); track slot.id) {
+            <div
+              forTimePickerOption
+              class="time-picker-option"
+              [value]="slot.value"
+              [disabled]="slot.disabled"
+            >
+              {{ slot.label }}
+            </div>
+          }
+        </div>
+      }
+    </div>
+  `,
+})
+export class TimePickerTimeExample {
+  protected readonly value = signal<CalendarDateTime | null>(
+    new CalendarDateTime(2024, 6, 15, 9, 0),
+  );
+}
+```
+
 ```html
 <div
   forTimePicker

@@ -262,6 +262,77 @@ Declaratively the same recipe is the four vetoable outputs on `[forDrawer]`: `(i
 
 Open the drawer, drag it by its edge and let go past the threshold — `data-state` drives the transition and `data-dragging` is set for the gesture itself.
 
+```ts
+import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
+import {
+  ForDrawer,
+  ForDrawerBackdrop,
+  ForDrawerClose,
+  ForDrawerDescription,
+  ForDrawerHandle,
+  type ForDrawerSide,
+  ForDrawerTitle,
+} from 'forty-cdk/drawer';
+
+@Component({
+  selector: 'app-drawer-default-example',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [
+    ForDrawer,
+    ForDrawerBackdrop,
+    ForDrawerHandle,
+    ForDrawerTitle,
+    ForDrawerDescription,
+    ForDrawerClose,
+  ],
+  template: `
+    <div class="drawer-sides">
+      @for (side of sides; track side) {
+        <button class="drawer-btn drawer-btn--primary" type="button" (click)="openSide.set(side)">
+          {{ side }}
+        </button>
+      }
+    </div>
+
+    @if (openSide(); as side) {
+      <div
+        forDrawer
+        class="drawer"
+        [side]="side"
+        (dismiss)="openSide.set(null)"
+        [animate.enter]="'drawer-in-' + side"
+        [animate.leave]="'drawer-out-' + side"
+      >
+        <div
+          forDrawerBackdrop
+          class="drawer-backdrop"
+          animate.enter="drawer-backdrop-in"
+          animate.leave="drawer-backdrop-out"
+        ></div>
+        @if (vertical()) {
+          <div forDrawerHandle class="drawer-handle"></div>
+        }
+        <h2 forDrawerTitle class="drawer-title">Drawer title</h2>
+        <p forDrawerDescription class="drawer-desc">
+          Swipe toward the edge, press Escape, or click the backdrop to dismiss.
+        </p>
+        <div class="drawer-actions">
+          <button class="drawer-btn" forDrawerClose>Close</button>
+        </div>
+      </div>
+    }
+  `,
+})
+export class DrawerDefaultExample {
+  protected readonly sides: readonly ForDrawerSide[] = ['bottom', 'top', 'left', 'right'];
+  protected readonly openSide = signal<ForDrawerSide | null>(null);
+  protected readonly vertical = computed(() => {
+    const side = this.openSide();
+    return side === 'bottom' || side === 'top';
+  });
+}
+```
+
 ## API
 
 ### `ForDrawer`

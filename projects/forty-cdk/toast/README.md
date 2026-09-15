@@ -61,6 +61,50 @@ The viewport renders each toast in this shape (the declarative path composes the
 
 Fire a toast and leave it alone — hovering pauses it, a drag swipes it away, and the stack reflects `data-front-stack-index` so the cards behind it can shrink.
 
+```ts
+import { ChangeDetectionStrategy, Component, DestroyRef, inject } from '@angular/core';
+import { ForToastManager, ForToastViewport } from 'forty-cdk/toast';
+
+type Variant = 'info' | 'success' | 'warning' | 'error';
+
+@Component({
+  selector: 'app-toast-default-example',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [ForToastViewport],
+  template: `
+    <div class="row">
+      <button type="button" class="btn" (click)="notify('info')">Info</button>
+      <button type="button" class="btn" (click)="notify('success')">Success</button>
+      <button type="button" class="btn" (click)="notify('warning')">Warning</button>
+      <button type="button" class="btn btn--danger" (click)="notify('error')">Error</button>
+    </div>
+
+    <for-toast-viewport
+      class="demo-toast-viewport"
+      region="toast-variants"
+      [stackShift]="{ duration: 220, easing: 'cubic-bezier(0.05, 0.7, 0.1, 1)' }"
+    />
+  `,
+})
+export class ToastDefaultExample {
+  protected readonly manager = inject(ForToastManager);
+
+  constructor() {
+    inject(DestroyRef).onDestroy(() => this.manager.dismissAll());
+  }
+
+  protected notify(variant: Variant): void {
+    const copy = {
+      info: { title: 'Heads up', description: 'A new version is available.' },
+      success: { title: 'Saved', description: 'Your changes were saved.' },
+      warning: { title: 'Storage almost full', description: 'You have used 90% of your quota.' },
+      error: { title: 'Upload failed', description: 'The file could not be uploaded.' },
+    }[variant];
+    this.manager.show({ variant, duration: 5000, region: 'toast-variants', ...copy });
+  }
+}
+```
+
 ## API
 
 ### `ForToast`

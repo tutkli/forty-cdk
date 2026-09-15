@@ -23,6 +23,74 @@ A role='searchbox' text input that mirrors its value to a signal and reflects va
 
 Type in the box and clear it again — the clear button is yours to render, and the host reflects `data-empty` for as long as there is nothing to clear.
 
+```ts
+import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
+import { ForSearch, ForSearchClear, ForSearchGroup } from 'forty-cdk/search';
+
+const PRIMITIVES = [
+  'Accordion',
+  'Breadcrumbs',
+  'Combobox',
+  'Date Picker',
+  'Dialog',
+  'File Upload',
+  'Listbox',
+  'Pagination',
+  'Popover',
+  'Slider',
+  'Switch',
+  'Tooltip',
+];
+
+@Component({
+  selector: 'app-search-default-example',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [ForSearchGroup, ForSearch, ForSearchClear],
+  template: `
+    <div class="stage">
+      <div forSearchGroup class="search">
+        <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.75"
+            stroke-linecap="round"
+            d="m21 21-4.35-4.35M19 11a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z"
+          />
+        </svg>
+        <input
+          forSearch
+          class="search-input"
+          [(value)]="query"
+          placeholder="Search primitives…"
+          aria-label="Search primitives"
+        />
+        <button forSearchClear class="search-clear" ariaLabel="Clear search">×</button>
+      </div>
+
+      <ul class="results">
+        @for (item of results(); track item) {
+          <li>{{ item }}</li>
+        } @empty {
+          <li class="empty">No matches for “{{ query() }}”</li>
+        }
+      </ul>
+    </div>
+  `,
+})
+export class SearchDefaultExample {
+  protected readonly query = signal('');
+
+  protected readonly results = computed(() => {
+    const q = this.query().trim().toLowerCase();
+    if (!q) {
+      return PRIMITIVES;
+    }
+    return PRIMITIVES.filter((item) => item.toLowerCase().includes(q));
+  });
+}
+```
+
 ### Basic usage
 
 ```html

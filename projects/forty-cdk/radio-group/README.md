@@ -34,23 +34,47 @@ Move between the radios with the arrow keys — selection follows focus, the gro
 ### Stand-alone
 
 ```ts
-import { Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { ForRadio, ForRadioGroup } from 'forty-cdk/radio-group';
 
+interface RadioOption {
+  readonly value: string;
+  readonly label: string;
+  readonly disabled?: boolean;
+}
+
 @Component({
-  selector: 'demo-color',
+  selector: 'app-radio-group-default-example',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ForRadioGroup, ForRadio],
   template: `
-    <div forRadioGroup [(value)]="color" aria-labelledby="color-label">
-      <span id="color-label">Color</span>
-      <button type="button" forRadio class="radio-group-item" value="red">Red</button>
-      <button type="button" forRadio class="radio-group-item" value="green">Green</button>
-      <button type="button" forRadio class="radio-group-item" value="blue" disabled>Blue</button>
+    <div>
+      <span id="rg-label" class="rg-label">Shipping method</span>
+      <div forRadioGroup class="rg" [(value)]="value" aria-labelledby="rg-label">
+        @for (opt of options; track opt.value) {
+          <button
+            type="button"
+            forRadio
+            class="rg-option"
+            [value]="opt.value"
+            [disabled]="opt.disabled ?? false"
+          >
+            <span class="rg-dot"></span>
+            {{ opt.label }}
+          </button>
+        }
+      </div>
     </div>
   `,
 })
-export class DemoColor {
-  readonly color = signal('red');
+export class RadioGroupDefaultExample {
+  protected readonly options: readonly RadioOption[] = [
+    { value: 'standard', label: 'Standard' },
+    { value: 'express', label: 'Express' },
+    { value: 'overnight', label: 'Overnight', disabled: true },
+  ];
+
+  protected readonly value = signal<string | null>('standard');
 }
 ```
 

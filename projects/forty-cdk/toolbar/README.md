@@ -32,7 +32,7 @@ The toolbar takes a single Tab stop and arrow keys move focus across its buttons
 Move along the controls with the arrow keys — the toolbar keeps one tab stop, so `Tab` leaves it rather than walking every button in it.
 
 ```ts
-import { Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { ForToggleGroup, ForToggleGroupItem } from 'forty-cdk/toggle';
 import {
   ForToolbar,
@@ -42,7 +42,8 @@ import {
 } from 'forty-cdk/toolbar';
 
 @Component({
-  selector: 'demo-toolbar',
+  selector: 'app-toolbar-default-example',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     ForToolbar,
     ForToolbarButton,
@@ -52,24 +53,80 @@ import {
     ForToggleGroupItem,
   ],
   template: `
-    <div forToolbar class="toolbar" [ariaLabel]="'Formatting'">
-      <button forToolbarButton class="toolbar-button" (click)="undo()">Undo</button>
-      <button forToolbarButton class="toolbar-button" (click)="redo()">Redo</button>
-      <span forToolbarSeparator></span>
-      <div forToggleGroup multiple [(value)]="formatting">
-        <button forToggleGroupItem value="bold">B</button>
-        <button forToggleGroupItem value="italic">I</button>
-        <button forToggleGroupItem value="underline">U</button>
+    <div forToolbar class="toolbar" aria-label="Text formatting">
+      <button forToolbarButton class="toolbar-btn">Undo</button>
+      <button forToolbarButton class="toolbar-btn">Redo</button>
+
+      <span forToolbarSeparator class="toolbar-sep"></span>
+
+      <div forToggleGroup class="toolbar-grp" multiple [(value)]="style" aria-label="Text style">
+        <button forToggleGroupItem class="toolbar-btn toolbar-icon" value="bold" aria-label="Bold">
+          B
+        </button>
+        <button
+          forToggleGroupItem
+          class="toolbar-btn toolbar-icon"
+          value="italic"
+          aria-label="Italic"
+        >
+          I
+        </button>
+        <button
+          forToggleGroupItem
+          class="toolbar-btn toolbar-icon"
+          value="underline"
+          aria-label="Underline"
+        >
+          U
+        </button>
       </div>
-      <span forToolbarSeparator></span>
-      <a forToolbarLink class="toolbar-link" href="/help">Help</a>
+
+      <span forToolbarSeparator class="toolbar-sep"></span>
+
+      <div forToggleGroup class="toolbar-grp" [(value)]="align" aria-label="Alignment">
+        <button
+          forToggleGroupItem
+          class="toolbar-btn toolbar-icon"
+          value="left"
+          aria-label="Align left"
+        >
+          L
+        </button>
+        <button
+          forToggleGroupItem
+          class="toolbar-btn toolbar-icon"
+          value="center"
+          aria-label="Align center"
+        >
+          C
+        </button>
+        <button
+          forToggleGroupItem
+          class="toolbar-btn toolbar-icon"
+          value="right"
+          aria-label="Align right"
+        >
+          R
+        </button>
+      </div>
+
+      <span forToolbarSeparator class="toolbar-sep"></span>
+
+      <a
+        forToolbarLink
+        class="toolbar-link"
+        href="https://www.w3.org/WAI/ARIA/apg/patterns/toolbar/"
+        target="_blank"
+        rel="noreferrer noopener"
+      >
+        Docs
+      </a>
     </div>
   `,
 })
-export class DemoToolbar {
-  readonly formatting = signal<readonly string[]>([]);
-  undo() {}
-  redo() {}
+export class ToolbarDefaultExample {
+  protected readonly style = signal<readonly string[]>(['bold']);
+  protected readonly align = signal<readonly string[]>(['left']);
 }
 ```
 

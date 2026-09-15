@@ -23,33 +23,30 @@ The focusable divider that resizes two panes is a separate primitive — [`ForPa
 A styleless `role="separator"` that reflects `data-orientation`, so one rule draws the horizontal and the vertical divider the same way.
 
 ```ts
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { ForSeparator } from 'forty-cdk/separator';
 
 @Component({
-  selector: 'demo-separator',
+  selector: 'app-separator-default-example',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ForSeparator],
   template: `
-    <section>
-      <h2>Profile</h2>
-      <p>…</p>
-    </section>
-
-    <hr forSeparator class="separator" />
-
-    <section>
-      <h2>Notifications</h2>
-      <p>…</p>
-    </section>
-
-    <nav>
-      <a href="/a">A</a>
-      <span forSeparator class="separator" orientation="vertical" decorative></span>
-      <a href="/b">B</a>
-    </nav>
+    <div class="card">
+      <span class="label">Account</span>
+      <hr forSeparator class="separator-h" />
+      <span class="label">Workspace</span>
+      <hr forSeparator class="separator-h" />
+      <div class="inline">
+        <span>Edit</span>
+        <span forSeparator decorative orientation="vertical" class="separator-v"></span>
+        <span>Share</span>
+        <span forSeparator decorative orientation="vertical" class="separator-v"></span>
+        <span>Delete</span>
+      </div>
+    </div>
   `,
 })
-export class DemoSeparator {}
+export class SeparatorDefaultExample {}
 ```
 
 ## API

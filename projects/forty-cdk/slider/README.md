@@ -26,6 +26,31 @@ A single primitive supports single, range, and multi-thumb sliders — the shape
 
 Drag a thumb, or focus it and press the arrow keys — `Home` and `End` jump to the bounds, and each thumb carries its own `data-index`.
 
+```ts
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ForSlider, ForSliderRange, ForSliderThumb, ForSliderTrack } from 'forty-cdk/slider';
+
+@Component({
+  selector: 'app-slider-default-example',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [ForSlider, ForSliderTrack, ForSliderRange, ForSliderThumb],
+  template: `
+    <div class="sl-demo">
+      <div forSlider class="sl" [(value)]="value" [min]="0" [max]="100">
+        <span forSliderTrack class="sl-track">
+          <span forSliderRange class="sl-range"></span>
+          <span forSliderThumb class="sl-thumb" [index]="0" ariaLabel="Volume"></span>
+        </span>
+      </div>
+      <span class="sl-value">{{ value()[0] }}</span>
+    </div>
+  `,
+})
+export class SliderDefaultExample {
+  protected readonly value = signal<readonly number[]>([40]);
+}
+```
+
 ### Single thumb
 
 ```html

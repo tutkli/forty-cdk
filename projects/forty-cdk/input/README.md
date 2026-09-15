@@ -68,21 +68,38 @@ Type in the field and watch the `[forInput]` host: `data-empty`, `data-dirty` an
 ### Stand-alone
 
 ```ts
-import { Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { ForInput, ForTextarea } from 'forty-cdk/input';
 
 @Component({
-  selector: 'demo-profile',
+  selector: 'app-input-default-example',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ForInput, ForTextarea],
   template: `
-    <input forInput class="input" [(value)]="email" type="email" placeholder="you@example.com" />
-    <textarea forTextarea class="textarea" [(value)]="bio" placeholder="About you"></textarea>
-    <p>{{ email() }} — {{ bio().length }} chars</p>
+    <div class="stack">
+      <input
+        forInput
+        class="input"
+        type="email"
+        aria-label="Email address"
+        placeholder="jane@example.com"
+        [(value)]="email"
+      />
+      <textarea
+        forTextarea
+        class="input area"
+        rows="3"
+        aria-label="Short bio"
+        placeholder="A short bio…"
+        [(value)]="bio"
+      ></textarea>
+      <p class="state">{{ email() || '∅' }} — {{ bio().length }} chars</p>
+    </div>
   `,
 })
-export class DemoProfile {
-  readonly email = signal('');
-  readonly bio = signal('');
+export class InputDefaultExample {
+  protected readonly email = signal('');
+  protected readonly bio = signal('');
 }
 ```
 

@@ -36,58 +36,36 @@ It carries `role="separator"` plus live `aria-value*`, is tabbable, handles arro
 Drag the divider, or focus it and press the arrow keys — the resizer is a `separator` carrying `aria-valuenow`, so the split is announced as it moves.
 
 ```ts
-import { Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { ForPaneResizer } from 'forty-cdk/pane-resizer';
 
 @Component({
-  selector: 'demo-split-pane',
+  selector: 'app-pane-resizer-resize-example',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ForPaneResizer],
   template: `
-    <div class="split" [style.--start.px]="size()">
-      <section id="pane-a" class="pane-a">…</section>
-
+    <div class="pr-split">
+      <div id="pr-pane-a" class="pr-pane pr-pane-a" [style.flex-basis.px]="size()">
+        {{ size() }}px
+      </div>
       <div
-        class="resizer"
         forPaneResizer
         orientation="vertical"
+        class="pr-resizer"
+        aria-label="Resize panes"
+        controls="pr-pane-a pr-pane-b"
         [(value)]="size"
         [min]="120"
-        [max]="640"
+        [max]="520"
         [step]="8"
-        [largeStep]="80"
-        [valueText]="size() + ' pixels'"
-        aria-controls="pane-a pane-b"
-        (resizeCommit)="persist($event)"
+        [largeStep]="48"
       ></div>
-
-      <section id="pane-b" class="pane-b">…</section>
+      <div id="pr-pane-b" class="pr-pane pr-pane-b">flex: 1</div>
     </div>
   `,
-  styles: `
-    .split {
-      display: grid;
-      grid-template-columns: var(--start) 4px 1fr;
-      block-size: 100%;
-    }
-    .resizer {
-      cursor: col-resize;
-      background: var(--border);
-    }
-    .resizer:focus-visible {
-      outline: 2px solid currentColor;
-      outline-offset: 2px;
-    }
-    .resizer[data-disabled] {
-      cursor: default;
-      opacity: 0.5;
-    }
-  `,
 })
-export class DemoSplitPane {
-  readonly size = signal(280);
-  persist(px: number) {
-    localStorage.setItem('pane-a-size', String(px));
-  }
+export class PaneResizerResizeExample {
+  protected readonly size = signal(240);
 }
 ```
 
