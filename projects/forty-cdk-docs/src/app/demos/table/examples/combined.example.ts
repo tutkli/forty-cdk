@@ -18,8 +18,46 @@ import {
 import { ForTableVirtualized } from 'forty-cdk/table-virtualization';
 import { injectInfiniteScroll } from 'forty-cdk/virtualization';
 
-import { makePeople } from './big-people';
-import { COLUMN_LABELS, type Person, type PersonColumn, personField } from './people';
+interface Person {
+  readonly id: number;
+  readonly name: string;
+  readonly role: string;
+  readonly dept: string;
+  readonly location: string;
+}
+
+type PersonColumn = 'name' | 'role' | 'dept' | 'location';
+
+const COLUMN_LABELS: Record<PersonColumn, string> = {
+  name: 'Name',
+  role: 'Role',
+  dept: 'Department',
+  location: 'Location',
+};
+
+function personField(person: Person, column: PersonColumn): string {
+  return person[column];
+}
+
+const ROLES = ['Engineer', 'Researcher', 'Analyst', 'Designer', 'Manager', 'Intern'];
+const DEPTS = ['Platform', 'Research', 'Aerospace', 'Compilers', 'Growth', 'Security'];
+const CITIES = ['London', 'Berlin', 'Tokyo', 'Austin', 'Madrid', 'Toronto', 'Oslo', 'Lagos'];
+const FIRST = ['Ada', 'Alan', 'Grace', 'Edsger', 'Barbara', 'Donald', 'Katherine', 'Tim'];
+const LAST = ['Lovelace', 'Turing', 'Hopper', 'Dijkstra', 'Liskov', 'Knuth', 'Johnson', 'Lee'];
+
+function makePerson(i: number): Person {
+  return {
+    id: i + 1,
+    name: `${FIRST[i % FIRST.length]} ${LAST[(i * 3) % LAST.length]} ${i + 1}`,
+    role: ROLES[i % ROLES.length]!,
+    dept: DEPTS[(i * 2) % DEPTS.length]!,
+    location: CITIES[(i * 5) % CITIES.length]!,
+  };
+}
+
+function makePeople(start: number, length: number): Person[] {
+  return Array.from({ length }, (_, k) => makePerson(start + k));
+}
 
 const ROW_HEIGHT = 40;
 const PAGE = 50;
