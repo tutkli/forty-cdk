@@ -5,10 +5,11 @@ import { foldTargetOf } from '../lib/doc-contract.mjs';
 import { compileCorpus } from '../lib/doc-corpus.mjs';
 import { buildDocRoutes } from '../lib/doc-links.mjs';
 import { readErrorCodes } from '../lib/error-codes.mjs';
-import { EXCLUDED_GUIDES, GUIDE_GROUPS, readLibraryMeta } from '../lib/doc-site.mjs';
+import { EXCLUDED_GUIDES, GUIDE_GROUPS, NAV_GROUPS, readLibraryMeta } from '../lib/doc-site.mjs';
 import { repoRoot } from '../lib/repo-path.mjs';
 import { foldableOf, withFold } from './doc-fold.mjs';
 import { DocCompileError } from './doc-model.mjs';
+import { relatedIndexOf } from './doc-related.mjs';
 import { headingText, renderDocument } from './doc-render.mjs';
 import { pageFileOf, pageProblems, routesModule } from './doc-routes.mjs';
 import { searchTextOf } from './doc-search.mjs';
@@ -303,6 +304,108 @@ if (codeProblems.length > 0) {
 
 const keyOf = (document) => `${document.kind}:${document.slug}`;
 
+const publishedKeys = new Set(documents.map(keyOf));
+
+/**
+ * The page a folded README is republished inside, refused here when the site
+ * publishes none — the failure a renamed or unpublished host would otherwise
+ * reach the reader as a README that is documented nowhere.
+ */
+function foldHostOf(document) {
+  const target = foldTargetOf(document.meta);
+  const key = `primitive:${target.slug}`;
+  if (!publishedKeys.has(key)) {
+    throw new DocCompileError([
+      {
+        path: document.path,
+        line: 1,
+        message:
+          `foldInto names "${target.slug}", which the site publishes no page for — fold this ` +
+          'document into a published page, or give it one of its own',
+      },
+    ]);
+  }
+  return { key, section: target.section };
+}
+
+/**
+ * Every published document in the order and under the group the navigation
+ * lists it ([#1938](https://github.com/tutkli/forty-cdk/issues/1938)).
+ *
+ * Derived from the same three registries the rail is built from rather than
+ * restated: the site's pages in reading order, the entry points by frontmatter
+ * group and sorted by title the way {@link registryModule} sorts them, and the
+ * guides by registry group and registry order. A _Related_ block then arranges
+ * its entries the way the reader already navigates, whatever order the graph
+ * found them in.
+ */
+function navListing() {
+  const byTitle = (a, b) => a.meta.title.localeCompare(b.meta.title);
+  const inGroup = (id) => {
+    if (id === 'site') {
+      return sitePages;
+    }
+    if (id === 'primitives' || id === 'utilities') {
+      return primitives.filter((document) => document.meta.group === id).sort(byTitle);
+    }
+    return guides.filter((guide) => groupOf(guide.slug) === id);
+  };
+
+  const listing = NAV_GROUPS.flatMap((group) =>
+    inGroup(group.id).map((document) => ({ document, group })),
+  );
+  if (listing.length !== documents.length) {
+    throw new Error(
+      `[gen-doc-model] the navigation lists ${listing.length} of ${documents.length} published ` +
+        'documents — a group in NAV_GROUPS no longer matches the registry that fills it, and the ' +
+        'documents it named would lose their Related entries silently',
+    );
+  }
+  return listing;
+}
+
+const listing = navListing();
+
+/** How each published page is ranked and described wherever another page links it. */
+const relatedRank = new Map(listing.map(({ document }, index) => [keyOf(document), index]));
+const relatedEntry = new Map(
+  listing.map(({ document, group }) => {
+    const route = routes.get(document.path);
+    if (route === undefined) {
+      throw new Error(`[gen-doc-model] ${document.path} is published under no route`);
+    }
+    return [
+      keyOf(document),
+      {
+        route,
+        group: group.label,
+        title: document.meta === null ? headingText(document.title) : document.meta.title,
+        description: descriptionOf(document),
+      },
+    ];
+  }),
+);
+
+/**
+ * The graph the _Related_ blocks are read off, over the pages the site serves —
+ * a folded README's links counting as its host page's.
+ */
+const relatedPages = new Map(documents.map((document) => [keyOf(document), [document]]));
+for (const document of folded) {
+  relatedPages.get(foldHostOf(document).key).push(document);
+}
+const relatedIndex = relatedIndexOf(
+  [...relatedPages].map(([key, held]) => ({ key, documents: held })),
+  routes,
+);
+
+function relatedOf(document) {
+  return (relatedIndex.get(keyOf(document)) ?? [])
+    .slice()
+    .sort((a, b) => relatedRank.get(a) - relatedRank.get(b))
+    .map((key) => relatedEntry.get(key));
+}
+
 /**
  * The pages, with every folded README appended to the section it names
  * ([#1809](https://github.com/tutkli/forty-cdk/issues/1809)).
@@ -313,24 +416,15 @@ const keyOf = (document) => `${document.kind}:${document.slug}`;
  */
 function foldedPages() {
   const pages = new Map(
-    documents.map((document) => [keyOf(document), renderDocument(document, { routes })]),
+    documents.map((document) => [
+      keyOf(document),
+      renderDocument(document, { routes, related: relatedOf(document) }),
+    ]),
   );
   for (const document of folded) {
-    const target = foldTargetOf(document.meta);
-    const host = pages.get(`primitive:${target.slug}`);
-    if (host === undefined) {
-      throw new DocCompileError([
-        {
-          path: document.path,
-          line: 1,
-          message:
-            `foldInto names "${target.slug}", which the site publishes no page for — fold this ` +
-            'document into a published page, or give it one of its own',
-        },
-      ]);
-    }
+    const { key, section: target } = foldHostOf(document);
     const [section] = renderDocument(foldableOf(document), { routes }).sections;
-    pages.set(`primitive:${target.slug}`, withFold(host, target.section, section));
+    pages.set(key, withFold(pages.get(key), target, section));
   }
   return pages;
 }
@@ -372,6 +466,14 @@ console.log(
   `[gen-doc-model] wrote ${rel(OUT_DIR)} — ` +
     `${documents.length} documents (${guides.length} guides), ${sections} sections, ${tables} tables, ` +
     `${primitives.length + guides.length + sitePages.length} routes`,
+);
+const relatedEntries = [...relatedIndex.values()].reduce((total, keys) => total + keys.length, 0);
+const unrelated = [...relatedIndex].filter(([, keys]) => keys.length === 0).map(([key]) => key);
+console.log(
+  `[gen-doc-model] related: ${relatedEntries} entries across ${relatedIndex.size} pages` +
+    (unrelated.length > 0
+      ? `, ${unrelated.length} of them linking and linked by nothing (${unrelated.join(', ')})`
+      : ''),
 );
 console.log(
   `[gen-doc-model] error codes: ${errorCodes.length} FORCDK-* code(s) across ` +

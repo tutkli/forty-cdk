@@ -9,6 +9,7 @@ export type {
   DocPageExample,
   DocPageHeading,
   DocPagePlainTable,
+  DocPageRelated,
   DocPageSection,
   DocPageTable,
 } from '../../../../../scripts/docs/doc-render.mjs';

@@ -330,6 +330,7 @@ describe('rendering a whole document for its page', () => {
       'examples',
       'behaviorGroup',
       'sections',
+      'related',
     ]);
     expect(Object.keys(page.intro[0]!)).toEqual(['kind', 'html']);
     expect(Object.keys(page.sections[0]!)).toEqual(['title', 'slug', 'ring', 'headings', 'blocks']);

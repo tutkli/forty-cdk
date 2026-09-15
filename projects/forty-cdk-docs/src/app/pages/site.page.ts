@@ -4,6 +4,7 @@ import { DomSanitizer } from '@angular/platform-browser';
 import { injectDocBase } from '../doc/doc-base';
 import { injectFragmentScroll } from '../doc/doc-fragment';
 import { DocLinks } from '../doc/doc-links';
+import { DocRelated } from '../doc/doc-related';
 import type { DocPage, DocPageSection } from '../doc/doc-model';
 import { DocSection } from '../doc/doc-section';
 import { DocToc } from '../doc/doc-toc';
@@ -13,7 +14,7 @@ import { sitePageBySlug } from '../doc/site-pages';
 @Component({
   selector: 'site-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DocSection, DocToc, DocLinks],
+  imports: [DocSection, DocToc, DocLinks, DocRelated],
   template: `
     <header class="head">
       <h1 class="pg-doc-title">{{ page().title }}</h1>
@@ -31,6 +32,8 @@ import { sitePageBySlug } from '../doc/site-pages';
         @for (section of sections(); track section.slug) {
           <doc-section [section]="section" />
         }
+
+        <doc-related [entries]="doc().related" />
       </div>
 
       <aside class="rail">

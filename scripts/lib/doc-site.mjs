@@ -21,6 +21,28 @@ export const GUIDE_GROUPS = [
   { id: 'table', label: 'Table & virtualization' },
 ];
 
+/**
+ * Every group the navigation lists documents under, in the order it lists them
+ * ([#1938](https://github.com/tutkli/forty-cdk/issues/1938)).
+ *
+ * The two rails read end to end: the site's own pages, then the entry points by
+ * the group their frontmatter declares, then the guides by the group their
+ * registry gives them. It exists because a _Related_ block spans all three and
+ * has to arrange them the way the reader already navigates — a listing that
+ * jumped between a primitive, a guide and a site page in graph order would be
+ * the one arrangement the navigation never shows.
+ *
+ * `site` is the one id no document declares: a site page is identified by its
+ * kind, the registry deciding its reading order the way {@link GUIDE_GROUPS}
+ * decides a guide's group.
+ */
+export const NAV_GROUPS = [
+  { id: 'site', label: 'Introduction' },
+  { id: 'primitives', label: 'Primitives' },
+  { id: 'utilities', label: 'Utilities' },
+  ...GUIDE_GROUPS,
+];
+
 export const PUBLISHED_GUIDES = [
   { file: 'styling.md', group: 'styling' },
   { file: 'styling-floating-content.md', group: 'styling' },
