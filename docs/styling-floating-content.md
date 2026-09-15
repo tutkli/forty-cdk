@@ -1,7 +1,10 @@
 # Styling floating content
 
-Applies to every primitive that portals positioned content to `document.body`:
-**Popover**, **Tooltip**, **HoverCard**, **DropdownMenu**, **ContextMenu**, and nested **Menu sub-menus**.
+Every primitive that portals positioned content to `document.body` — **Popover**, **Tooltip**,
+**HoverCard**, **DropdownMenu**, **ContextMenu**, and nested **Menu sub-menus** — styles under the
+same four rules, because the positioner owns the content's `translate` and leaves the rest of the
+box to you. Follow them and enter / exit animations, arrow offsets and stacking all work without
+fighting the positioner.
 
 ---
 

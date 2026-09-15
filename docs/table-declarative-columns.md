@@ -1,18 +1,14 @@
 # Table: declarative columns
 
-The optional ergonomic layer over `forty-cdk/table` — author one `[forTableColumnDef]` per column and
-let `<for-table-body>` stamp the header row and one data row per item. Split out of the table
-README in [#1401](https://github.com/tutkli/forty-cdk/issues/1401); the raw
-`[forTableCell]` / `[forTableHeaderCell]` primitives it builds on are documented in
-[the table README](../projects/forty-cdk/table/README.md).
+Author one `[forTableColumnDef]` per column and `<for-table-body>` stamps the header row and one
+data row per item out of the same cell primitives, so a column is declared in one place instead of
+being kept in sync by hand across a header row and a data row.
 
-Hand-writing every cell in the header row **and** the data row keeps the two in sync by hand and
-smears a single column across several places. The optional ergonomic layer lets you author one
-`[forTableColumnDef]` per column and have `<for-table-body>` stamp the header row and one data row per item
-out of the same cell primitives. Place it inside a `[forTable]`; it is additive — the raw
-`[forTableRow]` / `[forTableCell]` primitives in
+The layer is optional and additive. Place `<for-table-body>` inside a `[forTable]`; the raw
+`[forTableRow]` / `[forTableCell]` / `[forTableHeaderCell]` primitives in
 [the table README](../projects/forty-cdk/table/README.md) keep working unchanged, and a table that
-never imports `ForTableBody` never bundles it.
+never imports `ForTableBody` never bundles it. Split out of the table README in
+[#1401](https://github.com/tutkli/forty-cdk/issues/1401).
 
 **Supported modes: `table` and `grid`.** Nothing in `<for-table-body>` is grid-specific — it derives
 each stamped cell's role from the table `mode` and applies no mode guard, so it works under the default
