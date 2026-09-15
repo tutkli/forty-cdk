@@ -27,18 +27,13 @@ import { DOC } from '../../../generated/docs/primitives/dropdown-menu.generated'
       </demo-layout>
 
       <demo-layout
-        title="Checkbox & radio items"
-        subtitle="A settings-style dropdown built from the full menu vocabulary: <code>forMenuGroup</code> with a <code>forMenuGroupLabel</code> header, <code>forMenuCheckboxItem</code> toggles (role <code>menuitemcheckbox</code>) and a <code>forMenuRadioGroup</code> of <code>forMenuRadioItem</code> options (role <code>menuitemradio</code>). Each item carries a <code>forMenuItemIndicator</code> that paints its checkmark / dot from the item's checked state. Calling <code>preventDefault()</code> on <code>(activate)</code> keeps the menu open so several options can be flipped in one pass — try <kbd>Space</kbd> to toggle without closing."
+        heading="checkbox--radio-items"
         sourcePath="dropdown-menu/examples/checkbox-radio.example.ts"
       >
         <app-dropdown-menu-checkbox-radio-example />
       </demo-layout>
 
-      <demo-layout
-        title="Submenus"
-        subtitle="<code>forMenuSub</code> nests a second menu under a <code>forMenuSubTrigger</code> item (role <code>menuitem</code>, <code>aria-haspopup=menu</code>). The submenu owns its own open model and item collection, and its <code>forMenuSubContent</code> reuses the menu surface positioned to the side of the trigger. Submenus nest arbitrarily — here a third level sits inside the second. <kbd>ArrowRight</kbd> opens a submenu and focuses its first item; <kbd>ArrowLeft</kbd> collapses back to the parent; <kbd>Escape</kbd> closes one level at a time."
-        sourcePath="dropdown-menu/examples/submenus.example.ts"
-      >
+      <demo-layout heading="submenus" sourcePath="dropdown-menu/examples/submenus.example.ts">
         <app-dropdown-menu-submenus-example />
       </demo-layout>
     </primitive-page>

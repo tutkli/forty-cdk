@@ -99,6 +99,10 @@ export class MenubarDefaultExample {
 
 `@if (open() === '<value>')` controls each menu's mount, so Angular's `animate.enter` / `animate.leave` fire on the natural mount cycle. `[(value)]` is two-way bindable; the menubar flips it on trigger interaction, item activation, Escape, outside dismissal, and cross-menu navigation.
 
+### Vertical & RTL
+
+The same menubar laid out as a vertical sidebar (`orientation='vertical'` makes `Up` / `Down` move between triggers) with `dir='rtl'`. RTL swaps the cross-menu arrow keys and floats each menu out of the opposite edge — the directive resolves the writing direction and positioning for you.
+
 ## Mount shapes
 
 The bar provides **one** multiplexed `ForMenuContext`, so a `[forMenuContent]` does not have to be repeated per trigger. Three shapes are supported, and all three preserve a consumer-set static `id` on the surface:

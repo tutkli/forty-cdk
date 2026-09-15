@@ -87,7 +87,28 @@ export class FileUploadDefaultExample {
 }
 ```
 
-### Stand-alone
+### Multiple files
+
+`multiple` lets the picker (and a drop) accept more than one file at once, and `accept` narrows the chooser to the MIME types you list.
+
+```html
+<div forFileUpload multiple (filesChange)="onFiles($event)">
+  <input forFileUploadInput aria-label="Upload files" class="sr-only" />
+  <button forFileUploadTrigger>Choose files</button>
+</div>
+```
+
+With `multiple` off the zone keeps the first accepted file and surfaces the extras on `filesRejected` with the reason `'multiple'` — nothing is discarded silently, so a consumer can tell the user why only one file went through. Combining `directory` with `multiple` off is therefore noisy by design: every file in the chosen folder past the first is reported as a `'multiple'` rejection.
+
+### States
+
+One class and one directive, two states. `disabled` blocks the dialog and drops alike, and reflects `data-disabled` on the zone — so it dims and ignores pointer events from the same stylesheet that styles `data-dragging`, without the input leaving the DOM.
+
+### Folder selection
+
+Set `directory` to switch the native picker into folder mode (mirrored as `webkitdirectory` on the input). The emitted `FileList` then contains every file inside the chosen folder, each carrying a `webkitRelativePath` the consumer reads to reconstruct the tree.
+
+## Stand-alone
 
 ```html
 <div forFileUpload accept="image/*,.pdf" (filesChange)="onFiles($event)">
@@ -102,18 +123,7 @@ export class FileUploadDefaultExample {
 </div>
 ```
 
-### Multiple files
-
-```html
-<div forFileUpload multiple (filesChange)="onFiles($event)">
-  <input forFileUploadInput aria-label="Upload files" class="sr-only" />
-  <button forFileUploadTrigger>Choose files</button>
-</div>
-```
-
-With `multiple` off the zone keeps the first accepted file and surfaces the extras on `filesRejected` with the reason `'multiple'` — nothing is discarded silently, so a consumer can tell the user why only one file went through. Combining `directory` with `multiple` off is therefore noisy by design: every file in the chosen folder past the first is reported as a `'multiple'` rejection.
-
-### Handling rejections
+## Handling rejections
 
 <!-- snippet: fragment -->
 
@@ -125,7 +135,7 @@ onRejected(rejections: ForFileUploadRejection[]): void {
 }
 ```
 
-### Directory (folder) selection
+## Directory (folder) selection
 
 Set `directory` to switch the native picker into folder-selection mode (mirrored onto the input as `webkitdirectory`). The emitted `FileList` then contains every file inside the chosen folder, each carrying a `webkitRelativePath` the consumer reads to reconstruct the tree.
 
@@ -148,7 +158,7 @@ onFolder(files: FileList): void {
 
 Despite the `webkit-` prefix the attribute is supported across modern Chromium, Firefox, and WebKit. Directory drag-and-drop (`DataTransferItem.webkitGetAsEntry`) is out of scope — drop continues to surface `DataTransfer.files` only.
 
-### Disabled
+## Disabled
 
 ```html
 <div forFileUpload [disabled]="isDisabled()">

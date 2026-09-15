@@ -84,7 +84,11 @@ export class BreadcrumbsDefaultExample {
 
 The root defaults its label to `Breadcrumb`. Override it with `ariaLabel="…"` (or point a native `aria-labelledby` at a visible heading) when a page hosts more than one breadcrumb trail.
 
-### Localizing the label
+### Collapsing a long trail
+
+The primitive renders whatever items you give it, so collapsing a deep path is a consumer decision. Here the middle is folded into an expandable ellipsis button that reveals the hidden crumbs — the trail stays a single accessible navigation landmark either way.
+
+## Localizing the label
 
 `Breadcrumb` is verbalized by screen readers, so translate it per injector scope with `provideForBreadcrumbsDefaults`. Configure it at the application root, or in any component's `providers` to scope the translation to a subtree. A per-instance `[ariaLabel]` still wins over the scope default.
 

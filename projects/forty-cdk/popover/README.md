@@ -93,37 +93,13 @@ export class PopoverDefaultExample {}
 
 `[forPopoverContent]` portals to `document.body` and is positioned with floating-ui — it must be wrapped with `@if` so mount and unmount drive `animate.enter` / `animate.leave`.
 
-### `#popover="forPopover"` vs `[(open)]`
+### Anchor & arrow
 
-The minimal "click trigger → show content" case needs **neither** a separate `open` signal **nor** a two-way binding. `[forPopover]` is `exportAs: 'forPopover'`, so expose the directive instance with a template reference variable — `#popover="forPopover"` — and drive the `@if` straight off its own `open()` signal, as above. The trigger toggles it; Escape and outside dismissal flip it back.
+The element that opens the popover and the element it points at can differ: the button is the trigger, but `[forPopoverAnchor]` on the highlighted phrase is what floating-ui positions against.
 
-Reach for the explicit `[(open)]="mySignal"` model binding only when the component class needs to read or drive open state — open it programmatically, persist it, or react to it elsewhere:
+### Positioning & collisions
 
-```html
-<div forPopover [(open)]="open">
-  <button forPopoverTrigger>Settings</button>
-  @if (open()) {
-  <div forPopoverContent>…</div>
-  }
-</div>
-```
-
-### Triggers stamped from outside-declared templates
-
-Angular resolves `ng-template` DI at the template's **declaration** site, not where it is stamped. A `[forPopoverTrigger]` declared in a template outside the root throws the orphan error even when the template is rendered inside the root via `ngTemplateOutlet`. For that case the selector attribute accepts the root reference as a value, `routerLink`-style — grab it with `#root="forPopover"` and pass it through the outlet context. The bare valueless attribute keeps resolving via DI.
-
-```html
-<div forPopover #root="forPopover">
-  <ng-container *ngTemplateOutlet="trig; context: { root }" />
-  @if (root.open()) {
-  <div forPopoverContent>…</div>
-  }
-</div>
-
-<ng-template #trig let-root="root">
-  <button [forPopoverTrigger]="root">Settings</button>
-</ng-template>
-```
+The trigger sits in a tight, scrollable frame. `sideOffset` nudges the surface off the trigger and `collisionPadding` reserves a margin from the edge before `flip` / `shift` kick in — scroll the frame to see it react.
 
 ## API
 
@@ -302,6 +278,38 @@ See also: [Styling floating content](../../../docs/styling-floating-content.md) 
 - **No backdrop**: popovers don't render an overlay. Outside dismissal is event-driven.
 - **Focus return**: on unmount, focus is sent back to the registered trigger element (unless `returnFocus="false"`). The one exception is an **outside-interaction close** — a pointer-down or focus-out that lands outside the popover: focus stays where the interaction moved it instead of snapping back to the trigger, matching `[forDropdownMenu]` (so a popover on a trigger that also carries a tooltip doesn't rip focus back and re-open that tooltip). Escape and programmatic closes still return focus. The return happens before the portal helper removes the node, so the trigger receives `focusin` against a stable layout.
 - **Arrow offset**: `[forPopoverArrow]` writes `position: absolute`, the floating-ui-resolved `left` / `top`, and `var(--for-floating-arrow-offset, 0px)` on the side opposite the popover (so the arrow points back at the trigger). Set `--for-floating-arrow-offset` on the arrow element (or any ancestor) to control how far the arrow pokes out — typically a negative `px` value such as `-4px`. Defaults to `0px` (flush with the popover edge); the helper ships no default visual.
+
+### `#popover="forPopover"` vs `[(open)]`
+
+The minimal "click trigger → show content" case needs **neither** a separate `open` signal **nor** a two-way binding. `[forPopover]` is `exportAs: 'forPopover'`, so expose the directive instance with a template reference variable — `#popover="forPopover"` — and drive the `@if` straight off its own `open()` signal, as above. The trigger toggles it; Escape and outside dismissal flip it back.
+
+Reach for the explicit `[(open)]="mySignal"` model binding only when the component class needs to read or drive open state — open it programmatically, persist it, or react to it elsewhere:
+
+```html
+<div forPopover [(open)]="open">
+  <button forPopoverTrigger>Settings</button>
+  @if (open()) {
+  <div forPopoverContent>…</div>
+  }
+</div>
+```
+
+### Triggers stamped from outside-declared templates
+
+Angular resolves `ng-template` DI at the template's **declaration** site, not where it is stamped. A `[forPopoverTrigger]` declared in a template outside the root throws the orphan error even when the template is rendered inside the root via `ngTemplateOutlet`. For that case the selector attribute accepts the root reference as a value, `routerLink`-style — grab it with `#root="forPopover"` and pass it through the outlet context. The bare valueless attribute keeps resolving via DI.
+
+```html
+<div forPopover #root="forPopover">
+  <ng-container *ngTemplateOutlet="trig; context: { root }" />
+  @if (root.open()) {
+  <div forPopoverContent>…</div>
+  }
+</div>
+
+<ng-template #trig let-root="root">
+  <button [forPopoverTrigger]="root">Settings</button>
+</ng-template>
+```
 
 ## Wrapping in a design system
 

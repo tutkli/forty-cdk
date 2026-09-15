@@ -80,6 +80,14 @@ export class ScrollAreaDefaultExample {
 }
 ```
 
+### Always-painted track
+
+`type='always'` keeps both tracks (and the corner) mounted and visible regardless of overflow. Laying the scrollbars out in flow as grid columns reserves a stable gutter, so the viewport width never shifts as content crosses the overflow boundary.
+
+### Geometry signals
+
+The root exposes its live scroll geometry as read-only signals via `exportAs` — `scrollTop` / `scrollLeft`, the client vs. scroll size on each axis, plus `hovering` and `scrolling`. Grab the reference with `#sa="forScrollArea"` and read them straight in the template; here they drive the readout and a scrolled-percentage bar without a single scroll listener of your own.
+
 ## API
 
 ### `ForScrollArea`

@@ -105,6 +105,14 @@ export class ToastDefaultExample {
 }
 ```
 
+### Action & live update
+
+An action toast carries a `[forToastAction]` button that runs your handler and closes with reason `'action'`. The save flow shows `ref.update()` mutating a toast in place — 'Saving…' becomes 'Saved' with a new `variant` and `duration`, re-announced automatically when the text changes.
+
+### Swipe to dismiss
+
+Opt in with `swipeDirection` on the viewport. Drag a toast with mouse or touch: the directive clamps pointer travel to the active half-line and exposes it as the `--for-toast-swipe-movement-x/y` variables, which the CSS turns into a live `translate3d`. Release past `swipeThreshold` to dismiss with reason `'swipe'`; release short and `data-swipe='cancel'` springs it back.
+
 ## API
 
 ### `ForToast`

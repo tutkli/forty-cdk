@@ -113,6 +113,34 @@ export class TableGridExample {
 }
 ```
 
+### Row selection
+
+`selectionMode="multiple"` adds row selection. The row owns `aria-selected`; `[forTableRowSelector]` is a decorative per-row affordance and `[forTableSelectAll]` is a tri-state header checkbox. Click a row, the selector, or press `Space` on a focused cell.
+
+### Sortable headers
+
+A native `<table>` in the default `table` mode. `[forTableSortHeader]` emits `aria-sort` and fires `(sortChange)` on click, `Enter` or `Space` — it never sorts the data itself. The consumer holds a single sort descriptor, derives each header's direction from it and reorders its own rows.
+
+### Column resizing
+
+`[forTableColumnResizer]` turns a focusable element inside a header cell into a resize handle. It publishes the resolved width as `--for-table-col-<name>-width` on the table root; the consumer wires that variable into `grid-template-columns`. Drag the handle, or focus it and press `ArrowLeft` / `ArrowRight` to step by 10px.
+
+### Column & row reordering
+
+The companion directives `[forTableColumnReorder]` (on the header row) and `[forTableRowReorder]` (on the rowgroup) wrap the drag-drop primitive. Add `[forDraggable]` `[dragData]` to each header cell / row, then drag to reorder. `aria-rowindex` / `aria-colindex` recompute automatically. The library never mutates your data — the handlers apply the move to local signals.
+
+### Virtualized rows (10,000)
+
+`[forTableVirtualized]` sits on the same element as `[forTable]` in `<div>` grid mode. Set `[rowCount]` to the true total — it drives both `aria-rowcount` and the window size. Each `[forTableRow]` gets `[virtualIndex]` and a `translateY` transform. Roving 2D keyboard navigation works across the full 10,000 rows, scrolling out-of-window cells into view on demand.
+
+### Infinite scroll
+
+The headless `injectInfiniteScroll` core composes on top of `[forTableVirtualized]`: derive a [first, last+1) range from `virtualRows()` and feed it the loaded count. The detector fires once per threshold crossing, suppresses re-fire while the load promise is pending and re-arms when `[rowCount]` grows after each appended page — up to a cap.
+
+### Everything at once
+
+One grid-mode table composing six features on the same element: multiple row selection with a tri-state select-all, sortable headers, column resizing, column reordering, virtualization and infinite scroll. `[selectableValues]` feeds select-all the full loaded dataset so its tri-state stays correct beyond the rendered window.
+
 ## API
 
 ### `ForTable`

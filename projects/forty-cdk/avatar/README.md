@@ -62,6 +62,10 @@ export class AvatarDefaultExample {
 }
 ```
 
+### Failed load
+
+When the image errors, the directive flips `shouldShowFallback()` and the initials render in its place — an error shows the fallback at once, skipping the `fallbackDelayMs` wait.
+
 ## API
 
 ### `ForAvatar`

@@ -184,6 +184,10 @@ export class NavigationMenuDefaultExample {
 }
 ```
 
+### Vertical orientation
+
+`orientation='vertical'` stacks the triggers into a sidebar and swaps the keyboard axis: `ArrowUp` / `ArrowDown` move focus across triggers, `ArrowRight` opens the focused panel. Each panel flies out beside its trigger and the indicator becomes a vertical bar tracking the active row.
+
 ## Mega-menu
 
 For Stripe / Vercel / Linear-style mega menus that share a single panel between trigger groups, drop a `[forNavigationMenuViewport]` inside the menu and let it host the active content. The Viewport is fully opt-in: with no Viewport in the markup the menu behaves exactly as the disclosure recipe above.

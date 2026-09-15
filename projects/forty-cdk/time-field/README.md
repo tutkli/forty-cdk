@@ -56,8 +56,6 @@ The root iterates its computed `segments()` and renders each part as either an e
 
 Focus a segment and type, or step it with the arrow keys — hour, minute and meridiem are separate spinbuttons, each announced on its own.
 
-### Stand-alone
-
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { CalendarDateTime } from '@internationalized/date';
@@ -97,9 +95,13 @@ export class TimeFieldDefaultExample {
 }
 ```
 
-The library is styleless: style the boolean `data-*` hooks on the segments yourself — `[data-highlighted]` (the focused/roving segment), `[data-placeholder]` (empty), `[data-disabled]`, `[data-readonly]` — and `[data-empty]` / `[data-disabled]` / `[data-readonly]` on the root group.
+### Bounded time
+
+`minTime` and `maxTime` fence the time-of-day to office hours. Only the time component is compared, so stepping the hour past `17:00` or before `09:00` with `↑` / `↓` clamps back into the 09:00 – 17:00 window.
 
 ### Signal Forms
+
+`ForTimeField` implements `FormValueControl<CalendarDateTime | null>`, so a single `[formField]` binding wires the committed value into the form and pulls validity and touched back out — no `ControlValueAccessor`.
 
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
@@ -135,6 +137,18 @@ export class ApptTimeFormField {
   readonly appointment = form(this.model);
 }
 ```
+
+### Time range
+
+`ForTimeRangeField` is the range variant, shipped from this same entry point. Two labelled endpoint groups share the hour cycle and bounds; each is its own tab stop, so `Tab` steps start → end while the arrows move between segments inside one endpoint.
+
+### Bounded range
+
+`minTime` and `maxTime` fence both endpoints to a window. Only the time component is compared, so stepping a segment past 18:00 or before 08:00 clamps back in — a booking slot inside business hours, with the `start <= end` invariant still enforced on top.
+
+### Range in Signal Forms
+
+`ForTimeRangeField` implements `FormValueControl<DateRange | null>`, so `[formField]` binds the committed range into the form and pulls validation back out. A half-entered or out-of-order range keeps `value()` null, so a `required` field stays invalid until both endpoints are filled and ordered.
 
 ## API
 
@@ -294,6 +308,8 @@ Composes the [WAI-ARIA Spinbutton pattern](https://www.w3.org/WAI/ARIA/apg/patte
 - **`aria-readonly` belongs on the segments, not the group.** WAI-ARIA supports it on `role="spinbutton"` but not on `role="group"`, so each segment carries `aria-readonly="true"` while the group reflects the `data-readonly` styling hook only.
 
 ## Styling
+
+The library is styleless: style the boolean `data-*` hooks on the segments yourself — `[data-highlighted]` (the focused/roving segment), `[data-placeholder]` (empty), `[data-disabled]`, `[data-readonly]` — and `[data-empty]` / `[data-disabled]` / `[data-readonly]` on the root group.
 
 forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
 

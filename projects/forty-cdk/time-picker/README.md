@@ -137,22 +137,13 @@ export class TimePickerTimeExample {
 </div>
 ```
 
-### Signal Forms
+### States
 
-```html
-<div forTimePicker [formField]="profile.meetingTime" [(open)]="open" #picker="forTimePicker">
-  <button forTimePickerTrigger>
-    <span forTimePickerValue placeholder="Pick a time"></span>
-  </button>
-  @if (open()) {
-  <div forTimePickerContent>
-    @for (slot of picker.slots(); track slot.id) {
-    <div forTimePickerOption [value]="slot.value" [disabled]="slot.disabled">{{ slot.label }}</div>
-    }
-  </div>
-  }
-</div>
-```
+One class and one directive, three states. `disabled` removes the trigger from the tab order; `readonly` keeps it focusable and announced. Both refuse to open the listbox, and both reflect a styling hook of their own — `data-disabled` and `data-readonly`.
+
+### Bounded slots
+
+`minTime` and `maxTime` fence the selectable time-of-day. Slots outside the window are not removed — they stay in the listbox as disabled options (`data-disabled`), skipped by keyboard navigation, so the full timeline stays visible. Open the listbox and scroll past `17:00` to see the late slots dimmed out.
 
 ## API
 
@@ -289,6 +280,23 @@ resolves it automatically via `contentChild` to graft time changes onto the comm
       </div>
       }
     </div>
+  </div>
+  }
+</div>
+```
+
+## Signal Forms
+
+```html
+<div forTimePicker [formField]="profile.meetingTime" [(open)]="open" #picker="forTimePicker">
+  <button forTimePickerTrigger>
+    <span forTimePickerValue placeholder="Pick a time"></span>
+  </button>
+  @if (open()) {
+  <div forTimePickerContent>
+    @for (slot of picker.slots(); track slot.id) {
+    <div forTimePickerOption [value]="slot.value" [disabled]="slot.disabled">{{ slot.label }}</div>
+    }
   </div>
   }
 </div>

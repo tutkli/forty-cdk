@@ -97,7 +97,9 @@ export class VisuallyHiddenDefaultExample {}
 
 Naming an icon-only button through a hidden `<span>` (rather than `aria-label`) keeps the name translatable by the same pipeline as the rest of your copy, and visible to text-only browsers.
 
-Announcing an event that has no visible text of its own goes through `LiveAnnouncer` instead — there is no element to hide, so there is nothing for `[forVisuallyHidden]` to mark:
+### Announcing an event
+
+An event with no visible text of its own goes through `LiveAnnouncer` instead — there is no element to hide, so there is nothing for `[forVisuallyHidden]` to mark. The two politeness levels are independent regions, so an `assertive` message never cancels a `polite` one in flight.
 
 ```ts
 import { Component, inject } from '@angular/core';

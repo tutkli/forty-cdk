@@ -15,8 +15,8 @@ import { DomSanitizer, type SafeHtml } from '@angular/platform-browser';
 import { ForTabs, ForTabsContent, ForTabsList, ForTabsTrigger } from 'forty-cdk/tabs';
 import { ForToastManager } from 'forty-cdk/toast';
 
+import { DemoHeadings } from '../doc/demo-headings';
 import { EXAMPLE_SOURCES } from '../doc/example-source';
-import { slugify } from '../../../../../scripts/lib/readme-slug.mjs';
 import { GITHUB_BLOB_BASE } from './github';
 import { Icon } from './icon';
 
@@ -29,17 +29,20 @@ const DEMOS_SOURCE_PREFIX = 'projects/forty-cdk-docs/src/app/demos/';
   host: {
     '[attr.id]': 'hostId()',
     '[class.is-hero]': 'hero()',
-    '[attr.title]': 'null',
-    '[attr.subtitle]': 'null',
+    '[attr.heading]': 'null',
     '[attr.sourcepath]': 'null',
     '[attr.hero]': 'null',
   },
   template: `
     @if (!hero()) {
       <header class="head">
-        <h2>{{ title() }}</h2>
-        @if (subtitleHtml(); as subtitle) {
-          <p class="pg-doc-subtitle" [innerHTML]="subtitle"></p>
+        @if (titleHtml(); as markup) {
+          <h3 [innerHTML]="markup"></h3>
+        } @else {
+          <h3>{{ title() }}</h3>
+        }
+        @if (prose(); as sentence) {
+          <p class="pg-doc-subtitle" [innerHTML]="sentence"></p>
         }
       </header>
     }
@@ -95,7 +98,7 @@ const DEMOS_SOURCE_PREFIX = 'projects/forty-cdk-docs/src/app/demos/';
       margin-bottom: 1rem;
     }
 
-    .head h2 {
+    .head h3 {
       margin: 0;
       font-size: 1.3125rem;
       letter-spacing: -0.02em;
@@ -210,7 +213,7 @@ const DEMOS_SOURCE_PREFIX = 'projects/forty-cdk-docs/src/app/demos/';
     }
 
     @media (max-width: 820px) {
-      .head h2 {
+      .head h3 {
         font-size: 1.1rem;
       }
 
@@ -233,24 +236,36 @@ const DEMOS_SOURCE_PREFIX = 'projects/forty-cdk-docs/src/app/demos/';
 })
 export class DemoLayout {
   readonly #sources = inject(EXAMPLE_SOURCES, { optional: true });
+  readonly #headings = inject(DemoHeadings);
   readonly #toast = inject(ForToastManager);
   readonly #sanitizer = inject(DomSanitizer);
   readonly #document = inject(DOCUMENT);
   readonly #destroyRef = inject(DestroyRef);
 
-  readonly title = input<string>('');
-  /** Inline HTML, bound as written — a demo subtitle is authored, not compiled. */
-  readonly subtitle = input<string>('');
+  /**
+   * The `###` this demo belongs to, by the anchor its README heading slugs to
+   * ([#1940](https://github.com/tutkli/forty-cdk/issues/1940)).
+   *
+   * Empty for the hero, which the section's opening paragraph introduces.
+   */
+  readonly heading = input<string>('');
   readonly sourcePath = input.required<string>();
   readonly hero = input(false, { transform: booleanAttribute });
 
   protected readonly tab = signal<string>('preview');
   protected readonly copied = signal(false);
 
-  readonly tocSlug = computed(() => `example-${slugify(this.title())}`);
-  protected readonly hostId = computed(() =>
-    this.hero() || !this.title() ? null : this.tocSlug(),
-  );
+  readonly #declared = computed(() => this.#headings.bySlug(this.heading()));
+
+  readonly title = computed(() => this.#declared()?.title ?? '');
+
+  protected readonly titleHtml = computed<SafeHtml | null>(() => {
+    const markup = this.#declared()?.titleHtml;
+    return markup === undefined ? null : this.#sanitizer.bypassSecurityTrustHtml(markup);
+  });
+
+  readonly tocSlug = computed(() => this.#declared()?.slug ?? '');
+  protected readonly hostId = computed(() => (this.hero() ? null : this.tocSlug() || null));
 
   protected readonly fullSourcePath = computed(() => DEMOS_SOURCE_PREFIX + this.sourcePath());
 
@@ -263,9 +278,9 @@ export class DemoLayout {
     return source ? this.#sanitizer.bypassSecurityTrustHtml(source.highlighted) : null;
   });
 
-  protected readonly subtitleHtml = computed<SafeHtml | null>(() => {
-    const subtitle = this.subtitle();
-    return subtitle ? this.#sanitizer.bypassSecurityTrustHtml(subtitle) : null;
+  protected readonly prose = computed<SafeHtml | null>(() => {
+    const sentence = this.#declared()?.prose;
+    return sentence ? this.#sanitizer.bypassSecurityTrustHtml(sentence) : null;
   });
 
   protected readonly copyLabel = computed(() =>

@@ -27,16 +27,14 @@ import { DOC } from '../../../generated/docs/primitives/breakpoints.generated';
       </demo-layout>
 
       <demo-layout
-        title="Responsive layout"
-        subtitle="Derive UI from the breakpoint inside <code>computed()</code> and <code>@if</code> instead of repeating media queries in the template. The card grid picks its column count from <code>up('md')</code> / <code>up('lg')</code> / <code>up('xl')</code>, and the sidebar is only mounted at <code>lg</code> and wider."
+        heading="responsive-layout"
         sourcePath="breakpoints/examples/responsive-layout.example.ts"
       >
         <app-breakpoints-responsive-layout-example />
       </demo-layout>
 
       <demo-layout
-        title="Arbitrary media queries"
-        subtitle="<code>matches(query)</code> is the escape hatch for any media feature the named width helpers don't cover — orientation, pointer, hover, and the <code>prefers-*</code> user settings. Each call returns a live <code>Signal&amp;lt;boolean&amp;gt;</code> from the same cached <code>MediaQueryList</code> layer."
+        heading="arbitrary-media-queries"
         sourcePath="breakpoints/examples/media-queries.example.ts"
       >
         <app-breakpoints-media-queries-example />

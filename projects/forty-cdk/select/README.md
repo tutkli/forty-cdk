@@ -191,51 +191,21 @@ export class SelectDefaultExample {
 }
 ```
 
-### Single mode (default)
+### Multi select
 
-Click an option to replace the selection and close. `[(value)]` keeps 0 or 1 element. Read the sole value through the read-only `selected: Signal<T | null>` accessor (the form contract keeps `value` as `readonly T[]`; `selected()` is `value()[0]` or `null`).
+Set `multiple` and bind `[(value)]` to a `string[]`. Clicking an option toggles it in or out and the listbox stays open; `Tab`, `Esc` or an outside pointer close it.
 
-```html
-<div forSelect #select="forSelect" [(value)]="favorite" placeholder="Pick a fruit">
-  <button forSelectTrigger class="select-trigger">
-    <span forSelectValue></span>
-  </button>
-  @if (select.open()) {
-  <div forSelectContent>
-    <button forSelectOption class="select-item" value="apple">Apple</button>
-    <button forSelectOption class="select-item" value="banana">Banana</button>
-    <button forSelectOption class="select-item" value="cherry">Cherry</button>
-  </div>
-  }
-</div>
-```
+### macOS-style item alignment
 
-`[(value)]` is the selection (form state) and is always the consumer's. Open state is separate: `[forSelect]` owns it as a `model<boolean>`, so the `@if` reads it straight off the directive instance. `[forSelect]` is `exportAs: 'forSelect'` — expose it with a template reference variable (`#select="forSelect"`) and gate `[forSelectContent]` on `select.open()`. The trigger toggles it; Escape, Tab, and outside-pointer flip it back. No separate `open` signal, no `[(open)]` — bind `[(open)]="mySignal"` only when the component class needs to read or drive open state itself (open it programmatically, persist it, or react to it elsewhere).
+`position="item-aligned"` overlays the listbox so the selected option's vertical center lines up with the trigger, the way native macOS menus open. `[collisionPadding]` clamps it inside the viewport and exposes the available height as a CSS variable.
 
-### Multi mode
+### Object values & typeahead
 
-Set `multiple` and bind `[(value)]` to a `string[]`. Click an option to toggle in/out — the listbox stays open. Tab, Escape, or outside-pointer close it.
-
-In the default (non-virtualized) path the full APG range keyboard works while the listbox is open, matching `ForListbox`: **Shift+Arrow** moves focus and toggles the destination option, **Shift+Space** selects the contiguous range from the anchor (the last clicked / activated option) to the focused option, **Ctrl/Cmd+A** selects all enabled options (toggling back to empty when all are already selected), and **Ctrl+Shift+Home / End** extends the selection to the first / last option. These range modifiers are not available in the [virtualized path](#virtualization).
-
-```html
-<div forSelect #select="forSelect" multiple [(value)]="tags">
-  <button forSelectTrigger class="select-trigger">
-    <span forSelectValue placeholder="Pick tags…"></span>
-  </button>
-  @if (select.open()) {
-  <div forSelectContent>
-    <button forSelectOption class="select-item" value="ng">Angular</button>
-    <button forSelectOption class="select-item" value="ts">TypeScript</button>
-    <button forSelectOption class="select-item" value="rx">RxJS</button>
-  </div>
-  }
-</div>
-```
+`forSelect` is generic over `T`: bind whole objects to `[forSelectOption][value]`, match them by a stable key with `[compareWith]`, and serialize what a native form submits with `[itemToFormValue]`. Typeahead mirrors native `<select>` — with the listbox open, printable keys jump to the first match.
 
 ### Signal Forms
 
-`[forSelect]` implements `FormValueControl<readonly T[]>`. Pair with the `[formField]` directive for auto-wiring with `@angular/forms/signals`:
+`forSelect` implements `FormValueControl<readonly T[]>` from `@angular/forms/signals`, so a single `[formField]` binding wires the value, validation status and touched flag both ways — no `ControlValueAccessor`. The field is required and reflects `data-invalid` / `data-touched` after a blur without a choice.
 
 ```html
 <div forSelect [formField]="form.color">
@@ -249,6 +219,10 @@ In the default (non-virtualized) path the full APG range keyboard works while th
 For a legacy `<form action="…">` flow, set `[name]` — `[forSelect]` mirrors `[(value)]` into one `<input type="hidden">` per selected value (single produces 0–1 inputs, multi produces N). String values land verbatim in the hidden input; object values default to `JSON.stringify` (override via `[itemToFormValue]`, see below).
 
 A single-select field is modeled as the same `readonly T[]`, kept at length ≤ 1, and bound with `[formField]` directly — single mode needs no adapter. A `FieldTree<T | null>` cannot bind here; map to that shape at the edge that needs it. See [the selection value-type contract](../../../docs/selection-value-type-contract.md).
+
+### Virtualized (5,000 options)
+
+Setting `[totalCount]` switches `ForSelect` to the virtualized activedescendant model: `[forSelectContent]` becomes the single `Tab` stop and the active option is tracked by `aria-activedescendant`, so rows recycle as the listbox scrolls. The window is rendered with the library's `injectVirtualizer` core.
 
 ## API
 
@@ -653,6 +627,48 @@ readonly v = injectVirtualizer({
 - **No multi-select range modifiers in the virtualized path.** Shift+Arrow, Shift+Space, Ctrl+A, and Ctrl+Shift+Home/End are not implemented — range operations require knowledge of every intermediate position, which is unavailable in a windowed render. Pressing one of these combinations on a virtualized multi-select select (`[multiple]` + `[totalCount]`) throws in dev mode rather than silently doing nothing, so the unsupported path surfaces during development; production builds no-op. Per-option toggling via Enter, Space, or click works normally.
 - **Typeahead matches only the rendered window.** `[forSelect]` runs typeahead against the live registered options; options scrolled out of the window are unmounted and invisible to the buffer.
 - **Cold-open committed-index resolution.** On the very first open, if the committed value has never been rendered (the option has never scrolled into the window), the position snapshot is empty and `[forSelect]` falls back to focusing the first enabled option. This mirrors the `[forSelectValue]` / `[itemToLabel]` cold-cache limitation: supply `[itemToLabel]` to render the label and open the listbox once to prime the snapshot.
+
+## Single mode (default)
+
+Click an option to replace the selection and close. `[(value)]` keeps 0 or 1 element. Read the sole value through the read-only `selected: Signal<T | null>` accessor (the form contract keeps `value` as `readonly T[]`; `selected()` is `value()[0]` or `null`).
+
+```html
+<div forSelect #select="forSelect" [(value)]="favorite" placeholder="Pick a fruit">
+  <button forSelectTrigger class="select-trigger">
+    <span forSelectValue></span>
+  </button>
+  @if (select.open()) {
+  <div forSelectContent>
+    <button forSelectOption class="select-item" value="apple">Apple</button>
+    <button forSelectOption class="select-item" value="banana">Banana</button>
+    <button forSelectOption class="select-item" value="cherry">Cherry</button>
+  </div>
+  }
+</div>
+```
+
+`[(value)]` is the selection (form state) and is always the consumer's. Open state is separate: `[forSelect]` owns it as a `model<boolean>`, so the `@if` reads it straight off the directive instance. `[forSelect]` is `exportAs: 'forSelect'` — expose it with a template reference variable (`#select="forSelect"`) and gate `[forSelectContent]` on `select.open()`. The trigger toggles it; Escape, Tab, and outside-pointer flip it back. No separate `open` signal, no `[(open)]` — bind `[(open)]="mySignal"` only when the component class needs to read or drive open state itself (open it programmatically, persist it, or react to it elsewhere).
+
+## Multi mode
+
+Set `multiple` and bind `[(value)]` to a `string[]`. Click an option to toggle in/out — the listbox stays open. Tab, Escape, or outside-pointer close it.
+
+In the default (non-virtualized) path the full APG range keyboard works while the listbox is open, matching `ForListbox`: **Shift+Arrow** moves focus and toggles the destination option, **Shift+Space** selects the contiguous range from the anchor (the last clicked / activated option) to the focused option, **Ctrl/Cmd+A** selects all enabled options (toggling back to empty when all are already selected), and **Ctrl+Shift+Home / End** extends the selection to the first / last option. These range modifiers are not available in the [virtualized path](#virtualization).
+
+```html
+<div forSelect #select="forSelect" multiple [(value)]="tags">
+  <button forSelectTrigger class="select-trigger">
+    <span forSelectValue placeholder="Pick tags…"></span>
+  </button>
+  @if (select.open()) {
+  <div forSelectContent>
+    <button forSelectOption class="select-item" value="ng">Angular</button>
+    <button forSelectOption class="select-item" value="ts">TypeScript</button>
+    <button forSelectOption class="select-item" value="rx">RxJS</button>
+  </div>
+  }
+</div>
+```
 
 ## Keyboard
 

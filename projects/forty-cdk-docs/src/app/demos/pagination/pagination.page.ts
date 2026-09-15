@@ -19,11 +19,7 @@ import { DOC } from '../../../generated/docs/primitives/pagination.generated';
         <app-pagination-default-example />
       </demo-layout>
 
-      <demo-layout
-        title="Driving a data list"
-        subtitle="Pagination is headless state — derive <code>count</code> from your data, then slice the visible rows from <code>page()</code>. Changing the page re-slices the list; the <code>page</code> model is the single source of truth shared by the rows and the controls."
-        sourcePath="pagination/examples/data.example.ts"
-      >
+      <demo-layout heading="driving-a-data-list" sourcePath="pagination/examples/data.example.ts">
         <app-pagination-data-example />
       </demo-layout>
     </primitive-page>

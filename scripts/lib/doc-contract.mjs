@@ -628,6 +628,40 @@ export function checkExamplesCaption(documents) {
 }
 
 /**
+ * Every `###` under `## Examples` that does not open with the sentence its demo
+ * is introduced by ([#1940](https://github.com/tutkli/forty-cdk/issues/1940)).
+ *
+ * Each of those headings names one demo the page projects below the hero, and
+ * the paragraph under it is the prose the site prints beside that demo. It used
+ * to be a `subtitle` attribute on `<demo-layout>` — documentation authored as
+ * raw HTML in a TypeScript file, so no link in it was resolved, no symbol
+ * checked, and none of it reached the package page a reader on npm lands on.
+ *
+ * Stated over the section rather than over the page, for the reason
+ * {@link checkExamplesCaption} is: the page is the one thing this file cannot
+ * see, and `doc-demo-headings.spec.ts` pairs the two sides.
+ */
+export function checkExampleHeadings(documents) {
+  const problems = [];
+  for (const document of documents) {
+    for (const example of document.examples) {
+      if (example.prose !== null) {
+        continue;
+      }
+      problems.push({
+        path: document.path,
+        line: example.line,
+        message:
+          `"### ${example.title}" does not open with a paragraph — a demo heading under ` +
+          '"## Examples" is followed by the one sentence the site prints beside that demo, ' +
+          'saying what it adds and what to watch',
+      });
+    }
+  }
+  return problems;
+}
+
+/**
  * Every exemption that no longer earns its place — one naming a document that
  * is gone, and one for a section the document has since written.
  *
@@ -827,6 +861,7 @@ export function checkContract(documents) {
   return [
     ...checkSections(documents),
     ...checkExamplesCaption(documents),
+    ...checkExampleHeadings(documents),
     ...checkExemptions(documents),
     ...checkHeadingAliases(documents),
     ...checkSectionOrder(documents),

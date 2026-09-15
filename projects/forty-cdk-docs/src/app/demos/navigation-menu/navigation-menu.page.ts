@@ -20,8 +20,7 @@ import { DOC } from '../../../generated/docs/primitives/navigation-menu.generate
       </demo-layout>
 
       <demo-layout
-        title="Vertical orientation"
-        subtitle="<code>orientation='vertical'</code> stacks the triggers into a sidebar and swaps the keyboard axis: <kbd>ArrowUp</kbd> / <kbd>ArrowDown</kbd> move focus across triggers, <kbd>ArrowRight</kbd> opens the focused panel. Each panel flies out beside its trigger and the indicator becomes a vertical bar tracking the active row."
+        heading="vertical-orientation"
         sourcePath="navigation-menu/examples/vertical.example.ts"
       >
         <app-navigation-menu-vertical-example />

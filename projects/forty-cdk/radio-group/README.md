@@ -31,8 +31,6 @@ Headless implementation with selection-on-focus, wrap-around arrow navigation, a
 
 Move between the radios with the arrow keys — selection follows focus, the group keeps one tab stop, and the checked radio carries `data-state="checked"`.
 
-### Stand-alone
-
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { ForRadio, ForRadioGroup } from 'forty-cdk/radio-group';
@@ -78,7 +76,13 @@ export class RadioGroupDefaultExample {
 }
 ```
 
+### Horizontal orientation
+
+`orientation='horizontal'` reflects `data-orientation` and switches arrow navigation to `ArrowLeft` / `ArrowRight` (swapped in RTL).
+
 ### Signal Forms
+
+`forRadioGroup` implements `FormValueControl<string | null>`, so `[formField]` binds the selected value into the form and surfaces validity back. This field is required: `Tab` through without choosing and the group reflects `data-invalid` / `data-touched` once focus leaves it.
 
 ```ts
 import { Component, signal } from '@angular/core';

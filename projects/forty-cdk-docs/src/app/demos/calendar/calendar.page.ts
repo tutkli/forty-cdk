@@ -32,41 +32,30 @@ import { DOC } from '../../../generated/docs/primitives/calendar.generated';
         <app-calendar-default-example />
       </demo-layout>
 
-      <demo-layout
-        title="States"
-        subtitle="One class and one directive, three states. <code>disabled</code> turns off focus movement and selection for the whole calendar; <code>readonly</code> keeps days focusable and the grid still pages, but clicking or pressing <kbd>Enter</kbd> no longer changes the selection. Each reflects a root hook — <code>data-disabled</code> and <code>data-readonly</code> — and the stylesheet below keys on nothing else."
-        sourcePath="calendar/examples/states.example.ts"
-      >
+      <demo-layout heading="states" sourcePath="calendar/examples/states.example.ts">
         <app-calendar-states-example />
       </demo-layout>
 
       <demo-layout
-        title="Constraints & week start"
-        subtitle="<code>min</code> disables past dates and <code>isDateUnavailable</code> blocks weekends — both reflect <code>aria-disabled</code> and refuse selection, while arrows still move across them so navigation is never trapped. <code>firstDayOfWeek</code> starts the week on Monday."
+        heading="constraints--week-start"
         sourcePath="calendar/examples/constraints.example.ts"
       >
         <app-calendar-constraints-example />
       </demo-layout>
 
-      <demo-layout
-        title="Range selection"
-        subtitle='Set <code>selectionMode="range"</code> and bind <code>[(range)]</code> to a <code>DateRange</code> signal. Click a first cell to anchor the range, move the pointer to preview, click a second cell to commit. Committed cells reflect <code>data-range-start</code> / <code>data-range-end</code> / <code>data-in-range</code>; the preview band uses <code>data-range-preview</code>.'
-        sourcePath="calendar/examples/range.example.ts"
-      >
+      <demo-layout heading="range-selection" sourcePath="calendar/examples/range.example.ts">
         <app-calendar-range-example />
       </demo-layout>
 
       <demo-layout
-        title="Month / year dropdowns"
-        subtitle="<code>[forCalendarMonthSelect]</code> and <code>[forCalendarYearSelect]</code> wire native selects to the calendar's month/year navigation. Render the options yourself from <code>m.options()</code> and <code>y.years()</code>; months and years entirely outside <code>[min, max]</code> are disabled."
+        heading="month--year-dropdowns"
         sourcePath="calendar/examples/dropdowns.example.ts"
       >
         <app-calendar-dropdowns-example />
       </demo-layout>
 
       <demo-layout
-        title="View switching (month / year picker)"
-        subtitle="Click the heading button to cycle from day → month → year view. Click a month to drill down to days; click a year to drill down to months. Prev/next pages by month, year, or block depending on the active view, and <code>min</code> / <code>max</code> disable out-of-range cells."
+        heading="view-switching-month--year-picker"
         sourcePath="calendar/examples/views.example.ts"
       >
         <app-calendar-view-switching-example />

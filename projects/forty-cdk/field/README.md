@@ -50,6 +50,14 @@ You render them; the field handles the ARIA. The error id is wired into `aria-er
 
 Gate the region's `@if` on the field's `invalid()` (exposed via the `[forField]` export, `#field="forField"`) or on the bound Signal Forms field — **not** on a reference to `ForFieldError` itself, which is block-scoped to the `@if` body and so can't appear in the condition that mounts it.
 
+## Label-click activation
+
+Clicking the label activates the control on both host shapes, not just focuses it. A native `<label forLabel>` emits `for` and the browser forwards the click; a non-`<label>` `[forLabel]` (e.g. `<span forLabel>`) has no native `for` forwarding, so the directive forwards the click itself. Either way, clicking the label toggles a `[forSwitch]` / checkbox-role control, activates a button-host control, or focuses a text input — matching native `<label for>` behavior consistently.
+
+> Note: composite controls whose host is not the focusable element (`forListbox`, `forSelect`, `forCombobox`) still receive `aria-labelledby` correctly, and a label click is forwarded to the control's nominated focusable element (the Select trigger / Combobox input) rather than the wrapper host.
+
+Where a composite is named on the wrapper itself — the `role="group"` of `[forDateField]`, `[forTimeField]`, `[forDateRangeField]` and `[forTimeRangeField]` — the association stays on that group and the label click moves focus to the control's own entry point instead: the first editable segment, or nowhere while the field is disabled. A native `<label>` reaches it too, because `for` pointing at a `role="group"` is not a [labelable element](https://html.spec.whatwg.org/multipage/forms.html#category-label) and the browser forwards nothing there, so the directive forwards it. Any control implementing `FormValueControl.focus` gets the same treatment.
+
 ## Examples
 
 Focus the control through its label and watch the `[forField]` host: it reflects `data-disabled`, `data-required`, `data-touched` and `data-invalid` for the whole block.
@@ -90,13 +98,13 @@ Style off the reflected state:
 }
 ```
 
-### Label-click activation
+### States
 
-Clicking the label activates the control on both host shapes, not just focuses it. A native `<label forLabel>` emits `for` and the browser forwards the click; a non-`<label>` `[forLabel]` (e.g. `<span forLabel>`) has no native `for` forwarding, so the directive forwards the click itself. Either way, clicking the label toggles a `[forSwitch]` / checkbox-role control, activates a button-host control, or focuses a text input — matching native `<label for>` behavior consistently.
+One class and one directive, four states. The control's own `required`, `invalid` and `disabled` are reflected on the `[forField]` host as `data-required`, `data-invalid` and `data-disabled`, so the label, the input and the description all key on one element.
 
-> Note: composite controls whose host is not the focusable element (`forListbox`, `forSelect`, `forCombobox`) still receive `aria-labelledby` correctly, and a label click is forwarded to the control's nominated focusable element (the Select trigger / Combobox input) rather than the wrapper host.
+### Validation with Signal Forms
 
-Where a composite is named on the wrapper itself — the `role="group"` of `[forDateField]`, `[forTimeField]`, `[forDateRangeField]` and `[forTimeRangeField]` — the association stays on that group and the label click moves focus to the control's own entry point instead: the first editable segment, or nowhere while the field is disabled. A native `<label>` reaches it too, because `for` pointing at a `role="group"` is not a [labelable element](https://html.spec.whatwg.org/multipage/forms.html#category-label) and the browser forwards nothing there, so the directive forwards it. Any control implementing `FormValueControl.focus` gets the same treatment.
+`[forFieldError]` reads the control's Signal Forms errors automatically — you render `err.messages()`, the field wires `aria-errormessage` and folds the id into `aria-describedby` while invalid. The `[forCheckbox]` auto-associates because it extends the shared form base. Tick then untick to surface the required error.
 
 ## API
 

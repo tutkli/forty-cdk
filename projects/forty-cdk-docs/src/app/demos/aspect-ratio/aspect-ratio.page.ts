@@ -19,11 +19,7 @@ import { DOC } from '../../../generated/docs/primitives/aspect-ratio.generated';
         <app-aspect-ratio-default-example />
       </demo-layout>
 
-      <demo-layout
-        title="Square (1 / 1)"
-        subtitle="Set <code>ratio</code> to <code>1</code> to keep a box perfectly square at any width — handy for avatars, thumbnails, or uniform grid cards."
-        sourcePath="aspect-ratio/examples/square.example.ts"
-      >
+      <demo-layout heading="square-1--1" sourcePath="aspect-ratio/examples/square.example.ts">
         <app-aspect-ratio-square-example />
       </demo-layout>
     </primitive-page>

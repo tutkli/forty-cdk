@@ -19,11 +19,7 @@ import { DOC } from '../../../generated/docs/primitives/disclosure.generated';
         <app-disclosure-default-example />
       </demo-layout>
 
-      <demo-layout
-        title="States"
-        subtitle="One class and one directive, two states. <code>disabled</code> drops the trigger from the tab order and blocks toggling, so the panel stays where it is; the root and the trigger both reflect <code>data-disabled</code>, which is all the stylesheet below keys on."
-        sourcePath="disclosure/examples/states.example.ts"
-      >
+      <demo-layout heading="states" sourcePath="disclosure/examples/states.example.ts">
         <app-disclosure-states-example />
       </demo-layout>
     </primitive-page>

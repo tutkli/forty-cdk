@@ -103,6 +103,14 @@ The returned handle captures its injection context, so the query methods can be 
 protected columns = computed(() => (this.bp.up('xl')() ? 4 : this.bp.up('md')() ? 2 : 1));
 ```
 
+### Responsive layout
+
+Derive UI from the breakpoint inside `computed()` and `@if` instead of repeating media queries in the template. The card grid picks its column count from `up('md')` / `up('lg')` / `up('xl')`, and the sidebar is only mounted at `lg` and wider.
+
+### Arbitrary media queries
+
+`matches(query)` is the escape hatch for any media feature the named width helpers don't cover — orientation, pointer, hover, and the `prefers-*` user settings. Each call returns a live `Signal<boolean>` from the same cached `MediaQueryList` layer.
+
 ## Typed custom names
 
 The default map gives you fully-typed names out of the box (`up('md')` autocompletes; `up('foo')` is a type error). When you provide a custom map, recover the same typing by augmenting `BreakpointRegistry` once — derive the keys from your map so you never write them twice:

@@ -51,20 +51,13 @@ export class SliderDefaultExample {
 }
 ```
 
-### Single thumb
+### Stepped
 
-```html
-<div forSlider [(value)]="volume">
-  <span forSliderTrack>
-    <span forSliderRange></span>
-    <span forSliderThumb [index]="0" [ariaLabel]="'Volume'"></span>
-  </span>
-</div>
-```
-
-Where `volume = signal<readonly number[]>([50])`.
+`step` sets the granularity values snap to and the amount each arrow-key press moves. Here `step` is 10, so values snap to 0, 10, 20…; `PageUp` / `PageDown` move by 10× this step.
 
 ### Range (two thumbs)
+
+The `value` model is a `readonly number[]`; two `forSliderThumb` pieces, one per `index`, make a range. Each thumb's `aria-valuemin` / `aria-valuemax` squeeze to its neighbor so the thumbs can't cross, and `minStepsBetweenThumbs` keeps a minimum gap in step units.
 
 ```html
 <div forSlider [(value)]="priceRange" [min]="0" [max]="1000" [step]="10">
@@ -78,7 +71,28 @@ Where `volume = signal<readonly number[]>([50])`.
 
 `priceRange = signal<readonly number[]>([200, 800])` — non-passing constraint is enforced automatically (the lower thumb can't go above the upper, and vice versa). Use `[minStepsBetweenThumbs]="1"` to force a minimum gap.
 
-### Signal Forms
+### Vertical orientation
+
+`orientation='vertical'` reflects `data-orientation` on every piece and sets `aria-orientation` on the thumb. The exposed fractions are unchanged — the consumer paints along the Y axis: `ArrowUp` increases, `ArrowDown` decreases.
+
+### Inverted
+
+`inverted` flips the value-to-position mapping — in horizontal LTR, max sits on the left. The flip is baked into the exposed fractions, so the same CSS paints both ways. Keyboard semantics are unchanged: `ArrowRight` / `ArrowUp` still move toward max.
+
+## Single thumb
+
+```html
+<div forSlider [(value)]="volume">
+  <span forSliderTrack>
+    <span forSliderRange></span>
+    <span forSliderThumb [index]="0" [ariaLabel]="'Volume'"></span>
+  </span>
+</div>
+```
+
+Where `volume = signal<readonly number[]>([50])`.
+
+## Signal Forms
 
 `[forSlider]` implements `FormValueControl<readonly number[]>`. Pair with `[formField]` for auto-wiring with `@angular/forms/signals`:
 

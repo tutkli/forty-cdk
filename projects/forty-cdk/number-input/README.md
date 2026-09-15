@@ -30,8 +30,6 @@ Headless and implementing Angular's `FormValueControl<number | null>` from `@ang
 
 Type a number, press the arrow keys or hold a stepper button — the host carries `data-empty` while the value is `null` and `data-dirty` once it has changed.
 
-### Stand-alone
-
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import {
@@ -58,13 +56,15 @@ export class NumberInputDefaultExample {
 }
 ```
 
-Keyboard-only (no buttons, no group):
+### States
 
-```html
-<input forNumberInput [(value)]="qty" [min]="0" [max]="100" />
-```
+One class and one directive, three states. `disabled` reflects `data-disabled` on the spinbutton and both stepper buttons and removes the control from the tab order; `readonly` reflects `data-readonly` and keeps it focusable while refusing every edit. The example's stylesheet keys on nothing else.
 
-### Formatting
+### Formatting & precision
+
+`formatOptions` feeds an `Intl.NumberFormat` that renders the displayed text and `aria-valuetext`, while `value()` stays a raw number. The `locale` drives both formatting and parsing; a hidden input submits the raw number, not the formatted string.
+
+## Formatting
 
 `formatOptions` (+ optional `locale`) drives both the displayed text and `aria-valuetext`; `value()` stays the raw number, and that raw number is what a surrounding `<form>` submits (via a hidden input).
 
@@ -80,7 +80,7 @@ Keyboard-only (no buttons, no group):
 
 > **Percent style needs a matching `step`.** With `{ style: 'percent' }` the model value is the fraction Intl formats from (`0.5` displays as `"50%"`), while `step` still defaults to `1`. Because stepping snaps to the `min ?? 0` ± k·`step` grid, ArrowUp from `0.5` would jump to `1` (100%). Set `[step]="0.01"` so one arrow press moves one percentage point. `step` is never derived from `formatOptions` — the grid is always exactly what you bind.
 
-### Field composition
+## Field composition
 
 Drop the spinbutton inside a `[forField]` and it auto-associates with the label, description, and error region — no `id` / `aria-*` wiring by hand.
 

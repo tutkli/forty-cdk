@@ -26,17 +26,12 @@ import { DOC } from '../../../generated/docs/primitives/pane-resizer.generated';
         <app-pane-resizer-resize-example />
       </demo-layout>
 
-      <demo-layout
-        title="States"
-        subtitle="One class and one directive, two states. <code>disabled</code> drops the resizer out of the tab order and blocks both keyboard and pointer resizing; it reflects <code>aria-disabled</code> and <code>data-disabled</code>, so the dimmed divider and the live one come from the same stylesheet."
-        sourcePath="pane-resizer/examples/states.example.ts"
-      >
+      <demo-layout heading="states" sourcePath="pane-resizer/examples/states.example.ts">
         <app-pane-resizer-states-example />
       </demo-layout>
 
       <demo-layout
-        title="Collapsible panel"
-        subtitle="With <code>collapsible</code> on, <kbd>Enter</kbd> / <kbd>Space</kbd> on the focused resizer snaps the panel to its <code>min</code> and a second press restores the last expanded size — APG-optional behaviour for a resizer that backs a collapsible pane. Drag or the arrow keys still resize as usual."
+        heading="collapsible-panel"
         sourcePath="pane-resizer/examples/collapsible.example.ts"
       >
         <app-pane-resizer-collapsible-example />

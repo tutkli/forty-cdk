@@ -188,6 +188,26 @@ export class CalendarDefaultExample {
 
 The library is styleless: style the boolean `data-*` hooks on `[forCalendarCell]` yourself (`[data-selected]`, `[data-today]`, `[data-outside-month]`, `[data-highlighted]`, and `:not([data-disabled])` for the enabled state).
 
+### States
+
+One class and one directive, three states. `disabled` turns off focus movement and selection for the whole calendar; `readonly` keeps days focusable and the grid still pages, but clicking or pressing `Enter` no longer changes the selection. Each reflects a root hook — `data-disabled` and `data-readonly` — and the example's stylesheet keys on nothing else.
+
+### Constraints & week start
+
+`min` disables past dates and `isDateUnavailable` blocks weekends — both reflect `aria-disabled` and refuse selection, while arrows still move across them so navigation is never trapped. `firstDayOfWeek` starts the week on Monday.
+
+### Range selection
+
+Set `selectionMode="range"` and bind `[(range)]` to a `DateRange` signal. Click a first cell to anchor the range, move the pointer to preview, click a second cell to commit. Committed cells reflect `data-range-start` / `data-range-end` / `data-in-range`; the preview band uses `data-range-preview`.
+
+### Month / year dropdowns
+
+`[forCalendarMonthSelect]` and `[forCalendarYearSelect]` wire native selects to the calendar's month/year navigation. Render the options yourself from `m.options()` and `y.years()`; months and years entirely outside `[min, max]` are disabled.
+
+### View switching (month / year picker)
+
+Click the heading button to cycle from day → month → year view. Click a month to drill down to days; click a year to drill down to months. Prev/next pages by month, year, or block depending on the active view, and `min` / `max` disable out-of-range cells.
+
 ## API
 
 ### `ForCalendar`

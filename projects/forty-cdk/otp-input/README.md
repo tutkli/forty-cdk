@@ -40,70 +40,7 @@ The focusable, submittable control is the injected `<input>`, not the `role="gro
 
 `OTP_REGEXP_ONLY_DIGITS`, `OTP_REGEXP_ONLY_CHARS`, `OTP_REGEXP_ONLY_DIGITS_AND_CHARS` — bind one to `[allowedPattern]` for a custom restriction. `allowedCharForType` / `inputModeForType` expose the `type` → RegExp / `inputmode` mapping.
 
-## Examples
-
-Type or paste a code — focus advances a slot at a time, the active slot carries `data-active`, and the group reflects `data-complete` once it is full.
-
-### Stand-alone
-
-```ts
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
-import { ForOtpInput, ForOtpInputSlot } from 'forty-cdk/otp-input';
-
-@Component({
-  selector: 'app-otp-default-example',
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ForOtpInput, ForOtpInputSlot],
-  template: `
-    <div
-      forOtpInput
-      class="otp"
-      [(value)]="code"
-      [length]="6"
-      type="numeric"
-      ariaLabel="Verification code"
-      #otp="forOtpInput"
-    >
-      @for (i of otp.slots(); track i) {
-        <div forOtpInputSlot [index]="i" #s="forOtpInputSlot" class="otp-slot">
-          {{ s.char() }}
-          @if (s.hasFakeCaret()) {
-            <span class="otp-caret"></span>
-          }
-        </div>
-      }
-    </div>
-  `,
-})
-export class OtpDefaultExample {
-  protected readonly code = signal('');
-}
-```
-
-The styling is yours. The key rule: make the injected `<input>` overlay the slots so it stays the interactive surface, e.g.
-
-```css
-.otp-slot {
-  position: relative;
-  width: 2.5rem;
-  height: 3rem; /* ... */
-}
-.otp {
-  position: relative;
-  display: flex;
-  gap: 0.5rem;
-}
-.otp > input {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-}
-.otp-caret {
-  /* style + animate; gate the blink on prefers-reduced-motion */
-}
-```
-
-### Field composition
+## Field composition
 
 Drop the OTP inside a `[forField]` and it auto-associates with the label, description, and error region — no `id` / `aria-*` wiring by hand. The label's `for`, `aria-labelledby`, `aria-describedby`, and `aria-errormessage` all land on the real input.
 
@@ -146,6 +83,48 @@ export class DemoOtpField {
   });
 }
 ```
+
+## Examples
+
+Type or paste a code — focus advances a slot at a time, the active slot carries `data-active`, and the group reflects `data-complete` once it is full.
+
+```ts
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ForOtpInput, ForOtpInputSlot } from 'forty-cdk/otp-input';
+
+@Component({
+  selector: 'app-otp-default-example',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [ForOtpInput, ForOtpInputSlot],
+  template: `
+    <div
+      forOtpInput
+      class="otp"
+      [(value)]="code"
+      [length]="6"
+      type="numeric"
+      ariaLabel="Verification code"
+      #otp="forOtpInput"
+    >
+      @for (i of otp.slots(); track i) {
+        <div forOtpInputSlot [index]="i" #s="forOtpInputSlot" class="otp-slot">
+          {{ s.char() }}
+          @if (s.hasFakeCaret()) {
+            <span class="otp-caret"></span>
+          }
+        </div>
+      }
+    </div>
+  `,
+})
+export class OtpDefaultExample {
+  protected readonly code = signal('');
+}
+```
+
+### Masked PIN with paste transform
+
+`mask` obscures the slots while `value()` stays raw, and a `pasteTransformer` strips spaces and dashes before filtering — so pasting “12 34 56” fills cleanly. `type` still rejects anything outside the numeric character class as you type.
 
 ## API
 
@@ -213,6 +192,29 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 }
 .otp-input-slot[data-empty] {
   color: transparent;
+}
+```
+
+The one rule the layout has to keep: make the injected `<input>` overlay the slots so it stays the interactive surface.
+
+```css
+.otp-slot {
+  position: relative;
+  width: 2.5rem;
+  height: 3rem; /* ... */
+}
+.otp {
+  position: relative;
+  display: flex;
+  gap: 0.5rem;
+}
+.otp > input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+}
+.otp-caret {
+  /* style + animate; gate the blink on prefers-reduced-motion */
 }
 ```
 

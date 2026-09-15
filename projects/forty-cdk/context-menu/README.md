@@ -74,55 +74,9 @@ export class ContextMenuDefaultExample {}
 
 The trigger is focusable out of the box: `[forContextMenuTrigger]` host-binds a default `tabindex="-1"` so focus returns there programmatically when the menu closes — no consumer setup required. Override it with your own `tabindex` (e.g. `tabindex="0"` to put the region in the Tab order) and it wins.
 
-### `#menu="forContextMenu"` vs. `[(open)]`
+### Rich content
 
-The minimal "right-click → show menu" case needs **neither** a separate `open` signal **nor** a two-way binding. `[forContextMenu]` is `exportAs: 'forContextMenu'`, so expose the directive instance with a template reference variable — `#menu="forContextMenu"` — and drive the `@if` straight off its own `open()` signal, as above. The contextmenu gesture, item activation, Escape, and outside dismissal all flip it.
-
-Reach for the explicit `[(open)]="mySignal"` model binding only when the component class needs to read or drive open state — open it programmatically, persist it, or react to it elsewhere:
-
-```html
-<div forContextMenu [(open)]="open">
-  <div forContextMenuTrigger class="context-menu-trigger">Right-click anywhere here.</div>
-  @if (open()) {
-  <div forMenuContent>…</div>
-  }
-</div>
-```
-
-### Triggers stamped from outside-declared templates
-
-Angular resolves `ng-template` DI at the template's **declaration** site, not where it is stamped. A `[forContextMenuTrigger]` declared in a template outside the root throws the orphan error even when the template is rendered inside the root via `ngTemplateOutlet`. For that case the selector attribute accepts the root reference as a value, `routerLink`-style — grab it with `#root="forContextMenu"` and pass it through the outlet context. The bare valueless attribute keeps resolving via DI.
-
-```html
-<div forContextMenu #root="forContextMenu">
-  <ng-container *ngTemplateOutlet="chip; context: { root }" />
-  @if (root.open()) {
-  <div forMenuContent>…</div>
-  }
-</div>
-
-<ng-template #chip let-root="root">
-  <span [forContextMenuTrigger]="root">Right-click here</span>
-</ng-template>
-```
-
-### Sharing one menu with a second opener
-
-`[forContextMenu]` is a **single-opener preset**: one root, one right-click region. When the same actions must also be reachable another way — the canonical case being a table row with a right-click region _and_ a kebab button — bind the trigger to a `[forMenu]` root instead, which drives one `[forMenuContent]` block from any number of openers. See [Shared openers](../menu/README.md#shared-openers-formenu).
-
-The same explicit-reference input carries it, and here the binding is **required** rather than optional: the trigger resolves `FOR_CONTEXT_MENU_CONTEXT`, which `[forMenu]` deliberately does not provide (`forty-cdk/menu` must not depend on `forty-cdk/context-menu`).
-
-```html
-<tr forMenu #row="forMenu" [(open)]="open" ariaLabel="Row actions">
-  <td [forContextMenuTrigger]="row">…cells…</td>
-  <td>
-    <button [forDropdownMenuTrigger]="row" [menuPositioning]="{ sideOffset: 4 }">⋮</button>
-  </td>
-  <!-- one content block, no duplication -->
-</tr>
-```
-
-Both triggers carry `[menuPositioning]`, a partial `{ side, align, sideOffset, alignOffset }` override applied only to the opens that trigger drives, with each omitted key falling back to the root's input. It exists because a shared root cannot pick offsets that suit heterogeneous openers: the region above keeps the root's `sideOffset` of `0` — flush at the cursor, which is what a pointer-anchored menu wants — while the sibling button opener asks for the 4px of clearance a menu button wants. Under a `[forContextMenu]` root it resolves the same way, where it is simply a per-trigger spelling of the root's inputs. See [Per-opener positioning](../menu/README.md#per-opener-positioning).
+The same menu vocabulary the Dropdown Menu exposes, anchored to the pointer on right-click: plain `forMenuItem` actions, a `forMenuCheckboxItem` toggle, a `forMenuRadioGroup`, a `forMenuSub` submenu, and grouped labels with separators. Checkbox and radio items call `preventDefault()` on `(activate)` to stay open; plain items close the menu and bubble up through any open submenu.
 
 ## API
 
@@ -196,6 +150,56 @@ forty-cdk ships no styles. Add your own class to each piece — the for\* select
 ```
 
 - **Mount equals open.** Same convention as the rest of the library — wrap `[forMenuContent]` in `@if (open())` and use `animate.enter` / `animate.leave` for transitions.
+
+### `#menu="forContextMenu"` vs. `[(open)]`
+
+The minimal "right-click → show menu" case needs **neither** a separate `open` signal **nor** a two-way binding. `[forContextMenu]` is `exportAs: 'forContextMenu'`, so expose the directive instance with a template reference variable — `#menu="forContextMenu"` — and drive the `@if` straight off its own `open()` signal, as above. The contextmenu gesture, item activation, Escape, and outside dismissal all flip it.
+
+Reach for the explicit `[(open)]="mySignal"` model binding only when the component class needs to read or drive open state — open it programmatically, persist it, or react to it elsewhere:
+
+```html
+<div forContextMenu [(open)]="open">
+  <div forContextMenuTrigger class="context-menu-trigger">Right-click anywhere here.</div>
+  @if (open()) {
+  <div forMenuContent>…</div>
+  }
+</div>
+```
+
+### Triggers stamped from outside-declared templates
+
+Angular resolves `ng-template` DI at the template's **declaration** site, not where it is stamped. A `[forContextMenuTrigger]` declared in a template outside the root throws the orphan error even when the template is rendered inside the root via `ngTemplateOutlet`. For that case the selector attribute accepts the root reference as a value, `routerLink`-style — grab it with `#root="forContextMenu"` and pass it through the outlet context. The bare valueless attribute keeps resolving via DI.
+
+```html
+<div forContextMenu #root="forContextMenu">
+  <ng-container *ngTemplateOutlet="chip; context: { root }" />
+  @if (root.open()) {
+  <div forMenuContent>…</div>
+  }
+</div>
+
+<ng-template #chip let-root="root">
+  <span [forContextMenuTrigger]="root">Right-click here</span>
+</ng-template>
+```
+
+### Sharing one menu with a second opener
+
+`[forContextMenu]` is a **single-opener preset**: one root, one right-click region. When the same actions must also be reachable another way — the canonical case being a table row with a right-click region _and_ a kebab button — bind the trigger to a `[forMenu]` root instead, which drives one `[forMenuContent]` block from any number of openers. See [Shared openers](../menu/README.md#shared-openers-formenu).
+
+The same explicit-reference input carries it, and here the binding is **required** rather than optional: the trigger resolves `FOR_CONTEXT_MENU_CONTEXT`, which `[forMenu]` deliberately does not provide (`forty-cdk/menu` must not depend on `forty-cdk/context-menu`).
+
+```html
+<tr forMenu #row="forMenu" [(open)]="open" ariaLabel="Row actions">
+  <td [forContextMenuTrigger]="row">…cells…</td>
+  <td>
+    <button [forDropdownMenuTrigger]="row" [menuPositioning]="{ sideOffset: 4 }">⋮</button>
+  </td>
+  <!-- one content block, no duplication -->
+</tr>
+```
+
+Both triggers carry `[menuPositioning]`, a partial `{ side, align, sideOffset, alignOffset }` override applied only to the opens that trigger drives, with each omitted key falling back to the root's input. It exists because a shared root cannot pick offsets that suit heterogeneous openers: the region above keeps the root's `sideOffset` of `0` — flush at the cursor, which is what a pointer-anchored menu wants — while the sibling button opener asks for the 4px of clearance a menu button wants. Under a `[forContextMenu]` root it resolves the same way, where it is simply a per-trigger spelling of the root's inputs. See [Per-opener positioning](../menu/README.md#per-opener-positioning).
 
 ## Wrapping in a design system
 

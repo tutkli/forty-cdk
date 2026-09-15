@@ -26,17 +26,12 @@ import { DOC } from '../../../generated/docs/primitives/popover.generated';
         <app-popover-default-example />
       </demo-layout>
 
-      <demo-layout
-        title="Anchor & arrow"
-        subtitle="The element that opens the popover and the element it points at can differ: the button is the trigger, but <code>[forPopoverAnchor]</code> on the highlighted phrase is what floating-ui positions against."
-        sourcePath="popover/examples/anchor.example.ts"
-      >
+      <demo-layout heading="anchor--arrow" sourcePath="popover/examples/anchor.example.ts">
         <app-popover-anchor-example />
       </demo-layout>
 
       <demo-layout
-        title="Positioning & collisions"
-        subtitle="The trigger sits in a tight, scrollable frame. <code>sideOffset</code> nudges the surface off the trigger and <code>collisionPadding</code> reserves a margin from the edge before <code>flip</code> / <code>shift</code> kick in — scroll the frame to see it react."
+        heading="positioning--collisions"
         sourcePath="popover/examples/positioning.example.ts"
       >
         <app-popover-positioning-example />

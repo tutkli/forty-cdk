@@ -55,8 +55,6 @@ For the recommended `[forceMount]` + `opacity` pattern that keeps indicator colu
 
 Open the menu and walk the items with the arrow keys — the surface is shared, so what happens here is what Dropdown Menu, Context Menu and Menubar each compose.
 
-The surface is never used alone, so the compositions live with their openers: [Dropdown Menu](../dropdown-menu/README.md), [Context Menu](../context-menu/README.md) and [Menubar](../menubar/README.md) each carry the demos for their own.
-
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { ForDropdownMenu, ForDropdownMenuTrigger } from 'forty-cdk/dropdown-menu';
@@ -220,6 +218,8 @@ export class MenuDefaultExample {
   protected readonly sortBy = signal<string | null>('name');
 }
 ```
+
+The surface is never used alone, so the compositions live with their openers: [Dropdown Menu](../dropdown-menu/README.md), [Context Menu](../context-menu/README.md) and [Menubar](../menubar/README.md) each carry the demos for their own.
 
 ## Mount/visibility convention
 

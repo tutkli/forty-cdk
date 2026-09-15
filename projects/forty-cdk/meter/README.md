@@ -61,6 +61,10 @@ export class MeterDefaultExample {
 }
 ```
 
+### Custom value label
+
+`getValueLabel` receives the clamped value, `min` and `max` and returns `aria-valuetext`, so AT announces 'Disk: 200 GB used · 312 GB free' instead of the bare number.
+
 ## API
 
 ### `ForMeter`

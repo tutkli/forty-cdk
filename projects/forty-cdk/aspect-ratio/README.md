@@ -58,6 +58,10 @@ import { ForAspectRatio } from 'forty-cdk/aspect-ratio';
 export class AspectRatioDefaultExample {}
 ```
 
+### Square (1 / 1)
+
+Set `ratio` to `1` to keep a box perfectly square at any width — handy for avatars, thumbnails, or uniform grid cards.
+
 ## API
 
 ### `ForAspectRatio`

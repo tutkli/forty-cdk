@@ -136,6 +136,18 @@ export class DialogAnatomyExample {
 }
 ```
 
+### Guarded close
+
+`(escapeKeyDown)` and `(interactOutside)` fire before `(dismiss)`; calling `preventDefault()` on them keeps the dialog open. `Escape` and click-outside are vetoed, so only Discard or Save close it. Modal with no backdrop, so the page behind is inert but undimmed.
+
+### Non-modal & keep focus
+
+`[modal]="false"` drops the focus trap, scroll lock and inert siblings. `autoFocusOnOpen` vetoes the initial focus move so the search field keeps focus while you type, and `autoFocusOnClose` returns focus to it on close. With no visible title, `ariaLabel` names the panel.
+
+### Programmatic (`ForDialogManager`)
+
+Open a component imperatively and await its result. The manager mounts it under the same `[forDialog]` engine, so `[forDialogClose]` `[closeWith]` propagates straight to `ForDialogRef.close(value)`. Here as a non-dismissible `alertdialog`; `class` / `animateLeave` / `backdropAnimateLeave` style and fade out the manager-created host.
+
 ## API
 
 ### `ForDialog`

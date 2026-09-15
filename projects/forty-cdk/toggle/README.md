@@ -29,8 +29,6 @@ Two related primitives in a single folder: `[forToggle]` is a standalone two-sta
 
 Press it with the pointer, `Space` or `Enter` — the button reflects `aria-pressed` and `data-state`, so the pressed and unpressed looks come from one rule.
 
-### Standalone Toggle
-
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { ForToggle } from 'forty-cdk/toggle';
@@ -46,31 +44,13 @@ export class ToggleDefaultExample {
 }
 ```
 
-### Signal Forms (single Toggle)
+### States
 
-`ForToggle` implements `FormCheckboxControl`, so a single `aria-pressed` toggle auto-wires with `[formField]` from `@angular/forms/signals` — the natural home for bold / italic, mute, or favourite buttons. The schema's `disabled`, `readonly`, `required`, `invalid`, `pending`, `dirty`, `errors`, and `touched` flow into the matching inputs without consumer glue.
-
-```ts
-import { Component, signal } from '@angular/core';
-import { form, FormField, required } from '@angular/forms/signals';
-import { ForToggle } from 'forty-cdk/toggle';
-
-@Component({
-  selector: 'demo-bold',
-  imports: [ForToggle, FormField],
-  template: ` <button forToggle [formField]="prefs.bold" aria-label="Bold">B</button> `,
-})
-export class DemoBold {
-  readonly model = signal({ bold: false });
-  readonly prefs = form(this.model, (s) => required(s.bold));
-}
-```
-
-When `[name]` is set (typically through `[formField]`), the directive mounts an `<input type="hidden" value="on">` sibling while checked so the surrounding `<form>` picks it up during native submission.
-
-For a set of related toggles, `ForToggleGroup` implements `FormValueControl<readonly string[]>` instead — its `value` is `readonly string[]`, and a single-mode group simply carries `[]` or `[selected]`.
+One class and one directive, three states. Both `disabled` and `readonly` stay focusable (per APG) — they reflect `aria-disabled` / `data-disabled` and `aria-readonly` / `data-readonly` rather than the native `disabled` attribute, so assistive tech still announces the button while interaction is a no-op.
 
 ### ToggleGroup
+
+A group of toggles with roving tabindex. In `multiple` mode each item toggles independently; arrows only move focus — selection needs `Space` / `Enter` or click.
 
 ```ts
 import { Component, signal } from '@angular/core';
@@ -103,7 +83,35 @@ export class DemoAlignment {
 
 `value` is always `readonly string[]`. In single mode it carries 0 or 1 entries; this lets consumers flip `multiple` without re-typing their state.
 
-### Signal Forms (ToggleGroup)
+### Signal Forms
+
+`ForToggleGroup` implements `FormValueControl<readonly string[]>`, so `[formField]` binds the pressed-values array to a form field. This single-select alignment group is required: clearing the choice and blurring marks the group `data-invalid` / `data-touched`.
+
+## Signal Forms (single Toggle)
+
+`ForToggle` implements `FormCheckboxControl`, so a single `aria-pressed` toggle auto-wires with `[formField]` from `@angular/forms/signals` — the natural home for bold / italic, mute, or favourite buttons. The schema's `disabled`, `readonly`, `required`, `invalid`, `pending`, `dirty`, `errors`, and `touched` flow into the matching inputs without consumer glue.
+
+```ts
+import { Component, signal } from '@angular/core';
+import { form, FormField, required } from '@angular/forms/signals';
+import { ForToggle } from 'forty-cdk/toggle';
+
+@Component({
+  selector: 'demo-bold',
+  imports: [ForToggle, FormField],
+  template: ` <button forToggle [formField]="prefs.bold" aria-label="Bold">B</button> `,
+})
+export class DemoBold {
+  readonly model = signal({ bold: false });
+  readonly prefs = form(this.model, (s) => required(s.bold));
+}
+```
+
+When `[name]` is set (typically through `[formField]`), the directive mounts an `<input type="hidden" value="on">` sibling while checked so the surrounding `<form>` picks it up during native submission.
+
+For a set of related toggles, `ForToggleGroup` implements `FormValueControl<readonly string[]>` instead — its `value` is `readonly string[]`, and a single-mode group simply carries `[]` or `[selected]`.
+
+## Signal Forms (ToggleGroup)
 
 `ForToggleGroup` implements `FormValueControl<readonly string[]>`, so it auto-wires with `[formField]` from `@angular/forms/signals`. The schema's `disabled`, `readonly`, `required`, `invalid`, `pending`, `dirty`, `errors`, `touched`, and `name` flow into the matching inputs without consumer glue.
 

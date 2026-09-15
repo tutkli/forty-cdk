@@ -20,8 +20,7 @@ import { DOC } from '../../../generated/docs/primitives/otp-input.generated';
       </demo-layout>
 
       <demo-layout
-        title="Masked PIN with paste transform"
-        subtitle="<code>mask</code> obscures the slots while <code>value()</code> stays raw, and a <code>pasteTransformer</code> strips spaces and dashes before filtering — so pasting “12 34 56” fills cleanly. <code>type</code> still rejects anything outside the numeric character class as you type."
+        heading="masked-pin-with-paste-transform"
         sourcePath="otp-input/examples/masked.example.ts"
       >
         <app-otp-masked-example />

@@ -26,19 +26,11 @@ import { DOC } from '../../../generated/docs/primitives/tooltip.generated';
         <app-tooltip-default-example />
       </demo-layout>
 
-      <demo-layout
-        title="Overflow-only"
-        subtitle="With <code>showOnOverflow</code> the tooltip opens only when the trigger's own text is actually truncated — ideal for table cells or file paths that may or may not fit. The short label fits and stays silent; the long one is clipped, so the full text appears."
-        sourcePath="tooltip/examples/overflow.example.ts"
-      >
+      <demo-layout heading="overflow-only" sourcePath="tooltip/examples/overflow.example.ts">
         <app-tooltip-overflow-example />
       </demo-layout>
 
-      <demo-layout
-        title="Hoverable content"
-        subtitle="With <code>hoverableContent</code> the bubble keeps <code>pointer-events</code>, so the pointer can rest on it to read or select long text without dismissing it. A pointer-grace safe triangle bridges the trigger-to-content gap. The content must still stay non-interactive per APG."
-        sourcePath="tooltip/examples/hoverable.example.ts"
-      >
+      <demo-layout heading="hoverable-content" sourcePath="tooltip/examples/hoverable.example.ts">
         <app-tooltip-hoverable-example />
       </demo-layout>
     </primitive-page>

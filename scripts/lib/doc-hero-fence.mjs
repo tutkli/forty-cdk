@@ -1,4 +1,5 @@
 import { fencesOf } from '../docs/doc-model.mjs';
+import { demosOf } from './doc-demo-headings.mjs';
 import { snippetsOf } from './doc-snippets.mjs';
 
 /**
@@ -186,43 +187,9 @@ function withoutEncapsulation(module) {
 /**
  * The `sourcePath` of the demo a page projects above its intro, or `null` when
  * it projects none and when the one it projects names no source.
- *
- * Scanned quote-aware rather than with one regular expression over the element:
- * a hero's subtitle carries inline markup — `<code>`, `<kbd>` — so the first
- * `>` after `<demo-layout` is regularly inside an attribute value rather than
- * at the end of the tag.
  */
 export function heroSourceOf(pageSource) {
-  const page = normalize(pageSource);
-  const tag = '<demo-layout';
-  let index = page.indexOf(tag);
-
-  while (index !== -1) {
-    let cursor = index + tag.length;
-    let quote = null;
-    while (cursor < page.length) {
-      const char = page[cursor];
-      if (quote !== null) {
-        if (char === quote) {
-          quote = null;
-        }
-      } else if (char === '"' || char === "'") {
-        quote = char;
-      } else if (char === '>') {
-        break;
-      }
-      cursor += 1;
-    }
-
-    const attributes = page.slice(index + tag.length, cursor);
-    if (/(^|\s)hero(\s|$)/.test(attributes.replace(/"[^"]*"|'[^']*'/g, ''))) {
-      const source = /\bsourcePath="([^"]+)"/.exec(attributes);
-      return source === null ? null : source[1];
-    }
-    index = page.indexOf(tag, cursor);
-  }
-
-  return null;
+  return demosOf(pageSource).find((demo) => demo.hero)?.sourcePath ?? null;
 }
 
 /** The lines one fence occupies, from its opening line to its closing one. */

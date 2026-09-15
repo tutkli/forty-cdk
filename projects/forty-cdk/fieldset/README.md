@@ -85,6 +85,14 @@ On custom markup (no native `<fieldset>`), the same wiring yields `role="group"`
 </div>
 ```
 
+### Disable a group
+
+`disabled` emits the native `disabled` attribute, which disables every control inside in one move. The `data-disabled` hook flows to the fieldset and to each `forField` so the whole block can dim together.
+
+### Group on any element
+
+On non-fieldset markup `forFieldset` synthesizes the grouping: it emits `role="group"` and points `aria-labelledby` at the `[forFieldsetLegend]`'s generated id, so a plain `<div>` + `<span>` reads to assistive tech exactly like a native fieldset / legend.
+
 ## API
 
 ### `ForFieldset`

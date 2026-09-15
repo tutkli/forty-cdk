@@ -19,11 +19,7 @@ import { DOC } from '../../../generated/docs/primitives/menubar.generated';
         <app-menubar-default-example />
       </demo-layout>
 
-      <demo-layout
-        title="Vertical & RTL"
-        subtitle="The same menubar laid out as a vertical sidebar (<code>orientation='vertical'</code> makes <kbd>Up</kbd> / <kbd>Down</kbd> move between triggers) with <code>dir='rtl'</code>. RTL swaps the cross-menu arrow keys and floats each menu out of the opposite edge — the directive resolves the writing direction and positioning for you."
-        sourcePath="menubar/examples/vertical-rtl.example.ts"
-      >
+      <demo-layout heading="vertical--rtl" sourcePath="menubar/examples/vertical-rtl.example.ts">
         <app-menubar-vertical-rtl-example />
       </demo-layout>
     </primitive-page>

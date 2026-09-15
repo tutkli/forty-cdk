@@ -26,17 +26,12 @@ import { DOC } from '../../../generated/docs/primitives/number-input.generated';
         <app-number-input-default-example />
       </demo-layout>
 
-      <demo-layout
-        title="States"
-        subtitle="One class and one directive, three states. <code>disabled</code> reflects <code>data-disabled</code> on the spinbutton and both stepper buttons and removes the control from the tab order; <code>readonly</code> reflects <code>data-readonly</code> and keeps it focusable while refusing every edit. The stylesheet below keys on nothing else."
-        sourcePath="number-input/examples/states.example.ts"
-      >
+      <demo-layout heading="states" sourcePath="number-input/examples/states.example.ts">
         <app-number-input-states-example />
       </demo-layout>
 
       <demo-layout
-        title="Formatting & precision"
-        subtitle="<code>formatOptions</code> feeds an <code>Intl.NumberFormat</code> that renders the displayed text and <code>aria-valuetext</code>, while <code>value()</code> stays a raw number. The <code>locale</code> drives both formatting and parsing; a hidden input submits the raw number, not the formatted string."
+        heading="formatting--precision"
         sourcePath="number-input/examples/formatting.example.ts"
       >
         <app-number-input-formatting-example />

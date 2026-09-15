@@ -81,6 +81,17 @@ export interface DocPageSection {
   readonly blocks: readonly DocPageBlock[];
 }
 
+/** One secondary demo as its page renders it: the heading, and the line under it. */
+export interface DocPageExample {
+  readonly title: string;
+  /** The title's markup, present only when it carries a tag. */
+  readonly titleHtml?: string;
+  /** The anchor the demo emits, and the key its `<demo-layout>` names. */
+  readonly slug: string;
+  /** Inline markup, or `null` for a heading the document opens with something else. */
+  readonly prose: string | null;
+}
+
 /**
  * The container a page's specific sections nest under in its table of contents
  * ([#1810](https://github.com/tutkli/forty-cdk/issues/1810)).
@@ -101,6 +112,11 @@ export interface DocPage {
    * ([#1920](https://github.com/tutkli/forty-cdk/issues/1920)).
    */
   readonly caption: string | null;
+  /**
+   * The secondary demos the document declares, in the order the page projects
+   * them ([#1940](https://github.com/tutkli/forty-cdk/issues/1940)).
+   */
+  readonly examples: readonly DocPageExample[];
   /** `null` for a document whose rail the grouping would not improve. */
   readonly behaviorGroup: DocPageBehaviorGroup | null;
   readonly sections: readonly DocPageSection[];

@@ -20,8 +20,7 @@ import { DOC } from '../../../generated/docs/primitives/context-menu.generated';
       </demo-layout>
 
       <demo-layout
-        title="Rich content"
-        subtitle="The same menu vocabulary the Dropdown Menu exposes, anchored to the pointer on right-click: plain <code>forMenuItem</code> actions, a <code>forMenuCheckboxItem</code> toggle, a <code>forMenuRadioGroup</code>, a <code>forMenuSub</code> submenu, and grouped labels with separators. Checkbox and radio items call <code>preventDefault()</code> on <code>(activate)</code> to stay open; plain items close the menu and bubble up through any open submenu."
+        heading="rich-content"
         sourcePath="context-menu/examples/rich-content.example.ts"
       >
         <app-context-menu-rich-content-example />
