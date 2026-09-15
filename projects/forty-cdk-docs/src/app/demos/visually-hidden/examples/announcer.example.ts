@@ -33,9 +33,9 @@ import { LiveAnnouncer } from 'forty-cdk/visually-hidden';
       flex-direction: column;
       gap: 0.8rem;
       padding: 1rem 1.1rem;
-      background: var(--pg-surface);
-      border: 1px solid var(--pg-border);
-      border-radius: var(--pg-radius);
+      background: var(--ex-surface, #ffffff);
+      border: 1px solid var(--ex-border, #e5e0d6);
+      border-radius: var(--ex-radius, 22px);
       corner-shape: squircle;
     }
 
@@ -47,8 +47,8 @@ import { LiveAnnouncer } from 'forty-cdk/visually-hidden';
 
     .button {
       padding: 0.4rem 0.8rem;
-      border: 1px solid var(--pg-border);
-      border-radius: var(--pg-radius);
+      border: 1px solid var(--ex-border, #e5e0d6);
+      border-radius: var(--ex-radius, 22px);
       corner-shape: squircle;
       background: transparent;
       color: inherit;
@@ -61,7 +61,7 @@ import { LiveAnnouncer } from 'forty-cdk/visually-hidden';
 
     .hint {
       margin: 0;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
       font-size: 0.85rem;
     }
   `,

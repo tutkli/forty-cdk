@@ -128,10 +128,10 @@ interface Slide {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      border-radius: var(--pg-radius-sm);
-      border: 1px solid var(--pg-border-strong);
-      background: var(--pg-surface);
-      color: var(--pg-text);
+      border-radius: var(--ex-radius-sm, 14px);
+      border: 1px solid var(--ex-border-strong, #d0c9bc);
+      background: var(--ex-surface, #ffffff);
+      color: var(--ex-text, #17191c);
       font-size: 1.1rem;
       cursor: pointer;
     }
@@ -142,7 +142,7 @@ interface Slide {
     }
 
     .acar-rotation-btn:hover {
-      background: var(--pg-surface-2);
+      background: var(--ex-surface-2, #f2eee6);
     }
 
     .sr-only {
@@ -170,10 +170,10 @@ interface Slide {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      border-radius: var(--pg-radius-sm);
-      border: 1px solid var(--pg-border-strong);
-      background: var(--pg-surface);
-      color: var(--pg-text);
+      border-radius: var(--ex-radius-sm, 14px);
+      border: 1px solid var(--ex-border-strong, #d0c9bc);
+      background: var(--ex-surface, #ffffff);
+      color: var(--ex-text, #17191c);
       font-size: 1.2rem;
       line-height: 1;
       cursor: pointer;
@@ -185,7 +185,7 @@ interface Slide {
     }
 
     .acar-btn:hover:not([data-disabled]) {
-      background: var(--pg-surface-2);
+      background: var(--ex-surface-2, #f2eee6);
     }
 
     .acar-btn[data-disabled] {
@@ -195,7 +195,7 @@ interface Slide {
 
     .acar-viewport {
       overflow: hidden;
-      border-radius: var(--pg-radius);
+      border-radius: var(--ex-radius, 22px);
       corner-shape: squircle;
     }
 
@@ -217,27 +217,27 @@ interface Slide {
       display: flex;
       align-items: center;
       justify-content: center;
-      border-radius: var(--pg-radius);
+      border-radius: var(--ex-radius, 22px);
       corner-shape: squircle;
     }
 
     .acar-slide--1 {
-      background: color-mix(in srgb, var(--pg-primary) 20%, var(--pg-surface));
+      background: color-mix(in srgb, var(--ex-accent, #0e7c6b) 20%, var(--ex-surface, #ffffff));
     }
     .acar-slide--2 {
-      background: color-mix(in srgb, var(--pg-success) 20%, var(--pg-surface));
+      background: color-mix(in srgb, var(--ex-success, #1f7a4d) 20%, var(--ex-surface, #ffffff));
     }
     .acar-slide--3 {
-      background: color-mix(in srgb, var(--pg-warning) 20%, var(--pg-surface));
+      background: color-mix(in srgb, var(--ex-warning, #a5651a) 20%, var(--ex-surface, #ffffff));
     }
     .acar-slide--4 {
-      background: color-mix(in srgb, var(--pg-primary) 35%, var(--pg-surface));
+      background: color-mix(in srgb, var(--ex-accent, #0e7c6b) 35%, var(--ex-surface, #ffffff));
     }
 
     .acar-slide-label {
       font-size: 1.1rem;
       font-weight: 700;
-      color: var(--pg-text);
+      color: var(--ex-text, #17191c);
     }
 
     .acar-indicators {
@@ -252,7 +252,7 @@ interface Slide {
       height: 8px;
       border-radius: 50%;
       border: none;
-      background: var(--pg-border-strong);
+      background: var(--ex-border-strong, #d0c9bc);
       padding: 0;
       cursor: pointer;
       transition:
@@ -261,7 +261,7 @@ interface Slide {
     }
 
     .acar-dot[aria-current='true'] {
-      background: var(--pg-primary);
+      background: var(--ex-accent, #0e7c6b);
       transform: scale(1.4);
     }
 

@@ -62,27 +62,27 @@ import {
       font-weight: 600;
       font-size: 0.9rem;
       padding: 0.5rem 0.9rem;
-      border-radius: var(--pg-radius-sm);
-      border: 1px solid var(--pg-border-strong);
-      background: var(--pg-surface);
-      color: var(--pg-text);
+      border-radius: var(--ex-radius-sm, 14px);
+      border: 1px solid var(--ex-border-strong, #d0c9bc);
+      background: var(--ex-surface, #ffffff);
+      color: var(--ex-text, #17191c);
       cursor: pointer;
     }
 
     .guarded-btn:hover {
-      background: var(--pg-surface-2);
+      background: var(--ex-surface-2, #f2eee6);
     }
 
     .guarded-btn--primary,
     .guarded-btn--primary:hover {
-      background: var(--pg-primary);
-      border-color: var(--pg-primary);
-      color: var(--pg-primary-contrast);
+      background: var(--ex-accent, #0e7c6b);
+      border-color: var(--ex-accent, #0e7c6b);
+      color: var(--ex-accent-contrast, #ffffff);
     }
 
     .guarded-btn--primary:hover {
-      background: var(--pg-primary-hover);
-      border-color: var(--pg-primary-hover);
+      background: var(--ex-accent-hover, #0a5a4d);
+      border-color: var(--ex-accent-hover, #0a5a4d);
     }
 
     .guarded-dialog {
@@ -94,12 +94,16 @@ import {
       transform: translate(-50%, -50%);
       width: min(440px, calc(100vw - 2rem));
       padding: 1.5rem;
-      background: var(--pg-surface);
-      color: var(--pg-text);
-      border: 1px solid var(--pg-border);
-      border-radius: var(--pg-radius-lg);
+      background: var(--ex-surface, #ffffff);
+      color: var(--ex-text, #17191c);
+      border: 1px solid var(--ex-border, #e5e0d6);
+      border-radius: var(--ex-radius-lg, 34px);
       corner-shape: squircle;
-      box-shadow: var(--pg-shadow);
+      box-shadow: var(
+        --ex-shadow,
+        0 2px 4px rgba(0, 0, 0, 0.04),
+        0 20px 40px -18px rgba(0, 0, 0, 0.2)
+      );
     }
 
     .guarded-dialog h2 {
@@ -109,7 +113,7 @@ import {
 
     .guarded-dialog > p {
       margin: 0 0 1.5rem;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     .guarded-field {
@@ -122,7 +126,7 @@ import {
     .guarded-label {
       font-size: 0.85rem;
       font-weight: 600;
-      color: var(--pg-text);
+      color: var(--ex-text, #17191c);
     }
 
     .guarded-input {
@@ -130,20 +134,20 @@ import {
       font: inherit;
       font-size: 0.9rem;
       padding: 0.5rem 0.7rem;
-      border-radius: var(--pg-radius-sm);
-      border: 1px solid var(--pg-border-strong);
-      background: var(--pg-surface);
-      color: var(--pg-text);
+      border-radius: var(--ex-radius-sm, 14px);
+      border: 1px solid var(--ex-border-strong, #d0c9bc);
+      background: var(--ex-surface, #ffffff);
+      color: var(--ex-text, #17191c);
     }
 
     .guarded-warn {
       margin: 0 0 1.25rem;
       padding: 0.6rem 0.8rem;
-      border-radius: var(--pg-radius-sm);
-      border-left: 3px solid var(--pg-warning);
-      background: color-mix(in srgb, var(--pg-warning) 14%, var(--pg-surface));
+      border-radius: var(--ex-radius-sm, 14px);
+      border-left: 3px solid var(--ex-warning, #a5651a);
+      background: color-mix(in srgb, var(--ex-warning, #a5651a) 14%, var(--ex-surface, #ffffff));
       font-size: 0.85rem;
-      color: var(--pg-text);
+      color: var(--ex-text, #17191c);
     }
 
     .guarded-actions {
@@ -167,7 +171,7 @@ import {
     }
 
     .guarded-fade-in {
-      animation: guarded-fade-in 0.24s var(--pg-ease-spring) both;
+      animation: guarded-fade-in 0.24s var(--ex-ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1)) both;
     }
 
     .guarded-fade-out {

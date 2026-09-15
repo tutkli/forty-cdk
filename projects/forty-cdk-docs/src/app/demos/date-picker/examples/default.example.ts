@@ -131,15 +131,15 @@ import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized
       font: inherit;
       font-size: 0.9rem;
       padding: 0.55rem 0.75rem;
-      border-radius: var(--pg-radius-sm);
-      border: 1px solid var(--pg-border-strong);
-      background: var(--pg-surface);
-      color: var(--pg-text);
+      border-radius: var(--ex-radius-sm, 14px);
+      border: 1px solid var(--ex-border-strong, #d0c9bc);
+      background: var(--ex-surface, #ffffff);
+      color: var(--ex-text, #17191c);
       cursor: pointer;
     }
 
     .date-picker-trigger:hover:not([disabled]) {
-      background: var(--pg-surface-2);
+      background: var(--ex-surface-2, #f2eee6);
     }
 
     .date-picker-trigger[disabled] {
@@ -148,14 +148,14 @@ import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized
     }
 
     .date-picker-value[data-placeholder] {
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     .date-picker-chevron {
       flex: none;
       width: 14px;
       height: 14px;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
       transition: transform 0.15s ease;
     }
 
@@ -167,12 +167,16 @@ import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized
       z-index: 60;
       width: min(280px, calc(100vw - 1.5rem));
       padding: 0.85rem;
-      background: var(--pg-surface);
-      color: var(--pg-text);
-      border: 1px solid var(--pg-border);
-      border-radius: var(--pg-radius);
+      background: var(--ex-surface, #ffffff);
+      color: var(--ex-text, #17191c);
+      border: 1px solid var(--ex-border, #e5e0d6);
+      border-radius: var(--ex-radius, 22px);
       corner-shape: squircle;
-      box-shadow: var(--pg-shadow);
+      box-shadow: var(
+        --ex-shadow,
+        0 2px 4px rgba(0, 0, 0, 0.04),
+        0 20px 40px -18px rgba(0, 0, 0, 0.2)
+      );
     }
 
     .date-picker-cal {
@@ -203,10 +207,10 @@ import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      border-radius: var(--pg-radius-sm);
-      border: 1px solid var(--pg-border-strong);
-      background: var(--pg-surface);
-      color: var(--pg-text);
+      border-radius: var(--ex-radius-sm, 14px);
+      border: 1px solid var(--ex-border-strong, #d0c9bc);
+      background: var(--ex-surface, #ffffff);
+      color: var(--ex-text, #17191c);
       font-size: 1.05rem;
       line-height: 1;
       cursor: pointer;
@@ -219,7 +223,7 @@ import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized
     }
 
     .date-picker-nav:hover:not([disabled]) {
-      background: var(--pg-surface-2);
+      background: var(--ex-surface-2, #f2eee6);
     }
 
     .date-picker-nav[disabled] {
@@ -239,7 +243,7 @@ import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.04em;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     .date-picker-cell {
@@ -247,43 +251,43 @@ import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized
       text-align: center;
       vertical-align: middle;
       font-size: 0.82rem;
-      border-radius: var(--pg-radius-sm);
+      border-radius: var(--ex-radius-sm, 14px);
       cursor: pointer;
       user-select: none;
       transition: background 0.12s ease;
     }
 
     .date-picker-cell:hover:not([aria-disabled]):not([data-selected]) {
-      background: var(--pg-surface-2);
+      background: var(--ex-surface-2, #f2eee6);
     }
 
     .date-picker-cell[data-outside-month] {
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
       opacity: 0.5;
     }
 
     .date-picker-cell[data-today] {
-      box-shadow: inset 0 0 0 1px var(--pg-border-strong);
+      box-shadow: inset 0 0 0 1px var(--ex-border-strong, #d0c9bc);
     }
 
     .date-picker-cell[data-selected] {
-      background: var(--pg-primary);
-      color: var(--pg-primary-contrast);
+      background: var(--ex-accent, #0e7c6b);
+      color: var(--ex-accent-contrast, #ffffff);
       font-weight: 600;
     }
 
     .date-picker-cell[data-selected]:hover:not([aria-disabled]) {
-      background: var(--pg-primary-hover);
+      background: var(--ex-accent-hover, #0a5a4d);
     }
 
     .date-picker-grid:focus-within .date-picker-cell[data-highlighted],
     .date-picker-cell:focus-visible {
-      outline: 2px solid var(--pg-primary);
+      outline: 2px solid var(--ex-accent, #0e7c6b);
       outline-offset: -2px;
     }
 
     .date-picker-cell[aria-disabled] {
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
       opacity: 0.4;
       cursor: not-allowed;
       text-decoration: line-through;
@@ -291,7 +295,8 @@ import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized
 
     .date-picker-pop-in {
       transform-origin: var(--for-floating-content-transform-origin, center);
-      animation: date-picker-pop-in 0.2s var(--pg-ease-spring) both;
+      animation: date-picker-pop-in 0.2s var(--ex-ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1))
+        both;
     }
 
     @keyframes date-picker-pop-in {

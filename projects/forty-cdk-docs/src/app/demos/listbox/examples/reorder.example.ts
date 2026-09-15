@@ -51,10 +51,10 @@ import {
       font: inherit;
       font-size: 0.85rem;
       padding: 0.4rem 0.85rem;
-      border: 1px solid var(--pg-border-strong);
+      border: 1px solid var(--ex-border-strong, #d0c9bc);
       border-radius: 999px;
-      background: var(--pg-surface);
-      color: var(--pg-text);
+      background: var(--ex-surface, #ffffff);
+      color: var(--ex-text, #17191c);
       cursor: grab;
       user-select: none;
       transition:
@@ -64,18 +64,22 @@ import {
     }
 
     .chip[data-highlighted] {
-      border-color: var(--pg-primary);
+      border-color: var(--ex-accent, #0e7c6b);
     }
 
     .chip[data-state='checked'] {
-      background: var(--pg-primary);
-      border-color: var(--pg-primary);
-      color: var(--pg-primary-contrast);
+      background: var(--ex-accent, #0e7c6b);
+      border-color: var(--ex-accent, #0e7c6b);
+      color: var(--ex-accent-contrast, #ffffff);
     }
 
     .chip[data-dragging] {
       cursor: grabbing;
-      box-shadow: var(--pg-shadow);
+      box-shadow: var(
+        --ex-shadow,
+        0 2px 4px rgba(0, 0, 0, 0.04),
+        0 20px 40px -18px rgba(0, 0, 0, 0.2)
+      );
       opacity: 0.9;
     }
 

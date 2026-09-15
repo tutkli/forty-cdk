@@ -62,19 +62,19 @@ import {
       font-weight: 600;
       font-size: 0.9rem;
       padding: 0.5rem 0.9rem;
-      border-radius: var(--pg-radius-sm);
-      border: 1px solid var(--pg-border-strong);
-      background: var(--pg-surface);
-      color: var(--pg-text);
+      border-radius: var(--ex-radius-sm, 14px);
+      border: 1px solid var(--ex-border-strong, #d0c9bc);
+      background: var(--ex-surface, #ffffff);
+      color: var(--ex-text, #17191c);
       cursor: pointer;
       transition:
         background 0.15s ease,
         border-color 0.15s ease,
-        transform 0.18s var(--pg-ease-spring);
+        transform 0.18s var(--ex-ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1));
     }
 
     .scale-btn:hover {
-      background: var(--pg-surface-2);
+      background: var(--ex-surface-2, #f2eee6);
     }
 
     .scale-btn:active {
@@ -83,14 +83,14 @@ import {
 
     .scale-btn--primary,
     .scale-btn--primary:hover {
-      background: var(--pg-primary);
-      border-color: var(--pg-primary);
-      color: var(--pg-primary-contrast);
+      background: var(--ex-accent, #0e7c6b);
+      border-color: var(--ex-accent, #0e7c6b);
+      color: var(--ex-accent-contrast, #ffffff);
     }
 
     .scale-btn--primary:hover {
-      background: var(--pg-primary-hover);
-      border-color: var(--pg-primary-hover);
+      background: var(--ex-accent-hover, #0a5a4d);
+      border-color: var(--ex-accent-hover, #0a5a4d);
     }
 
     .scale-drawer {
@@ -101,9 +101,13 @@ import {
       flex-direction: column;
       gap: 0.65rem;
       padding: 1.25rem;
-      background: var(--pg-surface);
-      color: var(--pg-text);
-      box-shadow: var(--pg-shadow);
+      background: var(--ex-surface, #ffffff);
+      color: var(--ex-text, #17191c);
+      box-shadow: var(
+        --ex-shadow,
+        0 2px 4px rgba(0, 0, 0, 0.04),
+        0 20px 40px -18px rgba(0, 0, 0, 0.2)
+      );
       translate: var(--for-drawer-swipe-movement-x, 0px) var(--for-drawer-swipe-movement-y, 0px);
       transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1);
       user-select: none;
@@ -112,7 +116,7 @@ import {
       right: 0;
       bottom: 0;
       height: 85vh;
-      border-radius: var(--pg-radius);
+      border-radius: var(--ex-radius, 22px);
       corner-shape: squircle;
     }
 
@@ -122,7 +126,7 @@ import {
       height: 5px;
       margin: 0 auto 0.3rem;
       border-radius: 999px;
-      background: var(--pg-border-strong);
+      background: var(--ex-border-strong, #d0c9bc);
       cursor: grab;
       touch-action: none;
     }
@@ -138,7 +142,7 @@ import {
 
     .scale-drawer-desc {
       margin: 0 0 0.25rem;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
       font-size: 0.9rem;
     }
 

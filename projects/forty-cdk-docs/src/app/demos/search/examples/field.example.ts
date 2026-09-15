@@ -61,7 +61,7 @@ interface Filters {
     .field-label-text {
       font-size: 0.9rem;
       font-weight: 600;
-      color: var(--pg-text);
+      color: var(--ex-text, #17191c);
     }
 
     .search {
@@ -75,20 +75,20 @@ interface Filters {
       font: inherit;
       font-size: 0.95rem;
       padding: 0.6rem 2.2rem 0.6rem 0.85rem;
-      color: var(--pg-text);
-      background: var(--pg-surface);
-      border: 1px solid var(--pg-border-strong);
-      border-radius: var(--pg-radius-sm);
+      color: var(--ex-text, #17191c);
+      background: var(--ex-surface, #ffffff);
+      border: 1px solid var(--ex-border-strong, #d0c9bc);
+      border-radius: var(--ex-radius-sm, 14px);
       outline: none;
     }
 
     .search-input:focus-visible {
-      border-color: var(--pg-primary);
-      box-shadow: 0 0 0 3px color-mix(in srgb, var(--pg-primary) 35%, transparent);
+      border-color: var(--ex-accent, #0e7c6b);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--ex-accent, #0e7c6b) 35%, transparent);
     }
 
     .field[data-touched][data-invalid] .search-input {
-      border-color: var(--pg-danger);
+      border-color: var(--ex-danger, #b3261e);
     }
 
     .search-clear {
@@ -102,22 +102,22 @@ interface Filters {
       font: inherit;
       font-size: 1.1rem;
       line-height: 1;
-      color: var(--pg-text-muted);
-      background: var(--pg-surface-2);
+      color: var(--ex-muted, #585d66);
+      background: var(--ex-surface-2, #f2eee6);
       border: 0;
       border-radius: 50%;
       cursor: pointer;
     }
 
     .search-clear:hover {
-      color: var(--pg-text);
+      color: var(--ex-text, #17191c);
     }
 
     .field-error {
       margin: 0;
       font-size: 0.85rem;
       font-weight: 500;
-      color: var(--pg-danger);
+      color: var(--ex-danger, #b3261e);
     }
   `,
 })

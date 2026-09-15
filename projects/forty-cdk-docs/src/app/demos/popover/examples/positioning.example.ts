@@ -55,8 +55,8 @@ import {
       width: min(220px, 100%);
       height: 160px;
       overflow: auto;
-      border: 1px dashed var(--pg-border-strong);
-      border-radius: var(--pg-radius);
+      border: 1px dashed var(--ex-border-strong, #d0c9bc);
+      border-radius: var(--ex-radius, 22px);
       corner-shape: squircle;
     }
 
@@ -66,10 +66,10 @@ import {
       font-weight: 600;
       font-size: 0.9rem;
       padding: 0.5rem 0.9rem;
-      border-radius: var(--pg-radius-sm);
-      border: 1px solid var(--pg-primary);
-      background: var(--pg-primary);
-      color: var(--pg-primary-contrast);
+      border-radius: var(--ex-radius-sm, 14px);
+      border: 1px solid var(--ex-accent, #0e7c6b);
+      background: var(--ex-accent, #0e7c6b);
+      color: var(--ex-accent-contrast, #ffffff);
       cursor: pointer;
     }
 
@@ -77,12 +77,16 @@ import {
       z-index: 60;
       width: min(240px, calc(100vw - 1.5rem));
       padding: 1rem 1.1rem;
-      background: var(--pg-surface);
-      color: var(--pg-text);
-      border: 1px solid var(--pg-border);
-      border-radius: var(--pg-radius);
+      background: var(--ex-surface, #ffffff);
+      color: var(--ex-text, #17191c);
+      border: 1px solid var(--ex-border, #e5e0d6);
+      border-radius: var(--ex-radius, 22px);
       corner-shape: squircle;
-      box-shadow: var(--pg-shadow);
+      box-shadow: var(
+        --ex-shadow,
+        0 2px 4px rgba(0, 0, 0, 0.04),
+        0 20px 40px -18px rgba(0, 0, 0, 0.2)
+      );
     }
 
     .pos-popover-title {
@@ -93,15 +97,15 @@ import {
     .pos-popover-desc {
       margin: 0;
       font-size: 0.85rem;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     .pos-popover-arrow {
       width: 11px;
       height: 11px;
-      background: var(--pg-surface);
-      border-top: 1px solid var(--pg-border);
-      border-left: 1px solid var(--pg-border);
+      background: var(--ex-surface, #ffffff);
+      border-top: 1px solid var(--ex-border, #e5e0d6);
+      border-left: 1px solid var(--ex-border, #e5e0d6);
       --for-floating-arrow-offset: -6px;
     }
 
@@ -123,7 +127,8 @@ import {
 
     .pos-popover-enter {
       transform-origin: var(--for-floating-content-transform-origin, center);
-      animation: pos-popover-enter 0.2s var(--pg-ease-spring) both;
+      animation: pos-popover-enter 0.2s var(--ex-ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1))
+        both;
     }
 
     @keyframes pos-popover-enter {

@@ -55,7 +55,7 @@ import { ForFileUpload, ForFileUploadInput, ForFileUploadTrigger } from 'forty-c
       font-weight: 700;
       letter-spacing: 0.06em;
       text-transform: uppercase;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     .sr-only {
@@ -78,10 +78,10 @@ import { ForFileUpload, ForFileUploadInput, ForFileUploadTrigger } from 'forty-c
       gap: 0.5rem;
       padding: 1.6rem 1.2rem;
       text-align: center;
-      color: var(--pg-text-muted);
-      background: var(--pg-surface);
-      border: 2px dashed var(--pg-border-strong);
-      border-radius: var(--pg-radius);
+      color: var(--ex-muted, #585d66);
+      background: var(--ex-surface, #ffffff);
+      border: 2px dashed var(--ex-border-strong, #d0c9bc);
+      border-radius: var(--ex-radius, 22px);
       corner-shape: squircle;
       transition:
         border-color 0.15s ease,
@@ -89,8 +89,8 @@ import { ForFileUpload, ForFileUploadInput, ForFileUploadTrigger } from 'forty-c
     }
 
     .zone[data-dragging] {
-      border-color: var(--pg-primary);
-      background: color-mix(in srgb, var(--pg-primary) 8%, var(--pg-surface));
+      border-color: var(--ex-accent, #0e7c6b);
+      background: color-mix(in srgb, var(--ex-accent, #0e7c6b) 8%, var(--ex-surface, #ffffff));
     }
 
     .zone[data-disabled] {
@@ -106,7 +106,7 @@ import { ForFileUpload, ForFileUploadInput, ForFileUploadTrigger } from 'forty-c
     .zone-btn {
       font: inherit;
       font-weight: 700;
-      color: var(--pg-primary);
+      color: var(--ex-accent, #0e7c6b);
       background: none;
       border: 0;
       padding: 0;
@@ -117,7 +117,7 @@ import { ForFileUpload, ForFileUploadInput, ForFileUploadTrigger } from 'forty-c
     .zone-accept {
       margin: 0;
       font-size: 0.78rem;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     @media (prefers-reduced-motion: reduce) {

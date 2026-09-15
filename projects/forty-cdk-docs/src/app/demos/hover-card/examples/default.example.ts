@@ -51,12 +51,12 @@ import {
       text-align: center;
       font-size: 1.05rem;
       line-height: 1.7;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     .hovercard-trigger {
       font-weight: 600;
-      color: var(--pg-primary);
+      color: var(--ex-accent, #0e7c6b);
       text-decoration: none;
     }
 
@@ -68,12 +68,16 @@ import {
       z-index: 60;
       width: min(300px, calc(100vw - 1.5rem));
       padding: 1.1rem;
-      background: var(--pg-surface);
-      color: var(--pg-text);
-      border: 1px solid var(--pg-border);
-      border-radius: var(--pg-radius);
+      background: var(--ex-surface, #ffffff);
+      color: var(--ex-text, #17191c);
+      border: 1px solid var(--ex-border, #e5e0d6);
+      border-radius: var(--ex-radius, 22px);
       corner-shape: squircle;
-      box-shadow: var(--pg-shadow);
+      box-shadow: var(
+        --ex-shadow,
+        0 2px 4px rgba(0, 0, 0, 0.04),
+        0 20px 40px -18px rgba(0, 0, 0, 0.2)
+      );
     }
 
     .hovercard-head {
@@ -92,8 +96,8 @@ import {
       border-radius: 50%;
       font-size: 0.85rem;
       font-weight: 700;
-      color: var(--pg-primary-contrast);
-      background: var(--pg-primary);
+      color: var(--ex-accent-contrast, #ffffff);
+      background: var(--ex-accent, #0e7c6b);
     }
 
     .hovercard-id {
@@ -103,14 +107,14 @@ import {
 
     .hovercard-handle {
       font-size: 0.8rem;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     .hovercard-bio {
       margin: 0.8rem 0 0;
       font-size: 0.875rem;
       line-height: 1.5;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     .hovercard-stats {
@@ -118,11 +122,11 @@ import {
       gap: 1.1rem;
       margin-top: 0.8rem;
       font-size: 0.8rem;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     .hovercard-stats b {
-      color: var(--pg-text);
+      color: var(--ex-text, #17191c);
     }
 
     .hovercard-follow {
@@ -133,24 +137,24 @@ import {
       font-weight: 600;
       font-size: 0.9rem;
       padding: 0.5rem 0.9rem;
-      border-radius: var(--pg-radius-sm);
-      border: 1px solid var(--pg-primary);
-      background: var(--pg-primary);
-      color: var(--pg-primary-contrast);
+      border-radius: var(--ex-radius-sm, 14px);
+      border: 1px solid var(--ex-accent, #0e7c6b);
+      background: var(--ex-accent, #0e7c6b);
+      color: var(--ex-accent-contrast, #ffffff);
       cursor: pointer;
     }
 
     .hovercard-follow:hover {
-      background: var(--pg-primary-hover);
-      border-color: var(--pg-primary-hover);
+      background: var(--ex-accent-hover, #0a5a4d);
+      border-color: var(--ex-accent-hover, #0a5a4d);
     }
 
     .hovercard-arrow {
       width: 11px;
       height: 11px;
-      background: var(--pg-surface);
-      border-top: 1px solid var(--pg-border);
-      border-left: 1px solid var(--pg-border);
+      background: var(--ex-surface, #ffffff);
+      border-top: 1px solid var(--ex-border, #e5e0d6);
+      border-left: 1px solid var(--ex-border, #e5e0d6);
       --for-floating-arrow-offset: -6px;
     }
 
@@ -172,7 +176,7 @@ import {
 
     .hovercard-pop-in {
       transform-origin: var(--for-floating-content-transform-origin, center);
-      animation: hovercard-pop-in 0.2s var(--pg-ease-spring) both;
+      animation: hovercard-pop-in 0.2s var(--ex-ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1)) both;
     }
 
     @keyframes hovercard-pop-in {

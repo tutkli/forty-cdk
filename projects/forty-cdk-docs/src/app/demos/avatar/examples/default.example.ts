@@ -42,8 +42,12 @@ const AVATAR_SRC =
       height: 72px;
       border-radius: 50%;
       overflow: hidden;
-      background: var(--pg-surface-2);
-      box-shadow: var(--pg-shadow);
+      background: var(--ex-surface-2, #f2eee6);
+      box-shadow: var(
+        --ex-shadow,
+        0 2px 4px rgba(0, 0, 0, 0.04),
+        0 20px 40px -18px rgba(0, 0, 0, 0.2)
+      );
     }
 
     .avatar-image {
@@ -64,7 +68,7 @@ const AVATAR_SRC =
       font-weight: 700;
       font-size: 1.3rem;
       color: #fff;
-      background: linear-gradient(135deg, var(--pg-primary), #ec4899);
+      background: linear-gradient(135deg, var(--ex-accent, #0e7c6b), #ec4899);
     }
   `,
 })

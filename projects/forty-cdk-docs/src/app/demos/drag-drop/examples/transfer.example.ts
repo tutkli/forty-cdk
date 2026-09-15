@@ -72,7 +72,7 @@ interface Card {
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.06em;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     .stack {
@@ -83,22 +83,26 @@ interface Card {
       margin: 0;
       padding: 0.6rem;
       list-style: none;
-      background: var(--pg-surface-2);
-      border: 1px solid var(--pg-border);
-      border-radius: var(--pg-radius-sm);
+      background: var(--ex-surface-2, #f2eee6);
+      border: 1px solid var(--ex-border, #e5e0d6);
+      border-radius: var(--ex-radius-sm, 14px);
     }
 
     .stack[data-drag-over] {
-      border-color: var(--pg-primary);
-      background: color-mix(in srgb, var(--pg-primary) 8%, var(--pg-surface-2));
+      border-color: var(--ex-accent, #0e7c6b);
+      background: color-mix(in srgb, var(--ex-accent, #0e7c6b) 8%, var(--ex-surface-2, #f2eee6));
     }
 
     .card {
       padding: 0.65rem 0.8rem;
-      background: var(--pg-surface);
-      border: 1px solid var(--pg-border-strong);
-      border-radius: var(--pg-radius-sm);
-      box-shadow: var(--pg-shadow);
+      background: var(--ex-surface, #ffffff);
+      border: 1px solid var(--ex-border-strong, #d0c9bc);
+      border-radius: var(--ex-radius-sm, 14px);
+      box-shadow: var(
+        --ex-shadow,
+        0 2px 4px rgba(0, 0, 0, 0.04),
+        0 20px 40px -18px rgba(0, 0, 0, 0.2)
+      );
       font-size: 0.88rem;
       cursor: grab;
     }
@@ -108,7 +112,7 @@ interface Card {
     }
 
     .card--done {
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
       text-decoration: line-through;
     }
 
@@ -119,7 +123,7 @@ interface Card {
     .empty {
       padding: 0.65rem 0.8rem;
       font-size: 0.82rem;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
       text-align: center;
     }
   `,

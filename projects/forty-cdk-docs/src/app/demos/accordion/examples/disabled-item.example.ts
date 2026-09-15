@@ -49,9 +49,9 @@ interface AccordionEntry {
     }
 
     .acc-item {
-      background: var(--pg-surface);
-      border: 1px solid var(--pg-border);
-      border-radius: var(--pg-radius-sm);
+      background: var(--ex-surface, #ffffff);
+      border: 1px solid var(--ex-border, #e5e0d6);
+      border-radius: var(--ex-radius-sm, 14px);
       overflow: hidden;
     }
 
@@ -69,14 +69,14 @@ interface AccordionEntry {
       font: inherit;
       font-weight: 600;
       text-align: left;
-      color: var(--pg-text);
+      color: var(--ex-text, #17191c);
       background: transparent;
       border: 0;
       cursor: pointer;
     }
 
     .acc-trigger:hover {
-      background: var(--pg-surface-2);
+      background: var(--ex-surface-2, #f2eee6);
     }
 
     .acc-trigger:disabled {
@@ -88,8 +88,8 @@ interface AccordionEntry {
       flex: none;
       width: 10px;
       height: 10px;
-      border-right: 2px solid var(--pg-text-muted);
-      border-bottom: 2px solid var(--pg-text-muted);
+      border-right: 2px solid var(--ex-muted, #585d66);
+      border-bottom: 2px solid var(--ex-muted, #585d66);
       transform: rotate(45deg);
       transition: transform 0.2s ease;
     }
@@ -115,7 +115,7 @@ interface AccordionEntry {
     .acc-inner p {
       margin: 0;
       padding: 0 1rem 0.9rem;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     @media (prefers-reduced-motion: reduce) {

@@ -134,22 +134,22 @@ interface Option {
       font: inherit;
       font-size: 0.875rem;
       padding: 0.4rem 0.6rem;
-      border-radius: var(--pg-radius-sm);
-      border: 1px solid var(--pg-border-strong);
-      background: var(--pg-surface);
-      color: var(--pg-text);
+      border-radius: var(--ex-radius-sm, 14px);
+      border: 1px solid var(--ex-border-strong, #d0c9bc);
+      background: var(--ex-surface, #ffffff);
+      color: var(--ex-text, #17191c);
       cursor: pointer;
     }
 
     .select-trigger:hover {
-      background: var(--pg-surface-2);
+      background: var(--ex-surface-2, #f2eee6);
     }
 
     .select-chevron {
       flex: none;
       width: 14px;
       height: 14px;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
       transition: transform 0.15s ease;
     }
 
@@ -166,10 +166,14 @@ interface Option {
       max-height: 260px;
       overflow-y: auto;
       padding: 4px;
-      background: var(--pg-surface);
-      border: 1px solid var(--pg-border);
-      border-radius: var(--pg-radius-sm);
-      box-shadow: var(--pg-shadow);
+      background: var(--ex-surface, #ffffff);
+      border: 1px solid var(--ex-border, #e5e0d6);
+      border-radius: var(--ex-radius-sm, 14px);
+      box-shadow: var(
+        --ex-shadow,
+        0 2px 4px rgba(0, 0, 0, 0.04),
+        0 20px 40px -18px rgba(0, 0, 0, 0.2)
+      );
     }
 
     .select-option {
@@ -182,19 +186,19 @@ interface Option {
       text-align: left;
       padding: 0.4rem 0.6rem;
       border: 0;
-      border-radius: var(--pg-radius-sm);
+      border-radius: var(--ex-radius-sm, 14px);
       background: transparent;
-      color: var(--pg-text);
+      color: var(--ex-text, #17191c);
       cursor: pointer;
     }
 
     .select-option[data-highlighted],
     .select-option:not([data-disabled]):hover {
-      background: var(--pg-surface-2);
+      background: var(--ex-surface-2, #f2eee6);
     }
 
     .select-option[data-state='checked'] {
-      color: var(--pg-primary);
+      color: var(--ex-accent, #0e7c6b);
       font-weight: 600;
     }
 
@@ -210,7 +214,7 @@ interface Option {
       justify-content: center;
       width: 1.1em;
       height: 1.1em;
-      color: var(--pg-primary);
+      color: var(--ex-accent, #0e7c6b);
     }
 
     .select-indicator[hidden] {
@@ -228,19 +232,19 @@ interface Option {
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     .select-separator {
       height: 1px;
       margin: 4px -1px;
       border: 0;
-      background: var(--pg-border);
+      background: var(--ex-border, #e5e0d6);
     }
 
     .select-pop-in {
       transform-origin: var(--for-floating-content-transform-origin, center);
-      animation: select-pop-in 0.2s var(--pg-ease-spring) both;
+      animation: select-pop-in 0.2s var(--ex-ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1)) both;
     }
 
     @keyframes select-pop-in {

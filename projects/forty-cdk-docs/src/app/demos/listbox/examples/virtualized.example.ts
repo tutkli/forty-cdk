@@ -65,14 +65,18 @@ import { injectVirtualizer } from 'forty-cdk/virtualization';
       margin: 0;
       padding: 5px;
       list-style: none;
-      background: var(--pg-surface);
-      border: 1px solid var(--pg-border);
-      border-radius: var(--pg-radius-sm);
-      box-shadow: var(--pg-shadow);
+      background: var(--ex-surface, #ffffff);
+      border: 1px solid var(--ex-border, #e5e0d6);
+      border-radius: var(--ex-radius-sm, 14px);
+      box-shadow: var(
+        --ex-shadow,
+        0 2px 4px rgba(0, 0, 0, 0.04),
+        0 20px 40px -18px rgba(0, 0, 0, 0.2)
+      );
     }
 
     .vlb:focus-visible {
-      outline: 2px solid var(--pg-primary);
+      outline: 2px solid var(--ex-accent, #0e7c6b);
       outline-offset: -2px;
     }
 
@@ -94,18 +98,18 @@ import { injectVirtualizer } from 'forty-cdk/virtualization';
       text-align: left;
       padding: 0 0.65rem;
       border: 0;
-      border-radius: var(--pg-radius-sm);
+      border-radius: var(--ex-radius-sm, 14px);
       background: transparent;
-      color: var(--pg-text);
+      color: var(--ex-text, #17191c);
       cursor: pointer;
     }
 
     .vlb-option[data-highlighted] {
-      background: var(--pg-surface-2);
+      background: var(--ex-surface-2, #f2eee6);
     }
 
     .vlb-option[data-state='checked'] {
-      color: var(--pg-primary);
+      color: var(--ex-accent, #0e7c6b);
       font-weight: 600;
     }
 
@@ -117,7 +121,7 @@ import { injectVirtualizer } from 'forty-cdk/virtualization';
       width: 1.1em;
       height: 1.1em;
       margin-left: auto;
-      color: var(--pg-primary);
+      color: var(--ex-accent, #0e7c6b);
     }
 
     .vlb-indicator svg {

@@ -72,21 +72,21 @@ function makePage(start: number, length: number): Activity[] {
 
     .status {
       margin: 0;
-      font-family: var(--pg-font-mono);
+      font-family: var(--ex-font-mono, ui-monospace, monospace);
       font-size: 0.78rem;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     .status b {
-      color: var(--pg-text);
+      color: var(--ex-text, #17191c);
       font-weight: 600;
     }
 
     .viewport {
       height: 360px;
-      border: 1px solid var(--pg-border);
-      border-radius: var(--pg-radius-sm);
-      background: var(--pg-surface);
+      border: 1px solid var(--ex-border, #e5e0d6);
+      border-radius: var(--ex-radius-sm, 14px);
+      background: var(--ex-surface, #ffffff);
     }
 
     .feed-row {
@@ -95,7 +95,7 @@ function makePage(start: number, length: number): Activity[] {
       gap: 0.7rem;
       height: 52px;
       padding: 0 0.85rem;
-      border-bottom: 1px solid var(--pg-border);
+      border-bottom: 1px solid var(--ex-border, #e5e0d6);
       font-size: 0.88rem;
       box-sizing: border-box;
     }
@@ -110,24 +110,24 @@ function makePage(start: number, length: number): Activity[] {
       border-radius: 50%;
       font-size: 0.78rem;
       font-weight: 700;
-      color: var(--pg-primary-contrast);
-      background: var(--pg-primary);
+      color: var(--ex-accent-contrast, #ffffff);
+      background: var(--ex-accent, #0e7c6b);
     }
 
     .feed-text {
       flex: 1;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     .feed-text b {
-      color: var(--pg-text);
+      color: var(--ex-text, #17191c);
     }
 
     .feed-id {
       flex: none;
-      font-family: var(--pg-font-mono);
+      font-family: var(--ex-font-mono, ui-monospace, monospace);
       font-size: 0.72rem;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
   `,
 })

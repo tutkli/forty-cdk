@@ -45,7 +45,7 @@ interface Account {
     .field-label-text {
       font-size: 0.9rem;
       font-weight: 600;
-      color: var(--pg-text);
+      color: var(--ex-text, #17191c);
     }
 
     .input {
@@ -53,21 +53,21 @@ interface Account {
       font: inherit;
       font-size: 0.9rem;
       padding: 0.5rem 0.7rem;
-      border-radius: var(--pg-radius-sm);
-      border: 1px solid var(--pg-border-strong);
-      background: var(--pg-surface);
-      color: var(--pg-text);
+      border-radius: var(--ex-radius-sm, 14px);
+      border: 1px solid var(--ex-border-strong, #d0c9bc);
+      background: var(--ex-surface, #ffffff);
+      color: var(--ex-text, #17191c);
     }
 
     .field[data-touched][data-invalid] .input {
-      border-color: var(--pg-danger);
+      border-color: var(--ex-danger, #b3261e);
     }
 
     .field-error {
       margin: 0;
       font-size: 0.85rem;
       font-weight: 500;
-      color: var(--pg-danger);
+      color: var(--ex-danger, #b3261e);
     }
   `,
 })

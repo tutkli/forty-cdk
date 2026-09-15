@@ -67,18 +67,18 @@ import {
       font-size: 1rem;
       font-variant-numeric: tabular-nums;
       padding: 0.5rem 0.7rem;
-      border: 1px solid var(--pg-border-strong);
-      border-radius: var(--pg-radius-sm);
-      background: var(--pg-surface);
-      color: var(--pg-text);
+      border: 1px solid var(--ex-border-strong, #d0c9bc);
+      border-radius: var(--ex-radius-sm, 14px);
+      background: var(--ex-surface, #ffffff);
+      color: var(--ex-text, #17191c);
       transition:
         border-color 0.15s ease,
         box-shadow 0.15s ease;
     }
 
     .range-field:focus-within {
-      border-color: var(--pg-primary);
-      box-shadow: 0 0 0 1px var(--pg-primary);
+      border-color: var(--ex-accent, #0e7c6b);
+      box-shadow: 0 0 0 1px var(--ex-accent, #0e7c6b);
     }
 
     .range-field[data-range-error] {
@@ -101,22 +101,22 @@ import {
     }
 
     .range-segment[data-placeholder] {
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     .range-segment[data-highlighted],
     .range-segment:focus {
-      background: var(--pg-primary);
-      color: var(--pg-primary-contrast);
+      background: var(--ex-accent, #0e7c6b);
+      color: var(--ex-accent-contrast, #ffffff);
     }
 
     .range-literal {
       padding: 0 0.05rem;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     .range-sep {
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     @media (prefers-reduced-motion: reduce) {

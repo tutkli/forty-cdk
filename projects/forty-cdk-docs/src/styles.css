@@ -35,6 +35,28 @@
   --pg-font-display: 'Bricolage Grotesque', 'Nunito', ui-sans-serif, system-ui, sans-serif;
   --pg-font-sans: 'Nunito', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --pg-font-mono: 'Space Mono', ui-monospace, 'SFMono-Regular', 'Cascadia Code', Menlo, monospace;
+  --ex-bg: var(--pg-bg);
+  --ex-surface: var(--pg-surface);
+  --ex-surface-2: var(--pg-surface-2);
+  --ex-border: var(--pg-border);
+  --ex-border-strong: var(--pg-border-strong);
+  --ex-text: var(--pg-text);
+  --ex-muted: var(--pg-text-muted);
+  --ex-accent: var(--pg-primary);
+  --ex-accent-hover: var(--pg-primary-hover);
+  --ex-accent-contrast: var(--pg-primary-contrast);
+  --ex-danger: var(--pg-danger);
+  --ex-danger-contrast: var(--pg-danger-contrast);
+  --ex-success: var(--pg-success);
+  --ex-warning: var(--pg-warning);
+  --ex-inverse-bg: var(--pg-tooltip-bg);
+  --ex-inverse-text: var(--pg-tooltip-fg);
+  --ex-radius-sm: var(--pg-radius-sm);
+  --ex-radius: var(--pg-radius);
+  --ex-radius-lg: var(--pg-radius-lg);
+  --ex-shadow: var(--pg-shadow);
+  --ex-ease-spring: var(--pg-ease-spring);
+  --ex-font-mono: var(--pg-font-mono);
 }
 
 [data-theme='dark'] {
@@ -62,6 +84,28 @@
   --pg-tooltip-bg: #e6e9ee;
   --pg-tooltip-fg: #0e1116;
   --pg-shadow: 0 2px 4px rgba(0, 0, 0, 0.3), 0 20px 40px -18px rgba(0, 0, 0, 0.6);
+  --ex-bg: var(--pg-bg);
+  --ex-surface: var(--pg-surface);
+  --ex-surface-2: var(--pg-surface-2);
+  --ex-border: var(--pg-border);
+  --ex-border-strong: var(--pg-border-strong);
+  --ex-text: var(--pg-text);
+  --ex-muted: var(--pg-text-muted);
+  --ex-accent: var(--pg-primary);
+  --ex-accent-hover: var(--pg-primary-hover);
+  --ex-accent-contrast: var(--pg-primary-contrast);
+  --ex-danger: var(--pg-danger);
+  --ex-danger-contrast: var(--pg-danger-contrast);
+  --ex-success: var(--pg-success);
+  --ex-warning: var(--pg-warning);
+  --ex-inverse-bg: var(--pg-tooltip-bg);
+  --ex-inverse-text: var(--pg-tooltip-fg);
+  --ex-radius-sm: var(--pg-radius-sm);
+  --ex-radius: var(--pg-radius);
+  --ex-radius-lg: var(--pg-radius-lg);
+  --ex-shadow: var(--pg-shadow);
+  --ex-ease-spring: var(--pg-ease-spring);
+  --ex-font-mono: var(--pg-font-mono);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -90,6 +134,28 @@
     --pg-tooltip-bg: #e6e9ee;
     --pg-tooltip-fg: #0e1116;
     --pg-shadow: 0 2px 4px rgba(0, 0, 0, 0.3), 0 20px 40px -18px rgba(0, 0, 0, 0.6);
+    --ex-bg: var(--pg-bg);
+    --ex-surface: var(--pg-surface);
+    --ex-surface-2: var(--pg-surface-2);
+    --ex-border: var(--pg-border);
+    --ex-border-strong: var(--pg-border-strong);
+    --ex-text: var(--pg-text);
+    --ex-muted: var(--pg-text-muted);
+    --ex-accent: var(--pg-primary);
+    --ex-accent-hover: var(--pg-primary-hover);
+    --ex-accent-contrast: var(--pg-primary-contrast);
+    --ex-danger: var(--pg-danger);
+    --ex-danger-contrast: var(--pg-danger-contrast);
+    --ex-success: var(--pg-success);
+    --ex-warning: var(--pg-warning);
+    --ex-inverse-bg: var(--pg-tooltip-bg);
+    --ex-inverse-text: var(--pg-tooltip-fg);
+    --ex-radius-sm: var(--pg-radius-sm);
+    --ex-radius: var(--pg-radius);
+    --ex-radius-lg: var(--pg-radius-lg);
+    --ex-shadow: var(--pg-shadow);
+    --ex-ease-spring: var(--pg-ease-spring);
+    --ex-font-mono: var(--pg-font-mono);
   }
 }
 

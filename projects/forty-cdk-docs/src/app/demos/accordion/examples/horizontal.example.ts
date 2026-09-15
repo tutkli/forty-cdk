@@ -50,9 +50,9 @@ interface AccordionEntry {
     .acc-item {
       flex: 1;
       min-width: 0;
-      background: var(--pg-surface);
-      border: 1px solid var(--pg-border);
-      border-radius: var(--pg-radius-sm);
+      background: var(--ex-surface, #ffffff);
+      border: 1px solid var(--ex-border, #e5e0d6);
+      border-radius: var(--ex-radius-sm, 14px);
       overflow: hidden;
     }
 
@@ -66,14 +66,14 @@ interface AccordionEntry {
       font: inherit;
       font-weight: 600;
       text-align: left;
-      color: var(--pg-text);
+      color: var(--ex-text, #17191c);
       background: transparent;
       border: 0;
       cursor: pointer;
     }
 
     .acc-trigger:hover {
-      background: var(--pg-surface-2);
+      background: var(--ex-surface-2, #f2eee6);
     }
 
     .acc-content {
@@ -93,7 +93,7 @@ interface AccordionEntry {
     .acc-inner p {
       margin: 0;
       padding: 0 1rem 0.9rem;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     @media (prefers-reduced-motion: reduce) {

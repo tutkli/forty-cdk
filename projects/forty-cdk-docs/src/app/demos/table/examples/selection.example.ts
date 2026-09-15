@@ -87,8 +87,8 @@ const PEOPLE: readonly Person[] = [
       width: min(560px, 100%);
       max-height: 300px;
       overflow: auto;
-      border: 1px solid var(--pg-border);
-      border-radius: var(--pg-radius-sm);
+      border: 1px solid var(--ex-border, #e5e0d6);
+      border-radius: var(--ex-radius-sm, 14px);
     }
 
     .tbl {
@@ -106,22 +106,22 @@ const PEOPLE: readonly Person[] = [
       position: sticky;
       top: 0;
       z-index: 1;
-      background: var(--pg-surface-2);
+      background: var(--ex-surface-2, #f2eee6);
       font-weight: 700;
     }
 
     .tbl-row:not(.tbl-head):hover {
-      background: var(--pg-surface-2);
+      background: var(--ex-surface-2, #f2eee6);
       cursor: pointer;
     }
 
     .tbl-row[data-selected] {
-      background: color-mix(in srgb, var(--pg-primary) 12%, transparent);
+      background: color-mix(in srgb, var(--ex-accent, #0e7c6b) 12%, transparent);
     }
 
     .tbl-cell {
       padding: 0.55rem 0.75rem;
-      border-bottom: 1px solid var(--pg-border);
+      border-bottom: 1px solid var(--ex-border, #e5e0d6);
       outline: none;
       white-space: nowrap;
       overflow: hidden;
@@ -129,7 +129,7 @@ const PEOPLE: readonly Person[] = [
     }
 
     .tbl-head .tbl-cell {
-      border-bottom: 2px solid var(--pg-border-strong);
+      border-bottom: 2px solid var(--ex-border-strong, #d0c9bc);
     }
 
     .tbl-row:not(.tbl-head):last-child .tbl-cell {
@@ -144,7 +144,7 @@ const PEOPLE: readonly Person[] = [
     }
 
     .tbl-cell:focus-visible {
-      outline: 2px solid var(--pg-primary);
+      outline: 2px solid var(--ex-accent, #0e7c6b);
       outline-offset: -2px;
     }
 
@@ -154,9 +154,9 @@ const PEOPLE: readonly Person[] = [
       justify-content: center;
       width: 1.05rem;
       height: 1.05rem;
-      border: 1.5px solid var(--pg-border-strong);
+      border: 1.5px solid var(--ex-border-strong, #d0c9bc);
       border-radius: 5px;
-      background: var(--pg-surface);
+      background: var(--ex-surface, #ffffff);
       cursor: pointer;
     }
 
@@ -165,21 +165,21 @@ const PEOPLE: readonly Person[] = [
     }
 
     .tbl-check--all:focus-visible {
-      outline: 2px solid var(--pg-primary);
+      outline: 2px solid var(--ex-accent, #0e7c6b);
       outline-offset: 2px;
     }
 
     .tbl-check[data-state='checked'],
     .tbl-check[data-state='indeterminate'] {
-      border-color: var(--pg-primary);
-      background: var(--pg-primary);
+      border-color: var(--ex-accent, #0e7c6b);
+      background: var(--ex-accent, #0e7c6b);
     }
 
     .tbl-check[data-state='checked']::after {
       content: '✓';
       font-size: 0.7rem;
       font-weight: 700;
-      color: var(--pg-primary-contrast);
+      color: var(--ex-accent-contrast, #ffffff);
       line-height: 1;
     }
 
@@ -188,7 +188,7 @@ const PEOPLE: readonly Person[] = [
       width: 0.6rem;
       height: 2px;
       border-radius: 1px;
-      background: var(--pg-primary-contrast);
+      background: var(--ex-accent-contrast, #ffffff);
     }
   `,
 })

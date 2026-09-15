@@ -42,7 +42,7 @@ interface TabEntry {
     .tb-list {
       display: flex;
       gap: 0.25rem;
-      border-bottom: 1px solid var(--pg-border);
+      border-bottom: 1px solid var(--ex-border, #e5e0d6);
     }
 
     .tb-trigger {
@@ -50,21 +50,21 @@ interface TabEntry {
       font: inherit;
       font-weight: 600;
       padding: 0.55rem 0.85rem;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
       background: transparent;
       border: 0;
-      border-radius: var(--pg-radius-sm);
+      border-radius: var(--ex-radius-sm, 14px);
       cursor: pointer;
       white-space: nowrap;
     }
 
     .tb-trigger:hover {
-      color: var(--pg-text);
-      background: var(--pg-surface-2);
+      color: var(--ex-text, #17191c);
+      background: var(--ex-surface-2, #f2eee6);
     }
 
     .tb-trigger[data-state='active'] {
-      color: var(--pg-primary);
+      color: var(--ex-accent, #0e7c6b);
     }
 
     .tb-trigger[data-state='active']::after {
@@ -74,12 +74,12 @@ interface TabEntry {
       bottom: -1px;
       height: 2px;
       border-radius: 2px;
-      background: var(--pg-primary);
+      background: var(--ex-accent, #0e7c6b);
     }
 
     .tb-content {
       min-height: 3rem;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     .tb-content[data-state='inactive'] {

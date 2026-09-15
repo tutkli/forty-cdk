@@ -8,6 +8,11 @@ If you are styling an overlay (Popover, Dialog, Menu, …) start with
 [Your first overlay](./your-first-overlay.md) — it walks one from empty markup to
 styled-and-animated. This page is the conceptual umbrella underneath it.
 
+> **Copying an example from these docs:** every example styles itself with `--ex-*`
+> properties that always carry a literal fallback — `var(--ex-accent, #0e7c6b)` — so the
+> file renders on its own the moment you paste it, and defining that same `--ex-*` set on
+> your `:root` re-themes every example you have copied.
+
 ---
 
 ## The three styling hooks

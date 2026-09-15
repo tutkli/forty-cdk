@@ -176,8 +176,8 @@ interface FormStep {
       padding: 0.3rem;
       background: transparent;
       border: 0;
-      border-radius: var(--pg-radius-sm);
-      color: var(--pg-text-muted);
+      border-radius: var(--ex-radius-sm, 14px);
+      color: var(--ex-muted, #585d66);
       cursor: pointer;
       white-space: nowrap;
     }
@@ -188,11 +188,11 @@ interface FormStep {
 
     .stp-trigger[data-state='active'],
     .stp-trigger[data-state='completed'] {
-      color: var(--pg-text);
+      color: var(--ex-text, #17191c);
     }
 
     .stp-trigger[data-state='error'] {
-      color: var(--pg-danger);
+      color: var(--ex-danger, #b3261e);
     }
 
     .stp-indicator {
@@ -203,27 +203,27 @@ interface FormStep {
       width: 1.9rem;
       height: 1.9rem;
       border-radius: 50%;
-      border: 2px solid var(--pg-border-strong);
-      background: var(--pg-surface);
+      border: 2px solid var(--ex-border-strong, #d0c9bc);
+      background: var(--ex-surface, #ffffff);
       font-size: 0.8rem;
       font-weight: 700;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     .stp-indicator[data-state='active'] {
-      border-color: var(--pg-primary);
-      color: var(--pg-primary);
+      border-color: var(--ex-accent, #0e7c6b);
+      color: var(--ex-accent, #0e7c6b);
     }
 
     .stp-indicator[data-state='completed'] {
-      border-color: var(--pg-primary);
-      background: var(--pg-primary);
-      color: var(--pg-primary-contrast);
+      border-color: var(--ex-accent, #0e7c6b);
+      background: var(--ex-accent, #0e7c6b);
+      color: var(--ex-accent-contrast, #ffffff);
     }
 
     .stp-indicator[data-state='error'] {
-      border-color: var(--pg-danger);
-      background: var(--pg-danger);
+      border-color: var(--ex-danger, #b3261e);
+      background: var(--ex-danger, #b3261e);
       color: #fff;
     }
 
@@ -237,11 +237,11 @@ interface FormStep {
       height: 2px;
       min-width: 1rem;
       border-radius: 2px;
-      background: var(--pg-border);
+      background: var(--ex-border, #e5e0d6);
     }
 
     .stp-sep[data-state='completed'] {
-      background: var(--pg-primary);
+      background: var(--ex-accent, #0e7c6b);
     }
 
     .stp-body {
@@ -256,7 +256,7 @@ interface FormStep {
     }
 
     .stp-complete {
-      color: var(--pg-text);
+      color: var(--ex-text, #17191c);
     }
 
     .stp-complete p {
@@ -279,7 +279,7 @@ interface FormStep {
     .field-label-text {
       font-size: 0.9rem;
       font-weight: 600;
-      color: var(--pg-text);
+      color: var(--ex-text, #17191c);
     }
 
     .input {
@@ -287,21 +287,21 @@ interface FormStep {
       font: inherit;
       font-size: 0.9rem;
       padding: 0.5rem 0.7rem;
-      border-radius: var(--pg-radius-sm);
-      border: 1px solid var(--pg-border-strong);
-      background: var(--pg-surface);
-      color: var(--pg-text);
+      border-radius: var(--ex-radius-sm, 14px);
+      border: 1px solid var(--ex-border-strong, #d0c9bc);
+      background: var(--ex-surface, #ffffff);
+      color: var(--ex-text, #17191c);
     }
 
     .field[data-touched][data-invalid] .input {
-      border-color: var(--pg-danger);
+      border-color: var(--ex-danger, #b3261e);
     }
 
     .field-error {
       margin: 0;
       font-size: 0.85rem;
       font-weight: 500;
-      color: var(--pg-danger);
+      color: var(--ex-danger, #b3261e);
     }
 
     .stp-nav {
@@ -315,15 +315,15 @@ interface FormStep {
       font-weight: 600;
       font-size: 0.9rem;
       padding: 0.5rem 0.9rem;
-      border-radius: var(--pg-radius-sm);
-      border: 1px solid var(--pg-border-strong);
-      background: var(--pg-surface);
-      color: var(--pg-text);
+      border-radius: var(--ex-radius-sm, 14px);
+      border: 1px solid var(--ex-border-strong, #d0c9bc);
+      background: var(--ex-surface, #ffffff);
+      color: var(--ex-text, #17191c);
       cursor: pointer;
     }
 
     .btn:hover {
-      background: var(--pg-surface-2);
+      background: var(--ex-surface-2, #f2eee6);
     }
 
     .btn[aria-disabled='true'] {
@@ -333,14 +333,14 @@ interface FormStep {
 
     .btn-next,
     .btn-next:hover {
-      background: var(--pg-primary);
-      border-color: var(--pg-primary);
-      color: var(--pg-primary-contrast);
+      background: var(--ex-accent, #0e7c6b);
+      border-color: var(--ex-accent, #0e7c6b);
+      color: var(--ex-accent-contrast, #ffffff);
     }
 
     .btn-next:hover {
-      background: var(--pg-primary-hover);
-      border-color: var(--pg-primary-hover);
+      background: var(--ex-accent-hover, #0a5a4d);
+      border-color: var(--ex-accent-hover, #0a5a4d);
     }
   `,
 })

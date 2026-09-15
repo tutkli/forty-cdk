@@ -56,16 +56,20 @@ interface Task {
       align-items: center;
       gap: 0.6rem;
       padding: 0.7rem 0.85rem;
-      background: var(--pg-surface);
-      border: 1px solid var(--pg-border-strong);
-      border-radius: var(--pg-radius-sm);
-      box-shadow: var(--pg-shadow);
+      background: var(--ex-surface, #ffffff);
+      border: 1px solid var(--ex-border-strong, #d0c9bc);
+      border-radius: var(--ex-radius-sm, 14px);
+      box-shadow: var(
+        --ex-shadow,
+        0 2px 4px rgba(0, 0, 0, 0.04),
+        0 20px 40px -18px rgba(0, 0, 0, 0.2)
+      );
       font-size: 0.9rem;
     }
 
     .handle {
       flex: none;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
       cursor: grab;
       line-height: 1;
     }
@@ -84,9 +88,9 @@ interface Task {
 
     .placeholder {
       height: 2.9rem;
-      border: 2px dashed var(--pg-primary);
-      border-radius: var(--pg-radius-sm);
-      background: color-mix(in srgb, var(--pg-primary) 10%, transparent);
+      border: 2px dashed var(--ex-accent, #0e7c6b);
+      border-radius: var(--ex-radius-sm, 14px);
+      background: color-mix(in srgb, var(--ex-accent, #0e7c6b) 10%, transparent);
     }
 
     .item[data-drag-animating] {

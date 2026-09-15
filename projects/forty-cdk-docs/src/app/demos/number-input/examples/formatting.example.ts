@@ -34,10 +34,10 @@ import { ForNumberInput } from 'forty-cdk/number-input';
       width: 100%;
       font: inherit;
       padding: 0.5rem 0.7rem;
-      border-radius: var(--pg-radius-sm);
-      border: 1px solid var(--pg-border-strong);
-      background: var(--pg-surface);
-      color: var(--pg-text);
+      border-radius: var(--ex-radius-sm, 14px);
+      border: 1px solid var(--ex-border-strong, #d0c9bc);
+      background: var(--ex-surface, #ffffff);
+      color: var(--ex-text, #17191c);
     }
 
     .num {
@@ -48,7 +48,7 @@ import { ForNumberInput } from 'forty-cdk/number-input';
     .hint {
       margin: 0;
       font-size: 0.78rem;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
   `,
 })

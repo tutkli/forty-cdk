@@ -69,7 +69,7 @@ interface Topping {
       border: 0;
       background: transparent;
       font: inherit;
-      color: var(--pg-text);
+      color: var(--ex-text, #17191c);
       cursor: pointer;
     }
 
@@ -79,9 +79,9 @@ interface Topping {
       height: 22px;
       display: grid;
       place-items: center;
-      border: 2px solid var(--pg-border-strong);
+      border: 2px solid var(--ex-border-strong, #d0c9bc);
       border-radius: 6px;
-      background: var(--pg-surface);
+      background: var(--ex-surface, #ffffff);
       transition:
         background 0.15s ease,
         border-color 0.15s ease;
@@ -89,8 +89,8 @@ interface Topping {
 
     .cb-row[data-state='checked'] .cb,
     .cb-row[data-state='indeterminate'] .cb {
-      background: var(--pg-primary);
-      border-color: var(--pg-primary);
+      background: var(--ex-accent, #0e7c6b);
+      border-color: var(--ex-accent, #0e7c6b);
     }
 
     .cb-check,
@@ -101,7 +101,7 @@ interface Topping {
     .cb-check {
       width: 12px;
       height: 12px;
-      border: solid var(--pg-primary-contrast);
+      border: solid var(--ex-accent-contrast, #ffffff);
       border-width: 0 2.5px 2.5px 0;
       transform: rotate(45deg) translate(-1px, -1px);
     }
@@ -114,7 +114,7 @@ interface Topping {
       width: 12px;
       height: 2px;
       border-radius: 1px;
-      background: var(--pg-primary-contrast);
+      background: var(--ex-accent-contrast, #ffffff);
     }
 
     .cb-row[data-state='indeterminate'] .cb-dash {

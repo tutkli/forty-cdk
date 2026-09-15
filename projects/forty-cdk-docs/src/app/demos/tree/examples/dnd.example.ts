@@ -76,7 +76,7 @@ interface TreeNodeData {
       align-items: center;
       gap: 0.45rem;
       padding: 0.4rem 0.55rem;
-      border-radius: var(--pg-radius-sm);
+      border-radius: var(--ex-radius-sm, 14px);
       font-size: 0.875rem;
       cursor: pointer;
       user-select: none;
@@ -87,17 +87,17 @@ interface TreeNodeData {
     }
 
     .tree-item:focus-visible > .tree-label {
-      outline: 2px solid var(--pg-primary);
+      outline: 2px solid var(--ex-accent, #0e7c6b);
       outline-offset: -2px;
     }
 
     .tree-label:hover,
     .tree-item[data-highlighted] > .tree-label {
-      background: var(--pg-surface-2);
+      background: var(--ex-surface-2, #f2eee6);
     }
 
     .tree-item[data-selected] > .tree-label {
-      color: var(--pg-primary);
+      color: var(--ex-accent, #0e7c6b);
       font-weight: 600;
     }
 
@@ -107,7 +107,7 @@ interface TreeNodeData {
       align-items: center;
       justify-content: center;
       width: 1.05rem;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
       font-size: 0.85rem;
       line-height: 1;
       cursor: grab;
@@ -127,7 +127,7 @@ interface TreeNodeData {
       inset-inline-end: 0;
       height: 2px;
       border-radius: 1px;
-      background: var(--pg-primary);
+      background: var(--ex-accent, #0e7c6b);
       pointer-events: none;
     }
 
@@ -149,7 +149,7 @@ interface TreeNodeData {
       padding: 0;
       border: 0;
       background: transparent;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
       font-size: 0.8rem;
       cursor: pointer;
     }
@@ -260,11 +260,15 @@ const INITIAL_ROOTS: readonly TreeNodeData[] = [
       margin: 0;
       padding: 6px;
       list-style: none;
-      background: var(--pg-surface);
-      border: 1px solid var(--pg-border);
-      border-radius: var(--pg-radius-sm);
-      box-shadow: var(--pg-shadow);
-      color: var(--pg-text);
+      background: var(--ex-surface, #ffffff);
+      border: 1px solid var(--ex-border, #e5e0d6);
+      border-radius: var(--ex-radius-sm, 14px);
+      box-shadow: var(
+        --ex-shadow,
+        0 2px 4px rgba(0, 0, 0, 0.04),
+        0 20px 40px -18px rgba(0, 0, 0, 0.2)
+      );
+      color: var(--ex-text, #17191c);
     }
 
     .reset {
@@ -273,15 +277,15 @@ const INITIAL_ROOTS: readonly TreeNodeData[] = [
       font-weight: 600;
       font-size: 0.9rem;
       padding: 0.5rem 0.9rem;
-      border-radius: var(--pg-radius-sm);
-      border: 1px solid var(--pg-border-strong);
-      background: var(--pg-surface);
-      color: var(--pg-text);
+      border-radius: var(--ex-radius-sm, 14px);
+      border: 1px solid var(--ex-border-strong, #d0c9bc);
+      background: var(--ex-surface, #ffffff);
+      color: var(--ex-text, #17191c);
       cursor: pointer;
     }
 
     .reset:hover {
-      background: var(--pg-surface-2);
+      background: var(--ex-surface-2, #f2eee6);
     }
   `,
 })

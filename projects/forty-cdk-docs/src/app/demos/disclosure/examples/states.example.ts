@@ -61,13 +61,13 @@ import { ForDisclosure, ForDisclosureContent, ForDisclosureTrigger } from 'forty
       font-weight: 700;
       letter-spacing: 0.06em;
       text-transform: uppercase;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     .dis {
-      background: var(--pg-surface);
-      border: 1px solid var(--pg-border);
-      border-radius: var(--pg-radius);
+      background: var(--ex-surface, #ffffff);
+      border: 1px solid var(--ex-border, #e5e0d6);
+      border-radius: var(--ex-radius, 22px);
       corner-shape: squircle;
       overflow: hidden;
     }
@@ -86,14 +86,14 @@ import { ForDisclosure, ForDisclosureContent, ForDisclosureTrigger } from 'forty
       font: inherit;
       font-weight: 600;
       text-align: left;
-      color: var(--pg-text);
+      color: var(--ex-text, #17191c);
       background: transparent;
       border: 0;
       cursor: pointer;
     }
 
     .dis-trigger:hover:not([data-disabled]) {
-      background: var(--pg-surface-2);
+      background: var(--ex-surface-2, #f2eee6);
     }
 
     .dis-trigger[data-disabled] {
@@ -104,8 +104,8 @@ import { ForDisclosure, ForDisclosureContent, ForDisclosureTrigger } from 'forty
       flex: none;
       width: 10px;
       height: 10px;
-      border-right: 2px solid var(--pg-text-muted);
-      border-bottom: 2px solid var(--pg-text-muted);
+      border-right: 2px solid var(--ex-muted, #585d66);
+      border-bottom: 2px solid var(--ex-muted, #585d66);
       transform: rotate(45deg);
       transition: transform 0.2s ease;
     }
@@ -131,7 +131,7 @@ import { ForDisclosure, ForDisclosureContent, ForDisclosureTrigger } from 'forty
     .dis-inner p {
       margin: 0;
       padding: 0 1rem 0.95rem;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     @media (prefers-reduced-motion: reduce) {

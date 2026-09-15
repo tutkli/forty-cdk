@@ -66,10 +66,10 @@ interface FolderEntry {
       gap: 0.5rem;
       padding: 1.75rem 1.5rem;
       text-align: center;
-      color: var(--pg-text-muted);
-      background: var(--pg-surface);
-      border: 2px dashed var(--pg-border-strong);
-      border-radius: var(--pg-radius);
+      color: var(--ex-muted, #585d66);
+      background: var(--ex-surface, #ffffff);
+      border: 2px dashed var(--ex-border-strong, #d0c9bc);
+      border-radius: var(--ex-radius, 22px);
       corner-shape: squircle;
     }
 
@@ -80,7 +80,7 @@ interface FolderEntry {
     .zone-btn {
       font: inherit;
       font-weight: 700;
-      color: var(--pg-primary);
+      color: var(--ex-accent, #0e7c6b);
       background: none;
       border: 0;
       padding: 0;
@@ -95,7 +95,7 @@ interface FolderEntry {
 
     .tree-head {
       font-size: 0.85rem;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     .tree {
@@ -105,23 +105,23 @@ interface FolderEntry {
       margin: 0;
       padding: 0.6rem 0.75rem;
       list-style: none;
-      background: var(--pg-surface-2);
-      border: 1px solid var(--pg-border);
-      border-radius: var(--pg-radius-sm);
+      background: var(--ex-surface-2, #f2eee6);
+      border: 1px solid var(--ex-border, #e5e0d6);
+      border-radius: var(--ex-radius-sm, 14px);
     }
 
     .tree-row,
     .tree-more {
-      font-family: var(--pg-font-mono);
+      font-family: var(--ex-font-mono, ui-monospace, monospace);
       font-size: 0.76rem;
-      color: var(--pg-text);
+      color: var(--ex-text, #17191c);
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
 
     .tree-more {
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
   `,
 })

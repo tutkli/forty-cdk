@@ -74,7 +74,7 @@ const PRIMITIVES = [
       left: 0.7rem;
       width: 18px;
       height: 18px;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
       pointer-events: none;
     }
 
@@ -83,16 +83,16 @@ const PRIMITIVES = [
       font: inherit;
       font-size: 0.95rem;
       padding: 0.6rem 2.2rem;
-      color: var(--pg-text);
-      background: var(--pg-surface);
-      border: 1px solid var(--pg-border-strong);
-      border-radius: var(--pg-radius-sm);
+      color: var(--ex-text, #17191c);
+      background: var(--ex-surface, #ffffff);
+      border: 1px solid var(--ex-border-strong, #d0c9bc);
+      border-radius: var(--ex-radius-sm, 14px);
       outline: none;
     }
 
     .search-input:focus-visible {
-      border-color: var(--pg-primary);
-      box-shadow: 0 0 0 3px color-mix(in srgb, var(--pg-primary) 35%, transparent);
+      border-color: var(--ex-accent, #0e7c6b);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--ex-accent, #0e7c6b) 35%, transparent);
     }
 
     .search-clear {
@@ -106,15 +106,15 @@ const PRIMITIVES = [
       font: inherit;
       font-size: 1.1rem;
       line-height: 1;
-      color: var(--pg-text-muted);
-      background: var(--pg-surface-2);
+      color: var(--ex-muted, #585d66);
+      background: var(--ex-surface-2, #f2eee6);
       border: 0;
       border-radius: 50%;
       cursor: pointer;
     }
 
     .search-clear:hover {
-      color: var(--pg-text);
+      color: var(--ex-text, #17191c);
     }
 
     .results {
@@ -129,16 +129,16 @@ const PRIMITIVES = [
 
     .results li {
       padding: 0.4rem 0.6rem;
-      border-radius: var(--pg-radius-sm);
-      background: var(--pg-surface);
-      border: 1px solid var(--pg-border);
-      color: var(--pg-text);
+      border-radius: var(--ex-radius-sm, 14px);
+      background: var(--ex-surface, #ffffff);
+      border: 1px solid var(--ex-border, #e5e0d6);
+      color: var(--ex-text, #17191c);
     }
 
     .results .empty {
       background: transparent;
       border-style: dashed;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
   `,
 })

@@ -189,8 +189,8 @@ const FALLBACK_WIDTH: Record<PersonColumn, number> = {
       height: 400px;
       overflow: auto;
       position: relative;
-      border: 1px solid var(--pg-border);
-      border-radius: var(--pg-radius-sm);
+      border: 1px solid var(--ex-border, #e5e0d6);
+      border-radius: var(--ex-radius-sm, 14px);
       font-size: 0.88rem;
     }
 
@@ -202,7 +202,7 @@ const FALLBACK_WIDTH: Record<PersonColumn, number> = {
       position: sticky;
       top: 0;
       z-index: 1;
-      background: var(--pg-surface-2);
+      background: var(--ex-surface-2, #f2eee6);
       font-weight: 700;
     }
 
@@ -217,13 +217,13 @@ const FALLBACK_WIDTH: Record<PersonColumn, number> = {
     }
 
     .ctbl-data-row[data-selected] {
-      background: color-mix(in srgb, var(--pg-primary) 12%, transparent);
+      background: color-mix(in srgb, var(--ex-accent, #0e7c6b) 12%, transparent);
     }
 
     .ctbl-cell {
       position: relative;
       padding: 0.5rem 0.75rem;
-      border-bottom: 1px solid var(--pg-border);
+      border-bottom: 1px solid var(--ex-border, #e5e0d6);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -231,14 +231,14 @@ const FALLBACK_WIDTH: Record<PersonColumn, number> = {
     }
 
     .ctbl-head .ctbl-cell {
-      border-bottom: 2px solid var(--pg-border-strong);
+      border-bottom: 2px solid var(--ex-border-strong, #d0c9bc);
     }
 
     .ctbl-cell[data-highlighted],
     .ctbl-cell:focus-visible {
-      outline: 2px solid var(--pg-primary);
+      outline: 2px solid var(--ex-accent, #0e7c6b);
       outline-offset: -2px;
-      background: color-mix(in srgb, var(--pg-primary) 10%, transparent);
+      background: color-mix(in srgb, var(--ex-accent, #0e7c6b) 10%, transparent);
     }
 
     .ctbl-sel {
@@ -254,23 +254,23 @@ const FALLBACK_WIDTH: Record<PersonColumn, number> = {
       justify-content: center;
       width: 1.05rem;
       height: 1.05rem;
-      border: 1.5px solid var(--pg-border-strong);
+      border: 1.5px solid var(--ex-border-strong, #d0c9bc);
       border-radius: 5px;
-      background: var(--pg-surface);
+      background: var(--ex-surface, #ffffff);
       cursor: pointer;
     }
 
     .ctbl-check[data-state='checked'],
     .ctbl-check[data-state='indeterminate'] {
-      border-color: var(--pg-primary);
-      background: var(--pg-primary);
+      border-color: var(--ex-accent, #0e7c6b);
+      background: var(--ex-accent, #0e7c6b);
     }
 
     .ctbl-check[data-state='checked']::after {
       content: '✓';
       font-size: 0.7rem;
       font-weight: 700;
-      color: var(--pg-primary-contrast);
+      color: var(--ex-accent-contrast, #ffffff);
       line-height: 1;
     }
 
@@ -279,7 +279,7 @@ const FALLBACK_WIDTH: Record<PersonColumn, number> = {
       width: 0.6rem;
       height: 2px;
       border-radius: 1px;
-      background: var(--pg-primary-contrast);
+      background: var(--ex-accent-contrast, #ffffff);
     }
 
     .ctbl-head-cell {
@@ -303,17 +303,17 @@ const FALLBACK_WIDTH: Record<PersonColumn, number> = {
     .ctbl-head-cell[data-sorted='ascending'] .ctbl-sort-label::after {
       content: ' ▲';
       opacity: 1;
-      color: var(--pg-primary);
+      color: var(--ex-accent, #0e7c6b);
     }
 
     .ctbl-head-cell[data-sorted='descending'] .ctbl-sort-label::after {
       content: ' ▼';
       opacity: 1;
-      color: var(--pg-primary);
+      color: var(--ex-accent, #0e7c6b);
     }
 
     .ctbl-grip {
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
       font-size: 0.85rem;
       line-height: 1;
     }
@@ -343,12 +343,12 @@ const FALLBACK_WIDTH: Record<PersonColumn, number> = {
       width: 2px;
       height: 60%;
       border-radius: 1px;
-      background: var(--pg-border-strong);
+      background: var(--ex-border-strong, #d0c9bc);
     }
 
     .ctbl-resizer:hover::before,
     .ctbl-resizer[data-resizing]::before {
-      background: var(--pg-primary);
+      background: var(--ex-accent, #0e7c6b);
     }
 
     .ctbl-ph {
@@ -356,19 +356,19 @@ const FALLBACK_WIDTH: Record<PersonColumn, number> = {
       height: 100%;
       min-height: 2rem;
       box-sizing: border-box;
-      border: 2px dashed var(--pg-primary);
-      border-radius: var(--pg-radius-sm);
-      background: color-mix(in srgb, var(--pg-primary) 10%, transparent);
+      border: 2px dashed var(--ex-accent, #0e7c6b);
+      border-radius: var(--ex-radius-sm, 14px);
+      background: color-mix(in srgb, var(--ex-accent, #0e7c6b) 10%, transparent);
     }
 
     .ctbl-status {
       margin: 0;
       font-size: 0.82rem;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     .ctbl-status b {
-      color: var(--pg-text);
+      color: var(--ex-text, #17191c);
       font-weight: 600;
     }
   `,

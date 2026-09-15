@@ -49,12 +49,16 @@ type ConfirmResult = 'confirm' | 'cancel';
       transform: translate(-50%, -50%);
       width: min(440px, calc(100vw - 2rem));
       padding: 1.5rem;
-      background: var(--pg-surface);
-      color: var(--pg-text);
-      border: 1px solid var(--pg-border);
-      border-radius: var(--pg-radius-lg);
+      background: var(--ex-surface, #ffffff);
+      color: var(--ex-text, #17191c);
+      border: 1px solid var(--ex-border, #e5e0d6);
+      border-radius: var(--ex-radius-lg, 34px);
       corner-shape: squircle;
-      box-shadow: var(--pg-shadow);
+      box-shadow: var(
+        --ex-shadow,
+        0 2px 4px rgba(0, 0, 0, 0.04),
+        0 20px 40px -18px rgba(0, 0, 0, 0.2)
+      );
     }
 
     .programmatic-dialog h2 {
@@ -64,7 +68,7 @@ type ConfirmResult = 'confirm' | 'cancel';
 
     .programmatic-dialog p {
       margin: 0 0 1.5rem;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     .programmatic-backdrop {
@@ -87,22 +91,22 @@ type ConfirmResult = 'confirm' | 'cancel';
       font-weight: 600;
       font-size: 0.9rem;
       padding: 0.5rem 0.9rem;
-      border-radius: var(--pg-radius-sm);
-      border: 1px solid var(--pg-border-strong);
-      background: var(--pg-surface);
-      color: var(--pg-text);
+      border-radius: var(--ex-radius-sm, 14px);
+      border: 1px solid var(--ex-border-strong, #d0c9bc);
+      background: var(--ex-surface, #ffffff);
+      color: var(--ex-text, #17191c);
       cursor: pointer;
     }
 
     .programmatic-btn:hover {
-      background: var(--pg-surface-2);
+      background: var(--ex-surface-2, #f2eee6);
     }
 
     .programmatic-btn--danger,
     .programmatic-btn--danger:hover {
-      background: var(--pg-danger);
-      border-color: var(--pg-danger);
-      color: var(--pg-danger-contrast);
+      background: var(--ex-danger, #b3261e);
+      border-color: var(--ex-danger, #b3261e);
+      color: var(--ex-danger-contrast, #ffffff);
     }
 
     @keyframes programmatic-pop {
@@ -132,7 +136,8 @@ type ConfirmResult = 'confirm' | 'cancel';
     }
 
     .programmatic-dialog--pop {
-      animation: programmatic-pop 0.22s var(--pg-ease-spring) both;
+      animation: programmatic-pop 0.22s var(--ex-ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1))
+        both;
     }
 
     .programmatic-out {
@@ -183,10 +188,10 @@ class ConfirmDialog {
       font-weight: 600;
       font-size: 0.9rem;
       padding: 0.5rem 0.9rem;
-      border-radius: var(--pg-radius-sm);
-      border: 1px solid var(--pg-danger);
-      background: var(--pg-danger);
-      color: var(--pg-danger-contrast);
+      border-radius: var(--ex-radius-sm, 14px);
+      border: 1px solid var(--ex-danger, #b3261e);
+      background: var(--ex-danger, #b3261e);
+      color: var(--ex-danger-contrast, #ffffff);
       cursor: pointer;
     }
   `,

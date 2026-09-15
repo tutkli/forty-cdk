@@ -52,9 +52,9 @@ type TailwindName = keyof typeof forBreakpointsTailwind;
       flex-direction: column;
       gap: 0.2rem;
       padding: 1rem 1.1rem;
-      border: 1px solid var(--pg-border);
-      border-radius: var(--pg-radius-sm);
-      background: var(--pg-surface);
+      border: 1px solid var(--ex-border, #e5e0d6);
+      border-radius: var(--ex-radius-sm, 14px);
+      background: var(--ex-surface, #ffffff);
     }
 
     .bp-readout-label {
@@ -62,21 +62,21 @@ type TailwindName = keyof typeof forBreakpointsTailwind;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.08em;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     .bp-active {
-      font-family: var(--pg-font-mono);
+      font-family: var(--ex-font-mono, ui-monospace, monospace);
       font-size: 1.9rem;
       font-weight: 700;
       line-height: 1.1;
-      color: var(--pg-primary);
+      color: var(--ex-accent, #0e7c6b);
     }
 
     .bp-width {
-      font-family: var(--pg-font-mono);
+      font-family: var(--ex-font-mono, ui-monospace, monospace);
       font-size: 0.78rem;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     .bp-grid {
@@ -93,9 +93,9 @@ type TailwindName = keyof typeof forBreakpointsTailwind;
       align-items: center;
       gap: 0.75rem;
       padding: 0.55rem 0.85rem;
-      border: 1px solid var(--pg-border);
-      border-radius: var(--pg-radius-sm);
-      background: var(--pg-surface);
+      border: 1px solid var(--ex-border, #e5e0d6);
+      border-radius: var(--ex-radius-sm, 14px);
+      background: var(--ex-surface, #ffffff);
       opacity: 0.5;
       transition:
         opacity 0.15s ease,
@@ -104,20 +104,20 @@ type TailwindName = keyof typeof forBreakpointsTailwind;
 
     .bp-cell--on {
       opacity: 1;
-      border-color: var(--pg-primary);
+      border-color: var(--ex-accent, #0e7c6b);
     }
 
     .bp-name {
       flex: none;
       width: 3rem;
-      font-family: var(--pg-font-mono);
+      font-family: var(--ex-font-mono, ui-monospace, monospace);
       font-weight: 700;
     }
 
     .bp-min {
       flex: 1;
       font-size: 0.82rem;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     .bp-flags {
@@ -129,16 +129,16 @@ type TailwindName = keyof typeof forBreakpointsTailwind;
     .bp-flag {
       padding: 0.12rem 0.5rem;
       border-radius: 999px;
-      font-family: var(--pg-font-mono);
+      font-family: var(--ex-font-mono, ui-monospace, monospace);
       font-size: 0.7rem;
       font-weight: 700;
-      background: var(--pg-surface-2);
-      color: var(--pg-text-muted);
+      background: var(--ex-surface-2, #f2eee6);
+      color: var(--ex-muted, #585d66);
     }
 
     .bp-flag--on {
-      background: color-mix(in srgb, var(--pg-primary) 16%, transparent);
-      color: var(--pg-primary);
+      background: color-mix(in srgb, var(--ex-accent, #0e7c6b) 16%, transparent);
+      color: var(--ex-accent, #0e7c6b);
     }
 
     @media (prefers-reduced-motion: reduce) {

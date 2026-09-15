@@ -56,7 +56,7 @@ import { ForInput } from 'forty-cdk/input';
     .row-label {
       font-size: 0.85rem;
       font-weight: 600;
-      color: var(--pg-text);
+      color: var(--ex-text, #17191c);
     }
 
     .input {
@@ -64,10 +64,10 @@ import { ForInput } from 'forty-cdk/input';
       font: inherit;
       font-size: 0.9rem;
       padding: 0.5rem 0.7rem;
-      border-radius: var(--pg-radius-sm);
-      border: 1px solid var(--pg-border-strong);
-      background: var(--pg-surface);
-      color: var(--pg-text);
+      border-radius: var(--ex-radius-sm, 14px);
+      border: 1px solid var(--ex-border-strong, #d0c9bc);
+      background: var(--ex-surface, #ffffff);
+      color: var(--ex-text, #17191c);
     }
 
     .input[data-disabled] {
@@ -76,7 +76,7 @@ import { ForInput } from 'forty-cdk/input';
     }
 
     .input[data-readonly] {
-      background: var(--pg-surface-2);
+      background: var(--ex-surface-2, #f2eee6);
     }
   `,
 })
