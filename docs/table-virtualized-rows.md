@@ -1,14 +1,18 @@
 # Table: virtualized rows
 
-How `[forTableVirtualized]` windows a `forty-cdk/table` grid over `forty-cdk/virtualization`,
-including the scroll-container choice and the ARIA reindexing contract. Split out of the table
-README in [#1401](https://github.com/tutkli/forty-cdk/issues/1401) because it spans two entry
-points; the adapter itself ships from the third,
+`[forTableVirtualized]` renders a window of rows instead of the whole dataset, while `aria-rowcount`
+and each row's `aria-rowindex` go on reporting the true totals, so a grid of tens of thousands of
+rows scrolls at a fixed cost and still tells a screen reader where the user is.
+
+It is opt-in and works only with `<div role>` grid mode. Native `<table>` cannot omit rows mid-body
+(the browser recalculates all column widths when any row is missing), so virtualization requires the
+`<div>` structure documented in
+[the table README](../projects/forty-cdk/table/README.md#div-mode). This guide also covers the
+scroll-container choice and the ARIA reindexing contract. Split out of the table README in
+[#1401](https://github.com/tutkli/forty-cdk/issues/1401) because it spans two entry points; the
+adapter itself ships from the third,
 [`forty-cdk/table-virtualization`](../projects/forty-cdk/table-virtualization/README.md), and the
 table is documented in [the table README](../projects/forty-cdk/table/README.md).
-
-`[forTableVirtualized]` is opt-in and works only with `<div role>` grid mode. Native `<table>` cannot omit rows mid-body (the browser recalculates all column widths when any row is missing), so virtualization requires the `<div>` structure documented in
-[the table README](../projects/forty-cdk/table/README.md#div-mode).
 
 Place `[forTableVirtualized]` on the same element as `[forTable]`. Set `[rowCount]` on `[forTable]` to the **true total** row count — this drives both `aria-rowcount` and the window size, and for an index-addressable dataset it is the whole configuration. An append-style infinite list splits the two: see [Append-style lists](#append-style-lists-virtualrowcount) below.
 

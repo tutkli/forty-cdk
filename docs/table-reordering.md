@@ -1,13 +1,18 @@
 # Table: column & row reordering
 
-How `forty-cdk/table` composes `forty-cdk/drag-drop` to make header columns and data rows
-reorderable — including the shared-tab-stop keyboard model, the virtualization interaction, and the
+`[forTableColumnReorder]` and `[forTableRowReorder]` are opt-in companion directives that make
+header columns and data rows reorderable by pointer and by keyboard, each wrapping `[forDropList]`
+through `hostDirectives` so a table drags exactly as a standalone drop list does. The table never
+mutates your data — every committed drop reports `{ from, to }` for you to apply yourself.
+
+Wrapping the drop list brings the whole drag-drop toolkit with it — `[forDraggable]`,
+`[forDragHandle]`, `[forDragPreview]`, `[forDragPlaceholder]`, FLIP animations, live announce,
+keyboard and pointer drag — and reorder handlers apply `moveItemInArray` to a local signal. This
+guide also covers the shared-tab-stop keyboard model, the virtualization interaction, and the
 boundary / axis-lock passthrough. Split out of the table README in
 [#1401](https://github.com/tutkli/forty-cdk/issues/1401) because it spans two entry points; the
 table itself is documented in [the table README](../projects/forty-cdk/table/README.md) and the
 drag-drop vocabulary in [its own](../projects/forty-cdk/drag-drop/README.md).
-
-`[forTableColumnReorder]` and `[forTableRowReorder]` are opt-in companion directives that compose the **drag-drop** primitive to make table headers and data rows reorderable. Each wraps `[forDropList]` via `hostDirectives`, so every drag-drop capability — `[forDraggable]`, `[forDragHandle]`, `[forDragPreview]`, `[forDragPlaceholder]`, FLIP animations, live announce, keyboard and pointer drag — is available to the consumer exactly as with a standalone drop list. **The table never mutates the consumer's data.** Reorder handlers apply `moveItemInArray` to a local signal.
 
 ## Column reordering
 

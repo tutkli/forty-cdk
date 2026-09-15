@@ -1,6 +1,6 @@
 # Selected-indicator alignment pattern
 
-Applies to **Menu** checkbox / radio items (`[forMenuItemIndicator]`), the one selection indicator that keeps a `[forceMount]` opt-in.
+Menu checkbox and radio items line their labels up only when every row reserves the checkmark's width, checked or not. `[forMenuItemIndicator]` is the one selection indicator that still keeps a `[forceMount]` opt-in for exactly that, and hiding the glyph with `opacity` rather than `display: none` keeps the slot it reserves.
 
 > Select (`[forSelectIndicator]`) and Combobox (`[forComboboxIndicator]`) no longer expose `[forceMount]`: their indicators always self-hide while unselected (inline `display:none` + `hidden`). For column alignment in those primitives, render a fixed-width spacer in the option layout (e.g. a CSS grid column or a sibling element) rather than keeping the indicator mounted.
 

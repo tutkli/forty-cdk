@@ -16,6 +16,7 @@ const NOT_AN_ENTRY_POINT = 'eslint-rules-fixtures';
 export const GUIDE_GROUPS = [
   { id: 'styling', label: 'Styling' },
   { id: 'composition', label: 'Composition patterns' },
+  { id: 'forms', label: 'Forms & selection' },
   { id: 'dates', label: 'Dates & time' },
   { id: 'table', label: 'Table & virtualization' },
 ];
@@ -26,8 +27,8 @@ export const PUBLISHED_GUIDES = [
   { file: 'selected-indicator-pattern.md', group: 'styling' },
   { file: 'your-first-overlay.md', group: 'composition' },
   { file: 'wrapping-non-form-roots.md', group: 'composition' },
-  { file: 'wrapping-form-primitives.md', group: 'composition' },
-  { file: 'selection-value-type-contract.md', group: 'composition' },
+  { file: 'wrapping-form-primitives.md', group: 'forms' },
+  { file: 'selection-value-type-contract.md', group: 'forms' },
   { file: 'date-adapters.md', group: 'dates' },
   { file: 'table-declarative-columns.md', group: 'table' },
   { file: 'table-reordering.md', group: 'table' },
