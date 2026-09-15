@@ -7,6 +7,7 @@ const gfm = new Marked({ gfm: true });
 
 const API_TYPE_COLUMN = 'type';
 const API_DEFAULT_COLUMN = 'default';
+const EXAMPLES_SECTION = 'examples';
 
 /**
  * A document the compiler refused, with every problem it found.
@@ -600,6 +601,26 @@ export function compileDocument(source, { path, slug, kind }) {
       .filter((entry) => entry.token.type === 'heading')
       .map((entry) => ({ depth: entry.token.depth, text: entry.token.text, slug: entry.slug }));
 
+  /**
+   * `## Examples` opens with the sentence the page prints above its hero, and
+   * that sentence is lifted out of the section for the reason the lede is
+   * lifted out of the intro: the page renders it once, beside the live widget a
+   * reader meets first, so a body that also held it would publish it twice
+   * ([#1920](https://github.com/tutkli/forty-cdk/issues/1920)).
+   *
+   * Only the section's *opening* block counts. A `## Examples` that starts with
+   * a `###` or a fence carries no caption, and `checkExamplesCaption` in
+   * `scripts/lib/doc-contract.mjs` fails the build over that — lifting a
+   * paragraph out of the middle of the section would take prose its author
+   * wrote about one example and print it over all of them.
+   */
+  const examples = sectionRuns.find(({ heading }) => heading.slug === EXAMPLES_SECTION);
+  const opening = examples?.run.findIndex((entry) => entry.token.type !== 'space') ?? -1;
+  const caption =
+    opening !== -1 && examples.run[opening].token.type === 'paragraph'
+      ? examples.run.splice(opening, 1)[0].token.text
+      : null;
+
   return {
     path,
     slug,
@@ -607,6 +628,7 @@ export function compileDocument(source, { path, slug, kind }) {
     meta,
     title: title.token.text,
     lede: ledeIndex === -1 ? null : introRun[ledeIndex].token.text,
+    caption,
     intro: blocksOf(introRun.filter((_, index) => index !== ledeIndex)),
     introHeadings: headingsOf(introRun),
     sections: sectionRuns.map(({ heading, run }) => ({

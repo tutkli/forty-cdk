@@ -32,6 +32,8 @@ A popover is a non-modal dialog: focus moves into the surface on open and return
 
 ## Examples
 
+Open the popover from the trigger — `Escape` and an outside click close it, focus returns to the trigger, and `data-side` says which side it landed on.
+
 ```ts
 import { Component } from '@angular/core';
 import {

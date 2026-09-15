@@ -5,7 +5,7 @@ import { DemoLayout } from '../../ui/demo-layout';
 import { PrimitivePage } from '../../ui/primitive-page';
 import { FileUploadDefaultExample } from './examples/default.example';
 import { FileUploadDirectoryExample } from './examples/directory.example';
-import { FileUploadDisabledExample } from './examples/disabled.example';
+import { FileUploadStatesExample } from './examples/states.example';
 import { FileUploadMultipleExample } from './examples/multiple.example';
 import { SOURCES } from './sources.generated';
 import { DOC } from '../../../generated/docs/primitives/file-upload.generated';
@@ -18,7 +18,7 @@ import { DOC } from '../../../generated/docs/primitives/file-upload.generated';
     DemoLayout,
     FileUploadDefaultExample,
     FileUploadMultipleExample,
-    FileUploadDisabledExample,
+    FileUploadStatesExample,
     FileUploadDirectoryExample,
   ],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
@@ -37,11 +37,11 @@ import { DOC } from '../../../generated/docs/primitives/file-upload.generated';
       </demo-layout>
 
       <demo-layout
-        title="Disabled"
-        subtitle="<code>disabled</code> blocks the dialog and drops and reflects <code>data-disabled</code> on the zone, so you can dim it and ignore pointer events without removing the input from the DOM."
-        sourcePath="file-upload/examples/disabled.example.ts"
+        title="States"
+        subtitle="One class and one directive, two states. <code>disabled</code> blocks the dialog and drops alike, and reflects <code>data-disabled</code> on the zone — so it dims and ignores pointer events from the same stylesheet that styles <code>data-dragging</code>, without the input leaving the DOM."
+        sourcePath="file-upload/examples/states.example.ts"
       >
-        <app-file-upload-disabled-example />
+        <app-file-upload-states-example />
       </demo-layout>
 
       <demo-layout

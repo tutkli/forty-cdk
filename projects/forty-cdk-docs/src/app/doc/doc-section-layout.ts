@@ -10,8 +10,6 @@ type Anchored = Ringed & { readonly slug: string };
 type Projected = { readonly hero: boolean };
 
 const EXAMPLES = 'examples';
-const EXAMPLES_TITLE = 'Examples';
-const ANATOMY = 'anatomy';
 
 /**
  * The one specific section a document may write above its first core one, or
@@ -25,9 +23,8 @@ const ANATOMY = 'anatomy';
  * `scripts/lib/doc-contract.mjs`.
  *
  * Read off the rings rather than off the index, so it means the same thing to
- * the rail — which reads it over its own entries, the synthesised demos one
- * included — and to {@link splitAtExamples}, which reads it over the sections a
- * document declared.
+ * the rail — which reads it over its own entries — and to the contract, which
+ * reads it over the sections a document declared.
  */
 export function preludeIndexOf(sections: readonly Ringed[]): number {
   const first = sections.findIndex((section) => section.ring === 'specific');
@@ -50,7 +47,8 @@ export interface DocExamplesSlot<T> {
   /**
    * The section whose body the demos replace, or `null` when they replace none
    * — a document declaring no `## Examples`, or a page projecting no demo into
-   * the block.
+   * the block. A page with demos and no section to put them in renders none,
+   * which `doc-caption.spec.ts` is what keeps out of the corpus.
    */
   readonly declared: T | null;
 }
@@ -61,12 +59,15 @@ function rendersInBlock(demos: readonly Projected[]): boolean {
 }
 
 /**
- * Where a page renders its live demos.
+ * Where a page renders its live demos: in the `## Examples` section its
+ * document declared, whose body the site replaces with them.
  *
- * A document that declares `## Examples` keeps the position it wrote it in, and
- * the site replaces that section's body with the demos. One that declares none
- * gets the block after `## Anatomy`, and after the prelude when it declares no
- * `## Anatomy` at all.
+ * Every document that projects a demo declares that section — the contract
+ * requires it of every archetype with DOM, and `## Examples` is also where the
+ * hero's caption is authored ([#1920](https://github.com/tutkli/forty-cdk/issues/1920)),
+ * so there is no page left for the site to synthesise a heading for. Until that
+ * issue, seven documents declared none and the block was placed for them after
+ * `## Anatomy`; the placement rule retired with the last page reaching it.
  *
  * A page that projects no demo into the block gets no slot: every section stays
  * in `before`, a declared `## Examples` among them, so its markdown renders like
@@ -76,39 +77,30 @@ export function splitAtExamples<T extends Anchored>(
   sections: readonly T[],
   demos: readonly Projected[],
 ): DocExamplesSlot<T> {
-  if (!rendersInBlock(demos)) {
+  const declared = rendersInBlock(demos)
+    ? sections.findIndex((section) => section.slug === EXAMPLES)
+    : -1;
+  if (declared === -1) {
     return { before: sections, after: [], declared: null };
   }
-
-  const declared = sections.findIndex((section) => section.slug === EXAMPLES);
-  if (declared !== -1) {
-    return {
-      before: sections.slice(0, declared),
-      after: sections.slice(declared + 1),
-      declared: sections[declared]!,
-    };
-  }
-
-  const anatomy = sections.findIndex((section) => section.slug === ANATOMY);
-  const at = anatomy !== -1 ? anatomy + 1 : preludeIndexOf(sections) + 1;
-  return { before: sections.slice(0, at), after: sections.slice(at), declared: null };
+  return {
+    before: sections.slice(0, declared),
+    after: sections.slice(declared + 1),
+    declared: sections[declared]!,
+  };
 }
 
 /**
- * The heading a page renders its live demos under, or `null` for a page that
- * projects none into the block.
- *
- * A document that declares the section owns the title and anchor; one that
- * declares none has `Examples` synthesised.
+ * The heading a page renders its live demos under, taken from the section the
+ * document declared — `null` for a page that projects none into the block, and
+ * for one whose document declares no section to render them in.
  */
 export function examplesHeadingOf(
   declared: DocExamplesHeading | null,
   demos: readonly Projected[],
 ): DocExamplesHeading | null {
-  if (!rendersInBlock(demos)) {
+  if (declared === null || !rendersInBlock(demos)) {
     return null;
   }
-  return declared === null
-    ? { title: EXAMPLES_TITLE, slug: EXAMPLES }
-    : { title: declared.title, slug: declared.slug };
+  return { title: declared.title, slug: declared.slug };
 }

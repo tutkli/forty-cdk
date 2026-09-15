@@ -27,6 +27,8 @@ Two related primitives in a single folder: `[forToggle]` is a standalone two-sta
 
 ## Examples
 
+Press it with the pointer, `Space` or `Enter` — the button reflects `aria-pressed` and `data-state`, so the pressed and unpressed looks come from one rule.
+
 ### Standalone Toggle
 
 ```ts

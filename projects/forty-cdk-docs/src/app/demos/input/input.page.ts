@@ -29,8 +29,8 @@ import { DOC } from '../../../generated/docs/primitives/input.generated';
       </demo-layout>
 
       <demo-layout
-        title="Disabled & read-only"
-        subtitle="<code>disabled</code> reflects native <code>disabled</code> plus <code>data-disabled</code> and drops out of submission; <code>readonly</code> keeps the field focusable but blocks edits and reflects <code>data-readonly</code>."
+        title="States"
+        subtitle="One class and one directive, three states. <code>disabled</code> reflects native <code>disabled</code> plus <code>data-disabled</code> and drops out of submission; <code>readonly</code> keeps the field focusable but blocks edits and reflects <code>data-readonly</code>. The stylesheet below keys on nothing else."
         sourcePath="input/examples/states.example.ts"
       >
         <app-input-states-example />

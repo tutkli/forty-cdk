@@ -24,6 +24,8 @@ A single primitive supports single, range, and multi-thumb sliders — the shape
 
 ## Examples
 
+Drag a thumb, or focus it and press the arrow keys — `Home` and `End` jump to the bounds, and each thumb carries its own `data-index`.
+
 ### Single thumb
 
 ```html

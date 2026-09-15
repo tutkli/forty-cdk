@@ -21,6 +21,8 @@ Pass a numeric `value` for a determinate bar, or `null` for indeterminate ("load
 
 ## Examples
 
+The bar reflects `data-value` against `data-min` / `data-max` and moves `data-state` between `loading`, `complete` and `indeterminate`.
+
 ```ts
 import { Component, signal } from '@angular/core';
 import { ForProgress, ForProgressIndicator } from 'forty-cdk/progress';

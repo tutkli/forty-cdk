@@ -204,6 +204,7 @@ export function renderDocument(document, { routes, blobBase = GITHUB_BLOB_BASE }
   const group = behaviorGroupOf(document);
   return {
     intro: document.intro.map((block) => renderProseBlock(block, context)),
+    caption: document.caption === null ? null : renderInlineMarkdown(document.caption, context),
     behaviorGroup: group === null ? null : { title: headingText(group.title), slug: group.slug },
     sections: document.sections.map((section) => ({
       ...renderTitle(section.title, context),

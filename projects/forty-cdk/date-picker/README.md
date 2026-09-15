@@ -43,6 +43,8 @@ All date math and formatting go through a `DateAdapter<D>`, shared with `ForCale
 
 ## Examples
 
+Open the popover from the trigger and pick a day — the trigger keeps `data-placeholder` until something is chosen, and its `data-state` follows the overlay.
+
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { CalendarDate } from '@internationalized/date';

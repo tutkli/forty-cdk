@@ -29,6 +29,8 @@ Headless implementation with selection-on-focus, wrap-around arrow navigation, a
 
 ## Examples
 
+Move between the radios with the arrow keys — selection follows focus, the group keeps one tab stop, and the checked radio carries `data-state="checked"`.
+
 ### Stand-alone
 
 ```ts

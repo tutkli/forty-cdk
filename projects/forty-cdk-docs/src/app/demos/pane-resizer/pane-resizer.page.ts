@@ -4,7 +4,7 @@ import { EXAMPLE_SOURCES } from '../../doc/example-source';
 import { DemoLayout } from '../../ui/demo-layout';
 import { PrimitivePage } from '../../ui/primitive-page';
 import { PaneResizerCollapsibleExample } from './examples/collapsible.example';
-import { PaneResizerDisabledExample } from './examples/disabled.example';
+import { PaneResizerStatesExample } from './examples/states.example';
 import { PaneResizerResizeExample } from './examples/resize.example';
 import { SOURCES } from './sources.generated';
 import { DOC } from '../../../generated/docs/primitives/pane-resizer.generated';
@@ -16,7 +16,7 @@ import { DOC } from '../../../generated/docs/primitives/pane-resizer.generated';
     PrimitivePage,
     DemoLayout,
     PaneResizerResizeExample,
-    PaneResizerDisabledExample,
+    PaneResizerStatesExample,
     PaneResizerCollapsibleExample,
   ],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
@@ -27,11 +27,11 @@ import { DOC } from '../../../generated/docs/primitives/pane-resizer.generated';
       </demo-layout>
 
       <demo-layout
-        title="Disabled"
-        subtitle="<code>disabled</code> drops the resizer out of the tab order and blocks both keyboard and pointer resizing. It reflects <code>aria-disabled</code> and <code>data-disabled</code> so you can dim the divider in CSS."
-        sourcePath="pane-resizer/examples/disabled.example.ts"
+        title="States"
+        subtitle="One class and one directive, two states. <code>disabled</code> drops the resizer out of the tab order and blocks both keyboard and pointer resizing; it reflects <code>aria-disabled</code> and <code>data-disabled</code>, so the dimmed divider and the live one come from the same stylesheet."
+        sourcePath="pane-resizer/examples/states.example.ts"
       >
-        <app-pane-resizer-disabled-example />
+        <app-pane-resizer-states-example />
       </demo-layout>
 
       <demo-layout

@@ -42,6 +42,10 @@ whole dialog around by its header — see [`[forFreeDrag]`](#free-drag).
 `onDrop` applies `moveItemInArray` (or `transferArrayItem`) to your own signal: **the primitive never
 mutates the consumer's data**, in either the pointer or the keyboard flow.
 
+## Examples
+
+Drag a row with the pointer, or lift it with `Space` and move it with the arrow keys — `data-dragging` is on the item and `data-drag-over` on the list it is over.
+
 ## API
 
 There is no single table of every input here: each piece is introduced with the flow that uses it —

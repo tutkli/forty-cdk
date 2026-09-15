@@ -33,6 +33,8 @@ It carries `role="separator"` plus live `aria-value*`, is tabbable, handles arro
 
 ## Examples
 
+Drag the divider, or focus it and press the arrow keys — the resizer is a `separator` carrying `aria-valuenow`, so the split is announced as it moves.
+
 ```ts
 import { Component, signal } from '@angular/core';
 import { ForPaneResizer } from 'forty-cdk/pane-resizer';

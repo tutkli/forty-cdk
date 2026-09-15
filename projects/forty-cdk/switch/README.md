@@ -31,6 +31,8 @@ Use the one that matches your semantics. `ForSwitch` and `ForCheckbox` are inten
 
 ## Examples
 
+Toggle it with the pointer, `Space` or `Enter`, and watch `data-state` follow.
+
 ### Stand-alone
 
 ```ts

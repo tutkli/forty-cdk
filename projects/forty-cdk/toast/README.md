@@ -57,6 +57,10 @@ The viewport renders each toast in this shape (the declarative path composes the
 </div>
 ```
 
+## Examples
+
+Fire a toast and leave it alone — hovering pauses it, a drag swipes it away, and the stack reflects `data-front-stack-index` so the cards behind it can shrink.
+
 ## API
 
 ### `ForToast`

@@ -42,6 +42,8 @@ Nesting composes like native fieldsets: a disabled outer `[forFieldset]` keeps e
 
 ## Examples
 
+Disable the group and every control inside it follows — the fieldset reflects `data-disabled` and reaches custom-role controls a native `<fieldset disabled>` cannot.
+
 ```ts
 import { Component, signal } from '@angular/core';
 import { ForField, ForFieldControl, ForLabel } from 'forty-cdk/field';

@@ -4,9 +4,8 @@ import { EXAMPLE_SOURCES } from '../../doc/example-source';
 import { DemoLayout } from '../../ui/demo-layout';
 import { PrimitivePage } from '../../ui/primitive-page';
 import { SwitchDefaultExample } from './examples/default.example';
-import { SwitchDisabledExample } from './examples/disabled.example';
 import { SwitchFormFieldExample } from './examples/form-field.example';
-import { SwitchReadOnlyExample } from './examples/read-only.example';
+import { SwitchStatesExample } from './examples/states.example';
 import { SOURCES } from './sources.generated';
 import { DOC } from '../../../generated/docs/primitives/switch.generated';
 
@@ -17,8 +16,7 @@ import { DOC } from '../../../generated/docs/primitives/switch.generated';
     PrimitivePage,
     DemoLayout,
     SwitchDefaultExample,
-    SwitchDisabledExample,
-    SwitchReadOnlyExample,
+    SwitchStatesExample,
     SwitchFormFieldExample,
   ],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
@@ -29,19 +27,11 @@ import { DOC } from '../../../generated/docs/primitives/switch.generated';
       </demo-layout>
 
       <demo-layout
-        title="Disabled"
-        subtitle="<code>disabled</code> ignores clicks and keyboard activation but keeps the switch focusable (per APG); it reflects <code>aria-disabled</code> and <code>data-disabled</code>."
-        sourcePath="switch/examples/disabled.example.ts"
+        title="States"
+        subtitle="One class and one directive, three states. <code>disabled</code> and <code>readonly</code> both keep the switch focusable and announced (per APG) while interaction is a no-op; they reflect <code>aria-disabled</code> / <code>data-disabled</code> and <code>aria-readonly</code> / <code>data-readonly</code>, which is all the stylesheet below keys on."
+        sourcePath="switch/examples/states.example.ts"
       >
-        <app-switch-disabled-example />
-      </demo-layout>
-
-      <demo-layout
-        title="Read-only"
-        subtitle="<code>readonly</code> keeps the switch focusable and announced but blocks toggling; it reflects <code>aria-readonly</code> and <code>data-readonly</code>."
-        sourcePath="switch/examples/read-only.example.ts"
-      >
-        <app-switch-read-only-example />
+        <app-switch-states-example />
       </demo-layout>
 
       <demo-layout

@@ -46,6 +46,8 @@ Gate the region's `@if` on the field's `invalid()` (exposed via the `[forField]`
 
 ## Examples
 
+Focus the control through its label and watch the `[forField]` host: it reflects `data-disabled`, `data-required`, `data-touched` and `data-invalid` for the whole block.
+
 ```ts
 import { Component, signal } from '@angular/core';
 import { form, FormField, required } from '@angular/forms/signals';

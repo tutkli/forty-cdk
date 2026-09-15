@@ -41,6 +41,8 @@ Requires a time-capable adapter:
 
 ## Examples
 
+Open the listbox from the trigger and pick a slot — the arrow keys walk the timeline, and the trigger keeps `data-placeholder` until something is chosen.
+
 ```html
 <div
   forTimePicker

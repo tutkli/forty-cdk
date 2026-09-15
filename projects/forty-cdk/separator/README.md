@@ -20,6 +20,8 @@ The focusable divider that resizes two panes is a separate primitive — [`ForPa
 
 ## Examples
 
+A styleless `role="separator"` that reflects `data-orientation`, so one rule draws the horizontal and the vertical divider the same way.
+
 ```ts
 import { Component } from '@angular/core';
 import { ForSeparator } from 'forty-cdk/separator';

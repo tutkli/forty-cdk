@@ -60,6 +60,10 @@ Wrapping with `@if` is what makes Angular's native `animate.enter` / `animate.le
 
 The trigger (`[forDialogTrigger]`) and the dialog surface (`[forDialog]`) are **separate, unrelated elements**. They wire to each other via a shared id that the consumer keeps in sync: `[forDialogTrigger]` always reflects `aria-haspopup="dialog"` and `aria-expanded` (`"true"` / `"false"`, from the trigger's own `open` state) — these do not depend on `controls`. The `controls` value is what gets reflected as `aria-controls="my-dialog"`, and only while the dialog is open; omit `controls` and the trigger never gets an `aria-controls`, silently breaking assistive technology that announces "opens dialog X". Popover is different: `[forPopover]` wraps both the trigger and content in a single parent directive, so ids are auto-generated and kept in sync internally. Dialog is flat — trigger and surface can live anywhere in the template — so the wiring is manual.
 
+## Examples
+
+Open the dialog and press `Tab` — focus is trapped inside it, `Escape` closes it, and focus returns to the trigger that opened it.
+
 ## API
 
 ### `ForDialog`

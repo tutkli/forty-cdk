@@ -5,10 +5,9 @@ import { DemoLayout } from '../../ui/demo-layout';
 import { PrimitivePage } from '../../ui/primitive-page';
 import { CalendarConstraintsExample } from './examples/constraints.example';
 import { CalendarDefaultExample } from './examples/default.example';
-import { CalendarDisabledExample } from './examples/disabled.example';
 import { CalendarDropdownsExample } from './examples/dropdowns.example';
 import { CalendarRangeExample } from './examples/range.example';
-import { CalendarReadOnlyExample } from './examples/read-only.example';
+import { CalendarStatesExample } from './examples/states.example';
 import { CalendarViewSwitchingExample } from './examples/views.example';
 import { SOURCES } from './sources.generated';
 import { DOC } from '../../../generated/docs/primitives/calendar.generated';
@@ -20,8 +19,7 @@ import { DOC } from '../../../generated/docs/primitives/calendar.generated';
     PrimitivePage,
     DemoLayout,
     CalendarDefaultExample,
-    CalendarDisabledExample,
-    CalendarReadOnlyExample,
+    CalendarStatesExample,
     CalendarConstraintsExample,
     CalendarRangeExample,
     CalendarDropdownsExample,
@@ -35,19 +33,11 @@ import { DOC } from '../../../generated/docs/primitives/calendar.generated';
       </demo-layout>
 
       <demo-layout
-        title="Disabled"
-        subtitle="<code>disabled</code> turns off focus movement and selection for the whole calendar and reflects <code>data-disabled</code> on the root for styling."
-        sourcePath="calendar/examples/disabled.example.ts"
+        title="States"
+        subtitle="One class and one directive, three states. <code>disabled</code> turns off focus movement and selection for the whole calendar; <code>readonly</code> keeps days focusable and the grid still pages, but clicking or pressing <kbd>Enter</kbd> no longer changes the selection. Each reflects a root hook — <code>data-disabled</code> and <code>data-readonly</code> — and the stylesheet below keys on nothing else."
+        sourcePath="calendar/examples/states.example.ts"
       >
-        <app-calendar-disabled-example />
-      </demo-layout>
-
-      <demo-layout
-        title="Read-only"
-        subtitle="<code>readonly</code> keeps days focusable and the grid still pages, but clicking or pressing <kbd>Enter</kbd> no longer changes the selection. It reflects <code>data-readonly</code>."
-        sourcePath="calendar/examples/read-only.example.ts"
-      >
-        <app-calendar-read-only-example />
+        <app-calendar-states-example />
       </demo-layout>
 
       <demo-layout

@@ -28,6 +28,8 @@ Headless and implementing Angular's `FormValueControl<number | null>` from `@ang
 
 ## Examples
 
+Type a number, press the arrow keys or hold a stepper button — the host carries `data-empty` while the value is `null` and `data-dirty` once it has changed.
+
 ### Stand-alone
 
 ```ts

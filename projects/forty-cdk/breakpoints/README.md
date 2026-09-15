@@ -29,6 +29,8 @@ Providing it again on a component injector replaces the map for that subtree onl
 
 ## Examples
 
+Resize the preview and watch the matched breakpoint change: `injectBreakpoints()` hands back signals, so the template re-renders without a listener of your own.
+
 ```ts
 import { Component, inject } from '@angular/core';
 import { injectBreakpoints } from 'forty-cdk/breakpoints';

@@ -51,6 +51,12 @@ Shared surface and item directives consumed by `[forDropdownMenu]` (button trigg
 
 For the recommended `[forceMount]` + `opacity` pattern that keeps indicator columns aligned across checkbox / radio items, see the [selected-indicator alignment guide](../../../docs/selected-indicator-pattern.md).
 
+## Examples
+
+Open the menu and walk the items with the arrow keys — the surface is shared, so what happens here is what Dropdown Menu, Context Menu and Menubar each compose.
+
+The surface is never used alone, so the compositions live with their openers: [Dropdown Menu](../dropdown-menu/README.md), [Context Menu](../context-menu/README.md) and [Menubar](../menubar/README.md) each carry the demos for their own.
+
 ## Mount/visibility convention
 
 `[forMenuContent]` follows the floating-overlay convention: the consumer's signal drives `@if`, the directive emits `(close)` (forwarded by the root primitive) when it wants to be unmounted. No `[hidden]`. See `[forDropdownMenu]` and `[forContextMenu]` for end-to-end examples.

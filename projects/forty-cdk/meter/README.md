@@ -21,6 +21,8 @@ Mirrors the HTML5 `<meter>` element: a **measurement** — battery, disk space, 
 
 ## Examples
 
+The gauge reflects `data-value` against `data-min` / `data-max` and reports `data-quality`, so one rule colours the optimum, suboptimum and critical bands.
+
 ```ts
 import { Component, signal } from '@angular/core';
 import { ForMeter, ForMeterIndicator } from 'forty-cdk/meter';

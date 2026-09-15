@@ -62,6 +62,8 @@ The picker anatomy adds a `[forComboboxTrigger]` `<button>` showing the committe
 
 ## Examples
 
+Type to filter, move the highlight with the arrow keys and commit with `Enter` — the highlighted option carries `data-highlighted`, and the filtering itself stays yours.
+
 ### Filtering is the consumer's job
 
 The primitive is headless — it does **not** filter the registered options. The consumer reads `[forCombobox][(query)]`, applies whatever match logic they want, and renders the filtered subset with `@for`. Each rendered `[forComboboxOption]` registers itself; the listbox tracks the live set automatically.

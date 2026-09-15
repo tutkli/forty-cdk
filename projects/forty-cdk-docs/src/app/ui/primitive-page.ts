@@ -44,6 +44,9 @@ import { Icon } from './icon';
 
     <div class="layout">
       <div class="main" docLinks>
+        @if (heroCaption(); as caption) {
+          <p class="pg-doc-subtitle caption" [innerHTML]="caption"></p>
+        }
         <ng-content select="[hero]" />
 
         @if (introHtml(); as intro) {
@@ -146,6 +149,13 @@ import { Icon } from './icon';
       min-width: 0;
     }
 
+    .caption {
+      margin: 0 0 0.9rem;
+      max-width: 62ch;
+      font-size: 0.92rem;
+      color: var(--pg-text-muted);
+    }
+
     .examples {
       display: flex;
       flex-direction: column;
@@ -204,6 +214,21 @@ export class PrimitivePage {
   });
 
   readonly #projected = computed(() => this.demos().map((demo) => ({ hero: demo.hero() })));
+
+  /**
+   * The sentence the page prints above its hero, authored as the paragraph
+   * `## Examples` opens with ([#1920](https://github.com/tutkli/forty-cdk/issues/1920)).
+   *
+   * Rendered only for a page that projects a hero, which every page projecting
+   * a demo at all does — `doc-caption.spec.ts` states both halves, so a caption
+   * is never compiled and then published nowhere.
+   */
+  protected readonly heroCaption = computed(() => {
+    const caption = this.doc().caption;
+    return caption === null || !this.#projected().some((demo) => demo.hero)
+      ? null
+      : this.#sanitizer.bypassSecurityTrustHtml(caption);
+  });
 
   readonly #slot = computed(() => splitAtExamples(this.doc().sections, this.#projected()));
 

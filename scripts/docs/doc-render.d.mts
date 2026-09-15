@@ -95,6 +95,12 @@ export interface DocPageBehaviorGroup {
 export interface DocPage {
   /** Prose only: a table above the first section fails the compile. */
   readonly intro: readonly DocPageProse[];
+  /**
+   * The line the page prints above its hero, as inline markup — `## Examples`'
+   * opening paragraph, lifted out of the section it introduces
+   * ([#1920](https://github.com/tutkli/forty-cdk/issues/1920)).
+   */
+  readonly caption: string | null;
   /** `null` for a document whose rail the grouping would not improve. */
   readonly behaviorGroup: DocPageBehaviorGroup | null;
   readonly sections: readonly DocPageSection[];

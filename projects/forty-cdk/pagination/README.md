@@ -48,6 +48,8 @@ A navigation landmark that derives a visible page list with ellipsis gaps from p
 
 ## Examples
 
+Walk the pages with the pointer or the keyboard — the current page is `aria-current="page"`, and the ends reflect `data-disabled` on the arrow that has nowhere to go.
+
 ```ts
 import { Component, signal } from '@angular/core';
 import {

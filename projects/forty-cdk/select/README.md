@@ -46,6 +46,8 @@ It implements the select-only combobox pattern (`role="combobox"` on the trigger
 
 ## Examples
 
+Open the listbox from the trigger, move with the arrow keys and commit with `Enter` — `data-placeholder` stays on the trigger until something is chosen.
+
 ### Single mode (default)
 
 Click an option to replace the selection and close. `[(value)]` keeps 0 or 1 element. Read the sole value through the read-only `selected: Signal<T | null>` accessor (the form contract keeps `value` as `readonly T[]`; `selected()` is `value()[0]` or `null`).
