@@ -29,6 +29,8 @@ The toolbar takes a single Tab stop and arrow keys move focus across its buttons
 
 ## Examples
 
+Move along the controls with the arrow keys — the toolbar keeps one tab stop, so `Tab` leaves it rather than walking every button in it.
+
 ```ts
 import { Component, signal } from '@angular/core';
 import { ForToggleGroup, ForToggleGroupItem } from 'forty-cdk/toggle';

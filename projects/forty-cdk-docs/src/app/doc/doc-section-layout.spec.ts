@@ -12,14 +12,19 @@ import { PRIMITIVE_DOCS } from './testing/doc-corpus';
  * written exemption, and `virtualization`'s archetype never required the
  * section — put the demos, the heading and its anchor at index 0. Seven
  * published pages opened with their demos, `/table` reaching `## Anatomy` in
- * ninth place.
+ * ninth place. #1865 gave those pages a placement rule; every one of them now
+ * declares the section itself, because `## Examples` is where a hero's caption
+ * is authored ([#1920](https://github.com/tutkli/forty-cdk/issues/1920)), so
+ * the rule retired with the last page that reached it.
  *
  * Stated over the compiled model rather than over the page, because a spec in
  * this target cannot mount the page component: its TypeScript program holds
  * none, and the builder's AOT plugin refuses any file carrying Angular
  * metadata it was not asked to compile. That is what makes the split a pure
  * function in the first place, and this is where it is held to its rule — the
- * rail reads the same split, and `check-doc-output.mjs` reads the emitted DOM.
+ * rail reads the same split, `check-doc-output.mjs` reads the emitted DOM, and
+ * `doc-caption.spec.ts` is what keeps a page with demos and no section for them
+ * out of the corpus.
  */
 function sectionsOf(...titles: readonly string[]): readonly DocSection[] {
   const body = titles.flatMap((title) => [`## ${title}`, '', `What ${title} says.`, '']);
@@ -59,33 +64,26 @@ describe('the slot a page renders its live demos in', () => {
     expect(slugsOf(after)).toEqual([]);
   });
 
-  it('gives a synthesised block the position the page template orders it in', () => {
+  it('gives a document that declares no ## Examples no slot to place the demos in', () => {
     const { before, after, declared } = slotOf('Anatomy', 'API', 'Keyboard');
 
     expect(declared).toBeNull();
-    expect(slugsOf(before)).toEqual(['anatomy']);
-    expect(slugsOf(after)).toEqual(['api', 'keyboard']);
+    expect(slugsOf(before)).toEqual(['anatomy', 'api', 'keyboard']);
+    expect(slugsOf(after)).toEqual([]);
   });
 
-  it('keeps a prelude above the synthesised block', () => {
-    const { before, after } = slotOf('Date adapter', 'Anatomy', 'API');
-
-    expect(slugsOf(before)).toEqual(['date-adapter', 'anatomy']);
-    expect(slugsOf(after)).toEqual(['api']);
-  });
-
-  it('follows the prelude for a document that declares no ## Anatomy', () => {
-    const { before, after } = slotOf('Ergonomic layer', 'Vertical list', 'API');
-
-    expect(slugsOf(before)).toEqual(['ergonomic-layer']);
-    expect(slugsOf(after)).toEqual(['vertical-list', 'api']);
-  });
-
-  it('opens the page with the demos only when nothing precedes them', () => {
-    const { before, after } = slotOf('API', 'Accessibility');
+  it('opens the page with the demos when the document declares the section first', () => {
+    const { before, after } = slotOf('Examples', 'API', 'Accessibility');
 
     expect(slugsOf(before)).toEqual([]);
     expect(slugsOf(after)).toEqual(['api', 'accessibility']);
+  });
+
+  it('keeps a prelude above a section declared below it', () => {
+    const { before, after } = slotOf('Date adapter', 'Anatomy', 'Examples', 'API');
+
+    expect(slugsOf(before)).toEqual(['date-adapter', 'anatomy']);
+    expect(slugsOf(after)).toEqual(['api']);
   });
 
   it('reads the prelude off the rings, so a specific section below a core one is not one', () => {
@@ -100,7 +98,6 @@ describe('the slot a page renders its live demos in', () => {
  * finding anything is.
  */
 const README_FLOOR = 50;
-const SYNTHESISED_FLOOR = 6;
 const DECLARED_FLOOR = 40;
 
 describe('the slot over the corpus', () => {
@@ -133,37 +130,18 @@ describe('the slot over the corpus', () => {
 
     expect(dropped.map(({ slug }) => slug)).toEqual([]);
   });
-
-  it('renders the parts list above the demos on every page that synthesises the block', () => {
-    const synthesised = compiled.filter(
-      ({ document }) =>
-        document.meta?.group !== 'none' &&
-        !document.sections.some((section) => section.slug === 'examples'),
-    );
-    expect(synthesised.length).toBeGreaterThanOrEqual(SYNTHESISED_FLOOR);
-
-    const placed = synthesised.map(({ slug, document }) => {
-      const { before, after } = splitAtExamples(document.sections, IN_BLOCK);
-      return [slug, before.length > 0, slugsOf(after).includes('anatomy')] as const;
-    });
-
-    expect(placed).toEqual(synthesised.map(({ slug }) => [slug, true, false]));
-  });
 });
 
 describe('the heading a page renders its live demos under', () => {
-  it('synthesises the block for a page that projects a demo into it', () => {
-    expect(examplesHeadingOf(null, [{ hero: true }, { hero: false }])).toEqual({
-      title: 'Examples',
-      slug: 'examples',
-    });
+  it('renders no block for a document that declares no ## Examples', () => {
+    expect(examplesHeadingOf(null, IN_BLOCK)).toBeNull();
   });
 
-  it('synthesises nothing for a page whose only demo is its hero', () => {
-    expect(examplesHeadingOf(null, [{ hero: true }])).toBeNull();
+  it('renders no block for a page whose only demo is its hero', () => {
+    expect(examplesHeadingOf(null, HERO_ONLY)).toBeNull();
   });
 
-  it('synthesises nothing for a page that declares no demo at all', () => {
+  it('renders no block for a page that declares no demo at all', () => {
     expect(examplesHeadingOf(null, [])).toBeNull();
   });
 

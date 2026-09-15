@@ -31,6 +31,8 @@ Use the one that matches your semantics. `ForCheckbox` and `ForSwitch` are inten
 
 ## Examples
 
+Tick it with the pointer or `Space` and watch `data-state` move between `checked` and `unchecked` — the box is a `<button>`, so its whole appearance is your CSS.
+
 ### Stand-alone
 
 ```ts

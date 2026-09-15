@@ -2,21 +2,38 @@ import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { ForDisclosure, ForDisclosureContent, ForDisclosureTrigger } from 'forty-cdk/disclosure';
 
 @Component({
-  selector: 'app-disclosure-disabled-example',
+  selector: 'app-disclosure-states-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ForDisclosure, ForDisclosureTrigger, ForDisclosureContent],
   template: `
-    <div forDisclosure class="dis" [(open)]="open" disabled>
-      <button type="button" forDisclosureTrigger class="dis-trigger">
-        <span>This section is locked</span>
-        <span class="chevron" aria-hidden="true"></span>
-      </button>
-      <div forDisclosureContent class="dis-content">
-        <div class="dis-inner">
-          <p>
-            While disabled the trigger leaves the tab order and ignores clicks and keys, so the
-            panel cannot be toggled.
-          </p>
+    <div class="states">
+      <div class="state">
+        <span class="state-label">Default</span>
+        <div forDisclosure class="dis" [(open)]="open">
+          <button type="button" forDisclosureTrigger class="dis-trigger">
+            <span>What is inside the box?</span>
+            <span class="chevron" aria-hidden="true"></span>
+          </button>
+          <div forDisclosureContent class="dis-content">
+            <div class="dis-inner">
+              <p>Behavior, ARIA and focus are handled for you; the styling is entirely yours.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="state">
+        <span class="state-label">Disabled</span>
+        <div forDisclosure class="dis" [(open)]="open" disabled>
+          <button type="button" forDisclosureTrigger class="dis-trigger">
+            <span>This section is locked</span>
+            <span class="chevron" aria-hidden="true"></span>
+          </button>
+          <div forDisclosureContent class="dis-content">
+            <div class="dis-inner">
+              <p>The trigger leaves the tab order and ignores clicks and keys.</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -26,13 +43,37 @@ import { ForDisclosure, ForDisclosureContent, ForDisclosureTrigger } from 'forty
       display: contents;
     }
 
-    .dis {
+    .states {
+      display: flex;
+      flex-direction: column;
+      gap: 1.4rem;
       width: min(440px, 100%);
+    }
+
+    .state {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+
+    .state-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--pg-text-muted);
+    }
+
+    .dis {
       background: var(--pg-surface);
       border: 1px solid var(--pg-border);
       border-radius: var(--pg-radius);
       corner-shape: squircle;
       overflow: hidden;
+    }
+
+    .dis[data-disabled] {
+      opacity: 0.5;
     }
 
     .dis-trigger {
@@ -51,12 +92,11 @@ import { ForDisclosure, ForDisclosureContent, ForDisclosureTrigger } from 'forty
       cursor: pointer;
     }
 
-    .dis-trigger:hover {
+    .dis-trigger:hover:not([data-disabled]) {
       background: var(--pg-surface-2);
     }
 
-    .dis-trigger:disabled {
-      opacity: 0.5;
+    .dis-trigger[data-disabled] {
       cursor: not-allowed;
     }
 
@@ -102,6 +142,6 @@ import { ForDisclosure, ForDisclosureContent, ForDisclosureTrigger } from 'forty
     }
   `,
 })
-export class DisclosureDisabledExample {
-  protected readonly open = signal(false);
+export class DisclosureStatesExample {
+  protected readonly open = signal(true);
 }

@@ -25,6 +25,8 @@ A stack of collapsible sections, optionally allowing multiple panels open at onc
 
 ## Examples
 
+Open a panel with the pointer or `Enter`, move between headers with the arrow keys, and watch `data-state` flip on the item, its trigger and its content together.
+
 ```ts
 import { Component, signal } from '@angular/core';
 import {

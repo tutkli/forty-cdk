@@ -38,6 +38,10 @@ The library sets roles, `aria-label`, writing direction, `data-column`, sticky h
 
 Opt-in companions compose on the same elements: [`[forTableVirtualized]`](../table-virtualization/README.md) on `[forTable]` for windowed rows (its own `forty-cdk/table-virtualization` entry point), and `[forTableColumnReorder]` / `[forTableRowReorder]` on the header row / data rowgroup for drag reordering.
 
+## Examples
+
+Move around the grid with the arrow keys — one tab stop serves the whole table, `Ctrl+Home` / `Ctrl+End` jump to its corners, and the focused cell carries `data-highlighted`.
+
 ## API
 
 ### `ForTable`

@@ -26,6 +26,8 @@ Headless, with a selectable activation mode (automatic vs manual), configurable 
 
 ## Examples
 
+Move between triggers with the arrow keys and activate with `Space` — the active trigger and its panel share `data-state="active"`.
+
 ```ts
 import { Component, signal } from '@angular/core';
 import { ForTabs, ForTabsContent, ForTabsList, ForTabsTrigger } from 'forty-cdk/tabs';

@@ -32,6 +32,8 @@ The menu items themselves come from the [`menu/`](../menu/README.md) folder.
 
 ## Examples
 
+Right-click the region — or focus it and press `Shift+F10` — and the menu opens at the pointer with `data-state="open"`; the arrow keys then walk the items.
+
 ```ts
 import { Component, signal } from '@angular/core';
 import { ForContextMenu, ForContextMenuTrigger } from 'forty-cdk/context-menu';

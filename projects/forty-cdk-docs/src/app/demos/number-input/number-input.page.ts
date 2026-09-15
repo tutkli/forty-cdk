@@ -4,8 +4,8 @@ import { EXAMPLE_SOURCES } from '../../doc/example-source';
 import { DemoLayout } from '../../ui/demo-layout';
 import { PrimitivePage } from '../../ui/primitive-page';
 import { NumberInputDefaultExample } from './examples/default.example';
-import { NumberInputDisabledExample } from './examples/disabled.example';
 import { NumberInputFormattingExample } from './examples/formatting.example';
+import { NumberInputStatesExample } from './examples/states.example';
 import { SOURCES } from './sources.generated';
 import { DOC } from '../../../generated/docs/primitives/number-input.generated';
 
@@ -16,7 +16,7 @@ import { DOC } from '../../../generated/docs/primitives/number-input.generated';
     PrimitivePage,
     DemoLayout,
     NumberInputDefaultExample,
-    NumberInputDisabledExample,
+    NumberInputStatesExample,
     NumberInputFormattingExample,
   ],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
@@ -27,11 +27,11 @@ import { DOC } from '../../../generated/docs/primitives/number-input.generated';
       </demo-layout>
 
       <demo-layout
-        title="Disabled"
-        subtitle="<code>disabled</code> reflects <code>data-disabled</code> on the spinbutton and both stepper buttons, removes the control from the tab order, and ignores the keyboard."
-        sourcePath="number-input/examples/disabled.example.ts"
+        title="States"
+        subtitle="One class and one directive, three states. <code>disabled</code> reflects <code>data-disabled</code> on the spinbutton and both stepper buttons and removes the control from the tab order; <code>readonly</code> reflects <code>data-readonly</code> and keeps it focusable while refusing every edit. The stylesheet below keys on nothing else."
+        sourcePath="number-input/examples/states.example.ts"
       >
-        <app-number-input-disabled-example />
+        <app-number-input-states-example />
       </demo-layout>
 
       <demo-layout

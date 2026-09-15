@@ -36,6 +36,8 @@ A `<nav>` of disclosures, **not** an ARIA `menu`. Triggers are buttons with `ari
 
 ## Examples
 
+Open a section from the bar and move between them — the active trigger carries `data-state="open"` and `data-motion` says which way the viewport slid to reach it.
+
 ```ts
 import { Component, signal } from '@angular/core';
 import {

@@ -2,15 +2,31 @@ import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { ForSwitch } from 'forty-cdk/switch';
 
 @Component({
-  selector: 'app-switch-read-only-example',
+  selector: 'app-switch-states-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ForSwitch],
   template: `
-    <div class="row">
-      <button forSwitch class="switch" [(checked)]="enabled" readonly>
-        <span class="thumb"></span>
-      </button>
-      <span class="text">Notifications (read-only)</span>
+    <div class="states">
+      <div class="state">
+        <span class="state-label">Default</span>
+        <button forSwitch class="switch" [(checked)]="enabled">
+          <span class="thumb"></span>
+        </button>
+      </div>
+
+      <div class="state">
+        <span class="state-label">Disabled</span>
+        <button forSwitch class="switch" [(checked)]="enabled" disabled>
+          <span class="thumb"></span>
+        </button>
+      </div>
+
+      <div class="state">
+        <span class="state-label">Read-only</span>
+        <button forSwitch class="switch" [(checked)]="enabled" readonly>
+          <span class="thumb"></span>
+        </button>
+      </div>
     </div>
   `,
   styles: `
@@ -18,14 +34,25 @@ import { ForSwitch } from 'forty-cdk/switch';
       display: contents;
     }
 
-    .row {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.8rem;
+    .states {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      gap: 1.8rem;
     }
 
-    .text {
-      font-weight: 500;
+    .state {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+
+    .state-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--pg-text-muted);
     }
 
     .switch {
@@ -42,6 +69,11 @@ import { ForSwitch } from 'forty-cdk/switch';
 
     .switch[data-state='checked'] {
       background: var(--pg-primary);
+    }
+
+    .switch[data-disabled] {
+      opacity: 0.5;
+      cursor: not-allowed;
     }
 
     .switch[data-readonly] {
@@ -72,6 +104,6 @@ import { ForSwitch } from 'forty-cdk/switch';
     }
   `,
 })
-export class SwitchReadOnlyExample {
+export class SwitchStatesExample {
   protected readonly enabled = signal(true);
 }

@@ -29,6 +29,8 @@ Use it for profile snapshots, link previews, definition cards — any complement
 
 ## Examples
 
+Hover or focus the trigger and wait out the delay — the card opens with `data-state="open"`, and leaving both the trigger and the card closes it again.
+
 ```ts
 import { Component, signal } from '@angular/core';
 import {

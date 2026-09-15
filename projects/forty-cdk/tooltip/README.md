@@ -31,6 +31,8 @@ Hover / focus delays, Escape-to-dismiss, portal rendering, and `@floating-ui/dom
 
 ## Examples
 
+Hover or focus the trigger and wait out the delay — the tip opens with `data-state`, and `Escape` closes it without moving focus.
+
 ```ts
 import { Component, signal } from '@angular/core';
 import {

@@ -252,6 +252,10 @@ Declaratively the same recipe is the four vetoable outputs on `[forDrawer]`: `(i
 </div>
 ```
 
+## Examples
+
+Open the drawer, drag it by its edge and let go past the threshold — `data-state` drives the transition and `data-dragging` is set for the gesture itself.
+
 ## API
 
 ### `ForDrawer`

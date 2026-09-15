@@ -2627,6 +2627,12 @@ exports[`document structure > projects/forty-cdk/dialog/README.md declares the s
     "title": "Anatomy",
   },
   {
+    "headings": [],
+    "slug": "examples",
+    "tables": [],
+    "title": "Examples",
+  },
+  {
     "headings": [
       {
         "depth": 3,
@@ -2904,6 +2910,12 @@ exports[`document structure > projects/forty-cdk/drag-drop/README.md declares th
     "title": "Anatomy",
   },
   {
+    "headings": [],
+    "slug": "examples",
+    "tables": [],
+    "title": "Examples",
+  },
+  {
     "headings": [
       {
         "depth": 3,
@@ -3079,6 +3091,12 @@ exports[`document structure > projects/forty-cdk/drawer/README.md declares the s
     "slug": "anatomy",
     "tables": [],
     "title": "Anatomy",
+  },
+  {
+    "headings": [],
+    "slug": "examples",
+    "tables": [],
+    "title": "Examples",
   },
   {
     "headings": [
@@ -4161,6 +4179,12 @@ exports[`document structure > projects/forty-cdk/menu/README.md declares the sec
     "slug": "anatomy",
     "tables": [],
     "title": "Anatomy",
+  },
+  {
+    "headings": [],
+    "slug": "examples",
+    "tables": [],
+    "title": "Examples",
   },
   {
     "headings": [],
@@ -6454,6 +6478,12 @@ exports[`document structure > projects/forty-cdk/table/README.md declares the se
     "title": "Anatomy",
   },
   {
+    "headings": [],
+    "slug": "examples",
+    "tables": [],
+    "title": "Examples",
+  },
+  {
     "headings": [
       {
         "depth": 3,
@@ -7266,6 +7296,12 @@ exports[`document structure > projects/forty-cdk/toast/README.md declares the se
     "slug": "anatomy",
     "tables": [],
     "title": "Anatomy",
+  },
+  {
+    "headings": [],
+    "slug": "examples",
+    "tables": [],
+    "title": "Examples",
   },
   {
     "headings": [
@@ -8279,6 +8315,12 @@ exports[`document structure > projects/forty-cdk/virtualization/README.md declar
     "slug": "ergonomic-layer",
     "tables": [],
     "title": "Ergonomic layer",
+  },
+  {
+    "headings": [],
+    "slug": "examples",
+    "tables": [],
+    "title": "Examples",
   },
   {
     "headings": [],

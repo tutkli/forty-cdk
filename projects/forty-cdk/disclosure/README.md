@@ -22,6 +22,8 @@ A button toggles the visibility of a content region, wired with `aria-expanded` 
 
 ## Examples
 
+Toggle the panel with the pointer or `Enter` and watch `data-state` flip on the trigger and the content together, so one rule animates both.
+
 ```ts
 import { Component, signal } from '@angular/core';
 import { ForDisclosure, ForDisclosureContent, ForDisclosureTrigger } from 'forty-cdk/disclosure';

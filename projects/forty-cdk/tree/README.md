@@ -49,6 +49,8 @@ In `selectionMode="checkbox"`, place a checkbox surface inside the label:
 
 ## Examples
 
+Walk the tree with the arrow keys — right expands a node, left collapses it, and each node carries `data-state`, `data-selected` and `data-highlighted`.
+
 Trees are recursive, and the idiomatic Angular shape is a small **recursive component** for the node. This keeps dependency injection correct at every depth: each node component nests its element injector under its enclosing `[forTreeGroup]`, so `[forTreeItem]` resolves the right level / container automatically.
 
 ```ts

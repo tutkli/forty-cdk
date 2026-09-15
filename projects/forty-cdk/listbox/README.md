@@ -31,6 +31,8 @@ Wrap options in a `[forListboxGroup]` (labelled by `[forListboxGroupLabel]`) for
 
 ## Examples
 
+Move the highlight with the arrow keys and select with `Space` — one tab stop serves the whole list, and the selected option carries `data-state`.
+
 ### Stand-alone (single select)
 
 ```ts

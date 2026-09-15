@@ -4,7 +4,7 @@ import { EXAMPLE_SOURCES } from '../../doc/example-source';
 import { DemoLayout } from '../../ui/demo-layout';
 import { PrimitivePage } from '../../ui/primitive-page';
 import { TimePickerBoundsExample } from './examples/bounds.example';
-import { TimePickerDisabledExample } from './examples/disabled.example';
+import { TimePickerStatesExample } from './examples/states.example';
 import { TimePickerTimeExample } from './examples/time.example';
 import { SOURCES } from './sources.generated';
 import { DOC } from '../../../generated/docs/primitives/time-picker.generated';
@@ -16,7 +16,7 @@ import { DOC } from '../../../generated/docs/primitives/time-picker.generated';
     PrimitivePage,
     DemoLayout,
     TimePickerTimeExample,
-    TimePickerDisabledExample,
+    TimePickerStatesExample,
     TimePickerBoundsExample,
   ],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
@@ -27,11 +27,11 @@ import { DOC } from '../../../generated/docs/primitives/time-picker.generated';
       </demo-layout>
 
       <demo-layout
-        title="Disabled"
-        subtitle="<code>disabled</code> removes the trigger from the tab order and reflects <code>data-disabled</code>. The listbox can no longer be opened."
-        sourcePath="time-picker/examples/disabled.example.ts"
+        title="States"
+        subtitle="One class and one directive, three states. <code>disabled</code> removes the trigger from the tab order; <code>readonly</code> keeps it focusable and announced. Both refuse to open the listbox, and both reflect a styling hook of their own — <code>data-disabled</code> and <code>data-readonly</code>."
+        sourcePath="time-picker/examples/states.example.ts"
       >
-        <app-time-picker-disabled-example />
+        <app-time-picker-states-example />
       </demo-layout>
 
       <demo-layout

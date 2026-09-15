@@ -4,7 +4,7 @@ import { EXAMPLE_SOURCES } from '../../doc/example-source';
 import { DemoLayout } from '../../ui/demo-layout';
 import { PrimitivePage } from '../../ui/primitive-page';
 import { FieldDefaultExample } from './examples/default.example';
-import { FieldDisabledExample } from './examples/disabled.example';
+import { FieldStatesExample } from './examples/states.example';
 import { FieldValidationExample } from './examples/validation.example';
 import { SOURCES } from './sources.generated';
 import { DOC } from '../../../generated/docs/primitives/field.generated';
@@ -16,7 +16,7 @@ import { DOC } from '../../../generated/docs/primitives/field.generated';
     PrimitivePage,
     DemoLayout,
     FieldDefaultExample,
-    FieldDisabledExample,
+    FieldStatesExample,
     FieldValidationExample,
   ],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
@@ -27,11 +27,11 @@ import { DOC } from '../../../generated/docs/primitives/field.generated';
       </demo-layout>
 
       <demo-layout
-        title="Disabled"
-        subtitle="A disabled native control reflects <code>data-disabled</code> on the <code>[forField]</code> host, so the whole block can dim in one rule. The control stays announced as disabled to assistive tech."
-        sourcePath="field/examples/disabled.example.ts"
+        title="States"
+        subtitle="One class and one directive, four states. The control's own <code>required</code>, <code>invalid</code> and <code>disabled</code> are reflected on the <code>[forField]</code> host as <code>data-required</code>, <code>data-invalid</code> and <code>data-disabled</code>, so the label, the input and the description all key on one element."
+        sourcePath="field/examples/states.example.ts"
       >
-        <app-field-disabled-example />
+        <app-field-states-example />
       </demo-layout>
 
       <demo-layout

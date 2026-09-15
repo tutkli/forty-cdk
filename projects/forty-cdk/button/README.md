@@ -23,6 +23,8 @@ A single `[forButton]` directive does all of this. On a native `<button>` host t
 
 ## Examples
 
+Press and hold either control — a native `<button>` and a `<span>` — and watch `data-pressed`, `data-hovered` and `data-focus-visible` appear on both, so one rule styles the pair.
+
 ### Basic usage
 
 ```html

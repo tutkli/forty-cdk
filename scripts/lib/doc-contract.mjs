@@ -183,23 +183,23 @@ export const HEADING_ALIASES = new Map([
 /**
  * An alias a document keeps, and the reason the rename is not available to it.
  *
- * `## Declarative usage` is Toast's example set, and Toast is exempt from
- * `## Examples` for exactly that reason. The placement half of that is settled
- * — the block the site synthesises for such a page renders where the template
- * orders it ([#1865](https://github.com/tutkli/forty-cdk/issues/1865)) — and
- * the rename is still unavailable, because the site replaces a declared
- * `## Examples` body with the live demos: called by its canonical name, the
- * section's snippet would stop being published at all. The canonical heading
- * becomes available the day that snippet is a live example of its own, and this
- * entry fails the build then rather than outliving its reason.
+ * `## Declarative usage` is Toast's second example set, written as a snippet.
+ * Toast now declares `## Examples` too — it is the section its hero's caption
+ * is authored in ([#1920](https://github.com/tutkli/forty-cdk/issues/1920)) —
+ * and the rename is still unavailable, because the site replaces a declared
+ * `## Examples` body with the live demos: called by its canonical name, this
+ * section's snippet would stop being published at all, and it would be the
+ * second heading of that name besides. The canonical heading becomes available
+ * the day that snippet is a live example of its own, and this entry fails the
+ * build then rather than outliving its reason.
  */
 export const ALIAS_EXEMPTIONS = [
   {
     slug: 'toast',
     section: 'Declarative usage',
     reason:
-      'The example set of a page exempt from ## Examples, and the site replaces a declared ' +
-      'Examples body with its live demos — so the canonical name would unpublish this snippet.',
+      "A snippet-based example set beside the page's own ## Examples, whose body the site " +
+      'replaces with its live demos — so the canonical name would unpublish this snippet.',
   },
 ];
 
@@ -244,22 +244,6 @@ export const SECTION_EXEMPTIONS = [
     reason: 'A declarative overlay — the picker opens from its own trigger, with no manager.',
   },
   {
-    slug: 'dialog',
-    section: 'Examples',
-    reason:
-      'Its live demos carry the section; ## Two flows, one engine is the prose the examples need.',
-  },
-  {
-    slug: 'drag-drop',
-    section: 'Examples',
-    reason: 'Every flow it documents is a live demo; the README pairs each with its own section.',
-  },
-  {
-    slug: 'drawer',
-    section: 'Examples',
-    reason: 'Its live demos carry the section; each behaviour has a section of its own instead.',
-  },
-  {
     slug: 'drawer',
     section: 'Keyboard',
     reason: 'Escape and the focus trap are the dialog pattern, documented under ## Accessibility.',
@@ -285,11 +269,6 @@ export const SECTION_EXEMPTIONS = [
     reason:
       'The entry point is two adapter values; the README states what they are and defers to ' +
       '@internationalized/date for everything they expose.',
-  },
-  {
-    slug: 'menu',
-    section: 'Examples',
-    reason: 'The shared surface is never used alone; each menu-family README carries the demos.',
   },
   {
     slug: 'menu',
@@ -337,11 +316,6 @@ export const SECTION_EXEMPTIONS = [
     reason: 'Its exports are one-liners, listed under ## What it exports with their contracts.',
   },
   {
-    slug: 'table',
-    section: 'Examples',
-    reason: 'Its modes are the examples; each carries a section and a live demo of its own.',
-  },
-  {
     slug: 'table-virtualization',
     section: 'Examples',
     reason: 'An extension of Table, demonstrated from that page.',
@@ -350,11 +324,6 @@ export const SECTION_EXEMPTIONS = [
     slug: 'table-virtualization',
     section: 'Styling',
     reason: 'It adds no piece to style — Table owns the styling reference.',
-  },
-  {
-    slug: 'toast',
-    section: 'Examples',
-    reason: '## Declarative usage is the example set; the imperative flow has its own section.',
   },
   {
     slug: 'time-picker',
@@ -623,6 +592,42 @@ export function checkSections(documents) {
 }
 
 /**
+ * Every document whose `## Examples` opens with something other than the
+ * sentence its page prints above the hero
+ * ([#1920](https://github.com/tutkli/forty-cdk/issues/1920)).
+ *
+ * The caption is documentation prose, so the README owns it and no page file
+ * writes one: a hero the site renders with no sentence beside it is a widget a
+ * reader is not told what to try, and on a form control that widget is a lone
+ * toggle. The compiler lifts the paragraph out of the section — see
+ * `compileDocument` in `scripts/docs/doc-model.mjs` — which is what makes its
+ * absence a fact this check can read off the model rather than a scan of the
+ * markdown.
+ *
+ * Stated over the section rather than over the page, because the page is the
+ * one thing this file cannot see. `doc-caption.spec.ts` closes the other half:
+ * that every page projecting a hero has a document declaring the section at
+ * all.
+ */
+export function checkExamplesCaption(documents) {
+  const problems = [];
+  for (const document of documents) {
+    const examples = document.sections.find((section) => section.slug === 'examples');
+    if (examples === undefined || document.caption !== null) {
+      continue;
+    }
+    problems.push({
+      path: document.path,
+      line: examples.line,
+      message:
+        '"## Examples" does not open with a paragraph — its first line is the caption the page ' +
+        'prints above its hero, so write one sentence there saying what to try and what to watch',
+    });
+  }
+  return problems;
+}
+
+/**
  * Every exemption that no longer earns its place — one naming a document that
  * is gone, and one for a section the document has since written.
  *
@@ -821,6 +826,7 @@ export function checkSectionRuns(documents) {
 export function checkContract(documents) {
   return [
     ...checkSections(documents),
+    ...checkExamplesCaption(documents),
     ...checkExemptions(documents),
     ...checkHeadingAliases(documents),
     ...checkSectionOrder(documents),

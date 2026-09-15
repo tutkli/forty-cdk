@@ -30,6 +30,8 @@ The last case is common enough that this entry point also ships it as a service:
 
 ## Examples
 
+The text is off-screen for a sighted reader and announced in full by a screen reader — the one clip rule, applied for you.
+
 ```ts
 import { Component } from '@angular/core';
 import { ForVisuallyHidden } from 'forty-cdk/visually-hidden';

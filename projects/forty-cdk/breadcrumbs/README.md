@@ -23,6 +23,8 @@ A labelled navigation landmark for a breadcrumb trail: links with aria-current='
 
 ## Examples
 
+Walk the trail with `Tab` — the last crumb is the page you are on, so it carries `aria-current="page"` and is not a link back to itself.
+
 ```ts
 import { Component } from '@angular/core';
 import { ForBreadcrumbItem, ForBreadcrumbSeparator, ForBreadcrumbs } from 'forty-cdk/breadcrumbs';

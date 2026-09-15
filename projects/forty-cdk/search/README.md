@@ -21,6 +21,8 @@ A role='searchbox' text input that mirrors its value to a signal and reflects va
 
 ## Examples
 
+Type in the box and clear it again — the clear button is yours to render, and the host reflects `data-empty` for as long as there is nothing to clear.
+
 ### Basic usage
 
 ```html

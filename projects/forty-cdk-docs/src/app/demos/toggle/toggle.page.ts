@@ -4,9 +4,9 @@ import { EXAMPLE_SOURCES } from '../../doc/example-source';
 import { DemoLayout } from '../../ui/demo-layout';
 import { PrimitivePage } from '../../ui/primitive-page';
 import { ToggleDefaultExample } from './examples/default.example';
-import { ToggleDisabledExample } from './examples/disabled.example';
 import { ToggleFormFieldExample } from './examples/form-field.example';
 import { ToggleGroupExample } from './examples/group.example';
+import { ToggleStatesExample } from './examples/states.example';
 import { SOURCES } from './sources.generated';
 import { DOC } from '../../../generated/docs/primitives/toggle.generated';
 
@@ -17,7 +17,7 @@ import { DOC } from '../../../generated/docs/primitives/toggle.generated';
     PrimitivePage,
     DemoLayout,
     ToggleDefaultExample,
-    ToggleDisabledExample,
+    ToggleStatesExample,
     ToggleGroupExample,
     ToggleFormFieldExample,
   ],
@@ -29,11 +29,11 @@ import { DOC } from '../../../generated/docs/primitives/toggle.generated';
       </demo-layout>
 
       <demo-layout
-        title="Disabled"
-        subtitle="A disabled toggle stays focusable (per APG) — it reflects <code>aria-disabled</code> and <code>data-disabled</code> rather than the native <code>disabled</code> attribute, so assistive tech still announces it while interaction is a no-op."
-        sourcePath="toggle/examples/disabled.example.ts"
+        title="States"
+        subtitle="One class and one directive, three states. Both <code>disabled</code> and <code>readonly</code> stay focusable (per APG) — they reflect <code>aria-disabled</code> / <code>data-disabled</code> and <code>aria-readonly</code> / <code>data-readonly</code> rather than the native <code>disabled</code> attribute, so assistive tech still announces the button while interaction is a no-op."
+        sourcePath="toggle/examples/states.example.ts"
       >
-        <app-toggle-disabled-example />
+        <app-toggle-states-example />
       </demo-layout>
 
       <demo-layout

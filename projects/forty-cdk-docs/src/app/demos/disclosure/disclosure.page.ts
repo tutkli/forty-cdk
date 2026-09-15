@@ -4,14 +4,14 @@ import { EXAMPLE_SOURCES } from '../../doc/example-source';
 import { DemoLayout } from '../../ui/demo-layout';
 import { PrimitivePage } from '../../ui/primitive-page';
 import { DisclosureDefaultExample } from './examples/default.example';
-import { DisclosureDisabledExample } from './examples/disabled.example';
+import { DisclosureStatesExample } from './examples/states.example';
 import { SOURCES } from './sources.generated';
 import { DOC } from '../../../generated/docs/primitives/disclosure.generated';
 
 @Component({
   selector: 'app-disclosure-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [PrimitivePage, DemoLayout, DisclosureDefaultExample, DisclosureDisabledExample],
+  imports: [PrimitivePage, DemoLayout, DisclosureDefaultExample, DisclosureStatesExample],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="disclosure" [doc]="doc">
@@ -20,11 +20,11 @@ import { DOC } from '../../../generated/docs/primitives/disclosure.generated';
       </demo-layout>
 
       <demo-layout
-        title="Disabled"
-        subtitle="<code>disabled</code> drops the trigger from the tab order and blocks toggling, so the panel stays in its current state."
-        sourcePath="disclosure/examples/disabled.example.ts"
+        title="States"
+        subtitle="One class and one directive, two states. <code>disabled</code> drops the trigger from the tab order and blocks toggling, so the panel stays where it is; the root and the trigger both reflect <code>data-disabled</code>, which is all the stylesheet below keys on."
+        sourcePath="disclosure/examples/states.example.ts"
       >
-        <app-disclosure-disabled-example />
+        <app-disclosure-states-example />
       </demo-layout>
     </primitive-page>
   `,

@@ -38,6 +38,8 @@ The menu surface, items, separators, groups, and submenus come from the [`menu/`
 
 ## Examples
 
+Move along the bar with the left / right arrows and open a menu with the down arrow — once one is open, moving the pointer to another opens it without a click.
+
 ```ts
 import { Component, signal } from '@angular/core';
 import { ForMenuContent, ForMenuItem, ForMenuSeparator } from 'forty-cdk/menu';

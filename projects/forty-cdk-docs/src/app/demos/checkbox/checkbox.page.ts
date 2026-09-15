@@ -4,9 +4,9 @@ import { EXAMPLE_SOURCES } from '../../doc/example-source';
 import { DemoLayout } from '../../ui/demo-layout';
 import { PrimitivePage } from '../../ui/primitive-page';
 import { CheckboxDefaultExample } from './examples/default.example';
-import { CheckboxDisabledExample } from './examples/disabled.example';
 import { CheckboxFormFieldExample } from './examples/form-field.example';
 import { CheckboxSelectAllExample } from './examples/select-all.example';
+import { CheckboxStatesExample } from './examples/states.example';
 import { SOURCES } from './sources.generated';
 import { DOC } from '../../../generated/docs/primitives/checkbox.generated';
 
@@ -18,7 +18,7 @@ import { DOC } from '../../../generated/docs/primitives/checkbox.generated';
     DemoLayout,
     CheckboxDefaultExample,
     CheckboxSelectAllExample,
-    CheckboxDisabledExample,
+    CheckboxStatesExample,
     CheckboxFormFieldExample,
   ],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
@@ -37,11 +37,11 @@ import { DOC } from '../../../generated/docs/primitives/checkbox.generated';
       </demo-layout>
 
       <demo-layout
-        title="Disabled"
-        subtitle="<code>disabled</code> keeps the checkbox focusable and announced (per APG) but makes click a no-op, and reflects <code>data-disabled</code>."
-        sourcePath="checkbox/examples/disabled.example.ts"
+        title="States"
+        subtitle="One class and one directive, three states. <code>disabled</code> and <code>readonly</code> both keep the box focusable and announced (per APG) while click and <kbd>Space</kbd> are a no-op; they reflect <code>data-disabled</code> and <code>data-readonly</code>, which is all the stylesheet below keys on."
+        sourcePath="checkbox/examples/states.example.ts"
       >
-        <app-checkbox-disabled-example />
+        <app-checkbox-states-example />
       </demo-layout>
 
       <demo-layout

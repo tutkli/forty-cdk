@@ -78,6 +78,10 @@ export declare function requiredSections(meta: DocMeta, slug: string): readonly 
 
 export declare function checkSections(documents: readonly DocDocument[]): readonly DocMetaProblem[];
 
+export declare function checkExamplesCaption(
+  documents: readonly DocDocument[],
+): readonly DocMetaProblem[];
+
 export declare function checkExemptions(
   documents: readonly DocDocument[],
 ): readonly DocMetaProblem[];

@@ -42,6 +42,8 @@ The focusable, submittable control is the injected `<input>`, not the `role="gro
 
 ## Examples
 
+Type or paste a code — focus advances a slot at a time, the active slot carries `data-active`, and the group reflects `data-complete` once it is full.
+
 ### Stand-alone
 
 ```ts

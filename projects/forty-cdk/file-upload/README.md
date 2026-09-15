@@ -22,6 +22,8 @@ No ARIA role is imposed on the drop zone — it is a plain container. The `<inpu
 
 ## Examples
 
+Click the zone or drop a file on it — `data-dragging` is set while a file hovers the zone, and the chosen files arrive as a `FileList` you render yourself.
+
 ### Stand-alone
 
 ```html

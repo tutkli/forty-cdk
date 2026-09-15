@@ -49,6 +49,10 @@ The template context exposes `row` (`$implicit`), `virtualItem`, `index`, and `c
 For full control (custom DOM, dynamic per-item measurement, a window/document scroller) use the
 headless `injectVirtualizer` core directly, documented below.
 
+## Examples
+
+Scroll the list and watch the DOM: only the rows in view exist, each carrying its own `data-index`, while the sizer keeps the scrollbar honest.
+
 ## Vertical list
 
 ```html

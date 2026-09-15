@@ -91,6 +91,8 @@ bootstrapApplication(App, {
 
 ## Examples
 
+Move across the grid with the arrow keys, page with `PageUp` / `PageDown`, and select with `Enter` — every cell reflects `data-selected`, `data-today` and `data-outside-month`.
+
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { CalendarDate, today, getLocalTimeZone } from '@internationalized/date';

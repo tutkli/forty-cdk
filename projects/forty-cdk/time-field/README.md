@@ -54,6 +54,8 @@ The root iterates its computed `segments()` and renders each part as either an e
 
 ## Examples
 
+Focus a segment and type, or step it with the arrow keys — hour, minute and meridiem are separate spinbuttons, each announced on its own.
+
 ### Stand-alone
 
 ```ts

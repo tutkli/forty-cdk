@@ -39,6 +39,8 @@ If your ratio is a literal constant, prefer the CSS property directly and keep t
 
 ## Examples
 
+Resize the preview and watch the frame hold its 16 / 9 ratio — the primitive writes the ratio and nothing else, so every border, colour and inset below is your own CSS.
+
 ```ts
 import { Component } from '@angular/core';
 import { ForAspectRatio } from 'forty-cdk/aspect-ratio';

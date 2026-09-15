@@ -34,6 +34,8 @@ The menu items, content surface, radio groups, separators, and groups come from 
 
 ## Examples
 
+Open the menu from the trigger and walk the items with the arrow keys — the highlighted item carries `data-highlighted`, and typing jumps to the first match.
+
 ```ts
 import { Component, signal } from '@angular/core';
 import { ForDropdownMenu, ForDropdownMenuTrigger } from 'forty-cdk/dropdown-menu';

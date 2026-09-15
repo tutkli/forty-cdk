@@ -29,6 +29,8 @@ Hides native scrollbars on the inner viewport and exposes synthetic `scrollbar` 
 
 ## Examples
 
+Scroll the pane and watch the custom scrollbar follow — the thumb is sized from the content, and `data-state` says whether the bar is showing.
+
 ```ts
 import { Component } from '@angular/core';
 import {

@@ -136,6 +136,16 @@ export interface DocDocument {
    */
   readonly lede: string | null;
   /**
+   * The markdown of the paragraph `## Examples` opens with — the one line a
+   * page prints above its hero, saying what to try and what to watch
+   * ([#1920](https://github.com/tutkli/forty-cdk/issues/1920)).
+   *
+   * `null` for a document declaring no `## Examples`, and for one whose
+   * section opens with something other than a paragraph. Whether either is
+   * allowed is the contract's question rather than the compiler's.
+   */
+  readonly caption: string | null;
+  /**
    * Everything above the first section bar the lede, which the compiler holds
    * to prose: a table there reaches no page, so it is an error rather than a
    * silent drop.

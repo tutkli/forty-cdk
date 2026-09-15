@@ -57,6 +57,8 @@ Auto-resize is a browser-only DOM side effect, so it is inert under server-side 
 
 ## Examples
 
+Type in the field and watch the `[forInput]` host: `data-empty`, `data-dirty` and `data-touched` follow what the user has actually done to it.
+
 ### Stand-alone
 
 ```ts

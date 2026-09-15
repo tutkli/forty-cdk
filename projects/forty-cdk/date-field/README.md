@@ -47,6 +47,8 @@ bootstrapApplication(App, {
 
 ## Examples
 
+Focus a segment and type, or step it with the arrow keys — each segment is a spinbutton of its own, and one still holding its placeholder carries `data-placeholder`.
+
 ### Stand-alone
 
 ```ts

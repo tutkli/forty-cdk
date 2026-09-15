@@ -8,6 +8,10 @@ import { ForInput } from 'forty-cdk/input';
   template: `
     <div class="stack">
       <label class="row">
+        <span class="row-label">Default</span>
+        <input forInput class="input" type="text" aria-label="Editable field" [(value)]="draft" />
+      </label>
+      <label class="row">
         <span class="row-label">Disabled</span>
         <input
           forInput
@@ -77,6 +81,7 @@ import { ForInput } from 'forty-cdk/input';
   `,
 })
 export class InputStatesExample {
+  protected readonly draft = signal('Type over me');
   protected readonly locked = signal('Cannot edit me');
   protected readonly reference = signal('Read me, do not change me');
 }

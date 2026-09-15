@@ -22,6 +22,8 @@ Headless and presentational — it tracks the load lifecycle of an `<img>` and l
 
 ## Examples
 
+Let the image load, then break its URL: `data-status` moves between `loading`, `loaded` and `error`, and the fallback only appears once the delay has passed without an image.
+
 ```ts
 import { Component, signal } from '@angular/core';
 import { ForAvatar, ForAvatarFallback, ForAvatarImage } from 'forty-cdk/avatar';

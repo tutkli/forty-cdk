@@ -52,6 +52,8 @@ See [Styling forty-cdk](../../../docs/styling.md) for theming guidance.
 
 ## Examples
 
+Walk the steps with their triggers or the arrow keys — each step carries `data-state` for `completed`, `active`, `upcoming` or `disabled`, and the root says which `data-mode` it is in.
+
 ### Interactive mode with linear progression
 
 ```html

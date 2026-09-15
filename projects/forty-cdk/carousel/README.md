@@ -57,6 +57,8 @@ Headless and styleless: it ships slide tracking, keyboard navigation, focus mana
 
 ## Examples
 
+Page through the slides with the buttons, the arrow keys or a drag — `data-dragging` is on while a pointer holds the track, and the root carries `data-orientation`.
+
 ### Basic carousel
 
 ```html
