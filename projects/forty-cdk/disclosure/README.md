@@ -11,6 +11,11 @@ A single trigger that shows or hides a related region of content.
 
 A button toggles the visibility of a content region, wired with `aria-expanded` and `aria-controls`.
 
+## When to choose
+
+- **Disclosure** — one trigger and one region, independent of everything around it. Nothing coordinates it with a neighbour, so several on a page open and close freely.
+- **[Accordion](../accordion/README.md)** — a group of items under one root sharing a `[(value)]`: single mode closes the open panel when another opens, `multiple` allows several, and arrow keys move focus between the triggers. Choose it when the sections belong together and their open state is one decision.
+
 ## Anatomy
 
 ```html

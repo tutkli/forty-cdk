@@ -13,6 +13,12 @@ The keyboard-first counterpart to [Calendar](../calendar/README.md): each day / 
 
 `ForDateField` implements `FormValueControl<D | null>` from `@angular/forms/signals`, so it auto-wires with `[formField]` and auto-associates inside a `[forField]` (label / description / error) with no extra markup. The value stays `null` until every segment is filled.
 
+## When to choose
+
+- **Date Field** — typed entry: one `role="spinbutton"` per date part, in the runtime locale's own order, with no popup at all. Choose it when the user knows the date — a birth date, an expiry — and typing beats pointing.
+- **[Date Picker](../date-picker/README.md)** — a trigger that opens a floating [Calendar](../calendar/README.md), and the form value itself. Choose it when the date is found by looking: the next free Tuesday, a day near the end of the month.
+- **[Calendar](../calendar/README.md)** — that same grid inline and always visible. It is a widget with a `[(value)]` model rather than a form control.
+
 ## Date adapter
 
 Pick one (required). All date math goes through the same pluggable `DateAdapter<D>` as `ForCalendar`, so the library hard-depends on **no** date library. Provide exactly one adapter in your application (or component) providers:

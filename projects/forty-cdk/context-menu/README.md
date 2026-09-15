@@ -13,6 +13,13 @@ Opened via the `contextmenu` event (right-click, long-press on touch) and via th
 
 > New to overlays in forty-cdk? [Your first overlay](../../../docs/your-first-overlay.md) walks a Popover from empty markup to styled-and-animated and explains the `@if` / open-state model and the portal → global CSS rule.
 
+## When to choose
+
+- **Context Menu** — actions for a region, opened by right-click, long-press, `Shift+F10` or the `ContextMenu` key and anchored at the pointer. It is a single-opener preset: one root, one region.
+- **[Dropdown Menu](../dropdown-menu/README.md)** — the same [menu surface](../menu/README.md) opened from a visible `<button>`. Choose it when the actions need a control the user can see and reach with Tab.
+- **[Menu](../menu/README.md)** — the opener-agnostic root, for when one menu definition must be driven by several openers at once (a right-click region _and_ a kebab button).
+- **[Menubar](../menubar/README.md)** — a persistent bar of menus with arrow navigation between them.
+
 ## Anatomy
 
 ```html

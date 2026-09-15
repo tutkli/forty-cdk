@@ -12,6 +12,12 @@ Use it for profile snapshots, link previews, definition cards — any complement
 
 > New to overlays in forty-cdk? [Your first overlay](../../../docs/your-first-overlay.md) walks a Popover from empty markup to styled-and-animated and explains the `@if` / open-state model and the portal → global CSS rule.
 
+## When to choose
+
+- **Hover Card** — a preview opened by hover or focus, whose content may be interactive. It adds no ARIA relationship to its trigger, so the card may only enrich what the trigger already conveys.
+- **[Tooltip](../tooltip/README.md)** — the same hover / focus cadence, but the content is non-interactive and becomes the trigger's `aria-describedby` description. Choose it when the text _is_ the trigger's hint.
+- **[Popover](../popover/README.md)** — opens on activation rather than on hover, and focus moves into the surface. Choose it when the content must be reachable from the keyboard.
+
 ## Anatomy
 
 ```html

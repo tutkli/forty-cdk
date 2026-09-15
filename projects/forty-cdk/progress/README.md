@@ -11,6 +11,11 @@ A bar that reflects the completion progress of a task.
 
 Pass a numeric `value` for a determinate bar, or `null` for indeterminate ("loading…"). The directive owns ARIA + state; the visual fill is yours via `[forProgressIndicator]`.
 
+## When to choose
+
+- **Progress** — `role="progressbar"`, for a task advancing toward completion. `value` accepts `null` for the indeterminate "working…" state, and `announceCompletion` announces the end of the task.
+- **[Meter](../meter/README.md)** — `role="meter"`, for a measurement inside a known range (disk used, battery, score), always determinate and bucketed into quality bands. Screen readers announce the two roles differently, so the choice is meaning rather than appearance: if the number is not going anywhere, it is a meter.
+
 ## Anatomy
 
 ```html

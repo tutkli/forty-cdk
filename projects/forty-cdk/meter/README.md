@@ -11,6 +11,12 @@ A gauge that shows a scalar value within a known range, bucketed into quality ba
 
 Mirrors the HTML5 `<meter>` element: a **measurement** — battery, disk space, score, queue depth — _not_ progress on a task. Use [Progress](../progress) for the latter.
 
+## When to choose
+
+- **Meter** — `role="meter"`, a measurement within a known range, bucketed into quality bands by `low` / `high` / `optimum`. Always determinate: a meter has no unknown state.
+- **[Progress](../progress/README.md)** — `role="progressbar"`, for a task moving toward completion, including the indeterminate case (`value` of `null`). Choose it whenever the number is going somewhere.
+- **[Slider](../slider/README.md)** — when the number is one the user sets rather than one they read.
+
 ## Anatomy
 
 ```html

@@ -15,6 +15,13 @@ It implements the select-only combobox pattern (`role="combobox"` on the trigger
 
 > New to overlays in forty-cdk? [Your first overlay](../../../docs/your-first-overlay.md) walks a Popover from empty markup to styled-and-animated and explains the `@if` / open-state model and the portal → global CSS rule.
 
+## When to choose
+
+- **Select** — a trigger that opens a portaled `role="listbox"` popup. There is no text entry: the value comes from the options, and typing only jumps to a matching one (typeahead). Choose it when the option set is short enough to scan.
+- **[Combobox](../combobox/README.md)** — the same popup behind an editable `<input>`, where typing filters the list as the user goes. Choose it when the list is long enough that scanning it is the slow part.
+- **[Listbox](../listbox/README.md)** — the same option semantics with no overlay and no trigger: an in-page list under roving tabindex. Choose it when the choices should stay visible.
+- **[Dropdown Menu](../dropdown-menu/README.md)** — when the surface runs commands rather than holding a value. A menu is not a form control.
+
 ## Anatomy
 
 ```html

@@ -196,6 +196,7 @@ describe('the rail the published corpus renders', () => {
     const items = railOf('select');
 
     expect(titlesOf(items)).toEqual([
+      'When to choose',
       'Anatomy',
       'Examples',
       'API',

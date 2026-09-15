@@ -11,6 +11,14 @@ A modal window overlaid on the page, with a focus trap, scroll lock and Escape /
 
 > New to overlays in forty-cdk? [Your first overlay](../../../docs/your-first-overlay.md) walks a Popover from empty markup to styled-and-animated and explains the `@if` / open-state model and the portal → global CSS rule.
 
+## When to choose
+
+All three modal-family surfaces float above the page; what separates them is what they do to focus and to everything behind them.
+
+- **Dialog** — modal. Focus is trapped inside the surface, the background is inert and body scroll is locked, so the task has to be finished or dismissed before anything else is reachable.
+- **[Drawer](../drawer/README.md)** — the same modal engine anchored to an edge, plus a pointer drag with swipe-to-dismiss and snap points. Choose it when the surface slides in from a side and the user may drag it.
+- **[Popover](../popover/README.md)** — non-modal. Focus moves in and returns to the trigger on close, but Tab is free to leave and the page behind stays interactive. Choose it when the user should be able to keep working around the surface.
+
 ## Two flows, one engine
 
 The same focus trap, scroll lock, portal, and dismissible-layer behaviors run under both APIs. Pick the one that fits the call site: declaratively, `[forDialog]` is an overlay where **mount equals open** — the consumer's signal drives `@if`, and the directive emits `(dismiss)` when it wants to be unmounted (Escape, backdrop, outside-pointer, outside-focus, close button). There is no `[(open)]` two-way binding on `[forDialog]` — the directive never opens itself, only requests close. Imperatively, `ForDialogManager.open()` creates the surface for you and hands back a `ForDialogRef` — see [Programmatic API](#programmatic-api).

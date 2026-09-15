@@ -13,6 +13,16 @@ A popover is a non-modal dialog: focus moves into the surface on open and return
 
 > New to overlays in forty-cdk? [Your first overlay](../../../docs/your-first-overlay.md) walks a Popover from empty markup to styled-and-animated and explains the `@if` / open-state model and the portal → global CSS rule.
 
+## When to choose
+
+Popover is the one floating surface that opens on activation, takes focus and still leaves the page usable — which is what separates it from both the modal surfaces and the hover ones.
+
+- **Popover** — non-modal `role="dialog"`, opened from its trigger. Focus moves into the surface and returns on close, but Tab may leave and nothing behind it is inert or scroll-locked.
+- **[Dialog](../dialog/README.md)** / **[Drawer](../drawer/README.md)** — modal. Choose either when the rest of the page must be unreachable until the task ends; Drawer adds the edge anchoring, swipe-to-dismiss and snap points.
+- **[Tooltip](../tooltip/README.md)** — opens on hover or focus, never takes focus, and its content must be non-interactive: it is the trigger's description, wired with `aria-describedby`.
+- **[Hover Card](../hover-card/README.md)** — opens on hover or focus and may hold interactive content, but it adds no ARIA relationship to its trigger. Choose it only for a preview whose trigger already stands on its own.
+- For a list of commands reach for [Dropdown Menu](../dropdown-menu/README.md), and for a value picked from options [Select](../select/README.md) — `role="dialog"` announces neither.
+
 ## Anatomy
 
 ```html

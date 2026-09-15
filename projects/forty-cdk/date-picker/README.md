@@ -13,6 +13,12 @@ Reinterpreted idiomatically for modern Angular: a focusable trigger that opens a
 
 `ForDatePicker` is the root **and** the form value — it implements `FormValueControl<D | null>` from `@angular/forms/signals`, so it auto-wires with `[formField]`. The trigger is the focusable control that carries `name` / `disabled` / `invalid`; selection state flows root → projected calendar via `[(value)]`. The library reuses its existing overlay stack (trigger-anchored Popover positioning, dismissible layer, return-focus) rather than re-implementing positioning, dismissal, or focus return — and the modal opt-in routes through the shared modal shell (focus trap + inert background + scroll lock).
 
+## When to choose
+
+- **Date Picker** — a trigger plus a floating [Calendar](../calendar/README.md), and the form value itself (`FormValueControl<D | null>`). Choose it when the date is found by looking and the grid should stay out of the way until asked for.
+- **[Calendar](../calendar/README.md)** — the same grid inline and always visible. It exposes `[(value)]` as a model but implements no form-control contract, so a form binds the picker rather than the calendar.
+- **[Date Field](../date-field/README.md)** — segmented keyboard entry with no grid and no popup. Choose it when the user already knows the date and typing is the fast path.
+
 ## Date adapter
 
 All date math and formatting go through a `DateAdapter<D>`, shared with `ForCalendar`, so the library hard-depends on **no** date library. Provide exactly one adapter in your application (or component) providers (required):
