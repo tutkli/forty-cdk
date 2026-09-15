@@ -11,6 +11,13 @@ A button that opens a menu of actions, with full keyboard navigation, typeahead 
 
 > New to overlays in forty-cdk? [Your first overlay](../../../docs/your-first-overlay.md) walks a Popover from empty markup to styled-and-animated and explains the `@if` / open-state model and the portal → global CSS rule.
 
+## When to choose
+
+- **Dropdown Menu** — a `<button>` that opens a menu of commands. Items run an action and close the surface; the menu carries no form value.
+- **[Context Menu](../context-menu/README.md)** — the same [menu surface](../menu/README.md), opened by right-click, long-press, `Shift+F10` or the `ContextMenu` key and anchored at the pointer. Choose it when the actions belong to a region instead of to a visible control.
+- **[Menubar](../menubar/README.md)** — a persistent bar of triggers with roving tabindex and cross-menu arrow navigation. Choose it when several menus sit together, as in a desktop application.
+- **[Select](../select/README.md)** — when the surface produces a value. `role="menu"` announces commands; `role="listbox"` announces options.
+
 ## Anatomy
 
 ```html

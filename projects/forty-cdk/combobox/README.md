@@ -22,6 +22,14 @@ Two anatomies share the same core:
 
 `[forCombobox]` is generic over the option value type `T` (default `string`). Bind primitive ids for the simple case or full objects for richer models — the directive infers `T` from `[(value)]` and `[forComboboxOption][value]`. See [Object values](#object-values) for the object-mode contract.
 
+## When to choose
+
+- **Combobox** — an editable `<input>` that filters a `role="listbox"` popup as the user types, with `aria-activedescendant` keeping DOM focus in the field.
+- **[Select](../select/README.md)** — the same popup with a non-editable trigger. Choose it when the value must come from the options and typing is only typeahead.
+- **[Listbox](../listbox/README.md)** — no overlay and no field: an in-page list of options, always visible.
+
+The picker anatomy blurs the line on purpose — a `[forComboboxTrigger]` button shows the committed value while the search input lives inside the panel. Reach for it when the collapsed control should read like a Select but the list still needs filtering.
+
 ## Anatomy
 
 The editable (default) anatomy — an `<input>` that filters a portaled listbox in place:

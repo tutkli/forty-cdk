@@ -11,6 +11,13 @@ A scrollable list of selectable options with roving-tabindex navigation, single 
 
 It also supports typeahead and `FormValueControl<readonly T[]>` integration. `[forListbox]` is generic over the option value type `T` (default `string`). Bind primitive ids for the simple case or full objects for richer models — the directive infers `T` from `[(value)]` and `[forListboxOption][value]`. See [Object values](#object-values) for the object-mode contract.
 
+## When to choose
+
+- **Listbox** — an in-page list of options with roving tabindex and typeahead. No trigger, no overlay, no text field: the options are always visible.
+- **[Select](../select/README.md)** — the same option semantics behind a trigger that opens a portaled popup. Choose it when the list should stay collapsed until asked for.
+- **[Combobox](../combobox/README.md)** — a popup driven by an editable input, so the user narrows the list by typing.
+- **[Dropdown Menu](../dropdown-menu/README.md)** — for commands rather than a value: menu items run an action and the surface holds no selection.
+
 ## Anatomy
 
 ```html

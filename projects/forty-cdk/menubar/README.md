@@ -11,6 +11,13 @@ A horizontal bar of menus, as in a desktop application, with roving tabindex acr
 
 A bar of triggers — horizontal or vertical — each opening a dropdown menu, with cross-menu ArrowLeft / ArrowRight navigation and hover-after-first-open.
 
+## When to choose
+
+- **Menubar** — a persistent bar of menu triggers: roving tabindex across the bar, ArrowLeft / ArrowRight between menus, and one menu open at a time.
+- **[Dropdown Menu](../dropdown-menu/README.md)** — a single trigger and its menu, with no bar and no cross-menu navigation. Choose it unless the menus genuinely belong to one bar.
+- **[Context Menu](../context-menu/README.md)** — the same actions opened by right-click at the pointer.
+- **[Toolbar](../toolbar/README.md)** — the same one-Tab-stop bar shape when the controls act directly (buttons, toggles) instead of opening menus.
+
 ## Anatomy
 
 ```html

@@ -13,6 +13,12 @@ Headless and styleless — the date table at the heart of the APG [Date Picker D
 
 `ForCalendar` is the grid widget, **not a form value** — it exposes `[(value)]` as a `model<D | null>`. The form-control contract (`FormValueControl<D>`) arrives with the follow-up `ForDatePicker` / `ForDateField`.
 
+## When to choose
+
+- **Calendar** — the date grid itself, always visible, exposing `[(value)]` as a model. It is a widget, not a form control: it implements no `FormValueControl` contract, so `[formField]` binds a picker or a field instead.
+- **[Date Picker](../date-picker/README.md)** — wraps this same grid in a trigger-anchored floating surface and _is_ the form value. Choose it when a form owns the date and the grid should stay collapsed until asked for.
+- **[Date Field](../date-field/README.md)** — segmented typed entry with no grid. Choose it when the date is known rather than browsed.
+
 ## Date adapter
 
 All date math goes through a `DateAdapter<D>`, so the library hard-depends on **no** date library. Provide exactly one adapter in your application (or component) providers (required):

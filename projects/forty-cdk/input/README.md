@@ -10,6 +10,12 @@ Attribute directives for single- and multi-line text: a string value() that auto
 
 `ForInput` and `ForTextarea` implement Angular's `FormValueControl<string>` from `@angular/forms/signals`, so they auto-wire with `[formField]` and auto-associate inside a [`[forField]`](../field/README.md) — label, description, and error wiring — with zero extra markup. These are thin wrappers, not re-implementations: the native `<input>` / `<textarea>` keeps its own `type`, caret, IME composition, and native form submission. The directive only bridges the value to a signal and reflects validation state.
 
+## When to choose
+
+- **Input / Textarea** — the control. `[forInput]` / `[forTextarea]` sit on a native `<input>` / `<textarea>`, bridge its string value to a signal and reflect validation state; the element keeps its own `type`, caret and IME behaviour.
+- **[Field](../field/README.md)** — the wiring around a control: label, description and error region tied to it by id, with no value of its own. It renders nothing and never replaces the input — the two are used together.
+- When the value is not free text, reach for the control that models it: [Number Input](../number-input/README.md), [Date Field](../date-field/README.md), [Select](../select/README.md) or [Combobox](../combobox/README.md).
+
 ## Anatomy
 
 ```html

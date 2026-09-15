@@ -10,6 +10,12 @@ Headless wiring that ties a label, description and error region to a control, an
 
 It renders **nothing** and imposes no layout, and there is **no control contract to implement**: every forty-cdk form primitive (`FormValueControl` / `FormCheckboxControl`) already exposes the state the field needs (`id` / `aria-labelledby` / `aria-describedby` / `aria-errormessage` association plus `data-*` validation hooks), so wrapping one in a `[forField]` auto-associates it with zero extra markup.
 
+## When to choose
+
+- **Field** — the wiring, not the control. It owns the control's id, ties `[forLabel]`, `[forFieldDescription]` and `[forFieldError]` to it through `aria-labelledby` / `aria-describedby` / `aria-errormessage`, and reflects validation state as `data-*`. It renders no element and holds no value.
+- **[Input](../input/README.md)** — and every other form primitive — is what holds the value. A field wraps exactly one of them; it never stands in for one.
+- **[Fieldset](../fieldset/README.md)** — the grouping above it: one accessible name and an optional shared disabled state over several fields.
+
 ## Anatomy
 
 ```html

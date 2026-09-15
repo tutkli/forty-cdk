@@ -11,6 +11,12 @@ A side or bottom sheet built on the modal dialog pattern, adding pointer-driven 
 
 It shares the same focus trap, scroll lock, Escape-to-close, dismissible-layer, and portal behaviors as `ForDialog`, plus a pointer-driven drag engine.
 
+## When to choose
+
+- **Drawer** — an edge-anchored sheet on the modal dialog engine: focus trap, inert background and scroll lock, plus a pointer drag that swipes it away or rests it on a snap point.
+- **[Dialog](../dialog/README.md)** — the same modal behaviour without the edge anchoring, the drag or the snap points. Choose it for a surface you place with CSS and dismiss with Escape, the backdrop or a close button.
+- **[Popover](../popover/README.md)** — non-modal and anchored to its trigger. Choose it when the page behind must stay interactive while the surface is open.
+
 ## Two flows, one engine
 
 Same engine as Dialog: the directive composes focus trap + scroll lock + dismissible layer + portal + (additionally) swipe-dismiss. Pick declarative or programmatic.

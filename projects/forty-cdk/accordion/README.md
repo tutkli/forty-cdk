@@ -9,6 +9,12 @@ apgUrl: https://www.w3.org/WAI/ARIA/apg/patterns/accordion/
 
 A stack of collapsible sections, optionally allowing multiple panels open at once.
 
+## When to choose
+
+- **Accordion** — a group of collapsible items under one root. `[(value)]` holds which are open, `multiple` decides whether more than one may be, and ArrowUp / ArrowDown / Home / End move focus across the triggers.
+- **[Disclosure](../disclosure/README.md)** — a single trigger and its region, with no shared state and no arrow-key navigation. Stacking several of them is not an accordion, and that is the right shape when the panels are unrelated.
+- **[Tabs](../tabs/README.md)** — when exactly one panel is ever visible and the panels are alternatives rather than sections the reader may open together.
+
 ## Anatomy
 
 ```html

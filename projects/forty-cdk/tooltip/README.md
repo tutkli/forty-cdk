@@ -15,6 +15,12 @@ Hover / focus delays, Escape-to-dismiss, portal rendering, and `@floating-ui/dom
 
 > APG: tooltips are for **non-interactive** descriptive text. If you need a click-to-open menu / popup with focusable contents, use a Popover primitive.
 
+## When to choose
+
+- **Tooltip** — `role="tooltip"`, opened on hover or focus and never focusable itself. While open it becomes the trigger's `aria-describedby` description, so its content must be non-interactive text.
+- **[Hover Card](../hover-card/README.md)** — the same open-on-dwell cadence, but its content may hold links and buttons and it names nothing. Choose it when the surface is a preview to read or click, not a description of the trigger.
+- **[Popover](../popover/README.md)** — opens on activation and moves focus into the surface. Choose it whenever the content contains anything the user has to operate.
+
 ## Anatomy
 
 ```html
