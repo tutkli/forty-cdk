@@ -19,11 +19,7 @@ import { DOC } from '../../../generated/docs/primitives/avatar.generated';
         <app-avatar-default-example />
       </demo-layout>
 
-      <demo-layout
-        title="Failed load"
-        subtitle="When the image errors, the directive flips <code>shouldShowFallback()</code> and the initials render in its place — an error shows the fallback at once, skipping the <code>fallbackDelayMs</code> wait."
-        sourcePath="avatar/examples/fallback.example.ts"
-      >
+      <demo-layout heading="failed-load" sourcePath="avatar/examples/fallback.example.ts">
         <app-avatar-fallback-example />
       </demo-layout>
     </primitive-page>

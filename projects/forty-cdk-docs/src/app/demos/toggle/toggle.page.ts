@@ -28,27 +28,15 @@ import { DOC } from '../../../generated/docs/primitives/toggle.generated';
         <app-toggle-default-example />
       </demo-layout>
 
-      <demo-layout
-        title="States"
-        subtitle="One class and one directive, three states. Both <code>disabled</code> and <code>readonly</code> stay focusable (per APG) — they reflect <code>aria-disabled</code> / <code>data-disabled</code> and <code>aria-readonly</code> / <code>data-readonly</code> rather than the native <code>disabled</code> attribute, so assistive tech still announces the button while interaction is a no-op."
-        sourcePath="toggle/examples/states.example.ts"
-      >
+      <demo-layout heading="states" sourcePath="toggle/examples/states.example.ts">
         <app-toggle-states-example />
       </demo-layout>
 
-      <demo-layout
-        title="ToggleGroup"
-        subtitle="A group of toggles with roving tabindex. In <code>multiple</code> mode each item toggles independently; arrows only move focus — selection needs <kbd>Space</kbd> / <kbd>Enter</kbd> or click."
-        sourcePath="toggle/examples/group.example.ts"
-      >
+      <demo-layout heading="togglegroup" sourcePath="toggle/examples/group.example.ts">
         <app-toggle-group-example />
       </demo-layout>
 
-      <demo-layout
-        title="Signal Forms"
-        subtitle="<code>ForToggleGroup</code> implements <code>FormValueControl&lt;readonly string[]&gt;</code>, so <code>[formField]</code> binds the pressed-values array to a form field. This single-select alignment group is required: clearing the choice and blurring marks the group <code>data-invalid</code> / <code>data-touched</code>."
-        sourcePath="toggle/examples/form-field.example.ts"
-      >
+      <demo-layout heading="signal-forms" sourcePath="toggle/examples/form-field.example.ts">
         <app-toggle-form-field-example />
       </demo-layout>
     </primitive-page>

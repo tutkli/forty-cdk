@@ -77,53 +77,13 @@ export class DropdownMenuDefaultExample {}
 
 `@if` is what makes Angular's `animate.enter` / `animate.leave` work — they fire on real mount / unmount.
 
-### `#menu="forDropdownMenu"` vs. `[(open)]`
+### Checkbox & radio items
 
-The minimal "click trigger → show menu" case needs **neither** a separate `open` signal **nor** a two-way binding. `[forDropdownMenu]` is `exportAs: 'forDropdownMenu'`, so expose the directive instance with a template reference variable — `#menu="forDropdownMenu"` — and drive the `@if` straight off its own `open()` signal, as above. Trigger interactions, item activation, Escape, and outside dismissal all flip it.
+A settings-style dropdown built from the full menu vocabulary: `forMenuGroup` with a `forMenuGroupLabel` header, `forMenuCheckboxItem` toggles (role `menuitemcheckbox`) and a `forMenuRadioGroup` of `forMenuRadioItem` options (role `menuitemradio`). Each item carries a `forMenuItemIndicator` that paints its checkmark / dot from the item's checked state. Calling `preventDefault()` on `(activate)` keeps the menu open so several options can be flipped in one pass — try `Space` to toggle without closing.
 
-Reach for the explicit `[(open)]="mySignal"` model binding only when the component class needs to read or drive open state — open it programmatically, persist it, or react to it elsewhere:
+### Submenus
 
-```html
-<div forDropdownMenu [(open)]="open">
-  <button forDropdownMenuTrigger class="dropdown-menu-trigger">Options</button>
-  @if (open()) {
-  <div forMenuContent>…</div>
-  }
-</div>
-```
-
-### Triggers stamped from outside-declared templates
-
-Angular resolves `ng-template` DI at the template's **declaration** site, not where it is stamped. A `[forDropdownMenuTrigger]` declared in a template outside the root throws the orphan error even when the template is rendered inside the root via `ngTemplateOutlet`. For that case the selector attribute accepts the root reference as a value, `routerLink`-style — grab it with `#root="forDropdownMenu"` and pass it through the outlet context. The bare valueless attribute keeps resolving via DI.
-
-```html
-<div forDropdownMenu #root="forDropdownMenu">
-  <ng-container *ngTemplateOutlet="trig; context: { root }" />
-  @if (root.open()) {
-  <div forMenuContent>…</div>
-  }
-</div>
-
-<ng-template #trig let-root="root">
-  <button [forDropdownMenuTrigger]="root">Options</button>
-</ng-template>
-```
-
-### Sharing one menu with a second opener
-
-`[forDropdownMenu]` is a **single-opener preset**: one root, one button trigger. When the same actions must also be reachable another way — the canonical case being a table row with a kebab button _and_ a right-click region over the whole row — bind the trigger to a `[forMenu]` root instead, which drives one `[forMenuContent]` block from any number of openers. See [Shared openers](../menu/README.md#shared-openers-formenu).
-
-```html
-<tr forMenu #row="forMenu" [(open)]="open" ariaLabel="Row actions">
-  <td [forContextMenuTrigger]="row">…cells…</td>
-  <td>
-    <button [forDropdownMenuTrigger]="row" [menuPositioning]="{ sideOffset: 4 }">⋮</button>
-  </td>
-  <!-- one content block, no duplication -->
-</tr>
-```
-
-`[menuPositioning]` is the trigger's own placement override — a partial `{ side, align, sideOffset, alignOffset }`, each key falling back to the root's input when omitted. It exists because a shared root cannot pick offsets that suit heterogeneous openers: the `sideOffset: 4` above keeps the button-opened menu clear of the button while a sibling right-click region still opens flush at the cursor. Under a `[forDropdownMenu]` root it resolves the same way, where it is simply a per-trigger spelling of the root's inputs. See [Per-opener positioning](../menu/README.md#per-opener-positioning).
+`forMenuSub` nests a second menu under a `forMenuSubTrigger` item (role `menuitem`, `aria-haspopup=menu`). The submenu owns its own open model and item collection, and its `forMenuSubContent` reuses the menu surface positioned to the side of the trigger. Submenus nest arbitrarily — here a third level sits inside the second. `ArrowRight` opens a submenu and focuses its first item; `ArrowLeft` collapses back to the parent; `Escape` closes one level at a time.
 
 ## API
 
@@ -204,6 +164,54 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 - **Trigger is exempt** from outside-pointer / outside-focus checks. Without this, clicking the trigger to close would race with its own toggle handler and reopen immediately.
 - **Initial focus depends on the opening key.** Click / Space / Enter / ArrowDown focus the first enabled item; ArrowUp focuses the last enabled item. The same keys re-focus that item when the menu is already open.
 - **Selecting an item closes the menu** by default. To keep the menu open after activation (multi-select pattern), call `$event.preventDefault()` in the item's `(activate)` handler.
+
+### `#menu="forDropdownMenu"` vs. `[(open)]`
+
+The minimal "click trigger → show menu" case needs **neither** a separate `open` signal **nor** a two-way binding. `[forDropdownMenu]` is `exportAs: 'forDropdownMenu'`, so expose the directive instance with a template reference variable — `#menu="forDropdownMenu"` — and drive the `@if` straight off its own `open()` signal, as above. Trigger interactions, item activation, Escape, and outside dismissal all flip it.
+
+Reach for the explicit `[(open)]="mySignal"` model binding only when the component class needs to read or drive open state — open it programmatically, persist it, or react to it elsewhere:
+
+```html
+<div forDropdownMenu [(open)]="open">
+  <button forDropdownMenuTrigger class="dropdown-menu-trigger">Options</button>
+  @if (open()) {
+  <div forMenuContent>…</div>
+  }
+</div>
+```
+
+### Triggers stamped from outside-declared templates
+
+Angular resolves `ng-template` DI at the template's **declaration** site, not where it is stamped. A `[forDropdownMenuTrigger]` declared in a template outside the root throws the orphan error even when the template is rendered inside the root via `ngTemplateOutlet`. For that case the selector attribute accepts the root reference as a value, `routerLink`-style — grab it with `#root="forDropdownMenu"` and pass it through the outlet context. The bare valueless attribute keeps resolving via DI.
+
+```html
+<div forDropdownMenu #root="forDropdownMenu">
+  <ng-container *ngTemplateOutlet="trig; context: { root }" />
+  @if (root.open()) {
+  <div forMenuContent>…</div>
+  }
+</div>
+
+<ng-template #trig let-root="root">
+  <button [forDropdownMenuTrigger]="root">Options</button>
+</ng-template>
+```
+
+### Sharing one menu with a second opener
+
+`[forDropdownMenu]` is a **single-opener preset**: one root, one button trigger. When the same actions must also be reachable another way — the canonical case being a table row with a kebab button _and_ a right-click region over the whole row — bind the trigger to a `[forMenu]` root instead, which drives one `[forMenuContent]` block from any number of openers. See [Shared openers](../menu/README.md#shared-openers-formenu).
+
+```html
+<tr forMenu #row="forMenu" [(open)]="open" ariaLabel="Row actions">
+  <td [forContextMenuTrigger]="row">…cells…</td>
+  <td>
+    <button [forDropdownMenuTrigger]="row" [menuPositioning]="{ sideOffset: 4 }">⋮</button>
+  </td>
+  <!-- one content block, no duplication -->
+</tr>
+```
+
+`[menuPositioning]` is the trigger's own placement override — a partial `{ side, align, sideOffset, alignOffset }`, each key falling back to the root's input when omitted. It exists because a shared root cannot pick offsets that suit heterogeneous openers: the `sideOffset: 4` above keeps the button-opened menu clear of the button while a sibling right-click region still opens flush at the cursor. Under a `[forDropdownMenu]` root it resolves the same way, where it is simply a per-trigger spelling of the root's inputs. See [Per-opener positioning](../menu/README.md#per-opener-positioning).
 
 ## Wrapping in a design system
 

@@ -82,6 +82,10 @@ export declare function checkExamplesCaption(
   documents: readonly DocDocument[],
 ): readonly DocMetaProblem[];
 
+export declare function checkExampleHeadings(
+  documents: readonly DocDocument[],
+): readonly DocMetaProblem[];
+
 export declare function checkExemptions(
   documents: readonly DocDocument[],
 ): readonly DocMetaProblem[];

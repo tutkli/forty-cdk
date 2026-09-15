@@ -26,17 +26,12 @@ import { DOC } from '../../../generated/docs/primitives/field.generated';
         <app-field-default-example />
       </demo-layout>
 
-      <demo-layout
-        title="States"
-        subtitle="One class and one directive, four states. The control's own <code>required</code>, <code>invalid</code> and <code>disabled</code> are reflected on the <code>[forField]</code> host as <code>data-required</code>, <code>data-invalid</code> and <code>data-disabled</code>, so the label, the input and the description all key on one element."
-        sourcePath="field/examples/states.example.ts"
-      >
+      <demo-layout heading="states" sourcePath="field/examples/states.example.ts">
         <app-field-states-example />
       </demo-layout>
 
       <demo-layout
-        title="Validation with Signal Forms"
-        subtitle="<code>[forFieldError]</code> reads the control's Signal Forms errors automatically — you render <code>err.messages()</code>, the field wires <code>aria-errormessage</code> and folds the id into <code>aria-describedby</code> while invalid. The <code>[forCheckbox]</code> auto-associates because it extends the shared form base. Tick then untick to surface the required error."
+        heading="validation-with-signal-forms"
         sourcePath="field/examples/validation.example.ts"
       >
         <app-field-validation-example />

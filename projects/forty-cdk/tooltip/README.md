@@ -86,22 +86,13 @@ import {
 export class TooltipDefaultExample {}
 ```
 
-### Triggers stamped from outside-declared templates
+### Overflow-only
 
-Angular resolves `ng-template` DI at the template's **declaration** site, not where it is stamped. A `[forTooltipTrigger]` declared in a template outside the root throws the orphan error even when the template is rendered inside the root via `ngTemplateOutlet`. For that case the selector attribute accepts the root reference as a value, `routerLink`-style — grab it with `#root="forTooltip"` and pass it through the outlet context. The bare valueless attribute keeps resolving via DI.
+With `showOnOverflow` the tooltip opens only when the trigger's own text is actually truncated — ideal for table cells or file paths that may or may not fit. The short label fits and stays silent; the long one is clipped, so the full text appears.
 
-```html
-<span forTooltip #root="forTooltip">
-  <ng-container *ngTemplateOutlet="trig; context: { root }" />
-  @if (root.open()) {
-  <div forTooltipContent>Save changes</div>
-  }
-</span>
+### Hoverable content
 
-<ng-template #trig let-root="root">
-  <button type="button" [forTooltipTrigger]="root" aria-label="Save">💾</button>
-</ng-template>
-```
+With `hoverableContent` the bubble keeps `pointer-events`, so the pointer can rest on it to read or select long text without dismissing it. A pointer-grace safe triangle bridges the trigger-to-content gap. The content must still stay non-interactive per APG.
 
 ## API
 
@@ -320,6 +311,23 @@ While `disabled` is `true`, hover and focus are ignored and an already-open tool
 - **Closes on scroll.** When an ancestor scroll container moves content under a stationary cursor (wheel / trackpad scrolling a virtualized or overflow-scroll list), an open tooltip closes immediately and hover opens stay suppressed for a short window while the scroll is in flight — so tooltips on rows sliding past the pointer don't linger or flicker open. This is always on; a genuine pointer move after scrolling settles opens the tooltip normally again.
 - **Touch**: APG flags tooltips as problematic on touch devices (no hover, no separate focus, no obvious dismiss). The trigger filters touch pointers out of both the hover-open and focus-open paths, so a tap does **not** open the tooltip — only mouse hover and keyboard focus do. For touch-first UI where the descriptive content must be reachable on tap, consider a Popover.
 - **Arrow offset**: `[forTooltipArrow]` writes `position: absolute`, the floating-ui-resolved `left` / `top`, and `var(--for-floating-arrow-offset, 0px)` on the side opposite the bubble. Set `--for-floating-arrow-offset` on the arrow (or any ancestor) to control how far the arrow pokes out — typically a negative `px` value such as `-4px`. Defaults to `0px`.
+
+### Triggers stamped from outside-declared templates
+
+Angular resolves `ng-template` DI at the template's **declaration** site, not where it is stamped. A `[forTooltipTrigger]` declared in a template outside the root throws the orphan error even when the template is rendered inside the root via `ngTemplateOutlet`. For that case the selector attribute accepts the root reference as a value, `routerLink`-style — grab it with `#root="forTooltip"` and pass it through the outlet context. The bare valueless attribute keeps resolving via DI.
+
+```html
+<span forTooltip #root="forTooltip">
+  <ng-container *ngTemplateOutlet="trig; context: { root }" />
+  @if (root.open()) {
+  <div forTooltipContent>Save changes</div>
+  }
+</span>
+
+<ng-template #trig let-root="root">
+  <button type="button" [forTooltipTrigger]="root" aria-label="Save">💾</button>
+</ng-template>
+```
 
 ## Wrapping in a design system
 

@@ -33,8 +33,6 @@ Use the one that matches your semantics. `ForSwitch` and `ForCheckbox` are inten
 
 Toggle it with the pointer, `Space` or `Enter`, and watch `data-state` follow.
 
-### Stand-alone
-
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { ForSwitch } from 'forty-cdk/switch';
@@ -57,9 +55,13 @@ export class SwitchDefaultExample {
 }
 ```
 
+### States
+
+One class and one directive, three states. `disabled` and `readonly` both keep the switch focusable and announced (per APG) while interaction is a no-op; they reflect `aria-disabled` / `data-disabled` and `aria-readonly` / `data-readonly`, which is all the example's stylesheet keys on.
+
 ### Signal Forms
 
-`ForSwitch` implements `FormCheckboxControl`. The `[formField]` directive detects the interface and wires everything — value, disabled, required, invalid, errors, touched — without any glue.
+`forSwitch` implements `FormCheckboxControl`, so a single `[formField]` binding wires checked state, validity and touched both ways — no `ControlValueAccessor`.
 
 ```ts
 import { Component, signal } from '@angular/core';

@@ -6,6 +6,7 @@ export type {
   DocPageBehaviorGroup,
   DocPageBlock,
   DocPageCell,
+  DocPageExample,
   DocPageHeading,
   DocPagePlainTable,
   DocPageSection,

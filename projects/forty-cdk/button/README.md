@@ -43,7 +43,11 @@ import { ForButton } from 'forty-cdk/button';
 export class ButtonDefaultExample {}
 ```
 
-### Basic usage
+### Disabled stays focusable
+
+Per the APG, a disabled button must stay reachable so assistive tech can announce it. `forButton` never sets the native `disabled` attribute — it reflects `aria-disabled='true'` + `data-disabled` and makes activation a no-op. The native disabled button is skipped entirely.
+
+## Basic usage
 
 ```html
 <!-- Native button — platform handles Enter/Space → click synthesis -->
@@ -53,7 +57,7 @@ export class ButtonDefaultExample {}
 <div forButton (activate)="save()">Save</div>
 ```
 
-### Disabled
+## Disabled
 
 Disabled buttons stay focusable so assistive technology can announce them. The native `disabled` attribute is never set; instead `aria-disabled="true"` is reflected.
 
@@ -70,7 +74,7 @@ A surrounding disabled `[forFieldset]` disables the button too — its `disabled
 </fieldset>
 ```
 
-### Preserve consumer `type`
+## Preserve consumer `type`
 
 A native `<button>` without an explicit `type` attribute defaults to `type="button"`. A consumer-set `type="submit"` is preserved:
 

@@ -34,49 +34,34 @@ import { DOC } from '../../../generated/docs/primitives/date-field.generated';
         <app-date-field-default-example />
       </demo-layout>
 
-      <demo-layout
-        title="Date & time"
-        subtitle="With a time-capable adapter, a <code>granularity</code> coarser than <code>'day'</code> appends hour / minute segments and the value becomes a <code>CalendarDateTime</code>. A 12-hour cycle adds an AM/PM segment you toggle with <kbd>↑</kbd> / <kbd>↓</kbd> or by typing <kbd>a</kbd> / <kbd>p</kbd>."
-        sourcePath="date-field/examples/date-time.example.ts"
-      >
+      <demo-layout heading="date--time" sourcePath="date-field/examples/date-time.example.ts">
         <app-date-field-date-time-example />
       </demo-layout>
 
       <demo-layout
-        title="Localized segment labels"
-        subtitle="<code>provideForDateFieldDefaults({ segmentLabels })</code> overrides the accessible name each segment announces, scoped to this injector. A screen reader reads the focused segment as 'día' / 'mes' / 'año' instead of the English default."
+        heading="localized-segment-labels"
         sourcePath="date-field/examples/localized.example.ts"
       >
         <app-date-field-localized-example />
       </demo-layout>
 
-      <demo-layout
-        title="Signal Forms"
-        subtitle="<code>ForDateField</code> implements <code>FormValueControl&lt;CalendarDate | null&gt;</code>, so a single <code>[formField]</code> binding wires the committed value into the form and pulls validity and touched back out — no <code>ControlValueAccessor</code>."
-        sourcePath="date-field/examples/form-field.example.ts"
-      >
+      <demo-layout heading="signal-forms" sourcePath="date-field/examples/form-field.example.ts">
         <app-date-field-form-field-example />
       </demo-layout>
 
-      <demo-layout
-        title="Date range"
-        subtitle="<code>ForDateRangeField</code> is the range variant, shipped from this same entry point. Two labelled endpoint groups share locale, granularity and bounds; each is its own tab stop, so <kbd>Tab</kbd> steps start → end while the arrows move between segments inside one endpoint."
-        sourcePath="date-field/examples/range.example.ts"
-      >
+      <demo-layout heading="date-range" sourcePath="date-field/examples/range.example.ts">
         <app-date-range-field-default-example />
       </demo-layout>
 
       <demo-layout
-        title="Date & time range"
-        subtitle="With a time-capable adapter, a <code>granularity</code> coarser than <code>'day'</code> appends time segments to both endpoints and the value becomes a <code>CalendarDateTime</code> range — handy for a check-in to check-out with times. A 12-hour <code>hourCycle</code> adds an AM/PM segment to each side."
+        heading="date--time-range"
         sourcePath="date-field/examples/range-date-time.example.ts"
       >
         <app-date-range-field-date-time-example />
       </demo-layout>
 
       <demo-layout
-        title="Range in Signal Forms"
-        subtitle="<code>ForDateRangeField</code> implements <code>FormValueControl&lt;DateRange | null&gt;</code>, so <code>[formField]</code> binds the committed range into the form and pulls validation back out. A half-entered or out-of-order range keeps <code>value()</code> null, so a <code>required</code> field stays invalid until both endpoints are filled and ordered."
+        heading="range-in-signal-forms"
         sourcePath="date-field/examples/range-form-field.example.ts"
       >
         <app-date-range-field-form-field-example />

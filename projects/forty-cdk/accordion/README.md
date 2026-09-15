@@ -95,6 +95,18 @@ export class AccordionDefaultExample {
 }
 ```
 
+### Multiple
+
+`multiple` lets several sections stay open at once, so `value` holds an array of every open item.
+
+### Horizontal
+
+`orientation='horizontal'` lays the sections out in a row and switches roving navigation to `ArrowLeft` / `ArrowRight`. It is reflected as `data-orientation` for styling.
+
+### Disabled item
+
+A disabled item cannot be toggled and is skipped by the arrow keys, while staying in the DOM for screen readers.
+
 ## API
 
 ### `ForAccordion`

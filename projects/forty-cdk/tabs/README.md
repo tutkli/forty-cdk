@@ -82,6 +82,14 @@ export class TabsDefaultExample {
 }
 ```
 
+### Manual activation
+
+`activationMode='manual'` lets the arrow keys move focus without selecting; the user presses `Space` or `Enter` to activate — better when panel content is expensive.
+
+### Vertical
+
+`orientation='vertical'` stacks the tablist beside the panel and switches roving navigation to `ArrowUp` / `ArrowDown`. It is reflected as `data-orientation` for styling.
+
 ## Manual activation
 
 ```html

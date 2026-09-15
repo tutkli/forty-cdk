@@ -50,6 +50,14 @@ export class ProgressDefaultExample {
 }
 ```
 
+### Indeterminate
+
+A `null` value puts the bar in indeterminate mode — `aria-valuenow` is omitted and `data-state` reflects `indeterminate`, for loading states whose duration cannot be predicted.
+
+### Custom value label
+
+`getValueLabel` maps value and max to a human string used for `aria-valuetext`, so screen readers announce '84 MB of 200 MB' instead of a bare number. The same function feeds the visible caption.
+
 ## API
 
 ### `ForProgress`

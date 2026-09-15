@@ -29,24 +29,18 @@ import { DOC } from '../../../generated/docs/primitives/date-picker.generated';
       </demo-layout>
 
       <demo-layout
-        title="Date & time picker"
-        subtitle='With <code>granularity="minute"</code> and a time-capable adapter the picker becomes a date-time control: a projected <code>forTimeField</code> sits beside the calendar, both bound one-way to <code>picker.value()</code>. Picking a different day preserves the time you entered, and a date-time <code>minDate</code> / <code>maxDate</code> clamps on the full instant while the boundary day stays selectable. At this granularity a calendar selection never closes the surface, so you can finish editing the time.'
+        heading="date--time-picker"
         sourcePath="date-picker/examples/date-time.example.ts"
       >
         <app-date-picker-date-time-example />
       </demo-layout>
 
-      <demo-layout
-        title="Constraints"
-        subtitle="<code>minDate</code> disables every day before today and <code>isDateUnavailable</code> blocks weekends — the picker forwards both to the projected calendar, where they reflect <code>aria-disabled</code> and refuse selection while the arrow keys still travel across them. Only an available weekday can be committed."
-        sourcePath="date-picker/examples/constraints.example.ts"
-      >
+      <demo-layout heading="constraints" sourcePath="date-picker/examples/constraints.example.ts">
         <app-date-picker-constraints-example />
       </demo-layout>
 
       <demo-layout
-        title="Range selection"
-        subtitle='<code>ForDateRangePicker</code> is the dedicated date-range root: it is the root AND the form value, implementing <code>FormValueControl&lt;DateRange | null&gt;</code>, so <code>[formField]</code> wires the committed range into the form directly. Project a <code>ForCalendar</code> in <code>selectionMode="range"</code> and bind its <code>[(range)]</code> to <code>picker.value</code>. The two-click anchor → commit flow keeps <code>value()</code> null until both endpoints are chosen, so a required range stays invalid until a full range is committed.'
+        heading="range-selection"
         sourcePath="date-picker/examples/range-form.example.ts"
       >
         <app-date-picker-range-form-example />

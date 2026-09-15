@@ -162,66 +162,17 @@ export class CarouselDefaultExample {
 }
 ```
 
-### Basic carousel
+### Multiple slides per view
 
-```html
-<div
-  forCarousel
-  [(activeIndex)]="index"
-  loop
-  orientation="horizontal"
-  ariaLabel="Featured products"
->
-  <button forCarouselPrevious aria-label="Previous slide">
-    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-      <path
-        d="m15.75 19.5-7.5-7.5 7.5-7.5"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="1.75"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      />
-    </svg>
-  </button>
+Set `slidesPerView` above `1` to show several slides at once. Each slide is `flex: 0 0 calc(100% / var(--for-carousel-slides-per-view))`; `loop` wraps once the last visible set is reached.
 
-  <div forCarouselViewport>
-    <div forCarouselTrack>
-      @for (product of products(); track product.id) {
-      <div forCarouselSlide>{{ product.name }}</div>
-      }
-    </div>
-  </div>
+### Autoplay with pause control
 
-  <button forCarouselNext aria-label="Next slide">
-    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-      <path
-        d="m8.25 4.5 7.5 7.5-7.5 7.5"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="1.75"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      />
-    </svg>
-  </button>
+`[forCarouselRotationControl]` is the first focusable child (APG / WCAG 2.2.2). Rotation pauses on hover, on keyboard focus inside the carousel, and while the tab is backgrounded; an explicit stop is sticky. Under `prefers-reduced-motion` it does not auto-start.
 
-  <div forCarouselIndicators ariaLabel="Choose slide to display">
-    @for (product of products(); track product.id; let i = $index) {
-    <button forCarouselIndicator [attr.aria-label]="'Go to slide ' + (i + 1)"></button>
-    }
-  </div>
-</div>
-```
+### Drag / swipe
 
-### Indicators map 1:1 to slides
-
-The picker assumes **one `[forCarouselIndicator]` per `[forCarouselSlide]`**: the
-indicator at DOM index `i` targets slide `i`. Iterate the same collection that
-drives the slides (as above) so the counts always match. A mismatched count
-desynchronizes the active-indicator state and is dev-guarded by a `console.warn`
-in development builds. Grouped or summarized indicators (fewer dots than slides)
-are not supported.
+Add the opt-in `[forCarouselDrag]` directive to the viewport for pointer drag and touch swipe. The track follows the finger 1:1 via `--for-carousel-swipe-movement-x/y`, then snaps to the nearest slide on release.
 
 ## Autoplay
 
@@ -410,6 +361,67 @@ merge with the parent scope, so you can localize just the labels and inherit the
 rest of the defaults. A per-element `ariaLabel` on `[forCarouselSlide]` /
 `[forCarouselIndicator]` still takes precedence over the localized default, as do
 `[startLabel]` / `[stopLabel]` on `[forCarouselRotationControl]`.
+
+## Basic carousel
+
+```html
+<div
+  forCarousel
+  [(activeIndex)]="index"
+  loop
+  orientation="horizontal"
+  ariaLabel="Featured products"
+>
+  <button forCarouselPrevious aria-label="Previous slide">
+    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+      <path
+        d="m15.75 19.5-7.5-7.5 7.5-7.5"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.75"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    </svg>
+  </button>
+
+  <div forCarouselViewport>
+    <div forCarouselTrack>
+      @for (product of products(); track product.id) {
+      <div forCarouselSlide>{{ product.name }}</div>
+      }
+    </div>
+  </div>
+
+  <button forCarouselNext aria-label="Next slide">
+    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+      <path
+        d="m8.25 4.5 7.5 7.5-7.5 7.5"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.75"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    </svg>
+  </button>
+
+  <div forCarouselIndicators ariaLabel="Choose slide to display">
+    @for (product of products(); track product.id; let i = $index) {
+    <button forCarouselIndicator [attr.aria-label]="'Go to slide ' + (i + 1)"></button>
+    }
+  </div>
+</div>
+```
+
+## Indicators map 1:1 to slides
+
+The picker assumes **one `[forCarouselIndicator]` per `[forCarouselSlide]`**: the
+indicator at DOM index `i` targets slide `i`. Iterate the same collection that
+drives the slides (as above) so the counts always match. A mismatched count
+desynchronizes the active-indicator state and is dev-guarded by a `console.warn`
+in development builds. Grouped or summarized indicators (fewer dots than slides)
+are not supported.
 
 ## API
 

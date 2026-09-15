@@ -27,18 +27,13 @@ import { DOC } from '../../../generated/docs/primitives/tabs.generated';
       </demo-layout>
 
       <demo-layout
-        title="Manual activation"
-        subtitle="<code>activationMode='manual'</code> lets the arrow keys move focus without selecting; the user presses <kbd>Space</kbd> or <kbd>Enter</kbd> to activate — better when panel content is expensive."
+        heading="manual-activation"
         sourcePath="tabs/examples/manual-activation.example.ts"
       >
         <app-tabs-manual-activation-example />
       </demo-layout>
 
-      <demo-layout
-        title="Vertical"
-        subtitle="<code>orientation='vertical'</code> stacks the tablist beside the panel and switches roving navigation to <kbd>ArrowUp</kbd> / <kbd>ArrowDown</kbd>. It is reflected as <code>data-orientation</code> for styling."
-        sourcePath="tabs/examples/vertical.example.ts"
-      >
+      <demo-layout heading="vertical" sourcePath="tabs/examples/vertical.example.ts">
         <app-tabs-vertical-example />
       </demo-layout>
     </primitive-page>

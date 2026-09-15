@@ -69,7 +69,15 @@ export class PaneResizerResizeExample {
 }
 ```
 
-### Pointer drag
+### States
+
+One class and one directive, two states. `disabled` drops the resizer out of the tab order and blocks both keyboard and pointer resizing; it reflects `aria-disabled` and `data-disabled`, so the dimmed divider and the live one come from the same stylesheet.
+
+### Collapsible panel
+
+With `collapsible` on, `Enter` / `Space` on the focused resizer snaps the panel to its `min` and a second press restores the last expanded size — APG-optional behaviour for a resizer that backs a collapsible pane. Drag or the arrow keys still resize as usual.
+
+## Pointer drag
 
 `pointerdown` captures the pointer, records the starting value, and on each `pointermove` adds the **raw px delta** along the resize axis to `value`, clamped to `[min, max]`. Use this directly for px-unit layouts; for percentage / fractional layouts, listen to `(resizing)` and translate yourself, or skip pointer drag and stick to keyboard.
 

@@ -333,6 +333,26 @@ export class DrawerDefaultExample {
 }
 ```
 
+### Snap points
+
+Drag the sheet between peek / half / full. Release resolves to the nearest snap by position (or dismisses past the lowest one). The consumer positions each snap via CSS keyed off `data-active-snap-point`; `data-dragging` disables the transition mid-gesture. `fadeFromIndex` fades the backdrop in only once the sheet reaches the half snap.
+
+### Scale background
+
+With `[scaleBackground]` the `[forDrawerWrapper]` element scales and rounds its corners behind the drawer, so the page reads as a layer that recedes. Here the wrapper is the app shell of this documentation site, so the whole page recedes behind the sheet.
+
+### Nested drawers
+
+A drawer mounted inside another joins a LIFO stack automatically — no flag needed. The parent recedes (`data-state-nested`), focus stays trapped in the topmost, scroll-lock is refcounted, and `Escape` closes the topmost first.
+
+### Region-scoped (container)
+
+Set `[container]` to a positioned element and the drawer portals into that region instead of `<body>`. With `modal` on, the backdrop, focus trap, scroll lock and inert siblings are all scoped to the card — only this region is dimmed and trapped, while the rest of the page stays fully interactive.
+
+### Programmatic (`ForDrawerManager`)
+
+Open an arbitrary component imperatively and await its result. The manager mounts the component under the same `[forDrawer]` engine, so every piece and input works identically; `[forDrawerClose]` `[closeWith]` propagates straight through to `ForDrawerRef.close(value)`. `class` / `animateEnter` / `animateLeave` / `backdropAnimateLeave` land on the real host so the imperative overlay plays the same slide and fade as the declarative drawers.
+
 ## API
 
 ### `ForDrawer`

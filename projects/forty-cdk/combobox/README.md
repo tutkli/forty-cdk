@@ -170,58 +170,29 @@ export class ComboboxDefaultExample {
 }
 ```
 
-### Filtering is the consumer's job
+### Multi-select with chips
 
-The primitive is headless — it does **not** filter the registered options. The consumer reads `[forCombobox][(query)]`, applies whatever match logic they want, and renders the filtered subset with `@for`. Each rendered `[forComboboxOption]` registers itself; the listbox tracks the live set automatically.
+Pass `multiple` and render the committed values as chips inside `[forComboboxChips]`. Each chip has a remove button; `Backspace` from the empty input jumps to the last chip, and `←` / `→` navigate between them.
 
-```html
-@let q = query().toLowerCase(); @let filtered = items.filter(it =>
-it.label.toLowerCase().includes(q));
+### Inline autocomplete
 
-<div forCombobox #combobox="forCombobox" [(query)]="query" [(value)]="value">
-  <input forComboboxInput placeholder="Search a fruit…" />
-  @if (combobox.open()) {
-  <div forComboboxContent>
-    @for (it of filtered; track it.id) {
-    <div forComboboxOption [value]="it.id" [label]="it.label">{{ it.label }}</div>
-    }
-    <div forComboboxEmpty>No matches.</div>
-  </div>
-  }
-</div>
-```
+`autocompleteMode='both'` mirrors `aria-autocomplete`: the listbox shows filtered options and the rest of the first match is completed inline into the input as selected text, so the next keystroke replaces it. `Backspace` deletes the selection without re-completing.
 
-`[(query)]` (the typed text) and `[(value)]` (the committed selection / form state) are the consumer's. Open state is separate: `[forCombobox]` owns it as a `model<boolean>`, and since the directive is `exportAs: 'forCombobox'` you can read it straight off a template reference variable — `#combobox="forCombobox"` — and gate `[forComboboxContent]` on `combobox.open()`. Focus / query / arrow keys flip it; Escape, Tab, and outside-pointer flip it back. No separate `open` signal, no `[(open)]` — bind `[(open)]="mySignal"` (as the multi / object / virtualization examples below do) only when the component class needs to read or drive open state itself.
+### Action item (create on the fly)
 
-#### Static options alongside the `@for`
+A pinned `[forComboboxAction]` is a `role=button` affordance — not an option — so it never lands in `value()`, `aria-setsize` or `aria-posinset`. It emits `(activate)` on click / `Enter` / `Space`, and `Tab` reaches it in one keypress regardless of list length; `Escape` or an outside click still dismiss.
 
-A sentinel option (an "Add new…" action, a "No results" row, a pinned default) can be rendered **statically** above or below the `@for` list — it does not need to be folded into the filtered collection:
+### Picker (trigger + in-panel search)
 
-```html
-<div forComboboxContent>
-  <div forComboboxOption [value]="addSentinel" [label]="'Add new…'">Add new…</div>
-  @for (it of filtered; track it.id) {
-  <div forComboboxOption [value]="it.id" [label]="it.label">{{ it.label }}</div>
-  }
-</div>
-```
+The other anatomy: a button shows the committed selection while the search input lives inside the panel. `[forComboboxTrigger]` opens the panel, becomes the positioning anchor and takes focus back on close; `[forComboboxList]` carries `role=listbox` so the input can sit beside it.
 
-Static and `@for`-rendered options share the same registry, navigation order (DOM order), filtering, and label cache. This is right when the entry _selects_ (adds to `value` and commits). For a pinned entry that is a pure side-effect and must **not** land in `value` — "Create new…", "Manage tags…" — reach for [`[forComboboxAction]`](#action-items) instead.
+### Object values
 
-### Signal Forms
+`forCombobox` is generic over `T`: bind the whole object to `[forComboboxOption][value]` and configure three hooks — `[compareWith]` to match by a stable key, `[itemToStringLabel]` for the visible label, and `[itemToFormValue]` to serialize what a native form submits. `value()` holds the full object.
 
-`[forCombobox]` implements `FormValueControl<readonly T[]>`. Pair with `[formField]` for auto-wiring with `@angular/forms/signals`:
+### Virtualized (1,000 options)
 
-```html
-<div forCombobox [formField]="form.country">
-  <input forComboboxInput />
-  …
-</div>
-```
-
-For a legacy `<form action="…">` flow, set `[name]` — the directive mirrors `[(value)]` into N `<input type="hidden">` siblings (one per array entry; zero when empty). String values land verbatim in the hidden input; object values default to `JSON.stringify` (override via `[itemToFormValue]`, see below).
-
-A single-select field is modeled as the same `readonly T[]`, kept at length ≤ 1, and bound with `[formField]` directly — single mode needs no adapter. A `FieldTree<T | null>` cannot bind here; map to that shape at the edge that needs it. See [the selection value-type contract](../../../docs/selection-value-type-contract.md).
+The primitive never owns the scroll container, so it virtualizes with any windowing strategy — here a dependency-free one. The consumer renders only the visible window and wires `[totalCount]`, `[visibleRange]` and `[forComboboxOption][posInSet]`; `(scrollToIndex)` fires when navigation targets a row outside the window.
 
 ## API
 
@@ -706,6 +677,59 @@ When `[totalCount]` is omitted, the directive falls back to `options().length` a
 - **Default popover placement** — `align` defaults to `'start'` in LTR and `'end'` in RTL so the listbox anchors to the visually-leading edge of the input (`side` defaults to `'bottom'` in both). A consumer-provided `[align]` is honoured as-is — no automatic flip — so advanced layouts can pin an alignment regardless of writing direction. `provideForComboboxDefaults({ align })` pins it for a whole scope the same way; its default is `null`, which is what "follow the writing direction" is spelled as there. `side` is scope-defaultable through the same provider, with the plain `'bottom'` fallback — writing direction does not enter into it.
 
 The native `<input>` handles caret movement and BiDi from the document's CSS `direction` already, so there's nothing extra to do for the typed text itself.
+
+## Filtering is the consumer's job
+
+The primitive is headless — it does **not** filter the registered options. The consumer reads `[forCombobox][(query)]`, applies whatever match logic they want, and renders the filtered subset with `@for`. Each rendered `[forComboboxOption]` registers itself; the listbox tracks the live set automatically.
+
+```html
+@let q = query().toLowerCase(); @let filtered = items.filter(it =>
+it.label.toLowerCase().includes(q));
+
+<div forCombobox #combobox="forCombobox" [(query)]="query" [(value)]="value">
+  <input forComboboxInput placeholder="Search a fruit…" />
+  @if (combobox.open()) {
+  <div forComboboxContent>
+    @for (it of filtered; track it.id) {
+    <div forComboboxOption [value]="it.id" [label]="it.label">{{ it.label }}</div>
+    }
+    <div forComboboxEmpty>No matches.</div>
+  </div>
+  }
+</div>
+```
+
+`[(query)]` (the typed text) and `[(value)]` (the committed selection / form state) are the consumer's. Open state is separate: `[forCombobox]` owns it as a `model<boolean>`, and since the directive is `exportAs: 'forCombobox'` you can read it straight off a template reference variable — `#combobox="forCombobox"` — and gate `[forComboboxContent]` on `combobox.open()`. Focus / query / arrow keys flip it; Escape, Tab, and outside-pointer flip it back. No separate `open` signal, no `[(open)]` — bind `[(open)]="mySignal"` (as the multi / object / virtualization examples do) only when the component class needs to read or drive open state itself.
+
+### Static options alongside the `@for`
+
+A sentinel option (an "Add new…" action, a "No results" row, a pinned default) can be rendered **statically** above or below the `@for` list — it does not need to be folded into the filtered collection:
+
+```html
+<div forComboboxContent>
+  <div forComboboxOption [value]="addSentinel" [label]="'Add new…'">Add new…</div>
+  @for (it of filtered; track it.id) {
+  <div forComboboxOption [value]="it.id" [label]="it.label">{{ it.label }}</div>
+  }
+</div>
+```
+
+Static and `@for`-rendered options share the same registry, navigation order (DOM order), filtering, and label cache. This is right when the entry _selects_ (adds to `value` and commits). For a pinned entry that is a pure side-effect and must **not** land in `value` — "Create new…", "Manage tags…" — reach for [`[forComboboxAction]`](#action-items) instead.
+
+## Signal Forms
+
+`[forCombobox]` implements `FormValueControl<readonly T[]>`. Pair with `[formField]` for auto-wiring with `@angular/forms/signals`:
+
+```html
+<div forCombobox [formField]="form.country">
+  <input forComboboxInput />
+  …
+</div>
+```
+
+For a legacy `<form action="…">` flow, set `[name]` — the directive mirrors `[(value)]` into N `<input type="hidden">` siblings (one per array entry; zero when empty). String values land verbatim in the hidden input; object values default to `JSON.stringify` (override via `[itemToFormValue]`, see below).
+
+A single-select field is modeled as the same `readonly T[]`, kept at length ≤ 1, and bound with `[formField]` directly — single mode needs no adapter. A `FieldTree<T | null>` cannot bind here; map to that shape at the edge that needs it. See [the selection value-type contract](../../../docs/selection-value-type-contract.md).
 
 ## Keyboard
 

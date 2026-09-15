@@ -114,6 +114,21 @@ export interface DocMeta {
   readonly foldInto: string | null;
 }
 
+/** One secondary demo as its `###` under `## Examples` declares it. */
+export interface DocExampleHeading {
+  /** The heading's markdown, which the page renders above the demo. */
+  readonly title: string;
+  /** The anchor, and the key a `<demo-layout>` names to claim this heading. */
+  readonly slug: string;
+  readonly line: number;
+  /**
+   * The markdown of the paragraph the heading opens with, or `null` when it
+   * opens with something else. Whether that is allowed is the contract's
+   * question rather than the compiler's.
+   */
+  readonly prose: string | null;
+}
+
 /** One compiled document: an entry point's README, or a published guide. */
 export interface DocDocument {
   /** Repository-relative path, the string the link resolver is handed. */
@@ -145,6 +160,14 @@ export interface DocDocument {
    * allowed is the contract's question rather than the compiler's.
    */
   readonly caption: string | null;
+  /**
+   * The demos `## Examples` declares, in the order the page projects them
+   * ([#1940](https://github.com/tutkli/forty-cdk/issues/1940)).
+   *
+   * Empty for a document declaring no `## Examples` and for one whose section
+   * writes no `###`.
+   */
+  readonly examples: readonly DocExampleHeading[];
   /**
    * Everything above the first section bar the lede, which the compiler holds
    * to prose: a table there reaches no page, so it is an error rather than a

@@ -61,11 +61,45 @@ export class DemoComment {
 
 Auto-resize is a browser-only DOM side effect, so it is inert under server-side rendering and hydrates without a layout jump.
 
+## Field composition
+
+Drop the control inside a `[forField]` and it auto-associates with the label, description, and error region — no `id` / `aria-*` wiring by hand.
+
+```ts
+import { Component, signal } from '@angular/core';
+import { form, required } from '@angular/forms/signals';
+import { FormField } from '@angular/forms/signals';
+import { ForField, ForFieldError, ForLabel } from 'forty-cdk/field';
+import { ForInput } from 'forty-cdk/input';
+
+@Component({
+  selector: 'demo-signup',
+  imports: [ForField, ForLabel, ForFieldError, ForInput, FormField],
+  template: `
+    <form>
+      <div forField>
+        <label forLabel>Full name</label>
+        <input forInput class="input" [formField]="profile.name" />
+        @if (err.shown()) {
+          <p forFieldError #err="forFieldError">{{ err.messages().join(', ') }}</p>
+        }
+      </div>
+    </form>
+  `,
+})
+export class DemoSignup {
+  readonly model = signal({ name: '' });
+  readonly profile = form(this.model, (p) => {
+    required(p.name, { message: 'Name is required' });
+  });
+}
+```
+
+`[formField]` detects the `FormValueControl<string>` interface and wires everything — value, disabled, required, invalid, errors, touched — without any glue.
+
 ## Examples
 
 Type in the field and watch the `[forInput]` host: `data-empty`, `data-dirty` and `data-touched` follow what the user has actually done to it.
-
-### Stand-alone
 
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
@@ -103,41 +137,17 @@ export class InputDefaultExample {
 }
 ```
 
-### Field composition
+### States
 
-Drop the control inside a `[forField]` and it auto-associates with the label, description, and error region — no `id` / `aria-*` wiring by hand.
+One class and one directive, three states. `disabled` reflects native `disabled` plus `data-disabled` and drops out of submission; `readonly` keeps the field focusable but blocks edits and reflects `data-readonly`. The example's stylesheet keys on nothing else.
 
-```ts
-import { Component, signal } from '@angular/core';
-import { form, required } from '@angular/forms/signals';
-import { FormField } from '@angular/forms/signals';
-import { ForField, ForFieldError, ForLabel } from 'forty-cdk/field';
-import { ForInput } from 'forty-cdk/input';
+### Auto-sizing textarea
 
-@Component({
-  selector: 'demo-signup',
-  imports: [ForField, ForLabel, ForFieldError, ForInput, FormField],
-  template: `
-    <form>
-      <div forField>
-        <label forLabel>Full name</label>
-        <input forInput class="input" [formField]="profile.name" />
-        @if (err.shown()) {
-          <p forFieldError #err="forFieldError">{{ err.messages().join(', ') }}</p>
-        }
-      </div>
-    </form>
-  `,
-})
-export class DemoSignup {
-  readonly model = signal({ name: '' });
-  readonly profile = form(this.model, (p) => {
-    required(p.name, { message: 'Name is required' });
-  });
-}
-```
+`autosize` tracks the textarea's content height — growing as you type and shrinking as you delete, recomputed on every edit and on width reflow. Pair it with the reflected `data-autosize` and `resize: none; overflow: hidden`. The measurement is browser-only, so it stays inert under SSR.
 
-`[formField]` detects the `FormValueControl<string>` interface and wires everything — value, disabled, required, invalid, errors, touched — without any glue.
+### Signal Forms validation
+
+Bound through `[formField]`, `forInput` auto-associates inside `forField` — the label adopts the control id, errors flow into `aria-errormessage`, and `touched` / `invalid` are reflected with no manual id plumbing. Type an invalid address and blur to surface the error.
 
 ## API
 

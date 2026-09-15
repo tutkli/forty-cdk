@@ -55,8 +55,6 @@ bootstrapApplication(App, {
 
 Focus a segment and type, or step it with the arrow keys — each segment is a spinbutton of its own, and one still holding its placeholder carries `data-placeholder`.
 
-### Stand-alone
-
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { type CalendarDate } from '@internationalized/date';
@@ -87,9 +85,17 @@ export class DateFieldDefaultExample {
 }
 ```
 
-The library is styleless: style the boolean `data-*` hooks on the segments yourself — `[data-highlighted]` (the focused/roving segment), `[data-placeholder]` (empty), `[data-disabled]`, `[data-readonly]` — and `[data-empty]` / `[data-disabled]` / `[data-readonly]` on the root group.
+### Date & time
+
+With a time-capable adapter, a `granularity` coarser than `'day'` appends hour / minute segments and the value becomes a `CalendarDateTime`. A 12-hour cycle adds an AM/PM segment you toggle with `↑` / `↓` or by typing `a` / `p`.
+
+### Localized segment labels
+
+`provideForDateFieldDefaults({ segmentLabels })` overrides the accessible name each segment announces, scoped to this injector. A screen reader reads the focused segment as 'día' / 'mes' / 'año' instead of the English default.
 
 ### Signal Forms
+
+`ForDateField` implements `FormValueControl<CalendarDate | null>`, so a single `[formField]` binding wires the committed value into the form and pulls validity and touched back out — no `ControlValueAccessor`.
 
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
@@ -126,6 +132,18 @@ export class DobFormField {
   readonly checkout = form(this.model);
 }
 ```
+
+### Date range
+
+`ForDateRangeField` is the range variant, shipped from this same entry point. Two labelled endpoint groups share locale, granularity and bounds; each is its own tab stop, so `Tab` steps start → end while the arrows move between segments inside one endpoint.
+
+### Date & time range
+
+With a time-capable adapter, a `granularity` coarser than `'day'` appends time segments to both endpoints and the value becomes a `CalendarDateTime` range — handy for a check-in to check-out with times. A 12-hour `hourCycle` adds an AM/PM segment to each side.
+
+### Range in Signal Forms
+
+`ForDateRangeField` implements `FormValueControl<DateRange | null>`, so `[formField]` binds the committed range into the form and pulls validation back out. A half-entered or out-of-order range keeps `value()` null, so a `required` field stays invalid until both endpoints are filled and ordered.
 
 ## API
 
@@ -302,6 +320,8 @@ Composes the [WAI-ARIA Spinbutton pattern](https://www.w3.org/WAI/ARIA/apg/patte
 - **`aria-readonly` belongs on the segments, not the group.** WAI-ARIA supports it on `role="spinbutton"` but not on `role="group"`, so each segment carries `aria-readonly="true"` while the group reflects the `data-readonly` styling hook only.
 
 ## Styling
+
+The library is styleless: style the boolean `data-*` hooks on the segments yourself — `[data-highlighted]` (the focused/roving segment), `[data-placeholder]` (empty), `[data-disabled]`, `[data-readonly]` — and `[data-empty]` / `[data-disabled]` / `[data-readonly]` on the root group.
 
 forty-cdk ships no styles. Add your own class to each piece — the for\* selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected data-\* attributes listed under [Data attributes](#data-attributes).
 

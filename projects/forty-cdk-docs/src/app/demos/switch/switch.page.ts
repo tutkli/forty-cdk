@@ -26,19 +26,11 @@ import { DOC } from '../../../generated/docs/primitives/switch.generated';
         <app-switch-default-example />
       </demo-layout>
 
-      <demo-layout
-        title="States"
-        subtitle="One class and one directive, three states. <code>disabled</code> and <code>readonly</code> both keep the switch focusable and announced (per APG) while interaction is a no-op; they reflect <code>aria-disabled</code> / <code>data-disabled</code> and <code>aria-readonly</code> / <code>data-readonly</code>, which is all the stylesheet below keys on."
-        sourcePath="switch/examples/states.example.ts"
-      >
+      <demo-layout heading="states" sourcePath="switch/examples/states.example.ts">
         <app-switch-states-example />
       </demo-layout>
 
-      <demo-layout
-        title="Signal Forms"
-        subtitle="<code>forSwitch</code> implements <code>FormCheckboxControl</code>, so a single <code>[formField]</code> binding wires checked state, validity and touched both ways — no <code>ControlValueAccessor</code>."
-        sourcePath="switch/examples/form-field.example.ts"
-      >
+      <demo-layout heading="signal-forms" sourcePath="switch/examples/form-field.example.ts">
         <app-switch-form-field-example />
       </demo-layout>
     </primitive-page>

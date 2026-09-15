@@ -101,6 +101,26 @@ export class DragDropSortableExample {
 }
 ```
 
+### Drag follows scroll (auto-scroll)
+
+When a pointer drag reaches the edge of the nearest scrollable container, `[forDropList]` auto-scrolls it toward that edge so you can drop on items far outside the visible window. The edge zone and max speed are tuned via `provideForDragDropDefaults`. Keyboard dragging is unaffected.
+
+### Transfer between lists
+
+Wrap two `[forDropList]` columns in `[forDropListGroup]` and they connect automatically. The `(dragDrop)` event fires on the source list with `previousContainer` / `container` contexts; compare them to choose `moveItemInArray` (same list) or `transferArrayItem` (across lists).
+
+### Axis lock, boundary & custom preview
+
+A horizontal palette where `lockAxis='x'` pins the preview to its lift-time vertical position and `[boundary]` clamps it inside the dashed frame. A custom `[forDragPreview]` template replaces the default clone, and `[forDragPlaceholder]` fills the source slot. Both constraints affect only the pointer preview — never the resolved drop index.
+
+### Wrapping grid (mixed orientation)
+
+A flex-wrap grid of uniformly-sized tiles with `orientation='mixed'`. The drop index is resolved in 2D, so a tile dragged across a wrapped row lands in the slot under the pointer's row and column instead of mis-resolving to the nearest single-axis slot.
+
+### Free drag (`forFreeDrag`)
+
+`[forFreeDrag]` repositions its host (or a resolved `rootElement`) by pointer drag via a CSS transform — no `[forDropList]`, no reorder. The blue card moves itself within the dashed `boundary`; the panel is dragged by its header via `rootElement` so a child handle moves the whole ancestor. Pointer-only by design.
+
 ## API
 
 There is no single table of every input here: each piece is introduced with the flow that uses it —

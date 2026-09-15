@@ -40,8 +40,6 @@ Wrap options in a `[forListboxGroup]` (labelled by `[forListboxGroupLabel]`) for
 
 Move the highlight with the arrow keys and select with `Space` — one tab stop serves the whole list, and the selected option carries `data-state`.
 
-### Stand-alone (single select)
-
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { ForListbox, ForListboxOption, ForListboxOptionIndicator } from 'forty-cdk/listbox';
@@ -103,6 +101,8 @@ export class ListboxDefaultExample {
 
 ### Multi select
 
+`multiple` lets several options be selected and enables the APG range model: `Shift`+`Arrow` extends the selection, `Shift`+`Space` fills a range, and `Ctrl`+`A` toggles all.
+
 ```html
 <ul forListbox multiple [(value)]="tags" aria-label="Tags">
   <li>
@@ -115,7 +115,17 @@ export class ListboxDefaultExample {
 
 Click toggles individual options in multi mode; click selects in single mode.
 
+### Option groups
+
+`forListboxGroup` wraps options in a `role="group"` labelled by `forListboxGroupLabel`. Grouping is advisory: arrow navigation, `Home`/`End`, and typeahead traverse across group boundaries in DOM order.
+
+### Sortable (reorder)
+
+Add `[forListboxReorder]` for a selectable AND sortable list, with no `@angular/cdk/drag-drop`. Drag a chip to move it, or focus one and press `Ctrl`+`Space` to lift, arrows to position, `Space`/`Enter` to drop. `(optionReorder)` emits `{ from, to }`; you apply `moveItemInArray`.
+
 ### Signal Forms
+
+`ForListbox` implements `FormValueControl<readonly T[]>`, so a multi-select binds to a form field with one `[formField]` directive. The field requires at least one topic and reflects `data-invalid` until then, flipping `touched` once focus leaves it.
 
 ```ts
 import { Component, signal } from '@angular/core';
@@ -162,6 +172,10 @@ export class DemoPriorities {
 > bind it with `[formField]` directly — single mode needs no adapter. A `FieldTree<T | null>`
 > cannot bind here; map to that shape at the edge that needs it. See
 > [the selection value-type contract](../../../docs/selection-value-type-contract.md).
+
+### Virtualized (10,000 options)
+
+Setting `[totalCount]` switches `ForListbox` to the activedescendant model: the container becomes the single `Tab` stop and the active option is tracked by `aria-activedescendant`, so options recycle as you scroll. `Arrow` / `Home` / `End` reach options outside the rendered window via `(scrollToIndex)`.
 
 ## Object values
 

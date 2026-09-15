@@ -9,6 +9,7 @@ import {
 import { DomSanitizer } from '@angular/platform-browser';
 import { RouterLink } from '@angular/router';
 
+import { DemoHeadings } from '../doc/demo-headings';
 import { injectDocBase } from '../doc/doc-base';
 import { injectFragmentScroll } from '../doc/doc-fragment';
 import { DocLinks } from '../doc/doc-links';
@@ -25,6 +26,7 @@ import { Icon } from './icon';
   selector: 'primitive-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [DocSection, DocToc, DocLinks, RouterLink, Icon],
+  providers: [DemoHeadings],
   template: `
     <header class="head">
       <p class="pg-doc-eyebrow">{{ group() }}</p>
@@ -197,6 +199,7 @@ import { Icon } from './icon';
 export class PrimitivePage {
   readonly #sanitizer = inject(DomSanitizer);
   readonly #base = injectDocBase();
+  readonly #headings = inject(DemoHeadings);
 
   readonly slug = input.required<string>();
   readonly doc = input.required<DocPage>();
@@ -276,6 +279,7 @@ export class PrimitivePage {
   });
 
   constructor() {
+    this.#headings.connect(computed(() => this.doc().examples));
     injectFragmentScroll();
   }
 }

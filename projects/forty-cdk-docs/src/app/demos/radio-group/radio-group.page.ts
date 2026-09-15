@@ -27,18 +27,13 @@ import { DOC } from '../../../generated/docs/primitives/radio-group.generated';
       </demo-layout>
 
       <demo-layout
-        title="Horizontal orientation"
-        subtitle="<code>orientation='horizontal'</code> reflects <code>data-orientation</code> and switches arrow navigation to <kbd>ArrowLeft</kbd> / <kbd>ArrowRight</kbd> (swapped in RTL)."
+        heading="horizontal-orientation"
         sourcePath="radio-group/examples/horizontal.example.ts"
       >
         <app-radio-group-horizontal-example />
       </demo-layout>
 
-      <demo-layout
-        title="Signal Forms"
-        subtitle="<code>forRadioGroup</code> implements <code>FormValueControl&lt;string | null&gt;</code>, so <code>[formField]</code> binds the selected value into the form and surfaces validity back. This field is required: <kbd>Tab</kbd> through without choosing and the group reflects <code>data-invalid</code> / <code>data-touched</code> once focus leaves it."
-        sourcePath="radio-group/examples/form-field.example.ts"
-      >
+      <demo-layout heading="signal-forms" sourcePath="radio-group/examples/form-field.example.ts">
         <app-radio-group-form-field-example />
       </demo-layout>
     </primitive-page>

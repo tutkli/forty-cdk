@@ -147,214 +147,13 @@ export class StepperDefaultExample {
 }
 ```
 
-### Interactive mode with linear progression
+### Linear wizard with Signal Forms
 
-```html
-<div forStepper [(selectedIndex)]="step" [linear]="true">
-  <ol forStepperList ariaLabel="Checkout">
-    <li forStepperItem [completed]="step > 0">
-      <button forStepperTrigger>
-        <span forStepperIndicator></span>
-        Shipping
-      </button>
-      <span forStepperSeparator></span>
-    </li>
-    <li forStepperItem [completed]="step > 1">
-      <button forStepperTrigger>
-        <span forStepperIndicator></span>
-        Payment
-      </button>
-      <span forStepperSeparator></span>
-    </li>
-    <li forStepperItem>
-      <button forStepperTrigger>
-        <span forStepperIndicator></span>
-        Review
-      </button>
-    </li>
-  </ol>
+Each step binds a Signal Forms `field`. A step is completed when its field is valid and touched, and shows the error state when touched and invalid — no manual `[completed]` wiring. In `[linear]` mode Next stays disabled until the current step's field is valid, so fill the input and blur it to advance.
 
-  <section forStepperContent>Shipping form</section>
-  <section forStepperContent>Payment form</section>
-  <section forStepperContent>Order review</section>
+### Progress mode + progress bar
 
-  <button forStepperPrevious>Back</button>
-  <button forStepperNext>Next</button>
-</div>
-```
-
-### Completed-all content
-
-```html
-<div forStepper [(selectedIndex)]="step" (complete)="onDone()">
-  <!-- … list / content … -->
-  @if (step() >= steps.length) {
-  <section forStepperCompletedContent>All steps complete 🎉</section>
-  }
-</div>
-```
-
-When `Next` is pressed on the last step, `selectedIndex` advances to `count` (one past the last step) and `(complete)` fires once. `[forStepperPrevious]` returns to the last step. While completed, every `[forStepperContent]` panel is inactive and only `[forStepperCompletedContent]` carries `data-state="active"` (the others reflect `inert` + `aria-hidden`).
-
-### Conditionally rendered or reordered panels (`[step]`)
-
-A `[forStepperContent]` panel pairs with a step by DOM-order position: the Nth panel is the
-Nth step. When panels are conditionally rendered — or declared in an order that doesn't match
-the steps — that position no longer identifies the step, so bind `[step]` to make the pairing
-explicit. It keeps `data-state` / `inert` / `aria-labelledby` on the panel and `aria-controls`
-on the trigger correct no matter which panels are mounted.
-
-```html
-<div forStepper [(selectedIndex)]="step">
-  <!-- … list … -->
-  @for (s of steps; track $index) { @if (step() === $index) {
-  <section forStepperContent [step]="$index">{{ s.body }}</section>
-  } }
-</div>
-```
-
-A structurally hidden `[forStepperTrigger]` needs no equivalent opt-in: a trigger always
-resolves its step from its enclosing `[forStepperItem]`.
-
-### Signal Forms field-driven completion
-
-Bind a step to a [Signal Forms](https://angular.dev/) field and its completion and
-error state follow the field's validity automatically — no manual `[completed]`
-wiring. A step is `completed` when its field is **valid and touched**; it reflects
-`error` when the field is **touched and invalid**. A manual `[completed]` /
-`[hasError]` input always wins when set.
-
-```ts
-import { Component, signal } from '@angular/core';
-import { form, required, email } from '@angular/forms/signals';
-import {
-  ForStepper,
-  ForStepperContent,
-  ForStepperItem,
-  ForStepperList,
-  ForStepperTrigger,
-} from 'forty-cdk/stepper';
-
-@Component({
-  imports: [ForStepper, ForStepperList, ForStepperItem, ForStepperTrigger, ForStepperContent],
-  template: `
-    <div forStepper [(selectedIndex)]="step" [linear]="true">
-      <ol forStepperList ariaLabel="Sign up">
-        <li forStepperItem [field]="signup.account">
-          <button forStepperTrigger>Account</button>
-        </li>
-        <li forStepperItem [field]="signup.profile">
-          <button forStepperTrigger>Profile</button>
-        </li>
-      </ol>
-      <section forStepperContent>…</section>
-      <section forStepperContent>…</section>
-    </div>
-  `,
-})
-export class SignupWizard {
-  protected readonly step = signal(0);
-  private readonly model = signal({ account: '', profile: '' });
-  protected readonly signup = form(this.model, (s) => {
-    required(s.account);
-    email(s.account);
-    required(s.profile);
-  });
-}
-```
-
-### Progress mode (display-only)
-
-```html
-<div forStepper [selectedIndex]="currentStep" mode="progress">
-  <ol forStepperList ariaLabel="Order status">
-    <li forStepperItem [completed]="currentStep > 0">
-      <span forStepperTrigger>Processing</span>
-      <span forStepperSeparator></span>
-    </li>
-    <li forStepperItem [completed]="currentStep > 1">
-      <span forStepperTrigger>Shipped</span>
-      <span forStepperSeparator></span>
-    </li>
-    <li forStepperItem>
-      <span forStepperTrigger>Delivered</span>
-    </li>
-  </ol>
-</div>
-```
-
-### Progress bar (`ForStepperProgress`)
-
-An optional `role="progressbar"` reflecting how far through the steps the user is. Reports
-`aria-valuenow` (0–100) + `aria-valuetext`, and publishes a `--for-stepper-progress` (0–1)
-custom property for a styleable fill. `valueBy="index"` (default) tracks the current step
-index; `valueBy="completed"` tracks the count of completed steps.
-
-```html
-<div forStepper [(selectedIndex)]="step">
-  <div forStepperProgress ariaLabel="Checkout progress"></div>
-  <!-- … list / content … -->
-</div>
-```
-
-```css
-[forStepperProgress]::after {
-  content: '';
-  display: block;
-  width: calc(var(--for-stepper-progress) * 100%);
-}
-```
-
-The `aria-valuetext` string (`"Step N of M"` on the `index` basis, `"P% complete"` on the
-`completed` basis) is verbalized by screen readers, so it is localizable centrally via
-`provideForStepperDefaults` — override the `stepValueText` / `progressValueText` builders:
-
-<!-- snippet: fragment -->
-
-```ts
-providers: [
-  provideForStepperDefaults({
-    stepValueText: (current, total) => `Paso ${current} de ${total}`,
-    progressValueText: (percent) => `${percent}% completado`,
-  }),
-];
-```
-
-### Custom icon per state (indicator example)
-
-```html
-<li forStepperItem #step="forStepperItem">
-  <button forStepperTrigger>
-    <span forStepperIndicator>
-      @if (step.resolvedState() === 'completed') {
-      <svg aria-hidden="true"><!-- checkmark --></svg>
-      } @else if (step.resolvedState() === 'error') {
-      <svg aria-hidden="true"><!-- exclamation --></svg>
-      } @else { {{ step.index() + 1 }} }
-    </span>
-    Step label
-  </button>
-</li>
-```
-
-Or purely via CSS:
-
-```css
-[forStepperIndicator][data-state='completed']::before {
-  content: '✓';
-}
-[forStepperIndicator][data-state='error']::before {
-  content: '!';
-}
-[forStepperIndicator][data-state='active']::before {
-  content: '●';
-}
-[forStepperIndicator][data-state='pending']::before {
-  content: '○';
-}
-```
-
----
+A display-only status tracker: the list renders as a plain ordered list with `aria-current="step"` on the active stage — no roving tabindex or tab roles. The optional `forStepperProgress` part adds a `role="progressbar"` that publishes a `--for-stepper-progress` (0–1) custom property for the fill.
 
 ## API
 
@@ -417,6 +216,226 @@ Or purely via CSS:
 
 ---
 
+## Interactive mode with linear progression
+
+```html
+<div forStepper [(selectedIndex)]="step" [linear]="true">
+  <ol forStepperList ariaLabel="Checkout">
+    <li forStepperItem [completed]="step > 0">
+      <button forStepperTrigger>
+        <span forStepperIndicator></span>
+        Shipping
+      </button>
+      <span forStepperSeparator></span>
+    </li>
+    <li forStepperItem [completed]="step > 1">
+      <button forStepperTrigger>
+        <span forStepperIndicator></span>
+        Payment
+      </button>
+      <span forStepperSeparator></span>
+    </li>
+    <li forStepperItem>
+      <button forStepperTrigger>
+        <span forStepperIndicator></span>
+        Review
+      </button>
+    </li>
+  </ol>
+
+  <section forStepperContent>Shipping form</section>
+  <section forStepperContent>Payment form</section>
+  <section forStepperContent>Order review</section>
+
+  <button forStepperPrevious>Back</button>
+  <button forStepperNext>Next</button>
+</div>
+```
+
+## Completed-all content
+
+```html
+<div forStepper [(selectedIndex)]="step" (complete)="onDone()">
+  <!-- … list / content … -->
+  @if (step() >= steps.length) {
+  <section forStepperCompletedContent>All steps complete 🎉</section>
+  }
+</div>
+```
+
+When `Next` is pressed on the last step, `selectedIndex` advances to `count` (one past the last step) and `(complete)` fires once. `[forStepperPrevious]` returns to the last step. While completed, every `[forStepperContent]` panel is inactive and only `[forStepperCompletedContent]` carries `data-state="active"` (the others reflect `inert` + `aria-hidden`).
+
+## Conditionally rendered or reordered panels (`[step]`)
+
+A `[forStepperContent]` panel pairs with a step by DOM-order position: the Nth panel is the
+Nth step. When panels are conditionally rendered — or declared in an order that doesn't match
+the steps — that position no longer identifies the step, so bind `[step]` to make the pairing
+explicit. It keeps `data-state` / `inert` / `aria-labelledby` on the panel and `aria-controls`
+on the trigger correct no matter which panels are mounted.
+
+```html
+<div forStepper [(selectedIndex)]="step">
+  <!-- … list … -->
+  @for (s of steps; track $index) { @if (step() === $index) {
+  <section forStepperContent [step]="$index">{{ s.body }}</section>
+  } }
+</div>
+```
+
+A structurally hidden `[forStepperTrigger]` needs no equivalent opt-in: a trigger always
+resolves its step from its enclosing `[forStepperItem]`.
+
+## Signal Forms field-driven completion
+
+Bind a step to a [Signal Forms](https://angular.dev/) field and its completion and
+error state follow the field's validity automatically — no manual `[completed]`
+wiring. A step is `completed` when its field is **valid and touched**; it reflects
+`error` when the field is **touched and invalid**. A manual `[completed]` /
+`[hasError]` input always wins when set.
+
+```ts
+import { Component, signal } from '@angular/core';
+import { form, required, email } from '@angular/forms/signals';
+import {
+  ForStepper,
+  ForStepperContent,
+  ForStepperItem,
+  ForStepperList,
+  ForStepperTrigger,
+} from 'forty-cdk/stepper';
+
+@Component({
+  imports: [ForStepper, ForStepperList, ForStepperItem, ForStepperTrigger, ForStepperContent],
+  template: `
+    <div forStepper [(selectedIndex)]="step" [linear]="true">
+      <ol forStepperList ariaLabel="Sign up">
+        <li forStepperItem [field]="signup.account">
+          <button forStepperTrigger>Account</button>
+        </li>
+        <li forStepperItem [field]="signup.profile">
+          <button forStepperTrigger>Profile</button>
+        </li>
+      </ol>
+      <section forStepperContent>…</section>
+      <section forStepperContent>…</section>
+    </div>
+  `,
+})
+export class SignupWizard {
+  protected readonly step = signal(0);
+  private readonly model = signal({ account: '', profile: '' });
+  protected readonly signup = form(this.model, (s) => {
+    required(s.account);
+    email(s.account);
+    required(s.profile);
+  });
+}
+```
+
+## Progress mode (display-only)
+
+```html
+<div forStepper [selectedIndex]="currentStep" mode="progress">
+  <ol forStepperList ariaLabel="Order status">
+    <li forStepperItem [completed]="currentStep > 0">
+      <span forStepperTrigger>Processing</span>
+      <span forStepperSeparator></span>
+    </li>
+    <li forStepperItem [completed]="currentStep > 1">
+      <span forStepperTrigger>Shipped</span>
+      <span forStepperSeparator></span>
+    </li>
+    <li forStepperItem>
+      <span forStepperTrigger>Delivered</span>
+    </li>
+  </ol>
+</div>
+```
+
+## Progress bar (`ForStepperProgress`)
+
+An optional `role="progressbar"` reflecting how far through the steps the user is. Reports
+`aria-valuenow` (0–100) + `aria-valuetext`, and publishes a `--for-stepper-progress` (0–1)
+custom property for a styleable fill. `valueBy="index"` (default) tracks the current step
+index; `valueBy="completed"` tracks the count of completed steps.
+
+```html
+<div forStepper [(selectedIndex)]="step">
+  <div forStepperProgress ariaLabel="Checkout progress"></div>
+  <!-- … list / content … -->
+</div>
+```
+
+```css
+[forStepperProgress]::after {
+  content: '';
+  display: block;
+  width: calc(var(--for-stepper-progress) * 100%);
+}
+```
+
+The `aria-valuetext` string (`"Step N of M"` on the `index` basis, `"P% complete"` on the
+`completed` basis) is verbalized by screen readers, so it is localizable centrally via
+`provideForStepperDefaults` — override the `stepValueText` / `progressValueText` builders:
+
+<!-- snippet: fragment -->
+
+```ts
+providers: [
+  provideForStepperDefaults({
+    stepValueText: (current, total) => `Paso ${current} de ${total}`,
+    progressValueText: (percent) => `${percent}% completado`,
+  }),
+];
+```
+
+## Custom icon per state (indicator example)
+
+```html
+<li forStepperItem #step="forStepperItem">
+  <button forStepperTrigger>
+    <span forStepperIndicator>
+      @if (step.resolvedState() === 'completed') {
+      <svg aria-hidden="true"><!-- checkmark --></svg>
+      } @else if (step.resolvedState() === 'error') {
+      <svg aria-hidden="true"><!-- exclamation --></svg>
+      } @else { {{ step.index() + 1 }} }
+    </span>
+    Step label
+  </button>
+</li>
+```
+
+Or purely via CSS:
+
+```css
+[forStepperIndicator][data-state='completed']::before {
+  content: '✓';
+}
+[forStepperIndicator][data-state='error']::before {
+  content: '!';
+}
+[forStepperIndicator][data-state='active']::before {
+  content: '●';
+}
+[forStepperIndicator][data-state='pending']::before {
+  content: '○';
+}
+```
+
+---
+
+## Known limitations
+
+**The panel's focusable-content detection does not re-measure across a shadow boundary, nor on a CSS-only visibility flip.** In `mode="interactive"` the measurement runs on the panel's first render and again on mutations of its own subtree, filtered to the attributes that change whether an element is focusable (`disabled`, `hidden`, `inert`, `tabindex`, `type`, `contenteditable`). Two changes are therefore invisible to it and leave the previous answer standing:
+
+- **Focusable content appearing (or disappearing) inside a shadow root** — a web component in the panel that renders its controls on a later tick, or swaps them. The shadow root's own subtree is not observable, so a panel that gains its first focusable control that way keeps its redundant `tabindex="0"`, and one that loses its last keeps none, leaving the panel unreachable by keyboard for a screen-reader user reading it. Nothing in the DOM looks wrong.
+- **A visibility flip driven purely by a stylesheet** — the measurement excludes CSS-hidden elements, but `class` and `style` are not watched, so toggling a class that hides or reveals the panel's only control does not re-measure.
+
+**Workaround.** Render the panel's focusable content in the light tree, or remount the panel with `@if` when its content changes — a fresh directive instance measures again. Stepper exposes no override input for the detection; [`ForTabsContent`](../tabs/README.md#fortabscontent), which shares the mechanism, has `[interactiveContent]` for it.
+
+The library-wide shadow-DOM statement, covering the two limits that affect overlays rather than panels, is [Shadow DOM](../shared/README.md#shadow-dom) in `forty-cdk/shared`.
+
 ## Keyboard
 
 | Key                        | Action                                    |
@@ -443,17 +462,6 @@ Implements the [WAI-ARIA Tabs pattern](https://www.w3.org/WAI/ARIA/apg/patterns/
 - **RTL** is supported: set `dir="rtl"` on the root or a DOM ancestor.
 - **Progress bar** (`[forStepperProgress]`) is an opt-in part. When present it exposes `role="progressbar"` with `aria-valuemin="0"`, `aria-valuemax="100"`, and `aria-valuenow` derived from the current step or the count of completed steps.
 - **Panel `tabindex`** follows the Tabs pattern in `mode="interactive"`: a `[forStepperContent]` with **no** focusable descendants is itself a tab stop (`tabindex="0"`) so screen-reader users can focus and read it, while a panel that already contains focusable content is not. The directive detects this and re-measures on subtree changes; two kinds of change are outside what it can observe — see [Known limitations](#known-limitations). In `mode="progress"` no `tabindex` is emitted at all.
-
-## Known limitations
-
-**The panel's focusable-content detection does not re-measure across a shadow boundary, nor on a CSS-only visibility flip.** In `mode="interactive"` the measurement runs on the panel's first render and again on mutations of its own subtree, filtered to the attributes that change whether an element is focusable (`disabled`, `hidden`, `inert`, `tabindex`, `type`, `contenteditable`). Two changes are therefore invisible to it and leave the previous answer standing:
-
-- **Focusable content appearing (or disappearing) inside a shadow root** — a web component in the panel that renders its controls on a later tick, or swaps them. The shadow root's own subtree is not observable, so a panel that gains its first focusable control that way keeps its redundant `tabindex="0"`, and one that loses its last keeps none, leaving the panel unreachable by keyboard for a screen-reader user reading it. Nothing in the DOM looks wrong.
-- **A visibility flip driven purely by a stylesheet** — the measurement excludes CSS-hidden elements, but `class` and `style` are not watched, so toggling a class that hides or reveals the panel's only control does not re-measure.
-
-**Workaround.** Render the panel's focusable content in the light tree, or remount the panel with `@if` when its content changes — a fresh directive instance measures again. Stepper exposes no override input for the detection; [`ForTabsContent`](../tabs/README.md#fortabscontent), which shares the mechanism, has `[interactiveContent]` for it.
-
-The library-wide shadow-DOM statement, covering the two limits that affect overlays rather than panels, is [Shadow DOM](../shared/README.md#shadow-dom) in `forty-cdk/shared`.
 
 ## Styling
 

@@ -180,6 +180,18 @@ Bind the projected `[forCalendar]` to the picker: `[(value)]` to the same date s
 
 The library is styleless: presence in the DOM is the consumer's job (`@if (open())`), and `animate.enter` / `animate.leave` drive transitions. Style the `data-state="open" | "closed"` hooks (root + trigger + content) and `[data-disabled]` yourself.
 
+### Date & time picker
+
+With `granularity="minute"` and a time-capable adapter the picker becomes a date-time control: a projected `forTimeField` sits beside the calendar, both bound one-way to `picker.value()`. Picking a different day preserves the time you entered, and a date-time `minDate` / `maxDate` clamps on the full instant while the boundary day stays selectable. At this granularity a calendar selection never closes the surface, so you can finish editing the time.
+
+### Constraints
+
+`minDate` disables every day before today and `isDateUnavailable` blocks weekends — the picker forwards both to the projected calendar, where they reflect `aria-disabled` and refuse selection while the arrow keys still travel across them. Only an available weekday can be committed.
+
+### Range selection
+
+`ForDateRangePicker` is the dedicated date-range root: it is the root AND the form value, implementing `FormValueControl<DateRange | null>`, so `[formField]` wires the committed range into the form directly. Project a `ForCalendar` in `selectionMode="range"` and bind its `[(range)]` to `picker.value`. The two-click anchor → commit flow keeps `value()` null until both endpoints are chosen, so a required range stays invalid until a full range is committed.
+
 ## API
 
 ### `ForDatePicker`

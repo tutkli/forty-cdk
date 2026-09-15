@@ -19,6 +19,12 @@ A role='searchbox' text input that mirrors its value to a signal and reflects va
 </div>
 ```
 
+`[forSearchClear]` self-hides while the value is empty and refocuses the input
+on activation. Wrap the field and the button in a `[forSearchGroup]` so the
+button can coordinate with the field — the void `<input>` can't contain the
+button as a DOM descendant, so they bridge through the group registry. A
+standalone `[forSearch]` (no clear button) needs no group.
+
 ## Examples
 
 Type in the box and clear it again — the clear button is yours to render, and the host reflects `data-empty` for as long as there is nothing to clear.
@@ -91,22 +97,11 @@ export class SearchDefaultExample {
 }
 ```
 
-### Basic usage
+### Inside a Field with Signal Forms
 
-```html
-<div forSearchGroup>
-  <input forSearch [(value)]="query" placeholder="Search…" />
-  <button forSearchClear ariaLabel="Clear search">×</button>
-</div>
-```
+`forSearch` implements `FormValueControl<string>`, so `[formField]` auto-wires it inside `forField` exactly like `forInput`: the label adopts the control id, validation flows into `aria-errormessage`, and `aria-invalid` / `aria-required` are reflected. Type one or two characters and blur to surface the error.
 
-`[forSearchClear]` self-hides while the value is empty and refocuses the input
-on activation. Wrap the field and the button in a `[forSearchGroup]` so the
-button can coordinate with the field — the void `<input>` can't contain the
-button as a DOM descendant, so they bridge through the group registry. A
-standalone `[forSearch]` (no clear button) needs no group.
-
-### With Signal Forms and Field
+## With Signal Forms and Field
 
 ```html
 <div forField>
@@ -118,7 +113,7 @@ standalone `[forSearch]` (no clear button) needs no group.
 `[formField]` auto-wires the `FormValueControl<string>` contract — `required`,
 `invalid`, `touched`, and the value itself flow in and out without extra glue.
 
-### Command palette
+## Command palette
 
 ```html
 @if (paletteOpen()) {

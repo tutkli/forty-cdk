@@ -20,8 +20,7 @@ import { DOC } from '../../../generated/docs/primitives/breadcrumbs.generated';
       </demo-layout>
 
       <demo-layout
-        title="Collapsing a long trail"
-        subtitle="The primitive renders whatever items you give it, so collapsing a deep path is a consumer decision. Here the middle is folded into an expandable ellipsis button that reveals the hidden crumbs — the trail stays a single accessible navigation landmark either way."
+        heading="collapsing-a-long-trail"
         sourcePath="breadcrumbs/examples/collapsed.example.ts"
       >
         <app-breadcrumbs-collapsed-example />

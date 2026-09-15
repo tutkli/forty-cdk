@@ -419,6 +419,40 @@ function checkFenceLanguages(entries, report) {
   }
 }
 
+/**
+ * The demos `## Examples` declares, in the order a page projects them: every
+ * `###` the section writes, with the paragraph it opens with
+ * ([#1940](https://github.com/tutkli/forty-cdk/issues/1940)).
+ *
+ * A secondary demo's title and its one sentence of prose are documentation, so
+ * the README owns them the way it owns the hero's caption — and unlike the
+ * caption these are *derived* rather than lifted, because the section's body is
+ * what reaches `llms.txt`, the `⌘K` index and the package page. The site is the
+ * one consumer that drops the body, replacing it with the live demos, so
+ * leaving the headings in place is what keeps the prose published everywhere
+ * else while the page still prints it exactly once.
+ *
+ * `prose` is `null` for a heading followed by anything but a paragraph, which
+ * `checkExampleHeadings` in `scripts/lib/doc-contract.mjs` fails the build
+ * over: a demo with no sentence beside it is the state this replaces.
+ */
+function exampleHeadingsOf(run) {
+  const headings = [];
+  for (const [index, entry] of run.entries()) {
+    if (entry.token.type !== 'heading' || entry.token.depth !== 3) {
+      continue;
+    }
+    const next = run.slice(index + 1).find(({ token }) => token.type !== 'space');
+    headings.push({
+      title: entry.token.text,
+      slug: entry.slug,
+      line: entry.line,
+      prose: next?.token.type === 'paragraph' ? next.token.text : null,
+    });
+  }
+  return headings;
+}
+
 function blocksOf(run) {
   const blocks = [];
   let prose = [];
@@ -629,6 +663,7 @@ export function compileDocument(source, { path, slug, kind }) {
     title: title.token.text,
     lede: ledeIndex === -1 ? null : introRun[ledeIndex].token.text,
     caption,
+    examples: exampleHeadingsOf(examples?.run ?? []),
     intro: blocksOf(introRun.filter((_, index) => index !== ledeIndex)),
     introHeadings: headingsOf(introRun),
     sections: sectionRuns.map(({ heading, run }) => ({

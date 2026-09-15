@@ -126,6 +126,7 @@ describe('withFold', () => {
   const page = {
     intro: [],
     caption: null,
+    examples: [],
     behaviorGroup: null,
     sections: [
       { title: 'One', slug: 'one', ring: 'core' as const, headings: [], blocks: [] },

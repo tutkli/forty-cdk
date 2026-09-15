@@ -51,8 +51,6 @@ In `selectionMode="checkbox"`, place a checkbox surface inside the label:
 
 Walk the tree with the arrow keys — right expands a node, left collapses it, and each node carries `data-state`, `data-selected` and `data-highlighted`.
 
-Trees are recursive, and the idiomatic Angular shape is a small **recursive component** for the node. This keeps dependency injection correct at every depth: each node component nests its element injector under its enclosing `[forTreeGroup]`, so `[forTreeItem]` resolves the right level / container automatically.
-
 ```ts
 import { ChangeDetectionStrategy, Component, input, signal } from '@angular/core';
 import {
@@ -171,9 +169,27 @@ export class TreeDefaultExample {
 }
 ```
 
+Trees are recursive, and the idiomatic Angular shape is a small **recursive component** for the node. This keeps dependency injection correct at every depth: each node component nests its element injector under its enclosing `[forTreeGroup]`, so `[forTreeItem]` resolves the right level / container automatically.
+
 > **Why not `ngTemplateOutlet`?** A single recursive `<ng-template>` instantiated with `[ngTemplateOutlet]` resolves dependency injection from where the template is **declared**, not where it is inserted — so a nested `[forTreeItem]` would inject the root tree as its container instead of its enclosing `[forTreeGroup]`, breaking `aria-level` and visible-order navigation. The recursive component above avoids this. If you must use `ngTemplateOutlet`, pass an explicit `[ngTemplateOutletInjector]` captured at each insertion point.
 
 Mounting is the consumer's responsibility: wrap `[forTreeGroup]` in `@if (expanded().includes(node.id))` so a collapsed parent drops its subtree. A node is treated as a **parent** (and emits `aria-expanded` / `data-state`) only when a `[forTreeItemToggle]` is registered inside it — leaves render no toggle and emit neither, matching the APG "end nodes lack `aria-expanded`" rule.
+
+### Checkbox selection
+
+`selectionMode='checkbox'` switches each treeitem from `aria-selected` to `aria-checked` and lets every node toggle independently. `cascade` plus a `descendantsOf` descriptor propagates checks to all descendants (even collapsed ones) and surfaces `aria-checked='mixed'` on partially-checked parents.
+
+### Filter picker
+
+A search box narrows the tree while `cascade` checkboxes pick values. You filter your own data and re-render, then call the pure `expandToReveal(matches, ancestorsOf)` helper to expand just the ancestors that make each match visible. Matched text is highlighted with your own `<mark>`.
+
+### Drag & drop reordering
+
+`[forTreeNodeDrag]` on the root adds pointer and keyboard reordering and re-parenting; the ⠿ grip is an optional `[forTreeNodeDragHandle]`. The library never mutates your data — apply the pure `moveTreeNode` helper in `(nodeDrop)`. On lift the dragged subtree collapses, which structurally prevents dropping a node into its own descendant.
+
+### Virtualized (12,300 nodes)
+
+For huge trees, bind `[totalCount]` to switch `ForTree` to the activedescendant model over a consumer-owned virtual window. We flatten the expanded tree to a linear list, feed its length to `injectVirtualizer`, and render only the visible slice — each `[forTreeItem]` gets its absolute `[itemIndex]` plus `level` / `setSize` / `posInSet` so ARIA stays correct.
 
 ## Multi select
 

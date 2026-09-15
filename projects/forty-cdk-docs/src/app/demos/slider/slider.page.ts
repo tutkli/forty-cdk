@@ -30,35 +30,19 @@ import { DOC } from '../../../generated/docs/primitives/slider.generated';
         <app-slider-default-example />
       </demo-layout>
 
-      <demo-layout
-        title="Stepped"
-        subtitle="<code>step</code> sets the granularity values snap to and the amount each arrow-key press moves. Here <code>step</code> is 10, so values snap to 0, 10, 20…; <kbd>PageUp</kbd> / <kbd>PageDown</kbd> move by 10× this step."
-        sourcePath="slider/examples/steps.example.ts"
-      >
+      <demo-layout heading="stepped" sourcePath="slider/examples/steps.example.ts">
         <app-slider-steps-example />
       </demo-layout>
 
-      <demo-layout
-        title="Range (two thumbs)"
-        subtitle="The <code>value</code> model is a <code>readonly number[]</code>; two <code>forSliderThumb</code> pieces, one per <code>index</code>, make a range. Each thumb's <code>aria-valuemin</code> / <code>aria-valuemax</code> squeeze to its neighbor so the thumbs can't cross, and <code>minStepsBetweenThumbs</code> keeps a minimum gap in step units."
-        sourcePath="slider/examples/range.example.ts"
-      >
+      <demo-layout heading="range-two-thumbs" sourcePath="slider/examples/range.example.ts">
         <app-slider-range-example />
       </demo-layout>
 
-      <demo-layout
-        title="Vertical orientation"
-        subtitle="<code>orientation='vertical'</code> reflects <code>data-orientation</code> on every piece and sets <code>aria-orientation</code> on the thumb. The exposed fractions are unchanged — the consumer paints along the Y axis: <kbd>ArrowUp</kbd> increases, <kbd>ArrowDown</kbd> decreases."
-        sourcePath="slider/examples/vertical.example.ts"
-      >
+      <demo-layout heading="vertical-orientation" sourcePath="slider/examples/vertical.example.ts">
         <app-slider-vertical-example />
       </demo-layout>
 
-      <demo-layout
-        title="Inverted"
-        subtitle="<code>inverted</code> flips the value-to-position mapping — in horizontal LTR, max sits on the left. The flip is baked into the exposed fractions, so the same CSS paints both ways. Keyboard semantics are unchanged: <kbd>ArrowRight</kbd> / <kbd>ArrowUp</kbd> still move toward max."
-        sourcePath="slider/examples/inverted.example.ts"
-      >
+      <demo-layout heading="inverted" sourcePath="slider/examples/inverted.example.ts">
         <app-slider-inverted-example />
       </demo-layout>
     </primitive-page>

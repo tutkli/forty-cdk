@@ -118,6 +118,14 @@ export class VirtualizationViewportExample {
 }
 ```
 
+### Dynamic heights (measured)
+
+When rows vary in height, drop to the headless `injectVirtualizer` core: it owns no DOM, so the consumer renders the spacer and the absolutely-positioned window. Each row carries `[attr.data-index]` and is fed to `measureElement()` in `afterEveryRender`, so estimates refine and jumping to the bottom lands precisely.
+
+### Infinite scroll (endReached)
+
+The Shape A turnkey path: bind `(endReached)` on `[forVirtualViewport]` and it builds the infinite-scroll detector internally, firing once when the rendered window comes within the overscan of the end. The consumer owns the fetch and appends the next page; the detector re-arms when the bound `count` grows.
+
 ## Vertical list
 
 ```html

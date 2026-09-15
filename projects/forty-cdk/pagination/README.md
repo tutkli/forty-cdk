@@ -117,6 +117,10 @@ export class PaginationDefaultExample {
 }
 ```
 
+### Driving a data list
+
+Pagination is headless state — derive `count` from your data, then slice the visible rows from `page()`. Changing the page re-slices the list; the `page` model is the single source of truth shared by the rows and the controls.
+
 ## API
 
 ### `ForPagination`

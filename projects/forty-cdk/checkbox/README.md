@@ -33,8 +33,6 @@ Use the one that matches your semantics. `ForCheckbox` and `ForSwitch` are inten
 
 Tick it with the pointer or `Space` and watch `data-state` move between `checked` and `unchecked` — the box is a `<button>`, so its whole appearance is your CSS.
 
-### Stand-alone
-
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { ForCheckbox } from 'forty-cdk/checkbox';
@@ -58,6 +56,8 @@ export class CheckboxDefaultExample {
 ```
 
 ### Tri-state ("select all")
+
+A parent checkbox reflects `indeterminate` when only some children are selected. Activating it selects or clears them all at once, matching native inputs.
 
 ```ts
 import { Component, computed, signal } from '@angular/core';
@@ -99,7 +99,13 @@ export class DemoSelectAll {
 }
 ```
 
+### States
+
+One class and one directive, three states. `disabled` and `readonly` both keep the box focusable and announced (per APG) while click and `Space` are a no-op; they reflect `data-disabled` and `data-readonly`, which is all the example's stylesheet keys on.
+
 ### Signal Forms
+
+`forCheckbox` implements `FormCheckboxControl`, so a single `[formField]` binding wires the binary `checked` value into the form and pulls validity back out. The box is required: blur it unchecked and it reflects `data-invalid` / `data-touched`.
 
 ```ts
 import { Component, signal } from '@angular/core';

@@ -25,8 +25,7 @@ import { SOURCES } from './sources.generated';
       </demo-layout>
 
       <demo-layout
-        title="Announcing an event"
-        subtitle="An event with no visible text of its own goes through <code>LiveAnnouncer</code> instead — there is no element to hide, so there is nothing for <code>[forVisuallyHidden]</code> to mark. The two politeness levels are independent regions, so an <code>assertive</code> message never cancels a <code>polite</code> one in flight."
+        heading="announcing-an-event"
         sourcePath="visually-hidden/examples/announcer.example.ts"
       >
         <app-visually-hidden-announcer-example />

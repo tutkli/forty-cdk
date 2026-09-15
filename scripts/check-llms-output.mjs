@@ -1,6 +1,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 
+import { compileCorpus } from './lib/doc-corpus.mjs';
 import { markdownLinksOf } from './docs/doc-markdown.mjs';
 import { GITHUB_BLOB_BASE, isAbsoluteHref, SITE_URL, splitDocHref } from './lib/doc-links.mjs';
 import { readEntryPointDocs, readGuides, readPrimitives, readSitePages } from './lib/doc-site.mjs';
@@ -68,6 +69,7 @@ const ERRORS_FILE = 'errors.md';
 const ARTIFACT_FLOOR = 60;
 const LINK_FLOOR = 500;
 const CODE_FLOOR = 100;
+const DEMO_PROSE_FLOOR = 120;
 
 /**
  * How many missing codes the roster failure names before it reports the rest as
@@ -191,6 +193,44 @@ for (const [file, source] of expected) {
     failures.push(
       `/${file} does not open with the document's title, so it published a body with no heading`,
     );
+  }
+}
+
+/**
+ * The prose a page prints under each of its demos, read back out of the
+ * artifact ([#1940](https://github.com/tutkli/forty-cdk/issues/1940)).
+ *
+ * Those sentences used to be `subtitle` attributes on `<demo-layout>`, so the
+ * one reader they never reached was the one holding this file: the site
+ * replaces the body of `## Examples` with live demos, and the markdown emitter
+ * serialises the body. Now that they are `###` headings under that section they
+ * are carried by the same serialisation as everything else — which is exactly
+ * why it is asserted here rather than assumed: the emitter is free to skip a
+ * section, and a lift like the caption's takes its prose out of the body
+ * silently.
+ */
+let demoProse = 0;
+const { documents: compiled } = compileCorpus();
+for (const primitive of readPrimitives()) {
+  const contents = read(`${primitive.slug}.md`);
+  if (contents === null) {
+    continue;
+  }
+  const document = compiled.find(
+    (entry) => entry.path === `projects/forty-cdk/${primitive.slug}/README.md`,
+  );
+  for (const example of document?.examples ?? []) {
+    demoProse += 1;
+    if (!contents.includes(`### ${example.title}`)) {
+      failures.push(
+        `/${primitive.slug}.md is missing "### ${example.title}", a demo its README introduces`,
+      );
+    } else if (example.prose !== null && !contents.includes(example.prose)) {
+      failures.push(
+        `/${primitive.slug}.md publishes "### ${example.title}" without the sentence under it, ` +
+          'so the demo reaches an assistant with no prose',
+      );
+    }
   }
 }
 
@@ -397,10 +437,18 @@ if (scannedLinks < LINK_FLOOR) {
   );
 }
 
+if (demoProse < DEMO_PROSE_FLOOR) {
+  fail(
+    `read only ${demoProse} demo heading(s) off the corpus (floor ${DEMO_PROSE_FLOOR}) — the ` +
+      'compiler has stopped reporting them, so a green run says nothing about the prose',
+  );
+}
+
 console.log(
   `[check-llms-output] ok — ${expected.size} documents published as markdown, all listed in ` +
     `/${INDEX_FILE} and concatenated into /${FULL_FILE} ` +
     `(${Math.round(Buffer.byteLength(fullContents, 'utf8') / 1024)} kB); /${ERRORS_FILE} carries ` +
-    `all ${errorCodes.length} FORCDK-* code(s) the library emits; ${scannedLinks} links ` +
+    `all ${errorCodes.length} FORCDK-* code(s) the library emits; ${demoProse} demo heading(s) ` +
+    `reach the artifact of the page that renders them; ${scannedLinks} links ` +
     `resolved (${sourceLinks} to repository source on GitHub, which is where those files are read)`,
 );

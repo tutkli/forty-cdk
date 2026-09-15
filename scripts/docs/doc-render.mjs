@@ -205,6 +205,11 @@ export function renderDocument(document, { routes, blobBase = GITHUB_BLOB_BASE }
   return {
     intro: document.intro.map((block) => renderProseBlock(block, context)),
     caption: document.caption === null ? null : renderInlineMarkdown(document.caption, context),
+    examples: document.examples.map((example) => ({
+      ...renderTitle(example.title, context),
+      slug: example.slug,
+      prose: example.prose === null ? null : renderInlineMarkdown(example.prose, context),
+    })),
     behaviorGroup: group === null ? null : { title: headingText(group.title), slug: group.slug },
     sections: document.sections.map((section) => ({
       ...renderTitle(section.title, context),

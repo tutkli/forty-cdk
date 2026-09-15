@@ -206,7 +206,7 @@ describe('the rail the published corpus renders', () => {
       'Styling',
       'Wrapping in a design system',
     ]);
-    expect(groupOf(items).children).toHaveLength(13);
+    expect(groupOf(items).children).toHaveLength(15);
     expect(groupOf(items).disclosure).toBe('closed');
   });
 
@@ -317,7 +317,7 @@ describe('the rail the published corpus renders', () => {
     );
     const paths = entries.map((entry) => entry.path);
 
-    expect(nested).toHaveLength(13);
+    expect(nested).toHaveLength(15);
     for (const slug of nested) {
       expect(paths).toContain(`/select#${slug}`);
     }
