@@ -169,26 +169,26 @@ interface Booking {
       font: inherit;
       font-size: 0.9rem;
       padding: 0.55rem 0.75rem;
-      border-radius: var(--pg-radius-sm);
-      border: 1px solid var(--pg-border-strong);
-      background: var(--pg-surface);
-      color: var(--pg-text);
+      border-radius: var(--ex-radius-sm, 14px);
+      border: 1px solid var(--ex-border-strong, #d0c9bc);
+      background: var(--ex-surface, #ffffff);
+      color: var(--ex-text, #17191c);
       cursor: pointer;
     }
 
     .dp-range-form-trigger:hover:not([disabled]) {
-      background: var(--pg-surface-2);
+      background: var(--ex-surface-2, #f2eee6);
     }
 
     .dp-range-form-value[data-placeholder] {
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     .dp-range-form-chevron {
       flex: none;
       width: 14px;
       height: 14px;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
       transition: transform 0.15s ease;
     }
 
@@ -200,12 +200,16 @@ interface Booking {
       z-index: 60;
       width: min(280px, calc(100vw - 1.5rem));
       padding: 0.85rem;
-      background: var(--pg-surface);
-      color: var(--pg-text);
-      border: 1px solid var(--pg-border);
-      border-radius: var(--pg-radius);
+      background: var(--ex-surface, #ffffff);
+      color: var(--ex-text, #17191c);
+      border: 1px solid var(--ex-border, #e5e0d6);
+      border-radius: var(--ex-radius, 22px);
       corner-shape: squircle;
-      box-shadow: var(--pg-shadow);
+      box-shadow: var(
+        --ex-shadow,
+        0 2px 4px rgba(0, 0, 0, 0.04),
+        0 20px 40px -18px rgba(0, 0, 0, 0.2)
+      );
     }
 
     .dp-range-form-cal {
@@ -236,10 +240,10 @@ interface Booking {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      border-radius: var(--pg-radius-sm);
-      border: 1px solid var(--pg-border-strong);
-      background: var(--pg-surface);
-      color: var(--pg-text);
+      border-radius: var(--ex-radius-sm, 14px);
+      border: 1px solid var(--ex-border-strong, #d0c9bc);
+      background: var(--ex-surface, #ffffff);
+      color: var(--ex-text, #17191c);
       font-size: 1.05rem;
       line-height: 1;
       cursor: pointer;
@@ -252,7 +256,7 @@ interface Booking {
     }
 
     .dp-range-form-nav:hover:not([disabled]) {
-      background: var(--pg-surface-2);
+      background: var(--ex-surface-2, #f2eee6);
     }
 
     .dp-range-form-nav[disabled] {
@@ -272,7 +276,7 @@ interface Booking {
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.04em;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     .dp-range-form-cell {
@@ -280,58 +284,58 @@ interface Booking {
       text-align: center;
       vertical-align: middle;
       font-size: 0.82rem;
-      border-radius: var(--pg-radius-sm);
+      border-radius: var(--ex-radius-sm, 14px);
       cursor: pointer;
       user-select: none;
       transition: background 0.12s ease;
     }
 
     .dp-range-form-cell:hover:not([aria-disabled]):not([data-in-range]):not([data-range-preview]) {
-      background: var(--pg-surface-2);
+      background: var(--ex-surface-2, #f2eee6);
     }
 
     .dp-range-form-cell[data-outside-month] {
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
       opacity: 0.5;
     }
 
     .dp-range-form-cell[data-today] {
-      box-shadow: inset 0 0 0 1px var(--pg-border-strong);
+      box-shadow: inset 0 0 0 1px var(--ex-border-strong, #d0c9bc);
     }
 
     .dp-range-form-cell[data-selected] {
-      background: var(--pg-primary);
-      color: var(--pg-primary-contrast);
+      background: var(--ex-accent, #0e7c6b);
+      color: var(--ex-accent-contrast, #ffffff);
       font-weight: 600;
     }
 
     .dp-range-form-grid:focus-within .dp-range-form-cell[data-highlighted],
     .dp-range-form-cell:focus-visible {
-      outline: 2px solid var(--pg-primary);
+      outline: 2px solid var(--ex-accent, #0e7c6b);
       outline-offset: -2px;
     }
 
     .dp-range-form-cell[aria-disabled] {
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
       opacity: 0.4;
       cursor: not-allowed;
       text-decoration: line-through;
     }
 
     .dp-range-form-cell[data-in-range] {
-      background: color-mix(in srgb, var(--pg-primary) 15%, var(--pg-surface));
+      background: color-mix(in srgb, var(--ex-accent, #0e7c6b) 15%, var(--ex-surface, #ffffff));
       border-radius: 0;
     }
 
     .dp-range-form-cell[data-range-start],
     .dp-range-form-cell[data-range-end] {
-      background: var(--pg-primary);
-      color: var(--pg-primary-contrast);
+      background: var(--ex-accent, #0e7c6b);
+      color: var(--ex-accent-contrast, #ffffff);
       font-weight: 600;
     }
 
     .dp-range-form-cell[data-range-preview] {
-      background: color-mix(in srgb, var(--pg-primary) 8%, var(--pg-surface));
+      background: color-mix(in srgb, var(--ex-accent, #0e7c6b) 8%, var(--ex-surface, #ffffff));
       border-radius: 0;
     }
 
@@ -345,7 +349,8 @@ interface Booking {
 
     .dp-range-form-pop-in {
       transform-origin: var(--for-floating-content-transform-origin, center);
-      animation: dp-range-form-pop-in 0.2s var(--pg-ease-spring) both;
+      animation: dp-range-form-pop-in 0.2s var(--ex-ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1))
+        both;
     }
 
     @keyframes dp-range-form-pop-in {

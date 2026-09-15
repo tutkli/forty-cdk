@@ -99,11 +99,15 @@ import {
       align-items: center;
       gap: 0.25rem;
       padding: 0.35rem;
-      background: var(--pg-surface);
-      border: 1px solid var(--pg-border);
-      border-radius: var(--pg-radius);
+      background: var(--ex-surface, #ffffff);
+      border: 1px solid var(--ex-border, #e5e0d6);
+      border-radius: var(--ex-radius, 22px);
       corner-shape: squircle;
-      box-shadow: var(--pg-shadow);
+      box-shadow: var(
+        --ex-shadow,
+        0 2px 4px rgba(0, 0, 0, 0.04),
+        0 20px 40px -18px rgba(0, 0, 0, 0.2)
+      );
     }
 
     .toolbar-grp {
@@ -115,10 +119,10 @@ import {
       font: inherit;
       font-weight: 600;
       padding: 0.4rem 0.7rem;
-      color: var(--pg-text);
+      color: var(--ex-text, #17191c);
       background: transparent;
       border: 1px solid transparent;
-      border-radius: var(--pg-radius-sm);
+      border-radius: var(--ex-radius-sm, 14px);
       cursor: pointer;
     }
 
@@ -129,12 +133,12 @@ import {
     }
 
     .toolbar-btn:hover {
-      background: var(--pg-surface-2);
+      background: var(--ex-surface-2, #f2eee6);
     }
 
     .toolbar-btn[data-state='checked'] {
-      background: var(--pg-primary);
-      color: var(--pg-primary-contrast);
+      background: var(--ex-accent, #0e7c6b);
+      color: var(--ex-accent-contrast, #ffffff);
     }
 
     .toolbar-btn:disabled,
@@ -147,7 +151,7 @@ import {
       align-self: stretch;
       width: 1px;
       margin: 0 0.2rem;
-      background: var(--pg-border-strong);
+      background: var(--ex-border-strong, #d0c9bc);
     }
 
     .toolbar-link {
@@ -155,9 +159,9 @@ import {
       align-items: center;
       padding: 0.4rem 0.7rem;
       font-weight: 600;
-      color: var(--pg-primary);
+      color: var(--ex-accent, #0e7c6b);
       text-decoration: none;
-      border-radius: var(--pg-radius-sm);
+      border-radius: var(--ex-radius-sm, 14px);
     }
 
     .toolbar-link:hover {
@@ -171,7 +175,7 @@ import {
 
     .toolbar-btn:focus-visible,
     .toolbar-link:focus-visible {
-      outline: 2px solid var(--pg-primary);
+      outline: 2px solid var(--ex-accent, #0e7c6b);
       outline-offset: 2px;
     }
   `,

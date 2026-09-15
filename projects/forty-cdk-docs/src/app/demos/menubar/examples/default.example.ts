@@ -51,10 +51,14 @@ import { ForMenubar, ForMenubarTrigger } from 'forty-cdk/menubar';
       display: inline-flex;
       gap: 2px;
       padding: 4px;
-      background: var(--pg-surface);
-      border: 1px solid var(--pg-border);
-      border-radius: var(--pg-radius-sm);
-      box-shadow: var(--pg-shadow);
+      background: var(--ex-surface, #ffffff);
+      border: 1px solid var(--ex-border, #e5e0d6);
+      border-radius: var(--ex-radius-sm, 14px);
+      box-shadow: var(
+        --ex-shadow,
+        0 2px 4px rgba(0, 0, 0, 0.04),
+        0 20px 40px -18px rgba(0, 0, 0, 0.2)
+      );
     }
 
     .menubar-menu[data-disabled] {
@@ -68,15 +72,15 @@ import { ForMenubar, ForMenubarTrigger } from 'forty-cdk/menubar';
       text-align: left;
       padding: 0.4rem 0.75rem;
       border: 0;
-      border-radius: var(--pg-radius-sm);
+      border-radius: var(--ex-radius-sm, 14px);
       background: transparent;
-      color: var(--pg-text);
+      color: var(--ex-text, #17191c);
       cursor: pointer;
     }
 
     .menubar-menu-trigger:hover,
     .menubar-menu-trigger[data-state='open'] {
-      background: var(--pg-surface-2);
+      background: var(--ex-surface-2, #f2eee6);
     }
 
     .menubar-menu-content {
@@ -86,10 +90,14 @@ import { ForMenubar, ForMenubarTrigger } from 'forty-cdk/menubar';
       gap: 2px;
       min-width: 200px;
       padding: 5px;
-      background: var(--pg-surface);
-      border: 1px solid var(--pg-border);
-      border-radius: var(--pg-radius-sm);
-      box-shadow: var(--pg-shadow);
+      background: var(--ex-surface, #ffffff);
+      border: 1px solid var(--ex-border, #e5e0d6);
+      border-radius: var(--ex-radius-sm, 14px);
+      box-shadow: var(
+        --ex-shadow,
+        0 2px 4px rgba(0, 0, 0, 0.04),
+        0 20px 40px -18px rgba(0, 0, 0, 0.2)
+      );
     }
 
     .menubar-menu-item {
@@ -102,20 +110,20 @@ import { ForMenubar, ForMenubarTrigger } from 'forty-cdk/menubar';
       text-align: left;
       padding: 0.45rem 0.6rem;
       border: 0;
-      border-radius: var(--pg-radius-sm);
+      border-radius: var(--ex-radius-sm, 14px);
       background: transparent;
-      color: var(--pg-text);
+      color: var(--ex-text, #17191c);
       cursor: pointer;
     }
 
     .menubar-menu-item[data-highlighted],
     .menubar-menu-item[data-state='open'],
     .menubar-menu-item:not([data-disabled]):hover {
-      background: var(--pg-surface-2);
+      background: var(--ex-surface-2, #f2eee6);
     }
 
     .menubar-menu-item[data-disabled] {
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
       opacity: 0.6;
       cursor: not-allowed;
     }
@@ -124,12 +132,13 @@ import { ForMenubar, ForMenubarTrigger } from 'forty-cdk/menubar';
       height: 1px;
       margin: 4px -1px;
       border: 0;
-      background: var(--pg-border);
+      background: var(--ex-border, #e5e0d6);
     }
 
     .menubar-menu-pop-in {
       transform-origin: var(--for-floating-content-transform-origin, center);
-      animation: menubar-menu-pop-in 0.2s var(--pg-ease-spring) both;
+      animation: menubar-menu-pop-in 0.2s var(--ex-ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1))
+        both;
     }
 
     @keyframes menubar-menu-pop-in {

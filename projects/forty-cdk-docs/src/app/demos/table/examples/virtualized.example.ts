@@ -124,19 +124,19 @@ function makePeople(start: number, length: number): Person[] {
       font-weight: 600;
       font-size: 0.85rem;
       padding: 0.4rem 0.8rem;
-      border-radius: var(--pg-radius-sm);
-      border: 1px solid var(--pg-border-strong);
-      background: var(--pg-surface);
-      color: var(--pg-text);
+      border-radius: var(--ex-radius-sm, 14px);
+      border: 1px solid var(--ex-border-strong, #d0c9bc);
+      background: var(--ex-surface, #ffffff);
+      color: var(--ex-text, #17191c);
       cursor: pointer;
     }
 
     .vtbl-btn:hover {
-      background: var(--pg-surface-2);
+      background: var(--ex-surface-2, #f2eee6);
     }
 
     .vtbl-btn:focus-visible {
-      outline: 2px solid var(--pg-primary);
+      outline: 2px solid var(--ex-accent, #0e7c6b);
       outline-offset: 2px;
     }
 
@@ -145,8 +145,8 @@ function makePeople(start: number, length: number): Person[] {
       height: 380px;
       overflow: auto;
       position: relative;
-      border: 1px solid var(--pg-border);
-      border-radius: var(--pg-radius-sm);
+      border: 1px solid var(--ex-border, #e5e0d6);
+      border-radius: var(--ex-radius-sm, 14px);
       font-size: 0.88rem;
     }
 
@@ -159,7 +159,7 @@ function makePeople(start: number, length: number): Person[] {
       position: sticky;
       top: 0;
       z-index: 1;
-      background: var(--pg-surface-2);
+      background: var(--ex-surface-2, #f2eee6);
       font-weight: 700;
     }
 
@@ -175,7 +175,7 @@ function makePeople(start: number, length: number): Person[] {
 
     .vtbl-cell {
       padding: 0.5rem 0.75rem;
-      border-bottom: 1px solid var(--pg-border);
+      border-bottom: 1px solid var(--ex-border, #e5e0d6);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -183,14 +183,14 @@ function makePeople(start: number, length: number): Person[] {
     }
 
     .vtbl-head .vtbl-cell {
-      border-bottom: 2px solid var(--pg-border-strong);
+      border-bottom: 2px solid var(--ex-border-strong, #d0c9bc);
     }
 
     .vtbl-cell[data-highlighted],
     .vtbl-cell:focus-visible {
-      outline: 2px solid var(--pg-primary);
+      outline: 2px solid var(--ex-accent, #0e7c6b);
       outline-offset: -2px;
-      background: color-mix(in srgb, var(--pg-primary) 10%, transparent);
+      background: color-mix(in srgb, var(--ex-accent, #0e7c6b) 10%, transparent);
     }
   `,
 })

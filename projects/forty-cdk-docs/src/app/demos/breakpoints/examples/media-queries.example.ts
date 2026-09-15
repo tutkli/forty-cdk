@@ -49,31 +49,31 @@ interface Probe {
       justify-content: space-between;
       gap: 0.75rem;
       padding: 0.6rem 0.85rem;
-      border: 1px solid var(--pg-border);
-      border-radius: var(--pg-radius-sm);
-      background: var(--pg-surface);
+      border: 1px solid var(--ex-border, #e5e0d6);
+      border-radius: var(--ex-radius-sm, 14px);
+      background: var(--ex-surface, #ffffff);
     }
 
     .bp-query {
-      font-family: var(--pg-font-mono);
+      font-family: var(--ex-font-mono, ui-monospace, monospace);
       font-size: 0.8rem;
-      color: var(--pg-text);
+      color: var(--ex-text, #17191c);
     }
 
     .bp-result {
       flex: none;
       padding: 0.15rem 0.6rem;
       border-radius: 999px;
-      font-family: var(--pg-font-mono);
+      font-family: var(--ex-font-mono, ui-monospace, monospace);
       font-size: 0.74rem;
       font-weight: 700;
-      background: var(--pg-surface-2);
-      color: var(--pg-text-muted);
+      background: var(--ex-surface-2, #f2eee6);
+      color: var(--ex-muted, #585d66);
     }
 
     .bp-result--on {
-      background: color-mix(in srgb, var(--pg-success) 18%, transparent);
-      color: var(--pg-success);
+      background: color-mix(in srgb, var(--ex-success, #1f7a4d) 18%, transparent);
+      color: var(--ex-success, #1f7a4d);
     }
   `,
 })

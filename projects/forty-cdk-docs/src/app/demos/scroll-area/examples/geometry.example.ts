@@ -76,9 +76,9 @@ import {
       position: relative;
       width: min(420px, 100%);
       height: 240px;
-      background: var(--pg-surface);
-      border: 1px solid var(--pg-border);
-      border-radius: var(--pg-radius);
+      background: var(--ex-surface, #ffffff);
+      border: 1px solid var(--ex-border, #e5e0d6);
+      border-radius: var(--ex-radius, 22px);
       corner-shape: squircle;
       overflow: hidden;
     }
@@ -96,12 +96,12 @@ import {
     .ga-row {
       margin: 0 0 0.7rem;
       white-space: nowrap;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     .ga-scrollbar {
       position: absolute;
-      background: var(--pg-surface-2);
+      background: var(--ex-surface-2, #f2eee6);
       border-radius: 999px;
     }
 
@@ -120,7 +120,7 @@ import {
     }
 
     .ga-thumb {
-      background: var(--pg-border-strong);
+      background: var(--ex-border-strong, #d0c9bc);
       border-radius: 999px;
       cursor: grab;
     }
@@ -149,21 +149,21 @@ import {
     }
 
     .ga-stats dt {
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     .ga-stats dd {
       margin: 0;
       font-weight: 600;
       font-variant-numeric: tabular-nums;
-      color: var(--pg-text);
+      color: var(--ex-text, #17191c);
     }
 
     .ga-meter {
       width: 100%;
       height: 8px;
       border-radius: 999px;
-      background: var(--pg-surface-2);
+      background: var(--ex-surface-2, #f2eee6);
       overflow: hidden;
     }
 
@@ -171,13 +171,13 @@ import {
       display: block;
       height: 100%;
       border-radius: 999px;
-      background: var(--pg-primary);
+      background: var(--ex-accent, #0e7c6b);
     }
 
     .ga-hint {
       margin: 0.5rem 0 0;
       font-size: 0.82rem;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
   `,
 })

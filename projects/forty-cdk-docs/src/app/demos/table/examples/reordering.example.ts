@@ -125,8 +125,8 @@ function personField(person: Person, column: PersonColumn): string {
       width: min(600px, 100%);
       max-height: 320px;
       overflow: auto;
-      border: 1px solid var(--pg-border);
-      border-radius: var(--pg-radius-sm);
+      border: 1px solid var(--ex-border, #e5e0d6);
+      border-radius: var(--ex-radius-sm, 14px);
     }
 
     .tbl {
@@ -144,7 +144,7 @@ function personField(person: Person, column: PersonColumn): string {
       position: sticky;
       top: 0;
       z-index: 1;
-      background: var(--pg-surface-2);
+      background: var(--ex-surface-2, #f2eee6);
       font-weight: 700;
     }
 
@@ -153,14 +153,14 @@ function personField(person: Person, column: PersonColumn): string {
       align-items: center;
       gap: 0.4rem;
       padding: 0.55rem 0.75rem;
-      border-bottom: 1px solid var(--pg-border);
+      border-bottom: 1px solid var(--ex-border, #e5e0d6);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
 
     .tbl-head .tbl-cell {
-      border-bottom: 2px solid var(--pg-border-strong);
+      border-bottom: 2px solid var(--ex-border-strong, #d0c9bc);
     }
 
     .tbl-row:not(.tbl-head):last-child .tbl-cell {
@@ -176,7 +176,7 @@ function personField(person: Person, column: PersonColumn): string {
     }
 
     .tbl-grip {
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
       font-size: 0.85rem;
       line-height: 1;
     }
@@ -187,14 +187,14 @@ function personField(person: Person, column: PersonColumn): string {
     }
 
     .tbl-row[data-drag-over] {
-      background: color-mix(in srgb, var(--pg-primary) 10%, transparent);
+      background: color-mix(in srgb, var(--ex-accent, #0e7c6b) 10%, transparent);
     }
 
     .tbl-ph {
       box-sizing: border-box;
-      border: 2px dashed var(--pg-primary);
-      border-radius: var(--pg-radius-sm);
-      background: color-mix(in srgb, var(--pg-primary) 10%, transparent);
+      border: 2px dashed var(--ex-accent, #0e7c6b);
+      border-radius: var(--ex-radius-sm, 14px);
+      background: color-mix(in srgb, var(--ex-accent, #0e7c6b) 10%, transparent);
     }
 
     .tbl-ph--col {

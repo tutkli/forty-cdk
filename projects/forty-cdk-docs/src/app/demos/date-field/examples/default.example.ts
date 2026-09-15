@@ -32,18 +32,18 @@ import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized
       font-size: 1rem;
       font-variant-numeric: tabular-nums;
       padding: 0.5rem 0.7rem;
-      border: 1px solid var(--pg-border-strong);
-      border-radius: var(--pg-radius-sm);
-      background: var(--pg-surface);
-      color: var(--pg-text);
+      border: 1px solid var(--ex-border-strong, #d0c9bc);
+      border-radius: var(--ex-radius-sm, 14px);
+      background: var(--ex-surface, #ffffff);
+      color: var(--ex-text, #17191c);
       transition:
         border-color 0.15s ease,
         box-shadow 0.15s ease;
     }
 
     .date-field:focus-within {
-      border-color: var(--pg-primary);
-      box-shadow: 0 0 0 1px var(--pg-primary);
+      border-color: var(--ex-accent, #0e7c6b);
+      box-shadow: 0 0 0 1px var(--ex-accent, #0e7c6b);
     }
 
     .date-field[data-disabled] {
@@ -51,7 +51,7 @@ import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized
     }
 
     .date-field[data-readonly] {
-      background: var(--pg-surface-2);
+      background: var(--ex-surface-2, #f2eee6);
     }
 
     .date-field-segment {
@@ -61,18 +61,18 @@ import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized
     }
 
     .date-field-segment[data-placeholder] {
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     .date-field-segment[data-highlighted],
     .date-field-segment:focus {
-      background: var(--pg-primary);
-      color: var(--pg-primary-contrast);
+      background: var(--ex-accent, #0e7c6b);
+      color: var(--ex-accent-contrast, #ffffff);
     }
 
     .date-field-literal {
       padding: 0 0.05rem;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     @media (prefers-reduced-motion: reduce) {

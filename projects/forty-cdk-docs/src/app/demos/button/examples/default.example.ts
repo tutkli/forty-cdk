@@ -31,10 +31,10 @@ import { ForButton } from 'forty-cdk/button';
       font: inherit;
       font-weight: 600;
       padding: 0.55rem 1.1rem;
-      border-radius: var(--pg-radius-sm);
-      border: 1px solid var(--pg-border-strong);
-      background: var(--pg-surface);
-      color: var(--pg-text);
+      border-radius: var(--ex-radius-sm, 14px);
+      border: 1px solid var(--ex-border-strong, #d0c9bc);
+      background: var(--ex-surface, #ffffff);
+      color: var(--ex-text, #17191c);
       cursor: pointer;
       user-select: none;
       outline: none;
@@ -45,18 +45,18 @@ import { ForButton } from 'forty-cdk/button';
     }
 
     .btn--primary {
-      background: var(--pg-primary);
-      border-color: var(--pg-primary);
-      color: var(--pg-primary-contrast);
+      background: var(--ex-accent, #0e7c6b);
+      border-color: var(--ex-accent, #0e7c6b);
+      color: var(--ex-accent-contrast, #ffffff);
     }
 
     .btn[data-hovered] {
-      background: var(--pg-surface-2);
+      background: var(--ex-surface-2, #f2eee6);
     }
 
     .btn--primary[data-hovered] {
-      background: var(--pg-primary-hover);
-      border-color: var(--pg-primary-hover);
+      background: var(--ex-accent-hover, #0a5a4d);
+      border-color: var(--ex-accent-hover, #0a5a4d);
     }
 
     .btn[data-pressed] {
@@ -64,7 +64,7 @@ import { ForButton } from 'forty-cdk/button';
     }
 
     .btn[data-focus-visible] {
-      box-shadow: 0 0 0 3px color-mix(in srgb, var(--pg-primary) 45%, transparent);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--ex-accent, #0e7c6b) 45%, transparent);
     }
 
     @media (prefers-reduced-motion: reduce) {

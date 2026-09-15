@@ -119,19 +119,19 @@ interface Crumb {
     }
 
     .bc-link {
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
       text-decoration: none;
-      border-radius: var(--pg-radius-sm);
+      border-radius: var(--ex-radius-sm, 14px);
       padding: 0.15rem 0.4rem;
     }
 
     .bc-link:hover {
-      color: var(--pg-text);
+      color: var(--ex-text, #17191c);
       text-decoration: underline;
     }
 
     .bc-link[aria-current='page'] {
-      color: var(--pg-text);
+      color: var(--ex-text, #17191c);
       font-weight: 700;
       pointer-events: none;
     }
@@ -140,22 +140,22 @@ interface Crumb {
       font: inherit;
       line-height: 1;
       padding: 0.05rem 0.45rem 0.3rem;
-      color: var(--pg-text-muted);
-      background: var(--pg-surface-2);
-      border: 1px solid var(--pg-border);
-      border-radius: var(--pg-radius-sm);
+      color: var(--ex-muted, #585d66);
+      background: var(--ex-surface-2, #f2eee6);
+      border: 1px solid var(--ex-border, #e5e0d6);
+      border-radius: var(--ex-radius-sm, 14px);
       cursor: pointer;
     }
 
     .bc-ellipsis:hover {
-      color: var(--pg-text);
-      border-color: var(--pg-border-strong);
+      color: var(--ex-text, #17191c);
+      border-color: var(--ex-border-strong, #d0c9bc);
     }
 
     .bc-sep {
       display: inline-flex;
       align-items: center;
-      color: var(--pg-border-strong);
+      color: var(--ex-border-strong, #d0c9bc);
       user-select: none;
     }
 

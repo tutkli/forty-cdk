@@ -19,14 +19,14 @@ import { ForAspectRatio } from 'forty-cdk/aspect-ratio';
       width: min(340px, 100%);
       display: grid;
       place-items: center;
-      border-radius: var(--pg-radius);
+      border-radius: var(--ex-radius, 22px);
       corner-shape: squircle;
       overflow: hidden;
       color: #fff;
       font-weight: 700;
       font-size: 1.1rem;
       letter-spacing: 0.02em;
-      background: linear-gradient(135deg, var(--pg-primary), #ec4899);
+      background: linear-gradient(135deg, var(--ex-accent, #0e7c6b), #ec4899);
     }
 
     .label {

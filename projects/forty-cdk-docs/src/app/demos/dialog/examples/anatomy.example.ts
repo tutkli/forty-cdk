@@ -67,34 +67,34 @@ import {
       font-weight: 600;
       font-size: 0.9rem;
       padding: 0.5rem 0.9rem;
-      border-radius: var(--pg-radius-sm);
-      border: 1px solid var(--pg-border-strong);
-      background: var(--pg-surface);
-      color: var(--pg-text);
+      border-radius: var(--ex-radius-sm, 14px);
+      border: 1px solid var(--ex-border-strong, #d0c9bc);
+      background: var(--ex-surface, #ffffff);
+      color: var(--ex-text, #17191c);
       cursor: pointer;
     }
 
     .anatomy-btn:hover {
-      background: var(--pg-surface-2);
+      background: var(--ex-surface-2, #f2eee6);
     }
 
     .anatomy-btn--primary,
     .anatomy-btn--primary:hover {
-      background: var(--pg-primary);
-      border-color: var(--pg-primary);
-      color: var(--pg-primary-contrast);
+      background: var(--ex-accent, #0e7c6b);
+      border-color: var(--ex-accent, #0e7c6b);
+      color: var(--ex-accent-contrast, #ffffff);
     }
 
     .anatomy-btn--primary:hover {
-      background: var(--pg-primary-hover);
-      border-color: var(--pg-primary-hover);
+      background: var(--ex-accent-hover, #0a5a4d);
+      border-color: var(--ex-accent-hover, #0a5a4d);
     }
 
     .anatomy-btn--danger,
     .anatomy-btn--danger:hover {
-      background: var(--pg-danger);
-      border-color: var(--pg-danger);
-      color: var(--pg-danger-contrast);
+      background: var(--ex-danger, #b3261e);
+      border-color: var(--ex-danger, #b3261e);
+      color: var(--ex-danger-contrast, #ffffff);
     }
 
     .anatomy-backdrop {
@@ -114,12 +114,16 @@ import {
       transform: translate(-50%, -50%);
       width: min(440px, calc(100vw - 2rem));
       padding: 1.5rem;
-      background: var(--pg-surface);
-      color: var(--pg-text);
-      border: 1px solid var(--pg-border);
-      border-radius: var(--pg-radius-lg);
+      background: var(--ex-surface, #ffffff);
+      color: var(--ex-text, #17191c);
+      border: 1px solid var(--ex-border, #e5e0d6);
+      border-radius: var(--ex-radius-lg, 34px);
       corner-shape: squircle;
-      box-shadow: var(--pg-shadow);
+      box-shadow: var(
+        --ex-shadow,
+        0 2px 4px rgba(0, 0, 0, 0.04),
+        0 20px 40px -18px rgba(0, 0, 0, 0.2)
+      );
     }
 
     .anatomy-dialog h2 {
@@ -129,7 +133,7 @@ import {
 
     .anatomy-dialog p {
       margin: 0 0 1.5rem;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     .anatomy-actions {
@@ -165,7 +169,7 @@ import {
     }
 
     .anatomy-fade-in {
-      animation: anatomy-fade-in 0.24s var(--pg-ease-spring) both;
+      animation: anatomy-fade-in 0.24s var(--ex-ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1)) both;
     }
 
     .anatomy-fade-out {

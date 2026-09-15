@@ -57,9 +57,9 @@ const ARTISTS = [
       margin: 0;
       padding: 0.5rem;
       list-style: none;
-      background: var(--pg-surface-2);
-      border: 1px solid var(--pg-border);
-      border-radius: var(--pg-radius-sm);
+      background: var(--ex-surface-2, #f2eee6);
+      border: 1px solid var(--ex-border, #e5e0d6);
+      border-radius: var(--ex-radius-sm, 14px);
       user-select: none;
       -webkit-user-select: none;
     }
@@ -70,16 +70,20 @@ const ARTISTS = [
       gap: 0.6rem;
       flex: none;
       padding: 0.6rem 0.75rem;
-      background: var(--pg-surface);
-      border: 1px solid var(--pg-border-strong);
-      border-radius: var(--pg-radius-sm);
-      box-shadow: var(--pg-shadow);
+      background: var(--ex-surface, #ffffff);
+      border: 1px solid var(--ex-border-strong, #d0c9bc);
+      border-radius: var(--ex-radius-sm, 14px);
+      box-shadow: var(
+        --ex-shadow,
+        0 2px 4px rgba(0, 0, 0, 0.04),
+        0 20px 40px -18px rgba(0, 0, 0, 0.2)
+      );
       font-size: 0.88rem;
     }
 
     .handle {
       flex: none;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
       cursor: grab;
       line-height: 1;
     }
@@ -91,9 +95,9 @@ const ARTISTS = [
     .num {
       flex: none;
       width: 1.6rem;
-      font-family: var(--pg-font-mono);
+      font-family: var(--ex-font-mono, ui-monospace, monospace);
       font-size: 0.74rem;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     .title {
@@ -103,9 +107,9 @@ const ARTISTS = [
     .placeholder {
       flex: none;
       height: 2.65rem;
-      border: 2px dashed var(--pg-primary);
-      border-radius: var(--pg-radius-sm);
-      background: color-mix(in srgb, var(--pg-primary) 10%, transparent);
+      border: 2px dashed var(--ex-accent, #0e7c6b);
+      border-radius: var(--ex-radius-sm, 14px);
+      background: color-mix(in srgb, var(--ex-accent, #0e7c6b) 10%, transparent);
     }
 
     .item[data-dragging] {

@@ -47,9 +47,9 @@ interface Card {
       display: flex;
       gap: 0.75rem;
       padding: 0.75rem;
-      border: 1px solid var(--pg-border);
-      border-radius: var(--pg-radius-sm);
-      background: var(--pg-surface-2);
+      border: 1px solid var(--ex-border, #e5e0d6);
+      border-radius: var(--ex-radius-sm, 14px);
+      background: var(--ex-surface-2, #f2eee6);
     }
 
     .bp-sidebar {
@@ -59,9 +59,9 @@ interface Card {
       flex-direction: column;
       gap: 0.25rem;
       padding: 0.85rem;
-      border-radius: var(--pg-radius-sm);
-      background: var(--pg-primary);
-      color: var(--pg-primary-contrast);
+      border-radius: var(--ex-radius-sm, 14px);
+      background: var(--ex-accent, #0e7c6b);
+      color: var(--ex-accent-contrast, #ffffff);
     }
 
     .bp-sidebar-title {
@@ -69,7 +69,7 @@ interface Card {
     }
 
     .bp-sidebar-note {
-      font-family: var(--pg-font-mono);
+      font-family: var(--ex-font-mono, ui-monospace, monospace);
       font-size: 0.7rem;
       opacity: 0.85;
     }
@@ -90,9 +90,9 @@ interface Card {
       gap: 0.3rem;
       padding: 0.85rem 0.75rem;
       min-height: 4.5rem;
-      border: 1px solid var(--pg-border);
-      border-radius: var(--pg-radius-sm);
-      background: var(--pg-surface);
+      border: 1px solid var(--ex-border, #e5e0d6);
+      border-radius: var(--ex-radius-sm, 14px);
+      background: var(--ex-surface, #ffffff);
     }
 
     .bp-card-title {
@@ -101,9 +101,9 @@ interface Card {
     }
 
     .bp-card-tag {
-      font-family: var(--pg-font-mono);
+      font-family: var(--ex-font-mono, ui-monospace, monospace);
       font-size: 0.7rem;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
   `,
 })

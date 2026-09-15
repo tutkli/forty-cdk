@@ -86,9 +86,9 @@ import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized
     .calendar {
       width: 280px;
       padding: 1rem;
-      background: var(--pg-surface);
-      border: 1px solid var(--pg-border);
-      border-radius: var(--pg-radius);
+      background: var(--ex-surface, #ffffff);
+      border: 1px solid var(--ex-border, #e5e0d6);
+      border-radius: var(--ex-radius, 22px);
       corner-shape: squircle;
     }
 
@@ -116,10 +116,10 @@ import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      border-radius: var(--pg-radius-sm);
-      border: 1px solid var(--pg-border-strong);
-      background: var(--pg-surface);
-      color: var(--pg-text);
+      border-radius: var(--ex-radius-sm, 14px);
+      border: 1px solid var(--ex-border-strong, #d0c9bc);
+      background: var(--ex-surface, #ffffff);
+      color: var(--ex-text, #17191c);
       font-size: 1.1rem;
       line-height: 1;
       cursor: pointer;
@@ -132,7 +132,7 @@ import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized
     }
 
     .calendar-nav:hover:not([disabled]) {
-      background: var(--pg-surface-2);
+      background: var(--ex-surface-2, #f2eee6);
     }
 
     .calendar-nav[disabled] {
@@ -152,7 +152,7 @@ import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.04em;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     .calendar-cell {
@@ -160,43 +160,43 @@ import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized
       text-align: center;
       vertical-align: middle;
       font-size: 0.85rem;
-      border-radius: var(--pg-radius-sm);
+      border-radius: var(--ex-radius-sm, 14px);
       cursor: pointer;
       user-select: none;
       transition: background 0.12s ease;
     }
 
     .calendar-cell:hover:not([aria-disabled]):not([data-selected]) {
-      background: var(--pg-surface-2);
+      background: var(--ex-surface-2, #f2eee6);
     }
 
     .calendar-cell[data-outside-month] {
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
       opacity: 0.5;
     }
 
     .calendar-cell[data-today] {
-      box-shadow: inset 0 0 0 1px var(--pg-border-strong);
+      box-shadow: inset 0 0 0 1px var(--ex-border-strong, #d0c9bc);
     }
 
     .calendar-cell[data-selected] {
-      background: var(--pg-primary);
-      color: var(--pg-primary-contrast);
+      background: var(--ex-accent, #0e7c6b);
+      color: var(--ex-accent-contrast, #ffffff);
       font-weight: 600;
     }
 
     .calendar-cell[data-selected]:hover:not([aria-disabled]) {
-      background: var(--pg-primary-hover);
+      background: var(--ex-accent-hover, #0a5a4d);
     }
 
     .calendar-grid:focus-within .calendar-cell[data-highlighted],
     .calendar-cell:focus-visible {
-      outline: 2px solid var(--pg-primary);
+      outline: 2px solid var(--ex-accent, #0e7c6b);
       outline-offset: -2px;
     }
 
     .calendar-cell[aria-disabled] {
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
       opacity: 0.4;
       cursor: not-allowed;
       text-decoration: line-through;

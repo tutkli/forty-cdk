@@ -93,10 +93,10 @@ import {
       box-sizing: border-box;
       width: min(520px, 100%);
       min-height: 300px;
-      box-shadow: inset 0 0 0 1px var(--pg-border);
-      border-radius: var(--pg-radius);
+      box-shadow: inset 0 0 0 1px var(--ex-border, #e5e0d6);
+      border-radius: var(--ex-radius, 22px);
       corner-shape: squircle;
-      background: var(--pg-surface-2);
+      background: var(--ex-surface-2, #f2eee6);
     }
 
     .region-content {
@@ -111,14 +111,14 @@ import {
     .region-text {
       margin: 0 0 1rem;
       max-width: 38ch;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
       font-size: 0.9rem;
     }
 
     .region-text code {
       padding: 0.05rem 0.3rem;
-      border-radius: var(--pg-radius-sm);
-      background: var(--pg-surface);
+      border-radius: var(--ex-radius-sm, 14px);
+      background: var(--ex-surface, #ffffff);
       font-size: 0.85em;
     }
 
@@ -143,19 +143,19 @@ import {
       font-weight: 600;
       font-size: 0.9rem;
       padding: 0.5rem 0.9rem;
-      border-radius: var(--pg-radius-sm);
-      border: 1px solid var(--pg-border-strong);
-      background: var(--pg-surface);
-      color: var(--pg-text);
+      border-radius: var(--ex-radius-sm, 14px);
+      border: 1px solid var(--ex-border-strong, #d0c9bc);
+      background: var(--ex-surface, #ffffff);
+      color: var(--ex-text, #17191c);
       cursor: pointer;
       transition:
         background 0.15s ease,
         border-color 0.15s ease,
-        transform 0.18s var(--pg-ease-spring);
+        transform 0.18s var(--ex-ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1));
     }
 
     .region-btn:hover {
-      background: var(--pg-surface-2);
+      background: var(--ex-surface-2, #f2eee6);
     }
 
     .region-btn:active {
@@ -164,14 +164,14 @@ import {
 
     .region-btn--primary,
     .region-btn--primary:hover {
-      background: var(--pg-primary);
-      border-color: var(--pg-primary);
-      color: var(--pg-primary-contrast);
+      background: var(--ex-accent, #0e7c6b);
+      border-color: var(--ex-accent, #0e7c6b);
+      color: var(--ex-accent-contrast, #ffffff);
     }
 
     .region-btn--primary:hover {
-      background: var(--pg-primary-hover);
-      border-color: var(--pg-primary-hover);
+      background: var(--ex-accent-hover, #0a5a4d);
+      border-color: var(--ex-accent-hover, #0a5a4d);
     }
 
     .region-drawer {
@@ -181,8 +181,8 @@ import {
       flex-direction: column;
       gap: 0.65rem;
       padding: 1.25rem;
-      background: var(--pg-surface);
-      color: var(--pg-text);
+      background: var(--ex-surface, #ffffff);
+      color: var(--ex-text, #17191c);
       user-select: none;
       -webkit-user-select: none;
     }
@@ -212,7 +212,7 @@ import {
 
     .region-drawer-desc {
       margin: 0 0 0.25rem;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
       font-size: 0.9rem;
     }
 

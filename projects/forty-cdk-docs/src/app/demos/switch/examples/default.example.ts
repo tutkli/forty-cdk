@@ -35,13 +35,13 @@ import { ForSwitch } from 'forty-cdk/switch';
       padding: 0;
       border: 0;
       border-radius: 999px;
-      background: var(--pg-border-strong);
+      background: var(--ex-border-strong, #d0c9bc);
       cursor: pointer;
       transition: background 0.2s ease;
     }
 
     .switch[data-state='checked'] {
-      background: var(--pg-primary);
+      background: var(--ex-accent, #0e7c6b);
     }
 
     .thumb {

@@ -43,7 +43,7 @@ interface TabEntry {
       display: flex;
       flex-direction: column;
       gap: 0.15rem;
-      border-inline-end: 1px solid var(--pg-border);
+      border-inline-end: 1px solid var(--ex-border, #e5e0d6);
       padding-inline-end: 0.5rem;
     }
 
@@ -52,22 +52,22 @@ interface TabEntry {
       font: inherit;
       font-weight: 600;
       padding: 0.55rem 0.85rem;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
       background: transparent;
       border: 0;
-      border-radius: var(--pg-radius-sm);
+      border-radius: var(--ex-radius-sm, 14px);
       cursor: pointer;
       white-space: nowrap;
       text-align: left;
     }
 
     .tb-trigger:hover {
-      color: var(--pg-text);
-      background: var(--pg-surface-2);
+      color: var(--ex-text, #17191c);
+      background: var(--ex-surface-2, #f2eee6);
     }
 
     .tb-trigger[data-state='active'] {
-      color: var(--pg-primary);
+      color: var(--ex-accent, #0e7c6b);
     }
 
     .tb-trigger[data-state='active']::after {
@@ -77,14 +77,14 @@ interface TabEntry {
       inset-inline-end: -0.5rem;
       width: 2px;
       border-radius: 2px;
-      background: var(--pg-primary);
+      background: var(--ex-accent, #0e7c6b);
     }
 
     .tb-content {
       flex: 1;
       min-width: 0;
       min-height: 3rem;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     .tb-content[data-state='inactive'] {

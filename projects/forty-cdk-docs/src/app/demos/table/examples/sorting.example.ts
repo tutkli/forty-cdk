@@ -98,8 +98,8 @@ function personField(person: Person, column: PersonColumn): string {
       width: min(620px, 100%);
       max-height: 300px;
       overflow: auto;
-      border: 1px solid var(--pg-border);
-      border-radius: var(--pg-radius-sm);
+      border: 1px solid var(--ex-border, #e5e0d6);
+      border-radius: var(--ex-radius-sm, 14px);
     }
 
     .tbl {
@@ -111,7 +111,7 @@ function personField(person: Person, column: PersonColumn): string {
     .tbl-cell {
       padding: 0.55rem 0.75rem;
       text-align: left;
-      border-bottom: 1px solid var(--pg-border);
+      border-bottom: 1px solid var(--ex-border, #e5e0d6);
       white-space: nowrap;
     }
 
@@ -119,9 +119,9 @@ function personField(person: Person, column: PersonColumn): string {
       position: sticky;
       top: 0;
       z-index: 1;
-      background: var(--pg-surface-2);
+      background: var(--ex-surface-2, #f2eee6);
       font-weight: 700;
-      box-shadow: inset 0 -2px 0 var(--pg-border-strong);
+      box-shadow: inset 0 -2px 0 var(--ex-border-strong, #d0c9bc);
     }
 
     tbody .tbl-row:last-child .tbl-cell {
@@ -135,7 +135,7 @@ function personField(person: Person, column: PersonColumn): string {
     }
 
     .tbl-sort:focus-visible {
-      outline: 2px solid var(--pg-primary);
+      outline: 2px solid var(--ex-accent, #0e7c6b);
       outline-offset: -2px;
     }
 
@@ -148,13 +148,13 @@ function personField(person: Person, column: PersonColumn): string {
     .tbl-sort[data-sorted='ascending']::after {
       content: ' ▲';
       opacity: 1;
-      color: var(--pg-primary);
+      color: var(--ex-accent, #0e7c6b);
     }
 
     .tbl-sort[data-sorted='descending']::after {
       content: ' ▼';
       opacity: 1;
-      color: var(--pg-primary);
+      color: var(--ex-accent, #0e7c6b);
     }
   `,
 })

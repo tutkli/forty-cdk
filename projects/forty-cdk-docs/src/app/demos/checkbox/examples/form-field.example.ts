@@ -48,7 +48,7 @@ interface Signup {
       border: 0;
       background: transparent;
       font: inherit;
-      color: var(--pg-text);
+      color: var(--ex-text, #17191c);
       cursor: pointer;
     }
 
@@ -58,17 +58,17 @@ interface Signup {
       height: 22px;
       display: grid;
       place-items: center;
-      border: 2px solid var(--pg-border-strong);
+      border: 2px solid var(--ex-border-strong, #d0c9bc);
       border-radius: 6px;
-      background: var(--pg-surface);
+      background: var(--ex-surface, #ffffff);
       transition:
         background 0.15s ease,
         border-color 0.15s ease;
     }
 
     .cb-row[data-state='checked'] .cb {
-      background: var(--pg-primary);
-      border-color: var(--pg-primary);
+      background: var(--ex-accent, #0e7c6b);
+      border-color: var(--ex-accent, #0e7c6b);
     }
 
     .cb-row[data-touched][data-invalid] .cb {
@@ -79,7 +79,7 @@ interface Signup {
       display: none;
       width: 12px;
       height: 12px;
-      border: solid var(--pg-primary-contrast);
+      border: solid var(--ex-accent-contrast, #ffffff);
       border-width: 0 2.5px 2.5px 0;
       transform: rotate(45deg) translate(-1px, -1px);
     }

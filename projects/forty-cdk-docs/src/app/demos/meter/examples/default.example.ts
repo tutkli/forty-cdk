@@ -39,7 +39,7 @@ import { ForMeter, ForMeterIndicator } from 'forty-cdk/meter';
       flex: 1;
       height: 14px;
       border-radius: 999px;
-      background: var(--pg-border-strong);
+      background: var(--ex-border-strong, #d0c9bc);
       overflow: hidden;
     }
 
@@ -47,7 +47,7 @@ import { ForMeter, ForMeterIndicator } from 'forty-cdk/meter';
       height: 100%;
       width: var(--for-meter-percentage, 0%);
       border-radius: 999px;
-      background: var(--pg-primary);
+      background: var(--ex-accent, #0e7c6b);
       transition:
         width 0.3s ease,
         background 0.3s ease;

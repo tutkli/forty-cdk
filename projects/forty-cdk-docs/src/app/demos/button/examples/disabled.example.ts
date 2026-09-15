@@ -42,19 +42,19 @@ import { ForButton } from 'forty-cdk/button';
     }
 
     .cap {
-      font-family: var(--pg-font-mono);
+      font-family: var(--ex-font-mono, ui-monospace, monospace);
       font-size: 0.78rem;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     .btn {
       font: inherit;
       font-weight: 600;
       padding: 0.55rem 1.4rem;
-      border-radius: var(--pg-radius-sm);
-      border: 1px solid var(--pg-primary);
-      background: var(--pg-primary);
-      color: var(--pg-primary-contrast);
+      border-radius: var(--ex-radius-sm, 14px);
+      border: 1px solid var(--ex-accent, #0e7c6b);
+      background: var(--ex-accent, #0e7c6b);
+      color: var(--ex-accent-contrast, #ffffff);
       cursor: pointer;
       outline: none;
     }
@@ -66,22 +66,22 @@ import { ForButton } from 'forty-cdk/button';
     }
 
     .btn[data-focus-visible] {
-      box-shadow: 0 0 0 3px color-mix(in srgb, var(--pg-primary) 45%, transparent);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--ex-accent, #0e7c6b) 45%, transparent);
     }
 
     .tag {
       font-size: 0.74rem;
       font-weight: 600;
-      color: var(--pg-text-muted);
-      background: var(--pg-surface-2);
-      border: 1px solid var(--pg-border);
+      color: var(--ex-muted, #585d66);
+      background: var(--ex-surface-2, #f2eee6);
+      border: 1px solid var(--ex-border, #e5e0d6);
       border-radius: 999px;
       padding: 0.15rem 0.6rem;
     }
 
     .tag--ok {
-      color: var(--pg-success);
-      border-color: color-mix(in srgb, var(--pg-success) 40%, transparent);
+      color: var(--ex-success, #1f7a4d);
+      border-color: color-mix(in srgb, var(--ex-success, #1f7a4d) 40%, transparent);
     }
   `,
 })

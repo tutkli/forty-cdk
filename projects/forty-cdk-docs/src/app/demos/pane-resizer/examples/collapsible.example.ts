@@ -50,8 +50,8 @@ import { ForPaneResizer } from 'forty-cdk/pane-resizer';
       align-items: stretch;
       width: min(560px, 100%);
       height: 200px;
-      border: 1px solid var(--pg-border);
-      border-radius: var(--pg-radius);
+      border: 1px solid var(--ex-border, #e5e0d6);
+      border-radius: var(--ex-radius, 22px);
       corner-shape: squircle;
       overflow: hidden;
     }
@@ -60,7 +60,7 @@ import { ForPaneResizer } from 'forty-cdk/pane-resizer';
       flex: 0 0 auto;
       min-width: 0;
       overflow: hidden;
-      background: var(--pg-surface-2);
+      background: var(--ex-surface-2, #f2eee6);
     }
 
     .cs-nav {
@@ -72,31 +72,31 @@ import { ForPaneResizer } from 'forty-cdk/pane-resizer';
 
     .cs-item {
       padding: 0.4rem 0.6rem;
-      border-radius: var(--pg-radius-sm);
+      border-radius: var(--ex-radius-sm, 14px);
       white-space: nowrap;
-      color: var(--pg-text);
+      color: var(--ex-text, #17191c);
     }
 
     .cs-rail {
       display: grid;
       place-items: center;
       height: 100%;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     .cs-main {
       flex: 1;
       padding: 1rem 1.2rem;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     .cs-main kbd {
       font: inherit;
       font-size: 0.8em;
       padding: 0.05rem 0.35rem;
-      border: 1px solid var(--pg-border-strong);
+      border: 1px solid var(--ex-border-strong, #d0c9bc);
       border-radius: 4px;
-      background: var(--pg-surface);
+      background: var(--ex-surface, #ffffff);
     }
 
     .cs-resizer {
@@ -104,7 +104,7 @@ import { ForPaneResizer } from 'forty-cdk/pane-resizer';
       width: 12px;
       padding: 0;
       border: 0;
-      background: var(--pg-border);
+      background: var(--ex-border, #e5e0d6);
       cursor: ew-resize;
       touch-action: none;
       position: relative;
@@ -119,15 +119,15 @@ import { ForPaneResizer } from 'forty-cdk/pane-resizer';
       width: 2px;
       height: 28px;
       border-radius: 2px;
-      background: var(--pg-border-strong);
+      background: var(--ex-border-strong, #d0c9bc);
     }
 
     .cs-resizer:hover {
-      background: var(--pg-border-strong);
+      background: var(--ex-border-strong, #d0c9bc);
     }
 
     .cs-resizer:focus-visible {
-      outline: 2px solid var(--pg-primary);
+      outline: 2px solid var(--ex-accent, #0e7c6b);
       outline-offset: -2px;
     }
   `,

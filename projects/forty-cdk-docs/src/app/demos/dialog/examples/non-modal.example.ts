@@ -68,16 +68,16 @@ import { ForDialog, ForDialogClose } from 'forty-cdk/dialog';
       font: inherit;
       font-size: 0.9rem;
       padding: 0.5rem 0.7rem;
-      border-radius: var(--pg-radius-sm);
-      border: 1px solid var(--pg-border-strong);
-      background: var(--pg-surface);
-      color: var(--pg-text);
+      border-radius: var(--ex-radius-sm, 14px);
+      border: 1px solid var(--ex-border-strong, #d0c9bc);
+      background: var(--ex-surface, #ffffff);
+      color: var(--ex-text, #17191c);
     }
 
     .non-modal-hint {
       margin: 0.7rem 0 0;
       font-size: 0.8rem;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     .non-modal-dialog {
@@ -89,12 +89,16 @@ import { ForDialog, ForDialogClose } from 'forty-cdk/dialog';
       transform: translateX(-50%);
       width: min(440px, calc(100vw - 2rem));
       padding: 1.5rem;
-      background: var(--pg-surface);
-      color: var(--pg-text);
-      border: 1px solid var(--pg-border);
-      border-radius: var(--pg-radius-lg);
+      background: var(--ex-surface, #ffffff);
+      color: var(--ex-text, #17191c);
+      border: 1px solid var(--ex-border, #e5e0d6);
+      border-radius: var(--ex-radius-lg, 34px);
       corner-shape: squircle;
-      box-shadow: var(--pg-shadow);
+      box-shadow: var(
+        --ex-shadow,
+        0 2px 4px rgba(0, 0, 0, 0.04),
+        0 20px 40px -18px rgba(0, 0, 0, 0.2)
+      );
     }
 
     .non-modal-results {
@@ -109,8 +113,8 @@ import { ForDialog, ForDialogClose } from 'forty-cdk/dialog';
     .non-modal-row {
       flex: none;
       padding: 0.7rem 0.9rem;
-      border-radius: var(--pg-radius-sm);
-      background: var(--pg-surface-2);
+      border-radius: var(--ex-radius-sm, 14px);
+      background: var(--ex-surface-2, #f2eee6);
       font-size: 0.9rem;
     }
 
@@ -126,15 +130,15 @@ import { ForDialog, ForDialogClose } from 'forty-cdk/dialog';
       font-weight: 600;
       font-size: 0.9rem;
       padding: 0.5rem 0.9rem;
-      border-radius: var(--pg-radius-sm);
-      border: 1px solid var(--pg-border-strong);
-      background: var(--pg-surface);
-      color: var(--pg-text);
+      border-radius: var(--ex-radius-sm, 14px);
+      border: 1px solid var(--ex-border-strong, #d0c9bc);
+      background: var(--ex-surface, #ffffff);
+      color: var(--ex-text, #17191c);
       cursor: pointer;
     }
 
     .non-modal-btn:hover {
-      background: var(--pg-surface-2);
+      background: var(--ex-surface-2, #f2eee6);
     }
 
     @keyframes non-modal-panel-in {
@@ -145,7 +149,8 @@ import { ForDialog, ForDialogClose } from 'forty-cdk/dialog';
     }
 
     .non-modal-panel-in {
-      animation: non-modal-panel-in 0.2s var(--pg-ease-spring) both;
+      animation: non-modal-panel-in 0.2s var(--ex-ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1))
+        both;
     }
 
     @media (prefers-reduced-motion: reduce) {

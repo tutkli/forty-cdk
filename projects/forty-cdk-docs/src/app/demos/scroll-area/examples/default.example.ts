@@ -49,9 +49,9 @@ import {
       position: relative;
       width: min(420px, 100%);
       height: 260px;
-      background: var(--pg-surface);
-      border: 1px solid var(--pg-border);
-      border-radius: var(--pg-radius);
+      background: var(--ex-surface, #ffffff);
+      border: 1px solid var(--ex-border, #e5e0d6);
+      border-radius: var(--ex-radius, 22px);
       corner-shape: squircle;
       overflow: hidden;
     }
@@ -69,7 +69,7 @@ import {
     .sa-row {
       margin: 0 0 0.7rem;
       white-space: nowrap;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     .sa-scrollbar {
@@ -82,7 +82,7 @@ import {
     }
 
     .sa-scrollbar:hover {
-      background: var(--pg-surface-2);
+      background: var(--ex-surface-2, #f2eee6);
     }
 
     .sa-scrollbar--v {
@@ -105,7 +105,7 @@ import {
     }
 
     .sa-thumb {
-      background: var(--pg-border-strong);
+      background: var(--ex-border-strong, #d0c9bc);
       border-radius: 999px;
       cursor: grab;
       transition: background 0.15s ease;
@@ -122,7 +122,7 @@ import {
     }
 
     .sa-thumb:hover {
-      background: var(--pg-text-muted);
+      background: var(--ex-muted, #585d66);
     }
 
     .sa-thumb:active {

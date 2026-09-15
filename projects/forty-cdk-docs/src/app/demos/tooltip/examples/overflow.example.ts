@@ -62,10 +62,10 @@ import {
       font: inherit;
       font-weight: 600;
       padding: 0.5rem 0.9rem;
-      color: var(--pg-text);
-      background: var(--pg-surface);
-      border: 1px solid var(--pg-border-strong);
-      border-radius: var(--pg-radius-sm);
+      color: var(--ex-text, #17191c);
+      background: var(--ex-surface, #ffffff);
+      border: 1px solid var(--ex-border-strong, #d0c9bc);
+      border-radius: var(--ex-radius-sm, 14px);
       cursor: default;
     }
 
@@ -74,7 +74,7 @@ import {
       max-width: 34ch;
       text-align: center;
       font-size: 0.85rem;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     .overflow-tooltip {
@@ -84,24 +84,29 @@ import {
       font-size: 0.8rem;
       font-weight: 500;
       line-height: 1.3;
-      color: var(--pg-tooltip-fg);
-      background: var(--pg-tooltip-bg);
-      border-radius: var(--pg-radius-sm);
-      box-shadow: var(--pg-shadow);
+      color: var(--ex-inverse-text, #ffffff);
+      background: var(--ex-inverse-bg, #1b1f24);
+      border-radius: var(--ex-radius-sm, 14px);
+      box-shadow: var(
+        --ex-shadow,
+        0 2px 4px rgba(0, 0, 0, 0.04),
+        0 20px 40px -18px rgba(0, 0, 0, 0.2)
+      );
       pointer-events: none;
     }
 
     .overflow-tooltip-arrow {
       width: 9px;
       height: 9px;
-      background: var(--pg-tooltip-bg);
+      background: var(--ex-inverse-bg, #1b1f24);
       transform: rotate(45deg);
       --for-floating-arrow-offset: -4px;
     }
 
     .overflow-tooltip-pop-in {
       transform-origin: var(--for-floating-content-transform-origin, center);
-      animation: overflow-tooltip-pop-in 0.2s var(--pg-ease-spring) both;
+      animation: overflow-tooltip-pop-in 0.2s
+        var(--ex-ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1)) both;
     }
 
     @keyframes overflow-tooltip-pop-in {

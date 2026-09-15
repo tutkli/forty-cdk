@@ -38,27 +38,27 @@ import { ForToastManager, ForToastViewport } from 'forty-cdk/toast';
       font-weight: 600;
       font-size: 0.9rem;
       padding: 0.5rem 0.9rem;
-      border-radius: var(--pg-radius-sm);
-      border: 1px solid var(--pg-border-strong);
-      background: var(--pg-surface);
-      color: var(--pg-text);
+      border-radius: var(--ex-radius-sm, 14px);
+      border: 1px solid var(--ex-border-strong, #d0c9bc);
+      background: var(--ex-surface, #ffffff);
+      color: var(--ex-text, #17191c);
       cursor: pointer;
     }
 
     .btn:hover {
-      background: var(--pg-surface-2);
+      background: var(--ex-surface-2, #f2eee6);
     }
 
     .btn--primary,
     .btn--primary:hover {
-      background: var(--pg-primary);
-      border-color: var(--pg-primary);
-      color: var(--pg-primary-contrast);
+      background: var(--ex-accent, #0e7c6b);
+      border-color: var(--ex-accent, #0e7c6b);
+      color: var(--ex-accent-contrast, #ffffff);
     }
 
     .btn--primary:hover {
-      background: var(--pg-primary-hover);
-      border-color: var(--pg-primary-hover);
+      background: var(--ex-accent-hover, #0a5a4d);
+      border-color: var(--ex-accent-hover, #0a5a4d);
     }
 
     .action-toast-viewport {
@@ -81,17 +81,21 @@ import { ForToastManager, ForToastViewport } from 'forty-cdk/toast';
       flex-direction: column;
       gap: 0.15rem;
       padding: 0.8rem 2.4rem 0.85rem 1rem;
-      background: var(--pg-surface);
-      color: var(--pg-text);
-      border: 1px solid var(--pg-border);
-      border-left: 4px solid var(--pg-primary);
-      border-radius: var(--pg-radius-sm);
-      box-shadow: var(--pg-shadow);
-      animation: action-toast-in 0.24s var(--pg-ease-spring) both;
+      background: var(--ex-surface, #ffffff);
+      color: var(--ex-text, #17191c);
+      border: 1px solid var(--ex-border, #e5e0d6);
+      border-left: 4px solid var(--ex-accent, #0e7c6b);
+      border-radius: var(--ex-radius-sm, 14px);
+      box-shadow: var(
+        --ex-shadow,
+        0 2px 4px rgba(0, 0, 0, 0.04),
+        0 20px 40px -18px rgba(0, 0, 0, 0.2)
+      );
+      animation: action-toast-in 0.24s var(--ex-ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1)) both;
     }
 
     .action-toast-viewport [forToast][data-variant='success'] {
-      border-left-color: var(--pg-success);
+      border-left-color: var(--ex-success, #1f7a4d);
     }
 
     .action-toast-viewport [forToastTitle] {
@@ -101,7 +105,7 @@ import { ForToastManager, ForToastViewport } from 'forty-cdk/toast';
 
     .action-toast-viewport [forToastDescription] {
       font-size: 0.82rem;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     .action-toast-viewport [forToastAction] {
@@ -111,15 +115,15 @@ import { ForToastManager, ForToastViewport } from 'forty-cdk/toast';
       font-size: 0.8rem;
       font-weight: 600;
       padding: 0.3rem 0.6rem;
-      border: 1px solid var(--pg-border-strong);
-      border-radius: var(--pg-radius-sm);
-      background: var(--pg-surface);
-      color: var(--pg-primary);
+      border: 1px solid var(--ex-border-strong, #d0c9bc);
+      border-radius: var(--ex-radius-sm, 14px);
+      background: var(--ex-surface, #ffffff);
+      color: var(--ex-accent, #0e7c6b);
       cursor: pointer;
     }
 
     .action-toast-viewport [forToastAction]:hover {
-      background: var(--pg-surface-2);
+      background: var(--ex-surface-2, #f2eee6);
     }
 
     .action-toast-viewport [forToastClose] {
@@ -134,15 +138,15 @@ import { ForToastManager, ForToastViewport } from 'forty-cdk/toast';
       font-size: 1.05rem;
       line-height: 1;
       border: 0;
-      border-radius: var(--pg-radius-sm);
+      border-radius: var(--ex-radius-sm, 14px);
       background: transparent;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
       cursor: pointer;
     }
 
     .action-toast-viewport [forToastClose]:hover {
-      background: var(--pg-surface-2);
-      color: var(--pg-text);
+      background: var(--ex-surface-2, #f2eee6);
+      color: var(--ex-text, #17191c);
     }
 
     @keyframes action-toast-in {

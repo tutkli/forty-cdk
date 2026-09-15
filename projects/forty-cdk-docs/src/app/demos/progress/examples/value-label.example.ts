@@ -41,13 +41,13 @@ import { ForProgress, ForProgressIndicator } from 'forty-cdk/progress';
 
     .label {
       font-variant-numeric: tabular-nums;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     .track {
       height: 10px;
       border-radius: 999px;
-      background: var(--pg-border-strong);
+      background: var(--ex-border-strong, #d0c9bc);
       overflow: hidden;
     }
 
@@ -55,7 +55,7 @@ import { ForProgress, ForProgressIndicator } from 'forty-cdk/progress';
       height: 100%;
       width: var(--for-progress-percentage, 0%);
       border-radius: 999px;
-      background: var(--pg-primary);
+      background: var(--ex-accent, #0e7c6b);
       transition: width 0.3s ease;
     }
 

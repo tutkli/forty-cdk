@@ -26,8 +26,12 @@ import { ForAvatar, ForAvatarFallback, ForAvatarImage } from 'forty-cdk/avatar';
       height: 72px;
       border-radius: 50%;
       overflow: hidden;
-      background: var(--pg-surface-2);
-      box-shadow: var(--pg-shadow);
+      background: var(--ex-surface-2, #f2eee6);
+      box-shadow: var(
+        --ex-shadow,
+        0 2px 4px rgba(0, 0, 0, 0.04),
+        0 20px 40px -18px rgba(0, 0, 0, 0.2)
+      );
     }
 
     .avatar-image {

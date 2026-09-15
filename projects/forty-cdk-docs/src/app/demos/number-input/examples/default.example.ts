@@ -25,9 +25,9 @@ import {
     .stepper {
       display: inline-flex;
       align-items: center;
-      border: 1px solid var(--pg-border-strong);
-      border-radius: var(--pg-radius-sm);
-      background: var(--pg-surface);
+      border: 1px solid var(--ex-border-strong, #d0c9bc);
+      border-radius: var(--ex-radius-sm, 14px);
+      background: var(--ex-surface, #ffffff);
       overflow: hidden;
     }
 
@@ -40,11 +40,11 @@ import {
       padding: 0.5rem 0;
       border: 0;
       background: transparent;
-      color: var(--pg-text);
+      color: var(--ex-text, #17191c);
     }
 
     .step-input:focus-visible {
-      outline: 2px solid var(--pg-primary);
+      outline: 2px solid var(--ex-accent, #0e7c6b);
       outline-offset: -2px;
     }
 
@@ -55,15 +55,15 @@ import {
       width: 2.4rem;
       height: 2.4rem;
       border: 0;
-      background: var(--pg-surface-2);
-      color: var(--pg-text);
+      background: var(--ex-surface-2, #f2eee6);
+      color: var(--ex-text, #17191c);
       font-size: 1.2rem;
       line-height: 1;
       cursor: pointer;
     }
 
     .step-btn:hover:not([data-disabled]) {
-      background: var(--pg-border-strong);
+      background: var(--ex-border-strong, #d0c9bc);
     }
 
     .step-btn[data-disabled] {

@@ -62,28 +62,28 @@ import { ForOtpInput, ForOtpInputSlot } from 'forty-cdk/otp-input';
       height: 3.25rem;
       font-size: 1.3rem;
       font-variant-numeric: tabular-nums;
-      border: 1px solid var(--pg-border-strong);
-      border-radius: var(--pg-radius-sm);
-      background: var(--pg-surface);
-      color: var(--pg-text);
+      border: 1px solid var(--ex-border-strong, #d0c9bc);
+      border-radius: var(--ex-radius-sm, 14px);
+      background: var(--ex-surface, #ffffff);
+      color: var(--ex-text, #17191c);
       transition:
         border-color 0.15s ease,
         box-shadow 0.15s ease;
     }
 
     .otp-slot[data-active] {
-      border-color: var(--pg-primary);
-      box-shadow: 0 0 0 1px var(--pg-primary);
+      border-color: var(--ex-accent, #0e7c6b);
+      box-shadow: 0 0 0 1px var(--ex-accent, #0e7c6b);
     }
 
     .otp[data-complete] .otp-slot {
-      border-color: var(--pg-primary);
+      border-color: var(--ex-accent, #0e7c6b);
     }
 
     .otp-caret {
       width: 2px;
       height: 1.5rem;
-      background: var(--pg-primary);
+      background: var(--ex-accent, #0e7c6b);
       border-radius: 1px;
       animation: otp-caret 1s steps(2, jump-none) infinite;
     }

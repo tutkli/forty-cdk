@@ -115,15 +115,15 @@ interface VirtualRow {
     .virt-combobox-input {
       font: inherit;
       font-size: 0.9rem;
-      color: var(--pg-text);
+      color: var(--ex-text, #17191c);
     }
 
     .virt-combobox-input--boxed {
       width: 100%;
       padding: 0.55rem 2.2rem 0.55rem 0.7rem;
-      border: 1px solid var(--pg-border-strong);
-      border-radius: var(--pg-radius-sm);
-      background: var(--pg-surface);
+      border: 1px solid var(--ex-border-strong, #d0c9bc);
+      border-radius: var(--ex-radius-sm, 14px);
+      background: var(--ex-surface, #ffffff);
       transition:
         border-color 0.15s ease,
         box-shadow 0.15s ease;
@@ -134,8 +134,8 @@ interface VirtualRow {
     }
 
     .virt-combobox-single:focus-within .virt-combobox-input--boxed {
-      border-color: var(--pg-primary);
-      box-shadow: 0 0 0 1px var(--pg-primary);
+      border-color: var(--ex-accent, #0e7c6b);
+      box-shadow: 0 0 0 1px var(--ex-accent, #0e7c6b);
     }
 
     .virt-combobox-clear {
@@ -148,15 +148,15 @@ interface VirtualRow {
       font-size: 1.1rem;
       line-height: 1;
       border: 0;
-      border-radius: var(--pg-radius-sm);
+      border-radius: var(--ex-radius-sm, 14px);
       background: transparent;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
       cursor: pointer;
     }
 
     .virt-combobox-clear:hover {
-      background: var(--pg-surface-2);
-      color: var(--pg-text);
+      background: var(--ex-surface-2, #f2eee6);
+      color: var(--ex-text, #17191c);
     }
 
     .virt-combobox-clear--inset {
@@ -176,10 +176,14 @@ interface VirtualRow {
       max-height: 280px;
       overflow-y: auto;
       padding: 4px;
-      background: var(--pg-surface);
-      border: 1px solid var(--pg-border);
-      border-radius: var(--pg-radius-sm);
-      box-shadow: var(--pg-shadow);
+      background: var(--ex-surface, #ffffff);
+      border: 1px solid var(--ex-border, #e5e0d6);
+      border-radius: var(--ex-radius-sm, 14px);
+      box-shadow: var(
+        --ex-shadow,
+        0 2px 4px rgba(0, 0, 0, 0.04),
+        0 20px 40px -18px rgba(0, 0, 0, 0.2)
+      );
     }
 
     .virt-combobox-track {
@@ -198,31 +202,32 @@ interface VirtualRow {
       gap: 0.5rem;
       font-size: 0.875rem;
       padding: 0.45rem 0.6rem;
-      border-radius: var(--pg-radius-sm);
-      color: var(--pg-text);
+      border-radius: var(--ex-radius-sm, 14px);
+      color: var(--ex-text, #17191c);
       cursor: pointer;
     }
 
     .virt-combobox-option[data-highlighted],
     .virt-combobox-option:not([data-disabled]):hover {
-      background: var(--pg-surface-2);
+      background: var(--ex-surface-2, #f2eee6);
     }
 
     .virt-combobox-option[data-state='checked'] {
-      color: var(--pg-primary);
+      color: var(--ex-accent, #0e7c6b);
       font-weight: 600;
     }
 
     .virt-combobox-empty {
       padding: 0.6rem;
       font-size: 0.85rem;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
       text-align: center;
     }
 
     .virt-combobox-pop-in {
       transform-origin: var(--for-floating-content-transform-origin, center);
-      animation: virt-combobox-pop-in 0.2s var(--pg-ease-spring) both;
+      animation: virt-combobox-pop-in 0.2s var(--ex-ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1))
+        both;
     }
 
     @keyframes virt-combobox-pop-in {

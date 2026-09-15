@@ -169,10 +169,10 @@ import {
       padding: 1.5rem;
       text-align: center;
       font-weight: 600;
-      color: var(--pg-text-muted);
-      background: var(--pg-surface-2);
-      border: 2px dashed var(--pg-border-strong);
-      border-radius: var(--pg-radius);
+      color: var(--ex-muted, #585d66);
+      background: var(--ex-surface-2, #f2eee6);
+      border: 2px dashed var(--ex-border-strong, #d0c9bc);
+      border-radius: var(--ex-radius, 22px);
       corner-shape: squircle;
       user-select: none;
     }
@@ -189,10 +189,14 @@ import {
       gap: 2px;
       min-width: 200px;
       padding: 5px;
-      background: var(--pg-surface);
-      border: 1px solid var(--pg-border);
-      border-radius: var(--pg-radius-sm);
-      box-shadow: var(--pg-shadow);
+      background: var(--ex-surface, #ffffff);
+      border: 1px solid var(--ex-border, #e5e0d6);
+      border-radius: var(--ex-radius-sm, 14px);
+      box-shadow: var(
+        --ex-shadow,
+        0 2px 4px rgba(0, 0, 0, 0.04),
+        0 20px 40px -18px rgba(0, 0, 0, 0.2)
+      );
     }
 
     .context-menu-rich--wide {
@@ -209,31 +213,31 @@ import {
       text-align: left;
       padding: 0.45rem 0.6rem;
       border: 0;
-      border-radius: var(--pg-radius-sm);
+      border-radius: var(--ex-radius-sm, 14px);
       background: transparent;
-      color: var(--pg-text);
+      color: var(--ex-text, #17191c);
       cursor: pointer;
     }
 
     .context-menu-rich-item[data-highlighted],
     .context-menu-rich-item[data-state='open'],
     .context-menu-rich-item:not([data-disabled]):hover {
-      background: var(--pg-surface-2);
+      background: var(--ex-surface-2, #f2eee6);
     }
 
     .context-menu-rich-item[data-disabled] {
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
       opacity: 0.6;
       cursor: not-allowed;
     }
 
     .context-menu-rich-item--danger {
-      color: var(--pg-danger);
+      color: var(--ex-danger, #b3261e);
     }
 
     .context-menu-rich-item--danger[data-highlighted],
     .context-menu-rich-item--danger:not([data-disabled]):hover {
-      background: color-mix(in srgb, var(--pg-danger) 14%, transparent);
+      background: color-mix(in srgb, var(--ex-danger, #b3261e) 14%, transparent);
     }
 
     .context-menu-rich-indicator {
@@ -243,7 +247,7 @@ import {
       justify-content: center;
       width: 1.1em;
       height: 1.1em;
-      color: var(--pg-primary);
+      color: var(--ex-accent, #0e7c6b);
     }
 
     .context-menu-rich-indicator svg {
@@ -261,7 +265,7 @@ import {
       margin-left: auto;
       width: 1em;
       height: 1em;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     .context-menu-rich-arrow svg {
@@ -273,7 +277,7 @@ import {
       height: 1px;
       margin: 4px -1px;
       border: 0;
-      background: var(--pg-border);
+      background: var(--ex-border, #e5e0d6);
     }
 
     .context-menu-rich-label {
@@ -282,12 +286,13 @@ import {
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     .context-menu-rich-pop-in {
       transform-origin: var(--for-floating-content-transform-origin, center);
-      animation: context-menu-rich-pop-in 0.2s var(--pg-ease-spring) both;
+      animation: context-menu-rich-pop-in 0.2s
+        var(--ex-ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1)) both;
     }
 
     @keyframes context-menu-rich-pop-in {

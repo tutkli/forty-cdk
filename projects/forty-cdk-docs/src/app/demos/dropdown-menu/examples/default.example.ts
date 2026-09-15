@@ -37,16 +37,16 @@ import { ForMenuContent, ForMenuItem, ForMenuSeparator } from 'forty-cdk/menu';
       font-weight: 600;
       font-size: 0.9rem;
       padding: 0.5rem 0.9rem;
-      border-radius: var(--pg-radius-sm);
-      border: 1px solid var(--pg-primary);
-      background: var(--pg-primary);
-      color: var(--pg-primary-contrast);
+      border-radius: var(--ex-radius-sm, 14px);
+      border: 1px solid var(--ex-accent, #0e7c6b);
+      background: var(--ex-accent, #0e7c6b);
+      color: var(--ex-accent-contrast, #ffffff);
       cursor: pointer;
     }
 
     .dropdown-menu-trigger:hover {
-      background: var(--pg-primary-hover);
-      border-color: var(--pg-primary-hover);
+      background: var(--ex-accent-hover, #0a5a4d);
+      border-color: var(--ex-accent-hover, #0a5a4d);
     }
 
     .dropdown-menu {
@@ -56,10 +56,14 @@ import { ForMenuContent, ForMenuItem, ForMenuSeparator } from 'forty-cdk/menu';
       gap: 2px;
       min-width: 200px;
       padding: 5px;
-      background: var(--pg-surface);
-      border: 1px solid var(--pg-border);
-      border-radius: var(--pg-radius-sm);
-      box-shadow: var(--pg-shadow);
+      background: var(--ex-surface, #ffffff);
+      border: 1px solid var(--ex-border, #e5e0d6);
+      border-radius: var(--ex-radius-sm, 14px);
+      box-shadow: var(
+        --ex-shadow,
+        0 2px 4px rgba(0, 0, 0, 0.04),
+        0 20px 40px -18px rgba(0, 0, 0, 0.2)
+      );
     }
 
     .dropdown-menu-item {
@@ -72,43 +76,44 @@ import { ForMenuContent, ForMenuItem, ForMenuSeparator } from 'forty-cdk/menu';
       text-align: left;
       padding: 0.45rem 0.6rem;
       border: 0;
-      border-radius: var(--pg-radius-sm);
+      border-radius: var(--ex-radius-sm, 14px);
       background: transparent;
-      color: var(--pg-text);
+      color: var(--ex-text, #17191c);
       cursor: pointer;
     }
 
     .dropdown-menu-item[data-highlighted],
     .dropdown-menu-item[data-state='open'],
     .dropdown-menu-item:not([data-disabled]):hover {
-      background: var(--pg-surface-2);
+      background: var(--ex-surface-2, #f2eee6);
     }
 
     .dropdown-menu-item[data-disabled] {
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
       opacity: 0.6;
       cursor: not-allowed;
     }
 
     .dropdown-menu-item--danger {
-      color: var(--pg-danger);
+      color: var(--ex-danger, #b3261e);
     }
 
     .dropdown-menu-item--danger[data-highlighted],
     .dropdown-menu-item--danger:not([data-disabled]):hover {
-      background: color-mix(in srgb, var(--pg-danger) 14%, transparent);
+      background: color-mix(in srgb, var(--ex-danger, #b3261e) 14%, transparent);
     }
 
     .dropdown-menu-separator {
       height: 1px;
       margin: 4px -1px;
       border: 0;
-      background: var(--pg-border);
+      background: var(--ex-border, #e5e0d6);
     }
 
     .dropdown-menu-pop-in {
       transform-origin: var(--for-floating-content-transform-origin, center);
-      animation: dropdown-menu-pop-in 0.2s var(--pg-ease-spring) both;
+      animation: dropdown-menu-pop-in 0.2s var(--ex-ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1))
+        both;
     }
 
     @keyframes dropdown-menu-pop-in {

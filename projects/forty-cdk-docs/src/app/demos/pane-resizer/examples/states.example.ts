@@ -76,15 +76,15 @@ import { ForPaneResizer } from 'forty-cdk/pane-resizer';
       font-weight: 700;
       letter-spacing: 0.06em;
       text-transform: uppercase;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     .pr-split {
       display: flex;
       align-items: stretch;
       height: 120px;
-      border: 1px solid var(--pg-border);
-      border-radius: var(--pg-radius);
+      border: 1px solid var(--ex-border, #e5e0d6);
+      border-radius: var(--ex-radius, 22px);
       corner-shape: squircle;
       overflow: hidden;
     }
@@ -94,8 +94,8 @@ import { ForPaneResizer } from 'forty-cdk/pane-resizer';
       place-items: center;
       font-weight: 600;
       font-variant-numeric: tabular-nums;
-      color: var(--pg-text-muted);
-      background: var(--pg-surface-2);
+      color: var(--ex-muted, #585d66);
+      background: var(--ex-surface-2, #f2eee6);
     }
 
     .pr-pane-a {
@@ -111,7 +111,7 @@ import { ForPaneResizer } from 'forty-cdk/pane-resizer';
       width: 12px;
       padding: 0;
       border: 0;
-      background: var(--pg-border);
+      background: var(--ex-border, #e5e0d6);
       cursor: ew-resize;
       touch-action: none;
       position: relative;
@@ -126,15 +126,15 @@ import { ForPaneResizer } from 'forty-cdk/pane-resizer';
       width: 2px;
       height: 28px;
       border-radius: 2px;
-      background: var(--pg-border-strong);
+      background: var(--ex-border-strong, #d0c9bc);
     }
 
     .pr-resizer:hover:not([data-disabled]) {
-      background: var(--pg-border-strong);
+      background: var(--ex-border-strong, #d0c9bc);
     }
 
     .pr-resizer:focus-visible {
-      outline: 2px solid var(--pg-primary);
+      outline: 2px solid var(--ex-accent, #0e7c6b);
       outline-offset: -2px;
     }
 

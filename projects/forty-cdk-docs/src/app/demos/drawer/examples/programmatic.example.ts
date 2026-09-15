@@ -52,9 +52,13 @@ type ConfirmResult = 'confirm' | 'cancel';
       flex-direction: column;
       gap: 0.65rem;
       padding: 1.25rem;
-      background: var(--pg-surface);
-      color: var(--pg-text);
-      box-shadow: var(--pg-shadow);
+      background: var(--ex-surface, #ffffff);
+      color: var(--ex-text, #17191c);
+      box-shadow: var(
+        --ex-shadow,
+        0 2px 4px rgba(0, 0, 0, 0.04),
+        0 20px 40px -18px rgba(0, 0, 0, 0.2)
+      );
       translate: var(--for-drawer-swipe-movement-x, 0px) var(--for-drawer-swipe-movement-y, 0px);
       transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1);
       user-select: none;
@@ -66,7 +70,7 @@ type ConfirmResult = 'confirm' | 'cancel';
       right: 0;
       bottom: 0;
       max-height: 85vh;
-      border-radius: var(--pg-radius) var(--pg-radius) 0 0;
+      border-radius: var(--ex-radius, 22px) var(--ex-radius, 22px) 0 0;
       corner-shape: squircle;
     }
 
@@ -90,7 +94,7 @@ type ConfirmResult = 'confirm' | 'cancel';
       height: 5px;
       margin: 0 auto 0.3rem;
       border-radius: 999px;
-      background: var(--pg-border-strong);
+      background: var(--ex-border-strong, #d0c9bc);
       cursor: grab;
       touch-action: none;
     }
@@ -106,7 +110,7 @@ type ConfirmResult = 'confirm' | 'cancel';
 
     .prog-drawer-desc {
       margin: 0 0 0.25rem;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
       font-size: 0.9rem;
     }
 
@@ -123,19 +127,19 @@ type ConfirmResult = 'confirm' | 'cancel';
       font-weight: 600;
       font-size: 0.9rem;
       padding: 0.5rem 0.9rem;
-      border-radius: var(--pg-radius-sm);
-      border: 1px solid var(--pg-border-strong);
-      background: var(--pg-surface);
-      color: var(--pg-text);
+      border-radius: var(--ex-radius-sm, 14px);
+      border: 1px solid var(--ex-border-strong, #d0c9bc);
+      background: var(--ex-surface, #ffffff);
+      color: var(--ex-text, #17191c);
       cursor: pointer;
       transition:
         background 0.15s ease,
         border-color 0.15s ease,
-        transform 0.18s var(--pg-ease-spring);
+        transform 0.18s var(--ex-ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1));
     }
 
     .prog-btn:hover {
-      background: var(--pg-surface-2);
+      background: var(--ex-surface-2, #f2eee6);
     }
 
     .prog-btn:active {
@@ -144,9 +148,9 @@ type ConfirmResult = 'confirm' | 'cancel';
 
     .prog-btn--danger,
     .prog-btn--danger:hover {
-      background: var(--pg-danger);
-      border-color: var(--pg-danger);
-      color: var(--pg-danger-contrast);
+      background: var(--ex-danger, #b3261e);
+      border-color: var(--ex-danger, #b3261e);
+      color: var(--ex-danger-contrast, #ffffff);
     }
 
     @keyframes prog-drawer-in-bottom {
@@ -231,15 +235,15 @@ class ConfirmDrawer {
       font-weight: 600;
       font-size: 0.9rem;
       padding: 0.5rem 0.9rem;
-      border-radius: var(--pg-radius-sm);
-      border: 1px solid var(--pg-danger);
-      background: var(--pg-danger);
-      color: var(--pg-danger-contrast);
+      border-radius: var(--ex-radius-sm, 14px);
+      border: 1px solid var(--ex-danger, #b3261e);
+      background: var(--ex-danger, #b3261e);
+      color: var(--ex-danger-contrast, #ffffff);
       cursor: pointer;
       transition:
         background 0.15s ease,
         border-color 0.15s ease,
-        transform 0.18s var(--pg-ease-spring);
+        transform 0.18s var(--ex-ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1));
     }
 
     .prog-trigger:active {
@@ -248,13 +252,13 @@ class ConfirmDrawer {
 
     .prog-result {
       margin: 0.75rem 0 0;
-      font-family: var(--pg-font-mono);
+      font-family: var(--ex-font-mono, ui-monospace, monospace);
       font-size: 0.78rem;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     .prog-result b {
-      color: var(--pg-text);
+      color: var(--ex-text, #17191c);
     }
 
     @media (prefers-reduced-motion: reduce) {

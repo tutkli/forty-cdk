@@ -67,25 +67,25 @@ import { ForVisuallyHidden } from 'forty-cdk/visually-hidden';
       flex-direction: column;
       gap: 0.9rem;
       padding: 1rem 1.1rem;
-      background: var(--pg-surface);
-      border: 1px solid var(--pg-border);
-      border-radius: var(--pg-radius);
+      background: var(--ex-surface, #ffffff);
+      border: 1px solid var(--ex-border, #e5e0d6);
+      border-radius: var(--ex-radius, 22px);
       corner-shape: squircle;
     }
 
     .skip:focus {
       align-self: flex-start;
       padding: 0.35rem 0.7rem;
-      border-radius: var(--pg-radius);
+      border-radius: var(--ex-radius, 22px);
       corner-shape: squircle;
-      background: var(--pg-primary);
-      color: var(--pg-surface);
+      background: var(--ex-accent, #0e7c6b);
+      color: var(--ex-surface, #ffffff);
       text-decoration: none;
     }
 
     .hint {
       margin: 0;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
       font-size: 0.85rem;
     }
 
@@ -101,8 +101,8 @@ import { ForVisuallyHidden } from 'forty-cdk/visually-hidden';
       width: 2rem;
       height: 2rem;
       padding: 0;
-      border: 1px solid var(--pg-border);
-      border-radius: var(--pg-radius);
+      border: 1px solid var(--ex-border, #e5e0d6);
+      border-radius: var(--ex-radius, 22px);
       corner-shape: squircle;
       background: transparent;
       color: inherit;
@@ -119,7 +119,7 @@ import { ForVisuallyHidden } from 'forty-cdk/visually-hidden';
     .invoices th,
     .invoices td {
       padding: 0.4rem 0.5rem;
-      border-bottom: 1px solid var(--pg-border);
+      border-bottom: 1px solid var(--ex-border, #e5e0d6);
     }
   `,
 })

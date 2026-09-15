@@ -80,7 +80,7 @@ interface Stage {
       position: relative;
       height: 8px;
       border-radius: 999px;
-      background: var(--pg-surface-2);
+      background: var(--ex-surface-2, #f2eee6);
       overflow: hidden;
     }
 
@@ -89,7 +89,7 @@ interface Stage {
       position: absolute;
       inset: 0 auto 0 0;
       width: calc(var(--for-stepper-progress, 0) * 100%);
-      background: var(--pg-primary);
+      background: var(--ex-accent, #0e7c6b);
       transition: width 0.3s ease;
     }
 
@@ -122,12 +122,12 @@ interface Stage {
       display: inline-flex;
       align-items: center;
       gap: 0.55rem;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
       white-space: nowrap;
     }
 
     .stp-trigger[aria-current='step'] {
-      color: var(--pg-text);
+      color: var(--ex-text, #17191c);
     }
 
     .stp-indicator {
@@ -138,22 +138,22 @@ interface Stage {
       width: 1.9rem;
       height: 1.9rem;
       border-radius: 50%;
-      border: 2px solid var(--pg-border-strong);
-      background: var(--pg-surface);
+      border: 2px solid var(--ex-border-strong, #d0c9bc);
+      background: var(--ex-surface, #ffffff);
       font-size: 0.8rem;
       font-weight: 700;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     .stp-indicator[data-state='active'] {
-      border-color: var(--pg-primary);
-      color: var(--pg-primary);
+      border-color: var(--ex-accent, #0e7c6b);
+      color: var(--ex-accent, #0e7c6b);
     }
 
     .stp-indicator[data-state='completed'] {
-      border-color: var(--pg-primary);
-      background: var(--pg-primary);
-      color: var(--pg-primary-contrast);
+      border-color: var(--ex-accent, #0e7c6b);
+      background: var(--ex-accent, #0e7c6b);
+      color: var(--ex-accent-contrast, #ffffff);
     }
 
     .stp-label {
@@ -166,11 +166,11 @@ interface Stage {
       height: 2px;
       min-width: 1rem;
       border-radius: 2px;
-      background: var(--pg-border);
+      background: var(--ex-border, #e5e0d6);
     }
 
     .stp-sep[data-state='completed'] {
-      background: var(--pg-primary);
+      background: var(--ex-accent, #0e7c6b);
     }
 
     .stp-nav {
@@ -184,15 +184,15 @@ interface Stage {
       font-weight: 600;
       font-size: 0.9rem;
       padding: 0.5rem 0.9rem;
-      border-radius: var(--pg-radius-sm);
-      border: 1px solid var(--pg-border-strong);
-      background: var(--pg-surface);
-      color: var(--pg-text);
+      border-radius: var(--ex-radius-sm, 14px);
+      border: 1px solid var(--ex-border-strong, #d0c9bc);
+      background: var(--ex-surface, #ffffff);
+      color: var(--ex-text, #17191c);
       cursor: pointer;
     }
 
     .btn:hover {
-      background: var(--pg-surface-2);
+      background: var(--ex-surface-2, #f2eee6);
     }
 
     .btn[aria-disabled='true'] {
@@ -202,14 +202,14 @@ interface Stage {
 
     .btn-next,
     .btn-next:hover {
-      background: var(--pg-primary);
-      border-color: var(--pg-primary);
-      color: var(--pg-primary-contrast);
+      background: var(--ex-accent, #0e7c6b);
+      border-color: var(--ex-accent, #0e7c6b);
+      color: var(--ex-accent-contrast, #ffffff);
     }
 
     .btn-next:hover {
-      background: var(--pg-primary-hover);
-      border-color: var(--pg-primary-hover);
+      background: var(--ex-accent-hover, #0a5a4d);
+      border-color: var(--ex-accent-hover, #0a5a4d);
     }
   `,
 })

@@ -105,8 +105,8 @@ const PEOPLE: readonly Person[] = [
       width: min(640px, 100%);
       max-height: 300px;
       overflow: auto;
-      border: 1px solid var(--pg-border);
-      border-radius: var(--pg-radius-sm);
+      border: 1px solid var(--ex-border, #e5e0d6);
+      border-radius: var(--ex-radius-sm, 14px);
     }
 
     .tbl {
@@ -126,21 +126,21 @@ const PEOPLE: readonly Person[] = [
       position: sticky;
       top: 0;
       z-index: 1;
-      background: var(--pg-surface-2);
+      background: var(--ex-surface-2, #f2eee6);
       font-weight: 700;
     }
 
     .tbl-cell {
       position: relative;
       padding: 0.55rem 0.75rem;
-      border-bottom: 1px solid var(--pg-border);
+      border-bottom: 1px solid var(--ex-border, #e5e0d6);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
 
     .tbl-head .tbl-cell {
-      border-bottom: 2px solid var(--pg-border-strong);
+      border-bottom: 2px solid var(--ex-border-strong, #d0c9bc);
     }
 
     .tbl-row:not(.tbl-head):last-child .tbl-cell {
@@ -168,14 +168,14 @@ const PEOPLE: readonly Person[] = [
       width: 2px;
       height: 60%;
       border-radius: 1px;
-      background: var(--pg-border-strong);
+      background: var(--ex-border-strong, #d0c9bc);
       transition: background 0.12s ease;
     }
 
     .tbl-resizer:hover::before,
     .tbl-resizer:focus-visible::before,
     .tbl-resizer[data-resizing]::before {
-      background: var(--pg-primary);
+      background: var(--ex-accent, #0e7c6b);
     }
 
     .tbl-resizer:focus-visible {

@@ -19,7 +19,7 @@ import { ForAspectRatio } from 'forty-cdk/aspect-ratio';
       width: min(240px, 100%);
       display: grid;
       place-items: center;
-      border-radius: var(--pg-radius);
+      border-radius: var(--ex-radius, 22px);
       corner-shape: squircle;
       overflow: hidden;
       color: #fff;

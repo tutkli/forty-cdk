@@ -27,10 +27,10 @@ import { ForDragHandle, ForFreeDrag } from 'forty-cdk/drag-drop';
       position: relative;
       width: min(440px, 100%);
       height: 280px;
-      border: 2px dashed var(--pg-border-strong);
-      border-radius: var(--pg-radius);
+      border: 2px dashed var(--ex-border-strong, #d0c9bc);
+      border-radius: var(--ex-radius, 22px);
       corner-shape: squircle;
-      background: var(--pg-surface-2);
+      background: var(--ex-surface-2, #f2eee6);
       overflow: hidden;
     }
 
@@ -42,10 +42,14 @@ import { ForDragHandle, ForFreeDrag } from 'forty-cdk/drag-drop';
       place-items: center;
       width: 96px;
       height: 96px;
-      background: var(--pg-primary);
-      color: var(--pg-primary-contrast);
-      border-radius: var(--pg-radius-sm);
-      box-shadow: var(--pg-shadow);
+      background: var(--ex-accent, #0e7c6b);
+      color: var(--ex-accent-contrast, #ffffff);
+      border-radius: var(--ex-radius-sm, 14px);
+      box-shadow: var(
+        --ex-shadow,
+        0 2px 4px rgba(0, 0, 0, 0.04),
+        0 20px 40px -18px rgba(0, 0, 0, 0.2)
+      );
       font-size: 0.85rem;
       font-weight: 600;
       cursor: grab;
@@ -66,10 +70,14 @@ import { ForDragHandle, ForFreeDrag } from 'forty-cdk/drag-drop';
       top: 40px;
       left: 220px;
       width: 180px;
-      background: var(--pg-surface);
-      border: 1px solid var(--pg-border-strong);
-      border-radius: var(--pg-radius-sm);
-      box-shadow: var(--pg-shadow);
+      background: var(--ex-surface, #ffffff);
+      border: 1px solid var(--ex-border-strong, #d0c9bc);
+      border-radius: var(--ex-radius-sm, 14px);
+      box-shadow: var(
+        --ex-shadow,
+        0 2px 4px rgba(0, 0, 0, 0.04),
+        0 20px 40px -18px rgba(0, 0, 0, 0.2)
+      );
       overflow: hidden;
     }
 
@@ -78,8 +86,8 @@ import { ForDragHandle, ForFreeDrag } from 'forty-cdk/drag-drop';
       align-items: center;
       gap: 0.4rem;
       padding: 0.5rem 0.6rem;
-      background: var(--pg-surface-2);
-      border-bottom: 1px solid var(--pg-border);
+      background: var(--ex-surface-2, #f2eee6);
+      border-bottom: 1px solid var(--ex-border, #e5e0d6);
       font-size: 0.82rem;
       font-weight: 600;
       cursor: grab;
@@ -92,7 +100,7 @@ import { ForDragHandle, ForFreeDrag } from 'forty-cdk/drag-drop';
 
     .grip {
       flex: none;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
       line-height: 1;
       cursor: grab;
       touch-action: none;
@@ -101,7 +109,7 @@ import { ForDragHandle, ForFreeDrag } from 'forty-cdk/drag-drop';
     .dialog-body {
       padding: 0.7rem 0.6rem;
       font-size: 0.78rem;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
   `,
 })

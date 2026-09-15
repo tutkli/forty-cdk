@@ -40,7 +40,7 @@ import { ForSlider, ForSliderRange, ForSliderThumb, ForSliderTrack } from 'forty
       flex: 1;
       height: 6px;
       border-radius: 999px;
-      background: var(--pg-border-strong);
+      background: var(--ex-border-strong, #d0c9bc);
       cursor: pointer;
     }
 
@@ -48,7 +48,7 @@ import { ForSlider, ForSliderRange, ForSliderThumb, ForSliderTrack } from 'forty
       position: absolute;
       height: 100%;
       border-radius: 999px;
-      background: var(--pg-primary);
+      background: var(--ex-accent, #0e7c6b);
       inset-inline-start: calc(var(--for-slider-range-start) * 100%);
       width: calc(var(--for-slider-range-size) * 100%);
     }
@@ -59,9 +59,13 @@ import { ForSlider, ForSliderRange, ForSliderThumb, ForSliderTrack } from 'forty
       width: 18px;
       height: 18px;
       border-radius: 50%;
-      background: var(--pg-surface);
-      border: 2px solid var(--pg-primary);
-      box-shadow: var(--pg-shadow);
+      background: var(--ex-surface, #ffffff);
+      border: 2px solid var(--ex-accent, #0e7c6b);
+      box-shadow: var(
+        --ex-shadow,
+        0 2px 4px rgba(0, 0, 0, 0.04),
+        0 20px 40px -18px rgba(0, 0, 0, 0.2)
+      );
       cursor: grab;
       inset-inline-start: calc(var(--for-slider-thumb-position) * 100%);
       transform: translate(-50%, -50%);
@@ -73,7 +77,7 @@ import { ForSlider, ForSliderRange, ForSliderThumb, ForSliderTrack } from 'forty
     }
 
     .sl-thumb:focus-visible {
-      outline: 2px solid var(--pg-primary);
+      outline: 2px solid var(--ex-accent, #0e7c6b);
       outline-offset: 3px;
     }
 

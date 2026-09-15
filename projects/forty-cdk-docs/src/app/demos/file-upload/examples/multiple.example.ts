@@ -71,10 +71,10 @@ import { ForFileUpload, ForFileUploadInput, ForFileUploadTrigger } from 'forty-c
       gap: 0.5rem;
       padding: 2rem 1.5rem;
       text-align: center;
-      color: var(--pg-text-muted);
-      background: var(--pg-surface);
-      border: 2px dashed var(--pg-border-strong);
-      border-radius: var(--pg-radius);
+      color: var(--ex-muted, #585d66);
+      background: var(--ex-surface, #ffffff);
+      border: 2px dashed var(--ex-border-strong, #d0c9bc);
+      border-radius: var(--ex-radius, 22px);
       corner-shape: squircle;
       transition:
         border-color 0.15s ease,
@@ -82,18 +82,18 @@ import { ForFileUpload, ForFileUploadInput, ForFileUploadTrigger } from 'forty-c
     }
 
     .zone[data-dragging] {
-      border-color: var(--pg-primary);
-      background: color-mix(in srgb, var(--pg-primary) 8%, var(--pg-surface));
+      border-color: var(--ex-accent, #0e7c6b);
+      background: color-mix(in srgb, var(--ex-accent, #0e7c6b) 8%, var(--ex-surface, #ffffff));
     }
 
     .zone-icon {
       width: 34px;
       height: 34px;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     .zone[data-dragging] .zone-icon {
-      color: var(--pg-primary);
+      color: var(--ex-accent, #0e7c6b);
     }
 
     .zone-text {
@@ -104,7 +104,7 @@ import { ForFileUpload, ForFileUploadInput, ForFileUploadTrigger } from 'forty-c
     .zone-btn {
       font: inherit;
       font-weight: 700;
-      color: var(--pg-primary);
+      color: var(--ex-accent, #0e7c6b);
       background: none;
       border: 0;
       padding: 0;
@@ -115,7 +115,7 @@ import { ForFileUpload, ForFileUploadInput, ForFileUploadTrigger } from 'forty-c
     .zone-accept {
       margin: 0;
       font-size: 0.78rem;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     .files {
@@ -134,14 +134,14 @@ import { ForFileUpload, ForFileUploadInput, ForFileUploadTrigger } from 'forty-c
       gap: 0.75rem;
       padding: 0.45rem 0.7rem;
       font-size: 0.85rem;
-      background: var(--pg-surface);
-      border: 1px solid var(--pg-border);
-      border-radius: var(--pg-radius-sm);
+      background: var(--ex-surface, #ffffff);
+      border: 1px solid var(--ex-border, #e5e0d6);
+      border-radius: var(--ex-radius-sm, 14px);
     }
 
     .file-name {
       font-weight: 600;
-      color: var(--pg-text);
+      color: var(--ex-text, #17191c);
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -149,9 +149,9 @@ import { ForFileUpload, ForFileUploadInput, ForFileUploadTrigger } from 'forty-c
 
     .file-size {
       flex: none;
-      font-family: var(--pg-font-mono);
+      font-family: var(--ex-font-mono, ui-monospace, monospace);
       font-size: 0.76rem;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     @media (prefers-reduced-motion: reduce) {

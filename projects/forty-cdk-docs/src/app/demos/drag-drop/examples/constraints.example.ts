@@ -55,10 +55,10 @@ interface Swatch {
     .frame {
       width: min(520px, 100%);
       padding: 1.25rem;
-      border: 2px dashed var(--pg-border-strong);
-      border-radius: var(--pg-radius);
+      border: 2px dashed var(--ex-border-strong, #d0c9bc);
+      border-radius: var(--ex-radius, 22px);
       corner-shape: squircle;
-      background: var(--pg-surface-2);
+      background: var(--ex-surface-2, #f2eee6);
     }
 
     .strip {
@@ -77,9 +77,9 @@ interface Swatch {
       gap: 0.4rem;
       width: 84px;
       padding: 0.6rem;
-      background: var(--pg-surface);
-      border: 1px solid var(--pg-border-strong);
-      border-radius: var(--pg-radius-sm);
+      background: var(--ex-surface, #ffffff);
+      border: 1px solid var(--ex-border-strong, #d0c9bc);
+      border-radius: var(--ex-radius-sm, 14px);
       cursor: grab;
     }
 
@@ -88,19 +88,23 @@ interface Swatch {
     }
 
     .preview {
-      box-shadow: var(--pg-shadow);
+      box-shadow: var(
+        --ex-shadow,
+        0 2px 4px rgba(0, 0, 0, 0.04),
+        0 20px 40px -18px rgba(0, 0, 0, 0.2)
+      );
       cursor: grabbing;
     }
 
     .chip {
       width: 100%;
       height: 36px;
-      border-radius: var(--pg-radius-sm);
+      border-radius: var(--ex-radius-sm, 14px);
     }
 
     .name {
       font-size: 0.78rem;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     .swatch[data-dragging] {
@@ -110,9 +114,9 @@ interface Swatch {
     .slot {
       width: 84px;
       align-self: stretch;
-      border: 2px dashed var(--pg-primary);
-      border-radius: var(--pg-radius-sm);
-      background: color-mix(in srgb, var(--pg-primary) 10%, transparent);
+      border: 2px dashed var(--ex-accent, #0e7c6b);
+      border-radius: var(--ex-radius-sm, 14px);
+      background: color-mix(in srgb, var(--ex-accent, #0e7c6b) 10%, transparent);
     }
   `,
 })

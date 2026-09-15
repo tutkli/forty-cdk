@@ -52,7 +52,7 @@ interface RadioOption {
       gap: 0.6rem;
       align-self: flex-start;
       padding: 0.5rem 0.75rem;
-      border-radius: var(--pg-radius-sm);
+      border-radius: var(--ex-radius-sm, 14px);
     }
 
     .rg[data-touched][data-invalid] {
@@ -68,7 +68,7 @@ interface RadioOption {
       border: 0;
       background: transparent;
       font: inherit;
-      color: var(--pg-text);
+      color: var(--ex-text, #17191c);
       cursor: pointer;
     }
 
@@ -77,14 +77,14 @@ interface RadioOption {
       position: relative;
       width: 20px;
       height: 20px;
-      border: 2px solid var(--pg-border-strong);
+      border: 2px solid var(--ex-border-strong, #d0c9bc);
       border-radius: 50%;
-      background: var(--pg-surface);
+      background: var(--ex-surface, #ffffff);
       transition: border-color 0.15s ease;
     }
 
     .rg-option[data-state='checked'] .rg-dot {
-      border-color: var(--pg-primary);
+      border-color: var(--ex-accent, #0e7c6b);
     }
 
     .rg-option[data-state='checked'] .rg-dot::after {
@@ -92,7 +92,7 @@ interface RadioOption {
       position: absolute;
       inset: 3px;
       border-radius: 50%;
-      background: var(--pg-primary);
+      background: var(--ex-accent, #0e7c6b);
     }
 
     .rg-error {

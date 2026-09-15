@@ -39,7 +39,7 @@ import { ForField, ForFieldControl, ForFieldDescription, ForLabel } from 'forty-
       gap: 0.4rem;
       font-size: 0.9rem;
       font-weight: 600;
-      color: var(--pg-text);
+      color: var(--ex-text, #17191c);
     }
 
     .field[data-required] .field-label-text::after {
@@ -52,10 +52,10 @@ import { ForField, ForFieldControl, ForFieldDescription, ForLabel } from 'forty-
       font: inherit;
       font-size: 0.9rem;
       padding: 0.5rem 0.7rem;
-      border-radius: var(--pg-radius-sm);
-      border: 1px solid var(--pg-border-strong);
-      background: var(--pg-surface);
-      color: var(--pg-text);
+      border-radius: var(--ex-radius-sm, 14px);
+      border: 1px solid var(--ex-border-strong, #d0c9bc);
+      background: var(--ex-surface, #ffffff);
+      color: var(--ex-text, #17191c);
     }
 
     .field[data-invalid] .input {
@@ -65,7 +65,7 @@ import { ForField, ForFieldControl, ForFieldDescription, ForLabel } from 'forty-
     .field-desc {
       margin: 0;
       font-size: 0.82rem;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
   `,
 })

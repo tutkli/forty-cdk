@@ -52,7 +52,7 @@ import { ForSwitch } from 'forty-cdk/switch';
       font-weight: 700;
       letter-spacing: 0.06em;
       text-transform: uppercase;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     .switch {
@@ -62,13 +62,13 @@ import { ForSwitch } from 'forty-cdk/switch';
       padding: 0;
       border: 0;
       border-radius: 999px;
-      background: var(--pg-border-strong);
+      background: var(--ex-border-strong, #d0c9bc);
       cursor: pointer;
       transition: background 0.2s ease;
     }
 
     .switch[data-state='checked'] {
-      background: var(--pg-primary);
+      background: var(--ex-accent, #0e7c6b);
     }
 
     .switch[data-disabled] {

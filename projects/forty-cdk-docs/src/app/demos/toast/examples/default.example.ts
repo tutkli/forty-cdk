@@ -46,22 +46,22 @@ type Variant = 'info' | 'success' | 'warning' | 'error';
       font-weight: 600;
       font-size: 0.9rem;
       padding: 0.5rem 0.9rem;
-      border-radius: var(--pg-radius-sm);
-      border: 1px solid var(--pg-border-strong);
-      background: var(--pg-surface);
-      color: var(--pg-text);
+      border-radius: var(--ex-radius-sm, 14px);
+      border: 1px solid var(--ex-border-strong, #d0c9bc);
+      background: var(--ex-surface, #ffffff);
+      color: var(--ex-text, #17191c);
       cursor: pointer;
     }
 
     .btn:hover {
-      background: var(--pg-surface-2);
+      background: var(--ex-surface-2, #f2eee6);
     }
 
     .btn--danger,
     .btn--danger:hover {
-      background: var(--pg-danger);
-      border-color: var(--pg-danger);
-      color: var(--pg-danger-contrast);
+      background: var(--ex-danger, #b3261e);
+      border-color: var(--ex-danger, #b3261e);
+      color: var(--ex-danger-contrast, #ffffff);
     }
 
     .demo-toast-viewport {
@@ -84,25 +84,29 @@ type Variant = 'info' | 'success' | 'warning' | 'error';
       flex-direction: column;
       gap: 0.15rem;
       padding: 0.8rem 2.4rem 0.85rem 1rem;
-      background: var(--pg-surface);
-      color: var(--pg-text);
-      border: 1px solid var(--pg-border);
-      border-left: 4px solid var(--pg-primary);
-      border-radius: var(--pg-radius-sm);
-      box-shadow: var(--pg-shadow);
-      animation: toast-in 0.24s var(--pg-ease-spring) both;
+      background: var(--ex-surface, #ffffff);
+      color: var(--ex-text, #17191c);
+      border: 1px solid var(--ex-border, #e5e0d6);
+      border-left: 4px solid var(--ex-accent, #0e7c6b);
+      border-radius: var(--ex-radius-sm, 14px);
+      box-shadow: var(
+        --ex-shadow,
+        0 2px 4px rgba(0, 0, 0, 0.04),
+        0 20px 40px -18px rgba(0, 0, 0, 0.2)
+      );
+      animation: toast-in 0.24s var(--ex-ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1)) both;
     }
 
     .demo-toast-viewport [forToast][data-variant='success'] {
-      border-left-color: var(--pg-success);
+      border-left-color: var(--ex-success, #1f7a4d);
     }
 
     .demo-toast-viewport [forToast][data-variant='warning'] {
-      border-left-color: var(--pg-warning);
+      border-left-color: var(--ex-warning, #a5651a);
     }
 
     .demo-toast-viewport [forToast][data-variant='error'] {
-      border-left-color: var(--pg-danger);
+      border-left-color: var(--ex-danger, #b3261e);
     }
 
     .demo-toast-viewport [forToastTitle] {
@@ -112,7 +116,7 @@ type Variant = 'info' | 'success' | 'warning' | 'error';
 
     .demo-toast-viewport [forToastDescription] {
       font-size: 0.82rem;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     .demo-toast-viewport [forToastClose] {
@@ -127,15 +131,15 @@ type Variant = 'info' | 'success' | 'warning' | 'error';
       font-size: 1.05rem;
       line-height: 1;
       border: 0;
-      border-radius: var(--pg-radius-sm);
+      border-radius: var(--ex-radius-sm, 14px);
       background: transparent;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
       cursor: pointer;
     }
 
     .demo-toast-viewport [forToastClose]:hover {
-      background: var(--pg-surface-2);
-      color: var(--pg-text);
+      background: var(--ex-surface-2, #f2eee6);
+      color: var(--ex-text, #17191c);
     }
 
     @keyframes toast-in {

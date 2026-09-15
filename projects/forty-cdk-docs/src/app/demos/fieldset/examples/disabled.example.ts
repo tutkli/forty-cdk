@@ -37,8 +37,8 @@ import { ForInput } from 'forty-cdk/input';
       gap: 0.9rem;
       margin: 0;
       padding: 1.1rem 1.2rem 1.3rem;
-      border: 1px solid var(--pg-border);
-      border-radius: var(--pg-radius);
+      border: 1px solid var(--ex-border, #e5e0d6);
+      border-radius: var(--ex-radius, 22px);
       corner-shape: squircle;
       transition: opacity 0.15s ease;
     }
@@ -51,7 +51,7 @@ import { ForInput } from 'forty-cdk/input';
       padding: 0 0.4rem;
       font-size: 0.95rem;
       font-weight: 700;
-      color: var(--pg-text);
+      color: var(--ex-text, #17191c);
     }
 
     .lbl {
@@ -63,7 +63,7 @@ import { ForInput } from 'forty-cdk/input';
     .lbl-text {
       font-size: 0.85rem;
       font-weight: 600;
-      color: var(--pg-text);
+      color: var(--ex-text, #17191c);
     }
 
     .input {
@@ -71,10 +71,10 @@ import { ForInput } from 'forty-cdk/input';
       font: inherit;
       font-size: 0.9rem;
       padding: 0.5rem 0.7rem;
-      border-radius: var(--pg-radius-sm);
-      border: 1px solid var(--pg-border-strong);
-      background: var(--pg-surface);
-      color: var(--pg-text);
+      border-radius: var(--ex-radius-sm, 14px);
+      border: 1px solid var(--ex-border-strong, #d0c9bc);
+      background: var(--ex-surface, #ffffff);
+      color: var(--ex-text, #17191c);
     }
 
     @media (prefers-reduced-motion: reduce) {

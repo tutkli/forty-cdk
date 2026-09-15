@@ -85,16 +85,16 @@ interface Message {
       font-weight: 600;
       font-size: 0.9rem;
       padding: 0.5rem 0.9rem;
-      border-radius: var(--pg-radius-sm);
-      border: 1px solid var(--pg-border-strong);
-      background: var(--pg-surface);
-      color: var(--pg-text);
+      border-radius: var(--ex-radius-sm, 14px);
+      border: 1px solid var(--ex-border-strong, #d0c9bc);
+      background: var(--ex-surface, #ffffff);
+      color: var(--ex-text, #17191c);
       cursor: pointer;
       transition: background 0.15s ease;
     }
 
     .jump-btn:hover {
-      background: var(--pg-surface-2);
+      background: var(--ex-surface-2, #f2eee6);
     }
 
     .jump-btn:active {
@@ -104,9 +104,9 @@ interface Message {
     .scroll {
       height: 380px;
       overflow: auto;
-      border: 1px solid var(--pg-border);
-      border-radius: var(--pg-radius-sm);
-      background: var(--pg-surface);
+      border: 1px solid var(--ex-border, #e5e0d6);
+      border-radius: var(--ex-radius-sm, 14px);
+      background: var(--ex-surface, #ffffff);
     }
 
     .track {
@@ -119,7 +119,7 @@ interface Message {
       left: 0;
       width: 100%;
       padding: 0.7rem 0.95rem;
-      border-bottom: 1px solid var(--pg-border);
+      border-bottom: 1px solid var(--ex-border, #e5e0d6);
       box-sizing: border-box;
     }
 
@@ -136,16 +136,16 @@ interface Message {
     }
 
     .msg-id {
-      font-family: var(--pg-font-mono);
+      font-family: var(--ex-font-mono, ui-monospace, monospace);
       font-size: 0.72rem;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     .msg-body {
       margin: 0;
       font-size: 0.86rem;
       line-height: 1.5;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     @media (prefers-reduced-motion: reduce) {

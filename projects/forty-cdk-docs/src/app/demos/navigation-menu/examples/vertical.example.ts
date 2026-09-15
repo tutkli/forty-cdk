@@ -173,10 +173,14 @@ import {
       margin: 0;
       padding: 4px;
       list-style: none;
-      background: var(--pg-surface);
-      border: 1px solid var(--pg-border);
-      border-radius: var(--pg-radius-sm);
-      box-shadow: var(--pg-shadow);
+      background: var(--ex-surface, #ffffff);
+      border: 1px solid var(--ex-border, #e5e0d6);
+      border-radius: var(--ex-radius-sm, 14px);
+      box-shadow: var(
+        --ex-shadow,
+        0 2px 4px rgba(0, 0, 0, 0.04),
+        0 20px 40px -18px rgba(0, 0, 0, 0.2)
+      );
     }
 
     .navmenu-list--vertical {
@@ -203,15 +207,15 @@ import {
       text-decoration: none;
       padding: 0.45rem 0.7rem;
       border: 0;
-      border-radius: var(--pg-radius-sm);
+      border-radius: var(--ex-radius-sm, 14px);
       background: transparent;
-      color: var(--pg-text);
+      color: var(--ex-text, #17191c);
       cursor: pointer;
     }
 
     .navmenu-trigger:hover,
     .navmenu-trigger[data-state='open'] {
-      background: var(--pg-surface-2);
+      background: var(--ex-surface-2, #f2eee6);
     }
 
     .navmenu-trigger--row {
@@ -236,11 +240,15 @@ import {
       width: 240px;
       box-sizing: border-box;
       padding: 1.1rem;
-      background: var(--pg-surface);
-      border: 1px solid var(--pg-border);
-      border-radius: var(--pg-radius);
+      background: var(--ex-surface, #ffffff);
+      border: 1px solid var(--ex-border, #e5e0d6);
+      border-radius: var(--ex-radius, 22px);
       corner-shape: squircle;
-      box-shadow: var(--pg-shadow);
+      box-shadow: var(
+        --ex-shadow,
+        0 2px 4px rgba(0, 0, 0, 0.04),
+        0 20px 40px -18px rgba(0, 0, 0, 0.2)
+      );
       z-index: 60;
     }
 
@@ -250,7 +258,7 @@ import {
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
     }
 
     .navmenu-links {
@@ -267,23 +275,23 @@ import {
       flex-direction: column;
       gap: 0.1rem;
       padding: 0.5rem 0.6rem;
-      border-radius: var(--pg-radius-sm);
-      color: var(--pg-text);
+      border-radius: var(--ex-radius-sm, 14px);
+      color: var(--ex-text, #17191c);
       text-decoration: none;
     }
 
     .navmenu-link:hover {
-      background: var(--pg-surface-2);
+      background: var(--ex-surface-2, #f2eee6);
     }
 
     .navmenu-link[data-active] {
-      background: color-mix(in srgb, var(--pg-primary) 14%, transparent);
-      color: var(--pg-primary);
+      background: color-mix(in srgb, var(--ex-accent, #0e7c6b) 14%, transparent);
+      color: var(--ex-accent, #0e7c6b);
     }
 
     .navmenu-indicator {
       position: absolute;
-      background: var(--pg-primary);
+      background: var(--ex-accent, #0e7c6b);
       border-radius: 999px;
     }
 

@@ -122,17 +122,17 @@ const COUNTRIES = [
       gap: 0.3rem;
       width: 100%;
       padding: 0.3rem;
-      background: var(--pg-surface);
-      border: 1px solid var(--pg-border-strong);
-      border-radius: var(--pg-radius-sm);
+      background: var(--ex-surface, #ffffff);
+      border: 1px solid var(--ex-border-strong, #d0c9bc);
+      border-radius: var(--ex-radius-sm, 14px);
       transition:
         border-color 0.15s ease,
         box-shadow 0.15s ease;
     }
 
     .chips-combobox-field:focus-within {
-      border-color: var(--pg-primary);
-      box-shadow: 0 0 0 1px var(--pg-primary);
+      border-color: var(--ex-accent, #0e7c6b);
+      box-shadow: 0 0 0 1px var(--ex-accent, #0e7c6b);
     }
 
     .chips-combobox-input {
@@ -143,7 +143,7 @@ const COUNTRIES = [
       padding: 0.2rem 0;
       border: 0;
       background: transparent;
-      color: var(--pg-text);
+      color: var(--ex-text, #17191c);
     }
 
     .chips-combobox-input:focus-visible {
@@ -156,9 +156,9 @@ const COUNTRIES = [
       gap: 0.2rem;
       padding: 0.15rem 0.2rem 0.15rem 0.5rem;
       font-size: 0.8rem;
-      border-radius: var(--pg-radius-sm);
-      background: var(--pg-surface-2);
-      color: var(--pg-text);
+      border-radius: var(--ex-radius-sm, 14px);
+      background: var(--ex-surface-2, #f2eee6);
+      color: var(--ex-text, #17191c);
     }
 
     .chips-combobox-chip-remove {
@@ -172,13 +172,13 @@ const COUNTRIES = [
       border: 0;
       border-radius: 50%;
       background: transparent;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
       cursor: pointer;
     }
 
     .chips-combobox-chip-remove:hover {
-      background: var(--pg-border-strong);
-      color: var(--pg-text);
+      background: var(--ex-border-strong, #d0c9bc);
+      color: var(--ex-text, #17191c);
     }
 
     .chips-combobox-content {
@@ -191,10 +191,14 @@ const COUNTRIES = [
       max-height: 280px;
       overflow-y: auto;
       padding: 4px;
-      background: var(--pg-surface);
-      border: 1px solid var(--pg-border);
-      border-radius: var(--pg-radius-sm);
-      box-shadow: var(--pg-shadow);
+      background: var(--ex-surface, #ffffff);
+      border: 1px solid var(--ex-border, #e5e0d6);
+      border-radius: var(--ex-radius-sm, 14px);
+      box-shadow: var(
+        --ex-shadow,
+        0 2px 4px rgba(0, 0, 0, 0.04),
+        0 20px 40px -18px rgba(0, 0, 0, 0.2)
+      );
     }
 
     .chips-combobox-option {
@@ -203,18 +207,18 @@ const COUNTRIES = [
       gap: 0.5rem;
       font-size: 0.875rem;
       padding: 0.45rem 0.6rem;
-      border-radius: var(--pg-radius-sm);
-      color: var(--pg-text);
+      border-radius: var(--ex-radius-sm, 14px);
+      color: var(--ex-text, #17191c);
       cursor: pointer;
     }
 
     .chips-combobox-option[data-highlighted],
     .chips-combobox-option:not([data-disabled]):hover {
-      background: var(--pg-surface-2);
+      background: var(--ex-surface-2, #f2eee6);
     }
 
     .chips-combobox-option[data-state='checked'] {
-      color: var(--pg-primary);
+      color: var(--ex-accent, #0e7c6b);
       font-weight: 600;
     }
 
@@ -225,7 +229,7 @@ const COUNTRIES = [
       justify-content: center;
       width: 1.1em;
       height: 1.1em;
-      color: var(--pg-primary);
+      color: var(--ex-accent, #0e7c6b);
     }
 
     .chips-combobox-indicator svg {
@@ -236,13 +240,14 @@ const COUNTRIES = [
     .chips-combobox-empty {
       padding: 0.6rem;
       font-size: 0.85rem;
-      color: var(--pg-text-muted);
+      color: var(--ex-muted, #585d66);
       text-align: center;
     }
 
     .chips-combobox-pop-in {
       transform-origin: var(--for-floating-content-transform-origin, center);
-      animation: chips-combobox-pop-in 0.2s var(--pg-ease-spring) both;
+      animation: chips-combobox-pop-in 0.2s var(--ex-ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1))
+        both;
     }
 
     @keyframes chips-combobox-pop-in {
