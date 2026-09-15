@@ -54,6 +54,99 @@ See [Styling forty-cdk](../../../docs/styling.md) for theming guidance.
 
 Walk the steps with their triggers or the arrow keys — each step carries `data-state` for `completed`, `active`, `upcoming` or `disabled`, and the root says which `data-mode` it is in.
 
+```ts
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import {
+  ForStepper,
+  ForStepperCompletedContent,
+  ForStepperContent,
+  ForStepperIndicator,
+  ForStepperItem,
+  ForStepperList,
+  ForStepperNext,
+  ForStepperPrevious,
+  ForStepperSeparator,
+  ForStepperTrigger,
+} from 'forty-cdk/stepper';
+
+interface Step {
+  readonly label: string;
+  readonly body: string;
+}
+
+@Component({
+  selector: 'app-stepper-default-example',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [
+    ForStepper,
+    ForStepperList,
+    ForStepperItem,
+    ForStepperTrigger,
+    ForStepperIndicator,
+    ForStepperSeparator,
+    ForStepperContent,
+    ForStepperCompletedContent,
+    ForStepperNext,
+    ForStepperPrevious,
+  ],
+  template: `
+    <div class="stp-demo">
+      <div forStepper class="stp" [(selectedIndex)]="step">
+        <ol forStepperList class="stp-list" ariaLabel="Checkout">
+          @for (s of steps; track s.label; let i = $index; let last = $last) {
+            <li forStepperItem #item="forStepperItem" class="stp-item" [completed]="step() > i">
+              <button forStepperTrigger type="button" class="stp-trigger">
+                <span forStepperIndicator class="stp-indicator">
+                  @if (item.resolvedState() === 'completed') {
+                    ✓
+                  } @else {
+                    {{ i + 1 }}
+                  }
+                </span>
+                <span class="stp-label">{{ s.label }}</span>
+              </button>
+              @if (!last) {
+                <span forStepperSeparator class="stp-sep"></span>
+              }
+            </li>
+          }
+        </ol>
+
+        <div class="stp-body">
+          @for (s of steps; track s.label) {
+            <section forStepperContent class="stp-panel">
+              <p>{{ s.body }}</p>
+            </section>
+          }
+          <section forStepperCompletedContent class="stp-panel stp-complete">
+            <p>🎉 All steps complete — your order is placed.</p>
+            <button type="button" class="btn" (click)="restart()">Start over</button>
+          </section>
+
+          <div class="stp-nav">
+            <button forStepperPrevious type="button" class="btn">Back</button>
+            <button forStepperNext type="button" class="btn btn-next">Next</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `,
+})
+export class StepperDefaultExample {
+  protected readonly steps: readonly Step[] = [
+    { label: 'Shipping', body: 'Where should we send your order? Enter a delivery address.' },
+    { label: 'Payment', body: 'Add a card or pick a saved payment method.' },
+    { label: 'Review', body: 'Check everything looks right, then place the order.' },
+  ];
+
+  protected readonly step = signal(0);
+
+  protected restart(): void {
+    this.step.set(0);
+  }
+}
+```
+
 ### Interactive mode with linear progression
 
 ```html

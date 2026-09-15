@@ -29,55 +29,24 @@ Pass a numeric `value` for a determinate bar, or `null` for indeterminate ("load
 The bar reflects `data-value` against `data-min` / `data-max` and moves `data-state` between `loading`, `complete` and `indeterminate`.
 
 ```ts
-import { Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { ForProgress, ForProgressIndicator } from 'forty-cdk/progress';
 
 @Component({
-  selector: 'demo-upload',
+  selector: 'app-progress-default-example',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ForProgress, ForProgressIndicator],
   template: `
-    <div forProgress class="progress" [value]="uploaded()" [max]="total()" announceCompletion>
-      <div forProgressIndicator class="progress-indicator"></div>
+    <div class="row">
+      <div forProgress class="track" [value]="value()" [max]="100" announceCompletion>
+        <div forProgressIndicator class="indicator"></div>
+      </div>
+      <span class="value">{{ value() }}%</span>
     </div>
   `,
-  styles: [
-    `
-      .progress {
-        position: relative;
-        height: 8px;
-        width: 240px;
-        background: #eee;
-        border-radius: 4px;
-        overflow: hidden;
-      }
-      .progress-indicator {
-        position: absolute;
-        inset: 0;
-        background: #4f46e5;
-        transform-origin: left center;
-        transition: transform 120ms;
-      }
-      .progress-indicator[data-state='loading'] {
-        transform: scaleX(calc(var(--for-progress-percentage) / 100));
-      }
-      .progress-indicator[data-state='indeterminate'] {
-        transform: scaleX(0.4);
-        animation: slide 1.2s infinite ease-in-out;
-      }
-      @keyframes slide {
-        from {
-          transform: translateX(-100%) scaleX(0.4);
-        }
-        to {
-          transform: translateX(250%) scaleX(0.4);
-        }
-      }
-    `,
-  ],
 })
-export class DemoUpload {
-  readonly uploaded = signal(0);
-  readonly total = signal(200);
+export class ProgressDefaultExample {
+  protected readonly value = signal(60);
 }
 ```
 

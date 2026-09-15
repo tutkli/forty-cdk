@@ -59,24 +59,20 @@ Focus a segment and type, or step it with the arrow keys — each segment is a s
 
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
-import { CalendarDate } from '@internationalized/date';
+import { type CalendarDate } from '@internationalized/date';
 import { ForDateField, ForDateFieldLiteral, ForDateFieldSegment } from 'forty-cdk/date-field';
+import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized-date';
 
 @Component({
-  selector: 'app-dob',
+  selector: 'app-date-field-default-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ForDateField, ForDateFieldSegment, ForDateFieldLiteral],
+  providers: [...provideInternationalizedDateAdapter()],
   template: `
-    <div
-      forDateField
-      class="date-field"
-      [(value)]="date"
-      [ariaLabel]="'Date of birth'"
-      #field="forDateField"
-    >
+    <div forDateField class="date-field" [(value)]="value" ariaLabel="Date" #field="forDateField">
       @for (seg of field.segments(); track seg.id) {
         @if (seg.isLiteral) {
-          <span forDateFieldLiteral>{{ seg.text }}</span>
+          <span forDateFieldLiteral class="date-field-literal">{{ seg.text }}</span>
         } @else {
           <span forDateFieldSegment class="date-field-segment" [segment]="seg.type!">{{
             seg.text
@@ -86,8 +82,8 @@ import { ForDateField, ForDateFieldLiteral, ForDateFieldSegment } from 'forty-cd
     </div>
   `,
 })
-export class DobField {
-  readonly date = signal<CalendarDate | null>(null);
+export class DateFieldDefaultExample {
+  protected readonly value = signal<CalendarDate | null>(null);
 }
 ```
 

@@ -32,16 +32,17 @@ Press it with the pointer, `Space` or `Enter` — the button reflects `aria-pres
 ### Standalone Toggle
 
 ```ts
-import { Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { ForToggle } from 'forty-cdk/toggle';
 
 @Component({
-  selector: 'demo-toggle',
+  selector: 'app-toggle-default-example',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ForToggle],
-  template: ` <button forToggle [(checked)]="bold">B</button> `,
+  template: ` <button forToggle class="toggle" [(checked)]="bold">Bold</button> `,
 })
-export class DemoToggle {
-  readonly bold = signal(false);
+export class ToggleDefaultExample {
+  protected readonly bold = signal(false);
 }
 ```
 

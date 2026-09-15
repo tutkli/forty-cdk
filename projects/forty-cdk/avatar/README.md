@@ -25,48 +25,40 @@ Headless and presentational — it tracks the load lifecycle of an `<img>` and l
 Let the image load, then break its URL: `data-status` moves between `loading`, `loaded` and `error`, and the fallback only appears once the delay has passed without an image.
 
 ```ts
-import { Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { ForAvatar, ForAvatarFallback, ForAvatarImage } from 'forty-cdk/avatar';
 
+const AVATAR_SRC =
+  'data:image/svg+xml;utf8,' +
+  encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 72 72">
+      <defs>
+        <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#6366f1" />
+          <stop offset="1" stop-color="#ec4899" />
+        </linearGradient>
+      </defs>
+      <rect width="72" height="72" fill="url(#g)" />
+      <circle cx="36" cy="28" r="14" fill="#fff" opacity="0.92" />
+      <path d="M14 64c0-12 9.8-20 22-20s22 8 22 20Z" fill="#fff" opacity="0.92" />
+    </svg>`,
+  );
+
 @Component({
-  selector: 'demo-avatar',
+  selector: 'app-avatar-default-example',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ForAvatar, ForAvatarImage, ForAvatarFallback],
   template: `
-    <span forAvatar #a="forAvatar" class="avatar" fallbackDelayMs="500">
-      <img forAvatarImage class="avatar-image" [src]="user.avatarUrl" [alt]="user.name" />
-      @if (a.shouldShowFallback()) {
-        <span forAvatarFallback class="avatar-fallback">{{ initials() }}</span>
+    <span forAvatar #avatar="forAvatar" class="avatar" [fallbackDelayMs]="500">
+      <img forAvatarImage class="avatar-image" [src]="src" alt="Ada Lovelace" />
+      @if (avatar.shouldShowFallback()) {
+        <span forAvatarFallback class="avatar-fallback">AL</span>
       }
     </span>
   `,
-  styles: [
-    `
-      .avatar {
-        display: inline-flex;
-        width: 40px;
-        height: 40px;
-        border-radius: 999px;
-        overflow: hidden;
-        background: #eee;
-        font: 600 14px/40px system-ui;
-        align-items: center;
-        justify-content: center;
-      }
-      .avatar-image {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-      }
-      .avatar-image[data-status='loading'],
-      .avatar-image[data-status='error'] {
-        display: none;
-      }
-    `,
-  ],
 })
-export class DemoAvatar {
-  readonly user = { name: 'Ada Lovelace', avatarUrl: '/api/avatar/ada.jpg' };
-  readonly initials = signal('AL');
+export class AvatarDefaultExample {
+  protected readonly src = AVATAR_SRC;
 }
 ```
 

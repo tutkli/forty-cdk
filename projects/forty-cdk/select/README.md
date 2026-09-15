@@ -55,6 +55,142 @@ It implements the select-only combobox pattern (`role="combobox"` on the trigger
 
 Open the listbox from the trigger, move with the arrow keys and commit with `Enter` — `data-placeholder` stays on the trigger until something is chosen.
 
+```ts
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import {
+  ForSelect,
+  ForSelectContent,
+  ForSelectGroup,
+  ForSelectGroupLabel,
+  ForSelectIndicator,
+  ForSelectOption,
+  ForSelectSeparator,
+  ForSelectTrigger,
+  ForSelectValue,
+} from 'forty-cdk/select';
+
+interface Option {
+  readonly value: string;
+  readonly label: string;
+  readonly disabled?: boolean;
+}
+
+@Component({
+  selector: 'app-select-default-example',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [
+    ForSelect,
+    ForSelectTrigger,
+    ForSelectValue,
+    ForSelectContent,
+    ForSelectOption,
+    ForSelectIndicator,
+    ForSelectGroup,
+    ForSelectGroupLabel,
+    ForSelectSeparator,
+  ],
+  template: `
+    <div
+      forSelect
+      #select="forSelect"
+      class="select-field"
+      [(value)]="value"
+      placeholder="Pick your stack"
+      ariaLabel="Tech stack"
+    >
+      <button forSelectTrigger type="button" class="select-trigger">
+        <span forSelectValue></span>
+        <svg class="select-chevron" viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            d="m19.5 8.25-7.5 7.5-7.5-7.5"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.75"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
+      @if (select.open()) {
+        <div forSelectContent class="select-content" animate.enter="select-pop-in">
+          <div forSelectGroup>
+            <div forSelectGroupLabel class="select-group-label">Frontend</div>
+            @for (opt of frontend; track opt.value) {
+              <button
+                forSelectOption
+                type="button"
+                class="select-option"
+                [value]="opt.value"
+                [disabled]="opt.disabled ?? false"
+              >
+                <span forSelectIndicator class="select-indicator">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                      d="m4.5 12.75 6 6 9-13.5"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.75"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </span>
+                {{ opt.label }}
+              </button>
+            }
+          </div>
+
+          <hr forSelectSeparator class="select-separator" />
+
+          <div forSelectGroup>
+            <div forSelectGroupLabel class="select-group-label">Backend</div>
+            @for (opt of backend; track opt.value) {
+              <button
+                forSelectOption
+                type="button"
+                class="select-option"
+                [value]="opt.value"
+                [disabled]="opt.disabled ?? false"
+              >
+                <span forSelectIndicator class="select-indicator">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                      d="m4.5 12.75 6 6 9-13.5"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.75"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </span>
+                {{ opt.label }}
+              </button>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  `,
+})
+export class SelectDefaultExample {
+  protected readonly frontend: readonly Option[] = [
+    { value: 'angular', label: 'Angular' },
+    { value: 'react', label: 'React' },
+    { value: 'vue', label: 'Vue' },
+    { value: 'svelte', label: 'Svelte', disabled: true },
+  ];
+
+  protected readonly backend: readonly Option[] = [
+    { value: 'node', label: 'Node.js' },
+    { value: 'deno', label: 'Deno' },
+    { value: 'bun', label: 'Bun' },
+  ];
+
+  protected readonly value = signal<readonly string[]>([]);
+}
+```
+
 ### Single mode (default)
 
 Click an option to replace the selection and close. `[(value)]` keeps 0 or 1 element. Read the sole value through the read-only `selected: Signal<T | null>` accessor (the form contract keeps `value` as `readonly T[]`; `selected()` is `value()[0]` or `null`).

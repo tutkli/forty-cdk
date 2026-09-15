@@ -33,7 +33,7 @@ Type a number, press the arrow keys or hold a stepper button — the host carrie
 ### Stand-alone
 
 ```ts
-import { Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import {
   ForNumberInput,
   ForNumberInputDecrement,
@@ -42,19 +42,19 @@ import {
 } from 'forty-cdk/number-input';
 
 @Component({
-  selector: 'demo-quantity',
+  selector: 'app-number-input-default-example',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ForNumberInputGroup, ForNumberInput, ForNumberInputIncrement, ForNumberInputDecrement],
   template: `
-    <div forNumberInputGroup>
-      <button forNumberInputDecrement class="number-input-decrement" ariaLabel="Decrease">−</button>
-      <input forNumberInput [(value)]="qty" [min]="0" [max]="10" [step]="1" />
-      <button forNumberInputIncrement class="number-input-increment" ariaLabel="Increase">+</button>
+    <div forNumberInputGroup class="stepper">
+      <button forNumberInputDecrement class="step-btn" ariaLabel="Decrease">−</button>
+      <input forNumberInput class="step-input" [(value)]="qty" [min]="0" [max]="10" [step]="1" />
+      <button forNumberInputIncrement class="step-btn" ariaLabel="Increase">+</button>
     </div>
-    <p>{{ qty() }}</p>
   `,
 })
-export class DemoQuantity {
-  readonly qty = signal<number | null>(1);
+export class NumberInputDefaultExample {
+  protected readonly qty = signal<number | null>(1);
 }
 ```
 

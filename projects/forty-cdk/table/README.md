@@ -42,6 +42,77 @@ Opt-in companions compose on the same elements: [`[forTableVirtualized]`](../tab
 
 Move around the grid with the arrow keys — one tab stop serves the whole table, `Ctrl+Home` / `Ctrl+End` jump to its corners, and the focused cell carries `data-highlighted`.
 
+```ts
+import { ChangeDetectionStrategy, Component } from '@angular/core';
+import {
+  ForTable,
+  ForTableCell,
+  ForTableHeaderCell,
+  ForTableHeaderRow,
+  ForTableRow,
+} from 'forty-cdk/table';
+
+interface Person {
+  readonly id: number;
+  readonly name: string;
+  readonly role: string;
+  readonly dept: string;
+  readonly location: string;
+}
+
+const PEOPLE: readonly Person[] = [
+  { id: 1, name: 'Ada Lovelace', role: 'Engineer', dept: 'Platform', location: 'London' },
+  { id: 2, name: 'Alan Turing', role: 'Researcher', dept: 'Research', location: 'Manchester' },
+  { id: 3, name: 'Grace Hopper', role: 'Engineer', dept: 'Compilers', location: 'New York' },
+  { id: 4, name: 'Katherine Johnson', role: 'Analyst', dept: 'Aerospace', location: 'Hampton' },
+  { id: 5, name: 'Edsger Dijkstra', role: 'Researcher', dept: 'Research', location: 'Rotterdam' },
+  { id: 6, name: 'Barbara Liskov', role: 'Professor', dept: 'Research', location: 'Boston' },
+  { id: 7, name: 'Margaret Hamilton', role: 'Engineer', dept: 'Aerospace', location: 'Boston' },
+  { id: 8, name: 'Tim Berners-Lee', role: 'Engineer', dept: 'Platform', location: 'London' },
+  { id: 9, name: 'Donald Knuth', role: 'Professor', dept: 'Compilers', location: 'Stanford' },
+];
+
+@Component({
+  selector: 'app-table-grid-example',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [ForTable, ForTableHeaderRow, ForTableRow, ForTableHeaderCell, ForTableCell],
+  template: `
+    <div class="tbl-scroll">
+      <div forTable mode="grid" ariaLabel="Team members" class="tbl">
+        <div role="rowgroup">
+          <div forTableHeaderRow class="tbl-row tbl-head">
+            <div forTableHeaderCell name="name" class="tbl-cell">Name</div>
+            <div forTableHeaderCell name="role" class="tbl-cell">Role</div>
+            <div forTableHeaderCell name="dept" class="tbl-cell">Department</div>
+            <div forTableHeaderCell name="location" class="tbl-cell">Location</div>
+          </div>
+        </div>
+        <div role="rowgroup">
+          @for (person of people; track person.id) {
+            <div forTableRow class="tbl-row">
+              <div forTableCell name="name" class="tbl-cell">{{ person.name }}</div>
+              <div
+                forTableCell
+                name="role"
+                [disabled]="person.role === 'Researcher'"
+                class="tbl-cell"
+              >
+                {{ person.role }}
+              </div>
+              <div forTableCell name="dept" class="tbl-cell">{{ person.dept }}</div>
+              <div forTableCell name="location" class="tbl-cell">{{ person.location }}</div>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  `,
+})
+export class TableGridExample {
+  protected readonly people = PEOPLE;
+}
+```
+
 ## API
 
 ### `ForTable`

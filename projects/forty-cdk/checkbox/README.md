@@ -36,23 +36,24 @@ Tick it with the pointer or `Space` and watch `data-state` move between `checked
 ### Stand-alone
 
 ```ts
-import { Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { ForCheckbox } from 'forty-cdk/checkbox';
 
 @Component({
-  selector: 'demo-terms',
+  selector: 'app-checkbox-default-example',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ForCheckbox],
   template: `
-    <label>
-      <button forCheckbox class="checkbox" [(checked)]="agreed">
-        <span class="indicator"></span>
-      </button>
+    <button forCheckbox class="cb-row" [(checked)]="checked">
+      <span class="cb">
+        <span class="cb-check" aria-hidden="true"></span>
+      </span>
       I agree to the terms
-    </label>
+    </button>
   `,
 })
-export class DemoTerms {
-  readonly agreed = signal(false);
+export class CheckboxDefaultExample {
+  protected readonly checked = signal(false);
 }
 ```
 

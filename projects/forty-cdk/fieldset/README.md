@@ -45,31 +45,35 @@ Nesting composes like native fieldsets: a disabled outer `[forFieldset]` keeps e
 Disable the group and every control inside it follows — the fieldset reflects `data-disabled` and reaches custom-role controls a native `<fieldset disabled>` cannot.
 
 ```ts
-import { Component, signal } from '@angular/core';
-import { ForField, ForFieldControl, ForLabel } from 'forty-cdk/field';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ForField, ForLabel } from 'forty-cdk/field';
 import { ForFieldset, ForFieldsetLegend } from 'forty-cdk/fieldset';
+import { ForInput } from 'forty-cdk/input';
 
 @Component({
-  selector: 'demo-fieldset',
-  imports: [ForFieldset, ForFieldsetLegend, ForField, ForLabel, ForFieldControl],
+  selector: 'app-fieldset-default-example',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [ForFieldset, ForFieldsetLegend, ForField, ForLabel, ForInput],
   template: `
-    <fieldset forFieldset class="fieldset" [disabled]="locked()">
-      <legend forFieldsetLegend>Shipping address</legend>
+    <fieldset forFieldset class="set">
+      <legend forFieldsetLegend class="legend">Shipping address</legend>
 
-      <div forField>
-        <label forLabel>Street</label>
-        <input forFieldControl />
+      <div forField class="field">
+        <label forLabel class="lbl">
+          <span class="lbl-text">Street</span>
+          <input forInput class="input" placeholder="221B Baker Street" />
+        </label>
       </div>
-      <div forField>
-        <label forLabel>City</label>
-        <input forFieldControl />
+      <div forField class="field">
+        <label forLabel class="lbl">
+          <span class="lbl-text">City</span>
+          <input forInput class="input" placeholder="London" />
+        </label>
       </div>
     </fieldset>
   `,
 })
-export class DemoFieldset {
-  readonly locked = signal(false);
-}
+export class FieldsetDefaultExample {}
 ```
 
 On custom markup (no native `<fieldset>`), the same wiring yields `role="group"` + `aria-labelledby`:

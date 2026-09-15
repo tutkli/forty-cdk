@@ -39,7 +39,7 @@ A `<nav>` of disclosures, **not** an ARIA `menu`. Triggers are buttons with `ari
 Open a section from the bar and move between them — the active trigger carries `data-state="open"` and `data-motion` says which way the viewport slid to reach it.
 
 ```ts
-import { Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import {
   ForNavigationMenu,
   ForNavigationMenuContent,
@@ -48,10 +48,12 @@ import {
   ForNavigationMenuLink,
   ForNavigationMenuList,
   ForNavigationMenuTrigger,
+  ForNavigationMenuViewport,
 } from 'forty-cdk/navigation-menu';
 
 @Component({
-  selector: 'demo-nav',
+  selector: 'app-navigation-menu-default-example',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     ForNavigationMenu,
     ForNavigationMenuList,
@@ -60,40 +62,125 @@ import {
     ForNavigationMenuContent,
     ForNavigationMenuLink,
     ForNavigationMenuIndicator,
+    ForNavigationMenuViewport,
   ],
   template: `
-    <nav forNavigationMenu aria-label="Main" [(value)]="open">
-      <ul forNavigationMenuList>
-        <li forNavigationMenuItem value="products">
-          <button forNavigationMenuTrigger class="navigation-menu-trigger">Products</button>
-          @if (open() === 'products') {
-            <div
-              forNavigationMenuContent
-              class="navigation-menu-content"
-              animate.enter="fade-in"
-              animate.leave="fade-out"
-            >
-              <a href="/p/web" forNavigationMenuLink>Web</a>
-              <a href="/p/mobile" forNavigationMenuLink active>Mobile</a>
-            </div>
-          }
-        </li>
-        <li forNavigationMenuItem value="company">
-          <button forNavigationMenuTrigger class="navigation-menu-trigger">Company</button>
-          @if (open() === 'company') {
-            <div forNavigationMenuContent class="navigation-menu-content">
-              <a href="/about" forNavigationMenuLink>About</a>
-              <a href="/jobs" forNavigationMenuLink>Careers</a>
-            </div>
-          }
-        </li>
-        <span forNavigationMenuIndicator class="navigation-menu-indicator"></span>
-      </ul>
-    </nav>
+    <div class="nav-demo">
+      <nav forNavigationMenu [(value)]="open" ariaLabel="Main" class="navmenu">
+        <ul forNavigationMenuList class="navmenu-list">
+          <li forNavigationMenuItem value="products" class="navmenu-item">
+            <button forNavigationMenuTrigger class="navmenu-trigger">
+              Products
+              <svg class="navmenu-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="m19.5 8.25-7.5 7.5-7.5-7.5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.75"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
+            @if (open() === 'products') {
+              <div forNavigationMenuContent data-id="products" class="navmenu-panel">
+                <p class="navmenu-panel-title">Build</p>
+                <div class="navmenu-grid">
+                  <a forNavigationMenuLink [active]="true" href="#analytics" class="navmenu-link">
+                    <strong>Analytics</strong>
+                    <span>Dashboards and funnels</span>
+                  </a>
+                  <a forNavigationMenuLink href="#automation" class="navmenu-link">
+                    <strong>Automation</strong>
+                    <span>Workflows and triggers</span>
+                  </a>
+                  <a forNavigationMenuLink href="#reports" class="navmenu-link">
+                    <strong>Reports</strong>
+                    <span>Scheduled exports</span>
+                  </a>
+                  <a forNavigationMenuLink href="#integrations" class="navmenu-link">
+                    <strong>Integrations</strong>
+                    <span>Connect your stack</span>
+                  </a>
+                </div>
+              </div>
+            }
+          </li>
+
+          <li forNavigationMenuItem value="solutions" class="navmenu-item">
+            <button forNavigationMenuTrigger class="navmenu-trigger">
+              Solutions
+              <svg class="navmenu-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="m19.5 8.25-7.5 7.5-7.5-7.5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.75"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
+            @if (open() === 'solutions') {
+              <div forNavigationMenuContent data-id="solutions" class="navmenu-panel">
+                <p class="navmenu-panel-title">By team</p>
+                <ul class="navmenu-links">
+                  <li>
+                    <a forNavigationMenuLink href="#startups" class="navmenu-link">Startups</a>
+                  </li>
+                  <li>
+                    <a forNavigationMenuLink href="#enterprise" class="navmenu-link">Enterprise</a>
+                  </li>
+                  <li>
+                    <a forNavigationMenuLink href="#agencies" class="navmenu-link">Agencies</a>
+                  </li>
+                </ul>
+              </div>
+            }
+          </li>
+
+          <li forNavigationMenuItem value="company" class="navmenu-item">
+            <button forNavigationMenuTrigger class="navmenu-trigger">
+              Company
+              <svg class="navmenu-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="m19.5 8.25-7.5 7.5-7.5-7.5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.75"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
+            @if (open() === 'company') {
+              <div forNavigationMenuContent data-id="company" class="navmenu-panel">
+                <p class="navmenu-panel-title">About us</p>
+                <ul class="navmenu-links">
+                  <li><a forNavigationMenuLink href="#about" class="navmenu-link">About</a></li>
+                  <li><a forNavigationMenuLink href="#careers" class="navmenu-link">Careers</a></li>
+                  <li><a forNavigationMenuLink href="#blog" class="navmenu-link">Blog</a></li>
+                </ul>
+              </div>
+            }
+          </li>
+
+          <li class="navmenu-item">
+            <a href="#pricing" class="navmenu-trigger navmenu-trigger--link">Pricing</a>
+          </li>
+
+          <div forNavigationMenuIndicator class="navmenu-indicator" aria-hidden="true"></div>
+        </ul>
+
+        <div class="navmenu-viewport-wrap">
+          <div forNavigationMenuViewport class="navmenu-viewport"></div>
+        </div>
+      </nav>
+    </div>
   `,
 })
-export class DemoNav {
-  readonly open = signal<string | null>(null);
+export class NavigationMenuDefaultExample {
+  protected readonly open = signal<string | null>(null);
 }
 ```
 

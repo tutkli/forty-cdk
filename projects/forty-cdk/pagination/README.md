@@ -51,7 +51,7 @@ A navigation landmark that derives a visible page list with ellipsis gaps from p
 Walk the pages with the pointer or the keyboard — the current page is `aria-current="page"`, and the ends reflect `data-disabled` on the arrow that has nowhere to go.
 
 ```ts
-import { Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import {
   ForPagination,
   ForPaginationItem,
@@ -60,12 +60,22 @@ import {
 } from 'forty-cdk/pagination';
 
 @Component({
-  selector: 'demo-pagination',
+  selector: 'app-pagination-default-example',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ForPagination, ForPaginationItem, ForPaginationPrevious, ForPaginationNext],
   template: `
-    <nav forPagination [(page)]="page" [count]="20" ariaLabel="Pagination" #pg="forPagination">
-      <button forPaginationPrevious ariaLabel="Previous page">
-        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+    <nav
+      forPagination
+      #pg="forPagination"
+      class="pgn"
+      ariaLabel="Pagination"
+      [(page)]="page"
+      [count]="20"
+      [siblingCount]="1"
+      [boundaryCount]="1"
+    >
+      <button forPaginationPrevious class="pgn-btn pgn-nav" ariaLabel="Previous page">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
           <path
             d="m15.75 19.5-7.5-7.5 7.5-7.5"
             fill="none"
@@ -76,15 +86,19 @@ import {
           />
         </svg>
       </button>
+
       @for (item of pg.items(); track $index) {
         @if (item.type === 'page') {
-          <button forPaginationItem [page]="item.value!">{{ item.value }}</button>
+          <button forPaginationItem class="pgn-btn pgn-page" [page]="item.value!">
+            {{ item.value }}
+          </button>
         } @else {
-          <span aria-hidden="true">…</span>
+          <span class="pgn-gap" aria-hidden="true">…</span>
         }
       }
-      <button forPaginationNext ariaLabel="Next page">
-        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+
+      <button forPaginationNext class="pgn-btn pgn-nav" ariaLabel="Next page">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
           <path
             d="m8.25 4.5 7.5 7.5-7.5 7.5"
             fill="none"
@@ -98,8 +112,8 @@ import {
     </nav>
   `,
 })
-export class DemoPagination {
-  readonly page = signal(1);
+export class PaginationDefaultExample {
+  protected readonly page = signal(1);
 }
 ```
 

@@ -32,23 +32,66 @@ Providing it again on a component injector replaces the map for that subtree onl
 Resize the preview and watch the matched breakpoint change: `injectBreakpoints()` hands back signals, so the template re-renders without a listener of your own.
 
 ```ts
-import { Component, inject } from '@angular/core';
-import { injectBreakpoints } from 'forty-cdk/breakpoints';
+import {
+  afterNextRender,
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  inject,
+  signal,
+} from '@angular/core';
+import { forBreakpointsTailwind, injectBreakpoints } from 'forty-cdk/breakpoints';
+
+type TailwindName = keyof typeof forBreakpointsTailwind;
 
 @Component({
-  selector: 'app-layout',
+  selector: 'app-breakpoints-active-example',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    @if (isDesktop()) {
-      <aside>Sidebar</aside>
-    }
-    <main>Active breakpoint: {{ active() }}</main>
+    <div class="bp-demo">
+      <div class="bp-readout">
+        <span class="bp-readout-label">active breakpoint</span>
+        <span class="bp-active">{{ active() ?? 'below sm' }}</span>
+        <span class="bp-width">viewport ≈ {{ width() }}px</span>
+      </div>
+
+      <ul class="bp-grid">
+        @for (row of rows; track row.name) {
+          <li class="bp-cell" [class.bp-cell--on]="row.up()">
+            <span class="bp-name">{{ row.name }}</span>
+            <span class="bp-min">≥ {{ row.min }}px</span>
+            <span class="bp-flags">
+              <span class="bp-flag" [class.bp-flag--on]="row.up()">up</span>
+              <span class="bp-flag" [class.bp-flag--on]="row.only()">only</span>
+            </span>
+          </li>
+        }
+      </ul>
+    </div>
   `,
 })
-export class Layout {
-  private bp = injectBreakpoints();
+export class BreakpointsActiveExample {
+  protected readonly bp = injectBreakpoints();
+  protected readonly active = this.bp.active;
 
-  protected isDesktop = this.bp.up('lg'); // (min-width: 1024px) and wider
-  protected active = this.bp.active; // 'sm' | 'md' | … | null
+  protected readonly rows = (Object.keys(forBreakpointsTailwind) as TailwindName[]).map((name) => ({
+    name,
+    min: forBreakpointsTailwind[name],
+    up: this.bp.up(name),
+    only: this.bp.only(name),
+  }));
+
+  protected readonly width = signal(0);
+
+  constructor() {
+    const destroyRef = inject(DestroyRef);
+    afterNextRender(() => {
+      const onResize = (): void => this.width.set(globalThis.innerWidth);
+      onResize();
+      globalThis.addEventListener('resize', onResize, { passive: true });
+      destroyRef.onDestroy(() => globalThis.removeEventListener('resize', onResize));
+    });
+  }
 }
 ```
 

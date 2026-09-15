@@ -55,31 +55,31 @@ Gate the region's `@if` on the field's `invalid()` (exposed via the `[forField]`
 Focus the control through its label and watch the `[forField]` host: it reflects `data-disabled`, `data-required`, `data-touched` and `data-invalid` for the whole block.
 
 ```ts
-import { Component, signal } from '@angular/core';
-import { form, FormField, required } from '@angular/forms/signals';
-import { ForField, ForFieldDescription, ForFieldError, ForLabel } from 'forty-cdk/field';
-import { ForSwitch } from 'forty-cdk/switch';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ForField, ForFieldControl, ForFieldDescription, ForLabel } from 'forty-cdk/field';
 
 @Component({
-  selector: 'demo-field',
-  imports: [ForField, ForLabel, ForFieldDescription, ForFieldError, ForSwitch, FormField],
+  selector: 'app-field-default-example',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [ForField, ForLabel, ForFieldControl, ForFieldDescription],
   template: `
-    <div forField class="field" #field="forField">
-      <label forLabel class="field-label">Notifications</label>
-      <button forSwitch [formField]="settings.notify"></button>
-      <p forFieldDescription>We'll only email you about security.</p>
-      @if (field.invalid()) {
-        <p forFieldError #err="forFieldError">{{ err.messages().join(', ') }}</p>
-      }
+    <div forField class="field">
+      <label forLabel class="field-label">
+        <span class="field-label-text">Email address</span>
+        <input
+          forFieldControl
+          class="input"
+          type="email"
+          placeholder="jane@example.com"
+          required
+          aria-required="true"
+        />
+      </label>
+      <p forFieldDescription class="field-desc">We'll only use this to send receipts.</p>
     </div>
   `,
 })
-export class DemoField {
-  readonly model = signal({ notify: false });
-  readonly settings = form(this.model, (s) => {
-    required(s.notify, { message: 'Please choose a preference' });
-  });
-}
+export class FieldDefaultExample {}
 ```
 
 Style off the reflected state:

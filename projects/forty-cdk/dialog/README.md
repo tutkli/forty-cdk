@@ -72,6 +72,70 @@ The trigger (`[forDialogTrigger]`) and the dialog surface (`[forDialog]`) are **
 
 Open the dialog and press `Tab` — focus is trapped inside it, `Escape` closes it, and focus returns to the trigger that opened it.
 
+```ts
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import {
+  ForDialog,
+  ForDialogBackdrop,
+  ForDialogClose,
+  ForDialogDescription,
+  ForDialogTitle,
+  ForDialogTrigger,
+} from 'forty-cdk/dialog';
+
+@Component({
+  selector: 'app-dialog-anatomy-example',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [
+    ForDialog,
+    ForDialogTrigger,
+    ForDialogTitle,
+    ForDialogDescription,
+    ForDialogClose,
+    ForDialogBackdrop,
+  ],
+  template: `
+    <button
+      forDialogTrigger
+      class="anatomy-btn anatomy-btn--primary"
+      [(open)]="open"
+      controls="anatomy-dialog"
+    >
+      Open dialog
+    </button>
+
+    @if (open()) {
+      <div
+        forDialog
+        id="anatomy-dialog"
+        class="anatomy-dialog"
+        (dismiss)="open.set(false)"
+        animate.enter="anatomy-fade-in"
+        animate.leave="anatomy-fade-out"
+      >
+        <div
+          forDialogBackdrop
+          class="anatomy-backdrop"
+          animate.enter="anatomy-backdrop-in"
+          animate.leave="anatomy-backdrop-out"
+        ></div>
+        <h2 forDialogTitle>Delete account?</h2>
+        <p forDialogDescription>This action is permanent and cannot be undone.</p>
+        <div class="anatomy-actions">
+          <button class="anatomy-btn" forDialogClose>Cancel</button>
+          <button class="anatomy-btn anatomy-btn--danger" type="button" (click)="open.set(false)">
+            Delete
+          </button>
+        </div>
+      </div>
+    }
+  `,
+})
+export class DialogAnatomyExample {
+  protected readonly open = signal(false);
+}
+```
+
 ## API
 
 ### `ForDialog`

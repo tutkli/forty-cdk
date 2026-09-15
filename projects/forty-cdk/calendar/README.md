@@ -101,7 +101,7 @@ Move across the grid with the arrow keys, page with `PageUp` / `PageDown`, and s
 
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
-import { CalendarDate, today, getLocalTimeZone } from '@internationalized/date';
+import { type CalendarDate, getLocalTimeZone, today } from '@internationalized/date';
 import {
   ForCalendar,
   ForCalendarCell,
@@ -111,9 +111,10 @@ import {
   ForCalendarNextButton,
   ForCalendarPrevButton,
 } from 'forty-cdk/calendar';
+import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized-date';
 
 @Component({
-  selector: 'app-date',
+  selector: 'app-calendar-default-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     ForCalendar,
@@ -124,11 +125,12 @@ import {
     ForCalendarGridHeader,
     ForCalendarCell,
   ],
+  providers: [...provideInternationalizedDateAdapter()],
   template: `
-    <div forCalendar [(value)]="date">
-      <header>
-        <button forCalendarPrevButton [ariaLabel]="'Previous month'">
-          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+    <div forCalendar class="calendar" [(value)]="value">
+      <header class="calendar-header">
+        <button forCalendarPrevButton class="calendar-nav" [ariaLabel]="'Previous month'">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
             <path
               d="m15.75 19.5-7.5-7.5 7.5-7.5"
               fill="none"
@@ -139,9 +141,11 @@ import {
             />
           </svg>
         </button>
-        <h2 forCalendarHeading #heading="forCalendarHeading">{{ heading.label() }}</h2>
-        <button forCalendarNextButton [ariaLabel]="'Next month'">
-          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+        <h2 forCalendarHeading #heading="forCalendarHeading" class="calendar-title">
+          {{ heading.label() }}
+        </h2>
+        <button forCalendarNextButton class="calendar-nav" [ariaLabel]="'Next month'">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
             <path
               d="m8.25 4.5 7.5 7.5-7.5 7.5"
               fill="none"
@@ -154,11 +158,13 @@ import {
         </button>
       </header>
 
-      <table forCalendarGrid #grid="forCalendarGrid">
+      <table forCalendarGrid #grid="forCalendarGrid" class="calendar-grid">
         <thead forCalendarGridHeader>
           <tr>
             @for (day of grid.weekDays(); track day.key) {
-              <th scope="col" [attr.aria-label]="day.long">{{ day.short }}</th>
+              <th scope="col" class="calendar-weekday" [attr.aria-label]="day.long">
+                {{ day.narrow }}
+              </th>
             }
           </tr>
         </thead>
@@ -175,8 +181,8 @@ import {
     </div>
   `,
 })
-export class DatePage {
-  readonly date = signal<CalendarDate | null>(today(getLocalTimeZone()));
+export class CalendarDefaultExample {
+  protected readonly value = signal<CalendarDate | null>(today(getLocalTimeZone()));
 }
 ```
 

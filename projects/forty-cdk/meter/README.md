@@ -30,48 +30,34 @@ Mirrors the HTML5 `<meter>` element: a **measurement** — battery, disk space, 
 The gauge reflects `data-value` against `data-min` / `data-max` and reports `data-quality`, so one rule colours the optimum, suboptimum and critical bands.
 
 ```ts
-import { Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { ForMeter, ForMeterIndicator } from 'forty-cdk/meter';
 
 @Component({
-  selector: 'demo-disk',
+  selector: 'app-meter-default-example',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ForMeter, ForMeterIndicator],
   template: `
-    <label for="disk">Disk usage</label>
-    <div id="disk" forMeter class="meter" [value]="used()" [low]="20" [high]="80" [optimum]="40">
-      <div forMeterIndicator class="meter-indicator"></div>
+    <div class="row">
+      <div
+        forMeter
+        class="track"
+        [value]="value()"
+        [min]="0"
+        [max]="100"
+        [low]="33"
+        [high]="66"
+        [optimum]="90"
+        aria-label="Battery level"
+      >
+        <div forMeterIndicator class="indicator"></div>
+      </div>
+      <span class="value">{{ value() }}%</span>
     </div>
-    <output>{{ used() }}%</output>
   `,
-  styles: [
-    `
-      .meter {
-        position: relative;
-        height: 8px;
-        width: 200px;
-        background: #f1f1f1;
-        border-radius: 4px;
-        overflow: hidden;
-      }
-      .meter-indicator {
-        height: 100%;
-        width: var(--for-meter-percentage, 0%);
-        transition: width 200ms;
-      }
-      .meter-indicator[data-quality='optimum'] {
-        background: #16a34a;
-      }
-      .meter-indicator[data-quality='sub-optimum'] {
-        background: #ca8a04;
-      }
-      .meter-indicator[data-quality='even-less-good'] {
-        background: #dc2626;
-      }
-    `,
-  ],
 })
-export class DemoDisk {
-  readonly used = signal(72);
+export class MeterDefaultExample {
+  protected readonly value = signal(72);
 }
 ```
 

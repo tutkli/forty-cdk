@@ -46,6 +46,61 @@ mutates the consumer's data**, in either the pointer or the keyboard flow.
 
 Drag a row with the pointer, or lift it with `Space` and move it with the arrow keys — `data-dragging` is on the item and `data-drag-over` on the list it is over.
 
+```ts
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import {
+  type ForDragDropEvent,
+  ForDragHandle,
+  ForDragPlaceholder,
+  ForDraggable,
+  ForDropList,
+  moveItemInArray,
+} from 'forty-cdk/drag-drop';
+
+interface Task {
+  readonly id: string;
+  readonly label: string;
+}
+
+@Component({
+  selector: 'app-drag-drop-sortable-example',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [ForDropList, ForDraggable, ForDragHandle, ForDragPlaceholder],
+  template: `
+    <ul
+      forDropList
+      class="list"
+      [liveSort]="true"
+      [animateReorder]="true"
+      (dragDrop)="onDrop($event)"
+    >
+      @for (task of tasks(); track task.id) {
+        <li forDraggable [dragData]="task" class="item">
+          <span forDragHandle class="handle" aria-hidden="true">⠿</span>
+          <span class="label">{{ task.label }}</span>
+          <ng-template forDragPlaceholder>
+            <div class="placeholder"></div>
+          </ng-template>
+        </li>
+      }
+    </ul>
+  `,
+})
+export class DragDropSortableExample {
+  protected readonly tasks = signal<readonly Task[]>([
+    { id: 'a', label: 'Draft the release notes' },
+    { id: 'b', label: 'Review open pull requests' },
+    { id: 'c', label: 'Update the changelog' },
+    { id: 'd', label: 'Publish the npm package' },
+    { id: 'e', label: 'Announce on the forum' },
+  ]);
+
+  protected onDrop(event: ForDragDropEvent): void {
+    this.tasks.update((tasks) => moveItemInArray(tasks, event.previousIndex, event.currentIndex));
+  }
+}
+```
+
 ## API
 
 There is no single table of every input here: each piece is introduced with the flow that uses it —

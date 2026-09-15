@@ -24,6 +24,69 @@ No ARIA role is imposed on the drop zone — it is a plain container. The `<inpu
 
 Click the zone or drop a file on it — `data-dragging` is set while a file hovers the zone, and the chosen files arrive as a `FileList` you render yourself.
 
+```ts
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ForFileUpload, ForFileUploadInput, ForFileUploadTrigger } from 'forty-cdk/file-upload';
+
+@Component({
+  selector: 'app-file-upload-default-example',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [ForFileUpload, ForFileUploadInput, ForFileUploadTrigger],
+  template: `
+    <div class="stage">
+      <div forFileUpload class="zone" (filesChange)="onFiles($event)">
+        <input forFileUploadInput class="sr-only" aria-label="Upload files" />
+
+        <svg class="zone-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M12 16.5V4.5m0 0L7.5 9M12 4.5 16.5 9M4.5 16.5v1.5a2.25 2.25 0 0 0 2.25 2.25h10.5A2.25 2.25 0 0 0 19.5 18v-1.5"
+          />
+        </svg>
+
+        <p class="zone-text">
+          <button forFileUploadTrigger class="zone-btn">Choose a file</button>
+          or drag and drop
+        </p>
+        <p class="zone-accept">Any file type</p>
+      </div>
+
+      @if (files().length) {
+        <ul class="files">
+          @for (file of files(); track file.name) {
+            <li class="file">
+              <span class="file-name">{{ file.name }}</span>
+              <span class="file-size">{{ sizeLabel(file.size) }}</span>
+            </li>
+          }
+        </ul>
+      }
+    </div>
+  `,
+})
+export class FileUploadDefaultExample {
+  protected readonly files = signal<readonly File[]>([]);
+
+  protected onFiles(list: FileList): void {
+    this.files.set(Array.from(list));
+  }
+
+  protected sizeLabel(bytes: number): string {
+    if (bytes < 1024) {
+      return `${bytes} B`;
+    }
+    if (bytes < 1024 * 1024) {
+      return `${(bytes / 1024).toFixed(1)} KB`;
+    }
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+}
+```
+
 ### Stand-alone
 
 ```html

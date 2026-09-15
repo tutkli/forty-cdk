@@ -42,39 +42,34 @@ The menu items themselves come from the [`menu/`](../menu/README.md) folder.
 Right-click the region — or focus it and press `Shift+F10` — and the menu opens at the pointer with `data-state="open"`; the arrow keys then walk the items.
 
 ```ts
-import { Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { ForContextMenu, ForContextMenuTrigger } from 'forty-cdk/context-menu';
-import { ForMenuContent, ForMenuItem } from 'forty-cdk/menu';
+import { ForMenuContent, ForMenuItem, ForMenuSeparator } from 'forty-cdk/menu';
 
 @Component({
-  selector: 'demo-context',
-  imports: [ForContextMenu, ForContextMenuTrigger, ForMenuContent, ForMenuItem],
+  selector: 'app-context-menu-default-example',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [ForContextMenu, ForContextMenuTrigger, ForMenuContent, ForMenuItem, ForMenuSeparator],
   template: `
     <div forContextMenu #menu="forContextMenu">
-      <div forContextMenuTrigger class="canvas context-menu-trigger">
-        Right-click anywhere here.
+      <div forContextMenuTrigger tabindex="0" class="context-menu-region">
+        Right-click anywhere in this area
+        <span class="context-menu-hint">(or focus it and press Shift+F10)</span>
       </div>
       @if (menu.open()) {
-        <div forMenuContent animate.leave="fade-out">
-          <button forMenuItem (activate)="rename()">Rename</button>
-          <button forMenuItem (activate)="duplicate()">Duplicate</button>
-          <button forMenuItem (activate)="delete()">Delete</button>
+        <div forMenuContent class="context-menu" animate.enter="context-menu-pop-in">
+          <button forMenuItem class="context-menu-item">Cut</button>
+          <button forMenuItem class="context-menu-item">Copy</button>
+          <button forMenuItem class="context-menu-item">Paste</button>
+          <hr forMenuSeparator class="context-menu-separator" />
+          <button forMenuItem class="context-menu-item">Rename</button>
+          <button forMenuItem class="context-menu-item context-menu-item--danger">Delete</button>
         </div>
       }
     </div>
   `,
 })
-export class DemoContext {
-  rename() {
-    /* ... */
-  }
-  duplicate() {
-    /* ... */
-  }
-  delete() {
-    /* ... */
-  }
-}
+export class ContextMenuDefaultExample {}
 ```
 
 The trigger is focusable out of the box: `[forContextMenuTrigger]` host-binds a default `tabindex="-1"` so focus returns there programmatically when the menu closes — no consumer setup required. Override it with your own `tabindex` (e.g. `tabindex="0"` to put the region in the Tab order) and it wins.

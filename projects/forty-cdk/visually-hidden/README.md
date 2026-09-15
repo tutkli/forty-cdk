@@ -33,33 +33,66 @@ The last case is common enough that this entry point also ships it as a service:
 The text is off-screen for a sighted reader and announced in full by a screen reader — the one clip rule, applied for you.
 
 ```ts
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { ForVisuallyHidden } from 'forty-cdk/visually-hidden';
 
 @Component({
-  selector: 'demo-visually-hidden',
+  selector: 'app-visually-hidden-default-example',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ForVisuallyHidden],
   template: `
-    <a forVisuallyHidden focusable href="#main" class="skip-link">Skip to content</a>
+    <div class="card">
+      <a forVisuallyHidden focusable href="#vh-main" class="skip">Skip to content</a>
 
-    <button type="button">
-      <svg aria-hidden="true" viewBox="0 0 16 16">…</svg>
-      <span forVisuallyHidden>Delete invoice</span>
-    </button>
+      <p class="hint">Tab into the card: the skip link is the first stop and un-clips on focus.</p>
 
-    <p forVisuallyHidden>Sorted by due date, ascending.</p>
+      <div class="toolbar">
+        <button type="button" class="icon-button">
+          <svg aria-hidden="true" viewBox="0 0 16 16" width="16" height="16">
+            <path
+              d="M6 2h4v1h3v1H3V3h3V2Zm-2 3h8l-.7 8.2a1 1 0 0 1-1 .8H5.7a1 1 0 0 1-1-.8L4 5Z"
+              fill="currentColor"
+            />
+          </svg>
+          <span forVisuallyHidden>Delete invoice</span>
+        </button>
+
+        <button type="button" class="icon-button">
+          <svg aria-hidden="true" viewBox="0 0 16 16" width="16" height="16">
+            <path
+              d="M12.1 2.5 13.5 3.9 5.4 12H4v-1.4l8.1-8.1ZM2 14h12v1H2v-1Z"
+              fill="currentColor"
+            />
+          </svg>
+          <span forVisuallyHidden>Rename invoice</span>
+        </button>
+      </div>
+
+      <table id="vh-main" class="invoices">
+        <caption forVisuallyHidden>
+          Invoices, sorted by due date, ascending
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">Invoice</th>
+            <th scope="col">Due</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>#4021</td>
+            <td>12 Mar</td>
+          </tr>
+          <tr>
+            <td>#4022</td>
+            <td>19 Mar</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   `,
-  styles: [
-    `
-      .skip-link:focus {
-        position: static;
-        padding: 0.5rem 1rem;
-        background: canvas;
-      }
-    `,
-  ],
 })
-export class DemoVisuallyHidden {}
+export class VisuallyHiddenDefaultExample {}
 ```
 
 Naming an icon-only button through a hidden `<span>` (rather than `aria-label`) keeps the name translatable by the same pipeline as the rest of your copy, and visible to text-only browsers.

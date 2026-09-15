@@ -26,25 +26,60 @@ A labelled navigation landmark for a breadcrumb trail: links with aria-current='
 Walk the trail with `Tab` — the last crumb is the page you are on, so it carries `aria-current="page"` and is not a link back to itself.
 
 ```ts
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { ForBreadcrumbItem, ForBreadcrumbSeparator, ForBreadcrumbs } from 'forty-cdk/breadcrumbs';
 
+interface Crumb {
+  readonly label: string;
+  readonly href: string;
+}
+
 @Component({
-  selector: 'demo-breadcrumbs',
+  selector: 'app-breadcrumbs-default-example',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ForBreadcrumbs, ForBreadcrumbItem, ForBreadcrumbSeparator],
   template: `
-    <nav forBreadcrumbs>
-      <ol>
-        <li><a forBreadcrumbItem href="/">Home</a></li>
-        <li forBreadcrumbSeparator>/</li>
-        <li><a forBreadcrumbItem href="/library">Library</a></li>
-        <li forBreadcrumbSeparator>/</li>
-        <li><a forBreadcrumbItem href="/library/data" current>Data</a></li>
+    <nav forBreadcrumbs class="bc">
+      <ol class="bc-list">
+        @for (crumb of crumbs(); track crumb.href; let last = $last) {
+          <li class="bc-li">
+            <a
+              forBreadcrumbItem
+              class="bc-link"
+              [href]="crumb.href"
+              [current]="last"
+              (click)="$event.preventDefault()"
+            >
+              {{ crumb.label }}
+            </a>
+          </li>
+          @if (!last) {
+            <li forBreadcrumbSeparator class="bc-sep">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="m8.25 4.5 7.5 7.5-7.5 7.5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.75"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </li>
+          }
+        }
       </ol>
     </nav>
   `,
 })
-export class DemoBreadcrumbs {}
+export class BreadcrumbsDefaultExample {
+  protected readonly crumbs = signal<readonly Crumb[]>([
+    { label: 'Home', href: '/' },
+    { label: 'Components', href: '/components' },
+    { label: 'Navigation', href: '/components/navigation' },
+    { label: 'Breadcrumbs', href: '/components/navigation/breadcrumbs' },
+  ]);
+}
 ```
 
 The root defaults its label to `Breadcrumb`. Override it with `ariaLabel="…"` (or point a native `aria-labelledby` at a visible heading) when a page hosts more than one breadcrumb trail.

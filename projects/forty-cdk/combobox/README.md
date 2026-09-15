@@ -72,6 +72,104 @@ The picker anatomy adds a `[forComboboxTrigger]` `<button>` showing the committe
 
 Type to filter, move the highlight with the arrow keys and commit with `Enter` — the highlighted option carries `data-highlighted`, and the filtering itself stays yours.
 
+```ts
+import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
+import {
+  ForCombobox,
+  ForComboboxClear,
+  ForComboboxContent,
+  ForComboboxEmpty,
+  ForComboboxIndicator,
+  ForComboboxInput,
+  ForComboboxOption,
+} from 'forty-cdk/combobox';
+
+const COUNTRIES = [
+  'Argentina',
+  'Australia',
+  'Brazil',
+  'Canada',
+  'Chile',
+  'China',
+  'France',
+  'Germany',
+  'India',
+  'Italy',
+  'Japan',
+  'Mexico',
+  'Spain',
+  'United Kingdom',
+  'United States',
+] as const;
+
+@Component({
+  selector: 'app-combobox-default-example',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [
+    ForCombobox,
+    ForComboboxInput,
+    ForComboboxContent,
+    ForComboboxOption,
+    ForComboboxIndicator,
+    ForComboboxEmpty,
+    ForComboboxClear,
+  ],
+  template: `
+    <div
+      forCombobox
+      #combobox="forCombobox"
+      class="combobox"
+      [(query)]="query"
+      [(value)]="value"
+      ariaLabel="Country search"
+    >
+      <div class="combobox-single">
+        <input
+          forComboboxInput
+          class="combobox-input combobox-input--boxed"
+          placeholder="Search countries…"
+        />
+        <button forComboboxClear class="combobox-clear combobox-clear--inset" aria-label="Clear">
+          ×
+        </button>
+      </div>
+
+      @if (combobox.open()) {
+        <div forComboboxContent class="combobox-content" animate.enter="combobox-pop-in">
+          @for (country of filtered(); track country) {
+            <div forComboboxOption [value]="country" [label]="country" class="combobox-option">
+              <span forComboboxIndicator class="combobox-indicator">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="m4.5 12.75 6 6 9-13.5"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.75"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </span>
+              {{ country }}
+            </div>
+          }
+          <div forComboboxEmpty class="combobox-empty">No countries match "{{ query() }}".</div>
+        </div>
+      }
+    </div>
+  `,
+})
+export class ComboboxDefaultExample {
+  protected readonly query = signal('');
+  protected readonly value = signal<readonly string[]>([]);
+
+  protected readonly filtered = computed<readonly string[]>(() => {
+    const q = this.query().toLowerCase().trim();
+    return q === '' ? COUNTRIES : COUNTRIES.filter((c) => c.toLowerCase().includes(q));
+  });
+}
+```
+
 ### Filtering is the consumer's job
 
 The primitive is headless — it does **not** filter the registered options. The consumer reads `[forCombobox][(query)]`, applies whatever match logic they want, and renders the filtered subset with `@for`. Each rendered `[forComboboxOption]` registers itself; the listbox tracks the live set automatically.
