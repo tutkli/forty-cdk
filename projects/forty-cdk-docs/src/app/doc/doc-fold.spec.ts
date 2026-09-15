@@ -124,6 +124,7 @@ describe('foldableOf', () => {
 
 describe('withFold', () => {
   const page = {
+    related: [],
     intro: [],
     caption: null,
     examples: [],

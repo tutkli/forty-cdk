@@ -102,6 +102,20 @@ export interface DocPageBehaviorGroup {
   readonly slug: string | null;
 }
 
+/**
+ * One page a page is related to, as the navigation would list it
+ * ([#1938](https://github.com/tutkli/forty-cdk/issues/1938)).
+ */
+export interface DocPageRelated {
+  /** The route the site publishes the target under, from the site root. */
+  readonly route: string;
+  /** The navigation group the target is listed under. */
+  readonly group: string;
+  readonly title: string;
+  /** The target's lede, as its registry publishes it. */
+  readonly description: string;
+}
+
 /** One document as its page renders it, and nothing the page does not read. */
 export interface DocPage {
   /** Prose only: a table above the first section fails the compile. */
@@ -120,12 +134,19 @@ export interface DocPage {
   /** `null` for a document whose rail the grouping would not improve. */
   readonly behaviorGroup: DocPageBehaviorGroup | null;
   readonly sections: readonly DocPageSection[];
+  /**
+   * The pages this one links or is linked by, in the order and under the groups
+   * the navigation lists them — empty for a document with no internal links.
+   */
+  readonly related: readonly DocPageRelated[];
 }
 
 export interface DocRenderOptions {
   /** Repository path to published route, as `buildDocRoutes` maps them. */
   readonly routes: ReadonlyMap<string, string>;
   readonly blobBase?: string;
+  /** The corpus's own answer for this page; absent, the page renders no block. */
+  readonly related?: readonly DocPageRelated[];
 }
 
 export declare function renderDocProse(

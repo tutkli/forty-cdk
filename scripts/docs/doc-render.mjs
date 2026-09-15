@@ -198,8 +198,14 @@ function renderBlock(block, context) {
  * does not read — no source path, no title, no markdown. The document those come
  * from stays available to build-time work that needs the prose as authored,
  * which is what a generated README will be derived from (D2).
+ *
+ * `related` is the one field handed in rather than derived here
+ * ([#1938](https://github.com/tutkli/forty-cdk/issues/1938)): which pages a page
+ * is related to is a fact about the corpus, and a renderer holding one document
+ * cannot know it. A caller with no corpus — a spec, the folded half of a page —
+ * passes none, and the page renders no block.
  */
-export function renderDocument(document, { routes, blobBase = GITHUB_BLOB_BASE }) {
+export function renderDocument(document, { routes, blobBase = GITHUB_BLOB_BASE, related = [] }) {
   const context = { sourcePath: document.path, resolveLink: resolverFor(routes, blobBase) };
   const group = behaviorGroupOf(document);
   return {
@@ -222,5 +228,6 @@ export function renderDocument(document, { routes, blobBase = GITHUB_BLOB_BASE }
       })),
       blocks: section.blocks.map((block) => renderBlock(block, context)),
     })),
+    related,
   };
 }

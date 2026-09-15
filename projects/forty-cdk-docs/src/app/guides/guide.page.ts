@@ -5,6 +5,7 @@ import { RouterLink } from '@angular/router';
 import { injectDocBase } from '../doc/doc-base';
 import { injectFragmentScroll } from '../doc/doc-fragment';
 import { DocLinks } from '../doc/doc-links';
+import { DocRelated } from '../doc/doc-related';
 import { DocSection } from '../doc/doc-section';
 import { DocToc } from '../doc/doc-toc';
 import { buildTocItems, type TocEntry } from '../doc/doc-toc-rail';
@@ -14,7 +15,7 @@ import { guideBySlug } from '../doc/guides';
 @Component({
   selector: 'guide-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DocSection, DocToc, DocLinks, RouterLink],
+  imports: [DocSection, DocToc, DocLinks, DocRelated, RouterLink],
   template: `
     <header class="head">
       <a class="crumb pg-doc-eyebrow" [routerLink]="['/guides']">Guides</a>
@@ -33,6 +34,8 @@ import { guideBySlug } from '../doc/guides';
         @for (section of sections(); track section.slug) {
           <doc-section [section]="section" />
         }
+
+        <doc-related [entries]="doc().related" />
       </div>
 
       <aside class="rail">

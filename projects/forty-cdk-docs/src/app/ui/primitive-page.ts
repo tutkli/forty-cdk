@@ -13,6 +13,7 @@ import { DemoHeadings } from '../doc/demo-headings';
 import { injectDocBase } from '../doc/doc-base';
 import { injectFragmentScroll } from '../doc/doc-fragment';
 import { DocLinks } from '../doc/doc-links';
+import { DocRelated } from '../doc/doc-related';
 import type { DocPage, DocPageSection } from '../doc/doc-model';
 import { DocSection } from '../doc/doc-section';
 import { examplesHeadingOf, splitAtExamples } from '../doc/doc-section-layout';
@@ -25,7 +26,7 @@ import { Icon } from './icon';
 @Component({
   selector: 'primitive-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DocSection, DocToc, DocLinks, RouterLink, Icon],
+  imports: [DocSection, DocToc, DocLinks, DocRelated, RouterLink, Icon],
   providers: [DemoHeadings],
   template: `
     <header class="head">
@@ -81,6 +82,8 @@ import { Icon } from './icon';
         @for (section of sectionsAfter(); track section.slug) {
           <doc-section [section]="section" />
         }
+
+        <doc-related [entries]="doc().related" />
       </div>
 
       <aside class="rail">
