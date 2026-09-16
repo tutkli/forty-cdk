@@ -33,8 +33,16 @@
  * hop past 5000ms on an otherwise-correct test, producing order-dependent
  * timeout flakes (observed in select.spec). 15000ms absorbs the contention
  * spike without hiding a real hang.
+ *
+ * The file is also where `assertNoComponentIdCollisions` is armed. A setup file
+ * is imported before the spec module it precedes, which is the only point early
+ * enough to observe an AOT fixture's definition-time `NG0912`
+ * ([#1957](https://github.com/tutkli/forty-cdk/issues/1957)); the recording
+ * patch travels with that import, and the assertion runs after each test.
  */
 import { afterEach, vi } from 'vitest';
+
+import { assertNoComponentIdCollisions } from './component-id-collisions';
 
 vi.setConfig({ testTimeout: 15000 });
 
@@ -43,4 +51,5 @@ afterEach(() => {
   vi.clearAllMocks();
   vi.unstubAllGlobals();
   vi.unstubAllEnvs();
+  assertNoComponentIdCollisions();
 });

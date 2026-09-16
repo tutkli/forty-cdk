@@ -54,6 +54,7 @@ describe('ForComboboxChips', () => {
 
   describe('scope defaults (issue #1145 item 8)', () => {
     @Component({
+      host: { 'data-fixture': 'unbound-chips-host' },
       imports: CHIPS_IMPORTS,
       template: `
         <div forCombobox multiple [(query)]="query" [(value)]="value" [(open)]="open">
@@ -70,6 +71,7 @@ describe('ForComboboxChips', () => {
     }
 
     @Component({
+      host: { 'data-fixture': 'scoped-chips-host' },
       imports: CHIPS_IMPORTS,
       providers: [provideForComboboxDefaults({ chipsAriaLabel: 'Etiquetas' })],
       template: `
@@ -144,7 +146,11 @@ describe('ForComboboxChipRemove aria-label (issue #1481)', () => {
     </div>
   `;
 
-  @Component({ imports: CHIP_REMOVE_IMPORTS, template: CHIP_REMOVE_TEMPLATE })
+  @Component({
+    host: { 'data-fixture': 'chip-remove-host' },
+    imports: CHIP_REMOVE_IMPORTS,
+    template: CHIP_REMOVE_TEMPLATE,
+  })
   class ChipRemoveHost {
     readonly query = signal('');
     readonly value = signal<readonly string[]>(['Apple']);
@@ -152,6 +158,7 @@ describe('ForComboboxChipRemove aria-label (issue #1481)', () => {
   }
 
   @Component({
+    host: { 'data-fixture': 'scoped-chip-remove-host' },
     imports: CHIP_REMOVE_IMPORTS,
     providers: [provideForComboboxDefaults({ chipRemoveLabel: (label) => `Quitar ${label}` })],
     template: CHIP_REMOVE_TEMPLATE,

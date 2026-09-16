@@ -13,6 +13,7 @@ const q = (host: HTMLElement, testId: string) =>
 describe('ForFieldset', () => {
   describe('grouping on a non-<fieldset> host', () => {
     @Component({
+      host: { 'data-fixture': 'non-fieldset-host' },
       imports: [ForFieldset, ForFieldsetLegend],
       template: `
         <div forFieldset data-test-id="group">
@@ -38,6 +39,7 @@ describe('ForFieldset', () => {
 
   describe('grouping on a native <fieldset> host', () => {
     @Component({
+      host: { 'data-fixture': 'native-fieldset-host' },
       imports: [ForFieldset, ForFieldsetLegend],
       template: `
         <fieldset forFieldset data-test-id="group">
@@ -102,6 +104,7 @@ describe('ForFieldset', () => {
     class TwoLegendsHost {}
 
     @Component({
+      host: { 'data-fixture': 'one-legend-host' },
       imports: [ForFieldset, ForFieldsetLegend],
       template: `
         <div forFieldset data-test-id="group">
@@ -169,6 +172,7 @@ describe('ForFieldset', () => {
 
   describe('disabled reflection', () => {
     @Component({
+      host: { 'data-fixture': 'disabled-reflection-host' },
       imports: [ForFieldset],
       template: `<div forFieldset [disabled]="disabled()" data-test-id="group"></div>`,
     })
@@ -194,6 +198,7 @@ describe('ForFieldset', () => {
 
   describe('disabled on a native <fieldset> host', () => {
     @Component({
+      host: { 'data-fixture': 'disabled-native-fieldset-host' },
       imports: [ForFieldset],
       template: `<fieldset forFieldset [disabled]="disabled()" data-test-id="group"></fieldset>`,
     })

@@ -72,6 +72,7 @@ export class DialogFixture {
 export class DialogOpenFixture {}
 
 @Component({
+  host: { 'data-fixture': 'dialog-contained-fixture' },
   imports: [ForDialog, ForDialogBackdrop, ForDialogTitle],
   template: `
     <div #box style="position: relative">
@@ -85,6 +86,7 @@ export class DialogOpenFixture {}
 export class DialogContainedFixture {}
 
 @Component({
+  host: { 'data-fixture': 'dialog-contained-modal-fixture' },
   imports: [ForDialog, ForDialogBackdrop, ForDialogTitle],
   template: `
     <section #box style="position: relative">
@@ -108,6 +110,7 @@ export class DialogContainedModalFixture {}
 export class DrawerOpenFixture {}
 
 @Component({
+  host: { 'data-fixture': 'drawer-contained-fixture' },
   imports: [ForDrawer, ForDrawerBackdrop, ForDrawerTitle],
   template: `
     <div #box style="position: relative">
@@ -121,6 +124,7 @@ export class DrawerOpenFixture {}
 export class DrawerContainedFixture {}
 
 @Component({
+  host: { 'data-fixture': 'drawer-contained-modal-fixture' },
   imports: [ForDrawer, ForDrawerBackdrop, ForDrawerTitle],
   template: `
     <section #box style="position: relative">

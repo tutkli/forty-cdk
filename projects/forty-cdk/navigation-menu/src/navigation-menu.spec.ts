@@ -620,6 +620,7 @@ describe('ForNavigationMenu', () => {
     });
 
     @Component({
+      host: { 'data-fixture': 'scoped-open-delay-host' },
       imports: [
         ForNavigationMenu,
         ForNavigationMenuList,
@@ -672,6 +673,7 @@ describe('ForNavigationMenu', () => {
     }
 
     @Component({
+      host: { 'data-fixture': 'scoped-close-delay-host' },
       imports: [
         ForNavigationMenu,
         ForNavigationMenuList,

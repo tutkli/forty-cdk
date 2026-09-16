@@ -92,6 +92,7 @@ interface GuardedRoot {
 }
 
 @Component({
+  host: { 'data-fixture': 'impostor-accordion-host' },
   imports: [ForAccordionItem],
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [{ provide: FOR_ACCORDION_CONTEXT, useValue: {} }],
@@ -316,6 +317,7 @@ const READ_SURFACE_ONLY: ForAccordionContext = {
 };
 
 @Component({
+  host: { 'data-fixture': 'read-surface-accordion-host' },
   imports: [ForAccordionItem],
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [{ provide: FOR_ACCORDION_CONTEXT, useValue: READ_SURFACE_ONLY }],

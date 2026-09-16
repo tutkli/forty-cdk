@@ -5,6 +5,7 @@ import { renderHost } from '../../src/test-utils/render';
 import { ForButton } from './button';
 
 @Component({
+  host: { 'data-fixture': 'native-button-host' },
   imports: [ForButton],
   template: `<button forButton>Native</button>`,
 })
@@ -17,6 +18,7 @@ class NativeButtonHost {}
 class NativeSubmitButtonHost {}
 
 @Component({
+  host: { 'data-fixture': 'custom-host' },
   imports: [ForButton],
   template: `<div forButton>Custom</div>`,
 })
@@ -31,6 +33,7 @@ class DisabledHost {
 }
 
 @Component({
+  host: { 'data-fixture': 'activate-host' },
   imports: [ForButton],
   template: `<button forButton [disabled]="disabled()" (activate)="count.update((n) => n + 1)">
     Btn
@@ -42,6 +45,7 @@ class ActivateHost {
 }
 
 @Component({
+  host: { 'data-fixture': 'custom-activate-host' },
   imports: [ForButton],
   template: `<div forButton [disabled]="disabled()" (activate)="count.update((n) => n + 1)">
     Custom
