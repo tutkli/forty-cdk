@@ -240,6 +240,14 @@ Angular derives a component's id from its **shape** — selector, `decls` / `var
 
 Two gaps are known rather than closed, and both predate the guard. A collision emitted while a spec holds its own `vi.spyOn(console, 'warn').mockImplementation(…)` reaches neither the record nor the reporter — such a spec already swallowed it. And under the nightly `isolate: false` profile the record is shared across files in one worker, so a collision can be attributed to the file whose test drained it; the message names the two classes either way.
 
+### `NG0953` is the second warning the suite refuses to carry ([#1961](https://github.com/tutkli/forty-cdk/issues/1961))
+
+Angular drops an `emit()` on an `OutputEmitterRef` whose owning directive is already destroyed. For a **vetoable** output that is worse than a lost notification: `defaultPrevented` reads back `false`, the primitive reads the consumer's silence as consent, and it performs the action the consumer asked it to skip. Nothing turns red, and the suite carried **93** of these on a green run — 64 of them from the SSR smoke suite, whose fixtures mount a surface and then let `TestBed` tear the root down with it.
+
+[`src/test-utils/destroyed-output-emits.ts`](../../projects/forty-cdk/src/test-utils/destroyed-output-emits.ts) records the warning instead of forwarding it, and `vitest-invariants-setup.ts` calls `assertNoDestroyedOutputEmits()` after every test, beside its `NG0912` sibling. Both patch `console.warn`; the second import chains onto the first rather than replacing it, so the two record independently. It carries the same liveness probe for the same reason — [`destroyed-output-emits.spec.ts`](../../projects/forty-cdk/src/test-utils/destroyed-output-emits.spec.ts) emits into a destroyed output on purpose and asserts the guard throws, draining the record as it does — and inherits both of its sibling's known gaps verbatim.
+
+**A report is a library defect, never a fixture to adjust.** The channel the primitive emits through has to survive teardown: `injectVetoableEmitter` for a vetoable hook (see the _Auto-focus hook shape_ section in `.claude/rules/conventions.md`), a function `input` for a value reported from a destroy hook.
+
 ### Test isolation — non-negotiables
 
 These invariants are the rationale behind the mechanical enforcement (ESLint rules, Vitest setup file). They exist because each one was, at some point, a bug that bled state across specs or a contract leak that made a refactor harder than it needed to be. A new spec must clear them all.

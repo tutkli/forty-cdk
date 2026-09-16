@@ -1,8 +1,8 @@
 import type { OutputEmitterRef, Signal, WritableSignal } from '@angular/core';
 
 import {
-  emitVetoableEvent,
   emitVetoableNativeEvent,
+  injectVetoableEmitter,
   type VetoableEvent,
   type VetoableNativeEvent,
 } from 'forty-cdk/core';
@@ -179,9 +179,9 @@ export interface OverlayControllerDeps<Focus, CloseReason> {
  * per-primitive `onNavigateFocus` and gates the move on `disabled`.
  *
  * Construct it from a directive's field initializer, or from a controller
- * constructed there, so the slot factories' `inject()` calls resolve through the
- * directive's injector. A caller whose factories mint no id needs no injection
- * context at all.
+ * constructed there: it reads that directive's `DestroyRef` for the auto-focus
+ * vetoes, and the slot factories' `inject()` calls resolve through the same
+ * injector.
  *
  * @typeParam Focus Initial-focus union owned by the composing controller.
  * @typeParam CloseReason Close-reason union owned by the composing controller.
@@ -194,6 +194,9 @@ export class OverlayController<Focus, CloseReason> {
 
   readonly #initialFocusState: InitialFocusState<Focus>;
   readonly #closeReasonState = new CloseReasonState<CloseReason>();
+
+  readonly #autoFocusOnOpen: () => boolean;
+  readonly #autoFocusOnClose: () => boolean;
 
   /** The trigger's stable id, adopted from a consumer-set static id when present. */
   readonly triggerId: Signal<string>;
@@ -225,6 +228,8 @@ export class OverlayController<Focus, CloseReason> {
       ? deps.createContent(mintContentId)
       : new IdentifiedElementSlot(mintContentId());
     this.#initialFocusState = new InitialFocusState<Focus>(deps.defaultInitialFocus);
+    this.#autoFocusOnOpen = injectVetoableEmitter(deps.emit.autoFocusOnOpen);
+    this.#autoFocusOnClose = injectVetoableEmitter(deps.emit.autoFocusOnClose);
     this.triggerId = this.#triggerSlot.id;
     this.contentId = this.#contentSlot.id;
     this.trigger = this.#triggerSlot.element;
@@ -378,13 +383,19 @@ export class OverlayController<Focus, CloseReason> {
     this.close(reason);
   }
 
-  /** Emits `(autoFocusOnOpen)`, returning whether a consumer vetoed the mount's focus move. */
+  /**
+   * Emits `(autoFocusOnOpen)`, returning whether the mount's focus move is
+   * vetoed — by a consumer, or by the root's own destruction.
+   */
   emitAutoFocusOnOpen(): boolean {
-    return emitVetoableEvent(this.#deps.emit.autoFocusOnOpen);
+    return this.#autoFocusOnOpen();
   }
 
-  /** Emits `(autoFocusOnClose)`, returning whether a consumer vetoed the return-focus move. */
+  /**
+   * Emits `(autoFocusOnClose)`, returning whether the return-focus move is
+   * vetoed — by a consumer, or by the root's own destruction.
+   */
   emitAutoFocusOnClose(): boolean {
-    return emitVetoableEvent(this.#deps.emit.autoFocusOnClose);
+    return this.#autoFocusOnClose();
   }
 }

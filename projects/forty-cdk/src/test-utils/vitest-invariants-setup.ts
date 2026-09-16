@@ -39,10 +39,16 @@
  * enough to observe an AOT fixture's definition-time `NG0912`
  * ([#1957](https://github.com/tutkli/forty-cdk/issues/1957)); the recording
  * patch travels with that import, and the assertion runs after each test.
+ *
+ * `assertNoDestroyedOutputEmits` is armed beside it, over `NG0953`
+ * ([#1961](https://github.com/tutkli/forty-cdk/issues/1961)). Both patch
+ * `console.warn`, and the second import chains onto the first rather than
+ * replacing it, so the two record independently.
  */
 import { afterEach, vi } from 'vitest';
 
 import { assertNoComponentIdCollisions } from './component-id-collisions';
+import { assertNoDestroyedOutputEmits } from './destroyed-output-emits';
 
 vi.setConfig({ testTimeout: 15000 });
 
@@ -52,4 +58,5 @@ afterEach(() => {
   vi.unstubAllGlobals();
   vi.unstubAllEnvs();
   assertNoComponentIdCollisions();
+  assertNoDestroyedOutputEmits();
 });

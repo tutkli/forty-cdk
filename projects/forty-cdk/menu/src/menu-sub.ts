@@ -13,7 +13,6 @@ import {
 import type { ReferenceElement } from '@floating-ui/dom';
 
 import {
-  emitVetoableEvent,
   isHoverCapablePointer,
   orphanContextError,
   type VetoableEvent,
@@ -456,7 +455,7 @@ export class ForMenuSub extends MenuOverlayHost implements ForMenuContext {
       this.#suppressOpenFocus = false;
       return true;
     }
-    return emitVetoableEvent(this.autoFocusOnOpen);
+    return super.emitAutoFocusOnOpen();
   }
 
   override emitAutoFocusOnClose(): boolean {
@@ -465,6 +464,6 @@ export class ForMenuSub extends MenuOverlayHost implements ForMenuContext {
       this.#suppressCloseFocus = false;
       return true;
     }
-    return emitVetoableEvent(this.autoFocusOnClose);
+    return super.emitAutoFocusOnClose();
   }
 }

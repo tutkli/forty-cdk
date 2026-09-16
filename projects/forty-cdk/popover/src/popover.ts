@@ -14,8 +14,8 @@ import {
   adoptHostId,
   IdGenerator,
   injectPrefersReducedMotion,
-  emitVetoableEvent,
   emitVetoableNativeEvent,
+  injectVetoableEmitter,
   type VetoableEvent,
   type VetoableNativeEvent,
 } from 'forty-cdk/core';
@@ -164,6 +164,9 @@ export class ForPopover extends AnchoredOverlayPositioningBase implements ForPop
    * `preventDefault()` on the veto to suppress the return-focus.
    */
   readonly autoFocusOnClose = output<VetoableEvent>();
+
+  readonly #emitAutoFocusOnOpen = injectVetoableEmitter(this.autoFocusOnOpen);
+  readonly #emitAutoFocusOnClose = injectVetoableEmitter(this.autoFocusOnClose);
 
   readonly triggerId = signal(this.#idGen.next('for-popover-trigger'));
   readonly contentId = signal(this.#idGen.next('for-popover-content'));
@@ -321,10 +324,10 @@ export class ForPopover extends AnchoredOverlayPositioningBase implements ForPop
   }
 
   emitAutoFocusOnOpen(): boolean {
-    return emitVetoableEvent(this.autoFocusOnOpen);
+    return this.#emitAutoFocusOnOpen();
   }
 
   emitAutoFocusOnClose(): boolean {
-    return emitVetoableEvent(this.autoFocusOnClose);
+    return this.#emitAutoFocusOnClose();
   }
 }

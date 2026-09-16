@@ -1,4 +1,4 @@
-import type { OutputEmitterRef } from '@angular/core';
+import { DestroyRef, inject, type OutputEmitterRef } from '@angular/core';
 
 /**
  * An event a consumer can veto by calling `preventDefault()`. The directive
@@ -90,4 +90,19 @@ export function emitVetoableNativeEvent<E extends Event>(
   const veto = createVetoableNativeEvent(event);
   emitter.emit(veto);
   return veto.defaultPrevented;
+}
+
+/**
+ * Builds a veto resolver over `emitter` that answers `true` — vetoed — once the
+ * directive declaring it is destroyed, instead of emitting.
+ *
+ * Use it for a vetoable hook the primitive also fires from a teardown path: the
+ * consumer's handler is unreachable there, and a dropped emit would otherwise
+ * read as "not vetoed" and run the default action.
+ *
+ * Call it from the injection context of the directive that declares `emitter`.
+ */
+export function injectVetoableEmitter(emitter: OutputEmitterRef<VetoableEvent>): () => boolean {
+  const destroyRef = inject(DestroyRef);
+  return () => (destroyRef.destroyed ? true : emitVetoableEvent(emitter));
 }
