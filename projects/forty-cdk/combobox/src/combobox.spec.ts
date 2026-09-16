@@ -4752,6 +4752,133 @@ describe('picker anatomy is reactive, not a construction-time snapshot (#1581)',
   });
 });
 
+describe('ForCombobox picker anatomy inside a [forField] (issue #1942)', () => {
+  const PICKER_FIELD_IMPORTS = [
+    ForCombobox,
+    ForComboboxTrigger,
+    ForComboboxContent,
+    ForComboboxInput,
+    ForComboboxList,
+    ForField,
+    ForLabel,
+  ];
+
+  @Component({
+    imports: PICKER_FIELD_IMPORTS,
+    template: `
+      <div forField>
+        <span forLabel data-test-id="label">Fruit</span>
+        <div forCombobox [(open)]="open">
+          <button forComboboxTrigger data-test-id="trigger">Pick a fruit</button>
+          @if (open()) {
+            <div forComboboxContent>
+              <input forComboboxInput data-test-id="input" />
+              <div forComboboxList></div>
+            </div>
+          }
+        </div>
+      </div>
+    `,
+  })
+  class PickerFieldHost {
+    readonly open = signal(false);
+  }
+
+  @Component({
+    imports: PICKER_FIELD_IMPORTS,
+    template: `
+      <div forField>
+        <label forLabel data-test-id="label">Fruit</label>
+        <div forCombobox [(open)]="open">
+          <button forComboboxTrigger data-test-id="trigger">Pick a fruit</button>
+          @if (open()) {
+            <div forComboboxContent>
+              <input forComboboxInput data-test-id="input" />
+              <div forComboboxList></div>
+            </div>
+          }
+        </div>
+      </div>
+    `,
+  })
+  class NativeLabelPickerFieldHost {
+    readonly open = signal(false);
+  }
+
+  const labelOf = (el: HTMLElement) => el.querySelector<HTMLElement>('[data-test-id="label"]')!;
+  const triggerOf = (el: HTMLElement) =>
+    el.querySelector<HTMLButtonElement>('[data-test-id="trigger"]')!;
+  const wrapperOf = (el: HTMLElement) => el.querySelector<HTMLElement>('[forCombobox]')!;
+  const pickerInput = () => document.querySelector<HTMLInputElement>('[data-test-id="input"]');
+  const idHolders = (id: string) => document.querySelectorAll(`[id="${id}"]`);
+
+  afterEachOverlayCleanup();
+
+  it('names the trigger while the panel keeps the input unmounted', async () => {
+    const r = renderHost(PickerFieldHost);
+    await flush(r.fixture);
+
+    expect(pickerInput()).toBeNull();
+    expect(triggerOf(r.el).getAttribute('aria-labelledby')).toBe(labelOf(r.el).id);
+    expect(wrapperOf(r.el).hasAttribute('aria-labelledby')).toBe(false);
+  });
+
+  it('points the label `for` at the trigger while the panel is closed', async () => {
+    const r = renderHost(NativeLabelPickerFieldHost);
+    await flush(r.fixture);
+
+    const trigger = triggerOf(r.el);
+    expect(trigger.id).not.toBe('');
+    expect(labelOf(r.el).getAttribute('for')).toBe(trigger.id);
+  });
+
+  it('opens the listbox and focuses the input when the label is clicked', async () => {
+    const r = renderHost(PickerFieldHost);
+    await flush(r.fixture);
+
+    labelOf(r.el).click();
+    await flush(r.fixture);
+
+    expect(r.instance.open()).toBe(true);
+    expect(document.activeElement).toBe(pickerInput());
+  });
+
+  it('migrates the association onto the input on open, leaving one id holder', async () => {
+    const r = renderHost(PickerFieldHost);
+    r.instance.open.set(true);
+    await flush(r.fixture);
+
+    const input = pickerInput()!;
+    expect(input.getAttribute('aria-labelledby')).toBe(labelOf(r.el).id);
+    expect(triggerOf(r.el).hasAttribute('aria-labelledby')).toBe(false);
+    expect(idHolders(input.id)).toHaveLength(1);
+  });
+
+  it('hands the association back to the trigger when the panel closes', async () => {
+    const r = renderHost(PickerFieldHost);
+    r.instance.open.set(true);
+    await flush(r.fixture);
+    r.instance.open.set(false);
+    await flush(r.fixture);
+
+    const trigger = triggerOf(r.el);
+    expect(trigger.getAttribute('aria-labelledby')).toBe(labelOf(r.el).id);
+    expect(idHolders(trigger.id)).toHaveLength(1);
+  });
+
+  it('moves focus-on-error to the trigger while the panel is closed', async () => {
+    const r = renderHost(PickerFieldHost);
+    await flush(r.fixture);
+    const combobox = r.fixture.debugElement
+      .query(By.directive(ForCombobox))
+      .injector.get(ForCombobox);
+
+    combobox.focus();
+
+    expect(document.activeElement).toBe(triggerOf(r.el));
+  });
+});
+
 describe('ForCombobox unwritten option value (issue #1601)', () => {
   afterEachOverlayCleanup();
 
