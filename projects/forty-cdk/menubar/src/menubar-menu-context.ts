@@ -87,7 +87,8 @@ export interface MenubarMenuHost extends MenuSiblingNavigator {
  * composes — `MenuItemList` and {@link OverlayController} — so this class covers only the
  * `activeTrigger`-derived multiplexing on top of them. Both of the controller's element sides are
  * supplied here rather than minted: every id the bar exposes lives on one of its triggers, so the
- * shared machine mints none and this class needs no injection context.
+ * shared machine mints none. Construct it from `[forMenubar]`'s own injection context regardless —
+ * the shared machine reads the bar's `DestroyRef` for the auto-focus vetoes.
  *
  * Ids and the accessible name are the exception: they derive from `lastTrigger`, because the
  * surface outlives the trigger's active window. `activeTrigger()` is already `null` while the

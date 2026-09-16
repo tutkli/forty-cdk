@@ -259,6 +259,7 @@ export {
   createVetoableNativeEvent,
   emitVetoableEvent,
   emitVetoableNativeEvent,
+  injectVetoableEmitter,
   type VetoableEvent,
   type VetoableNativeEvent,
 } from './vetoable-event/vetoable-event';

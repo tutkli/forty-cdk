@@ -18,10 +18,10 @@ import {
   adoptHostId,
   createVetoableNativeEvent,
   type DateAdapter,
-  emitVetoableEvent,
   fortyError,
   IdGenerator,
   injectTextDirection,
+  injectVetoableEmitter,
   type VetoableEvent,
   type VetoableNativeEvent,
   type WritingDirection,
@@ -160,6 +160,9 @@ export abstract class DatePickerBase<D>
 
   /** Fires just before focus returns to the trigger on close. Vetoable. */
   readonly autoFocusOnClose = output<VetoableEvent>();
+
+  readonly #emitAutoFocusOnOpen = injectVetoableEmitter(this.autoFocusOnOpen);
+  readonly #emitAutoFocusOnClose = injectVetoableEmitter(this.autoFocusOnClose);
 
   /** The trigger's `id` for `aria-controls` wiring; concrete roots seed it from {@link idGen}. */
   abstract readonly triggerId: WritableSignal<string>;
@@ -354,10 +357,10 @@ export abstract class DatePickerBase<D>
   }
 
   emitAutoFocusOnOpen(): boolean {
-    return emitVetoableEvent(this.autoFocusOnOpen);
+    return this.#emitAutoFocusOnOpen();
   }
 
   emitAutoFocusOnClose(): boolean {
-    return emitVetoableEvent(this.autoFocusOnClose);
+    return this.#emitAutoFocusOnClose();
   }
 }

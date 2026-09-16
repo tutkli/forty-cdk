@@ -6,6 +6,7 @@ import {
   createVetoableNativeEvent,
   emitVetoableEvent,
   emitVetoableNativeEvent,
+  injectVetoableEmitter,
   type VetoableEvent,
   type VetoableNativeEvent,
 } from './vetoable-event';
@@ -108,5 +109,41 @@ describe('emitVetoableNativeEvent', () => {
     const host = createEmitters();
     host.native.subscribe((veto) => veto.preventDefault());
     expect(emitVetoableNativeEvent(host.native, new KeyboardEvent('keydown'))).toBe(true);
+  });
+});
+
+describe('injectVetoableEmitter', () => {
+  function createGuardedHost(): { host: EmitterHost; emit: () => boolean } {
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+    const fixture = TestBed.createComponent(EmitterHost);
+    const host = fixture.componentInstance;
+    const emit = TestBed.runInInjectionContext(() => injectVetoableEmitter(host.plain));
+    return { host, emit };
+  }
+
+  it('returns false while the owner is alive and no subscriber vetoes', () => {
+    const { emit } = createGuardedHost();
+
+    expect(emit()).toBe(false);
+  });
+
+  it('returns true while the owner is alive and a subscriber vetoes', () => {
+    const { host, emit } = createGuardedHost();
+    host.plain.subscribe((event) => event.preventDefault());
+
+    expect(emit()).toBe(true);
+  });
+
+  it('returns true without emitting once the owner is destroyed', () => {
+    const { host, emit } = createGuardedHost();
+    let seen = 0;
+    host.plain.subscribe(() => {
+      seen++;
+    });
+
+    TestBed.resetTestingModule();
+
+    expect(emit()).toBe(true);
+    expect(seen).toBe(0);
   });
 });
