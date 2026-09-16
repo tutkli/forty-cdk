@@ -69,6 +69,7 @@ class ModernBubble {
 }
 
 @Component({
+  host: { 'data-fixture': 'modern-bubble-host' },
   imports: [ModernBubble],
   template: `
     <div id="container">
@@ -114,6 +115,7 @@ class TrackingBubble {
 }
 
 @Component({
+  host: { 'data-fixture': 'tracking-bubble-host' },
   imports: [TrackingBubble],
   template: `
     <div id="container">
@@ -198,6 +200,7 @@ class NoClipBubble {
 }
 
 @Component({
+  host: { 'data-fixture': 'no-clip-bubble-host' },
   imports: [NoClipBubble],
   template: `
     <div id="container">
@@ -235,6 +238,7 @@ class FirstPositionBubble {
 }
 
 @Component({
+  host: { 'data-fixture': 'first-position-bubble-host' },
   imports: [FirstPositionBubble],
   template: `
     <div id="container">
@@ -287,6 +291,7 @@ class RecorderBubble {
 }
 
 @Component({
+  host: { 'data-fixture': 'recorder-bubble-host' },
   imports: [RecorderBubble],
   template: `
     <div id="container">

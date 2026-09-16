@@ -4765,6 +4765,7 @@ describe('ForCombobox inside a [forField]', () => {
     ];
 
     @Component({
+      host: { 'data-fixture': 'picker-field-host' },
       imports: PICKER_FIELD_IMPORTS,
       template: `
         <div forField>
@@ -4786,6 +4787,7 @@ describe('ForCombobox inside a [forField]', () => {
     }
 
     @Component({
+      host: { 'data-fixture': 'native-label-picker-field-host' },
       imports: PICKER_FIELD_IMPORTS,
       template: `
         <div forField>

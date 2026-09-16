@@ -58,7 +58,10 @@ function withMatchMedia(impl: (query: string) => unknown): () => void {
   };
 }
 
-@Component({ template: `` })
+@Component({
+  host: { 'data-fixture': 'media-query-host' },
+  template: ``,
+})
 class Host {
   readonly value: Signal<boolean>;
   constructor() {
@@ -66,7 +69,10 @@ class Host {
   }
 }
 
-@Component({ template: `` })
+@Component({
+  host: { 'data-fixture': 'reduced-motion-host' },
+  template: ``,
+})
 class ReducedMotionHost {
   readonly value: Signal<boolean>;
   constructor() {

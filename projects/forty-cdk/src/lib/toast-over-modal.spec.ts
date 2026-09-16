@@ -9,6 +9,7 @@ import { afterEachOverlayCleanup } from '../test-utils/overlay-cleanup';
 import { renderHost } from '../test-utils/render';
 
 @Component({
+  host: { 'data-fixture': 'dialog-toast-host' },
   imports: [ForDialog, ForToastViewport],
   template: `
     <button #before type="button" data-test-id="before">before</button>
@@ -55,6 +56,7 @@ class DrawerToastHost {
 }
 
 @Component({
+  host: { 'data-fixture': 'inert-dialog-toast-host' },
   imports: [ForDialog, ForToastViewport],
   providers: [provideForToastDefaults({ overModal: 'inert' })],
   template: `

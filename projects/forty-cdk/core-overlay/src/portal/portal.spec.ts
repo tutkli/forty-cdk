@@ -15,6 +15,7 @@ class PortaledBubble {
 }
 
 @Component({
+  host: { 'data-fixture': 'portal-host' },
   imports: [PortaledBubble],
   template: `
     <div id="parent">
@@ -45,6 +46,7 @@ class LazyTargetBubble {
 }
 
 @Component({
+  host: { 'data-fixture': 'lazy-target-host' },
   imports: [LazyTargetBubble],
   template: `
     <div id="parent">
@@ -55,6 +57,7 @@ class LazyTargetBubble {
 class LazyTargetHost {}
 
 @Component({
+  host: { 'data-fixture': 'custom-target-host' },
   imports: [TargetedBubble],
   template: `
     <div id="parent">

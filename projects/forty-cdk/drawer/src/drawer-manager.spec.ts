@@ -406,6 +406,7 @@ describe('ForDrawerManager (programmatic)', () => {
     const SCOPED_TOKEN = new InjectionToken<string>('SCOPED_DRAWER_TEST_TOKEN');
 
     @Component({
+      host: { 'data-fixture': 'scoped-host' },
       template: ``,
       providers: [
         provideForDrawerDefaults({ side: 'right' }),
@@ -1095,7 +1096,10 @@ describe('ForDrawerManager (programmatic)', () => {
   });
 
   describe('open() from within change detection (NG0101 — #1138)', () => {
-    @Component({ template: `` })
+    @Component({
+      host: { 'data-fixture': 'effect-drawer-opener' },
+      template: ``,
+    })
     class EffectDrawerOpener {
       readonly #drawers = inject(ForDrawerManager);
       readonly openNow = signal(false);

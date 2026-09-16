@@ -363,6 +363,7 @@ describe('ForField', () => {
 
   describe('label-click activation', () => {
     @Component({
+      host: { 'data-fixture': 'non-label-host' },
       imports: [ForField, ForLabel, ForSwitch],
       template: `
         <div forField>
@@ -396,6 +397,7 @@ describe('ForField', () => {
     });
 
     @Component({
+      host: { 'data-fixture': 'wrapping-label-host' },
       imports: [ForField, ForLabel, ForSwitch],
       template: `
         <div forField>
@@ -434,6 +436,7 @@ describe('ForField', () => {
     });
 
     @Component({
+      host: { 'data-fixture': 'native-label-switch-host' },
       imports: [ForField, ForLabel, ForSwitch],
       template: `
         <div forField>

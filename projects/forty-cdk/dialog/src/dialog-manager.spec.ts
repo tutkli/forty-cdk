@@ -743,6 +743,7 @@ describe('ForDialogManager (programmatic)', () => {
     const SCOPED_TOKEN = new InjectionToken<string>('SCOPED_DIALOG_TEST_TOKEN');
 
     @Component({
+      host: { 'data-fixture': 'scoped-host' },
       template: ``,
       providers: [
         provideForDialogDefaults({ modal: false }),
@@ -1102,7 +1103,10 @@ describe('ForDialogManager (programmatic)', () => {
   });
 
   describe('open() from within change detection (NG0101 — #1138)', () => {
-    @Component({ template: `` })
+    @Component({
+      host: { 'data-fixture': 'effect-dialog-opener' },
+      template: ``,
+    })
     class EffectDialogOpener {
       readonly #dialogs = inject(ForDialogManager);
       readonly openNow = signal(false);

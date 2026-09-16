@@ -191,6 +191,7 @@ describe('ForVirtualViewport + ForVirtualFor', () => {
 
 describe('ForVirtualViewport — retained (pinned) row offset', () => {
   @Component({
+    host: { 'data-fixture': 'pin-host' },
     imports: [ForVirtualViewport, ForVirtualFor],
     template: `
       <div
@@ -415,6 +416,7 @@ describe('ForVirtualViewport — detached-row sweep (#1424)', () => {
   }
 
   @Component({
+    host: { 'data-fixture': 'sweep-host' },
     imports: [ForVirtualViewport, ForVirtualFor],
     template: `
       <div
