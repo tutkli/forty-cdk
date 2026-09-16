@@ -4489,91 +4489,6 @@ describe('ForCombobox virtualization', () => {
     const item99 = document.querySelector<HTMLElement>('[data-test-id="item-99"]')!;
     expect(input.getAttribute('aria-activedescendant')).toBe(item99.id);
   });
-
-  describe('[forField] integration', () => {
-    @Component({
-      imports: [
-        ForCombobox,
-        ForComboboxInput,
-        ForField,
-        ForLabel,
-        ForFieldDescription,
-        ForFieldError,
-      ],
-      template: `
-        <div forField>
-          <label forLabel data-test-id="label">Fruit</label>
-          <div forCombobox [invalid]="invalid()">
-            <input forComboboxInput data-test-id="input" />
-          </div>
-          <p forFieldDescription data-test-id="desc">Choose one.</p>
-          <p forFieldError data-test-id="error">Required.</p>
-        </div>
-      `,
-    })
-    class FieldHost {
-      readonly invalid = signal(false);
-    }
-
-    // Non-`<label>` label element forwards the click to the input via
-    // `clickControl()` instead of the native `for` association.
-    @Component({
-      imports: [ForCombobox, ForComboboxInput, ForField, ForLabel],
-      template: `
-        <div forField>
-          <span forLabel data-test-id="label">Fruit</span>
-          <div forCombobox>
-            <input forComboboxInput data-test-id="input" />
-          </div>
-        </div>
-      `,
-    })
-    class SpanLabelHost {}
-
-    const wrapper = (el: HTMLElement) => el.querySelector<HTMLElement>('[forCombobox]')!;
-    const input = (el: HTMLElement) =>
-      el.querySelector<HTMLInputElement>('[data-test-id="input"]')!;
-    const label = (el: HTMLElement) => el.querySelector<HTMLElement>('[data-test-id="label"]')!;
-
-    it('lands aria-labelledby/aria-describedby on the input, not the wrapper', () => {
-      const { el } = renderHost(FieldHost);
-      const i = input(el);
-      const w = wrapper(el);
-
-      expect(i.getAttribute('aria-labelledby')).toBe(label(el).id);
-      expect(i.getAttribute('aria-describedby')).toBe(
-        el.querySelector('[data-test-id="desc"]')!.id,
-      );
-      expect(w.hasAttribute('aria-labelledby')).toBe(false);
-      expect(w.hasAttribute('aria-describedby')).toBe(false);
-    });
-
-    it('points the label `for` at the input id', () => {
-      const { el } = renderHost(FieldHost);
-      expect(label(el).getAttribute('for')).toBe(input(el).id);
-    });
-
-    it('focuses the input when the label is clicked', () => {
-      const { el } = renderHost(SpanLabelHost);
-      const i = input(el);
-
-      label(el).click();
-      expect(document.activeElement).toBe(i);
-    });
-
-    it('targets aria-errormessage at the error on the input while invalid', async () => {
-      const r = renderHost(FieldHost);
-      const i = input(r.el);
-      const error = r.el.querySelector<HTMLElement>('[data-test-id="error"]')!;
-
-      expect(i.hasAttribute('aria-errormessage')).toBe(false);
-      r.instance.invalid.set(true);
-      await flush(r.fixture);
-
-      expect(i.getAttribute('aria-errormessage')).toBe(error.id);
-      expect(i.getAttribute('aria-describedby')).toContain(error.id);
-    });
-  });
 });
 
 describe('picker anatomy is reactive, not a construction-time snapshot (#1581)', () => {
@@ -4752,140 +4667,110 @@ describe('picker anatomy is reactive, not a construction-time snapshot (#1581)',
   });
 });
 
-describe('ForCombobox picker anatomy inside a [forField] (issue #1942)', () => {
-  const PICKER_FIELD_IMPORTS = [
-    ForCombobox,
-    ForComboboxTrigger,
-    ForComboboxContent,
-    ForComboboxInput,
-    ForComboboxList,
-    ForField,
-    ForLabel,
-  ];
-
-  @Component({
-    imports: PICKER_FIELD_IMPORTS,
-    template: `
-      <div forField>
-        <span forLabel data-test-id="label">Fruit</span>
-        <div forCombobox [(open)]="open">
-          <button forComboboxTrigger data-test-id="trigger">Pick a fruit</button>
-          @if (open()) {
-            <div forComboboxContent>
-              <input forComboboxInput data-test-id="input" />
-              <div forComboboxList></div>
-            </div>
-          }
+describe('ForCombobox inside a [forField]', () => {
+  describe('editable anatomy', () => {
+    @Component({
+      imports: [
+        ForCombobox,
+        ForComboboxInput,
+        ForField,
+        ForLabel,
+        ForFieldDescription,
+        ForFieldError,
+      ],
+      template: `
+        <div forField>
+          <label forLabel data-test-id="label">Fruit</label>
+          <div forCombobox [invalid]="invalid()">
+            <input forComboboxInput data-test-id="input" />
+          </div>
+          <p forFieldDescription data-test-id="desc">Choose one.</p>
+          <p forFieldError data-test-id="error">Required.</p>
         </div>
-      </div>
-    `,
-  })
-  class PickerFieldHost {
-    readonly open = signal(false);
-  }
+      `,
+    })
+    class FieldHost {
+      readonly invalid = signal(false);
+    }
 
-  @Component({
-    imports: PICKER_FIELD_IMPORTS,
-    template: `
-      <div forField>
-        <label forLabel data-test-id="label">Fruit</label>
-        <div forCombobox [(open)]="open">
-          <button forComboboxTrigger data-test-id="trigger">Pick a fruit</button>
-          @if (open()) {
-            <div forComboboxContent>
-              <input forComboboxInput data-test-id="input" />
-              <div forComboboxList></div>
-            </div>
-          }
+    // Non-`<label>` label element forwards the click to the input via
+    // `clickControl()` instead of the native `for` association.
+    @Component({
+      imports: [ForCombobox, ForComboboxInput, ForField, ForLabel],
+      template: `
+        <div forField>
+          <span forLabel data-test-id="label">Fruit</span>
+          <div forCombobox>
+            <input forComboboxInput data-test-id="input" />
+          </div>
         </div>
-      </div>
-    `,
-  })
-  class NativeLabelPickerFieldHost {
-    readonly open = signal(false);
-  }
+      `,
+    })
+    class SpanLabelHost {}
 
-  const labelOf = (el: HTMLElement) => el.querySelector<HTMLElement>('[data-test-id="label"]')!;
-  const triggerOf = (el: HTMLElement) =>
-    el.querySelector<HTMLButtonElement>('[data-test-id="trigger"]')!;
-  const wrapperOf = (el: HTMLElement) => el.querySelector<HTMLElement>('[forCombobox]')!;
-  const pickerInput = () => document.querySelector<HTMLInputElement>('[data-test-id="input"]');
-  const idHolders = (id: string) => document.querySelectorAll(`[id="${id}"]`);
+    const wrapper = (el: HTMLElement) => el.querySelector<HTMLElement>('[forCombobox]')!;
+    const input = (el: HTMLElement) =>
+      el.querySelector<HTMLInputElement>('[data-test-id="input"]')!;
+    const label = (el: HTMLElement) => el.querySelector<HTMLElement>('[data-test-id="label"]')!;
 
-  afterEachOverlayCleanup();
+    it('lands aria-labelledby/aria-describedby on the input, not the wrapper', () => {
+      const { el } = renderHost(FieldHost);
+      const i = input(el);
+      const w = wrapper(el);
 
-  it('names the trigger while the panel keeps the input unmounted', async () => {
-    const r = renderHost(PickerFieldHost);
-    await flush(r.fixture);
+      expect(i.getAttribute('aria-labelledby')).toBe(label(el).id);
+      expect(i.getAttribute('aria-describedby')).toBe(
+        el.querySelector('[data-test-id="desc"]')!.id,
+      );
+      expect(w.hasAttribute('aria-labelledby')).toBe(false);
+      expect(w.hasAttribute('aria-describedby')).toBe(false);
+    });
 
-    expect(pickerInput()).toBeNull();
-    expect(triggerOf(r.el).getAttribute('aria-labelledby')).toBe(labelOf(r.el).id);
-    expect(wrapperOf(r.el).hasAttribute('aria-labelledby')).toBe(false);
+    it('points the label `for` at the input id', () => {
+      const { el } = renderHost(FieldHost);
+      expect(label(el).getAttribute('for')).toBe(input(el).id);
+    });
+
+    it('focuses the input when the label is clicked', () => {
+      const { el } = renderHost(SpanLabelHost);
+      const i = input(el);
+
+      label(el).click();
+      expect(document.activeElement).toBe(i);
+    });
+
+    it('targets aria-errormessage at the error on the input while invalid', async () => {
+      const r = renderHost(FieldHost);
+      const i = input(r.el);
+      const error = r.el.querySelector<HTMLElement>('[data-test-id="error"]')!;
+
+      expect(i.hasAttribute('aria-errormessage')).toBe(false);
+      r.instance.invalid.set(true);
+      await flush(r.fixture);
+
+      expect(i.getAttribute('aria-errormessage')).toBe(error.id);
+      expect(i.getAttribute('aria-describedby')).toContain(error.id);
+    });
   });
 
-  it('points the label `for` at the trigger while the panel is closed', async () => {
-    const r = renderHost(NativeLabelPickerFieldHost);
-    await flush(r.fixture);
+  describe('picker anatomy (issue #1942)', () => {
+    const PICKER_FIELD_IMPORTS = [
+      ForCombobox,
+      ForComboboxTrigger,
+      ForComboboxContent,
+      ForComboboxInput,
+      ForComboboxList,
+      ForField,
+      ForLabel,
+    ];
 
-    const trigger = triggerOf(r.el);
-    expect(trigger.id).not.toBe('');
-    expect(labelOf(r.el).getAttribute('for')).toBe(trigger.id);
-  });
-
-  it('opens the listbox and focuses the input when the label is clicked', async () => {
-    const r = renderHost(PickerFieldHost);
-    await flush(r.fixture);
-
-    labelOf(r.el).click();
-    await flush(r.fixture);
-
-    expect(r.instance.open()).toBe(true);
-    expect(document.activeElement).toBe(pickerInput());
-  });
-
-  it('migrates the association onto the input on open, leaving one id holder', async () => {
-    const r = renderHost(PickerFieldHost);
-    r.instance.open.set(true);
-    await flush(r.fixture);
-
-    const input = pickerInput()!;
-    expect(input.getAttribute('aria-labelledby')).toBe(labelOf(r.el).id);
-    expect(triggerOf(r.el).hasAttribute('aria-labelledby')).toBe(false);
-    expect(idHolders(input.id)).toHaveLength(1);
-  });
-
-  it('hands the association back to the trigger when the panel closes', async () => {
-    const r = renderHost(PickerFieldHost);
-    r.instance.open.set(true);
-    await flush(r.fixture);
-    r.instance.open.set(false);
-    await flush(r.fixture);
-
-    const trigger = triggerOf(r.el);
-    expect(trigger.getAttribute('aria-labelledby')).toBe(labelOf(r.el).id);
-    expect(idHolders(trigger.id)).toHaveLength(1);
-  });
-
-  it('moves focus-on-error to the trigger while the panel is closed', async () => {
-    const r = renderHost(PickerFieldHost);
-    await flush(r.fixture);
-    const combobox = r.fixture.debugElement
-      .query(By.directive(ForCombobox))
-      .injector.get(ForCombobox);
-
-    combobox.focus();
-
-    expect(document.activeElement).toBe(triggerOf(r.el));
-  });
-
-  describe('with a consumer-set id on the trigger (issue #1954)', () => {
     @Component({
       imports: PICKER_FIELD_IMPORTS,
       template: `
         <div forField>
-          <label forLabel data-test-id="label">Fruit</label>
+          <span forLabel data-test-id="label">Fruit</span>
           <div forCombobox [(open)]="open">
-            <button forComboboxTrigger id="my-trigger" data-test-id="trigger">Pick a fruit</button>
+            <button forComboboxTrigger data-test-id="trigger">Pick a fruit</button>
             @if (open()) {
               <div forComboboxContent>
                 <input forComboboxInput data-test-id="input" />
@@ -4896,66 +4781,185 @@ describe('ForCombobox picker anatomy inside a [forField] (issue #1942)', () => {
         </div>
       `,
     })
-    class ConsumerIdPickerFieldHost {
+    class PickerFieldHost {
       readonly open = signal(false);
     }
 
     @Component({
-      imports: [ForCombobox, ForComboboxInput],
+      imports: PICKER_FIELD_IMPORTS,
       template: `
-        <div forCombobox>
-          <input forComboboxInput />
+        <div forField>
+          <label forLabel data-test-id="label">Fruit</label>
+          <div forCombobox [(open)]="open">
+            <button forComboboxTrigger data-test-id="trigger">Pick a fruit</button>
+            @if (open()) {
+              <div forComboboxContent>
+                <input forComboboxInput data-test-id="input" />
+                <div forComboboxList></div>
+              </div>
+            }
+          </div>
         </div>
       `,
     })
-    class EditableIdSequenceHost {}
+    class NativeLabelPickerFieldHost {
+      readonly open = signal(false);
+    }
 
-    it('resolves the label `for` to the trigger while the panel is closed', async () => {
-      const r = renderHost(ConsumerIdPickerFieldHost);
+    const labelOf = (el: HTMLElement) => el.querySelector<HTMLElement>('[data-test-id="label"]')!;
+    const triggerOf = (el: HTMLElement) =>
+      el.querySelector<HTMLButtonElement>('[data-test-id="trigger"]')!;
+    const wrapperOf = (el: HTMLElement) => el.querySelector<HTMLElement>('[forCombobox]')!;
+    const pickerInput = () => document.querySelector<HTMLInputElement>('[data-test-id="input"]');
+    const idHolders = (id: string) => document.querySelectorAll(`[id="${id}"]`);
+
+    afterEachOverlayCleanup();
+
+    it('names the trigger while the panel keeps the input unmounted', async () => {
+      const r = renderHost(PickerFieldHost);
       await flush(r.fixture);
 
-      const label = labelOf(r.el) as HTMLLabelElement;
-      expect(label.getAttribute('for')).toBe('my-trigger');
-      expect(label.control).toBe(triggerOf(r.el));
+      expect(pickerInput()).toBeNull();
+      expect(triggerOf(r.el).getAttribute('aria-labelledby')).toBe(labelOf(r.el).id);
+      expect(wrapperOf(r.el).hasAttribute('aria-labelledby')).toBe(false);
     });
 
-    it('leaves the consumer id on the trigger and still names it', async () => {
-      const r = renderHost(ConsumerIdPickerFieldHost);
+    it('points the label `for` at the trigger while the panel is closed', async () => {
+      const r = renderHost(NativeLabelPickerFieldHost);
       await flush(r.fixture);
 
       const trigger = triggerOf(r.el);
-      expect(trigger.id).toBe('my-trigger');
-      expect(trigger.getAttribute('aria-labelledby')).toBe(labelOf(r.el).id);
-      expect(idHolders('my-trigger')).toHaveLength(1);
+      expect(trigger.id).not.toBe('');
+      expect(labelOf(r.el).getAttribute('for')).toBe(trigger.id);
     });
 
-    it('hands the label `for` to the input on open and back on close', async () => {
-      const r = renderHost(ConsumerIdPickerFieldHost);
+    it('opens the listbox and focuses the input when the label is clicked', async () => {
+      const r = renderHost(PickerFieldHost);
+      await flush(r.fixture);
+
+      labelOf(r.el).click();
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(true);
+      expect(document.activeElement).toBe(pickerInput());
+    });
+
+    it('migrates the association onto the input on open, leaving one id holder', async () => {
+      const r = renderHost(PickerFieldHost);
       r.instance.open.set(true);
       await flush(r.fixture);
 
       const input = pickerInput()!;
-      const label = labelOf(r.el) as HTMLLabelElement;
-      expect(label.getAttribute('for')).toBe(input.id);
+      expect(input.getAttribute('aria-labelledby')).toBe(labelOf(r.el).id);
+      expect(triggerOf(r.el).hasAttribute('aria-labelledby')).toBe(false);
       expect(idHolders(input.id)).toHaveLength(1);
+    });
 
+    it('hands the association back to the trigger when the panel closes', async () => {
+      const r = renderHost(PickerFieldHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
       r.instance.open.set(false);
       await flush(r.fixture);
 
-      expect(label.getAttribute('for')).toBe('my-trigger');
-      expect(label.control).toBe(triggerOf(r.el));
-      expect(idHolders('my-trigger')).toHaveLength(1);
+      const trigger = triggerOf(r.el);
+      expect(trigger.getAttribute('aria-labelledby')).toBe(labelOf(r.el).id);
+      expect(idHolders(trigger.id)).toHaveLength(1);
     });
 
-    it('mints no id for the editable anatomy, which has no trigger', () => {
-      const r = renderHost(EditableIdSequenceHost);
+    it('moves focus-on-error to the trigger while the panel is closed', async () => {
+      const r = renderHost(PickerFieldHost);
+      await flush(r.fixture);
       const combobox = r.fixture.debugElement
         .query(By.directive(ForCombobox))
         .injector.get(ForCombobox);
-      const counterOf = (id: string) => Number(id.slice(id.lastIndexOf('-') + 1));
 
-      expect(counterOf(combobox.contentId())).toBe(counterOf(combobox.inputId()) + 1);
-      expect(counterOf(combobox.listId())).toBe(counterOf(combobox.inputId()) + 2);
+      combobox.focus();
+
+      expect(document.activeElement).toBe(triggerOf(r.el));
+    });
+
+    describe('with a consumer-set id on the trigger (issue #1954)', () => {
+      @Component({
+        imports: PICKER_FIELD_IMPORTS,
+        template: `
+          <div forField>
+            <label forLabel data-test-id="label">Fruit</label>
+            <div forCombobox [(open)]="open">
+              <button forComboboxTrigger id="my-trigger" data-test-id="trigger">
+                Pick a fruit
+              </button>
+              @if (open()) {
+                <div forComboboxContent>
+                  <input forComboboxInput data-test-id="input" />
+                  <div forComboboxList></div>
+                </div>
+              }
+            </div>
+          </div>
+        `,
+      })
+      class ConsumerIdPickerFieldHost {
+        readonly open = signal(false);
+      }
+
+      @Component({
+        imports: [ForCombobox, ForComboboxInput],
+        template: `
+          <div forCombobox>
+            <input forComboboxInput />
+          </div>
+        `,
+      })
+      class EditableIdSequenceHost {}
+
+      it('resolves the label `for` to the trigger while the panel is closed', async () => {
+        const r = renderHost(ConsumerIdPickerFieldHost);
+        await flush(r.fixture);
+
+        const label = labelOf(r.el) as HTMLLabelElement;
+        expect(label.getAttribute('for')).toBe('my-trigger');
+        expect(label.control).toBe(triggerOf(r.el));
+      });
+
+      it('leaves the consumer id on the trigger and still names it', async () => {
+        const r = renderHost(ConsumerIdPickerFieldHost);
+        await flush(r.fixture);
+
+        const trigger = triggerOf(r.el);
+        expect(trigger.id).toBe('my-trigger');
+        expect(trigger.getAttribute('aria-labelledby')).toBe(labelOf(r.el).id);
+        expect(idHolders('my-trigger')).toHaveLength(1);
+      });
+
+      it('hands the label `for` to the input on open and back on close', async () => {
+        const r = renderHost(ConsumerIdPickerFieldHost);
+        r.instance.open.set(true);
+        await flush(r.fixture);
+
+        const input = pickerInput()!;
+        const label = labelOf(r.el) as HTMLLabelElement;
+        expect(label.getAttribute('for')).toBe(input.id);
+        expect(idHolders(input.id)).toHaveLength(1);
+
+        r.instance.open.set(false);
+        await flush(r.fixture);
+
+        expect(label.getAttribute('for')).toBe('my-trigger');
+        expect(label.control).toBe(triggerOf(r.el));
+        expect(idHolders('my-trigger')).toHaveLength(1);
+      });
+
+      it('mints no id for the editable anatomy, which has no trigger', () => {
+        const r = renderHost(EditableIdSequenceHost);
+        const combobox = r.fixture.debugElement
+          .query(By.directive(ForCombobox))
+          .injector.get(ForCombobox);
+        const counterOf = (id: string) => Number(id.slice(id.lastIndexOf('-') + 1));
+
+        expect(counterOf(combobox.contentId())).toBe(counterOf(combobox.inputId()) + 1);
+        expect(counterOf(combobox.listId())).toBe(counterOf(combobox.inputId()) + 2);
+      });
     });
   });
 });
