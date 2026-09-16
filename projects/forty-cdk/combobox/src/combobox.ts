@@ -340,9 +340,11 @@ export class ForCombobox<T = string>
    * The open / close / dismiss machine, shared with the menu and listbox
    * overlays. The combobox supplies both element sides: its trigger owns no
    * aria-wiring id — the `role="combobox"` id lives on the input — so that slot
-   * borrows the input's and mints nothing, while the content side is the
-   * ordinary identified slot, minted here so `for-combobox-content` keeps
-   * following the input's id and preceding the list's.
+   * borrows the input's and mints nothing (it only captures a consumer-set
+   * static id, which `fieldLabelledElementId` reports while the input is
+   * unmounted), while the content side is the ordinary identified slot, minted
+   * here so `for-combobox-content` keeps following the input's id and preceding
+   * the list's.
    */
   readonly #overlay = new OverlayController<ForComboboxInitialFocus, ForComboboxCloseReason>({
     idPrefix: 'for-combobox',
@@ -532,8 +534,18 @@ export class ForCombobox<T = string>
     return this.#entryPoint();
   }
 
+  /**
+   * Id a surrounding `[forField]` points its label `for` at. Tracks
+   * {@link #entryPoint}: the input's id, except while the input is unmounted
+   * and the trigger carries a consumer-set static id — the field only stamps
+   * its own id on a target that has none, so nominating `inputId()` there
+   * would leave the `for` resolving to no element at all.
+   */
   protected override fieldLabelledElementId(): string {
-    return this.inputId();
+    if (this.input()) {
+      return this.inputId();
+    }
+    return this.#triggerSlot.adoptedId() ?? this.inputId();
   }
 
   /**

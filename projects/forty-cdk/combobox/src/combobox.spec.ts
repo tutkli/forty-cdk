@@ -4877,6 +4877,87 @@ describe('ForCombobox picker anatomy inside a [forField] (issue #1942)', () => {
 
     expect(document.activeElement).toBe(triggerOf(r.el));
   });
+
+  describe('with a consumer-set id on the trigger (issue #1954)', () => {
+    @Component({
+      imports: PICKER_FIELD_IMPORTS,
+      template: `
+        <div forField>
+          <label forLabel data-test-id="label">Fruit</label>
+          <div forCombobox [(open)]="open">
+            <button forComboboxTrigger id="my-trigger" data-test-id="trigger">Pick a fruit</button>
+            @if (open()) {
+              <div forComboboxContent>
+                <input forComboboxInput data-test-id="input" />
+                <div forComboboxList></div>
+              </div>
+            }
+          </div>
+        </div>
+      `,
+    })
+    class ConsumerIdPickerFieldHost {
+      readonly open = signal(false);
+    }
+
+    @Component({
+      imports: [ForCombobox, ForComboboxInput],
+      template: `
+        <div forCombobox>
+          <input forComboboxInput />
+        </div>
+      `,
+    })
+    class EditableIdSequenceHost {}
+
+    it('resolves the label `for` to the trigger while the panel is closed', async () => {
+      const r = renderHost(ConsumerIdPickerFieldHost);
+      await flush(r.fixture);
+
+      const label = labelOf(r.el) as HTMLLabelElement;
+      expect(label.getAttribute('for')).toBe('my-trigger');
+      expect(label.control).toBe(triggerOf(r.el));
+    });
+
+    it('leaves the consumer id on the trigger and still names it', async () => {
+      const r = renderHost(ConsumerIdPickerFieldHost);
+      await flush(r.fixture);
+
+      const trigger = triggerOf(r.el);
+      expect(trigger.id).toBe('my-trigger');
+      expect(trigger.getAttribute('aria-labelledby')).toBe(labelOf(r.el).id);
+      expect(idHolders('my-trigger')).toHaveLength(1);
+    });
+
+    it('hands the label `for` to the input on open and back on close', async () => {
+      const r = renderHost(ConsumerIdPickerFieldHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const input = pickerInput()!;
+      const label = labelOf(r.el) as HTMLLabelElement;
+      expect(label.getAttribute('for')).toBe(input.id);
+      expect(idHolders(input.id)).toHaveLength(1);
+
+      r.instance.open.set(false);
+      await flush(r.fixture);
+
+      expect(label.getAttribute('for')).toBe('my-trigger');
+      expect(label.control).toBe(triggerOf(r.el));
+      expect(idHolders('my-trigger')).toHaveLength(1);
+    });
+
+    it('mints no id for the editable anatomy, which has no trigger', () => {
+      const r = renderHost(EditableIdSequenceHost);
+      const combobox = r.fixture.debugElement
+        .query(By.directive(ForCombobox))
+        .injector.get(ForCombobox);
+      const counterOf = (id: string) => Number(id.slice(id.lastIndexOf('-') + 1));
+
+      expect(counterOf(combobox.contentId())).toBe(counterOf(combobox.inputId()) + 1);
+      expect(counterOf(combobox.listId())).toBe(counterOf(combobox.inputId()) + 2);
+    });
+  });
 });
 
 describe('ForCombobox unwritten option value (issue #1601)', () => {
