@@ -49,16 +49,31 @@ export class IdentifiedElementSlot<E extends HTMLElement = HTMLElement> {
 /**
  * A registered overlay element that carries no aria-wiring id of its own — the
  * combobox trigger, whose id stays on the input. Same register/unregister
- * identity guard as {@link IdentifiedElementSlot} without the id adoption.
+ * identity guard as {@link IdentifiedElementSlot}, and it mints nothing: a
+ * consumer-set static id is captured on {@link adoptedId} rather than folded
+ * into a generated one, so the borrowing slot can report it without moving the
+ * shared {@link IdGenerator} counter for the anatomies that never mount here.
  */
 export class ElementSlot<E extends HTMLElement = HTMLElement> {
   readonly #el = signal<E | null>(null);
+  readonly #adoptedId = signal<string | null>(null);
 
   /** The registered element, or `null` while nothing is mounted. */
   readonly element: Signal<E | null> = this.#el.asReadonly();
 
-  /** Register the element. */
+  /**
+   * The static `id` the consumer wrote on the registered element, or `null`
+   * when it carried none. Survives the element's deregistration, mirroring
+   * {@link IdentifiedElementSlot}'s adopted id.
+   */
+  readonly adoptedId: Signal<string | null> = this.#adoptedId.asReadonly();
+
+  /** Register the element, capturing a consumer-set static `id` if it has one. */
   register(el: E): void {
+    const staticId = el.getAttribute('id');
+    if (staticId) {
+      this.#adoptedId.set(staticId);
+    }
     this.#el.set(el);
   }
 
@@ -165,8 +180,9 @@ export function injectIdentifiedSlot<E extends HTMLElement = HTMLElement>(
 }
 
 /**
- * A slot for an element that carries no aria-wiring id of its own. Depends on
- * nothing, so it needs no injection context.
+ * A slot for an element that carries no aria-wiring id of its own, exposing any
+ * consumer-set static id on `adoptedId`. Depends on nothing, so it needs no
+ * injection context.
  *
  * @typeParam E Concrete element type the slot registers. Defaults to
  *   `HTMLElement`.
