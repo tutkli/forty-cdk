@@ -79,19 +79,6 @@ The `value` model is a `readonly number[]`; two `forSliderThumb` pieces, one per
 
 `inverted` flips the value-to-position mapping — in horizontal LTR, max sits on the left. The flip is baked into the exposed fractions, so the same CSS paints both ways. Keyboard semantics are unchanged: `ArrowRight` / `ArrowUp` still move toward max.
 
-## Single thumb
-
-```html
-<div forSlider [(value)]="volume">
-  <span forSliderTrack>
-    <span forSliderRange></span>
-    <span forSliderThumb [index]="0" [ariaLabel]="'Volume'"></span>
-  </span>
-</div>
-```
-
-Where `volume = signal<readonly number[]>([50])`.
-
 ## Signal Forms
 
 `[forSlider]` implements `FormValueControl<readonly number[]>`. Pair with `[formField]` for auto-wiring with `@angular/forms/signals`:

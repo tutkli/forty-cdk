@@ -220,37 +220,11 @@ A display-only status tracker: the list renders as a plain ordered list with `ar
 
 ```html
 <div forStepper [(selectedIndex)]="step" [linear]="true">
-  <ol forStepperList ariaLabel="Checkout">
-    <li forStepperItem [completed]="step > 0">
-      <button forStepperTrigger>
-        <span forStepperIndicator></span>
-        Shipping
-      </button>
-      <span forStepperSeparator></span>
-    </li>
-    <li forStepperItem [completed]="step > 1">
-      <button forStepperTrigger>
-        <span forStepperIndicator></span>
-        Payment
-      </button>
-      <span forStepperSeparator></span>
-    </li>
-    <li forStepperItem>
-      <button forStepperTrigger>
-        <span forStepperIndicator></span>
-        Review
-      </button>
-    </li>
-  </ol>
-
-  <section forStepperContent>Shipping form</section>
-  <section forStepperContent>Payment form</section>
-  <section forStepperContent>Order review</section>
-
-  <button forStepperPrevious>Back</button>
-  <button forStepperNext>Next</button>
+  <!-- … list / content / Next / Previous … -->
 </div>
 ```
+
+`[linear]` gates forward movement on completion: `[forStepperNext]` advances only while the current step is `[completed]` or `[optional]`, and a trigger further ahead is selectable only once every step before it is one of the two. Going back is never gated — `[forStepperPrevious]` and the earlier triggers stay live throughout.
 
 ## Completed-all content
 

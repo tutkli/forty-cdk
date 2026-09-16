@@ -108,21 +108,6 @@ One class and one directive, two states. `disabled` blocks the dialog and drops 
 
 Set `directory` to switch the native picker into folder mode (mirrored as `webkitdirectory` on the input). The emitted `FileList` then contains every file inside the chosen folder, each carrying a `webkitRelativePath` the consumer reads to reconstruct the tree.
 
-## Stand-alone
-
-```html
-<div forFileUpload accept="image/*,.pdf" (filesChange)="onFiles($event)">
-  <!-- Visually hidden input: keep it focusable for keyboard / AT users.
-       Apply your own sr-only / visually-hidden CSS utility. -->
-  <input forFileUploadInput aria-label="Upload files" class="sr-only" />
-
-  <!-- The trigger opens the native file dialog on click / Enter / Space. -->
-  <button forFileUploadTrigger type="button">Choose files</button>
-
-  <p>or drag and drop here</p>
-</div>
-```
-
 ## Handling rejections
 
 <!-- snippet: fragment -->

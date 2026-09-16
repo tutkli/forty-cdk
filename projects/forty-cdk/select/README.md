@@ -632,22 +632,7 @@ readonly v = injectVirtualizer({
 
 Click an option to replace the selection and close. `[(value)]` keeps 0 or 1 element. Read the sole value through the read-only `selected: Signal<T | null>` accessor (the form contract keeps `value` as `readonly T[]`; `selected()` is `value()[0]` or `null`).
 
-```html
-<div forSelect #select="forSelect" [(value)]="favorite" placeholder="Pick a fruit">
-  <button forSelectTrigger class="select-trigger">
-    <span forSelectValue></span>
-  </button>
-  @if (select.open()) {
-  <div forSelectContent>
-    <button forSelectOption class="select-item" value="apple">Apple</button>
-    <button forSelectOption class="select-item" value="banana">Banana</button>
-    <button forSelectOption class="select-item" value="cherry">Cherry</button>
-  </div>
-  }
-</div>
-```
-
-`[(value)]` is the selection (form state) and is always the consumer's. Open state is separate: `[forSelect]` owns it as a `model<boolean>`, so the `@if` reads it straight off the directive instance. `[forSelect]` is `exportAs: 'forSelect'` — expose it with a template reference variable (`#select="forSelect"`) and gate `[forSelectContent]` on `select.open()`. The trigger toggles it; Escape, Tab, and outside-pointer flip it back. No separate `open` signal, no `[(open)]` — bind `[(open)]="mySignal"` only when the component class needs to read or drive open state itself (open it programmatically, persist it, or react to it elsewhere).
+`[(value)]` is the selection (form state) and is always the consumer's. Open state is separate: `[forSelect]` owns it as a `model<boolean>`, so the `@if` gating the content reads it straight off the directive instance. `[forSelect]` is `exportAs: 'forSelect'` — expose it with a template reference variable (`#select="forSelect"`) and gate `[forSelectContent]` on `select.open()`. The trigger toggles it; Escape, Tab, and outside-pointer flip it back. No separate `open` signal, no `[(open)]` — bind `[(open)]="mySignal"` only when the component class needs to read or drive open state itself (open it programmatically, persist it, or react to it elsewhere).
 
 ## Multi mode
 
