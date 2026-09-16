@@ -520,8 +520,16 @@ export class ForCombobox<T = string>
    */
   readonly selectedItem = singleSelected(this.value);
 
+  /**
+   * The combobox's mounted entry point: the `role="combobox"` input, or the
+   * `[forComboboxTrigger]` while the input is unmounted — the picker anatomy
+   * keeps its input inside the panel, so until it opens the trigger is the
+   * only element a surrounding `[forField]` can label, click, or focus.
+   */
+  readonly #entryPoint = computed(() => this.input() ?? this.trigger());
+
   protected override fieldLabelledElement(): HTMLElement | null {
-    return this.input();
+    return this.#entryPoint();
   }
 
   protected override fieldLabelledElementId(): string {
@@ -529,17 +537,17 @@ export class ForCombobox<T = string>
   }
 
   /**
-   * Move focus to the `role="combobox"` input, implementing
+   * Move focus to the combobox's entry point, implementing
    * `FormValueControl.focus` from `@angular/forms/signals`. Without this override
    * Signal Forms would focus the host `[forCombobox]` wrapper — which carries no
    * focusable role — so focus-on-error would silently go nowhere. No-op when
-   * disabled or before the input has registered.
+   * disabled, or before either the input or a picker trigger has registered.
    */
   override focus(options?: FocusOptions): void {
     if (this.effectiveDisabled()) {
       return;
     }
-    this.input()?.focus(options);
+    this.#entryPoint()?.focus(options);
   }
 
   constructor() {
