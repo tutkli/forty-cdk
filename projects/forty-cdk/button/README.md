@@ -47,16 +47,6 @@ export class ButtonDefaultExample {}
 
 Per the APG, a disabled button must stay reachable so assistive tech can announce it. `forButton` never sets the native `disabled` attribute — it reflects `aria-disabled='true'` + `data-disabled` and makes activation a no-op. The native disabled button is skipped entirely.
 
-## Basic usage
-
-```html
-<!-- Native button — platform handles Enter/Space → click synthesis -->
-<button forButton (activate)="save()">Save</button>
-
-<!-- Non-button host — role="button", tabindex="0", and keyboard activation added automatically -->
-<div forButton (activate)="save()">Save</div>
-```
-
 ## Disabled
 
 Disabled buttons stay focusable so assistive technology can announce them. The native `disabled` attribute is never set; instead `aria-disabled="true"` is reflected.

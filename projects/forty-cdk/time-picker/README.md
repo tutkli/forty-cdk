@@ -114,29 +114,6 @@ export class TimePickerTimeExample {
 }
 ```
 
-```html
-<div
-  forTimePicker
-  [(value)]="value"
-  [(open)]="open"
-  [step]="30"
-  [hourCycle]="24"
-  #picker="forTimePicker"
->
-  <button forTimePickerTrigger>
-    <span forTimePickerValue placeholder="Pick a time"></span>
-  </button>
-
-  @if (open()) {
-  <div forTimePickerContent>
-    @for (slot of picker.slots(); track slot.id) {
-    <div forTimePickerOption [value]="slot.value" [disabled]="slot.disabled">{{ slot.label }}</div>
-    }
-  </div>
-  }
-</div>
-```
-
 ### States
 
 One class and one directive, three states. `disabled` removes the trigger from the tab order; `readonly` keeps it focusable and announced. Both refuse to open the listbox, and both reflect a styling hook of their own — `data-disabled` and `data-readonly`.

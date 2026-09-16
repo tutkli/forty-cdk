@@ -1364,12 +1364,6 @@ exports[`document structure > projects/forty-cdk/button/README.md declares the s
   },
   {
     "headings": [],
-    "slug": "basic-usage",
-    "tables": [],
-    "title": "Basic usage",
-  },
-  {
-    "headings": [],
     "slug": "disabled",
     "tables": [],
     "title": "Disabled",
@@ -1790,12 +1784,6 @@ exports[`document structure > projects/forty-cdk/carousel/README.md declares the
     "slug": "localizing-the-default-labels",
     "tables": [],
     "title": "Localizing the default labels",
-  },
-  {
-    "headings": [],
-    "slug": "basic-carousel",
-    "tables": [],
-    "title": "Basic carousel",
   },
   {
     "headings": [],
@@ -3884,12 +3872,6 @@ exports[`document structure > projects/forty-cdk/file-upload/README.md declares 
     "slug": "examples",
     "tables": [],
     "title": "Examples",
-  },
-  {
-    "headings": [],
-    "slug": "stand-alone",
-    "tables": [],
-    "title": "Stand-alone",
   },
   {
     "headings": [],
@@ -6569,12 +6551,6 @@ exports[`document structure > projects/forty-cdk/slider/README.md declares the s
     "slug": "examples",
     "tables": [],
     "title": "Examples",
-  },
-  {
-    "headings": [],
-    "slug": "single-thumb",
-    "tables": [],
-    "title": "Single thumb",
   },
   {
     "headings": [],
