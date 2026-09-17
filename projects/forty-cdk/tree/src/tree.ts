@@ -30,7 +30,12 @@ import {
   injectTypeahead,
   hostAriaLabel,
 } from 'forty-cdk/core';
-import { ActiveDescendantFocusModel, type FocusModel, RovingFocusModel } from './focus-model';
+import {
+  ActiveDescendantFocusModel,
+  type FocusModel,
+  RovingFocusModel,
+  type TreeResumeTarget,
+} from './focus-model';
 import {
   FOR_TREE_CONTAINER_CONTEXT,
   FOR_TREE_CONTEXT,
@@ -318,7 +323,7 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
 
   readonly #activeId = signal<string | null>(null);
 
-  readonly #lastActivePos = signal<number | null>(null);
+  readonly #lastActive = signal<TreeResumeTarget<T> | null>(null);
 
   /**
    * The active node's `id` when using the activedescendant focus model,
@@ -369,7 +374,8 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
       getActiveId: () => this.#activeId(),
       setActiveId: (id) => this.#setActiveId(id),
       emitScrollToIndex: (idx) => this.scrollToIndex.emit(idx),
-      getResumePos: () => this.#lastActivePos(),
+      getResumeTarget: () => this.#lastActive(),
+      compareWith: this.compareWith,
       dataVersion: this.dataVersion,
       typeahead: this.#typeahead,
     }));
@@ -392,7 +398,7 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
 
   #setActiveId(id: string | null): void {
     if (id !== null) {
-      this.#lastActivePos.set(null);
+      this.#lastActive.set(null);
     }
     this.#activeId.set(id);
   }
@@ -716,7 +722,8 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
     this.#items.unregister(handle);
     this.roving.unregister(handle.host);
     if (this.#virtualized() && this.#activeId() === handle.id()) {
-      this.#lastActivePos.set(handle.itemIndex());
+      const pos = handle.itemIndex();
+      this.#lastActive.set(pos === null ? null : { pos, value: handle.value() });
       this.#activeId.set(null);
     }
   }

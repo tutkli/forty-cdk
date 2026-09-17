@@ -209,22 +209,34 @@ interface PositionEntry<T> {
 }
 
 /**
+ * The position the tree resumes navigation from, paired with the node that
+ * occupied it when the active node unmounted. The value is what makes the
+ * position answer for its own identity across a snapshot rebuild.
+ */
+export interface TreeResumeTarget<T = unknown> {
+  readonly pos: number;
+  readonly value: T;
+}
+
+/**
  * Wiring for {@link ActiveDescendantFocusModel} — the shared engine's own
  * dependencies, minus `loop` (a tree never wraps, so the model pins it to
- * `false`) and with `getResumePos` mandatory rather than optional, because the
- * tree clears its dangling activedescendant on unmount and always resumes from
- * the retained position.
+ * `false`) and minus `getResumePos`, which the model supplies to the engine
+ * itself from the root's retained target, so every intent resolves the resume
+ * through the same validation.
  */
 export type ActiveDescendantFocusModelDeps<T = unknown> = Omit<
   VirtualizedNavigatorDeps<ForTreeItemHandle<T>>,
   'loop' | 'getResumePos'
 > & {
   /**
-   * Last active absolute position, retained when the active node unmounts so
-   * navigation resumes from it instead of restarting at the edge. Returns `null`
-   * when there is nothing to resume from.
+   * Last active absolute position and the node that occupied it, retained when
+   * the active node unmounts so navigation resumes from it instead of restarting
+   * at the edge. Returns `null` when there is nothing to resume from.
    */
-  readonly getResumePos: () => number | null;
+  readonly getResumeTarget: () => TreeResumeTarget<T> | null;
+  /** Node identity, used to match a retained target against the snapshot. */
+  readonly compareWith: Signal<(a: T, b: T) => boolean>;
   /** The root's typeahead buffer, shared with the other focus model. */
   readonly typeahead: Typeahead;
 };
@@ -247,7 +259,7 @@ export class ActiveDescendantFocusModel<T = unknown> implements FocusModel<T> {
   constructor(deps: ActiveDescendantFocusModelDeps<T>) {
     this.#deps = deps;
     this.#core = new VirtualizedNavigator(
-      { ...deps, loop: () => false },
+      { ...deps, loop: () => false, getResumePos: () => this.#resumePos() },
       {
         posOf: (n) => n.itemIndex(),
         idOf: (n) => n.id(),
@@ -425,22 +437,17 @@ export class ActiveDescendantFocusModel<T = unknown> implements FocusModel<T> {
   }
 
   /**
-   * The retained position, bounded against the current `totalCount`. Returns
-   * `null` when nothing is retained or the count has shrunk past it.
+   * The retained position, or `null` when it no longer names the node it was
+   * retained for. A snapshot rebuild — a `totalCount` transition, a
+   * `[dataVersion]` change or `invalidateSnapshot()` — drops the retained node's
+   * entry, so a refresh that moved it resolves to nothing instead of resuming on
+   * whatever now occupies that position.
    */
   #resumePos(): number | null {
-    const resume = this.#deps.getResumePos();
-    if (resume === null || resume < 0) {
-      return null;
-    }
-    const total = this.#deps.totalCount();
-    if (total === undefined || resume >= total) {
-      return null;
-    }
-    return resume;
+    return this.#resumeEntry()?.pos ?? null;
   }
 
-  /** The position entry the retained position resolves to in the snapshot. */
+  /** The position entry the retained target resolves to in the snapshot. */
   #resumeEntry(): {
     pos: number;
     value: T;
@@ -449,16 +456,20 @@ export class ActiveDescendantFocusModel<T = unknown> implements FocusModel<T> {
     disabled: boolean;
     selectable: boolean;
   } | null {
-    const pos = this.#resumePos();
-    if (pos === null) {
+    const target = this.#deps.getResumeTarget();
+    if (target === null || target.pos < 0) {
       return null;
     }
-    const entry = this.#core.snapshotByPos().get(pos);
-    if (!entry) {
+    const total = this.#deps.totalCount();
+    if (total === undefined || target.pos >= total) {
+      return null;
+    }
+    const entry = this.#core.snapshotByPos().get(target.pos);
+    if (!entry || !this.#deps.compareWith()(entry.value, target.value)) {
       return null;
     }
     return {
-      pos,
+      pos: target.pos,
       value: entry.value,
       level: entry.level,
       expandable: entry.expandable,
