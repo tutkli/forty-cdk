@@ -2350,6 +2350,160 @@ describe('ForTree', () => {
       expect(instance.scrolledToIndex()).toBeNull();
     });
 
+    describe('a refresh that rebuilds the position snapshot (#1971)', () => {
+      @Component({
+        imports: [ForTree, ForTreeItem, ForTreeItemLabel],
+        template: `
+          <ul
+            forTree
+            data-test-tree
+            [(value)]="picked"
+            [totalCount]="flat().length"
+            [visibleRange]="range()"
+            [dataVersion]="version()"
+            (scrollToIndex)="onScroll($event)"
+            aria-label="Refresh"
+          >
+            @for (node of window(); track node.value) {
+              <li
+                forTreeItem
+                [value]="node.value"
+                [level]="1"
+                [setSize]="flat().length"
+                [posInSet]="node.itemIndex + 1"
+                [itemIndex]="node.itemIndex"
+                [attr.data-test-id]="node.value"
+              >
+                <div forTreeItemLabel>{{ node.value }}</div>
+              </li>
+            }
+          </ul>
+        `,
+      })
+      class RefreshHost {
+        readonly tree = viewChild.required(ForTree);
+        readonly picked = signal<readonly string[]>([]);
+        readonly order = signal<readonly string[]>(['a', 'b', 'c', 'd']);
+        readonly version = signal(0);
+        readonly windowStart = signal(0);
+        readonly windowSize = signal(2);
+        readonly scrolledToIndex = signal<number | null>(null);
+
+        readonly flat = computed(() =>
+          this.order().map((value, itemIndex) => ({ value, itemIndex })),
+        );
+
+        readonly range = computed<readonly [number, number]>(() => {
+          const start = this.windowStart();
+          return [start, Math.min(start + this.windowSize(), this.flat().length)];
+        });
+
+        readonly window = computed(() => {
+          const [start, end] = this.range();
+          return this.flat().slice(start, end);
+        });
+
+        onScroll(index: number): void {
+          this.scrolledToIndex.set(index);
+          const maxStart = Math.max(0, this.flat().length - this.windowSize());
+          this.windowStart.set(Math.min(index, maxStart));
+        }
+      }
+
+      const triggers: readonly {
+        name: string;
+        refresh: (instance: RefreshHost, order: readonly string[]) => void;
+      }[] = [
+        {
+          name: '[dataVersion] changes',
+          refresh: (instance, order) => {
+            instance.order.set(order);
+            instance.version.update((v) => v + 1);
+          },
+        },
+        {
+          name: 'invalidateSnapshot() is called',
+          refresh: (instance, order) => {
+            instance.order.set(order);
+            instance.tree().invalidateSnapshot();
+          },
+        },
+        {
+          name: 'totalCount transitions',
+          refresh: (instance, order) => instance.order.set([...order, 'e']),
+        },
+      ];
+
+      async function strandOnB() {
+        const { el, fixture, instance } = renderHost(RefreshHost);
+        await flush(fixture);
+        const tree = el.querySelector<HTMLElement>('[data-test-tree]')!;
+        tree.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+        await flush(fixture);
+        await pressKey(tree, 'ArrowDown');
+        await flush(fixture);
+        expect(tree.getAttribute('aria-activedescendant')).toBe(
+          el.querySelector<HTMLElement>('[data-test-id="b"]')!.id,
+        );
+
+        instance.windowStart.set(2);
+        await flush(fixture);
+        expect(el.querySelector('[data-test-id="b"]')).toBeNull();
+        expect(tree.getAttribute('aria-activedescendant')).toBeFalsy();
+        return { el, fixture, instance, tree };
+      }
+
+      for (const trigger of triggers) {
+        it(`ArrowDown starts from the edge when ${trigger.name} and another node took the retained position`, async () => {
+          const { el, fixture, instance, tree } = await strandOnB();
+
+          trigger.refresh(instance, ['d', 'c', 'b', 'a']);
+          await flush(fixture);
+          instance.windowStart.set(0);
+          await flush(fixture);
+
+          await pressKey(tree, 'ArrowDown');
+          await flush(fixture);
+          await flush(fixture);
+          expect(instance.scrolledToIndex()).toBeNull();
+          expect(tree.getAttribute('aria-activedescendant')).toBe(
+            el.querySelector<HTMLElement>('[data-test-id="d"]')!.id,
+          );
+        });
+
+        it(`Enter selects nothing when ${trigger.name} and another node took the retained position`, async () => {
+          const { fixture, instance, tree } = await strandOnB();
+
+          trigger.refresh(instance, ['d', 'c', 'b', 'a']);
+          await flush(fixture);
+          instance.windowStart.set(0);
+          await flush(fixture);
+
+          await pressKey(tree, 'Enter');
+          await flush(fixture);
+          expect(instance.picked()).toEqual([]);
+          expect(instance.scrolledToIndex()).toBeNull();
+        });
+
+        it(`ArrowDown resumes from the retained position when ${trigger.name} and its node is unchanged`, async () => {
+          const { el, fixture, instance, tree } = await strandOnB();
+
+          trigger.refresh(instance, ['a', 'b', 'd', 'c']);
+          await flush(fixture);
+          instance.windowStart.set(0);
+          await flush(fixture);
+
+          await pressKey(tree, 'ArrowDown');
+          await flush(fixture);
+          await flush(fixture);
+          expect(instance.scrolledToIndex()).toBe(2);
+          expect(tree.getAttribute('aria-activedescendant')).toBe(
+            el.querySelector<HTMLElement>('[data-test-id="d"]')!.id,
+          );
+        });
+      }
+    });
+
     it('9. non-virtualized path unchanged — no aria-activedescendant; ArrowDown moves DOM focus', async () => {
       const { el, fixture } = await setup();
       const tree = treeOf(el);
