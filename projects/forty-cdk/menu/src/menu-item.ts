@@ -44,10 +44,10 @@ export class ForMenuItem {
 
   /**
    * Override the string used for typeahead matching. Defaults to `''`,
-   * which falls back to the item's `textContent`. Set this when the item
-   * DOM contains icons, kbd hints, or other text that shouldn't bleed
-   * into the match — e.g. `<button forMenuItem textValue="New file">…</button>`
-   * for an item rendered as `New file ⌘N`.
+   * which falls back to the item's accessible text — an `aria-hidden`
+   * subtree is already excluded. Set this when announced text still
+   * shouldn't bleed into the match — e.g. `<button forMenuItem
+   * textValue="New file">…</button>` for an item rendered as `New file ⌘N`.
    */
   readonly textValue = input<string>('');
 

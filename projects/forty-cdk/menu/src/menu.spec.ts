@@ -152,6 +152,58 @@ class TypeaheadOverrideHost {
     ForMenuContent,
     ForMenuItem,
     ForMenuCheckboxItem,
+    ForMenuItemIndicator,
+    ForMenuRadioGroup,
+    ForMenuRadioItem,
+  ],
+  template: `
+    <div forDropdownMenu [(open)]="open">
+      <button forDropdownMenuTrigger>Format</button>
+      @if (open()) {
+        <div forMenuContent>
+          <button id="save" forMenuItem>Save</button>
+          <button id="bold" forMenuCheckboxItem [(checked)]="bold">
+            <span forMenuItemIndicator [forceMount]="true">✓</span>
+            Bold
+          </button>
+          <button id="underline" forMenuCheckboxItem [(checked)]="underline">
+            <span forMenuItemIndicator>✓</span>
+            Underline
+          </button>
+          <button id="slanted" forMenuCheckboxItem [(checked)]="italic" textValue="Oblique">
+            <span forMenuItemIndicator [forceMount]="true">✓</span>
+            Italic
+          </button>
+          <div forMenuRadioGroup [(value)]="sortBy">
+            <button id="name" forMenuRadioItem value="name">
+              <span forMenuItemIndicator [forceMount]="true">●</span>
+              Name
+            </button>
+          </div>
+          <button id="date" forMenuItem>
+            <span class="shortcut" aria-hidden="true">⌘</span>
+            Date modified
+          </button>
+        </div>
+      }
+    </div>
+  `,
+})
+class MenuIndicatorTypeaheadHost {
+  readonly open = signal(true);
+  readonly bold = signal(false);
+  readonly underline = signal(false);
+  readonly italic = signal(false);
+  readonly sortBy = signal<string | null>('name');
+}
+
+@Component({
+  imports: [
+    ForDropdownMenu,
+    ForDropdownMenuTrigger,
+    ForMenuContent,
+    ForMenuItem,
+    ForMenuCheckboxItem,
   ],
   template: `
     <div forDropdownMenu [(open)]="open">
@@ -1086,6 +1138,106 @@ describe('Menu items / content', () => {
         await flush(r.fixture);
 
         expect(document.querySelector('#left')!.getAttribute('data-highlighted')).toBe('');
+      });
+    });
+
+    describe('indicator glyph nested inside the item', () => {
+      it('matches a checkbox item on its visible label while unchecked', async () => {
+        const r = renderHost(MenuIndicatorTypeaheadHost);
+        await flush(r.fixture);
+
+        const save = document.querySelector<HTMLElement>('#save')!;
+        save.focus();
+        pressKey(save, 'b');
+        await flush(r.fixture);
+
+        expect(document.querySelector('#bold')!.getAttribute('data-highlighted')).toBe('');
+      });
+
+      it('matches a checkbox item on its visible label while checked', async () => {
+        const r = renderHost(MenuIndicatorTypeaheadHost);
+        r.instance.bold.set(true);
+        await flush(r.fixture);
+
+        const save = document.querySelector<HTMLElement>('#save')!;
+        save.focus();
+        pressKey(save, 'b');
+        await flush(r.fixture);
+
+        expect(document.querySelector('#bold')!.getAttribute('data-highlighted')).toBe('');
+      });
+
+      it('matches a checkbox item whose indicator is not force-mounted', async () => {
+        const r = renderHost(MenuIndicatorTypeaheadHost);
+        await flush(r.fixture);
+
+        const save = document.querySelector<HTMLElement>('#save')!;
+        save.focus();
+        pressKey(save, 'u');
+        await flush(r.fixture);
+
+        expect(document.querySelector('#underline')!.getAttribute('data-highlighted')).toBe('');
+      });
+
+      it('matches a radio item on its visible label', async () => {
+        const r = renderHost(MenuIndicatorTypeaheadHost);
+        await flush(r.fixture);
+
+        const save = document.querySelector<HTMLElement>('#save')!;
+        save.focus();
+        pressKey(save, 'n');
+        await flush(r.fixture);
+
+        expect(document.querySelector('#name')!.getAttribute('data-highlighted')).toBe('');
+      });
+
+      it('skips an aria-hidden shortcut glyph on a plain item', async () => {
+        const r = renderHost(MenuIndicatorTypeaheadHost);
+        await flush(r.fixture);
+
+        const save = document.querySelector<HTMLElement>('#save')!;
+        save.focus();
+        pressKey(save, 'd');
+        await flush(r.fixture);
+
+        expect(document.querySelector('#date')!.getAttribute('data-highlighted')).toBe('');
+      });
+
+      it('leaves an item with no indicator unaffected', async () => {
+        const r = renderHost(MenuIndicatorTypeaheadHost);
+        await flush(r.fixture);
+
+        const bold = document.querySelector<HTMLElement>('#bold')!;
+        bold.focus();
+        pressKey(bold, 's');
+        await flush(r.fixture);
+
+        expect(document.querySelector('#save')!.getAttribute('data-highlighted')).toBe('');
+      });
+
+      it('matches an indicator-bearing item on its textValue override', async () => {
+        const r = renderHost(MenuIndicatorTypeaheadHost);
+        await flush(r.fixture);
+
+        const save = document.querySelector<HTMLElement>('#save')!;
+        save.focus();
+        pressKey(save, 'o');
+        await flush(r.fixture);
+
+        expect(document.querySelector('#slanted')!.getAttribute('data-highlighted')).toBe('');
+      });
+
+      it('keeps the textValue override ahead of the resolved text', async () => {
+        const r = renderHost(MenuIndicatorTypeaheadHost);
+        await flush(r.fixture);
+
+        const save = document.querySelector<HTMLElement>('#save')!;
+        save.focus();
+        pressKey(save, 'i');
+        await flush(r.fixture);
+
+        expect(document.querySelector('#slanted')!.hasAttribute('data-highlighted')).toBe(false);
+        expect(document.activeElement).toBe(save);
       });
     });
   });

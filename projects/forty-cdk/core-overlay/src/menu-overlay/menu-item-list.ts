@@ -1,6 +1,7 @@
 import { type Signal } from '@angular/core';
 
 import {
+  accessibleTextContent,
   Collection,
   type CollectionHandle,
   firstEnabledHandle,
@@ -105,6 +106,10 @@ export class MenuItemList<H extends MenuItemHandle = MenuItemHandle> {
 
   /**
    * Feeds `event` to the typeahead buffer and focuses the first matching item.
+   * An item matches on its `textValue` when set, else on its accessible text:
+   * an `aria-hidden` subtree (a `[forMenuItemIndicator]` glyph, an icon, a
+   * badge) contributes nothing, while visually-hidden but announced content
+   * still does.
    * Returns `true` when the key was consumed as a typeahead character (a
    * printable char, or Space while the buffer is already non-empty), `false`
    * otherwise. Items applied on a native `<button>` use the return value to
@@ -143,7 +148,7 @@ export class MenuItemList<H extends MenuItemHandle = MenuItemHandle> {
         continue;
       }
       const override = item.textValue?.() ?? '';
-      const source = override !== '' ? override : (item.host.textContent ?? '');
+      const source = override !== '' ? override : accessibleTextContent(item.host);
       if (source.trim().toLowerCase().startsWith(query)) {
         focusMenuItemHost(item.host);
         return true;

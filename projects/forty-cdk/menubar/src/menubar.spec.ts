@@ -18,7 +18,14 @@ import {
   assertSingleValueModelContract,
 } from '../../src/test-utils/contract';
 import type { VetoableEvent, VetoableNativeEvent } from 'forty-cdk/core';
-import { ForMenuContent, ForMenuItem, ForMenuSub, ForMenuSubTrigger } from 'forty-cdk/menu';
+import {
+  ForMenuCheckboxItem,
+  ForMenuContent,
+  ForMenuItem,
+  ForMenuItemIndicator,
+  ForMenuSub,
+  ForMenuSubTrigger,
+} from 'forty-cdk/menu';
 
 import { ForMenubar } from './menubar';
 import { ForMenubarTrigger } from './menubar-trigger';
@@ -235,6 +242,28 @@ class LoneMenubarHost {
 })
 class MenubarTypeaheadHost {
   readonly open = signal<string | null>(null);
+}
+
+@Component({
+  imports: [...IMPORTS, ForMenuCheckboxItem, ForMenuItemIndicator],
+  template: `
+    <div forMenubar [(value)]="open" aria-label="Main">
+      <button forMenubarTrigger value="format">Format</button>
+      @if (open() === 'format') {
+        <div forMenuContent>
+          <button id="fmt-save" forMenuItem>Save</button>
+          <button id="fmt-bold" forMenuCheckboxItem [(checked)]="bold">
+            <span forMenuItemIndicator [forceMount]="true">✓</span>
+            Bold
+          </button>
+        </div>
+      }
+    </div>
+  `,
+})
+class MenubarIndicatorTypeaheadHost {
+  readonly open = signal<string | null>('format');
+  readonly bold = signal(false);
 }
 
 @Component({
@@ -1397,6 +1426,20 @@ describe('ForMenubar', () => {
 
       expect(document.activeElement).toBe(triggers[2]);
       expect(scrollSpy).toHaveBeenCalledWith({ block: 'nearest' });
+    });
+  });
+
+  describe('typeahead inside an open menu', () => {
+    it('matches a checkbox item on its visible label, not on its indicator glyph', async () => {
+      const r = renderHost(MenubarIndicatorTypeaheadHost);
+      await flush(r.fixture);
+
+      const save = document.querySelector<HTMLElement>('#fmt-save')!;
+      save.focus();
+      pressKey(save, 'b');
+      await flush(r.fixture);
+
+      expect(document.activeElement).toBe(document.querySelector('#fmt-bold'));
     });
   });
 
