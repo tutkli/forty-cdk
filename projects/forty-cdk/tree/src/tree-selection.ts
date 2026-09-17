@@ -29,6 +29,8 @@ export interface TreeSelectionDeps<T> {
   readonly visibleNodes: Signal<readonly ForTreeVisibleNode<T>[]>;
   /** Visible node handles in flattened order. */
   readonly visibleHandles: Signal<readonly ForTreeItemHandle<T>[]>;
+  /** Whether a value belongs to a node that takes part in selection. */
+  readonly isSelectable: (value: T) => boolean;
   /** The shared roving-tabindex tracker, used to move focus on shift-extend. */
   readonly roving: RovingTabindex;
   /** Replace the selection value. */
@@ -81,7 +83,7 @@ export class TreeSelection<T> {
   }
 
   select(value: T): void {
-    if (this.#deps.disabled()) {
+    if (this.#deps.disabled() || !this.#deps.isSelectable(value)) {
       return;
     }
     const equals = this.#deps.compareWith();
@@ -147,6 +149,10 @@ export class TreeSelection<T> {
     if (!target) {
       return;
     }
+    this.#deps.roving.focusActive(target.host);
+    if (!target.selectable()) {
+      return;
+    }
     // Establish the range anchor at the origin of the shift-extend run so a
     // following Shift+Space ranges from where the user started extending, not
     // from a stale (or absent) anchor. A pre-existing anchor (e.g. from a prior
@@ -154,7 +160,6 @@ export class TreeSelection<T> {
     if (this.#deps.anchorValue() === null && currentIndex >= 0) {
       this.#deps.setAnchorValue(items[currentIndex]!.value());
     }
-    this.#deps.roving.focusActive(target.host);
     this.#deps.setValue(
       toggleInArray(this.#deps.value(), target.value(), this.#deps.compareWith()),
     );
@@ -179,7 +184,7 @@ export class TreeSelection<T> {
     const next = [...this.#deps.value()];
     for (let i = lo; i <= hi; i++) {
       const item = items[i];
-      if (!item || item.disabled()) {
+      if (!item || item.disabled() || !item.selectable()) {
         continue;
       }
       const value = item.value();
@@ -197,7 +202,7 @@ export class TreeSelection<T> {
     const values = this.#deps
       .visibleNodes()
       .map((entry) => entry.handle)
-      .filter((handle) => !handle.disabled())
+      .filter((handle) => !handle.disabled() && handle.selectable())
       .map((handle) => handle.value());
     if (values.length === 0) {
       return;
@@ -220,6 +225,6 @@ export class TreeSelection<T> {
         fix: 'Bind [descendantsOf] to a function returning the descendant values of a node.',
       });
     }
-    return fn(value);
+    return fn(value).filter((descendant) => this.#deps.isSelectable(descendant));
   }
 }

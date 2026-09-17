@@ -24,6 +24,8 @@ export interface TreeFocusEntry<T = unknown> {
   readonly expandable: boolean;
   /** Effective disabled state. */
   readonly disabled: boolean;
+  /** Whether the node takes part in selection. */
+  readonly selectable: boolean;
 }
 
 /**
@@ -97,7 +99,12 @@ export class RovingFocusModel<T = unknown> implements FocusModel<T> {
       return null;
     }
     const handle = entry.handle;
-    return { value: handle.value(), expandable: handle.expandable(), disabled: handle.disabled() };
+    return {
+      value: handle.value(),
+      expandable: handle.expandable(),
+      disabled: handle.disabled(),
+      selectable: handle.selectable(),
+    };
   }
 
   navigate(action: ListNavigationAction): void {
@@ -119,7 +126,9 @@ export class RovingFocusModel<T = unknown> implements FocusModel<T> {
       return;
     }
     this.#deps.roving.focusActive(target.host);
-    this.#deps.selectOnFocus(target.value());
+    if (target.selectable()) {
+      this.#deps.selectOnFocus(target.value());
+    }
   }
 
   enterChild(): void {
@@ -161,6 +170,7 @@ export class RovingFocusModel<T = unknown> implements FocusModel<T> {
 interface PositionEntry<T> {
   readonly id: string;
   readonly disabled: boolean;
+  readonly selectable: boolean;
   readonly level: number;
   readonly expandable: boolean;
   readonly value: T;
@@ -216,6 +226,7 @@ export class ActiveDescendantFocusModel<T = unknown> implements FocusModel<T> {
             : {
                 id: n.id(),
                 disabled: n.disabled(),
+                selectable: n.selectable(),
                 level: n.level(),
                 expandable: n.expandable(),
                 value,
@@ -249,7 +260,12 @@ export class ActiveDescendantFocusModel<T = unknown> implements FocusModel<T> {
     if (!cur) {
       return null;
     }
-    return { value: cur.value, expandable: cur.expandable, disabled: cur.disabled };
+    return {
+      value: cur.value,
+      expandable: cur.expandable,
+      disabled: cur.disabled,
+      selectable: cur.selectable,
+    };
   }
 
   /**
@@ -323,6 +339,7 @@ export class ActiveDescendantFocusModel<T = unknown> implements FocusModel<T> {
     level: number;
     expandable: boolean;
     disabled: boolean;
+    selectable: boolean;
   } | null {
     const currentId = this.#deps.getActiveId();
     if (currentId === null) {
@@ -338,6 +355,7 @@ export class ActiveDescendantFocusModel<T = unknown> implements FocusModel<T> {
           level: live.level(),
           expandable: live.expandable(),
           disabled: live.disabled(),
+          selectable: live.selectable(),
         };
       }
     }
@@ -350,6 +368,7 @@ export class ActiveDescendantFocusModel<T = unknown> implements FocusModel<T> {
           level: entry.level,
           expandable: entry.expandable,
           disabled: entry.disabled,
+          selectable: entry.selectable,
         };
       }
     }
@@ -379,6 +398,7 @@ export class ActiveDescendantFocusModel<T = unknown> implements FocusModel<T> {
     level: number;
     expandable: boolean;
     disabled: boolean;
+    selectable: boolean;
   } | null {
     const pos = this.#resumePos();
     if (pos === null) {
@@ -394,6 +414,7 @@ export class ActiveDescendantFocusModel<T = unknown> implements FocusModel<T> {
       level: entry.level,
       expandable: entry.expandable,
       disabled: entry.disabled,
+      selectable: entry.selectable,
     };
   }
 }

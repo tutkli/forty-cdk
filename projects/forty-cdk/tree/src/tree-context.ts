@@ -36,6 +36,12 @@ export interface ForTreeItemHandle<T = unknown> {
   readonly value: Signal<T>;
   /** Effective disabled state (own `disabled` OR the root's `disabled`). */
   readonly disabled: Signal<boolean>;
+  /**
+   * Whether the node takes part in selection. A `false` node stays in
+   * navigation and typeahead but carries no selection state, never enters the
+   * root's `value`, and drops out of a cascade's descendant set.
+   */
+  readonly selectable: Signal<boolean>;
   /** Whether a `[forTreeItemToggle]` is registered, marking the item a parent. */
   readonly expandable: Signal<boolean>;
   /** Nested `[forTreeGroup]` container, present only while the item is expanded. */
@@ -113,7 +119,10 @@ export interface ForTreeContext<T = unknown> {
   checkState(value: T): 'true' | 'false' | 'mixed';
   /** Open or close a node, mutating the `expanded` array immutably. */
   setExpanded(value: T, open: boolean): void;
-  /** Single mode replaces the selection; multi mode toggles the value. */
+  /**
+   * Single mode replaces the selection; multi mode toggles the value. A value
+   * belonging to a `[selectable]="false"` node is ignored.
+   */
   select(value: T): void;
   /**
    * Move roving focus from `currentItem` to the next / previous / first /
@@ -196,7 +205,10 @@ export interface ForTreeItemContext<T = unknown> {
   readonly level: Signal<number>;
   readonly expanded: Signal<boolean>;
   readonly expandable: Signal<boolean>;
-  /** Whether this node is in the root's selection set (its `aria-checked` / `aria-selected` state). */
+  /**
+   * Whether this node is in the root's selection set (its `aria-checked` /
+   * `aria-selected` state). Always `false` on a `[selectable]="false"` node.
+   */
   readonly selected: Signal<boolean>;
   /** Tri-state checkbox status of this node (`'true'` / `'false'` / `'mixed'`). */
   readonly checkState: Signal<'true' | 'false' | 'mixed'>;
@@ -208,7 +220,7 @@ export interface ForTreeItemContext<T = unknown> {
   setLabel(el: HTMLElement | null): void;
   /** Toggle expansion. No-op on leaves or when disabled. */
   toggle(): void;
-  /** Select / activate the item. No-op when disabled. */
+  /** Select / activate the item. No-op when disabled or not selectable. */
   select(): void;
   /** Move roving focus to the item. No-op when disabled. */
   focusItem(): void;
