@@ -46,9 +46,12 @@ export interface ForTreeItemHandle<T = unknown> {
   readonly expandable: Signal<boolean>;
   /** Nested `[forTreeGroup]` container, present only while the item is expanded. */
   readonly childContainer: Signal<ForTreeContainerContext<T> | null>;
-  /** Typeahead text override; empty when the default label text should be used. */
+  /**
+   * Text override for the node's name, honored by typeahead matching and by the
+   * drag announcements; empty when the label's text should be used.
+   */
   readonly textValue: Signal<string>;
-  /** The `[forTreeItemLabel]` element, used as the default typeahead text source. */
+  /** The `[forTreeItemLabel]` element, used as the default text source. */
   readonly labelEl: Signal<HTMLElement | null>;
   /**
    * The resolved typeahead text — `textValue` when set, else the label

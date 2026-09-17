@@ -105,8 +105,9 @@ export class ForTreeItem<T = string> implements ForTreeItemContext<T> {
   readonly selectable = input(true, { transform: booleanAttribute });
 
   /**
-   * Typeahead text source override. Falls back to the `[forTreeItemLabel]`
-   * element's text content when empty (default).
+   * Text override for this node's name — typeahead matching and drag
+   * announcements alike. Falls back to the `[forTreeItemLabel]` element's
+   * accessible text when empty (default).
    */
   readonly textValue = input<string>('');
 

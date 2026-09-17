@@ -46,11 +46,14 @@ export function buildTreeDropRows<T>(
 }
 
 /**
- * The visible row's trimmed accessible label (its label element, else its whole host), with any
+ * The visible row's trimmed announced text: the node's `[textValue]` override when set, else the
+ * accessible text of its label element (its whole host when it registers none), with any
  * `aria-hidden` subtree — a toggle or checkbox glyph — excluded.
  */
 export function treeNodeLabel(entry: ForTreeVisibleNode<unknown>): string {
-  return accessibleTextContent(entry.handle.labelEl() ?? entry.handle.host).trim();
+  const handle = entry.handle;
+  const override = handle.textValue();
+  return (override || accessibleTextContent(handle.labelEl() ?? handle.host)).trim();
 }
 
 /**

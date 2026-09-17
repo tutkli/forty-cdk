@@ -720,6 +720,118 @@ describe('ForTreeNodeDrag — i18n announcements', () => {
   });
 });
 
+@Component({
+  imports: [ForTree, ForTreeNodeDrag, ForTreeItem, ForTreeItemLabel, ForTreeItemToggle],
+  providers: [
+    provideForTreeDefaults({
+      dragAnnounceLift: (label) => `[lift] ${label}`,
+      dragAnnounceMove: (label, parentLabel, position, total) =>
+        `[move] ${label} @ ${parentLabel ?? 'root'} ${position}/${total}`,
+      dragAnnounceDrop: (label, parentLabel, position, total) =>
+        `[drop] ${label} @ ${parentLabel ?? 'root'} ${position}/${total}`,
+      dragAnnounceCancel: (label) => `[cancel] ${label}`,
+      dragAnnounceInvalid: (label) => `[invalid] ${label}`,
+    }),
+  ],
+  template: `
+    <ul
+      forTree
+      forTreeNodeDrag
+      [canDrop]="canDropFn()"
+      (nodeDrop)="dropped.set($event)"
+      aria-label="Files"
+    >
+      <li forTreeItem value="a" textValue="Zulu" data-testid="a">
+        <div forTreeItemLabel>Alpha</div>
+      </li>
+      <li forTreeItem value="b" textValue="Yankee" data-testid="b">
+        <div forTreeItemLabel>Bravo</div>
+      </li>
+      <li forTreeItem value="c" data-testid="c">
+        <div forTreeItemLabel><span forTreeItemToggle>▸</span>Charlie</div>
+      </li>
+    </ul>
+  `,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class TreeDragTextValueHost {
+  readonly canDropFn = signal<((e: ForTreeDragDropEvent) => boolean) | undefined>(undefined);
+  readonly dropped = signal<ForTreeDragDropEvent | null>(null);
+}
+
+describe('ForTreeNodeDrag — [textValue] in announcements', () => {
+  it('announces the override on lift, move and drop, for the node and for its parent', async () => {
+    const { query, flush: f } = renderHost(TreeDragTextValueHost);
+    await f();
+
+    const tree = query<HTMLElement>('[forTree]')!;
+    const alpha = query<HTMLElement>('[data-testid="a"]')!;
+    alpha.focus();
+
+    dispatchKey(alpha, ' ', { ctrlKey: true });
+    await f();
+    expect(liveRegion('assertive')?.textContent).toBe('[lift] Zulu');
+
+    dispatchKey(tree, 'ArrowDown', {});
+    await f();
+    expect(liveRegion('polite')?.textContent).toBe('[move] Zulu @ root 2/3');
+
+    dispatchKey(tree, 'ArrowRight', {});
+    await f();
+    expect(liveRegion('polite')?.textContent).toBe('[move] Zulu @ Yankee 1/1');
+
+    dispatchKey(tree, ' ', {});
+    await f();
+    expect(liveRegion('assertive')?.textContent).toBe('[drop] Zulu @ Yankee 1/1');
+  });
+
+  it('announces the override when the lift is cancelled', async () => {
+    const { query, flush: f } = renderHost(TreeDragTextValueHost);
+    await f();
+
+    const tree = query<HTMLElement>('[forTree]')!;
+    const alpha = query<HTMLElement>('[data-testid="a"]')!;
+    alpha.focus();
+
+    dispatchKey(alpha, ' ', { ctrlKey: true });
+    await f();
+    dispatchKey(tree, 'Escape', {});
+    await f();
+
+    expect(liveRegion('assertive')?.textContent).toBe('[cancel] Zulu');
+  });
+
+  it('announces the override when a canDrop veto rejects the drop', async () => {
+    const { instance, query, flush: f } = renderHost(TreeDragTextValueHost);
+    instance.canDropFn.set(() => false);
+    await f();
+
+    const tree = query<HTMLElement>('[forTree]')!;
+    const alpha = query<HTMLElement>('[data-testid="a"]')!;
+    alpha.focus();
+
+    dispatchKey(alpha, ' ', { ctrlKey: true });
+    await f();
+    dispatchKey(tree, ' ', {});
+    await f();
+
+    expect(liveRegion('assertive')?.textContent).toBe('[invalid] Zulu');
+  });
+
+  it('falls back to the label accessible text on a node carrying no override', async () => {
+    const { query, flush: f } = renderHost(TreeDragTextValueHost);
+    await f();
+
+    const charlie = query<HTMLElement>('[data-testid="c"]')!;
+    charlie.focus();
+
+    dispatchKey(charlie, ' ', { ctrlKey: true });
+    await f();
+
+    expect(liveRegion('assertive')?.textContent).toBe('[lift] Charlie');
+  });
+});
+
 describe('ForTreeNodeDrag — keyboard drag', () => {
   it('emits nodeDrop after a keyboard lift and drop', async () => {
     TestBed.configureTestingModule({
