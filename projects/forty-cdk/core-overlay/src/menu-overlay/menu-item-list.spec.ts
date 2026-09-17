@@ -7,10 +7,17 @@ interface TestItem extends MenuItemHandle {
   readonly id: string;
 }
 
-function makeItem(id: string, opts: { disabled?: boolean; text?: string } = {}): TestItem {
+function makeItem(
+  id: string,
+  opts: { disabled?: boolean; text?: string; html?: string } = {},
+): TestItem {
   const host = document.createElement('button');
   host.id = id;
-  host.textContent = opts.text ?? id;
+  if (opts.html !== undefined) {
+    host.innerHTML = opts.html;
+  } else {
+    host.textContent = opts.text ?? id;
+  }
   document.body.appendChild(host);
   return {
     id,
@@ -200,6 +207,38 @@ describe('MenuItemList', () => {
       expect(list.handleTypeahead(new KeyboardEvent('keydown', { key: ' ' }))).toBe(false);
       expect(list.handleTypeahead(new KeyboardEvent('keydown', { key: 'n' }))).toBe(true);
       expect(list.handleTypeahead(new KeyboardEvent('keydown', { key: ' ' }))).toBe(true);
+    });
+
+    it('excludes an aria-hidden indicator glyph from the matched text', () => {
+      const list = build();
+      const cut = makeItem('cut', { text: 'Cut' });
+      const bold = makeItem('bold', { html: '<span aria-hidden="true">✓</span>\n      Bold' });
+      list.registerItem(cut);
+      list.registerItem(bold);
+
+      cut.host.focus();
+      const event = new KeyboardEvent('keydown', { key: 'b' });
+      cut.host.dispatchEvent(event);
+      list.handleTypeahead(event);
+
+      expect(document.activeElement).toBe(bold.host);
+    });
+
+    it('keeps visually hidden but announced text in the matched text', () => {
+      const list = build();
+      const cut = makeItem('cut', { text: 'Cut' });
+      const bold = makeItem('bold', {
+        html: '<span hidden style="display: none">Bold</span>',
+      });
+      list.registerItem(cut);
+      list.registerItem(bold);
+
+      cut.host.focus();
+      const event = new KeyboardEvent('keydown', { key: 'b' });
+      cut.host.dispatchEvent(event);
+      list.handleTypeahead(event);
+
+      expect(document.activeElement).toBe(bold.host);
     });
   });
 

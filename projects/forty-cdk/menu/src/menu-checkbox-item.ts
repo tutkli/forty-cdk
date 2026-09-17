@@ -74,8 +74,9 @@ export class ForMenuCheckboxItem {
 
   /**
    * Override the string used for typeahead matching. Defaults to `''`,
-   * which falls back to the item's `textContent`. See `[forMenuItem]`
-   * for the rationale.
+   * which falls back to the item's accessible text — the
+   * `[forMenuItemIndicator]` glyph never bleeds into the match. See
+   * `[forMenuItem]` for the rationale.
    */
   readonly textValue = input<string>('');
 

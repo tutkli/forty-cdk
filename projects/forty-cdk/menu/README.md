@@ -451,7 +451,7 @@ Outputs match the other trigger-anchored overlays: `(escapeKeyDown)`, `(pointerD
 - **Escape** — close the menu and return focus to the trigger. Inside a submenu, closes only that level (parent stays open).
 - **ArrowRight** (on a `[forMenuSubTrigger]`) — open the submenu and focus its first item. (LTR.)
 - **ArrowLeft** (on an item inside a submenu) — close the submenu and return focus to the `[forMenuSubTrigger]`.
-- **Typeahead** — single printable characters move focus to the first item whose text starts with the buffered string. Disabled items are skipped. By default the match is run against the item's `textContent`; pass `textValue="…"` on `[forMenuItem]`, `[forMenuCheckboxItem]`, or `[forMenuRadioItem]` to override the matched string when the DOM contains icons, kbd hints, or badges that would otherwise bleed into it.
+- **Typeahead** — single printable characters move focus to the first item whose text starts with the buffered string. Disabled items are skipped. By default the match is run against the item's **accessible text**, so an `aria-hidden` subtree — the `[forMenuItemIndicator]` glyph, a decorative icon — never bleeds into it, while visually-hidden but announced content still counts. Pass `textValue="…"` on `[forMenuItem]`, `[forMenuCheckboxItem]`, or `[forMenuRadioItem]` to override the matched string when announced text such as a kbd hint or a badge would otherwise bleed into it.
 
   ```html
   <!-- Without textValue, prefix-match would compare against "3 Archive" -->
