@@ -3538,14 +3538,14 @@ describe('ForSelectIndicator', () => {
           </button>
           @if (open()) {
             <div forSelectContent data-test-id="content">
-              @for (i of windowIndices(); track i) {
+              @for (row of windowRows(); track row.index) {
                 <button
                   forSelectOption
-                  [value]="'item-' + i"
-                  [posInSet]="i"
-                  [attr.data-test-id]="'opt-' + i"
+                  [value]="'item-' + row.index"
+                  [posInSet]="row.index"
+                  [attr.data-test-id]="'opt-' + row.index"
                 >
-                  Item {{ i }}
+                  Item {{ row.index }}
                 </button>
               }
             </div>
@@ -3560,9 +3560,9 @@ describe('ForSelectIndicator', () => {
       readonly range = signal<readonly [number, number]>([0, 10]);
       readonly selIndex = signal<number | undefined>(undefined);
       readonly scrolled = signal<number | null>(null);
-      windowIndices() {
+      windowRows() {
         const [s, e] = this.range();
-        return Array.from({ length: e - s }, (_, k) => s + k);
+        return Array.from({ length: e - s }, (_, k) => ({ index: s + k }));
       }
       onScrollToIndex(idx: number) {
         this.scrolled.set(idx);
@@ -3764,6 +3764,21 @@ describe('ForSelectIndicator', () => {
       const opt2 = voptOf(2);
       expect(opt2.getAttribute('data-state')).toBe('checked');
       expect(opt2.getAttribute('aria-selected')).toBe('true');
+    });
+
+    it('an option whose index stays in the window keeps its DOM node across a scroll', async () => {
+      const r = renderHost(VirtualSelectHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      const survivor = voptOf(5);
+      const leaving = voptOf(0);
+
+      r.instance.range.set([5, 15]);
+      await flush(r.fixture);
+
+      expect(voptOf(5)).toBe(survivor);
+      expect(document.querySelector('[data-test-id="opt-0"]')).toBeNull();
+      expect(leaving.isConnected).toBe(false);
     });
 
     describe('label snapshot', () => {
