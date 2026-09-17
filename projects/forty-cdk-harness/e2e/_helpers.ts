@@ -616,6 +616,23 @@ export function expectDeepFocused(page: Page, testid: string): Promise<void> {
 }
 
 /**
+ * Read the `data-index` of the node a container's `aria-activedescendant` names,
+ * in a single round trip — `null` when there is no active descendant, or when the
+ * node it names is not mounted.
+ *
+ * Use this inside an `expect.poll` over a virtualized widget — never a locator
+ * built from an id read in a previous step, which throws once that id goes stale
+ * and ends the poll instead of retrying.
+ */
+export function activeDescendantIndex(container: Locator): Promise<string | null> {
+  return container.evaluate((el) => {
+    const activeId = el.getAttribute('aria-activedescendant');
+    if (!activeId) return null;
+    return el.ownerDocument.getElementById(activeId)?.getAttribute('data-index') ?? null;
+  });
+}
+
+/**
  * Drive an IME composition sequence on `input` entirely from script. Playwright
  * has no real IME engine, so these mirror what the browser emits during a
  * `compositionstart → insertCompositionText → compositionend` cycle — the path

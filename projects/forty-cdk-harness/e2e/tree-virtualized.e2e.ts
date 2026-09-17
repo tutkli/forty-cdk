@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { el, gotoFixture } from './_helpers';
+import { activeDescendantIndex, el, gotoFixture } from './_helpers';
 
 test.describe('Tree virtualization (Shape C)', () => {
   test('windowed render — only a small window of the 2550 nodes is mounted', async ({ page }) => {
@@ -72,16 +72,7 @@ test.describe('Tree virtualization (Shape C)', () => {
       .poll(() => tree.getAttribute('aria-activedescendant'), { timeout: 10000 })
       .toBeTruthy();
     await page.keyboard.press('ArrowDown');
-    await expect
-      .poll(
-        async () => {
-          const activeId = await tree.getAttribute('aria-activedescendant');
-          if (!activeId) return null;
-          return page.locator(`[id="${activeId}"]`).getAttribute('data-index');
-        },
-        { timeout: 10000 },
-      )
-      .toBe('1');
+    await expect.poll(() => activeDescendantIndex(tree), { timeout: 10000 }).toBe('1');
 
     await tree.hover();
     await page.mouse.wheel(0, 4000);
@@ -110,29 +101,11 @@ test.describe('Tree virtualization (Shape C)', () => {
       .toBeTruthy();
 
     await page.keyboard.press('End');
-    await expect
-      .poll(
-        async () => {
-          const activeId = await tree.getAttribute('aria-activedescendant');
-          if (!activeId) return null;
-          return page.locator(`[id="${activeId}"]`).getAttribute('data-index');
-        },
-        { timeout: 10000 },
-      )
-      .toBe('2549');
+    await expect.poll(() => activeDescendantIndex(tree), { timeout: 10000 }).toBe('2549');
     await expect(page.locator('[data-index="0"]')).toHaveCount(0);
 
     await page.keyboard.press('c');
-    await expect
-      .poll(
-        async () => {
-          const activeId = await tree.getAttribute('aria-activedescendant');
-          if (!activeId) return null;
-          return page.locator(`[id="${activeId}"]`).getAttribute('data-index');
-        },
-        { timeout: 10000 },
-      )
-      .toBe('1');
+    await expect.poll(() => activeDescendantIndex(tree), { timeout: 10000 }).toBe('1');
     await expect(page.locator('[data-index="1"]')).toContainText('Child 0-0');
   });
 
