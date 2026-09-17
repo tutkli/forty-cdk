@@ -160,6 +160,10 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
    * itself), used to cascade selection and derive `'mixed'` across collapsed —
    * possibly unmounted — subtrees. **Required** when {@link ForTree.cascade} is
    * `true`; the tree throws a `[forty-cdk/tree]` error otherwise.
+   *
+   * Leave out the values of any `[selectable]="false"` node: a mounted one is
+   * dropped here anyway, but an unmounted one the tree cannot see would hold
+   * its ancestors at `'mixed'` forever.
    */
   readonly descendantsOf = input<(value: T) => readonly T[]>();
 
@@ -285,6 +289,12 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
 
   readonly #visibleHandles = computed(() => this.#visibleEntries().map((entry) => entry.handle));
 
+  readonly #nonSelectableValues = computed<readonly T[]>(() =>
+    this.#visibleHandles()
+      .filter((handle) => !handle.selectable())
+      .map((handle) => handle.value()),
+  );
+
   readonly #firstEnabledRoot = computed(() => firstEnabledHost(this.#items.items()));
 
   readonly #firstSelectedHost = computed<HTMLElement | null>(() => {
@@ -340,6 +350,7 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
     descendantsOf: this.descendantsOf,
     visibleNodes: this.#visibleEntries,
     visibleHandles: this.#visibleHandles,
+    isSelectable: (value) => this.#isSelectable(value),
     roving: this.roving,
     setValue: (next) => this.value.set(next),
     setExpanded: (next) => this.expanded.set(next),
@@ -423,6 +434,15 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
   }
 
   /**
+   * Whether a value belongs to a mounted node that declined selection
+   * (`[selectable]="false"`). Unmounted nodes are unknowable here, which is why
+   * {@link ForTree.descendantsOf} is documented to return selectable values only.
+   */
+  #isSelectable(value: T): boolean {
+    return !isInArray(this.#nonSelectableValues(), value, this.compareWith());
+  }
+
+  /**
    * Tri-state check status of a node in `selectionMode="checkbox"`. Without
    * cascade (or in `'highlight'` mode) returns `'true'` / `'false'` by direct
    * membership. With cascade a parent returns `'true'` when all its descendants
@@ -459,7 +479,8 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
 
   /**
    * Single mode replaces the selection; multi and checkbox modes toggle the
-   * value. An item whose `[value]` binding is not written yet is dropped.
+   * value. An item whose `[value]` binding is not written yet is dropped, and
+   * so is one belonging to a `[selectable]="false"` node.
    */
   select(value: T): void {
     if (isUnset(value)) {
@@ -634,6 +655,7 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
     const cur = model.current();
     if (!cur || cur.disabled) return;
     model.resumeActive();
+    if (!cur.selectable) return;
     this.select(cur.value);
   }
 

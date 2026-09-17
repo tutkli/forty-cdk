@@ -133,6 +133,8 @@ const labelOf = (host: HTMLElement, id: string) =>
   host.querySelector<HTMLElement>(`[data-test-label="${id}"]`)!;
 const toggleOf = (host: HTMLElement, id: string) =>
   host.querySelector<HTMLElement>(`[data-test-toggle="${id}"]`)!;
+const checkboxOfTest = (host: HTMLElement, id: string) =>
+  host.querySelector<HTMLElement>(`[data-test-checkbox="${id}"]`)!;
 const visibleItems = (host: HTMLElement): HTMLElement[] =>
   Array.from(host.querySelectorAll<HTMLElement>('[role="treeitem"]'));
 
@@ -1251,6 +1253,371 @@ describe('ForTree', () => {
       cascadeCheckboxOf(el, 'g').click();
       await flush(fixture);
       expect(cascadeItemOf(el, 'g1').getAttribute('aria-checked')).toBe('true');
+    });
+  });
+
+  describe('structural nodes (selectable = false)', () => {
+    const STRUCTURAL_DESCENDANTS: Record<string, readonly string[]> = {
+      filters: ['colors', 'red', 'blue', 'sizes', 'small', 'large'],
+      colors: ['red', 'blue'],
+      sizes: ['small', 'large'],
+    };
+
+    @Component({
+      imports: [
+        ForTree,
+        ForTreeItem,
+        ForTreeItemLabel,
+        ForTreeItemToggle,
+        ForTreeGroup,
+        ForTreeItemCheckbox,
+      ],
+      template: `
+        <ul
+          forTree
+          selectionMode="checkbox"
+          cascade
+          [descendantsOf]="descendantsFn"
+          [(value)]="picked"
+          [(expanded)]="open"
+          aria-label="Filters"
+        >
+          <li forTreeItem value="filters" data-test-id="filters">
+            <div forTreeItemLabel data-test-label="filters">
+              <span forTreeItemToggle data-test-toggle="filters">▸</span>
+              <span forTreeItemCheckbox data-test-checkbox="filters">✓</span>
+              <span>Filters</span>
+            </div>
+            @if (open().includes('filters')) {
+              <ul forTreeGroup>
+                <li
+                  forTreeItem
+                  value="colors"
+                  [selectable]="false"
+                  textValue="Colors"
+                  data-test-id="colors"
+                >
+                  <div forTreeItemLabel data-test-label="colors">
+                    <span forTreeItemToggle data-test-toggle="colors">▸</span>
+                    <span>Colors</span>
+                  </div>
+                  @if (open().includes('colors')) {
+                    <ul forTreeGroup>
+                      <li forTreeItem value="red" data-test-id="red">
+                        <div forTreeItemLabel data-test-label="red">
+                          <span forTreeItemCheckbox data-test-checkbox="red">✓</span>
+                          <span>Red</span>
+                        </div>
+                      </li>
+                      <li forTreeItem value="blue" data-test-id="blue">
+                        <div forTreeItemLabel data-test-label="blue">
+                          <span forTreeItemCheckbox data-test-checkbox="blue">✓</span>
+                          <span>Blue</span>
+                        </div>
+                      </li>
+                    </ul>
+                  }
+                </li>
+                <li forTreeItem value="sizes" [selectable]="false" data-test-id="sizes">
+                  <div forTreeItemLabel data-test-label="sizes">
+                    <span forTreeItemToggle data-test-toggle="sizes">▸</span>
+                    <span>Sizes</span>
+                  </div>
+                  @if (open().includes('sizes')) {
+                    <ul forTreeGroup>
+                      <li forTreeItem value="small" data-test-id="small">
+                        <div forTreeItemLabel data-test-label="small"><span>Small</span></div>
+                      </li>
+                      <li forTreeItem value="large" data-test-id="large">
+                        <div forTreeItemLabel data-test-label="large"><span>Large</span></div>
+                      </li>
+                    </ul>
+                  }
+                </li>
+              </ul>
+            }
+          </li>
+        </ul>
+      `,
+    })
+    class StructuralHost {
+      readonly picked = signal<readonly string[]>([]);
+      readonly open = signal<readonly string[]>(['filters', 'colors', 'sizes']);
+      readonly descendantsFn = (v: string): readonly string[] => STRUCTURAL_DESCENDANTS[v] ?? [];
+    }
+
+    async function setupStructural(configure?: (i: StructuralHost) => void) {
+      const result = renderHost(StructuralHost);
+      configure?.(result.instance);
+      await flush(result.fixture);
+      return result;
+    }
+
+    it('emits no aria-checked and no data-checked, while a selectable sibling emits both', async () => {
+      const { el } = await setupStructural();
+      const colors = itemOf(el, 'colors');
+      expect(colors.hasAttribute('aria-checked')).toBe(false);
+      expect(colors.hasAttribute('data-checked')).toBe(false);
+      expect(colors.hasAttribute('data-selected')).toBe(false);
+
+      const red = itemOf(el, 'red');
+      expect(red.getAttribute('aria-checked')).toBe('false');
+      expect(red.getAttribute('data-checked')).toBe('false');
+    });
+
+    it('stays silent on aria-checked even while its own group is partially checked', async () => {
+      const { el, fixture } = await setupStructural((i) => i.picked.set(['red']));
+      expect(itemOf(el, 'colors').hasAttribute('aria-checked')).toBe(false);
+
+      fixture.componentInstance.picked.set(['red', 'blue']);
+      await flush(fixture);
+      expect(itemOf(el, 'colors').hasAttribute('aria-checked')).toBe(false);
+    });
+
+    it('keeps aria-level / aria-setsize / aria-posinset and aria-expanded', async () => {
+      const { el, fixture } = await setupStructural();
+      const colors = itemOf(el, 'colors');
+      expect(colors.getAttribute('aria-level')).toBe('2');
+      expect(colors.getAttribute('aria-setsize')).toBe('2');
+      expect(colors.getAttribute('aria-posinset')).toBe('1');
+      expect(colors.getAttribute('aria-expanded')).toBe('true');
+      expect(colors.getAttribute('data-state')).toBe('open');
+
+      toggleOf(el, 'colors').click();
+      await flush(fixture);
+      expect(colors.getAttribute('aria-expanded')).toBe('false');
+      expect(fixture.componentInstance.picked()).toEqual([]);
+    });
+
+    it('carries no aria-disabled and stays reachable by arrows, Home / End and typeahead', async () => {
+      const { el } = await setupStructural();
+      const colors = itemOf(el, 'colors');
+      expect(colors.hasAttribute('aria-disabled')).toBe(false);
+      expect(colors.getAttribute('tabindex')).toBe('-1');
+
+      pressKey(itemOf(el, 'filters'), 'ArrowDown');
+      expect(document.activeElement).toBe(colors);
+
+      pressKey(colors, 'End');
+      expect(document.activeElement).toBe(itemOf(el, 'large'));
+
+      pressKey(itemOf(el, 'large'), 'Home');
+      expect(document.activeElement).toBe(itemOf(el, 'filters'));
+
+      pressKey(itemOf(el, 'filters'), 'c');
+      expect(document.activeElement).toBe(colors);
+    });
+
+    it('Space, Enter and a label click leave the selection untouched', async () => {
+      const { el, fixture } = await setupStructural();
+      const colors = itemOf(el, 'colors');
+
+      pressKey(colors, ' ');
+      await flush(fixture);
+      expect(fixture.componentInstance.picked()).toEqual([]);
+
+      pressKey(colors, 'Enter');
+      await flush(fixture);
+      expect(fixture.componentInstance.picked()).toEqual([]);
+
+      labelOf(el, 'colors').click();
+      await flush(fixture);
+      expect(fixture.componentInstance.picked()).toEqual([]);
+    });
+
+    it('cascade skips it when an ancestor checks: it never enters the value, its descendants do', async () => {
+      const { el, fixture } = await setupStructural();
+      checkboxOfTest(el, 'filters').click();
+      await flush(fixture);
+
+      const picked = fixture.componentInstance.picked();
+      expect(picked).toEqual(['filters', 'red', 'blue', 'small', 'large']);
+      expect(picked).not.toContain('colors');
+      expect(picked).not.toContain('sizes');
+    });
+
+    it('cascade excludes it from an ancestor checkState: every selectable descendant checked reads "true", not "mixed"', async () => {
+      const { el, fixture } = await setupStructural((i) =>
+        i.picked.set(['red', 'blue', 'small', 'large']),
+      );
+      expect(itemOf(el, 'filters').getAttribute('aria-checked')).toBe('true');
+
+      fixture.componentInstance.picked.set(['red', 'small']);
+      await flush(fixture);
+      expect(itemOf(el, 'filters').getAttribute('aria-checked')).toBe('mixed');
+    });
+
+    it('cascade still reaches its own descendants: unchecking one drops the ancestor to mixed', async () => {
+      const { el, fixture } = await setupStructural((i) =>
+        i.picked.set(['filters', 'red', 'blue', 'small', 'large']),
+      );
+      expect(itemOf(el, 'filters').getAttribute('aria-checked')).toBe('true');
+
+      checkboxOfTest(el, 'red').click();
+      await flush(fixture);
+      expect(fixture.componentInstance.picked()).not.toContain('red');
+      expect(itemOf(el, 'filters').getAttribute('aria-checked')).toBe('mixed');
+    });
+
+    describe('highlight mode', () => {
+      @Component({
+        imports: [ForTree, ForTreeItem, ForTreeItemLabel],
+        template: `
+          <ul
+            forTree
+            [multiple]="isMulti()"
+            [selectionFollowsFocus]="follow()"
+            [(value)]="picked"
+            aria-label="Options"
+          >
+            <li forTreeItem value="one" data-test-id="one">
+              <div forTreeItemLabel data-test-label="one"><span>One</span></div>
+            </li>
+            <li forTreeItem value="group" [selectable]="false" data-test-id="group">
+              <div forTreeItemLabel data-test-label="group"><span>Group</span></div>
+            </li>
+            <li forTreeItem value="two" data-test-id="two">
+              <div forTreeItemLabel data-test-label="two"><span>Two</span></div>
+            </li>
+          </ul>
+        `,
+      })
+      class HighlightStructuralHost {
+        readonly picked = signal<readonly string[]>([]);
+        readonly isMulti = signal(false);
+        readonly follow = signal(false);
+      }
+
+      async function setupHighlight(configure?: (i: HighlightStructuralHost) => void) {
+        const result = renderHost(HighlightStructuralHost);
+        configure?.(result.instance);
+        await flush(result.fixture);
+        return result;
+      }
+
+      it('emits no aria-selected, while a selectable sibling emits it', async () => {
+        const { el } = await setupHighlight();
+        expect(itemOf(el, 'group').hasAttribute('aria-selected')).toBe(false);
+        expect(itemOf(el, 'one').getAttribute('aria-selected')).toBe('false');
+      });
+
+      it('Ctrl+A skips it', async () => {
+        const { el, fixture } = await setupHighlight((i) => i.isMulti.set(true));
+        pressKey(itemOf(el, 'one'), 'a', { ctrlKey: true });
+        await flush(fixture);
+        expect(fixture.componentInstance.picked()).toEqual(['one', 'two']);
+      });
+
+      it('Shift+Space ranges across it without selecting it', async () => {
+        const { el, fixture } = await setupHighlight((i) => i.isMulti.set(true));
+        labelOf(el, 'one').click();
+        await flush(fixture);
+
+        pressKey(itemOf(el, 'two'), ' ', { shiftKey: true });
+        await flush(fixture);
+        expect(fixture.componentInstance.picked()).toEqual(['one', 'two']);
+      });
+
+      it('Shift+ArrowDown moves focus onto it without selecting it', async () => {
+        const { el, fixture } = await setupHighlight((i) => i.isMulti.set(true));
+        pressKey(itemOf(el, 'one'), 'ArrowDown', { shiftKey: true });
+        await flush(fixture);
+        expect(document.activeElement).toBe(itemOf(el, 'group'));
+        expect(fixture.componentInstance.picked()).toEqual([]);
+      });
+
+      it('selectionFollowsFocus leaves the selection behind when focus lands on it', async () => {
+        const { el, fixture } = await setupHighlight((i) => i.follow.set(true));
+        labelOf(el, 'one').click();
+        await flush(fixture);
+        expect(fixture.componentInstance.picked()).toEqual(['one']);
+
+        pressKey(itemOf(el, 'one'), 'ArrowDown');
+        await flush(fixture);
+        expect(document.activeElement).toBe(itemOf(el, 'group'));
+        expect(fixture.componentInstance.picked()).toEqual(['one']);
+
+        pressKey(itemOf(el, 'group'), 'ArrowDown');
+        await flush(fixture);
+        expect(fixture.componentInstance.picked()).toEqual(['two']);
+      });
+    });
+
+    describe('virtualized path', () => {
+      @Component({
+        imports: [ForTree, ForTreeItem, ForTreeItemLabel],
+        template: `
+          <ul
+            forTree
+            data-test-tree
+            [(value)]="picked"
+            [totalCount]="3"
+            [visibleRange]="range"
+            aria-label="Virtual"
+          >
+            <li
+              forTreeItem
+              value="v0"
+              [itemIndex]="0"
+              [level]="1"
+              [setSize]="3"
+              [posInSet]="1"
+              data-test-id="v0"
+            >
+              <div forTreeItemLabel><span>V0</span></div>
+            </li>
+            <li
+              forTreeItem
+              value="v1"
+              [selectable]="false"
+              [itemIndex]="1"
+              [level]="1"
+              [setSize]="3"
+              [posInSet]="2"
+              data-test-id="v1"
+            >
+              <div forTreeItemLabel><span>V1</span></div>
+            </li>
+            <li
+              forTreeItem
+              value="v2"
+              [itemIndex]="2"
+              [level]="1"
+              [setSize]="3"
+              [posInSet]="3"
+              data-test-id="v2"
+            >
+              <div forTreeItemLabel><span>V2</span></div>
+            </li>
+          </ul>
+        `,
+      })
+      class VirtualStructuralHost {
+        readonly picked = signal<readonly string[]>([]);
+        readonly range: readonly [number, number] = [0, 3];
+      }
+
+      it('Enter on the activedescendant selects nothing, and the next node still selects', async () => {
+        const { el, fixture } = renderHost(VirtualStructuralHost);
+        await flush(fixture);
+        const tree = el.querySelector<HTMLElement>('[data-test-tree]')!;
+        tree.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+        await flush(fixture);
+
+        pressKey(tree, 'ArrowDown');
+        await flush(fixture);
+        expect(tree.getAttribute('aria-activedescendant')).toBe(itemOf(el, 'v1').id);
+
+        pressKey(tree, 'Enter');
+        await flush(fixture);
+        expect(fixture.componentInstance.picked()).toEqual([]);
+
+        pressKey(tree, 'ArrowDown');
+        await flush(fixture);
+        pressKey(tree, 'Enter');
+        await flush(fixture);
+        expect(fixture.componentInstance.picked()).toEqual(['v2']);
+      });
     });
   });
 

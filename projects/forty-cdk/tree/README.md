@@ -336,6 +336,34 @@ export class Categories {
 }
 ```
 
+### Structural nodes
+
+A group header is not an option: it organises the list and is worth navigating to, but there is no checkbox to act on. Set `[selectable]="false"` on it. The node keeps its place in the hierarchy — `aria-level` / `aria-setsize` / `aria-posinset`, `aria-expanded` from its toggle, and arrow / Home / End / typeahead reach it — and drops out of the selection contract: no `aria-checked` (nor `aria-selected` in `'highlight'` mode), no `data-checked`, Space and Enter change nothing, and the value never enters `[(value)]`.
+
+It is orthogonal to `disabled`, which is the wrong lever here: that one announces the node as an _unavailable option_ and takes it out of navigation, so a screen-reader user never learns which group an option belongs to.
+
+```html
+<li forTreeItem value="colors" [selectable]="false">
+  <div forTreeItemLabel>
+    <span forTreeItemToggle>▸</span>
+    <!-- deliberately no [forTreeItemCheckbox]: you cannot check a group heading -->
+    <span>Colors</span>
+  </div>
+
+  <!-- rendered only while the node is expanded -->
+  <ul forTreeGroup>
+    <li forTreeItem value="red">
+      <div forTreeItemLabel>
+        <span forTreeItemCheckbox><span forTreeItemCheckboxIndicator>✓</span></span>
+        Red
+      </div>
+    </li>
+  </ul>
+</li>
+```
+
+Under `cascade`, a non-selectable node is skipped when an ancestor collects its descendants — it neither enters the checked set nor counts toward that ancestor's `'mixed'` — while its own descendants cascade normally. The tree can only apply that to **mounted** nodes, so `descendantsOf` keeps its contract: return the _selectable_ descendant values, leaving out any structural node in a collapsed subtree.
+
 ## Filtering
 
 forty-cdk ships no filtering machinery — matching stays consumer-owned. The library exports one pure helper, `expandToReveal`, that translates the matched set into the ancestor values you need to expand so every match becomes visible.
@@ -798,11 +826,12 @@ provideForTreeDefaults({
 
 ### `ForTreeItem`
 
-| Property    | Type                | Description                                                                                                |
-| ----------- | ------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `value`     | `input.required<T>` | The node's value. Must be unique within the tree.<br>**Default:** —                                        |
-| `disabled`  | `input<boolean>`    | Disables this node: not selectable, skipped by keyboard navigation.<br>**Default:** —                      |
-| `textValue` | `input<string>`     | Typeahead text override. Falls back to the `[forTreeItemLabel]` text content when empty.<br>**Default:** — |
+| Property     | Type                | Description                                                                                                                                                                                                        |
+| ------------ | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `value`      | `input.required<T>` | The node's value. Must be unique within the tree.<br>**Default:** —                                                                                                                                                |
+| `disabled`   | `input<boolean>`    | Disables this node: not selectable, skipped by keyboard navigation.<br>**Default:** —                                                                                                                              |
+| `selectable` | `input<boolean>`    | Whether the node takes part in selection. `false` marks a structural node: it keeps navigation, typeahead and its ARIA position, but emits no selection state and never enters `[(value)]`.<br>**Default:** `true` |
+| `textValue`  | `input<string>`     | Typeahead text override. Falls back to the `[forTreeItemLabel]` text content when empty.<br>**Default:** —                                                                                                         |
 
 | Data attribute     | Values                                                  |
 | ------------------ | ------------------------------------------------------- |
@@ -861,6 +890,7 @@ Implements the [WAI-ARIA Tree View pattern](https://www.w3.org/WAI/ARIA/apg/patt
 - **`data-selected`** (present / absent) reflects selection on every node — a node is simultaneously expandable and selectable, so expansion (`data-state`) and selection (`data-selected`) get separate hooks.
 - **`data-highlighted=""`** marks the current roving-tabindex node, the same hook used across the listbox / menu / select primitives.
 - **Exactly one node is tabbable** at a time (the selected node, or the first enabled node). `Tab` enters and leaves the whole tree in one stop.
+- **A `[selectable]="false"` node** emits neither `aria-checked` nor `aria-selected` (and neither `data-checked` nor `data-selected`), so assistive tech announces a group header as a heading in the hierarchy rather than as an option the user can act on. It carries no `aria-disabled` and keeps its tab stop, its `aria-level` / `aria-setsize` / `aria-posinset` and its `aria-expanded`.
 - **In `selectionMode="checkbox"`** each `treeitem` emits `aria-checked` (`"true"` / `"false"`) and no `aria-selected`; the `[forTreeItemCheckbox]` and `[forTreeItemCheckboxIndicator]` are `aria-hidden` / decorative — the `treeitem` itself is the accessible checkbox. With `cascade`, a parent reports `aria-checked="mixed"` (and `data-checked="mixed"`) when only some of its descendants are checked; the cascade reaches collapsed / unmounted descendants through the `descendantsOf` descriptor, so the tri-state is always correct even when children are not yet mounted.
 
 ## Styling

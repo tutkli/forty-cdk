@@ -43,8 +43,9 @@ import { FOR_TREE_NODE_DRAG_CONTEXT } from './tree-node-drag';
     role: 'treeitem',
     '[id]': 'id()',
     '[attr.aria-expanded]': 'expandable() ? (expanded() ? "true" : "false") : null',
-    '[attr.aria-checked]': 'checkboxMode() ? checkState() : null',
-    '[attr.aria-selected]': 'checkboxMode() ? null : (selected() ? "true" : "false")',
+    '[attr.aria-checked]': 'checkboxMode() && selectable() ? checkState() : null',
+    '[attr.aria-selected]':
+      'checkboxMode() || !selectable() ? null : (selected() ? "true" : "false")',
     '[attr.aria-level]': 'level()',
     '[attr.aria-setsize]': 'setsize()',
     '[attr.aria-posinset]': 'posinset()',
@@ -54,7 +55,7 @@ import { FOR_TREE_NODE_DRAG_CONTEXT } from './tree-node-drag';
     '[attr.data-selected]': 'selected() ? "" : null',
     '[attr.data-highlighted]': 'highlighted() ? "" : null',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
-    '[attr.data-checked]': 'checkboxMode() ? checkState() : null',
+    '[attr.data-checked]': 'checkboxMode() && selectable() ? checkState() : null',
     '[attr.data-drop-position]': '_dropPosition()',
     '(keydown)': 'onKeyDown($event)',
     '(focus)': 'onFocus()',
@@ -84,6 +85,23 @@ export class ForTreeItem<T = string> implements ForTreeItemContext<T> {
 
   /** Disables this node: not selectable, skipped by keyboard navigation. */
   readonly disabled = input(false, { transform: booleanAttribute });
+
+  /**
+   * Whether this node takes part in selection. Set `false` for a structural
+   * node — a group header that organises the list and is worth navigating to,
+   * but is not itself an option.
+   *
+   * A non-selectable node emits no `aria-checked` / `aria-selected` (nor the
+   * matching `data-*` hooks), never enters the root's `[(value)]`, and is
+   * skipped when a cascade collects an ancestor's descendants — its own
+   * descendants still cascade. It keeps everything else: `aria-level` /
+   * `aria-setsize` / `aria-posinset`, `aria-expanded` when it carries a toggle,
+   * and its place in arrow navigation, Home / End and typeahead.
+   *
+   * Orthogonal to {@link ForTreeItem.disabled}, which means "present but
+   * unavailable" and removes the node from navigation.
+   */
+  readonly selectable = input(true, { transform: booleanAttribute });
 
   /**
    * Typeahead text source override. Falls back to the `[forTreeItemLabel]`
@@ -129,7 +147,7 @@ export class ForTreeItem<T = string> implements ForTreeItemContext<T> {
   /** True once a `[forTreeItemToggle]` registers, marking the node a parent (D4). */
   readonly expandable = computed(() => this.#toggleCount() > 0);
   readonly expanded = computed(() => this.#tree.isExpanded(this.value()));
-  readonly selected = computed(() => this.#tree.isSelected(this.value()));
+  readonly selected = computed(() => this.selectable() && this.#tree.isSelected(this.value()));
   /** True when the root tree is in `'checkbox'` selection mode. */
   readonly checkboxMode = computed(() => this.#tree.selectionMode() === 'checkbox');
   /**
@@ -199,6 +217,7 @@ export class ForTreeItem<T = string> implements ForTreeItemContext<T> {
       host: this.#host.nativeElement,
       value: this.value,
       disabled: this.effectiveDisabled,
+      selectable: this.selectable,
       expandable: this.expandable,
       childContainer: this.#childContainer.asReadonly(),
       textValue: this.textValue,
@@ -235,7 +254,7 @@ export class ForTreeItem<T = string> implements ForTreeItemContext<T> {
   }
 
   select(): void {
-    if (this.effectiveDisabled()) {
+    if (this.effectiveDisabled() || !this.selectable()) {
       return;
     }
     this.#tree.select(this.value());
@@ -304,12 +323,12 @@ export class ForTreeItem<T = string> implements ForTreeItemContext<T> {
 
     if (event.key === 'Enter') {
       event.preventDefault();
-      tree.select(this.value());
+      this.select();
       return;
     }
     if (event.key === ' ' || event.key === 'Spacebar') {
       event.preventDefault();
-      tree.select(this.value());
+      this.select();
       return;
     }
     if (event.key === '*') {

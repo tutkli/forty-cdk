@@ -8531,6 +8531,10 @@ exports[`document structure > projects/forty-cdk/tree/README.md declares the sec
         "depth": 3,
         "slug": "cascade-selection",
       },
+      {
+        "depth": 3,
+        "slug": "structural-nodes",
+      },
     ],
     "slug": "checkbox-selection-1",
     "tables": [],
@@ -8755,7 +8759,7 @@ exports[`document structure > projects/forty-cdk/tree/README.md declares the sec
           "Description",
         ],
         "role": "api",
-        "rows": 3,
+        "rows": 4,
       },
       {
         "columns": [
