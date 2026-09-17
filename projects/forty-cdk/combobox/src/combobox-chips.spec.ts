@@ -135,7 +135,7 @@ describe('ForComboboxChipRemove aria-label (issue #1481)', () => {
   const CHIP_REMOVE_TEMPLATE = `
     <div forCombobox multiple [(query)]="query" [(value)]="value" [(open)]="open">
       <div forComboboxChips>
-        @for (v of value(); track v) {
+        @for (v of value(); track $index) {
           <span forComboboxChip [value]="v">
             {{ v }}
             <button forComboboxChipRemove [attr.data-test-remove]="v">×</button>
@@ -174,7 +174,7 @@ describe('ForComboboxChipRemove aria-label (issue #1481)', () => {
     template: `
       <div forCombobox multiple [(query)]="query" [(value)]="value" [(open)]="open">
         <div forComboboxChips>
-          @for (v of value(); track v) {
+          @for (v of value(); track $index) {
             <span forComboboxChip [value]="v">
               {{ v }}
               <button forComboboxChipRemove aria-label="Static name" [attr.data-test-remove]="v">
@@ -225,13 +225,12 @@ describe('ForComboboxChipRemove aria-label (issue #1481)', () => {
   it('re-derives the name when the chip label changes', async () => {
     const r = renderHost(ScopedChipRemoveHost);
     await flush(r.fixture);
+    const before = getRemove();
     r.instance.value.set(['Banana']);
     await flush(r.fixture);
 
-    expect(
-      document
-        .querySelector<HTMLButtonElement>('[data-test-remove="Banana"]')!
-        .getAttribute('aria-label'),
-    ).toBe('Quitar Banana');
+    const after = document.querySelector<HTMLButtonElement>('[data-test-remove="Banana"]')!;
+    expect(after).toBe(before);
+    expect(after.getAttribute('aria-label')).toBe('Quitar Banana');
   });
 });

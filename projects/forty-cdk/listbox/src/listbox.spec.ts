@@ -2229,15 +2229,15 @@ describe('ForListbox', () => {
           [visibleRange]="range()"
           (scrollToIndex)="onScrollToIndex($event)"
         >
-          @for (i of windowIndices(); track i) {
+          @for (row of windowRows(); track row.index) {
             <button
               type="button"
               forListboxOption
-              [value]="'item-' + i"
-              [posInSet]="i"
-              [attr.data-test-id]="'opt-' + i"
+              [value]="'item-' + row.index"
+              [posInSet]="row.index"
+              [attr.data-test-id]="'opt-' + row.index"
             >
-              Item {{ i }}
+              Item {{ row.index }}
             </button>
           }
         </div>
@@ -2249,9 +2249,9 @@ describe('ForListbox', () => {
       readonly total = signal<number | undefined>(50);
       readonly range = signal<readonly [number, number]>([0, 10]);
       readonly scrolled = signal<number | null>(null);
-      windowIndices() {
+      windowRows() {
         const [s, e] = this.range();
-        return Array.from({ length: e - s }, (_, k) => s + k);
+        return Array.from({ length: e - s }, (_, k) => ({ index: s + k }));
       }
       onScrollToIndex(idx: number) {
         this.scrolled.set(idx);
@@ -2423,6 +2423,20 @@ describe('ForListbox', () => {
       const opt2 = voptOf(result.el, 2);
       expect(opt2.getAttribute('data-state')).toBe('checked');
       expect(opt2.getAttribute('aria-selected')).toBe('true');
+    });
+
+    it('an option whose index stays in the window keeps its DOM node across a scroll', async () => {
+      const result = renderHost(VirtualHost);
+      await result.flush();
+      const survivor = voptOf(result.el, 5);
+      const leaving = voptOf(result.el, 0);
+
+      result.fixture.componentInstance.range.set([5, 15]);
+      await flush(result.fixture);
+
+      expect(voptOf(result.el, 5)).toBe(survivor);
+      expect(result.el.querySelector('[data-test-id="opt-0"]')).toBeNull();
+      expect(leaving.isConnected).toBe(false);
     });
 
     it('unmounting the active option clears aria-activedescendant', async () => {

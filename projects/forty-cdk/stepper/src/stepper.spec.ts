@@ -193,7 +193,7 @@ class HiddenTriggerHost {
           </li>
         }
       </ol>
-      @for (i of mountedPanels(); track i) {
+      @for (i of mountedPanels(); track $index) {
         <section forStepperContent [step]="explicitStep() ? i : null" [attr.data-content]="i">
           Panel {{ i }}
         </section>
@@ -806,6 +806,7 @@ describe('ForStepper', () => {
       fixture.detectChanges();
       await flush();
       const next = contentAt(el, 1);
+      expect(next).toBe(panel);
       expect(next.getAttribute('data-state')).toBe('active');
       expect(next.hasAttribute('inert')).toBe(false);
       expect(next.getAttribute('aria-labelledby')).toBe(triggerAt(el, 1).id);

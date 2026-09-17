@@ -1189,7 +1189,8 @@ class TreegridTableHost {
   template: `
     <div forTable forTableVirtualized mode="grid" [rowCount]="1000" #v="forTableVirtualized">
       <div role="rowgroup">
-        @for (vi of windowIndices(); track vi) {
+        @for (row of windowRows(); track row.index) {
+          @let vi = row.index;
           <div forTableRow [virtualIndex]="vi" [attr.data-testid]="'row-' + vi">
             <div forTableCell name="a">{{ vi }}</div>
           </div>
@@ -1200,6 +1201,7 @@ class TreegridTableHost {
 })
 class VirtualizedTableHost {
   readonly windowIndices = signal<readonly number[]>([50, 51, 52]);
+  readonly windowRows = computed(() => this.windowIndices().map((index) => ({ index })));
 }
 
 @Component({
@@ -1233,7 +1235,8 @@ class VirtualizedNoTotalTableHost {}
   template: `
     <div forTable forTableVirtualized mode="grid" [rowCount]="200" #v="forTableVirtualized">
       <div role="rowgroup">
-        @for (vi of windowIndices(); track vi) {
+        @for (row of windowRows(); track row.index) {
+          @let vi = row.index;
           <div forTableRow [virtualIndex]="vi">
             <div forTableCell name="a" [attr.data-testid]="'cell-' + vi + '-a'">{{ vi }}a</div>
             <div forTableCell name="b" [attr.data-testid]="'cell-' + vi + '-b'">{{ vi }}b</div>
@@ -1245,6 +1248,7 @@ class VirtualizedNoTotalTableHost {}
 })
 class CrossWindowTableHost {
   readonly windowIndices = signal<readonly number[]>([20, 21, 22, 23, 24]);
+  readonly windowRows = computed(() => this.windowIndices().map((index) => ({ index })));
 }
 
 @Component({
@@ -1264,7 +1268,8 @@ class CrossWindowTableHost {
         }
       </div>
       <div role="rowgroup">
-        @for (vi of windowIndices(); track vi) {
+        @for (row of windowRows(); track row.index) {
+          @let vi = row.index;
           <div forTableRow [virtualIndex]="vi">
             <div forTableCell name="a" [attr.data-testid]="'cell-' + vi + '-a'">{{ vi }}a</div>
             <div forTableCell name="b" [attr.data-testid]="'cell-' + vi + '-b'">{{ vi }}b</div>
@@ -1277,6 +1282,7 @@ class CrossWindowTableHost {
 class VirtualizedGridWithHeaderHost {
   readonly cols = ['a', 'b'] as const;
   readonly windowIndices = signal<readonly number[]>([20, 21, 22, 23, 24]);
+  readonly windowRows = computed(() => this.windowIndices().map((index) => ({ index })));
 }
 
 @Component({
@@ -1284,7 +1290,8 @@ class VirtualizedGridWithHeaderHost {
   template: `
     <div forTable forTableVirtualized mode="grid" [rowCount]="200" #v="forTableVirtualized">
       <div role="rowgroup">
-        @for (vi of windowIndices(); track vi) {
+        @for (row of windowRows(); track row.index) {
+          @let vi = row.index;
           @if (variantIndices().has(vi)) {
             <div forTableRow [virtualIndex]="vi" [attr.data-testid]="'variant-' + vi">
               <div role="gridcell" [attr.aria-colindex]="1" style="grid-column: 1 / -1">
@@ -1304,6 +1311,7 @@ class VirtualizedGridWithHeaderHost {
 })
 class CrossWindowVariantTableHost {
   readonly windowIndices = signal<readonly number[]>([23, 24, 25, 26, 27]);
+  readonly windowRows = computed(() => this.windowIndices().map((index) => ({ index })));
   readonly variantIndices = signal<ReadonlySet<number>>(new Set([25]));
 }
 
@@ -1319,7 +1327,8 @@ class CrossWindowVariantTableHost {
   template: `
     <div forTable forTableVirtualized mode="grid" [rowCount]="1000" #v="forTableVirtualized">
       <div role="rowgroup" forTableRowReorder (rowReorder)="lastRow = $event">
-        @for (vi of windowIndices(); track vi) {
+        @for (row of windowRows(); track row.index) {
+          @let vi = row.index;
           <div
             forTableRow
             [virtualIndex]="vi"
@@ -1336,6 +1345,7 @@ class CrossWindowVariantTableHost {
 })
 class VirtualizedReorderTableHost {
   readonly windowIndices = signal<readonly number[]>([50, 51, 52, 53, 54]);
+  readonly windowRows = computed(() => this.windowIndices().map((index) => ({ index })));
   lastRow: TableRowReorderDescriptor | null = null;
 }
 
@@ -4751,6 +4761,19 @@ describe('ForTable', () => {
     describe('cross-window keyboard navigation', () => {
       const cell = (el: HTMLElement, id: string) =>
         el.querySelector<HTMLElement>(`[data-testid="${id}"]`);
+
+      it('a row whose virtual index stays in the window keeps its DOM node across a scroll', async () => {
+        const { el, instance, flush } = renderHost(CrossWindowTableHost);
+        const survivor = cell(el, 'cell-24-a')!;
+        const leaving = cell(el, 'cell-20-a')!;
+
+        instance.windowIndices.set([22, 23, 24, 25, 26]);
+        await flush();
+
+        expect(cell(el, 'cell-24-a')).toBe(survivor);
+        expect(cell(el, 'cell-20-a')).toBeNull();
+        expect(leaving.isConnected).toBe(false);
+      });
 
       // Each cross-window case below asserts BOTH halves of the seam: that
       // the table asked the virtualizer to scroll the off-window target in
