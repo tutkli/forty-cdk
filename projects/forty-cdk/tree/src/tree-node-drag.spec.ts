@@ -591,7 +591,7 @@ describe('ForTreeNodeDragHandle', () => {
 });
 
 @Component({
-  imports: [ForTree, ForTreeNodeDrag, ForTreeItem, ForTreeItemLabel],
+  imports: [ForTree, ForTreeNodeDrag, ForTreeItem, ForTreeItemLabel, ForTreeItemToggle],
   providers: [
     provideForTreeDefaults({
       dragAnnounceLift: (label) => `[lift] ${label}`,
@@ -613,7 +613,9 @@ describe('ForTreeNodeDragHandle', () => {
     >
       <li forTreeItem value="a" data-testid="a"><div forTreeItemLabel>Alpha</div></li>
       <li forTreeItem value="b" data-testid="b"><div forTreeItemLabel>Bravo</div></li>
-      <li forTreeItem value="c" data-testid="c"><div forTreeItemLabel>Charlie</div></li>
+      <li forTreeItem value="c" data-testid="c">
+        <div forTreeItemLabel><span forTreeItemToggle>▸</span>Charlie</div>
+      </li>
     </ul>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -653,6 +655,19 @@ describe('ForTreeNodeDrag — i18n announcements', () => {
     dispatchKey(tree, ' ', {});
     await f();
     expect(liveRegion('assertive')?.textContent).toBe('[drop] Alpha @ Bravo 1/1');
+  });
+
+  it('announces a label without the aria-hidden glyph nested inside it', async () => {
+    const { query, flush: f } = renderHost(TreeDragI18nHost);
+    await f();
+
+    const charlie = query<HTMLElement>('[data-testid="c"]')!;
+    charlie.focus();
+
+    dispatchKey(charlie, ' ', { ctrlKey: true });
+    await f();
+
+    expect(liveRegion('assertive')?.textContent).toBe('[lift] Charlie');
   });
 
   it('cancel announces via the consumer formatter', async () => {

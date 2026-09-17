@@ -883,6 +883,61 @@ describe('ForTree', () => {
     });
   });
 
+  describe('typeahead text resolution (issue #1975)', () => {
+    @Component({
+      imports: [ForTree, ForTreeItem, ForTreeItemLabel, ForTreeItemToggle, ForTreeItemCheckbox],
+      template: `
+        <ul forTree selectionMode="checkbox" aria-label="Decorated">
+          <li forTreeItem value="alpha" data-test-id="alpha">
+            <div forTreeItemLabel>
+              <span forTreeItemToggle>▸</span>
+              <span forTreeItemCheckbox>✓</span>
+              <span>Alpha</span>
+            </div>
+          </li>
+          <li forTreeItem value="bravo" textValue="Zulu" data-test-id="bravo">
+            <div forTreeItemLabel>
+              <span forTreeItemToggle>▸</span>
+              <span>Bravo</span>
+            </div>
+          </li>
+        </ul>
+      `,
+    })
+    class DecoratedHost {}
+
+    async function setupDecorated() {
+      const result = renderHost(DecoratedHost);
+      await flush(result.fixture);
+      return result;
+    }
+
+    it('excludes the aria-hidden indicator glyph from typeahead matching', async () => {
+      const { el } = await setupDecorated();
+
+      pressKey(itemOf(el, 'alpha'), 'a');
+
+      expect(document.activeElement).toBe(itemOf(el, 'alpha'));
+    });
+
+    it('keeps [textValue] winning over the label text', async () => {
+      const { el } = await setupDecorated();
+
+      pressKey(itemOf(el, 'alpha'), 'z');
+
+      expect(document.activeElement).toBe(itemOf(el, 'bravo'));
+    });
+
+    it('does not match the label text of a node carrying [textValue]', async () => {
+      const { el } = await setupDecorated();
+      itemOf(el, 'alpha').focus();
+
+      pressKey(itemOf(el, 'alpha'), 'b');
+
+      expect(document.activeElement).toBe(itemOf(el, 'alpha'));
+    });
+  });
+
   describe('reactive updates', () => {
     it('reflects an expanded write in aria-expanded', async () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
@@ -1721,10 +1776,12 @@ describe('ForTree', () => {
               [disabled]="disabledValues().includes(node.value)"
               [attr.data-test-id]="node.value"
             >
-              @if (node.expandable) {
-                <span forTreeItemToggle [attr.data-test-toggle]="node.value">▸</span>
-              }
-              <div forTreeItemLabel [attr.data-test-label]="node.value">{{ node.label }}</div>
+              <div forTreeItemLabel [attr.data-test-label]="node.value">
+                @if (node.expandable) {
+                  <span forTreeItemToggle [attr.data-test-toggle]="node.value">▸</span>
+                }
+                {{ node.label }}
+              </div>
             </li>
           }
         </ul>
@@ -1900,6 +1957,18 @@ describe('ForTree', () => {
         expect(tree.getAttribute('aria-activedescendant')).toBe(
           el.querySelector<HTMLElement>('[data-test-id="root-1"]')!.id,
         );
+      });
+
+      it('excludes the aria-hidden indicator glyph from typeahead matching', async () => {
+        const { el, fixture, instance, tree } = await scrolledToTheEnd();
+        const lastChild = el.querySelector<HTMLElement>('[data-test-id="child-2-1"]')!;
+
+        pressKey(tree, '▸');
+        await flush(fixture);
+        await flush(fixture);
+
+        expect(instance.scrolledToIndex()).toBeNull();
+        expect(tree.getAttribute('aria-activedescendant')).toBe(lastChild.id);
       });
     });
 

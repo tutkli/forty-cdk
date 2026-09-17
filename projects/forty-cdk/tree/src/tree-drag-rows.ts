@@ -1,3 +1,5 @@
+import { accessibleTextContent } from 'forty-cdk/core';
+
 import type { ForTreeVisibleNode } from './tree-context';
 import { type TreeDropRow } from './tree-drop-resolver';
 
@@ -43,10 +45,12 @@ export function buildTreeDropRows<T>(
     });
 }
 
-/** The visible row's trimmed accessible label (its label element, else its text content). */
+/**
+ * The visible row's trimmed accessible label (its label element, else its whole host), with any
+ * `aria-hidden` subtree — a toggle or checkbox glyph — excluded.
+ */
 export function treeNodeLabel(entry: ForTreeVisibleNode<unknown>): string {
-  const labelEl = entry.handle.labelEl();
-  return (labelEl?.textContent ?? entry.handle.host.textContent ?? '').trim();
+  return accessibleTextContent(entry.handle.labelEl() ?? entry.handle.host).trim();
 }
 
 /**

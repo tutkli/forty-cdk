@@ -1,6 +1,7 @@
 import { type Signal } from '@angular/core';
 
 import {
+  accessibleTextContent,
   firstEnabledHost,
   isUnset,
   type ListNavigationAction,
@@ -179,7 +180,10 @@ export class RovingFocusModel<T = unknown> implements FocusModel<T> {
       if (handle.disabled()) {
         return false;
       }
-      const text = (handle.textValue() || handle.labelEl()?.textContent || '').trim().toLowerCase();
+      const labelEl = handle.labelEl();
+      const text = (handle.textValue() || (labelEl ? accessibleTextContent(labelEl) : ''))
+        .trim()
+        .toLowerCase();
       return text.startsWith(buffer);
     });
     if (match) {
