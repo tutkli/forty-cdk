@@ -1351,6 +1351,7 @@ describe('ForTree', () => {
               [setSize]="node.setSize"
               [posInSet]="node.posInSet"
               [itemIndex]="node.itemIndex"
+              [disabled]="disabledValues().includes(node.value)"
               [attr.data-test-id]="node.value"
             >
               @if (node.expandable) {
@@ -1368,6 +1369,7 @@ describe('ForTree', () => {
       readonly scrolledToIndex = signal<number | null>(null);
       readonly selectionMode = signal<'highlight' | 'checkbox'>('highlight');
       readonly cascade = signal(false);
+      readonly disabledValues = signal<readonly string[]>([]);
 
       readonly flat = computed(() => buildFlat(this.open()));
 
@@ -1632,6 +1634,137 @@ describe('ForTree', () => {
       await flush(fixture);
       const resumed = el.querySelector<HTMLElement>('[data-test-id="root-2"]')!;
       expect(tree.getAttribute('aria-activedescendant')).toBe(resumed.id);
+    });
+
+    async function strandActiveDescendant(
+      result: Awaited<ReturnType<typeof setupVirtual>>,
+      arrowDowns: number,
+      activeTestId: string,
+      windowStart: number,
+    ): Promise<HTMLElement> {
+      const { el, fixture, instance } = result;
+      const tree = treeEl(el);
+      tree.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+      await flush(fixture);
+      for (let i = 0; i < arrowDowns; i++) {
+        await pressKey(tree, 'ArrowDown');
+        await flush(fixture);
+      }
+      expect(tree.getAttribute('aria-activedescendant')).toBe(
+        el.querySelector<HTMLElement>(`[data-test-id="${activeTestId}"]`)!.id,
+      );
+      instance.windowStart.set(windowStart);
+      await flush(fixture);
+      expect(el.querySelector(`[data-test-id="${activeTestId}"]`)).toBeNull();
+      expect(tree.getAttribute('aria-activedescendant')).toBeFalsy();
+      return tree;
+    }
+
+    it('8e. after the active item unmounts, Enter selects the retained node and scrolls it back', async () => {
+      const result = await setupVirtual((i) => i.windowSize.set(2));
+      const { el, fixture, instance } = result;
+      const tree = await strandActiveDescendant(result, 1, 'root-1', 2);
+
+      await pressKey(tree, 'Enter');
+      await flush(fixture);
+      expect(instance.picked()).toEqual(['root-1']);
+      expect(instance.scrolledToIndex()).toBe(1);
+      const resumed = el.querySelector<HTMLElement>('[data-test-id="root-1"]')!;
+      expect(tree.getAttribute('aria-activedescendant')).toBe(resumed.id);
+    });
+
+    it('8f. after the active item unmounts, Space checks the retained node (checkbox mode)', async () => {
+      const result = await setupVirtual((i) => {
+        i.selectionMode.set('checkbox');
+        i.windowSize.set(2);
+      });
+      const { el, fixture, instance } = result;
+      const tree = await strandActiveDescendant(result, 1, 'root-1', 2);
+
+      await pressKey(tree, ' ');
+      await flush(fixture);
+      expect(instance.picked()).toEqual(['root-1']);
+      const resumed = el.querySelector<HTMLElement>('[data-test-id="root-1"]')!;
+      expect(resumed.getAttribute('aria-checked')).toBe('true');
+      expect(tree.getAttribute('aria-activedescendant')).toBe(resumed.id);
+    });
+
+    it('8g. after the active item unmounts, ArrowRight expands the retained node', async () => {
+      const result = await setupVirtual((i) => i.windowSize.set(2));
+      const { el, fixture, instance } = result;
+      const tree = await strandActiveDescendant(result, 1, 'root-1', 2);
+
+      await pressKey(tree, 'ArrowRight');
+      await flush(fixture);
+      expect(instance.open()).toContain('root-1');
+      const resumed = el.querySelector<HTMLElement>('[data-test-id="root-1"]')!;
+      expect(tree.getAttribute('aria-activedescendant')).toBe(resumed.id);
+    });
+
+    it('8h. after the active open parent unmounts, ArrowRight enters its first child', async () => {
+      const result = await setupVirtual((i) => {
+        i.open.set(['root-1']);
+        i.windowSize.set(2);
+      });
+      const { el, fixture } = result;
+      const tree = await strandActiveDescendant(result, 1, 'root-1', 3);
+
+      await pressKey(tree, 'ArrowRight');
+      await flush(fixture);
+      const firstChild = el.querySelector<HTMLElement>('[data-test-id="child-1-0"]')!;
+      expect(tree.getAttribute('aria-activedescendant')).toBe(firstChild.id);
+    });
+
+    it('8i. after the active item unmounts, ArrowLeft collapses the retained node', async () => {
+      const result = await setupVirtual((i) => {
+        i.open.set(['root-1']);
+        i.windowSize.set(2);
+      });
+      const { el, fixture, instance } = result;
+      const tree = await strandActiveDescendant(result, 1, 'root-1', 3);
+
+      await pressKey(tree, 'ArrowLeft');
+      await flush(fixture);
+      expect(instance.open()).not.toContain('root-1');
+      const resumed = el.querySelector<HTMLElement>('[data-test-id="root-1"]')!;
+      expect(tree.getAttribute('aria-activedescendant')).toBe(resumed.id);
+    });
+
+    it('8j. after the active child unmounts, ArrowLeft moves to its parent', async () => {
+      const result = await setupVirtual((i) => {
+        i.open.set(['root-0']);
+        i.windowSize.set(2);
+      });
+      const { el, fixture } = result;
+      const tree = await strandActiveDescendant(result, 1, 'child-0-0', 3);
+
+      await pressKey(tree, 'ArrowLeft');
+      await flush(fixture);
+      const parent = el.querySelector<HTMLElement>('[data-test-id="root-0"]')!;
+      expect(tree.getAttribute('aria-activedescendant')).toBe(parent.id);
+    });
+
+    it('8k. a disabled node at the retained position is still not selectable', async () => {
+      const { el, fixture, instance } = await setupVirtual((i) => i.windowSize.set(2));
+      const tree = treeEl(el);
+      tree.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+      await flush(fixture);
+      await pressKey(tree, 'ArrowDown');
+      await flush(fixture);
+      expect(tree.getAttribute('aria-activedescendant')).toBe(
+        el.querySelector<HTMLElement>('[data-test-id="root-1"]')!.id,
+      );
+
+      instance.disabledValues.set(['root-1']);
+      await flush(fixture);
+      instance.windowStart.set(2);
+      await flush(fixture);
+      expect(tree.getAttribute('aria-activedescendant')).toBeFalsy();
+
+      await pressKey(tree, 'Enter');
+      await flush(fixture);
+      expect(instance.picked()).toEqual([]);
+      expect(instance.scrolledToIndex()).toBeNull();
     });
 
     it('9. non-virtualized path unchanged — no aria-activedescendant; ArrowDown moves DOM focus', async () => {

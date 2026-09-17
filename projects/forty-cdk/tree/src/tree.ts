@@ -503,6 +503,7 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
       return;
     }
     if (!this.isExpanded(cur.value)) {
+      model.resumeActive();
       this.setExpanded(cur.value, true);
       return;
     }
@@ -520,6 +521,7 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
       return;
     }
     if (cur.expandable && this.isExpanded(cur.value)) {
+      model.resumeActive();
       this.setExpanded(cur.value, false);
       return;
     }
@@ -628,11 +630,11 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
   }
 
   #activateActiveDescendant(): void {
-    const id = this.#activeId();
-    if (id === null) return;
-    const handle = this.#items.items().find((o) => o.id() === id);
-    if (!handle || handle.disabled()) return;
-    this.select(handle.value());
+    const model = this.#focusModel();
+    const cur = model.current();
+    if (!cur || cur.disabled) return;
+    model.resumeActive();
+    this.select(cur.value);
   }
 
   #isMultiSelectShortcut(event: KeyboardEvent): boolean {

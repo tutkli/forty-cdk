@@ -62,6 +62,43 @@ test.describe('Tree virtualization (Shape C)', () => {
       .toBe(lastId);
   });
 
+  test('wheel-scrolling the active row out of the window — Enter still selects it and scrolls it back', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'tree-virtualized');
+    const tree = el(page, 'tree');
+    await tree.focus();
+    await expect
+      .poll(() => tree.getAttribute('aria-activedescendant'), { timeout: 10000 })
+      .toBeTruthy();
+    await page.keyboard.press('ArrowDown');
+    await expect
+      .poll(
+        async () => {
+          const activeId = await tree.getAttribute('aria-activedescendant');
+          if (!activeId) return null;
+          return page.locator(`[id="${activeId}"]`).getAttribute('data-index');
+        },
+        { timeout: 10000 },
+      )
+      .toBe('1');
+
+    await tree.hover();
+    await page.mouse.wheel(0, 4000);
+    await expect
+      .poll(() => tree.getAttribute('aria-activedescendant'), { timeout: 10000 })
+      .toBeFalsy();
+    await expect(page.locator('[data-index="1"]')).toHaveCount(0);
+
+    await page.keyboard.press('Enter');
+    const resumed = page.locator('[data-index="1"]');
+    await expect(resumed).toHaveCount(1, { timeout: 10000 });
+    await expect(resumed).toHaveAttribute('aria-selected', 'true');
+    await expect
+      .poll(() => tree.getAttribute('aria-activedescendant'), { timeout: 10000 })
+      .toBe(await resumed.getAttribute('id'));
+  });
+
   test('expand / collapse re-windows — ArrowLeft on open root collapses, ArrowRight re-expands', async ({
     page,
   }) => {

@@ -41,6 +41,12 @@ export interface FocusModel<T = unknown> {
   focusTarget(handle: ForTreeItemHandle<T>): void;
   /** Resolve the currently-focused node, or `null` when nothing is focused. */
   current(): TreeFocusEntry<T> | null;
+  /**
+   * Re-seed focus on the node {@link FocusModel.current} resolved, so an intent
+   * that acts on it in place — select, expand, collapse — leaves it focused and
+   * back in view. A no-op when focus already rides a live node.
+   */
+  resumeActive(): void;
   /** Move focus to the next / previous / first / last enabled node. */
   navigate(action: ListNavigationAction): void;
   /** Move focus to the first child of the current node (an open parent). */
@@ -134,6 +140,9 @@ export class RovingFocusModel<T = unknown> implements FocusModel<T> {
       this.#deps.roving.focusActive(entry.parentHost);
     }
   }
+
+  /** No-op: DOM focus rides the `treeitem`, so it is never lost to an unmount. */
+  resumeActive(): void {}
 
   typeaheadTo(handle: ForTreeItemHandle<T>): void {
     this.#deps.roving.focusActive(handle.host);
@@ -243,6 +252,22 @@ export class ActiveDescendantFocusModel<T = unknown> implements FocusModel<T> {
     return { value: cur.value, expandable: cur.expandable, disabled: cur.disabled };
   }
 
+  /**
+   * Re-seed `aria-activedescendant` on the retained position, emitting
+   * `(scrollToIndex)` when that node is outside the rendered window so it comes
+   * back into view. A no-op while a node is already active.
+   */
+  resumeActive(): void {
+    if (this.#deps.getActiveId() !== null) {
+      return;
+    }
+    const resume = this.#resumePos();
+    if (resume === null) {
+      return;
+    }
+    this.#core.seedActive(resume);
+  }
+
   navigate(action: ListNavigationAction): void {
     this.#core.navigate(action);
   }
@@ -287,8 +312,10 @@ export class ActiveDescendantFocusModel<T = unknown> implements FocusModel<T> {
 
   /**
    * Resolve the active node's position entry from live items first, then the
-   * snapshot. Returns `{ pos, value, level, expandable, disabled }` or `null`
-   * when nothing is active.
+   * snapshot. With no active id, falls back to the retained resume position so
+   * every intent — not only directional navigation — recovers the node the tree
+   * was on when it unmounted. Returns `{ pos, value, level, expandable,
+   * disabled }` or `null` when nothing is active and nothing is retained.
    */
   #currentEntry(): {
     pos: number;
@@ -299,7 +326,7 @@ export class ActiveDescendantFocusModel<T = unknown> implements FocusModel<T> {
   } | null {
     const currentId = this.#deps.getActiveId();
     if (currentId === null) {
-      return null;
+      return this.#resumeEntry();
     }
     const live = this.#deps.items().find((o) => o.id() === currentId);
     if (live) {
@@ -327,5 +354,46 @@ export class ActiveDescendantFocusModel<T = unknown> implements FocusModel<T> {
       }
     }
     return null;
+  }
+
+  /**
+   * The retained position, bounded against the current `totalCount`. Returns
+   * `null` when nothing is retained or the count has shrunk past it.
+   */
+  #resumePos(): number | null {
+    const resume = this.#deps.getResumePos();
+    if (resume === null || resume < 0) {
+      return null;
+    }
+    const total = this.#deps.totalCount();
+    if (total === undefined || resume >= total) {
+      return null;
+    }
+    return resume;
+  }
+
+  /** The position entry the retained position resolves to in the snapshot. */
+  #resumeEntry(): {
+    pos: number;
+    value: T;
+    level: number;
+    expandable: boolean;
+    disabled: boolean;
+  } | null {
+    const pos = this.#resumePos();
+    if (pos === null) {
+      return null;
+    }
+    const entry = this.#core.snapshotByPos().get(pos);
+    if (!entry) {
+      return null;
+    }
+    return {
+      pos,
+      value: entry.value,
+      level: entry.level,
+      expandable: entry.expandable,
+      disabled: entry.disabled,
+    };
   }
 }
