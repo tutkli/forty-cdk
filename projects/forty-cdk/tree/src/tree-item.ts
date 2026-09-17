@@ -9,6 +9,7 @@ import {
 } from '@angular/core';
 
 import {
+  accessibleTextContent,
   assertInputBound,
   registerHandle,
   hostId,
@@ -214,11 +215,14 @@ export class ForTreeItem<T = string> implements ForTreeItemContext<T> {
   /**
    * Reactive typeahead text exposed on the handle, so the root can fold a
    * per-node `Signal<string>` into its virtualized position snapshot instead of
-   * reading `textContent` from inside a `computed` of its own. `textContent` is
+   * reading the label's text from inside a `computed` of its own. That text is
    * not a signal, so a text-only change with no `[textValue]` change does not
    * refresh the snapshot entry.
    */
-  readonly #typeaheadText = computed(() => this.textValue() || this.#labelEl()?.textContent || '');
+  readonly #typeaheadText = computed(() => {
+    const labelEl = this.#labelEl();
+    return this.textValue() || (labelEl ? accessibleTextContent(labelEl) : '');
+  });
 
   constructor() {
     assertInputBound(this.value, 'tree', '[forTreeItem]', 'value');
