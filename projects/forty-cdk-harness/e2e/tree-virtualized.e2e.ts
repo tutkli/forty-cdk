@@ -99,6 +99,43 @@ test.describe('Tree virtualization (Shape C)', () => {
       .toBe(await resumed.getAttribute('id'));
   });
 
+  test('typeahead reaches a node the window scrolled past — End then "c" lands back on the first child', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'tree-virtualized');
+    const tree = el(page, 'tree');
+    await tree.focus();
+    await expect
+      .poll(() => tree.getAttribute('aria-activedescendant'), { timeout: 10000 })
+      .toBeTruthy();
+
+    await page.keyboard.press('End');
+    await expect
+      .poll(
+        async () => {
+          const activeId = await tree.getAttribute('aria-activedescendant');
+          if (!activeId) return null;
+          return page.locator(`[id="${activeId}"]`).getAttribute('data-index');
+        },
+        { timeout: 10000 },
+      )
+      .toBe('2549');
+    await expect(page.locator('[data-index="0"]')).toHaveCount(0);
+
+    await page.keyboard.press('c');
+    await expect
+      .poll(
+        async () => {
+          const activeId = await tree.getAttribute('aria-activedescendant');
+          if (!activeId) return null;
+          return page.locator(`[id="${activeId}"]`).getAttribute('data-index');
+        },
+        { timeout: 10000 },
+      )
+      .toBe('1');
+    await expect(page.locator('[data-index="1"]')).toContainText('Child 0-0');
+  });
+
   test('expand / collapse re-windows — ArrowLeft on open root collapses, ArrowRight re-expands', async ({
     page,
   }) => {

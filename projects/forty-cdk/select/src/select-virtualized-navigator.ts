@@ -2,15 +2,18 @@ import { isUnset, VirtualizedNavigator, type VirtualizedNavigatorDeps } from 'fo
 import type { ForSelectOptionHandle } from './select-context';
 
 /**
- * Position-snapshot entry for `ForSelect`. Carries the option's raw `value` on
- * top of the engine's `id` / `disabled`, so the root can resolve the committed
- * option's absolute index on open even while it is outside the rendered window.
+ * Position-snapshot entry for `ForSelect`. Carries the option's raw `value` and
+ * its accessible text on top of the engine's `id` / `disabled`, so the root can
+ * resolve the committed option's absolute index on open — and match a typeahead
+ * — even while the option is outside the rendered window.
  */
 export interface SelectPositionEntry<T> {
   /** Stable option host id — the activedescendant target. */
   readonly id: string;
   /** The option's raw value, matched against the selection by `compareWith`. */
   readonly value: T;
+  /** The option's accessible text, matched by the virtualized typeahead. */
+  readonly label: string;
   /** Whether the option is disabled, so navigation skips over it. */
   readonly disabled: boolean;
 }
@@ -43,7 +46,7 @@ export function createSelectVirtualizedNavigator<T>(
     readEntry: (o) => {
       const id = o.id();
       const value = o.value();
-      return isUnset(value) ? null : { id, value, disabled: o.disabled() };
+      return isUnset(value) ? null : { id, value, label: o.label(), disabled: o.disabled() };
     },
     scrollIntoView: (host) => scrollActiveIntoView(host),
   });

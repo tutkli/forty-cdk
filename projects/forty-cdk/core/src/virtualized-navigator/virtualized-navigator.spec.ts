@@ -1,6 +1,7 @@
 import { ApplicationRef, effect, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
+import { Typeahead } from '../typeahead/typeahead';
 import { isUnset, unsetInput } from '../unset-input/unset-input';
 import { VirtualizedNavigator } from './virtualized-navigator';
 
@@ -504,6 +505,100 @@ describe('VirtualizedNavigator', () => {
       h.navigator.seedActive(2);
       expect(override).toHaveBeenCalledWith(items[2]!.host);
       expect(items[2]!.host.scrollIntoView).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('resolveTypeahead', () => {
+    const NAMES = ['Alpha', 'Bravo', 'Apple', 'Charlie', 'Avocado'];
+
+    function typeaheadHarness(options: { disabled?: readonly number[] } = {}) {
+      const h = createNavigator({ total: 40, range: [0, 5] });
+      const items = NAMES.map((name, i) =>
+        makeHandle({
+          id: `r-${i}`,
+          value: name,
+          pos: i,
+          disabled: options.disabled?.includes(i) ?? false,
+        }),
+      );
+      h.setItems(items);
+      h.navigator.prime();
+      h.setRange([30, 35]);
+      h.setItems([]);
+      h.navigator.prime();
+      return h;
+    }
+
+    const press = (key: string) => new KeyboardEvent('keydown', { key });
+
+    it('reports the key unhandled and no match for a non-printable key', () => {
+      const h = typeaheadHarness();
+      const result = h.navigator.resolveTypeahead(new Typeahead(), press('ArrowDown'), (e) =>
+        String(e.value),
+      );
+      expect(result).toEqual({ handled: false, pos: null });
+    });
+
+    it('matches an entry the rendered window has unmounted, returning its absolute position', () => {
+      const h = typeaheadHarness();
+      const result = h.navigator.resolveTypeahead(new Typeahead(), press('b'), (e) =>
+        String(e.value),
+      );
+      expect(result).toEqual({ handled: true, pos: 1 });
+    });
+
+    it('resolves only, leaving activedescendant and (scrollToIndex) to the caller', () => {
+      const h = typeaheadHarness();
+      h.navigator.resolveTypeahead(new Typeahead(), press('b'), (e) => String(e.value));
+      expect(h.getActive()).toBeNull();
+      expect(h.emitted).toEqual([]);
+    });
+
+    it('skips a disabled off-window entry and matches the next one', () => {
+      const h = typeaheadHarness({ disabled: [0] });
+      const result = h.navigator.resolveTypeahead(new Typeahead(), press('a'), (e) =>
+        String(e.value),
+      );
+      expect(result.pos).toBe(2);
+    });
+
+    it('cycles a repeated character from the active entry, wrapping past the last match', () => {
+      const h = typeaheadHarness();
+      const typeahead = new Typeahead();
+      const next = () => {
+        const { pos } = h.navigator.resolveTypeahead(typeahead, press('a'), (e) => String(e.value));
+        h.setActive(pos === null ? null : `r-${pos}`);
+        return pos;
+      };
+      h.setActive('r-0');
+      expect(next()).toBe(2);
+      expect(next()).toBe(4);
+      expect(next()).toBe(0);
+    });
+
+    it('anchors a multi-character prefix on the active entry, keeping it while it still matches', () => {
+      const h = typeaheadHarness();
+      const typeahead = new Typeahead();
+      h.setActive('r-2');
+      typeahead.handle(press('a'));
+      const result = h.navigator.resolveTypeahead(typeahead, press('p'), (e) => String(e.value));
+      expect(result.pos).toBe(2);
+    });
+
+    it('reaches a position only once its window has been folded — the snapshot is the ceiling', () => {
+      const h = typeaheadHarness();
+      expect(
+        h.navigator.resolveTypeahead(new Typeahead(), press('z'), (e) => String(e.value)),
+      ).toEqual({ handled: true, pos: null });
+
+      h.setItems([makeHandle({ id: 'r-30', value: 'Zulu', pos: 30 })]);
+      h.navigator.prime();
+      h.setItems([]);
+      h.navigator.prime();
+
+      expect(
+        h.navigator.resolveTypeahead(new Typeahead(), press('z'), (e) => String(e.value)),
+      ).toEqual({ handled: true, pos: 30 });
     });
   });
 });

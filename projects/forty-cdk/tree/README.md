@@ -559,10 +559,10 @@ export class VirtualTree {
 
 ### Intentional limitations
 
-The following behaviors are unavailable in the virtualized path and are documented intentional limitations (same as listbox/select virtualization):
+The following behaviors are unavailable or bounded in the virtualized path and are documented intentional limitations (same as listbox/select virtualization):
 
 - **Multi-select range modifiers** (Shift+ArrowUp/Down, Shift+Space, Ctrl/Cmd+A) are unsupported: pressing one on a virtualized `[multiple]` tree throws in dev mode (a no-op in production) rather than silently degrading. Range selection requires knowing the full list of enabled nodes in the range, which is not available when the list is partially unmounted. Use `selectionMode="checkbox"` (each node toggles independently, so no range is needed) for multi-select over large trees.
-- **Cross-window typeahead** only matches within the currently rendered window. Typeahead over unmounted nodes is not supported.
+- **Typeahead reaches only positions the window has rendered at least once.** The search runs over the persisted position snapshot rather than the live nodes, so a node the virtualizer has since unmounted is still reachable — the match moves `aria-activedescendant` to it and emits `(scrollToIndex)` so your virtualizer brings it back. A position the window has **never** rendered carries no text the library can match: the keystroke is consumed, the buffer grows, and nothing moves. The shape that triggers it is a freshly-rendered `[totalCount]` tree where the user types before scrolling, and a `[dataVersion]` bump or `invalidateSnapshot()` narrows the reachable set back to the current window. Arrow / `Home` / `End` navigation reaches every position regardless (it walks absolute indices, not text), so that is the workaround for a target the user cannot type their way to; rendering a larger window widens the reachable set.
 - **`*` (expand-all-siblings)** is dropped. It requires knowing all siblings at the focused node's level, including those outside the window.
 
 ## Drag & drop

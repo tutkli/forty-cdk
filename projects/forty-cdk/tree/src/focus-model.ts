@@ -6,6 +6,7 @@ import {
   type ListNavigationAction,
   moveIndex,
   type RovingTabindex,
+  type Typeahead,
   VirtualizedNavigator,
   type VirtualizedNavigatorDeps,
 } from 'forty-cdk/core';
@@ -55,14 +56,27 @@ export interface FocusModel<T = unknown> {
   enterChild(): void;
   /** Move focus to the current node's parent. */
   moveToParent(): void;
-  /** Move focus to a typeahead match. */
-  typeaheadTo(handle: ForTreeItemHandle<T>): void;
+  /**
+   * Feed a keydown to the shared typeahead buffer and move focus to the match.
+   * Each model searches everything it can reach — the flattened visible nodes
+   * in the roving path, the position snapshot in the virtualized one — so the
+   * root never re-tests the mode to decide what a keystroke may match.
+   *
+   * `beforeMove` runs only once a match is resolved and before focus moves, so
+   * a root guard that rejects the move (the `selectionFollowsFocus` +
+   * virtualization throw) still precedes it.
+   *
+   * @returns `true` when the key was a printable character the buffer consumed.
+   */
+  handleTypeahead(event: KeyboardEvent, beforeMove: () => void): boolean;
 }
 
 /** Wiring for {@link RovingFocusModel}. */
 export interface RovingFocusModelDeps<T = unknown> {
   /** The shared roving-tabindex tracker driving the single tab stop. */
   readonly roving: RovingTabindex;
+  /** The root's typeahead buffer, shared with the other focus model. */
+  readonly typeahead: Typeahead;
   /** Flattened visible nodes (each with its resolved parent host). */
   readonly visibleNodes: Signal<readonly ForTreeVisibleNode<T>[]>;
   /** Visible node handles in flattened order. */
@@ -153,8 +167,26 @@ export class RovingFocusModel<T = unknown> implements FocusModel<T> {
   /** No-op: DOM focus rides the `treeitem`, so it is never lost to an unmount. */
   resumeActive(): void {}
 
-  typeaheadTo(handle: ForTreeItemHandle<T>): void {
-    this.#deps.roving.focusActive(handle.host);
+  handleTypeahead(event: KeyboardEvent, beforeMove: () => void): boolean {
+    if (!this.#deps.typeahead.handle(event)) {
+      return false;
+    }
+    const buffer = this.#deps.typeahead.buffer().toLowerCase();
+    if (!buffer) {
+      return true;
+    }
+    const match = this.#deps.visibleHandles().find((handle) => {
+      if (handle.disabled()) {
+        return false;
+      }
+      const text = (handle.textValue() || handle.labelEl()?.textContent || '').trim().toLowerCase();
+      return text.startsWith(buffer);
+    });
+    if (match) {
+      beforeMove();
+      this.#deps.roving.focusActive(match.host);
+    }
+    return true;
   }
 
   #currentNode(): ForTreeVisibleNode<T> | null {
@@ -174,6 +206,7 @@ interface PositionEntry<T> {
   readonly level: number;
   readonly expandable: boolean;
   readonly value: T;
+  readonly label: string;
 }
 
 /**
@@ -193,6 +226,8 @@ export type ActiveDescendantFocusModelDeps<T = unknown> = Omit<
    * when there is nothing to resume from.
    */
   readonly getResumePos: () => number | null;
+  /** The root's typeahead buffer, shared with the other focus model. */
+  readonly typeahead: Typeahead;
 };
 
 /**
@@ -230,6 +265,7 @@ export class ActiveDescendantFocusModel<T = unknown> implements FocusModel<T> {
                 level: n.level(),
                 expandable: n.expandable(),
                 value,
+                label: n.typeaheadText(),
               };
         },
       },
@@ -321,9 +357,23 @@ export class ActiveDescendantFocusModel<T = unknown> implements FocusModel<T> {
     }
   }
 
-  typeaheadTo(handle: ForTreeItemHandle<T>): void {
-    this.#deps.setActiveId(handle.id());
-    handle.host.scrollIntoView?.({ block: 'nearest' });
+  /**
+   * Match the keystroke against the position snapshot rather than the rendered
+   * window, then **seed** the match instead of pointing activedescendant at a
+   * live host: a node the consumer's virtualizer has unmounted is reachable,
+   * and reaching it emits `(scrollToIndex)` so the window comes to it.
+   */
+  handleTypeahead(event: KeyboardEvent, beforeMove: () => void): boolean {
+    const { handled, pos } = this.#core.resolveTypeahead(
+      this.#deps.typeahead,
+      event,
+      (entry) => entry.label,
+    );
+    if (pos !== null) {
+      beforeMove();
+      this.#core.seedActive(pos);
+    }
+    return handled;
   }
 
   /**

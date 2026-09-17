@@ -419,7 +419,7 @@ export class DemoVirtualizedListbox {
 ### Intentional limitations
 
 - **Multi-select range modifiers** (Shift+Arrow, Shift+Space, Ctrl+A, Ctrl+Shift+Home/End) are not available in the virtualized path. These require the full materialized option set to compute ranges, which contradicts windowing. Pressing one of these combinations on a virtualized multi-select listbox (`[multiple]` + `[totalCount]`) throws in dev mode rather than silently doing nothing, so the unsupported path surfaces during development; production builds no-op. Per-option toggling via Enter, Space, or click works normally in both single and multi mode.
-- **Typeahead** matches only the currently rendered window. Options outside the visible range cannot be reached by typing.
+- **Typeahead reaches only positions the window has rendered at least once.** The search runs over the persisted position snapshot rather than the live options, so an option the virtualizer has since unmounted is still reachable — the match moves `aria-activedescendant` to it and emits `(scrollToIndex)` so your virtualizer brings it back. A position the window has **never** rendered carries no text the library can match: the keystroke is consumed, the buffer grows, and nothing moves. The shape that triggers it is a freshly-rendered `[totalCount]="10000"` listbox where the user types before scrolling, and a `[dataVersion]` bump or `invalidateSnapshot()` narrows the reachable set back to the current window. Arrow / `Home` / `End` navigation reaches every position regardless (it walks absolute indices, not text), so that is the workaround for a target the user cannot type their way to; rendering a larger window widens the reachable set.
 
 ## Self-hiding pieces
 

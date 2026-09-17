@@ -1,6 +1,8 @@
 import { computed, linkedSignal, signal, type Signal, untracked } from '@angular/core';
 
 import { type ListNavigationAction, moveIndex } from '../keyboard-navigation/keyboard-navigation';
+import { resolveListTypeahead } from '../typeahead/list-typeahead';
+import type { Typeahead } from '../typeahead/typeahead';
 
 /**
  * Minimal shape every position-snapshot entry must expose so the engine can
@@ -103,6 +105,14 @@ export interface VirtualizedNavigatorDeps<H> {
    * unchanged) so navigation never resolves against a stale off-window entry.
    */
   readonly dataVersion?: Signal<unknown>;
+}
+
+/** Outcome of a {@link VirtualizedNavigator.resolveTypeahead} call. */
+export interface VirtualizedTypeaheadResult {
+  /** Whether the key was a printable character the typeahead buffer consumed. */
+  readonly handled: boolean;
+  /** Absolute position of the matched entry, or `null` when nothing matched. */
+  readonly pos: number | null;
 }
 
 /**
@@ -341,6 +351,46 @@ export class VirtualizedNavigator<H, E extends VirtualizedNavigatorEntry> {
     }
 
     this.#moveFrom(currentPos, action);
+  }
+
+  /**
+   * Run a typeahead keystroke against the **position snapshot** rather than the
+   * rendered window, so a match the consumer's virtualizer has unmounted is
+   * still reachable. Entries are scanned in absolute-position order and the
+   * anchor is the current activedescendant's entry, so the repeated-character
+   * cycle and the anchored prefix scan of `findTypeaheadMatch` mean the same
+   * thing they mean in a fully-mounted collection.
+   *
+   * Returns the matched **absolute position** rather than moving to it: the
+   * caller runs its own per-primitive guards first, then hands the position to
+   * {@link seedActive}, which emits `(scrollToIndex)` when the match is outside
+   * the rendered window.
+   *
+   * The reachable set is bounded by the snapshot, which only holds positions
+   * that have been rendered at least once — a position the consumer's window has
+   * never reached is invisible to the search, and each collection's README
+   * states that limit for consumers.
+   *
+   * @param typeahead The root's buffer; the key is fed to it before matching.
+   * @param event The keydown to match on.
+   * @param getText Resolves an entry's match text.
+   */
+  resolveTypeahead(
+    typeahead: Typeahead,
+    event: KeyboardEvent,
+    getText: (entry: E) => string,
+  ): VirtualizedTypeaheadResult {
+    const entries = [...this.#snapshotByPos().entries()].sort(([a], [b]) => a - b);
+    const activeId = this.#deps.getActiveId();
+    const anchorIndex =
+      activeId === null ? -1 : entries.findIndex(([, entry]) => entry.id === activeId);
+    const { handled, match } = resolveListTypeahead(typeahead, event, {
+      items: entries,
+      anchorIndex,
+      getText: ([, entry]) => getText(entry),
+      isDisabled: ([, entry]) => entry.disabled,
+    });
+    return { handled, pos: match === null ? null : match[0] };
   }
 
   /**

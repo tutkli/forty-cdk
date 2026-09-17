@@ -50,6 +50,14 @@ export interface ForTreeItemHandle<T = unknown> {
   readonly textValue: Signal<string>;
   /** The `[forTreeItemLabel]` element, used as the default typeahead text source. */
   readonly labelEl: Signal<HTMLElement | null>;
+  /**
+   * The resolved typeahead text — `textValue` when set, else the label
+   * element's text. The root folds it into the virtualized position snapshot so
+   * typeahead can reach a node the window has unmounted; the roving path reads
+   * the live label instead, so a text-only change is picked up there on the next
+   * keystroke.
+   */
+  readonly typeaheadText: Signal<string>;
   /** Stable host id for the activedescendant focus model (virtualized path). */
   readonly id: Signal<string>;
   /** Absolute index in the flattened visible-node list; `null` outside the virtualized path. */
@@ -160,7 +168,9 @@ export interface ForTreeContext<T = unknown> {
   selectAll(): void;
   /**
    * Forward a keydown to the typeahead helper. When the key is printable,
-   * focuses the first matching visible node and returns `true`.
+   * focuses the first matching node and returns `true` — the visible nodes in
+   * the roving path, every position the virtualized window has rendered at
+   * least once in the activedescendant one.
    */
   handleTypeahead(event: KeyboardEvent): boolean;
   /** Whether `el` is the first enabled root node — the default roving-tabindex entry point. */

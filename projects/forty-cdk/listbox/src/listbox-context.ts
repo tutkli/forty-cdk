@@ -10,6 +10,13 @@ import {
 export interface ForListboxOptionHandle<T = unknown> {
   readonly host: HTMLElement;
   readonly value: Signal<T>;
+  /**
+   * The option's accessible text, trimmed. The root folds it into the
+   * virtualized position snapshot so typeahead can reach an option the window
+   * has unmounted; the roving path reads the live host instead, so a text-only
+   * change is picked up there on the next keystroke.
+   */
+  readonly label: Signal<string>;
   readonly disabled: Signal<boolean>;
   readonly id: Signal<string>;
   readonly posInSet: Signal<number | null>;
