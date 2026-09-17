@@ -15,6 +15,7 @@ import {
   assertDataStateContract,
   assertRovingTabindexContract,
 } from '../../src/test-utils/contract';
+import { entryPointOf, LIBRARY_CODE } from '../../src/test-utils/source-scan';
 import { ForTree } from './tree';
 import { ForTreeGroup } from './tree-group';
 import { ForTreeItem } from './tree-item';
@@ -935,6 +936,104 @@ describe('ForTree', () => {
       pressKey(itemOf(el, 'alpha'), 'b');
 
       expect(document.activeElement).toBe(itemOf(el, 'alpha'));
+    });
+  });
+
+  describe('roving typeahead matching (issue #1976)', () => {
+    @Component({
+      imports: [ForTree, ForTreeItem, ForTreeItemLabel],
+      template: `
+        <ul forTree aria-label="Places">
+          <li forTreeItem value="almada" data-test-id="almada">
+            <div forTreeItemLabel><span>Almada</span></div>
+          </li>
+          <li forTreeItem value="cadiz" data-test-id="cadiz">
+            <div forTreeItemLabel><span>Cádiz</span></div>
+          </li>
+          <li forTreeItem value="cascais" [selectable]="false" data-test-id="cascais">
+            <div forTreeItemLabel><span>Cascais</span></div>
+          </li>
+          <li forTreeItem value="coimbra" [disabled]="true" data-test-id="coimbra">
+            <div forTreeItemLabel><span>Coimbra</span></div>
+          </li>
+          <li forTreeItem value="cuenca" data-test-id="cuenca">
+            <div forTreeItemLabel><span>Cuenca</span></div>
+          </li>
+          <li forTreeItem value="evora" data-test-id="evora">
+            <div forTreeItemLabel><span>Évora</span></div>
+          </li>
+        </ul>
+      `,
+    })
+    class PlacesHost {}
+
+    async function setupPlaces() {
+      const result = renderHost(PlacesHost);
+      await flush(result.fixture);
+      return result;
+    }
+
+    it('cycles to the next same-initial node after the focused one, skipping a disabled one', async () => {
+      const { el } = await setupPlaces();
+      itemOf(el, 'cadiz').focus();
+
+      pressKey(itemOf(el, 'cadiz'), 'c');
+      expect(document.activeElement).toBe(itemOf(el, 'cascais'));
+
+      pressKey(itemOf(el, 'cascais'), 'c');
+      expect(document.activeElement).toBe(itemOf(el, 'cuenca'));
+    });
+
+    it('wraps past the last node when the cycle runs off the end', async () => {
+      const { el } = await setupPlaces();
+      itemOf(el, 'cuenca').focus();
+
+      pressKey(itemOf(el, 'cuenca'), 'c');
+
+      expect(document.activeElement).toBe(itemOf(el, 'cadiz'));
+    });
+
+    it('anchors a growing multi-character prefix on the focused node, keeping it while it matches', async () => {
+      const { el } = await setupPlaces();
+      itemOf(el, 'cadiz').focus();
+
+      pressKey(itemOf(el, 'cadiz'), 'c');
+      expect(document.activeElement).toBe(itemOf(el, 'cascais'));
+
+      pressKey(itemOf(el, 'cascais'), 'a');
+      expect(document.activeElement).toBe(itemOf(el, 'cascais'));
+    });
+
+    it('folds diacritics, so a plain character reaches an accented label', async () => {
+      const { el } = await setupPlaces();
+      itemOf(el, 'almada').focus();
+
+      pressKey(itemOf(el, 'almada'), 'e');
+
+      expect(document.activeElement).toBe(itemOf(el, 'evora'));
+    });
+
+    it('keeps a [selectable]="false" node reachable by a distinct prefix', async () => {
+      const { el } = await setupPlaces();
+      itemOf(el, 'almada').focus();
+
+      pressKey(itemOf(el, 'almada'), 'c');
+      expect(document.activeElement).toBe(itemOf(el, 'cadiz'));
+
+      pressKey(itemOf(el, 'cadiz'), 'a');
+      pressKey(itemOf(el, 'cadiz'), 's');
+
+      expect(document.activeElement).toBe(itemOf(el, 'cascais'));
+    });
+
+    it('leaves the shared matcher as the only one in the tree', () => {
+      const handRolled = [...LIBRARY_CODE]
+        .filter(([path]) => entryPointOf(path) === 'tree')
+        .filter(([, code]) => code.includes('.buffer()'))
+        .map(([path]) => path);
+
+      expect(handRolled).toEqual([]);
+      expect(LIBRARY_CODE.get('tree/src/focus-model.ts')).toContain('resolveListTypeahead(');
     });
   });
 

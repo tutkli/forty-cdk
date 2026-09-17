@@ -6,6 +6,7 @@ import {
   isUnset,
   type ListNavigationAction,
   moveIndex,
+  resolveListTypeahead,
   type RovingTabindex,
   type Typeahead,
   VirtualizedNavigator,
@@ -169,28 +170,22 @@ export class RovingFocusModel<T = unknown> implements FocusModel<T> {
   resumeActive(): void {}
 
   handleTypeahead(event: KeyboardEvent, beforeMove: () => void): boolean {
-    if (!this.#deps.typeahead.handle(event)) {
-      return false;
-    }
-    const buffer = this.#deps.typeahead.buffer().toLowerCase();
-    if (!buffer) {
-      return true;
-    }
-    const match = this.#deps.visibleHandles().find((handle) => {
-      if (handle.disabled()) {
-        return false;
-      }
-      const labelEl = handle.labelEl();
-      const text = (handle.textValue() || (labelEl ? accessibleTextContent(labelEl) : ''))
-        .trim()
-        .toLowerCase();
-      return text.startsWith(buffer);
+    const active = this.#deps.roving.active();
+    const items = this.#deps.visibleHandles();
+    const { handled, match } = resolveListTypeahead(this.#deps.typeahead, event, {
+      items,
+      anchorIndex: items.findIndex((handle) => handle.host === active),
+      getText: (handle) => {
+        const labelEl = handle.labelEl();
+        return handle.textValue() || (labelEl ? accessibleTextContent(labelEl) : '');
+      },
+      isDisabled: (handle) => handle.disabled(),
     });
     if (match) {
       beforeMove();
       this.#deps.roving.focusActive(match.host);
     }
-    return true;
+    return handled;
   }
 
   #currentNode(): ForTreeVisibleNode<T> | null {
