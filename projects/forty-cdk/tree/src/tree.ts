@@ -371,6 +371,7 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
       emitScrollToIndex: (idx) => this.scrollToIndex.emit(idx),
       getResumePos: () => this.#lastActivePos(),
       dataVersion: this.dataVersion,
+      typeahead: this.#typeahead,
     }));
   }
 
@@ -402,6 +403,7 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
     }
     return (this.#rovingModel ??= new RovingFocusModel<T>({
       roving: this.roving,
+      typeahead: this.#typeahead,
       visibleNodes: this.#visibleEntries,
       visibleHandles: this.#visibleHandles,
       selectOnFocus: (value) => {
@@ -567,28 +569,9 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
   }
 
   handleTypeahead(event: KeyboardEvent): boolean {
-    if (!this.#typeahead.handle(event)) {
-      return false;
-    }
-    const buffer = this.#typeahead.buffer().toLowerCase();
-    if (!buffer) {
-      return true;
-    }
-    const source = this.#virtualized()
-      ? this.#items.items()
-      : this.#visibleEntries().map((entry) => entry.handle);
-    const match = source.find((handle) => {
-      if (handle.disabled()) {
-        return false;
-      }
-      const text = (handle.textValue() || handle.labelEl()?.textContent || '').trim().toLowerCase();
-      return text.startsWith(buffer);
-    });
-    if (match) {
-      this.#assertSelectionFollowsFocusSupported();
-      this.#focusModel().typeaheadTo(match);
-    }
-    return true;
+    return this.#focusModel().handleTypeahead(event, () =>
+      this.#assertSelectionFollowsFocusSupported(),
+    );
   }
 
   isFirstFocusableItem(el: HTMLElement): boolean {

@@ -2477,6 +2477,111 @@ describe('ForListbox', () => {
       expect(document.activeElement).toBe(y);
     });
 
+    describe('typeahead across the window (issue #1970)', () => {
+      @Component({
+        imports: [ForListbox, ForListboxOption],
+        template: `
+          <div
+            forListbox
+            [(value)]="picked"
+            [totalCount]="total()"
+            [visibleRange]="range()"
+            (scrollToIndex)="onScrollToIndex($event)"
+          >
+            @for (row of windowRows(); track row.index) {
+              <button
+                type="button"
+                forListboxOption
+                [value]="'item-' + row.index"
+                [posInSet]="row.index"
+                [disabled]="disabledIndexes().includes(row.index)"
+                [attr.data-test-id]="'opt-' + row.index"
+              >
+                {{ labelOf(row.index) }}
+              </button>
+            }
+          </div>
+        `,
+      })
+      class TypeaheadVirtualHost {
+        readonly picked = signal<readonly string[]>([]);
+        readonly total = signal<number | undefined>(50);
+        readonly range = signal<readonly [number, number]>([0, 10]);
+        readonly scrolled = signal<number | null>(null);
+        readonly disabledIndexes = signal<readonly number[]>([]);
+        windowRows() {
+          const [s, e] = this.range();
+          return Array.from({ length: e - s }, (_, k) => ({ index: s + k }));
+        }
+        labelOf(index: number) {
+          if (index === 0) return 'Alpha';
+          if (index === 5) return 'Apple';
+          if (index === 30) return 'Gamma';
+          return `Row ${index}`;
+        }
+        onScrollToIndex(idx: number) {
+          this.scrolled.set(idx);
+          const start = Math.max(0, Math.min(idx - 4, (this.total() ?? 0) - 10));
+          this.range.set([start, start + 10]);
+        }
+      }
+
+      async function scrolledToTheEnd(configure?: (i: TypeaheadVirtualHost) => void) {
+        const result = renderHost(TypeaheadVirtualHost);
+        configure?.(result.instance);
+        await result.flush();
+        const lb = lbOf(result.el);
+        lb.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+        await result.flush();
+        lb.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }));
+        await result.flush();
+        await result.flush();
+        expect(lb.getAttribute('aria-activedescendant')).toBe(
+          voptOf(result.el, 49).getAttribute('id'),
+        );
+        result.instance.scrolled.set(null);
+        return { ...result, lb };
+      }
+
+      it('reaches an option in a window scrolled past and emits (scrollToIndex) for it', async () => {
+        const { el, lb, instance, flush: settle } = await scrolledToTheEnd();
+
+        lb.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', bubbles: true }));
+        await settle();
+        await settle();
+
+        expect(instance.scrolled()).toBe(0);
+        expect(lb.getAttribute('aria-activedescendant')).toBe(voptOf(el, 0).getAttribute('id'));
+      });
+
+      it('skips a disabled option outside the rendered window', async () => {
+        const {
+          el,
+          lb,
+          instance,
+          flush: settle,
+        } = await scrolledToTheEnd((i) => i.disabledIndexes.set([0]));
+
+        lb.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', bubbles: true }));
+        await settle();
+        await settle();
+
+        expect(instance.scrolled()).toBe(5);
+        expect(lb.getAttribute('aria-activedescendant')).toBe(voptOf(el, 5).getAttribute('id'));
+      });
+
+      it('leaves a position the window has never rendered unreachable', async () => {
+        const { el, lb, instance, flush: settle } = await scrolledToTheEnd();
+
+        lb.dispatchEvent(new KeyboardEvent('keydown', { key: 'g', bubbles: true }));
+        await settle();
+        await settle();
+
+        expect(instance.scrolled()).toBeNull();
+        expect(lb.getAttribute('aria-activedescendant')).toBe(voptOf(el, 49).getAttribute('id'));
+      });
+    });
+
     describe('pointer highlight (issue #1781)', () => {
       const hover = (option: HTMLElement) =>
         option.dispatchEvent(new PointerEvent('pointermove', { bubbles: true }));

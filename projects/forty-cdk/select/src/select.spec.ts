@@ -3685,6 +3685,119 @@ describe('ForSelectIndicator', () => {
       expect(content.getAttribute('aria-activedescendant')).toBe(voptOf(2).getAttribute('id'));
     });
 
+    describe('typeahead across the window (issue #1970)', () => {
+      @Component({
+        imports: BASE_IMPORTS,
+        template: `
+          <div
+            forSelect
+            [(open)]="open"
+            [(value)]="value"
+            [totalCount]="total()"
+            [visibleRange]="range()"
+            (scrollToIndex)="onScrollToIndex($event)"
+          >
+            <button forSelectTrigger data-test-id="trigger">
+              <span forSelectValue></span>
+            </button>
+            @if (open()) {
+              <div forSelectContent data-test-id="ta-content">
+                @for (row of windowRows(); track row.index) {
+                  <button
+                    forSelectOption
+                    [value]="'item-' + row.index"
+                    [posInSet]="row.index"
+                    [disabled]="disabledIndexes().includes(row.index)"
+                    [attr.data-test-id]="'ta-opt-' + row.index"
+                  >
+                    {{ labelOf(row.index) }}
+                  </button>
+                }
+              </div>
+            }
+          </div>
+        `,
+      })
+      class TypeaheadVirtualSelectHost {
+        readonly open = signal(false);
+        readonly value = signal<readonly string[]>([]);
+        readonly total = signal<number | undefined>(50);
+        readonly range = signal<readonly [number, number]>([0, 10]);
+        readonly scrolled = signal<number | null>(null);
+        readonly disabledIndexes = signal<readonly number[]>([]);
+        windowRows() {
+          const [s, e] = this.range();
+          return Array.from({ length: e - s }, (_, k) => ({ index: s + k }));
+        }
+        labelOf(index: number) {
+          if (index === 0) return 'Alpha';
+          if (index === 5) return 'Apple';
+          if (index === 30) return 'Gamma';
+          return `Row ${index}`;
+        }
+        onScrollToIndex(idx: number) {
+          this.scrolled.set(idx);
+          const start = Math.max(0, Math.min(idx - 4, (this.total() ?? 0) - 10));
+          this.range.set([start, start + 10]);
+        }
+      }
+
+      const taContent = () => document.querySelector<HTMLElement>('[data-test-id="ta-content"]')!;
+      const taOptOf = (idx: number) =>
+        document.querySelector<HTMLButtonElement>(`[data-test-id="ta-opt-${idx}"]`)!;
+
+      async function scrolledToTheEnd(configure?: (i: TypeaheadVirtualSelectHost) => void) {
+        const r = renderHost(TypeaheadVirtualSelectHost);
+        configure?.(r.instance);
+        r.instance.open.set(true);
+        await flush(r.fixture);
+        const content = taContent();
+        content.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+        await flush(r.fixture);
+        content.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }));
+        await flush(r.fixture);
+        await flush(r.fixture);
+        expect(content.getAttribute('aria-activedescendant')).toBe(taOptOf(49).getAttribute('id'));
+        r.instance.scrolled.set(null);
+        return { ...r, content };
+      }
+
+      it('reaches an option in a window scrolled past and emits (scrollToIndex) for it', async () => {
+        const { fixture, instance, content } = await scrolledToTheEnd();
+
+        content.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', bubbles: true }));
+        await flush(fixture);
+        await flush(fixture);
+
+        expect(instance.scrolled()).toBe(0);
+        expect(content.getAttribute('aria-activedescendant')).toBe(taOptOf(0).getAttribute('id'));
+      });
+
+      it('skips a disabled option outside the rendered window', async () => {
+        const { fixture, instance, content } = await scrolledToTheEnd((i) =>
+          i.disabledIndexes.set([0]),
+        );
+
+        content.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', bubbles: true }));
+        await flush(fixture);
+        await flush(fixture);
+
+        expect(instance.scrolled()).toBe(5);
+        expect(content.getAttribute('aria-activedescendant')).toBe(taOptOf(5).getAttribute('id'));
+      });
+
+      it('leaves a position the window has never rendered unreachable', async () => {
+        const { fixture, instance, content } = await scrolledToTheEnd();
+
+        content.dispatchEvent(new KeyboardEvent('keydown', { key: 'g', bubbles: true }));
+        await flush(fixture);
+        await flush(fixture);
+
+        expect(instance.scrolled()).toBeNull();
+        expect(content.getAttribute('aria-activedescendant')).toBe(taOptOf(49).getAttribute('id'));
+      });
+    });
+
     it('End to an off-window index emits scrollToIndex, pending resolves when option mounts', async () => {
       const r = renderHost(VirtualSelectHost);
       r.instance.open.set(true);

@@ -3,11 +3,14 @@ import type { ForListboxOptionHandle } from './listbox-context';
 
 /**
  * Position-snapshot entry for `ForListbox`. The listbox never reads option
- * values off the snapshot, so the engine's minimal shape is the whole entry.
+ * values off the snapshot, so the engine's minimal shape plus the typeahead
+ * text is the whole entry.
  */
 export interface ListboxPositionEntry {
   /** Stable option host id — the activedescendant target. */
   readonly id: string;
+  /** The option's accessible text, matched by the virtualized typeahead. */
+  readonly label: string;
   /** Whether the option is disabled, so navigation skips over it. */
   readonly disabled: boolean;
 }
@@ -20,8 +23,8 @@ export type ListboxVirtualizedNavigator<T> = VirtualizedNavigator<
 
 /**
  * Wire the shared `forty-cdk/core` navigation engine to the listbox option
- * handle. The snapshot needs only the id + disabled flag, so no unwritten-binding
- * guard is required on `readEntry`. Scroll-into-view is routed through
+ * handle. The snapshot needs only the id, the label and the disabled flag, so no
+ * unwritten-binding guard is required on `readEntry`. Scroll-into-view is routed through
  * `scrollActiveIntoView` so the root's pointer-suppression window opens first — a
  * synthetic `pointermove` from the scroll must not hijack the highlight.
  *
@@ -36,7 +39,7 @@ export function createListboxVirtualizedNavigator<T>(
     idOf: (o) => o.id(),
     hostOf: (o) => o.host,
     isDisabled: (o) => o.disabled(),
-    readEntry: (o) => ({ id: o.id(), disabled: o.disabled() }),
+    readEntry: (o) => ({ id: o.id(), label: o.label(), disabled: o.disabled() }),
     scrollIntoView: (host) => scrollActiveIntoView(host),
   });
 }

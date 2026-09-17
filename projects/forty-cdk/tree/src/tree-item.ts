@@ -211,6 +211,15 @@ export class ForTreeItem<T = string> implements ForTreeItemContext<T> {
     return this.#tree.isFirstFocusableItem(this.#host.nativeElement) ? 0 : -1;
   });
 
+  /**
+   * Reactive typeahead text exposed on the handle, so the root can fold a
+   * per-node `Signal<string>` into its virtualized position snapshot instead of
+   * reading `textContent` from inside a `computed` of its own. `textContent` is
+   * not a signal, so a text-only change with no `[textValue]` change does not
+   * refresh the snapshot entry.
+   */
+  readonly #typeaheadText = computed(() => this.textValue() || this.#labelEl()?.textContent || '');
+
   constructor() {
     assertInputBound(this.value, 'tree', '[forTreeItem]', 'value');
     const handle: ForTreeItemHandle<T> = {
@@ -222,6 +231,7 @@ export class ForTreeItem<T = string> implements ForTreeItemContext<T> {
       childContainer: this.#childContainer.asReadonly(),
       textValue: this.textValue,
       labelEl: this.#labelEl.asReadonly(),
+      typeaheadText: this.#typeaheadText,
       id: this.id,
       itemIndex: this.itemIndex,
       level: this.level,

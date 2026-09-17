@@ -9,6 +9,7 @@ import {
 } from '@angular/core';
 
 import {
+  accessibleTextContent,
   assertInputBound,
   hostButtonType,
   isUnset,
@@ -150,11 +151,23 @@ export class ForListboxOption<T = string> {
     return this.#group.isFirstFocusableOption(this.#host.nativeElement) ? 0 : -1;
   });
 
+  /**
+   * Reactive accessible text exposed on the handle — the trimmed `textContent`
+   * of the host, minus any `aria-hidden` indicator glyph. Mirrors
+   * `ForSelectOption`'s `#effectiveLabel` so the root can fold a per-option
+   * `Signal<string>` into its virtualized position snapshot instead of reading
+   * `textContent` from inside a `computed` of its own. `textContent` is not a
+   * signal, so a text-only change with no value change does not refresh the
+   * snapshot entry.
+   */
+  readonly #effectiveLabel = computed(() => accessibleTextContent(this.#host.nativeElement).trim());
+
   constructor() {
     assertInputBound(this.value, 'listbox', '[forListboxOption]', 'value');
     const handle = {
       host: this.#host.nativeElement,
       value: this.value,
+      label: this.#effectiveLabel,
       disabled: this.effectiveDisabled,
       id: this.id,
       posInSet: this.posInSet,

@@ -1855,6 +1855,54 @@ describe('ForTree', () => {
       expect(tree.getAttribute('aria-activedescendant')).toBe(lastItem.id);
     });
 
+    describe('typeahead across the window (issue #1970)', () => {
+      async function scrolledToTheEnd(configure?: (i: VirtualHost) => void) {
+        const result = await setupVirtual((i) => {
+          i.open.set(['root-0', 'root-1', 'root-2']);
+          configure?.(i);
+        });
+        const tree = treeEl(result.el);
+        tree.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+        await flush(result.fixture);
+        pressKey(tree, 'End');
+        await flush(result.fixture);
+        await flush(result.fixture);
+        expect(tree.getAttribute('aria-activedescendant')).toBe(
+          result.el.querySelector<HTMLElement>('[data-test-id="child-2-1"]')!.id,
+        );
+        result.instance.scrolledToIndex.set(null);
+        return { ...result, tree };
+      }
+
+      it('reaches a node in a window scrolled past and emits (scrollToIndex) for it', async () => {
+        const { el, fixture, instance, tree } = await scrolledToTheEnd();
+
+        pressKey(tree, 'r');
+        await flush(fixture);
+        await flush(fixture);
+
+        expect(instance.scrolledToIndex()).toBe(0);
+        expect(tree.getAttribute('aria-activedescendant')).toBe(
+          el.querySelector<HTMLElement>('[data-test-id="root-0"]')!.id,
+        );
+      });
+
+      it('skips a disabled node outside the rendered window', async () => {
+        const { el, fixture, instance, tree } = await scrolledToTheEnd((i) =>
+          i.disabledValues.set(['root-0']),
+        );
+
+        pressKey(tree, 'r');
+        await flush(fixture);
+        await flush(fixture);
+
+        expect(instance.scrolledToIndex()).toBe(3);
+        expect(tree.getAttribute('aria-activedescendant')).toBe(
+          el.querySelector<HTMLElement>('[data-test-id="root-1"]')!.id,
+        );
+      });
+    });
+
     it('6. ArrowRight on closed expandable calls setExpanded; ArrowRight on open enters child', async () => {
       const { el, fixture, instance } = await setupVirtual();
       const tree = treeEl(el);

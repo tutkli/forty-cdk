@@ -891,19 +891,18 @@ export class ForSelect<T = string>
     this.#controller.closeOverlay('tab');
   }
 
+  /**
+   * The virtualized typeahead searches the position snapshot, not the rendered
+   * window, so a match the consumer's virtualizer has unmounted is reachable;
+   * the match is seeded rather than focused, so an off-window one emits
+   * `(scrollToIndex)` and settles once the option mounts.
+   */
   #typeaheadVirtualized(event: KeyboardEvent): void {
-    const options = this.#controller.options();
-    const activeId = this.#activeId();
-    const { match } = resolveListTypeahead(this.#typeahead, event, {
-      items: options,
-      anchorIndex: activeId === null ? -1 : options.findIndex((o) => o.id() === activeId),
-      getText: (o) => accessibleTextContent(o.host),
-      isDisabled: (o) => o.disabled(),
-    });
-    if (match) {
+    const navigator = this.#requireNavigator();
+    const { pos } = navigator.resolveTypeahead(this.#typeahead, event, (entry) => entry.label);
+    if (pos !== null) {
       this.#assertSelectionFollowsFocusSupported();
-      this.#activeId.set(match.id());
-      this.#scrollActiveIntoView(match.host);
+      navigator.seedActive(pos);
     }
   }
 }
