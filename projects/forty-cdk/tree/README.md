@@ -776,6 +776,8 @@ On lift the dragged node's subtree is collapsed (and restored on drop / cancel).
 
 While a drag is in flight, `[forTreeNodeDrag]` announces lift / move / drop / cancel / invalid-drop through an off-screen live region. The phrasing is English by default; override it per injector scope with `provideForTreeDefaults` so screen readers speak the consumer's language. `position` / `total` are 1-based, and `parentLabel` is `null` when the node lands at the root — phrase the root-vs-parent distinction in your own language.
 
+The `label` and `parentLabel` a formatter receives are the node's `[textValue]` when it carries one, and the accessible text of its `[forTreeItemLabel]` otherwise. That is the same text typeahead matches against, so a node is announced by the name the user types to reach it, and `aria-hidden` decoration inside the label (a toggle caret, a checkbox glyph) is excluded from both.
+
 ```ts
 import { provideForTreeDefaults } from 'forty-cdk/tree';
 
@@ -831,7 +833,7 @@ provideForTreeDefaults({
 | `value`      | `input.required<T>` | The node's value. Must be unique within the tree.<br>**Default:** —                                                                                                                                                |
 | `disabled`   | `input<boolean>`    | Disables this node: not selectable, skipped by keyboard navigation.<br>**Default:** —                                                                                                                              |
 | `selectable` | `input<boolean>`    | Whether the node takes part in selection. `false` marks a structural node: it keeps navigation, typeahead and its ARIA position, but emits no selection state and never enters `[(value)]`.<br>**Default:** `true` |
-| `textValue`  | `input<string>`     | Typeahead text override. Falls back to the `[forTreeItemLabel]` text content when empty.<br>**Default:** —                                                                                                         |
+| `textValue`  | `input<string>`     | Text override for the node's name, used by typeahead matching and by the drag announcements. Falls back to the `[forTreeItemLabel]` accessible text when empty.<br>**Default:** —                                  |
 
 | Data attribute     | Values                                                  |
 | ------------------ | ------------------------------------------------------- |
