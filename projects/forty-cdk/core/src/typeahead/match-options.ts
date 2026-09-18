@@ -21,9 +21,9 @@ export interface TypeaheadMatchQuery {
  * Folds text to a case- and diacritics-insensitive form for typeahead
  * matching: decomposes accented characters (`NFD`), strips the combining
  * diacritical marks, and lowercases, so `"e"` matches `"Évora"`. Shared by
- * `findTypeaheadMatch` and the Select / Combobox call sites that run their own
- * prefix matching, so Select, Listbox, and Combobox behave alike for accented
- * text.
+ * `findTypeaheadMatch` and Combobox's inline autocomplete, the one call site
+ * that runs its own prefix matching, so every collection typeahead and
+ * Combobox behave alike for accented text.
  *
  * @param text Raw text to fold (an option label or the typed buffer).
  */

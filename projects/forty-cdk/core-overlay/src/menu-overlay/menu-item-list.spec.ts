@@ -209,6 +209,104 @@ describe('MenuItemList', () => {
       expect(list.handleTypeahead(new KeyboardEvent('keydown', { key: ' ' }))).toBe(true);
     });
 
+    it('reports a consumed key when no item matches the buffer', () => {
+      const list = build();
+      list.registerItem(makeItem('apple', { text: 'Apple' }));
+
+      expect(list.handleTypeahead(new KeyboardEvent('keydown', { key: 'z' }))).toBe(true);
+    });
+
+    it('reports a consumed key with no registered items', () => {
+      const list = build();
+
+      expect(list.handleTypeahead(new KeyboardEvent('keydown', { key: 'a' }))).toBe(true);
+    });
+
+    it('wraps to the top when cycling past the last same-initial item', () => {
+      const list = build();
+      const cut = makeItem('cut', { text: 'Cut' });
+      const open = makeItem('open', { text: 'Open' });
+      const copy = makeItem('copy', { text: 'Copy' });
+      list.registerItem(cut);
+      list.registerItem(open);
+      list.registerItem(copy);
+
+      copy.host.focus();
+      const event = new KeyboardEvent('keydown', { key: 'c' });
+      copy.host.dispatchEvent(event);
+      list.handleTypeahead(event);
+
+      expect(document.activeElement).toBe(cut.host);
+    });
+
+    it('re-anchors an inclusive multi-character prefix on the focused item', () => {
+      const list = build();
+      const copy = makeItem('copy', { text: 'Copy' });
+      const copies = makeItem('copies', { text: 'Copies' });
+      list.registerItem(copy);
+      list.registerItem(copies);
+
+      copies.host.focus();
+      const c = new KeyboardEvent('keydown', { key: 'c' });
+      copies.host.dispatchEvent(c);
+      list.handleTypeahead(c);
+      expect(document.activeElement).toBe(copy.host);
+
+      const o = new KeyboardEvent('keydown', { key: 'o' });
+      copy.host.dispatchEvent(o);
+      list.handleTypeahead(o);
+      expect(document.activeElement).toBe(copy.host);
+    });
+
+    it('matches an accented label from its unaccented initial', () => {
+      const list = build();
+      const cut = makeItem('cut', { text: 'Cut' });
+      const editer = makeItem('editer', { text: 'Éditer' });
+      list.registerItem(cut);
+      list.registerItem(editer);
+
+      cut.host.focus();
+      const event = new KeyboardEvent('keydown', { key: 'e' });
+      cut.host.dispatchEvent(event);
+      list.handleTypeahead(event);
+
+      expect(document.activeElement).toBe(editer.host);
+    });
+
+    it('matches an unaccented label from an accented keypress', () => {
+      const list = build();
+      const cut = makeItem('cut', { text: 'Cut' });
+      const editer = makeItem('editer', { text: 'Editer' });
+      list.registerItem(cut);
+      list.registerItem(editer);
+
+      cut.host.focus();
+      const event = new KeyboardEvent('keydown', { key: 'é' });
+      cut.host.dispatchEvent(event);
+      list.handleTypeahead(event);
+
+      expect(document.activeElement).toBe(editer.host);
+    });
+
+    it('folds an accented textValue override the same way', () => {
+      const list = build();
+      const cut = makeItem('cut', { text: 'Cut' });
+      const overview = makeItem('overview', { text: 'Overview' });
+      list.registerItem(cut);
+      const withOverride: TestItem = {
+        ...overview,
+        textValue: signal('Übersicht'),
+      };
+      list.registerItem(withOverride);
+
+      cut.host.focus();
+      const event = new KeyboardEvent('keydown', { key: 'u' });
+      cut.host.dispatchEvent(event);
+      list.handleTypeahead(event);
+
+      expect(document.activeElement).toBe(withOverride.host);
+    });
+
     it('excludes an aria-hidden indicator glyph from the matched text', () => {
       const list = build();
       const cut = makeItem('cut', { text: 'Cut' });

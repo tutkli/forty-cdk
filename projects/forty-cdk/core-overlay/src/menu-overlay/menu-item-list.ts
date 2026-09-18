@@ -9,6 +9,7 @@ import {
   lastEnabledHandle,
   type ListNavigationAction,
   nextEnabledHandle,
+  resolveListTypeahead,
   type Typeahead,
 } from 'forty-cdk/core';
 
@@ -109,7 +110,8 @@ export class MenuItemList<H extends MenuItemHandle = MenuItemHandle> {
    * An item matches on its `textValue` when set, else on its accessible text:
    * an `aria-hidden` subtree (a `[forMenuItemIndicator]` glyph, an icon, a
    * badge) contributes nothing, while visually-hidden but announced content
-   * still does.
+   * still does. Text and buffer are compared trimmed, case-insensitively and
+   * diacritics-insensitively, so `e` reaches `Éditer`.
    * Returns `true` when the key was consumed as a typeahead character (a
    * printable char, or Space while the buffer is already non-empty), `false`
    * otherwise. Items applied on a native `<button>` use the return value to
@@ -119,42 +121,20 @@ export class MenuItemList<H extends MenuItemHandle = MenuItemHandle> {
    * 'nearest' })`.
    */
   handleTypeahead(event: KeyboardEvent): boolean {
-    if (!this.#typeahead.handle(event)) {
-      return false;
-    }
-    const buffer = this.#typeahead.buffer().toLowerCase();
-    if (!buffer) {
-      return true;
-    }
     const items = this.#items.items();
-    if (items.length === 0) {
-      return true;
+    const { handled, match } = resolveListTypeahead(this.#typeahead, event, {
+      items,
+      anchorIndex: items.findIndex((item) => item.host === event.target),
+      getText: (item) => {
+        const override = item.textValue?.() ?? '';
+        return override !== '' ? override : accessibleTextContent(item.host);
+      },
+      isDisabled: (item) => item.disabled(),
+    });
+    if (match) {
+      focusMenuItemHost(match.host);
     }
-
-    const cycle = this.#typeahead.isRepeatedChar();
-    const query = cycle ? buffer[0]! : buffer;
-    const currentIndex = items.findIndex((i) => i.host === event.target);
-    // Single-character typeahead cycles: each (re-)press of one key steps to the
-    // next same-initial item after the current focus and wraps around (APG menu
-    // typeahead). A distinct multi-character prefix re-anchors on the current
-    // focus (inclusive) so a growing prefix keeps the current item when it still
-    // matches; both fall back to the top when nothing is focused.
-    const anchor = currentIndex >= 0 ? currentIndex : -1;
-    const start = cycle ? anchor + 1 : Math.max(anchor, 0);
-
-    for (let offset = 0; offset < items.length; offset++) {
-      const item = items[(start + offset) % items.length]!;
-      if (item.disabled()) {
-        continue;
-      }
-      const override = item.textValue?.() ?? '';
-      const source = override !== '' ? override : accessibleTextContent(item.host);
-      if (source.trim().toLowerCase().startsWith(query)) {
-        focusMenuItemHost(item.host);
-        return true;
-      }
-    }
-    return true;
+    return handled;
   }
 
   /**
