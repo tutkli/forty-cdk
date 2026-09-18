@@ -1,5 +1,36 @@
 import { vi } from 'vitest';
+import { ApplicationRef } from '@angular/core';
 import { type ComponentFixture } from '@angular/core/testing';
+
+/**
+ * Refuses a drain whose `ApplicationRef` is already destroyed, so a request
+ * arriving after teardown is a failing test rather than a suppressed `NG0406`
+ * ([#1963](https://github.com/tutkli/forty-cdk/issues/1963)).
+ *
+ * `ApplicationRef.tick()` returns without rendering once the ref is destroyed
+ * and warns on a channel Vitest's default reporter suppresses, so the `await`
+ * resolves having drained nothing and every assertion after it runs against
+ * whatever DOM happened to be there.
+ *
+ * Destroyed is read off the ref's own getter, and a failure to resolve the ref
+ * at all counts as destroyed: tearing the `TestBed` down destroys the
+ * environment injector behind it, so that is how the state actually arrives —
+ * `NG0205` from the lookup rather than `destroyed === true`.
+ */
+function assertDrainable<T>(fixture: ComponentFixture<T>): void {
+  let destroyed: boolean;
+  try {
+    destroyed = fixture.componentRef.injector.get(ApplicationRef).destroyed;
+  } catch {
+    destroyed = true;
+  }
+  if (!destroyed) return;
+  throw new Error(
+    "[forty-cdk/test-utils] flush: the fixture's ApplicationRef is already destroyed, so this drain would render nothing.\n\n" +
+      'Cause: the drain outlived the test that started it — its promise was never awaited there, so it resumed after the TestBed tore the fixture down.\n\n' +
+      'Fix: await every flush inside the test that started it. `expect(async () => …).not.toThrow()` never awaits its callback (an async function rejects, it does not throw), so drop the wrapper and await the drain directly.',
+  );
+}
 
 /**
  * Drain Angular's render pipeline so any `afterNextRender` /
@@ -25,14 +56,20 @@ import { type ComponentFixture } from '@angular/core/testing';
  * real `setTimeout`, which never fires while timers are faked and would hang
  * the `await`. See {@link macrotask}.
  *
+ * Throws when the fixture's `ApplicationRef` is already destroyed — before each
+ * `detectChanges`, because the macrotask hop is where a drain that escaped its
+ * test crosses the teardown. See {@link assertDrainable}.
+ *
  * Internal to the test suite — never re-exported from `public-api.ts`.
  */
 export async function flush<T>(fixture: ComponentFixture<T>): Promise<void> {
+  assertDrainable(fixture);
   fixture.detectChanges();
   await fixture.whenStable();
   // One macrotask hop. afterNextRender + Promise-chained side effects
   // (floating-ui, autoUpdate, MutationObserver callbacks) settle here.
   await macrotask();
+  assertDrainable(fixture);
   fixture.detectChanges();
 }
 
@@ -179,6 +216,7 @@ export async function flushPositioning<T>(
       break;
     }
     await macrotask();
+    assertDrainable(fixture);
     fixture.detectChanges();
     await fixture.whenStable();
   }

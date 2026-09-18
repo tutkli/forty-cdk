@@ -132,15 +132,17 @@ describe('ForScrollArea', () => {
     expect(query('[data-testid="corner"]')).not.toBeNull();
   });
 
-  it('wires the viewport scroll listener without throwing', async () => {
-    const { query, flush } = renderHost(ScrollAreaHost);
+  it('routes a native viewport scroll event into the scrolling window', async () => {
+    const { instance, query, flush } = renderHost(ScrollAreaWiringHost);
     await flush();
+    const root = instance.root();
+    expect(root.scrolling()).toBe(false);
 
     const viewport = query<HTMLElement>('[forScrollAreaViewport]')!;
-    expect(async () => {
-      viewport.dispatchEvent(new Event('scroll'));
-      await flush();
-    }).not.toThrow();
+    viewport.dispatchEvent(new Event('scroll'));
+    await flush();
+
+    expect(root.scrolling()).toBe(true);
   });
 
   it('constructs with a registered [forScrollAreaContent] without throwing', () => {
@@ -151,16 +153,24 @@ describe('ForScrollArea', () => {
     expect(() => renderHost(ScrollAreaHostNoContent)).not.toThrow();
   });
 
-  it('changing [type] does not throw', async () => {
-    const { fixture, flush } = renderHost(ScrollAreaHost);
+  it('reflects every [type] value on the root as data-type', async () => {
+    const { fixture, query, flush } = renderHost(ScrollAreaHost);
     await flush();
 
-    expect(async () => {
-      fixture.componentInstance.type.set('hover');
-      await flush();
-      fixture.componentInstance.type.set('scroll');
-      await flush();
-    }).not.toThrow();
+    const root = query<HTMLElement>('[forScrollArea]')!;
+    expect(root.getAttribute('data-type')).toBe('always');
+
+    fixture.componentInstance.type.set('hover');
+    await flush();
+    expect(root.getAttribute('data-type')).toBe('hover');
+
+    fixture.componentInstance.type.set('scroll');
+    await flush();
+    expect(root.getAttribute('data-type')).toBe('scroll');
+
+    fixture.componentInstance.type.set('auto');
+    await flush();
+    expect(root.getAttribute('data-type')).toBe('auto');
   });
 
   // The single non-geometry carve-out: `type="always"` short-circuits the
