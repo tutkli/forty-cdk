@@ -5,6 +5,195 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.26.0] - 2026-09-18
+
+A release about the text a collection searches and announces. Four primitives resolved it from the
+raw `textContent` of the host, so the decorative `aria-hidden` glyph their own README anatomy nests
+inside the label — a tree node's expand toggle, a menu item's check indicator, a menubar trigger's
+icon, a drag handle — was part of what a typeahead matched on and what the assertive live region
+read back: a node labelled `▸ Root 0` was unreachable by typing `r`, and lifting it announced the
+glyph. All four read the accessible text now, and the two hand-rolled matchers the library still
+carried — the tree's roving path and the menu family's — route through the shared one, so a repeated
+character cycles and an accented label is reachable by its unaccented initial everywhere. The second
+thread is the virtualized tree, whose retained position now resumes every keyboard intent, is
+validated by node identity across a refresh, and is what the typeahead searches. The one thing that
+changes without you binding anything is `[textValue]` on a tree node: it now governs the drag
+announcements too.
+
+### Added
+
+- **Tree** — `[selectable]` lets a node decline selection
+  ([#1968](https://github.com/tutkli/forty-cdk/issues/1968)). A group header worth navigating to but
+  not itself an option had to be either `disabled` — announced as unavailable and skipped by the
+  arrows — or an ordinary node, announced as a checkbox with no control to match.
+  `[selectable]="false"` on `[forTreeItem]` drops it from the **selection contract only**: no
+  `aria-checked` / `data-checked` in `selectionMode="checkbox"`, no `aria-selected` /
+  `data-selected` in `'highlight'`, and `select()` is a no-op. It keeps `aria-level` /
+  `aria-setsize` / `aria-posinset`, its `aria-expanded`, no `aria-disabled`, and its place in arrow
+  navigation, `Home` / `End` and typeahead. The guard reaches every selection path — `selectAll`,
+  `selectRangeToFocused`, Shift+Arrow, `selectionFollowsFocus` and the virtualized activedescendant
+  — and the cascade resolves both ways: a structural node neither enters the checked set when an
+  ancestor is checked nor counts toward that ancestor's `'mixed'`, while its own descendants cascade
+  normally. `descendantsOf` therefore keeps its documented contract of returning the _selectable_
+  descendants.
+
+- **Menubar** — `[textValue]` overrides a trigger's typeahead text
+  ([#1993](https://github.com/tutkli/forty-cdk/issues/1993)). `[forMenubarTrigger]` was the only
+  piece in a typeahead-navigable collection without the override, so a trigger whose announced text
+  leads with a count or a badge was reachable only by that leading content. It takes the same input
+  its four siblings do, resolved the same way: a non-empty value wins, an empty one falls back to
+  the trigger's accessible text. `ForMenubarTriggerHandle` gains a required
+  `textValue: Signal<string>` — required rather than optional because `ForMenubarTrigger` is its
+  single implementor.
+
+### Changed
+
+- **Tree** — `[textValue]` governs the drag announcements too
+  ([#1982](https://github.com/tutkli/forty-cdk/issues/1982)). The tree read a node's text in three
+  places and only the two typeahead readers honoured the override, so a node reached by typing
+  `Zulu` was announced as `Bravo` on every lift, move, drop and cancel. `treeNodeLabel` now prefers
+  the override — and `treeParentLabel` with it, so a parent named by `[textValue]` is announced by
+  the override as well — falling back to the accessible text of the label element. **If you set
+  `[textValue]` purely to fix a typeahead match**, that string is now what a screen reader announces
+  during a drag instead of the visible label; drop the override, or set it to the text you want
+  announced.
+
+### Fixed
+
+- **Table** — `Cmd+Home` / `Cmd+End` reach the grid extremes
+  ([#1875](https://github.com/tutkli/forty-cdk/issues/1875)). `resolveGridNavigation` read
+  `event.ctrlKey` alone, so on macOS the chord fell through to the row's own extremes — the only
+  `Ctrl`-ish chord in the library that took no `Meta` alias, while `Ctrl/Cmd+Space` lifts a row and
+  `Ctrl/Cmd`-click toggles one on that same focused cell. Both cases read
+  `event.ctrlKey || event.metaKey` now; plain `Home` / `End` still resolve the row extremes.
+
+- **Select** — the item-aligned surface is measured untransformed
+  ([#1888](https://github.com/tutkli/forty-cdk/issues/1888)). The `itemAligned` middleware measured
+  the listbox and the anchor option with `getBoundingClientRect()`, which is transform-inclusive, so
+  a consumer's `scale(0.9)` enter animation skewed the **first** resolved position — the pass on
+  which the anti-flash clip is dropped — by the scale delta, landing the selected option 11px off
+  the trigger centre until some later `autoUpdate` tick corrected it. The listbox height now comes
+  from `offsetHeight` and the option's centre from an `offsetParent` walk, so a transform on either
+  element cannot skew the result and the viewport clamps read the same untransformed height. The
+  trigger is still read in viewport coordinates, which is what the result needs.
+
+- **Overlays** — a vetoed `(autoFocusOnClose)` stays vetoed on teardown
+  ([#1961](https://github.com/tutkli/forty-cdk/issues/1961)). The shell consults the output from a
+  `DestroyRef.onDestroy` hook, and when the surface lives in the same view as its root the root's
+  `OutputEmitterRef` is torn down first: Angular drops the emit, `defaultPrevented` reads back
+  `false`, and the shell performed the focus move the consumer had vetoed, landing focus on
+  `<body>`. An undeliverable emit now resolves as a veto, so no focus move is attempted at all. It
+  covers all ten roots that emit the hook — the four menu roots, Select, TimePicker, Menubar,
+  Combobox, Popover and the date pickers — with no API change.
+
+- **Combobox** — the picker trigger is labelled and focusable while the panel is closed
+  ([#1942](https://github.com/tutkli/forty-cdk/issues/1942)). In the picker anatomy the
+  `role="combobox"` input lives inside `[forComboboxContent]`, which consumers mount under
+  `@if (combobox.open())`, so with the panel closed the root nominated a `null` labelled element: a
+  surrounding `[forField]` wired nothing, clicking the label did nothing, and Signal Forms'
+  focus-on-error went nowhere. The root now resolves one entry point — the input, or
+  `[forComboboxTrigger]` while the input is unmounted — for both the field labelling and `focus()`,
+  the way `[forSelect]` / `[forTimePicker]` / `[forDatePicker]` already did. The wiring migrates
+  onto the input when the panel opens and hands back on close, with exactly one element carrying the
+  label's target either way.
+
+- **Combobox** — a consumer id on the picker trigger is adopted, not shadowed
+  ([#1954](https://github.com/tutkli/forty-cdk/issues/1954)). `ForField` only stamps its
+  `controlId()` on a target that carries no `id`, so an `id` of your own on `[forComboboxTrigger]`
+  left the `<label for>` present, plausible and dangling while the panel was closed, and the native
+  label-click forwarding was lost. `fieldLabelledElementId()` now reports the trigger's own id in
+  that case, mirroring what `OverlayController` already does for every other trigger. With no
+  consumer id the behaviour is byte-identical to before, and the field never takes ownership of your
+  id, so the migration onto the input on open leaves it alone.
+
+- **Tree** — every keyboard intent resumes from the retained position
+  ([#1967](https://github.com/tutkli/forty-cdk/issues/1967)). In the virtualized tree the retained
+  position was read back by directional navigation only, so once the active row scrolled out of the
+  rendered window `Space`, `Enter`, `ArrowRight` and `ArrowLeft` were swallowed by
+  `preventDefault()` and did nothing until an arrow press re-seeded the id. Expand, collapse,
+  enter-child and go-to-parent now resolve through the same fallback and re-seed the
+  activedescendant first, emitting `(scrollToIndex)` so the node comes back into view. The position
+  is bounded against the current `totalCount`, so a shrunk dataset resolves to nothing rather than
+  to a stale entry, and a disabled node at the retained position is still neither selected nor
+  scrolled back.
+
+- **Tree** — the resume position is validated by node identity
+  ([#1971](https://github.com/tutkli/forty-cdk/issues/1971)). The retained position was cleared in
+  exactly one place, so neither `[dataVersion]`, nor `invalidateSnapshot()`, nor a `totalCount`
+  transition reached it: after a refresh that rebuilt the snapshot it kept naming a position whose
+  node had changed, and the next keypress acted on whatever now occupied it — arrows walked from the
+  wrong origin, and `Enter` / `Space` / `ArrowRight` / `ArrowLeft` selected, expanded or collapsed a
+  node the user was never on. The root now retains the node beside the position and resolves every
+  resume — the in-place intents and the arrow / `Home` / `End` path alike — through one seam that
+  requires the snapshot entry at that position to still be the retained node, compared with the
+  root's own `compareWith`. A refresh that leaves the node where it was still resumes from it.
+
+- **Tree, Listbox, Select** — a virtualized typeahead searches the position snapshot
+  ([#1970](https://github.com/tutkli/forty-cdk/issues/1970)). All three resolved the match against
+  the live handles — the rendered window — so a match the virtualizer had unmounted did not exist
+  for the search and nothing ever emitted `(scrollToIndex)`. `VirtualizedNavigator.resolveTypeahead`
+  now sorts the persisted snapshot by absolute position, anchors on the current activedescendant and
+  runs the existing matcher over it, so an off-window match moves `aria-activedescendant` and asks
+  your virtualizer for that index; each root still runs its own `selectionFollowsFocus` guard. The
+  ceiling is that the snapshot only holds positions rendered at least once, which is stated under
+  _Intentional limitations_ in all three READMEs. The non-virtualized path is unchanged.
+
+- **Tree** — `aria-hidden` decoration is excluded from a node's text
+  ([#1975](https://github.com/tutkli/forty-cdk/issues/1975)). The tree resolved a node's typeahead
+  text from the raw `textContent` of its label, so the toggle and checkbox glyphs the README's own
+  anatomy nests inside `[forTreeItemLabel]` poisoned every match: a node labelled `▸ Root 0` was
+  unreachable by typing `r`, and in `selectionMode="checkbox"` every node's text started with the
+  indicator glyph. Both readers — the roving path and the virtualized snapshot — resolve through
+  `accessibleTextContent` now, which is the library's single definition of the text a typeahead
+  matches on and was already what Listbox, Select and Combobox used. The drag announcements, fed by
+  the same raw read, follow.
+
+- **Tree** — the roving typeahead routes through the shared matcher
+  ([#1976](https://github.com/tutkli/forty-cdk/issues/1976)). The roving path hand-rolled its match
+  — a plain scan from index `0` with `toLowerCase()` on both sides — so a repeated character stayed
+  on the first match forever and an accented node was unreachable by its unaccented initial; since
+  the virtualized search landed, the tree's two focus models also answered the same keystroke
+  differently depending on whether you set `[totalCount]`. The roving path now resolves through
+  `resolveListTypeahead` with the anchor taken from the roving-active host, so the cycle, the wrap,
+  the inclusive multi-character anchor and the diacritics fold behave as they do in every other
+  collection. It keeps reading the label live rather than through the handle's cached text, which is
+  deliberate.
+
+- **Menu** — typeahead matches an item's accessible text
+  ([#1983](https://github.com/tutkli/forty-cdk/issues/1983)). The shared item list matched against
+  the item host's raw `textContent`, so the `aria-hidden` `[forMenuItemIndicator]` glyph nested
+  inside a `[forMenuCheckboxItem]` / `[forMenuRadioItem]` — the menu README's own anatomy — poisoned
+  the match text and no prefix at all reached the item. It was not state-dependent either:
+  `textContent` ignores the `hidden` an unchecked indicator sets, so an unchecked item was poisoned
+  exactly like a checked one. The fallback reads through `accessibleTextContent` now, which keeps
+  visually-hidden but announced content, and the fix lands in the list all four menu roots share —
+  `[forDropdownMenu]`, `[forContextMenu]`, `[forMenuSub]` and `[forMenubar]`.
+
+- **Menu** — item typeahead routes through the shared matcher
+  ([#1984](https://github.com/tutkli/forty-cdk/issues/1984)). The item list held the last
+  hand-rolled collection matcher in the library, comparing with `toLowerCase()` on both sides, so
+  `e` did not reach `Éditer` and `é` did not reach `Editer`. Both sides are folded through
+  `foldTypeaheadText` now. What the method owes its callers is preserved: the key is still consumed
+  unconditionally once handled, so a mid-typeahead `Space` is still `preventDefault()`ed on an empty
+  buffer and an empty collection, the match is still focused with `preventScroll` plus
+  `scrollIntoView({ block: 'nearest' })`, and the anchor is still the focused item.
+
+- **Menubar** — trigger typeahead matches a trigger's accessible text
+  ([#1987](https://github.com/tutkli/forty-cdk/issues/1987)). `handleTriggerTypeahead` resolved each
+  trigger's match text from the host's raw `textContent`, so a `[forMenubarTrigger]` whose label was
+  preceded by an `aria-hidden` icon matched on the glyph and no prefix ever reached it. It reads
+  through `accessibleTextContent` now, and the contract is stated where a consumer meets it — on the
+  context method's JSDoc and in the trigger's `Typeahead` keyboard row.
+
+- **Drag & drop** — a lifted item is announced by its accessible text
+  ([#1989](https://github.com/tutkli/forty-cdk/issues/1989)). `[forDropList]` built every
+  announcement's label from the lifted host's raw `textContent`, so the decorative `aria-hidden`
+  `[forDragHandle]` glyph the drag-drop README prescribes in all three of its examples was read back
+  on every lift, move, drop and cancel, in the assertive live region a screen-reader user depends on
+  while dragging. All five call sites resolve the label through one helper built on
+  `accessibleTextContent`, which skips an `aria-hidden="true"` subtree and deliberately keeps
+  visually-hidden but announced content.
+
 ## [0.25.2] - 2026-09-08
 
 A bugfix release about interaction mode. Cell entry in a `mode="grid"` table handed the keyboard the
@@ -2390,7 +2579,8 @@ primitives.
 - **Display** — avatar, progress, meter, tree.
 - `forty-cdk/internationalized-date` secondary entry point exposing the `@internationalized/date` adapters for the date and time primitives.
 
-[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.25.2...HEAD
+[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.26.0...HEAD
+[0.26.0]: https://github.com/tutkli/forty-cdk/compare/v0.25.2...v0.26.0
 [0.25.2]: https://github.com/tutkli/forty-cdk/compare/v0.25.1...v0.25.2
 [0.25.1]: https://github.com/tutkli/forty-cdk/compare/v0.25.0...v0.25.1
 [0.25.0]: https://github.com/tutkli/forty-cdk/compare/v0.24.1...v0.25.0
