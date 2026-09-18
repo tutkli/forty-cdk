@@ -245,6 +245,25 @@ class MenubarTypeaheadHost {
 }
 
 @Component({
+  imports: [ForMenubar, ForMenubarTrigger],
+  template: `
+    <div forMenubar [(value)]="open">
+      <button forMenubarTrigger value="file">File</button>
+      <button forMenubarTrigger value="view">
+        <span aria-hidden="true">📁</span>
+        View
+      </button>
+      <button forMenubarTrigger value="edit">
+        <span class="visually-hidden">Recent </span>Edit
+      </button>
+    </div>
+  `,
+})
+class MenubarDecoratedTypeaheadHost {
+  readonly open = signal<string | null>(null);
+}
+
+@Component({
   imports: [...IMPORTS, ForMenuCheckboxItem, ForMenuItemIndicator],
   template: `
     <div forMenubar [(value)]="open" aria-label="Main">
@@ -1426,6 +1445,39 @@ describe('ForMenubar', () => {
 
       expect(document.activeElement).toBe(triggers[2]);
       expect(scrollSpy).toHaveBeenCalledWith({ block: 'nearest' });
+    });
+
+    it('matches a trigger on its label when an aria-hidden icon precedes it', async () => {
+      const r = renderHost(MenubarDecoratedTypeaheadHost);
+      const triggers = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]');
+      triggers[0]!.focus();
+
+      pressKey(triggers[0]!, 'v');
+      await flush(r.fixture);
+
+      expect(document.activeElement).toBe(triggers[1]);
+    });
+
+    it('leaves an undecorated trigger reachable by its own first character', async () => {
+      const r = renderHost(MenubarDecoratedTypeaheadHost);
+      const triggers = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]');
+      triggers[2]!.focus();
+
+      pressKey(triggers[2]!, 'f');
+      await flush(r.fixture);
+
+      expect(document.activeElement).toBe(triggers[0]);
+    });
+
+    it('counts visually-hidden but announced text inside a trigger', async () => {
+      const r = renderHost(MenubarDecoratedTypeaheadHost);
+      const triggers = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]');
+      triggers[0]!.focus();
+
+      pressKey(triggers[0]!, 'r');
+      await flush(r.fixture);
+
+      expect(document.activeElement).toBe(triggers[2]);
     });
   });
 

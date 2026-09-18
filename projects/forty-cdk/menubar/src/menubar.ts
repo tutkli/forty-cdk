@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 
 import {
+  accessibleTextContent,
   Collection,
   firstEnabledHost,
   findTypeaheadMatch,
@@ -408,7 +409,7 @@ export class ForMenubar implements ForMenubarContext {
         repeated: this.#triggerTypeahead.isRepeatedChar(),
         anchorIndex: currentIndex,
       },
-      (t) => t.host.textContent ?? '',
+      (t) => accessibleTextContent(t.host),
       (t) => t.disabled(),
     );
     if (!match) {

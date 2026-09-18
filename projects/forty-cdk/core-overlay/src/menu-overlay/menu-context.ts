@@ -56,10 +56,11 @@ export type ForMenuCloseReason =
  * registers with the parent menu. The collection orders them by DOM
  * position so groups, separators, and `@for` loops don't affect navigation.
  *
- * `textValue`, when present and non-empty, overrides `host.textContent` for
- * typeahead matching — useful when the item's DOM contains icons, kbd
- * shortcuts, badges, or SVG titles that would otherwise bleed into the
- * match string. Empty / unset means "fall back to the host's text content".
+ * `textValue`, when present and non-empty, overrides the item's accessible
+ * text for typeahead matching — useful when announced content such as a kbd
+ * shortcut, a badge, or an SVG title would otherwise bleed into the match
+ * string. Empty / unset means "fall back to the host's accessible text", which
+ * already excludes any `aria-hidden` subtree.
  */
 export interface ForMenuItemHandle extends CollectionHandle {
   /**
