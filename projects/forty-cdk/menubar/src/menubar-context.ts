@@ -29,6 +29,11 @@ export interface ForMenubarTriggerHandle extends CollectionHandle {
   readonly host: HTMLElement;
   readonly value: Signal<string>;
   readonly disabled: Signal<boolean>;
+  /**
+   * Typeahead-match override for the trigger row. Non-empty wins over the
+   * trigger's accessible text; `''` falls back to it.
+   */
+  readonly textValue: Signal<string>;
   readonly triggerId: Signal<string>;
   readonly contentId: Signal<string>;
   readonly side: Signal<FloatingSide | undefined>;
@@ -160,9 +165,10 @@ export interface ForMenubarContext extends MenuSiblingNavigator {
    * Typeahead at the trigger row: focuses the sibling trigger whose label
    * matches the buffered keys, anchored on the currently-focused trigger and
    * cycling to the next match (per the APG typeahead behaviour). The label is
-   * the trigger's accessible text, so an `aria-hidden` subtree (a decorative
-   * icon, a badge) never bleeds into the match, while visually-hidden but
-   * announced content still counts.
+   * the trigger's `textValue` when set, else its accessible text — so an
+   * `aria-hidden` subtree (a decorative icon, a badge) never bleeds into the
+   * match, while visually-hidden but announced content still counts unless the
+   * trigger overrides it.
    */
   handleTriggerTypeahead(event: KeyboardEvent): void;
 }

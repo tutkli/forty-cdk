@@ -409,7 +409,10 @@ export class ForMenubar implements ForMenubarContext {
         repeated: this.#triggerTypeahead.isRepeatedChar(),
         anchorIndex: currentIndex,
       },
-      (t) => accessibleTextContent(t.host),
+      (t) => {
+        const override = t.textValue();
+        return override !== '' ? override : accessibleTextContent(t.host);
+      },
       (t) => t.disabled(),
     );
     if (!match) {

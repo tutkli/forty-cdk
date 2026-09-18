@@ -4711,7 +4711,7 @@ exports[`document structure > projects/forty-cdk/menubar/README.md declares the 
           "Description",
         ],
         "role": "api",
-        "rows": 5,
+        "rows": 6,
       },
       {
         "columns": [

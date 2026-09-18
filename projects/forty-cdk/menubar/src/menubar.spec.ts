@@ -264,6 +264,26 @@ class MenubarDecoratedTypeaheadHost {
 }
 
 @Component({
+  imports: [ForMenubar, ForMenubarTrigger],
+  template: `
+    <div forMenubar [(value)]="open">
+      <button forMenubarTrigger value="edit">Edit</button>
+      <button forMenubarTrigger value="file" textValue="File">
+        <span class="count">3</span>
+        File
+      </button>
+      <button forMenubarTrigger value="view">
+        <span aria-hidden="true">📁</span>
+        View
+      </button>
+    </div>
+  `,
+})
+class MenubarTextValueTypeaheadHost {
+  readonly open = signal<string | null>(null);
+}
+
+@Component({
   imports: [...IMPORTS, ForMenuCheckboxItem, ForMenuItemIndicator],
   template: `
     <div forMenubar [(value)]="open" aria-label="Main">
@@ -1478,6 +1498,41 @@ describe('ForMenubar', () => {
       await flush(r.fixture);
 
       expect(document.activeElement).toBe(triggers[2]);
+    });
+
+    describe('textValue override', () => {
+      it('matches a trigger on its textValue when announced content precedes the label', async () => {
+        const r = renderHost(MenubarTextValueTypeaheadHost);
+        const triggers = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]');
+        triggers[0]!.focus();
+
+        pressKey(triggers[0]!, 'f');
+        await flush(r.fixture);
+
+        expect(document.activeElement).toBe(triggers[1]);
+      });
+
+      it('does not match a trigger carrying textValue on its announced text', async () => {
+        const r = renderHost(MenubarTextValueTypeaheadHost);
+        const triggers = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]');
+        triggers[0]!.focus();
+
+        pressKey(triggers[0]!, '3');
+        await flush(r.fixture);
+
+        expect(document.activeElement).toBe(triggers[0]);
+      });
+
+      it('falls back to the accessible text for a trigger with no textValue', async () => {
+        const r = renderHost(MenubarTextValueTypeaheadHost);
+        const triggers = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]');
+        triggers[1]!.focus();
+
+        pressKey(triggers[1]!, 'v');
+        await flush(r.fixture);
+
+        expect(document.activeElement).toBe(triggers[2]);
+      });
     });
   });
 
