@@ -164,15 +164,15 @@ Every output above is vetoable — each handler receives a `VetoableEvent` (or `
 
 ### Trigger
 
-| Key                        | Behavior                                                                                    |
-| -------------------------- | ------------------------------------------------------------------------------------------- |
-| `Click`                    | Toggle this trigger's menu. On open, focus moves to the first enabled item.                 |
-| `Enter` / `Space`          | Open this trigger's menu and focus the first enabled item; already open, focus moves to it. |
-| `ArrowDown`                | Open and focus the first enabled item; already open, focus moves to it.                     |
-| `ArrowUp`                  | Open and focus the last enabled item; already open, focus moves to it.                      |
-| `ArrowLeft` / `ArrowRight` | Move focus to the previous / next enabled trigger. RTL inverts.                             |
-| `Home` / `End`             | Focus the first / last enabled trigger.                                                     |
-| `Typeahead`                | Printable keys focus the first sibling trigger whose label starts with the buffered string. |
+| Key                        | Behavior                                                                                                                                                                                                    |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Click`                    | Toggle this trigger's menu. On open, focus moves to the first enabled item.                                                                                                                                 |
+| `Enter` / `Space`          | Open this trigger's menu and focus the first enabled item; already open, focus moves to it.                                                                                                                 |
+| `ArrowDown`                | Open and focus the first enabled item; already open, focus moves to it.                                                                                                                                     |
+| `ArrowUp`                  | Open and focus the last enabled item; already open, focus moves to it.                                                                                                                                      |
+| `ArrowLeft` / `ArrowRight` | Move focus to the previous / next enabled trigger. RTL inverts.                                                                                                                                             |
+| `Home` / `End`             | Focus the first / last enabled trigger.                                                                                                                                                                     |
+| `Typeahead`                | Printable keys focus the first sibling trigger whose label starts with the buffered string. The label is the trigger's **accessible text**, so an `aria-hidden` icon inside it never bleeds into the match. |
 
 ### In-menu
 

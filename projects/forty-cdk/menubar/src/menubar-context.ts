@@ -159,7 +159,10 @@ export interface ForMenubarContext extends MenuSiblingNavigator {
   /**
    * Typeahead at the trigger row: focuses the sibling trigger whose label
    * matches the buffered keys, anchored on the currently-focused trigger and
-   * cycling to the next match (per the APG typeahead behaviour).
+   * cycling to the next match (per the APG typeahead behaviour). The label is
+   * the trigger's accessible text, so an `aria-hidden` subtree (a decorative
+   * icon, a badge) never bleeds into the match, while visually-hidden but
+   * announced content still counts.
    */
   handleTriggerTypeahead(event: KeyboardEvent): void;
 }
