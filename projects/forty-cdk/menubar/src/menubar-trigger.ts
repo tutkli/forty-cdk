@@ -97,6 +97,15 @@ export class ForMenubarTrigger extends AnchoredOverlayPositioningBase {
   /** Per-trigger disabled, in addition to the menubar's `disabled`. */
   readonly disabled = input(false, { transform: booleanAttribute });
 
+  /**
+   * Override the string used for trigger-row typeahead matching. Defaults to
+   * `''`, which falls back to the trigger's accessible text — an `aria-hidden`
+   * subtree is already excluded. Set this when announced text still shouldn't
+   * bleed into the match — e.g. `<button forMenubarTrigger textValue="File">`
+   * for a trigger rendered as `3 File`.
+   */
+  readonly textValue = input<string>('');
+
   // -- Floating-ui inputs (forwarded to the multiplexed [forMenuContent]) --
 
   /**
@@ -152,6 +161,7 @@ export class ForMenubarTrigger extends AnchoredOverlayPositioningBase {
       host: this.#host.nativeElement,
       value: this.value,
       disabled: this.effectiveDisabled,
+      textValue: this.textValue,
       triggerId: this.triggerId,
       contentId: this.contentId,
       side: this.side,
