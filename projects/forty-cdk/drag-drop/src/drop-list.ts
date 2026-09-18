@@ -17,6 +17,7 @@ import {
 import { isPlatformBrowser } from '@angular/common';
 
 import {
+  accessibleTextContent,
   Collection,
   firstEnabledHost,
   registerHandle,
@@ -78,6 +79,15 @@ function shiftRect(rect: DragRect, dx: number, dy: number): DragRect {
     right: rect.right + dx,
     bottom: rect.bottom + dy,
   };
+}
+
+/**
+ * The trimmed name every drag announcement calls the item by: the lifted host's accessible text,
+ * excluding any `aria-hidden` subtree such as the decorative `[forDragHandle]` glyph, and keeping
+ * visually-hidden but announced content.
+ */
+function announcedLabel(host: HTMLElement): string {
+  return accessibleTextContent(host).trim();
 }
 
 /**
@@ -371,7 +381,7 @@ export class ForDropList implements ForDropListContext {
     this.#liftedHost.set(el);
     this.#flatIndex.set(flatIndex < 0 ? 0 : flatIndex);
     this.#dragOver.set(from);
-    const label = (el.textContent ?? '').trim();
+    const label = announcedLabel(el);
     this.#announcer.announce(
       this.#defaults.announceLift(label, from + 1, items.length),
       'assertive',
@@ -471,7 +481,7 @@ export class ForDropList implements ForDropListContext {
     this.#flatIndex.set(flat);
     if (changed) {
       this.#sorter?.onTargetChange(targetCtx, target.index);
-      const label = (lifted.textContent ?? '').trim();
+      const label = announcedLabel(lifted);
       this.#announcer.announce(
         this.#defaults.announceMove(label, target.index + 1, this.#positionCount(targetCtx)),
         'polite',
@@ -613,7 +623,7 @@ export class ForDropList implements ForDropListContext {
     }
     this.#flatIndex.set(next);
     if (nextTarget) {
-      const label = (liftedHost.textContent ?? '').trim();
+      const label = announcedLabel(liftedHost);
       this.#announcer.announce(
         this.#defaults.announceMove(label, nextSlot.index + 1, this.#positionCount(nextTarget)),
         'polite',
@@ -644,7 +654,7 @@ export class ForDropList implements ForDropListContext {
       slot.containerIndex === 0 ? this : (connected[slot.containerIndex - 1] ?? this);
     const handle = items.find((h) => h.host === liftedHost);
     const item = handle ? handle.data() : undefined;
-    const label = (liftedHost.textContent ?? '').trim();
+    const label = announcedLabel(liftedHost);
 
     const moved = !(previousIndex === currentIndex && container === (this as ForDropListContext));
     const animate =
@@ -717,7 +727,7 @@ export class ForDropList implements ForDropListContext {
     if (liftedHost === null) {
       return;
     }
-    const label = (liftedHost.textContent ?? '').trim();
+    const label = announcedLabel(liftedHost);
     this.#announcer.announce(this.#defaults.announceCancel(label), 'assertive');
     this.#teardown(this.#effectiveConnected());
   }

@@ -1109,6 +1109,128 @@ describe('ForDropList + ForDraggable', () => {
       const region = document.querySelector('[aria-live="assertive"]') as HTMLElement | null;
       expect(region?.textContent).toContain('lifted. 1 of 2');
     });
+
+    @Component({
+      imports: [...HANDLE_IMPORTS],
+      template: `
+        <ul forDropList #list="forDropList" [autoScroll]="false">
+          @for (row of rows(); track row.id) {
+            <li forDraggable [dragData]="row" [attr.data-test-id]="row.id">
+              <span forDragHandle aria-hidden="true">⠿</span>
+              <span class="visually-hidden">Task </span>
+              <span>{{ row.label }}</span>
+            </li>
+          }
+        </ul>
+      `,
+    })
+    class DecoratedHandleHost {
+      readonly listRef = viewChild.required<ForDropList>('list');
+      readonly rows: WritableSignal<Row[]> = signal([
+        { id: 1, label: 'Buy milk' },
+        { id: 2, label: 'Walk dog' },
+      ]);
+    }
+
+    function liveText(politeness: 'assertive' | 'polite'): string {
+      const region = document.querySelector(`[aria-live="${politeness}"]`);
+      return (region?.textContent ?? '').replace(/\s+/g, ' ').trim();
+    }
+
+    function stubRect(node: HTMLElement, top: number, bottom: number): void {
+      const value: DOMRect = {
+        left: 0,
+        top,
+        right: 200,
+        bottom,
+        width: 200,
+        height: bottom - top,
+        x: 0,
+        y: top,
+        toJSON() {},
+      };
+      node.getBoundingClientRect = () => value;
+    }
+
+    function stubDecoratedLayout(el: HTMLElement): void {
+      const list = el.querySelector<HTMLElement>('[forDropList]')!;
+      stubRect(list, 0, 40);
+      list.querySelectorAll<HTMLElement>('[forDraggable]').forEach((item, i) => {
+        stubRect(item, i * 20, i * 20 + 20);
+      });
+    }
+
+    it('announces a lift by the accessible text, dropping the aria-hidden handle glyph', () => {
+      vi.useFakeTimers();
+      const { el, fixture } = renderHost(DecoratedHandleHost);
+      const first = itemEl(el, 1);
+      first.focus();
+      pressKey(first, ' ');
+      vi.runAllTimers();
+      fixture.detectChanges();
+      expect(liveText('assertive')).toBe('Task Buy milk, lifted. 1 of 2.');
+    });
+
+    it('announces a keyboard move without the aria-hidden handle glyph', () => {
+      vi.useFakeTimers();
+      const { el, fixture } = renderHost(DecoratedHandleHost);
+      const first = itemEl(el, 1);
+      first.focus();
+      pressKey(first, ' ');
+      pressKey(first, 'ArrowDown');
+      vi.runAllTimers();
+      fixture.detectChanges();
+      expect(liveText('polite')).toBe('Task Buy milk, moved to position 2 of 2.');
+    });
+
+    it('announces a pointer-resolved move without the aria-hidden handle glyph', async () => {
+      vi.useFakeTimers();
+      const r = renderHost(DecoratedHandleHost);
+      await r.flush();
+      stubDecoratedLayout(r.el);
+      const list = r.instance.listRef();
+      list.pointerLift(itemEl(r.el, 1), { x: 100, y: 10 });
+      list.pointerMove({ x: 100, y: 35 });
+      vi.runAllTimers();
+      r.fixture.detectChanges();
+      expect(liveText('polite')).toBe('Task Buy milk, moved to position 2 of 2.');
+    });
+
+    it('announces a drop without the aria-hidden handle glyph', () => {
+      vi.useFakeTimers();
+      const { el, fixture } = renderHost(DecoratedHandleHost);
+      const first = itemEl(el, 1);
+      first.focus();
+      pressKey(first, ' ');
+      pressKey(first, 'ArrowDown');
+      pressKey(first, ' ');
+      vi.runAllTimers();
+      fixture.detectChanges();
+      expect(liveText('assertive')).toBe('Task Buy milk, dropped at position 2 of 2.');
+    });
+
+    it('announces a cancel without the aria-hidden handle glyph', () => {
+      vi.useFakeTimers();
+      const { el, fixture } = renderHost(DecoratedHandleHost);
+      const first = itemEl(el, 1);
+      first.focus();
+      pressKey(first, ' ');
+      pressKey(first, 'Escape');
+      vi.runAllTimers();
+      fixture.detectChanges();
+      expect(liveText('assertive')).toBe('Task Buy milk, movement cancelled.');
+    });
+
+    it('announces an item carrying no handle glyph by its label alone', () => {
+      vi.useFakeTimers();
+      const { el, fixture } = renderHost(SingleListHost);
+      const first = itemEl(el, 1);
+      first.focus();
+      pressKey(first, ' ');
+      vi.runAllTimers();
+      fixture.detectChanges();
+      expect(liveText('assertive')).toBe('Alpha, lifted. 1 of 3.');
+    });
   });
 
   describe('keyboard round-trip', () => {
