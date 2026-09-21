@@ -34,21 +34,16 @@
  * timeout flakes (observed in select.spec). 15000ms absorbs the contention
  * spike without hiding a real hang.
  *
- * The file is also where `assertNoComponentIdCollisions` is armed. A setup file
- * is imported before the spec module it precedes, which is the only point early
- * enough to observe an AOT fixture's definition-time `NG0912`
+ * The file is also where `assertNoAngularDiagnostics` is armed, over every
+ * `NG<NNNN>` code. A setup file is imported before the spec module it
+ * precedes, which is the only point early enough to observe an AOT fixture's
+ * definition-time `NG0912`
  * ([#1957](https://github.com/tutkli/forty-cdk/issues/1957)); the recording
  * patch travels with that import, and the assertion runs after each test.
- *
- * `assertNoDestroyedOutputEmits` is armed beside it, over `NG0953`
- * ([#1961](https://github.com/tutkli/forty-cdk/issues/1961)). Both patch
- * `console.warn`, and the second import chains onto the first rather than
- * replacing it, so the two record independently.
  */
 import { afterEach, vi } from 'vitest';
 
-import { assertNoComponentIdCollisions } from './component-id-collisions';
-import { assertNoDestroyedOutputEmits } from './destroyed-output-emits';
+import { assertNoAngularDiagnostics } from './angular-diagnostics';
 
 vi.setConfig({ testTimeout: 15000 });
 
@@ -57,6 +52,5 @@ afterEach(() => {
   vi.clearAllMocks();
   vi.unstubAllGlobals();
   vi.unstubAllEnvs();
-  assertNoComponentIdCollisions();
-  assertNoDestroyedOutputEmits();
+  assertNoAngularDiagnostics();
 });
