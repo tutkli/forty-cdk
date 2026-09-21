@@ -39,7 +39,7 @@ Eight blessed symbols are **not** here, because a primitive is their semantic ho
 
 ## Reading a control's accessible text
 
-`accessibleTextContent(node)` concatenates a node's text content while skipping any subtree marked `aria-hidden="true"`, so a decorative indicator glyph, badge or icon contributes nothing while visually-hidden but announced content is kept. It is what the library itself calls to decide what a `[forSelectOption]` / `[forComboboxOption]` is named, what its typeahead matches on, and how a reorder announcement labels the moved option.
+`accessibleTextContent(node)` concatenates a node's text content while skipping any subtree marked `aria-hidden="true"`, so a decorative indicator glyph, badge or icon contributes nothing while visually-hidden but announced content is kept. It is what the library itself calls to decide what a `[forSelectOption]` / `[forComboboxOption]` is named, what its typeahead matches on, how a reorder announcement labels the moved option, and what a `[forTreeItem]` carrying no `[textValue]` matches typeahead and drag announcements on.
 
 Reach for it whenever your own code has to reason about that same text — a truncation tooltip that shows a cell's full label, a filter that matches what the user actually perceives:
 
