@@ -44,7 +44,7 @@ import { LIBRARY_CODE } from '../test-utils/source-scan';
  * the hook through; the source-derived guard underneath covers the roots the
  * behavioural cases do not mount.
  *
- * A dropped emit is also an `NG0953`, which `assertNoDestroyedOutputEmits` fails
+ * A dropped emit is also an `NG0953`, which `assertNoAngularDiagnostics` fails
  * the run on — so the two halves fail independently.
  */
 interface TeardownCase {
