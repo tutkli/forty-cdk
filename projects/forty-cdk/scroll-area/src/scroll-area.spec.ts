@@ -346,7 +346,7 @@ describe('ForScrollArea', () => {
       expect(viewport.getAttribute('tabindex')).toBe('0');
     });
 
-    it('removes the tab stop (no tabindex attribute) when [focusable]="false"', async () => {
+    it('removes the tab stop (no tabindex attribute) when [focusable]="false", and restores it when it flips back', async () => {
       const { fixture, query, flush } = renderHost(ScrollAreaFocusableHost);
       const viewport = query<HTMLElement>('[data-testid="viewport"]')!;
       expect(viewport.getAttribute('tabindex')).toBe('0');
@@ -354,26 +354,9 @@ describe('ForScrollArea', () => {
       fixture.componentInstance.focusable.set(false);
       await flush();
       expect(viewport.hasAttribute('tabindex')).toBe(false);
-    });
-
-    it('toggling [focusable] reflects the tabindex', async () => {
-      TestBed.configureTestingModule({
-        providers: [provideZonelessChangeDetection()],
-      });
-      const fixture = TestBed.createComponent(ScrollAreaFocusableHost);
-      await flush(fixture);
-
-      const viewport = fixture.nativeElement.querySelector(
-        '[data-testid="viewport"]',
-      ) as HTMLElement;
-      expect(viewport.getAttribute('tabindex')).toBe('0');
-
-      fixture.componentInstance.focusable.set(false);
-      await flush(fixture);
-      expect(viewport.hasAttribute('tabindex')).toBe(false);
 
       fixture.componentInstance.focusable.set(true);
-      await flush(fixture);
+      await flush();
       expect(viewport.getAttribute('tabindex')).toBe('0');
     });
   });
