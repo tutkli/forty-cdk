@@ -2800,196 +2800,6 @@ describe('ForSelect', () => {
       );
     });
   });
-});
-
-describe('ForSelectIndicator', () => {
-  afterEachOverlayCleanup();
-
-  @Component({
-    imports: [ForSelect, ForSelectTrigger, ForSelectContent, ForSelectOption, ForSelectIndicator],
-    template: `
-      <div forSelect [(open)]="open" [(value)]="value">
-        <button forSelectTrigger>Open</button>
-        @if (open()) {
-          <div forSelectContent>
-            <button data-test-id="apple" forSelectOption value="apple">
-              <span data-test-id="apple-ind" forSelectIndicator>✓</span>
-              Apple
-            </button>
-            <button data-test-id="banana" forSelectOption value="banana">
-              <span data-test-id="banana-ind" forSelectIndicator class="consumer-flex">✓</span>
-              Banana
-            </button>
-          </div>
-        }
-      </div>
-    `,
-  })
-  class IndicatorHost {
-    readonly open = signal(true);
-    readonly value = signal<readonly string[]>([]);
-  }
-
-  function indicator(testId: string): HTMLElement {
-    const el = document.querySelector<HTMLElement>(`[data-test-id="${testId}"]`);
-    if (!el) {
-      throw new Error(`Indicator [data-test-id="${testId}"] not found.`);
-    }
-    return el;
-  }
-
-  assertDataStateContract({
-    vocabulary: ['checked', 'unchecked'],
-    mount: () => {
-      const r = renderHost(IndicatorHost);
-      return {
-        pieces: () => ({
-          option: document.querySelector<HTMLElement>('[data-test-id="apple"]'),
-          indicator: document.querySelector<HTMLElement>('[data-test-id="apple-ind"]'),
-        }),
-        setState: (state) => r.instance.value.set(state === 'checked' ? ['apple'] : ['banana']),
-        flush: r.flush,
-      };
-    },
-  });
-
-  it('hides the indicator when the option is unselected and shows it when selected', async () => {
-    const r = renderHost(IndicatorHost);
-    await flush(r.fixture);
-
-    expect(indicator('apple-ind').hasAttribute('hidden')).toBe(true);
-
-    r.instance.value.set(['apple']);
-    await flush(r.fixture);
-
-    expect(indicator('apple-ind').hasAttribute('hidden')).toBe(false);
-  });
-
-  it('enforces inline display:none while unselected so a consumer display class cannot leak through', async () => {
-    const r = renderHost(IndicatorHost);
-    await flush(r.fixture);
-
-    expect(indicator('banana-ind').style.display).toBe('none');
-
-    r.instance.value.set(['banana']);
-    await flush(r.fixture);
-
-    expect(indicator('banana-ind').style.display).toBe('');
-  });
-
-  it('marks the indicator aria-hidden so screen readers ignore the decoration', async () => {
-    const r = renderHost(IndicatorHost);
-    await flush(r.fixture);
-    expect(indicator('apple-ind').getAttribute('aria-hidden')).toBe('true');
-  });
-
-  it('excludes the aria-hidden indicator glyph from typeahead matching', async () => {
-    const r = renderHost(IndicatorHost);
-    await flush(r.fixture);
-
-    const apple = document.querySelector<HTMLButtonElement>('[data-test-id="apple"]')!;
-    apple.focus();
-    pressKey(apple, 'a');
-    await flush(r.fixture);
-
-    expect(document.activeElement).toBe(apple);
-  });
-
-  it('excludes the aria-hidden indicator glyph from the displayed label', async () => {
-    @Component({
-      imports: [...BASE_IMPORTS, ForSelectValue, ForSelectIndicator],
-      template: `
-        <div forSelect [(open)]="open" [(value)]="value">
-          <button forSelectTrigger>
-            <span forSelectValue placeholder="Pick"></span>
-          </button>
-          @if (open()) {
-            <div forSelectContent>
-              <button data-test-id="apple" forSelectOption value="apple">
-                <span forSelectIndicator>✓</span>
-                Apple
-              </button>
-            </div>
-          }
-        </div>
-      `,
-    })
-    class IndicatorValueHost {
-      readonly open = signal(true);
-      readonly value = signal<readonly string[]>([]);
-    }
-
-    const r = renderHost(IndicatorValueHost);
-    r.instance.value.set(['apple']);
-    await flush(r.fixture);
-
-    const value = r.query<HTMLElement>('[forSelectValue]')!;
-    expect(value.textContent).toBe('Apple');
-  });
-
-  it('throws when used outside [forSelectOption]', () => {
-    @Component({
-      imports: [ForSelectIndicator],
-      template: `<span forSelectIndicator></span>`,
-    })
-    class Orphan {}
-
-    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
-    expect(() => TestBed.createComponent(Orphan)).toThrow(
-      /\[forty-cdk\/select\] FORCDK-SELECT-004: ForSelectIndicator must be used inside a \[forSelectOption\] element\./,
-    );
-  });
-
-  it('resolves a subclassed option via the re-provided FOR_SELECT_OPTION token', async () => {
-    @Directive({
-      selector: '[testSelectOption]',
-      providers: [{ provide: FOR_SELECT_OPTION, useExisting: TestSelectOption }],
-    })
-    class TestSelectOption extends ForSelectOption {}
-
-    @Component({
-      imports: [
-        ForSelect,
-        ForSelectTrigger,
-        ForSelectContent,
-        TestSelectOption,
-        ForSelectIndicator,
-      ],
-      template: `
-        <div forSelect [(open)]="open" [(value)]="value">
-          <button forSelectTrigger>Open</button>
-          @if (open()) {
-            <div forSelectContent>
-              <button data-test-id="apple" testSelectOption value="apple">
-                <span data-test-id="apple-ind" forSelectIndicator>✓</span>
-                Apple
-              </button>
-            </div>
-          }
-        </div>
-      `,
-    })
-    class SubclassHost {
-      readonly open = signal(true);
-      readonly value = signal<readonly string[]>(['apple']);
-    }
-
-    const r = renderHost(SubclassHost);
-    await flush(r.fixture);
-    expect(indicator('apple-ind').getAttribute('data-state')).toBe('checked');
-  });
-
-  describe('reactive updates', () => {
-    it('flips indicator visibility when the parent selection changes', async () => {
-      const r = renderHost(IndicatorHost);
-      await flush(r.fixture);
-
-      expect(indicator('apple-ind').hasAttribute('hidden')).toBe(true);
-      r.instance.value.set(['apple']);
-      await flush(r.fixture);
-      expect(indicator('apple-ind').hasAttribute('hidden')).toBe(false);
-    });
-  });
 
   describe('[forField] integration', () => {
     @Component({
@@ -4397,6 +4207,196 @@ describe('ForSelectIndicator', () => {
       pressKey(content, 'ArrowDown', { shiftKey: true });
       pressKey(content, 'a', { ctrlKey: true });
       expect(throwsUnsupported(captured)).toBe(false);
+    });
+  });
+});
+
+describe('ForSelectIndicator', () => {
+  afterEachOverlayCleanup();
+
+  @Component({
+    imports: [ForSelect, ForSelectTrigger, ForSelectContent, ForSelectOption, ForSelectIndicator],
+    template: `
+      <div forSelect [(open)]="open" [(value)]="value">
+        <button forSelectTrigger>Open</button>
+        @if (open()) {
+          <div forSelectContent>
+            <button data-test-id="apple" forSelectOption value="apple">
+              <span data-test-id="apple-ind" forSelectIndicator>✓</span>
+              Apple
+            </button>
+            <button data-test-id="banana" forSelectOption value="banana">
+              <span data-test-id="banana-ind" forSelectIndicator class="consumer-flex">✓</span>
+              Banana
+            </button>
+          </div>
+        }
+      </div>
+    `,
+  })
+  class IndicatorHost {
+    readonly open = signal(true);
+    readonly value = signal<readonly string[]>([]);
+  }
+
+  function indicator(testId: string): HTMLElement {
+    const el = document.querySelector<HTMLElement>(`[data-test-id="${testId}"]`);
+    if (!el) {
+      throw new Error(`Indicator [data-test-id="${testId}"] not found.`);
+    }
+    return el;
+  }
+
+  assertDataStateContract({
+    vocabulary: ['checked', 'unchecked'],
+    mount: () => {
+      const r = renderHost(IndicatorHost);
+      return {
+        pieces: () => ({
+          option: document.querySelector<HTMLElement>('[data-test-id="apple"]'),
+          indicator: document.querySelector<HTMLElement>('[data-test-id="apple-ind"]'),
+        }),
+        setState: (state) => r.instance.value.set(state === 'checked' ? ['apple'] : ['banana']),
+        flush: r.flush,
+      };
+    },
+  });
+
+  it('hides the indicator when the option is unselected and shows it when selected', async () => {
+    const r = renderHost(IndicatorHost);
+    await flush(r.fixture);
+
+    expect(indicator('apple-ind').hasAttribute('hidden')).toBe(true);
+
+    r.instance.value.set(['apple']);
+    await flush(r.fixture);
+
+    expect(indicator('apple-ind').hasAttribute('hidden')).toBe(false);
+  });
+
+  it('enforces inline display:none while unselected so a consumer display class cannot leak through', async () => {
+    const r = renderHost(IndicatorHost);
+    await flush(r.fixture);
+
+    expect(indicator('banana-ind').style.display).toBe('none');
+
+    r.instance.value.set(['banana']);
+    await flush(r.fixture);
+
+    expect(indicator('banana-ind').style.display).toBe('');
+  });
+
+  it('marks the indicator aria-hidden so screen readers ignore the decoration', async () => {
+    const r = renderHost(IndicatorHost);
+    await flush(r.fixture);
+    expect(indicator('apple-ind').getAttribute('aria-hidden')).toBe('true');
+  });
+
+  it('excludes the aria-hidden indicator glyph from typeahead matching', async () => {
+    const r = renderHost(IndicatorHost);
+    await flush(r.fixture);
+
+    const apple = document.querySelector<HTMLButtonElement>('[data-test-id="apple"]')!;
+    apple.focus();
+    pressKey(apple, 'a');
+    await flush(r.fixture);
+
+    expect(document.activeElement).toBe(apple);
+  });
+
+  it('excludes the aria-hidden indicator glyph from the displayed label', async () => {
+    @Component({
+      imports: [...BASE_IMPORTS, ForSelectValue, ForSelectIndicator],
+      template: `
+        <div forSelect [(open)]="open" [(value)]="value">
+          <button forSelectTrigger>
+            <span forSelectValue placeholder="Pick"></span>
+          </button>
+          @if (open()) {
+            <div forSelectContent>
+              <button data-test-id="apple" forSelectOption value="apple">
+                <span forSelectIndicator>✓</span>
+                Apple
+              </button>
+            </div>
+          }
+        </div>
+      `,
+    })
+    class IndicatorValueHost {
+      readonly open = signal(true);
+      readonly value = signal<readonly string[]>([]);
+    }
+
+    const r = renderHost(IndicatorValueHost);
+    r.instance.value.set(['apple']);
+    await flush(r.fixture);
+
+    const value = r.query<HTMLElement>('[forSelectValue]')!;
+    expect(value.textContent).toBe('Apple');
+  });
+
+  it('throws when used outside [forSelectOption]', () => {
+    @Component({
+      imports: [ForSelectIndicator],
+      template: `<span forSelectIndicator></span>`,
+    })
+    class Orphan {}
+
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+    expect(() => TestBed.createComponent(Orphan)).toThrow(
+      /\[forty-cdk\/select\] FORCDK-SELECT-004: ForSelectIndicator must be used inside a \[forSelectOption\] element\./,
+    );
+  });
+
+  it('resolves a subclassed option via the re-provided FOR_SELECT_OPTION token', async () => {
+    @Directive({
+      selector: '[testSelectOption]',
+      providers: [{ provide: FOR_SELECT_OPTION, useExisting: TestSelectOption }],
+    })
+    class TestSelectOption extends ForSelectOption {}
+
+    @Component({
+      imports: [
+        ForSelect,
+        ForSelectTrigger,
+        ForSelectContent,
+        TestSelectOption,
+        ForSelectIndicator,
+      ],
+      template: `
+        <div forSelect [(open)]="open" [(value)]="value">
+          <button forSelectTrigger>Open</button>
+          @if (open()) {
+            <div forSelectContent>
+              <button data-test-id="apple" testSelectOption value="apple">
+                <span data-test-id="apple-ind" forSelectIndicator>✓</span>
+                Apple
+              </button>
+            </div>
+          }
+        </div>
+      `,
+    })
+    class SubclassHost {
+      readonly open = signal(true);
+      readonly value = signal<readonly string[]>(['apple']);
+    }
+
+    const r = renderHost(SubclassHost);
+    await flush(r.fixture);
+    expect(indicator('apple-ind').getAttribute('data-state')).toBe('checked');
+  });
+
+  describe('reactive updates', () => {
+    it('flips indicator visibility when the parent selection changes', async () => {
+      const r = renderHost(IndicatorHost);
+      await flush(r.fixture);
+
+      expect(indicator('apple-ind').hasAttribute('hidden')).toBe(true);
+      r.instance.value.set(['apple']);
+      await flush(r.fixture);
+      expect(indicator('apple-ind').hasAttribute('hidden')).toBe(false);
     });
   });
 });
