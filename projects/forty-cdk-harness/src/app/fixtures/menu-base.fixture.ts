@@ -1,7 +1,15 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { ForDropdownMenu, ForDropdownMenuTrigger } from 'forty-cdk/dropdown-menu';
-import { ForMenuContent, ForMenuItem, ForMenuSeparator } from 'forty-cdk/menu';
+import {
+  ForMenuCheckboxItem,
+  ForMenuContent,
+  ForMenuItem,
+  ForMenuItemIndicator,
+  ForMenuRadioGroup,
+  ForMenuRadioItem,
+  ForMenuSeparator,
+} from 'forty-cdk/menu';
 
 /**
  * Default item set for the base-Menu fixture. Hand-picked so typeahead has
@@ -36,7 +44,17 @@ const SEPARATOR_AFTER = new Set<number>([2]);
 @Component({
   selector: 'app-menu-base-fixture',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ForDropdownMenu, ForDropdownMenuTrigger, ForMenuContent, ForMenuItem, ForMenuSeparator],
+  imports: [
+    ForDropdownMenu,
+    ForDropdownMenuTrigger,
+    ForMenuCheckboxItem,
+    ForMenuContent,
+    ForMenuItem,
+    ForMenuItemIndicator,
+    ForMenuRadioGroup,
+    ForMenuRadioItem,
+    ForMenuSeparator,
+  ],
   template: `
     <input data-testid="before" placeholder="before-trigger" />
     <div forDropdownMenu [(open)]="open" ariaLabel="Test menu">
@@ -51,6 +69,27 @@ const SEPARATOR_AFTER = new Set<number>([2]);
               <hr [attr.data-testid]="'sep-' + i" forMenuSeparator />
             }
           }
+          @if (indicators) {
+            <hr data-testid="sep-indicators" forMenuSeparator />
+            <button data-testid="item-fullscreen" forMenuCheckboxItem [(checked)]="fullscreen">
+              <span forMenuItemIndicator [forceMount]="true">✓</span>
+              Fullscreen
+            </button>
+            <button data-testid="item-gridlines" forMenuCheckboxItem [(checked)]="gridlines">
+              <span forMenuItemIndicator [forceMount]="true">✓</span>
+              Gridlines
+            </button>
+            <div forMenuRadioGroup [(value)]="sortBy">
+              <button data-testid="item-newest" forMenuRadioItem value="newest">
+                <span forMenuItemIndicator>●</span>
+                Newest
+              </button>
+              <button data-testid="item-oldest" forMenuRadioItem value="oldest">
+                <span forMenuItemIndicator>●</span>
+                Oldest
+              </button>
+            </div>
+          }
         </div>
       }
     </div>
@@ -61,6 +100,14 @@ export class MenuBaseFixture {
   readonly #route = inject(ActivatedRoute);
 
   protected readonly open = signal(false);
+
+  protected readonly indicators = this.#route.snapshot.queryParamMap.get('indicators') === '1';
+
+  protected readonly fullscreen = signal(true);
+
+  protected readonly gridlines = signal(false);
+
+  protected readonly sortBy = signal<string | null>('newest');
 
   protected readonly items = computed(() => {
     const raw = this.#route.snapshot.queryParamMap.get('items');

@@ -1,5 +1,10 @@
-import { expect, test } from '@playwright/test';
+import { expect, type Page, test } from '@playwright/test';
 import { el, gotoFixture } from './_helpers';
+
+async function rawTextContent(page: Page, testid: string): Promise<string> {
+  const text = await el(page, testid).evaluate((node) => node.textContent ?? '');
+  return text.trim();
+}
 
 /**
  * Coverage for the **base** Menu primitive (`[forMenuContent]`, `[forMenuItem]`,
@@ -186,6 +191,46 @@ test.describe('Menu (base)', () => {
     await page.keyboard.press('b');
     await expect(el(page, 'item-blueberry')).toBeFocused();
     await expect(el(page, 'item-banana')).not.toHaveAttribute('data-highlighted', '');
+  });
+
+  test('typeahead reaches a checkbox item by its label, past its indicator glyph', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'menu-base', { indicators: '1' });
+    await el(page, 'trigger').click();
+    await expect(el(page, 'item-apple')).toBeFocused();
+
+    await expect(el(page, 'item-fullscreen')).toHaveAttribute('aria-checked', 'true');
+    await expect(el(page, 'item-gridlines')).toHaveAttribute('aria-checked', 'false');
+    expect(await rawTextContent(page, 'item-fullscreen')).not.toMatch(/^Fullscreen/);
+    expect(await rawTextContent(page, 'item-gridlines')).not.toMatch(/^Gridlines/);
+
+    await page.keyboard.press('f');
+    await expect(el(page, 'item-fullscreen')).toBeFocused();
+
+    await page.waitForTimeout(700);
+    await page.keyboard.press('g');
+    await expect(el(page, 'item-gridlines')).toBeFocused();
+  });
+
+  test('typeahead reaches a radio item by its label, past its indicator glyph', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'menu-base', { indicators: '1' });
+    await el(page, 'trigger').click();
+    await expect(el(page, 'item-apple')).toBeFocused();
+
+    await expect(el(page, 'item-newest')).toHaveAttribute('aria-checked', 'true');
+    await expect(el(page, 'item-oldest')).toHaveAttribute('aria-checked', 'false');
+    expect(await rawTextContent(page, 'item-newest')).not.toMatch(/^Newest/);
+    expect(await rawTextContent(page, 'item-oldest')).not.toMatch(/^Oldest/);
+
+    await page.keyboard.press('n');
+    await expect(el(page, 'item-newest')).toBeFocused();
+
+    await page.waitForTimeout(700);
+    await page.keyboard.press('o');
+    await expect(el(page, 'item-oldest')).toBeFocused();
   });
 
   test('Tab from inside the menu closes it and advances focus past the trigger', async ({
