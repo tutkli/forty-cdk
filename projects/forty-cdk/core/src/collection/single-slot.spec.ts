@@ -1,3 +1,6 @@
+import { provideZonelessChangeDetection } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
+
 import { createSingleSlot } from './single-slot';
 
 interface Occupant {
@@ -5,17 +8,27 @@ interface Occupant {
 }
 
 function makeSlot() {
-  return createSingleSlot<Occupant>({
-    primitive: 'search',
-    owner: '[forSearchGroup]',
-    claimant: '[forSearch]',
-  });
+  return TestBed.runInInjectionContext(() =>
+    createSingleSlot<Occupant>({
+      primitive: 'search',
+      owner: '[forSearchGroup]',
+      claimant: '[forSearch]',
+    }),
+  );
 }
 
 describe('createSingleSlot', () => {
   const a: Occupant = { name: 'a' };
   const b: Occupant = { name: 'b' };
   const c: Occupant = { name: 'c' };
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+  });
+
+  afterEach(() => {
+    TestBed.resetTestingModule();
+  });
 
   it('reports null while the slot is empty', () => {
     expect(makeSlot().value()).toBeNull();
@@ -32,6 +45,7 @@ describe('createSingleSlot', () => {
     const slot = makeSlot();
     slot.register(a);
     slot.register(b);
+    TestBed.tick();
     expect(slot.value()).toBe(b);
     expect(warn).toHaveBeenCalledTimes(1);
   });
@@ -72,11 +86,14 @@ describe('createSingleSlot', () => {
     expect(slot.value()).toBe(b);
   });
 
-  it('warns in dev mode when a second occupant registers', () => {
+  it('warns in dev mode when a second occupant is still registered once the pass settles', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const slot = makeSlot();
     slot.register(a);
     slot.register(b);
+    expect(warn).not.toHaveBeenCalled();
+
+    TestBed.tick();
 
     expect(warn).toHaveBeenCalledTimes(1);
     const message = String(warn.mock.calls[0]?.[0]);
@@ -86,9 +103,43 @@ describe('createSingleSlot', () => {
     expect(message).toContain('but 2 are registered');
   });
 
+  it('does not warn for a duplicate that resolves before the pass settles', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const slot = makeSlot();
+    slot.register(a);
+    TestBed.tick();
+
+    slot.register(b);
+    slot.unregister(a);
+    TestBed.tick();
+
+    expect(slot.value()).toBe(b);
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it('warns once per entry into the duplicated state, not on every further registration', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const slot = makeSlot();
+    slot.register(a);
+    slot.register(b);
+    TestBed.tick();
+    slot.register(c);
+    TestBed.tick();
+    expect(warn).toHaveBeenCalledTimes(1);
+
+    slot.unregister(c);
+    slot.unregister(b);
+    TestBed.tick();
+    slot.register(b);
+    TestBed.tick();
+
+    expect(warn).toHaveBeenCalledTimes(2);
+  });
+
   it('does not warn for the first registration', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     makeSlot().register(a);
+    TestBed.tick();
     expect(warn).not.toHaveBeenCalled();
   });
 });

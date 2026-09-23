@@ -153,9 +153,13 @@ export class ForFieldset implements ForFieldsetContext {
   }
 
   #warnOnDuplicateLegend(): void {
+    let warned = false;
     effect(() => {
       const registered = this.#legends();
-      if (registered > 1) {
+      if (registered <= 1) {
+        warned = false;
+      } else if (!warned) {
+        warned = true;
         fortyWarn({
           code: 'FORCDK-FIELDSET-001',
           message: `A [forFieldset] is labelled by a single [forFieldsetLegend], but ${registered} are registered.`,

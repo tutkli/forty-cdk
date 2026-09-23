@@ -114,6 +114,41 @@ describe('ForField', () => {
       readonly showSecond = signal(true);
     }
 
+    @Component({
+      imports: [ForField, ForFieldDescription, ForSwitch],
+      template: `
+        <div forField data-test-id="field">
+          <button forSwitch [(checked)]="checked" data-test-id="control"></button>
+          @for (n of descriptions(); track n) {
+            <p forFieldDescription>{{ n }}</p>
+          }
+        </div>
+      `,
+    })
+    class GrowingDupHost {
+      readonly checked = signal(false);
+      readonly descriptions = signal<readonly number[]>([1]);
+    }
+
+    it('warns once per entry into a duplicated slot, not on every further registration', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const { fixture, flush } = renderHost(GrowingDupHost);
+      const descriptions = fixture.componentInstance.descriptions;
+      expect(warn).not.toHaveBeenCalled();
+
+      descriptions.set([1, 2]);
+      await flush();
+      descriptions.set([1, 2, 3]);
+      await flush();
+      expect(warn).toHaveBeenCalledTimes(1);
+
+      descriptions.set([1]);
+      await flush();
+      descriptions.set([1, 2]);
+      await flush();
+      expect(warn).toHaveBeenCalledTimes(2);
+    });
+
     it('warns in dev mode when a second description claims the single slot', () => {
       const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
       renderHost(DupHost);
