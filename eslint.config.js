@@ -356,7 +356,7 @@ const fortyCdkPlugin = {
     // ====================================================================
     // @forty-cdk-test-isolation-rules
     //
-    // The nine rules below codify the test-isolation invariants documented
+    // The ten rules below codify the test-isolation invariants documented
     // in `CLAUDE.md` → "Testing notes" → "Test isolation — non-negotiables"
     // (the fourteen numbered items immediately under that heading). Without
     // mechanical enforcement those invariants decay back into PR-review
@@ -1472,6 +1472,112 @@ const fortyCdkPlugin = {
               node: statement.expression,
               messageId: 'stale',
               data: { mark: hit.mark },
+            });
+          },
+        };
+      },
+    },
+
+    // Rule 10 — `forty-cdk/no-async-tothrow`.
+    //
+    // Forbids an `async` callback handed straight to `expect(…)` and matched
+    // with `toThrow` / `toThrowError`, plain or behind `.not`. Both matchers
+    // invoke the callback and catch only a synchronous throw; an `async`
+    // function never throws — it returns a rejected Promise — so the assertion
+    // passes whatever the body does, and nothing awaits the body, which keeps
+    // running after the test has returned. #1963 shipped both halves at once:
+    // two such wrappers in `scroll-area.spec.ts` drained `flush` inside later
+    // tests against a torn-down `TestBed`, and the `NG0406` landed on the wrong
+    // `it`.
+    //
+    // It completes the two guards rule 12 already names. `no-floating-flush`
+    // cannot see this shape — every `flush` inside the wrapper *is* awaited;
+    // what floats is the callback one level up — and `flush`'s
+    // destroyed-`ApplicationRef` guard turns the escape red only when the
+    // escaped body happens to contain a drain. Around anything else the wrapper
+    // stays green and asserts nothing.
+    //
+    // Detection is syntactic, like its siblings, and three limits follow from
+    // that rather than being chased with type information:
+    //   1. an async function passed by reference (`expect(someAsyncFn)`) is not
+    //      seen;
+    //   2. a non-`async` callback returning a Promise
+    //      (`expect(() => somePromiseFn())`) is deliberately not reported — it
+    //      still catches a synchronous throw, so it is weak, not vacuous;
+    //   3. `toThrow` on a synchronous callback is the correct shape and is
+    //      never reported.
+    // `rejects` between `expect(…)` and the matcher is the replacement, not a
+    // violation, so that chain is never inspected.
+    //
+    // See: CLAUDE.md > Testing notes > Test isolation — non-negotiables > rule 12
+    // Cross-link: https://github.com/tutkli/forty-cdk/blob/main/CLAUDE.md#test-isolation--non-negotiables
+    // Refs: tutkli/forty-cdk#1999, tutkli/forty-cdk#1963, tutkli/forty-cdk#1154
+    'no-async-tothrow': {
+      meta: {
+        type: 'problem',
+        docs: {
+          description:
+            'Forbid an `async` callback in `expect(…).toThrow()` / `.toThrowError()` — it rejects instead of throwing, so the matcher cannot fail and the un-awaited body escapes the test.',
+        },
+        schema: [],
+        messages: {
+          vacuous:
+            '`expect(async …).{{ matcher }}(…)` cannot fail: an `async` callback returns a rejected Promise instead of throwing, `{{ matcher }}` catches only a synchronous throw, and nothing awaits the body, so it keeps running into later tests. If a rejection is the claim, write `await expect(fn()).rejects.{{ matcher }}(…)`; otherwise drop the wrapper and `await` the body directly, so a throw fails the test on its own. (CLAUDE.md § "Test isolation — non-negotiables" rule 12.)',
+        },
+      },
+      create(context) {
+        const filename = (context.filename || context.getFilename()).replace(/\\/g, '/');
+        const isSpec = filename.endsWith('.spec.ts');
+        const isOwnFixture = filename.endsWith(
+          '/eslint-rules-fixtures/no-async-tothrow.fixture.ts',
+        );
+        if (!isSpec && !isOwnFixture) {
+          return {};
+        }
+        const MATCHERS = new Set(['toThrow', 'toThrowError']);
+
+        function isNamedMember(node, name) {
+          return (
+            node.type === 'MemberExpression' &&
+            !node.computed &&
+            node.property.type === 'Identifier' &&
+            node.property.name === name
+          );
+        }
+
+        return {
+          CallExpression(node) {
+            const callee = node.callee;
+            if (
+              callee.type !== 'MemberExpression' ||
+              callee.computed ||
+              callee.property.type !== 'Identifier' ||
+              !MATCHERS.has(callee.property.name)
+            ) {
+              return;
+            }
+            const subject = isNamedMember(callee.object, 'not')
+              ? callee.object.object
+              : callee.object;
+            if (
+              subject.type !== 'CallExpression' ||
+              subject.callee.type !== 'Identifier' ||
+              subject.callee.name !== 'expect'
+            ) {
+              return;
+            }
+            const actual = subject.arguments[0];
+            if (
+              !actual ||
+              (actual.type !== 'ArrowFunctionExpression' && actual.type !== 'FunctionExpression') ||
+              !actual.async
+            ) {
+              return;
+            }
+            context.report({
+              node,
+              messageId: 'vacuous',
+              data: { matcher: callee.property.name },
             });
           },
         };
@@ -3575,6 +3681,7 @@ module.exports = tseslint.config(
       'forty-cdk/require-overlay-cleanup': 'error',
       'forty-cdk/no-redundant-not-tobenull': 'error',
       'forty-cdk/no-bare-detect-changes': 'error',
+      'forty-cdk/no-async-tothrow': 'error',
 
       // ---- SSR safety: ban raw `document` / `window` globals in library code ----
       // Use `inject(DOCUMENT)` and `document.defaultView` instead so the
