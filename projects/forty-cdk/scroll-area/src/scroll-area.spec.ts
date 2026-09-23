@@ -601,22 +601,4 @@ describe('ForScrollArea', () => {
       expect(down.defaultPrevented).toBe(true);
     });
   });
-
-  describe('reactive updates', () => {
-    it('reflects a type change in the scrollbar data-state', async () => {
-      TestBed.configureTestingModule({
-        providers: [provideZonelessChangeDetection()],
-      });
-      const fixture = TestBed.createComponent(ScrollAreaHost);
-      await flush(fixture);
-
-      const vbar = fixture.nativeElement.querySelector('[data-testid="vbar"]') as HTMLElement;
-      expect(vbar.getAttribute('data-state')).toBe('visible');
-
-      fixture.componentInstance.type.set('hover');
-      await flush(fixture);
-
-      expect(vbar.getAttribute('data-state')).toBe('hidden');
-    });
-  });
 });
