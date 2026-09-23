@@ -342,11 +342,12 @@ A group header is not an option: it organises the list and is worth navigating t
 
 It is orthogonal to `disabled`, which is the wrong lever here: that one announces the node as an _unavailable option_ and takes it out of navigation, so a screen-reader user never learns which group an option belongs to.
 
+Leave `[forTreeItemCheckbox]` off a structural node. It is the interactive half of the checkbox anatomy, so inside one it paints a box whose click selects nothing, and in dev mode each such click warns `FORCDK-TREE-006`.
+
 ```html
 <li forTreeItem value="colors" [selectable]="false">
   <div forTreeItemLabel>
     <span forTreeItemToggle>▸</span>
-    <!-- deliberately no [forTreeItemCheckbox]: you cannot check a group heading -->
     <span>Colors</span>
   </div>
 
@@ -363,6 +364,17 @@ It is orthogonal to `disabled`, which is the wrong lever here: that one announce
 ```
 
 Under `cascade`, a non-selectable node is skipped when an ancestor collects its descendants — it neither enters the checked set nor counts toward that ancestor's `'mixed'` — while its own descendants cascade normally. The tree can only apply that to **mounted** nodes, so `descendantsOf` keeps its contract: return the _selectable_ descendant values, leaving out any structural node in a collapsed subtree.
+
+The structural node still derives its own group's roll-up. To show it on the header, read `checkState()` off the node's `forTreeItem` export — `'true'`, `'false'` or `'mixed'` — which gives you a styling hook with no click behind it:
+
+```html
+<li forTreeItem #colors="forTreeItem" value="colors" [selectable]="false">
+  <div forTreeItemLabel [attr.data-rollup]="colors.checkState()">
+    <span forTreeItemToggle>▸</span>
+    <span>Colors</span>
+  </div>
+</li>
+```
 
 ## Filtering
 

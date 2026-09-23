@@ -219,6 +219,12 @@ export interface ForTreeItemContext<T = unknown> {
   readonly expanded: Signal<boolean>;
   readonly expandable: Signal<boolean>;
   /**
+   * Whether this node takes part in selection. `false` marks a structural node,
+   * which carries no selection state and on which {@link ForTreeItemContext.select}
+   * changes nothing.
+   */
+  readonly selectable: Signal<boolean>;
+  /**
    * Whether this node is in the root's selection set (its `aria-checked` /
    * `aria-selected` state). Always `false` on a `[selectable]="false"` node.
    */

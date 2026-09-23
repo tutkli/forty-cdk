@@ -1446,12 +1446,17 @@ describe('ForTree', () => {
               <ul forTreeGroup>
                 <li
                   forTreeItem
+                  #colorsNode="forTreeItem"
                   value="colors"
                   [selectable]="false"
                   textValue="Colors"
                   data-test-id="colors"
                 >
-                  <div forTreeItemLabel data-test-label="colors">
+                  <div
+                    forTreeItemLabel
+                    [attr.data-rollup]="colorsNode.checkState()"
+                    data-test-label="colors"
+                  >
                     <span forTreeItemToggle data-test-toggle="colors">▸</span>
                     <span>Colors</span>
                   </div>
@@ -1611,6 +1616,108 @@ describe('ForTree', () => {
       await flush(fixture);
       expect(fixture.componentInstance.picked()).not.toContain('red');
       expect(itemOf(el, 'filters').getAttribute('aria-checked')).toBe('mixed');
+    });
+
+    it('still derives its group roll-up, readable off its forTreeItem export', async () => {
+      const { el, fixture } = await setupStructural();
+      expect(labelOf(el, 'colors').getAttribute('data-rollup')).toBe('false');
+
+      fixture.componentInstance.picked.set(['red']);
+      await flush(fixture);
+      expect(labelOf(el, 'colors').getAttribute('data-rollup')).toBe('mixed');
+
+      fixture.componentInstance.picked.set(['red', 'blue']);
+      await flush(fixture);
+      expect(labelOf(el, 'colors').getAttribute('data-rollup')).toBe('true');
+      expect(itemOf(el, 'colors').hasAttribute('aria-checked')).toBe(false);
+    });
+
+    describe('a [forTreeItemCheckbox] rendered inside it', () => {
+      @Component({
+        imports: [ForTree, ForTreeItem, ForTreeItemLabel, ForTreeItemCheckbox],
+        template: `
+          <ul forTree selectionMode="checkbox" [(value)]="picked" aria-label="Filters">
+            <li forTreeItem value="colors" [selectable]="headerSelectable()" data-test-id="colors">
+              <div forTreeItemLabel>
+                <span forTreeItemCheckbox data-test-checkbox="colors">✓</span>
+                <span>Colors</span>
+              </div>
+            </li>
+          </ul>
+        `,
+      })
+      class CheckboxInStructuralHost {
+        readonly picked = signal<readonly string[]>([]);
+        readonly headerSelectable = signal(false);
+      }
+
+      let warned: string[];
+
+      beforeEach(() => {
+        warned = [];
+        vi.spyOn(console, 'warn').mockImplementation((...args: unknown[]) => {
+          warned.push(args.map(String).join(' '));
+        });
+      });
+
+      async function setupCheckboxInStructural(selectable: boolean) {
+        const result = renderHost(CheckboxInStructuralHost);
+        result.instance.headerSelectable.set(selectable);
+        await flush(result.fixture);
+        return result;
+      }
+
+      it('warns FORCDK-TREE-006 naming the node on every click, and selects nothing', async () => {
+        const { el, fixture, instance } = await setupCheckboxInStructural(false);
+        expect(warned).toEqual([]);
+
+        checkboxOfTest(el, 'colors').click();
+        await flush(fixture);
+
+        expect(warned).toHaveLength(1);
+        expect(warned[0]).toContain(
+          '[forty-cdk/tree] FORCDK-TREE-006: [forTreeItemCheckbox] was clicked inside the [selectable]="false" node "colors"',
+        );
+        expect(warned[0]).toContain('Fix: Remove [forTreeItemCheckbox] from the structural node.');
+        expect(instance.picked()).toEqual([]);
+
+        checkboxOfTest(el, 'colors').click();
+        await flush(fixture);
+        expect(warned).toHaveLength(2);
+      });
+
+      it('stays silent for a checkbox inside a selectable node, whose click selects it', async () => {
+        const { el, fixture, instance } = await setupCheckboxInStructural(true);
+
+        checkboxOfTest(el, 'colors').click();
+        await flush(fixture);
+
+        expect(warned).toEqual([]);
+        expect(instance.picked()).toEqual(['colors']);
+      });
+
+      it('reads the node at click time, so a node turned structural after mount warns', async () => {
+        const { el, fixture, instance } = await setupCheckboxInStructural(true);
+        instance.headerSelectable.set(false);
+        await flush(fixture);
+
+        checkboxOfTest(el, 'colors').click();
+        await flush(fixture);
+
+        expect(warned).toHaveLength(1);
+        expect(warned[0]).toContain('FORCDK-TREE-006');
+      });
+
+      it('stays silent once ngDevMode is cleared, as a production build does', async () => {
+        vi.stubGlobal('ngDevMode', false);
+        const { el, fixture, instance } = await setupCheckboxInStructural(false);
+
+        checkboxOfTest(el, 'colors').click();
+        await flush(fixture);
+
+        expect(warned).toEqual([]);
+        expect(instance.picked()).toEqual([]);
+      });
     });
 
     describe('highlight mode', () => {
