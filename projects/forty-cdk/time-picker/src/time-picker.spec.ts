@@ -3,7 +3,13 @@ import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { form, FormField, required } from '@angular/forms/signals';
 
-import { afterEachOverlayCleanup, flush, pressKey, renderHost } from '../../src/test-utils';
+import {
+  afterEachOverlayCleanup,
+  flush,
+  pressKey,
+  pressWithMouse,
+  renderHost,
+} from '../../src/test-utils';
 import {
   assertDataStateContract,
   assertDismissibleLayerContract,
@@ -14,6 +20,7 @@ import {
 } from '../../src/test-utils/contract';
 import { type DateAdapter, FOR_DATE_ADAPTER, type VetoableNativeEvent } from 'forty-cdk/core';
 import { provideNativeDateAdapter } from 'forty-cdk/calendar';
+import { ForField, ForLabel } from 'forty-cdk/field';
 import {
   ForTimePicker,
   ForTimePickerAnchor,
@@ -1247,6 +1254,69 @@ describe('ForTimePicker', () => {
       r.instance.open.set(false);
       await flush(r.fixture);
       expect(getContent()).toBeNull();
+    });
+  });
+
+  describe('[forField] label press inside a focusable container (issue #2010)', () => {
+    @Component({
+      imports: [...BASE_IMPORTS, ForField, ForLabel],
+      providers: [...provideNativeDateAdapter()],
+      template: `
+        <div role="dialog" tabindex="-1" aria-label="Filter">
+          <div forField>
+            <span forLabel data-testid="label">Start time</span>
+            <div
+              forTimePicker
+              [open]="open()"
+              (openChange)="onOpenChange($event)"
+              [step]="60"
+              #picker="forTimePicker"
+            >
+              <button data-testid="trigger" forTimePickerTrigger>Pick a time</button>
+              @if (open()) {
+                <div forTimePickerContent>
+                  @for (slot of picker.slots(); track slot.id) {
+                    <div forTimePickerOption [value]="slot.value" [disabled]="slot.disabled">
+                      {{ slot.label }}
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      `,
+    })
+    class FilterHost {
+      readonly open = signal(false);
+      readonly openChanges: boolean[] = [];
+      onOpenChange(open: boolean): void {
+        this.openChanges.push(open);
+        this.open.set(open);
+      }
+    }
+
+    it('toggles once per label press, open or closed, and returns focus to the trigger', async () => {
+      const r = renderHost(FilterHost);
+      await flush(r.fixture);
+      const label = r.el.querySelector<HTMLElement>('[data-testid="label"]')!;
+      const press = async () => {
+        pressWithMouse(label);
+        await flush(r.fixture);
+      };
+
+      await press();
+      expect(r.instance.openChanges).toEqual([true]);
+      expect(getContent()).not.toBeNull();
+
+      await press();
+      expect(r.instance.openChanges).toEqual([true, false]);
+      expect(getContent()).toBeNull();
+      expect(document.activeElement).toBe(getTrigger());
+
+      await press();
+      expect(r.instance.openChanges).toEqual([true, false, true]);
+      expect(getContent()).not.toBeNull();
     });
   });
 });

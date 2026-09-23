@@ -8,6 +8,7 @@ import {
   afterEachOverlayCleanup,
   flush,
   pressKey,
+  pressWithMouse,
   renderHost,
   type RenderResult,
 } from '../../src/test-utils';
@@ -1496,6 +1497,60 @@ describe('ForDatePicker', () => {
 
       expect(t.getAttribute('aria-errormessage')).toBe(error.id);
       expect(t.getAttribute('aria-describedby')).toContain(error.id);
+    });
+
+    describe('pressing the label inside a focusable container (issue #2010)', () => {
+      @Component({
+        imports: [ForDatePicker, ForDatePickerTrigger, ForDatePickerContent, ForField, ForLabel],
+        providers: [...provideNativeDateAdapter()],
+        template: `
+          <div role="dialog" tabindex="-1" aria-label="Filter">
+            <div forField>
+              <span forLabel data-testid="label">Date of birth</span>
+              <div forDatePicker [open]="open()" (openChange)="onOpenChange($event)">
+                <button forDatePickerTrigger data-testid="trigger">Pick a date</button>
+                @if (open()) {
+                  <div forDatePickerContent data-testid="content">
+                    <button type="button">Today</button>
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+        `,
+      })
+      class FilterHost {
+        readonly open = signal(false);
+        readonly openChanges: boolean[] = [];
+        onOpenChange(open: boolean): void {
+          this.openChanges.push(open);
+          this.open.set(open);
+        }
+      }
+
+      const content = () => document.querySelector('[data-testid="content"]');
+
+      it('toggles once per press, open or closed, and returns focus to the trigger', async () => {
+        const r = renderHost(FilterHost);
+        await r.flush();
+        const press = async () => {
+          pressWithMouse(fieldLabel(r.el));
+          await r.flush();
+        };
+
+        await press();
+        expect(r.instance.openChanges).toEqual([true]);
+        expect(content()).not.toBeNull();
+
+        await press();
+        expect(r.instance.openChanges).toEqual([true, false]);
+        expect(content()).toBeNull();
+        expect(document.activeElement).toBe(fieldTrigger(r.el));
+
+        await press();
+        expect(r.instance.openChanges).toEqual([true, false, true]);
+        expect(content()).not.toBeNull();
+      });
     });
   });
 

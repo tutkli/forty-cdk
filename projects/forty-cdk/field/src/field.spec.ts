@@ -492,6 +492,33 @@ describe('ForField', () => {
       await flush();
       expect(control.getAttribute('aria-checked')).toBe('true');
     });
+
+    const mouseDown = (target: HTMLElement, button = 0) => {
+      const event = new MouseEvent('mousedown', { bubbles: true, cancelable: true, button });
+      target.dispatchEvent(event);
+      return event;
+    };
+
+    it('cancels the primary mousedown of a press on a non-`<label>` host (#2010)', () => {
+      const { el } = renderHost(NonLabelHost);
+      expect(mouseDown(q(el, 'label')).defaultPrevented).toBe(true);
+    });
+
+    it('cancels the primary mousedown of a press on a native `<label>` (#2010)', () => {
+      const { el } = renderHost(NativeLabelSwitchHost);
+      expect(mouseDown(q(el, 'label')).defaultPrevented).toBe(true);
+    });
+
+    it('leaves a secondary-button mousedown on the label alone (#2010)', () => {
+      const { el } = renderHost(NonLabelHost);
+      expect(mouseDown(q(el, 'label'), 2).defaultPrevented).toBe(false);
+    });
+
+    it('leaves the mousedown of a press on the wrapped control alone (#2010)', () => {
+      const { el } = renderHost(WrappingLabelHost);
+      expect(mouseDown(q(el, 'control')).defaultPrevented).toBe(false);
+      expect(mouseDown(q(el, 'label')).defaultPrevented).toBe(true);
+    });
   });
 
   describe('label-click activation on a composite control', () => {
@@ -577,6 +604,13 @@ describe('ForField', () => {
       const label = q(el, 'label');
       expect(label.hasAttribute('id')).toBe(false);
       expect(label.hasAttribute('for')).toBe(false);
+    });
+
+    it('leaves a mousedown on the label alone (#2010)', () => {
+      const { el } = renderHost(Host);
+      const event = new MouseEvent('mousedown', { bubbles: true, cancelable: true });
+      q(el, 'label').dispatchEvent(event);
+      expect(event.defaultPrevented).toBe(false);
     });
   });
 

@@ -526,12 +526,16 @@ export class ForCombobox<T = string>
    * The combobox's mounted entry point: the `role="combobox"` input, or the
    * `[forComboboxTrigger]` while the input is unmounted — the picker anatomy
    * keeps its input inside the panel, so until it opens the trigger is the
-   * only element a surrounding `[forField]` can label, click, or focus.
+   * only element a surrounding `[forField]` can label or focus.
    */
   readonly #entryPoint = computed(() => this.input() ?? this.trigger());
 
   protected override fieldLabelledElement(): HTMLElement | null {
     return this.#entryPoint();
+  }
+
+  protected override fieldActivationTarget(): HTMLElement | null {
+    return this.trigger();
   }
 
   /**

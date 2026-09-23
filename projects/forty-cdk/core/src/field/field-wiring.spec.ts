@@ -33,6 +33,8 @@ function makeFieldContext(): ForFieldContext {
     disabled: signal(false),
     touched: signal(false),
     control: control.asReadonly(),
+    activationTarget: signal<HTMLElement | null>(null),
+    labelElements: signal<readonly HTMLElement[]>([]),
     registerControl: (handle) => control.set(handle),
     unregisterControl: () => control.set(null),
     registerLabel: () => () => {},

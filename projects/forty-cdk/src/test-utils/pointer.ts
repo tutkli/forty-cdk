@@ -46,3 +46,24 @@
 export function pointerEvent(type: string, init: PointerEventInit = {}): PointerEvent {
   return new PointerEvent(type, { bubbles: true, cancelable: true, pointerId: 1, ...init });
 }
+
+const MOUSE_FOCUSABLE =
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]';
+
+export function pressWithMouse(target: HTMLElement): void {
+  const press = { button: 0, buttons: 1, isPrimary: true, pointerType: 'mouse' };
+  target.dispatchEvent(pointerEvent('pointerdown', press));
+  const mousedown = new MouseEvent('mousedown', { bubbles: true, cancelable: true, buttons: 1 });
+  target.dispatchEvent(mousedown);
+  if (!mousedown.defaultPrevented) {
+    const focusable = target.closest<HTMLElement>(MOUSE_FOCUSABLE);
+    if (focusable) {
+      focusable.focus();
+    } else {
+      (target.ownerDocument.activeElement as HTMLElement | null)?.blur();
+    }
+  }
+  target.dispatchEvent(pointerEvent('pointerup', { ...press, buttons: 0 }));
+  target.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true }));
+  target.click();
+}

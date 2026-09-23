@@ -20,6 +20,12 @@ import { FOR_FIELD_CONTEXT } from './field-context';
  * host) is not re-forwarded, so a label-wrapping layout toggles once, matching
  * native `<label>` semantics.
  *
+ * Pressing the label is pressing the control's trigger: on an overlay control
+ * (`[forSelect]`, a picker-anatomy `[forCombobox]`, `[forDatePicker]`,
+ * `[forTimePicker]`) it toggles the panel exactly once whether the panel is
+ * open or closed. A press on the label never moves focus anywhere but the
+ * control and does not start a text selection.
+ *
  * Usable standalone outside a field — there it is an inert
  * marker and the consumer wires native `for` themselves.
  *
@@ -37,6 +43,7 @@ import { FOR_FIELD_CONTEXT } from './field-context';
   host: {
     '[attr.id]': 'labelId()',
     '[attr.for]': 'forAttr()',
+    '(mousedown)': 'onMouseDown($event)',
     '(click)': 'onClick($event)',
   },
 })
@@ -58,37 +65,43 @@ export class ForLabel {
   constructor() {
     const ctx = this.ctx;
     if (ctx) {
-      const unregister = ctx.registerLabel();
+      const unregister = ctx.registerLabel(this.#host.nativeElement);
       inject(DestroyRef).onDestroy(unregister);
     }
   }
 
+  protected onMouseDown(event: MouseEvent): void {
+    if (event.button === 0 && this.#pressedTarget(event)) {
+      event.preventDefault();
+    }
+  }
+
   protected onClick(event: MouseEvent): void {
-    if (!this.ctx || this.#browserForwards()) {
+    const target = this.#pressedTarget(event);
+    if (!target || !this.ctx) {
       return;
     }
-    // When the control is nested inside the label host (label wraps control),
-    // a click on the control already activates it natively; forwarding again
-    // would double-toggle. Mirror native `<label>` semantics and bail when the
-    // click originated from the control (or anything inside it).
-    const control = this.ctx.control();
-    const controlEl = control?.labelledElement?.() ?? control?.host ?? null;
-    const target = event.target as Node | null;
-    if (controlEl && target && controlEl.contains(target)) {
+    const nativeControl = this.#nativeControl();
+    if (nativeControl === target) {
       return;
+    }
+    if (nativeControl) {
+      event.preventDefault();
     }
     this.ctx.clickControl();
   }
 
-  /**
-   * Whether the browser itself forwards this click, in which case the
-   * directive must not forward it too. True only on a native `<label>` that
-   * resolved a labeled control — `for` pointing at a non-labelable element
-   * (a composite's `role="group"`) leaves `control` null and the browser
-   * forwards nothing, so the directive owns the activation there.
-   */
-  #browserForwards(): boolean {
+  #pressedTarget(event: Event): HTMLElement | null {
+    const target = this.ctx?.activationTarget() ?? null;
+    const origin = event.target as Node | null;
+    if (!target || (origin && target.contains(origin))) {
+      return null;
+    }
+    return target;
+  }
+
+  #nativeControl(): HTMLElement | null {
     const host = this.#host.nativeElement;
-    return host.tagName === 'LABEL' && (host as HTMLLabelElement).control !== null;
+    return host.tagName === 'LABEL' ? (host as HTMLLabelElement).control : null;
   }
 }

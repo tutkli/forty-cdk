@@ -19,7 +19,7 @@ export { afterEachOverlayCleanup } from './overlay-cleanup';
 export { installObserverPolyfills } from './observers';
 export { pointerDownOn, focusInOn } from './outside-events';
 export { TestStackedLayer } from './stacked-layer';
-export { pointerEvent } from './pointer';
+export { pointerEvent, pressWithMouse } from './pointer';
 export {
   type FlippableReducedMotion,
   withFlippableReducedMotion,

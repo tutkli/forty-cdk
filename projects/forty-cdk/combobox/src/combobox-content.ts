@@ -1,6 +1,11 @@
 import { computed, Directive, ElementRef, inject } from '@angular/core';
 
-import { registerHandle, hostAriaLabel, hostLabelledBy } from 'forty-cdk/core';
+import {
+  registerHandle,
+  hostAriaLabel,
+  hostLabelledBy,
+  injectFieldLabelExemption,
+} from 'forty-cdk/core';
 import {
   injectOverlayShell,
   type OverlayShellConfig,
@@ -138,7 +143,7 @@ export class ForComboboxContent {
         // focus handlers; the trigger (picker anatomy) toggles via its own
         // click handler. Without exemption a pointer-down on either would race
         // the dismissal layer.
-        exemptElements: () => {
+        exemptElements: injectFieldLabelExemption(() => {
           const els: Element[] = [];
           const input = ctx.input();
           if (input) els.push(input);
@@ -146,7 +151,7 @@ export class ForComboboxContent {
           if (trigger) els.push(trigger);
           for (const chip of ctx.chips()) els.push(chip.host);
           return els;
-        },
+        }),
       },
       // Picker anatomy only: move focus into the input on open, return it to the
       // trigger on close. The editable anatomy keeps focus in the input
