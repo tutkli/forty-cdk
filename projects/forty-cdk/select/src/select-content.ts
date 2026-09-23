@@ -1,6 +1,11 @@
 import { Directive, ElementRef, inject } from '@angular/core';
 
-import { registerHandle, hostAriaLabel, hostLabelledBy } from 'forty-cdk/core';
+import {
+  registerHandle,
+  hostAriaLabel,
+  hostLabelledBy,
+  injectFieldLabelExemption,
+} from 'forty-cdk/core';
 import {
   injectModalShell,
   injectOverlayShell,
@@ -185,10 +190,10 @@ export class ForSelectContent {
         emitInteractOutside: (veto) => ctx.overlay.emitInteractOutside(veto),
         // Trigger button is exempt — its own click handler toggles open/close;
         // without exemption pointer-down-outside would race and double-close.
-        exemptElements: () => {
+        exemptElements: injectFieldLabelExemption(() => {
           const t = ctx.overlay.trigger();
           return t ? [t] : [];
-        },
+        }),
       },
       initialFocus: {
         move: focusInitial,

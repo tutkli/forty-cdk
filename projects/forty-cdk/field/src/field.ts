@@ -49,7 +49,8 @@ export class ForField implements ForFieldContext {
   readonly #controls = signal<readonly FieldControlHandle[]>([]);
   readonly #controlCount = computed(() => this.#controls().length);
   readonly #control = computed<FieldControlHandle | null>(() => this.#controls().at(-1) ?? null);
-  readonly #labelCount = signal(0);
+  readonly #labels = signal<readonly HTMLElement[]>([]);
+  readonly #labelCount = computed(() => this.#labels().length);
   readonly #descriptionCount = signal(0);
   readonly #errorCount = signal(0);
 
@@ -74,6 +75,17 @@ export class ForField implements ForFieldContext {
     }
     return control.labelledElement?.() ?? control.host;
   });
+
+  /**
+   * The element a label press activates: the control's nominated
+   * `activationTarget` when present, else the association target.
+   */
+  readonly activationTarget = computed<HTMLElement | null>(
+    () => this.#control()?.activationTarget?.() ?? this.#targetEl(),
+  );
+
+  /** The host elements of the registered `[forLabel]`s, in registration order. */
+  readonly labelElements = this.#labels.asReadonly();
 
   /**
    * Id assigned to the control; a label's `for` points here. Adopts a
@@ -159,17 +171,18 @@ export class ForField implements ForFieldContext {
   }
 
   /**
-   * Register the label slot; returns an unregister callback. The field targets
-   * a single label per slot — its `labelId` / `descriptionId` / `errorId` are
-   * single ids, not id lists — so one `[forLabel]`, `[forFieldDescription]`,
-   * and `[forFieldError]` per field is the supported shape. Registrations are
-   * counted (mirroring `ForFieldset`'s legend counting), so unmounting one of
-   * several accidental duplicates never drops the association while another is
-   * still mounted; a duplicate emits a dev-mode warning.
+   * Register a label's host element; returns an unregister callback. The field
+   * targets a single label per slot — its `labelId` / `descriptionId` /
+   * `errorId` are single ids, not id lists — so one `[forLabel]`,
+   * `[forFieldDescription]`, and `[forFieldError]` per field is the supported
+   * shape. Registrations are counted (mirroring `ForFieldset`'s legend
+   * counting), so unmounting one of several accidental duplicates never drops
+   * the association while another is still mounted; a duplicate emits a
+   * dev-mode warning.
    */
-  registerLabel(): () => void {
-    this.#labelCount.update((n) => n + 1);
-    return () => this.#labelCount.update((n) => n - 1);
+  registerLabel(element: HTMLElement): () => void {
+    this.#labels.update((labels) => [...labels, element]);
+    return () => this.#labels.update((labels) => labels.filter((l) => l !== element));
   }
 
   /** Register the description slot; returns an unregister callback. See {@link registerLabel} for the counted single-instance-per-slot contract. */
@@ -226,10 +239,18 @@ export class ForField implements ForFieldContext {
    * point over the association target, because the two diverge on a composite:
    * the `role="group"` a segmented date / time field is named on takes no
    * focus, while its `focus()` lands on the first editable segment (and no-ops
-   * while disabled).
+   * while disabled). A control nominating a distinct
+   * {@link FieldControlHandle.activationTarget} has that element clicked and
+   * focused instead.
    */
   clickControl(): void {
     const control = this.#control();
+    const activation = control?.activationTarget?.() ?? null;
+    if (activation) {
+      activation.click();
+      activation.focus();
+      return;
+    }
     const target = this.#targetEl();
     if (!target) {
       return;

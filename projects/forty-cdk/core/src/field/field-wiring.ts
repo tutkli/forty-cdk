@@ -38,6 +38,15 @@ export interface FieldControlHandle {
    */
   readonly labelledElement?: Signal<HTMLElement | null>;
   /**
+   * The element a label press clicks and focuses, when it differs from the
+   * association target. A picker-anatomy `[forCombobox]` nominates its trigger
+   * here: while its panel is open the association moves onto the search input
+   * inside it, but the label keeps toggling the panel through the trigger.
+   * When omitted or resolving to `null` the label activates the association
+   * target.
+   */
+  readonly activationTarget?: Signal<HTMLElement | null>;
+  /**
    * Moves focus into the control, when it exposes an entry point of its own
    * (`FormValueControl.focus`). The field prefers this over focusing the
    * association target on a label click, because a composite root is not
@@ -99,6 +108,15 @@ export interface ForFieldContext {
   /** The currently registered control handle, or null. */
   readonly control: Signal<FieldControlHandle | null>;
   /**
+   * The element a label press activates: the control's
+   * {@link FieldControlHandle.activationTarget} when it nominates one, else
+   * the element carrying the association. `null` while no control is
+   * registered.
+   */
+  readonly activationTarget: Signal<HTMLElement | null>;
+  /** The host elements of the registered `[forLabel]`s, in registration order. */
+  readonly labelElements: Signal<readonly HTMLElement[]>;
+  /**
    * Register the control whose state the field reflects. A field exposes a
    * single `controlId` (not an id list), so one control per `[forField]` is the
    * supported shape — group several under a `[forFieldset]`. Registrations are
@@ -110,13 +128,14 @@ export interface ForFieldContext {
   /** Remove a previously registered control. */
   unregisterControl(handle: FieldControlHandle): void;
   /**
-   * Register a label slot; returns an unregister callback. The field exposes a
-   * single `labelId` (not an id list), so one `[forLabel]` per field is the
-   * supported shape. Registrations are **counted** (not a boolean) so unmounting
-   * one of several accidental duplicates never drops the association while
-   * another is still mounted; a duplicate is flagged with a dev-mode warning.
+   * Register a label's host element; returns an unregister callback. The field
+   * exposes a single `labelId` (not an id list), so one `[forLabel]` per field
+   * is the supported shape. Registrations are **counted** (not a boolean) so
+   * unmounting one of several accidental duplicates never drops the association
+   * while another is still mounted; a duplicate is flagged with a dev-mode
+   * warning.
    */
-  registerLabel(): () => void;
+  registerLabel(element: HTMLElement): () => void;
   /** Register a description slot; returns an unregister callback. Counted, single `[forFieldDescription]` per field — see {@link registerLabel}. */
   registerDescription(): () => void;
   /** Register an error slot; returns an unregister callback. Counted, single `[forFieldError]` per field — see {@link registerLabel}. */
@@ -127,8 +146,9 @@ export interface ForFieldContext {
    * click-forwarding (toggling a checkbox / switch, activating a button). Used
    * by a `[forLabel]` the browser will not forward for: a non-`<label>` host,
    * which has no native `for` forwarding at all, and a native `<label>` whose
-   * `for` resolves to a non-labelable element (the `role="group"` of a
-   * segmented date / time field), so label-click activation stays consistent
+   * `for` resolves to an element other than the {@link activationTarget} (the
+   * `role="group"` of a segmented date / time field, the search input of an
+   * open picker-anatomy combobox), so label-click activation stays consistent
    * across host shapes and control anatomies.
    */
   clickControl(): void;
@@ -250,4 +270,20 @@ function clearFieldAttrs(
   if (ownsId && target.getAttribute('id') === controlId) {
     target.removeAttribute('id');
   }
+}
+
+export function injectFieldLabelExemption(
+  exempt: () => readonly Element[],
+): () => readonly Element[] {
+  const field = inject(FOR_FIELD_CONTEXT, { optional: true });
+  if (!field) {
+    return exempt;
+  }
+  return () => {
+    const elements = exempt();
+    const target = field.activationTarget();
+    return target !== null && elements.includes(target)
+      ? [...elements, ...field.labelElements()]
+      : elements;
+  };
 }

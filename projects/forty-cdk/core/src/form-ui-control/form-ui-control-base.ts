@@ -149,6 +149,10 @@ export abstract class FormUiControlBase {
     return null;
   }
 
+  protected fieldActivationTarget(): HTMLElement | null {
+    return null;
+  }
+
   /**
    * Marks the control touched: flips the {@link touched} model (standalone
    * reflection) and emits {@link touch} (Signal Forms integration). Subclasses
@@ -209,6 +213,7 @@ export abstract class FormUiControlBase {
       errors: this.errors,
       labelledElement: computed(() => this.fieldLabelledElement()),
       labelledElementId: computed(() => this.fieldLabelledElementId() ?? undefined),
+      activationTarget: computed(() => this.fieldActivationTarget()),
       focus: this.focus?.bind(this),
     });
   }

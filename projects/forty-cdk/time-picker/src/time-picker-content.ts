@@ -1,6 +1,11 @@
 import { Directive, ElementRef, inject } from '@angular/core';
 
-import { registerHandle, hostAriaLabel, hostLabelledBy } from 'forty-cdk/core';
+import {
+  registerHandle,
+  hostAriaLabel,
+  hostLabelledBy,
+  injectFieldLabelExemption,
+} from 'forty-cdk/core';
 import {
   injectModalShell,
   injectOverlayShell,
@@ -134,10 +139,10 @@ export class ForTimePickerContent {
         emitPointerDownOutside: (veto) => ctx.overlay.emitPointerDownOutside(veto),
         emitFocusOutside: (veto) => ctx.overlay.emitFocusOutside(veto),
         emitInteractOutside: (veto) => ctx.overlay.emitInteractOutside(veto),
-        exemptElements: () => {
+        exemptElements: injectFieldLabelExemption(() => {
           const t = ctx.overlay.trigger();
           return t ? [t] : [];
-        },
+        }),
       },
       initialFocus: {
         move: focusInitial,

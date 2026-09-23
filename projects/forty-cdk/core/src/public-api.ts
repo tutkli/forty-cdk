@@ -159,6 +159,7 @@ export {
   type FieldControlHandle,
   FOR_FIELD_CONTEXT,
   type ForFieldContext,
+  injectFieldLabelExemption,
   injectFieldWiring,
 } from './field/field-wiring';
 export { FOR_FIELDSET_CONTEXT, type ForFieldsetContext } from './field/fieldset-context';

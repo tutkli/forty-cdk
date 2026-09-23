@@ -15,6 +15,7 @@ import {
   flush,
   flushPositioning,
   pressKey,
+  pressWithMouse,
   renderHost,
 } from '../../src/test-utils';
 import {
@@ -4739,6 +4740,51 @@ describe('ForCombobox inside a [forField]', () => {
       expect(document.activeElement).toBe(i);
     });
 
+    describe('pressing the label inside a focusable container (issue #2010)', () => {
+      @Component({
+        imports: [...BASE_IMPORTS, ForField, ForLabel],
+        template: `
+          <div role="dialog" tabindex="-1" aria-label="Filter">
+            <div forField>
+              <span forLabel data-test-id="label">Fruit</span>
+              <div forCombobox [open]="open()" (openChange)="onOpenChange($event)">
+                <input forComboboxInput data-test-id="input" />
+                @if (open()) {
+                  <div forComboboxContent>
+                    <div forComboboxOption value="apple">Apple</div>
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+        `,
+      })
+      class EditableFilterHost {
+        readonly open = signal(false);
+        readonly openChanges: boolean[] = [];
+        onOpenChange(open: boolean): void {
+          this.openChanges.push(open);
+          this.open.set(open);
+        }
+      }
+
+      afterEachOverlayCleanup();
+
+      it('focuses the input and leaves an open listbox open', async () => {
+        const r = renderHost(EditableFilterHost);
+        r.instance.open.set(true);
+        await flush(r.fixture);
+        input(r.el).focus();
+
+        pressWithMouse(label(r.el));
+        await flush(r.fixture);
+
+        expect(r.instance.openChanges).toEqual([]);
+        expect(document.querySelector('[forComboboxContent]')).not.toBeNull();
+        expect(document.activeElement).toBe(input(r.el));
+      });
+    });
+
     it('targets aria-errormessage at the error on the input while invalid', async () => {
       const r = renderHost(FieldHost);
       const i = input(r.el);
@@ -4879,6 +4925,146 @@ describe('ForCombobox inside a [forField]', () => {
       combobox.focus();
 
       expect(document.activeElement).toBe(triggerOf(r.el));
+    });
+
+    describe('pressing the label inside a focusable container (issue #2010)', () => {
+      @Component({
+        host: { 'data-fixture': 'span-label-picker-filter-host' },
+        imports: PICKER_FIELD_IMPORTS,
+        template: `
+          <div role="dialog" tabindex="-1" aria-label="Filter">
+            <div forField>
+              <span forLabel data-test-id="label">Fruit</span>
+              <div forCombobox [open]="open()" (openChange)="onOpenChange($event)">
+                <button forComboboxTrigger data-test-id="trigger">Pick a fruit</button>
+                @if (open()) {
+                  <div forComboboxContent>
+                    <input forComboboxInput data-test-id="input" />
+                    <div forComboboxList></div>
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+        `,
+      })
+      class SpanLabelPickerFilterHost {
+        readonly open = signal(false);
+        readonly openChanges: boolean[] = [];
+        onOpenChange(open: boolean): void {
+          this.openChanges.push(open);
+          this.open.set(open);
+        }
+      }
+
+      @Component({
+        host: { 'data-fixture': 'native-label-picker-filter-host' },
+        imports: PICKER_FIELD_IMPORTS,
+        template: `
+          <div role="dialog" tabindex="-1" aria-label="Filter">
+            <div forField>
+              <label forLabel data-test-id="label">Fruit</label>
+              <div forCombobox [open]="open()" (openChange)="onOpenChange($event)">
+                <button forComboboxTrigger data-test-id="trigger">Pick a fruit</button>
+                @if (open()) {
+                  <div forComboboxContent>
+                    <input forComboboxInput data-test-id="input" />
+                    <div forComboboxList></div>
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+        `,
+      })
+      class NativeLabelPickerFilterHost {
+        readonly open = signal(false);
+        readonly openChanges: boolean[] = [];
+        onOpenChange(open: boolean): void {
+          this.openChanges.push(open);
+          this.open.set(open);
+        }
+      }
+
+      @Component({
+        imports: PICKER_FIELD_IMPORTS,
+        template: `
+          <div role="dialog" tabindex="-1" aria-label="Filter">
+            <div forField>
+              <div forLabel>
+                <span data-test-id="text">Fruit</span>
+                <div forCombobox [open]="open()" (openChange)="onOpenChange($event)">
+                  <button forComboboxTrigger data-test-id="trigger">Pick a fruit</button>
+                  @if (open()) {
+                    <div forComboboxContent>
+                      <input forComboboxInput data-test-id="input" />
+                      <div forComboboxList></div>
+                    </div>
+                  }
+                </div>
+              </div>
+            </div>
+          </div>
+        `,
+      })
+      class WrappingLabelPickerFilterHost {
+        readonly open = signal(false);
+        readonly openChanges: boolean[] = [];
+        onOpenChange(open: boolean): void {
+          this.openChanges.push(open);
+          this.open.set(open);
+        }
+      }
+
+      for (const [shape, host] of [
+        ['a non-<label> [forLabel]', SpanLabelPickerFilterHost],
+        ['a native <label forLabel>', NativeLabelPickerFilterHost],
+      ] as const) {
+        it(`toggles through the trigger once per press of ${shape}, open or closed`, async () => {
+          const r = renderHost(host);
+          await flush(r.fixture);
+          const press = async () => {
+            pressWithMouse(labelOf(r.el));
+            await flush(r.fixture);
+          };
+
+          await press();
+          expect(r.instance.openChanges).toEqual([true]);
+          expect(document.activeElement).toBe(pickerInput());
+
+          await press();
+          expect(r.instance.openChanges).toEqual([true, false]);
+          expect(pickerInput()).toBeNull();
+          expect(document.activeElement).toBe(triggerOf(r.el));
+
+          await press();
+          expect(r.instance.openChanges).toEqual([true, false, true]);
+          expect(document.activeElement).toBe(pickerInput());
+        });
+      }
+
+      it('toggles once when the trigger inside a wrapping label is pressed', async () => {
+        const r = renderHost(WrappingLabelPickerFilterHost);
+        await flush(r.fixture);
+        const text = r.el.querySelector<HTMLElement>('[data-test-id="text"]')!;
+        const press = async (target: HTMLElement) => {
+          pressWithMouse(target);
+          await flush(r.fixture);
+        };
+
+        await press(text);
+        expect(r.instance.openChanges).toEqual([true]);
+
+        await press(triggerOf(r.el));
+        expect(r.instance.openChanges).toEqual([true, false]);
+
+        await press(triggerOf(r.el));
+        expect(r.instance.openChanges).toEqual([true, false, true]);
+
+        await press(text);
+        expect(r.instance.openChanges).toEqual([true, false, true, false]);
+        expect(document.activeElement).toBe(triggerOf(r.el));
+      });
     });
 
     describe('with a consumer-set id on the trigger (issue #1954)', () => {

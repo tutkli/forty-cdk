@@ -1,6 +1,11 @@
 import { Directive, ElementRef, inject } from '@angular/core';
 
-import { registerHandle, hostAriaLabel, hostLabelledBy } from 'forty-cdk/core';
+import {
+  registerHandle,
+  hostAriaLabel,
+  hostLabelledBy,
+  injectFieldLabelExemption,
+} from 'forty-cdk/core';
 import {
   injectModalShell,
   injectOverlayShell,
@@ -123,10 +128,10 @@ export class ForDatePickerContent {
         emitInteractOutside: (veto) => ctx.emitInteractOutside(veto),
         // Trigger is exempt — its own click toggles open/close; without
         // exemption pointer-down-outside would race and double-close.
-        exemptElements: () => {
+        exemptElements: injectFieldLabelExemption(() => {
           const trigger = ctx.trigger();
           return trigger ? [trigger] : [];
-        },
+        }),
       },
       // Move focus to the calendar's roving cell on open; the shell falls back
       // to the first focusable descendant when no cell is found.
