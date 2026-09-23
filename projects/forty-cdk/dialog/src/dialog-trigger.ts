@@ -59,7 +59,8 @@ export class ForDialogTrigger {
    * `[forDialog]`. Has no effect on focus or behavior — purely the
    * accessibility relationship between trigger and box. Leaving it unset when
    * the dialog opens drops `aria-controls` silently; a dev-mode warning fires
-   * so the missing linkage is visible during development.
+   * on the first open while it stays unset, so the missing linkage is visible
+   * during development.
    */
   readonly controls = input<string | null>(null);
 
@@ -77,8 +78,12 @@ export class ForDialogTrigger {
   constructor() {
     reflectDisabled(this.disabled);
     if (isDevMode()) {
+      let warned = false;
       effect(() => {
-        if (this.open() && this.controls() === null) {
+        if (this.controls() !== null) {
+          warned = false;
+        } else if (this.open() && !warned) {
+          warned = true;
           fortyWarn({
             code: 'FORCDK-DIALOG-002',
             message:

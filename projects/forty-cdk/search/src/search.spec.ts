@@ -611,6 +611,42 @@ describe('ForSearch', () => {
       expect(message).toContain('[forSearch]');
     });
 
+    @Component({
+      imports: [ForSearchGroup, ForSearch, ForSearchClear],
+      template: `
+        <div forSearchGroup>
+          @if (mode() === 'a') {
+            <input forSearch [(value)]="first" data-test-id="a" />
+          }
+          @if (mode() === 'b') {
+            <input forSearch [(value)]="second" data-test-id="b" />
+          }
+          <button forSearchClear data-test-id="clear">×</button>
+        </div>
+      `,
+    })
+    class SwapFieldHost {
+      readonly first = signal('a');
+      readonly second = signal('b');
+      readonly mode = signal<'a' | 'b'>('b');
+    }
+
+    it('does not warn when a structural swap mounts the replacement before the outgoing field is destroyed', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const { el, instance, flush: f } = renderHost(SwapFieldHost);
+      expect(warn).not.toHaveBeenCalled();
+
+      instance.mode.set('a');
+      await f();
+
+      expect(warn).not.toHaveBeenCalled();
+      expect(el.querySelector('[data-test-id="b"]')).toBeNull();
+      clearOf(el).click();
+      await f();
+      expect(instance.first()).toBe('');
+      expect(instance.second()).toBe('b');
+    });
+
     it('keeps the clear button bound to the surviving field when a duplicate unmounts', async () => {
       vi.spyOn(console, 'warn').mockImplementation(() => {});
       const { el, instance, flush: f } = renderHost(DuplicateFieldHost);

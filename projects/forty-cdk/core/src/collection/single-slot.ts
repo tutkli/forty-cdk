@@ -1,4 +1,4 @@
-import { computed, type Signal, signal } from '@angular/core';
+import { computed, effect, isDevMode, type Signal, signal } from '@angular/core';
 import { fortyWarn } from '../errors/errors';
 
 /**
@@ -27,6 +27,12 @@ export interface SingleSlotConfig {
  * and unregistering the newest restores the previous survivor instead of
  * emptying the slot while a piece is still mounted.
  *
+ * The warning reads the occupant count once the change-detection pass has
+ * settled, so a structural swap that mounts the replacement before destroying
+ * the outgoing piece (two sibling `@if` blocks under one owner) is not
+ * reported. It fires once each time the slot becomes duplicated, not on every
+ * further registration.
+ *
  * The helper owns no teardown of its own — pair `register` / `unregister` with
  * the core `registerHandle` helper at the claimant's construction so the
  * claimant's own `DestroyRef` drives unregistration.
@@ -41,9 +47,9 @@ export interface SingleSlot<T> {
    */
   readonly value: Signal<T | null>;
   /**
-   * Register an occupant, making it the coordinated one. Warns in dev mode
-   * when it is not the first — a second occupant means the owner's single
-   * coordination surface is ambiguous.
+   * Register an occupant, making it the coordinated one. A second occupant
+   * still registered once the pass settles means the owner's single
+   * coordination surface is ambiguous, and warns in dev mode.
    */
   register(occupant: T): void;
   /**
@@ -55,27 +61,37 @@ export interface SingleSlot<T> {
 }
 
 /**
- * Creates a {@link SingleSlot}. Pure signal state: safe in a field
- * initializer, safe under SSR, and needs no injection context.
+ * Creates a {@link SingleSlot}. Must be called in an injection context, which a
+ * directive field initializer is, because the dev-mode duplicate warning runs
+ * on an `effect`. Safe under SSR.
  */
 export function createSingleSlot<T>(config: SingleSlotConfig): SingleSlot<T> {
   const occupants = signal<readonly T[]>([]);
   const value = computed<T | null>(() => occupants().at(-1) ?? null);
 
-  return {
-    value,
-    register(occupant: T): void {
-      const next = [...occupants(), occupant];
-      occupants.set(next);
-      if (next.length > 1) {
+  if (isDevMode()) {
+    let warned = false;
+    effect(() => {
+      const registered = occupants().length;
+      if (registered <= 1) {
+        warned = false;
+      } else if (!warned) {
+        warned = true;
         fortyWarn({
           code: 'FORCDK-CORE-005',
           scope: config.primitive,
-          message: `A ${config.owner} coordinates a single ${config.claimant}, but ${next.length} are registered.`,
+          message: `A ${config.owner} coordinates a single ${config.claimant}, but ${registered} are registered.`,
           cause: 'Only the most recently registered one is coordinated; the rest are inert.',
           fix: `Keep one ${config.claimant} per ${config.owner}.`,
         });
       }
+    });
+  }
+
+  return {
+    value,
+    register(occupant: T): void {
+      occupants.set([...occupants(), occupant]);
     },
     unregister(occupant: T): void {
       const current = occupants();

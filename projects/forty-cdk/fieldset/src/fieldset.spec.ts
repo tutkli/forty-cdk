@@ -131,6 +131,39 @@ describe('ForFieldset', () => {
       readonly mode = signal<'a' | 'b'>('b');
     }
 
+    @Component({
+      imports: [ForFieldset, ForFieldsetLegend],
+      template: `
+        <div forFieldset data-test-id="group">
+          @for (n of legends(); track n) {
+            <span forFieldsetLegend>{{ n }}</span>
+          }
+        </div>
+      `,
+    })
+    class GrowingLegendsHost {
+      readonly legends = signal<readonly number[]>([1]);
+    }
+
+    it('warns once per entry into a duplicated legend, not on every further registration', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const { fixture, flush } = renderHost(GrowingLegendsHost);
+      const legends = fixture.componentInstance.legends;
+      expect(warn).not.toHaveBeenCalled();
+
+      legends.set([1, 2]);
+      await flush();
+      legends.set([1, 2, 3]);
+      await flush();
+      expect(warn).toHaveBeenCalledTimes(1);
+
+      legends.set([1]);
+      await flush();
+      legends.set([1, 2]);
+      await flush();
+      expect(warn).toHaveBeenCalledTimes(2);
+    });
+
     it('warns in dev mode when a second legend registers under one fieldset', () => {
       const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
       renderHost(TwoLegendsHost);

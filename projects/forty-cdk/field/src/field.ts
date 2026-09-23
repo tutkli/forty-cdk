@@ -195,12 +195,17 @@ export class ForField implements ForFieldContext {
    * reads the *settled* count for the change-detection pass: a structural swap
    * that mounts the replacement before destroying the outgoing piece (two
    * sibling `@if` blocks under one field) is not a duplicate and must not warn.
-   * Only ever created in dev mode.
+   * Warns once each time the slot becomes duplicated, not on every further
+   * registration. Only ever created in dev mode.
    */
   #warnOnDuplicateSlot(count: Signal<number>, slot: string, idName: string): void {
+    let warned = false;
     effect(() => {
       const registered = count();
-      if (registered > 1) {
+      if (registered <= 1) {
+        warned = false;
+      } else if (!warned) {
+        warned = true;
         fortyWarn({
           code: 'FORCDK-FIELD-002',
           message: `A [forField] supports a single ${slot}, but ${registered} are registered.`,

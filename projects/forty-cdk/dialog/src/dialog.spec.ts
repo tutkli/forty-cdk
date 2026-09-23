@@ -1467,14 +1467,15 @@ describe('ForDialogTrigger', () => {
     @Component({
       imports: [ForDialog, ForDialogTrigger],
       template: `
-        <button forDialogTrigger [(open)]="open">Open</button>
+        <button forDialogTrigger [(open)]="open" [controls]="controls()">Open</button>
         @if (open()) {
-          <div forDialog (dismiss)="open.set(false)" ariaLabel="t"></div>
+          <div forDialog id="dlg" (dismiss)="open.set(false)" ariaLabel="t"></div>
         }
       `,
     })
     class NoControlsHost {
       readonly open = signal(false);
+      readonly controls = signal<string | null>(null);
     }
 
     it('warns when the trigger opens without [controls]', async () => {
@@ -1488,6 +1489,29 @@ describe('ForDialogTrigger', () => {
 
       expect(warn).toHaveBeenCalledTimes(1);
       expect(warn.mock.calls[0]![0]).toContain('[forty-cdk/dialog]');
+    });
+
+    it('warns once while [controls] stays unset, and again only after it was set and cleared', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const r = renderHost(NoControlsHost);
+      const cycle = async () => {
+        r.instance.open.set(true);
+        await flush(r.fixture);
+        r.instance.open.set(false);
+        await flush(r.fixture);
+      };
+
+      await cycle();
+      await cycle();
+      expect(warn).toHaveBeenCalledTimes(1);
+
+      r.instance.controls.set('dlg');
+      await cycle();
+      expect(warn).toHaveBeenCalledTimes(1);
+
+      r.instance.controls.set(null);
+      await cycle();
+      expect(warn).toHaveBeenCalledTimes(2);
     });
 
     it('does not warn when [controls] is provided', async () => {
