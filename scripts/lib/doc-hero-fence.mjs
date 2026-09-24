@@ -222,6 +222,11 @@ function spanOf(lines, fence) {
  * it means to the snippet gate.
  */
 export function heroFencePlacement(source) {
+  const examples = examplesOf(source);
+  return examples === null ? null : placementIn(examples);
+}
+
+function examplesOf(source) {
   const lines = normalize(source).split('\n');
   const fences = fencesOf(source).map((fence) => spanOf(lines, fence));
   const inFence = (line) => fences.some((fence) => line > fence.open && line <= fence.close);
@@ -240,6 +245,10 @@ export function heroFencePlacement(source) {
     }
   }
 
+  return { lines, fences, inFence, section, end };
+}
+
+function placementIn({ lines, fences, inFence, section, end }) {
   const within = (line) => line > section && line <= end;
   const first = fences.find((entry) => within(entry.open));
   if (first !== undefined && first.language === FENCE_LANGUAGE) {
@@ -290,23 +299,128 @@ export function withHeroFence(source, code) {
 }
 
 /**
- * Every README whose opening `## Examples` fence is not the hero its page
+ * A class a later `## Examples` fence names although the hero does not declare
+ * it, and the reason the fence is written that way.
+ *
+ * The reason is a data field rather than a comment: it is what a reviewer
+ * weighs and what keeps the entry from reading as an oversight. An entry that
+ * no longer exempts anything fails, which is what stops the list outliving its
+ * reasons.
+ */
+export const CLASS_EXEMPTIONS = [];
+
+const CLASS_NAME = /^-?[_a-zA-Z][\w-]*$/;
+const TEMPLATE_CLASS_LISTS = [
+  /(?<![\w.[-])class="([^"]*)"/g,
+  /(?<![\w[])animate\.(?:enter|leave)="([^"]*)"/g,
+  /\bclass: '([^']*)'/g,
+];
+const TEMPLATE_CLASS_BINDING = /\[class\.(-?[_a-zA-Z][\w-]*)\]/g;
+const STYLESHEET_PRELUDE = /([^{};]*)\{/g;
+const STYLESHEET_CLASS = /\.(-?[_a-zA-Z][\w-]*)/g;
+
+function templateClassesOf(code) {
+  const classes = new Set();
+  for (const pattern of TEMPLATE_CLASS_LISTS) {
+    for (const [, list] of code.matchAll(pattern)) {
+      for (const name of list.replace(/\{\{[\s\S]*?\}\}/g, ' ').split(/\s+/)) {
+        if (CLASS_NAME.test(name)) {
+          classes.add(name);
+        }
+      }
+    }
+  }
+  for (const [, name] of code.matchAll(TEMPLATE_CLASS_BINDING)) {
+    classes.add(name);
+  }
+  return classes;
+}
+
+function stylesheetClassesOf(code) {
+  const stylesheet = code.replace(/\/\*[\s\S]*?\*\//g, '').replace(/'[^'\n]*'|"[^"\n]*"/g, '""');
+  const classes = new Set();
+  for (const [, prelude] of stylesheet.matchAll(STYLESHEET_PRELUDE)) {
+    for (const [, name] of prelude.matchAll(STYLESHEET_CLASS)) {
+      classes.add(name);
+    }
+  }
+  return classes;
+}
+
+const CLASSES_OF = new Map([
+  ['html', templateClassesOf],
+  ['css', stylesheetClassesOf],
+]);
+
+function undeclaredClasses(document, examples, placement, exemptions, used) {
+  const declared = templateClassesOf(document.hero.code);
+  const after = placement.fence?.close ?? placement.insert.line - 1;
+  const problems = [];
+
+  for (const fence of examples.fences) {
+    const classesOf = CLASSES_OF.get(fence.language);
+    if (classesOf === undefined || fence.open <= after || fence.open > examples.end) {
+      continue;
+    }
+    const undeclared = [...classesOf(fence.code)].filter((name) => {
+      if (declared.has(name)) {
+        return false;
+      }
+      const exemption = exemptions.find(
+        (entry) => entry.path === document.path && entry.className === name,
+      );
+      if (exemption !== undefined) {
+        used.add(exemption);
+        return false;
+      }
+      return true;
+    });
+    if (undeclared.length === 0) {
+      continue;
+    }
+    const names = undeclared.map((name) => `\`${name}\``).join(', ');
+    problems.push({
+      path: document.path,
+      line: fence.open,
+      message:
+        `this \`\`\`${fence.lang} fence names ${undeclared.length === 1 ? 'the class' : 'classes'} ` +
+        `${names}, which ${document.hero.path} — the hero this section opens with — does not ` +
+        "declare; name the hero's class instead, or add an exemption with a reason to " +
+        'CLASS_EXEMPTIONS in scripts/lib/doc-hero-fence.mjs',
+    });
+  }
+
+  return problems;
+}
+
+/**
+ * Every README whose `## Examples` has stopped agreeing with the hero its page
  * projects, stated over documents the caller has already read.
  *
  * Each entry pairs a README — `path` and `source` — with its hero: the `path`
  * the page names and the `code` this generator publishes for it. A hero of
  * `null` is a page that projects none, which is a problem of its own: the
  * opening fence is published from something, or it is drift nobody checks.
+ *
+ * The opening fence must be the hero, and every class a later `html` or `css`
+ * fence in the section names must be one the hero declares — the hero is the
+ * section's reference composition, so a class it does not write is one a
+ * reader cannot follow back to anything. `exemptions` defaults to
+ * {@link CLASS_EXEMPTIONS}, and an entry that exempts nothing is reported too.
  */
-export function heroFenceProblems(documents) {
+export function heroFenceProblems(documents, exemptions = CLASS_EXEMPTIONS) {
   const problems = [];
+  const used = new Set();
+  const unjudged = new Set();
 
   for (const document of documents) {
-    const placement = heroFencePlacement(document.source);
-    if (placement === null) {
+    const examples = examplesOf(document.source);
+    if (examples === null) {
       continue;
     }
+    const placement = placementIn(examples);
     if (document.hero === null) {
+      unjudged.add(document.path);
       problems.push({
         path: document.path,
         line: placement.section,
@@ -325,9 +439,7 @@ export function heroFenceProblems(documents) {
           'page projects, and no longer matches it — run `pnpm gen:hero-fences` rather than ' +
           'writing the fence by hand',
       });
-      continue;
-    }
-    if (placement.fence !== null && modeOf(document, placement.fence) !== 'compile') {
+    } else if (placement.fence !== null && modeOf(document, placement.fence) !== 'compile') {
       problems.push({
         path: document.path,
         line: placement.fence.open,
@@ -336,6 +448,20 @@ export function heroFenceProblems(documents) {
           'module the site compiles, so drop the marker rather than the one gate that reads it',
       });
     }
+    problems.push(...undeclaredClasses(document, examples, placement, exemptions, used));
+  }
+
+  for (const exemption of exemptions) {
+    if (used.has(exemption) || unjudged.has(exemption.path)) {
+      continue;
+    }
+    problems.push({
+      path: 'scripts/lib/doc-hero-fence.mjs',
+      line: 1,
+      message:
+        `CLASS_EXEMPTIONS exempts \`${exemption.className}\` in ${exemption.path}, and no later ` +
+        '"## Examples" fence there names it without the hero declaring it — drop the exemption',
+    });
   }
 
   return problems;

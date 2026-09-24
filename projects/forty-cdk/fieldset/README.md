@@ -79,7 +79,7 @@ export class FieldsetDefaultExample {}
 On custom markup (no native `<fieldset>`), the same wiring yields `role="group"` + `aria-labelledby`:
 
 ```html
-<div forFieldset class="fieldset">
+<div forFieldset class="set">
   <span forFieldsetLegend>Shipping address</span>
   <!-- … fields … -->
 </div>

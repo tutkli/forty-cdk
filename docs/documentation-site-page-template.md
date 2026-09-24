@@ -212,6 +212,15 @@ removed, stays in the alias list so it cannot come back.
   `<!-- snippet: … -->` marker where the generated one sits: the hero is a whole module, so it
   compiles under `pnpm check:doc-snippets` with no exemption.
 
+  Every class a later `html` or `css` fence in the section names must be one the hero declares
+  ([#1946](https://github.com/tutkli/forty-cdk/issues/1946)). The hero is the section's reference
+  composition, so a sketch below it writing or styling a class the hero does not is one a reader
+  cannot follow back to anything — and a hero that renames a class would otherwise leave the
+  fences under it naming the old one. `pnpm check:hero-fences` fails it, naming the README, the
+  class and the hero file. A later `ts` fence is a module of its own and is not held to it; an
+  `html` or `css` fence that deliberately sketches an unrelated element carries a written
+  exemption in `CLASS_EXEMPTIONS` in `scripts/lib/doc-hero-fence.mjs` instead.
+
 - **`## API`** — One `### ForX` subsection per piece, each with an **Inputs / Outputs / Models**
   table (merge "Inputs" and "Outputs" tables under the piece; mark outputs in the Description or a
   Kind column). Canonical columns for new content: **Property · Type · Default · Description**,

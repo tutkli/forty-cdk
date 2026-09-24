@@ -426,6 +426,171 @@ describe('the drift the gate reports', () => {
   });
 });
 
+describe('the classes a later fence names', () => {
+  const path = 'projects/forty-cdk/fieldset/README.md';
+  const hero = {
+    path: 'demos/fieldset/examples/default.example.ts',
+    code: [
+      'const template = `',
+      '  <fieldset class="set" [class.set--busy]="busy" animate.enter="set-in"></fieldset>',
+      '`;',
+      "const options = { class: 'set-panel' };",
+      '',
+    ].join('\n'),
+  };
+  const readme = (...later: readonly string[]) =>
+    md(
+      '## Examples',
+      '',
+      'Caption.',
+      '',
+      '```ts',
+      hero.code.trimEnd(),
+      '```',
+      '',
+      ...later,
+      '## API',
+    );
+
+  it('names the README, the class and the hero file when an html fence strays from the hero', () => {
+    const source = readme('```html', '<div forFieldset class="fieldset"></div>', '```', '');
+
+    expect(heroFenceProblems([{ path, source, hero }], [])).toEqual([
+      {
+        path,
+        line: 12,
+        message: expect.stringMatching(/the class `fieldset`, which demos\/fieldset\/examples\//),
+      },
+    ]);
+  });
+
+  it('names every class a stylesheet selects that the hero does not declare', () => {
+    const source = readme('```css', '.set[data-disabled] .row, .set .hint {', '}', '```', '');
+
+    const problems = heroFenceProblems([{ path, source, hero }], []);
+
+    expect(problems.map((problem) => problem.message)).toEqual([
+      expect.stringContaining('classes `row`, `hint`, which'),
+    ]);
+  });
+
+  it('accepts every form in which the hero declares a class', () => {
+    const source = readme('```css', '.set, .set--busy, .set-in, .set-panel {', '}', '```', '');
+
+    expect(heroFenceProblems([{ path, source, hero }], [])).toEqual([]);
+  });
+
+  it('reads a stylesheet’s selectors, not its declarations, strings or comments', () => {
+    const source = readme(
+      '```css',
+      ".set[data-hint='.hint'] {",
+      "  content: '.label';",
+      '}',
+      '/* .retired {} */',
+      '@media (prefers-reduced-motion: no-preference) {',
+      '  .set {',
+      '    transition: opacity 0.2s;',
+      '    background: url(icon.svg);',
+      '  }',
+      '}',
+      '```',
+      '',
+    );
+
+    expect(heroFenceProblems([{ path, source, hero }], [])).toEqual([]);
+  });
+
+  it('reads a template’s static class names, not the bindings beside them', () => {
+    const source = readme(
+      '```html',
+      '<div class="set {{ variant }}" [class]="dynamic" [attr.class]="other" data-class="x"></div>',
+      '```',
+      '',
+    );
+
+    expect(heroFenceProblems([{ path, source, hero }], [])).toEqual([]);
+  });
+
+  it('leaves a later module and every fence outside the section alone', () => {
+    const source = md(
+      '## Examples',
+      '',
+      'Caption.',
+      '',
+      '```ts',
+      hero.code.trimEnd(),
+      '```',
+      '',
+      '### Signal Forms',
+      '',
+      '```ts',
+      'const template = `<div class="own-composition"></div>`;',
+      '```',
+      '',
+      '## Styling',
+      '',
+      '```css',
+      '.elsewhere {',
+      '}',
+      '```',
+    );
+
+    expect(heroFenceProblems([{ path, source, hero }], [])).toEqual([]);
+  });
+
+  it('still names the class when the opening fence has drifted as well', () => {
+    const source = md(
+      '## Examples',
+      '',
+      'Caption.',
+      '',
+      '```ts',
+      'const stale = 1;',
+      '```',
+      '',
+      '```html',
+      '<div class="fieldset"></div>',
+      '```',
+      '',
+      '## API',
+    );
+
+    const problems = heroFenceProblems([{ path, source, hero }], []);
+
+    expect(problems.map((problem) => problem.line)).toEqual([5, 9]);
+    expect(problems[1]?.message).toContain('the class `fieldset`');
+  });
+
+  it('lets through a class a written exemption names for that README', () => {
+    const source = readme('```html', '<div class="fieldset"></div>', '```', '');
+    const exemptions = [{ path, className: 'fieldset', reason: 'Sketches an unrelated element.' }];
+
+    expect(heroFenceProblems([{ path, source, hero }], exemptions)).toEqual([]);
+  });
+
+  it('reports an exemption that no longer exempts anything', () => {
+    const exemptions = [
+      { path, className: 'fieldset', reason: 'Sketches an unrelated element.' },
+      { path: 'projects/forty-cdk/gone/README.md', className: 'x', reason: 'Was needed once.' },
+    ];
+
+    const problems = heroFenceProblems([{ path, source: readme(), hero }], exemptions);
+
+    expect(problems).toEqual([
+      {
+        path: 'scripts/lib/doc-hero-fence.mjs',
+        line: 1,
+        message: expect.stringContaining(`\`fieldset\` in ${path}`),
+      },
+      {
+        path: 'scripts/lib/doc-hero-fence.mjs',
+        line: 1,
+        message: expect.stringContaining('`x` in projects/forty-cdk/gone/README.md'),
+      },
+    ]);
+  });
+});
+
 describe('the corpus the generator owns', () => {
   it('reads every README declaring the section, not a fraction of them', () => {
     expect(DOCUMENTED.length).toBeGreaterThanOrEqual(SECTION_FLOOR);

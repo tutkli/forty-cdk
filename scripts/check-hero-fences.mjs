@@ -86,24 +86,26 @@ const problems = heroFenceProblems(documents);
 if (problems.length === 0) {
   console.log(
     `[check-hero-fences] ok — ${documents.length} README(s) open "## Examples" with the hero ` +
-      'their page projects',
+      'their page projects, and name no class below it that the hero does not declare',
   );
   process.exit(0);
 }
 
 if (WRITE) {
   const written = [];
-  for (const document of documents) {
+  const repaired = documents.map((document) => {
     if (document.hero === null) {
-      continue;
+      return document;
     }
     const rewritten = withHeroFence(document.source, document.hero.code);
-    if (rewritten !== document.source.replace(/\r\n/g, '\n')) {
-      writeFileSync(document.file, rewritten, 'utf8');
-      written.push(document.path);
+    if (rewritten === document.source.replace(/\r\n/g, '\n')) {
+      return document;
     }
-  }
-  const unrepaired = problems.filter((problem) => !written.includes(problem.path));
+    writeFileSync(document.file, rewritten, 'utf8');
+    written.push(document.path);
+    return { ...document, source: rewritten };
+  });
+  const unrepaired = heroFenceProblems(repaired);
   console.log(`[check-hero-fences] wrote ${written.length} README fence(s) from their page hero`);
   for (const path of written) {
     console.log(`  ${path}`);

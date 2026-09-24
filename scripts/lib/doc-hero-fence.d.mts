@@ -27,6 +27,15 @@ export interface HeroFenceDocument {
   readonly hero: { readonly path: string; readonly code: string } | null;
 }
 
+/** A class a later `## Examples` fence names that the hero does not declare, and why. */
+export interface HeroClassExemption {
+  readonly path: string;
+  readonly className: string;
+  readonly reason: string;
+}
+
+export declare const CLASS_EXEMPTIONS: readonly HeroClassExemption[];
+
 export declare function projectHero(source: string): string;
 
 export declare function heroSourceOf(pageSource: string): string | null;
@@ -37,4 +46,5 @@ export declare function withHeroFence(source: string, code: string): string;
 
 export declare function heroFenceProblems(
   documents: readonly HeroFenceDocument[],
+  exemptions?: readonly HeroClassExemption[],
 ): readonly DocProblem[];
