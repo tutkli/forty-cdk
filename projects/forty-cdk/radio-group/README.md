@@ -95,9 +95,18 @@ import { ForRadio, ForRadioGroup } from 'forty-cdk/radio-group';
   template: `
     <div forRadioGroup [formField]="checkout.shipping" aria-labelledby="ship-label">
       <span id="ship-label">Shipping</span>
-      <button type="button" forRadio class="radio-group-item" value="standard">Standard</button>
-      <button type="button" forRadio class="radio-group-item" value="express">Express</button>
-      <button type="button" forRadio class="radio-group-item" value="overnight">Overnight</button>
+      <button type="button" forRadio class="rg-option" value="standard">
+        <span class="rg-dot"></span>
+        Standard
+      </button>
+      <button type="button" forRadio class="rg-option" value="express">
+        <span class="rg-dot"></span>
+        Express
+      </button>
+      <button type="button" forRadio class="rg-option" value="overnight">
+        <span class="rg-dot"></span>
+        Overnight
+      </button>
     </div>
   `,
 })
@@ -179,11 +188,19 @@ Implements the [WAI-ARIA Radio Group pattern](https://www.w3.org/WAI/ARIA/apg/pa
 forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
 
 ```css
-.radio-group-indicator[data-state='unchecked'] {
-  display: none;
+.rg-dot {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid currentColor;
+  border-radius: 50%;
 }
 
-.radio-group-item:not([data-disabled]):hover {
+.rg-option[data-state='checked'] .rg-dot {
+  background: radial-gradient(circle, currentColor 40%, transparent 45%);
+}
+
+.rg-option:not([data-disabled]):hover {
   cursor: pointer;
 }
 ```

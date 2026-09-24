@@ -69,21 +69,31 @@ import { ForCheckbox } from 'forty-cdk/checkbox';
   template: `
     <button
       forCheckbox
-      class="checkbox"
+      class="cb-row"
       [checked]="allChecked()"
       [indeterminate]="someChecked()"
       (click)="toggleAll()"
-    ></button>
+    >
+      <span class="cb">
+        <span class="cb-check" aria-hidden="true"></span>
+      </span>
+      Select all toppings
+    </button>
     @for (item of items(); track item.id) {
-      <button forCheckbox class="checkbox" [(checked)]="item.selected"></button>
+      <button forCheckbox class="cb-row" [(checked)]="item.selected">
+        <span class="cb">
+          <span class="cb-check" aria-hidden="true"></span>
+        </span>
+        {{ item.label }}
+      </button>
     }
   `,
 })
 export class DemoSelectAll {
   readonly items = signal([
-    { id: 1, selected: false },
-    { id: 2, selected: true },
-    { id: 3, selected: false },
+    { id: 1, label: 'Mozzarella', selected: false },
+    { id: 2, label: 'Mushrooms', selected: true },
+    { id: 3, label: 'Pepperoni', selected: false },
   ]);
 
   readonly allChecked = computed(() => this.items().every((i) => i.selected));
@@ -115,7 +125,14 @@ import { ForCheckbox } from 'forty-cdk/checkbox';
 @Component({
   selector: 'demo-checkout',
   imports: [ForCheckbox /* , FormField from @angular/forms */],
-  template: ` <button forCheckbox class="checkbox" [formField]="checkout.acceptTerms"></button> `,
+  template: `
+    <button forCheckbox class="cb-row" [formField]="checkout.acceptTerms">
+      <span class="cb">
+        <span class="cb-check" aria-hidden="true"></span>
+      </span>
+      I accept the terms of service
+    </button>
+  `,
 })
 export class DemoCheckout {
   readonly model = signal({ acceptTerms: false });
@@ -174,12 +191,23 @@ Implements the [WAI-ARIA Checkbox pattern](https://www.w3.org/WAI/ARIA/apg/patte
 forty-cdk ships no styles. Add your own class to each piece — the for\* selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected data-\* attributes listed per piece in the [API](#api) section.
 
 ```css
-.checkbox-indicator[data-state='unchecked'] {
+.cb-check {
+  display: inline-block;
+  width: 6px;
+  height: 12px;
+  border: solid currentColor;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.cb-row[data-state='unchecked'] .cb-check {
   display: none;
 }
 
-.checkbox[data-state='indeterminate'] .dash {
-  display: block;
+.cb-row[data-state='indeterminate'] .cb-check {
+  width: 12px;
+  height: 0;
+  transform: none;
 }
 ```
 
