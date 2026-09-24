@@ -168,7 +168,7 @@ Set `slidesPerView` above `1` to show several slides at once. Each slide is `fle
 
 ### Autoplay with pause control
 
-`[forCarouselRotationControl]` is the first focusable child (APG / WCAG 2.2.2). Rotation pauses on hover, on keyboard focus inside the carousel, and while the tab is backgrounded; an explicit stop is sticky. Under `prefers-reduced-motion` it does not auto-start.
+With `autoplay` set, the slides advance every three seconds, unless your system asks for reduced motion, in which case they wait for the rotation control. Hover the carousel or move focus into it and rotation pauses until you leave; stop it with the control and it stays stopped through hover and focus until you start it again. [Autoplay](#autoplay) has the full pause rules and why the control must be the first focusable child.
 
 ### Drag / swipe
 

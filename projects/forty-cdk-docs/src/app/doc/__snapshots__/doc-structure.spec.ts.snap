@@ -3881,12 +3881,6 @@ exports[`document structure > projects/forty-cdk/file-upload/README.md declares 
   },
   {
     "headings": [],
-    "slug": "directory-folder-selection",
-    "tables": [],
-    "title": "Directory (folder) selection",
-  },
-  {
-    "headings": [],
     "slug": "disabled",
     "tables": [],
     "title": "Disabled",
@@ -4129,12 +4123,6 @@ exports[`document structure > projects/forty-cdk/input/README.md declares the se
     "slug": "anatomy",
     "tables": [],
     "title": "Anatomy",
-  },
-  {
-    "headings": [],
-    "slug": "auto-resizing-textarea",
-    "tables": [],
-    "title": "Auto-resizing textarea",
   },
   {
     "headings": [],

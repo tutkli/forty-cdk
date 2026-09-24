@@ -115,11 +115,11 @@ A horizontal palette where `lockAxis='x'` pins the preview to its lift-time vert
 
 ### Wrapping grid (mixed orientation)
 
-A flex-wrap grid of uniformly-sized tiles with `orientation='mixed'`. The drop index is resolved in 2D, so a tile dragged across a wrapped row lands in the slot under the pointer's row and column instead of mis-resolving to the nearest single-axis slot.
+Drag a tile across the wrap into the row below: with `orientation='mixed'` the placeholder follows the pointer's row and column, where a single-axis list would snap to the nearest slot along one line. [Orientation](#orientation) compares the three modes and the scope-wide default.
 
 ### Free drag (`forFreeDrag`)
 
-`[forFreeDrag]` repositions its host (or a resolved `rootElement`) by pointer drag via a CSS transform — no `[forDropList]`, no reorder. The blue card moves itself within the dashed `boundary`; the panel is dragged by its header via `rootElement` so a child handle moves the whole ancestor. Pointer-only by design.
+Drag the card anywhere inside the dashed box, its `boundary`, which it cannot leave. The panel moves by the grip in its header: `rootElement` makes that handle move the whole panel. Both are pointer-only; [Free drag](#free-drag) says why, and lists the inputs and outputs.
 
 ## API
 

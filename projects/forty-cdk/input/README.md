@@ -34,33 +34,6 @@ Attribute directives for single- and multi-line text: a string value() that auto
 
 Both expose the identical API below; `[forTextarea]` adds the optional `autosize` input.
 
-## Auto-resizing textarea
-
-`[forTextarea]` accepts an optional `autosize` input. When set, the textarea's height tracks its content — it grows as the value gets taller and shrinks back as it gets shorter, recomputed on every edit, on programmatic `value` writes, and on width reflow. The directive only sets the element's `height`; pair it with `resize: none; overflow: hidden;` (key off the reflected `data-autosize`) so the native resize grip and scrollbar don't fight the measured height.
-
-```ts
-import { Component, signal } from '@angular/core';
-import { ForTextarea } from 'forty-cdk/input';
-
-@Component({
-  selector: 'demo-comment',
-  imports: [ForTextarea],
-  template: `<textarea forTextarea autosize class="textarea" [(value)]="comment"></textarea>`,
-})
-export class DemoComment {
-  readonly comment = signal('');
-}
-```
-
-```css
-.textarea[data-autosize] {
-  resize: none;
-  overflow: hidden;
-}
-```
-
-Auto-resize is a browser-only DOM side effect, so it is inert under server-side rendering and hydrates without a layout jump.
-
 ## Field composition
 
 Drop the control inside a `[forField]` and it auto-associates with the label, description, and error region — no `id` / `aria-*` wiring by hand.
@@ -143,7 +116,7 @@ One class and one directive, three states. `disabled` reflects native `disabled`
 
 ### Auto-sizing textarea
 
-`autosize` tracks the textarea's content height — growing as you type and shrinking as you delete, recomputed on every edit and on width reflow. Pair it with the reflected `data-autosize` and `resize: none; overflow: hidden`. The measurement is browser-only, so it stays inert under SSR.
+`autosize` makes the textarea's height track its content: type a few lines and delete them, and it grows and shrinks with each edit. It also recomputes on programmatic `value` writes and when the width reflows. The directive sets only `height`, so pair it with `resize: none; overflow: hidden` keyed off the reflected `data-autosize`. The measurement is browser-only, so it is inert under SSR and hydrates without a layout jump.
 
 ### Signal Forms validation
 
