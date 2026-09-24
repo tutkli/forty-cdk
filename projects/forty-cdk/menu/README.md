@@ -53,7 +53,7 @@ For the recommended `[forceMount]` + `opacity` pattern that keeps indicator colu
 
 ## Examples
 
-Open the menu and walk the items with the arrow keys — the surface is shared, so what happens here is what Dropdown Menu, Context Menu and Menubar each compose.
+Open the menu from its most common opener, a Dropdown Menu button, and walk the items with the arrow keys — only the root and its trigger come from `forty-cdk/dropdown-menu`; every piece inside the surface is `forty-cdk/menu`.
 
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
@@ -219,7 +219,7 @@ export class MenuDefaultExample {
 }
 ```
 
-The surface is never used alone, so the compositions live with their openers: [Dropdown Menu](../dropdown-menu/README.md), [Context Menu](../context-menu/README.md) and [Menubar](../menubar/README.md) each carry the demos for their own.
+`forty-cdk/menu` ships no opener of its own, so the surface is always opened through another entry point — above, the button of [Dropdown Menu](../dropdown-menu/README.md). The same pieces compose unchanged under [Context Menu](../context-menu/README.md) and [Menubar](../menubar/README.md), whose pages carry the demos for those openers, and [`[forMenu]`](#shared-openers-formenu) lets several of them open one surface.
 
 ## Mount/visibility convention
 
