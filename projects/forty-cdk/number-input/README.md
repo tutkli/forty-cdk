@@ -62,7 +62,7 @@ One class and one directive, three states. `disabled` reflects `data-disabled` o
 
 ### Formatting & precision
 
-`formatOptions` feeds an `Intl.NumberFormat` that renders the displayed text and `aria-valuetext`, while `value()` stays a raw number. The `locale` drives both formatting and parsing; a hidden input submits the raw number, not the formatted string.
+Type an amount: `value()` under the field follows it as a raw number, and the text reformats through `formatOptions` as US dollars when you press `Enter` or leave the field. `↑` / `↓` step it by 1. [Formatting](#formatting) covers `locale`, what a surrounding form submits, and the `step` a percent style needs.
 
 ## Formatting
 

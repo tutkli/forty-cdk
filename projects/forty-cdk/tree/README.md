@@ -181,7 +181,7 @@ Mounting is the consumer's responsibility: wrap `[forTreeGroup]` in `@if (expand
 
 ### Filter picker
 
-A search box narrows the tree while `cascade` checkboxes pick values. You filter your own data and re-render, then call the pure `expandToReveal(matches, ancestorsOf)` helper to expand just the ancestors that make each match visible. Matched text is highlighted with your own `<mark>`.
+Type part of a category name: the tree narrows to the matches, expands their ancestors to reveal them and highlights the matched text, while the `cascade` checkboxes keep working. The library filters nothing; [Filtering](#filtering) is the three-step recipe, with the `expandToReveal` helper that computes which ancestors to open.
 
 ### Drag & drop reordering
 

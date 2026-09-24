@@ -119,11 +119,11 @@ export class TableGridExample {
 
 ### Sortable headers
 
-A native `<table>` in the default `table` mode. `[forTableSortHeader]` emits `aria-sort` and fires `(sortChange)` on click, `Enter` or `Space` — it never sorts the data itself. The consumer holds a single sort descriptor, derives each header's direction from it and reorders its own rows.
+Click a header, or tab to it and press `Enter` or `Space`, and its `[forTableSortHeader]` cycles the column through ascending, descending and unsorted. Sorting another column clears the first, because the demo holds a single sort descriptor and reorders its own rows from it. [Sortable headers](#sortable-headers-1) covers the options on the direction cycle and the grid-mode tab stop.
 
 ### Column resizing
 
-`[forTableColumnResizer]` turns a focusable element inside a header cell into a resize handle. It publishes the resolved width as `--for-table-col-<name>-width` on the table root; the consumer wires that variable into `grid-template-columns`. Drag the handle, or focus it and press `ArrowLeft` / `ArrowRight` to step by 10px.
+Drag a header's `[forTableColumnResizer]` handle to resize its column, or focus a header cell, press `Enter` to reach its handle and step the width by 10px with `ArrowLeft` / `ArrowRight`. Each column stops at its own `[min]` / `[max]`. The directive only publishes the width; [Column resizing](#column-resizing-1) shows the `grid-template-columns` wiring, the commit output and auto-fit.
 
 ### Column & row reordering
 

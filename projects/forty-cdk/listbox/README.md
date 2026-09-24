@@ -121,7 +121,7 @@ Click toggles individual options in multi mode; click selects in single mode.
 
 ### Sortable (reorder)
 
-Add `[forListboxReorder]` for a selectable AND sortable list, with no `@angular/cdk/drag-drop`. Drag a chip to move it, or focus one and press `Ctrl`+`Space` to lift, arrows to position, `Space`/`Enter` to drop. `(optionReorder)` emits `{ from, to }`; you apply `moveItemInArray`.
+With `[forListboxReorder]` on the listbox, drag a chip to a new place, or focus one and press `Ctrl`+`Space` to lift it, move it with the arrow keys and drop it with `Space` or `Enter`. Selection works as before: a click without movement still toggles the chip. [Reordering](#reordering) covers the output you apply, the full keyboard and the announcements.
 
 ### Signal Forms
 

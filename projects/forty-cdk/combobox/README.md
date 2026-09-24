@@ -176,7 +176,7 @@ Pass `multiple` and render the committed values as chips inside `[forComboboxChi
 
 ### Inline autocomplete
 
-`autocompleteMode='both'` mirrors `aria-autocomplete`: the listbox shows filtered options and the rest of the first match is completed inline into the input as selected text, so the next keystroke replaces it. `Backspace` deletes the selection without re-completing.
+Type `ger`: the list narrows to Germany and the input completes to `Germany`, with the appended `many` selected so your next keystroke replaces it. `Backspace` removes the completion without bringing it back. The demo uses `autocompleteMode='both'`; [Autocomplete modes](#autocomplete-modes) compares it with the other three.
 
 ### Action item (create on the fly)
 
@@ -184,7 +184,7 @@ A pinned `[forComboboxAction]` is a `role=button` affordance â€” not an option â
 
 ### Picker (trigger + in-panel search)
 
-The other anatomy: a button shows the committed selection while the search input lives inside the panel. `[forComboboxTrigger]` opens the panel, becomes the positioning anchor and takes focus back on close; `[forComboboxList]` carries `role=listbox` so the input can sit beside it.
+Click the `[forComboboxTrigger]` button, type into the search field inside the panel and pick a country: the button shows it and takes focus back. Reopen it and the search starts empty, with your pick checked. [Picker anatomy](#picker-anatomy) covers the `[forComboboxList]` part this also needs, the focus hand-off and the anchor order.
 
 ### Object values
 

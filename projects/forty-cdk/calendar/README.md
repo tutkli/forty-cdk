@@ -198,11 +198,11 @@ One class and one directive, three states. `disabled` turns off focus movement a
 
 ### Range selection
 
-Set `selectionMode="range"` and bind `[(range)]` to a `DateRange` signal. Click a first cell to anchor the range, move the pointer to preview, click a second cell to commit. Committed cells reflect `data-range-start` / `data-range-end` / `data-in-range`; the preview band uses `data-range-preview`.
+In `selectionMode="range"` the demo opens with a week already committed. Click a day to anchor a new range, hover or use the arrow keys to preview the band, then click or press `Enter` on a second day, on either side of the anchor, to commit it. [Range selection](#range-selection-1) lists the `data-range-*` facets to style and the length limits.
 
 ### Month / year dropdowns
 
-`[forCalendarMonthSelect]` and `[forCalendarYearSelect]` wire native selects to the calendar's month/year navigation. Render the options yourself from `m.options()` and `y.years()`; months and years entirely outside `[min, max]` are disabled.
+The `[forCalendarMonthSelect]` and `[forCalendarYearSelect]` selects jump straight to a month or a year. The demo bounds the calendar from February of last year to the end of next year, so the first and last years in the list are disabled, and so is January while last year is showing. Both directives are documented under [native `<select>` dropdowns](#usage--native-select-dropdowns).
 
 ### View switching (month / year picker)
 

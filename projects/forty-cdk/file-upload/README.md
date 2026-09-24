@@ -106,7 +106,14 @@ One class and one directive, two states. `disabled` blocks the dialog and drops 
 
 ### Folder selection
 
-Set `directory` to switch the native picker into folder mode (mirrored as `webkitdirectory` on the input). The emitted `FileList` then contains every file inside the chosen folder, each carrying a `webkitRelativePath` the consumer reads to reconstruct the tree.
+Set `directory` to switch the native picker into folder mode. The input mirrors it as `webkitdirectory`, which modern Chromium, Firefox and WebKit all support despite the prefix. Choose a folder and the emitted `FileList` holds every file inside it, each carrying a `webkitRelativePath` to rebuild the tree from. Dropping a folder is out of scope: a drop surfaces `DataTransfer.files` only, with no `webkitGetAsEntry` traversal.
+
+```html
+<div forFileUpload directory (filesChange)="onFolder($event)">
+  <input forFileUploadInput aria-label="Upload folder" class="sr-only" />
+  <button forFileUploadTrigger>Choose folder</button>
+</div>
+```
 
 ## Handling rejections
 
@@ -119,29 +126,6 @@ onRejected(rejections: ForFileUploadRejection[]): void {
   }
 }
 ```
-
-## Directory (folder) selection
-
-Set `directory` to switch the native picker into folder-selection mode (mirrored onto the input as `webkitdirectory`). The emitted `FileList` then contains every file inside the chosen folder, each carrying a `webkitRelativePath` the consumer reads to reconstruct the tree.
-
-```html
-<div forFileUpload directory (filesChange)="onFolder($event)">
-  <input forFileUploadInput aria-label="Upload folder" class="sr-only" />
-  <button forFileUploadTrigger>Choose folder</button>
-</div>
-```
-
-<!-- snippet: fragment -->
-
-```ts
-onFolder(files: FileList): void {
-  for (const file of Array.from(files)) {
-    console.log(file.webkitRelativePath); // e.g. "photos/2024/img.jpg"
-  }
-}
-```
-
-Despite the `webkit-` prefix the attribute is supported across modern Chromium, Firefox, and WebKit. Directory drag-and-drop (`DataTransferItem.webkitGetAsEntry`) is out of scope — drop continues to surface `DataTransfer.files` only.
 
 ## Disabled
 

@@ -190,7 +190,7 @@ With `granularity="minute"` and a time-capable adapter the picker becomes a date
 
 ### Range selection
 
-`ForDateRangePicker` is the dedicated date-range root: it is the root AND the form value, implementing `FormValueControl<DateRange | null>`, so `[formField]` wires the committed range into the form directly. Project a `ForCalendar` in `selectionMode="range"` and bind its `[(range)]` to `picker.value`. The two-click anchor → commit flow keeps `value()` null until both endpoints are chosen, so a required range stays invalid until a full range is committed.
+Open the picker and click a first day: the trigger keeps its placeholder, because the value `[formField]` reads stays `null` until a second click commits the range. Close the panel with only one end picked and the required error appears. [`ForDateRangePicker`](#range-selection--fordaterangepicker) documents the root, its bounds and native submission.
 
 ## API
 

@@ -193,11 +193,11 @@ export class SelectDefaultExample {
 
 ### Multi select
 
-Set `multiple` and bind `[(value)]` to a `string[]`. Clicking an option toggles it in or out and the listbox stays open; `Tab`, `Esc` or an outside pointer close it.
+With `multiple` set, open the list and pick a few tags: each click toggles one in or out and the list stays open, while the trigger shows what you picked. `Tab`, `Escape` or a click outside closes it. [Multi mode](#multi-mode) adds the range keys, such as `Shift`+arrow and `Ctrl`/`Cmd`+`A`.
 
 ### macOS-style item alignment
 
-`position="item-aligned"` overlays the listbox so the selected option's vertical center lines up with the trigger, the way native macOS menus open. `[collisionPadding]` clamps it inside the viewport and exposes the available height as a CSS variable.
+With `position="item-aligned"`, open the list: Germany, the preselected country, opens right over the trigger, with the other countries above and below it. Pick another and reopen to see the list shift so your new pick sits under the trigger. [macOS-style alignment](#macos-style-alignment) lists the inputs this mode ignores and the available-height variable.
 
 ### Object values & typeahead
 
