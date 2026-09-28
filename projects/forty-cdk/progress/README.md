@@ -111,7 +111,7 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 
 ```css
 .indicator[data-state='loading'] {
-  transform: scaleX(calc(var(--for-progress-percentage) / 100));
+  width: var(--for-progress-percentage, 0%);
 }
 ```
 
