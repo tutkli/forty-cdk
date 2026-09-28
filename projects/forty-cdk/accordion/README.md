@@ -116,9 +116,9 @@ A disabled item cannot be toggled and is skipped by the arrow keys, while stayin
 | `value`       | `model<readonly string[]>`          | Currently open item values. In single mode the array has 0 or 1 element.<br>**Default:** —                                                                               |
 | `multiple`    | `input<boolean>`                    | When true, multiple items can be open simultaneously.<br>**Default:** `false`                                                                                            |
 | `collapsible` | `input<boolean>`                    | Single mode only: when true, the open item can be collapsed by clicking it. Otherwise once any item is open, exactly one stays open.<br>**Default:** `false`             |
-| `disabled`    | `input<boolean>`                    | When true, disables every item — each trigger reflects the native `disabled` attribute and cannot toggle. Composes with a per-item `[disabled]`.<br>**Default:** `false` |
+| `disabled`    | `input<boolean>`                    | When true, disables every item: each trigger reflects the native `disabled` attribute and cannot toggle. Composes with a per-item `[disabled]`.<br>**Default:** `false` |
 | `orientation` | `input<'horizontal' \| 'vertical'>` | Layout direction of the trigger list. In horizontal mode ArrowLeft/Right replace ArrowUp/Down.<br>**Default:** `'vertical'`                                              |
-| `dir`         | `input<'ltr' \| 'rtl'>`             | Writing direction. Only relevant in horizontal mode — swaps the meaning of Left/Right arrows.<br>**Default:** —                                                          |
+| `dir`         | `input<'ltr' \| 'rtl'>`             | Writing direction. Only relevant in horizontal mode, where it swaps the meaning of Left/Right arrows.<br>**Default:** —                                                          |
 
 | Data attribute     | Values                     |
 | ------------------ | -------------------------- |
@@ -158,13 +158,13 @@ A disabled item cannot be toggled and is skipped by the arrow keys, while stayin
 | -------------------------------------------- | -------------------------------------------------------------------------------------------------- |
 | <kbd>Enter</kbd> / <kbd>Space</kbd>          | Toggle the focused trigger (native button).                                                        |
 | <kbd>ArrowDown</kbd> / <kbd>ArrowUp</kbd>    | Move focus between triggers (vertical, default). Wrap-around, skips disabled.                      |
-| <kbd>ArrowLeft</kbd> / <kbd>ArrowRight</kbd> | Move focus between triggers (horizontal — flipped under `dir='rtl'`). Wrap-around, skips disabled. |
+| <kbd>ArrowLeft</kbd> / <kbd>ArrowRight</kbd> | Move focus between triggers (horizontal, flipped under `dir='rtl'`). Wrap-around, skips disabled. |
 | <kbd>Home</kbd>                              | Jump to the first trigger.                                                                         |
 | <kbd>End</kbd>                               | Jump to the last trigger.                                                                          |
 
 ## Accessibility
 
-- **Heading wrapper is your job.** The library does not render a heading around the trigger — wrap it in the heading level (`<h2>`–`<h6>`) appropriate to your document outline. Without it, screen-reader landmark navigation is broken.
+- **Heading wrapper is your job.** The library does not render a heading around the trigger, so wrap it in the heading level (`<h2>`–`<h6>`) appropriate to your document outline. Without it, screen-reader landmark navigation is broken.
 - **Use a real `<button type="button">` for the trigger.** Native Enter / Space activation and focus come for free; the directive does not synthesize them.
 - **`role="region"`** is added to every panel automatically. APG recommends suppressing it on accordions with 6+ panels to avoid landmark proliferation; there is currently no opt-out.
 - **Closed panels leave the accessibility tree.** While closed, `ForAccordionContent` sets `aria-hidden="true"` and `inert` on the panel, removing it from both the accessibility tree and the focus order. The directive does **not** apply `[hidden]`, so pick how to hide it visually:

@@ -9,7 +9,7 @@ apgUrl: https://www.w3.org/WAI/ARIA/apg/patterns/button/
 
 A two-state button that stays pressed or unpressed.
 
-Two related primitives in a single folder: `[forToggle]` is a standalone two-state button (`<button aria-pressed>`); `[forToggleGroup]` + `[forToggleGroupItem]` compose a group of toggle buttons with single / multiple selection, roving tabindex, and arrow-key navigation. For exclusive selection where one option is always required, use `[forRadioGroup]` instead — Radio guarantees one-of-N, ToggleGroup in single mode lets the user clear the selection.
+Two related primitives in a single folder: `[forToggle]` is a standalone two-state button (`<button aria-pressed>`); `[forToggleGroup]` + `[forToggleGroupItem]` compose a group of toggle buttons with single / multiple selection, roving tabindex, and arrow-key navigation. For exclusive selection where one option is always required, use `[forRadioGroup]` instead. Radio guarantees one-of-N, whereas ToggleGroup in single mode lets the user clear the selection.
 
 ## Anatomy
 
@@ -27,7 +27,7 @@ Two related primitives in a single folder: `[forToggle]` is a standalone two-sta
 
 ## Examples
 
-Press it with the pointer, `Space` or `Enter` — the button reflects `aria-pressed` and `data-state`, so the pressed and unpressed looks come from one rule.
+Press it with the pointer, `Space` or `Enter`. The button reflects `aria-pressed` and `data-state`, so the pressed and unpressed looks come from one rule.
 
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
@@ -46,11 +46,11 @@ export class ToggleDefaultExample {
 
 ### States
 
-One class and one directive, three states. Both `disabled` and `readonly` stay focusable (per APG) — they reflect `aria-disabled` / `data-disabled` and `aria-readonly` / `data-readonly` rather than the native `disabled` attribute, so assistive tech still announces the button while interaction is a no-op.
+One class and one directive, three states. Both `disabled` and `readonly` stay focusable (per APG). They reflect `aria-disabled` / `data-disabled` and `aria-readonly` / `data-readonly` rather than the native `disabled` attribute, so assistive tech still announces the button while interaction is a no-op.
 
 ### ToggleGroup
 
-A group of toggles with roving tabindex. In `multiple` mode each item toggles independently; arrows only move focus — selection needs `Space` / `Enter` or click.
+A group of toggles with roving tabindex. In `multiple` mode each item toggles independently. Arrows only move focus; selection needs `Space` / `Enter` or click.
 
 ```ts
 import { Component, signal } from '@angular/core';
@@ -89,7 +89,7 @@ export class DemoAlignment {
 
 ## Signal Forms (single Toggle)
 
-`ForToggle` implements `FormCheckboxControl`, so a single `aria-pressed` toggle auto-wires with `[formField]` from `@angular/forms/signals` — the natural home for bold / italic, mute, or favourite buttons. The schema's `disabled`, `readonly`, `required`, `invalid`, `pending`, `dirty`, `errors`, and `touched` flow into the matching inputs without consumer glue.
+`ForToggle` implements `FormCheckboxControl`, so a single `aria-pressed` toggle (the natural home for bold / italic, mute, or favourite buttons) auto-wires with `[formField]` from `@angular/forms/signals`. The schema's `disabled`, `readonly`, `required`, `invalid`, `pending`, `dirty`, `errors`, and `touched` flow into the matching inputs without consumer glue.
 
 ```ts
 import { Component, signal } from '@angular/core';
@@ -109,7 +109,7 @@ export class DemoBold {
 
 When `[name]` is set (typically through `[formField]`), the directive mounts an `<input type="hidden" value="on">` sibling while checked so the surrounding `<form>` picks it up during native submission.
 
-For a set of related toggles, `ForToggleGroup` implements `FormValueControl<readonly string[]>` instead — its `value` is `readonly string[]`, and a single-mode group simply carries `[]` or `[selected]`.
+For a set of related toggles, `ForToggleGroup` implements `FormValueControl<readonly string[]>` instead: its `value` is `readonly string[]`, and a single-mode group simply carries `[]` or `[selected]`.
 
 ## Signal Forms (ToggleGroup)
 
@@ -143,7 +143,7 @@ export class DemoFormats {
 ```
 
 > **Requiring a non-empty selection.** `ForToggleGroup`'s value is a `readonly string[]`, and Angular's
-> `required()` treats only `''`, `false`, `null`, and `NaN` as empty — an empty array `[]` counts as
+> `required()` treats only `''`, `false`, `null`, and `NaN` as empty. An empty array `[]` counts as
 > _present_, so `required(s.formats)` reflects `data-required` but never makes the form invalid
 > on its own. Enforce "at least one" with the explicit `validate(...)` length rule above, or with
 > Angular's `minLength(s.formats, 1)` (which emits a `minLengthError` instead of a `requiredError`).
@@ -161,9 +161,9 @@ Choose between the two form-control shapes by the value you need: `ForToggle` (`
 | Property   | Type                                                      | Description                                                                                                                                                                   |
 | ---------- | --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `checked`  | `model<boolean>`                                          | Two-way bindable on/off state. Required by `FormCheckboxControl`; what `[formField]` binds. The host reflects it via `aria-pressed` and `data-state`.<br>**Default:** `false` |
-| `disabled` | `input<boolean>`                                          | When `true`, click is ignored; reflects `aria-disabled="true"` + `data-disabled`. Stays focusable (per APG) — no native `disabled`.<br>**Default:** `false`                   |
-| `readonly` | `input<boolean>`                                          | When `true`, click is ignored but the host stays focusable. Reflected as `data-readonly` only — `aria-readonly` is not supported on `role="button"`.<br>**Default:** `false`  |
-| `required` | `input<boolean>`                                          | Reflected as `data-required` only — `aria-required` is not supported on `role="button"`.<br>**Default:** `false`                                                              |
+| `disabled` | `input<boolean>`                                          | When `true`, click is ignored; reflects `aria-disabled="true"` + `data-disabled`. Stays focusable (per APG) and sets no native `disabled`.<br>**Default:** `false`                   |
+| `readonly` | `input<boolean>`                                          | When `true`, click is ignored but the host stays focusable. Reflected as `data-readonly` only, because `aria-readonly` is not supported on `role="button"`.<br>**Default:** `false`  |
+| `required` | `input<boolean>`                                          | Reflected as `data-required` only, because `aria-required` is not supported on `role="button"`.<br>**Default:** `false`                                                              |
 | `invalid`  | `input<boolean>`                                          | Reflected as `aria-invalid` and `data-invalid`.<br>**Default:** `false`                                                                                                       |
 | `pending`  | `input<boolean>`                                          | Reflected as `aria-busy` and `data-pending`.<br>**Default:** `false`                                                                                                          |
 | `dirty`    | `input<boolean>`                                          | Reflected as `data-dirty`.<br>**Default:** `false`                                                                                                                            |
@@ -185,8 +185,8 @@ Choose between the two form-control shapes by the value you need: `ForToggle` (`
 | `value`       | `model<readonly string[]>`                                | Two-way bindable. Selected values, in arbitrary order. Required by `FormValueControl<readonly string[]>`.<br>**Default:** `[]`                                                                           |
 | `multiple`    | `input<boolean>`                                          | When `true`, items toggle independently. When `false`, single mode (clicking the pressed item clears).<br>**Default:** `false`                                                                           |
 | `disabled`    | `input<boolean>`                                          | Disables every item regardless of per-item state.<br>**Default:** `false`                                                                                                                                |
-| `readonly`    | `input<boolean>`                                          | Click is ignored, items remain focusable. Reflected as `data-readonly` on the root only — `aria-readonly` is supported on neither `role="group"` nor the items' `role="button"`.<br>**Default:** `false` |
-| `required`    | `input<boolean>`                                          | Reflected as `data-required` on the root only — `aria-required` is supported on neither `role="group"` nor the items' `role="button"`.<br>**Default:** `false`                                           |
+| `readonly`    | `input<boolean>`                                          | Click is ignored, items remain focusable. Reflected as `data-readonly` on the root only, because `aria-readonly` is supported on neither `role="group"` nor the items' `role="button"`.<br>**Default:** `false` |
+| `required`    | `input<boolean>`                                          | Reflected as `data-required` on the root only, because `aria-required` is supported on neither `role="group"` nor the items' `role="button"`.<br>**Default:** `false`                                           |
 | `invalid`     | `input<boolean>`                                          | Reflected as `aria-invalid` and `data-invalid`.<br>**Default:** `false`                                                                                                                                  |
 | `pending`     | `input<boolean>`                                          | Reflected as `aria-busy` and `data-pending`.<br>**Default:** `false`                                                                                                                                     |
 | `dirty`       | `input<boolean>`                                          | Reflected as `data-dirty`.<br>**Default:** `false`                                                                                                                                                       |
@@ -207,7 +207,7 @@ Choose between the two form-control shapes by the value you need: `ForToggle` (`
 
 | Property   | Type                     | Description                                                                       |
 | ---------- | ------------------------ | --------------------------------------------------------------------------------- |
-| `value`    | `input.required<string>` | Identifier added to / removed from the group's `value`.<br>**Default:** —         |
+| `value`    | `input.required<string>` | Identifier added to / removed from the group's `value`.<br>**Default:** —      |
 | `disabled` | `input<boolean>`         | Per-item disabled, in addition to the group's `disabled`.<br>**Default:** `false` |
 
 | Data attribute     | Values                     |
@@ -224,13 +224,13 @@ Choose between the two form-control shapes by the value you need: `ForToggle` (`
 - **Home / End** jump to the first / last enabled item.
 - **Tab** enters and exits the group at the entry-point item. Before any interaction that is the first selected item, or the first enabled item when no value is selected; once you move focus with the arrows (or Home / End), the tab stop follows the last focused item, so Shift+Tab back into the group restores it.
 
-Arrow keys move focus only — selection requires an explicit click or Space / Enter. There is no selection-on-focus, unlike `[forRadioGroup]`.
+Arrow keys move focus only. Selection requires an explicit click or Space / Enter. There is no selection-on-focus, unlike `[forRadioGroup]`.
 
 ## Accessibility
 
 Implements the [WAI-ARIA Button pattern](https://www.w3.org/WAI/ARIA/apg/patterns/button/) (toggle-button variant).
 
-- **`[forToggle]`** emits `role="button"` with `aria-pressed="true|false"` — announced as "toggle button" by screen readers.
+- **`[forToggle]`** emits `role="button"` with `aria-pressed="true|false"`, which screen readers announce as "toggle button".
 - **`[forToggleGroup]`** emits `role="group"` and reflects `data-orientation` for CSS (not `aria-orientation`). Provide a label via `aria-label` or `aria-labelledby`.
 - **Roving tabindex** manages focus within the group. The consumer never sets `tabindex` manually.
 - **A disabled item stays focusable** (per APG): it reflects `aria-disabled="true"` + `data-disabled=""` rather than native `disabled`, so assistive tech still announces it while interaction is a no-op.
@@ -257,10 +257,10 @@ forty-cdk ships no styles. Add your own class to each piece. The for\* selectors
 
 ## Behavior notes
 
-- **`data-state`** uses the form-control vocabulary `"checked" | "unchecked"` (per `CLAUDE.md` cross-primitive convention), even though ARIA uses `aria-pressed` — the data attribute mirrors the logical "is this option active" state, not the ARIA term.
+- **`data-state`** uses the form-control vocabulary `"checked" | "unchecked"` (per `CLAUDE.md` cross-primitive convention), even though ARIA uses `aria-pressed`. The data attribute mirrors the logical "is this option active" state, not the ARIA term.
 - **Single mode** lets the user reach the `[]` state by clicking the currently pressed item again. Use `[forRadioGroup]` if you need to enforce one-of-N.
-- **Roving tabindex** follows focus: once any item is focused, that item becomes the tab stop so re-entry restores it. Before any focus, the entry point is computed from the group's value — with at least one selection the first selected item, otherwise the first enabled item in DOM order. The consumer never sets `tabindex` manually.
+- **Roving tabindex** follows focus: once any item is focused, that item becomes the tab stop so re-entry restores it. Before any focus, the entry point is computed from the group's value: the first selected item when there is at least one selection, otherwise the first enabled item in DOM order. The consumer never sets `tabindex` manually.
 
 ## Wrapping in a design system
 
-Both supported wrapper patterns — `hostDirectives` with the exported `FOR_TOGGLE_HOST_DIRECTIVE_INPUTS` / `FOR_TOGGLE_HOST_DIRECTIVE_OUTPUTS` and `FOR_TOGGLE_GROUP_HOST_DIRECTIVE_INPUTS` / `FOR_TOGGLE_GROUP_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing — are documented in [Wrapping form primitives](../../../docs/wrapping-form-primitives.md).
+[Wrapping form primitives](../../../docs/wrapping-form-primitives.md) documents both supported wrapper patterns: `hostDirectives` with the exported `FOR_TOGGLE_HOST_DIRECTIVE_INPUTS` / `FOR_TOGGLE_HOST_DIRECTIVE_OUTPUTS` and `FOR_TOGGLE_GROUP_HOST_DIRECTIVE_INPUTS` / `FOR_TOGGLE_GROUP_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing.

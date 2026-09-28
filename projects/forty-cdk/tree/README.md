@@ -13,7 +13,7 @@ A nested `role="tree"` → `treeitem` → `group` → `treeitem` widget (file ex
 
 Selection and expansion are two independent models: `value` (selected nodes) and `expanded` (open nodes). Expansion is always multi; only `value` honours `multiple`.
 
-Both models are `readonly T[]` over the node value type, which `ForTree<T = string>` infers from `[(value)]` / `[(expanded)]` — the same shape `ForTable` uses for its selected and open rows. Node identity is resolved by `compareWith`, which defaults to `===`; bind `[compareWith]="(a, b) => a.id === b.id"` when your nodes are objects you re-create (a `descendantsOf` that maps fresh objects is the case that needs it — under `===` a fully-checked subtree reports `aria-checked="false"`).
+Both models are `readonly T[]` over the node value type, which `ForTree<T = string>` infers from `[(value)]` / `[(expanded)]`. `ForTable` uses the same shape for its selected and open rows. Node identity is resolved by `compareWith`, which defaults to `===`; bind `[compareWith]="(a, b) => a.id === b.id"` when your nodes are objects you re-create (a `descendantsOf` that maps fresh objects is the case that needs it, because under `===` a fully-checked subtree reports `aria-checked="false"`).
 
 ## Anatomy
 
@@ -49,7 +49,7 @@ In `selectionMode="checkbox"`, place a checkbox surface inside the label:
 
 ## Examples
 
-Walk the tree with the arrow keys — right expands a node, left collapses it, and each node carries `data-state`, `data-selected` and `data-highlighted`.
+Walk the tree with the arrow keys: right expands a node and left collapses it. Each node carries `data-state`, `data-selected` and `data-highlighted`.
 
 ```ts
 import { ChangeDetectionStrategy, Component, input, signal } from '@angular/core';
@@ -171,9 +171,9 @@ export class TreeDefaultExample {
 
 Trees are recursive, and the idiomatic Angular shape is a small **recursive component** for the node. This keeps dependency injection correct at every depth: each node component nests its element injector under its enclosing `[forTreeGroup]`, so `[forTreeItem]` resolves the right level / container automatically.
 
-> **Why not `ngTemplateOutlet`?** A single recursive `<ng-template>` instantiated with `[ngTemplateOutlet]` resolves dependency injection from where the template is **declared**, not where it is inserted — so a nested `[forTreeItem]` would inject the root tree as its container instead of its enclosing `[forTreeGroup]`, breaking `aria-level` and visible-order navigation. The recursive component above avoids this. If you must use `ngTemplateOutlet`, pass an explicit `[ngTemplateOutletInjector]` captured at each insertion point.
+> **Why not `ngTemplateOutlet`?** A single recursive `<ng-template>` instantiated with `[ngTemplateOutlet]` resolves dependency injection from where the template is **declared**, not where it is inserted. A nested `[forTreeItem]` would therefore inject the root tree as its container instead of its enclosing `[forTreeGroup]`, breaking `aria-level` and visible-order navigation. The recursive component above avoids this. If you must use `ngTemplateOutlet`, pass an explicit `[ngTemplateOutletInjector]` captured at each insertion point.
 
-Mounting is the consumer's responsibility: wrap `[forTreeGroup]` in `@if (expanded().includes(node.id))` so a collapsed parent drops its subtree. A node is treated as a **parent** (and emits `aria-expanded` / `data-state`) only when a `[forTreeItemToggle]` is registered inside it — leaves render no toggle and emit neither, matching the APG "end nodes lack `aria-expanded`" rule.
+Mounting is the consumer's responsibility: wrap `[forTreeGroup]` in `@if (expanded().includes(node.id))` so a collapsed parent drops its subtree. A node is treated as a **parent** (and emits `aria-expanded` / `data-state`) only when a `[forTreeItemToggle]` is registered inside it. Leaves render no toggle and emit neither, matching the APG "end nodes lack `aria-expanded`" rule.
 
 ### Cascading checkboxes
 
@@ -185,11 +185,11 @@ Type part of a category name: the tree narrows to the matches, expands their anc
 
 ### Drag & drop reordering
 
-`[forTreeNodeDrag]` on the root adds pointer and keyboard reordering and re-parenting; the ⠿ grip is an optional `[forTreeNodeDragHandle]`. The library never mutates your data — apply the pure `moveTreeNode` helper in `(nodeDrop)`. On lift the dragged subtree collapses, which structurally prevents dropping a node into its own descendant.
+`[forTreeNodeDrag]` on the root adds pointer and keyboard reordering and re-parenting; the ⠿ grip is an optional `[forTreeNodeDragHandle]`. The library never mutates your data, so apply the pure `moveTreeNode` helper in `(nodeDrop)`. On lift the dragged subtree collapses, which structurally prevents dropping a node into its own descendant.
 
 ### Virtualized (12,300 nodes)
 
-For huge trees, bind `[totalCount]` to switch `ForTree` to the activedescendant model over a consumer-owned virtual window. We flatten the expanded tree to a linear list, feed its length to `injectVirtualizer`, and render only the visible slice — each `[forTreeItem]` gets its absolute `[itemIndex]` plus `level` / `setSize` / `posInSet` so ARIA stays correct.
+For huge trees, bind `[totalCount]` to switch `ForTree` to the activedescendant model over a consumer-owned virtual window. We flatten the expanded tree to a linear list, feed its length to `injectVirtualizer`, and render only the visible slice. Each `[forTreeItem]` gets its absolute `[itemIndex]` plus `level` / `setSize` / `posInSet` so ARIA stays correct.
 
 ## Multi select
 
@@ -203,7 +203,7 @@ In multi mode `Space` toggles the focused node; `Shift+ArrowUp/Down` extends; `S
 
 ## Checkbox selection
 
-`selectionMode="checkbox"` switches each `treeitem` to `aria-checked` (instead of `aria-selected`) and makes every node toggle independently — `multiple` is not required. Place `[forTreeItemCheckbox]` and `[forTreeItemCheckboxIndicator]` inside the label for a visible checkbox surface.
+`selectionMode="checkbox"` switches each `treeitem` to `aria-checked` (instead of `aria-selected`) and makes every node toggle independently, so `multiple` is not required. Place `[forTreeItemCheckbox]` and `[forTreeItemCheckboxIndicator]` inside the label for a visible checkbox surface.
 
 <!-- snippet: fragment -->
 
@@ -338,7 +338,7 @@ export class Categories {
 
 ### Structural nodes
 
-A group header is not an option: it organises the list and is worth navigating to, but there is no checkbox to act on. Set `[selectable]="false"` on it. The node keeps its place in the hierarchy — `aria-level` / `aria-setsize` / `aria-posinset`, `aria-expanded` from its toggle, and arrow / Home / End / typeahead reach it — and drops out of the selection contract: no `aria-checked` (nor `aria-selected` in `'highlight'` mode), no `data-checked`, Space and Enter change nothing, and the value never enters `[(value)]`.
+A group header is not an option: it organises the list and is worth navigating to, but there is no checkbox to act on. Set `[selectable]="false"` on it. The node keeps its place in the hierarchy: it retains `aria-level` / `aria-setsize` / `aria-posinset` and `aria-expanded` from its toggle, and arrow / Home / End / typeahead reach it. It also drops out of the selection contract: no `aria-checked` (nor `aria-selected` in `'highlight'` mode), no `data-checked`, Space and Enter change nothing, and the value never enters `[(value)]`.
 
 It is orthogonal to `disabled`, which is the wrong lever here: that one announces the node as an _unavailable option_ and takes it out of navigation, so a screen-reader user never learns which group an option belongs to.
 
@@ -363,9 +363,9 @@ Leave `[forTreeItemCheckbox]` off a structural node. It is the interactive half 
 </li>
 ```
 
-Under `cascade`, a non-selectable node is skipped when an ancestor collects its descendants — it neither enters the checked set nor counts toward that ancestor's `'mixed'` — while its own descendants cascade normally. The tree can only apply that to **mounted** nodes, so `descendantsOf` keeps its contract: return the _selectable_ descendant values, leaving out any structural node in a collapsed subtree.
+Under `cascade`, a non-selectable node is skipped when an ancestor collects its descendants: it neither enters the checked set nor counts toward that ancestor's `'mixed'`. Its own descendants still cascade normally. The tree can only apply that to **mounted** nodes, so `descendantsOf` keeps its contract: return the _selectable_ descendant values, leaving out any structural node in a collapsed subtree.
 
-The structural node still derives its own group's roll-up. To show it on the header, read `checkState()` off the node's `forTreeItem` export — `'true'`, `'false'` or `'mixed'` — which gives you a styling hook with no click behind it:
+The structural node still derives its own group's roll-up. To show it on the header, read `checkState()` (`'true'`, `'false'` or `'mixed'`) off the node's `forTreeItem` export. That gives you a styling hook with no click behind it:
 
 ```html
 <li forTreeItem #colors="forTreeItem" value="colors" [selectable]="false">
@@ -378,12 +378,12 @@ The structural node still derives its own group's roll-up. To show it on the hea
 
 ## Filtering
 
-forty-cdk ships no filtering machinery — matching stays consumer-owned. The library exports one pure helper, `expandToReveal`, that translates the matched set into the ancestor values you need to expand so every match becomes visible.
+forty-cdk ships no filtering machinery, so matching stays consumer-owned. The library exports one pure helper, `expandToReveal`, that translates the matched set into the ancestor values you need to expand so every match becomes visible.
 
 **Three-step recipe:**
 
 1. **Filter your own data and re-render.** Derive a filtered node list with `computed()` and drive the tree's `@for` off that signal. The library adds no filtering engine, empty-state pieces, or snapshot logic.
-2. **Expand ancestors with `expandToReveal`.** Call `expandToReveal(matches, ancestorsOf)` to get the unique ancestor values to merge into `[(expanded)]`. The helper is pure — it has no Angular reactivity, no DOM, and no side effects.
+2. **Expand ancestors with `expandToReveal`.** Call `expandToReveal(matches, ancestorsOf)` to get the unique ancestor values to merge into `[(expanded)]`. The helper is pure: it has no Angular reactivity, no DOM, and no side effects.
 3. **Highlight matched text with consumer CSS.** Wrap matched text in a `<mark>` element or apply a `.match` class while rendering filtered labels. No new data attribute is emitted by the library.
 
 <!-- snippet: fragment -->
@@ -410,7 +410,7 @@ readonly expanded = linkedSignal<readonly string[], readonly string[]>({
 ancestorsOf = (id: string): readonly string[] => { /* walk roots, return the path */ };
 ```
 
-`expandToReveal` accepts any `Iterable<T>` (array, `Set`, generator) of node values. Root-level matches contribute nothing — a root has no ancestors to expand.
+`expandToReveal` accepts any `Iterable<T>` (array, `Set`, generator) of node values. Root-level matches contribute nothing, because a root has no ancestors to expand.
 
 ## Scoped defaults
 
@@ -444,7 +444,7 @@ For very large trees (thousands of nodes) bind `[totalCount]` to switch to an **
 | `setSize`   | `input<number \| null>` | Total siblings at this node's level. Overrides the container-derived `aria-setsize` in the virtualized path.                                           |
 | `posInSet`  | `input<number \| null>` | 1-based position among siblings (matches `aria-posinset`). Overrides the container-derived value in the virtualized path.                              |
 
-**Naming note:** `[posInSet]` is the per-level `aria-posinset` (position among siblings at this level, 1-based). It is **not** the absolute flat index — that is `[itemIndex]`. This matches the ARIA attribute name and is intentionally different from how some other APIs name it.
+**Naming note:** `[posInSet]` is the per-level `aria-posinset` (position among siblings at this level, 1-based). It is **not** the absolute flat index, which is `[itemIndex]`. This matches the ARIA attribute name and is intentionally different from how some other APIs name it.
 
 ### Focus-model switch
 
@@ -455,7 +455,7 @@ For very large trees (thousands of nodes) bind `[totalCount]` to switch to an **
 
 ### Navigation flow
 
-1. Consumer flattens their visible tree into a flat list, computing `level`, `setSize`, `posInSet`, and `itemIndex` for each node (using the true sibling totals — off-window siblings contribute their real counts because the consumer knows them).
+1. Consumer flattens their visible tree into a flat list, computing `level`, `setSize`, `posInSet`, and `itemIndex` for each node (using the true sibling totals: off-window siblings contribute their real counts because the consumer knows them).
 2. `injectVirtualizer({ count: flatCount, estimateSize, scrollElement })` drives the render window.
 3. The tree host receives `(scrollToIndex)` when keyboard navigation needs a node outside the window; the consumer forwards the index to `v.scrollToIndex(idx, { align: 'auto' })`.
 4. Once the target node mounts (carrying the requested `[itemIndex]`), the bridge effect resolves the pending activedescendant.
@@ -574,7 +574,7 @@ export class VirtualTree {
 The following behaviors are unavailable or bounded in the virtualized path and are documented intentional limitations (same as listbox/select virtualization):
 
 - **Multi-select range modifiers** (Shift+ArrowUp/Down, Shift+Space, Ctrl/Cmd+A) are unsupported: pressing one on a virtualized `[multiple]` tree throws in dev mode (a no-op in production) rather than silently degrading. Range selection requires knowing the full list of enabled nodes in the range, which is not available when the list is partially unmounted. Use `selectionMode="checkbox"` (each node toggles independently, so no range is needed) for multi-select over large trees.
-- **Typeahead reaches only positions the window has rendered at least once.** The search runs over the persisted position snapshot rather than the live nodes, so a node the virtualizer has since unmounted is still reachable — the match moves `aria-activedescendant` to it and emits `(scrollToIndex)` so your virtualizer brings it back. A position the window has **never** rendered carries no text the library can match: the keystroke is consumed, the buffer grows, and nothing moves. The shape that triggers it is a freshly-rendered `[totalCount]` tree where the user types before scrolling, and a `[dataVersion]` bump or `invalidateSnapshot()` narrows the reachable set back to the current window. Arrow / `Home` / `End` navigation reaches every position regardless (it walks absolute indices, not text), so that is the workaround for a target the user cannot type their way to; rendering a larger window widens the reachable set.
+- **Typeahead reaches only positions the window has rendered at least once.** The search runs over the persisted position snapshot rather than the live nodes, so a node the virtualizer has since unmounted is still reachable. The match moves `aria-activedescendant` to it and emits `(scrollToIndex)` so your virtualizer brings it back. A position the window has **never** rendered carries no text the library can match: the keystroke is consumed, the buffer grows, and nothing moves. The shape that triggers it is a freshly-rendered `[totalCount]` tree where the user types before scrolling, and a `[dataVersion]` bump or `invalidateSnapshot()` narrows the reachable set back to the current window. Arrow / `Home` / `End` navigation reaches every position regardless (it walks absolute indices, not text), so that is the workaround for a target the user cannot type their way to; rendering a larger window widens the reachable set.
 - **`*` (expand-all-siblings)** is dropped. It requires knowing all siblings at the focused node's level, including those outside the window.
 
 ## Drag & drop
@@ -598,7 +598,7 @@ Add `[forTreeNodeDrag]` on the same element as `[forTree]` to enable pointer and
 
 ### A non-string tree must bind `[canDrop]`
 
-`ForTreeNodeDrag<T = string>` is generic over the same node value type as `ForTree`, but — unlike the root, which infers `T` from `[(value)]` / `[(expanded)]` — it has **no input that carries `T` on its own** except `[canDrop]`. So if your node values are not `string`, bind it, typed at the node value:
+`ForTreeNodeDrag<T = string>` is generic over the same node value type as `ForTree`. Unlike the root, which infers `T` from `[(value)]` / `[(expanded)]`, it has **no input that carries `T` on its own** except `[canDrop]`. So if your node values are not `string`, bind it, typed at the node value:
 
 <!-- snippet: fragment -->
 
@@ -610,7 +610,7 @@ readonly canDrop = (event: ForTreeDragDropEvent<FileNode>): boolean => true;
 <ul forTree forTreeNodeDrag [(value)]="picked" [canDrop]="canDrop" (nodeDrop)="onDrop($event)"></ul>
 ```
 
-A callback that vetoes nothing is enough — its only job here is to carry the inference.
+A callback that vetoes nothing is enough, because its only job here is to carry the inference.
 
 **Read the diagnostic you get without it carefully, because the obvious fix is the wrong one.** With no `[canDrop]`, `T` stays at its `string` default, so `(nodeDrop)` reports `ForTreeDragDropEvent<string>` while the runtime hands you the node value you actually bound. A handler typed at your real node type fails to compile:
 
@@ -619,9 +619,9 @@ TS2345: Argument of type 'ForTreeDragDropEvent<string>' is not assignable to
         parameter of type 'ForTreeDragDropEvent<FileNode>'.
 ```
 
-The error points at your handler, not at the missing input — and retyping the handler to `string` to satisfy it is what turns a compile error into a silent one: `moveTreeNode` then infers its own `V` as `string`, your `trackBy` returns a `string` id, and the comparison against the object the event really carries never matches, so the helper returns your `roots` unchanged. The drag completes, the announcement fires, and nothing moves.
+The error points at your handler, not at the missing input. Retyping the handler to `string` to satisfy it is what turns a compile error into a silent one: `moveTreeNode` then infers its own `V` as `string`, your `trackBy` returns a `string` id, and the comparison against the object the event really carries never matches, so the helper returns your `roots` unchanged. The drag completes, the announcement fires, and nothing moves.
 
-Annotating a `viewChild` / `@ViewChild` reference (`ForTreeNodeDrag<FileNode>`) recovers `T` for reading `dropIndicator` from TypeScript, but it cannot retype a template binding — `[canDrop]` is the only channel that fixes `(nodeDrop)`.
+Annotating a `viewChild` / `@ViewChild` reference (`ForTreeNodeDrag<FileNode>`) recovers `T` for reading `dropIndicator` from TypeScript, but it cannot retype a template binding, so `[canDrop]` is the only channel that fixes `(nodeDrop)`.
 
 ### Keyboard interaction
 
@@ -786,7 +786,7 @@ On lift the dragged node's subtree is collapsed (and restored on drop / cancel).
 
 ### Localizing drag announcements
 
-While a drag is in flight, `[forTreeNodeDrag]` announces lift / move / drop / cancel / invalid-drop through an off-screen live region. The phrasing is English by default; override it per injector scope with `provideForTreeDefaults` so screen readers speak the consumer's language. `position` / `total` are 1-based, and `parentLabel` is `null` when the node lands at the root — phrase the root-vs-parent distinction in your own language.
+While a drag is in flight, `[forTreeNodeDrag]` announces lift / move / drop / cancel / invalid-drop through an off-screen live region. The phrasing is English by default; override it per injector scope with `provideForTreeDefaults` so screen readers speak the consumer's language. `position` / `total` are 1-based, and `parentLabel` is `null` when the node lands at the root. Phrase the root-vs-parent distinction in your own language.
 
 The `label` and `parentLabel` a formatter receives are the node's `[textValue]` when it carries one, and the accessible text of its `[forTreeItemLabel]` otherwise. That is the same text typeahead matches against, so a node is announced by the name the user types to reach it, and `aria-hidden` decoration inside the label (a toggle caret, a checkbox glyph) is excluded from both.
 
@@ -822,7 +822,7 @@ provideForTreeDefaults({
 | `value`                 | `model<readonly T[]>`               | Two-way bindable. Selected node values. Single mode keeps 0 or 1; multi any number.<br>**Default:** `[]`                                                                                                                                                   |
 | `expanded`              | `model<readonly T[]>`               | Two-way bindable. Open (expanded) parent node values. Always multi.<br>**Default:** `[]`                                                                                                                                                                   |
 | `selected`              | `Signal<T \| null>`                 | Read-only single-select convenience view of `value`: the sole selected value, or `null` when none / many are selected.<br>**Default:** —                                                                                                                   |
-| `compareWith`           | `input<(a: T, b: T) => boolean>`    | Equality comparator for node values — selection and expansion membership, cascade descendants, the range anchor, and drag-drop resolution all route through it.<br>**Default:** `(a, b) => a === b`                                                        |
+| `compareWith`           | `input<(a: T, b: T) => boolean>`    | Equality comparator for node values. Selection and expansion membership, cascade descendants, the range anchor, and drag-drop resolution all route through it.<br>**Default:** `(a, b) => a === b`                                                        |
 | `multiple`              | `input<boolean>`                    | When true, multiple nodes can be selected.<br>**Default:** `false`                                                                                                                                                                                         |
 | `disabled`              | `input<boolean>`                    | Disables the whole tree. Reflected as `aria-disabled` / `data-disabled`.<br>**Default:** —                                                                                                                                                                 |
 | `orientation`           | `input<'vertical' \| 'horizontal'>` | Navigation axis. `'vertical'` (ArrowUp/Down move; ArrowLeft/Right expand/collapse). Reflected as `aria-orientation` / `data-orientation`.<br>**Default:** `'vertical'`                                                                                     |
@@ -845,7 +845,7 @@ provideForTreeDefaults({
 | `value`      | `input.required<T>` | The node's value. Must be unique within the tree.<br>**Default:** —                                                                                                                                                                                                                                                 |
 | `disabled`   | `input<boolean>`    | Disables this node: not selectable, skipped by keyboard navigation.<br>**Default:** —                                                                                                                                                                                                                               |
 | `selectable` | `input<boolean>`    | Whether the node takes part in selection. `false` marks a structural node: it keeps navigation, typeahead and its ARIA position, but emits no selection state and never enters `[(value)]`.<br>**Default:** `true`                                                                                                  |
-| `textValue`  | `input<string>`     | Text override for the node's name, used by typeahead matching and by the drag announcements. Falls back to the `[forTreeItemLabel]`'s accessible text when empty, which excludes any `aria-hidden` subtree — a nested `[forTreeItemToggle]` or `[forTreeItemCheckbox]` glyph contributes nothing.<br>**Default:** — |
+| `textValue`  | `input<string>`     | Text override for the node's name, used by typeahead matching and by the drag announcements. Falls back to the `[forTreeItemLabel]`'s accessible text when empty, which excludes any `aria-hidden` subtree, so a nested `[forTreeItemToggle]` or `[forTreeItemCheckbox]` glyph contributes nothing.<br>**Default:** — |
 
 | Data attribute     | Values                                                  |
 | ------------------ | ------------------------------------------------------- |
@@ -897,15 +897,15 @@ Under `dir="rtl"` the expand / collapse arrows swap: **ArrowLeft** expands and *
 
 ## Accessibility
 
-Implements the [WAI-ARIA Tree View pattern](https://www.w3.org/WAI/ARIA/apg/patterns/treeview/) (APG Approach A — DOM focus rides the `treeitem`).
+Implements the [WAI-ARIA Tree View pattern](https://www.w3.org/WAI/ARIA/apg/patterns/treeview/) (APG Approach A, where DOM focus rides the `treeitem`).
 
 - **Label the tree** via the reactive `[ariaLabel]` input or a native `aria-labelledby` pointing at a visible heading.
 - **`data-state="open" | "closed"`** is reflected on parent nodes only (and on the toggle); leaves carry neither, matching `aria-expanded`.
-- **`data-selected`** (present / absent) reflects selection on every node — a node is simultaneously expandable and selectable, so expansion (`data-state`) and selection (`data-selected`) get separate hooks.
+- **`data-selected`** (present / absent) reflects selection on every node. A node is simultaneously expandable and selectable, so expansion (`data-state`) and selection (`data-selected`) get separate hooks.
 - **`data-highlighted=""`** marks the current roving-tabindex node, the same hook used across the listbox / menu / select primitives.
 - **Exactly one node is tabbable** at a time (the selected node, or the first enabled node). `Tab` enters and leaves the whole tree in one stop.
 - **A `[selectable]="false"` node** emits neither `aria-checked` nor `aria-selected` (and neither `data-checked` nor `data-selected`), so assistive tech announces a group header as a heading in the hierarchy rather than as an option the user can act on. It carries no `aria-disabled` and keeps its tab stop, its `aria-level` / `aria-setsize` / `aria-posinset` and its `aria-expanded`.
-- **In `selectionMode="checkbox"`** each `treeitem` emits `aria-checked` (`"true"` / `"false"`) and no `aria-selected`; the `[forTreeItemCheckbox]` and `[forTreeItemCheckboxIndicator]` are `aria-hidden` / decorative — the `treeitem` itself is the accessible checkbox. With `cascade`, a parent reports `aria-checked="mixed"` (and `data-checked="mixed"`) when only some of its descendants are checked; the cascade reaches collapsed / unmounted descendants through the `descendantsOf` descriptor, so the tri-state is always correct even when children are not yet mounted.
+- **In `selectionMode="checkbox"`** each `treeitem` emits `aria-checked` (`"true"` / `"false"`) and no `aria-selected`; the `[forTreeItemCheckbox]` and `[forTreeItemCheckboxIndicator]` are `aria-hidden` / decorative, because the `treeitem` itself is the accessible checkbox. With `cascade`, a parent reports `aria-checked="mixed"` (and `data-checked="mixed"`) when only some of its descendants are checked; the cascade reaches collapsed / unmounted descendants through the `descendantsOf` descriptor, so the tri-state is always correct even when children are not yet mounted.
 
 ## Styling
 

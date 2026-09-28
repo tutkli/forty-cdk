@@ -37,11 +37,11 @@ A button that opens a menu of actions, with full keyboard navigation, typeahead 
 </div>
 ```
 
-The menu items, content surface, radio groups, separators, and groups come from the [`menu/`](../menu/README.md) folder — the same primitives are used by `[forContextMenu]`.
+The menu items, content surface, radio groups, separators, and groups come from the [`menu/`](../menu/README.md) folder. `[forContextMenu]` uses the same primitives.
 
 ## Examples
 
-Open the menu from the trigger and walk the items with the arrow keys — the highlighted item carries `data-highlighted`, and typing jumps to the first match.
+Open the menu from the trigger and walk the items with the arrow keys. The highlighted item carries `data-highlighted`, and typing jumps to the first match.
 
 ```ts
 import { ChangeDetectionStrategy, Component } from '@angular/core';
@@ -75,15 +75,15 @@ import { ForMenuContent, ForMenuItem, ForMenuSeparator } from 'forty-cdk/menu';
 export class DropdownMenuDefaultExample {}
 ```
 
-`@if` is what makes Angular's `animate.enter` / `animate.leave` work — they fire on real mount / unmount.
+`@if` is what makes Angular's `animate.enter` / `animate.leave` work, because they fire on real mount / unmount.
 
 ### Checkbox & radio items
 
-A settings-style dropdown built from the full menu vocabulary: `forMenuGroup` with a `forMenuGroupLabel` header, `forMenuCheckboxItem` toggles (role `menuitemcheckbox`) and a `forMenuRadioGroup` of `forMenuRadioItem` options (role `menuitemradio`). Each item carries a `forMenuItemIndicator` that paints its checkmark / dot from the item's checked state. Calling `preventDefault()` on `(activate)` keeps the menu open so several options can be flipped in one pass — try `Space` to toggle without closing.
+A settings-style dropdown built from the full menu vocabulary: `forMenuGroup` with a `forMenuGroupLabel` header, `forMenuCheckboxItem` toggles (role `menuitemcheckbox`) and a `forMenuRadioGroup` of `forMenuRadioItem` options (role `menuitemradio`). Each item carries a `forMenuItemIndicator` that paints its checkmark / dot from the item's checked state. Calling `preventDefault()` on `(activate)` keeps the menu open so several options can be flipped in one pass. Try `Space` to toggle without closing.
 
 ### Submenus
 
-`forMenuSub` nests a second menu under a `forMenuSubTrigger` item (role `menuitem`, `aria-haspopup=menu`). The submenu owns its own open model and item collection, and its `forMenuSubContent` reuses the menu surface positioned to the side of the trigger. Submenus nest arbitrarily — here a third level sits inside the second. `ArrowRight` opens a submenu and focuses its first item; `ArrowLeft` collapses back to the parent; `Escape` closes one level at a time.
+`forMenuSub` nests a second menu under a `forMenuSubTrigger` item (role `menuitem`, `aria-haspopup=menu`). The submenu owns its own open model and item collection, and its `forMenuSubContent` reuses the menu surface positioned to the side of the trigger. Submenus nest arbitrarily. Here a third level sits inside the second. `ArrowRight` opens a submenu and focuses its first item; `ArrowLeft` collapses back to the parent; `Escape` closes one level at a time.
 
 ## API
 
@@ -96,9 +96,9 @@ A settings-style dropdown built from the full menu vocabulary: `forMenuGroup` wi
 | `align`                     | `input<string>`                                           | Alignment along `side` (`'start'` / `'center'` / `'end'`). The default is read from `provideForDropdownMenuDefaults` for the surrounding scope.<br>**Default:** `'start'`                                                                                                                                                                            |
 | `sideOffset`                | `input<number>`                                           | Gap (px) between the trigger and the content along the main axis.<br>**Default:** `4`                                                                                                                                                                                                                                                                |
 | `alignOffset`               | `input<number>`                                           | Gap (px) along the cross axis (parallel to `side`).<br>**Default:** `0`                                                                                                                                                                                                                                                                              |
-| `fallbackAxisSideDirection` | `input<'none' \| 'start' \| 'end'>`                       | When both sides of the preferred axis overflow, lets `flip` drop the menu to a perpendicular side instead of clipping. `'none'` keeps only the opposite same-axis placement. The default is read from `provideForDropdownMenuDefaults` for the surrounding scope — set it once for the whole app rather than per call site.<br>**Default:** `'none'` |
+| `fallbackAxisSideDirection` | `input<'none' \| 'start' \| 'end'>`                       | When both sides of the preferred axis overflow, lets `flip` drop the menu to a perpendicular side instead of clipping. `'none'` keeps only the opposite same-axis placement. The default is read from `provideForDropdownMenuDefaults` for the surrounding scope, so set it once for the whole app rather than per call site.<br>**Default:** `'none'` |
 | `loop`                      | `input<boolean>`                                          | Whether arrow navigation wraps at the ends.<br>**Default:** `true`                                                                                                                                                                                                                                                                                   |
-| `dir`                       | `input<string>`                                           | Writing direction. In RTL, ArrowLeft opens submenus and ArrowRight closes them — the swap is automatic. Inherited by every nested `[forMenuSub]` underneath unless overridden.<br>**Default:** `'ltr'`                                                                                                                                               |
+| `dir`                       | `input<string>`                                           | Writing direction. In RTL, ArrowLeft opens submenus and ArrowRight closes them. The swap is automatic. Inherited by every nested `[forMenuSub]` underneath unless overridden.<br>**Default:** `'ltr'`                                                                                                                                               |
 | `disabled`                  | `input<boolean>`                                          | When `true`, trigger interactions are ignored.<br>**Default:** `false`                                                                                                                                                                                                                                                                               |
 | `dismissible`               | `input<boolean>`                                          | When `false`, Escape and outside interactions don't close.<br>**Default:** `true`                                                                                                                                                                                                                                                                    |
 | `returnFocus`               | `input<boolean>`                                          | When `true`, focus returns to the trigger on close.<br>**Default:** `true`                                                                                                                                                                                                                                                                           |
@@ -106,11 +106,11 @@ A settings-style dropdown built from the full menu vocabulary: `forMenuGroup` wi
 | `escapeKeyDown`             | `output<VetoableNativeEvent<KeyboardEvent>>`              | Output. Escape pressed while the menu is the topmost dismissible layer.<br>**Default:** —                                                                                                                                                                                                                                                            |
 | `pointerDownOutside`        | `output<VetoableNativeEvent<PointerEvent>>`               | Output. Pointer-down on a target outside content + trigger.<br>**Default:** —                                                                                                                                                                                                                                                                        |
 | `focusOutside`              | `output<VetoableNativeEvent<FocusEvent>>`                 | Output. Focus moves outside content + trigger.<br>**Default:** —                                                                                                                                                                                                                                                                                     |
-| `interactOutside`           | `output<VetoableNativeEvent<PointerEvent \| FocusEvent>>` | Output. Composite — fires alongside the two above (and shares their veto state).<br>**Default:** —                                                                                                                                                                                                                                                   |
+| `interactOutside`           | `output<VetoableNativeEvent<PointerEvent \| FocusEvent>>` | Output. Composite: fires alongside the two above (and shares their veto state).<br>**Default:** —                                                                                                                                                                                                                                                   |
 | `autoFocusOnOpen`           | `output<VetoableEvent>`                                   | Output. Just before focus moves to the first / last enabled item on mount.<br>**Default:** —                                                                                                                                                                                                                                                         |
 | `autoFocusOnClose`          | `output<VetoableEvent>`                                   | Output. Just before focus returns to the trigger on unmount.<br>**Default:** —                                                                                                                                                                                                                                                                       |
 
-Every output above is vetoable — each handler receives a `VetoableEvent` (or `VetoableNativeEvent<E>` when there is a native DOM event). Call `preventDefault()` on the emitted veto to suppress the directive's default action; the original DOM event, when present, is on `.event`.
+Every output above is vetoable: each handler receives a `VetoableEvent` (or `VetoableNativeEvent<E>` when there is a native DOM event). Call `preventDefault()` on the emitted veto to suppress the directive's default action; the original DOM event, when present, is on `.event`.
 
 `(autoFocusOnOpen)` / `(autoFocusOnClose)` are output-shape because DropdownMenu always routes close transitions through `[(open)]` (via the implicit `openChange` emitter). Dialog and Drawer take callback-shape inputs for the same pair instead: either can be closed by a direct `open.set(false)` that bypasses the `(dismiss)` output entirely, so their close hook has to be a stored function reference that still runs during teardown.
 
@@ -123,7 +123,7 @@ Every output above is vetoable — each handler receives a `VetoableEvent` (or `
 | `[forDropdownMenuTrigger]` | `data-state`    | `open` \| `closed` |
 | `[forDropdownMenuTrigger]` | `data-disabled` | present \| absent  |
 
-The menu items, content surface, radio groups, separators, and groups live in the [`menu/`](../menu/README.md) folder — see [menu → Styling](../menu/README.md#styling) for their `data-state` / `data-highlighted` / `data-disabled` attributes and the content-surface CSS custom properties.
+The menu items, content surface, radio groups, separators, and groups live in the [`menu/`](../menu/README.md) folder. See [menu → Styling](../menu/README.md#styling) for their `data-state` / `data-highlighted` / `data-disabled` attributes and the content-surface CSS custom properties.
 
 ## Keyboard
 
@@ -133,7 +133,7 @@ The menu items, content surface, radio groups, separators, and groups live in th
 | `Enter` / `Space` / `ArrowDown` | Opens the menu and focuses the first enabled item; on an already-open menu, moves focus there. |
 | `ArrowUp`                       | Opens the menu and focuses the last enabled item; on an already-open menu, moves focus there.  |
 
-The open keys never close the menu — the APG menu-button pattern gives them no close semantics (that's `Escape`, or a pointer click on the trigger). Pressing one while the menu is already open moves focus into it, which is what makes them useful after an `(autoFocusOnOpen)`-vetoed open left focus on the trigger. A menu with no enabled item moves nothing.
+The open keys never close the menu, because the APG menu-button pattern gives them no close semantics (that's `Escape`, or a pointer click on the trigger). Pressing one while the menu is already open moves focus into it, which is what makes them useful after an `(autoFocusOnOpen)`-vetoed open left focus on the trigger. A menu with no enabled item moves nothing.
 
 Once focus is in the menu, see [`menu/README.md`](../menu/README.md) for the in-menu keyboard.
 
@@ -141,13 +141,13 @@ Once focus is in the menu, see [`menu/README.md`](../menu/README.md) for the in-
 
 `[forDropdownMenu]` implements the [WAI-ARIA Menu Button pattern](https://www.w3.org/WAI/ARIA/apg/patterns/menu-button/). The trigger wires `aria-haspopup="menu"`, `aria-expanded`, and `aria-controls`; the menu surface and item roles come from the shared [`menu/`](../menu/README.md) primitives.
 
-A disabled trigger (its own `[disabled]`, or the root's) reflects through a **single channel**: the native `disabled` attribute plus the `data-disabled` styling hook. No `aria-disabled` is emitted — the trigger is a real single-purpose `<button>` and the native attribute already conveys the state to assistive technology. Style the disabled trigger off `[disabled]` or `[data-disabled]`, never `[aria-disabled]`.
+A disabled trigger (its own `[disabled]`, or the root's) reflects through a **single channel**: the native `disabled` attribute plus the `data-disabled` styling hook. No `aria-disabled` is emitted, because the trigger is a real single-purpose `<button>` and the native attribute already conveys the state to assistive technology. Style the disabled trigger off `[disabled]` or `[data-disabled]`, never `[aria-disabled]`.
 
 ## Styling
 
 forty-cdk ships no styles. Add your own class to each piece. The `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
 
-> The menu content (`[forMenuContent]`) portals to `document.body`, so a class scoped to your trigger's component cannot reach it. Style it with **global CSS** or a class you pass through (see [Styling floating content](../../../docs/styling-floating-content.md)). The content host also exposes the shared positioner custom properties — `--for-floating-anchor-width` / `--for-floating-anchor-height`, `--for-floating-available-width` / `--for-floating-available-height`, and `--for-floating-content-transform-origin` — documented in full in [Styling floating content](../../../docs/styling-floating-content.md).
+> The menu content (`[forMenuContent]`) portals to `document.body`, so a class scoped to your trigger's component cannot reach it. Style it with **global CSS** or a class you pass through (see [Styling floating content](../../../docs/styling-floating-content.md)). The content host also exposes the shared positioner custom properties (`--for-floating-anchor-width` / `--for-floating-anchor-height`, `--for-floating-available-width` / `--for-floating-available-height`, and `--for-floating-content-transform-origin`), documented in full in [Styling floating content](../../../docs/styling-floating-content.md).
 
 ```css
 .dropdown-menu-trigger .chevron {
@@ -160,16 +160,16 @@ forty-cdk ships no styles. Add your own class to each piece. The `for*` selector
 
 ## Behavior notes
 
-- **Mount equals open.** The directive does not toggle `[hidden]` — `@if (open())` controls presence so `animate.enter` / `animate.leave` fire on the natural mount cycle.
+- **Mount equals open.** The directive does not toggle `[hidden]`. Instead, `@if (open())` controls presence so `animate.enter` / `animate.leave` fire on the natural mount cycle.
 - **Trigger is exempt** from outside-pointer / outside-focus checks. Without this, clicking the trigger to close would race with its own toggle handler and reopen immediately.
 - **Initial focus depends on the opening key.** Click / Space / Enter / ArrowDown focus the first enabled item; ArrowUp focuses the last enabled item. The same keys re-focus that item when the menu is already open.
 - **Selecting an item closes the menu** by default. To keep the menu open after activation (multi-select pattern), call `$event.preventDefault()` in the item's `(activate)` handler.
 
 ### `#menu="forDropdownMenu"` vs. `[(open)]`
 
-The minimal "click trigger → show menu" case needs **neither** a separate `open` signal **nor** a two-way binding. `[forDropdownMenu]` is `exportAs: 'forDropdownMenu'`, so expose the directive instance with a template reference variable — `#menu="forDropdownMenu"` — and drive the `@if` straight off its own `open()` signal, as above. Trigger interactions, item activation, Escape, and outside dismissal all flip it.
+The minimal "click trigger → show menu" case needs **neither** a separate `open` signal **nor** a two-way binding. `[forDropdownMenu]` is `exportAs: 'forDropdownMenu'`, so expose the directive instance with a template reference variable (`#menu="forDropdownMenu"`) and drive the `@if` straight off its own `open()` signal, as above. Trigger interactions, item activation, Escape, and outside dismissal all flip it.
 
-Reach for the explicit `[(open)]="mySignal"` model binding only when the component class needs to read or drive open state — open it programmatically, persist it, or react to it elsewhere:
+Reach for the explicit `[(open)]="mySignal"` model binding only when the component class needs to read or drive open state (to open it programmatically, persist it, or react to it elsewhere):
 
 ```html
 <div forDropdownMenu [(open)]="open">
@@ -182,7 +182,7 @@ Reach for the explicit `[(open)]="mySignal"` model binding only when the compone
 
 ### Triggers stamped from outside-declared templates
 
-Angular resolves `ng-template` DI at the template's **declaration** site, not where it is stamped. A `[forDropdownMenuTrigger]` declared in a template outside the root throws the orphan error even when the template is rendered inside the root via `ngTemplateOutlet`. For that case the selector attribute accepts the root reference as a value, `routerLink`-style — grab it with `#root="forDropdownMenu"` and pass it through the outlet context. The bare valueless attribute keeps resolving via DI.
+Angular resolves `ng-template` DI at the template's **declaration** site, not where it is stamped. A `[forDropdownMenuTrigger]` declared in a template outside the root throws the orphan error even when the template is rendered inside the root via `ngTemplateOutlet`. For that case the selector attribute accepts the root reference as a value, `routerLink`-style. Grab it with `#root="forDropdownMenu"` and pass it through the outlet context. The bare valueless attribute keeps resolving via DI.
 
 ```html
 <div forDropdownMenu #root="forDropdownMenu">
@@ -199,7 +199,7 @@ Angular resolves `ng-template` DI at the template's **declaration** site, not wh
 
 ### Sharing one menu with a second opener
 
-`[forDropdownMenu]` is a **single-opener preset**: one root, one button trigger. When the same actions must also be reachable another way — the canonical case being a table row with a kebab button _and_ a right-click region over the whole row — bind the trigger to a `[forMenu]` root instead, which drives one `[forMenuContent]` block from any number of openers. See [Shared openers](../menu/README.md#shared-openers-formenu).
+`[forDropdownMenu]` is a **single-opener preset**: one root, one button trigger. When the same actions must also be reachable another way (the canonical case being a table row with a kebab button _and_ a right-click region over the whole row), bind the trigger to a `[forMenu]` root instead, which drives one `[forMenuContent]` block from any number of openers. See [Shared openers](../menu/README.md#shared-openers-formenu).
 
 ```html
 <tr forMenu #row="forMenu" [(open)]="open" ariaLabel="Row actions">
@@ -211,7 +211,7 @@ Angular resolves `ng-template` DI at the template's **declaration** site, not wh
 </tr>
 ```
 
-`[menuPositioning]` is the trigger's own placement override — a partial `{ side, align, sideOffset, alignOffset }`, each key falling back to the root's input when omitted. It exists because a shared root cannot pick offsets that suit heterogeneous openers: the `sideOffset: 4` above keeps the button-opened menu clear of the button while a sibling right-click region still opens flush at the cursor. Under a `[forDropdownMenu]` root it resolves the same way, where it is simply a per-trigger spelling of the root's inputs. See [Per-opener positioning](../menu/README.md#per-opener-positioning).
+`[menuPositioning]` is the trigger's own placement override: a partial `{ side, align, sideOffset, alignOffset }`, each key falling back to the root's input when omitted. It exists because a shared root cannot pick offsets that suit heterogeneous openers: the `sideOffset: 4` above keeps the button-opened menu clear of the button while a sibling right-click region still opens flush at the cursor. Under a `[forDropdownMenu]` root it resolves the same way, where it is simply a per-trigger spelling of the root's inputs. See [Per-opener positioning](../menu/README.md#per-opener-positioning).
 
 ## Wrapping in a design system
 

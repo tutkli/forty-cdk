@@ -26,7 +26,7 @@ Headless, with a selectable activation mode (automatic vs manual), configurable 
 
 ## Examples
 
-Move between triggers with the arrow keys and activate with `Space` — the active trigger and its panel share `data-state="active"`.
+Move between triggers with the arrow keys and activate with `Space`. The active trigger and its panel share `data-state="active"`.
 
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
@@ -84,7 +84,7 @@ export class TabsDefaultExample {
 
 ### Focus without selecting
 
-`activationMode='manual'` lets the arrow keys move focus without selecting; the user presses `Space` or `Enter` to activate — better when panel content is expensive.
+`activationMode='manual'` lets the arrow keys move focus without selecting; the user presses `Space` or `Enter` to activate. Manual activation is the better choice when panel content is expensive.
 
 ### Vertical
 
@@ -105,7 +105,7 @@ export class TabsDefaultExample {
 - **Focusable content appearing (or disappearing) inside a shadow root**: a web component in the panel that renders its controls on a later tick, or swaps them. The shadow root's own subtree is not observable, so a panel that gains its first focusable control that way keeps its redundant `tabindex="0"`, and one that loses its last keeps none, leaving the panel unreachable by keyboard for a screen-reader user reading it. Nothing in the DOM looks wrong.
 - **A visibility flip driven purely by a stylesheet**: the measurement excludes CSS-hidden elements, but `class` and `style` are not watched, so toggling a class that hides or reveals the panel's only control does not re-measure.
 
-**Workaround.** Bind `[interactiveContent]` — an explicit `true` / `false` wins over the detection in either direction, so the stale measurement stops driving the `tabindex`. It is the right channel whenever you know the answer for a panel, which is the usual case for a panel whose content is a web component. Remounting the panel with `@if` also re-measures, since a fresh directive instance measures again.
+**Workaround.** Bind `[interactiveContent]`. An explicit `true` / `false` wins over the detection in either direction, so the stale measurement stops driving the `tabindex`. It is the right channel whenever you know the answer for a panel, which is the usual case for a panel whose content is a web component. Remounting the panel with `@if` also re-measures, since a fresh directive instance measures again.
 
 The library-wide shadow-DOM statement, covering the two limits that affect overlays rather than panels, is [Shadow DOM](../shared/README.md#shadow-dom) in `forty-cdk/shared`.
 
@@ -115,8 +115,8 @@ The library-wide shadow-DOM statement, covering the two limits that affect overl
 
 | Property         | Type                                | Description                                                                                                                                                              |
 | ---------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `value`          | `model<string \| null>`             | Two-way bindable. The selected tab's value, or `null` when nothing is selected. `null` is the unset state — distinct from a tab whose `value` is `''`.<br>**Default:** — |
-| `activationMode` | `input<'automatic' \| 'manual'>`    | Use `'manual'` when panel content is expensive — user must press Space / Enter.<br>**Default:** `'automatic'` (selection follows arrow focus)                            |
+| `value`          | `model<string \| null>`             | Two-way bindable. The selected tab's value, or `null` when nothing is selected. `null` is the unset state and is distinct from a tab whose `value` is `''`.<br>**Default:** — |
+| `activationMode` | `input<'automatic' \| 'manual'>`    | Use `'manual'` when panel content is expensive. In manual mode the user must press Space / Enter.<br>**Default:** `'automatic'` (selection follows arrow focus)                            |
 | `orientation`    | `input<'horizontal' \| 'vertical'>` | Drives keyboard navigation and `aria-orientation`.<br>**Default:** `'horizontal'`                                                                                        |
 | `dir`            | `input<'ltr' \| 'rtl'>`             | Swaps ArrowLeft / ArrowRight.<br>**Default:** `'ltr'`                                                                                                                    |
 | `disabled`       | `input<boolean>`                    | When true, blocks all selection and keyboard nav.<br>**Default:** —                                                                                                      |
@@ -146,7 +146,7 @@ The library-wide shadow-DOM statement, covering the two limits that affect overl
 | `data-disabled`    | present \| absent          |
 | `data-orientation` | `horizontal` \| `vertical` |
 
-Reflects on its host: `id`, `aria-selected`, `aria-controls` (looked up from the matching content), `aria-disabled`, `tabindex`. A disabled trigger keeps `aria-disabled="true"` + `data-disabled=""` (no native `disabled`, per APG) — announced but non-activatable, with arrow nav skipping it.
+Reflects on its host: `id`, `aria-selected`, `aria-controls` (looked up from the matching content), `aria-disabled`, `tabindex`. A disabled trigger keeps `aria-disabled="true"` + `data-disabled=""` (no native `disabled`, per APG). It is announced but non-activatable, and arrow nav skips it.
 
 ### `ForTabsContent`
 
@@ -164,7 +164,7 @@ Reflects: `id`, `role="tabpanel"`, `aria-labelledby` (the matching trigger's id)
 
 The directive does **not** apply `[hidden]`. Two patterns work:
 
-- **Leave all panels mounted** (idiomatic) — preserves scroll/input state across activations. While inactive, the directive sets `aria-hidden="true"` and `inert` so each non-selected panel is out of the accessibility tree and focus order. Hide the inactive ones visually with CSS keyed on `[data-state="inactive"]` (e.g. `display: none`).
+- **Leave all panels mounted** (idiomatic): this preserves scroll/input state across activations. While inactive, the directive sets `aria-hidden="true"` and `inert` so each non-selected panel is out of the accessibility tree and focus order. Hide the inactive ones visually with CSS keyed on `[data-state="inactive"]` (e.g. `display: none`).
 - **Mount/unmount with `@if (active() === 'tab')`**: the panel is absent while inactive; useful for heavy panels or when you want `animate.enter` / `animate.leave`.
 
 ## Keyboard
@@ -181,8 +181,8 @@ Implements the [WAI-ARIA Tabs pattern](https://www.w3.org/WAI/ARIA/apg/patterns/
 
 - **Label the tablist** via `aria-label` on `ForTabsList`, or `aria-labelledby` pointing to a heading.
 - **Choose `activationMode='automatic'`** when panels render quickly; `'manual'` when activation has noticeable cost (network, heavy computation).
-- **Panel `tabindex`** follows APG: a panel with **no** focusable descendants is itself a tab stop (`tabindex="0"`) so screen-reader users can focus and read it, while a panel that already contains focusable content (a form, links, buttons) is **not** a tab stop — the directive detects this automatically and reacts to subtree changes. Use `[interactiveContent]` to override the detection in either direction. Two kinds of change are outside what it can observe — see [Known limitations](#known-limitations).
-- **`aria-controls` and `aria-labelledby`** are wired automatically when triggers and contents share the same `value`. `aria-controls` is emitted only on the selected trigger — mirroring the overlay triggers' open-only gating — so the reference never dangles at an unmounted panel under the `@if (selected())` mount pattern.
+- **Panel `tabindex`** follows APG: a panel with **no** focusable descendants is itself a tab stop (`tabindex="0"`) so screen-reader users can focus and read it, while a panel that already contains focusable content (a form, links, buttons) is **not** a tab stop. The directive detects this automatically and reacts to subtree changes. Use `[interactiveContent]` to override the detection in either direction. [Known limitations](#known-limitations) covers the two kinds of change the detection cannot observe.
+- **`aria-controls` and `aria-labelledby`** are wired automatically when triggers and contents share the same `value`. `aria-controls` is emitted only on the selected trigger (mirroring the overlay triggers' open-only gating), so the reference never dangles at an unmounted panel under the `@if (selected())` mount pattern.
 
 ## Styling
 

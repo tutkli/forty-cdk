@@ -41,7 +41,7 @@ Requires a time-capable adapter:
 
 ## Examples
 
-Open the listbox from the trigger and pick a slot — the arrow keys walk the timeline, and the trigger keeps `data-placeholder` until something is chosen.
+Open the listbox from the trigger and pick a slot. The arrow keys walk the timeline, and the trigger keeps `data-placeholder` until something is chosen.
 
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
@@ -116,11 +116,11 @@ export class TimePickerTimeExample {
 
 ### States
 
-One class and one directive, three states. `disabled` removes the trigger from the tab order; `readonly` keeps it focusable and announced. Both refuse to open the listbox, and both reflect a styling hook of their own — `data-disabled` and `data-readonly`.
+One class and one directive, three states. `disabled` removes the trigger from the tab order; `readonly` keeps it focusable and announced. Both refuse to open the listbox, and both reflect a styling hook of their own: `data-disabled` and `data-readonly`.
 
 ### Bounded slots
 
-`minTime` and `maxTime` fence the selectable time-of-day. Slots outside the window are not removed — they stay in the listbox as disabled options (`data-disabled`), skipped by keyboard navigation, so the full timeline stays visible. Open the listbox and scroll past `17:00` to see the late slots dimmed out.
+`minTime` and `maxTime` fence the selectable time-of-day. Slots outside the window are not removed. They stay in the listbox as disabled options (`data-disabled`), skipped by keyboard navigation, so the full timeline stays visible. Open the listbox and scroll past `17:00` to see the late slots dimmed out.
 
 ## API
 
@@ -164,11 +164,11 @@ Inherits all `FormUiControl` inputs (`disabled`, `readonly`, `required`, `invali
 | `[forTimePickerOption]`  | `data-disabled`    | present \| absent          |
 | `[forTimePickerOption]`  | `data-highlighted` | present \| absent          |
 
-`data-highlighted` marks the active slot — the one the pointer is over, else the keyboard-focused one (shared vocabulary with the listbox / menu / select primitives; see [Pointer highlight](#pointer-highlight)). `[forTimePickerContent]` also carries the positioner markers `data-side` / `data-align` / `data-placement` (and `data-detached` while `hideWhenDetached` is active) — see [Styling floating content](../../../docs/styling-floating-content.md).
+`data-highlighted` marks the active slot: the one the pointer is over, else the keyboard-focused one (shared vocabulary with the listbox / menu / select primitives; see [Pointer highlight](#pointer-highlight)). `[forTimePickerContent]` also carries the positioner markers `data-side` / `data-align` / `data-placement` (and `data-detached` while `hideWhenDetached` is active). See [Styling floating content](../../../docs/styling-floating-content.md).
 
 ## Pointer highlight
 
-Moving the pointer over an enabled slot hands it `data-highlighted`, so exactly one slot is ever decorated no matter which device the user reached for — the same feel as `[forSelect]`, `[forListbox]` and the menu family. Style that one attribute; you do not need a separate `:hover` rule (and combining both is what puts two rows in a highlighted state at once).
+Moving the pointer over an enabled slot hands it `data-highlighted`, so exactly one slot is ever decorated no matter which device the user reached for. That is the same feel as `[forSelect]`, `[forListbox]` and the menu family. Style that one attribute; you do not need a separate `:hover` rule (and combining both is what puts two rows in a highlighted state at once).
 
 - **Hover never selects and never moves DOM focus.** The pointer's own click still activates the slot.
 - **The keyboard takes it back on the next move**: the highlight falls back to the DOM-focused slot, so the first arrow / Home / End move drops the pointer highlight.
@@ -179,7 +179,7 @@ A hover on a disabled slot is ignored, and the highlight falls back to the focus
 
 ## Scoped defaults
 
-`provideForTimePickerDefaults` configures positioning defaults for an injector subtree — at the application root or in any component's `providers` array. Partial overrides inherit unspecified keys from the parent scope (or the library fallbacks at the root).
+`provideForTimePickerDefaults` configures positioning defaults for an injector subtree, either at the application root or in any component's `providers` array. Partial overrides inherit unspecified keys from the parent scope (or the library fallbacks at the root).
 
 | Key                | Library fallback | Meaning                                                                          |
 | ------------------ | ---------------- | -------------------------------------------------------------------------------- |
@@ -210,7 +210,7 @@ class CompactToolbar {}
 
 ## Anchoring to a field box
 
-By default the listbox is positioned against `[forTimePickerTrigger]`. When the trigger lives inside a decorated field box — padding, a prefix icon, a clear / chevron button — anchoring to the inner button makes the panel offset from the visible field's edge. Wrap the field box in `[forTimePickerAnchor]` so floating-ui positions (and sizes, via `--for-floating-anchor-width`) the listbox against the box instead:
+By default the listbox is positioned against `[forTimePickerTrigger]`. When the trigger lives inside a decorated field box (padding, a prefix icon, a clear / chevron button), anchoring to the inner button makes the panel offset from the visible field's edge. Wrap the field box in `[forTimePickerAnchor]` so floating-ui positions (and sizes, via `--for-floating-anchor-width`) the listbox against the box instead:
 
 ```html
 <div forTimePicker #picker="forTimePicker" [(value)]="value" [(open)]="open">
@@ -231,7 +231,7 @@ By default the listbox is positioned against `[forTimePickerTrigger]`. When the 
 </div>
 ```
 
-`[forTimePickerAnchor]` changes **only** positioning. The trigger keeps `aria-haspopup` / `aria-expanded` / `aria-controls`, the click toggle, focus return on close, and its exemption from outside-pointer dismissal. Without an anchor the listbox falls back to the trigger, so existing markup is unaffected. At most one `[forTimePickerAnchor]` per `[forTimePicker]` — a second one throws `[forty-cdk/time-picker]`.
+`[forTimePickerAnchor]` changes **only** positioning. The trigger keeps `aria-haspopup` / `aria-expanded` / `aria-controls`, the click toggle, focus return on close, and its exemption from outside-pointer dismissal. Without an anchor the listbox falls back to the trigger, so existing markup is unaffected. A `[forTimePicker]` takes at most one `[forTimePickerAnchor]`, and a second one throws `[forty-cdk/time-picker]`.
 
 ## Date-time composition
 
@@ -296,13 +296,13 @@ Implements the [WAI-ARIA Listbox pattern](https://www.w3.org/WAI/ARIA/apg/patter
 
 - **`role="combobox"`** on the trigger (`[forTimePickerTrigger]`) with `aria-haspopup="listbox"` and `aria-expanded` reflecting `open`.
 - **`role="listbox"`** on the portaled content (`[forTimePickerContent]`); each slot is `role="option"` with `aria-selected` and `aria-disabled`.
-- When used inside `[forDatePickerContent]` alongside a `[forCalendar]`, the time picker delegates its value to `[forDatePicker]` via `FOR_TIME_VALUE_SOURCE` — the combined date-time value is surfaced on the date picker's form-control ARIA.
-- **`data-highlighted=""`** is reflected on the active slot — the hovered one, else the focused one (see [Pointer highlight](#pointer-highlight)) — so it is the one hook to style rather than pairing it with `:hover`.
+- When used inside `[forDatePickerContent]` alongside a `[forCalendar]`, the time picker delegates its value to `[forDatePicker]` via `FOR_TIME_VALUE_SOURCE`, so the combined date-time value is surfaced on the date picker's form-control ARIA.
+- **`data-highlighted=""`** is reflected on the active slot (the hovered one, else the focused one), so it is the one hook to style rather than pairing it with `:hover` (see [Pointer highlight](#pointer-highlight)).
 - **Inside a `[forField]` the labelled element is the trigger**, not the `[forTimePicker]` wrapper: the field's `controlId` and its `aria-labelledby` / `aria-describedby` / `aria-errormessage` land on `[forTimePickerTrigger]`, so `[forLabel]`'s `for` points at the element that takes focus, clicking a non-`<label>` `[forLabel]` opens the listbox, and Signal Forms' focus-on-error reaches the trigger.
 
 ## Wrapping in a design system
 
-Both supported wrapper patterns — `hostDirectives` with the exported `FOR_TIME_PICKER_HOST_DIRECTIVE_INPUTS` / `FOR_TIME_PICKER_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing — are documented in [Wrapping form primitives](../../../docs/wrapping-form-primitives.md).
+[Wrapping form primitives](../../../docs/wrapping-form-primitives.md) documents both supported wrapper patterns: `hostDirectives` with the exported `FOR_TIME_PICKER_HOST_DIRECTIVE_INPUTS` / `FOR_TIME_PICKER_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing.
 
 ```typescript
 import { Component } from '@angular/core';

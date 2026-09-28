@@ -7,7 +7,7 @@ apgUrl: https://www.w3.org/WAI/ARIA/apg/patterns/windowsplitter/
 
 # Pane Resizer
 
-A focusable divider that resizes the panes on either side — draggable and keyboard-operable, with an optional collapse behaviour.
+A focusable, draggable, and keyboard-operable divider that resizes the panes on either side, with an optional collapse behaviour.
 
 It carries `role="separator"` plus live `aria-value*`, is tabbable, handles arrow / Page / Home / End keys, and drives a pointer-drag resize with `setPointerCapture`. It is essentially a 1-D slider wearing a separator role; the static visual divider lives in the separate [`ForSeparator`](../separator/README.md) primitive so a plain `<hr forSeparator>` never pulls the drag / keyboard-resize code in.
 
@@ -33,7 +33,7 @@ It carries `role="separator"` plus live `aria-value*`, is tabbable, handles arro
 
 ## Examples
 
-Drag the divider, or focus it and press the arrow keys — the resizer is a `separator` carrying `aria-valuenow`, so the split is announced as it moves.
+Drag the divider, or focus it and press the arrow keys. The resizer is a `separator` carrying `aria-valuenow`, so the split is announced as it moves.
 
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
@@ -75,15 +75,15 @@ One class and one directive, two states. `disabled` drops the resizer out of the
 
 ### Collapsible panel
 
-With `collapsible` on, `Enter` / `Space` on the focused resizer snaps the panel to its `min` and a second press restores the last expanded size — APG-optional behaviour for a resizer that backs a collapsible pane. Drag or the arrow keys still resize as usual.
+With `collapsible` on, `Enter` / `Space` on the focused resizer snaps the panel to its `min` and a second press restores the last expanded size. This is APG-optional behaviour for a resizer that backs a collapsible pane. Drag or the arrow keys still resize as usual.
 
 ## Pointer drag
 
 `pointerdown` captures the pointer, records the starting value, and on each `pointermove` adds the **raw px delta** along the resize axis to `value`, clamped to `[min, max]`. Use this directly for px-unit layouts; for percentage / fractional layouts, listen to `(resizing)` and translate yourself, or skip pointer drag and stick to keyboard.
 
-The press also **focuses the divider**. Starting a drag calls `preventDefault()` (so the gesture never turns into a text selection), which suppresses the browser's native focus-on-press, so the directive focuses the host itself — keyboard fine-tuning continues from where the drag ended instead of needing a `Tab` first. Ship a visible `:focus-visible` style for the divider (as the example above does) so the focus ring appears for keyboard users without flashing after every mouse drag.
+The press also **focuses the divider**. Starting a drag calls `preventDefault()` (so the gesture never turns into a text selection), which suppresses the browser's native focus-on-press, so the directive focuses the host itself. Keyboard fine-tuning continues from where the drag ended instead of needing a `Tab` first. Ship a visible `:focus-visible` style for the divider (as the example above does) so the focus ring appears for keyboard users without flashing after every mouse drag.
 
-`Escape` (or a `pointercancel`) mid-drag restores the pre-drag value through `[(value)]` and emits no `(resizeCommit)`. Unmounting the resizer mid-drag reverts too, but the destroyed `[(value)]` model can no longer emit, so the pre-drag value is reported through the `[valueRevert]` callback instead — bind it as a function reference when you persist the size and the pane layout can disappear during a gesture:
+`Escape` (or a `pointercancel`) mid-drag restores the pre-drag value through `[(value)]` and emits no `(resizeCommit)`. Unmounting the resizer mid-drag reverts too, but the destroyed `[(value)]` model can no longer emit, so the pre-drag value is reported through the `[valueRevert]` callback instead. Bind it as a function reference when you persist the size and the pane layout can disappear during a gesture:
 
 ```html
 <div forPaneResizer [(value)]="size" [valueRevert]="onValueRevert"></div>
@@ -112,9 +112,9 @@ readonly onValueRevert = (value: number): void => {
 | `largeStep`    | `input<number>`                          | Step applied by `Page Up` / `Page Down`.<br>**Default:** `10`                                                                                                                                                                                                     |
 | `valueText`    | `input<string \| null>`                  | Optional `aria-valuetext` string for human-readable values.<br>**Default:** —                                                                                                                                                                                     |
 | `controls`     | `input<string \| null>`                  | Space-separated list of pane ids surfaced as `aria-controls`.<br>**Default:** —                                                                                                                                                                                   |
-| `collapsible`  | `input<boolean>`                         | Opt-in `Enter` / `Space` toggle: collapses to `min`, and on the next press restores the last size the resizer settled on above `min` — from a drag, a keyboard burst, or a previous collapse. Falls back to `max` when no such size exists yet.<br>**Default:** — |
+| `collapsible`  | `input<boolean>`                         | Opt-in `Enter` / `Space` toggle: collapses to `min`, and on the next press restores the last size the resizer settled on above `min` (from a drag, a keyboard burst, or a previous collapse). Falls back to `max` when no such size exists yet.<br>**Default:** — |
 | `dir`          | `input<'ltr' \| 'rtl'>`                  | Reading direction. RTL inverts ArrowLeft / ArrowRight and the horizontal axis of pointer drag.<br>**Default:** —                                                                                                                                                  |
-| `valueChange`  | `output<number>`                         | Output. Implicit emitter from `model()`. Fires on internal updates only — silent on consumer writes via `[(value)]`.<br>**Default:** —                                                                                                                            |
+| `valueChange`  | `output<number>`                         | Output. Implicit emitter from `model()`. Fires on internal updates only and stays silent on consumer writes via `[(value)]`.<br>**Default:** —                                                                                                                            |
 | `resizing`     | `output<number>`                         | Output. Verb-named alias for `valueChange`. Useful when wiring one-way without `[(value)]`.<br>**Default:** —                                                                                                                                                     |
 | `resizeCommit` | `output<number>`                         | Output. Fires once at the end of a resize burst (key release, pointerup, `pointercancel`, or blur while a key is still held). Persist final size here.<br>**Default:** —                                                                                          |
 | `valueRevert`  | `((value: number) => void) \| undefined` | Teardown-only revert callback, bound as a function reference. Called with the pre-drag value when the resizer is destroyed mid-drag, where `[(value)]` can no longer emit. Silent on the `Escape` / `pointercancel` reverts.<br>**Default:** —                    |
@@ -134,7 +134,7 @@ readonly onValueRevert = (value: number): void => {
 | `Page Down`                | Apply `largeStep` toward `min`.                                                                                                                                                                                                                                       |
 | `Home`                     | Snap to `min`.                                                                                                                                                                                                                                                        |
 | `End`                      | Snap to `max`.                                                                                                                                                                                                                                                        |
-| `Enter` / `Space`          | Toggle collapse to `min` / restore the last size settled on above `min` — from a drag or a keyboard burst, so a drag-to-`min` then `Enter` returns to the pre-drag size (`max` is the never-sized-yet fallback). Only when `collapsible` is enabled (off by default). |
+| `Enter` / `Space`          | Toggle collapse to `min` / restore the last size settled on above `min`. That size can come from a drag or a keyboard burst, so a drag-to-`min` then `Enter` returns to the pre-drag size (`max` is the never-sized-yet fallback). Only when `collapsible` is enabled (off by default). |
 
 ## Accessibility
 

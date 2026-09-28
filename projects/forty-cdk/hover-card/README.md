@@ -8,7 +8,7 @@ archetype: [overlay]
 
 A floating card that opens on hover to preview the content behind a link, with a pointer bridge keeping it open.
 
-Use it for profile snapshots, link previews, definition cards — any complementary information that surfaces on dwell. There is no APG pattern for HoverCard. Treat it as a presentational layer: the trigger must already convey full meaning (it's a link, a name, a tag), so keyboard-only users miss nothing if they never see the card. Card content can be interactive — that's its main difference from `[forTooltip]`, where APG bans it.
+Use it for any complementary information that surfaces on dwell, such as profile snapshots, link previews, or definition cards. There is no APG pattern for HoverCard. Treat it as a presentational layer: the trigger must already convey full meaning (it's a link, a name, a tag), so keyboard-only users miss nothing if they never see the card. Card content can be interactive. That's its main difference from `[forTooltip]`, where APG bans it.
 
 > New to overlays in forty-cdk? [Your first overlay](../../../docs/your-first-overlay.md) walks a Popover from empty markup to styled-and-animated and explains the `@if` / open-state model and the portal → global CSS rule.
 
@@ -35,7 +35,7 @@ Use it for profile snapshots, link previews, definition cards — any complement
 
 ## Examples
 
-Hover or focus the trigger and wait out the delay — the card opens with `data-state="open"`, and leaving both the trigger and the card closes it again.
+Hover or focus the trigger and wait out the delay. The card opens with `data-state="open"`, and leaving both the trigger and the card closes it again.
 
 ```ts
 import { ChangeDetectionStrategy, Component } from '@angular/core';
@@ -128,7 +128,7 @@ export class HoverCardDefaultExample {}
 
 ## Scoped defaults
 
-`provideForHoverCardDefaults` configures defaults for an injector subtree — at the application root or in any component's `providers` array. Partial overrides inherit unspecified keys from the parent scope (or the library fallbacks at the root). Each call also establishes a fresh skip-delay coordinator scope: peer cards inside the scope share a skip-delay window (the next open is instant within `skipDelayDuration` after a peer closed); cards in other scopes don't.
+`provideForHoverCardDefaults` configures defaults for an injector subtree, either at the application root or in any component's `providers` array. Partial overrides inherit unspecified keys from the parent scope (or the library fallbacks at the root). Each call also establishes a fresh skip-delay coordinator scope: peer cards inside the scope share a skip-delay window (the next open is instant within `skipDelayDuration` after a peer closed); cards in other scopes don't.
 
 | Key                 | Library fallback | Meaning                                                                   |
 | ------------------- | ---------------- | ------------------------------------------------------------------------- |
@@ -143,7 +143,7 @@ export class HoverCardDefaultExample {}
 
 Per-instance inputs always win over the scope defaults.
 
-The HoverCard coordinator is **independent** from `TooltipCoordinator` — the two patterns have different cadences and shouldn't share their skip-delay windows.
+The HoverCard coordinator is **independent** from `TooltipCoordinator`, because the two patterns have different cadences and shouldn't share their skip-delay windows.
 
 <!-- snippet: fragment -->
 
@@ -165,7 +165,7 @@ class ProfileList {}
 
 ## Imperative show and hide
 
-For programmatic control beyond hover and focus — e.g. a wrapper that opens the card from an external event — `ForHoverCard` exposes `show()` and `hide()` methods. Grab the root with a template reference (`#card="forHoverCard"`) and call them:
+For programmatic control beyond hover and focus (e.g. a wrapper that opens the card from an external event), `ForHoverCard` exposes `show()` and `hide()` methods. Grab the root with a template reference (`#card="forHoverCard"`) and call them:
 
 ```ts
 import { Component } from '@angular/core';
@@ -191,7 +191,7 @@ export class DemoImperative {}
 
 Both mirror the hover / focus lifecycle rather than bypassing it:
 
-- `show()` schedules the open after the resolved `openDelay` (instant when the delay is `0` or the scope's skip-delay window is active). It is a no-op while `disabled`, and a no-op while an ancestor is scrolling (the scroll-dismiss suppression window) — the same gates a hover open passes.
+- `show()` schedules the open after the resolved `openDelay` (instant when the delay is `0` or the scope's skip-delay window is active). It passes the same gates a hover open does: it is a no-op while `disabled`, and a no-op while an ancestor is scrolling (the scroll-dismiss suppression window).
 - `hide()` schedules the close after the resolved `closeDelay` and disarms the pointer-grace bridge.
 
 For an **instant, unconditional** open or close that ignores the delays and every gate, write the `[(open)]` model directly (`open.set(true)` / `open.set(false)`) instead.
@@ -206,7 +206,7 @@ For an **instant, unconditional** open or close that ignores the delays and ever
 
 - **Not for tooltips.** If your overlay is a non-interactive label / hint, use `[forTooltip]`. HoverCard does not set `aria-describedby`; the trigger keeps its own label.
 - **Trigger must stand alone.** Keyboard users don't see hover-only previews. Make sure the trigger's text / `aria-label` already describes its destination or action.
-- **Focus opens the card** so keyboard users get the preview when tabbing through a list. Blur closes it; Escape closes immediately, no matter where focus currently lives — on the trigger, on a link inside the content, or on an unrelated element (the common case for a card opened by hover). Escape is routed through a document-level dismissible layer that is active only while the card is open.
+- **Focus opens the card** so keyboard users get the preview when tabbing through a list. Blur closes it; Escape closes immediately, no matter where focus currently lives: on the trigger, on a link inside the content, or on an unrelated element (the common case for a card opened by hover). Escape is routed through a document-level dismissible layer that is active only while the card is open.
 - **Pointer interaction inside the card.** Moving the cursor from the trigger to the content cancels the close timer, so users can copy text or follow nested links. A pointer-grace "safe triangle" bridges the gap between the trigger and the content: while the pointer travels across the default `sideOffset` gap toward the card it is assumed to be heading there, so the card stays open even when `closeDelay` is `0`. This also holds when the content overlaps its trigger (a negative `sideOffset`). The card closes once the pointer leaves the safe triangle without reaching the card, or on blur / Escape / scroll.
 - **Use `provideForHoverCardDefaults` per scope** when you need a different cadence for, e.g., a list of profile cards (faster) vs. a sidebar of glossary entries (slower).
 
@@ -222,12 +222,12 @@ forty-cdk ships no styles. Add your own class to each piece. The `for*` selector
 | ----------------------- | ----------------------------------------- | ------------------- | --------- | ------------------------------------------------------------------------------------------------------------ |
 | `[forHoverCardContent]` | `--for-floating-anchor-width`             | px                  | out       | Trigger (reference) width.                                                                                   |
 | `[forHoverCardContent]` | `--for-floating-anchor-height`            | px                  | out       | Trigger (reference) height.                                                                                  |
-| `[forHoverCardContent]` | `--for-floating-available-width`          | px                  | out       | Space available along the inline axis (floating-ui `size` middleware) — clamp with `max-width`.              |
-| `[forHoverCardContent]` | `--for-floating-available-height`         | px                  | out       | Space available along the block axis — clamp with `max-height`.                                              |
+| `[forHoverCardContent]` | `--for-floating-available-width`          | px                  | out       | Space available along the inline axis (floating-ui `size` middleware). Clamp with `max-width`.              |
+| `[forHoverCardContent]` | `--for-floating-available-height`         | px                  | out       | Space available along the block axis. Clamp with `max-height`.                                              |
 | `[forHoverCardContent]` | `--for-floating-content-transform-origin` | `<origin>` keywords | out       | `transform-origin` matching the resolved side / align, so a `scale` enter animation pivots from the trigger. |
-| `[forHoverCardArrow]`   | `--for-floating-arrow-offset`             | px (default `0px`)  | in        | Consumer-set. How far the arrow pokes out past the card edge — typically a negative `px` (e.g. `-4px`).      |
+| `[forHoverCardArrow]`   | `--for-floating-arrow-offset`             | px (default `0px`)  | in        | Consumer-set. How far the arrow pokes out past the card edge, typically a negative `px` (e.g. `-4px`).      |
 
-> `[forHoverCardContent]` (and the projected `[forHoverCardArrow]`) is portaled to `document.body`, so it sits outside your component's view-encapsulated styles. Style it with **global CSS or a class** you pass on the content element — component-scoped styles won't reach it. The positioner also writes the shared geometry custom properties listed above (`--for-floating-anchor-width` / `-height`, `--for-floating-available-width` / `-height`, `--for-floating-content-transform-origin`); see [Styling floating content](../../../docs/styling-floating-content.md) for the full list and the side/align animation recipe.
+> `[forHoverCardContent]` (and the projected `[forHoverCardArrow]`) is portaled to `document.body`, so it sits outside your component's view-encapsulated styles. Style it with **global CSS or a class** you pass on the content element, because component-scoped styles won't reach it. The positioner also writes the shared geometry custom properties listed above (`--for-floating-anchor-width` / `-height`, `--for-floating-available-width` / `-height`, `--for-floating-content-transform-origin`); see [Styling floating content](../../../docs/styling-floating-content.md) for the full list and the side/align animation recipe.
 
 ```css
 .card[data-state='open'] {
@@ -250,16 +250,16 @@ forty-cdk ships no styles. Add your own class to each piece. The `for*` selector
 }
 ```
 
-The card's open / close delays are hover-intent debouncing rather than motion, so they are deliberately left unchanged under reduced motion — only the visual transitions (which are yours) should opt out.
+The card's open / close delays are hover-intent debouncing rather than motion, so they are deliberately left unchanged under reduced motion. Only the visual transitions (which are yours) should opt out.
 
 ## Behavior notes
 
-- **Closes on scroll.** When an ancestor scroll container moves content under a stationary cursor (wheel / trackpad scrolling a virtualized or overflow-scroll list), an open card closes immediately and hover opens stay suppressed for a short window while the scroll is in flight — so cards on rows sliding past the pointer don't linger or flicker open. This is always on; a genuine pointer move after scrolling settles opens the card normally again. The keyboard-focus open path is never suppressed.
-- **Arrow offset**: `[forHoverCardArrow]` writes `position: absolute`, the floating-ui-resolved `left` / `top`, and `var(--for-floating-arrow-offset, 0px)` on the side opposite the card. Set `--for-floating-arrow-offset` on the arrow element (or any ancestor) to control how far the arrow pokes out — typically a negative `px` value such as `-4px`. The helper ships no default visual.
+- **Closes on scroll.** When an ancestor scroll container moves content under a stationary cursor (wheel / trackpad scrolling a virtualized or overflow-scroll list), an open card closes immediately and hover opens stay suppressed for a short window while the scroll is in flight, so that cards on rows sliding past the pointer don't linger or flicker open. This is always on; a genuine pointer move after scrolling settles opens the card normally again. The keyboard-focus open path is never suppressed.
+- **Arrow offset**: `[forHoverCardArrow]` writes `position: absolute`, the floating-ui-resolved `left` / `top`, and `var(--for-floating-arrow-offset, 0px)` on the side opposite the card. Set `--for-floating-arrow-offset` on the arrow element (or any ancestor) to control how far the arrow pokes out. The value is typically a negative `px` such as `-4px`. The helper ships no default visual.
 
 ### Triggers stamped from outside-declared templates
 
-Angular resolves `ng-template` DI at the template's **declaration** site, not where it is stamped. A `[forHoverCardTrigger]` declared in a template outside the root throws the orphan error even when the template is rendered inside the root via `ngTemplateOutlet`. For that case the selector attribute accepts the root reference as a value, `routerLink`-style — grab it with `#root="forHoverCard"` and pass it through the outlet context. The bare valueless attribute keeps resolving via DI.
+Angular resolves `ng-template` DI at the template's **declaration** site, not where it is stamped. A `[forHoverCardTrigger]` declared in a template outside the root throws the orphan error even when the template is rendered inside the root via `ngTemplateOutlet`. For that case the selector attribute accepts the root reference as a value, `routerLink`-style. Grab it with `#root="forHoverCard"` and pass it through the outlet context. The bare valueless attribute keeps resolving via DI.
 
 ```html
 <span forHoverCard #root="forHoverCard">

@@ -7,16 +7,16 @@ apgUrl: https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton/
 
 # DateField
 
-A segmented date (and optional time) input over a pluggable date adapter — each part a spinbutton with keyboard stepping, locale-driven segment order and min / max clamping.
+A segmented date (and optional time) input over a pluggable date adapter, with one spinbutton per part, keyboard stepping, locale-driven segment order and min / max clamping.
 
-The keyboard-first counterpart to [Calendar](../calendar/README.md): each day / month / year part is an independent `role="spinbutton"` segment inside a labelled `role="group"`, so entry is unambiguous and locale-correct — no free-text parsing, no `03/04`-is-it-March-4th guesswork. Segment **order** and separators follow the runtime locale (`MM/DD/YYYY` vs `DD.MM.YYYY` vs `YYYY/MM/DD`).
+The keyboard-first counterpart to [Calendar](../calendar/README.md): each day / month / year part is an independent `role="spinbutton"` segment inside a labelled `role="group"`, so entry is unambiguous and locale-correct, with no free-text parsing and no `03/04`-is-it-March-4th guesswork. Segment **order** and separators follow the runtime locale (`MM/DD/YYYY` vs `DD.MM.YYYY` vs `YYYY/MM/DD`).
 
 `ForDateField` implements `FormValueControl<D | null>` from `@angular/forms/signals`, so it auto-wires with `[formField]` and auto-associates inside a `[forField]` (label / description / error) with no extra markup. The value stays `null` until every segment is filled.
 
 ## When to choose
 
-- **Date Field** — typed entry: one `role="spinbutton"` per date part, in the runtime locale's own order, with no popup at all. Choose it when the user knows the date — a birth date, an expiry — and typing beats pointing.
-- **[Date Picker](../date-picker/README.md)** — a trigger that opens a floating [Calendar](../calendar/README.md), and the form value itself. Choose it when the date is found by looking: the next free Tuesday, a day near the end of the month.
+- **Date Field**: typed entry, with one `role="spinbutton"` per date part in the runtime locale's own order and no popup at all. Choose it when the user knows the date (a birth date, an expiry) and typing beats pointing.
+- **[Date Picker](../date-picker/README.md)**: a trigger that opens a floating [Calendar](../calendar/README.md), and the form value itself. Choose it when the date is found by looking: the next free Tuesday, a day near the end of the month.
 - **[Calendar](../calendar/README.md)**: that same grid inline and always visible. It is a widget with a `[(value)]` model rather than a form control.
 
 ## Date adapter
@@ -53,7 +53,7 @@ bootstrapApplication(App, {
 
 ## Examples
 
-Focus a segment and type, or step it with the arrow keys — each segment is a spinbutton of its own, and one still holding its placeholder carries `data-placeholder`.
+Focus a segment and type, or step it with the arrow keys. Each segment is a spinbutton of its own, and one still holding its placeholder carries `data-placeholder`.
 
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
@@ -95,7 +95,7 @@ With a time-capable adapter, a `granularity` coarser than `'day'` appends hour /
 
 ### Signal Forms
 
-`ForDateField` implements `FormValueControl<CalendarDate | null>`, so a single `[formField]` binding wires the committed value into the form and pulls validity and touched back out — no `ControlValueAccessor`.
+`ForDateField` implements `FormValueControl<CalendarDate | null>`, so a single `[formField]` binding wires the committed value into the form and pulls validity and touched back out. No `ControlValueAccessor` is involved.
 
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
@@ -139,7 +139,7 @@ export class DobFormField {
 
 ### Date & time range
 
-With a time-capable adapter, a `granularity` coarser than `'day'` appends time segments to both endpoints and the value becomes a `CalendarDateTime` range — handy for a check-in to check-out with times. A 12-hour `hourCycle` adds an AM/PM segment to each side.
+With a time-capable adapter, a `granularity` coarser than `'day'` appends time segments to both endpoints and the value becomes a `CalendarDateTime` range, which is handy for a check-in to check-out with times. A 12-hour `hourCycle` adds an AM/PM segment to each side.
 
 ### Range in Signal Forms
 
@@ -152,7 +152,7 @@ With a time-capable adapter, a `granularity` coarser than `'day'` appends time s
 | Property      | Type                                             | Description                                                                                                                                |
 | ------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | `value`       | `model<D \| null>`                               | Two-way bindable entered date, or `null` while any segment is empty. The `FormValueControl` backing.<br>**Default:** `null`                |
-| `minDate`     | `input<D \| null>`                               | Minimum date (inclusive). A composed value below it is clamped up. Named `minDate` — see note below.<br>**Default:** `null`                |
+| `minDate`     | `input<D \| null>`                               | Minimum date (inclusive). A composed value below it is clamped up. Named `minDate` (see note below).<br>**Default:** `null`                |
 | `maxDate`     | `input<D \| null>`                               | Maximum date (inclusive). A composed value above it is clamped down.<br>**Default:** `null`                                                |
 | `granularity` | `input<'day' \| 'hour' \| 'minute' \| 'second'>` | Date-time precision. `'day'` is date-only; coarser-than-day appends time segments. See below.<br>**Default:** `'day'`                      |
 | `hourCycle`   | `input<12 \| 24 \| null>`                        | 12/24-hour cycle for the time segments. `null` → locale. 12-hour adds the AM/PM segment.<br>**Default:** `null`                            |
@@ -177,11 +177,11 @@ Plus the shared `FormUiControl` members from `@angular/forms/signals`: `disabled
 | `[forDateFieldSegment]` | `data-disabled`    | present \| absent |
 | `[forDateFieldSegment]` | `data-readonly`    | present \| absent |
 
-`data-empty` marks the field only while **every** editable segment is empty (nothing has been entered); a partially-typed field is **not** empty. `data-placeholder` marks each individual segment that is still empty. `data-highlighted` is the current roving-tabindex segment — the only focus hook the consumer gets, shared with the other roving primitives. `[forDateFieldLiteral]` carries no data-\* attributes (it is `aria-hidden` and out of the tab order).
+`data-empty` marks the field only while **every** editable segment is empty (nothing has been entered); a partially-typed field is **not** empty. `data-placeholder` marks each individual segment that is still empty. `data-highlighted` is the current roving-tabindex segment and the only focus hook the consumer gets, shared with the other roving primitives. `[forDateFieldLiteral]` carries no data-\* attributes (it is `aria-hidden` and out of the tab order).
 
 ## Date-time field
 
-Set `granularity` to `'hour'`, `'minute'`, or `'second'` (`granularity > 'day'`) to append time segments — hour / minute / second and, in 12-hour mode, an AM·PM `dayPeriod` — after the date segments in the same `role="group"`. The whole field stays a single tab stop with one roving cursor across **all** segments; `field.segments()` already returns the combined, locale-ordered list, so the same `@for` template renders it. This needs a **time-capable** adapter — `provideNativeDateAdapter()` (`Date`) or `provideInternationalizedDateTimeAdapter()` (`CalendarDateTime`); the day-only `provideInternationalizedDateAdapter()` (`CalendarDate`) throws.
+Set `granularity` to `'hour'`, `'minute'`, or `'second'` (`granularity > 'day'`) to append time segments (hour / minute / second and, in 12-hour mode, an AM·PM `dayPeriod`) after the date segments in the same `role="group"`. The whole field stays a single tab stop with one roving cursor across **all** segments; `field.segments()` already returns the combined, locale-ordered list, so the same `@for` template renders it. This needs a **time-capable** adapter, either `provideNativeDateAdapter()` (`Date`) or `provideInternationalizedDateTimeAdapter()` (`CalendarDateTime`). The day-only `provideInternationalizedDateAdapter()` (`CalendarDate`) throws.
 
 ```html
 <div
@@ -200,7 +200,7 @@ Set `granularity` to `'hour'`, `'minute'`, or `'second'` (`granularity > 'day'`)
 </div>
 ```
 
-On the AM/PM segment, `a` / `p` set the period and ArrowUp / ArrowDown toggle it; the period is derived from the entered hour, so clearing it is a no-op (clear or step the hour instead). The value stays `null` until every visible segment — date **and** time — is filled.
+On the AM/PM segment, `a` / `p` set the period and ArrowUp / ArrowDown toggle it; the period is derived from the entered hour, so clearing it is a no-op (clear or step the hour instead). The value stays `null` until every visible segment (date **and** time) is filled.
 
 ## Scoped defaults
 
@@ -221,7 +221,7 @@ providers: [
 
 ## Range selection — `ForDateRangeField`
 
-For a date range use the dedicated `ForDateRangeField` root (selector `[forDateRangeField]`), shipped from this same entry point. It is the keyboard-first, form-capable counterpart to [DateRangePicker](../date-picker/README.md): two labelled `role="group"` endpoints (start / end), each holding a row of spinbutton segments — the same machinery as `ForDateField` — nested inside one outer `role="group"`. It implements `FormValueControl<DateRange<D> | null>`, the **same** contract as `ForDateRangePicker`, so the committed range auto-wires with `[formField]`. The value stays `null` until **both** endpoints are fully entered and ordered (`start <= end`).
+For a date range use the dedicated `ForDateRangeField` root (selector `[forDateRangeField]`), shipped from this same entry point. It is the keyboard-first, form-capable counterpart to [DateRangePicker](../date-picker/README.md): two labelled `role="group"` endpoints (start / end) nested inside one outer `role="group"`. Each endpoint holds a row of spinbutton segments built on the same machinery as `ForDateField`. It implements `FormValueControl<DateRange<D> | null>`, the **same** contract as `ForDateRangePicker`, so the committed range auto-wires with `[formField]`. The value stays `null` until **both** endpoints are fully entered and ordered (`start <= end`).
 
 The pieces are the range-specific `[forDateRangeFieldStart]` / `[forDateRangeFieldEnd]` endpoint groups plus `[forDateRangeFieldSegment]` / `[forDateRangeFieldLiteral]`; each endpoint exposes its own `segments()` list, so the same `@for` template renders both sides.
 
@@ -266,7 +266,7 @@ readonly booking = form(this.model);
 | Property      | Type                                             | Description                                                                                                                                       |
 | ------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `value`       | `model<DateRange<D> \| null>`                    | Two-way bindable committed range, or `null` while incomplete or out of order. The `FormValueControl` backing.<br>**Default:** `null`              |
-| `minDate`     | `input<D \| null>`                               | Minimum date (inclusive) for both endpoints. A composed endpoint below it is clamped up. Named `minDate` — see note below.<br>**Default:** `null` |
+| `minDate`     | `input<D \| null>`                               | Minimum date (inclusive) for both endpoints. A composed endpoint below it is clamped up. Named `minDate` (see note below).<br>**Default:** `null` |
 | `maxDate`     | `input<D \| null>`                               | Maximum date (inclusive) for both endpoints. A composed endpoint above it is clamped down.<br>**Default:** `null`                                 |
 | `granularity` | `input<'day' \| 'hour' \| 'minute' \| 'second'>` | Date-time precision shared by both endpoints. `'day'` is date-only; coarser-than-day appends time segments.<br>**Default:** `'day'`               |
 | `hourCycle`   | `input<12 \| 24 \| null>`                        | 12/24-hour cycle for the time segments. `null` → locale. 12-hour adds the AM/PM segment.<br>**Default:** `null`                                   |
@@ -277,7 +277,7 @@ readonly booking = form(this.model);
 
 The endpoint groups each accept an `ariaLabel` input for their own group label, falling back to the scope defaults (`'Start date'` / `'End date'`). Plus the shared `FormUiControl` members bound automatically by `[formField]`.
 
-> **Why `minDate` / `maxDate`, not `min` / `max`?** Beyond the reason above, `FormUiControl.min` / `max` are additionally typed `NonNullable<TValue>` — the range object itself — which is meaningless as a bound.
+> **Why `minDate` / `maxDate`, not `min` / `max`?** Beyond the reason above, `FormUiControl.min` / `max` are additionally typed `NonNullable<TValue>` (the range object itself), which is meaningless as a bound.
 
 `[forDateRangeField]` reflects the same `data-disabled` / `data-readonly` / `data-empty` hooks as `[forDateField]`, plus `data-range-error`; `[forDateRangeFieldSegment]` reflects the same four segment hooks. `data-empty` marks the field only while **both** endpoints are entirely empty; a partially-filled or complete-but-disordered range is **not** empty.
 
@@ -291,7 +291,7 @@ Each endpoint is its own tab stop, so `Tab` moves start group → end group → 
 
 ### Range scoped defaults
 
-`provideForDateRangeFieldDefaults` mirrors `provideForDateFieldDefaults` and adds `startLabel` / `endLabel` for the two endpoint group `aria-label`s (`'Start date'` / `'End date'` by default). Both wrapper patterns work via `FOR_DATE_RANGE_FIELD_HOST_DIRECTIVE_INPUTS` / `FOR_DATE_RANGE_FIELD_HOST_DIRECTIVE_OUTPUTS` — see [Wrapping form primitives](../../../docs/wrapping-form-primitives.md).
+`provideForDateRangeFieldDefaults` mirrors `provideForDateFieldDefaults` and adds `startLabel` / `endLabel` for the two endpoint group `aria-label`s (`'Start date'` / `'End date'` by default). Both wrapper patterns work via `FOR_DATE_RANGE_FIELD_HOST_DIRECTIVE_INPUTS` / `FOR_DATE_RANGE_FIELD_HOST_DIRECTIVE_OUTPUTS`. See [Wrapping form primitives](../../../docs/wrapping-form-primitives.md).
 
 ## Keyboard
 
@@ -310,18 +310,18 @@ The day clamps to the current month's length (e.g. 31 → 28 in February), and a
 
 ## Accessibility
 
-Composes the [WAI-ARIA Spinbutton pattern](https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton/) — there is no single APG pattern for a date field, so each segment is an independent spinbutton inside a labelled `role="group"`.
+Composes the [WAI-ARIA Spinbutton pattern](https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton/). There is no single APG pattern for a date field, so each segment is an independent spinbutton inside a labelled `role="group"`.
 
 - **`role="group"`** on the root carries the field's accessible name (`ariaLabel`, or point native `aria-labelledby` at a visible label).
 - **`role="spinbutton"`** per segment, with `aria-valuemin` / `aria-valuemax` / `aria-valuenow` reflected; the month segment also exposes a localized `aria-valuetext` ("March"), so screen readers read the name rather than the number.
 - **Roving tabindex**: exactly one segment is tabbable, so `Tab` enters and leaves the whole field in one stop; arrows move between segments.
-- **Literals are `aria-hidden`** and never focusable — assistive tech reads only the spinbutton segments.
-- **Boolean `data-*`** on each segment — `data-highlighted` (focused/roving), `data-placeholder` (empty), `data-disabled`, `data-readonly` — present when true, absent when false.
+- **Literals are `aria-hidden`** and never focusable, so assistive tech reads only the spinbutton segments.
+- **Boolean `data-*`** on each segment, present when true and absent when false: `data-highlighted` (focused/roving), `data-placeholder` (empty), `data-disabled`, `data-readonly`.
 - **`aria-readonly` belongs on the segments, not the group.** WAI-ARIA supports it on `role="spinbutton"` but not on `role="group"`, so each segment carries `aria-readonly="true"` while the group reflects the `data-readonly` styling hook only.
 
 ## Styling
 
-The library is styleless: style the boolean `data-*` hooks on the segments yourself — `[data-highlighted]` (the focused/roving segment), `[data-placeholder]` (empty), `[data-disabled]`, `[data-readonly]` — and `[data-empty]` / `[data-disabled]` / `[data-readonly]` on the root group.
+The library is styleless, so style the boolean `data-*` hooks yourself: `[data-highlighted]` (the focused/roving segment), `[data-placeholder]` (empty), `[data-disabled]` and `[data-readonly]` on the segments, and `[data-empty]` / `[data-disabled]` / `[data-readonly]` on the root group.
 
 forty-cdk ships no styles. Add your own class to each piece. The for\* selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected data-\* attributes listed under [Data attributes](#data-attributes).
 
@@ -340,4 +340,4 @@ forty-cdk ships no styles. Add your own class to each piece. The for\* selectors
 
 ## Wrapping in a design system
 
-Both supported wrapper patterns — `hostDirectives` with the exported `FOR_DATE_FIELD_HOST_DIRECTIVE_INPUTS` / `FOR_DATE_FIELD_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing — are documented in [Wrapping form primitives](../../../docs/wrapping-form-primitives.md).
+[Wrapping form primitives](../../../docs/wrapping-form-primitives.md) documents both supported wrapper patterns: `hostDirectives` with the exported `FOR_DATE_FIELD_HOST_DIRECTIVE_INPUTS` / `FOR_DATE_FIELD_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing.

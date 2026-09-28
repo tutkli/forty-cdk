@@ -48,7 +48,7 @@ A navigation landmark that derives a visible page list with ellipsis gaps from p
 
 ## Examples
 
-Walk the pages with the pointer or the keyboard — the current page is `aria-current="page"`, and the ends reflect `data-disabled` on the arrow that has nowhere to go.
+Walk the pages with the pointer or the keyboard. The current page is `aria-current="page"`, and the ends reflect `data-disabled` on the arrow that has nowhere to go.
 
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
@@ -119,7 +119,7 @@ export class PaginationDefaultExample {
 
 ### Driving a data list
 
-Pagination is headless state — derive `count` from your data, then slice the visible rows from `page()`. Changing the page re-slices the list; the `page` model is the single source of truth shared by the rows and the controls.
+Pagination is headless state: derive `count` from your data, then slice the visible rows from `page()`. Changing the page re-slices the list; the `page` model is the single source of truth shared by the rows and the controls.
 
 ## API
 

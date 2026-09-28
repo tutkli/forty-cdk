@@ -13,7 +13,7 @@ It shares the same focus trap, scroll lock, Escape-to-close, dismissible-layer, 
 
 ## When to choose
 
-- **Drawer** — an edge-anchored sheet on the modal dialog engine: focus trap, inert background and scroll lock, plus a pointer drag that swipes it away or rests it on a snap point.
+- **Drawer**: an edge-anchored sheet on the modal dialog engine, with its focus trap, inert background and scroll lock, plus a pointer drag that swipes it away or rests it on a snap point.
 - **[Dialog](../dialog/README.md)**: the same modal behaviour without the edge anchoring, the drag or the snap points. Choose it for a surface you place with CSS and dismiss with Escape, the backdrop or a close button.
 - **[Popover](../popover/README.md)**: non-modal and anchored to its trigger. Choose it when the page behind must stay interactive while the surface is open.
 
@@ -84,7 +84,7 @@ export class DemoFilters {
 }
 ```
 
-Wrapping with `@if` is what makes Angular's native `animate.enter` / `animate.leave` work — they fire on real mount / unmount, not on attribute toggling.
+Wrapping with `@if` is what makes Angular's native `animate.enter` / `animate.leave` work, because they fire on real mount / unmount, not on attribute toggling.
 
 ### Programmatic — `ForDrawerManager.open()`
 
@@ -151,11 +151,11 @@ class DemoHost {
 }
 ```
 
-`injectDrawerData<T>()` is typed `T | null`: the manager provides `null` when `open()` is called without `data`, so guard (`data?.message`) before dereferencing the payload. `await ref.closed` resolves `{ reason, result }` — the `reason` (a `ForDrawerCloseReason`) tells apart an imperative `close()` (`'programmatic'`) from Escape / backdrop / outside / swipe / close-button dismissals.
+`injectDrawerData<T>()` is typed `T | null`: the manager provides `null` when `open()` is called without `data`, so guard (`data?.message`) before dereferencing the payload. `await ref.closed` resolves `{ reason, result }`, whose `reason` (a `ForDrawerCloseReason`) tells apart an imperative `close()` (`'programmatic'`) from Escape / backdrop / outside / swipe / close-button dismissals.
 
 Drawers opened by the manager join the same `ForDrawerStack` as declarative ones, so mixed stacking (a programmatic drawer over a declarative parent, or vice versa) reflects correct `data-depth` / `data-state-nested` and routes Escape through the LIFO dismissible layer.
 
-**Styling the programmatic overlay root.** The manager creates the `[forDrawer]` host for you and it is class-less. Pass `class` / `classList` to style it — the tokens land on the real host alongside `data-side` / `data-state` / the `--for-drawer-swipe-movement-x` / `-y` custom properties, so positioning CSS keyed on `data-side` works:
+**Styling the programmatic overlay root.** The manager creates the `[forDrawer]` host for you and it is class-less. Pass `class` / `classList` to style it. The tokens land on the real host alongside `data-side` / `data-state` / the `--for-drawer-swipe-movement-x` / `-y` custom properties, so positioning CSS keyed on `data-side` works:
 
 <!-- snippet: fragment -->
 
@@ -169,7 +169,7 @@ this.#drawers.open(ConfirmDrawer, { data, side: 'bottom', class: 'my-drawer' });
 }
 ```
 
-**Enter / exit animations.** A programmatic drawer is portaled to `document.body` and torn down imperatively, so the consumer can't attach `animate.leave` to the host the way a declarative `@if` block can. Pass `animateEnter` / `animateLeave` (CSS class names) instead: the manager applies `animateEnter` on mount (via `animate.enter`) and, on `close()`, keeps the host mounted with `animateLeave` until its CSS animations / transitions finish before tearing down. `close()` still resolves its promise and flips `isClosed()` immediately — only the visual teardown waits. Set them once for a scope with `provideForDrawerDefaults({ animateEnter, animateLeave })`; a per-`open()` value wins over the scope default.
+**Enter / exit animations.** A programmatic drawer is portaled to `document.body` and torn down imperatively, so the consumer can't attach `animate.leave` to the host the way a declarative `@if` block can. Pass `animateEnter` / `animateLeave` (CSS class names) instead: the manager applies `animateEnter` on mount (via `animate.enter`) and, on `close()`, keeps the host mounted with `animateLeave` until its CSS animations / transitions finish before tearing down. `close()` still resolves its promise and flips `isClosed()` immediately. Only the visual teardown waits. Set them once for a scope with `provideForDrawerDefaults({ animateEnter, animateLeave })`; a per-`open()` value wins over the scope default.
 
 <!-- snippet: fragment -->
 
@@ -202,9 +202,9 @@ this.#drawers.open(ConfirmDrawer, {
 });
 ```
 
-`activeSnapPointChange` fires with the landed snap on the mount-time default and every swipe release — the read-back the declarative API exposes through `[(activeSnapPoint)]`. All subscriptions are released automatically when the drawer closes.
+`activeSnapPointChange` fires with the landed snap on the mount-time default and every swipe release. It is the read-back that the declarative API exposes through `[(activeSnapPoint)]`. All subscriptions are released automatically when the drawer closes.
 
-**Driving the active snap point.** `ForDrawerRef.setActiveSnapPoint(snap)` moves a snap-point drawer to a new snap after open — the programmatic equivalent of _writing_ `[(activeSnapPoint)]` on the declarative `[forDrawer]`. `ref.activeSnapPoint()` is the matching reactive read (it also reflects the drawer's own internal transitions — the mount-time default and every swipe release):
+**Driving the active snap point.** `ForDrawerRef.setActiveSnapPoint(snap)` moves a snap-point drawer to a new snap after open and is the programmatic equivalent of _writing_ `[(activeSnapPoint)]` on the declarative `[forDrawer]`. `ref.activeSnapPoint()` is the matching reactive read (it also reflects the drawer's own internal transitions, namely the mount-time default and every swipe release):
 
 <!-- snippet: fragment -->
 
@@ -222,7 +222,7 @@ Like the declarative model it does not validate the argument against `snapPoints
 
 ### Per-channel dismissal (Escape-only drawers)
 
-`dismissible` is **not** all-or-nothing. The four dismiss channels — Escape, pointer-down-outside, focus-outside, and the composite outside-interaction — are independently vetoable on both APIs, so you can keep some live and suppress others (e.g. a non-modal floater that closes on Escape but stays put on an outside click). Programmatically the channels are callbacks on the open config, mirroring the `autoFocusOn*` shape:
+`dismissible` is **not** all-or-nothing. The four dismiss channels (Escape, pointer-down-outside, focus-outside, and the composite outside-interaction) are independently vetoable on both APIs, so you can keep some live and suppress others (e.g. a non-modal floater that closes on Escape but stays put on an outside click). Programmatically the channels are callbacks on the open config, mirroring the `autoFocusOn*` shape:
 
 <!-- snippet: fragment -->
 
@@ -236,7 +236,7 @@ this.#drawers.open(ConfirmDrawer, {
 });
 ```
 
-Declaratively the same recipe is the four vetoable outputs on `[forDrawer]`: `(interactOutside)="$event.preventDefault()"` suppresses the outside-click close while Escape (its own channel) still closes; veto `(escapeKeyDown)` instead to suppress Escape. Each callback's / output's `event.event` carries the originating DOM event. The callbacks behave identically to the outputs — same events, same veto semantics — and are torn down with the drawer.
+Declaratively the same recipe is the four vetoable outputs on `[forDrawer]`: `(interactOutside)="$event.preventDefault()"` suppresses the outside-click close while Escape (its own channel) still closes; veto `(escapeKeyDown)` instead to suppress Escape. Each callback's / output's `event.event` carries the originating DOM event. The callbacks behave identically to the outputs (same events, same veto semantics) and are torn down with the drawer.
 
 ## Anatomy
 
@@ -260,7 +260,7 @@ Declaratively the same recipe is the four vetoable outputs on `[forDrawer]`: `(i
 
 ## Examples
 
-Open the drawer, drag it by its edge and let go past the threshold — `data-state` drives the transition and `data-dragging` is set for the gesture itself.
+Open the drawer, drag it by its edge and let go past the threshold. `data-state` drives the transition, and `data-dragging` is set for the gesture itself.
 
 ```ts
 import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
@@ -371,7 +371,7 @@ Press the button: the manager opens the confirmation as a bottom drawer, and the
 | `autoFocusOnOpen`           | `(e: VetoableEvent) => void` \| `undefined`                         | `event.preventDefault()` skips the imperative focus move.<br>**Default:** —                                                                                                                                  |
 | `autoFocusOnClose`          | `(e: VetoableEvent) => void` \| `undefined`                         | Fires on every close path regardless of mode. In non-modal mode the directive doesn't move focus, so the veto is informational; in modal mode `event.preventDefault()` skips return-focus.<br>**Default:** — |
 | `swipeToDismiss`            | `boolean`                                                           | Disabled automatically under `prefers-reduced-motion: reduce`.<br>**Default:** `true`                                                                                                                        |
-| `closeThreshold`            | `number`                                                            | Fraction past which a release dismisses — of the full dimension without `snapPoints`, of the lowest snap's extent with them.<br>**Default:** `0.25`                                                          |
+| `closeThreshold`            | `number`                                                            | Fraction past which a release dismisses, measured against the full dimension without `snapPoints` and against the lowest snap's extent with them.<br>**Default:** `0.25`                                                          |
 | `handleOnly`                | `boolean`                                                           | Swipe arms only on the registered `[forDrawerHandle]`.<br>**Default:** `false`                                                                                                                               |
 | `snapPoints`                | `ReadonlyArray<ForDrawerSnapPoint>`                                 | `number ∈ [0,1]` \| `'NN%'` \| `'NNpx'`. Strictly increasing.<br>**Default:** —                                                                                                                              |
 | `activeSnapPoint`           | `ModelSignal<ForDrawerSnapPoint \| null>`                           | Two-way bindable. Initialised to `snapPoints[0]` on mount when null.<br>**Default:** `null`                                                                                                                  |
@@ -382,7 +382,7 @@ Press the button: the manager opens the confirmation as a bottom drawer, and the
 | `escapeKeyDown`             | `OutputEmitterRef<VetoableNativeEvent<KeyboardEvent>>`              | Output. `preventDefault()` suppresses auto-close.<br>**Default:** —                                                                                                                                          |
 | `pointerDownOutside`        | `OutputEmitterRef<VetoableNativeEvent<PointerEvent>>`               | Output. `preventDefault()` suppresses auto-close.<br>**Default:** —                                                                                                                                          |
 | `focusOutside`              | `OutputEmitterRef<VetoableNativeEvent<FocusEvent>>`                 | Output. `preventDefault()` suppresses auto-close.<br>**Default:** —                                                                                                                                          |
-| `interactOutside`           | `OutputEmitterRef<VetoableNativeEvent<PointerEvent \| FocusEvent>>` | Output. Composite — vetoed by either specific event.<br>**Default:** —                                                                                                                                       |
+| `interactOutside`           | `OutputEmitterRef<VetoableNativeEvent<PointerEvent \| FocusEvent>>` | Output. Composite, vetoed by either specific event.<br>**Default:** —                                                                                                                                       |
 | `swipeStart`                | `OutputEmitterRef<ForDrawerSwipeEvent>`                             | Output. Fires once on the arming pointer move; `progress` is `0`.<br>**Default:** —                                                                                                                          |
 | `swipeMove`                 | `OutputEmitterRef<ForDrawerSwipeEvent>`                             | Output. Streams `progress` ∈ [0,1] and the originating `PointerEvent`.<br>**Default:** —                                                                                                                     |
 | `swipeEnd`                  | `OutputEmitterRef<ForDrawerSwipeEndEvent>`                          | Output. `willClose`, `nextSnapPoint`. Directive already updated state.<br>**Default:** —                                                                                                                     |
@@ -390,7 +390,7 @@ Press the button: the manager opens the confirmation as a bottom drawer, and the
 
 `ForDrawerCloseReason`: `'escape' | 'backdrop' | 'pointerDownOutside' | 'focusOutside' | 'closeButton' | 'swipe' | 'programmatic'`.
 
-> **The declarative and imperative surfaces spell this differently, on purpose.** The output is `(dismiss)` — an output named `close` would collide with the native DOM event and break any wrapper re-exposing it through `hostDirectives`. Nothing else changes name: the imperative handle method is `ForDrawerRef.close()`, the directive selector is `[forDrawerClose]`, and the payload type is `ForDrawerCloseReason`.
+> **The declarative and imperative surfaces spell this differently, on purpose.** The output is `(dismiss)`, because an output named `close` would collide with the native DOM event and break any wrapper re-exposing it through `hostDirectives`. Nothing else changes name: the imperative handle method is `ForDrawerRef.close()`, the directive selector is `[forDrawerClose]`, and the payload type is `ForDrawerCloseReason`.
 
 | Data attribute           | Values                                       |
 | ------------------------ | -------------------------------------------- |
@@ -433,9 +433,9 @@ Press the button: the manager opens the confirmation as a bottom drawer, and the
 
 Three accepted shapes:
 
-- `number ∈ [0, 1]` — fraction of the dismissal-axis dimension.
-- `'NN%'` — equivalent to a fraction (`'50%' === 0.5`).
-- `'NNpx'` — absolute pixel size measured from the anchored edge.
+- `number ∈ [0, 1]`: fraction of the dismissal-axis dimension.
+- `'NN%'`: equivalent to a fraction (`'50%' === 0.5`).
+- `'NNpx'`: absolute pixel size measured from the anchored edge.
 
 Pass them in **strictly increasing** order (closest-to-edge first); the directive throws `FORCDK-DRAWER-009` otherwise. Mixed units (`'200px'` next to `0.5`) can only be ordered against the live drawer size, so they are re-checked on first measurement and fail with `FORCDK-DRAWER-010`, which names the offending point and the dimension it resolved against. `fadeFromIndex` must be a valid index into `snapPoints`.
 
@@ -454,11 +454,11 @@ The `model<>()` change emitter (`(activeSnapPointChange)`) fires on internal tra
 
 ### Positioning the snaps (CSS contract)
 
-The directive does **not** position the surface at each snap — that is the consumer's job, keyed off `data-active-snap-point`. Position the rest state with a layout property such as `bottom` / `top` (or `left` / `right`), and transition it for the snap-to-snap animation.
+The directive does **not** position the surface at each snap. That is the consumer's job, keyed off `data-active-snap-point`. Position the rest state with a layout property such as `bottom` / `top` (or `left` / `right`), and transition it for the snap-to-snap animation.
 
-The live swipe delta is published on the host as **two px custom properties**, `--for-drawer-swipe-movement-x` and `--for-drawer-swipe-movement-y` (`0px` at rest; only the drawer's dismissal axis is ever non-zero). Compose the shorthand yourself on the surface with `translate: var(--for-drawer-swipe-movement-x, 0px) var(--for-drawer-swipe-movement-y, 0px)`. Custom properties are used — rather than the directive writing `translate` / `transform` directly — for two reasons: `transform` is reserved for the scale-background / nested effect, and a directly-written inline `translate` is silently dropped by Angular when you also bind a template `[style.*]` on the same host. Reading them through the vars keeps the gesture working regardless of any inline style bindings you put on the surface, and composes with `transform` without clobbering it.
+The live swipe delta is published on the host as **two px custom properties**, `--for-drawer-swipe-movement-x` and `--for-drawer-swipe-movement-y` (`0px` at rest; only the drawer's dismissal axis is ever non-zero). Compose the shorthand yourself on the surface with `translate: var(--for-drawer-swipe-movement-x, 0px) var(--for-drawer-swipe-movement-y, 0px)`. The directive uses custom properties instead of writing `translate` / `transform` directly, for two reasons: `transform` is reserved for the scale-background / nested effect, and a directly-written inline `translate` is silently dropped by Angular when you also bind a template `[style.*]` on the same host. Reading them through the vars keeps the gesture working regardless of any inline style bindings you put on the surface, and composes with `transform` without clobbering it.
 
-For a seamless release, transition **both** `translate` and your snap-position property with the same timing, and suppress that transition while `data-dragging` is present. The directive resets both movement properties to `0px`, removes `data-dragging`, and updates `data-active-snap-point` in a single change-detection pass on release, so the swipe delta animates back to zero in lockstep with the snap-position change — the surface never jumps to the previous rest position before sliding to the new snap.
+For a seamless release, transition **both** `translate` and your snap-position property with the same timing, and suppress that transition while `data-dragging` is present. The directive resets both movement properties to `0px`, removes `data-dragging`, and updates `data-active-snap-point` in a single change-detection pass on release, so the swipe delta animates back to zero in lockstep with the snap-position change. The surface never jumps to the previous rest position before sliding to the new snap.
 
 ```css
 .sheet {
@@ -487,7 +487,7 @@ For a seamless release, transition **both** `translate` and your snap-position p
 
 ### Backdrop swipe-fade (CSS contract)
 
-`[forDrawerBackdrop]` publishes the live swipe progress _toward the anchored edge_ as the **`--for-drawer-swipe-progress`** custom property (`0` at rest → `1` fully swiped off-screen) and mirrors the surface's **`data-dragging`** attribute. This drives the "backdrop fades out as you swipe to dismiss" cue with pure CSS — no `(swipeMove)` listener required:
+`[forDrawerBackdrop]` publishes the live swipe progress _toward the anchored edge_ as the **`--for-drawer-swipe-progress`** custom property (`0` at rest → `1` fully swiped off-screen) and mirrors the surface's **`data-dragging`** attribute. This drives the "backdrop fades out as you swipe to dismiss" cue with pure CSS and needs no `(swipeMove)` listener:
 
 ```css
 .drawer-backdrop {
@@ -506,7 +506,7 @@ For a seamless release, transition **both** `translate` and your snap-position p
 
 - Pointer drag toward the anchored edge translates the surface and resolves to the nearest snap (or a dismiss) on release.
 - With `snapPoints`, the drag is bidirectional: a drag **away** from the anchored edge grows the surface toward a larger snap (bounded by the largest snap), and a drag toward the edge shrinks it / dismisses past the lowest one. Without `snapPoints` the gesture is one-way (toward the edge to dismiss).
-- `closeThreshold` (default `0.25`) is the fraction past which a release from the lowest snap dismisses — measured against that snap's own extent (not the full dimension), so a small "peek" snap stays dismissible without dragging it off-screen.
+- `closeThreshold` (default `0.25`) is the fraction past which a release from the lowest snap dismisses. It is measured against that snap's own extent (not the full dimension), so a small "peek" snap stays dismissible without dragging it off-screen.
 - `handleOnly: true` confines the gesture to a registered `[forDrawerHandle]`, leaving the rest of the surface free for content scroll.
 - Gestures starting inside a scrollable element that hasn't reached its edge are NOT treated as swipes (the helper defers to inner scroll).
 - **`prefers-reduced-motion: reduce`** disables the swipe listener entirely. Escape, backdrop, outside-pointer, and close button continue to work.
@@ -542,17 +542,17 @@ Opt in to the "viewport recedes behind the drawer" effect: when the drawer opens
 
 While the effect is active the wrapper reflects `data-state="scaled"` (and `"idle"` at rest); the drawer reflects `data-scale-background` so consumers can style the surface differently when scale is in play (e.g. larger corner radii).
 
-`setBackgroundColorOnScale` (default `true`) paints `<body>` with `scaleBackgroundColor` while the effect is active. Disable it (`[setBackgroundColorOnScale]="false"`) when the application shell already covers the viewport edge — a themed `<html>` / `<body>` background, a fixed root layer, or a full-bleed CSS-framework wrapper. In those flows the body-color mutation is redundant and would briefly overwrite a theme-managed value on every open / close; leaving it off keeps the consumer's own paint authoritative, the rounded gap behind the scaled wrapper composes with whatever colour they ship. The flag has no effect under `prefers-reduced-motion: reduce` (the whole effect is suppressed).
+`setBackgroundColorOnScale` (default `true`) paints `<body>` with `scaleBackgroundColor` while the effect is active. Disable it (`[setBackgroundColorOnScale]="false"`) when the application shell already covers the viewport edge: a themed `<html>` / `<body>` background, a fixed root layer, or a full-bleed CSS-framework wrapper. In those flows the body-color mutation is redundant and would briefly overwrite a theme-managed value on every open / close; leaving it off keeps the consumer's own paint authoritative, the rounded gap behind the scaled wrapper composes with whatever colour they ship. The flag has no effect under `prefers-reduced-motion: reduce` (the whole effect is suppressed).
 
-`prefers-reduced-motion: reduce` suppresses the effect entirely — wrapper styles, body color, and `data-scale-background` are all bypassed without affecting the rest of the drawer's behaviour.
+`prefers-reduced-motion: reduce` suppresses the effect entirely. Wrapper styles, body color, and `data-scale-background` are all bypassed without affecting the rest of the drawer's behaviour.
 
 Tune the magic numbers via `provideForDrawerDefaults` (`scaleAmount`, `scaleTranslateYpx`, `scaleBorderRadiusPx`, `scaleBackgroundColor`).
 
 ## Nested drawers
 
-A drawer mounted inside another drawer's `@if` is automatically detected as a child and joins a LIFO stack — no `nested` flag required. The directive composes the existing dismissible-layer / focus / scroll-lock stacks (Escape closes the topmost first; focus stays trapped in the topmost; body scroll lock is refcounted so closing the child does not unlock the parent), and adds two visual hooks on the parent surface:
+A drawer mounted inside another drawer's `@if` is automatically detected as a child and joins a LIFO stack. No `nested` flag is required. The directive composes the existing dismissible-layer / focus / scroll-lock stacks (Escape closes the topmost first; focus stays trapped in the topmost; body scroll lock is refcounted so closing the child does not unlock the parent), and adds two visual hooks on the parent surface:
 
-- **`data-state-nested`** (present / absent) while at least one descendant is registered — useful for styling the parent differently when it is "covered" by a child. Style it with `[data-state-nested]`, never `[data-state-nested="true"]`.
+- **`data-state-nested`** (present / absent) while at least one descendant is registered. This is useful for styling the parent differently when it is "covered" by a child. Style it with `[data-state-nested]`, never `[data-state-nested="true"]`.
 - An inline `transform: scale(N) translate3d(...)` that scales the parent surface and translates it slightly away from its anchored edge, so the child reads as a layer in front. Suppressed under `prefers-reduced-motion: reduce`. Tune via `nestedScaleAmount` (default `0.93`) and `nestedTranslateYpx` (default `8`).
 
 Each drawer also reflects its position in the stack as `data-depth` (`"0"` for the root, `"1"` for the first child, …).
@@ -574,7 +574,7 @@ Each drawer also reflects its position in the stack as `data-depth` (`"0"` for t
 }
 ```
 
-Always nest the child's `@if` inside the parent's `@if`. That guarantees Angular's bottom-up destroy order tears the child down before the parent — the topology stack throws otherwise so the bug is loud at dev time. If both drawers opt into `[scaleBackground]="true"`, the wrapper effect composes with the parent's nested transform automatically.
+Always nest the child's `@if` inside the parent's `@if`. That guarantees Angular's bottom-up destroy order tears the child down before the parent. The topology stack throws otherwise, so the bug is loud at dev time. If both drawers opt into `[scaleBackground]="true"`, the wrapper effect composes with the parent's nested transform automatically.
 
 ## Scoped defaults
 
@@ -653,11 +653,11 @@ section[data-testid='container'] {
 }
 ```
 
-**`[container]` + `[modal]="true"` — region-isolating modal.** When `modal` is `true` alongside `container`, the drawer isolates **within the container**:
+**`[container]` + `[modal]="true"`: region-isolating modal.** When `modal` is `true` alongside `container`, the drawer isolates **within the container**:
 
 - **Focus trap** stays scoped to the drawer surface (unchanged from non-contained modal mode).
-- **Inert siblings** are applied to the container's other children only — body-level siblings outside the container stay fully interactive.
-- **Scroll lock** targets the container's own `overflow`, not `<body>` — the rest of the page keeps scrolling.
+- **Inert siblings** are applied to the container's other children only. Body-level siblings outside the container stay fully interactive.
+- **Scroll lock** targets the container's own `overflow`, not `<body>`, so the rest of the page keeps scrolling.
 
 ```html
 <section
@@ -679,13 +679,13 @@ section[data-testid='container'] {
 
 **Programmatic equivalent.** `ForDrawerManager.open(Cmp, { modal: true, container: boxEl })` portals both the surface and any `[forDrawerBackdrop]` inside the opened component into `boxEl` and scopes all three isolation behaviours to it.
 
-**Swipe-to-dismiss and snap points** keep working inside a container — the math is dimension-based (`getBoundingClientRect`), not viewport-based.
+**Swipe-to-dismiss and snap points** keep working inside a container, because the math is dimension-based (`getBoundingClientRect`), not viewport-based.
 
 **`scaleBackground` / nested visual transforms** assume a full-screen model and are not meaningful inside a container.
 
 ## Mount/unmount and animations
 
-The directive deliberately does **not** apply `[hidden]` to its surface. Wrap with `@if (open())` and use Angular's native `animate.enter` / `animate.leave` for transitions. `data-state="open"` reflects the logical state for CSS hooks but is never tied to visibility — that is `@if`'s job.
+The directive deliberately does **not** apply `[hidden]` to its surface. Wrap with `@if (open())` and use Angular's native `animate.enter` / `animate.leave` for transitions. `data-state="open"` reflects the logical state for CSS hooks but is never tied to visibility, which is `@if`'s job.
 
 ```html
 @if (open()) {
@@ -705,11 +705,11 @@ The directive deliberately does **not** apply `[hidden]` to its surface. Wrap wi
 
 Two shapes are correct by design and still break something a consumer can only discover by hitting it. Both live in markup a design system produces routinely, and neither shows up in devtools: every role and `aria-*` stays correct, so the symptom is a keyboard or screen-reader one. The library-wide statement, with the same detail for every primitive, is [Shadow DOM](../shared/README.md#shadow-dom) in `forty-cdk/shared`.
 
-**A shadow host that renders a focusable after its `<slot>` breaks the trap's `Tab` cycle.** The trap resolves its first / last pair by walking the surface's composed tree, and that walk visits slotted content after the host's whole shadow tree, whereas the browser sequences it at the `<slot>`'s position. Initial focus can land on a control that is not the visually first one, and a `Tab` at the drawer's real last control is not recognised as the cycle's end — focus leaves the surface (with the page `inert`, usually onto the browser's own UI) and the next `Tab` is pulled back to whichever control the walk thinks is first. That is the configuration you are in whenever you wrap a third-party web component, or your own `ViewEncapsulation.ShadowDom` component, inside the drawer. **Workaround:** render a host's own focusables before its `<slot>`, or project them instead of shadowing them; `initialFocus="container"` fixes the initial-focus half only, since the cycle's edges are re-resolved on every `Tab` press. Details and markup: [Focusable order](../shared/README.md#focusable-order-is-composed-only-for-a-host-that-renders-no-slot).
+**A shadow host that renders a focusable after its `<slot>` breaks the trap's `Tab` cycle.** The trap resolves its first / last pair by walking the surface's composed tree, and that walk visits slotted content after the host's whole shadow tree, whereas the browser sequences it at the `<slot>`'s position. Initial focus can land on a control that is not the visually first one, and a `Tab` at the drawer's real last control is not recognised as the cycle's end. Focus leaves the surface (with the page `inert`, usually onto the browser's own UI) and the next `Tab` is pulled back to whichever control the walk thinks is first. That is the configuration you are in whenever you wrap a third-party web component, or your own `ViewEncapsulation.ShadowDom` component, inside the drawer. **Workaround:** render a host's own focusables before its `<slot>`, or project them instead of shadowing them; `initialFocus="container"` fixes the initial-focus half only, since the cycle's edges are re-resolved on every `Tab` press. Details and markup: [Focusable order](../shared/README.md#focusable-order-is-composed-only-for-a-host-that-renders-no-slot).
 
-**A `keydown` handler inside the drawer that calls `stopPropagation()` swallows Escape.** The dismissible-layer stack observes `Escape` on `document` in the bubble phase — a deliberate trade-off recorded on `DismissibleLayerStack` — so an event stopped inside the surface never arrives, and `Escape` silently stops dismissing while swipe-to-dismiss, the backdrop click and `[forDrawerClose]` keep working. Only the topmost drawer's `Escape` is affected; see [Nested drawers](#nested-drawers) for the stacking contract. **Workaround:** narrow the `stopPropagation()` to the keys you actually handle. Keeping the drawer open on `Escape` is the separate, supported job of the vetoable `(escapeKeyDown)` output. Details: [Escape is observed on the bubble phase](../shared/README.md#escape-is-observed-on-the-bubble-phase).
+**A `keydown` handler inside the drawer that calls `stopPropagation()` swallows Escape.** The dismissible-layer stack observes `Escape` on `document` in the bubble phase (a deliberate trade-off recorded on `DismissibleLayerStack`), so an event stopped inside the surface never arrives, and `Escape` silently stops dismissing while swipe-to-dismiss, the backdrop click and `[forDrawerClose]` keep working. Only the topmost drawer's `Escape` is affected; see [Nested drawers](#nested-drawers) for the stacking contract. **Workaround:** narrow the `stopPropagation()` to the keys you actually handle. Keeping the drawer open on `Escape` is the separate, supported job of the vetoable `(escapeKeyDown)` output. Details: [Escape is observed on the bubble phase](../shared/README.md#escape-is-observed-on-the-bubble-phase).
 
-A third known limit does not apply to this primitive but is easy to hit inside one: a [Tabs](../tabs) or [Stepper](../stepper) panel rendered in a drawer cannot re-measure its focusable content across a shadow boundary, so its own tab stop can go stale — see [that entry](../shared/README.md#a-panels-focusable-content-measurement-does-not-re-measure-across-a-boundary).
+A third known limit does not apply to this primitive but is easy to hit inside one: a [Tabs](../tabs) or [Stepper](../stepper) panel rendered in a drawer cannot re-measure its focusable content across a shadow boundary, so its own tab stop can go stale. See [that entry](../shared/README.md#a-panels-focusable-content-measurement-does-not-re-measure-across-a-boundary).
 
 ## Accessibility
 
@@ -721,7 +721,7 @@ Keyboard: **Escape** closes the topmost drawer when `dismissible`; **Tab / Shift
 
 forty-cdk ships no styles. Add your own class to each piece. The `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
 
-> This is a modal overlay: the surface and backdrop portal to `document.body`. Style them with global CSS or classes — declaratively, add your class to the surface element (`<div forDrawer class="my-drawer">`); for drawers opened with `ForDrawerManager.open()`, pass `class` / `classList` on the open config so the tokens land on the real `[forDrawer]` host.
+> This is a modal overlay: the surface and backdrop portal to `document.body`. Style them with global CSS or classes. Declaratively, add your class to the surface element (`<div forDrawer class="my-drawer">`); for drawers opened with `ForDrawerManager.open()`, pass `class` / `classList` on the open config so the tokens land on the real `[forDrawer]` host.
 
 ### CSS custom properties
 

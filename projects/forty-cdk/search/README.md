@@ -21,13 +21,13 @@ A role='searchbox' text input that mirrors its value to a signal and reflects va
 
 `[forSearchClear]` self-hides while the value is empty and refocuses the input
 on activation. Wrap the field and the button in a `[forSearchGroup]` so the
-button can coordinate with the field — the void `<input>` can't contain the
+button can coordinate with the field. The void `<input>` can't contain the
 button as a DOM descendant, so they bridge through the group registry. A
 standalone `[forSearch]` (no clear button) needs no group.
 
 ## Examples
 
-Type in the box and clear it again — the clear button is yours to render, and the host reflects `data-empty` for as long as there is nothing to clear.
+Type in the box and clear it again. The clear button is yours to render, and the host reflects `data-empty` for as long as there is nothing to clear.
 
 ```ts
 import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
@@ -110,7 +110,7 @@ export class SearchDefaultExample {
 </div>
 ```
 
-`[formField]` auto-wires the `FormValueControl<string>` contract — `required`,
+`[formField]` auto-wires the `FormValueControl<string>` contract: `required`,
 `invalid`, `touched`, and the value itself flow in and out without extra glue.
 
 ## Command palette
@@ -126,7 +126,7 @@ export class SearchDefaultExample {
 
 When the search box **is** the overlay's only content, `[clearOnEscape]="false"`
 makes the first `Escape` dismiss the palette instead of clearing the query
-first — see [Keyboard](#keyboard) below.
+first (see [Keyboard](#keyboard) below).
 
 ## API
 
@@ -138,7 +138,7 @@ the companion clear button. Implements `FormValueControl<string>`, so it
 auto-wires with `[formField]` and auto-associates inside a `[forField]`.
 
 `clear()` is a no-op while the field is disabled or read-only, whichever caller
-invokes it — the clear button, the `Escape` key, or your own code through the
+invokes it: the clear button, the `Escape` key, or your own code through the
 `[forSearchGroup]` context.
 
 | Input           | Type      | Default | Description                                                                                                    |
@@ -161,7 +161,7 @@ Required only when you use the clear button.
 ### `ForSearchClear`
 
 Clear button. Apply on a `<button>` inside a `[forSearchGroup]` that also wraps
-the `[forSearch]` — no instance is passed through the template. Self-hides while
+the `[forSearch]`. No instance is passed through the template. Self-hides while
 the value is empty and refocuses the input on activation.
 
 | Input       | Type             | Default                            | Description                                                                    |
@@ -175,8 +175,8 @@ the value is empty and refocuses the input on activation.
 | `Escape` | Clears a non-empty value, matching the native `<input type="search">` affordance. |
 
 `Escape` is consumed (`preventDefault()` + `stopPropagation()`) **only** when it
-clears. When the field is already empty — or disabled / read-only, where
-clearing is a no-op — the key is left to propagate, so a `[forSearch]` placed
+clears. When the field is already empty (or disabled / read-only, where
+clearing is a no-op), the key is left to propagate, so a `[forSearch]` placed
 inside a Dialog, Popover, or Combobox panel does not swallow that overlay's own
 Escape dismissal. A non-empty search box inside an overlay therefore takes two
 presses: the first clears the field, the second closes the overlay.
@@ -191,7 +191,7 @@ dismissible layer sees it on the first press even with a non-empty query.
 <input forSearch [(value)]="query" [clearOnEscape]="false" />
 ```
 
-The propagation rule for an empty, disabled, or read-only field is unchanged —
+The propagation rule for an empty, disabled, or read-only field is unchanged:
 `Escape` passes through untouched in all three cases regardless of
 `clearOnEscape`.
 
@@ -200,7 +200,7 @@ The propagation rule for an empty, disabled, or read-only field is unchanged —
 - The `role="searchbox"` attribute is set statically by the directive.
 - Validation state (`aria-required`, `aria-invalid`, `aria-readonly`) is
   reflected as truthy-only attributes (absent when `false`). The disabled state
-  reflects through the native `disabled` attribute alone — no `aria-disabled` —
+  reflects through the native `disabled` attribute alone (no `aria-disabled`),
   so style it with `:disabled` or `[data-disabled]`.
 - `[forSearchClear]` carries `aria-label="Clear"` by default so the icon-only
   button has an accessible name. Override it per-instance with `[ariaLabel]`, or

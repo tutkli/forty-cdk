@@ -8,11 +8,11 @@ archetype: [composable-ui]
 
 A container that keeps its content at a fixed width-to-height ratio.
 
-Pure visual utility — it locks an element's box via the native CSS `aspect-ratio` property, with no ARIA semantics. Reach for it to reserve space for media before it loads (preventing layout shift), keep cards on a grid uniform, or wrap responsive iframes.
+It is a pure visual utility that locks an element's box via the native CSS `aspect-ratio` property, with no ARIA semantics. Reach for it to reserve space for media before it loads (preventing layout shift), keep cards on a grid uniform, or wrap responsive iframes.
 
 ## Why this exists
 
-A fixed, never-changing ratio is one line of CSS — you don't need this primitive for that:
+You don't need this primitive for a fixed, never-changing ratio, which is one line of CSS:
 
 ```css
 .card-cover {
@@ -22,7 +22,7 @@ A fixed, never-changing ratio is one line of CSS — you don't need this primiti
 
 `[forAspectRatio]` earns its place when the ratio is **dynamic or must be validated**. It is more than the static declaration:
 
-- **Reactive `ratio` input.** Bind `[ratio]="ratio()"` and the host style recomputes as the value changes — no manual style writes.
+- **Reactive `ratio` input.** Bind `[ratio]="ratio()"` and the host style recomputes as the value changes, with no manual style writes.
 - **Invalid-value guarding.** `0`, negative, and non-finite ratios fall back to `1`, so a bad computed value never emits invalid CSS.
 - **SSR-safe.** The `aspect-ratio` style is bound declaratively (never touched imperatively), so it renders identically on the server and hydrates cleanly.
 - **Consistent headless API.** Same shape as the other primitives, so it composes the same way.
@@ -39,7 +39,7 @@ If your ratio is a literal constant, prefer the CSS property directly and keep t
 
 ## Examples
 
-Resize the preview and watch the frame hold its 16 / 9 ratio — the primitive writes the ratio and nothing else, so every border, colour and inset below is your own CSS.
+Resize the preview and watch the frame hold its 16 / 9 ratio. The primitive writes the ratio and nothing else, so every border, colour and inset below is your own CSS.
 
 ```ts
 import { ChangeDetectionStrategy, Component } from '@angular/core';
@@ -60,7 +60,7 @@ export class AspectRatioDefaultExample {}
 
 ### Square (1 / 1)
 
-Set `ratio` to `1` to keep a box perfectly square at any width — handy for avatars, thumbnails, or uniform grid cards.
+Set `ratio` to `1` to keep a box perfectly square at any width. That is handy for avatars, thumbnails, or uniform grid cards.
 
 ## API
 

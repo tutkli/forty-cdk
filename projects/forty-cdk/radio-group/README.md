@@ -29,7 +29,7 @@ Headless implementation with selection-on-focus, wrap-around arrow navigation, a
 
 ## Examples
 
-Move between the radios with the arrow keys — selection follows focus, the group keeps one tab stop, and the checked radio carries `data-state="checked"`.
+Move between the radios with the arrow keys: selection follows focus, the group keeps one tab stop, and the checked radio carries `data-state="checked"`.
 
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
@@ -123,7 +123,7 @@ export class DemoShipping {
 | Property                                                     | Type                                                      | Description                                                                                                                                                                              |
 | ------------------------------------------------------------ | --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `value`                                                      | `model<string \| null>`                                   | Two-way bindable. The selected radio's value; `null` = none selected. Required by `FormValueControl<string \| null>`.<br>**Default:** `null`                                             |
-| `orientation`                                                | `input<'horizontal' \| 'vertical'>`                       | Layout hint reflected as `aria-orientation` / `data-orientation`. Does **not** restrict arrow navigation — all four cursors navigate in either orientation.<br>**Default:** `'vertical'` |
+| `orientation`                                                | `input<'horizontal' \| 'vertical'>`                       | Layout hint reflected as `aria-orientation` / `data-orientation`. Does **not** restrict arrow navigation: all four cursors navigate in either orientation.<br>**Default:** `'vertical'` |
 | `dir`                                                        | `input<'ltr' \| 'rtl'>`                                   | Swaps ArrowLeft / ArrowRight.<br>**Default:** `'ltr'`                                                                                                                                    |
 | `disabled` / `readonly` / `required` / `invalid` / `pending` | `input<boolean>`                                          | Reflected as `aria-*` / `data-*`. `disabled` blocks all interaction; `readonly` blocks selection changes but arrows still move focus.<br>**Default:** —                                  |
 | `loop`                                                       | `input<boolean>`                                          | When true (default), arrow nav wraps around past the first / last enabled radio. Set to `false` for a non-wrapping group.<br>**Default:** `true`                                         |
@@ -151,9 +151,9 @@ export class DemoShipping {
 | `data-readonly`    | present \| absent          |
 | `data-orientation` | `horizontal` \| `vertical` |
 
-A disabled radio reflects `aria-disabled="true"` + `data-disabled=""` (no native `disabled`, per APG) — announced but non-selectable, and skipped during arrow nav. Tabindex is `0` for the selected radio (or, when no radio is selected, the first enabled one) and `-1` for the rest.
+A disabled radio reflects `aria-disabled="true"` + `data-disabled=""` (no native `disabled`, per APG). It is announced but non-selectable, and skipped during arrow nav. Tabindex is `0` for the selected radio (or, when no radio is selected, the first enabled one) and `-1` for the rest.
 
-A read-only group reflects `data-readonly=""` on every radio for styling. `aria-readonly` is deliberately **not** emitted on `role="radio"` — WAI-ARIA supports that property on `radiogroup`, not on `radio` — so the read-only announcement lives on the `[forRadioGroup]` root, which reflects both `aria-readonly="true"` and `data-readonly=""`.
+A read-only group reflects `data-readonly=""` on every radio for styling. `aria-readonly` is deliberately **not** emitted on `role="radio"` (WAI-ARIA supports that property on `radiogroup`, not on `radio`), so the read-only announcement lives on the `[forRadioGroup]` root, which reflects both `aria-readonly="true"` and `data-readonly=""`.
 
 ### `ForRadioIndicator`
 
@@ -207,4 +207,4 @@ forty-cdk ships no styles. Add your own class to each piece. The `for*` selector
 
 ## Wrapping in a design system
 
-Both supported wrapper patterns — `hostDirectives` with the exported `FOR_RADIO_GROUP_HOST_DIRECTIVE_INPUTS` / `FOR_RADIO_GROUP_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing (which re-provides `FOR_RADIO_GROUP_CONTEXT` with `useExisting` pointing at the subclass) — are documented in [Wrapping form primitives](../../../docs/wrapping-form-primitives.md).
+[Wrapping form primitives](../../../docs/wrapping-form-primitives.md) documents both supported wrapper patterns: `hostDirectives` with the exported `FOR_RADIO_GROUP_HOST_DIRECTIVE_INPUTS` / `FOR_RADIO_GROUP_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing (which re-provides `FOR_RADIO_GROUP_CONTEXT` with `useExisting` pointing at the subclass).

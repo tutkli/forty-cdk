@@ -11,7 +11,7 @@ A trigger that opens a floating calendar to pick a date, composing ForCalendar i
 
 Reinterpreted idiomatically for modern Angular: a focusable trigger that opens a floating surface wrapping a projected [`ForCalendar`](../calendar/README.md).
 
-`ForDatePicker` is the root **and** the form value — it implements `FormValueControl<D | null>` from `@angular/forms/signals`, so it auto-wires with `[formField]`. The trigger is the focusable control that carries `name` / `disabled` / `invalid`; selection state flows root → projected calendar via `[(value)]`. The library reuses its existing overlay stack (trigger-anchored Popover positioning, dismissible layer, return-focus) rather than re-implementing positioning, dismissal, or focus return — and the modal opt-in routes through the shared modal shell (focus trap + inert background + scroll lock).
+`ForDatePicker` is the root **and** the form value: it implements `FormValueControl<D | null>` from `@angular/forms/signals`, so it auto-wires with `[formField]`. The trigger is the focusable control that carries `name` / `disabled` / `invalid`; selection state flows root → projected calendar via `[(value)]`. The library reuses its existing overlay stack (trigger-anchored Popover positioning, dismissible layer, return-focus) rather than re-implementing positioning, dismissal, or focus return. The modal opt-in routes through the shared modal shell (focus trap + inert background + scroll lock).
 
 ## When to choose
 
@@ -49,7 +49,7 @@ All date math and formatting go through a `DateAdapter<D>`, shared with `ForCale
 
 ## Examples
 
-Open the popover from the trigger and pick a day — the trigger keeps `data-placeholder` until something is chosen, and its `data-state` follows the overlay.
+Open the popover from the trigger and pick a day: the trigger keeps `data-placeholder` until something is chosen, and its `data-state` follows the overlay.
 
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
@@ -176,7 +176,7 @@ export class DatePickerDefaultExample {
 }
 ```
 
-Bind the projected `[forCalendar]` to the picker: `[(value)]` to the same date signal, and forward `[min]` / `[max]` / `[isDateUnavailable]` from the picker's accessors (`#picker="forDatePicker"`). The picker observes the calendar's selection through a `contentChild` query — it never mutates the calendar — so picking a date sets the value, flips `touched`, and (when `closeOnSelect`) closes the surface.
+Bind the projected `[forCalendar]` to the picker: `[(value)]` to the same date signal, and forward `[min]` / `[max]` / `[isDateUnavailable]` from the picker's accessors (`#picker="forDatePicker"`). The picker observes the calendar's selection through a `contentChild` query without ever mutating the calendar, so picking a date sets the value, flips `touched`, and (when `closeOnSelect`) closes the surface.
 
 The library is styleless: presence in the DOM is the consumer's job (`@if (open())`), and `animate.enter` / `animate.leave` drive transitions. Style the `data-state="open" | "closed"` hooks (root + trigger + content) and `[data-disabled]` yourself.
 
@@ -186,7 +186,7 @@ With `granularity="minute"` and a time-capable adapter the picker becomes a date
 
 ### Constraints
 
-`minDate` disables every day before today and `isDateUnavailable` blocks weekends — the picker forwards both to the projected calendar, where they reflect `aria-disabled` and refuse selection while the arrow keys still travel across them. Only an available weekday can be committed.
+`minDate` disables every day before today and `isDateUnavailable` blocks weekends. The picker forwards both to the projected calendar, where they reflect `aria-disabled` and refuse selection while the arrow keys still travel across them. Only an available weekday can be committed.
 
 ### Range selection
 
@@ -210,7 +210,7 @@ Open the picker and click a first day: the trigger keeps its placeholder, becaus
 | `dismissible`       | `input<boolean>`                                 | Escape / outside-pointer dismiss the surface.<br>**Default:** `true`                                                                                                      |
 | `returnFocus`       | `input<boolean>`                                 | Return focus to the trigger on close.<br>**Default:** `true`                                                                                                              |
 | `formatOptions`     | `input<Intl.DateTimeFormatOptions>`              | Options for the text rendered by `[forDatePickerValue]`.<br>**Default:** `{ year: 'numeric', month: 'long', day: 'numeric' }`                                             |
-| `locale`            | `input<string \| null>`                          | BCP 47 locale for the text rendered by `[forDatePickerValue]`. Not forwarded to the projected calendar — bind its `[locale]` too.<br>**Default:** `null` → runtime locale |
+| `locale`            | `input<string \| null>`                          | BCP 47 locale for the text rendered by `[forDatePickerValue]`. Not forwarded to the projected calendar, so bind its `[locale]` too.<br>**Default:** `null` → runtime locale |
 | `placeholder`       | `input<string>`                                  | Fallback text for `[forDatePickerValue]` when empty.<br>**Default:** `''`                                                                                                 |
 | `side` / `align`    | `input`                                          | Anchored placement (popover mode only). Defaults from `provideForDatePickerDefaults` / `provideForDateRangePickerDefaults`.<br>**Default:** `'bottom'` / `'start'`        |
 | `dir`               | `input<'ltr' \| 'rtl' \| null>`                  | Writing direction.<br>**Default:** `null` resolves the ambient direction; reflected to the host `dir`                                                                     |
@@ -236,7 +236,7 @@ Plus the shared `FormUiControl` inputs from the base (`disabled`, `readonly`, `r
 
 ## Triggers stamped from outside-declared templates
 
-Angular resolves `ng-template` DI at the template's **declaration** site, not where it is stamped. A `[forDatePickerTrigger]` declared in a template outside the root throws the orphan error even when the template is rendered inside the root via `ngTemplateOutlet`. For that case the selector attribute accepts the root reference as a value, `routerLink`-style — grab it with `#root="forDatePicker"` and pass it through the outlet context. The bare valueless attribute keeps resolving via DI.
+Angular resolves `ng-template` DI at the template's **declaration** site, not where it is stamped. A `[forDatePickerTrigger]` declared in a template outside the root throws the orphan error even when the template is rendered inside the root via `ngTemplateOutlet`. For that case the selector attribute accepts the root reference as a value, `routerLink`-style. Grab that reference with `#root="forDatePicker"` and pass it through the outlet context. The bare valueless attribute keeps resolving via DI.
 
 ```html
 <div forDatePicker #root="forDatePicker" [(value)]="date">
@@ -255,7 +255,7 @@ Angular resolves `ng-template` DI at the template's **declaration** site, not wh
 
 ## Anchoring to a field box
 
-By default the surface is positioned against `[forDatePickerTrigger]`. When the trigger lives inside a decorated field box — padding, a prefix icon, a clear / chevron button — anchoring to the inner button offsets the surface from the visible field's edge. Wrap the field box in `[forDatePickerAnchor]` so floating-ui positions the surface against the box instead:
+By default the surface is positioned against `[forDatePickerTrigger]`. When the trigger lives inside a decorated field box (padding, a prefix icon, a clear / chevron button), anchoring to the inner button offsets the surface from the visible field's edge. Wrap the field box in `[forDatePickerAnchor]` so floating-ui positions the surface against the box instead:
 
 ```html
 <div forDatePicker #picker="forDatePicker" [(value)]="date">
@@ -274,7 +274,7 @@ By default the surface is positioned against `[forDatePickerTrigger]`. When the 
 </div>
 ```
 
-`[forDatePickerAnchor]` changes **only** positioning. The trigger keeps `aria-haspopup` / `aria-expanded` / `aria-controls`, the click toggle, focus return on close, and its exemption from outside-pointer dismissal. Without an anchor the surface falls back to the trigger, so existing markup is unaffected. At most one `[forDatePickerAnchor]` per `[forDatePicker]` — a second one throws `[forty-cdk/date-picker]`. (A calendar has its own intrinsic width and ignores `--for-floating-anchor-width`, so the anchor mainly affects start / side alignment to the box edge.)
+`[forDatePickerAnchor]` changes **only** positioning. The trigger keeps `aria-haspopup` / `aria-expanded` / `aria-controls`, the click toggle, focus return on close, and its exemption from outside-pointer dismissal. Without an anchor the surface falls back to the trigger, so existing markup is unaffected. Each `[forDatePicker]` accepts at most one `[forDatePickerAnchor]`, and a second one throws `[forty-cdk/date-picker]`. (A calendar has its own intrinsic width and ignores `--for-floating-anchor-width`, so the anchor mainly affects start / side alignment to the box edge.)
 
 ## Modal vs non-modal
 
@@ -284,7 +284,7 @@ The mode is read once when the surface mounts (it is structurally different per 
 
 ## Date-time picker
 
-Set `granularity` to `'hour'`, `'minute'`, or `'second'` to turn the picker into a **date-time picker**: project a [`ForTimeField`](../time-field/README.md) beside the calendar and the value gains a time component. This needs a **time-capable** adapter — `provideNativeDateAdapter()` (`Date`) or `provideInternationalizedDateTimeAdapter()` (`CalendarDateTime`); the day-only `provideInternationalizedDateAdapter()` (`CalendarDate`) throws.
+Set `granularity` to `'hour'`, `'minute'`, or `'second'` to turn the picker into a **date-time picker**: project a [`ForTimeField`](../time-field/README.md) beside the calendar and the value gains a time component. This needs a **time-capable** adapter: `provideNativeDateAdapter()` (`Date`) or `provideInternationalizedDateTimeAdapter()` (`CalendarDateTime`). The day-only `provideInternationalizedDateAdapter()` (`CalendarDate`) throws.
 
 Bind the calendar **and** the time field **one-way** to `picker.value()` (not `[(value)]`). The picker is the single source of truth: when one-way bound to a timed value the calendar preserves the time-of-day on its own selection, and the picker re-grafts the previously entered time as a defensive fallback for the case where the calendar value was null or midnight (reading its own value, which the one-way children never clobber); a time-field edit emits a full date-time the picker mirrors in. A date-time picker never closes on a calendar selection, so the user can go on to set the time.
 
@@ -330,7 +330,7 @@ The value display (`[forDatePickerValue]`) automatically appends the time to its
 
 For date-range selection use the dedicated `ForDateRangePicker` root (selector `[forDateRangePicker]`). It is the root **and** the form value, implementing `FormValueControl<DateRange<D> | null>`, so the committed range auto-wires with `[formField]` exactly like any other control.
 
-It reuses the same pieces — `[forDatePickerTrigger]`, `[forDatePickerContent]`, `[forDatePickerValue]`, `[forDatePickerAnchor]` — through a shared base, and provides `FOR_DATE_PICKER_CONTEXT` so they resolve under it. Project a `[forCalendar]` in `selectionMode="range"` and bind its range to the picker's `value`; the two-click anchor → commit flow keeps `value` `null` until both endpoints are chosen (the form never sees a half-entered range), and `start <= end` is an invariant. Range is day-granular (no time composition).
+It reuses the same pieces (`[forDatePickerTrigger]`, `[forDatePickerContent]`, `[forDatePickerValue]`, `[forDatePickerAnchor]`) through a shared base, and provides `FOR_DATE_PICKER_CONTEXT` so they resolve under it. Project a `[forCalendar]` in `selectionMode="range"` and bind its range to the picker's `value`; the two-click anchor → commit flow keeps `value` `null` until both endpoints are chosen (the form never sees a half-entered range), and `start <= end` is an invariant. Range is day-granular (no time composition).
 
 <!-- snippet: fragment -->
 
@@ -374,12 +374,12 @@ readonly booking = form(this.model, (p) => required(p.stay));
 </div>
 ```
 
-- **Form value.** The committed `DateRange<D> | null` is the `value` model. `null` is the empty state — pair it with `required(p.stay)` so `invalid()` flips when the form demands a range and none is committed. `touched` fires on commit and on close, exactly like the single-date picker.
+- **Form value.** The committed `DateRange<D> | null` is the `value` model. `null` is the empty state. Pair it with `required(p.stay)` so `invalid()` flips when the form demands a range and none is committed. `touched` fires on commit and on close, exactly like the single-date picker.
 - **Validity.** `start <= end` is guaranteed by construction and is never an error. Forward `minDate` / `maxDate` to the calendar's `[min]` / `[max]`, and `minRangeLength` / `maxRangeLength` to the calendar's `[minRangeLength]` / `[maxRangeLength]` (a too-short / too-long range is rejected as a no-op by the calendar's two-click flow).
 - **Native submission.** When `name` is set, two hidden inputs `<name>-start` / `<name>-end` mirror the committed endpoints as ISO `YYYY-MM-DD` for native `<form>` posts.
-- **Bounds naming.** `minDate` / `maxDate` (not `min` / `max`) for the same reason as `ForDatePicker` — and additionally because `FormUiControl.min` / `max` are typed `NonNullable<TValue>` (the range object itself), which is meaningless as a bound.
+- **Bounds naming.** `minDate` / `maxDate` (not `min` / `max`) for the same reason as `ForDatePicker`, and additionally because `FormUiControl.min` / `max` are typed `NonNullable<TValue>` (the range object itself), which is meaningless as a bound.
 
-Defaults are configured with `provideForDateRangePickerDefaults` (`side` / `align` / `sideOffset` / `collisionPadding`), and both wrapper patterns work via the exported `FOR_DATE_RANGE_PICKER_HOST_DIRECTIVE_INPUTS` / `FOR_DATE_RANGE_PICKER_HOST_DIRECTIVE_OUTPUTS` tuples — see [Wrapping form primitives](../../../docs/wrapping-form-primitives.md).
+Defaults are configured with `provideForDateRangePickerDefaults` (`side` / `align` / `sideOffset` / `collisionPadding`), and both wrapper patterns work via the exported `FOR_DATE_RANGE_PICKER_HOST_DIRECTIVE_INPUTS` / `FOR_DATE_RANGE_PICKER_HOST_DIRECTIVE_OUTPUTS` tuples. See [Wrapping form primitives](../../../docs/wrapping-form-primitives.md).
 
 ## Keyboard
 
@@ -394,10 +394,10 @@ Inside the surface, the projected `ForCalendar` owns the full grid keyboard map 
 
 Implements the [WAI-ARIA Date Picker Dialog pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/examples/datepicker-dialog/).
 
-- **`role="combobox"`** on the trigger with **`aria-haspopup="dialog"`**, `aria-expanded` reflecting `open()`, and `aria-controls` pointing at the surface while open — the same shape `[forSelectTrigger]` / `[forTimePickerTrigger]` ship, with the `dialog` popup token ARIA 1.2 allows for a combobox surface. The role is also what makes the form-control ARIA below legal: `role="button"` supports neither `aria-readonly` nor `aria-required`.
+- **`role="combobox"`** on the trigger with **`aria-haspopup="dialog"`**, `aria-expanded` reflecting `open()`, and `aria-controls` pointing at the surface while open. This is the same shape `[forSelectTrigger]` / `[forTimePickerTrigger]` ship, with the `dialog` popup token ARIA 1.2 allows for a combobox surface. The role is also what makes the form-control ARIA below legal: `role="button"` supports neither `aria-readonly` nor `aria-required`.
 - **`role="dialog"`** on the surface, named by `[ariaLabel]` (or `aria-labelledby` the trigger when no label is set). `aria-modal="true"` only in modal mode (truthy-only).
-- **Form-control ARIA** (`aria-readonly` / `aria-required` / `aria-invalid` / `aria-busy`) is reflected on the focusable trigger so assistive tech announces validity on the element that takes focus, alongside the `data-readonly` styling hook. The disabled state is the exception: it reflects through the native `disabled` attribute alone (plus `data-disabled`), never `aria-disabled` — one channel only.
-- **Inside a `[forField]` the labelled element is the trigger**, not the `[forDatePicker]` / `[forDateRangePicker]` wrapper: the field's `controlId` and its `aria-labelledby` / `aria-describedby` / `aria-errormessage` land on `[forDatePickerTrigger]`, so `[forLabel]`'s `for` points at the element that takes focus, clicking a non-`<label>` `[forLabel]` opens the surface, and Signal Forms' focus-on-error reaches the trigger. `role="combobox"` takes its name from the author, so this is the channel that names the control — the root's `[ariaLabel]` names the `role="dialog"` surface instead.
+- **Form-control ARIA** (`aria-readonly` / `aria-required` / `aria-invalid` / `aria-busy`) is reflected on the focusable trigger so assistive tech announces validity on the element that takes focus, alongside the `data-readonly` styling hook. The disabled state is the exception. It reflects through one channel only: the native `disabled` attribute (plus `data-disabled`), never `aria-disabled`.
+- **Inside a `[forField]` the labelled element is the trigger**, not the `[forDatePicker]` / `[forDateRangePicker]` wrapper: the field's `controlId` and its `aria-labelledby` / `aria-describedby` / `aria-errormessage` land on `[forDatePickerTrigger]`, so `[forLabel]`'s `for` points at the element that takes focus, clicking a non-`<label>` `[forLabel]` opens the surface, and Signal Forms' focus-on-error reaches the trigger. `role="combobox"` takes its name from the author, so this is the channel that names the control. The root's `[ariaLabel]` names the `role="dialog"` surface instead.
 - **Focus management**: focus enters the surface on open (the calendar's roving cell in non-modal mode) and returns to the trigger on close, both vetoable via `(autoFocusOnOpen)` / `(autoFocusOnClose)`.
 - **Dismissal**: Escape (`(escapeKeyDown)`) and outside-pointer (`(pointerDownOutside)` / `(interactOutside)`) close the surface, each vetoable.
 
@@ -405,7 +405,7 @@ Implements the [WAI-ARIA Date Picker Dialog pattern](https://www.w3.org/WAI/ARIA
 
 forty-cdk ships no styles. Add your own class to each piece. The `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
 
-> `[forDatePickerContent]` is portaled to `document.body`, so it lives outside your component's view-encapsulated styles. Style it with **global CSS** (or a class you pass through) rather than component-scoped rules — see [Styling floating content](../../../docs/styling-floating-content.md). In non-modal (anchored) mode the surface also exposes the shared positioner custom properties (`--for-floating-anchor-width` / `--for-floating-anchor-height`, `--for-floating-available-width` / `--for-floating-available-height`, `--for-floating-content-transform-origin`); that same guide tabulates the full set.
+> `[forDatePickerContent]` is portaled to `document.body`, so it lives outside your component's view-encapsulated styles. Style it with **global CSS** (or a class you pass through) rather than component-scoped rules. See [Styling floating content](../../../docs/styling-floating-content.md). In non-modal (anchored) mode the surface also exposes the shared positioner custom properties (`--for-floating-anchor-width` / `--for-floating-anchor-height`, `--for-floating-available-width` / `--for-floating-available-height`, `--for-floating-content-transform-origin`); that same guide tabulates the full set.
 
 ```css
 .date-picker-trigger .date-picker-value[data-placeholder] {
@@ -422,4 +422,4 @@ forty-cdk ships no styles. Add your own class to each piece. The `for*` selector
 
 ## Wrapping in a design system
 
-Both supported wrapper patterns — `hostDirectives` with the exported `FOR_DATE_PICKER_HOST_DIRECTIVE_INPUTS` / `FOR_DATE_PICKER_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing — are documented in [Wrapping form primitives](../../../docs/wrapping-form-primitives.md).
+[Wrapping form primitives](../../../docs/wrapping-form-primitives.md) documents both supported wrapper patterns: `hostDirectives` with the exported `FOR_DATE_PICKER_HOST_DIRECTIVE_INPUTS` / `FOR_DATE_PICKER_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing.

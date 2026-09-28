@@ -7,7 +7,7 @@ apgUrl: https://www.w3.org/WAI/ARIA/apg/patterns/button/
 
 # ForButton
 
-Turns any element — a native `<button>` or a custom host like `<div>` / `<span>` — into an accessible button with keyboard activation. Disabled stays focusable (aria-disabled, never the native attribute) and pressed / hovered / focus-visible are reflected as data-\* hooks.
+Turns any element (a native `<button>` or a custom host like `<div>` / `<span>`) into an accessible button with keyboard activation. Disabled stays focusable (aria-disabled, never the native attribute) and pressed / hovered / focus-visible are reflected as data-\* hooks.
 
 A single `[forButton]` directive does all of this. On a native `<button>` host the platform owns Enter/Space activation and `type` handling; on any non-button host the directive adds `role="button"`, `tabindex="0"`, and keyboard activation so the contract matches.
 
@@ -23,7 +23,7 @@ A single `[forButton]` directive does all of this. On a native `<button>` host t
 
 ## Examples
 
-Press and hold either control — a native `<button>` and a `<span>` — and watch `data-pressed`, `data-hovered` and `data-focus-visible` appear on both, so one rule styles the pair.
+Press and hold either control (a native `<button>` and a `<span>`) and watch `data-pressed`, `data-hovered` and `data-focus-visible` appear on both, so one rule styles the pair.
 
 ```ts
 import { ChangeDetectionStrategy, Component } from '@angular/core';
@@ -45,7 +45,7 @@ export class ButtonDefaultExample {}
 
 ### Disabled stays focusable
 
-Per the APG, a disabled button must stay reachable so assistive tech can announce it. `forButton` never sets the native `disabled` attribute — it reflects `aria-disabled='true'` + `data-disabled` and makes activation a no-op. The native disabled button is skipped entirely.
+Per the APG, a disabled button must stay reachable so assistive tech can announce it. `forButton` never sets the native `disabled` attribute. Instead, it reflects `aria-disabled='true'` + `data-disabled` and makes activation a no-op. The native disabled button is skipped entirely.
 
 ## Disabled
 
@@ -55,7 +55,7 @@ Disabled buttons stay focusable so assistive technology can announce them. The n
 <button forButton [disabled]="isSaving()" (activate)="save()">Save</button>
 ```
 
-A surrounding disabled `[forFieldset]` disables the button too — its `disabled` input is OR'd with the group's, so `aria-disabled` / `data-disabled` are reflected and activation is suppressed. This matters most on a non-native host (`<div forButton>`), which a native `<fieldset disabled>` cannot reach.
+A surrounding disabled `[forFieldset]` disables the button too: its `disabled` input is OR'd with the group's, so `aria-disabled` / `data-disabled` are reflected and activation is suppressed. This matters most on a non-native host (`<div forButton>`), which a native `<fieldset disabled>` cannot reach.
 
 ```html
 <fieldset forFieldset [disabled]="locked()">
@@ -81,7 +81,7 @@ A native `<button>` without an explicit `type` attribute defaults to `type="butt
 | `disabled` | `input<boolean>` | Suppresses activation and reflects `aria-disabled` + `data-disabled`. OR'd with a surrounding `[forFieldset]`'s disabled state.<br>**Default:** `false` |
 | `activate` | `output<void>`   | Fires once per user activation (click, Enter, Space). Never fires when disabled.<br>**Default:** —                                                      |
 
-The directive reflects boolean `data-*` attributes (present with an empty-string value when true, absent when false). There is no `data-state` — this primitive has no open/closed or checked/unchecked logical state.
+The directive reflects boolean `data-*` attributes (present with an empty-string value when true, absent when false). There is no `data-state`, because this primitive has no open/closed or checked/unchecked logical state.
 
 | Data attribute       | Values            |
 | -------------------- | ----------------- |
@@ -94,14 +94,14 @@ The directive reflects boolean `data-*` attributes (present with an empty-string
 
 ## Keyboard
 
-On a native `<button>` host the platform owns activation: every key handler the directive binds returns immediately, and nothing in this table is its doing. On any other host (`<div forButton>`, `<span forButton>`) it synthesizes the activation itself, through the same `(click)` path a pointer takes — on a deliberately asymmetric split, because that is what a native button does.
+On a native `<button>` host the platform owns activation: every key handler the directive binds returns immediately, and nothing in this table is its doing. On any other host (`<div forButton>`, `<span forButton>`) it synthesizes the activation itself, through the same `(click)` path a pointer takes. The split between the two keys is deliberately asymmetric, because that is what a native button does.
 
 | Key                         | Action                                                                                                                                                                                                                                       |
 | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Enter` — native `<button>` | The platform synthesizes the click; the directive adds nothing.                                                                                                                                                                              |
-| `Enter` — any other host    | Activates on `keydown`, so `(activate)` fires while the key is still held. While disabled the event is left alone entirely — not even its default is prevented.                                                                              |
-| `Space` — native `<button>` | The platform synthesizes the click on release and suppresses the page scroll itself.                                                                                                                                                         |
-| `Space` — any other host    | Activates on `keyup`, and only when the matching `keydown` reached the same host — focus leaving mid-press drops the press. Its `keydown` always calls `preventDefault()` to stop the page scrolling, **even while the button is disabled**. |
+| `Enter` on a native `<button>` | The platform synthesizes the click; the directive adds nothing.                                                                                                                                                                              |
+| `Enter` on any other host    | Activates on `keydown`, so `(activate)` fires while the key is still held. While disabled the event is left alone entirely: not even its default is prevented.                                                                              |
+| `Space` on a native `<button>` | The platform synthesizes the click on release and suppresses the page scroll itself.                                                                                                                                                         |
+| `Space` on any other host    | Activates on `keyup`, and only when the matching `keydown` reached the same host. Focus leaving mid-press drops the press. Its `keydown` always calls `preventDefault()` to stop the page scrolling, **even while the button is disabled**. |
 
 Both keys drive `data-pressed` on every host: present from `keydown` until `keyup`, until focus leaves, or until the pointer is released. `data-focus-visible` instead follows the keyboard modality, so a `keydown` carrying `Meta` / `Control` / `Alt` is read as a shortcut and does not turn it on, while `Shift` does.
 
@@ -110,7 +110,7 @@ Both keys drive `data-pressed` on every host: present from `keydown` until `keyu
 Implements the [WAI-ARIA Button pattern](https://www.w3.org/WAI/ARIA/apg/patterns/button/).
 
 - **Native `<button>` semantics are preserved.** On a native host, no extra ARIA is added; the browser's built-in button role, keyboard activation, and `type` handling all apply.
-- **Non-button hosts get `role="button"` and `tabindex="0"`**, and the directive synthesizes the activation the platform would have — see [Keyboard](#keyboard).
+- **Non-button hosts get `role="button"` and `tabindex="0"`**, and the directive synthesizes the activation the platform would have (see [Keyboard](#keyboard)).
 - **Disabled buttons stay focusable.** `aria-disabled="true"` is used instead of the native `disabled` attribute so assistive technology can still announce the control's purpose.
 
 ## Styling

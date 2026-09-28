@@ -9,7 +9,7 @@ apgUrl: https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton/
 
 A segmented time-of-day input over a pluggable date adapter, with 12 / 24-hour cycles, optional seconds, and min / max time clamping.
 
-Headless, segmented, spin-editable — the time counterpart to [DateField](../date-field/README.md). There is **no single WAI-ARIA APG pattern** for a time field; it is a composition of spinbuttons inside a labelled `role="group"`. Each hour / minute / second / AM·PM part is an independent `role="spinbutton"` segment, so entry is unambiguous and locale-correct. Segment **order**, the separators between them, and whether an AM/PM segment is shown follow the runtime locale and the resolved hour cycle.
+Headless, segmented and spin-editable, it is the time counterpart to [DateField](../date-field/README.md). There is **no single WAI-ARIA APG pattern** for a time field; it is a composition of spinbuttons inside a labelled `role="group"`. Each hour / minute / second / AM·PM part is an independent `role="spinbutton"` segment, so entry is unambiguous and locale-correct. Segment **order**, the separators between them, and whether an AM/PM segment is shown follow the runtime locale and the resolved hour cycle.
 
 `ForTimeField` implements `FormValueControl<D | null>` from `@angular/forms/signals`, so it auto-wires with `[formField]` and auto-associates inside a `[forField]` (label / description / error) with no extra markup. The value stays `null` until every visible segment is filled.
 
@@ -22,7 +22,7 @@ Pick a time-capable one (required). All time math goes through the same pluggabl
 | `provideInternationalizedDateTimeAdapter()` | `CalendarDateTime` (`@internationalized/date`) | **Recommended.** From `forty-cdk/internationalized-date`; needs `@internationalized/date` (optional peer) |
 | `provideNativeDateAdapter()`                | `Date`                                         | None (zero-dependency fallback)                                                                           |
 
-> The day-only `provideInternationalizedDateAdapter()` (`CalendarDate`) cannot carry a time — `ForTimeField` throws a descriptive error if it is the active adapter.
+> The day-only `provideInternationalizedDateAdapter()` (`CalendarDate`) cannot carry a time, so `ForTimeField` throws a descriptive error if it is the active adapter.
 
 <!-- snippet: fragment -->
 
@@ -54,7 +54,7 @@ The root iterates its computed `segments()` and renders each part as either an e
 
 ## Examples
 
-Focus a segment and type, or step it with the arrow keys — hour, minute and meridiem are separate spinbuttons, each announced on its own.
+Focus a segment and type, or step it with the arrow keys. Hour, minute and meridiem are separate spinbuttons, each announced on its own.
 
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
@@ -101,7 +101,7 @@ export class TimeFieldDefaultExample {
 
 ### Signal Forms
 
-`ForTimeField` implements `FormValueControl<CalendarDateTime | null>`, so a single `[formField]` binding wires the committed value into the form and pulls validity and touched back out — no `ControlValueAccessor`.
+`ForTimeField` implements `FormValueControl<CalendarDateTime | null>`, so a single `[formField]` binding wires the committed value into the form and pulls validity and touched back out, with no `ControlValueAccessor` involved.
 
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
@@ -144,7 +144,7 @@ export class ApptTimeFormField {
 
 ### Bounded range
 
-`minTime` and `maxTime` fence both endpoints to a window. Only the time component is compared, so stepping a segment past 18:00 or before 08:00 clamps back in — a booking slot inside business hours, with the `start <= end` invariant still enforced on top.
+`minTime` and `maxTime` fence both endpoints to a window. Only the time component is compared, so stepping a segment past 18:00 or before 08:00 clamps back in. That keeps a booking slot inside business hours, with the `start <= end` invariant still enforced on top.
 
 ### Range in Signal Forms
 
@@ -157,7 +157,7 @@ export class ApptTimeFormField {
 | Property      | Type                                              | Description                                                                                                                             |
 | ------------- | ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
 | `value`       | `model<D \| null>`                                | Two-way bindable entered time, or `null` while any visible segment is empty. The `FormValueControl` backing.<br>**Default:** `null`     |
-| `minTime`     | `input<D \| null>`                                | Earliest time-of-day (inclusive). A composed value earlier in the day is clamped up. Named `minTime` — see note.<br>**Default:** `null` |
+| `minTime`     | `input<D \| null>`                                | Earliest time-of-day (inclusive). A composed value earlier in the day is clamped up. Named `minTime` (see note).<br>**Default:** `null` |
 | `maxTime`     | `input<D \| null>`                                | Latest time-of-day (inclusive). A composed value later in the day is clamped down.<br>**Default:** `null`                               |
 | `hourCycle`   | `input<12 \| 24 \| null>`                         | 12- or 24-hour cycle. `null` → derived from the locale. 12-hour adds the AM/PM segment.<br>**Default:** `null`                          |
 | `granularity` | `input<'hour' \| 'minute' \| 'second'>`           | Smallest editable unit.<br>**Default:** `'minute'`                                                                                      |
@@ -182,7 +182,7 @@ Plus the shared `FormUiControl` members from `@angular/forms/signals`: `disabled
 | `[forTimeFieldSegment]` | `data-disabled`    | present \| absent |
 | `[forTimeFieldSegment]` | `data-readonly`    | present \| absent |
 
-`[forTimeFieldLiteral]` carries no `data-*` hooks — it is `aria-hidden` and purely decorative; style it directly via your own class.
+`[forTimeFieldLiteral]` is `aria-hidden` and purely decorative, so it carries no `data-*` hooks. Style it directly via your own class.
 
 ## Scoped defaults
 
@@ -203,7 +203,7 @@ providers: [
 
 ## Range selection — `ForTimeRangeField`
 
-For a time-of-day range use the dedicated `ForTimeRangeField` root (selector `[forTimeRangeField]`), shipped from this same entry point. It is the time analog of [DateRangeField](../date-field/README.md#range-selection--fordaterangefield): two labelled `role="group"` endpoints (start / end), each holding a row of spinbutton segments — the same machinery as `ForTimeField` — nested inside one outer `role="group"`. It implements `FormValueControl<DateRange<D> | null>`, so the committed range auto-wires with `[formField]`. The value stays `null` until **both** endpoints are fully entered and ordered (`start <= end`).
+For a time-of-day range use the dedicated `ForTimeRangeField` root (selector `[forTimeRangeField]`), shipped from this same entry point. It is the time analog of [DateRangeField](../date-field/README.md#range-selection--fordaterangefield): two labelled `role="group"` endpoints (start / end), each holding a row of spinbutton segments (the same machinery as `ForTimeField`), nested inside one outer `role="group"`. It implements `FormValueControl<DateRange<D> | null>`, so the committed range auto-wires with `[formField]`. The value stays `null` until **both** endpoints are fully entered and ordered (`start <= end`).
 
 The pieces are the range-specific `[forTimeRangeFieldStart]` / `[forTimeRangeFieldEnd]` endpoint groups plus `[forTimeRangeFieldSegment]` / `[forTimeRangeFieldLiteral]`; each endpoint exposes its own `segments()` list, so the same `@for` template renders both sides.
 
@@ -260,7 +260,7 @@ readonly schedule = form(this.model);
 
 The endpoint groups each accept an `ariaLabel` input for their own group label, falling back to the scope defaults (`'Start time'` / `'End time'`). Plus the shared `FormUiControl` members bound automatically by `[formField]`.
 
-> **Why `minTime` / `maxTime`, not `min` / `max`?** Beyond the reason above, `FormUiControl.min` / `max` are additionally typed `NonNullable<TValue>` — the range object itself — which is meaningless as a bound. Only the time-of-day component of the bounds is considered.
+> **Why `minTime` / `maxTime`, not `min` / `max`?** Beyond the reason above, `FormUiControl.min` / `max` are additionally typed `NonNullable<TValue>` (the range object itself), which is meaningless as a bound. Only the time-of-day component of the bounds is considered.
 
 `[forTimeRangeField]` reflects the same `data-disabled` / `data-readonly` / `data-empty` hooks as `[forTimeField]`, plus `data-range-error`; `[forTimeRangeFieldSegment]` reflects the same four segment hooks. `data-empty` marks the field only while **both** endpoints are entirely empty; a partially-filled or complete-but-disordered range is **not** empty.
 
@@ -270,7 +270,7 @@ The two endpoints are typed independently, so order is not guaranteed by constru
 
 ### Overnight ranges
 
-Set `allowOvernight` to read a `start > end` entry as a range that **crosses midnight** (a night shift, `22:00`–`06:00`) rather than a disorder. The field then commits `{ start, end }` with the end advanced to the next day, so the `end >= start` invariant still holds and the emitted range spans the correct duration; `aria-invalid` / `data-range-error` are no longer set. In this mode both endpoints operate purely on their time-of-day — the calendar day of a bound `value` is re-anchored on the DST-stable sentinel rather than preserved, so every edit re-derives the crossing afresh (an end nudged back to a same-day time drops the extra day). Only the time-of-day of each endpoint is meaningful, so this trade-off is immaterial to a time-of-day range. The +1-day advance is carried by the in-memory `value` only — the native hidden inputs serialize each endpoint's time-of-day (`HH:mm`), so an overnight range submits as `<name>-start` / `<name>-end` with the crossing erased, and a server must re-apply the overnight rule to reconstruct it.
+Set `allowOvernight` to read a `start > end` entry as a range that **crosses midnight** (a night shift, `22:00`–`06:00`) rather than a disorder. The field then commits `{ start, end }` with the end advanced to the next day, so the `end >= start` invariant still holds and the emitted range spans the correct duration; `aria-invalid` / `data-range-error` are no longer set. In this mode both endpoints operate purely on their time-of-day: the calendar day of a bound `value` is re-anchored on the DST-stable sentinel rather than preserved, so every edit re-derives the crossing afresh (an end nudged back to a same-day time drops the extra day). Only the time-of-day of each endpoint is meaningful, so this trade-off is immaterial to a time-of-day range. The +1-day advance is carried by the in-memory `value` only. The native hidden inputs serialize each endpoint's time-of-day (`HH:mm`), so an overnight range submits as `<name>-start` / `<name>-end` with the crossing erased, and a server must re-apply the overnight rule to reconstruct it.
 
 ### Range keyboard and accessibility
 
@@ -278,7 +278,7 @@ Each endpoint is its own tab stop, so `Tab` moves start group → end group → 
 
 ### Range scoped defaults
 
-`provideForTimeRangeFieldDefaults` mirrors `provideForTimeFieldDefaults` and adds `startLabel` / `endLabel` for the two endpoint group `aria-label`s (`'Start time'` / `'End time'` by default). Both wrapper patterns work via `FOR_TIME_RANGE_FIELD_HOST_DIRECTIVE_INPUTS` / `FOR_TIME_RANGE_FIELD_HOST_DIRECTIVE_OUTPUTS` — see [Wrapping form primitives](../../../docs/wrapping-form-primitives.md).
+`provideForTimeRangeFieldDefaults` mirrors `provideForTimeFieldDefaults` and adds `startLabel` / `endLabel` for the two endpoint group `aria-label`s (`'Start time'` / `'End time'` by default). Both wrapper patterns work via `FOR_TIME_RANGE_FIELD_HOST_DIRECTIVE_INPUTS` / `FOR_TIME_RANGE_FIELD_HOST_DIRECTIVE_OUTPUTS`. See [Wrapping form primitives](../../../docs/wrapping-form-primitives.md).
 
 ## Keyboard
 
@@ -298,18 +298,18 @@ The hour, minute, and second clamp to their valid ranges (hour to the cycle, min
 
 ## Accessibility
 
-Composes the [WAI-ARIA Spinbutton pattern](https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton/) — each segment is an independent spinbutton inside a labelled group.
+Composes the [WAI-ARIA Spinbutton pattern](https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton/): each segment is an independent spinbutton inside a labelled group.
 
 - **`role="group"`** on the root carries the field's accessible name (`ariaLabel`, or point native `aria-labelledby` at a visible label).
 - **`role="spinbutton"`** per segment, with `aria-valuemin` / `aria-valuemax` / `aria-valuenow` reflected; the AM/PM segment also exposes a localized `aria-valuetext` ("AM" / "PM"), so screen readers read the period rather than `0` / `1`.
 - **Roving tabindex**: exactly one segment is tabbable, so `Tab` enters and leaves the whole field in one stop; arrows move between segments.
-- **Literals are `aria-hidden`** and never focusable — assistive tech reads only the spinbutton segments.
-- **Boolean `data-*`** on each segment — `data-highlighted` (focused/roving), `data-placeholder` (empty), `data-disabled`, `data-readonly` — present when true, absent when false.
+- **Literals are `aria-hidden`** and never focusable, so assistive tech reads only the spinbutton segments.
+- **Boolean `data-*` hooks** on each segment are present when true and absent when false: `data-highlighted` (focused/roving), `data-placeholder` (empty), `data-disabled`, `data-readonly`.
 - **`aria-readonly` belongs on the segments, not the group.** WAI-ARIA supports it on `role="spinbutton"` but not on `role="group"`, so each segment carries `aria-readonly="true"` while the group reflects the `data-readonly` styling hook only.
 
 ## Styling
 
-The library is styleless: style the boolean `data-*` hooks on the segments yourself — `[data-highlighted]` (the focused/roving segment), `[data-placeholder]` (empty), `[data-disabled]`, `[data-readonly]` — and `[data-empty]` / `[data-disabled]` / `[data-readonly]` on the root group.
+The library is styleless: style the boolean `data-*` hooks yourself. The segments carry `[data-highlighted]` (the focused/roving segment), `[data-placeholder]` (empty), `[data-disabled]` and `[data-readonly]`, and the root group carries `[data-empty]` / `[data-disabled]` / `[data-readonly]`.
 
 forty-cdk ships no styles. Add your own class to each piece. The `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
 
@@ -325,4 +325,4 @@ forty-cdk ships no styles. Add your own class to each piece. The `for*` selector
 
 ## Wrapping in a design system
 
-Both supported wrapper patterns — `hostDirectives` with the exported `FOR_TIME_FIELD_HOST_DIRECTIVE_INPUTS` / `FOR_TIME_FIELD_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing — are documented in [Wrapping form primitives](../../../docs/wrapping-form-primitives.md).
+[Wrapping form primitives](../../../docs/wrapping-form-primitives.md) documents both supported wrapper patterns: `hostDirectives` with the exported `FOR_TIME_FIELD_HOST_DIRECTIVE_INPUTS` / `FOR_TIME_FIELD_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing.

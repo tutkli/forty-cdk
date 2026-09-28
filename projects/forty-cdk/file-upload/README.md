@@ -8,7 +8,7 @@ archetype: [composable-ui]
 
 A headless drag-and-drop / dialog file-selection zone: a visually-hidden native `<input type="file">` stays the accessible control while a trigger button opens the picker, and dropping files emits the same change. Supports multiple, accept filters and whole-folder (directory) selection.
 
-No ARIA role is imposed on the drop zone — it is a plain container. The `<input type="file">` remains the accessible form control; the trigger is a native `<button>`.
+No ARIA role is imposed on the drop zone, which is a plain container. The `<input type="file">` remains the accessible form control; the trigger is a native `<button>`.
 
 ## Anatomy
 
@@ -22,7 +22,7 @@ No ARIA role is imposed on the drop zone — it is a plain container. The `<inpu
 
 ## Examples
 
-Click the zone or drop a file on it — `data-dragging` is set while a file hovers the zone, and the chosen files arrive as a `FileList` you render yourself.
+Click the zone or drop a file on it. The zone sets `data-dragging` while a file hovers it, and the chosen files arrive as a `FileList` you render yourself.
 
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
@@ -98,11 +98,11 @@ export class FileUploadDefaultExample {
 </div>
 ```
 
-With `multiple` off the zone keeps the first accepted file and surfaces the extras on `filesRejected` with the reason `'multiple'` — nothing is discarded silently, so a consumer can tell the user why only one file went through. Combining `directory` with `multiple` off is therefore noisy by design: every file in the chosen folder past the first is reported as a `'multiple'` rejection.
+With `multiple` off the zone keeps the first accepted file and surfaces the extras on `filesRejected` with the reason `'multiple'`. Nothing is discarded silently, so a consumer can tell the user why only one file went through. Combining `directory` with `multiple` off is therefore noisy by design: every file in the chosen folder past the first is reported as a `'multiple'` rejection.
 
 ### States
 
-One class and one directive, two states. `disabled` blocks the dialog and drops alike, and reflects `data-disabled` on the zone — so it dims and ignores pointer events from the same stylesheet that styles `data-dragging`, without the input leaving the DOM.
+One class and one directive, two states. `disabled` blocks the dialog and drops alike. It also reflects `data-disabled` on the zone, so the zone dims and ignores pointer events from the same stylesheet that styles `data-dragging`, without the input leaving the DOM.
 
 ### Folder selection
 
@@ -161,7 +161,7 @@ onRejected(rejections: ForFileUploadRejection[]): void {
 
 - **The `<input type="file">` is the accessible control.** Keep it reachable with a visually-hidden utility class (`sr-only` / `visually-hidden`) rather than `display: none` or `visibility: hidden`, which would remove it from the tab order and from assistive technology.
 - **Label the input.** Supply `aria-label` directly on `[forFileUploadInput]` (as in the examples above), or wrap it in a `<label>`.
-- **The trigger is a native `<button>`.** It receives focus, is announced as a button, and activates the file dialog via click / Enter / Space — no ARIA role augmentation needed.
+- **The trigger is a native `<button>`.** It receives focus, is announced as a button, and activates the file dialog via click / Enter / Space. No ARIA role augmentation is needed.
 
 ## Styling
 

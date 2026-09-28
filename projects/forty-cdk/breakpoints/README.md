@@ -6,13 +6,13 @@ archetype: [headless-utility]
 
 # Breakpoints
 
-A signal-first, zoneless, SSR-safe viewport breakpoint observer (injectBreakpoints). Configure the breakpoint map once via provideForBreakpointsDefaults — or use the Tailwind scale by default — then read up / down / between / only / active or any arbitrary media query, each as a live Signal&lt;boolean&gt;.
+A signal-first, zoneless, SSR-safe viewport breakpoint observer (injectBreakpoints). Configure the breakpoint map once via provideForBreakpointsDefaults (or use the Tailwind scale by default), then read up / down / between / only / active or any arbitrary media query, each as a live Signal&lt;boolean&gt;.
 
-It is a headless reactive utility, not a UI primitive: no DOM, no ARIA, no template. Configure the breakpoint map **once** via a provider; read it anywhere with `injectBreakpoints()` — no need to repeat the breakpoint set at every call site.
+It is a headless reactive utility, not a UI primitive: no DOM, no ARIA, no template. Configure the breakpoint map **once** via a provider and read it anywhere with `injectBreakpoints()`, so there is no need to repeat the breakpoint set at every call site.
 
 ## Setup
 
-Configuring is optional — without a provider the Tailwind scale (`sm` 640, `md` 768, `lg` 1024, `xl` 1280, `2xl` 1536) is used. To define your own:
+Configuring is optional: without a provider the Tailwind scale (`sm` 640, `md` 768, `lg` 1024, `xl` 1280, `2xl` 1536) is used. To define your own:
 
 ```ts
 import { ApplicationConfig } from '@angular/core';
@@ -109,11 +109,11 @@ Derive UI from the breakpoint inside `computed()` and `@if` instead of repeating
 
 ### Arbitrary media queries
 
-`matches(query)` is the escape hatch for any media feature the named width helpers don't cover — orientation, pointer, hover, and the `prefers-*` user settings. Each call returns a live `Signal<boolean>` from the same cached `MediaQueryList` layer.
+`matches(query)` is the escape hatch for any media feature the named width helpers don't cover: orientation, pointer, hover, and the `prefers-*` user settings. Each call returns a live `Signal<boolean>` from the same cached `MediaQueryList` layer.
 
 ## Typed custom names
 
-The default map gives you fully-typed names out of the box (`up('md')` autocompletes; `up('foo')` is a type error). When you provide a custom map, recover the same typing by augmenting `BreakpointRegistry` once — derive the keys from your map so you never write them twice:
+The default map gives you fully-typed names out of the box (`up('md')` autocompletes; `up('foo')` is a type error). When you provide a custom map, recover the same typing by augmenting `BreakpointRegistry` once. Derive the keys from your map so you never write them twice:
 
 ```ts
 // breakpoints.ts
@@ -137,8 +137,8 @@ Now `injectBreakpoints()` autocompletes `'mobile' | 'tablet' | 'laptop' | 'deskt
 
 | Method           | Matches                                                                        |
 | ---------------- | ------------------------------------------------------------------------------ |
-| `up(name)`       | the breakpoint and wider — `(min-width: N px)`                                 |
-| `down(name)`     | narrower than the breakpoint — `(max-width: (N − 0.02) px)`                    |
+| `up(name)`       | the breakpoint and wider: `(min-width: N px)`                                 |
+| `down(name)`     | narrower than the breakpoint: `(max-width: (N − 0.02) px)`                    |
 | `between(a, b)`  | from `a` (inclusive) up to but not including `b`                               |
 | `only(name)`     | the breakpoint's own band, up to but not including the next-larger one         |
 | `active`         | the largest breakpoint whose `min-width` matches, or `null` below the smallest |
@@ -161,9 +161,9 @@ export class Panel {
 }
 ```
 
-It is published here because forty-cdk ships no styles: the animation on a `data-state` change is yours, so honouring the preference is yours too — and a signal is what a `computed()` or a `[style]` binding can branch on, which a CSS `@media` block cannot. Treat `true` as "skip the animated path entirely", not "shorten the duration": the setting asks for no motion, not less of it.
+It is published here because forty-cdk ships no styles: the animation on a `data-state` change is yours, so honouring the preference is yours too. A signal is also what a `computed()` or a `[style]` binding can branch on, which a CSS `@media` block cannot. Treat `true` as "skip the animated path entirely", not "shorten the duration": the setting asks for no motion, not less of it.
 
-`bp.matches('(prefers-reduced-motion: reduce)')` resolves to the same thing. Prefer the named helper — it is the one the library's own motion-bearing primitives (drag gestures, carousel, drawer) read, so the query string stays spelled in one place.
+`bp.matches('(prefers-reduced-motion: reduce)')` resolves to the same thing. Prefer the named helper: it is the one the library's own motion-bearing primitives (drag gestures, carousel, drawer) read, so the query string stays spelled in one place.
 
 ## SSR
 

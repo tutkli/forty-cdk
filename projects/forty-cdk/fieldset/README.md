@@ -6,7 +6,7 @@ archetype: [composable-ui]
 
 # Fieldset
 
-Headless grouping that gives a set of related fields a shared accessible name — a native `<fieldset>` / `<legend>`, or `role="group"` + `aria-labelledby` on any element — plus an optional shared disabled state that reaches custom-role controls.
+Headless grouping that gives a set of related fields a shared accessible name (a native `<fieldset>` / `<legend>`, or `role="group"` + `aria-labelledby` on any element) plus an optional shared disabled state that reaches custom-role controls.
 
 The styleless counterpart to a native `<fieldset>` + `<legend>`, and the grouping companion to [`Field`](../field/README.md). It renders nothing and imposes no layout. Use it on a real `<fieldset>` to lean on native grouping, or on any other element to get `role="group"` + `aria-labelledby` wired automatically.
 
@@ -27,8 +27,8 @@ The styleless counterpart to a native `<fieldset>` + `<legend>`, and the groupin
 
 `ForFieldset` detects its host tag, exactly like `ForLabel`'s `<label>` check:
 
-- On a native **`<fieldset>`**, the browser groups its controls and labels them with the `<legend>` implicitly — so the directive emits **no** `role` and **no** `aria-labelledby`.
-- On **any other element**, it emits `role="group"` and `aria-labelledby` pointing at the `[forFieldsetLegend]`'s id — your own static `id` when you set one, else a generated one.
+- On a native **`<fieldset>`**, the browser groups its controls and labels them with the `<legend>` implicitly, so the directive emits **no** `role` and **no** `aria-labelledby`.
+- On **any other element**, it emits `role="group"` and `aria-labelledby` pointing at the `[forFieldsetLegend]`'s id: your own static `id` when you set one, else a generated one.
 
 ## Shared `disabled`
 
@@ -38,11 +38,11 @@ The `disabled` input:
 - emits the native `disabled` attribute on a `<fieldset>` (or `aria-disabled="true"` on any other element),
 - and propagates to every descendant form control (`forSwitch`, `forCheckbox`, `forSelect`, `forSlider`, …) via context: each control ORs the group's disabled into its own effective disabled, so it becomes genuinely **inert** (interaction ignored, excluded from native form submission) and exposes `aria-disabled="true"` / `data-disabled`. This reaches custom-role controls that a native `<fieldset disabled>` cannot. It also reaches `[forButton]`, which is not a form value but composes the same group disabled state (activation suppressed, `aria-disabled` / `data-disabled` reflected). A control outside any fieldset is unaffected.
 
-Nesting composes like native fieldsets: a disabled outer `[forFieldset]` keeps every control inside disabled even under an inner, enabled `[forFieldset]` — the inner group cannot re-enable what the outer disabled.
+Nesting composes like native fieldsets: a disabled outer `[forFieldset]` keeps every control inside disabled even under an inner, enabled `[forFieldset]`. The inner group cannot re-enable what the outer disabled.
 
 ## Examples
 
-Disable the group and every control inside it follows — the fieldset reflects `data-disabled` and reaches custom-role controls a native `<fieldset disabled>` cannot.
+Disable the group and every control inside it follows. The fieldset reflects `data-disabled` and reaches custom-role controls a native `<fieldset disabled>` cannot.
 
 ```ts
 import { ChangeDetectionStrategy, Component } from '@angular/core';
@@ -107,9 +107,9 @@ On non-fieldset markup `forFieldset` synthesizes the grouping: it emits `role="g
 
 ### `ForFieldsetLegend`
 
-Group label. Emits the fieldset's `legendId` so `aria-labelledby` resolves; usable standalone outside a fieldset as an inert marker. Reflects no `data-*` attributes — it carries only the `id` that the group's `aria-labelledby` resolves to.
+Group label. Emits the fieldset's `legendId` so `aria-labelledby` resolves; usable standalone outside a fieldset as an inert marker. Reflects no `data-*` attributes: it carries only the `id` that the group's `aria-labelledby` resolves to.
 
-A static `id` you write on the legend is **preserved**, not clobbered, and the group's `aria-labelledby` follows it — so an external `aria-labelledby` / `aria-describedby` reference or a `<label for>` pointing at your own id keeps resolving:
+A static `id` you write on the legend is **preserved**, not clobbered, and the group's `aria-labelledby` follows it. An external `aria-labelledby` / `aria-describedby` reference or a `<label for>` pointing at your own id therefore keeps resolving:
 
 ```html
 <div forFieldset>
@@ -119,12 +119,12 @@ A static `id` you write on the legend is **preserved**, not clobbered, and the g
 <!-- → <div role="group" aria-labelledby="shipping-legend"> -->
 ```
 
-Only a plain `id="…"` attribute is adopted; a `[id]="expr"` property binding evaluates after the directive constructs, so it is not. With no `id` of your own the legend gets a generated `for-fieldset-legend-*` one. Keep **one** legend per group — a fieldset is labelled by a single id, so a second `[forFieldsetLegend]` shares it (duplicate DOM ids) and warns in dev mode.
+Only a plain `id="…"` attribute is adopted; a `[id]="expr"` property binding evaluates after the directive constructs, so it is not. With no `id` of your own the legend gets a generated `for-fieldset-legend-*` one. Keep **one** legend per group: a fieldset is labelled by a single id, so a second `[forFieldsetLegend]` shares it (duplicate DOM ids) and warns in dev mode.
 
 ## Accessibility
 
-- **Native `<fieldset>` grouping is preserved.** On a `<fieldset>` host, no extra ARIA is added — the browser's native grouping and `<legend>` labelling apply.
-- **Custom hosts get `role="group"` + `aria-labelledby`** wired to the `[forFieldsetLegend]`'s id — a consumer-set static `id` when present, else a generated one.
+- **Native `<fieldset>` grouping is preserved.** On a `<fieldset>` host, no extra ARIA is added, and the browser's native grouping and `<legend>` labelling apply.
+- **Custom hosts get `role="group"` + `aria-labelledby`** wired to the `[forFieldsetLegend]`'s id, which is a consumer-set static `id` when present, else a generated one.
 - **Disabled propagation reaches custom-role controls** that a native `<fieldset disabled>` cannot disable, via context injection.
 
 ## Styling

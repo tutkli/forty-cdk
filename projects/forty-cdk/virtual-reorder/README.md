@@ -54,7 +54,7 @@ It re-exposes `[forDropList]`'s `dir`, `disabled`, `autoScroll`, `animateReorder
 | Property | Type     | Description                                                    |
 | -------- | -------- | -------------------------------------------------------------- |
 | `from`   | `number` | Previous absolute (dataset) index of the lifted item, 0-based. |
-| `to`     | `number` | New absolute (dataset) index — pass both to `moveItemInArray`. |
+| `to`     | `number` | New absolute (dataset) index. Pass both to `moveItemInArray`. |
 
 ## Keyboard
 
@@ -68,7 +68,7 @@ It re-exposes `[forDropList]`'s `dir`, `disabled`, `autoScroll`, `animateReorder
 
 Every lift, move, drop and cancel is announced through the live announcer using the `provideForDragDropDefaults` message builders, so a scope override localizes them centrally.
 
-The lifted row carries drag-drop's `data-dragging` hook for the whole gesture — the coordinator owns the keyboard lift, so it marks the row on the drop list's behalf — and the viewport carries it too. Style either exactly as you would in a non-windowed `[forDropList]`.
+The lifted row carries drag-drop's `data-dragging` hook for the whole gesture (the coordinator owns the keyboard lift, so it marks the row on the drop list's behalf), and the viewport carries it too. Style either exactly as you would in a non-windowed `[forDropList]`.
 
 ## What it adds over a bare `[forDropList]`
 

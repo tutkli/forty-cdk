@@ -8,9 +8,9 @@ archetype: [headless-utility]
 
 A headless windowing core (injectVirtualizer) plus an ergonomic [forVirtualViewport] + \*forVirtualFor layer that render only the visible slice of huge lists. Fixed or measured item sizes, horizontal lists, scroll-to-index, and an infinite-scroll detector. List primitives (Select, Combobox, Listbox, Tree, Table) compose it directly.
 
-Given a reactive item count, a size estimator, and a scroll container, the core returns the slice of items currently visible (plus overscan), the total scroll size, and imperative scroll/measure helpers. The consumer renders the items with their own `@for` and applies the position transform — this primitive owns no DOM. Backed internally by `@tanstack/virtual-core`. SSR-safe: off-browser it returns an empty window and the estimate-based total without touching `document`/`window`.
+Given a reactive item count, a size estimator, and a scroll container, the core returns the slice of items currently visible (plus overscan), the total scroll size, and imperative scroll/measure helpers. The consumer renders the items with their own `@for` and applies the position transform. This primitive owns no DOM. Backed internally by `@tanstack/virtual-core`. SSR-safe: off-browser it returns an empty window and the estimate-based total without touching `document`/`window`.
 
-> Ships from the **`forty-cdk/virtualization`** secondary entry point — import every
+> Ships from the **`forty-cdk/virtualization`** secondary entry point. Import every
 > symbol below (`injectVirtualizer`, `ForVirtualViewport`, `ForVirtualFor`,
 > `injectInfiniteScroll`) from `forty-cdk/virtualization`, not `forty-cdk`. This keeps
 > `@tanstack/virtual-core` out of the bundle for apps and routes that don't virtualize.
@@ -44,7 +44,7 @@ The viewport forces `overflow: auto` on its host; give it a fixed size (e.g. `he
 `orientation`, `overscan`, and `getItemKey` are optional inputs on `[forVirtualViewport]`; set
 `orientation` / `overscan` before first render (they are read once when the viewport initializes).
 The template context exposes `row` (`$implicit`), `virtualItem`, `index`, and `count`. Do not set
-`position` / `transform` on the row yourself — the directive owns them.
+`position` / `transform` on the row yourself, because the directive owns them.
 
 For full control (custom DOM, dynamic per-item measurement, a window/document scroller) use the
 headless `injectVirtualizer` core directly, documented below.
@@ -301,7 +301,7 @@ readonly loader = injectInfiniteScroll({
 The detector fires once per threshold crossing, is suppressed while the `onLoadMore` promise is
 pending (`loader.pending()` reflects the in-flight state), and re-arms when `count` grows (a page
 was appended). An empty `[0, 0]` window (including SSR off-browser) never fires. The consumer owns
-the fetch, deduplication, and retry — Angular `resource()` / `httpResource()` are a natural fit.
+the fetch, deduplication, and retry. Angular `resource()` / `httpResource()` are a natural fit.
 
 | Option       | Type                                | Default  | Description                                                             |
 | ------------ | ----------------------------------- | -------- | ----------------------------------------------------------------------- |
@@ -313,7 +313,7 @@ the fetch, deduplication, and retry — Angular `resource()` / `httpResource()` 
 
 ## Composing into a list primitive
 
-`range` lets the windowing core plug directly into a list primitive's `[visibleRange]` input without the consumer re-deriving the window from `virtualItems()`. The primitive uses `[visibleRange]` to keep `aria-setsize` / `aria-posinset` and `aria-activedescendant` correct across row recycling — it tracks option data by absolute index so options scrolled out of view are still reachable by keyboard.
+`range` lets the windowing core plug directly into a list primitive's `[visibleRange]` input without the consumer re-deriving the window from `virtualItems()`. The primitive uses `[visibleRange]` to keep `aria-setsize` / `aria-posinset` and `aria-activedescendant` correct across row recycling: it tracks option data by absolute index so options scrolled out of view are still reachable by keyboard.
 
 ```html
 [totalCount]="filtered().length" [visibleRange]="v.range()"
@@ -352,8 +352,8 @@ Virtual lists render only a window of items, so screen readers see a shorter lis
 than the true total. Bind the full list size so assistive technology announces
 the real count:
 
-- `aria-setsize` — the total number of items in the full (non-windowed) list.
-- `aria-posinset` — the 1-based position of the item in that full list
+- `aria-setsize`: the total number of items in the full (non-windowed) list.
+- `aria-posinset`: the 1-based position of the item in that full list
   (`item.index + 1`).
 
 ```html
