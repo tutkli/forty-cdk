@@ -14,7 +14,7 @@ adapter itself ships from the third,
 [`forty-cdk/table-virtualization`](../projects/forty-cdk/table-virtualization/README.md), and the
 table is documented in [the table README](../projects/forty-cdk/table/README.md).
 
-Place `[forTableVirtualized]` on the same element as `[forTable]`. Set `[rowCount]` on `[forTable]` to the **true total** row count — this drives both `aria-rowcount` and the window size, and for an index-addressable dataset it is the whole configuration. An append-style infinite list splits the two: see [Append-style lists](#append-style-lists-virtualrowcount) below.
+Place `[forTableVirtualized]` on the same element as `[forTable]`. Set `[rowCount]` on `[forTable]` to the **true total** row count. This drives both `aria-rowcount` and the window size, and for an index-addressable dataset it is the whole configuration. An append-style infinite list splits the two: see [Append-style lists](#append-style-lists-virtualrowcount) below.
 
 ```html
 <div
@@ -50,8 +50,8 @@ Place `[forTableVirtualized]` on the same element as `[forTable]`. Set `[rowCoun
 Key points:
 
 - The sticky header rowgroup lives **outside** the absolutely-positioned body so it is not clipped by the scroll container's overflow.
-- The body rowgroup is `position: relative` and sized to `v.totalSize()` — this creates the full scroll range.
-- Each row is `position: absolute; transform: translateY(vrow.start + 'px')`. Do not use `top` — `transform` avoids layout thrashing.
+- The body rowgroup is `position: relative` and sized to `v.totalSize()`. This creates the full scroll range.
+- Each row is `position: absolute; transform: translateY(vrow.start + 'px')`. Do not use `top`, because `transform` avoids layout thrashing.
 - Bind `[virtualIndex]="vrow.index"` on each `[forTableRow]`. This is what drives the absolute 1-based `aria-rowindex` (`vrow.index + 1`) rather than the DOM-order index.
 - The **focused row stays mounted** even when scrolled out of the window. The roving-focused `gridcell` is never unmounted; roving navigation is unchanged.
 - For measured (variable) row heights, call `v.measureRow(el)` per rendered row in `afterEveryRender`.
@@ -71,7 +71,7 @@ afterEveryRender(() => {
 
 ## Append-style lists: `[virtualRowCount]`
 
-`[rowCount]` answers "how many rows does the dataset have"; `[virtualRowCount]` answers "how many rows can the virtualizer place". They default to the same number, which is correct for an **index-addressable** dataset — the window can travel to any absolute index because the page behind it is fetchable on arrival.
+`[rowCount]` answers "how many rows does the dataset have"; `[virtualRowCount]` answers "how many rows can the virtualizer place". They default to the same number, which is correct for an **index-addressable** dataset: the window can travel to any absolute index because the page behind it is fetchable on arrival.
 
 An **append-style** infinite list (load 30, concatenate, load 30 more at the bottom) can only render its loaded prefix, so the two part ways. Keep `[rowCount]` at the server-known total and bind `[virtualRowCount]` to the loaded count:
 
@@ -86,15 +86,15 @@ An **append-style** infinite list (load 30, concatenate, load 30 more at the bot
 ></div>
 ```
 
-Both halves matter. Raising `[rowCount]` alone inflates the scroll range with rows that will never mount — the thumb shrinks to a sliver and the viewport scrolls into empty space — while lowering it to the loaded count announces an `aria-rowcount` that is wrong on every page but the last. `[virtualRowCount]` also bounds cross-window keyboard navigation, so `Ctrl+End` lands on the last loaded row rather than stashing a focus move that only resolves when a far page appends.
+Both halves matter. Raising `[rowCount]` alone inflates the scroll range with rows that will never mount (the thumb shrinks to a sliver and the viewport scrolls into empty space), while lowering it to the loaded count announces an `aria-rowcount` that is wrong on every page but the last. `[virtualRowCount]` also bounds cross-window keyboard navigation, so `Ctrl+End` lands on the last loaded row rather than stashing a focus move that only resolves when a far page appends.
 
 Raw-primitive rendering has no other channel for that count: `<for-table-body>` derives the loaded count from its own dataset (for the navigation bound), a table rendering its own rows does not.
 
 ## Scroll container (table root vs. ancestor)
 
-By default the **table root** is the scroll container — the element carrying `[forTableVirtualized]` scrolls its own rows (the `overflow: auto` element in the examples above), so `[scrollElement]` can be left unset.
+By default the **table root** is the scroll container: the element carrying `[forTableVirtualized]` scrolls its own rows (the `overflow: auto` element in the examples above), so `[scrollElement]` can be left unset.
 
-When the element that actually scrolls is an **ancestor** of the table — e.g. an app-shell viewport that scrolls projected content — the table cannot inject a scroll container it does not own. Bind `[scrollElement]` to that ancestor by hand (a template reference variable is the simplest source):
+When the element that actually scrolls is an **ancestor** of the table (e.g. an app-shell viewport that scrolls projected content), the table cannot inject a scroll container it does not own. Bind `[scrollElement]` to that ancestor by hand (a template reference variable is the simplest source):
 
 ```html
 <div #shell style="height: 100vh; overflow: auto;">
@@ -116,7 +116,7 @@ When the element that actually scrolls is an **ancestor** of the table — e.g. 
 
 ### Wrapping: re-exposing / renaming `scrollElement`
 
-A design-system wrapper that re-exposes `ForTableVirtualized` through `hostDirectives` can surface `scrollElement` directly, or rename it, via input aliasing — no bridging `effect` is needed because the value flows straight through:
+A design-system wrapper that re-exposes `ForTableVirtualized` through `hostDirectives` can surface `scrollElement` directly, or rename it, via input aliasing. No bridging `effect` is needed because the value flows straight through:
 
 ```ts
 import { Component } from '@angular/core';

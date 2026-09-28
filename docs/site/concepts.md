@@ -1,6 +1,6 @@
 # Concepts
 
-forty-cdk is one idea applied consistently: **the library owns behaviour, and you own everything else**. Six conventions fall out of that, and they hold across every entry point — learn them once on a Switch and a Table page reads the same way.
+forty-cdk is one idea applied consistently: **the library owns behaviour, and you own everything else**. Six conventions fall out of that, and they hold across every entry point. Learn them once on a Switch, and a Table page reads the same way.
 
 This page is the model. The primitive pages are the reference.
 
@@ -31,7 +31,7 @@ A primitive is not one component with thirty inputs. It is a set of standalone d
 </div>
 ```
 
-The pieces find each other through **dependency injection**, not through content queries: the root provides an `InjectionToken` carrying its context, and every piece `inject()`s it. That choice is what makes the arrangement above yours to rearrange — a piece works wherever it appears in the injector tree, however deeply you wrap it in components of your own, which a `@ContentChild` could not survive.
+The pieces find each other through **dependency injection**, not through content queries: the root provides an `InjectionToken` carrying its context, and every piece `inject()`s it. That choice is what makes the arrangement above yours to rearrange: a piece works wherever it appears in the injector tree, however deeply you wrap it in components of your own, which a `@ContentChild` could not survive.
 
 Selectors are attributes by default (`<button forPopoverTrigger>`) precisely so the element stays yours. A primitive uses an element selector only when it has to inject structure of its own.
 
@@ -51,11 +51,11 @@ The point is that state is stylable without being readable in TypeScript. You do
 
 ## Accessibility is the API
 
-Every primitive names the [WAI-ARIA APG](https://www.w3.org/WAI/ARIA/apg/patterns/) pattern it implements before it has an API at all, and its page links that pattern in the header. Roles, `aria-*` bound to live state, the full keyboard map, focus management — trap, return-focus, roving tabindex, as the pattern requires — RTL, and `prefers-reduced-motion` hooks are the deliverable, not a later pass.
+Every primitive names the [WAI-ARIA APG](https://www.w3.org/WAI/ARIA/apg/patterns/) pattern it implements before it has an API at all, and its page links that pattern in the header. Roles, `aria-*` bound to live state, the full keyboard map, focus management (trap, return-focus, roving tabindex, as the pattern requires), RTL, and `prefers-reduced-motion` hooks are the deliverable, not a later pass.
 
 This is why the library is worth taking a dependency on rather than writing a `<div>` with a click handler. It is also the constraint that decides API questions: where a convenient API and an accessible one disagree, the accessible one wins and the README says so.
 
-The limits that apply library-wide — the three cases where a consumer has to do something for accessibility to hold — are documented on the [shared](../../projects/forty-cdk/shared/README.md) entry point.
+The limits that apply library-wide (the three cases where a consumer has to do something for accessibility to hold) are documented on the [shared](../../projects/forty-cdk/shared/README.md) entry point.
 
 ## One entry point per primitive
 
@@ -67,7 +67,7 @@ import { ForAccordion, ForAccordionItem } from 'forty-cdk/accordion';
 
 Each entry point builds to a module of its own, so a bundle importing Accordion never contains, references or resolves anything belonging to Dialog. That is a structural property rather than a tree-shaking result: the isolation exists before the optimiser runs.
 
-Inside one entry point, `"sideEffects": false` and standalone directives do the rest — a variant you do not import, like the range picker sharing the Date Picker entry point, drops out too.
+Inside one entry point, `"sideEffects": false` and standalone directives do the rest: a variant you do not import, like the range picker sharing the Date Picker entry point, drops out too.
 
 The same rule is why optional peers stay optional. An entry point never imports a peer by value unless the consumer of _that_ entry point necessarily has it, so `@angular/forms` and `@internationalized/date` cost nothing to skip.
 
@@ -81,9 +81,9 @@ Overlays follow one shape. The root holds the open state and exposes it, you dec
 }
 ```
 
-Wrapping content in `@if` means it does not exist while closed — no hidden subtree, no stale form controls, no focusable elements a screen reader can reach. Where an exit animation or a reserved layout slot needs the element to survive, a `[forceMount]` opt-in keeps it mounted and the `data-state` attribute tells your CSS what to do with it.
+Wrapping content in `@if` means it does not exist while closed: no hidden subtree, no stale form controls, no focusable elements a screen reader can reach. Where an exit animation or a reserved layout slot needs the element to survive, a `[forceMount]` opt-in keeps it mounted and the `data-state` attribute tells your CSS what to do with it.
 
-What the library does own is the **portal**: an overlay's content moves to `document.body` when it opens, so it escapes `overflow: hidden` and stacking contexts. The practical consequence is that component-scoped styles do not reach it — overlay CSS has to be global. [Your first overlay](../your-first-overlay.md) walks the whole shape, and [Styling floating content](../styling-floating-content.md) covers the positioning hooks.
+What the library does own is the **portal**: an overlay's content moves to `document.body` when it opens, so it escapes `overflow: hidden` and stacking contexts. The practical consequence is that overlay CSS has to be global, because component-scoped styles do not reach it. [Your first overlay](../your-first-overlay.md) walks the whole shape, and [Styling floating content](../styling-floating-content.md) covers the positioning hooks.
 
 ## Zoneless, SSR-safe, signals throughout
 
@@ -95,6 +95,6 @@ Three properties hold everywhere, so no page has to restate them:
 
 ## Where to go next
 
-- [Getting started](./getting-started.md) — these conventions on one worked example.
-- [Installation](./installation.md) — peers, versions and the import model.
-- [Wrapping non-form roots](../wrapping-non-form-roots.md) and [Wrapping form primitives](../wrapping-form-primitives.md) — putting a design system on top without losing any of the above.
+- [Getting started](./getting-started.md): these conventions on one worked example.
+- [Installation](./installation.md): peers, versions and the import model.
+- [Wrapping non-form roots](../wrapping-non-form-roots.md) and [Wrapping form primitives](../wrapping-form-primitives.md): putting a design system on top without losing any of the above.

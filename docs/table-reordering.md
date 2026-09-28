@@ -3,11 +3,11 @@
 `[forTableColumnReorder]` and `[forTableRowReorder]` are opt-in companion directives that make
 header columns and data rows reorderable by pointer and by keyboard, each wrapping `[forDropList]`
 through `hostDirectives` so a table drags exactly as a standalone drop list does. The table never
-mutates your data — every committed drop reports `{ from, to }` for you to apply yourself.
+mutates your data: every committed drop reports `{ from, to }` for you to apply yourself.
 
-Wrapping the drop list brings the whole drag-drop toolkit with it — `[forDraggable]`,
+Wrapping the drop list brings the whole drag-drop toolkit with it (`[forDraggable]`,
 `[forDragHandle]`, `[forDragPreview]`, `[forDragPlaceholder]`, FLIP animations, live announce,
-keyboard and pointer drag — and reorder handlers apply `moveItemInArray` to a local signal. This
+keyboard and pointer drag), and reorder handlers apply `moveItemInArray` to a local signal. This
 guide also covers the shared-tab-stop keyboard model, the virtualization interaction, and the
 boundary / axis-lock passthrough. Split out of the table README in
 [#1401](https://github.com/tutkli/forty-cdk/issues/1401) because it spans two entry points; the
@@ -37,7 +37,7 @@ import { ForTableColumnReorder } from 'forty-cdk/table';
 
 Apply `[forTableRowReorder]` on the rowgroup element that wraps the data rows (`<div role="rowgroup">` in `<div>` mode, `<tbody>` in native `<table>` mode). The list orientation defaults to `vertical`. Add `[forDraggable] [dragData]="row.id"` to each `[forTableRow]`.
 
-`rowReorder` fires with `{ from, to }` — apply with `moveItemInArray`.
+`rowReorder` fires with `{ from, to }`, which you apply with `moveItemInArray`.
 
 In `mode="grid"` / `mode="treegrid"` the draggable rows **yield their tab stop** to the table's composite roving grid, so a keyboard-navigable, row-reorderable grid keeps the single tab stop the WAI-ARIA Data Grid pattern calls for (`Tab` enters the grid once). Because a row is a _container_, not a grid cell, keyboard reordering starts from a focused **cell**: press `Ctrl`/`Cmd`+`Space` on any cell to lift its enclosing row, then `ArrowUp` / `ArrowDown` (`Home` / `End`, `PageUp` / `PageDown`) move the target, `Space` / `Enter` drop, and `Escape` / `Tab` cancel. Idle Arrow keys stay grid navigation, and `Space` still selects the row when a `selectionMode` is set. In the static `mode="table"` the rowgroup keeps its own draggable-owned tab stop and the plain `Space` / `Enter` lift on a focused row.
 
@@ -66,17 +66,17 @@ onRowReorder(d: TableRowReorderDescriptor): void {
 drop list only sees the rows currently in the rendered window, so its raw `from` / `to` would be
 **window-relative**. `[forTableRowReorder]` translates them to **absolute** dataset indices using
 each rendered row's `[virtualIndex]`, so applying `moveItemInArray` to your **full** row array
-moves the right row. A non-virtualized table is unaffected — it emits rendered-order indices as
+moves the right row. A non-virtualized table is unaffected and emits rendered-order indices as
 before.
 
 Supported today:
 
 - **Pointer drag within the rendered window**, and **auto-scroll past the window edge** to reach
-  rows beyond it — the lifted row is pinned mounted for the duration of the drag so auto-scroll
+  rows beyond it. The lifted row is pinned mounted for the duration of the drag so auto-scroll
   cannot unmount it and desync the indices.
 - **Single-gesture windowed scrub to an arbitrary far row.** Hold **Shift** during a pointer drag
-  and the scroll viewport maps onto the whole dataset — the top edge targets row 0, the bottom edge
-  the last row — so one gesture drops the lifted row at any far row without waiting for auto-scroll
+  and the scroll viewport maps onto the whole dataset (the top edge targets row 0, the bottom edge
+  the last row), so one gesture drops the lifted row at any far row without waiting for auto-scroll
   to crawl there. Releasing Shift returns to normal in-window resolution; without Shift, pointer
   resolution is unchanged.
 - **Keyboard reorder across the entire dataset.** In `mode="grid"`, `Ctrl`/`Cmd`+`Space` on a
@@ -135,7 +135,7 @@ onReorder(d: TableRowReorderDescriptor): void {
 ```
 
 This is the **supported** way to drag-reorder a virtualized list. A bare
-`[forDropList]` wrapping `*forVirtualFor` is **not** — it emits window-relative
+`[forDropList]` wrapping `*forVirtualFor` is **not**. It emits window-relative
 indices, lets auto-scroll recycle the lifted row, and confines keyboard stepping
 to the rendered window. Those are exactly the three mechanisms
 `[forTableRowReorder]` supplies on top of it: absolute-index translation, a
@@ -148,8 +148,8 @@ missing one fails silently rather than loudly.
 Both companions forward `[liveSort]` to the wrapped `[forDropList]`. Combined with a
 `[forDragPlaceholder]` template on each draggable header cell / row, `[liveSort]="true"` makes
 the placeholder follow the **live resolved drop index** during a pointer drag, so the
-surrounding cells / rows part to reveal where the item will land — instead of only marking the
-dragged item's source slot. It has no effect without a `[forDragPlaceholder]` template, and none
+surrounding cells / rows part to reveal where the item will land. Without `[liveSort]`, the placeholder only marks the
+dragged item's source slot. `[liveSort]` has no effect without a `[forDragPlaceholder]` template, and none
 on keyboard dragging. See the [drag-drop README](../projects/forty-cdk/drag-drop/README.md) for the full behaviour.
 
 ```html
@@ -177,7 +177,7 @@ same opt-in visual constraint that standalone drop lists support.
 
 Because Angular cannot fix a host-directive input to a constant
 ([Angular #51691](https://github.com/angular/angular/issues/51691)), `lockAxis` must be set
-**explicitly** on the companion element — `lockAxis="x"` for columns (horizontal drag), `lockAxis="y"` for rows (vertical drag).
+**explicitly** on the companion element: `lockAxis="x"` for columns (horizontal drag), `lockAxis="y"` for rows (vertical drag).
 
 ```html
 <div
@@ -212,9 +212,9 @@ host element:
 
 ## Caveats
 
-- `[forTableSortHeader]` and `[forDraggable]` (column reorder) **may** share the same header cell. When co-located, the draggable's roving tabindex owns the single tab stop and both the header cell and the sort header yield their own `[tabindex]`, so nothing collides on the host attribute (the draggable is detected by DOM marker — the `forDraggable` / `forFreeDrag` attribute — not by a drag-drop import). `aria-sort` / `data-sorted` stay on the cell and clicking it still cycles the sort. In `mode="grid"` / `mode="treegrid"` a column-reorder header row **joins** the body's composite grid ([#1223](https://github.com/tutkli/forty-cdk/issues/1223)), so it shares the single tab stop: idle Arrow keys navigate across header and body. The two keyboard activations split along WAI-ARIA lines so a single key press never both sorts and lifts ([#1343](https://github.com/tutkli/forty-cdk/issues/1343)): **`Space`** lifts the column for keyboard reordering (and drops it), while **`Enter`** toggles the sort. A sort-only header (no `[forDraggable]`) still sorts on both `Enter` and `Space`, and a reorder-only header (no `[forTableSortHeader]`) still lifts on both — the split only applies where the two affordances co-locate. It is driven by the same `data-sortable` DOM marker (via the drag-drop `FOR_DRAGGABLE_LIFT_GUARD` seam), so neither directive imports the other. Two things the cell keeps while it yields ([#1840](https://github.com/tutkli/forty-cdk/issues/1840)): **`F2`** is still the cell-entry key that reaches a widget inside the header (a `[forTableColumnResizer]`), with `Escape` returning focus to the cell; and a column pinned with `[dragDisabled]` — which cannot be lifted — still owns the grid's single tab stop while it is the roving cell, so a grid whose first column is pinned stays reachable with `Tab` (and arrowing onto a pinned column takes the tab stop with it, wherever in the row it sits). A pinned column keeps `data-disabled` but emits no `aria-disabled`: the disabled affordance is the lift, not the `columnheader` the consumer can still sort, resize and navigate. For the same reason the `Space` / `Enter` split above does not apply to it — with no lift to collide with, a pinned sortable header sorts on both keys like a sort-only header.
-- Reorderable rows and cells must generate real boxes. Avoid `display: contents` on `[forTableRow]` or header cells used as drag targets — the drag-drop primitive needs a non-zero bounding box for pointer geometry.
-- In `mode="grid"`, both 2D cell roving and keyboard row reordering are keyboard-interactive from the same cells: idle Arrow keys navigate, and `Ctrl`/`Cmd`+`Space` lifts the enclosing row for reordering ([#1292](https://github.com/tutkli/forty-cdk/issues/1292)). The rows are not separate tab stops — they yield to the composite grid. Reordering is the consumer's composition choice; the library provides affordances, not opinions about whether both should coexist.
+- `[forTableSortHeader]` and `[forDraggable]` (column reorder) **may** share the same header cell. When co-located, the draggable's roving tabindex owns the single tab stop and both the header cell and the sort header yield their own `[tabindex]`, so nothing collides on the host attribute (the draggable is detected by its DOM marker, the `forDraggable` / `forFreeDrag` attribute, not by a drag-drop import). `aria-sort` / `data-sorted` stay on the cell and clicking it still cycles the sort. In `mode="grid"` / `mode="treegrid"` a column-reorder header row **joins** the body's composite grid ([#1223](https://github.com/tutkli/forty-cdk/issues/1223)), so it shares the single tab stop: idle Arrow keys navigate across header and body. The two keyboard activations split along WAI-ARIA lines so a single key press never both sorts and lifts ([#1343](https://github.com/tutkli/forty-cdk/issues/1343)): **`Space`** lifts the column for keyboard reordering (and drops it), while **`Enter`** toggles the sort. A sort-only header (no `[forDraggable]`) still sorts on both `Enter` and `Space`, and a reorder-only header (no `[forTableSortHeader]`) still lifts on both. The split only applies where the two affordances co-locate. It is driven by the same `data-sortable` DOM marker (via the drag-drop `FOR_DRAGGABLE_LIFT_GUARD` seam), so neither directive imports the other. Two things the cell keeps while it yields ([#1840](https://github.com/tutkli/forty-cdk/issues/1840)): **`F2`** is still the cell-entry key that reaches a widget inside the header (a `[forTableColumnResizer]`), with `Escape` returning focus to the cell; and a column pinned with `[dragDisabled]`, which cannot be lifted, still owns the grid's single tab stop while it is the roving cell, so a grid whose first column is pinned stays reachable with `Tab` (and arrowing onto a pinned column takes the tab stop with it, wherever in the row it sits). A pinned column keeps `data-disabled` but emits no `aria-disabled`: the disabled affordance is the lift, not the `columnheader` the consumer can still sort, resize and navigate. For the same reason the `Space` / `Enter` split above does not apply to it. With no lift to collide with, a pinned sortable header sorts on both keys like a sort-only header.
+- Reorderable rows and cells must generate real boxes. Avoid `display: contents` on `[forTableRow]` or header cells used as drag targets, because the drag-drop primitive needs a non-zero bounding box for pointer geometry.
+- In `mode="grid"`, both 2D cell roving and keyboard row reordering are keyboard-interactive from the same cells: idle Arrow keys navigate, and `Ctrl`/`Cmd`+`Space` lifts the enclosing row for reordering ([#1292](https://github.com/tutkli/forty-cdk/issues/1292)). The rows are not separate tab stops: they yield to the composite grid. Reordering is the consumer's composition choice; the library provides affordances, not opinions about whether both should coexist.
 - For all drag-drop CSS hooks (`data-dragging`, `data-drag-over`, `[forDragHandle]`, `[data-drag-preview]`, `data-settling`) see the [drag-drop README](../projects/forty-cdk/drag-drop/README.md).
 
 ## Inputs
@@ -228,18 +228,18 @@ host element:
 | `[forTableColumnReorder]` | `animateReorder` | `boolean`                       | `false`        | FLIP animation passthrough.                                                                                          |
 | `[forTableColumnReorder]` | `liveSort`       | `boolean`                       | `false`        | Live-sort placeholder passthrough.                                                                                   |
 | `[forTableColumnReorder]` | `boundary`       | `HTMLElement \| string \| null` | `null`         | Boundary element (or selector) passthrough. Confines the preview; no effect on drop index.                           |
-| `[forTableColumnReorder]` | `lockAxis`       | `'x' \| 'y' \| null`            | `null`         | Axis-lock passthrough. Set `'x'` for column drag (holds vertical position). Must be set explicitly — Angular #51691. |
+| `[forTableColumnReorder]` | `lockAxis`       | `'x' \| 'y' \| null`            | `null`         | Axis-lock passthrough. Set `'x'` for column drag (holds vertical position). Must be set explicitly (Angular #51691). |
 | `[forTableRowReorder]`    | `dir`            | `'ltr' \| 'rtl' \| null`        | `null`         | Writing direction passthrough.                                                                                       |
 | `[forTableRowReorder]`    | `disabled`       | `boolean`                       | `false`        | Disables the whole list passthrough.                                                                                 |
 | `[forTableRowReorder]`    | `autoScroll`     | `boolean`                       | `true`         | Auto-scroll passthrough.                                                                                             |
 | `[forTableRowReorder]`    | `animateReorder` | `boolean`                       | `false`        | FLIP animation passthrough.                                                                                          |
 | `[forTableRowReorder]`    | `liveSort`       | `boolean`                       | `false`        | Live-sort placeholder passthrough.                                                                                   |
 | `[forTableRowReorder]`    | `boundary`       | `HTMLElement \| string \| null` | `null`         | Boundary element (or selector) passthrough. Confines the preview; no effect on drop index.                           |
-| `[forTableRowReorder]`    | `lockAxis`       | `'x' \| 'y' \| null`            | `null`         | Axis-lock passthrough. Set `'y'` for row drag (holds horizontal position). Must be set explicitly — Angular #51691.  |
+| `[forTableRowReorder]`    | `lockAxis`       | `'x' \| 'y' \| null`            | `null`         | Axis-lock passthrough. Set `'y'` for row drag (holds horizontal position). Must be set explicitly (Angular #51691).  |
 
 ## Outputs
 
 | Directive                 | Output          | Payload                        | Description                                                          |
 | ------------------------- | --------------- | ------------------------------ | -------------------------------------------------------------------- |
-| `[forTableColumnReorder]` | `columnReorder` | `TableColumnReorderDescriptor` | `{ from, to, columns }` — fired once per committed column drag-drop. |
-| `[forTableRowReorder]`    | `rowReorder`    | `TableRowReorderDescriptor`    | `{ from, to }` — fired once per committed row drag-drop.             |
+| `[forTableColumnReorder]` | `columnReorder` | `TableColumnReorderDescriptor` | Fired once per committed column drag-drop with `{ from, to, columns }`. |
+| `[forTableRowReorder]`    | `rowReorder`    | `TableRowReorderDescriptor`    | Fired once per committed row drag-drop with `{ from, to }`.             |

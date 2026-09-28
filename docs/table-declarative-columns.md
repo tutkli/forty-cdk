@@ -10,15 +10,15 @@ The layer is optional and additive. Place `<for-table-body>` inside a `[forTable
 never imports `ForTableBody` never bundles it. Split out of the table README in
 [#1401](https://github.com/tutkli/forty-cdk/issues/1401).
 
-**Supported modes: `table` and `grid`.** Nothing in `<for-table-body>` is grid-specific — it derives
+**Supported modes: `table` and `grid`.** Nothing in `<for-table-body>` is grid-specific: it derives
 each stamped cell's role from the table `mode` and applies no mode guard, so it works under the default
 `mode="table"` and under `mode="grid"` alike. Choose `mode="grid"` for **interactive** cells: roving 2D
 keyboard navigation, cell widgets, and cell-entry. Choose `mode="table"` for **read-only** or
 **whole-row navigation** lists, where `role="grid"` would announce an interaction model the list does
-not have — see [Whole-row navigation lists](#whole-row-navigation-lists) for the row-interaction hooks
+not have. See [Whole-row navigation lists](#whole-row-navigation-lists) for the row-interaction hooks
 (`interactiveRows` / `rowActivate` / `rowContextMenu`). `mode="treegrid"` is out of scope: the body
 stamps no expansion affordances. The examples below use `mode="grid"`, but each stamps identically under
-`mode="table"` (only the emitted roles change — `role="table"` with `role="cell"` cells).
+`mode="table"` (only the emitted roles change: `role="table"` with `role="cell"` cells).
 
 ```html
 <div forTable mode="grid" ariaLabel="People" selectionMode="multiple">
@@ -50,15 +50,15 @@ stamps no expansion affordances. The examples below use `mode="grid"`, but each 
 </div>
 ```
 
-- **`<for-table-body>`** takes `[rows]` (already sorted / filtered / paged by you — BYO-data),
+- **`<for-table-body>`** takes `[rows]` (BYO-data, already sorted / filtered / paged by you),
   optional `[rowKey]` (row identity used for `@for` tracking **and** each row's selection `[value]`),
   optional `[displayedColumns]` (which columns render, in order; defaults to declaration order), and
-  `[loading]` / `[placeholderRows]` (render `forTablePlaceholderCellDef` skeletons — or the body-level
-  `forTablePlaceholderCellDefault` — for the initial full-replace load; see
+  `[loading]` / `[placeholderRows]` (render `forTablePlaceholderCellDef` skeletons, or the body-level
+  `forTablePlaceholderCellDefault`, for the initial full-replace load; see
   [Interleaved placeholder rows](#interleaved-placeholder-rows) for the infinite-scroll shape
   that keeps loaded rows and appends trailing skeletons). It **owns
   `grid-template-columns`**: each column contributes its `[width]`, falling back to the published
-  `--for-table-col-<name>-width` resize var — so a resized column drives its own track with no glue.
+  `--for-table-col-<name>-width` resize var. A resized column therefore drives its own track with no glue.
 - **Auto-wired from per-column flags:** `sortable` wires `[forTableSortHeader]` (the body derives each
   header's direction from its `[sort]` input and re-emits `(sortChange)`), and `resizable` wires
   `[forTableColumnResizer]` (re-emitted through `(resizeCommit)`; give `resizeAriaLabel` so the handle
@@ -66,8 +66,8 @@ stamps no expansion affordances. The examples below use `mode="grid"`, but each 
   driving `aria-valuemin` / `aria-valuemax`), `[resizeStep]` (arrow-key increment), `autoFit`
   (double-click size-to-content, **on by default**; set `[autoFit]="false"` to disable), and
   `fitIncludesHeader` (also account for the header label, isolated with a `[forTableColumnLabel]` inside
-  the `[forTableHeaderCellDef]` template). Let the body own width **state** with `[(columnWidths)]` — see
-  [Persisting column widths](#persisting-column-widths-columnwidths) — or keep applying widths yourself
+  the `[forTableHeaderCellDef]` template). Let the body own width **state** with `[(columnWidths)]` (see
+  [Persisting column widths](#persisting-column-widths-columnwidths)), or keep applying widths yourself
   from `(resizeCommit)`.
 - **Consumer-placed in templates:** selection (`[forTableRowSelector]` / `[forTableSelectAll]`) and any
   interactive widget go straight into the cell templates. Row-context primitives resolve their
@@ -75,29 +75,29 @@ stamps no expansion affordances. The examples below use `mode="grid"`, but each 
 - **Styling the stamped cells:** the body owns the header / data cell elements, so add a class to them
   per column with `[headerClass]` / `[cellClass]` on `[forTableColumnDef]` (see
   [Styling the stamped cells](#styling-the-stamped-cells) below).
-- **Typing `let-row`:** bind `[forTableCellDefRow]` to the same array you pass to `[rows]` — it is read only
+- **Typing `let-row`:** bind `[forTableCellDefRow]` to the same array you pass to `[rows]`. It is read only
   for type inference, so `let-row` is typed as your row type. With a discriminated-union row type,
-  bind `[forTableCellDefUnless]` (and `[forTableRowCellDefWhen]` on variants) to narrow it further — see
-  [Typing a discriminated-union row](#typing-a-discriminated-union-row) below.
+  bind `[forTableCellDefUnless]` (and `[forTableRowCellDefWhen]` on variants) to narrow it further (see
+  [Typing a discriminated-union row](#typing-a-discriminated-union-row) below).
 
 `<for-table-body>`'s host is `display: contents`, so it adds no box between `[forTable]` and its rows;
 all visual styling stays yours off the same `data-*` / role hooks the raw primitives emit. Full-span
 **row variants** (group headers, separators, summary rows) are covered below via `[forTableRowDef]`, and
-drag **column reordering** via the `reorderable` flag — see
-[Column reordering](#column-reordering-reorderable--columnreorder).
+drag **column reordering** via the `reorderable` flag (see
+[Column reordering](#column-reordering-reorderable--columnreorder)).
 
 > **Bundle note.** `<for-table-body>` statically imports `forty-cdk/drag-drop` so a `reorderable`
-> column can auto-wire drag reordering, so every `<for-table-body>` consumer bundles it — even one with
+> column can auto-wire drag reordering. Every `<for-table-body>` consumer therefore bundles drag-drop, even one with
 > no reorderable column. **Measured** ([#1730](https://github.com/tutkli/forty-cdk/issues/1730),
 > production `ng build` of an app whose lazy route holds one two-column table): the drag-drop bytes the
 > optimizer retains in that route are **18.0 kB raw / 5.1 kB gzip**, and the same route with every
-> column `reorderable` is 0.05 kB larger — the directives are reachable from `ForTableBody`'s component
+> column `reorderable` is 0.05 kB larger. The directives are reachable from `ForTableBody`'s component
 > definition, so nothing is dropped either way. Put that next to the rest of the layer's cost before
 > reading it as expensive: against the raw path the whole declarative layer is +54.2 kB raw / +13.7 kB
 > transfer on that route, of which drag-drop is a third. Per-entry-point tree-shaking is otherwise
 > intact (a table that never imports `ForTableBody` bundles neither it nor drag-drop). If a simple table
 > is bundle-sensitive and needs no declarative ergonomics, author it from the raw
-> `[forTableHeaderCell]` / `[forTableCell]` primitives instead — that path never touches drag-drop.
+> `[forTableHeaderCell]` / `[forTableCell]` primitives instead. That path never touches drag-drop.
 
 ### Styling the stamped cells
 
@@ -116,8 +116,8 @@ leaving them unset adds no `class` attribute at all.
 
 This is the seam a wrapping design system needs: it can key its stylesheet off classes it owns (a
 `.num-cell` it applies here) instead of scoping CSS to the body's template internals
-(`for-table-body [forTableCell]`, role selectors), and it reaches the cell box itself — padding,
-truncation, alignment, sticky backgrounds — rather than a wrapper node inside the template. Per-datum
+(`for-table-body [forTableCell]`, role selectors), and it reaches the cell box itself (padding,
+truncation, alignment, sticky backgrounds) rather than a wrapper node inside the template. Per-datum
 row styling (varying by the row's data, not just the column) is covered by
 [`[rowClass]` / `[rowAttrs]`](#styling-a-row-from-its-datum-rowclass--rowattrs) below.
 
@@ -125,9 +125,9 @@ row styling (varying by the row's data, not just the column) is covered by
 
 Instead of maintaining a widths signal, per-column seed / update handlers, and a hand-built
 `grid-template-columns` string, let `<for-table-body>` own the width **state**: bind `[(columnWidths)]`
-to a plain map keyed by column `name`. It seeds each `resizable` column's handle `[width]` — so the
+to a plain map keyed by column `name`. It seeds each `resizable` column's handle `[width]`, so the
 `role="separator"` handle exposes `aria-valuenow` from the first render and the column's track picks up
-the seeded width immediately — and folds every live change (pointer drag, keyboard resize, auto-fit)
+the seeded width immediately. It also folds every live change (pointer drag, keyboard resize, auto-fit)
 back into the map immutably. The map is JSON-serializable, so persisting a user's column layout is one
 two-way binding plus one storage write:
 
@@ -177,10 +177,10 @@ rather than the whole width map.
 
 `<for-table-body>` resolves each column's `grid-template-columns` track as
 `[width]() ?? var(--for-table-col-<name>-width, [fallbackWidth]() ?? minmax(0, 1fr))`, so a **static `[width]` on the def
-takes precedence** over the published resize var — a seeded or resized width would never reach the
+takes precedence** over the published resize var: a seeded or resized width would never reach the
 track. A column you resize (or seed through `[(columnWidths)]`) must therefore **leave `[width]`
 unset**: it then flexes as `minmax(0, 1fr)`, sharing the free space with the other unsized columns,
-until a width is seeded or committed — after which its track becomes that fixed pixel width and the
+until a width is seeded or committed. After that, its track becomes that fixed pixel width and the
 remaining `1fr` columns re-split what's left. Reserve `[width]` for columns you never resize (a fixed
 `48px` selection column, an `80px` id column); combining it with `resizable` on the same column pins the
 track and makes the handle's width purely advisory (`aria-valuenow` and `(resizeCommit)` still fire, but
@@ -206,8 +206,8 @@ one. `[fallbackWidth]` supplies the track fragment used as the **resize var's fa
 </ng-container>
 ```
 
-The column renders as `minmax(120px, 2.5fr)` — 2.5× the weight of a plain `1fr` sibling, never below
-`120px` — until a width is seeded or committed, at which point `--for-table-col-description-width`
+The column renders as `minmax(120px, 2.5fr)` (2.5× the weight of a plain `1fr` sibling, never below
+`120px`) until a width is seeded or committed, at which point `--for-table-col-description-width`
 resolves and the fallback stops applying, exactly as with the default. Unlike `[width]` it never pins the
 column, so the handle keeps driving it.
 
@@ -218,7 +218,7 @@ the same var, which `[(columnWidths)]` can publish, so a weighted fluid track is
 Both inputs are **dev-mode-guarded**, the same way a column name is. Any open track vocabulary is
 accepted (`minmax()`, `fit-content()`, `calc()`, `clamp()`, `var()`), but a fragment that would escape the
 derived `grid-template-columns` string throws a `[forty-cdk/table]` error instead of silently collapsing
-the layout: an empty fragment (pass `null` — or omit the input — to leave the track unset), a `;` / `{` /
+the layout: an empty fragment (pass `null`, or omit the input, to leave the track unset), a `;` / `{` /
 `}` / quote / comment opener, or unbalanced parentheses. That last one is the reason the guard exists at
 all for `[fallbackWidth]`: a stray `)` closes the enclosing `var(` early and swallows every column after
 it, which reads as "the whole table lost its layout" rather than "one column has a typo". Production
@@ -229,7 +229,7 @@ builds skip the check.
 Mark a column `reorderable` and `<for-table-body>` makes its header cell a drag-reorder handle. With at
 least one `reorderable` column the body applies `[forTableColumnReorder]` to the stamped header row and
 `[forDraggable]` (with `[dragData]` set to the column name) to each reorderable header cell, then
-re-emits every committed reorder — pointer drop **or** keyboard drop — through `(columnReorder)`. Like
+re-emits every committed reorder (pointer drop **or** keyboard drop) through `(columnReorder)`. Like
 `sort`, reorder is **BYO-data**: the body never reorders the columns itself. Apply
 `$event.columns` to your own column order and feed it back through `[displayedColumns]`.
 
@@ -269,32 +269,32 @@ protected readonly order = signal<readonly string[]>(['name', 'role']);
 
 - **Keyboard is inherited, not new:** the header row keeps its single composite tab stop, `Space` lifts
   a header cell for reordering, and Arrow keys move the lifted column (`Escape` cancels). On a header
-  that is **both** `sortable` and `reorderable`, the two split along WAI-ARIA lines — `Space` lifts,
-  `Enter` toggles the sort — so a single key never both sorts and reorders.
+  that is **both** `sortable` and `reorderable`, the two split along WAI-ARIA lines (`Space` lifts and
+  `Enter` toggles the sort), so a single key never both sorts and reorders.
 - **`(columnReorder)`** emits `{ from, to, columns }` (a `TableColumnReorderDescriptor`). Its `columns`
-  lists the **reorderable** columns in their new order — equal to the full displayed order when every
+  lists the **reorderable** columns in their new order, which equals the full displayed order when every
   displayed column is `reorderable`. Non-reorderable columns stay static (not draggable) and keep their
   slots, so a table that mixes them merges the reorderable subset back into its own full order.
 - **`forTableColumnDragPlaceholder`** is optional and declared **once per body**; it is stamped as every
   reorderable column's pointer-drag placeholder. Omit it to keep drag-drop's default placeholder.
 - This is the declarative twin of the raw `[forTableColumnReorder]` / `[forDraggable]` composition; it
-  bundles `forty-cdk/drag-drop` into every `<for-table-body>` — 18.0 kB raw / 5.1 kB gzip retained
-  whether or not a column is `reorderable`, see the bundle note above.
+  bundles `forty-cdk/drag-drop` into every `<for-table-body>`: 18.0 kB raw / 5.1 kB gzip retained
+  whether or not a column is `reorderable` (see the bundle note above).
 
 ## Virtualized rows
 
 Add `[forTableVirtualized]` to the same `[forTable]` element and the body switches to windowed rendering
-automatically — it reads the published window off the table context (so `forty-cdk/table` still never
+automatically. It reads the published window off the table context (so `forty-cdk/table` still never
 imports the virtualization core), mounts only the visible slice, sizes its rowgroup to the full scroll
-height, and absolutely positions each row. Pass the **whole dataset** to `[rows]` — the body derives the
+height, and absolutely positions each row. Pass the **whole dataset** to `[rows]`: the body derives the
 true total from its length, so `[rowCount]` on `[forTable]` is unnecessary (bind it only for a
 server-known total larger than the loaded rows). There is no `#v` reference, manual sizer, `@for`
-window, or `[virtualIndex]` binding. Rows are fixed-size by default — set the row height in CSS. For
+window, or `[virtualIndex]` binding. Rows are fixed-size by default, so set the row height in CSS. For
 tables that mix row shapes (denser variant rows, group separators), opt in to
 [measured row heights](#measured-variable-row-heights) with `measureRows`.
 
 The `mode="grid"` in the example below is a **convention, not a requirement** of the layer. Windowing is
-driven by the `<div>` structure `<for-table-body>` always renders — not by the ARIA mode — so
+driven by the `<div>` structure `<for-table-body>` always renders, not by the ARIA mode, so
 `mode="table"` windows the same way: the root keeps `role="table"`, stamped cells stay `role="cell"`,
 and only the visible slice mounts.
 
@@ -339,12 +339,12 @@ and only the visible slice mounts.
 
 ### Measured (variable) row heights
 
-The fixed-size fast path positions every row at `estimateRowSize` intervals — perfect when all rows are
+The fixed-size fast path positions every row at `estimateRowSize` intervals. That is perfect when all rows are
 the same height, but a table mixing row shapes (denser variant rows, group separators, summary rows)
 would show overlaps or gaps after scroll, because the estimate is wrong for the odd-sized rows. Set
 `measureRows` to opt in to measured heights: the body measures each stamped row after render and feeds
 its real height back to the virtualizer, which replaces the estimate and re-aligns the offsets of the
-rows below — so the window stays contiguous no matter how the row heights vary.
+rows below. That keeps the window contiguous no matter how the row heights vary.
 
 ```html
 <div class="scroll-root" forTable forTableVirtualized mode="grid" ariaLabel="People">
@@ -368,11 +368,11 @@ rows below — so the window stays contiguous no matter how the row heights vary
 `estimateRowSize` still seeds the initial estimate (keep it close to the common row height for the least
 scroll-position shift on first measure). `measureRows` is off by default and has no effect without
 `[forTableVirtualized]`; a uniform-height table should leave it unset to keep the zero-measurement fast
-path. This mirrors the raw `[forTableRow]` path's `v.measureRow(el)` — the declarative layer just wires
-it up for you.
+path. This mirrors the raw `[forTableRow]` path's `v.measureRow(el)`, which the declarative layer just wires
+up for you.
 
 Initial measurement happens once, after a row renders. Ongoing in-place size changes to a row that
-stays mounted — content that loads asynchronously (images, lazy cells), a cell that reflows — are picked
+stays mounted, such as content that loads asynchronously (images, lazy cells) or a cell that reflows, are picked
 up automatically by the virtualizer's own `ResizeObserver`, which re-measures the row and re-aligns the
 rows below without any manual trigger. So a row that grows in place after its data arrives keeps the
 window contiguous on its own; you only pass the data through `[rows]`.
@@ -380,22 +380,22 @@ window contiguous on its own; you only pass the data through `[rows]`.
 ## Row variants
 
 Declare one or more `[forTableRowDef]` alongside the columns to render a **full-span row** for the data it
-matches — group headers, section separators, full-width summary or empty-state rows. For each datum the
+matches: group headers, section separators, full-width summary or empty-state rows. For each datum the
 body picks the first `[forTableRowDef]` whose `[when]` predicate returns `true` and stamps a row whose single
 cell spans every column and renders the `[forTableRowCellDef]` template; unmatched data renders the standard
-per-column row. (A `[forTableRowDef]` can instead carry the `placeholderCells` flag — no `[forTableRowCellDef]` — to
+per-column row. (A `[forTableRowDef]` can instead carry the `placeholderCells` flag, with no `[forTableRowCellDef]`, to
 stamp per-column skeleton cells rather than a full-span cell; see
 [Interleaved placeholder rows](#interleaved-placeholder-rows).) Type `let-row` by binding
-`[forTableRowCellDefRow]` to the same array you pass to `[rows]` — and,
-for a discriminated-union row type, narrow it with `[forTableRowCellDefWhen]` / `[forTableCellDefUnless]` (see
+`[forTableRowCellDefRow]` to the same array you pass to `[rows]`.
+For a discriminated-union row type, narrow it with `[forTableRowCellDefWhen]` / `[forTableCellDefUnless]` (see
 [Typing a discriminated-union row](#typing-a-discriminated-union-row)).
 
 Variant rows are **presentational**: the spanning cell carries the row `role` (`gridcell` in grid /
 treegrid mode), `aria-colindex="1"`, and `aria-colspan` equal to the column count, but it does **not**
-join the roving 2D navigation grid — arrow keys move between the regular data cells and step over variant
-rows — and variant rows are non-selectable. They still occupy a row slot and count towards
+join the roving 2D navigation grid (arrow keys move between the regular data cells and step over variant
+rows), and variant rows are non-selectable. They still occupy a row slot and count towards
 `aria-rowindex` / `aria-rowcount` (reading order is preserved). Style them off the `data-row-variant`
-hook the spanning cell emits. Row variants compose with `[forTableVirtualized]` — a matched row inside
+hook the spanning cell emits. Row variants compose with `[forTableVirtualized]`: a matched row inside
 the window renders full-span and positioned like any other.
 
 Three requirements when a table mixes row variants with selection or virtualization:
@@ -404,7 +404,7 @@ Three requirements when a table mixes row variants with selection or virtualizat
   row by its `rowKey` identity, falling back to the dataset index only when `rowKey` is unset or returns
   `undefined`. A variant datum that yields `undefined` therefore tracks by index, which can collide with
   a numeric identity from a regular row and trip Angular's `NG0955` duplicate-track-key error. Give
-  group-header / separator data their own stable keys — the simplest scheme is a **negative-id**
+  group-header / separator data their own stable keys. The simplest scheme is a **negative-id**
   namespace reserved for variant data, disjoint from the positive ids the real rows carry (see the `ts`
   block below).
 - **Exclude variant-matched data from `[selectableValues]`.** The
@@ -414,8 +414,8 @@ Three requirements when a table mixes row variants with selection or virtualizat
   accumulates values no row reflects. Filter them out with the same predicate the `[forTableRowDef]` matches
   on (e.g. `rows().filter((r) => !isGroupHeader(r))`).
 - **Keep the `[forTableRowCellDef]` template presentational.** Its content spans the row but stays out of the
-  grid's single tab stop, so it must contain no interactive content (buttons, links, form controls —
-  they become keyboard-unreachable) and no `[forTableCell]` (it would register a cell handle on the
+  grid's single tab stop, so it must contain no interactive content (buttons, links, form controls,
+  all of which become keyboard-unreachable) and no `[forTableCell]` (it would register a cell handle on the
   variant row and make the roving grid ragged).
 
 ```html
@@ -478,23 +478,23 @@ protected readonly selectableIds = computed(() =>
 ## Interleaved placeholder rows
 
 `[loading]` is the **full-replace** skeleton: it swaps the whole dataset for `[placeholderRows]`
-skeleton rows built from each column's `[forTablePlaceholderCellDef]` — the right shape for the _initial_ load,
+skeleton rows built from each column's `[forTablePlaceholderCellDef]`. That is the right shape for the _initial_ load,
 when there are no rows yet.
 
 Paginated / infinite-scroll tables load differently: they keep the rows already loaded and show a few
 **trailing** (or interleaved) skeleton rows while the next page fetches. Model that with a
-`placeholderCells` [row variant](#row-variants) — a `[forTableRowDef]` that matches your placeholder data and
+`placeholderCells` [row variant](#row-variants), a `[forTableRowDef]` that matches your placeholder data and
 stamps one skeleton cell per column from the same `[forTablePlaceholderCellDef]` templates, in place among the
 real rows:
 
-- The matched rows are **non-selectable**, and their cells are stamped **disabled** — so grid-mode arrow
-  navigation steps over them while the roving grid stays rectangular (one cell per column, unlike a
+- The matched rows are **non-selectable**, and their cells are stamped **disabled**. Grid-mode arrow
+  navigation therefore steps over them while the roving grid stays rectangular (one cell per column, unlike a
   full-span variant).
 - A column that omits `[forTablePlaceholderCellDef]` falls back to the body-level
-  [`[forTablePlaceholderCellDefault]`](#shared-skeleton-fortableplaceholdercelldefault), then to an empty cell —
-  so you mark only the columns whose skeleton shape differs from the shared one (a circle for an avatar
+  [`[forTablePlaceholderCellDefault]`](#shared-skeleton-fortableplaceholdercelldefault), then to an empty cell.
+  That way you mark only the columns whose skeleton shape differs from the shared one (a circle for an avatar
   column, a bar for text).
-- It composes with `[forTableVirtualized]` for free: placeholder rows are ordinary data — they count in
+- It composes with `[forTableVirtualized]` for free: placeholder rows are ordinary data, so they count in
   the total and get windowed and positioned like any row.
 
 A `[forTableRowDef]` must declare **exactly one** of a `[forTableRowCellDef]` template (full-span variant) or the
@@ -591,18 +591,18 @@ per-column template.
 
 ## Whole-row navigation lists
 
-Some tables are navigation lists: the **whole row** is the interactive target — click or `Enter` opens
-a detail view, an optional right-click opens a context menu. Because `<for-table-body>` owns the
+Some tables are navigation lists: the **whole row** is the interactive target. Click or `Enter` opens
+a detail view, and an optional right-click opens a context menu. Because `<for-table-body>` owns the
 `[forTableRow]` element, it exposes the row-level interaction as inputs / outputs rather than letting
-you attach handlers to a row you don't author. Set `interactiveRows` and bind `(rowActivate)` — a
-pointer click emits the row datum, its dataset index, and the originating event. Bind
+you attach handlers to a row you don't author. Set `interactiveRows` and bind `(rowActivate)`, which
+emits the row datum, its dataset index, and the originating event on a pointer click. Bind
 `(rowContextMenu)` for the right-click / menu key. Full-span `[forTableRowDef]` variant rows stay
 non-interactive.
 
 The **keyboard** half is scoped to the default `mode="table"`: there each data row also becomes a
 focusable tab stop (`tabindex="0"`) and `Enter` activates it. In `grid` / `treegrid` mode the row takes
 no tab stop and `Enter` keeps its cell-entry meaning, because the roving 2D navigation owns the
-keyboard — so a grid that needs a keyboard path to the same action puts an `<a href>` or a `<button>`
+keyboard. A grid that needs a keyboard path to the same action therefore puts an `<a href>` or a `<button>`
 in a cell, which the interactive-descendant guard below already routes correctly.
 
 ```html
@@ -650,17 +650,17 @@ protected readonly rowClass = (row: Row): Record<string, boolean> => ({
 });
 ```
 
-The full-row hit target includes the gaps between cells — clicking anywhere on the row activates it,
+The full-row hit target includes the gaps between cells: clicking anywhere on the row activates it,
 unlike a click handler on each cell. A row context menu opened with the keyboard (the context-menu key
 or `Shift+F10`) fires on the focused element, so gating both hooks behind `interactiveRows` keeps the
 menu keyboard-reachable.
 
 **Interactive content in a data cell owns its own events.** A per-row action `<button>` (or `<a href>`,
 `<input>`, `<select>`, `<textarea>`, `<summary>`, or `contenteditable` element) in a trailing column is
-the common navigation-list shape — clicking it runs the control, and pressing `Enter` on it keeps its
+the common navigation-list shape. Clicking it runs the control, and pressing `Enter` on it keeps its
 native action, without _also_ firing `(rowActivate)`. The row still activates from everywhere else: cell
-text, the gaps between cells, and the focused row itself. `(rowContextMenu)` is the deliberate exception
-— a right-click anywhere on the row, including over an inner control, still offers the row's context
+text, the gaps between cells, and the focused row itself. `(rowContextMenu)` is the deliberate exception:
+a right-click anywhere on the row, including over an inner control, still offers the row's context
 menu, matching native list UIs.
 
 ```html
@@ -674,7 +674,7 @@ menu, matching native list UIs.
 ```
 
 **Selection and activation in the same grid.** A selectable `mode="grid"` announces the selection
-legally — `aria-selected` per row, `aria-multiselectable` on the root — and by default a row click
+legally (`aria-selected` per row, `aria-multiselectable` on the root), and by default a row click
 _selects_, so pairing it with `interactiveRows` makes one click do both. Set
 [`selectionBehavior="none"`](../projects/forty-cdk/table/README.md#selectionbehavior) on `[forTable]` to
 hand the row click to `(rowActivate)` alone: the `[forTableRowSelector]` column, `[forTableSelectAll]`
@@ -697,14 +697,14 @@ row-opens-the-record shape most data tables on the web use.
 ### Styling a row from its datum (`[rowClass]` / `[rowAttrs]`)
 
 `[headerClass]` / `[cellClass]` on `[forTableColumnDef]` style a stamped **cell** by column, but a row's
-appearance often depends on its **data** — an error row, a dimmed row, the "menu-open" highlight above.
+appearance often depends on its **data**: an error row, a dimmed row, the "menu-open" highlight above.
 `[rowClass]` and `[rowAttrs]` are the seam for that: both take a `(row, index) => …` function the body
-calls per stamped row, and — unlike the activation hooks, which skip variant rows and keep their
-keyboard half in `table` mode — apply to **both** data and variant rows in **every** mode.
+calls per stamped row, and (unlike the activation hooks, which skip variant rows and keep their
+keyboard half in `table` mode) apply to **both** data and variant rows in **every** mode.
 
 - **`[rowClass]`** returns a class string or a `{ className: boolean }` map, applied to the row host.
 - **`[rowAttrs]`** returns an attribute map applied to the row host; a key mapped to `null` (or dropped
-  from a later map) removes that attribute — useful for `aria-current`, `data-*` state, etc.
+  from a later map) removes that attribute, which is useful for `aria-current`, `data-*` state, etc.
 
 ```html
 <for-table-body [rows]="rows()" [rowKey]="rowKey" [rowClass]="rowClass" [rowAttrs]="rowAttrs">
@@ -727,19 +727,19 @@ protected readonly rowAttrs = (row: Row): Record<string, string | null> => ({
 ## Typing a discriminated-union row
 
 When rows are a discriminated union whose variant members render through a `[forTableRowDef]`, `let-row`
-would otherwise type as the full union in every template — a per-column `[forTableCellDef]` only ever
+would otherwise type as the full union in every template. A per-column `[forTableCellDef]` only ever
 receives the non-variant members, and a `[forTableRowCellDef]` only ever receives its matched variant. Bind
 the **same type guard** you use on the def's `[when]` to the compiler-only inference inputs so each
 `let-row` is narrowed to exactly what it receives:
 
-- **`[forTableCellDefUnless]`** on a `[forTableCellDef]` narrows `let-row` to `Exclude<Row, V>` — the members
+- **`[forTableCellDefUnless]`** on a `[forTableCellDef]` narrows `let-row` to `Exclude<Row, V>`, the members
   _not_ rendered as a variant. Compose several variants into one union guard.
 - **`[forTableRowCellDefWhen]`** on a `[forTableRowCellDef]` narrows `let-row` to the matched variant `V`.
 
 Both are read only by the compiler, exactly like `[forTableCellDefRow]` / `[forTableRowCellDefRow]`; omitting them
 leaves `let-row` as the full row type (no behavioural or type change for existing tables). This
 replaces the filtered-computed-per-template workaround (`dataRows()` / `separatorRows()` copies of
-`rows()` kept only to satisfy the compiler) — bind `rows()` directly and let the guard narrow.
+`rows()` kept only to satisfy the compiler). Bind `rows()` directly and let the guard narrow.
 
 <!-- snippet: fragment -->
 
@@ -797,8 +797,8 @@ virtualization wiring and shared row defs so a consumer only declares columns. B
 `[forTableRowDef]`, `[forTableColumnDragPlaceholder]` and `[forTablePlaceholderCellDefault]` **registers itself**
 with the surrounding def registry through DI at construction (and unregisters when destroyed).
 
-Registered defs are exposed in **document order**, so a def that constructs late — one declared in a
-preset's view, one mounted by `@if` — still renders in its authored place, and `[displayedColumns]`
+Registered defs are exposed in **document order**, so a def that constructs late (one declared in a
+preset's view, one mounted by `@if`) still renders in its authored place, and `[displayedColumns]`
 still pins an explicit order on top. A def with no reachable registry throws a `[forty-cdk/table]`
 error instead of being silently inert.
 
@@ -843,7 +843,7 @@ export class MyTextColumn<T> {
 ### Scaffold wrapper table
 
 Defs a consumer projects through the wrapper's `<ng-content>` are content of the **wrapper**, not of
-the `<for-table-body>` inside the wrapper's template — their declaration ancestors are the wrapper's
+the `<for-table-body>` inside the wrapper's template. Their declaration ancestors are the wrapper's
 host, so they never see the body's own registry. Provide one on the wrapper with
 `provideForTableDefRegistry()` and hand it to the inner body through `[defs]`:
 
@@ -891,15 +891,15 @@ Three rules for the scaffold shape:
 - **A bound `[defs]` replaces the body's own registry.** Defs the wrapper declares **inside** the
   `<for-table-body>` tags would register with the body instead and be ignored, so the body throws
   rather than dropping them. Declare the wrapper's own baked-in defs (a shared placeholder row def,
-  a fixed actions column) next to the projected ones — anywhere in the wrapper's template outside
-  the `<for-table-body>` element — where they reach the same registry and interleave with the
+  a fixed actions column) next to the projected ones (anywhere in the wrapper's template outside
+  the `<for-table-body>` element), where they reach the same registry and interleave with the
   projected defs by document order.
 - **`FOR_TABLE_DEF_REGISTRY` is a read token.** `ForTableDefRegistry` exposes `columnNames` (every
-  registered column's `name`, in document order — useful to derive the wrapper's own
+  registered column's `name` in document order, which is useful to derive the wrapper's own
   `[displayedColumns]`); the registration protocol behind it is internal, so only the registry
   `provideForTableDefRegistry()` installs is accepted by `[defs]`.
 - **Compose the body, don't subclass it.** A component subclass replaces its base's `providers`
-  wholesale, which strips the registry the defs resolve — the body throws a `[forty-cdk/table]`
+  wholesale, which strips the registry the defs resolve. The body then throws a `[forty-cdk/table]`
   error naming `provideForTableDefRegistry()` rather than a bare `NG0201` naming a class you
   cannot import. Spreading the helper in is not the fix, though: a subclass inherits neither
   `template` nor `imports` either, so it constructs and then renders none of the body. Composition
