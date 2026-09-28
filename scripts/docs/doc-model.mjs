@@ -442,15 +442,31 @@ function exampleHeadingsOf(run) {
     if (entry.token.type !== 'heading' || entry.token.depth !== 3) {
       continue;
     }
-    const next = run.slice(index + 1).find(({ token }) => token.type !== 'space');
+    const body = blocksUntilDemoHeading(run.slice(index + 1));
+    const opening = body[0]?.token.type === 'paragraph' ? body[0] : null;
     headings.push({
       title: entry.token.text,
       slug: entry.slug,
       line: entry.line,
-      prose: next?.token.type === 'paragraph' ? next.token.text : null,
+      prose: opening === null ? null : opening.token.text,
+      trailing: trailingOf(opening === null ? body : body.slice(1)),
     });
   }
   return headings;
+}
+
+function blocksUntilDemoHeading(run) {
+  const end = run.findIndex(({ token }) => token.type === 'heading' && token.depth <= 3);
+  return run.slice(0, end === -1 ? run.length : end).filter(({ token }) => token.type !== 'space');
+}
+
+const HTML_COMMENT = /^<!--(?:(?!-->)[\s\S])*-->$/;
+
+function trailingOf(entries) {
+  return entries.map(({ token, line }) => ({
+    type: token.type === 'html' && HTML_COMMENT.test(token.text.trim()) ? 'comment' : token.type,
+    line,
+  }));
 }
 
 function blocksOf(run) {
@@ -668,6 +684,7 @@ export function compileDocument(source, { path, slug, kind }) {
     title: title.token.text,
     lede: ledeIndex === -1 ? null : introRun[ledeIndex].token.text,
     caption,
+    captionTrailing: caption === null ? [] : trailingOf(blocksUntilDemoHeading(examples.run)),
     examples: exampleHeadingsOf(examples?.run ?? []),
     intro: blocksOf(introRun.filter((_, index) => index !== ledeIndex)),
     introHeadings: headingsOf(introRun),

@@ -186,8 +186,6 @@ export class CalendarDefaultExample {
 }
 ```
 
-The library is styleless: style the boolean `data-*` hooks on `[forCalendarCell]` yourself (`[data-selected]`, `[data-today]`, `[data-outside-month]`, `[data-highlighted]`, and `:not([data-disabled])` for the enabled state).
-
 ### States
 
 One class and one directive, three states. `disabled` turns off focus movement and selection for the whole calendar; `readonly` keeps days focusable and the grid still pages, but clicking or pressing `Enter` no longer changes the selection. Each reflects a root hook — `data-disabled` and `data-readonly` — and the example's stylesheet keys on nothing else.

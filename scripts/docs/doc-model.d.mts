@@ -128,6 +128,12 @@ export interface DocExampleHeading {
    * question rather than the compiler's.
    */
   readonly prose: string | null;
+  readonly trailing: readonly DocTrailingBlock[];
+}
+
+export interface DocTrailingBlock {
+  readonly type: string;
+  readonly line: number;
 }
 
 /** One compiled document: an entry point's README, or a published guide. */
@@ -161,6 +167,7 @@ export interface DocDocument {
    * allowed is the contract's question rather than the compiler's.
    */
   readonly caption: string | null;
+  readonly captionTrailing: readonly DocTrailingBlock[];
   /**
    * The demos `## Examples` declares, in the order the page projects them
    * ([#1940](https://github.com/tutkli/forty-cdk/issues/1940)).
