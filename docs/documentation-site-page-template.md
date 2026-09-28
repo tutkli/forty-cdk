@@ -232,6 +232,17 @@ removed, stays in the alias list so it cannot come back.
   a collision, naming the README and both headings, so `pnpm test:docs` and `pnpm build:docs` both
   stop on it.
 
+  Nothing but fences and `<!-- snippet: … -->` markers may follow a caption
+  ([#2020](https://github.com/tutkli/forty-cdk/issues/2020)). On a page that projects a demo into
+  the block, the site prints the paragraph `## Examples` opens with above the hero and the paragraph
+  each `###` opens with beside its demo, then drops the rest of the section's body. A second
+  paragraph, a list, a table or a blockquote below either caption therefore reaches GitHub, npm and
+  `llms-full.txt`, and never the site page. Fold it into the caption when it says what the demo
+  does, move it to the reference section that owns its contract, or delete it when it restates
+  either. A page that projects only its hero publishes the section as markdown and is not held to
+  this. `droppedProseProblems` in `scripts/lib/doc-demo-headings.mjs` fails the next one under
+  `pnpm test:docs`, naming the README, the line and the heading.
+
 - **`## API`** — One `### ForX` subsection per piece, each with an **Inputs / Outputs / Models**
   table (merge "Inputs" and "Outputs" tables under the piece; mark outputs in the Description or a
   Kind column). Canonical columns for new content: **Property · Type · Default · Description**,

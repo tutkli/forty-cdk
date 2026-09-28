@@ -32,3 +32,11 @@ export interface DemoHeadingProblem {
 export declare function demoHeadingProblems(
   pages: readonly DemoHeadingPage[],
 ): readonly DemoHeadingProblem[];
+
+export interface DroppedProsePage extends DemoHeadingPage {
+  readonly document: Pick<DocDocument, 'path' | 'examples' | 'caption' | 'captionTrailing'>;
+}
+
+export declare function droppedProseProblems(
+  pages: readonly DroppedProsePage[],
+): readonly DemoHeadingProblem[];

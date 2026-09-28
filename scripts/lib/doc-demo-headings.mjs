@@ -155,3 +155,55 @@ export function demoHeadingProblems(pages) {
 
   return problems;
 }
+
+const PRINTED_NOWHERE_ELSE = new Set(['code', 'comment']);
+
+const BLOCK_NAMES = {
+  paragraph: 'a paragraph',
+  list: 'a list',
+  table: 'a table',
+  blockquote: 'a blockquote',
+  html: 'an HTML block',
+  hr: 'a thematic break',
+};
+
+export function droppedProseProblems(pages) {
+  const problems = [];
+
+  for (const { path, source, document } of pages) {
+    const inBlock = demosOf(source).filter((demo) => !demo.hero);
+    if (inBlock.length === 0) {
+      continue;
+    }
+
+    const report = (blocks, caption) => {
+      for (const block of blocks) {
+        if (PRINTED_NOWHERE_ELSE.has(block.type)) {
+          continue;
+        }
+        problems.push({
+          path: document.path,
+          line: block.line,
+          message:
+            `${BLOCK_NAMES[block.type] ?? `a "${block.type}" block`} follows the caption of ` +
+            `${caption}, and ${path} replaces the body of "## Examples" with its live demos, so ` +
+            'the site never prints it. Fold it into the caption when it says what the demo does, ' +
+            'move it to the section that owns its contract, or delete it when it restates either. ' +
+            'Only fences and snippet markers may follow a caption',
+        });
+      }
+    };
+
+    if (document.caption !== null) {
+      report(document.captionTrailing, '"## Examples"');
+    }
+    const claimed = new Set(inBlock.map((demo) => demo.heading));
+    for (const example of document.examples) {
+      if (example.prose !== null && claimed.has(example.slug)) {
+        report(example.trailing, `"### ${example.title}"`);
+      }
+    }
+  }
+
+  return problems;
+}

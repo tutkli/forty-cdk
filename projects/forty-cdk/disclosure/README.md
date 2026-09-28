@@ -59,17 +59,6 @@ export class DisclosureDefaultExample {
 }
 ```
 
-The library ships no styles. Hide animations / transitions can be driven off `data-state` on the trigger and content:
-
-```css
-.dis-content[data-state='closed'] {
-  /* … */
-}
-.dis-content[data-state='open'] {
-  /* … */
-}
-```
-
 ### States
 
 One class and one directive, two states. `disabled` drops the trigger from the tab order and blocks toggling, so the panel stays where it is; the root and the trigger both reflect `data-disabled`, which is all the example's stylesheet keys on.

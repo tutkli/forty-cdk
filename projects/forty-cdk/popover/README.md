@@ -91,8 +91,6 @@ import {
 export class PopoverDefaultExample {}
 ```
 
-`[forPopoverContent]` portals to `document.body` and is positioned with floating-ui — it must be wrapped with `@if` so mount and unmount drive `animate.enter` / `animate.leave`.
-
 ### Anchor & arrow
 
 The element that opens the popover and the element it points at can differ: the button is the trigger, but `[forPopoverAnchor]` on the highlighted phrase is what floating-ui positions against.
@@ -270,6 +268,7 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 ## Behavior notes
 
 - **Portal**: the content is moved to `document.body` on first render. CSS scoped to ancestors won't reach it — use global styles or classes.
+- **Mount equals open**: wrap `[forPopoverContent]` in `@if` on the open state, so mount and unmount drive `animate.enter` / `animate.leave`.
 - **Trigger exemption**: clicks on the trigger never fire `pointerDownOutside` or `interactOutside`. Their only effect is the trigger's own toggle.
 - **Anchor vs. trigger**: `[forPopoverAnchor]` only changes the floating-ui reference. The trigger keeps `aria-controls` / `aria-expanded`, the click toggle, and focus return on close. The anchor is _not_ exempt from outside dismissal — clicking it is treated as outside.
 - **Non-modal**: no focus trap, no body scroll lock, no `aria-modal`. If you need modal semantics, use `[forDialog]` instead.

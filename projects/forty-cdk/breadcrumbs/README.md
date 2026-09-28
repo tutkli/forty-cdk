@@ -82,8 +82,6 @@ export class BreadcrumbsDefaultExample {
 }
 ```
 
-The root defaults its label to `Breadcrumb`. Override it with `ariaLabel="…"` (or point a native `aria-labelledby` at a visible heading) when a page hosts more than one breadcrumb trail.
-
 ### Collapsing a long trail
 
 The primitive renders whatever items you give it, so collapsing a deep path is a consumer decision. Here the middle is folded into an expandable ellipsis button that reveals the hidden crumbs — the trail stays a single accessible navigation landmark either way.
@@ -120,7 +118,7 @@ bootstrapApplication(App, {
 
 Implements the [WAI-ARIA Breadcrumb pattern](https://www.w3.org/WAI/ARIA/apg/patterns/breadcrumb/).
 
-- **Navigation landmark.** `[forBreadcrumbs]` applies `role="navigation"` and labels it `aria-label="Breadcrumb"` by default, creating a named landmark that screen-reader users can jump to directly.
+- **Navigation landmark.** `[forBreadcrumbs]` applies `role="navigation"` and labels it `aria-label="Breadcrumb"` by default, creating a named landmark that screen-reader users can jump to directly. When a page hosts more than one trail, name each with `[ariaLabel]`, or point a native `aria-labelledby` at a visible heading.
 - **Current page.** Set `current` on `[forBreadcrumbItem]` for the active page; the directive reflects `aria-current="page"` so assistive technology announces the user's location in the trail.
 - **Decorative separators.** `[forBreadcrumbSeparator]` reflects `aria-hidden="true"` so the visual divider (e.g. `/`) is skipped by screen readers.
 

@@ -1,4 +1,8 @@
-import { demoHeadingProblems, demosOf } from '../../../../../scripts/lib/doc-demo-headings.mjs';
+import {
+  demoHeadingProblems,
+  demosOf,
+  droppedProseProblems,
+} from '../../../../../scripts/lib/doc-demo-headings.mjs';
 import {
   checkContract,
   checkExampleAnchors,
@@ -276,6 +280,122 @@ describe('the pairing, stated over documents and pages written here', () => {
     ]);
 
     expect(problems).toEqual([]);
+  });
+});
+
+describe('what a README writes below a demo caption, which the site never prints', () => {
+  const page = (demos: string) => `template: \`<primitive-page>${demos}</primitive-page>\``;
+  const hero = '<demo-layout hero sourcePath="fixture/examples/default.example.ts"></demo-layout>';
+  const states =
+    '<demo-layout heading="states" sourcePath="fixture/examples/states.example.ts"></demo-layout>';
+  const README = 'projects/forty-cdk/fixture/README.md';
+
+  it('holds every README the site publishes to fences and snippet markers below each caption', () => {
+    expect(droppedProseProblems(PAGES)).toEqual([]);
+  });
+
+  it.each([
+    ['a paragraph', ['More prose.']],
+    ['a list', ['- One.', '- Two.']],
+    ['a table', ['| Key | Action |', '| --- | ------ |', '| A | B |']],
+    ['a blockquote', ['> An aside.']],
+  ])(
+    'reports %s below the caption of a "###" whose demo the page projects, naming the README and the heading',
+    (name, block) => {
+      const document = documentOf([
+        '## Examples',
+        '',
+        'Caption.',
+        '',
+        '### States',
+        '',
+        'Three of them.',
+        '',
+        ...block,
+      ]);
+
+      expect(
+        droppedProseProblems([
+          { path: 'fixture.page.ts', source: page(`${hero}${states}`), document },
+        ]),
+      ).toEqual([
+        {
+          path: README,
+          line: document.examples[0]!.line + 4,
+          message: expect.stringContaining(`${name} follows the caption of "### States"`),
+        },
+      ]);
+    },
+  );
+
+  it('reports prose below the caption "## Examples" opens with, once the page projects a demo into the block', () => {
+    const document = documentOf([
+      '## Examples',
+      '',
+      'Caption.',
+      '',
+      '```ts',
+      'const answer = 1;',
+      '```',
+      '',
+      'Printed nowhere on the site.',
+      '',
+      '### States',
+      '',
+      'Three of them.',
+    ]);
+
+    expect(
+      droppedProseProblems([
+        { path: 'fixture.page.ts', source: page(`${hero}${states}`), document },
+      ]),
+    ).toEqual([
+      {
+        path: README,
+        line: document.examples[0]!.line - 2,
+        message: expect.stringContaining('a paragraph follows the caption of "## Examples"'),
+      },
+    ]);
+  });
+
+  it('accepts fences and snippet markers below either caption', () => {
+    const document = documentOf([
+      '## Examples',
+      '',
+      'Caption.',
+      '',
+      '```ts',
+      'const answer = 1;',
+      '```',
+      '',
+      '<!-- snippet: fragment -->',
+      '',
+      '```ts',
+      'answer;',
+      '```',
+      '',
+      '### States',
+      '',
+      'Three of them.',
+      '',
+      '```html',
+      '<div></div>',
+      '```',
+    ]);
+
+    expect(
+      droppedProseProblems([
+        { path: 'fixture.page.ts', source: page(`${hero}${states}`), document },
+      ]),
+    ).toEqual([]);
+  });
+
+  it('leaves a section alone when the page projects only its hero, since the site prints its markdown', () => {
+    const document = documentOf(['## Examples', '', 'Caption.', '', 'Published as markdown.']);
+
+    expect(
+      droppedProseProblems([{ path: 'fixture.page.ts', source: page(hero), document }]),
+    ).toEqual([]);
   });
 });
 

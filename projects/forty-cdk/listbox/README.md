@@ -101,7 +101,7 @@ export class ListboxDefaultExample {
 
 ### Multi select
 
-`multiple` lets several options be selected and enables the APG range model: `Shift`+`Arrow` extends the selection, `Shift`+`Space` fills a range, and `Ctrl`+`A` toggles all.
+`multiple` lets several options be selected, so a click toggles an option instead of replacing the selection, and enables the APG range model: `Shift`+`Arrow` extends the selection, `Shift`+`Space` fills a range, and `Ctrl`+`A` toggles all.
 
 ```html
 <ul forListbox multiple [(value)]="tags" aria-label="Tags">
@@ -112,8 +112,6 @@ export class ListboxDefaultExample {
   <li><button type="button" forListboxOption class="listbox-option" value="ui">UI</button></li>
 </ul>
 ```
-
-Click toggles individual options in multi mode; click selects in single mode.
 
 ### Option groups
 
@@ -161,17 +159,6 @@ export class DemoPriorities {
   });
 }
 ```
-
-> **Requiring a non-empty selection.** The value is a `readonly string[]`, and Angular's `required()`
-> treats only `''`, `false`, `null`, and `NaN` as empty — an empty array `[]` counts as _present_, so
-> `required(s.priorities)` reflects `aria-required="true"` but never makes the form invalid on its own.
-> Enforce "at least one" with the explicit `validate(...)` length rule above, or with Angular's
-> `minLength(s.priorities, 1)` (which emits a `minLengthError` instead of a `requiredError`).
-
-> **Single-select fields.** Model the field as a `readonly string[]` you keep at length ≤ 1 and
-> bind it with `[formField]` directly — single mode needs no adapter. A `FieldTree<T | null>`
-> cannot bind here; map to that shape at the edge that needs it. See
-> [the selection value-type contract](../../../docs/selection-value-type-contract.md).
 
 ### Virtualized (10,000 options)
 
@@ -464,6 +451,18 @@ A hover on a disabled option is ignored, and the highlight falls back to the key
 | `data-orientation` | `horizontal` \| `vertical` |
 | `data-disabled`    | present \| absent          |
 | `data-readonly`    | present \| absent          |
+
+> **Requiring a non-empty selection.** The value is a `readonly T[]`, and Angular's `required()`
+> treats only `''`, `false`, `null`, and `NaN` as empty. An empty array counts as _present_, so
+> `required()` on the field reflects `aria-required="true"` but never makes the form invalid on its
+> own. Enforce "at least one" with an explicit `validate(...)` length rule, as the Signal Forms
+> example does, or with Angular's `minLength(field, 1)`, which emits a `minLengthError` instead of a
+> `requiredError`.
+
+> **Single-select fields.** Model the field as a `readonly string[]` you keep at length ≤ 1 and
+> bind it with `[formField]` directly, so single mode needs no adapter. A `FieldTree<T | null>`
+> cannot bind here; map to that shape at the edge that needs it. See
+> [the selection value-type contract](../../../docs/selection-value-type-contract.md).
 
 ### `ForListboxOption`
 
