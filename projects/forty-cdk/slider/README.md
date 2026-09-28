@@ -9,7 +9,7 @@ apgUrl: https://www.w3.org/WAI/ARIA/apg/patterns/slider/
 
 A draggable thumb that picks a numeric value along a track.
 
-A single primitive supports single, range, and multi-thumb sliders — the shape comes from `value`'s array length and how many `[forSliderThumb]` you render. Implements `FormValueControl<readonly number[]>` from `@angular/forms/signals`.
+A single primitive supports single, range, and multi-thumb sliders: the shape comes from `value`'s array length and how many `[forSliderThumb]` you render. Implements `FormValueControl<readonly number[]>` from `@angular/forms/signals`.
 
 ## Anatomy
 
@@ -24,7 +24,7 @@ A single primitive supports single, range, and multi-thumb sliders — the shape
 
 ## Examples
 
-Drag a thumb, or focus it and press the arrow keys — `Home` and `End` jump to the bounds, and each thumb carries its own `data-index`.
+Drag a thumb, or focus it and press the arrow keys. `Home` and `End` jump to the bounds, and each thumb carries its own `data-index`.
 
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
@@ -71,11 +71,11 @@ The `value` model is a `readonly number[]`; two `forSliderThumb` pieces, one per
 
 ### Vertical orientation
 
-`orientation='vertical'` reflects `data-orientation` on every piece and sets `aria-orientation` on the thumb. The exposed fractions are unchanged — the consumer paints along the Y axis: `ArrowUp` increases, `ArrowDown` decreases.
+`orientation='vertical'` reflects `data-orientation` on every piece and sets `aria-orientation` on the thumb. The exposed fractions are unchanged, and the consumer paints them along the Y axis. `ArrowUp` increases the value and `ArrowDown` decreases it.
 
 ### Inverted
 
-`inverted` flips the value-to-position mapping — in horizontal LTR, max sits on the left. The flip is baked into the exposed fractions, so the same CSS paints both ways. Keyboard semantics are unchanged: `ArrowRight` / `ArrowUp` still move toward max.
+`inverted` flips the value-to-position mapping: in horizontal LTR, max sits on the left. The flip is baked into the exposed fractions, so the same CSS paints both ways. Keyboard semantics are unchanged: `ArrowRight` / `ArrowUp` still move toward max.
 
 ## Signal Forms
 
@@ -91,23 +91,23 @@ For native `<form>` submit, set `[name]` and the directive mirrors `value()` int
 
 ### `ForSlider`
 
-| Property                | Type                                | Description                                                                                                                                                                                                                 |
-| ----------------------- | ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `value`                 | `model<readonly number[]>`          | Two-way bindable value array. Required by `FormValueControl<readonly number[]>`. Output. Emits on drag, keyboard, and track click.<br>**Default:** —                                                                        |
-| `min`                   | `input<number>`                     | Numeric minimum.<br>**Default:** `0`                                                                                                                                                                                        |
-| `max`                   | `input<number>`                     | Numeric maximum.<br>**Default:** `100`                                                                                                                                                                                      |
-| `step`                  | `input<number>`                     | Discrete value increment for arrows + drag.<br>**Default:** `1`                                                                                                                                                             |
-| `stepMultiplier`        | `input<number>`                     | Multiplier over `step` for `PageUp` / `PageDown` (configurable via `provideForSliderDefaults`).<br>**Default:** `10`                                                                                                        |
-| `orientation`           | `input<'horizontal' \| 'vertical'>` | `'horizontal'` or `'vertical'`.<br>**Default:** `'horizontal'`                                                                                                                                                              |
-| `dir`                   | `input<'ltr' \| 'rtl'>`             | `'ltr'` or `'rtl'`. RTL flips horizontal pointer mapping and `ArrowLeft`/`ArrowRight` semantics.<br>**Default:** `'ltr'`                                                                                                    |
-| `inverted`              | `input<boolean>`                    | Visually flips the value-to-position mapping (e.g. max on the left in horizontal LTR). Keyboard `Up`/`Right` (LTR) still moves toward `max` regardless.<br>**Default:** `false`                                             |
-| `minStepsBetweenThumbs` | `input<number>`                     | Multi-thumb only: minimum gap between adjacent thumbs in step units.<br>**Default:** `0`                                                                                                                                    |
-| `disabled`              | `input<boolean>`                    | Disables all interaction.<br>**Default:** `false`                                                                                                                                                                           |
-| `readonly`              | `input<boolean>`                    | Allows focus + announcement, blocks updates.<br>**Default:** `false`                                                                                                                                                        |
-| `name`                  | `input<string>`                     | If non-empty, mirrors `value()` into N `<input type="hidden">` siblings for native form submit.<br>**Default:** `''`                                                                                                        |
-| `valueCommit`           | —                                   | Output. Fires once at the trailing edge of a value-changing interaction with the final value array — on `pointerup` / `pointercancel` after a drag, or on `keyup` after one or more keyboard adjustments.<br>**Default:** — |
-| `touchedChange`         | —                                   | Output. Fires once, the first time the slider is touched — drag end, or focus leaving the slider region.<br>**Default:** —                                                                                                  |
-| `touch`                 | —                                   | Output. Signal Forms touch notification. Fires on **every** touch-producing interaction (drag end, focus leaving the region), not only the first.<br>**Default:** —                                                         |
+| Property                | Type                                | Description                                                                                                                                                                                                                |
+| ----------------------- | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`                 | `model<readonly number[]>`          | Two-way bindable value array. Required by `FormValueControl<readonly number[]>`. Output. Emits on drag, keyboard, and track click.<br>**Default:** —                                                                       |
+| `min`                   | `input<number>`                     | Numeric minimum.<br>**Default:** `0`                                                                                                                                                                                       |
+| `max`                   | `input<number>`                     | Numeric maximum.<br>**Default:** `100`                                                                                                                                                                                     |
+| `step`                  | `input<number>`                     | Discrete value increment for arrows + drag.<br>**Default:** `1`                                                                                                                                                            |
+| `stepMultiplier`        | `input<number>`                     | Multiplier over `step` for `PageUp` / `PageDown` (configurable via `provideForSliderDefaults`).<br>**Default:** `10`                                                                                                       |
+| `orientation`           | `input<'horizontal' \| 'vertical'>` | `'horizontal'` or `'vertical'`.<br>**Default:** `'horizontal'`                                                                                                                                                             |
+| `dir`                   | `input<'ltr' \| 'rtl'>`             | `'ltr'` or `'rtl'`. RTL flips horizontal pointer mapping and `ArrowLeft`/`ArrowRight` semantics.<br>**Default:** `'ltr'`                                                                                                   |
+| `inverted`              | `input<boolean>`                    | Visually flips the value-to-position mapping (e.g. max on the left in horizontal LTR). Keyboard `Up`/`Right` (LTR) still moves toward `max` regardless.<br>**Default:** `false`                                            |
+| `minStepsBetweenThumbs` | `input<number>`                     | Multi-thumb only: minimum gap between adjacent thumbs in step units.<br>**Default:** `0`                                                                                                                                   |
+| `disabled`              | `input<boolean>`                    | Disables all interaction.<br>**Default:** `false`                                                                                                                                                                          |
+| `readonly`              | `input<boolean>`                    | Allows focus + announcement, blocks updates.<br>**Default:** `false`                                                                                                                                                       |
+| `name`                  | `input<string>`                     | If non-empty, mirrors `value()` into N `<input type="hidden">` siblings for native form submit.<br>**Default:** `''`                                                                                                       |
+| `valueCommit`           | —                                   | Output. Fires once with the final value array at the trailing edge of a value-changing interaction: on `pointerup` / `pointercancel` after a drag, or on `keyup` after one or more keyboard adjustments.<br>**Default:** — |
+| `touchedChange`         | —                                   | Output. Fires once, the first time the slider is touched (drag end, or focus leaving the slider region).<br>**Default:** —                                                                                                 |
+| `touch`                 | —                                   | Output. Signal Forms touch notification. Fires on **every** touch-producing interaction (drag end, focus leaving the region), not only the first.<br>**Default:** —                                                        |
 
 `(valueChange)` (from `model<readonly number[]>`) fires only on internal updates (drag, keyboard, track click). It stays silent on consumer writes via `[(value)]`.
 
@@ -171,23 +171,23 @@ Focus a thumb, then:
 
 `inverted` swaps "increase" / "decrease" on every key. Disabled and readonly thumbs are no-ops.
 
-Values live on the `min` ± k·`step` grid. A thumb already on the grid travels the full amount (`step`, or `step × stepMultiplier` for the page keys); a thumb **off** the grid lands on the adjacent grid point in the direction of travel and the page multiplier is discarded, matching the platform's `HTMLInputElement.stepUp()` / `stepDown()`. So ArrowRight from `23` with `[step]="10"` gives `30` and ArrowLeft gives `20` — never an oversized first jump. Pointer drags are unaffected: they snap to the _nearest_ grid point, since a drag has no direction of travel.
+Values live on the `min` ± k·`step` grid. A thumb already on the grid travels the full amount (`step`, or `step × stepMultiplier` for the page keys); a thumb **off** the grid lands on the adjacent grid point in the direction of travel and the page multiplier is discarded, matching the platform's `HTMLInputElement.stepUp()` / `stepDown()`. So ArrowRight from `23` with `[step]="10"` gives `30` and ArrowLeft gives `20`. The first jump is never oversized. Pointer drags are unaffected: they snap to the _nearest_ grid point, since a drag has no direction of travel.
 
 ## Accessibility
 
 Implements the [WAI-ARIA Slider pattern](https://www.w3.org/WAI/ARIA/apg/patterns/slider/) (single thumb) and the [WAI-ARIA Slider (Multi-Thumb) pattern](https://www.w3.org/WAI/ARIA/apg/patterns/slider-multi-thumb/) (range / N thumbs).
 
 - `role="slider"` on each thumb with `aria-valuemin`, `aria-valuemax`, `aria-valuenow`, optional `aria-valuetext`, and `aria-orientation`.
-- Multi-thumb non-passing: each thumb's `aria-valuemin` / `aria-valuemax` automatically squeeze to its neighbors' values — offset by the `minStepsBetweenThumbs` gap — so the announced range is exactly the range the thumb can reach, matching the APG multi-thumb guidance.
+- Multi-thumb non-passing: each thumb's `aria-valuemin` / `aria-valuemax` automatically squeeze to its neighbors' values (offset by the `minStepsBetweenThumbs` gap), so the announced range is exactly the range the thumb can reach, matching the APG multi-thumb guidance.
 - The root has `role="group"` and `dir="rtl"` mirrored when `dir()==='rtl'`, so screen readers and CSS layout agree.
 - `disabled` thumbs receive `tabindex="-1"` and `aria-disabled="true"`.
 - **`aria-readonly` belongs on the thumb, not the root.** WAI-ARIA supports it on `role="slider"` but not on `role="group"`, so each thumb carries `aria-readonly="true"` while the root reflects the `data-readonly` styling hook only.
-- Provide `[ariaLabel]` on every thumb — even single-thumb sliders benefit from explicit naming. The directive does not synthesize a label. When the name is already visible in the DOM, write a native `aria-labelledby` on the thumb instead; the directive leaves that attribute alone.
+- Provide `[ariaLabel]` on every thumb. Even single-thumb sliders benefit from explicit naming. The directive does not synthesize a label. When the name is already visible in the DOM, write a native `aria-labelledby` on the thumb instead; the directive leaves that attribute alone.
 - A degenerate configuration (`min` greater than `max`, or a non-positive `step`) leaves the slider inoperable and is dev-guarded by a `console.warn` in development builds.
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
+forty-cdk ships no styles. Add your own class to each piece. The `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
 
 ### CSS custom properties
 
@@ -217,4 +217,4 @@ Pair with `data-orientation` on every piece to pick the right axis from CSS.
 
 ## Wrapping in a design system
 
-Both supported wrapper patterns — `hostDirectives` with the exported `FOR_SLIDER_HOST_DIRECTIVE_INPUTS` / `FOR_SLIDER_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing — are documented in [Wrapping form primitives](../../../docs/wrapping-form-primitives.md).
+[Wrapping form primitives](../../../docs/wrapping-form-primitives.md) documents both supported wrapper patterns: `hostDirectives` with the exported `FOR_SLIDER_HOST_DIRECTIVE_INPUTS` / `FOR_SLIDER_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing.

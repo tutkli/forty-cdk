@@ -31,7 +31,7 @@ Use the one that matches your semantics. `ForCheckbox` and `ForSwitch` are inten
 
 ## Examples
 
-Tick it with the pointer or `Space` and watch `data-state` move between `checked` and `unchecked` — the box is a `<button>`, so its whole appearance is your CSS.
+Tick it with the pointer or `Space` and watch `data-state` move between `checked` and `unchecked`. The box is a `<button>`, so its whole appearance is your CSS.
 
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
@@ -144,14 +144,14 @@ export class DemoCheckout {
 
 ### `ForCheckbox`
 
-| Property                                                     | Type                                                      | Description                                                                                                                                                                                                   |
-| ------------------------------------------------------------ | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `checked`                                                    | `model<boolean>`                                          | Two-way bindable on/off. Required by `FormCheckboxControl`.<br>**Default:** —                                                                                                                                 |
-| `indeterminate`                                              | `model<boolean>`                                          | Two-way bindable. When true, `aria-checked="mixed"` regardless of `checked`. Click clears it. UI-only — not part of the form value.<br>**Default:** —                                                         |
-| `disabled` / `readonly` / `required` / `invalid` / `pending` | `input<boolean>`                                          | Reflected as the matching `aria-*` / `data-*` attributes. A disabled checkbox stays focusable (per APG) — `aria-disabled="true"` + `data-disabled`, no native `disabled`; click is a no-op.<br>**Default:** — |
-| `name`                                                       | `input<string>`                                           | Reflected on `name` (empty string omits the attribute).<br>**Default:** `''`                                                                                                                                  |
-| `errors`                                                     | `input<readonly ValidationError.WithOptionalFieldTree[]>` | Validation errors fed by `[formField]`.<br>**Default:** —                                                                                                                                                     |
-| `touched`                                                    | `model<boolean>`                                          | Set to `true` on blur.<br>**Default:** —                                                                                                                                                                      |
+| Property                                                     | Type                                                      | Description                                                                                                                                                                                                          |
+| ------------------------------------------------------------ | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `checked`                                                    | `model<boolean>`                                          | Two-way bindable on/off. Required by `FormCheckboxControl`.<br>**Default:** —                                                                                                                                        |
+| `indeterminate`                                              | `model<boolean>`                                          | Two-way bindable. When true, `aria-checked="mixed"` regardless of `checked`. Click clears it. UI-only and not part of the form value.<br>**Default:** —                                                              |
+| `disabled` / `readonly` / `required` / `invalid` / `pending` | `input<boolean>`                                          | Reflected as the matching `aria-*` / `data-*` attributes. A disabled checkbox stays focusable (per APG), with `aria-disabled="true"` + `data-disabled` and no native `disabled`; click is a no-op.<br>**Default:** — |
+| `name`                                                       | `input<string>`                                           | Reflected on `name` (empty string omits the attribute).<br>**Default:** `''`                                                                                                                                         |
+| `errors`                                                     | `input<readonly ValidationError.WithOptionalFieldTree[]>` | Validation errors fed by `[formField]`.<br>**Default:** —                                                                                                                                                            |
+| `touched`                                                    | `model<boolean>`                                          | Set to `true` on blur.<br>**Default:** —                                                                                                                                                                             |
 
 | Data attribute  | Values                                      |
 | --------------- | ------------------------------------------- |
@@ -169,10 +169,10 @@ Optional styling slot inside a `[forCheckbox]`. Mirrors the parent's `data-state
 
 ## Keyboard
 
-| Key     | Action                                                      |
-| ------- | ----------------------------------------------------------- |
-| `Space` | Toggle the checkbox. The only key APG mandates.             |
-| `Enter` | Also toggles — a documented superset, not an APG violation. |
+| Key     | Action                                                     |
+| ------- | ---------------------------------------------------------- |
+| `Space` | Toggle the checkbox. The only key APG mandates.            |
+| `Enter` | Also toggles. A documented superset, not an APG violation. |
 
 Activating an indeterminate checkbox clears `indeterminate` and toggles `checked` (matches native `<input type="checkbox">`).
 
@@ -183,12 +183,12 @@ Both keys work on any host element. On a `<button>` they come from native button
 Implements the [WAI-ARIA Checkbox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/checkbox/).
 
 - **Provide an accessible name.** Wrap the button in a `<label>`, or set `aria-labelledby` / `aria-label`. Without one, the control is announced as just "checkbox" with no purpose.
-- **Any host element works.** A `<button>` is the recommended host (the directive forces `type="button"` through a host binding, so it never submits a surrounding form even if you write `type="submit"` yourself), but a non-button host gets `tabindex="0"` and synthesized `Space` / `Enter` activation, so it is keyboard-operable too. A non-button host gets no `type` attribute at all — `type` is not valid on a `<div>` / `<span>`, and there is no form submission to protect against.
-- **`role="checkbox"`** with `aria-checked="mixed"` is the canonical tri-state contract. Some legacy screen readers handle "mixed" differently — test with your target SRs.
+- **Any host element works.** A `<button>` is the recommended host (the directive forces `type="button"` through a host binding, so it never submits a surrounding form even if you write `type="submit"` yourself), but a non-button host gets `tabindex="0"` and synthesized `Space` / `Enter` activation, so it is keyboard-operable too. A non-button host gets no `type` attribute at all, because `type` is not valid on a `<div>` / `<span>` and there is no form submission to protect against.
+- **`role="checkbox"`** with `aria-checked="mixed"` is the canonical tri-state contract. Some legacy screen readers handle "mixed" differently, so test with your target SRs.
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the for\* selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected data-\* attributes listed per piece in the [API](#api) section.
+forty-cdk ships no styles. Add your own class to each piece. The for\* selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected data-\* attributes listed per piece in the [API](#api) section.
 
 ```css
 .cb-check {
@@ -213,4 +213,4 @@ forty-cdk ships no styles. Add your own class to each piece — the for\* select
 
 ## Wrapping in a design system
 
-Both supported wrapper patterns — `hostDirectives` with the exported `FOR_CHECKBOX_HOST_DIRECTIVE_INPUTS` / `FOR_CHECKBOX_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing — are documented in [Wrapping form primitives](../../../docs/wrapping-form-primitives.md).
+Both supported wrapper patterns are documented in [Wrapping form primitives](../../../docs/wrapping-form-primitives.md): `hostDirectives` with the exported `FOR_CHECKBOX_HOST_DIRECTIVE_INPUTS` / `FOR_CHECKBOX_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing.

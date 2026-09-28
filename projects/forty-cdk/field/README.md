@@ -12,9 +12,9 @@ It renders **nothing** and imposes no layout, and there is **no control contract
 
 ## When to choose
 
-- **Field** — the wiring, not the control. It owns the control's id, ties `[forLabel]`, `[forFieldDescription]` and `[forFieldError]` to it through `aria-labelledby` / `aria-describedby` / `aria-errormessage`, and reflects validation state as `data-*`. It renders no element and holds no value.
-- **[Input](../input/README.md)** — and every other form primitive — is what holds the value. A field wraps exactly one of them; it never stands in for one.
-- **[Fieldset](../fieldset/README.md)** — the grouping above it: one accessible name and an optional shared disabled state over several fields.
+- **Field**: the wiring, not the control. It owns the control's id, ties `[forLabel]`, `[forFieldDescription]` and `[forFieldError]` to it through `aria-labelledby` / `aria-describedby` / `aria-errormessage`, and reflects validation state as `data-*`. It renders no element and holds no value.
+- **[Input](../input/README.md)** (and every other form primitive) is what holds the value. A field wraps exactly one of them; it never stands in for one.
+- **[Fieldset](../fieldset/README.md)**: the grouping above it, with one accessible name and an optional shared disabled state over several fields.
 
 ## Anatomy
 
@@ -31,7 +31,7 @@ It renders **nothing** and imposes no layout, and there is **no control contract
 
 ## How the control connects
 
-- **forty-cdk controls** (`forSwitch`, `forCheckbox`, `forSlider`, `forSelect`, `forListbox`, `forCombobox`, `forRadioGroup`, `forToggle`, `forToggleGroup`) auto-wire — they inherit the association from the shared form base. No marker needed.
+- **forty-cdk controls** (`forSwitch`, `forCheckbox`, `forSlider`, `forSelect`, `forListbox`, `forCombobox`, `forRadioGroup`, `forToggle`, `forToggleGroup`) auto-wire, because they inherit the association from the shared form base. No marker needed.
 - **Native controls** add `[forFieldControl]` and drive validation state via its `invalid` / `required` / `disabled` / `touched` inputs.
 
 `ForField` owns the control's `id` (it assigns one if the control has none, otherwise it adopts the existing id), so a `<label forLabel>`'s `for` always resolves to the control.
@@ -42,23 +42,23 @@ It renders **nothing** and imposes no layout, and there is **no control contract
 
 `ForFieldError` reads the control's `errors()` automatically and exposes them as signals:
 
-- `errors()` — the raw `ValidationError[]`.
-- `messages()` — `string[]` of human-readable messages.
-- `hasErrors()` / `shown()` — `shown()` is `true` when the control is invalid and has errors.
+- `errors()`: the raw `ValidationError[]`.
+- `messages()`: `string[]` of human-readable messages.
+- `hasErrors()` / `shown()`: `shown()` is `true` when the control is invalid and has errors.
 
 You render them; the field handles the ARIA. The error id is wired into `aria-errormessage` (and folded into `aria-describedby`) only while the control is invalid.
 
-Gate the region's `@if` on the field's `invalid()` (exposed via the `[forField]` export, `#field="forField"`) or on the bound Signal Forms field — **not** on a reference to `ForFieldError` itself, which is block-scoped to the `@if` body and so can't appear in the condition that mounts it.
+Gate the region's `@if` on the field's `invalid()` (exposed via the `[forField]` export, `#field="forField"`) or on the bound Signal Forms field, **not** on a reference to `ForFieldError` itself, which is block-scoped to the `@if` body and so can't appear in the condition that mounts it.
 
 ## Label-click activation
 
-Clicking the label activates the control on both host shapes, not just focuses it. A native `<label forLabel>` emits `for` and the browser forwards the click; a non-`<label>` `[forLabel]` (e.g. `<span forLabel>`) has no native `for` forwarding, so the directive forwards the click itself. Either way, clicking the label toggles a `[forSwitch]` / checkbox-role control, activates a button-host control, or focuses a text input — matching native `<label for>` behavior consistently.
+Clicking the label activates the control on both host shapes, not just focuses it. A native `<label forLabel>` emits `for` and the browser forwards the click; a non-`<label>` `[forLabel]` (e.g. `<span forLabel>`) has no native `for` forwarding, so the directive forwards the click itself. Either way, the label matches native `<label for>` behavior consistently: clicking it toggles a `[forSwitch]` / checkbox-role control, activates a button-host control, or focuses a text input.
 
 > Note: composite controls whose host is not the focusable element (`forListbox`, `forSelect`, `forCombobox`) still receive `aria-labelledby` correctly, and a label click is forwarded to the control's nominated focusable element rather than the wrapper host: the Select trigger, the input of an editable Combobox, or the trigger of a picker-anatomy Combobox, even while its open panel holds the input the label names.
 
 Pressing the label of an overlay control (`forSelect`, a picker-anatomy `forCombobox`, `forDatePicker`, `forTimePicker`) is pressing its trigger: it opens a closed panel and closes an open one, with one `openChange` per press, and focus lands on the trigger when the panel closes. That holds inside a focusable container such as a popover or dialog surface, because a press on the label moves focus nowhere but the control. The cost is that a text selection cannot start on the label.
 
-Where a composite is named on the wrapper itself — the `role="group"` of `[forDateField]`, `[forTimeField]`, `[forDateRangeField]` and `[forTimeRangeField]` — the association stays on that group and the label click moves focus to the control's own entry point instead: the first editable segment, or nowhere while the field is disabled. A native `<label>` reaches it too, because `for` pointing at a `role="group"` is not a [labelable element](https://html.spec.whatwg.org/multipage/forms.html#category-label) and the browser forwards nothing there, so the directive forwards it. Any control implementing `FormValueControl.focus` gets the same treatment.
+Where a composite is named on the wrapper itself (the `role="group"` of `[forDateField]`, `[forTimeField]`, `[forDateRangeField]` and `[forTimeRangeField]`), the association stays on that group and the label click moves focus to the control's own entry point instead: the first editable segment, or nowhere while the field is disabled. A native `<label>` reaches it too, because `for` pointing at a `role="group"` is not a [labelable element](https://html.spec.whatwg.org/multipage/forms.html#category-label) and the browser forwards nothing there, so the directive forwards it. Any control implementing `FormValueControl.focus` gets the same treatment.
 
 ## Examples
 
@@ -98,7 +98,7 @@ One class and one directive, four states. The control's own `required`, `invalid
 
 ### Validation with Signal Forms
 
-`[forFieldError]` reads the control's Signal Forms errors automatically — you render `err.messages()`, the field wires `aria-errormessage` and folds the id into `aria-describedby` while invalid. The `[forCheckbox]` auto-associates because it extends the shared form base. Tick then untick to surface the required error.
+`[forFieldError]` reads the control's Signal Forms errors automatically. You render `err.messages()`; the field wires `aria-errormessage` and folds the id into `aria-describedby` while invalid. The `[forCheckbox]` auto-associates because it extends the shared form base. Tick then untick to surface the required error.
 
 ## API
 
@@ -136,12 +136,12 @@ Error region (`[forFieldError]`, `role="alert"`). Reads the control's Signal For
 
 Opt-in marker (`[forFieldControl]`) for a **native** `<input>` / `<textarea>` / `<select>` (forty-cdk controls auto-wire and don't need it). Validation state is consumer-driven. Reflects `aria-invalid` on its own host while `invalid` is true (an ARIA hook, not a styling one).
 
-| Property   | Type             | Description                                                                                     |
-| ---------- | ---------------- | ----------------------------------------------------------------------------------------------- |
-| `invalid`  | `input<boolean>` | Marks the control invalid — drives the error region and `aria-invalid`.<br>**Default:** `false` |
-| `required` | `input<boolean>` | Marks the control required — reflected by the field as `data-required`.<br>**Default:** `false` |
-| `disabled` | `input<boolean>` | Marks the control disabled — reflected by the field as `data-disabled`.<br>**Default:** `false` |
-| `touched`  | `input<boolean>` | Marks the control touched — reflected by the field as `data-touched`.<br>**Default:** `false`   |
+| Property   | Type             | Description                                                                                          |
+| ---------- | ---------------- | ---------------------------------------------------------------------------------------------------- |
+| `invalid`  | `input<boolean>` | Marks the control invalid, which drives the error region and `aria-invalid`.<br>**Default:** `false` |
+| `required` | `input<boolean>` | Marks the control required, which the field reflects as `data-required`.<br>**Default:** `false`     |
+| `disabled` | `input<boolean>` | Marks the control disabled, which the field reflects as `data-disabled`.<br>**Default:** `false`     |
+| `touched`  | `input<boolean>` | Marks the control touched, which the field reflects as `data-touched`.<br>**Default:** `false`       |
 
 ## Accessibility
 
@@ -152,7 +152,7 @@ Opt-in marker (`[forFieldControl]`) for a **native** `<input>` / `<textarea>` / 
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the for\* selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected data-\* attributes listed per piece in the [API](#api) section.
+forty-cdk ships no styles. Add your own class to each piece. The for\* selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected data-\* attributes listed per piece in the [API](#api) section.
 
 ```css
 .field[data-invalid] .field-label {

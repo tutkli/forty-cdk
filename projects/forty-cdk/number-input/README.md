@@ -9,7 +9,7 @@ apgUrl: https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton/
 
 A numeric spinbutton with keyboard stepping, optional +/− buttons, min / max / step clamping and Intl number formatting for the displayed text and aria-valuetext.
 
-Headless and implementing Angular's `FormValueControl<number | null>` from `@angular/forms/signals`, so it auto-wires with `[formField]` and auto-associates inside a [`[forField]`](../field/README.md) — label, description, and error wiring — with zero extra markup. It owns parsing, clamping to `[min, max]`, the full Spinbutton keyboard map, and optional `Intl.NumberFormat`-based display formatting. The directive sits on a `<input type="text">` (not `type="number"`, whose native UI is unstylable and locale-quirky); the focusable spinbutton input itself is the `FormValueControl`, mirroring `<button forSwitch>`.
+Headless and implementing Angular's `FormValueControl<number | null>` from `@angular/forms/signals`, so it auto-wires with `[formField]` and auto-associates inside a [`[forField]`](../field/README.md) (label, description, and error wiring) with zero extra markup. It owns parsing, clamping to `[min, max]`, the full Spinbutton keyboard map, and optional `Intl.NumberFormat`-based display formatting. The directive sits on a `<input type="text">` (not `type="number"`, whose native UI is unstylable and locale-quirky); the focusable spinbutton input itself is the `FormValueControl`, mirroring `<button forSwitch>`.
 
 ## Anatomy
 
@@ -28,7 +28,7 @@ Headless and implementing Angular's `FormValueControl<number | null>` from `@ang
 
 ## Examples
 
-Type a number, press the arrow keys or hold a stepper button — the host carries `data-empty` while the value is `null` and `data-dirty` once it has changed.
+Type a number, press the arrow keys or hold a stepper button. The host carries `data-empty` while the value is `null` and `data-dirty` once it has changed.
 
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
@@ -78,11 +78,11 @@ Type an amount: `value()` under the field follows it as a raw number, and the te
 <!-- value() === 1234.5 → displayed "$1,234.50", aria-valuenow="1234.5" -->
 ```
 
-> **Percent style needs a matching `step`.** With `{ style: 'percent' }` the model value is the fraction Intl formats from (`0.5` displays as `"50%"`), while `step` still defaults to `1`. Because stepping snaps to the `min ?? 0` ± k·`step` grid, ArrowUp from `0.5` would jump to `1` (100%). Set `[step]="0.01"` so one arrow press moves one percentage point. `step` is never derived from `formatOptions` — the grid is always exactly what you bind.
+> **Percent style needs a matching `step`.** With `{ style: 'percent' }` the model value is the fraction Intl formats from (`0.5` displays as `"50%"`), while `step` still defaults to `1`. Because stepping snaps to the `min ?? 0` ± k·`step` grid, ArrowUp from `0.5` would jump to `1` (100%). Set `[step]="0.01"` so one arrow press moves one percentage point. `step` is never derived from `formatOptions`, so the grid is always exactly what you bind.
 
 ## Field composition
 
-Drop the spinbutton inside a `[forField]` and it auto-associates with the label, description, and error region — no `id` / `aria-*` wiring by hand.
+Drop the spinbutton inside a `[forField]` and it auto-associates with the label, description, and error region, with no `id` / `aria-*` wiring by hand.
 
 ```ts
 import { Component, signal } from '@angular/core';
@@ -141,9 +141,9 @@ export class DemoOrder {
 
 ### Stepper buttons
 
-Both `[forNumberInputIncrement]` / `[forNumberInputDecrement]` take the uniform `ariaLabel` input for their accessible name and stay `tabindex="-1"` (focus belongs on the spinbutton). They reflect `[disabled]` + `data-disabled` at the bound (`max` for increment, `min` for decrement) or when the control is disabled / read-only. Clicking either button also marks the spinbutton touched — the buttons are outside the tab order, so a pointer-only user would otherwise never blur the input and never engage touched-gated error display.
+Both `[forNumberInputIncrement]` / `[forNumberInputDecrement]` take the uniform `ariaLabel` input for their accessible name and stay `tabindex="-1"` (focus belongs on the spinbutton). They reflect `[disabled]` + `data-disabled` at the bound (`max` for increment, `min` for decrement) or when the control is disabled / read-only. Clicking either button also marks the spinbutton touched. The buttons are outside the tab order, so a pointer-only user would otherwise never blur the input and never engage touched-gated error display.
 
-> Set the accessible name with the `ariaLabel` **input** (`ariaLabel="Increase"`), not the native `aria-label` attribute — like every forty-cdk primitive, the directive host-binds `aria-label` from that input and clears it when empty.
+> Set the accessible name with the `ariaLabel` **input** (`ariaLabel="Increase"`), not the native `aria-label` attribute. Like every forty-cdk primitive, the directive host-binds `aria-label` from that input and clears it when empty.
 
 `[forNumberInputIncrement]`:
 
@@ -157,7 +157,7 @@ Both `[forNumberInputIncrement]` / `[forNumberInputDecrement]` take the uniform 
 | --------------- | ---------------------------------------------------- |
 | `data-disabled` | present (at `min`, or disabled / read-only) / absent |
 
-`[forNumberInputGroup]` carries no styling attributes — it is a behavior-only coordination wrapper.
+`[forNumberInputGroup]` is a behavior-only coordination wrapper, so it carries no styling attributes.
 
 ## Keyboard
 
@@ -173,22 +173,22 @@ The following shortcuts implement the Spinbutton APG keyboard map.
 
 Stepping from an empty field lands on the clamped baseline (`min ?? 0`).
 
-Values live on the `min ?? 0` ± k·`step` grid. A value already on the grid travels the full amount (`step`, or `step × stepMultiplier` for the page keys); a value **off** the grid — a server-supplied `37.4` with `[step]="5"`, say — lands on the adjacent grid point in the direction of travel and the page multiplier is discarded, exactly as the platform's `HTMLInputElement.stepUp()` / `stepDown()` behave. So ArrowUp from `0.55` with `[step]="1"` gives `1`, not `1.55`, and one arrow press is all it takes to correct an off-grid value.
+Values live on the `min ?? 0` ± k·`step` grid. A value already on the grid travels the full amount (`step`, or `step × stepMultiplier` for the page keys); a value **off** the grid (a server-supplied `37.4` with `[step]="5"`, say) lands on the adjacent grid point in the direction of travel and the page multiplier is discarded, exactly as the platform's `HTMLInputElement.stepUp()` / `stepDown()` behave. So ArrowUp from `0.55` with `[step]="1"` gives `1`, not `1.55`, and one arrow press is all it takes to correct an off-grid value.
 
 ## Accessibility
 
 Implements the [WAI-ARIA Spinbutton pattern](https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton/).
 
-- **`role="spinbutton"` on a text input.** `aria-valuenow` / `aria-valuemin` / `aria-valuemax` reflect the value and bounds; `aria-valuetext` is emitted only when `formatOptions` is set (so the formatted text — "$1,234.50" — is announced instead of the bare number). `inputmode` is `numeric`, or `decimal` when fractional values are possible.
+- **`role="spinbutton"` on a text input.** `aria-valuenow` / `aria-valuemin` / `aria-valuemax` reflect the value and bounds; `aria-valuetext` is emitted only when `formatOptions` is set (so the formatted text, such as "$1,234.50", is announced instead of the bare number). `inputmode` is `numeric`, or `decimal` when fractional values are possible.
 - **Clamp on commit, validate on input.** Keystrokes update the parsed value live so you can type transient out-of-range text without fighting the caret; clamping to `[min, max]` happens on blur / Enter / step actions.
 - **Hidden input for submission.** Because the displayed text can be formatted, the visible input does **not** carry `name`; setting `name` mounts a hidden `<input>` with the raw number so native `<form>` serialization sees the value, not "$1,234.50". A disabled control is skipped automatically.
-- **Disabled reflects through one channel.** The native `disabled` attribute already exposes the unavailable state through HTML-AAM, so no `aria-disabled` is emitted alongside it — style the disabled state with `:disabled` or `[data-disabled]`.
-- **Falsy state styling selects on absence.** `aria-readonly` / `aria-required` / `aria-invalid` / `aria-busy` are emitted only when truthy — style the off state with `:not([aria-invalid])`, never `[aria-invalid="false"]`.
-- **`@angular/forms` is an optional peer.** If you're not using Signal Forms, don't install it — the directive runs fine on a plain `[(value)]` binding (the only `@angular/forms/signals` reference is a type import, erased at build).
+- **Disabled reflects through one channel.** The native `disabled` attribute already exposes the unavailable state through HTML-AAM, so no `aria-disabled` is emitted alongside it. Style the disabled state with `:disabled` or `[data-disabled]`.
+- **Falsy state styling selects on absence.** `aria-readonly` / `aria-required` / `aria-invalid` / `aria-busy` are emitted only when truthy, so style the off state with `:not([aria-invalid])`, never `[aria-invalid="false"]`.
+- **`@angular/forms` is an optional peer.** If you're not using Signal Forms, don't install it: the directive runs fine on a plain `[(value)]` binding (the only `@angular/forms/signals` reference is a type import, erased at build).
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
+forty-cdk ships no styles. Add your own class to each piece. The `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
 
 ```css
 .step-btn[data-disabled] {
@@ -199,4 +199,4 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 
 ## Wrapping in a design system
 
-Both supported wrapper patterns — `hostDirectives` with the exported `FOR_NUMBER_INPUT_HOST_DIRECTIVE_INPUTS` / `FOR_NUMBER_INPUT_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing — are documented in [Wrapping form primitives](../../../docs/wrapping-form-primitives.md).
+[Wrapping form primitives](../../../docs/wrapping-form-primitives.md) documents both supported wrapper patterns: `hostDirectives` with the exported `FOR_NUMBER_INPUT_HOST_DIRECTIVE_INPUTS` / `FOR_NUMBER_INPUT_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing.

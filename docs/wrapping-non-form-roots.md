@@ -1,11 +1,11 @@
 # Wrapping non-form roots
 
-Design systems built on forty-cdk rarely expose the raw primitives — they wrap each one in a styled
+Design systems built on forty-cdk rarely expose the raw primitives. They wrap each one in a styled
 component carrying the system's selector and classes. For **form-value** controls that story lives in
 [Wrapping form primitives](wrapping-form-primitives.md), which owns the Signal Forms contract, the
 `FOR_*_HOST_DIRECTIVE_INPUTS` name tuples, and the `[formField]` discovery rules.
 
-This guide covers everything else: the composed roots with no form value — Accordion, Dialog, Drawer,
+This guide covers everything else: the composed roots with no form value, namely Accordion, Dialog, Drawer,
 Popover, Tooltip, HoverCard, the menu family, Tabs, Stepper, Tree, Table, Carousel, ScrollArea,
 Toolbar, Pagination, Progress, Meter, Avatar, Fieldset, FileUpload, and the drag-drop /
 virtualization layers. The mechanics are simpler than the form side (there is no value contract to
@@ -28,7 +28,7 @@ import { ForAccordion } from 'forty-cdk/accordion';
 export class MyAccordion extends ForAccordion {}
 ```
 
-`hostDirectives` — the other pattern the form guide documents — is available too, but it is a worse
+`hostDirectives`, the other pattern the form guide documents, is available too, but it is a worse
 fit for a composed root and there are no name tuples to help you: `FOR_*_HOST_DIRECTIVE_INPUTS` is a
 form-control artefact (it exists because an unbound value / touched name fails _silently_ under
 `[formField]`), and no non-form primitive ships one. Re-exposing an accordion's or a dialog's whole
@@ -52,8 +52,8 @@ export class ForDisclosure { … }
 
 Angular inherits compiled metadata through the class hierarchy, but **each decorator declares its own
 `providers`, replacing the parent's array wholesale.** A bare subclass therefore ships with no
-context provider at all, and every projected piece — `[forAccordionTrigger]`, `[forDialogTitle]`,
-`[forPopoverContent]`, `[forTabsTrigger]` — throws the primitive's orphan error the moment it tries
+context provider at all, and every projected piece (`[forAccordionTrigger]`, `[forDialogTitle]`,
+`[forPopoverContent]`, `[forTabsTrigger]`) throws the primitive's orphan error the moment it tries
 to resolve. The failure is loud, but the cause is not obvious from the message, which is why it
 deserves its own section in both wrapping guides.
 
@@ -73,7 +73,7 @@ export class MyPopover extends ForPopover {}
 ```
 
 Every non-form root that needs a plain re-provide, and the token to name. `ForTable` is the one root
-not in this table — it needs `provideForTable()` instead, see the section below:
+not in this table, because it needs `provideForTable()` instead (see the section below).
 
 | Root                                                | Token to re-provide            |
 | --------------------------------------------------- | ------------------------------ |
@@ -106,7 +106,7 @@ not in this table — it needs `provideForTable()` instead, see the section belo
 | `ForTree`                                           | `FOR_TREE_CONTEXT`             |
 | `ForVirtualViewport`                                | `FOR_VIRTUAL_VIEWPORT_CONTEXT` |
 
-Several of these roots — Accordion, Carousel, NavigationMenu, Tabs, Toast — split their coordination
+Several of these roots (Accordion, Carousel, NavigationMenu, Tabs, Toast) split their coordination
 surface in two: the public `FOR_<PRIMITIVE>_CONTEXT` above, and an internal interface carrying the
 piece-registration protocol that is deliberately **not** exported
 ([#1399](https://github.com/tutkli/forty-cdk/issues/1399),
@@ -115,7 +115,7 @@ piece-registration protocol that is deliberately **not** exported
 **same token on the same object**, so the one-line re-provide above installs all of it.
 
 What that costs is a precondition worth stating: on those roots the token must be aliased to the
-root itself — `useExisting` pointing at the root's class or a subclass of it — because the pieces
+root itself (`useExisting` pointing at the root's class or a subclass of it) because the pieces
 read it at the internal interface's type. A `useValue` carrying your own object satisfies the token's
 declared type and resolves, but has none of the registration protocol behind it; in dev mode the
 first piece to resolve rejects it with a `[forty-cdk/<primitive>]`-prefixed error naming this shape
@@ -151,7 +151,7 @@ export class MyTable<T> extends ForTable<T> {}
 ```
 
 `<for-table-body>` has a public `provideForTableDefRegistry()` for the same reachability reason, but
-it is not a subclassing helper — see [Table](../projects/forty-cdk/table/README.md) for the scaffold
+it is not a subclassing helper. See [Table](../projects/forty-cdk/table/README.md) for the scaffold
 wrapper shape it supports.
 
 ## What a wrapper must not swallow
@@ -160,7 +160,7 @@ Wrapping the root is safe. Wrapping the _pieces_ into a single opaque component 
 systems lose behaviour the primitives were built to give them:
 
 - **Keep mount == open in the consumer's hands.** Overlay content is presence-controlled by the
-  consumer's `@if` — the library never applies `[hidden]`, precisely so `animate.enter` /
+  consumer's `@if`. The library never applies `[hidden]`, precisely so `animate.enter` /
   `animate.leave` work. A wrapper that renders the content unconditionally and toggles CSS
   `display` loses the focus trap / scroll-lock / dismissible-layer lifecycle, which all hang off the
   content directive's lifetime.

@@ -1,11 +1,11 @@
 # Wrapping form primitives
 
-Design systems built on forty-cdk usually don't expose the raw primitives — they wrap each
+Design systems built on forty-cdk usually don't expose the raw primitives. They wrap each
 form control in a styled component with the system's selector and classes. The wrapper must
 re-expose the primitive's full API by exact public name: the value model (`value` /
 `checked`), the `touched` model, the `touch` output, and the shared form-state inputs
 (`disabled`, `readonly`, `required`, `invalid`, `pending`, `dirty`, `name`, `errors`), plus
-every control-specific member. Any omission fails silently — an unbound name falls back to a
+every control-specific member. Any omission fails silently: an unbound name falls back to a
 native DOM property and `[formField]` discovery degrades.
 
 Two patterns are supported. Both keep the Signal Forms contract intact, so a wrapper still
@@ -15,7 +15,7 @@ auto-wires with `[formField]`.
 
 Every primitive implementing `FormValueControl` / `FormCheckboxControl` exports two `as
 const` tuples from the main entry point: `FOR_<PRIMITIVE>_HOST_DIRECTIVE_INPUTS` and
-`FOR_<PRIMITIVE>_HOST_DIRECTIVE_OUTPUTS` — the exact public names of every input (models
+`FOR_<PRIMITIVE>_HOST_DIRECTIVE_OUTPUTS`. They hold the exact public names of every input (models
 included) and every output (the models' `*Change` emitters and the `touch` output). Spread
 them into a `hostDirectives` entry:
 
@@ -43,8 +43,8 @@ import {
 export class MyInput {}
 ```
 
-The wrapper now accepts every `ForInput` binding by its original name — `[(value)]`,
-`[(touched)]`, `[disabled]`, `(touch)`, … — and works under `[formField]` exactly like the
+The wrapper now accepts every `ForInput` binding by its original name (`[(value)]`,
+`[(touched)]`, `[disabled]`, `(touch)`, …) and works under `[formField]` exactly like the
 bare primitive:
 
 ```html
@@ -58,7 +58,7 @@ actual inputs/outputs, so the lists stay trustworthy across releases.
 
 Angular resolves `hostDirectives` statically at compile time. When your app compiles against
 the published package, the compiler can evaluate the name tuples (their literal types are
-preserved in the `.d.ts`) — but it cannot evaluate a pre-built `{ directive, inputs,
+preserved in the `.d.ts`), but it cannot evaluate a pre-built `{ directive, inputs,
 outputs }` object imported from the package, and fails with `NG1010: Host directive
 reference must be a class`. That is why forty-cdk ships name tuples instead of ready-made
 config objects: spread them into an object literal written directly inside the
@@ -103,7 +103,7 @@ export class MyListbox {}
 ### Exposing only part of the surface
 
 Because `hostDirectives` is resolved statically, the compiler cannot evaluate computed
-expressions over the tuples — `.filter(...)`, `.map(...)`, and friends fail with `NG1010:
+expressions over the tuples. Calling `.filter(...)`, `.map(...)`, and friends fails with `NG1010:
 Value could not be determined statically`. A wrapper that wants to withhold some inputs
 lists its subset literally instead of spreading:
 
@@ -115,14 +115,14 @@ inputs: ['value', 'disabled', 'touched'],
 
 The withheld names are then no longer bindable from the outside; the wrapper binds the
 underlying directive itself (e.g. via `host` or by injecting it). Note that a hand-written
-subset opts out of the anti-drift guarantee — future API additions won't flow through
-automatically — so prefer spreading the full tuple unless hiding a member is a hard
+subset opts out of the anti-drift guarantee (future API additions won't flow through
+automatically), so prefer spreading the full tuple unless hiding a member is a hard
 requirement.
 
 ## Pattern 2 — subclassing
 
 A subclass with its own decorator inherits the primitive's inputs, outputs, host bindings,
-and listeners, and stays a `FormValueControl` / `FormCheckboxControl` — `[formField]` keeps
+and listeners, and stays a `FormValueControl` / `FormCheckboxControl`, so `[formField]` keeps
 working with no re-exposed names to maintain:
 
 ```ts
@@ -141,7 +141,7 @@ export class MyInput extends ForInput {}
 Angular inherits the parent's compiled metadata (inputs, outputs, host bindings) through the
 class hierarchy, but each decorator declares its own `providers`. A primitive that shares a
 context token through `providers: [{ provide: FOR_X_CONTEXT, useExisting: ForX }]` loses
-that registration in the subclass — projected child pieces (`[forListboxOption]`,
+that registration in the subclass, so projected child pieces (`[forListboxOption]`,
 `[forSelectTrigger]`, …) can no longer resolve their context and throw the primitive's
 orphan error. The subclass must re-provide the token, pointing `useExisting` at itself:
 
@@ -162,7 +162,7 @@ Primitives whose **root** provides a context token (and therefore needs the re-p
 `ForListbox`, `ForOtpInput`, `ForRadioGroup`, `ForSelect`, `ForSlider`, `ForTimeField`,
 `ForTimeRangeField`, `ForToggleGroup`.
 The pure leaf
-controls — `ForInput`, `ForTextarea`, `ForSwitch`, `ForToggle`, `ForNumberInput` — declare no
+controls (`ForInput`, `ForTextarea`, `ForSwitch`, `ForToggle`, `ForNumberInput`) declare no
 providers, so a bare subclass is enough.
 
 A wrapper that also wants `inject(ForSelect)` to resolve adds
@@ -173,14 +173,14 @@ A wrapper that also wants `inject(ForSelect)` to resolve adds
 `ForSelect`, `ForCombobox`, `ForListbox`, `ForTimePicker` and `ForRadioGroup` split their
 coordination surface in two:
 the public `FOR_<PRIMITIVE>_CONTEXT` an advanced consumer injects, and an internal interface carrying
-the members only the primitive's own pieces call — the piece-registration protocol, or in Listbox's
-and TimePicker's case the pointer-highlight channel — which is deliberately not exported
+the members only the primitive's own pieces call (the piece-registration protocol, or in Listbox's
+and TimePicker's case the pointer-highlight channel). That interface is deliberately not exported
 ([#1399](https://github.com/tutkli/forty-cdk/issues/1399),
 [#1524](https://github.com/tutkli/forty-cdk/issues/1524),
 [#1781](https://github.com/tutkli/forty-cdk/issues/1781),
 [#1784](https://github.com/tutkli/forty-cdk/issues/1784)). Since
 [#1593](https://github.com/tutkli/forty-cdk/issues/1593) both are typed views of the **same token on
-the same object**, the one-line re-provide above is the whole provider set — there is no second
+the same object**, the one-line re-provide above is the whole provider set. There is no second
 provider for a wrapper to name:
 
 ```ts
@@ -205,7 +205,7 @@ covers Select's and Combobox's explicit trigger reference (`[forSelectTrigger]="
 
 `ForTable` is the one exception. It is not a form primitive, but it splits its context the same way
 _and_ provides an internal registry its own constructor injects, so a subclass without
-`provideForTable(MyTable)` fails to construct at all (`NG0201`) — see
+`provideForTable(MyTable)` fails to construct at all (`NG0201`). See
 [Wrapping non-form roots](wrapping-non-form-roots.md#fortable-needs-its-provider-helper-not-a-hand-written-provider).
 
 ### Indicator parent parts also self-provide a token
@@ -269,7 +269,7 @@ export class MyTimeField<D> extends ForTimeField<D> {}
 | `ForTimePicker`      | `ForDatePicker`'s `contentChild` time bridge | `FOR_TIME_VALUE_SOURCE` |
 
 For `ForTimeField` this is **in addition to** the `FOR_TIME_FIELD_CONTEXT` re-provide from the
-table above — its decorator provides both tokens, and a subclass that projects the time field's
+table above. Its decorator provides both tokens, and a subclass that projects the time field's
 own segment pieces _and_ feeds a date-time picker re-provides each. A subclass that only feeds
 the date-picker bridge (no projected child pieces) re-provides `FOR_TIME_VALUE_SOURCE` alone.
 
@@ -310,14 +310,14 @@ the date-picker bridge (no projected child pieces) re-provides `FOR_TIME_VALUE_S
 
 ## Binding a single-valued field to a selection primitive
 
-The selection primitives — `ForSelect`, `ForListbox`, `ForCombobox` — model their value as
+The selection primitives (`ForSelect`, `ForListbox`, `ForCombobox`) model their value as
 `readonly T[]`, with single mode keeping the array at length ≤ 1 (the selection value-type
 contract). That uniform array shape is the `FormValueControl<readonly T[]>` backing the
 `[formField]` directive auto-wires to, and it is deliberately the same for single and multi
 selection.
 
 **Model the form field with the same shape, and bind it directly.** A single-select field is a
-`readonly T[]` you keep at length ≤ 1 — there is no adapter, no wrapper directive, and nothing
+`readonly T[]` you keep at length ≤ 1. There is no adapter, no wrapper directive, and nothing
 to re-plumb: `[formField]` pushes `disabled` / `readonly` / `required` / `invalid` / `errors` /
 `touched` into the control and routes `focus()` to the primitive's real focus target, exactly
 as it does for a multi-select field.
@@ -349,7 +349,7 @@ directions.
 Do not reach for a hand-written `FieldTree` view to bridge the gap. The library shipped one
 (`forSingleValueField`, retired in
 [#1579](https://github.com/tutkli/forty-cdk/issues/1579)) and it could only be expressed as
-reflection over `@angular/forms/signals` internals — Angular exposes no writable-computed
+reflection over `@angular/forms/signals` internals: Angular exposes no writable-computed
 primitive, so a two-way mapped value signal means mutating a `computed` after creation, and
 `FieldTree<readonly T[]>` is additionally an array-like of per-element subfield trees that no
 hand-built view carries. Every one of those bets fails silently on a dependency bump, which is

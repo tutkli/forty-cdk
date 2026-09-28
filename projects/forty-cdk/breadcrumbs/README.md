@@ -23,7 +23,7 @@ A labelled navigation landmark for a breadcrumb trail: links with aria-current='
 
 ## Examples
 
-Walk the trail with `Tab` — the last crumb is the page you are on, so it carries `aria-current="page"` and is not a link back to itself.
+Walk the trail with `Tab`: the last crumb is the page you are on, so it carries `aria-current="page"` and is not a link back to itself.
 
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
@@ -84,7 +84,7 @@ export class BreadcrumbsDefaultExample {
 
 ### Collapsing a long trail
 
-The primitive renders whatever items you give it, so collapsing a deep path is a consumer decision. Here the middle is folded into an expandable ellipsis button that reveals the hidden crumbs — the trail stays a single accessible navigation landmark either way.
+The primitive renders whatever items you give it, so collapsing a deep path is a consumer decision. Here the middle is folded into an expandable ellipsis button that reveals the hidden crumbs. The trail stays a single accessible navigation landmark either way.
 
 ## Localizing the label
 

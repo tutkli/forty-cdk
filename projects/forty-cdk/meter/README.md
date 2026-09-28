@@ -9,13 +9,13 @@ apgUrl: https://www.w3.org/WAI/ARIA/apg/patterns/meter/
 
 A gauge that shows a scalar value within a known range, bucketed into quality bands.
 
-Mirrors the HTML5 `<meter>` element: a **measurement** — battery, disk space, score, queue depth — _not_ progress on a task. Use [Progress](../progress) for the latter.
+Mirrors the HTML5 `<meter>` element: a **measurement** (battery, disk space, score, queue depth), _not_ progress on a task. Use [Progress](../progress) for the latter.
 
 ## When to choose
 
-- **Meter** — `role="meter"`, a measurement within a known range, bucketed into quality bands by `low` / `high` / `optimum`. Always determinate: a meter has no unknown state.
-- **[Progress](../progress/README.md)** — `role="progressbar"`, for a task moving toward completion, including the indeterminate case (`value` of `null`). Choose it whenever the number is going somewhere.
-- **[Slider](../slider/README.md)** — when the number is one the user sets rather than one they read.
+- **Meter**: `role="meter"`, a measurement within a known range, bucketed into quality bands by `low` / `high` / `optimum`. Always determinate, since a meter has no unknown state.
+- **[Progress](../progress/README.md)**: `role="progressbar"`, for a task moving toward completion, including the indeterminate case (`value` of `null`). Choose it whenever the number is going somewhere.
+- **[Slider](../slider/README.md)**: when the number is one the user sets rather than one they read.
 
 ## Anatomy
 
@@ -119,7 +119,7 @@ The `data-quality` reflection follows the HTML5 spec:
 
 Implements the [WAI-ARIA Meter pattern](https://www.w3.org/WAI/ARIA/apg/patterns/meter/).
 
-- **`role="meter"`** announces the current value as a fraction of the range. Pair with a visible label and `aria-labelledby` (or set `ariaLabel`) for context — "Disk usage 72 of 100".
+- **`role="meter"`** announces the current value as a fraction of the range. Pair with a visible label and `aria-labelledby` (or set `ariaLabel`) for context, as in "Disk usage 72 of 100".
 - **Inverted bounds are sanitized.** If `max` is passed below `min`, the reflected range is collapsed to a coherent one (`min <= max`) so `aria-valuemin` / `aria-valuemax` never emit invalid ARIA. The raw `min` / `max` inputs read back unchanged.
 - **Always determinate.** Unlike `<progress>`, a meter must always have a known value. There is no indeterminate mode in HTML5 / ARIA.
 - **Don't use Meter as Progress.** Screen readers announce the two roles differently (and assistive guidance differs); pick the right primitive for the meaning.
@@ -127,7 +127,7 @@ Implements the [WAI-ARIA Meter pattern](https://www.w3.org/WAI/ARIA/apg/patterns
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
+forty-cdk ships no styles. Add your own class to each piece. The `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
 
 ### CSS custom properties
 

@@ -13,8 +13,8 @@ A button toggles the visibility of a content region, wired with `aria-expanded` 
 
 ## When to choose
 
-- **Disclosure** — one trigger and one region, independent of everything around it. Nothing coordinates it with a neighbour, so several on a page open and close freely.
-- **[Accordion](../accordion/README.md)** — a group of items under one root sharing a `[(value)]`: single mode closes the open panel when another opens, `multiple` allows several, and arrow keys move focus between the triggers. Choose it when the sections belong together and their open state is one decision.
+- **Disclosure**: one trigger and one region, independent of everything around it. Nothing coordinates it with a neighbour, so several on a page open and close freely.
+- **[Accordion](../accordion/README.md)**: a group of items under one root sharing a `[(value)]`. Single mode closes the open panel when another opens, `multiple` allows several, and arrow keys move focus between the triggers. Choose it when the sections belong together and their open state is one decision.
 
 ## Anatomy
 
@@ -79,20 +79,20 @@ One class and one directive, two states. `disabled` drops the trigger from the t
 
 ### `ForDisclosureTrigger`
 
-| Property   | Type             | Description                                                                          |
-| ---------- | ---------------- | ------------------------------------------------------------------------------------ |
-| `disabled` | `input<boolean>` | Disables this trigger only — merged OR with the root's `disabled`.<br>**Default:** — |
+| Property   | Type             | Description                                                                         |
+| ---------- | ---------------- | ----------------------------------------------------------------------------------- |
+| `disabled` | `input<boolean>` | Disables this trigger only, merged OR with the root's `disabled`.<br>**Default:** — |
 
 | Data attribute  | Values             |
 | --------------- | ------------------ |
 | `data-state`    | `open` \| `closed` |
 | `data-disabled` | present \| absent  |
 
-Reflects on its host: `id`, `aria-expanded`, `aria-controls`, `disabled`, `data-state`. Toggles the state on click. The disabled reflection (the native `disabled` attribute plus `data-disabled`; no `aria-disabled` — one channel only) and the click guard follow the effective state — the trigger's own `disabled` OR the root's.
+Reflects on its host: `id`, `aria-expanded`, `aria-controls`, `disabled`, `data-state`. Toggles the state on click. The disabled reflection and the click guard follow the effective state, which is the trigger's own `disabled` OR the root's. That reflection is the native `disabled` attribute plus `data-disabled`, with no `aria-disabled`: one channel only.
 
-`aria-controls` is emitted only while open — mirroring the overlay triggers' open-only gating — so the reference never dangles at an unmounted panel under the recommended `@if (open())` mount pattern.
+`aria-controls` is emitted only while open (mirroring the overlay triggers' open-only gating), so the reference never dangles at an unmounted panel under the recommended `@if (open())` mount pattern.
 
-Use a native `<button type="button">` so Enter / Space activation come for free. Other elements lose keyboard accessibility — that is on you.
+Use a native `<button type="button">` so Enter / Space activation come for free. Other elements lose keyboard accessibility, and that is on you.
 
 ### `ForDisclosureContent`
 
@@ -105,8 +105,8 @@ Reflects on its host: `id`, `data-state`, `data-disabled`, `aria-hidden` (when c
 
 The directive does **not** apply `[hidden]` or otherwise control DOM presence. Two patterns work:
 
-- **Mount/unmount with `@if (open())`** — the panel is absent from the DOM while closed; idiomatic for `animate.enter` / `animate.leave`.
-- **Leave it mounted** — preserve scroll/input state or run CSS-only transitions off `data-state`. While closed, the directive sets `aria-hidden="true"` and `inert` on the host so the panel is removed from the accessibility tree and focus order. Add `display: none` (or your own collapse animation) keyed on `[data-state="closed"]` to also hide it visually.
+- **Mount/unmount with `@if (open())`**: the panel is absent from the DOM while closed; idiomatic for `animate.enter` / `animate.leave`.
+- **Leave it mounted**: preserve scroll/input state or run CSS-only transitions off `data-state`. While closed, the directive sets `aria-hidden="true"` and `inert` on the host so the panel is removed from the accessibility tree and focus order. Add `display: none` (or your own collapse animation) keyed on `[data-state="closed"]` to also hide it visually.
 
 If the panel is a semantic region, add `role="region"` and `aria-labelledby="..."` pointing to the trigger.
 
@@ -115,12 +115,12 @@ If the panel is a semantic region, add `role="region"` and `aria-labelledby="...
 Implements the [WAI-ARIA Disclosure pattern](https://www.w3.org/WAI/ARIA/apg/patterns/disclosure/).
 
 - The library does not auto-add `role="button"` or keyboard handlers when the trigger is not a `<button>`. Always use a real button.
-- The directive does not apply the native `hidden` attribute to the content. Either wrap it with `@if (open())` so it unmounts when closed, or leave it mounted and rely on the `aria-hidden="true"` + `inert` reflection that keeps the closed panel out of the accessibility tree and focus order. Visual hiding (and enter/leave transitions) are still on you — drive them off `[data-state]`.
+- The directive does not apply the native `hidden` attribute to the content. Either wrap it with `@if (open())` so it unmounts when closed, or leave it mounted and rely on the `aria-hidden="true"` + `inert` reflection that keeps the closed panel out of the accessibility tree and focus order. Visual hiding (and enter/leave transitions) are still on you. Drive them off `[data-state]`.
 - Disabled state sets the native `disabled` attribute on the trigger (effective on `<button>` elements). Click is also ignored at the directive level as a defensive measure. The trigger can be disabled from the root (`[forDisclosure] [disabled]`) or per trigger (`[forDisclosureTrigger] [disabled]`); either source disables it.
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
+forty-cdk ships no styles. Add your own class to each piece. The `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
 
 ```css
 .dis-trigger .chevron {

@@ -8,13 +8,13 @@ archetype: [form-control]
 
 A one-time-code / PIN field on the single-input model: typed and pasted characters fill styled slots, with masking, character filtering and a complete event.
 
-Headless and styleless. One real `<input maxlength=N>` carries the whole code as a `string`, and the `[forOtpInputSlot]` pieces are a pure styling surface painted over it. There is **no** WAI-ARIA APG pattern for OTP — this approach gives the cleanest screen-reader experience (one ordinary text field, not "edit text, 1 of 6" announced N times), native mobile SMS autofill via `autocomplete="one-time-code"`, and native paste / caret / selection. It implements Angular's `FormValueControl<string>` from `@angular/forms/signals`, so it auto-wires with `[formField]` and auto-associates inside a [`[forField]`](../field/README.md) — label, description, and error wiring — with zero extra markup.
+Headless and styleless. One real `<input maxlength=N>` carries the whole code as a `string`, and the `[forOtpInputSlot]` pieces are a pure styling surface painted over it. There is **no** WAI-ARIA APG pattern for OTP. This single-input approach gives the cleanest screen-reader experience (one ordinary text field, not "edit text, 1 of 6" announced N times), native mobile SMS autofill via `autocomplete="one-time-code"`, and native paste / caret / selection. It implements Angular's `FormValueControl<string>` from `@angular/forms/signals`, so it auto-wires with `[formField]` and auto-associates inside a [`[forField]`](../field/README.md) (label, description, and error wiring) with zero extra markup.
 
 ## How it works
 
 Apply `[forOtpInput]` on a **wrapper** element. It becomes a `role="group"` and the directive injects the single visually-hidden-but-interactive `<input>` inside it. You style that input to **overlay the slots** (typically `position: absolute; inset: 0` with a transparent or `caret-color`-only appearance); pointer events land on it and native caret positioning drives which slot is active. The slots are inert visual boxes.
 
-The focusable, submittable control is the injected `<input>`, not the `role="group"` host — so form-control state, the field association, and native `name` submission all live on that input.
+The focusable, submittable control is the injected `<input>`, not the `role="group"` host. Form-control state, the field association, and native `name` submission therefore all live on that input.
 
 ## Anatomy
 
@@ -38,11 +38,11 @@ The focusable, submittable control is the injected `<input>`, not the `role="gro
 
 ## Exported pattern constants
 
-`OTP_REGEXP_ONLY_DIGITS`, `OTP_REGEXP_ONLY_CHARS`, `OTP_REGEXP_ONLY_DIGITS_AND_CHARS` — bind one to `[allowedPattern]` for a custom restriction. `allowedCharForType` / `inputModeForType` expose the `type` → RegExp / `inputmode` mapping.
+Bind one of `OTP_REGEXP_ONLY_DIGITS`, `OTP_REGEXP_ONLY_CHARS`, or `OTP_REGEXP_ONLY_DIGITS_AND_CHARS` to `[allowedPattern]` for a custom restriction. `allowedCharForType` / `inputModeForType` expose the `type` → RegExp / `inputmode` mapping.
 
 ## Field composition
 
-Drop the OTP inside a `[forField]` and it auto-associates with the label, description, and error region — no `id` / `aria-*` wiring by hand. The label's `for`, `aria-labelledby`, `aria-describedby`, and `aria-errormessage` all land on the real input.
+Drop the OTP inside a `[forField]` and it auto-associates with the label, description, and error region, with no `id` / `aria-*` wiring by hand. The label's `for`, `aria-labelledby`, `aria-describedby`, and `aria-errormessage` all land on the real input.
 
 ```ts
 import { Component, signal } from '@angular/core';
@@ -86,7 +86,7 @@ export class DemoOtpField {
 
 ## Examples
 
-Type or paste a code — focus advances a slot at a time, the active slot carries `data-active`, and the group reflects `data-complete` once it is full.
+Type or paste a code. Focus advances a slot at a time, the active slot carries `data-active`, and the group reflects `data-complete` once it is full.
 
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
@@ -124,7 +124,7 @@ export class OtpDefaultExample {
 
 ### Masked PIN with paste transform
 
-`mask` obscures the slots while `value()` stays raw, and a `pasteTransformer` strips spaces and dashes before filtering — so pasting “12 34 56” fills cleanly. `type` still rejects anything outside the numeric character class as you type.
+`mask` obscures the slots while `value()` stays raw, and a `pasteTransformer` strips spaces and dashes before filtering, so pasting “12 34 56” fills cleanly. `type` still rejects anything outside the numeric character class as you type.
 
 ## API
 
@@ -178,13 +178,13 @@ The injected real `<input>` (created inside the `[forOtpInput]` wrapper) additio
 - **Mobile autofill & keypad.** `autocomplete="one-time-code"` (toggle with `oneTimeCode`) drives SMS autofill; `inputmode` is `numeric` for `type="numeric"` (plus a legacy `pattern="[0-9]*"` for older iOS), `text` otherwise.
 - **Character filtering happens live.** Rejected characters (per `type` / `allowedPattern`) are dropped before they reach the value and fire `(reject)`. Paste runs through `pasteTransformer`, is filtered, and sliced to `length`. A rejected keystroke never moves the insertion point: the caret stays at the position it was being edited at, so typing a disallowed character mid-code leaves the next character landing in the slot the user was on. A paste replaces the whole code and leaves the caret at the end.
 - **Fake caret is yours to style.** The slot exposes `hasFakeCaret()`; render and animate the blink in CSS, gated on `prefers-reduced-motion`. There is no JS-driven blink.
-- **Disabled reflects through one channel.** The native `disabled` attribute already exposes the unavailable state through HTML-AAM, so no `aria-disabled` is emitted alongside it — style the disabled state with `:disabled` or `[data-disabled]`.
-- **Falsy state styling selects on absence.** `aria-readonly` / `aria-required` / `aria-invalid` / `aria-busy` are emitted only when truthy — style the off state with `:not([aria-invalid])`, never `[aria-invalid="false"]`.
+- **Disabled reflects through one channel.** The native `disabled` attribute already exposes the unavailable state through HTML-AAM, so no `aria-disabled` is emitted alongside it. Style the disabled state with `:disabled` or `[data-disabled]`.
+- **Falsy state styling selects on absence.** `aria-readonly` / `aria-required` / `aria-invalid` / `aria-busy` are emitted only when truthy. Style the off state with `:not([aria-invalid])`, never `[aria-invalid="false"]`.
 - **`@angular/forms` is an optional peer.** The directive runs fine on a plain `[(value)]` binding; the only `@angular/forms/signals` reference is a type import, erased at build.
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
+forty-cdk ships no styles. Add your own class to each piece. The `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
 
 ```css
 .otp-input-slot[data-active] {
@@ -220,4 +220,4 @@ The one rule the layout has to keep: make the injected `<input>` overlay the slo
 
 ## Wrapping in a design system
 
-Both supported wrapper patterns — `hostDirectives` with the exported `FOR_OTP_INPUT_HOST_DIRECTIVE_INPUTS` / `FOR_OTP_INPUT_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing — are documented in [Wrapping form primitives](../../../docs/wrapping-form-primitives.md).
+[Wrapping form primitives](../../../docs/wrapping-form-primitives.md) documents both supported wrapper patterns: `hostDirectives` with the exported `FOR_OTP_INPUT_HOST_DIRECTIVE_INPUTS` / `FOR_OTP_INPUT_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing.

@@ -15,13 +15,13 @@ A popover is a non-modal dialog: focus moves into the surface on open and return
 
 ## When to choose
 
-Popover is the one floating surface that opens on activation, takes focus and still leaves the page usable — which is what separates it from both the modal surfaces and the hover ones.
+Popover is the one floating surface that opens on activation, takes focus and still leaves the page usable. That combination is what separates it from both the modal surfaces and the hover ones.
 
-- **Popover** — non-modal `role="dialog"`, opened from its trigger. Focus moves into the surface and returns on close, but Tab may leave and nothing behind it is inert or scroll-locked.
-- **[Dialog](../dialog/README.md)** / **[Drawer](../drawer/README.md)** — modal. Choose either when the rest of the page must be unreachable until the task ends; Drawer adds the edge anchoring, swipe-to-dismiss and snap points.
-- **[Tooltip](../tooltip/README.md)** — opens on hover or focus, never takes focus, and its content must be non-interactive: it is the trigger's description, wired with `aria-describedby`.
-- **[Hover Card](../hover-card/README.md)** — opens on hover or focus and may hold interactive content, but it adds no ARIA relationship to its trigger. Choose it only for a preview whose trigger already stands on its own.
-- For a list of commands reach for [Dropdown Menu](../dropdown-menu/README.md), and for a value picked from options [Select](../select/README.md) — `role="dialog"` announces neither.
+- **Popover**: non-modal `role="dialog"`, opened from its trigger. Focus moves into the surface and returns on close, but Tab may leave and nothing behind it is inert or scroll-locked.
+- **[Dialog](../dialog/README.md)** / **[Drawer](../drawer/README.md)**: modal. Choose either when the rest of the page must be unreachable until the task ends; Drawer adds the edge anchoring, swipe-to-dismiss and snap points.
+- **[Tooltip](../tooltip/README.md)**: opens on hover or focus and never takes focus. Its content must be non-interactive because it is the trigger's description, wired with `aria-describedby`.
+- **[Hover Card](../hover-card/README.md)**: opens on hover or focus and may hold interactive content, but it adds no ARIA relationship to its trigger. Choose it only for a preview whose trigger already stands on its own.
+- For a list of commands reach for [Dropdown Menu](../dropdown-menu/README.md), and for a value picked from options [Select](../select/README.md): `role="dialog"` announces neither.
 
 ## Anatomy
 
@@ -45,7 +45,7 @@ Popover is the one floating surface that opens on activation, takes focus and st
 
 ## Examples
 
-Open the popover from the trigger — `Escape` and an outside click close it, focus returns to the trigger, and `data-side` says which side it landed on.
+Open the popover from the trigger. `Escape` and an outside click close it, focus returns to the trigger, and `data-side` says which side it landed on.
 
 ```ts
 import { ChangeDetectionStrategy, Component } from '@angular/core';
@@ -100,7 +100,7 @@ The element that opens the popover and the element it points at can differ: the 
 
 ### Positioning & collisions
 
-The trigger sits in a tight, scrollable frame. `sideOffset` nudges the surface off the trigger and `collisionPadding` reserves a margin from the edge before `flip` / `shift` kick in — scroll the frame to see it react.
+The trigger sits in a tight, scrollable frame. `sideOffset` nudges the surface off the trigger and `collisionPadding` reserves a margin from the edge before `flip` / `shift` kick in. Scroll the frame to see it react.
 
 ## API
 
@@ -157,13 +157,13 @@ The dismiss outputs and the auto-focus pair are vetoable: each receives a `Vetoa
 </div>
 ```
 
-The popover opens / closes alongside the input but never steals focus from it — handy for live-search panels where every keystroke matters.
+The popover opens / closes alongside the input but never steals focus from it. That behavior is handy for live-search panels where every keystroke matters.
 
 ### `ForPopoverTrigger`
 
-| Property   | Type             | Description                                                                                                                                                                                                                         |
-| ---------- | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `disabled` | `input<boolean>` | Disables this trigger only — merged OR with the root's `disabled`. The effective state drives the native `disabled` attribute, `data-disabled` and the click guard — no `aria-disabled` (one channel only).<br>**Default:** `false` |
+| Property   | Type             | Description                                                                                                                                                                                                                                  |
+| ---------- | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `disabled` | `input<boolean>` | Disables this trigger only and is merged OR with the root's `disabled`. The effective state drives the native `disabled` attribute, `data-disabled` and the click guard, but not `aria-disabled` (one channel only).<br>**Default:** `false` |
 
 | Data attribute  | Values             |
 | --------------- | ------------------ |
@@ -185,7 +185,7 @@ The popover opens / closes alongside the input but never steals focus from it �
 
 ## Scoped defaults
 
-`provideForPopoverDefaults` configures positioning defaults for an injector subtree — at the application root or in any component's `providers` array. Partial overrides inherit unspecified keys from the parent scope (or the library fallbacks at the root).
+`provideForPopoverDefaults` configures positioning defaults for an injector subtree, either at the application root or in any component's `providers` array. Partial overrides inherit unspecified keys from the parent scope (or the library fallbacks at the root).
 
 | Key                | Library fallback | Meaning                                                                      |
 | ------------------ | ---------------- | ---------------------------------------------------------------------------- |
@@ -226,13 +226,13 @@ class Toolbar {}
 Implements the [WAI-ARIA Modeless Dialog pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/).
 
 - Always provide an accessible name: render a `[forPopoverTitle]` or pass `ariaLabel`.
-- `[forPopoverDescription]` is optional — use it for explanatory copy beyond the title.
+- `[forPopoverDescription]` is optional. Use it for explanatory copy beyond the title.
 - `aria-haspopup="dialog"` advertises the popover as a dialog (matches `role="dialog"` on the content). For menus or listboxes, build a different primitive.
-- The popover is not modal: assistive tech users can still navigate around it. That's intentional — modeless surfaces should not interrupt.
+- The popover is not modal: assistive tech users can still navigate around it. That's intentional, because modeless surfaces should not interrupt.
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
+forty-cdk ships no styles. Add your own class to each piece. The `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
 
 ### CSS custom properties
 
@@ -240,14 +240,14 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 
 | Element               | Custom property                           | Type / range        | Direction | Meaning                                                                                                      |
 | --------------------- | ----------------------------------------- | ------------------- | --------- | ------------------------------------------------------------------------------------------------------------ |
-| `[forPopoverContent]` | `--for-floating-anchor-width`             | px                  | out       | Trigger (reference) width — match it with `width: var(--for-floating-anchor-width)`.                         |
+| `[forPopoverContent]` | `--for-floating-anchor-width`             | px                  | out       | Trigger (reference) width. Match it with `width: var(--for-floating-anchor-width)`.                          |
 | `[forPopoverContent]` | `--for-floating-anchor-height`            | px                  | out       | Trigger (reference) height.                                                                                  |
-| `[forPopoverContent]` | `--for-floating-available-width`          | px                  | out       | Space available along the inline axis (floating-ui `size` middleware) — clamp with `max-width`.              |
-| `[forPopoverContent]` | `--for-floating-available-height`         | px                  | out       | Space available along the block axis — clamp with `max-height`.                                              |
+| `[forPopoverContent]` | `--for-floating-available-width`          | px                  | out       | Space available along the inline axis (floating-ui `size` middleware). Clamp with `max-width`.               |
+| `[forPopoverContent]` | `--for-floating-available-height`         | px                  | out       | Space available along the block axis. Clamp with `max-height`.                                               |
 | `[forPopoverContent]` | `--for-floating-content-transform-origin` | `<origin>` keywords | out       | `transform-origin` matching the resolved side / align, so a `scale` enter animation pivots from the trigger. |
-| `[forPopoverArrow]`   | `--for-floating-arrow-offset`             | px (default `0px`)  | in        | Consumer-set. How far the arrow pokes out past the popover edge — typically a negative `px` (e.g. `-4px`).   |
+| `[forPopoverArrow]`   | `--for-floating-arrow-offset`             | px (default `0px`)  | in        | Consumer-set. How far the arrow pokes out past the popover edge, typically a negative `px` (e.g. `-4px`).    |
 
-> `[forPopoverContent]` portals to `document.body`, so ancestor-scoped CSS can't reach it. Style it with global CSS or a class — see [Styling floating content](../../../docs/styling-floating-content.md) for the full positioner-property list and the floating-content rules.
+> `[forPopoverContent]` portals to `document.body`, so ancestor-scoped CSS can't reach it. Style it with global CSS or a class. See [Styling floating content](../../../docs/styling-floating-content.md) for the full positioner-property list and the floating-content rules.
 
 ```css
 .popover-trigger .chevron {
@@ -260,7 +260,7 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 
 ### Reduced motion
 
-`[forPopover]` and `[forPopoverContent]` reflect `data-reduced-motion` (present / absent) whenever the OS `prefers-reduced-motion: reduce` media query matches, so you can opt your own `animate.enter` / `animate.leave` and CSS transitions out without re-deriving the query. The attribute flips reactively if the preference changes mid-session. The popover toggles open / closed synchronously on click, so there is no JS-coordinated timing to skip — only the visual transitions (which are yours) opt out.
+`[forPopover]` and `[forPopoverContent]` reflect `data-reduced-motion` (present / absent) whenever the OS `prefers-reduced-motion: reduce` media query matches, so you can opt your own `animate.enter` / `animate.leave` and CSS transitions out without re-deriving the query. The attribute flips reactively if the preference changes mid-session. The popover toggles open / closed synchronously on click, so there is no JS-coordinated timing to skip. Only the visual transitions (which are yours) opt out.
 
 ```css
 .popover[data-reduced-motion] {
@@ -270,20 +270,20 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 
 ## Behavior notes
 
-- **Portal**: the content is moved to `document.body` on first render. CSS scoped to ancestors won't reach it — use global styles or classes.
+- **Portal**: the content is moved to `document.body` on first render. CSS scoped to ancestors won't reach it, so use global styles or classes.
 - **Mount equals open**: wrap `[forPopoverContent]` in `@if` on the open state, so mount and unmount drive `animate.enter` / `animate.leave`.
 - **Trigger exemption**: clicks on the trigger never fire `pointerDownOutside` or `interactOutside`. Their only effect is the trigger's own toggle.
-- **Anchor vs. trigger**: `[forPopoverAnchor]` only changes the floating-ui reference. The trigger keeps `aria-controls` / `aria-expanded`, the click toggle, and focus return on close. The anchor is _not_ exempt from outside dismissal — clicking it is treated as outside.
+- **Anchor vs. trigger**: `[forPopoverAnchor]` only changes the floating-ui reference. The trigger keeps `aria-controls` / `aria-expanded`, the click toggle, and focus return on close. The anchor is _not_ exempt from outside dismissal: clicking it is treated as outside.
 - **Non-modal**: no focus trap, no body scroll lock, no `aria-modal`. If you need modal semantics, use `[forDialog]` instead.
 - **No backdrop**: popovers don't render an overlay. Outside dismissal is event-driven.
-- **Focus return**: on unmount, focus is sent back to the registered trigger element (unless `returnFocus="false"`). The one exception is an **outside-interaction close** — a pointer-down or focus-out that lands outside the popover: focus stays where the interaction moved it instead of snapping back to the trigger, matching `[forDropdownMenu]` (so a popover on a trigger that also carries a tooltip doesn't rip focus back and re-open that tooltip). Escape and programmatic closes still return focus. The return happens before the portal helper removes the node, so the trigger receives `focusin` against a stable layout.
-- **Arrow offset**: `[forPopoverArrow]` writes `position: absolute`, the floating-ui-resolved `left` / `top`, and `var(--for-floating-arrow-offset, 0px)` on the side opposite the popover (so the arrow points back at the trigger). Set `--for-floating-arrow-offset` on the arrow element (or any ancestor) to control how far the arrow pokes out — typically a negative `px` value such as `-4px`. Defaults to `0px` (flush with the popover edge); the helper ships no default visual.
+- **Focus return**: on unmount, focus is sent back to the registered trigger element (unless `returnFocus="false"`). The one exception is an **outside-interaction close**, meaning a pointer-down or focus-out that lands outside the popover. After such a close, focus stays where the interaction moved it instead of snapping back to the trigger, matching `[forDropdownMenu]` (so a popover on a trigger that also carries a tooltip doesn't rip focus back and re-open that tooltip). Escape and programmatic closes still return focus. The return happens before the portal helper removes the node, so the trigger receives `focusin` against a stable layout.
+- **Arrow offset**: `[forPopoverArrow]` writes `position: absolute`, the floating-ui-resolved `left` / `top`, and `var(--for-floating-arrow-offset, 0px)` on the side opposite the popover (so the arrow points back at the trigger). Set `--for-floating-arrow-offset` on the arrow element (or any ancestor) to control how far the arrow pokes out. A negative `px` value such as `-4px` is typical. Defaults to `0px` (flush with the popover edge); the helper ships no default visual.
 
 ### `#popover="forPopover"` vs `[(open)]`
 
-The minimal "click trigger → show content" case needs **neither** a separate `open` signal **nor** a two-way binding. `[forPopover]` is `exportAs: 'forPopover'`, so expose the directive instance with a template reference variable — `#popover="forPopover"` — and drive the `@if` straight off its own `open()` signal, as above. The trigger toggles it; Escape and outside dismissal flip it back.
+The minimal "click trigger → show content" case needs **neither** a separate `open` signal **nor** a two-way binding. `[forPopover]` is `exportAs: 'forPopover'`, so expose the directive instance with a template reference variable (`#popover="forPopover"`) and drive the `@if` straight off its own `open()` signal, as above. The trigger toggles it; Escape and outside dismissal flip it back.
 
-Reach for the explicit `[(open)]="mySignal"` model binding only when the component class needs to read or drive open state — open it programmatically, persist it, or react to it elsewhere:
+Reach for the explicit `[(open)]="mySignal"` model binding only when the component class needs to read or drive open state (to open it programmatically, persist it, or react to it elsewhere):
 
 ```html
 <div forPopover [(open)]="open">
@@ -296,7 +296,7 @@ Reach for the explicit `[(open)]="mySignal"` model binding only when the compone
 
 ### Triggers stamped from outside-declared templates
 
-Angular resolves `ng-template` DI at the template's **declaration** site, not where it is stamped. A `[forPopoverTrigger]` declared in a template outside the root throws the orphan error even when the template is rendered inside the root via `ngTemplateOutlet`. For that case the selector attribute accepts the root reference as a value, `routerLink`-style — grab it with `#root="forPopover"` and pass it through the outlet context. The bare valueless attribute keeps resolving via DI.
+Angular resolves `ng-template` DI at the template's **declaration** site, not where it is stamped. A `[forPopoverTrigger]` declared in a template outside the root throws the orphan error even when the template is rendered inside the root via `ngTemplateOutlet`. For that case the selector attribute accepts the root reference as a value, `routerLink`-style. Grab it with `#root="forPopover"` and pass it through the outlet context. The bare valueless attribute keeps resolving via DI.
 
 ```html
 <div forPopover #root="forPopover">

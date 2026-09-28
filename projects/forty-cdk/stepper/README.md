@@ -52,7 +52,7 @@ See [Styling forty-cdk](../../../docs/styling.md) for theming guidance.
 
 ## Examples
 
-Walk the steps with their triggers or the arrow keys — each step carries `data-state` for `completed`, `active`, `upcoming` or `disabled`, and the root says which `data-mode` it is in.
+Walk the steps with their triggers or the arrow keys. Each step carries `data-state` for `completed`, `active`, `upcoming` or `disabled`, and the root says which `data-mode` it is in.
 
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
@@ -149,11 +149,11 @@ export class StepperDefaultExample {
 
 ### Linear wizard with Signal Forms
 
-Each step binds a Signal Forms `field`. A step is completed when its field is valid and touched, and shows the error state when touched and invalid — no manual `[completed]` wiring. In `[linear]` mode Next stays disabled until the current step's field is valid, so fill the input and blur it to advance.
+Each step binds a Signal Forms `field`. A step is completed when its field is valid and touched, and shows the error state when touched and invalid. No manual `[completed]` wiring is needed. In `[linear]` mode Next stays disabled until the current step's field is valid, so fill the input and blur it to advance.
 
 ### Progress mode + progress bar
 
-A display-only status tracker: the list renders as a plain ordered list with `aria-current="step"` on the active stage — no roving tabindex or tab roles. The optional `forStepperProgress` part adds a `role="progressbar"` that publishes a `--for-stepper-progress` (0–1) custom property for the fill.
+A display-only status tracker: the list renders as a plain ordered list with `aria-current="step"` on the active stage and no roving tabindex or tab roles. The optional `forStepperProgress` part adds a `role="progressbar"` that publishes a `--for-stepper-progress` (0–1) custom property for the fill.
 
 ## API
 
@@ -173,8 +173,8 @@ A display-only status tracker: the list renders as a plain ordered list with `ar
 
 `ForStepper` exposes two members for the terminal completed state:
 
-- **`isCompleted`** (`Signal<boolean>`) — true when `selectedIndex()` has reached `count()` (one past the last step). Read it via a `#stepper="forStepper"` template reference.
-- **`(complete)`** — output that fires once each time the stepper enters the completed state. Retreating via `[forStepperPrevious]` and re-entering emits again.
+- **`isCompleted`** (`Signal<boolean>`): true when `selectedIndex()` has reached `count()` (one past the last step). Read it via a `#stepper="forStepper"` template reference.
+- **`(complete)`**: output that fires once each time the stepper enters the completed state. Retreating via `[forStepperPrevious]` and re-entering emits again.
 
 ### `ForStepperItem`
 
@@ -185,7 +185,7 @@ A display-only status tracker: the list renders as a plain ordered list with `ar
 | `disabled`  | `input<boolean>`                  | Disables only this step.<br>**Default:** `false`                                                     |
 | `hasError`  | `input<boolean>`                  | Emits `'error'` resolved state when not current (manual; wins over `field`).<br>**Default:** `false` |
 | `field`     | `input<FieldTree<unknown>\|null>` | Optional Signal Forms field; drives `completed`/`hasError` from validity.<br>**Default:** `null`     |
-| `state`     | `input<string\|null>`             | Custom state override — wins over derived state.<br>**Default:** `null`                              |
+| `state`     | `input<string\|null>`             | Custom state override that wins over derived state.<br>**Default:** `null`                           |
 
 ### `ForStepperContent`
 
@@ -208,11 +208,11 @@ A display-only status tracker: the list renders as a plain ordered list with `ar
 
 #### Boolean `data-*`
 
-| Attribute          | When present                                     |
-| ------------------ | ------------------------------------------------ |
-| `data-disabled`    | Root or step is disabled                         |
-| `data-orientation` | Always — `horizontal` or `vertical`              |
-| `data-mode`        | Always (root only) — `interactive` or `progress` |
+| Attribute          | When present                                    |
+| ------------------ | ----------------------------------------------- |
+| `data-disabled`    | Root or step is disabled                        |
+| `data-orientation` | Always: `horizontal` or `vertical`              |
+| `data-mode`        | Always (root only): `interactive` or `progress` |
 
 ---
 
@@ -224,7 +224,7 @@ A display-only status tracker: the list renders as a plain ordered list with `ar
 </div>
 ```
 
-`[linear]` gates forward movement on completion: `[forStepperNext]` advances only while the current step is `[completed]` or `[optional]`, and a trigger further ahead is selectable only once every step before it is one of the two. Going back is never gated — `[forStepperPrevious]` and the earlier triggers stay live throughout.
+`[linear]` gates forward movement on completion: `[forStepperNext]` advances only while the current step is `[completed]` or `[optional]`, and a trigger further ahead is selectable only once every step before it is one of the two. Going back is never gated: `[forStepperPrevious]` and the earlier triggers stay live throughout.
 
 ## Completed-all content
 
@@ -242,8 +242,8 @@ When `Next` is pressed on the last step, `selectedIndex` advances to `count` (on
 ## Conditionally rendered or reordered panels (`[step]`)
 
 A `[forStepperContent]` panel pairs with a step by DOM-order position: the Nth panel is the
-Nth step. When panels are conditionally rendered — or declared in an order that doesn't match
-the steps — that position no longer identifies the step, so bind `[step]` to make the pairing
+Nth step. When panels are conditionally rendered (or declared in an order that doesn't match
+the steps), that position no longer identifies the step, so bind `[step]` to make the pairing
 explicit. It keeps `data-state` / `inert` / `aria-labelledby` on the panel and `aria-controls`
 on the trigger correct no matter which panels are mounted.
 
@@ -262,7 +262,7 @@ resolves its step from its enclosing `[forStepperItem]`.
 ## Signal Forms field-driven completion
 
 Bind a step to a [Signal Forms](https://angular.dev/) field and its completion and
-error state follow the field's validity automatically — no manual `[completed]`
+error state follow the field's validity automatically, with no manual `[completed]`
 wiring. A step is `completed` when its field is **valid and touched**; it reflects
 `error` when the field is **touched and invalid**. A manual `[completed]` /
 `[hasError]` input always wins when set.
@@ -350,7 +350,7 @@ index; `valueBy="completed"` tracks the count of completed steps.
 
 The `aria-valuetext` string (`"Step N of M"` on the `index` basis, `"P% complete"` on the
 `completed` basis) is verbalized by screen readers, so it is localizable centrally via
-`provideForStepperDefaults` — override the `stepValueText` / `progressValueText` builders:
+`provideForStepperDefaults`. Override the `stepValueText` / `progressValueText` builders:
 
 <!-- snippet: fragment -->
 
@@ -403,10 +403,10 @@ Or purely via CSS:
 
 **The panel's focusable-content detection does not re-measure across a shadow boundary, nor on a CSS-only visibility flip.** In `mode="interactive"` the measurement runs on the panel's first render and again on mutations of its own subtree, filtered to the attributes that change whether an element is focusable (`disabled`, `hidden`, `inert`, `tabindex`, `type`, `contenteditable`). Two changes are therefore invisible to it and leave the previous answer standing:
 
-- **Focusable content appearing (or disappearing) inside a shadow root** — a web component in the panel that renders its controls on a later tick, or swaps them. The shadow root's own subtree is not observable, so a panel that gains its first focusable control that way keeps its redundant `tabindex="0"`, and one that loses its last keeps none, leaving the panel unreachable by keyboard for a screen-reader user reading it. Nothing in the DOM looks wrong.
-- **A visibility flip driven purely by a stylesheet** — the measurement excludes CSS-hidden elements, but `class` and `style` are not watched, so toggling a class that hides or reveals the panel's only control does not re-measure.
+- **Focusable content appearing (or disappearing) inside a shadow root**: a web component in the panel that renders its controls on a later tick, or swaps them. The shadow root's own subtree is not observable, so a panel that gains its first focusable control that way keeps its redundant `tabindex="0"`, and one that loses its last keeps none, leaving the panel unreachable by keyboard for a screen-reader user reading it. Nothing in the DOM looks wrong.
+- **A visibility flip driven purely by a stylesheet**: the measurement excludes CSS-hidden elements, but `class` and `style` are not watched, so toggling a class that hides or reveals the panel's only control does not re-measure.
 
-**Workaround.** Render the panel's focusable content in the light tree, or remount the panel with `@if` when its content changes — a fresh directive instance measures again. Stepper exposes no override input for the detection; [`ForTabsContent`](../tabs/README.md#fortabscontent), which shares the mechanism, has `[interactiveContent]` for it.
+**Workaround.** Render the panel's focusable content in the light tree, or remount the panel with `@if` when its content changes, so that a fresh directive instance measures again. Stepper exposes no override input for the detection; [`ForTabsContent`](../tabs/README.md#fortabscontent), which shares the mechanism, has `[interactiveContent]` for it.
 
 The library-wide shadow-DOM statement, covering the two limits that affect overlays rather than panels, is [Shadow DOM](../shared/README.md#shadow-dom) in `forty-cdk/shared`.
 
@@ -429,17 +429,17 @@ In `orientation="vertical"` ArrowUp/Down navigate; ArrowLeft/Right are ignored. 
 
 Implements the [WAI-ARIA Tabs pattern](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/).
 
-- **Interactive mode** implements the WAI-ARIA Tabs pattern. Each trigger carries `role="tab"`, the list carries `role="tablist"`, and content panels carry `role="tabpanel"`. Each `<li forStepperItem>` carries `role="presentation"` so the `tablist` owns the `tab` triggers directly — an interposed implicit `listitem` would violate the tablist's required-owned-elements contract. `aria-selected` is always emitted; `aria-controls` is gated to the current step (prevents dangling references when panels are unmounted with `@if`). The trigger ↔ panel pairing resolves each side by its step index — a trigger through its `[forStepperItem]`, a panel through `[step]` (or its position when unbound) — so hiding one trigger or panel with `@if` never shifts the pairing of the others.
+- **Interactive mode** implements the WAI-ARIA Tabs pattern. Each trigger carries `role="tab"`, the list carries `role="tablist"`, and content panels carry `role="tabpanel"`. Each `<li forStepperItem>` carries `role="presentation"` so the `tablist` owns the `tab` triggers directly. An interposed implicit `listitem` would violate the tablist's required-owned-elements contract. `aria-selected` is always emitted; `aria-controls` is gated to the current step (prevents dangling references when panels are unmounted with `@if`). The trigger ↔ panel pairing resolves each side by its step index: a trigger through its `[forStepperItem]`, a panel through `[step]` (or its position when unbound). Hiding one trigger or panel with `@if` therefore never shifts the pairing of the others.
 - **Progress mode** uses a standard `<ol role="list">` with `aria-current="step"` on the active trigger; each `<li forStepperItem>` keeps its implicit `listitem` role. No tab-stop manipulation is performed; triggers carry no `role`.
 - **Disabled triggers** in interactive mode retain their tab stop using `aria-disabled="true"` rather than the native `disabled` attribute, so assistive technology can announce them.
 - **Linear mode** reflects unreachable ahead-steps as `aria-disabled="true"` + `data-disabled=""` on the trigger. Keyboard navigation skips them automatically.
 - **RTL** is supported: set `dir="rtl"` on the root or a DOM ancestor.
 - **Progress bar** (`[forStepperProgress]`) is an opt-in part. When present it exposes `role="progressbar"` with `aria-valuemin="0"`, `aria-valuemax="100"`, and `aria-valuenow` derived from the current step or the count of completed steps.
-- **Panel `tabindex`** follows the Tabs pattern in `mode="interactive"`: a `[forStepperContent]` with **no** focusable descendants is itself a tab stop (`tabindex="0"`) so screen-reader users can focus and read it, while a panel that already contains focusable content is not. The directive detects this and re-measures on subtree changes; two kinds of change are outside what it can observe — see [Known limitations](#known-limitations). In `mode="progress"` no `tabindex` is emitted at all.
+- **Panel `tabindex`** follows the Tabs pattern in `mode="interactive"`: a `[forStepperContent]` with **no** focusable descendants is itself a tab stop (`tabindex="0"`) so screen-reader users can focus and read it, while a panel that already contains focusable content is not. The directive detects this and re-measures on subtree changes; two kinds of change are outside what it can observe (see [Known limitations](#known-limitations)). In `mode="progress"` no `tabindex` is emitted at all.
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the `data-state` vocabulary and boolean `data-*` attributes listed under [Data attributes](#data-attributes).
+forty-cdk ships no styles. Add your own class to each piece. The `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the `data-state` vocabulary and boolean `data-*` attributes listed under [Data attributes](#data-attributes).
 
 ## Wrapping in a design system
 

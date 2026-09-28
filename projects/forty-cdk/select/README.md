@@ -11,16 +11,16 @@ A custom select: a trigger that opens a portaled listbox popup to pick one or ma
 
 It implements the select-only combobox pattern (`role="combobox"` on the trigger, `role="listbox"` on the surface, `role="option"` on items) and the `FormValueControl<readonly T[]>` interface from `@angular/forms/signals`.
 
-`[forSelect]` is generic over the option value type `T` (default `string`). Bind primitive ids for the simple case or full objects for richer models — the directive infers `T` from `[(value)]` and `[forSelectOption][value]`. See [Object values](#object-values) for the object-mode contract.
+`[forSelect]` is generic over the option value type `T` (default `string`). Bind primitive ids for the simple case or full objects for richer models. The directive infers `T` from `[(value)]` and `[forSelectOption][value]`. See [Object values](#object-values) for the object-mode contract.
 
 > New to overlays in forty-cdk? [Your first overlay](../../../docs/your-first-overlay.md) walks a Popover from empty markup to styled-and-animated and explains the `@if` / open-state model and the portal → global CSS rule.
 
 ## When to choose
 
-- **Select** — a trigger that opens a portaled `role="listbox"` popup. There is no text entry: the value comes from the options, and typing only jumps to a matching one (typeahead). Choose it when the option set is short enough to scan.
-- **[Combobox](../combobox/README.md)** — the same popup behind an editable `<input>`, where typing filters the list as the user goes. Choose it when the list is long enough that scanning it is the slow part.
-- **[Listbox](../listbox/README.md)** — the same option semantics with no overlay and no trigger: an in-page list under roving tabindex. Choose it when the choices should stay visible.
-- **[Dropdown Menu](../dropdown-menu/README.md)** — when the surface runs commands rather than holding a value. A menu is not a form control.
+- **Select**: a trigger that opens a portaled `role="listbox"` popup. There is no text entry: the value comes from the options, and typing only jumps to a matching one (typeahead). Choose it when the option set is short enough to scan.
+- **[Combobox](../combobox/README.md)**: the same popup behind an editable `<input>`, where typing filters the list as the user goes. Choose it when the list is long enough that scanning it is the slow part.
+- **[Listbox](../listbox/README.md)**: an in-page list under roving tabindex, with the same option semantics but no overlay and no trigger. Choose it when the choices should stay visible.
+- **[Dropdown Menu](../dropdown-menu/README.md)**: when the surface runs commands rather than holding a value. A menu is not a form control.
 
 ## Anatomy
 
@@ -49,11 +49,11 @@ It implements the select-only combobox pattern (`role="combobox"` on the trigger
 </div>
 ```
 
-`[forSelectAnchor]` (optional) wraps a decorated field box so the listbox positions against it instead of the trigger — see [Anchoring to a field box](#anchoring-to-a-field-box).
+`[forSelectAnchor]` (optional) wraps a decorated field box so the listbox positions against it instead of the trigger. See [Anchoring to a field box](#anchoring-to-a-field-box).
 
 ## Examples
 
-Open the listbox from the trigger, move with the arrow keys and commit with `Enter` — `data-placeholder` stays on the trigger until something is chosen.
+Open the listbox from the trigger, move with the arrow keys and commit with `Enter`. Until something is chosen, `data-placeholder` stays on the trigger.
 
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
@@ -201,11 +201,11 @@ With `position="item-aligned"`, open the list: Germany, the preselected country,
 
 ### Object values & typeahead
 
-`forSelect` is generic over `T`: bind whole objects to `[forSelectOption][value]`, match them by a stable key with `[compareWith]`, and serialize what a native form submits with `[itemToFormValue]`. Typeahead mirrors native `<select>` — with the listbox open, printable keys jump to the first match.
+`forSelect` is generic over `T`: bind whole objects to `[forSelectOption][value]`, match them by a stable key with `[compareWith]`, and serialize what a native form submits with `[itemToFormValue]`. Typeahead mirrors native `<select>`. With the listbox open, printable keys jump to the first match.
 
 ### Signal Forms
 
-`forSelect` implements `FormValueControl<readonly T[]>` from `@angular/forms/signals`, so a single `[formField]` binding wires the value, validation status and touched flag both ways — no `ControlValueAccessor`. The field is required and reflects `data-invalid` / `data-touched` after a blur without a choice.
+`forSelect` implements `FormValueControl<readonly T[]>` from `@angular/forms/signals`, so a single `[formField]` binding wires the value, validation status and touched flag both ways, with no `ControlValueAccessor`. The field is required and reflects `data-invalid` / `data-touched` after a blur without a choice.
 
 ```html
 <div forSelect [formField]="form.color">
@@ -243,11 +243,11 @@ Input tables are not yet tabulated for this primitive. See the feature sections 
 | `[forSelectIndicator]` | `data-state`       | `checked` \| `unchecked`   |
 | `[forSelectSeparator]` | `data-orientation` | `horizontal` \| `vertical` |
 
-`data-highlighted` marks the active option — the one the pointer is over, else the keyboard's (shared vocabulary with the listbox / menu / combobox primitives; see [Pointer highlight](#pointer-highlight)). In popper mode `[forSelectContent]` also carries the positioner markers `data-side` / `data-align` / `data-placement` (and `data-detached` while `hideWhenDetached` is active); in `item-aligned` mode it carries `data-position="item-aligned"` instead — see [Styling floating content](../../../docs/styling-floating-content.md).
+`data-highlighted` marks the active option: the one the pointer is over, else the keyboard's (shared vocabulary with the listbox / menu / combobox primitives; see [Pointer highlight](#pointer-highlight)). In popper mode `[forSelectContent]` also carries the positioner markers `data-side` / `data-align` / `data-placement` (and `data-detached` while `hideWhenDetached` is active); in `item-aligned` mode it carries `data-position="item-aligned"` instead. See [Styling floating content](../../../docs/styling-floating-content.md).
 
 ## Scoped defaults
 
-`provideForSelectDefaults` configures positioning defaults for an injector subtree — at the application root or in any component's `providers` array. Partial overrides inherit unspecified keys from the parent scope (or the library fallbacks at the root).
+`provideForSelectDefaults` configures positioning defaults for an injector subtree, either at the application root or in any component's `providers` array. Partial overrides inherit unspecified keys from the parent scope (or the library fallbacks at the root).
 
 | Key                | Library fallback | Meaning                                                                     |
 | ------------------ | ---------------- | --------------------------------------------------------------------------- |
@@ -256,7 +256,7 @@ Input tables are not yet tabulated for this primitive. See the feature sections 
 | `sideOffset`       | `4`              | Main-axis gap (px) for selects that don't set `sideOffset` themselves.      |
 | `collisionPadding` | `8`              | Collision-middleware padding (px) for selects that don't set it themselves. |
 
-Per-instance inputs always win over the scope defaults. `side` / `align` / `sideOffset` are no-ops under `position="item-aligned"`, where only `collisionPadding` is honored, and every one of the four is a no-op in modal mode — see [macOS-style alignment](#macos-style-alignment) and [Modal touch presentation](#modal-touch-presentation).
+Per-instance inputs always win over the scope defaults. `side` / `align` / `sideOffset` are no-ops under `position="item-aligned"`, where only `collisionPadding` is honored, and every one of the four is a no-op in modal mode. See [macOS-style alignment](#macos-style-alignment) and [Modal touch presentation](#modal-touch-presentation).
 
 <!-- snippet: fragment -->
 
@@ -278,7 +278,7 @@ class CompactToolbar {}
 
 ## Mount/visibility convention
 
-`[forSelectContent]` follows the floating-overlay convention: the consumer's signal drives `@if`, the directive emits dismiss events (forwarded by the root primitive) when it wants to be unmounted. No `[hidden]`. The trigger's own click toggles the same signal — `[forSelect]` exposes `open` as a `model<boolean>` so two-way binding works out of the box.
+`[forSelectContent]` follows the floating-overlay convention: the consumer's signal drives `@if`, the directive emits dismiss events (forwarded by the root primitive) when it wants to be unmounted. No `[hidden]`. The trigger's own click toggles the same signal: `[forSelect]` exposes `open` as a `model<boolean>`, so two-way binding works out of the box.
 
 ## Initial focus on open
 
@@ -291,20 +291,20 @@ Override programmatically with `forSelect.overlay.openOverlay('first' | 'last' |
 
 ## Pointer highlight
 
-Moving the pointer over an enabled option hands it `data-highlighted`, so exactly one option is ever decorated no matter which device the user reached for — the same feel as `[forCombobox]`, `[forListbox]` and the menu family. Style that one attribute; you do not need a separate `:hover` rule (and combining both is what puts two rows in a highlighted state at once).
+Moving the pointer over an enabled option hands it `data-highlighted`, so exactly one option is ever decorated no matter which device the user reached for. This matches the feel of `[forCombobox]`, `[forListbox]` and the menu family. Style that one attribute; you do not need a separate `:hover` rule (and combining both is what puts two rows in a highlighted state at once).
 
 Four properties of the pointer channel:
 
-- **It never selects and never moves DOM focus**, not even with `selectionFollowsFocus` set — that input commits on every _navigation_ focus move, and hovering is not one. The pointer's own click still activates, and the multi-select range anchor `Shift+Space` spans from is untouched.
+- **It never selects and never moves DOM focus**, not even with `selectionFollowsFocus` set, because that input commits on every _navigation_ focus move and hovering is not one. The pointer's own click still activates, and the multi-select range anchor `Shift+Space` spans from is untouched.
 - **The keyboard takes it back on the next move.** In the default path the highlight falls back to the DOM-focused option, so the first arrow / typeahead move drops the pointer highlight; in the virtualized path (`totalCount` set) hover moves `aria-activedescendant` itself, so the highlight and the option `Enter` activates never disagree there.
-- **Moving the pointer off `[forSelectContent]` releases it.** In the default path the highlight goes back to the DOM-focused option — the one `Enter` activates — so an open listbox never keeps a row decorated with the cursor somewhere else on the page. Crossing between two adjacent options is not a leave: the highlight moves straight from one to the other without blinking off. In the virtualized path the pointer's claim persists, because there it _is_ `aria-activedescendant` and dropping it would leave the listbox with no active option.
-- **A programmatic scroll cannot hijack it.** Opening the listbox scrolls the selected option into view, and keyboard navigation scrolls the active one — either can slide a different option under a stationary cursor and make the browser fire a synthetic `pointermove` for it. Moves arriving in a short window after such a scroll are ignored, so the selected option keeps the highlight a mouse-opened listbox gives it (see [Initial focus on open](#initial-focus-on-open)).
+- **Moving the pointer off `[forSelectContent]` releases it.** In the default path the highlight goes back to the DOM-focused option (the one `Enter` activates), so an open listbox never keeps a row decorated with the cursor somewhere else on the page. Crossing between two adjacent options is not a leave: the highlight moves straight from one to the other without blinking off. In the virtualized path the pointer's claim persists, because there it _is_ `aria-activedescendant` and dropping it would leave the listbox with no active option.
+- **A programmatic scroll cannot hijack it.** Opening the listbox scrolls the selected option into view, and keyboard navigation scrolls the active one. Either can slide a different option under a stationary cursor and make the browser fire a synthetic `pointermove` for it. Moves arriving in a short window after such a scroll are ignored, so the selected option keeps the highlight a mouse-opened listbox gives it (see [Initial focus on open](#initial-focus-on-open)).
 
 A hover on a disabled option is ignored, and the highlight falls back to the focused option if the hovered one is disabled or unmounted while the cursor rests on it.
 
 ## Anchoring to a field box
 
-By default the listbox is positioned against `[forSelectTrigger]`. When the trigger lives inside a decorated field box — padding, a prefix icon, a clear / chevron button — anchoring to the inner button makes the panel narrower than the visible field and offset from its edge. Wrap the field box in `[forSelectAnchor]` so floating-ui positions (and sizes, via `--for-floating-anchor-width`) the listbox against the box instead:
+By default the listbox is positioned against `[forSelectTrigger]`. When the trigger lives inside a decorated field box (padding, a prefix icon, a clear / chevron button), anchoring to the inner button makes the panel narrower than the visible field and offset from its edge. Wrap the field box in `[forSelectAnchor]` so floating-ui positions (and sizes, via `--for-floating-anchor-width`) the listbox against the box instead:
 
 ```html
 <div forSelect #select="forSelect" [(value)]="value">
@@ -324,11 +324,11 @@ By default the listbox is positioned against `[forSelectTrigger]`. When the trig
 </div>
 ```
 
-`[forSelectAnchor]` changes **only** positioning. The trigger keeps `aria-haspopup` / `aria-expanded` / `aria-controls`, the click toggle, focus return on close, and its exemption from outside-pointer dismissal. Without an anchor the listbox falls back to the trigger, so existing markup is unaffected. At most one `[forSelectAnchor]` per `[forSelect]` — a second one throws `[forty-cdk/select]`.
+`[forSelectAnchor]` changes **only** positioning. The trigger keeps `aria-haspopup` / `aria-expanded` / `aria-controls`, the click toggle, focus return on close, and its exemption from outside-pointer dismissal. Without an anchor the listbox falls back to the trigger, so existing markup is unaffected. A `[forSelect]` accepts at most one `[forSelectAnchor]`, and a second one throws `[forty-cdk/select]`.
 
 ## Triggers stamped from outside-declared templates
 
-Angular resolves `ng-template` DI at the template's **declaration** site, not where it is stamped. A `[forSelectTrigger]` declared in a template outside the root throws the orphan error even when the template is rendered inside the root via `ngTemplateOutlet`. For that case the selector attribute accepts the root reference as a value, `routerLink`-style — grab it with `#root="forSelect"` and pass it through the outlet context. The bare valueless attribute keeps resolving via DI.
+Angular resolves `ng-template` DI at the template's **declaration** site, not where it is stamped. A `[forSelectTrigger]` declared in a template outside the root throws the orphan error even when the template is rendered inside the root via `ngTemplateOutlet`. For that case the selector attribute accepts the root reference as a value, `routerLink`-style. Grab it with `#root="forSelect"` and pass it through the outlet context. The bare valueless attribute keeps resolving via DI.
 
 ```html
 <div forSelect #root="forSelect" [(value)]="value">
@@ -347,7 +347,7 @@ Angular resolves `ng-template` DI at the template's **declaration** site, not wh
 
 ## macOS-style alignment
 
-`[forSelect]` defaults to `position="popper"` — standard floating-ui anchored placement (`side` / `align` / `sideOffset` / `alignOffset` with `flip` + `shift` collision handling). Set `position="item-aligned"` to switch to the macOS-native algorithm: the listbox overlays the trigger so the **selected option's vertical center** lines up with the **trigger's vertical center**. The visual effect is that opening the menu doesn't shift the eye — the selected value stays in place; the rest of the options expand around it. Better UX for short lists with a known selected value (country / language / role pickers).
+`[forSelect]` defaults to `position="popper"`, the standard floating-ui anchored placement (`side` / `align` / `sideOffset` / `alignOffset` with `flip` + `shift` collision handling). Set `position="item-aligned"` to switch to the macOS-native algorithm: the listbox overlays the trigger so the **selected option's vertical center** lines up with the **trigger's vertical center**. The visual effect is that opening the menu doesn't shift the eye: the selected value stays in place, and the rest of the options expand around it. Better UX for short lists with a known selected value (country / language / role pickers).
 
 When nothing is selected, the algorithm falls back to the first enabled option. The listbox is clamped inside the viewport with `collisionPadding`; if the listbox is taller than the viewport the directive snaps it to the padding line and scrolls the selected option into view via `scrollIntoView({ block: 'nearest' })`.
 
@@ -381,13 +381,13 @@ The directive sets the shared `--for-floating-available-height` on the content h
 }
 ```
 
-When `position="item-aligned"`, the following inputs are **no-ops**: `side`, `align`, `sideOffset`, `alignOffset`, `avoidCollisions`, `sticky`, `hideWhenDetached`. Only `collisionPadding` (default `8`) is honored — it drives both the viewport clamp and the available-height variable. The content gets `data-position="item-aligned"` so consumers can target it with CSS; in popper mode the attribute is absent and the `data-side` / `data-align` / `data-placement` markers from `injectFloating` apply instead.
+When `position="item-aligned"`, the following inputs are **no-ops**: `side`, `align`, `sideOffset`, `alignOffset`, `avoidCollisions`, `sticky`, `hideWhenDetached`. Only `collisionPadding` (default `8`) is honored. It drives both the viewport clamp and the available-height variable. The content gets `data-position="item-aligned"` so consumers can target it with CSS; in popper mode the attribute is absent and the `data-side` / `data-align` / `data-placement` markers from `injectFloating` apply instead.
 
-The default stays `popper` so existing consumers' visuals don't shift on upgrade — opt in per primitive when the macOS feel is what you want.
+The default stays `popper` so existing consumers' visuals don't shift on upgrade. Opt in per primitive when the macOS feel is what you want.
 
 ## Modal touch presentation
 
-`[forSelect]` defaults to a **non-modal anchored popover**. On small / touch screens the established pattern (native mobile pickers) is a centered modal surface that's easier to tap. Set `modal` to route `[forSelectContent]` through `_internal/modal-shell` — a **trapped / inert / scroll-locked** surface — instead of the anchored popover. The form-value wiring is unchanged: `[(value)]`, `name`, and the `selected()` accessor keep working exactly as in popover mode.
+`[forSelect]` defaults to a **non-modal anchored popover**. On small / touch screens the established pattern (native mobile pickers) is a centered modal surface that's easier to tap. Set `modal` to route `[forSelectContent]` through `_internal/modal-shell` (a **trapped / inert / scroll-locked** surface) instead of the anchored popover. The form-value wiring is unchanged: `[(value)]`, `name`, and the `selected()` accessor keep working exactly as in popover mode.
 
 ```html
 <div
@@ -410,7 +410,7 @@ The default stays `popper` so existing consumers' visuals don't shift on upgrade
 </div>
 ```
 
-The consumer drives the mode — bind `[modal]="isCoarsePointer()"` (e.g. from a `(pointer: coarse)` media query) to switch presentation by device. The library does **not** auto-switch on viewport or pointer.
+The consumer drives the mode. Bind `[modal]="isCoarsePointer()"` (e.g. from a `(pointer: coarse)` media query) to switch presentation by device. The library does **not** auto-switch on viewport or pointer.
 
 What modal mode changes:
 
@@ -421,11 +421,11 @@ What modal mode changes:
 
 The mode is read **once** when `[forSelectContent]` mounts (the two shells are structurally different; switching at runtime would need a remount, and the surface mounts lazily via `@if (open())`, well after `modal` settles). Every **anchored-positioning input is a no-op** in modal mode: `position` (`popper` / `item-aligned`), `side`, `align`, `sideOffset`, `alignOffset`, `sticky`, `hideWhenDetached`, `avoidCollisions`, `collisionPadding`.
 
-> **Not** a swipe / snap-point sheet. This is the batteries-included _modal_ presentation of a value field. The draggable bottom-sheet (snap points, swipe-to-dismiss) is a different use case — compose a `ForListbox` inside a `ForDrawer` by hand for that. It loses the form-value wiring, which is why it isn't an internal mode here.
+> **Not** a swipe / snap-point sheet. This is the batteries-included _modal_ presentation of a value field. The draggable bottom-sheet (snap points, swipe-to-dismiss) is a different use case. For that, compose a `ForListbox` inside a `ForDrawer` by hand. It loses the form-value wiring, which is why it isn't an internal mode here.
 
 ## Selection follows focus
 
-Single-mode only. Set `selectionFollowsFocus` to also commit `[(value)]` as arrow navigation moves focus — useful for "live preview" UX. Default off; APG calls it optional and recommends caution.
+Single-mode only. Set `selectionFollowsFocus` to also commit `[(value)]` as arrow navigation moves focus, which is useful for "live preview" UX. Default off; APG calls it optional and recommends caution.
 
 ```html
 <div forSelect selectionFollowsFocus [(value)]="theme">…</div>
@@ -433,7 +433,7 @@ Single-mode only. Set `selectionFollowsFocus` to also commit `[(value)]` as arro
 
 ## Dismiss events
 
-Each dismiss reason emits a vetoable event from `[forSelect]` — call `preventDefault()` on the event to keep the listbox open.
+Each dismiss reason emits a vetoable event from `[forSelect]`. Call `preventDefault()` on the event to keep the listbox open.
 
 | Output                 | When                                                                         |
 | ---------------------- | ---------------------------------------------------------------------------- |
@@ -444,11 +444,11 @@ Each dismiss reason emits a vetoable event from `[forSelect]` — call `preventD
 
 ## Auto-focus events
 
-`(autoFocusOnOpen)` / `(autoFocusOnClose)` fire just before the listbox sends focus to the selected option (open) or returns it to the trigger (close). Both deliver a `VetoableEvent` — call `preventDefault()` on the veto to skip the imperative focus move. The listbox stays mounted; only the focus move is vetoed. These are output-shape because Select always routes close transitions through `[(open)]` (via the implicit `openChange` emitter). Dialog and Drawer take callback-shape inputs for the same pair instead: either can be closed by a direct `open.set(false)` that bypasses the `(dismiss)` output entirely, so their close hook has to be a stored function reference that still runs during teardown.
+`(autoFocusOnOpen)` / `(autoFocusOnClose)` fire just before the listbox sends focus to the selected option (open) or returns it to the trigger (close). Both deliver a `VetoableEvent`. Call `preventDefault()` on the veto to skip the imperative focus move. The listbox stays mounted; only the focus move is vetoed. These are output-shape because Select always routes close transitions through `[(open)]` (via the implicit `openChange` emitter). Dialog and Drawer take callback-shape inputs for the same pair instead: either can be closed by a direct `open.set(false)` that bypasses the `(dismiss)` output entirely, so their close hook has to be a stored function reference that still runs during teardown.
 
 ## Object values
 
-Real apps usually have richer option models — `{ id, name, ... }` — where the comparison key differs from what you'd serialize for a form. `[forSelect]` is generic over `T` to support that without forcing the consumer to stringify and re-hydrate.
+Real apps usually have richer option models, such as `{ id, name, ... }`, where the comparison key differs from what you'd serialize for a form. `[forSelect]` is generic over `T` to support that without forcing the consumer to stringify and re-hydrate.
 
 Three inputs configure the object behaviour. Defaults make string mode work unchanged:
 
@@ -460,11 +460,11 @@ Three inputs configure the object behaviour. Defaults make string mode work unch
 
 `[itemToFormValue]` feeds the hidden inputs of a legacy `<form action="…">` flow: set `[name]`, and `[forSelect]` mirrors `[(value)]` into one `<input type="hidden">` per selected value (0 or 1 in single mode, one per value in multi mode). String values land verbatim, and object values default to `JSON.stringify` until `[itemToFormValue]` says otherwise.
 
-The visible option label normally comes from the rendered `textContent`, so there's no separate label function — `[forSelectValue]` renders the matching option's text.
+The visible option label normally comes from the rendered `textContent`, so there's no separate label function: `[forSelectValue]` renders the matching option's text.
 
 ### Pre-set object values and the `@if (open())` pattern
 
-`[forSelectValue]` reads the selected option's label from the rendered option's `textContent`. With the recommended `@if (select.open())` markup the listbox stays unmounted until first opened, so an object value set **before** the user opens the listbox has no option to read from — `[forSelectValue]` shows the serialized form value (`[itemToFormValue]`, e.g. an id) as a last-resort fallback until the listbox is opened once.
+`[forSelectValue]` reads the selected option's label from the rendered option's `textContent`. With the recommended `@if (select.open())` markup the listbox stays unmounted until first opened, so an object value set **before** the user opens the listbox has no option to read from. In that case `[forSelectValue]` shows the serialized form value (`[itemToFormValue]`, e.g. an id) as a last-resort fallback until the listbox is opened once.
 
 Supply `[itemToLabel]` to resolve the label directly from the value, independent of the mounted options. It then renders correctly on first paint and never flickers from the id to the real label:
 
@@ -499,7 +499,7 @@ readonly toName = (c: City) => c.name;
 
 When `[itemToLabel]` is set it is authoritative for every selected value (single and multi mode), so the rendered label is identical whether or not the listbox has been opened. String-value selects render the value verbatim and never need it.
 
-Keeping `[forSelectContent]` mounted (dropping the `@if`) also gets the option `textContent` for free, but it is not a supported shape and it warns in dev mode: mount **is** the open state for this surface, so a permanently mounted listbox never runs `animate.enter` / `animate.leave`, and its dismissible layer stays active while closed — it keeps claiming Escape and outside pointer-downs from whatever is actually open. Use `[itemToLabel]`.
+Keeping `[forSelectContent]` mounted (dropping the `@if`) also gets the option `textContent` for free, but it is not a supported shape and it warns in dev mode: mount **is** the open state for this surface, so a permanently mounted listbox never runs `animate.enter` / `animate.leave`, and its dismissible layer stays active while closed. That layer keeps claiming Escape and outside pointer-downs from whatever is actually open. Use `[itemToLabel]`.
 
 ```html
 <div
@@ -542,7 +542,7 @@ readonly byId = (a: City, b: City) => a.id === b.id;
 readonly toId = (c: City) => c.id;
 ```
 
-Multi mode uses the same two inputs — `[(value)]` is a `readonly City[]` and option clicks toggle entries in/out by `compareWith`.
+Multi mode uses the same two inputs, with `[(value)]` as a `readonly City[]` and option clicks toggling entries in/out by `compareWith`.
 
 ## Virtualization
 
@@ -555,23 +555,23 @@ For selects with thousands of options, bind `[totalCount]` to enable the **virtu
 | Non-virtualized (default)        | real DOM focus on each `[forSelectOption]`         | DOM `:focus` + `data-highlighted`                       |
 | Virtualized (`[totalCount]` set) | DOM focus on `[forSelectContent]` (`tabindex="0"`) | `aria-activedescendant` on content + `data-highlighted` |
 
-In both paths the pointer takes `data-highlighted` over too — see [Pointer highlight](#pointer-highlight).
+In both paths the pointer takes `data-highlighted` over too (see [Pointer highlight](#pointer-highlight)).
 
 ### Inputs and output
 
-| Binding                | Type                        | Description                                                                                                                                                                                                                      |
-| ---------------------- | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `[totalCount]`         | `number`                    | Full source length. Switches to the virtualized path and populates `aria-setsize` on every rendered option.                                                                                                                      |
-| `[visibleRange]`       | `readonly [number, number]` | Inclusive-exclusive rendered window provided by `injectVirtualizer`'s `.range()`.                                                                                                                                                |
-| `[selectedIndex]`      | `number`                    | Absolute index of the committed option in the full source. Consulted on open to scroll an off-window, never-rendered selection into view. Bind from your value→index lookup. Reveal hint only — `[(value)]` stays authoritative. |
-| `(scrollToIndex)`      | `number`                    | Emitted when navigation reaches an off-screen option. Pass to `injectVirtualizer`'s `scrollToIndex()`.                                                                                                                           |
-| `[posInSet]` on option | `number`                    | Zero-based absolute index of the option in the full source. Required per option in the virtualized path.                                                                                                                         |
+| Binding                | Type                        | Description                                                                                                                                                                                                                     |
+| ---------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `[totalCount]`         | `number`                    | Full source length. Switches to the virtualized path and populates `aria-setsize` on every rendered option.                                                                                                                     |
+| `[visibleRange]`       | `readonly [number, number]` | Inclusive-exclusive rendered window provided by `injectVirtualizer`'s `.range()`.                                                                                                                                               |
+| `[selectedIndex]`      | `number`                    | Absolute index of the committed option in the full source. Consulted on open to scroll an off-window, never-rendered selection into view. Bind from your value→index lookup. Reveal hint only: `[(value)]` stays authoritative. |
+| `(scrollToIndex)`      | `number`                    | Emitted when navigation reaches an off-screen option. Pass to `injectVirtualizer`'s `scrollToIndex()`.                                                                                                                          |
+| `[posInSet]` on option | `number`                    | Zero-based absolute index of the option in the full source. Required per option in the virtualized path.                                                                                                                        |
 
 ### Navigation flow
 
 Arrow / Home / End keys are handled by `[forSelectContent]` (not the individual options) in the virtualized path. The content delegates to an internal navigator that walks `moveIndex` against the full `totalCount`, using the persisted position snapshot to handle disabled options outside the rendered window. When navigation lands outside the current window, `(scrollToIndex)` fires with the target index; once the option mounts the bridge effect resolves the pending activedescendant.
 
-On open, `[forSelectContent]` seeds `aria-activedescendant` to the committed option and scrolls it into view when its position is known — in the rendered window, previously rendered (in the snapshot), or supplied via `[selectedIndex]`. An off-window committed value that was never rendered and has no `[selectedIndex]` falls back to focusing the first enabled option; when nothing is selected it also focuses the first enabled option.
+On open, `[forSelectContent]` seeds `aria-activedescendant` to the committed option and scrolls it into view when its position is known: in the rendered window, previously rendered (in the snapshot), or supplied via `[selectedIndex]`. An off-window committed value that was never rendered and has no `[selectedIndex]` falls back to focusing the first enabled option; when nothing is selected it also focuses the first enabled option.
 
 ### Example with `injectVirtualizer`
 
@@ -622,8 +622,8 @@ readonly v = injectVirtualizer({
 
 ### Intentional limitations
 
-- **No multi-select range modifiers in the virtualized path.** Shift+Arrow, Shift+Space, Ctrl+A, and Ctrl+Shift+Home/End are not implemented — range operations require knowledge of every intermediate position, which is unavailable in a windowed render. Pressing one of these combinations on a virtualized multi-select select (`[multiple]` + `[totalCount]`) throws in dev mode rather than silently doing nothing, so the unsupported path surfaces during development; production builds no-op. Per-option toggling via Enter, Space, or click works normally.
-- **Typeahead reaches only positions the window has rendered at least once.** The search runs over the persisted position snapshot rather than the live options, so an option the virtualizer has since unmounted is still reachable — the match moves `aria-activedescendant` to it and emits `(scrollToIndex)` so your virtualizer brings it back. A position the window has **never** rendered carries no text the library can match: the keystroke is consumed, the buffer grows, and nothing moves. The shape that triggers it is a first open of a `[totalCount]="10000"` select where the user types before scrolling, and a `[dataVersion]` bump or `invalidateSnapshot()` narrows the reachable set back to the current window. Arrow / `Home` / `End` / `PageUp` / `PageDown` navigation reaches every position regardless (it walks absolute indices, not text), so that is the workaround for a target the user cannot type their way to; rendering a larger window widens the reachable set.
+- **No multi-select range modifiers in the virtualized path.** Shift+Arrow, Shift+Space, Ctrl+A, and Ctrl+Shift+Home/End are not implemented, because range operations require knowledge of every intermediate position, which is unavailable in a windowed render. Pressing one of these combinations on a virtualized multi-select select (`[multiple]` + `[totalCount]`) throws in dev mode rather than silently doing nothing, so the unsupported path surfaces during development; production builds no-op. Per-option toggling via Enter, Space, or click works normally.
+- **Typeahead reaches only positions the window has rendered at least once.** The search runs over the persisted position snapshot rather than the live options, so an option the virtualizer has since unmounted is still reachable. The match moves `aria-activedescendant` to it and emits `(scrollToIndex)` so your virtualizer brings it back. A position the window has **never** rendered carries no text the library can match: the keystroke is consumed, the buffer grows, and nothing moves. The shape that triggers it is a first open of a `[totalCount]="10000"` select where the user types before scrolling, and a `[dataVersion]` bump or `invalidateSnapshot()` narrows the reachable set back to the current window. Arrow / `Home` / `End` / `PageUp` / `PageDown` navigation reaches every position regardless (it walks absolute indices, not text), so that is the workaround for a target the user cannot type their way to; rendering a larger window widens the reachable set.
 - **Cold-open committed-index resolution.** On the very first open, if the committed value has never been rendered (the option has never scrolled into the window), the position snapshot is empty and `[forSelect]` falls back to focusing the first enabled option. This mirrors the `[forSelectValue]` / `[itemToLabel]` cold-cache limitation: supply `[itemToLabel]` to render the label and open the listbox once to prime the snapshot.
 
 ## Single mode (default)
@@ -632,11 +632,11 @@ Click an option to replace the selection and close. `[(value)]` keeps 0 or 1 ele
 
 A single-select form field is modeled as the same `readonly T[]`, kept at length ≤ 1, and bound with `[formField]` directly, so single mode needs no adapter. A `FieldTree<T | null>` cannot bind here; map to that shape at the edge that needs it. See [the selection value-type contract](../../../docs/selection-value-type-contract.md).
 
-`[(value)]` is the selection (form state) and is always the consumer's. Open state is separate: `[forSelect]` owns it as a `model<boolean>`, so the `@if` gating the content reads it straight off the directive instance. `[forSelect]` is `exportAs: 'forSelect'` — expose it with a template reference variable (`#select="forSelect"`) and gate `[forSelectContent]` on `select.open()`. The trigger toggles it; Escape, Tab, and outside-pointer flip it back. No separate `open` signal, no `[(open)]` — bind `[(open)]="mySignal"` only when the component class needs to read or drive open state itself (open it programmatically, persist it, or react to it elsewhere).
+`[(value)]` is the selection (form state) and is always the consumer's. Open state is separate: `[forSelect]` owns it as a `model<boolean>`, so the `@if` gating the content reads it straight off the directive instance. `[forSelect]` is `exportAs: 'forSelect'`. Expose it with a template reference variable (`#select="forSelect"`) and gate `[forSelectContent]` on `select.open()`. The trigger toggles it; Escape, Tab, and outside-pointer flip it back. You need neither a separate `open` signal nor `[(open)]`. Bind `[(open)]="mySignal"` only when the component class needs to read or drive open state itself (open it programmatically, persist it, or react to it elsewhere).
 
 ## Multi mode
 
-Set `multiple` and bind `[(value)]` to a `string[]`. Click an option to toggle in/out — the listbox stays open. Tab, Escape, or outside-pointer close it.
+Set `multiple` and bind `[(value)]` to a `string[]`. Click an option to toggle it in/out while the listbox stays open. Tab, Escape, or outside-pointer close it.
 
 In the default (non-virtualized) path the full APG range keyboard works while the listbox is open, matching `ForListbox`: **Shift+Arrow** moves focus and toggles the destination option, **Shift+Space** selects the contiguous range from the anchor (the last clicked / activated option) to the focused option, **Ctrl/Cmd+A** selects all enabled options (toggling back to empty when all are already selected), and **Ctrl+Shift+Home / End** extends the selection to the first / last option. These range modifiers are not available in the [virtualized path](#virtualization).
 
@@ -659,54 +659,54 @@ In the default (non-virtualized) path the full APG range keyboard works while th
 
 ### Trigger (closed)
 
-- **Click / Enter / Space** — open (focus selected, else first).
-- **ArrowDown** — open (focus selected, else first).
-- **ArrowUp** — open (focus selected, else last).
-- **Typeahead** _(single mode only)_ — printable keys select the matching option immediately without opening, mirroring native `<select>`. The lookup goes through a cached snapshot of options (the live registry is empty while `[forSelectContent]` is unmounted); the cache is populated the first time the listbox opens, so closed-state typeahead is available after the user has interacted with the listbox at least once.
+- **Click / Enter / Space**: open (focus selected, else first).
+- **ArrowDown**: open (focus selected, else first).
+- **ArrowUp**: open (focus selected, else last).
+- **Typeahead** _(single mode only)_: printable keys select the matching option immediately without opening, mirroring native `<select>`. The lookup goes through a cached snapshot of options (the live registry is empty while `[forSelectContent]` is unmounted); the cache is populated the first time the listbox opens, so closed-state typeahead is available after the user has interacted with the listbox at least once.
 
 ### Listbox (open)
 
-- **ArrowDown / ArrowUp** — move focus to next / previous enabled option, wrapping by default.
-- **Home / End** — jump to first / last enabled option.
-- **PageUp / PageDown** — jump to first / last enabled option.
-- **Enter / Space** — activate the focused option (native `<button>` semantics): select + close in single mode, toggle (stay open) in multi mode.
-- **Shift+ArrowDown / Shift+ArrowUp** _(multi mode, non-virtualized)_ — move focus to the next / previous enabled option **and** toggle it. Non-wrapping. Does not move the range anchor.
-- **Shift+Space** _(multi mode, non-virtualized)_ — select the contiguous range from the anchor (last clicked / activated option) to the focused option, preserving selection outside the span. Falls back to selecting just the focused option when no anchor exists.
-- **Ctrl/Cmd+A** _(multi mode, non-virtualized)_ — select every enabled option, or clear the selection when all enabled options are already selected (toggle).
-- **Ctrl+Shift+Home / Ctrl+Shift+End** _(multi mode, non-virtualized)_ — extend the selection from the focused option to the first / last option and move focus to that edge.
-- **Escape** — close without changing selection. Returns focus to the trigger.
-- **Tab / Shift+Tab** — commit the focused option (single mode only — multi-mode keeps the existing selection) and let the browser advance focus to the next / previous focusable, mirroring native `<select>`. The directive does **not** `preventDefault`, so form workflows keep flowing through tab order.
-- **Typeahead** — single printable characters move focus to the first option whose text starts with the buffered string. Disabled options are skipped.
+- **ArrowDown / ArrowUp**: move focus to next / previous enabled option, wrapping by default.
+- **Home / End**: jump to first / last enabled option.
+- **PageUp / PageDown**: jump to first / last enabled option.
+- **Enter / Space**: activate the focused option (native `<button>` semantics). Single mode selects and closes, while multi mode toggles and stays open.
+- **Shift+ArrowDown / Shift+ArrowUp** _(multi mode, non-virtualized)_: move focus to the next / previous enabled option **and** toggle it. Non-wrapping. Does not move the range anchor.
+- **Shift+Space** _(multi mode, non-virtualized)_: select the contiguous range from the anchor (last clicked / activated option) to the focused option, preserving selection outside the span. Falls back to selecting just the focused option when no anchor exists.
+- **Ctrl/Cmd+A** _(multi mode, non-virtualized)_: select every enabled option, or clear the selection when all enabled options are already selected (toggle).
+- **Ctrl+Shift+Home / Ctrl+Shift+End** _(multi mode, non-virtualized)_: extend the selection from the focused option to the first / last option and move focus to that edge.
+- **Escape**: close without changing selection. Returns focus to the trigger.
+- **Tab / Shift+Tab**: commit the focused option (single mode only; multi-mode keeps the existing selection) and let the browser advance focus to the next / previous focusable, mirroring native `<select>`. The directive does **not** `preventDefault`, so form workflows keep flowing through tab order.
+- **Typeahead**: single printable characters move focus to the first option whose text starts with the buffered string. Disabled options are skipped.
 
 ## Accessibility
 
 Implements the [WAI-ARIA select-only combobox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/examples/combobox-select-only/).
 
-- Apply each option directive to a `<button>` so Space / Enter activation come from native button behavior — the listbox doesn't intercept them.
+- Apply each option directive to a `<button>` so Space / Enter activation come from native button behavior. The listbox doesn't intercept them.
 - Disabled options keep `tabindex="-1"` and `aria-disabled="true"` (per APG): focusable for screen-reader announcement, but click and keyboard activation are no-ops.
-- `[forSelectSeparator]` never registers with the listbox's option collection — it's skipped during navigation and typeahead automatically. It carries `role="separator"` and emits `aria-orientation` only for `orientation="vertical"`, because `horizontal` is the ARIA default; `data-orientation` is always stamped for styling. Set `decorative` when the surrounding options already convey the split — it switches the line to `role="none"` and drops `aria-orientation`, matching the [shared separator emission policy](../separator/README.md#accessibility).
-- `[forSelectGroup]` is purely advisory grouping — options inside still register flatly with the root, so navigation flows through groups without interruption.
+- `[forSelectSeparator]` never registers with the listbox's option collection, so it's skipped during navigation and typeahead automatically. It carries `role="separator"` and emits `aria-orientation` only for `orientation="vertical"`, because `horizontal` is the ARIA default; `data-orientation` is always stamped for styling. Set `decorative` when the surrounding options already convey the split. `decorative` switches the line to `role="none"` and drops `aria-orientation`, matching the [shared separator emission policy](../separator/README.md#accessibility).
+- `[forSelectGroup]` is purely advisory grouping: options inside still register flatly with the root, so navigation flows through groups without interruption.
 - The trigger is exempt from the dismissible layer's outside-pointer checks, so a click on the trigger while the listbox is open routes through `(click)` (toggle) instead of double-firing as an outside dismissal.
-- **`data-highlighted=""`** is reflected on the active `[forSelectOption]` — the hovered one, else the focused one — so consumers can paint a uniform focus ring shared with the listbox / menu / combobox primitives. It follows the pointer as well as the keyboard (see [Pointer highlight](#pointer-highlight)), so it is the one hook to style rather than pairing it with `:hover`.
-- **Open highlights the selected option, regardless of how the listbox was opened — an intentional divergence from the menu family.** Initial focus on open lands on the currently-selected option (see [Initial focus on open](#initial-focus-on-open)), and `data-highlighted` follows that focus, so a mouse-opened Select renders the selected option highlighted. This is deliberate: the highlight **marks the current value**, it does not fake a "preselection" that isn't there. It contrasts with the `[forMenu*]` items, whose `data-highlighted` is intent-driven — a pointer open focuses the first item **without** highlighting it — because a menu has no "current value" to mark. `[forListbox]` shows neither effect: it's an embedded roving surface with no open-driven programmatic focus, so its highlight only ever derives from the roving active option.
+- **`data-highlighted=""`** is reflected on the active `[forSelectOption]` (the hovered one, else the focused one) so consumers can paint a uniform focus ring shared with the listbox / menu / combobox primitives. It follows the pointer as well as the keyboard (see [Pointer highlight](#pointer-highlight)), so it is the one hook to style rather than pairing it with `:hover`.
+- **Open highlights the selected option regardless of how the listbox was opened, which intentionally diverges from the menu family.** Initial focus on open lands on the currently-selected option (see [Initial focus on open](#initial-focus-on-open)), and `data-highlighted` follows that focus, so a mouse-opened Select renders the selected option highlighted. This is deliberate: the highlight **marks the current value**, it does not fake a "preselection" that isn't there. It contrasts with the `[forMenu*]` items, whose `data-highlighted` is intent-driven (a pointer open focuses the first item **without** highlighting it), because a menu has no "current value" to mark. `[forListbox]` shows neither effect: it's an embedded roving surface with no open-driven programmatic focus, so its highlight only ever derives from the roving active option.
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
+forty-cdk ships no styles. Add your own class to each piece. The `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
 
 ### CSS custom properties
 
 `[forSelectContent]` is portaled to `document.body` and exposes its resolved geometry as custom properties (set on the content host). Which ones are present depends on `position`:
 
-| Custom property                           | Type / range        | `position` | Meaning                                                                                                                                                                                                                                                        |
-| ----------------------------------------- | ------------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--for-floating-anchor-width`             | px                  | both       | Trigger width — size the content to match with `width: var(--for-floating-anchor-width)`.                                                                                                                                                                      |
-| `--for-floating-anchor-height`            | px                  | both       | Trigger height.                                                                                                                                                                                                                                                |
-| `--for-floating-available-width`          | px                  | `popper`   | Space available to the content along the inline axis (from floating-ui's `size` middleware).                                                                                                                                                                   |
-| `--for-floating-available-height`         | px                  | both       | Maximum block-size before collision — clamp with `max-height: var(--for-floating-available-height)`. In `popper` the anchor-relative space from floating-ui's `size` middleware; in `item-aligned` the viewport height minus `collisionPadding` on both edges. |
-| `--for-floating-content-transform-origin` | `<origin>` keywords | `popper`   | `transform-origin` matching the resolved side / align, so a `scale` enter animation pivots from the trigger.                                                                                                                                                   |
+| Custom property                           | Type / range        | `position` | Meaning                                                                                                                                                                                                                                                       |
+| ----------------------------------------- | ------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--for-floating-anchor-width`             | px                  | both       | Trigger width. Size the content to match with `width: var(--for-floating-anchor-width)`.                                                                                                                                                                      |
+| `--for-floating-anchor-height`            | px                  | both       | Trigger height.                                                                                                                                                                                                                                               |
+| `--for-floating-available-width`          | px                  | `popper`   | Space available to the content along the inline axis (from floating-ui's `size` middleware).                                                                                                                                                                  |
+| `--for-floating-available-height`         | px                  | both       | Maximum block-size before collision. Clamp with `max-height: var(--for-floating-available-height)`. In `popper` the anchor-relative space from floating-ui's `size` middleware; in `item-aligned` the viewport height minus `collisionPadding` on both edges. |
+| `--for-floating-content-transform-origin` | `<origin>` keywords | `popper`   | `transform-origin` matching the resolved side / align, so a `scale` enter animation pivots from the trigger.                                                                                                                                                  |
 
-> `[forSelectContent]` is portaled to `document.body`, so a scoped component style sheet will not reach it — style it with **global CSS** or pass a class the consumer keeps global. The anchored-positioning markers and shared positioner variables (`--for-floating-anchor-width` / `-height`, `--for-floating-available-width` / `-height`, `--for-floating-content-transform-origin`) live on the portaled host too — `--for-floating-available-height` is published in both modes; see [Styling floating content](../../../docs/styling-floating-content.md) for the full list.
+> `[forSelectContent]` is portaled to `document.body`, so a scoped component style sheet will not reach it. Style it with **global CSS** or pass a class the consumer keeps global. The anchored-positioning markers and shared positioner variables (`--for-floating-anchor-width` / `-height`, `--for-floating-available-width` / `-height`, `--for-floating-content-transform-origin`) live on the portaled host too, and `--for-floating-available-height` is published in both modes. See [Styling floating content](../../../docs/styling-floating-content.md) for the full list.
 
 ```css
 .select-trigger svg {
@@ -726,4 +726,4 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 
 ## Wrapping in a design system
 
-Both supported wrapper patterns — `hostDirectives` with the exported `FOR_SELECT_HOST_DIRECTIVE_INPUTS` / `FOR_SELECT_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing — are documented in [Wrapping form primitives](../../../docs/wrapping-form-primitives.md).
+[Wrapping form primitives](../../../docs/wrapping-form-primitives.md) documents both supported wrapper patterns: `hostDirectives` with the exported `FOR_SELECT_HOST_DIRECTIVE_INPUTS` / `FOR_SELECT_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing.

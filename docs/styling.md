@@ -5,11 +5,11 @@ and keyboard behavior; the visual design is entirely yours. This guide explains 
 hooks you style against, so the appearance is yours while the behavior stays the library's.
 
 If you are styling an overlay (Popover, Dialog, Menu, …) start with
-[Your first overlay](./your-first-overlay.md) — it walks one from empty markup to
+[Your first overlay](./your-first-overlay.md), which walks one from empty markup to
 styled-and-animated. This page is the conceptual umbrella underneath it.
 
 > **Copying an example from these docs:** every example styles itself with `--ex-*`
-> properties that always carry a literal fallback — `var(--ex-accent, #0e7c6b)` — so the
+> properties that always carry a literal fallback (`var(--ex-accent, #0e7c6b)`), so the
 > file renders on its own the moment you paste it, and defining that same `--ex-*` set on
 > your `:root` re-themes every example you have copied.
 
@@ -40,7 +40,7 @@ own class to each piece and style that:
 }
 ```
 
-You _can_ technically write `[forAccordion] { … }` — it is a valid attribute selector —
+You _can_ technically write `[forAccordion] { … }` (it is a valid attribute selector),
 but don't:
 
 - **Selectors can change.** forty-cdk is pre-1.0 and renames are in scope; a CSS file
@@ -51,12 +51,12 @@ but don't:
   decoupled from the library's internals.
 - **Some pieces have no attribute to target.** Overlays opened through a programmatic
   manager (see below) or rendered inside the library's own view (Toast) don't expose the
-  `[for…]` attribute in the DOM at all — a class is the only reliable hook there.
+  `[for…]` attribute in the DOM at all, so a class is the only reliable hook there.
 
 ### 2. `data-*` attributes — for state
 
 The library reflects logical state onto every piece you might want to style, as `data-*`
-attributes. **This is how you style state** — not by reading signals, not by toggling
+attributes. **This is how you style state**, not by reading signals or by toggling
 classes yourself.
 
 ```css
@@ -77,7 +77,7 @@ classes yourself.
 | `checked` \| `unchecked` \| `indeterminate` | form-control state               | Switch, Checkbox, Radio, Listbox / Select / Combobox / Menu items           |
 
 A few primitives use a different attribute because their spec doesn't fit the three
-families — these are intentional, not inconsistencies:
+families. These are intentional, not inconsistencies:
 
 | Attribute                                           | Values                                         | Primitive(s)                  |
 | --------------------------------------------------- | ---------------------------------------------- | ----------------------------- |
@@ -89,7 +89,7 @@ families — these are intentional, not inconsistencies:
 | `data-selected`                                     | present / absent (boolean)                     | Tree treeitem                 |
 
 **Boolean `data-*` attributes** (`data-disabled`, `data-readonly`, `data-highlighted`,
-`data-selected`, …) are **present with an empty value when true, absent when false** —
+`data-selected`, …) are **present with an empty value when true, absent when false**,
 never `data-disabled="false"`. So style the "off" state by selecting on absence:
 
 ```css
@@ -102,7 +102,7 @@ never `data-disabled="false"`. So style the "off" state by selecting on absence:
 ```
 
 `data-highlighted` is the roving-tabindex / `aria-activedescendant` "current candidate"
-hook — for Combobox it is the _only_ way to style the active option, since focus stays on
+hook. For Combobox it is the _only_ way to style the active option, since focus stays on
 the input.
 
 **ARIA attributes follow a parallel rule.** Togglable widgets always emit
@@ -121,8 +121,8 @@ falsy state via `:not([aria-disabled])`, never `[aria-disabled='false']`.
 
 ### 3. CSS custom properties — for measured values
 
-When the library computes a value your CSS needs — a percentage, an anchor dimension, a
-drag delta — it writes it as a `--for-*` custom property you consume:
+When the library computes a value your CSS needs (a percentage, an anchor dimension, a
+drag delta), it writes it as a `--for-*` custom property you consume:
 
 ```css
 .progress__indicator {
@@ -135,7 +135,7 @@ drag delta — it writes it as a `--for-*` custom property you consume:
 
 Each primitive's README lists the exact properties it sets, under **CSS custom
 properties**. Floating overlays additionally expose anchor dimensions and a transform
-origin — see [Styling floating content](./styling-floating-content.md).
+origin. See [Styling floating content](./styling-floating-content.md).
 
 ---
 
@@ -146,9 +146,9 @@ Drawer) **moves its content to `document.body`** when open. Component-scoped sty
 (Angular view encapsulation) don't reach a portaled node. Put overlay styles in a
 **global stylesheet** (or use `::ng-deep` sparingly) and target your class there.
 
-The full set of rules for positioned content — `animate.enter` only, animate `scale`/
-`opacity` not `transform`, never set `position`/`top`/`left`, the arrow recipe — lives in
-[Styling floating content](./styling-floating-content.md).
+The full set of rules for positioned content lives in
+[Styling floating content](./styling-floating-content.md): `animate.enter` only, animate
+`scale`/`opacity` not `transform`, never set `position`/`top`/`left`, and the arrow recipe.
 
 ## Programmatic overlays → `class` / `classList` on the config
 
@@ -181,7 +181,7 @@ this.dialogs.open(ConfirmDialog, { data, class: 'dialog dialog--danger' });
 
 - **RTL.** A primitive's `dir` input resolves keyboard meaning _and_ reflects the resolved
   value back to the host's native `dir` attribute. For visual RTL set `dir` on an ancestor
-  (the standard `<html dir="rtl">`) — every `dir`-aware primitive inherits it. Style
+  (the standard `<html dir="rtl">`). Every `dir`-aware primitive inherits it. Style
   direction-sensitive layout with `:dir(rtl)` or `[dir='rtl']`, and prefer logical
   properties (`margin-inline-start`, `inset-inline-end`) so layout flips for free.
 
@@ -195,7 +195,7 @@ reflects, and any CSS custom properties. Grouped by how you style them:
 ### Expand / collapse & tabs
 
 State is `data-state` (`open`/`closed`, or `active`/`inactive` for Tabs); flip layout off
-`data-orientation`. Content is never `[hidden]` — you gate it with `@if` or hide closed
+`data-orientation`. Content is never `[hidden]`, so you gate it with `@if` or hide closed
 panels in CSS.
 
 - [Accordion](../projects/forty-cdk/accordion/README.md) ·
@@ -264,15 +264,15 @@ Both expose `data-state`; Drawer adds `data-side` / drag state.
 
 ### Inline selection list & programmatic toast
 
-- [Listbox](../projects/forty-cdk/listbox/README.md) — inline (not portaled);
+- [Listbox](../projects/forty-cdk/listbox/README.md): inline (not portaled);
   roving tabindex, `data-orientation`, options carry `data-state` + `data-highlighted`.
-- [Toast](../projects/forty-cdk/toast/README.md) — rendered by the library's
+- [Toast](../projects/forty-cdk/toast/README.md): rendered by the library's
   viewport, so style its pieces via global attribute selectors; `data-variant`,
   `data-swipe`, `data-paused`.
 
 ### Layout & display
 
-- [Date Picker](../projects/forty-cdk/date-picker/README.md) — overlay composing a
+- [Date Picker](../projects/forty-cdk/date-picker/README.md): overlay composing a
   projected Calendar; floating rules apply.
 - [Separator](../projects/forty-cdk/separator/README.md) ·
   [Aspect Ratio](../projects/forty-cdk/aspect-ratio/README.md) ·
@@ -285,12 +285,12 @@ Both expose `data-state`; Drawer adds `data-side` / drag state.
 
 ## Related guides
 
-- [Your first overlay](./your-first-overlay.md) — hands-on overlay walkthrough.
-- [Styling floating content](./styling-floating-content.md) — the floating-overlay rules,
+- [Your first overlay](./your-first-overlay.md): hands-on overlay walkthrough.
+- [Styling floating content](./styling-floating-content.md): the floating-overlay rules,
   CSS custom properties, and arrow recipe.
-- [Selected-indicator alignment](./selected-indicator-pattern.md) — keeping menu checkmarks
+- [Selected-indicator alignment](./selected-indicator-pattern.md): keeping menu checkmarks
   aligned with `[forceMount]` + `opacity`.
 
 > **Contributors:** the `data-state` vocabulary, boolean-attribute rule, and `--for-*`
-> namespacing are enforced conventions — see `.claude/rules/conventions.md` for the
+> namespacing are enforced conventions. See `.claude/rules/conventions.md` for the
 > normative source.

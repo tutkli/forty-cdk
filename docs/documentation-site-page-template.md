@@ -437,6 +437,17 @@ requires to fail. A marker above anything other than a TypeScript fence is an er
 cannot linger, and the run reports how many fences carry each marker so a sweep can be reviewed.
 Prefer a fence that compiles: a snippet complete enough to paste is worth the two import lines.
 
+**No prose carries an em dash**, by `scripts/check-doc-prose.mjs` under `pnpm test:docs`
+([#1952](https://github.com/tutkli/forty-cdk/issues/1952)). It reads every document the corpus
+compiles (each entry-point README, published or not, every registered guide and every site page)
+and fails any em dash, or a spaced double hyphen (`--` with a space on each side) standing in for
+one, naming the document, the line and the count. The budget is zero, with no per-file allowance
+and no exemption list, so rewrite the sentence rather than swap the character: split it, or use a
+colon, commas or parentheses. Six places are exempt by construction: the frontmatter, fenced code,
+inline code, a heading of any level (its dash is part of its anchor), a table cell holding `—`
+alone, and a labelled slot such as `**Default:** —` that ends its cell or its `<br>` line. The last
+two are values ("none"), not punctuation.
+
 The page chrome itself dogfoods the library: **Drawer** for the mobile nav, **Combobox** for ⌘K
 search, **Switch** for the theme toggle, **Toast** for copy-to-clipboard feedback, **Tabs** for each
 demo's Preview / Code pair, **Popover** for an API row's detail, **Tooltip** for the inline hints,

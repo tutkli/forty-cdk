@@ -9,15 +9,15 @@ apgUrl: https://www.w3.org/WAI/ARIA/apg/patterns/grid/
 
 A single-date calendar grid implementing the APG Grid pattern over a pluggable date adapter: roving-tabindex day navigation, month / year paging, and min / max / per-date availability.
 
-Headless and styleless — the date table at the heart of the APG [Date Picker Dialog](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/examples/datepicker-dialog/) example. Full grid keyboard interaction (arrows / `Home` / `End` / `PageUp` / `PageDown` / `Shift+PageUp` / `Shift+PageDown`), focus paging across month boundaries, `aria-current="date"` on today, RTL arrow mirroring, and a pluggable, date-library-agnostic `DateAdapter<D>`.
+It is the headless, styleless date table at the heart of the APG [Date Picker Dialog](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/examples/datepicker-dialog/) example. Full grid keyboard interaction (arrows / `Home` / `End` / `PageUp` / `PageDown` / `Shift+PageUp` / `Shift+PageDown`), focus paging across month boundaries, `aria-current="date"` on today, RTL arrow mirroring, and a pluggable, date-library-agnostic `DateAdapter<D>`.
 
-`ForCalendar` is the grid widget, **not a form value** — it exposes `[(value)]` as a `model<D | null>`. The form-control contract (`FormValueControl<D>`) arrives with the follow-up `ForDatePicker` / `ForDateField`.
+`ForCalendar` is the grid widget, **not a form value**. It exposes `[(value)]` as a `model<D | null>`. The form-control contract (`FormValueControl<D>`) arrives with the follow-up `ForDatePicker` / `ForDateField`.
 
 ## When to choose
 
-- **Calendar** — the date grid itself, always visible, exposing `[(value)]` as a model. It is a widget, not a form control: it implements no `FormValueControl` contract, so `[formField]` binds a picker or a field instead.
-- **[Date Picker](../date-picker/README.md)** — wraps this same grid in a trigger-anchored floating surface and _is_ the form value. Choose it when a form owns the date and the grid should stay collapsed until asked for.
-- **[Date Field](../date-field/README.md)** — segmented typed entry with no grid. Choose it when the date is known rather than browsed.
+- **Calendar**: the date grid itself, always visible, exposing `[(value)]` as a model. It is a widget rather than a form control and implements no `FormValueControl` contract, so `[formField]` binds a picker or a field instead.
+- **[Date Picker](../date-picker/README.md)**: wraps this same grid in a trigger-anchored floating surface and _is_ the form value. Choose it when a form owns the date and the grid should stay collapsed until asked for.
+- **[Date Field](../date-field/README.md)**: segmented typed entry with no grid. Choose it when the date is known rather than browsed.
 
 ## Date adapter
 
@@ -41,9 +41,9 @@ bootstrapApplication(App, {
 
 `@internationalized/date` is a widely-used immutable date primitive; it works in every browser today with no polyfill, and its reference-equality-on-mutation makes it signal-friendly.
 
-→ **[Date adapters](../../../docs/date-adapters.md)** — picking one, the optional peer dependency, and writing your own.
+→ **[Date adapters](../../../docs/date-adapters.md)** covers picking one, the optional peer dependency, and writing your own.
 
-**Calendar system (Gregorian).** The adapter seam abstracts the date _library_ and locale-aware _formatting_, not the calendar _system_'s month structure. Both `@internationalized/date` adapters build Gregorian dates, so the grid stays Gregorian regardless of the runtime locale, and the grid, the month picker and the date field all assume a Gregorian-structured year — exactly twelve months, `month` **1-12**, the year ending at month 12. Adapters over calendars with a different month structure (e.g. a 13-month year) are not supported. The optional `compareDate` hook overrides day-only _ordering_ only — it does not make the grid non-Gregorian.
+**Calendar system (Gregorian).** The adapter seam abstracts the date _library_ and locale-aware _formatting_, not the calendar _system_'s month structure. Both `@internationalized/date` adapters build Gregorian dates, so the grid stays Gregorian regardless of the runtime locale, and the grid, the month picker and the date field all assume a Gregorian-structured year: exactly twelve months, `month` **1-12**, the year ending at month 12. Adapters over calendars with a different month structure (e.g. a 13-month year) are not supported. The optional `compareDate` hook overrides day-only _ordering_ only and does not make the grid non-Gregorian.
 
 ## Anatomy
 
@@ -97,7 +97,7 @@ bootstrapApplication(App, {
 
 ## Examples
 
-Move across the grid with the arrow keys, page with `PageUp` / `PageDown`, and select with `Enter` — every cell reflects `data-selected`, `data-today` and `data-outside-month`.
+Move across the grid with the arrow keys, page with `PageUp` / `PageDown`, and select with `Enter`. Every cell reflects `data-selected`, `data-today` and `data-outside-month`.
 
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
@@ -188,11 +188,11 @@ export class CalendarDefaultExample {
 
 ### States
 
-One class and one directive, three states. `disabled` turns off focus movement and selection for the whole calendar; `readonly` keeps days focusable and the grid still pages, but clicking or pressing `Enter` no longer changes the selection. Each reflects a root hook — `data-disabled` and `data-readonly` — and the example's stylesheet keys on nothing else.
+One class and one directive, three states. `disabled` turns off focus movement and selection for the whole calendar; `readonly` keeps days focusable and the grid still pages, but clicking or pressing `Enter` no longer changes the selection. Each reflects a root hook (`data-disabled` and `data-readonly`), and the example's stylesheet keys on nothing else.
 
 ### Constraints & week start
 
-`min` disables past dates and `isDateUnavailable` blocks weekends — both reflect `aria-disabled` and refuse selection, while arrows still move across them so navigation is never trapped. `firstDayOfWeek` starts the week on Monday.
+`min` disables past dates and `isDateUnavailable` blocks weekends. Both reflect `aria-disabled` and refuse selection, while arrows still move across them so navigation is never trapped. `firstDayOfWeek` starts the week on Monday.
 
 ### Range mode
 
@@ -251,9 +251,9 @@ Set `selectionMode="range"` and bind `[(range)]` to get date-range selection. In
 </div>
 ```
 
-**Interaction model.** Click (or `Enter` / `Space`) a first cell to set the anchor; the grid enters selecting state. Click (or `Enter` / `Space`) a second cell **in either direction** to commit the range — clicking before the anchor commits the inverted band `[click, anchor]` (matching the hover preview), it does not start over. There is no separate "start over" gesture and no explicit Escape-to-cancel: once a range is committed, the next click begins a fresh anchor.
+**Interaction model.** Click (or `Enter` / `Space`) a first cell to set the anchor; the grid enters selecting state. Click (or `Enter` / `Space`) a second cell **in either direction** to commit the range. Clicking before the anchor commits the inverted band `[click, anchor]` (matching the hover preview) rather than starting over. There is no separate "start over" gesture and no explicit Escape-to-cancel: once a range is committed, the next click begins a fresh anchor.
 
-**Keyboard in range mode.** `Enter` / `Space` on the focused cell sets the anchor on the first press and commits on the second (same key as single mode). While selecting, arrow / `Home` / `End` / `PageUp` / `PageDown` move the keyboard focus and update the preview cursor (the keyboard equivalent of pointer hover); moving before the anchor previews — and commits — the inverted band.
+**Keyboard in range mode.** `Enter` / `Space` on the focused cell sets the anchor on the first press and commits on the second (same key as single mode). While selecting, arrow / `Home` / `End` / `PageUp` / `PageDown` move the keyboard focus and update the preview cursor (the keyboard equivalent of pointer hover); moving before the anchor previews (and commits) the inverted band.
 
 **`min` / `max` / `isDateUnavailable`** still gate both endpoints. An unavailable or out-of-bounds date cannot become an anchor or an end.
 
@@ -292,11 +292,11 @@ Set `selectionMode="range"` and bind `[(range)]` to get date-range selection. In
 
 **`aria-selected`** in range mode is `"true"` across every committed-range cell (inclusive). During selecting (range null), it is `"false"` everywhere.
 
-**Scope.** Range mode is day-granular only — `granularity` / time is orthogonal and not supported alongside it.
+**Scope.** Range mode is day-granular only: `granularity` / time is orthogonal and not supported alongside it.
 
 ## Month / year navigation
 
-`ForCalendar` exposes absolute-navigation methods so consumers can wire their own month/year `<select>` dropdowns — or any other UI — without needing a library directive.
+`ForCalendar` exposes absolute-navigation methods so consumers can wire their own month/year `<select>` dropdowns (or any other UI) without needing a library directive.
 
 ### Navigation methods
 
@@ -306,7 +306,7 @@ Set `selectionMode="range"` and bind `[(range)]` to get date-range selection. In
 | `goToMonth(month)`  | Set the visible month within the current visible year. `month` is **1-12**.             |
 | `goToYear(year)`    | Set the visible year, keeping the current visible month.                                |
 
-All three methods re-apply the user's intended day-of-month (clamped to the target month's length), clamp the result into `[min, max]`, and announce the new period politely when the visible month changes. They keep DOM focus on the caller — they do not move focus into the grid. They are a no-op while the calendar is `disabled`.
+All three methods re-apply the user's intended day-of-month (clamped to the target month's length), clamp the result into `[min, max]`, and announce the new period politely when the visible month changes. They keep DOM focus on the caller and do not move focus into the grid. They are a no-op while the calendar is `disabled`.
 
 ### Read accessors and predicates
 
@@ -320,7 +320,7 @@ All three methods re-apply the user's intended day-of-month (clamped to the targ
 
 `CalendarMonthOption` has three fields: `value: number` (1-12), `label: string` (localized month name via the adapter), and `disabled: boolean`.
 
-A month/year is "disabled" only when its **entire** span is out of range — its last day falls before `min`, or its first day falls after `max`. A non-midnight `min`/`max` keeps its boundary month/year enabled, matching the grid's existing day-level availability.
+A month/year is "disabled" only when its **entire** span is out of range: its last day falls before `min`, or its first day falls after `max`. A non-midnight `min`/`max` keeps its boundary month/year enabled, matching the grid's existing day-level availability.
 
 ### Usage — native `<select>` dropdowns
 
@@ -373,37 +373,37 @@ The recommended path is `[forCalendarMonthSelect]` and `[forCalendarYearSelect]`
 
 #### `ForCalendarMonthSelect` API
 
-| API         | Description                                                                                                   |
-| ----------- | ------------------------------------------------------------------------------------------------------------- |
-| `options()` | `Signal<readonly CalendarMonthOption[]>` — twelve localized, bounds-aware month options for the visible year. |
+| API         | Description                                                                                                  |
+| ----------- | ------------------------------------------------------------------------------------------------------------ |
+| `options()` | `Signal<readonly CalendarMonthOption[]>`: twelve localized, bounds-aware month options for the visible year. |
 
 #### `ForCalendarYearSelect` API
 
-| API       | Description                                                                                                                                            |
-| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `minYear` | `input<number \| null>` — lowest listed year. Defaults to `currentYear - 100` when `null`.                                                             |
-| `maxYear` | `input<number \| null>` — highest listed year. Defaults to `currentYear + 10` when `null`.                                                             |
-| `years()` | `Signal<readonly CalendarYearOption[]>` — years from `minYear` to `maxYear` inclusive, each `disabled` when the whole year falls outside `[min, max]`. |
+| API       | Description                                                                                                                                           |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `minYear` | `input<number \| null>`: the lowest listed year. Defaults to `currentYear - 100` when `null`.                                                         |
+| `maxYear` | `input<number \| null>`: the highest listed year. Defaults to `currentYear + 10` when `null`.                                                         |
+| `years()` | `Signal<readonly CalendarYearOption[]>`: years from `minYear` to `maxYear` inclusive, each `disabled` when the whole year falls outside `[min, max]`. |
 
 The default window is **anchored to the current year** (not the visible year), so navigating far away never drops the current year off the list. Out-of-`[min, max]` entries have `disabled: true`, matching the `CalendarYearOption` shape. Both directives set the native `disabled` attribute on the `<select>` itself when the calendar is disabled.
 
-**Keep `[forCalendarHeading]` in the DOM.** The grid's `aria-labelledby` points at the heading's id. When dropdowns replace the visible heading, keep a visually-hidden `[forCalendarHeading]` so the grid stays named — removing the heading entirely leaves `aria-labelledby` pointing at a missing element.
+**Keep `[forCalendarHeading]` in the DOM.** The grid's `aria-labelledby` points at the heading's id. When dropdowns replace the visible heading, keep a visually-hidden `[forCalendarHeading]` so the grid stays named. Removing the heading entirely leaves `aria-labelledby` pointing at a missing element.
 
 The lower-level hooks (`visibleMonthNumber()`, `visibleYear()`, `monthOptions()`, `goToMonth()`, `goToYear()`, `isYearDisabled()`) in the table above remain available for any other UI.
 
 ## View switching
 
-`ForCalendar` supports two additional views — **month grid** and **year grid** — so users can jump quickly to a different month or year without paging one at a time. All three views share a single `[(view)]` model and the same `focusedDate` cursor.
+`ForCalendar` supports two additional views (**month grid** and **year grid**) so users can jump quickly to a different month or year without paging one at a time. All three views share a single `[(view)]` model and the same `focusedDate` cursor.
 
 ### Pieces
 
-| Class                    | Selector                   | Role                                                                                                                  |
-| ------------------------ | -------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `ForCalendarViewTrigger` | `[forCalendarViewTrigger]` | Button that cycles the view: day → month → year. Auto-disabled when the calendar is disabled.                         |
-| `ForCalendarMonthGrid`   | `[forCalendarMonthGrid]`   | 4×3 month grid (`role="grid"`). Exposes `rows()` — array of `CalendarMonthRow`, each with three `CalendarYearOption`. |
-| `ForCalendarMonthCell`   | `[forCalendarMonthCell]`   | One month (`role="gridcell"`). Requires `[month]` (1–12). Click drills down to day view for that month.               |
-| `ForCalendarYearGrid`    | `[forCalendarYearGrid]`    | 4×3 year grid (`role="grid"`). Exposes `rows()` — array of `CalendarYearRow`, each with three `CalendarYearOption`.   |
-| `ForCalendarYearCell`    | `[forCalendarYearCell]`    | One year (`role="gridcell"`). Requires `[year]`. Click drills down to month view for that year.                       |
+| Class                    | Selector                   | Role                                                                                                                    |
+| ------------------------ | -------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `ForCalendarViewTrigger` | `[forCalendarViewTrigger]` | Button that cycles the view: day → month → year. Auto-disabled when the calendar is disabled.                           |
+| `ForCalendarMonthGrid`   | `[forCalendarMonthGrid]`   | 4×3 month grid (`role="grid"`). Exposes `rows()`, an array of `CalendarMonthRow`, each with three `CalendarYearOption`. |
+| `ForCalendarMonthCell`   | `[forCalendarMonthCell]`   | One month (`role="gridcell"`). Requires `[month]` (1–12). Click drills down to day view for that month.                 |
+| `ForCalendarYearGrid`    | `[forCalendarYearGrid]`    | 4×3 year grid (`role="grid"`). Exposes `rows()`, an array of `CalendarYearRow`, each with three `CalendarYearOption`.   |
+| `ForCalendarYearCell`    | `[forCalendarYearCell]`    | One year (`role="gridcell"`). Requires `[year]`. Click drills down to month view for that year.                         |
 
 ### `view` model — `ForCalendar`
 
@@ -560,16 +560,16 @@ Focus that crosses a month boundary re-pages the visible grid and keeps the focu
 
 Implements the [WAI-ARIA Grid pattern](https://www.w3.org/WAI/ARIA/apg/patterns/grid/).
 
-- **`role="grid"`** on the table, `columnheader` weekday headers, `gridcell` days — the APG Date Picker Dialog technique over a real `<table>`.
+- **`role="grid"`** on the table, `columnheader` weekday headers and `gridcell` days follow the APG Date Picker Dialog technique over a real `<table>`.
 - **`aria-labelledby`** wires the grid to the heading so it names the visible period. Paging the month is announced through a dedicated off-screen `aria-live="polite"` region (owned by `[forCalendar]`), so the period is read on navigation without the heading double-announcing as both a live region and the grid's label.
 - **`aria-label`** on every cell carries the full localized date (e.g. `"Monday, June 15, 2026"`) so screen readers announce the whole date, not the bare day number that stays the cell's visible content. Outside-month padding days are suffixed (`" (outside month)"`) so they are distinguishable. Override the format via `ForCalendar`'s `dateLabel` input.
 - **`aria-selected`** is always emitted (`"true"` / `"false"`); **`aria-current="date"`** marks today; **`aria-disabled`** marks unavailable dates (truthy-only).
 - **Roving tabindex**: exactly one cell (the focused date) is tabbable. `Tab` enters and leaves the grid in one stop.
-- **Boolean `data-*`** on the cell — `data-selected`, `data-today`, `data-highlighted` (the focused/roving cell), `data-disabled`, `data-outside-month` — present when true, absent when false.
+- **Boolean `data-*`** on the cell, present when true and absent when false: `data-selected`, `data-today`, `data-highlighted` (the focused/roving cell), `data-disabled` and `data-outside-month`.
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `forCalendar*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
+forty-cdk ships no styles. Add your own class to each piece. The `forCalendar*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
 
 ```css
 .calendar-cell {
@@ -593,7 +593,7 @@ forty-cdk ships no styles. Add your own class to each piece — the `forCalendar
 
 ## SSR
 
-The active adapter's `today()` and `format()` resolve against the **runtime** time zone and default locale. Rendered on the server they reflect the _server's_ environment, so a render near midnight (or under a different server locale) can disagree with the browser by up to a day — `ForCalendar` reads `today()` once to mark the `data-today` / `aria-current="date"` cell, so the mismatch surfaces there as a hydration error and a flicker. For SSR, pin a fixed "today" / time zone / locale for both environments, or defer the today-highlight so it only computes client-side:
+The active adapter's `today()` and `format()` resolve against the **runtime** time zone and default locale. Rendered on the server they reflect the _server's_ environment, so a render near midnight (or under a different server locale) can disagree with the browser by up to a day. `ForCalendar` reads `today()` once to mark the `data-today` / `aria-current="date"` cell, so the mismatch surfaces there as a hydration error and a flicker. For SSR, pin a fixed "today" / time zone / locale for both environments, or defer the today-highlight so it only computes client-side:
 
 ```ts
 import { ChangeDetectionStrategy, Component, afterNextRender, signal } from '@angular/core';

@@ -9,14 +9,14 @@ apgUrl: https://www.w3.org/WAI/ARIA/apg/patterns/listbox/
 
 A scrollable list of selectable options with roving-tabindex navigation, single or multi selection.
 
-It also supports typeahead and `FormValueControl<readonly T[]>` integration. `[forListbox]` is generic over the option value type `T` (default `string`). Bind primitive ids for the simple case or full objects for richer models — the directive infers `T` from `[(value)]` and `[forListboxOption][value]`. See [Object values](#object-values) for the object-mode contract.
+It also supports typeahead and `FormValueControl<readonly T[]>` integration. `[forListbox]` is generic over the option value type `T` (default `string`). Bind primitive ids for the simple case or full objects for richer models. The directive infers `T` from `[(value)]` and `[forListboxOption][value]`. See [Object values](#object-values) for the object-mode contract.
 
 ## When to choose
 
-- **Listbox** — an in-page list of options with roving tabindex and typeahead. No trigger, no overlay, no text field: the options are always visible.
-- **[Select](../select/README.md)** — the same option semantics behind a trigger that opens a portaled popup. Choose it when the list should stay collapsed until asked for.
-- **[Combobox](../combobox/README.md)** — a popup driven by an editable input, so the user narrows the list by typing.
-- **[Dropdown Menu](../dropdown-menu/README.md)** — for commands rather than a value: menu items run an action and the surface holds no selection.
+- **Listbox**: an in-page list of options with roving tabindex and typeahead. No trigger, no overlay, no text field: the options are always visible.
+- **[Select](../select/README.md)**: the same option semantics behind a trigger that opens a portaled popup. Choose it when the list should stay collapsed until asked for.
+- **[Combobox](../combobox/README.md)**: a popup driven by an editable input, so the user narrows the list by typing.
+- **[Dropdown Menu](../dropdown-menu/README.md)**: for commands rather than a value. Menu items run an action and the surface holds no selection.
 
 ## Anatomy
 
@@ -38,7 +38,7 @@ Wrap options in a `[forListboxGroup]` (labelled by `[forListboxGroupLabel]`) for
 
 ## Examples
 
-Move the highlight with the arrow keys and select with `Space` — one tab stop serves the whole list, and the selected option carries `data-state`.
+Move the highlight with the arrow keys and select with `Space`. One tab stop serves the whole list, and the selected option carries `data-state`.
 
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
@@ -166,7 +166,7 @@ Setting `[totalCount]` switches `ForListbox` to the activedescendant model: the 
 
 ## Object values
 
-Real apps usually have richer option models — `{ id, name, ... }` — where the comparison key differs from what you'd serialize for a form. `[forListbox]` is generic over `T` to support that without forcing the consumer to stringify and re-hydrate.
+Real apps usually have richer option models (`{ id, name, ... }`) where the comparison key differs from what you'd serialize for a form. `[forListbox]` is generic over `T` to support that without forcing the consumer to stringify and re-hydrate.
 
 Two inputs configure the object behaviour. Defaults make string mode work unchanged:
 
@@ -213,9 +213,9 @@ export class DemoCities {
 
 ## Reordering
 
-Add `[forListboxReorder]` on the same element as `[forListbox]` to make a listbox **sortable** — a selectable _and_ sortable list (e.g. a chip grid) in one composition.
+Add `[forListboxReorder]` on the same element as `[forListbox]` to make a listbox **sortable**: a selectable _and_ sortable list (e.g. a chip grid) in one composition.
 
-`[forDraggable]` can't stack on a `[forListboxOption]`: both manage the option's roving tabindex and keyboard, so they collide on `tabindex`, on Space / Enter activation, and on `orientation`. `[forListboxReorder]` is a container-level coordinator (the same shape as `[forTreeNodeDrag]` / `[forTableRowReorder]`): it lives on the listbox, **never touches the option's roving tabindex**, intercepts keys in the capture phase with a dedicated lift chord, and owns its own 2D drop geometry — so selection, typeahead, and arrow navigation keep working unchanged.
+`[forDraggable]` can't stack on a `[forListboxOption]`: both manage the option's roving tabindex and keyboard, so they collide on `tabindex`, on Space / Enter activation, and on `orientation`. `[forListboxReorder]` is a container-level coordinator (the same shape as `[forTreeNodeDrag]` / `[forTableRowReorder]`): it lives on the listbox, **never touches the option's roving tabindex**, intercepts keys in the capture phase with a dedicated lift chord, and owns its own 2D drop geometry. Selection, typeahead, and arrow navigation therefore keep working unchanged.
 
 It **never reorders the options itself** (BYO-data): `(optionReorder)` emits `{ from, to }` on each committed drop; apply `moveItemInArray(items, from, to)` to your own array.
 
@@ -327,7 +327,7 @@ Without `[totalCount]` (the default), the roving-tabindex model is used unchange
 | Roving-tabindex (default)           | Active option     | DOM focus + `data-highlighted`               |
 | Activedescendant (`totalCount` set) | Listbox container | `aria-activedescendant` + `data-highlighted` |
 
-Both paths reflect `data-highlighted=""` on the active option, so consumer CSS for hover/focus rings works the same way in either mode. In both paths the pointer takes it over too — see [Pointer highlight](#pointer-highlight).
+Both paths reflect `data-highlighted=""` on the active option, so consumer CSS for hover/focus rings works the same way in either mode. In both paths the pointer takes it over too (see [Pointer highlight](#pointer-highlight)).
 
 ### Navigation flow
 
@@ -406,21 +406,21 @@ export class DemoVirtualizedListbox {
 ### Intentional limitations
 
 - **Multi-select range modifiers** (Shift+Arrow, Shift+Space, Ctrl+A, Ctrl+Shift+Home/End) are not available in the virtualized path. These require the full materialized option set to compute ranges, which contradicts windowing. Pressing one of these combinations on a virtualized multi-select listbox (`[multiple]` + `[totalCount]`) throws in dev mode rather than silently doing nothing, so the unsupported path surfaces during development; production builds no-op. Per-option toggling via Enter, Space, or click works normally in both single and multi mode.
-- **Typeahead reaches only positions the window has rendered at least once.** The search runs over the persisted position snapshot rather than the live options, so an option the virtualizer has since unmounted is still reachable — the match moves `aria-activedescendant` to it and emits `(scrollToIndex)` so your virtualizer brings it back. A position the window has **never** rendered carries no text the library can match: the keystroke is consumed, the buffer grows, and nothing moves. The shape that triggers it is a freshly-rendered `[totalCount]="10000"` listbox where the user types before scrolling, and a `[dataVersion]` bump or `invalidateSnapshot()` narrows the reachable set back to the current window. Arrow / `Home` / `End` navigation reaches every position regardless (it walks absolute indices, not text), so that is the workaround for a target the user cannot type their way to; rendering a larger window widens the reachable set.
+- **Typeahead reaches only positions the window has rendered at least once.** The search runs over the persisted position snapshot rather than the live options, so an option the virtualizer has since unmounted is still reachable: the match moves `aria-activedescendant` to it and emits `(scrollToIndex)` so your virtualizer brings it back. A position the window has **never** rendered carries no text the library can match: the keystroke is consumed, the buffer grows, and nothing moves. The shape that triggers it is a freshly-rendered `[totalCount]="10000"` listbox where the user types before scrolling, and a `[dataVersion]` bump or `invalidateSnapshot()` narrows the reachable set back to the current window. Arrow / `Home` / `End` navigation reaches every position regardless (it walks absolute indices, not text), so that is the workaround for a target the user cannot type their way to; rendering a larger window widens the reachable set.
 
 ## Self-hiding pieces
 
-`[forListboxOptionIndicator]` hides itself while its option is unselected with an inline `display: none` in addition to the `hidden` attribute that removes it from the accessibility tree. Because the inline style beats any author selector rule, you can give the indicator a custom `display` (e.g. `display: inline-flex` for a check icon) without a `.x[hidden] { display: none }` workaround — the directive's `display: none` still wins while the option is unselected, and your `display` applies once it's selected.
+`[forListboxOptionIndicator]` hides itself while its option is unselected with an inline `display: none` in addition to the `hidden` attribute that removes it from the accessibility tree. Because the inline style beats any author selector rule, you can give the indicator a custom `display` (e.g. `display: inline-flex` for a check icon) without a `.x[hidden] { display: none }` workaround. The directive's `display: none` still wins while the option is unselected, and your `display` applies once it's selected.
 
 ## Pointer highlight
 
-Moving the pointer over an enabled option hands it `data-highlighted`, so exactly one option is ever decorated no matter which device the user reached for — the same feel as `[forCombobox]` and the menu family. Style that one attribute; you do not need a separate `:hover` rule (and combining both is what puts two rows in a highlighted state at once).
+Moving the pointer over an enabled option hands it `data-highlighted`, so exactly one option is ever decorated no matter which device the user reached for. That is the same feel as `[forCombobox]` and the menu family. Style that one attribute; you do not need a separate `:hover` rule (and combining both is what puts two rows in a highlighted state at once).
 
 Four properties of the pointer channel:
 
 - **It never selects and never moves DOM focus**, not even with `selectionFollowsFocus` set: hovering is not activation, and a listbox is an in-flow surface that must not steal focus from whatever the user is typing in. The pointer's own click still activates, and the range anchor `Shift+Space` spans from is untouched.
-- **The keyboard takes it back on the next move.** In the roving-tabindex path the pointer highlight is a styling channel only — the tab stop and `Enter` / `Space` activation stay with the DOM-focused option, and the first arrow / typeahead move drops the pointer highlight. In the activedescendant path (`totalCount` set) hover moves `aria-activedescendant` itself, so the highlight and the option `Enter` activates never disagree there.
-- **Moving the pointer off the listbox releases it.** In the roving-tabindex path the highlight goes back to the DOM-focused option, or to none when focus is elsewhere — so an always-visible listbox never keeps a row decorated with the cursor somewhere else on the page. Crossing between two adjacent options is not a leave: the highlight moves straight from one to the other without blinking off. In the activedescendant path the pointer's claim persists, because there it _is_ `aria-activedescendant` and dropping it would leave the container with no active option.
+- **The keyboard takes it back on the next move.** In the roving-tabindex path the pointer highlight is a styling channel only: the tab stop and `Enter` / `Space` activation stay with the DOM-focused option, and the first arrow / typeahead move drops the pointer highlight. In the activedescendant path (`totalCount` set) hover moves `aria-activedescendant` itself, so the highlight and the option `Enter` activates never disagree there.
+- **Moving the pointer off the listbox releases it.** In the roving-tabindex path the highlight goes back to the DOM-focused option, or to none when focus is elsewhere. That way an always-visible listbox never keeps a row decorated with the cursor somewhere else on the page. Crossing between two adjacent options is not a leave: the highlight moves straight from one to the other without blinking off. In the activedescendant path the pointer's claim persists, because there it _is_ `aria-activedescendant` and dropping it would leave the container with no active option.
 - **A programmatic scroll cannot hijack it.** Keyboard navigation scrolls the active option into view, which can slide a different option under a stationary cursor and make the browser fire a synthetic `pointermove` for it. Moves arriving in a short window after such a scroll are ignored, so the keyboard keeps the highlight.
 
 A hover on a disabled option is ignored, and the highlight falls back to the keyboard's option if the hovered one is disabled or unmounted while the cursor rests on it.
@@ -440,7 +440,7 @@ A hover on a disabled option is ignored, and the highlight falls back to the key
 | `orientation`                                                | `input<'vertical' \| 'horizontal'>`              | Drives keyboard nav and `aria-orientation`.<br>**Default:** `'vertical'`                                                                                                                                  |
 | `loop`                                                       | `input<boolean>`                                 | When `true`, arrow nav wraps at the ends. Set `false` to stop at the boundaries. Range extension (Shift+Arrow) never wraps regardless, per the APG.<br>**Default:** `true`                                |
 | `dir`                                                        | `input<'ltr' \| 'rtl'>`                          | Text direction.<br>**Default:** `'ltr'`                                                                                                                                                                   |
-| `selectionFollowsFocus`                                      | `input<boolean>`                                 | Single-mode only. When true, arrow nav also selects the focused option. APG flags this as case-by-case — leave off unless your UX specifically benefits.<br>**Default:** `false`                          |
+| `selectionFollowsFocus`                                      | `input<boolean>`                                 | Single-mode only. When true, arrow nav also selects the focused option. APG flags this as case-by-case, so leave off unless your UX specifically benefits.<br>**Default:** `false`                        |
 | `disabled` / `readonly` / `required` / `invalid` / `pending` | `input<boolean>`                                 | Reflected as `aria-*` / `data-*`.<br>**Default:** —                                                                                                                                                       |
 | `name`                                                       | `input<string>`                                  | For form association.<br>**Default:** —                                                                                                                                                                   |
 | `errors`                                                     | `input<ValidationError.WithOptionalFieldTree[]>` | Wired by `[formField]`.<br>**Default:** —                                                                                                                                                                 |
@@ -491,7 +491,7 @@ Optional slot inside an option. Mirrors `data-state` and self-hides while the op
 
 > **Virtualized path (`[totalCount]` set):** the listbox container is always the single Tab stop. Arrow / Home / End / Enter / Space all fire on the container (not individual options). See the [Virtualization](#virtualization) section for the full contract.
 
-- **Tab** moves focus into / out of the listbox; lands on the first selected option (or the first enabled one if nothing is selected, or the last user-focused option after first interaction). With several preselected options in multi mode, only the first selected one is the tab stop — the group exposes a single `tabindex="0"`. When no option can serve as that entry point (the listbox is empty, or every option is disabled), the listbox host itself becomes the single Tab stop (`tabindex="0"`) so the control stays reachable; a disabled listbox is never tabbable.
+- **Tab** moves focus into / out of the listbox; lands on the first selected option (or the first enabled one if nothing is selected, or the last user-focused option after first interaction). With several preselected options in multi mode, only the first selected one is the tab stop: the group exposes a single `tabindex="0"`. When no option can serve as that entry point (the listbox is empty, or every option is disabled), the listbox host itself becomes the single Tab stop (`tabindex="0"`) so the control stays reachable; a disabled listbox is never tabbable.
 - **ArrowDown / ArrowUp** in vertical, **ArrowRight / ArrowLeft** in horizontal: move focus, wrap-around, skip disabled.
 - **Home / End** jump to first / last enabled option.
 - **PageUp / PageDown** jump to first / last enabled option.
@@ -511,9 +511,9 @@ The full WAI-ARIA APG "Recommended Selection" model is implemented and active au
 | **Ctrl+Shift+Home**              | Select from the focused option to the first enabled option, and move focus there.                                                                                           |
 | **Ctrl+Shift+End**               | Select from the focused option to the last enabled option, and move focus there.                                                                                            |
 
-The **anchor** for `Shift+Space` is set on every unmodified activation (click, plain Space, plain Enter) and is unaffected by `Shift+ArrowDown`/`ArrowUp` — that lets users click an option, navigate away with Shift+Arrow, and then Shift+Space to select the contiguous block back to where they started.
+The **anchor** for `Shift+Space` is set on every unmodified activation (click, plain Space, plain Enter) and is unaffected by `Shift+ArrowDown`/`ArrowUp`. That lets users click an option, navigate away with Shift+Arrow, and then Shift+Space to select the contiguous block back to where they started.
 
-When `readonly` is set, the focus-moving shortcuts (Shift+Arrow, Ctrl+Shift+Home/End) still move focus but do not change the selection — same contract as plain arrow nav under `readonly`. Pure-selection shortcuts (Shift+Space, Ctrl+A) are no-ops.
+When `readonly` is set, the focus-moving shortcuts (Shift+Arrow, Ctrl+Shift+Home/End) still move focus but do not change the selection. That is the same contract as plain arrow nav under `readonly`. Pure-selection shortcuts (Shift+Space, Ctrl+A) are no-ops.
 
 ## Accessibility
 
@@ -521,14 +521,14 @@ Implements the [WAI-ARIA Listbox pattern](https://www.w3.org/WAI/ARIA/apg/patter
 
 - **Label the listbox** via the reactive `[ariaLabel]` input or a native `aria-labelledby` pointing at a visible label element.
 - **Use `<button>` for each option** so Space / Enter activate via native click. Other host elements break keyboard activation.
-- **Visible text on each option** is what typeahead matches against — keep it descriptive and unique-prefixed.
-- **`selectionFollowsFocus`** is an opt-in for single-select. Avoid combining it with side effects that depend on commit semantics — it changes the form value on every arrow key.
-- **`data-highlighted=""`** is reflected on the option that is the current active item in both the roving-tabindex and activedescendant paths — same vocabulary as the menu / select / combobox primitives, useful when you want a uniform "keyboard focus ring" across surfaces without coupling to `:focus`. It follows the pointer as well as the keyboard (see [Pointer highlight](#pointer-highlight)), so it is the one hook to style rather than pairing it with `:hover`.
+- **Visible text on each option** is what typeahead matches against, so keep it descriptive and unique-prefixed.
+- **`selectionFollowsFocus`** is an opt-in for single-select. Avoid combining it with side effects that depend on commit semantics, because it changes the form value on every arrow key.
+- **`data-highlighted=""`** is reflected on the option that is the current active item in both the roving-tabindex and activedescendant paths. It shares its vocabulary with the menu / select / combobox primitives and is useful when you want a uniform "keyboard focus ring" across surfaces without coupling to `:focus`. It follows the pointer as well as the keyboard (see [Pointer highlight](#pointer-highlight)), so it is the one hook to style rather than pairing it with `:hover`.
 - **Virtualized path**: the listbox publishes `aria-activedescendant` on the container and each rendered option carries `aria-setsize` / `aria-posinset` so screen readers announce the true list size even when only a window is mounted.
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
+forty-cdk ships no styles. Add your own class to each piece. The `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
 
 ```css
 .listbox-option[data-highlighted] {
@@ -542,4 +542,4 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 
 ## Wrapping in a design system
 
-Both supported wrapper patterns — `hostDirectives` with the exported `FOR_LISTBOX_HOST_DIRECTIVE_INPUTS` / `FOR_LISTBOX_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing — are documented in [Wrapping form primitives](../../../docs/wrapping-form-primitives.md).
+Both supported wrapper patterns are documented in [Wrapping form primitives](../../../docs/wrapping-form-primitives.md): `hostDirectives` with the exported `FOR_LISTBOX_HOST_DIRECTIVE_INPUTS` / `FOR_LISTBOX_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing.

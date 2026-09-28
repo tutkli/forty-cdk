@@ -9,7 +9,7 @@ apgUrl: https://www.w3.org/WAI/ARIA/apg/patterns/toolbar/
 
 A container that groups a set of controls under roving-tabindex navigation.
 
-The toolbar takes a single Tab stop and arrow keys move focus across its buttons, links, and toggle groups. Composes naturally with `[forToggleGroup]` — toggle items nested inside a toolbar register with the toolbar's roving tabindex automatically, so arrows move fluidly across the whole bar.
+The toolbar takes a single Tab stop and arrow keys move focus across its buttons, links, and toggle groups. Composes naturally with `[forToggleGroup]`: toggle items nested inside a toolbar register with the toolbar's roving tabindex automatically, so arrows move fluidly across the whole bar.
 
 ## Anatomy
 
@@ -29,7 +29,7 @@ The toolbar takes a single Tab stop and arrow keys move focus across its buttons
 
 ## Examples
 
-Move along the controls with the arrow keys — the toolbar keeps one tab stop, so `Tab` leaves it rather than walking every button in it.
+Move along the controls with the arrow keys. The toolbar keeps one tab stop, so `Tab` leaves it rather than walking every button in it.
 
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
@@ -153,9 +153,9 @@ Root directive. `role="toolbar"`. Owns roving tabindex and arrow-key navigation.
 
 Plain push button. Apply on `<button>` so Enter / Space activate via native semantics.
 
-| Property   | Type             | Description                                                                                                                                                                                                                                    |
-| ---------- | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `disabled` | `input<boolean>` | Per-item disabled, in addition to the toolbar's `disabled`. When true the button is announced as `aria-disabled` and clicks are suppressed — it stays focusable (no native `disabled`) so assistive tech still announces it.<br>**Default:** — |
+| Property   | Type             | Description                                                                                                                                                                                                                                   |
+| ---------- | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `disabled` | `input<boolean>` | Per-item disabled, in addition to the toolbar's `disabled`. When true the button is announced as `aria-disabled` and clicks are suppressed. It stays focusable (no native `disabled`) so assistive tech still announces it.<br>**Default:** — |
 
 | Data attribute     | Values                     |
 | ------------------ | -------------------------- |
@@ -166,9 +166,9 @@ Plain push button. Apply on `<button>` so Enter / Space activate via native sema
 
 Hyperlink. Apply on `<a>`; `Enter` follows the link via native semantics.
 
-| Property   | Type             | Description                                                                                                                                                                                                                                                  |
-| ---------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `disabled` | `input<boolean>` | Per-item disabled, in addition to the toolbar's `disabled`. When true the link is announced as `aria-disabled` and activation is suppressed — `<a>` has no native `disabled`, so it stays focusable and assistive tech still announces it.<br>**Default:** — |
+| Property   | Type             | Description                                                                                                                                                                                                                                                      |
+| ---------- | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `disabled` | `input<boolean>` | Per-item disabled, in addition to the toolbar's `disabled`. When true the link is announced as `aria-disabled` and activation is suppressed. Because `<a>` has no native `disabled`, it stays focusable and assistive tech still announces it.<br>**Default:** — |
 
 | Data attribute     | Values                     |
 | ------------------ | -------------------------- |
@@ -202,14 +202,14 @@ Visual divider. Defaults `orientation` to the toolbar's cross-axis; reflects `ro
 Implements the [WAI-ARIA Toolbar pattern](https://www.w3.org/WAI/ARIA/apg/patterns/toolbar/).
 
 - **Single Tab stop that follows focus.** The toolbar takes one place in the tab order; only the entry-point item carries `tabindex="0"`. Before any interaction the entry point is the first enabled item; once you move focus with the arrows (or Home / End), the tab stop follows the last focused item, so Shift+Tab back into the toolbar restores it (matching APG and the Tabs / Tree primitives). Arrow keys move focus inside, Home / End jump to the first / last enabled item.
-- **Always label the toolbar.** Pass the reactive `[ariaLabel]` input (or a native `aria-labelledby` pointing at a visible label element) so screen-reader users know what the toolbar acts on. Not optional — APG requires it.
+- **Always label the toolbar.** Pass the reactive `[ariaLabel]` input (or a native `aria-labelledby` pointing at a visible label element) so screen-reader users know what the toolbar acts on. Not optional: APG requires it.
 - **Disabled items stay focusable.** Both `<button forToolbarButton>` and `<a forToolbarLink>` expose `aria-disabled="true"` and suppress click rather than setting the native `disabled` attribute. Removing an item from the focus order would deviate from APG; users can still hear "disabled".
 - **Toggle groups don't change roles.** Inside a toolbar, `[forToggleGroup]` keeps `role="group"` (semantically a related set of buttons). The toolbar role lives only on the outer container.
 - **Cross-axis separators.** `[forToolbarSeparator]` defaults to the orientation perpendicular to the toolbar so the line is visible. Override by setting `orientation` explicitly.
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
+forty-cdk ships no styles. Add your own class to each piece. The `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
 
 ```css
 .toolbar {

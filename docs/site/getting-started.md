@@ -1,6 +1,6 @@
 # Getting started
 
-This page builds one primitive end to end — installed, composed, styled, and bound to a form — so that by the end you have written every kind of code forty-cdk asks for. The primitive is **Switch**, chosen because it is small enough to show whole and is a form control, so it exercises the one API that has an extra step.
+This page builds one primitive end to end (installed, composed, styled, and bound to a form) so that by the end you have written every kind of code forty-cdk asks for. The primitive is **Switch**, chosen because it is small enough to show whole and is a form control, so it exercises the one API that has an extra step.
 
 Everything here generalises. A Dialog has more pieces than a Switch and a Table has many more, but the four moves are the same ones.
 
@@ -41,7 +41,7 @@ export class NotificationToggle {
 }
 ```
 
-That is a complete, accessible switch. The directive has given the `<button>` `role="switch"`, kept `aria-checked` in step with the model, and made `Space` and `Enter` toggle it. Nothing was configured — the behaviour came with the selector.
+That is a complete, accessible switch. The directive has given the `<button>` `role="switch"`, kept `aria-checked` in step with the model, and made `Space` and `Enter` toggle it. Nothing was configured: the behaviour came with the selector.
 
 Two details are worth naming, because they are the shape of every primitive:
 
@@ -91,7 +91,7 @@ Three rules to carry forward from those twenty lines:
 
 - **Style your class, not the selector.** `[forSwitch]` is a valid attribute selector and a bad styling contract: the library is pre-1.0 and selectors can be renamed, while `.switch` is yours.
 - **Enumerated state is a value**, so `[data-state='checked']` and `[data-state='unchecked']` are the two you write.
-- **Boolean state is presence**, so it is `[data-disabled]` and `:not([data-disabled])` — never `[data-disabled='false']`, which never matches anything.
+- **Boolean state is presence**, so it is `[data-disabled]` and `:not([data-disabled])`. Never write `[data-disabled='false']`, which never matches anything.
 
 Each primitive's page lists the exact attributes it reflects, in a table under **API**. [Styling forty-cdk](../styling.md) is the full reference for all three hooks, including the `--for-*` custom properties primitives write measured values to.
 
@@ -138,7 +138,7 @@ export class SettingsForm {
 
 ## Where to go next
 
-- [Concepts](./concepts.md) — the composition model these four steps are an instance of.
-- [Your first overlay](../your-first-overlay.md) — the same walkthrough for a Popover, where content is portaled and the open state is yours to hold.
-- [Wrapping form primitives](../wrapping-form-primitives.md) — how to put your own component around a primitive without losing its API.
+- [Concepts](./concepts.md): the composition model these four steps are an instance of.
+- [Your first overlay](../your-first-overlay.md): the same walkthrough for a Popover, where content is portaled and the open state is yours to hold.
+- [Wrapping form primitives](../wrapping-form-primitives.md): how to put your own component around a primitive without losing its API.
 - The primitive pages in the sidebar, each with live examples, a full API table and its keyboard map.

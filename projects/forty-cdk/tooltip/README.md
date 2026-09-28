@@ -17,9 +17,9 @@ Hover / focus delays, Escape-to-dismiss, portal rendering, and `@floating-ui/dom
 
 ## When to choose
 
-- **Tooltip** — `role="tooltip"`, opened on hover or focus and never focusable itself. While open it becomes the trigger's `aria-describedby` description, so its content must be non-interactive text.
-- **[Hover Card](../hover-card/README.md)** — the same open-on-dwell cadence, but its content may hold links and buttons and it names nothing. Choose it when the surface is a preview to read or click, not a description of the trigger.
-- **[Popover](../popover/README.md)** — opens on activation and moves focus into the surface. Choose it whenever the content contains anything the user has to operate.
+- **Tooltip**: `role="tooltip"`, opened on hover or focus and never focusable itself. While open it becomes the trigger's `aria-describedby` description, so its content must be non-interactive text.
+- **[Hover Card](../hover-card/README.md)**: the same open-on-dwell cadence, but its content may hold links and buttons and it names nothing. Choose it when the surface is a preview to read or click, not a description of the trigger.
+- **[Popover](../popover/README.md)**: opens on activation and moves focus into the surface. Choose it whenever the content contains anything the user has to operate.
 
 ## Anatomy
 
@@ -37,7 +37,7 @@ Hover / focus delays, Escape-to-dismiss, portal rendering, and `@floating-ui/dom
 
 ## Examples
 
-Hover or focus the trigger and wait out the delay — the tip opens with `data-state`, and `Escape` closes it without moving focus.
+Hover or focus the trigger and wait out the delay. The tip opens with `data-state`, and `Escape` closes it without moving focus.
 
 ```ts
 import { ChangeDetectionStrategy, Component } from '@angular/core';
@@ -88,7 +88,7 @@ export class TooltipDefaultExample {}
 
 ### Overflow-only
 
-With `showOnOverflow` the tooltip opens only when the trigger's own text is actually truncated — ideal for table cells or file paths that may or may not fit. The short label fits and stays silent; the long one is clipped, so the full text appears.
+With `showOnOverflow` the tooltip opens only when the trigger's own text is actually truncated, which makes `showOnOverflow` ideal for table cells or file paths that may or may not fit. The short label fits and stays silent; the long one is clipped, so the full text appears.
 
 ### Hoverable content
 
@@ -121,7 +121,7 @@ With `hoverableContent` the bubble keeps `pointer-events`, so the pointer can re
 
 ### `ForTooltipTrigger`
 
-No inputs of its own — coordinates via the `ForTooltip` context.
+`ForTooltipTrigger` has no inputs of its own and coordinates via the `ForTooltip` context.
 
 | Data attribute | Values             |
 | -------------- | ------------------ |
@@ -129,7 +129,7 @@ No inputs of its own — coordinates via the `ForTooltip` context.
 
 ### `ForTooltipContent`
 
-No inputs of its own — coordinates via the `ForTooltip` context.
+`ForTooltipContent` has no inputs of its own and coordinates via the `ForTooltip` context.
 
 | Data attribute        | Values             |
 | --------------------- | ------------------ |
@@ -138,11 +138,11 @@ No inputs of its own — coordinates via the `ForTooltip` context.
 
 ### `ForTooltipArrow`
 
-No inputs of its own — coordinates via the `ForTooltip` context.
+`ForTooltipArrow` has no inputs of its own and coordinates via the `ForTooltip` context.
 
 ## Scoped defaults
 
-`provideForTooltipDefaults` configures defaults for an injector subtree — at the application root or in any component's `providers` array. Partial overrides inherit unspecified keys from the parent scope (or the library fallbacks at the root). Each call also establishes a fresh skip-delay coordinator scope: peer tooltips inside the scope share a skip-delay window; tooltips in other scopes don't.
+`provideForTooltipDefaults` configures defaults for an injector subtree, whether at the application root or in any component's `providers` array. Partial overrides inherit unspecified keys from the parent scope (or the library fallbacks at the root). Each call also establishes a fresh skip-delay coordinator scope: peer tooltips inside the scope share a skip-delay window; tooltips in other scopes don't.
 
 | Key                 | Library fallback | Meaning                                                                                    |
 | ------------------- | ---------------- | ------------------------------------------------------------------------------------------ |
@@ -179,7 +179,7 @@ class Toolbar {}
 
 ## Imperative show and hide
 
-For programmatic control beyond hover and focus — e.g. a wrapper that drives the tooltip from a text-truncation observer — `ForTooltip` exposes `show()` and `hide()` methods. Grab the root with a template reference (`#tip="forTooltip"`) and call them:
+For programmatic control beyond hover and focus (e.g. a wrapper that drives the tooltip from a text-truncation observer), `ForTooltip` exposes `show()` and `hide()` methods. Grab the root with a template reference (`#tip="forTooltip"`) and call them:
 
 ```ts
 import { Component } from '@angular/core';
@@ -205,7 +205,7 @@ export class DemoImperative {}
 
 Both mirror the hover / focus lifecycle rather than bypassing it:
 
-- `show()` schedules the open after the resolved `openDelay` (instant when the delay is `0` or the scope's skip-delay window is active). It is a no-op while `disabled`, and a no-op under `showOnOverflow` when the trigger's own text is not truncated — the same gates a hover / focus open passes.
+- `show()` schedules the open after the resolved `openDelay` (instant when the delay is `0` or the scope's skip-delay window is active). It is a no-op while `disabled`, and a no-op under `showOnOverflow` when the trigger's own text is not truncated. These are the same gates a hover / focus open passes.
 - `hide()` schedules the close after the resolved `closeDelay` and disarms the hoverable-content grace bridge.
 
 For an **instant, unconditional** open or close that ignores the delays and both gates, write the `[(open)]` model directly (`open.set(true)` / `open.set(false)`) instead. To suppress empty-message tooltips, keep using the `disabled` input shown above rather than gating the `show()` call yourself.
@@ -223,12 +223,12 @@ Implements the [WAI-ARIA Tooltip pattern](https://www.w3.org/WAI/ARIA/apg/patter
 - The trigger receives `aria-describedby="<content-id>"` only while the tooltip is open, matching APG.
 - A consumer-set `id` on the trigger element is preserved (and used as the trigger id internally); the generated `for-tooltip-trigger-*` id is only assigned when the element has none. Anchors, `aria-labelledby` references, and `<label for>` associations keep working.
 - The content carries `role="tooltip"` and a stable id wired to the trigger.
-- The optional arrow is `aria-hidden="true"` — it's purely decorative.
+- The optional arrow is `aria-hidden="true"` because it's purely decorative.
 - The tooltip never steals focus.
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
+forty-cdk ships no styles. Add your own class to each piece. The `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
 
 ### CSS custom properties
 
@@ -238,10 +238,10 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 | --------------------- | ----------------------------------------- | ------------------- | --------- | ------------------------------------------------------------------------------------------------------------ |
 | `[forTooltipContent]` | `--for-floating-anchor-width`             | px                  | out       | Trigger (reference) width.                                                                                   |
 | `[forTooltipContent]` | `--for-floating-anchor-height`            | px                  | out       | Trigger (reference) height.                                                                                  |
-| `[forTooltipContent]` | `--for-floating-available-width`          | px                  | out       | Space available along the inline axis (floating-ui `size` middleware) — clamp with `max-width`.              |
-| `[forTooltipContent]` | `--for-floating-available-height`         | px                  | out       | Space available along the block axis — clamp with `max-height`.                                              |
+| `[forTooltipContent]` | `--for-floating-available-width`          | px                  | out       | Space available along the inline axis (floating-ui `size` middleware). Clamp with `max-width`.               |
+| `[forTooltipContent]` | `--for-floating-available-height`         | px                  | out       | Space available along the block axis. Clamp with `max-height`.                                               |
 | `[forTooltipContent]` | `--for-floating-content-transform-origin` | `<origin>` keywords | out       | `transform-origin` matching the resolved side / align, so a `scale` enter animation pivots from the trigger. |
-| `[forTooltipArrow]`   | `--for-floating-arrow-offset`             | px (default `0px`)  | in        | Consumer-set. How far the arrow pokes out past the bubble edge — typically a negative `px` (e.g. `-4px`).    |
+| `[forTooltipArrow]`   | `--for-floating-arrow-offset`             | px (default `0px`)  | in        | Consumer-set. How far the arrow pokes out past the bubble edge, typically a negative `px` (e.g. `-4px`).     |
 
 > `[forTooltipContent]` is portaled to `document.body`, so styles scoped to the `[forTooltip]` wrapper won't reach it. Style the bubble with a global stylesheet or a class on the content directive itself. See [Styling floating content](../../../docs/styling-floating-content.md) for the full positioner custom-property list (`--for-floating-anchor-width` / `-height`, `--for-floating-available-width` / `-height`, `--for-floating-content-transform-origin`) and the animation / arrow recipes.
 
@@ -270,9 +270,9 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 }
 ```
 
-The tooltip's open / close delays are hover-intent debouncing rather than motion, so they are deliberately left unchanged under reduced motion — only the visual transitions (which are yours) should opt out.
+The tooltip's open / close delays are hover-intent debouncing rather than motion, so they are deliberately left unchanged under reduced motion. Only the visual transitions (which are yours) should opt out.
 
-Tooltip content is template-provided and mounts via the consumer's own markup, so the tooltip cannot know the content would be empty before opening — it would happily open an empty bubble on hover/focus. The supported gate is the existing `disabled` input: drive it from whatever signal feeds the content. This is the recipe for design-system wrappers that take the tooltip text as a string input:
+Tooltip content is template-provided and mounts via the consumer's own markup, so the tooltip cannot know the content would be empty before opening. It would happily open an empty bubble on hover/focus. The supported gate is the existing `disabled` input: drive it from whatever signal feeds the content. This is the recipe for design-system wrappers that take the tooltip text as a string input:
 
 ```ts
 import { Component, input } from '@angular/core';
@@ -295,24 +295,24 @@ export class MyTooltipButton {
 }
 ```
 
-While `disabled` is `true`, hover and focus are ignored and an already-open tooltip force-closes — no empty bubble, no stale `aria-describedby`.
+While `disabled` is `true`, hover and focus are ignored and an already-open tooltip force-closes, so there is no empty bubble and no stale `aria-describedby`.
 
 ## Behavior notes
 
-- **Activating the trigger dismisses the tooltip.** A press (`pointerdown`) on the trigger closes an open tooltip immediately — the user is acting on the control, not asking for its description, so the bubble shouldn't cover the result of the click. The focus the same press induces does **not** reopen it (see below); the tooltip stays dismissed until the pointer leaves and re-enters, or the trigger is focused again from the keyboard. To keep the tooltip open across a click, drive `[(open)]` yourself.
-- **Only keyboard focus opens via the focus path.** Open-on-focus fires only when focus arrives **without** a preceding pointer interaction — i.e. a real keyboard `Tab`. A mouse, pen, or touch press that focuses the trigger never opens (or reopens) the tooltip, because hover already covers pointer users. This generalises the original touch-only guard to every pointer type.
-- **Portal**: the content element is moved to `document.body` on first render. Any styles you scope to the wrapper won't reach it — style the bubble globally or via a class on the content directive itself.
+- **Activating the trigger dismisses the tooltip.** A press (`pointerdown`) on the trigger closes an open tooltip immediately: the user is acting on the control, not asking for its description, so the bubble shouldn't cover the result of the click. The focus the same press induces does **not** reopen it (see below); the tooltip stays dismissed until the pointer leaves and re-enters, or the trigger is focused again from the keyboard. To keep the tooltip open across a click, drive `[(open)]` yourself.
+- **Only keyboard focus opens via the focus path.** Open-on-focus fires only when focus arrives **without** a preceding pointer interaction (i.e. a real keyboard `Tab`). A mouse, pen, or touch press that focuses the trigger never opens (or reopens) the tooltip, because hover already covers pointer users. This generalises the original touch-only guard to every pointer type.
+- **Portal**: the content element is moved to `document.body` on first render. Any styles you scope to the wrapper won't reach it, so style the bubble globally or via a class on the content directive itself.
 - **`pointer-events: none`** is applied only when `hoverableContent` is set to `false`. By default (`hoverableContent` is `true`) the pointer may rest over the bubble (WCAG 2.1 SC 1.4.13 "Hoverable"), and clicks land on the bubble rather than passing through to whatever is behind. Set `hoverableContent` to `false` (per-instance or via `provideForTooltipDefaults`) to restore the pass-through behavior, and keep the content non-interactive per APG regardless.
-- **Keep content non-interactive**. Tooltips don't trap focus and won't survive a click into them — APG explicitly forbids interactive children.
-- **`hoverableContent`** lets the pointer move into the bubble without dismissing it — useful for descriptive text the user may want to select. It drops the default `pointer-events: none` while open and bridges the trigger / content gap with a pointer-grace "safe triangle" so a slow diagonal traversal doesn't close the tooltip. The content must still stay non-interactive per APG.
-- **`showOnOverflow`** gates the tooltip on the trigger being truncated (`scrollWidth > clientWidth`) — the common pattern for ellipsized labels, where the tooltip adds nothing once the full text already fits. When the trigger's text fits, hover and focus are ignored.
-- **Closes on scroll.** When an ancestor scroll container moves content under a stationary cursor (wheel / trackpad scrolling a virtualized or overflow-scroll list), an open tooltip closes immediately and hover opens stay suppressed for a short window while the scroll is in flight — so tooltips on rows sliding past the pointer don't linger or flicker open. This is always on; a genuine pointer move after scrolling settles opens the tooltip normally again.
-- **Touch**: APG flags tooltips as problematic on touch devices (no hover, no separate focus, no obvious dismiss). The trigger filters touch pointers out of both the hover-open and focus-open paths, so a tap does **not** open the tooltip — only mouse hover and keyboard focus do. For touch-first UI where the descriptive content must be reachable on tap, consider a Popover.
-- **Arrow offset**: `[forTooltipArrow]` writes `position: absolute`, the floating-ui-resolved `left` / `top`, and `var(--for-floating-arrow-offset, 0px)` on the side opposite the bubble. Set `--for-floating-arrow-offset` on the arrow (or any ancestor) to control how far the arrow pokes out — typically a negative `px` value such as `-4px`. Defaults to `0px`.
+- **Keep content non-interactive**. Tooltips don't trap focus and won't survive a click into them. APG explicitly forbids interactive children.
+- **`hoverableContent`** lets the pointer move into the bubble without dismissing it, which is useful for descriptive text the user may want to select. It drops the default `pointer-events: none` while open and bridges the trigger / content gap with a pointer-grace "safe triangle" so a slow diagonal traversal doesn't close the tooltip. The content must still stay non-interactive per APG.
+- **`showOnOverflow`** gates the tooltip on the trigger being truncated (`scrollWidth > clientWidth`). This is the common pattern for ellipsized labels, where the tooltip adds nothing once the full text already fits. When the trigger's text fits, hover and focus are ignored.
+- **Closes on scroll.** When an ancestor scroll container moves content under a stationary cursor (wheel / trackpad scrolling a virtualized or overflow-scroll list), an open tooltip closes immediately and hover opens stay suppressed for a short window while the scroll is in flight, so that tooltips on rows sliding past the pointer don't linger or flicker open. This is always on; a genuine pointer move after scrolling settles opens the tooltip normally again.
+- **Touch**: APG flags tooltips as problematic on touch devices (no hover, no separate focus, no obvious dismiss). The trigger filters touch pointers out of both the hover-open and focus-open paths, so a tap does **not** open the tooltip. Only mouse hover and keyboard focus do. For touch-first UI where the descriptive content must be reachable on tap, consider a Popover.
+- **Arrow offset**: `[forTooltipArrow]` writes `position: absolute`, the floating-ui-resolved `left` / `top`, and `var(--for-floating-arrow-offset, 0px)` on the side opposite the bubble. Set `--for-floating-arrow-offset` on the arrow (or any ancestor) to control how far the arrow pokes out. The offset is typically a negative `px` value such as `-4px`. Defaults to `0px`.
 
 ### Triggers stamped from outside-declared templates
 
-Angular resolves `ng-template` DI at the template's **declaration** site, not where it is stamped. A `[forTooltipTrigger]` declared in a template outside the root throws the orphan error even when the template is rendered inside the root via `ngTemplateOutlet`. For that case the selector attribute accepts the root reference as a value, `routerLink`-style — grab it with `#root="forTooltip"` and pass it through the outlet context. The bare valueless attribute keeps resolving via DI.
+Angular resolves `ng-template` DI at the template's **declaration** site, not where it is stamped. A `[forTooltipTrigger]` declared in a template outside the root throws the orphan error even when the template is rendered inside the root via `ngTemplateOutlet`. For that case the selector attribute accepts the root reference as a value, `routerLink`-style. Grab it with `#root="forTooltip"` and pass it through the outlet context. The bare valueless attribute keeps resolving via DI.
 
 ```html
 <span forTooltip #root="forTooltip">

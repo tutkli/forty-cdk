@@ -57,7 +57,7 @@ Headless and styleless: it ships slide tracking, keyboard navigation, focus mana
 
 ## Examples
 
-Page through the slides with the buttons, the arrow keys or a drag — `data-dragging` is on while a pointer holds the track, and the root carries `data-orientation`.
+Page through the slides with the buttons, the arrow keys or a drag. The root carries `data-orientation`, and `data-dragging` is on while a pointer holds the track.
 
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
@@ -233,7 +233,7 @@ focusable child** of the carousel to enable automatic slide rotation.
   manual navigation is announced.
 
 **APG requirement:** if you enable `autoplay`, you **must** render a
-`[forCarouselRotationControl]` and place it first in the tab order — an
+`[forCarouselRotationControl]` and place it first in the tab order, because an
 auto-rotating carousel without a visible pause control fails WCAG 2.2.2 (Pause,
 Stop, Hide). The directive does not enforce this, but your implementation does.
 
@@ -268,7 +268,7 @@ car.playing(); // Signal<boolean> — user intent
 
 Apply `forCarouselDrag` on the `[forCarouselViewport]` element to enable
 pointer drag and touch swipe navigation. The directive is **opt-in and
-tree-shakeable** — it adds nothing to the root `ForCarousel` for consumers who
+tree-shakeable**: it adds nothing to the root `ForCarousel` for consumers who
 don't use it.
 
 ```html
@@ -326,11 +326,11 @@ so compose it **without** the `-1` factor the consumer may apply to
 
 Under `prefers-reduced-motion: reduce` the directive does **not** publish
 `--for-carousel-swipe-movement-x` / `-y` (no live track motion). The gesture still snaps
-`activeIndex` on release — only the continuous live offset is suppressed.
+`activeIndex` on release. Only the continuous live offset is suppressed.
 
 ### Cross-axis / touch
 
-`touch-action` is set automatically on the viewport host — `pan-y` for
+`touch-action` is set automatically on the viewport host: `pan-y` for
 horizontal carousels (allows vertical page scroll) and `pan-x` for vertical
 carousels (allows horizontal page scroll). A mostly-cross-axis swipe is never
 captured, so page scrolling on the perpendicular axis is unaffected.
@@ -473,7 +473,7 @@ Implements the [WAI-ARIA Carousel pattern](https://www.w3.org/WAI/ARIA/apg/patte
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). The directive publishes geometry as CSS custom properties on the root element so they cascade to the track. The consumer applies the transform and transition.
+forty-cdk ships no styles. Add your own class to each piece. The `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). The directive publishes geometry as CSS custom properties on the root element so they cascade to the track. The consumer applies the transform and transition.
 
 ```css
 [forCarouselViewport] {
@@ -516,7 +516,7 @@ children, unless noted otherwise:
 
 ### Autoplay styling hooks
 
-Render both icons inside the control and let `data-playing` pick which one shows — the
+Render both icons inside the control and let `data-playing` pick which one shows. The
 control keeps its own accessible name either way, so the icons stay `aria-hidden`.
 
 ```css
@@ -529,18 +529,18 @@ control keeps its own accessible name either way, so the icons stay `aria-hidden
 }
 ```
 
-| Attribute       | When present                                            |
-| --------------- | ------------------------------------------------------- |
-| `data-playing`  | On `[forCarouselRotationControl]` — user intent is "on" |
-| `data-rotating` | On `[forCarousel]` — actively rotating right now        |
-| `data-autoplay` | On `[forCarousel]` — the `autoplay` input is `true`     |
+| Attribute       | When present                                               |
+| --------------- | ---------------------------------------------------------- |
+| `data-playing`  | On `[forCarouselRotationControl]` when user intent is "on" |
+| `data-rotating` | On `[forCarousel]` while it is actively rotating           |
+| `data-autoplay` | On `[forCarousel]` when the `autoplay` input is `true`     |
 
 ### Boundary styling hooks
 
-| Attribute       | When present                                              |
-| --------------- | --------------------------------------------------------- |
-| `data-disabled` | On `[forCarouselPrevious]` — at index 0 without `loop`    |
-| `data-disabled` | On `[forCarouselNext]` — at the last index without `loop` |
+| Attribute       | When present                                                 |
+| --------------- | ------------------------------------------------------------ |
+| `data-disabled` | On `[forCarouselPrevious]` when at index 0 without `loop`    |
+| `data-disabled` | On `[forCarouselNext]` when at the last index without `loop` |
 
 ### Drag styling hooks
 
@@ -563,7 +563,7 @@ for users who prefer reduced motion:
 
 ### RTL support
 
-Arrow-key direction (ArrowLeft/ArrowRight) is automatically swapped in RTL — handled by
+Arrow-key direction (ArrowLeft/ArrowRight) is automatically swapped in RTL by
 `resolveListNavigation` and the reflected `dir` attribute. The **visual** track direction
 in RTL is the consumer's CSS concern. For example, to flip the translate sign in RTL:
 

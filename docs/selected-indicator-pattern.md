@@ -14,7 +14,7 @@ By default, an indicator that belongs to an unchecked item gets the `hidden` att
 
 ## The pattern: `[forceMount]` + `opacity`
 
-Set `[forceMount]="true"` on the indicator so it stays mounted and reserves its slot in every row regardless of state. Then hide the glyph **visually** — not structurally — with a CSS rule keyed on the `data-state` attribute the directive reflects:
+Set `[forceMount]="true"` on the indicator so it stays mounted and reserves its slot in every row regardless of state. Then hide the glyph **visually**, not structurally, with a CSS rule keyed on the `data-state` attribute the directive reflects:
 
 ```html
 <!-- Inside [forMenuCheckboxItem] -->
@@ -37,17 +37,17 @@ Set `[forceMount]="true"` on the indicator so it stays mounted and reserves its 
 
 | Approach                                        | Reserves layout slot | Screen-reader safe          |
 | ----------------------------------------------- | -------------------- | --------------------------- |
-| `display: none` (the default / no `forceMount`) | No — rows misalign   | Yes (already `aria-hidden`) |
+| `display: none` (the default / no `forceMount`) | No (rows misalign)   | Yes (already `aria-hidden`) |
 | `visibility: hidden`                            | Yes                  | Yes (already `aria-hidden`) |
 | `opacity: 0` (recommended)                      | Yes                  | Yes (already `aria-hidden`) |
 
-`ForMenuItemIndicator` always emits `aria-hidden="true"`, so neither `visibility` nor `opacity` creates an accessibility problem — the glyph is decorative and invisible to screen readers regardless. Use `opacity` or `visibility` interchangeably; the demos use `opacity`.
+`ForMenuItemIndicator` always emits `aria-hidden="true"`, so neither `visibility` nor `opacity` creates an accessibility problem. The glyph is decorative and invisible to screen readers regardless. Use `opacity` or `visibility` interchangeably; the demos use `opacity`.
 
 ---
 
 ## Exit animation
 
-`[forceMount]="true"` is also the prerequisite for wrapping the glyph in an `animate.leave` exit animation — Angular requires the element to stay in the DOM for the duration of the animation:
+`[forceMount]="true"` is also the prerequisite for wrapping the glyph in an `animate.leave` exit animation, because Angular requires the element to stay in the DOM for the duration of the animation:
 
 ```html
 <span forMenuItemIndicator [forceMount]="true" class="indicator" animate.leave="fade-out">✓</span>
