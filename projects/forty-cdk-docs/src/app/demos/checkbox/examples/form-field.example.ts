@@ -77,7 +77,7 @@ interface Signup {
 
     .cb-check {
       display: none;
-      width: 12px;
+      width: 6px;
       height: 12px;
       border: solid var(--ex-accent-contrast, #ffffff);
       border-width: 0 2.5px 2.5px 0;
