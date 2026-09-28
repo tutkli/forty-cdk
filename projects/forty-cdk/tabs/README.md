@@ -82,7 +82,7 @@ export class TabsDefaultExample {
 }
 ```
 
-### Manual activation
+### Focus without selecting
 
 `activationMode='manual'` lets the arrow keys move focus without selecting; the user presses `Space` or `Enter` to activate — better when panel content is expensive.
 

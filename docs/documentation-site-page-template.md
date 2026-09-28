@@ -221,6 +221,17 @@ removed, stays in the alias list so it cannot come back.
   `html` or `css` fence that deliberately sketches an unrelated element carries a written
   exemption in `CLASS_EXEMPTIONS` in `scripts/lib/doc-hero-fence.mjs` instead.
 
+  A demo's `###` may not slugify to what any other heading in its document slugifies to
+  ([#2019](https://github.com/tutkli/forty-cdk/issues/2019)). The slugger is GitHub's, so the second
+  of two headings that slug alike is published with a `-1`, and a demo sits above the reference
+  section it would share a title with: the demo takes `#column-resizing`, the contract is pushed to
+  `#column-resizing-1`, and a link written for the contract lands on the demo frame with nothing to
+  report it, because the id it names exists. Name the demo for what it shows instead —
+  `### Resizable columns` above `## Column resizing` — and its page's `heading` with it: the
+  reference section's anchor is the one other documents link to. The document-model generator fails
+  a collision, naming the README and both headings, so `pnpm test:docs` and `pnpm build:docs` both
+  stop on it.
+
 - **`## API`** — One `### ForX` subsection per piece, each with an **Inputs / Outputs / Models**
   table (merge "Inputs" and "Outputs" tables under the piece; mark outputs in the Description or a
   Kind column). Canonical columns for new content: **Property · Type · Default · Description**,

@@ -42,7 +42,10 @@ import { DOC } from '../../../generated/docs/primitives/carousel.generated';
         <app-carousel-autoplay-example />
       </demo-layout>
 
-      <demo-layout heading="drag--swipe" sourcePath="carousel/examples/drag.example.ts">
+      <demo-layout
+        heading="pointer-drag--touch-swipe"
+        sourcePath="carousel/examples/drag.example.ts"
+      >
         <app-carousel-drag-example />
       </demo-layout>
     </primitive-page>

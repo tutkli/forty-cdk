@@ -1475,7 +1475,7 @@ exports[`document structure > projects/forty-cdk/calendar/README.md declares the
       },
       {
         "depth": 3,
-        "slug": "range-selection",
+        "slug": "range-mode",
       },
       {
         "depth": 3,
@@ -1526,7 +1526,7 @@ exports[`document structure > projects/forty-cdk/calendar/README.md declares the
   },
   {
     "headings": [],
-    "slug": "range-selection-1",
+    "slug": "range-selection",
     "tables": [
       {
         "columns": [
@@ -1743,7 +1743,7 @@ exports[`document structure > projects/forty-cdk/carousel/README.md declares the
       },
       {
         "depth": 3,
-        "slug": "drag--swipe",
+        "slug": "pointer-drag--touch-swipe",
       },
     ],
     "slug": "examples",
@@ -1775,7 +1775,7 @@ exports[`document structure > projects/forty-cdk/carousel/README.md declares the
         "slug": "cross-axis--touch",
       },
     ],
-    "slug": "drag--swipe-1",
+    "slug": "drag--swipe",
     "tables": [],
     "title": "Drag / swipe",
   },
@@ -2086,7 +2086,7 @@ exports[`document structure > projects/forty-cdk/combobox/README.md declares the
       },
       {
         "depth": 3,
-        "slug": "object-values",
+        "slug": "binding-whole-objects",
       },
       {
         "depth": 3,
@@ -2257,7 +2257,7 @@ exports[`document structure > projects/forty-cdk/combobox/README.md declares the
   },
   {
     "headings": [],
-    "slug": "object-values-1",
+    "slug": "object-values",
     "tables": [
       {
         "columns": [
@@ -3325,15 +3325,15 @@ exports[`document structure > projects/forty-cdk/drawer/README.md declares the s
     "headings": [
       {
         "depth": 3,
-        "slug": "snap-points",
+        "slug": "snapping-sheet",
       },
       {
         "depth": 3,
-        "slug": "scale-background",
+        "slug": "receding-page",
       },
       {
         "depth": 3,
-        "slug": "nested-drawers",
+        "slug": "drawer-inside-a-drawer",
       },
       {
         "depth": 3,
@@ -3436,7 +3436,7 @@ exports[`document structure > projects/forty-cdk/drawer/README.md declares the s
         "slug": "backdrop-swipe-fade-css-contract",
       },
     ],
-    "slug": "snap-points-1",
+    "slug": "snap-points",
     "tables": [],
     "title": "Snap points",
   },
@@ -3448,13 +3448,13 @@ exports[`document structure > projects/forty-cdk/drawer/README.md declares the s
   },
   {
     "headings": [],
-    "slug": "scale-background-1",
+    "slug": "scale-background",
     "tables": [],
     "title": "Scale background",
   },
   {
     "headings": [],
-    "slug": "nested-drawers-1",
+    "slug": "nested-drawers",
     "tables": [],
     "title": "Nested drawers",
   },
@@ -6958,19 +6958,19 @@ exports[`document structure > projects/forty-cdk/table/README.md declares the se
     "headings": [
       {
         "depth": 3,
-        "slug": "row-selection",
+        "slug": "multiple-row-selection",
       },
       {
         "depth": 3,
-        "slug": "sortable-headers",
+        "slug": "single-column-sort",
       },
       {
         "depth": 3,
-        "slug": "column-resizing",
+        "slug": "resizable-columns",
       },
       {
         "depth": 3,
-        "slug": "column--row-reordering",
+        "slug": "reorderable-columns-and-rows",
       },
       {
         "depth": 3,
@@ -7261,13 +7261,13 @@ exports[`document structure > projects/forty-cdk/table/README.md declares the se
         "slug": "minimal-multiple-select-example",
       },
     ],
-    "slug": "row-selection-1",
+    "slug": "row-selection",
     "tables": [],
     "title": "Row selection",
   },
   {
     "headings": [],
-    "slug": "sortable-headers-1",
+    "slug": "sortable-headers",
     "tables": [],
     "title": "Sortable headers",
   },
@@ -7282,13 +7282,13 @@ exports[`document structure > projects/forty-cdk/table/README.md declares the se
         "slug": "include-the-header-label",
       },
     ],
-    "slug": "column-resizing-1",
+    "slug": "column-resizing",
     "tables": [],
     "title": "Column resizing",
   },
   {
     "headings": [],
-    "slug": "column--row-reordering-1",
+    "slug": "column--row-reordering",
     "tables": [],
     "title": "Column & row reordering",
   },
@@ -7396,7 +7396,7 @@ exports[`document structure > projects/forty-cdk/tabs/README.md declares the sec
     "headings": [
       {
         "depth": 3,
-        "slug": "manual-activation",
+        "slug": "focus-without-selecting",
       },
       {
         "depth": 3,
@@ -7409,7 +7409,7 @@ exports[`document structure > projects/forty-cdk/tabs/README.md declares the sec
   },
   {
     "headings": [],
-    "slug": "manual-activation-1",
+    "slug": "manual-activation",
     "tables": [],
     "title": "Manual activation",
   },
@@ -7842,7 +7842,7 @@ exports[`document structure > projects/forty-cdk/toast/README.md declares the se
       },
       {
         "depth": 3,
-        "slug": "swipe-to-dismiss",
+        "slug": "swipe-right-to-dismiss",
       },
     ],
     "slug": "examples",
@@ -7935,7 +7935,7 @@ exports[`document structure > projects/forty-cdk/toast/README.md declares the se
   },
   {
     "headings": [],
-    "slug": "swipe-to-dismiss-1",
+    "slug": "swipe-to-dismiss",
     "tables": [
       {
         "columns": [
@@ -8488,7 +8488,7 @@ exports[`document structure > projects/forty-cdk/tree/README.md declares the sec
     "headings": [
       {
         "depth": 3,
-        "slug": "checkbox-selection",
+        "slug": "cascading-checkboxes",
       },
       {
         "depth": 3,
@@ -8524,7 +8524,7 @@ exports[`document structure > projects/forty-cdk/tree/README.md declares the sec
         "slug": "structural-nodes",
       },
     ],
-    "slug": "checkbox-selection-1",
+    "slug": "checkbox-selection",
     "tables": [],
     "title": "Checkbox selection",
   },

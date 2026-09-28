@@ -36,20 +36,23 @@ import { DOC } from '../../../generated/docs/primitives/table.generated';
         <app-table-grid-example />
       </demo-layout>
 
-      <demo-layout heading="row-selection" sourcePath="table/examples/selection.example.ts">
+      <demo-layout
+        heading="multiple-row-selection"
+        sourcePath="table/examples/selection.example.ts"
+      >
         <app-table-selection-example />
       </demo-layout>
 
-      <demo-layout heading="sortable-headers" sourcePath="table/examples/sorting.example.ts">
+      <demo-layout heading="single-column-sort" sourcePath="table/examples/sorting.example.ts">
         <app-table-sorting-example />
       </demo-layout>
 
-      <demo-layout heading="column-resizing" sourcePath="table/examples/resizing.example.ts">
+      <demo-layout heading="resizable-columns" sourcePath="table/examples/resizing.example.ts">
         <app-table-resizing-example />
       </demo-layout>
 
       <demo-layout
-        heading="column--row-reordering"
+        heading="reorderable-columns-and-rows"
         sourcePath="table/examples/reordering.example.ts"
       >
         <app-table-reordering-example />

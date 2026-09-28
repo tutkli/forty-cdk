@@ -113,19 +113,19 @@ export class TableGridExample {
 }
 ```
 
-### Row selection
+### Multiple row selection
 
 `selectionMode="multiple"` adds row selection. The row owns `aria-selected`; `[forTableRowSelector]` is a decorative per-row affordance and `[forTableSelectAll]` is a tri-state header checkbox. Click a row, the selector, or press `Space` on a focused cell.
 
-### Sortable headers
+### Single-column sort
 
-Click a header, or tab to it and press `Enter` or `Space`, and its `[forTableSortHeader]` cycles the column through ascending, descending and unsorted. Sorting another column clears the first, because the demo holds a single sort descriptor and reorders its own rows from it. [Sortable headers](#sortable-headers-1) covers the options on the direction cycle and the grid-mode tab stop.
+Click a header, or tab to it and press `Enter` or `Space`, and its `[forTableSortHeader]` cycles the column through ascending, descending and unsorted. Sorting another column clears the first, because the demo holds a single sort descriptor and reorders its own rows from it. [Sortable headers](#sortable-headers) covers the options on the direction cycle and the grid-mode tab stop.
 
-### Column resizing
+### Resizable columns
 
-Drag a header's `[forTableColumnResizer]` handle to resize its column, or focus a header cell, press `Enter` to reach its handle and step the width by 10px with `ArrowLeft` / `ArrowRight`. Each column stops at its own `[min]` / `[max]`. The directive only publishes the width; [Column resizing](#column-resizing-1) shows the `grid-template-columns` wiring, the commit output and auto-fit.
+Drag a header's `[forTableColumnResizer]` handle to resize its column, or focus a header cell, press `Enter` to reach its handle and step the width by 10px with `ArrowLeft` / `ArrowRight`. Each column stops at its own `[min]` / `[max]`. The directive only publishes the width; [Column resizing](#column-resizing) shows the `grid-template-columns` wiring, the commit output and auto-fit.
 
-### Column & row reordering
+### Reorderable columns and rows
 
 The companion directives `[forTableColumnReorder]` (on the header row) and `[forTableRowReorder]` (on the rowgroup) wrap the drag-drop primitive. Add `[forDraggable]` `[dragData]` to each header cell / row, then drag to reorder. `aria-rowindex` / `aria-colindex` recompute automatically. The library never mutates your data — the handlers apply the move to local signals.
 

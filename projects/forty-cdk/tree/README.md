@@ -175,7 +175,7 @@ Trees are recursive, and the idiomatic Angular shape is a small **recursive comp
 
 Mounting is the consumer's responsibility: wrap `[forTreeGroup]` in `@if (expanded().includes(node.id))` so a collapsed parent drops its subtree. A node is treated as a **parent** (and emits `aria-expanded` / `data-state`) only when a `[forTreeItemToggle]` is registered inside it — leaves render no toggle and emit neither, matching the APG "end nodes lack `aria-expanded`" rule.
 
-### Checkbox selection
+### Cascading checkboxes
 
 `selectionMode='checkbox'` switches each treeitem from `aria-selected` to `aria-checked` and lets every node toggle independently. `cascade` plus a `descendantsOf` descriptor propagates checks to all descendants (even collapsed ones) and surfaces `aria-checked='mixed'` on partially-checked parents.
 

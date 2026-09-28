@@ -32,18 +32,15 @@ import { DOC } from '../../../generated/docs/primitives/drawer.generated';
         <app-drawer-default-example />
       </demo-layout>
 
-      <demo-layout heading="snap-points" sourcePath="drawer/examples/snap-points.example.ts">
+      <demo-layout heading="snapping-sheet" sourcePath="drawer/examples/snap-points.example.ts">
         <app-drawer-snap-points-example />
       </demo-layout>
 
-      <demo-layout
-        heading="scale-background"
-        sourcePath="drawer/examples/scale-background.example.ts"
-      >
+      <demo-layout heading="receding-page" sourcePath="drawer/examples/scale-background.example.ts">
         <app-drawer-scale-background-example />
       </demo-layout>
 
-      <demo-layout heading="nested-drawers" sourcePath="drawer/examples/nested.example.ts">
+      <demo-layout heading="drawer-inside-a-drawer" sourcePath="drawer/examples/nested.example.ts">
         <app-drawer-nested-example />
       </demo-layout>
 

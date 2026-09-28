@@ -333,17 +333,17 @@ export class DrawerDefaultExample {
 }
 ```
 
-### Snap points
+### Snapping sheet
 
 Drag the sheet between peek / half / full. Release resolves to the nearest snap by position (or dismisses past the lowest one). The consumer positions each snap via CSS keyed off `data-active-snap-point`; `data-dragging` disables the transition mid-gesture. `fadeFromIndex` fades the backdrop in only once the sheet reaches the half snap.
 
-### Scale background
+### Receding page
 
 With `[scaleBackground]` the `[forDrawerWrapper]` element scales and rounds its corners behind the drawer, so the page reads as a layer that recedes. Here the wrapper is the app shell of this documentation site, so the whole page recedes behind the sheet.
 
-### Nested drawers
+### Drawer inside a drawer
 
-Open the parent drawer, then the nested one mounted inside its `@if`: with no flag set, the parent scales back behind the child, and `Escape` closes the child first, then the parent. [Nested drawers](#nested-drawers-1) covers how nesting is detected, the `data-state-nested` / `data-depth` hooks and the `@if` order the stack relies on.
+Open the parent drawer, then the nested one mounted inside its `@if`: with no flag set, the parent scales back behind the child, and `Escape` closes the child first, then the parent. [Nested drawers](#nested-drawers) covers how nesting is detected, the `data-state-nested` / `data-depth` hooks and the `@if` order the stack relies on.
 
 ### Region-scoped (container)
 
@@ -707,7 +707,7 @@ Two shapes are correct by design and still break something a consumer can only d
 
 **A shadow host that renders a focusable after its `<slot>` breaks the trap's `Tab` cycle.** The trap resolves its first / last pair by walking the surface's composed tree, and that walk visits slotted content after the host's whole shadow tree, whereas the browser sequences it at the `<slot>`'s position. Initial focus can land on a control that is not the visually first one, and a `Tab` at the drawer's real last control is not recognised as the cycle's end — focus leaves the surface (with the page `inert`, usually onto the browser's own UI) and the next `Tab` is pulled back to whichever control the walk thinks is first. That is the configuration you are in whenever you wrap a third-party web component, or your own `ViewEncapsulation.ShadowDom` component, inside the drawer. **Workaround:** render a host's own focusables before its `<slot>`, or project them instead of shadowing them; `initialFocus="container"` fixes the initial-focus half only, since the cycle's edges are re-resolved on every `Tab` press. Details and markup: [Focusable order](../shared/README.md#focusable-order-is-composed-only-for-a-host-that-renders-no-slot).
 
-**A `keydown` handler inside the drawer that calls `stopPropagation()` swallows Escape.** The dismissible-layer stack observes `Escape` on `document` in the bubble phase — a deliberate trade-off recorded on `DismissibleLayerStack` — so an event stopped inside the surface never arrives, and `Escape` silently stops dismissing while swipe-to-dismiss, the backdrop click and `[forDrawerClose]` keep working. Only the topmost drawer's `Escape` is affected; see [Nested drawers](#nested-drawers-1) for the stacking contract. **Workaround:** narrow the `stopPropagation()` to the keys you actually handle. Keeping the drawer open on `Escape` is the separate, supported job of the vetoable `(escapeKeyDown)` output. Details: [Escape is observed on the bubble phase](../shared/README.md#escape-is-observed-on-the-bubble-phase).
+**A `keydown` handler inside the drawer that calls `stopPropagation()` swallows Escape.** The dismissible-layer stack observes `Escape` on `document` in the bubble phase — a deliberate trade-off recorded on `DismissibleLayerStack` — so an event stopped inside the surface never arrives, and `Escape` silently stops dismissing while swipe-to-dismiss, the backdrop click and `[forDrawerClose]` keep working. Only the topmost drawer's `Escape` is affected; see [Nested drawers](#nested-drawers) for the stacking contract. **Workaround:** narrow the `stopPropagation()` to the keys you actually handle. Keeping the drawer open on `Escape` is the separate, supported job of the vetoable `(escapeKeyDown)` output. Details: [Escape is observed on the bubble phase](../shared/README.md#escape-is-observed-on-the-bubble-phase).
 
 A third known limit does not apply to this primitive but is easy to hit inside one: a [Tabs](../tabs) or [Stepper](../stepper) panel rendered in a drawer cannot re-measure its focusable content across a shadow boundary, so its own tab stop can go stale — see [that entry](../shared/README.md#a-panels-focusable-content-measurement-does-not-re-measure-across-a-boundary).
 

@@ -1,4 +1,5 @@
 import { splitFrontmatter } from './doc-frontmatter.mjs';
+import { slugify } from './readme-slug.mjs';
 
 /**
  * The nav group a document publishes under, or `none` for an entry point whose
@@ -661,6 +662,47 @@ export function checkExampleHeadings(documents) {
   return problems;
 }
 
+export function checkExampleAnchors(documents) {
+  const problems = [];
+  for (const document of documents) {
+    const headings = [
+      ...document.introHeadings.map((heading) => ({ ...heading, section: null })),
+      ...document.sections.flatMap((section) => [
+        { depth: 2, text: section.title, slug: section.slug, section: null },
+        ...section.headings.map((heading) => ({ ...heading, section: section.title })),
+      ]),
+    ];
+    const reported = new Set();
+
+    for (const example of document.examples) {
+      const base = slugify(example.title);
+      for (const other of headings) {
+        if (
+          other.slug === example.slug ||
+          reported.has(other.slug) ||
+          slugify(other.text) !== base
+        ) {
+          continue;
+        }
+        const named = `"${'#'.repeat(other.depth)} ${other.text}"`;
+        const where = other.section === null ? named : `${named} under "## ${other.section}"`;
+        problems.push({
+          path: document.path,
+          line: example.line,
+          message:
+            `"### ${example.title}" under "## Examples" slugs to "${base}", as ${where} does, so ` +
+            `the demo is published as #${example.slug} and ${named} as #${other.slug} — whichever ` +
+            'comes first takes the plain anchor, and a link meant for the other lands on it. ' +
+            'Rename the demo heading, and the `heading` its page names: the anchor of a reference ' +
+            'heading is the one other documents link to',
+        });
+      }
+      reported.add(example.slug);
+    }
+  }
+  return problems;
+}
+
 /**
  * Every exemption that no longer earns its place — one naming a document that
  * is gone, and one for a section the document has since written.
@@ -862,6 +904,7 @@ export function checkContract(documents) {
     ...checkSections(documents),
     ...checkExamplesCaption(documents),
     ...checkExampleHeadings(documents),
+    ...checkExampleAnchors(documents),
     ...checkExemptions(documents),
     ...checkHeadingAliases(documents),
     ...checkSectionOrder(documents),

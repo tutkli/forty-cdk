@@ -25,7 +25,7 @@ import { DOC } from '../../../generated/docs/primitives/toast.generated';
       </demo-layout>
 
       <demo-layout
-        heading="swipe-to-dismiss"
+        heading="swipe-right-to-dismiss"
         sourcePath="toast/examples/swipe-to-dismiss.example.ts"
       >
         <app-toast-swipe-example />

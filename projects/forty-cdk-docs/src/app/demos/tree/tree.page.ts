@@ -30,7 +30,7 @@ import { DOC } from '../../../generated/docs/primitives/tree.generated';
         <app-tree-default-example />
       </demo-layout>
 
-      <demo-layout heading="checkbox-selection" sourcePath="tree/examples/checkbox.example.ts">
+      <demo-layout heading="cascading-checkboxes" sourcePath="tree/examples/checkbox.example.ts">
         <app-tree-checkbox-example />
       </demo-layout>
 
