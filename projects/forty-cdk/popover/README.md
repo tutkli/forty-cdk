@@ -27,7 +27,7 @@ Popover is the one floating surface that opens on activation, takes focus and st
 
 ```html
 <div forPopover #popover="forPopover" side="bottom" align="center">
-  <button forPopoverTrigger>
+  <button forPopoverTrigger class="popover-trigger">
     Settings
     <span class="chevron" aria-hidden="true"></span>
   </button>

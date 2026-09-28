@@ -689,6 +689,27 @@ describe('the classes a stylesheet outside the section selects', () => {
 
     expect(problems.map((problem) => problem.line)).toEqual([17, 1]);
   });
+
+  it('holds every stylesheet of a README declaring no "## Examples" to the rule', () => {
+    const source = md(
+      '## Anatomy',
+      '',
+      '```html',
+      '<span class="chevron"></span>',
+      '```',
+      '',
+      '## Styling',
+      '',
+      '```css',
+      '.chevron, .set-trigger {',
+      '}',
+      '```',
+    );
+
+    expect(heroFenceProblems([{ path, source, hero: null }], [])).toEqual([
+      { path, line: 9, message: expect.stringContaining('selects the class `set-trigger`,') },
+    ]);
+  });
 });
 
 describe('the corpus the generator owns', () => {

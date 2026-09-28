@@ -397,15 +397,18 @@ function undeclaredClasses(document, examples, placement, exemptions, used) {
 const CLASS_WRITERS = new Set(['html', FENCE_LANGUAGE]);
 
 function unwrittenClasses(document, examples) {
+  const fences =
+    examples?.fences ?? fencesOf(document.source).map((fence) => ({ ...fence, open: fence.line }));
   const written = new Set(
-    examples.fences
+    fences
       .filter((fence) => CLASS_WRITERS.has(fence.language))
       .flatMap((fence) => [...templateClassesOf(fence.code)]),
   );
-  const inExamples = (fence) => fence.open > examples.section && fence.open <= examples.end;
+  const inExamples = (fence) =>
+    examples !== null && fence.open > examples.section && fence.open <= examples.end;
   const problems = [];
 
-  for (const fence of examples.fences) {
+  for (const fence of fences) {
     if (fence.language !== 'css' || inExamples(fence)) {
       continue;
     }
@@ -444,7 +447,8 @@ function unwrittenClasses(document, examples) {
  * {@link CLASS_EXEMPTIONS}, and an entry that exempts nothing is reported too.
  *
  * Outside the section, every class a `css` fence selects must be one some
- * `html` or `ts` fence in the same README writes, hero or not. That is looser
+ * `html` or `ts` fence in the same README writes, hero or not, and in a README
+ * declaring no such section every `css` fence is outside it. That is looser
  * than the rule inside it, and it takes no exemptions: a selector naming a
  * class the document never writes styles nothing, whoever reads it.
  */
@@ -455,11 +459,11 @@ export function heroFenceProblems(documents, exemptions = CLASS_EXEMPTIONS) {
 
   for (const document of documents) {
     const examples = examplesOf(document.source);
+    problems.push(...unwrittenClasses(document, examples));
     if (examples === null) {
       continue;
     }
     const placement = placementIn(examples);
-    problems.push(...unwrittenClasses(document, examples));
     if (document.hero === null) {
       unjudged.add(document.path);
       problems.push({

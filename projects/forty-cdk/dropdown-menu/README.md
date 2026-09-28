@@ -22,7 +22,7 @@ A button that opens a menu of actions, with full keyboard navigation, typeahead 
 
 ```html
 <div forDropdownMenu #menu="forDropdownMenu" side="bottom" align="start">
-  <button forDropdownMenuTrigger>
+  <button forDropdownMenuTrigger class="dropdown-menu-trigger">
     Options
     <span class="chevron" aria-hidden="true"></span>
   </button>

@@ -501,7 +501,7 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 .menu-radio-item[data-highlighted] {
   background: rgba(0, 0, 0, 0.06);
 }
-.menu-sub-trigger[data-state='open'] .menu-sub-arrow {
+.menu-item[data-state='open'] .menu-sub-arrow {
   transform: rotate(90deg);
 }
 ```
