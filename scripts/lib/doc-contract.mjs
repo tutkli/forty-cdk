@@ -662,42 +662,59 @@ export function checkExampleHeadings(documents) {
   return problems;
 }
 
-export function checkExampleAnchors(documents) {
+function namedHeading(heading) {
+  return `"${'#'.repeat(heading.depth)} ${heading.text}"`;
+}
+
+function locatedHeading(heading) {
+  const named = namedHeading(heading);
+  return heading.where === null ? named : `${named} ${heading.where}`;
+}
+
+export function checkHeadingAnchors(documents) {
   const problems = [];
   for (const document of documents) {
+    const demoLines = new Set(document.examples.map((example) => example.line));
     const headings = [
-      ...document.introHeadings.map((heading) => ({ ...heading, section: null })),
+      ...document.introHeadings.map((heading) => ({
+        ...heading,
+        where: 'above the first section',
+      })),
       ...document.sections.flatMap((section) => [
-        { depth: 2, text: section.title, slug: section.slug, section: null },
-        ...section.headings.map((heading) => ({ ...heading, section: section.title })),
+        { depth: 2, text: section.title, slug: section.slug, line: section.line, where: null },
+        ...section.headings.map((heading) => ({
+          ...heading,
+          where: `under "## ${section.title}"`,
+        })),
       ]),
     ];
-    const reported = new Set();
+    const firstBySlug = new Map();
 
-    for (const example of document.examples) {
-      const base = slugify(example.title);
-      for (const other of headings) {
-        if (
-          other.slug === example.slug ||
-          reported.has(other.slug) ||
-          slugify(other.text) !== base
-        ) {
-          continue;
-        }
-        const named = `"${'#'.repeat(other.depth)} ${other.text}"`;
-        const where = other.section === null ? named : `${named} under "## ${other.section}"`;
-        problems.push({
-          path: document.path,
-          line: example.line,
-          message:
-            `"### ${example.title}" under "## Examples" slugs to "${base}", as ${where} does, so ` +
-            `the demo is published as #${example.slug} and ${named} as #${other.slug} — whichever ` +
-            'comes first takes the plain anchor, and a link meant for the other lands on it. ' +
-            'Rename the demo heading, and the `heading` its page names: the anchor of a reference ' +
-            'heading is the one other documents link to',
-        });
+    for (const heading of headings) {
+      const base = slugify(heading.text);
+      const first = firstBySlug.get(base);
+      if (first === undefined) {
+        firstBySlug.set(base, heading);
+        continue;
       }
-      reported.add(example.slug);
+      const [subject, other] =
+        demoLines.has(heading.line) && !demoLines.has(first.line)
+          ? [heading, first]
+          : [first, heading];
+      const demo = demoLines.has(subject.line);
+      problems.push({
+        path: document.path,
+        line: subject.line,
+        message:
+          `${locatedHeading(subject)} slugs to "${base}", as ${locatedHeading(other)} does, so ` +
+          `${demo ? 'the demo' : namedHeading(subject)} is published as #${subject.slug} and ` +
+          `${namedHeading(other)} as #${other.slug}. Whichever heading comes first takes the ` +
+          'plain anchor, and a link meant for the other lands on it. ' +
+          (demo
+            ? 'Rename the demo heading and the `heading` its page names, since the anchor of a ' +
+              'reference heading is the one other documents link to'
+            : 'Rename the heading that is not the reference one, and any link naming its anchor'),
+      });
     }
   }
   return problems;
@@ -900,14 +917,15 @@ export function checkSectionRuns(documents) {
 
 /** Every way a compiled corpus disagrees with the contract. */
 export function checkContract(documents) {
+  const readmes = documents.filter((document) => document.kind === 'primitive');
   return [
-    ...checkSections(documents),
-    ...checkExamplesCaption(documents),
-    ...checkExampleHeadings(documents),
-    ...checkExampleAnchors(documents),
-    ...checkExemptions(documents),
-    ...checkHeadingAliases(documents),
-    ...checkSectionOrder(documents),
-    ...checkSectionRuns(documents),
+    ...checkSections(readmes),
+    ...checkExamplesCaption(readmes),
+    ...checkExampleHeadings(readmes),
+    ...checkHeadingAnchors(documents),
+    ...checkExemptions(readmes),
+    ...checkHeadingAliases(readmes),
+    ...checkSectionOrder(readmes),
+    ...checkSectionRuns(readmes),
   ];
 }

@@ -291,6 +291,14 @@ removed, stays in the alias list so it cannot come back.
 - One `#` h1 per README (the title). Sections are `##`; per-piece and sub-topics are `###`.
 - Section anchors are derived from the heading slug, so canonical headings keep deep links stable
   across the site and GitHub.
+- No two headings in one document may slugify alike, whatever their level or section
+  ([#2026](https://github.com/tutkli/forty-cdk/issues/2026)). The second of two such headings is
+  published with a `-1`, so the order they are written in decides which one owns the plain anchor,
+  and a link meant for one lands on the other while still resolving. Rename the heading that is not
+  the reference: `### Reorder keyboard` under `## Reordering` leaves listbox's `## Keyboard` its
+  `#keyboard`. The contract check fails a pair in any README, published guide or site page,
+  naming the file, both headings, the section each sits under and the anchor each is published as,
+  so `pnpm test:docs` and `pnpm build:docs` both stop on it.
 
 ## Site rendering contract
 

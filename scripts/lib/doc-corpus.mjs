@@ -65,12 +65,12 @@ export function compileCorpus() {
     throw new DocCompileError(problems);
   }
 
-  const readmes = compiled.filter((document) => document.kind === 'primitive');
-  const contract = checkContract(readmes);
+  const contract = checkContract(compiled);
   if (contract.length > 0) {
     throw new DocCompileError(contract);
   }
 
+  const readmes = compiled.filter((document) => document.kind === 'primitive');
   const unpublished = readmes.filter((document) => document.meta.group === 'none');
   return {
     documents: compiled.filter((document) => document.meta?.group !== 'none'),

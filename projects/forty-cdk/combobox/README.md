@@ -367,7 +367,7 @@ Actions live inside `[forComboboxContent]` and beside `[forComboboxList]` (never
 inside it, in either anatomy), so they are naturally "inside" the outside-pointer /
 outside-focus dismissal checks, exactly like the input.
 
-### API
+### Action item API
 
 | Member       | Type           | Notes                                                                                                      |
 | ------------ | -------------- | ---------------------------------------------------------------------------------------------------------- |
