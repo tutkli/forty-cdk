@@ -90,8 +90,8 @@ One class and one directive, two states. `disabled` drops the trigger from the t
 
 ### `ForDisclosureTrigger`
 
-| Property   | Type             | Description                                                                          |
-| ---------- | ---------------- | ------------------------------------------------------------------------------------ |
+| Property   | Type             | Description                                                                         |
+| ---------- | ---------------- | ----------------------------------------------------------------------------------- |
 | `disabled` | `input<boolean>` | Disables this trigger only, merged OR with the root's `disabled`.<br>**Default:** — |
 
 | Data attribute  | Values             |

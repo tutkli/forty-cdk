@@ -20,7 +20,7 @@ Two peers are required, and every other one is optional and unlocks a specific p
 
 | Peer                      | Range     | Required | What it is for                                                               |
 | ------------------------- | --------- | -------- | ---------------------------------------------------------------------------- |
-| `@angular/core`           | `^22.0.1` | Yes      | Signals, standalone directives and DI, which the whole library is built on.     |
+| `@angular/core`           | `^22.0.1` | Yes      | Signals, standalone directives and DI, which the whole library is built on.  |
 | `@angular/common`         | `^22.0.1` | Yes      | `DOCUMENT`, platform checks and the SSR-safe branches every primitive takes. |
 | `@angular/forms`          | `^22.0.1` | No       | Signal Forms. Needed only to bind a form primitive with `[formField]`.       |
 | `@internationalized/date` | `^3.0.0`  | No       | The calendar adapters behind `forty-cdk/internationalized-date`.             |

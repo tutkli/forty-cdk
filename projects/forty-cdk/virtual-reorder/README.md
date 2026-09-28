@@ -54,7 +54,7 @@ It re-exposes `[forDropList]`'s `dir`, `disabled`, `autoScroll`, `animateReorder
 | Property | Type     | Description                                                    |
 | -------- | -------- | -------------------------------------------------------------- |
 | `from`   | `number` | Previous absolute (dataset) index of the lifted item, 0-based. |
-| `to`     | `number` | New absolute (dataset) index. Pass both to `moveItemInArray`. |
+| `to`     | `number` | New absolute (dataset) index. Pass both to `moveItemInArray`.  |
 
 ## Keyboard
 

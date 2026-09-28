@@ -113,14 +113,14 @@ The library-wide shadow-DOM statement, covering the two limits that affect overl
 
 ### `ForTabs`
 
-| Property         | Type                                | Description                                                                                                                                                              |
-| ---------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Property         | Type                                | Description                                                                                                                                                                   |
+| ---------------- | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `value`          | `model<string \| null>`             | Two-way bindable. The selected tab's value, or `null` when nothing is selected. `null` is the unset state and is distinct from a tab whose `value` is `''`.<br>**Default:** — |
-| `activationMode` | `input<'automatic' \| 'manual'>`    | Use `'manual'` when panel content is expensive. In manual mode the user must press Space / Enter.<br>**Default:** `'automatic'` (selection follows arrow focus)                            |
-| `orientation`    | `input<'horizontal' \| 'vertical'>` | Drives keyboard navigation and `aria-orientation`.<br>**Default:** `'horizontal'`                                                                                        |
-| `dir`            | `input<'ltr' \| 'rtl'>`             | Swaps ArrowLeft / ArrowRight.<br>**Default:** `'ltr'`                                                                                                                    |
-| `disabled`       | `input<boolean>`                    | When true, blocks all selection and keyboard nav.<br>**Default:** —                                                                                                      |
-| `loop`           | `input<boolean>`                    | When true (default), arrow nav wraps around past the first / last enabled trigger. Set to `false` for a non-wrapping tablist.<br>**Default:** `true`                     |
+| `activationMode` | `input<'automatic' \| 'manual'>`    | Use `'manual'` when panel content is expensive. In manual mode the user must press Space / Enter.<br>**Default:** `'automatic'` (selection follows arrow focus)               |
+| `orientation`    | `input<'horizontal' \| 'vertical'>` | Drives keyboard navigation and `aria-orientation`.<br>**Default:** `'horizontal'`                                                                                             |
+| `dir`            | `input<'ltr' \| 'rtl'>`             | Swaps ArrowLeft / ArrowRight.<br>**Default:** `'ltr'`                                                                                                                         |
+| `disabled`       | `input<boolean>`                    | When true, blocks all selection and keyboard nav.<br>**Default:** —                                                                                                           |
+| `loop`           | `input<boolean>`                    | When true (default), arrow nav wraps around past the first / last enabled trigger. Set to `false` for a non-wrapping tablist.<br>**Default:** `true`                          |
 
 | Data attribute     | Values                     |
 | ------------------ | -------------------------- |

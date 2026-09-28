@@ -169,7 +169,7 @@ A display-only status tracker: the list renders as a plain ordered list with `ar
 | `loop`           | `input<boolean>`                  | Wrap arrow navigation (scope-injectable).<br>**Default:** `true`                                                               |
 | `disabled`       | `input<boolean>`                  | Disables all triggers and navigation.<br>**Default:** `false`                                                                  |
 | `dir`            | `input<'ltr'\|'rtl'\|null>`       | Writing direction (inherits ambient when unset).<br>**Default:** `null`                                                        |
-| `complete`       | `output()`                        | Output. Fires once each time the stepper enters the completed state.<br>**Default:** —                                      |
+| `complete`       | `output()`                        | Output. Fires once each time the stepper enters the completed state.<br>**Default:** —                                         |
 
 `ForStepper` exposes two members for the terminal completed state:
 
@@ -185,7 +185,7 @@ A display-only status tracker: the list renders as a plain ordered list with `ar
 | `disabled`  | `input<boolean>`                  | Disables only this step.<br>**Default:** `false`                                                     |
 | `hasError`  | `input<boolean>`                  | Emits `'error'` resolved state when not current (manual; wins over `field`).<br>**Default:** `false` |
 | `field`     | `input<FieldTree<unknown>\|null>` | Optional Signal Forms field; drives `completed`/`hasError` from validity.<br>**Default:** `null`     |
-| `state`     | `input<string\|null>`             | Custom state override that wins over derived state.<br>**Default:** `null`                              |
+| `state`     | `input<string\|null>`             | Custom state override that wins over derived state.<br>**Default:** `null`                           |
 
 ### `ForStepperContent`
 
@@ -208,9 +208,9 @@ A display-only status tracker: the list renders as a plain ordered list with `ar
 
 #### Boolean `data-*`
 
-| Attribute          | When present                                     |
-| ------------------ | ------------------------------------------------ |
-| `data-disabled`    | Root or step is disabled                         |
+| Attribute          | When present                                    |
+| ------------------ | ----------------------------------------------- |
+| `data-disabled`    | Root or step is disabled                        |
 | `data-orientation` | Always: `horizontal` or `vertical`              |
 | `data-mode`        | Always (root only): `interactive` or `progress` |
 

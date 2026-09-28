@@ -168,8 +168,8 @@ Open a component imperatively and await its result. The manager mounts it under 
 | `focusOutside`       | `OutputEmitterRef<VetoableNativeEvent<FocusEvent>>`                 | Output. Focus moves outside the dialog.<br>**Default:** —                                                                                                                                                                                                         |
 | `interactOutside`    | `OutputEmitterRef<VetoableNativeEvent<PointerEvent \| FocusEvent>>` | Output. Composite: fires alongside both of the above (and shares their veto state).<br>**Default:** —                                                                                                                                                             |
 
-| Data attribute | Values                                                                         |
-| -------------- | ------------------------------------------------------------------------------ |
+| Data attribute | Values                                                                        |
+| -------------- | ----------------------------------------------------------------------------- |
 | `data-state`   | `open` (always: the host is only mounted while open, so it is never `closed`) |
 
 ### Inputs — focus callbacks
@@ -192,13 +192,13 @@ The auto-focus pair is bound as **function references** (input callbacks), not a
 
 | Data attribute             | Values                                                                                   |
 | -------------------------- | ---------------------------------------------------------------------------------------- |
-| `data-state`               | `open` (always, since it is mounted alongside the dialog)                                           |
+| `data-state`               | `open` (always, since it is mounted alongside the dialog)                                |
 | `data-for-dialog-backdrop` | present (stable marker; portaled alongside the dialog, so use it to select the backdrop) |
 
 ### `ForDialogClose`
 
-| Data attribute | Values                                         |
-| -------------- | ---------------------------------------------- |
+| Data attribute | Values                                                    |
+| -------------- | --------------------------------------------------------- |
 | `data-state`   | `open` (always, since it is mounted alongside the dialog) |
 
 ## Programmatic API

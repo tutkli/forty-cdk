@@ -239,7 +239,7 @@ host element:
 
 ## Outputs
 
-| Directive                 | Output          | Payload                        | Description                                                          |
-| ------------------------- | --------------- | ------------------------------ | -------------------------------------------------------------------- |
+| Directive                 | Output          | Payload                        | Description                                                             |
+| ------------------------- | --------------- | ------------------------------ | ----------------------------------------------------------------------- |
 | `[forTableColumnReorder]` | `columnReorder` | `TableColumnReorderDescriptor` | Fired once per committed column drag-drop with `{ from, to, columns }`. |
 | `[forTableRowReorder]`    | `rowReorder`    | `TableRowReorderDescriptor`    | Fired once per committed row drag-drop with `{ from, to }`.             |

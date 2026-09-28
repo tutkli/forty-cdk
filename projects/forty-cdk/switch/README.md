@@ -93,17 +93,17 @@ export class DemoSettings {
 
 ### `ForSwitch`
 
-| Property   | Type                                                      | Description                                                                                                                |
-| ---------- | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `checked`  | `model<boolean>`                                          | Two-way bindable on/off state. Required by `FormCheckboxControl`.<br>**Default:** —                                        |
-| `disabled` | `input<boolean>`                                          | Ignores click; reflects `aria-disabled="true"` and `data-disabled`. Stays focusable (per APG).<br>**Default:** —           |
-| `readonly` | `input<boolean>`                                          | Ignores click; reflects `aria-readonly="true"`. Stays focusable.<br>**Default:** —                                         |
-| `required` | `input<boolean>`                                          | Reflects `aria-required="true"`.<br>**Default:** —                                                                         |
-| `invalid`  | `input<boolean>`                                          | Reflects `aria-invalid="true"`.<br>**Default:** —                                                                          |
-| `pending`  | `input<boolean>`                                          | Reflects `aria-busy="true"` while async validation is in flight.<br>**Default:** —                                         |
-| `name`     | `input<string \| undefined>`                              | Reflects on `name`.<br>**Default:** —                                                                                      |
+| Property   | Type                                                      | Description                                                                                                                     |
+| ---------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `checked`  | `model<boolean>`                                          | Two-way bindable on/off state. Required by `FormCheckboxControl`.<br>**Default:** —                                             |
+| `disabled` | `input<boolean>`                                          | Ignores click; reflects `aria-disabled="true"` and `data-disabled`. Stays focusable (per APG).<br>**Default:** —                |
+| `readonly` | `input<boolean>`                                          | Ignores click; reflects `aria-readonly="true"`. Stays focusable.<br>**Default:** —                                              |
+| `required` | `input<boolean>`                                          | Reflects `aria-required="true"`.<br>**Default:** —                                                                              |
+| `invalid`  | `input<boolean>`                                          | Reflects `aria-invalid="true"`.<br>**Default:** —                                                                               |
+| `pending`  | `input<boolean>`                                          | Reflects `aria-busy="true"` while async validation is in flight.<br>**Default:** —                                              |
+| `name`     | `input<string \| undefined>`                              | Reflects on `name`.<br>**Default:** —                                                                                           |
 | `errors`   | `input<readonly ValidationError.WithOptionalFieldTree[]>` | Validation errors fed by `[formField]`. The directive does not render them, since that is consumer territory.<br>**Default:** — |
-| `touched`  | `model<boolean>`                                          | Set to `true` on blur. Two-way so the field can read it back.<br>**Default:** —                                            |
+| `touched`  | `model<boolean>`                                          | Set to `true` on blur. Two-way so the field can read it back.<br>**Default:** —                                                 |
 
 | Data attribute  | Values                   |
 | --------------- | ------------------------ |

@@ -228,7 +228,7 @@ One grid-mode table composing six features on the same element: multiple row sel
 | `aria-rowindex`                | `[forTableHeaderRow]`                           | `"1"` in grid / treegrid mode (the header is the grid's first row); absent in table mode.                                                           |
 | `aria-rowindex`                | `[forTableRow]`                                 | 1-based row index counting the header row (first data row is `2`). Absent in table mode.                                                            |
 | `aria-colindex`                | header / data cell                              | 1-based column index within the row. Absent in table mode.                                                                                          |
-| `aria-colindex`                | `[forTableVariantCell]`                         | Always `"1"`, because a full-span row's only cell starts at the first column. Emitted in every mode, matching what `<for-table-body>` stamps.              |
+| `aria-colindex`                | `[forTableVariantCell]`                         | Always `"1"`, because a full-span row's only cell starts at the first column. Emitted in every mode, matching what `<for-table-body>` stamps.       |
 | `aria-colspan`                 | `[forTableVariantCell]`                         | The grid's rendered column count. Absent while no cell has registered one (an empty virtualized window with no header row).                         |
 | `data-row-variant`             | `[forTableVariantCell]` / `<for-table-body>`    | Present (`""`) on the full-span cell of a presentational row. The hook to span it in CSS.                                                           |
 | `aria-selected`                | `[forTableRow]`                                 | `"true"` / `"false"` (always-emit) on selectable rows (with a `[value]`) when `selectionMode` is not `'none'`; absent on rows without a `[value]`.  |
@@ -240,7 +240,7 @@ One grid-mode table composing six features on the same element: multiple row sel
 | `aria-checked`                 | `[forTableSelectAll]`                           | `"true"` / `"false"` / `"mixed"` (tri-state).                                                                                                       |
 | `data-state`                   | `[forTableSelectAll]`                           | `"checked"` / `"unchecked"` / `"indeterminate"`.                                                                                                    |
 | `aria-sort`                    | `[forTableSortHeader]`                          | `"ascending"` or `"descending"` while sorted; absent (`null`) when unsorted. Truthy-only.                                                           |
-| `data-sorted`                  | `[forTableSortHeader]`                          | A CSS styling hook (e.g. for a sort arrow glyph) carrying the same value as `aria-sort`.                                                                       |
+| `data-sorted`                  | `[forTableSortHeader]`                          | A CSS styling hook (e.g. for a sort arrow glyph) carrying the same value as `aria-sort`.                                                            |
 | `data-sortable`                | `[forTableSortHeader]`                          | Present (`""`) while `sortable`; absent otherwise. Styling hook, and the marker that makes `Enter` sort (not enter) a grid header cell.             |
 | `--for-table-col-<name>-width` | `[forTable]` (set by `[forTableColumnResizer]`) | Resolved column width in px; apply it to your layout.                                                                                               |
 | `data-resizing`                | `[forTableColumnResizer]`                       | Present (`""`) while a pointer drag is active.                                                                                                      |
@@ -253,11 +253,11 @@ Two regimes, chosen by `mode`. The default `mode="table"` adds no navigation of 
 
 `mode="table"`. No roving group and no cell entry: the table is a sequence of ordinary tab stops.
 
-| Key               | Action                                                                                                                                                                                                                                                                                                     |
-| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Key               | Action                                                                                                                                                                                                                                                                                                   |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `Tab`             | Move to the next focusable piece: a sortable `[forTableSortHeader]`, a `[forTableSelectAll]`, each `[forTableRowSelector]`, each `[forTableColumnResizer]`, the one roving tab stop a `[forTableRowReorder]` gives its draggable rows, and, with `interactiveRows` on `<for-table-body>`, each data row. |
-| `Enter` / `Space` | Activate the focused piece: cycle the sort on a sortable header, toggle the row on a `[forTableRowSelector]`, toggle the tri-state on a `[forTableSelectAll]`, lift the roving `[forDraggable]` row of a `[forTableRowReorder]`.                                                                           |
-| `Enter`           | On a data row `interactiveRows` made a tab stop, emit `rowActivate`. A press originating from an interactive descendant runs that control instead and emits nothing.                                                                                                                                       |
+| `Enter` / `Space` | Activate the focused piece: cycle the sort on a sortable header, toggle the row on a `[forTableRowSelector]`, toggle the tri-state on a `[forTableSelectAll]`, lift the roving `[forDraggable]` row of a `[forTableRowReorder]`.                                                                         |
+| `Enter`           | On a data row `interactiveRows` made a tab stop, emit `rowActivate`. A press originating from an interactive descendant runs that control instead and emits nothing.                                                                                                                                     |
 
 ### Cell navigation
 
@@ -270,7 +270,7 @@ Two regimes, chosen by `mode`. The default `mode="table"` adds no navigation of 
 | `ArrowDown` / `ArrowUp`          | The cell one row down / up, keeping the column. `ArrowUp` from the first data row crosses into the header cell of the same column.                                              |
 | `Home` / `End`                   | First / last cell of the current row.                                                                                                                                           |
 | `Ctrl/Cmd+Home` / `Ctrl/Cmd+End` | First / last cell of the whole grid. `Ctrl/Cmd+Home` lands on the first **header** cell whenever the header joins the grid, and one `ArrowDown` moves into the first data cell. |
-| `PageUp` / `PageDown`            | One screenful of rows up / down, keeping the column. A page is the rendered row count, so a virtualized grid pages by its visible window. Neither jumps to the grid ends.      |
+| `PageUp` / `PageDown`            | One screenful of rows up / down, keeping the column. A page is the rendered row count, so a virtualized grid pages by its visible window. Neither jumps to the grid ends.       |
 
 `PageUp` from within the first screenful of data rows clamps to the header row, for the same reason `ArrowUp` crosses into it. Under [`[forTableVirtualized]`](../table-virtualization/README.md) a move resolving a row outside the rendered window scrolls that row into view and lands focus on the target cell once it mounts; a move onto the header row also scrolls the window back to row 0, so the grid is never left focused on its header while the window sits at the end of the dataset. When the header does not join the grid (an incomplete header row), `Ctrl/Cmd+Home` lands on the first data cell instead and `ArrowUp` / `PageUp` stop there.
 
@@ -281,7 +281,7 @@ Two regimes, chosen by `mode`. The default `mode="table"` adds no navigation of 
 | Key                 | Action                                                                                                                                                                 |
 | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `F2`                | Move focus **into** the focused cell's first focusable widget. No-op on a cell holding none.                                                                           |
-| `Enter`             | The same entry, on a cell whose keys no other affordance owns. [Sorting, resizing and reordering](#sorting-resizing-and-reordering) covers the two that do.          |
+| `Enter`             | The same entry, on a cell whose keys no other affordance owns. [Sorting, resizing and reordering](#sorting-resizing-and-reordering) covers the two that do.            |
 | `Tab` / `Shift+Tab` | While inside an entered cell: move between **that cell's** widgets, wrapping at both ends. Focus cannot leave the cell for another cell or the next document tab stop. |
 | `Escape`            | While inside an entered cell: return focus to the owning cell and leave interaction mode.                                                                              |
 
@@ -294,7 +294,7 @@ The cycle reaches every focusable in the cell, `tabindex="-1"` included, so a he
 | `Space`       | On a focused data cell in `grid` / `treegrid` with a `selectionMode` other than `'none'`: toggle the enclosing row's selection and prevent the page scroll. The row needs a `[value]`, and a `Space` originating from a nested element is ignored. |
 | `ArrowRight`  | `treegrid` only: expand the focused collapsed parent row (RTL: collapse). On a leaf, or a row already in that state, it falls through to cell navigation.                                                                                          |
 | `ArrowLeft`   | `treegrid` only: collapse the focused expanded parent row (RTL: expand). Otherwise it navigates.                                                                                                                                                   |
-| `ContextMenu` | With `interactiveRows`, emits `rowContextMenu` on the row it fires over, in every mode, as the keyboard half of the right-click. Unguarded, so it still offers the row's menu over an inner control.                                                 |
+| `ContextMenu` | With `interactiveRows`, emits `rowContextMenu` on the row it fires over, in every mode, as the keyboard half of the right-click. Unguarded, so it still offers the row's menu over an inner control.                                               |
 
 ### Sorting, resizing and reordering
 

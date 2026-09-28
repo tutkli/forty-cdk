@@ -137,8 +137,8 @@ Now `injectBreakpoints()` autocompletes `'mobile' | 'tablet' | 'laptop' | 'deskt
 
 | Method           | Matches                                                                        |
 | ---------------- | ------------------------------------------------------------------------------ |
-| `up(name)`       | the breakpoint and wider: `(min-width: N px)`                                 |
-| `down(name)`     | narrower than the breakpoint: `(max-width: (N − 0.02) px)`                    |
+| `up(name)`       | the breakpoint and wider: `(min-width: N px)`                                  |
+| `down(name)`     | narrower than the breakpoint: `(max-width: (N − 0.02) px)`                     |
 | `between(a, b)`  | from `a` (inclusive) up to but not including `b`                               |
 | `only(name)`     | the breakpoint's own band, up to but not including the next-larger one         |
 | `active`         | the largest breakpoint whose `min-width` matches, or `null` below the smallest |

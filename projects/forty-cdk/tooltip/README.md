@@ -238,10 +238,10 @@ forty-cdk ships no styles. Add your own class to each piece. The `for*` selector
 | --------------------- | ----------------------------------------- | ------------------- | --------- | ------------------------------------------------------------------------------------------------------------ |
 | `[forTooltipContent]` | `--for-floating-anchor-width`             | px                  | out       | Trigger (reference) width.                                                                                   |
 | `[forTooltipContent]` | `--for-floating-anchor-height`            | px                  | out       | Trigger (reference) height.                                                                                  |
-| `[forTooltipContent]` | `--for-floating-available-width`          | px                  | out       | Space available along the inline axis (floating-ui `size` middleware). Clamp with `max-width`.              |
-| `[forTooltipContent]` | `--for-floating-available-height`         | px                  | out       | Space available along the block axis. Clamp with `max-height`.                                              |
+| `[forTooltipContent]` | `--for-floating-available-width`          | px                  | out       | Space available along the inline axis (floating-ui `size` middleware). Clamp with `max-width`.               |
+| `[forTooltipContent]` | `--for-floating-available-height`         | px                  | out       | Space available along the block axis. Clamp with `max-height`.                                               |
 | `[forTooltipContent]` | `--for-floating-content-transform-origin` | `<origin>` keywords | out       | `transform-origin` matching the resolved side / align, so a `scale` enter animation pivots from the trigger. |
-| `[forTooltipArrow]`   | `--for-floating-arrow-offset`             | px (default `0px`)  | in        | Consumer-set. How far the arrow pokes out past the bubble edge, typically a negative `px` (e.g. `-4px`).    |
+| `[forTooltipArrow]`   | `--for-floating-arrow-offset`             | px (default `0px`)  | in        | Consumer-set. How far the arrow pokes out past the bubble edge, typically a negative `px` (e.g. `-4px`).     |
 
 > `[forTooltipContent]` is portaled to `document.body`, so styles scoped to the `[forTooltip]` wrapper won't reach it. Style the bubble with a global stylesheet or a class on the content directive itself. See [Styling floating content](../../../docs/styling-floating-content.md) for the full positioner custom-property list (`--for-floating-anchor-width` / `-height`, `--for-floating-available-width` / `-height`, `--for-floating-content-transform-origin`) and the animation / arrow recipes.
 

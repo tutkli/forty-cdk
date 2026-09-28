@@ -37,7 +37,7 @@ whole dialog around by its header, see [`[forFreeDrag]`](#free-drag).
 | Preview template     | `[forDragPreview]`     | no                 | On an `<ng-template>` inside the item: replaces the default clone that follows the pointer. Pointer drags only.                                  |
 | Placeholder template | `[forDragPlaceholder]` | no                 | On an `<ng-template>` inside the item: replaces the default gap held open in the dragged item's slot. Pointer drags only.                        |
 | Drop-list group      | `[forDropListGroup]`   | only for transfers | Connects sibling lists so items move between them. `[connectedTo]` on each list is the alternative when the lists are not siblings.              |
-| Free drag            | `[forFreeDrag]`        | standalone         | Not part of this anatomy: free repositioning with no list and no reorder. See [Free drag](#free-drag).                                          |
+| Free drag            | `[forFreeDrag]`        | standalone         | Not part of this anatomy: free repositioning with no list and no reorder. See [Free drag](#free-drag).                                           |
 
 `onDrop` applies `moveItemInArray` (or `transferArrayItem`) to your own signal: **the primitive never
 mutates the consumer's data**, in either the pointer or the keyboard flow.

@@ -153,8 +153,8 @@ Root directive. `role="toolbar"`. Owns roving tabindex and arrow-key navigation.
 
 Plain push button. Apply on `<button>` so Enter / Space activate via native semantics.
 
-| Property   | Type             | Description                                                                                                                                                                                                                                    |
-| ---------- | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Property   | Type             | Description                                                                                                                                                                                                                                   |
+| ---------- | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `disabled` | `input<boolean>` | Per-item disabled, in addition to the toolbar's `disabled`. When true the button is announced as `aria-disabled` and clicks are suppressed. It stays focusable (no native `disabled`) so assistive tech still announces it.<br>**Default:** — |
 
 | Data attribute     | Values                     |
@@ -166,8 +166,8 @@ Plain push button. Apply on `<button>` so Enter / Space activate via native sema
 
 Hyperlink. Apply on `<a>`; `Enter` follows the link via native semantics.
 
-| Property   | Type             | Description                                                                                                                                                                                                                                                  |
-| ---------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Property   | Type             | Description                                                                                                                                                                                                                                                      |
+| ---------- | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `disabled` | `input<boolean>` | Per-item disabled, in addition to the toolbar's `disabled`. When true the link is announced as `aria-disabled` and activation is suppressed. Because `<a>` has no native `disabled`, it stays focusable and assistive tech still announces it.<br>**Default:** — |
 
 | Data attribute     | Values                     |

@@ -778,13 +778,13 @@ forty-cdk ships no styles. Add your own class to each piece. The for\* selectors
 
 `[forComboboxContent]` is portaled to `document.body` and gets its position resolved by floating-ui. The resolved geometry is exposed as custom properties on the content host (cleared on close):
 
-| Custom property                           | Type / range        | Meaning                                                                                                         |
-| ----------------------------------------- | ------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Custom property                           | Type / range        | Meaning                                                                                                        |
+| ----------------------------------------- | ------------------- | -------------------------------------------------------------------------------------------------------------- |
 | `--for-floating-anchor-width`             | px                  | Anchor (input / wrapper) width. Match the listbox to the input with `width: var(--for-floating-anchor-width)`. |
-| `--for-floating-anchor-height`            | px                  | Anchor height.                                                                                                  |
+| `--for-floating-anchor-height`            | px                  | Anchor height.                                                                                                 |
 | `--for-floating-available-width`          | px                  | Space available along the inline axis (floating-ui `size` middleware). Clamp with `max-width`.                 |
 | `--for-floating-available-height`         | px                  | Space available along the block axis. Clamp with `max-height`.                                                 |
-| `--for-floating-content-transform-origin` | `<origin>` keywords | `transform-origin` matching the resolved side / align, so a `scale` enter animation pivots from the input.      |
+| `--for-floating-content-transform-origin` | `<origin>` keywords | `transform-origin` matching the resolved side / align, so a `scale` enter animation pivots from the input.     |
 
 > `[forComboboxContent]` is portaled to `document.body`, so it lives outside your component's view-encapsulated styles. Style it with global CSS (or a class you pass through) and the shared positioner properties above. See [Styling floating content](../../../docs/styling-floating-content.md) for the full positioner-variable list and the portal styling rules.
 

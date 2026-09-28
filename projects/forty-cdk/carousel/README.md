@@ -529,16 +529,16 @@ control keeps its own accessible name either way, so the icons stay `aria-hidden
 }
 ```
 
-| Attribute       | When present                                            |
-| --------------- | ------------------------------------------------------- |
+| Attribute       | When present                                               |
+| --------------- | ---------------------------------------------------------- |
 | `data-playing`  | On `[forCarouselRotationControl]` when user intent is "on" |
-| `data-rotating` | On `[forCarousel]` while it is actively rotating        |
+| `data-rotating` | On `[forCarousel]` while it is actively rotating           |
 | `data-autoplay` | On `[forCarousel]` when the `autoplay` input is `true`     |
 
 ### Boundary styling hooks
 
-| Attribute       | When present                                              |
-| --------------- | --------------------------------------------------------- |
+| Attribute       | When present                                                 |
+| --------------- | ------------------------------------------------------------ |
 | `data-disabled` | On `[forCarouselPrevious]` when at index 0 without `loop`    |
 | `data-disabled` | On `[forCarouselNext]` when at the last index without `loop` |
 

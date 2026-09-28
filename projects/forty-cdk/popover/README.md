@@ -160,8 +160,8 @@ The popover opens / closes alongside the input but never steals focus from it. T
 
 ### `ForPopoverTrigger`
 
-| Property   | Type             | Description                                                                                                                                                                                                                         |
-| ---------- | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Property   | Type             | Description                                                                                                                                                                                                                                  |
+| ---------- | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `disabled` | `input<boolean>` | Disables this trigger only and is merged OR with the root's `disabled`. The effective state drives the native `disabled` attribute, `data-disabled` and the click guard, but not `aria-disabled` (one channel only).<br>**Default:** `false` |
 
 | Data attribute  | Values             |
@@ -239,12 +239,12 @@ forty-cdk ships no styles. Add your own class to each piece. The `for*` selector
 
 | Element               | Custom property                           | Type / range        | Direction | Meaning                                                                                                      |
 | --------------------- | ----------------------------------------- | ------------------- | --------- | ------------------------------------------------------------------------------------------------------------ |
-| `[forPopoverContent]` | `--for-floating-anchor-width`             | px                  | out       | Trigger (reference) width. Match it with `width: var(--for-floating-anchor-width)`.                         |
+| `[forPopoverContent]` | `--for-floating-anchor-width`             | px                  | out       | Trigger (reference) width. Match it with `width: var(--for-floating-anchor-width)`.                          |
 | `[forPopoverContent]` | `--for-floating-anchor-height`            | px                  | out       | Trigger (reference) height.                                                                                  |
-| `[forPopoverContent]` | `--for-floating-available-width`          | px                  | out       | Space available along the inline axis (floating-ui `size` middleware). Clamp with `max-width`.              |
-| `[forPopoverContent]` | `--for-floating-available-height`         | px                  | out       | Space available along the block axis. Clamp with `max-height`.                                              |
+| `[forPopoverContent]` | `--for-floating-available-width`          | px                  | out       | Space available along the inline axis (floating-ui `size` middleware). Clamp with `max-width`.               |
+| `[forPopoverContent]` | `--for-floating-available-height`         | px                  | out       | Space available along the block axis. Clamp with `max-height`.                                               |
 | `[forPopoverContent]` | `--for-floating-content-transform-origin` | `<origin>` keywords | out       | `transform-origin` matching the resolved side / align, so a `scale` enter animation pivots from the trigger. |
-| `[forPopoverArrow]`   | `--for-floating-arrow-offset`             | px (default `0px`)  | in        | Consumer-set. How far the arrow pokes out past the popover edge, typically a negative `px` (e.g. `-4px`).   |
+| `[forPopoverArrow]`   | `--for-floating-arrow-offset`             | px (default `0px`)  | in        | Consumer-set. How far the arrow pokes out past the popover edge, typically a negative `px` (e.g. `-4px`).    |
 
 > `[forPopoverContent]` portals to `document.body`, so ancestor-scoped CSS can't reach it. Style it with global CSS or a class. See [Styling floating content](../../../docs/styling-floating-content.md) for the full positioner-property list and the floating-content rules.
 

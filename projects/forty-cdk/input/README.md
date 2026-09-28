@@ -126,18 +126,18 @@ Bound through `[formField]`, `forInput` auto-associates inside `forField`: the l
 
 ### `ForInput`
 
-| Property   | Type                                                      | Description                                                                                                                |
-| ---------- | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `value`    | `model<string>`                                           | Two-way bindable text value. Defaults to `''`; reflected as `data-empty` while empty.<br>**Default:** —                    |
-| `disabled` | `input<boolean>`                                          | Reflects native `disabled` + `data-disabled` (no `aria-disabled`).<br>**Default:** —                                       |
-| `readonly` | `input<boolean>`                                          | Reflects native `readonly` + `aria-readonly="true"` + `data-readonly`.<br>**Default:** —                                   |
-| `required` | `input<boolean>`                                          | Reflects `aria-required="true"`.<br>**Default:** —                                                                         |
-| `invalid`  | `input<boolean>`                                          | Reflects `aria-invalid="true"` + `data-invalid`.<br>**Default:** —                                                         |
-| `pending`  | `input<boolean>`                                          | Reflects `aria-busy="true"` + `data-pending` while async validation is in flight.<br>**Default:** —                        |
-| `dirty`    | `input<boolean>`                                          | Reflects `data-dirty`.<br>**Default:** —                                                                                   |
-| `name`     | `input<string>`                                           | Reflected on the native `name` attribute for form submission.<br>**Default:** —                                            |
+| Property   | Type                                                      | Description                                                                                                               |
+| ---------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `value`    | `model<string>`                                           | Two-way bindable text value. Defaults to `''`; reflected as `data-empty` while empty.<br>**Default:** —                   |
+| `disabled` | `input<boolean>`                                          | Reflects native `disabled` + `data-disabled` (no `aria-disabled`).<br>**Default:** —                                      |
+| `readonly` | `input<boolean>`                                          | Reflects native `readonly` + `aria-readonly="true"` + `data-readonly`.<br>**Default:** —                                  |
+| `required` | `input<boolean>`                                          | Reflects `aria-required="true"`.<br>**Default:** —                                                                        |
+| `invalid`  | `input<boolean>`                                          | Reflects `aria-invalid="true"` + `data-invalid`.<br>**Default:** —                                                        |
+| `pending`  | `input<boolean>`                                          | Reflects `aria-busy="true"` + `data-pending` while async validation is in flight.<br>**Default:** —                       |
+| `dirty`    | `input<boolean>`                                          | Reflects `data-dirty`.<br>**Default:** —                                                                                  |
+| `name`     | `input<string>`                                           | Reflected on the native `name` attribute for form submission.<br>**Default:** —                                           |
 | `errors`   | `input<readonly ValidationError.WithOptionalFieldTree[]>` | Validation errors fed by `[formField]`. The directive does not render them. That is consumer territory.<br>**Default:** — |
-| `touched`  | `model<boolean>`                                          | Set to `true` on blur. Two-way so the field can read it back.<br>**Default:** —                                            |
+| `touched`  | `model<boolean>`                                          | Set to `true` on blur. Two-way so the field can read it back.<br>**Default:** —                                           |
 
 | Data attribute  | Values                           |
 | --------------- | -------------------------------- |
@@ -151,19 +151,19 @@ Bound through `[formField]`, `forInput` auto-associates inside `forField`: the l
 
 ### `ForTextarea`
 
-| Property   | Type                                                      | Description                                                                                                                |
-| ---------- | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `value`    | `model<string>`                                           | Two-way bindable text value. Defaults to `''`; reflected as `data-empty` while empty.<br>**Default:** —                    |
-| `disabled` | `input<boolean>`                                          | Reflects native `disabled` + `data-disabled` (no `aria-disabled`).<br>**Default:** —                                       |
-| `readonly` | `input<boolean>`                                          | Reflects native `readonly` + `aria-readonly="true"` + `data-readonly`.<br>**Default:** —                                   |
-| `required` | `input<boolean>`                                          | Reflects `aria-required="true"`.<br>**Default:** —                                                                         |
-| `invalid`  | `input<boolean>`                                          | Reflects `aria-invalid="true"` + `data-invalid`.<br>**Default:** —                                                         |
-| `pending`  | `input<boolean>`                                          | Reflects `aria-busy="true"` + `data-pending` while async validation is in flight.<br>**Default:** —                        |
-| `dirty`    | `input<boolean>`                                          | Reflects `data-dirty`.<br>**Default:** —                                                                                   |
-| `name`     | `input<string>`                                           | Reflected on the native `name` attribute for form submission.<br>**Default:** —                                            |
+| Property   | Type                                                      | Description                                                                                                               |
+| ---------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `value`    | `model<string>`                                           | Two-way bindable text value. Defaults to `''`; reflected as `data-empty` while empty.<br>**Default:** —                   |
+| `disabled` | `input<boolean>`                                          | Reflects native `disabled` + `data-disabled` (no `aria-disabled`).<br>**Default:** —                                      |
+| `readonly` | `input<boolean>`                                          | Reflects native `readonly` + `aria-readonly="true"` + `data-readonly`.<br>**Default:** —                                  |
+| `required` | `input<boolean>`                                          | Reflects `aria-required="true"`.<br>**Default:** —                                                                        |
+| `invalid`  | `input<boolean>`                                          | Reflects `aria-invalid="true"` + `data-invalid`.<br>**Default:** —                                                        |
+| `pending`  | `input<boolean>`                                          | Reflects `aria-busy="true"` + `data-pending` while async validation is in flight.<br>**Default:** —                       |
+| `dirty`    | `input<boolean>`                                          | Reflects `data-dirty`.<br>**Default:** —                                                                                  |
+| `name`     | `input<string>`                                           | Reflected on the native `name` attribute for form submission.<br>**Default:** —                                           |
 | `errors`   | `input<readonly ValidationError.WithOptionalFieldTree[]>` | Validation errors fed by `[formField]`. The directive does not render them. That is consumer territory.<br>**Default:** — |
-| `touched`  | `model<boolean>`                                          | Set to `true` on blur. Two-way so the field can read it back.<br>**Default:** —                                            |
-| `autosize` | `input<boolean>`                                          | Grows/shrinks the height to fit content; reflects `data-autosize`.<br>**Default:** `false`                                 |
+| `touched`  | `model<boolean>`                                          | Set to `true` on blur. Two-way so the field can read it back.<br>**Default:** —                                           |
+| `autosize` | `input<boolean>`                                          | Grows/shrinks the height to fit content; reflects `data-autosize`.<br>**Default:** `false`                                |
 
 | Data attribute  | Values                           |
 | --------------- | -------------------------------- |

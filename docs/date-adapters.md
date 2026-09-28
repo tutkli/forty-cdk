@@ -8,10 +8,10 @@ This guide covers which adapter to pick, what the optional peer dependency means
 
 An adapter is required. The date primitives resolve it through `injectDateAdapter()` and fail loudly with no provider. Provide exactly one, at the application root or on the component that owns the widget:
 
-| Provider                                | Date type `D`                              | Install                                                       |
-| --------------------------------------- | ------------------------------------------ | ------------------------------------------------------------- |
+| Provider                                | Date type `D`                              | Install                                                      |
+| --------------------------------------- | ------------------------------------------ | ------------------------------------------------------------ |
 | `provideInternationalizedDateAdapter()` | `CalendarDate` (`@internationalized/date`) | `@internationalized/date`, an optional peer you add yourself |
-| `provideNativeDateAdapter()`            | `Date`                                     | Nothing; it ships with `forty-cdk/calendar`                   |
+| `provideNativeDateAdapter()`            | `Date`                                     | Nothing; it ships with `forty-cdk/calendar`                  |
 
 <!-- snippet: fragment -->
 

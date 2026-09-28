@@ -144,14 +144,14 @@ export class DemoCheckout {
 
 ### `ForCheckbox`
 
-| Property                                                     | Type                                                      | Description                                                                                                                                                                                                   |
-| ------------------------------------------------------------ | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `checked`                                                    | `model<boolean>`                                          | Two-way bindable on/off. Required by `FormCheckboxControl`.<br>**Default:** —                                                                                                                                 |
-| `indeterminate`                                              | `model<boolean>`                                          | Two-way bindable. When true, `aria-checked="mixed"` regardless of `checked`. Click clears it. UI-only and not part of the form value.<br>**Default:** —                                                         |
+| Property                                                     | Type                                                      | Description                                                                                                                                                                                                          |
+| ------------------------------------------------------------ | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `checked`                                                    | `model<boolean>`                                          | Two-way bindable on/off. Required by `FormCheckboxControl`.<br>**Default:** —                                                                                                                                        |
+| `indeterminate`                                              | `model<boolean>`                                          | Two-way bindable. When true, `aria-checked="mixed"` regardless of `checked`. Click clears it. UI-only and not part of the form value.<br>**Default:** —                                                              |
 | `disabled` / `readonly` / `required` / `invalid` / `pending` | `input<boolean>`                                          | Reflected as the matching `aria-*` / `data-*` attributes. A disabled checkbox stays focusable (per APG), with `aria-disabled="true"` + `data-disabled` and no native `disabled`; click is a no-op.<br>**Default:** — |
-| `name`                                                       | `input<string>`                                           | Reflected on `name` (empty string omits the attribute).<br>**Default:** `''`                                                                                                                                  |
-| `errors`                                                     | `input<readonly ValidationError.WithOptionalFieldTree[]>` | Validation errors fed by `[formField]`.<br>**Default:** —                                                                                                                                                     |
-| `touched`                                                    | `model<boolean>`                                          | Set to `true` on blur.<br>**Default:** —                                                                                                                                                                      |
+| `name`                                                       | `input<string>`                                           | Reflected on `name` (empty string omits the attribute).<br>**Default:** `''`                                                                                                                                         |
+| `errors`                                                     | `input<readonly ValidationError.WithOptionalFieldTree[]>` | Validation errors fed by `[formField]`.<br>**Default:** —                                                                                                                                                            |
+| `touched`                                                    | `model<boolean>`                                          | Set to `true` on blur.<br>**Default:** —                                                                                                                                                                             |
 
 | Data attribute  | Values                                      |
 | --------------- | ------------------------------------------- |
@@ -169,9 +169,9 @@ Optional styling slot inside a `[forCheckbox]`. Mirrors the parent's `data-state
 
 ## Keyboard
 
-| Key     | Action                                                      |
-| ------- | ----------------------------------------------------------- |
-| `Space` | Toggle the checkbox. The only key APG mandates.             |
+| Key     | Action                                                     |
+| ------- | ---------------------------------------------------------- |
+| `Space` | Toggle the checkbox. The only key APG mandates.            |
 | `Enter` | Also toggles. A documented superset, not an APG violation. |
 
 Activating an indeterminate checkbox clears `indeterminate` and toggles `checked` (matches native `<input type="checkbox">`).

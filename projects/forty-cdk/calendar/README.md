@@ -375,16 +375,16 @@ The recommended path is `[forCalendarMonthSelect]` and `[forCalendarYearSelect]`
 
 #### `ForCalendarMonthSelect` API
 
-| API         | Description                                                                                                   |
-| ----------- | ------------------------------------------------------------------------------------------------------------- |
+| API         | Description                                                                                                  |
+| ----------- | ------------------------------------------------------------------------------------------------------------ |
 | `options()` | `Signal<readonly CalendarMonthOption[]>`: twelve localized, bounds-aware month options for the visible year. |
 
 #### `ForCalendarYearSelect` API
 
-| API       | Description                                                                                                                                            |
-| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `minYear` | `input<number \| null>`: the lowest listed year. Defaults to `currentYear - 100` when `null`.                                                             |
-| `maxYear` | `input<number \| null>`: the highest listed year. Defaults to `currentYear + 10` when `null`.                                                             |
+| API       | Description                                                                                                                                           |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `minYear` | `input<number \| null>`: the lowest listed year. Defaults to `currentYear - 100` when `null`.                                                         |
+| `maxYear` | `input<number \| null>`: the highest listed year. Defaults to `currentYear + 10` when `null`.                                                         |
 | `years()` | `Signal<readonly CalendarYearOption[]>`: years from `minYear` to `maxYear` inclusive, each `disabled` when the whole year falls outside `[min, max]`. |
 
 The default window is **anchored to the current year** (not the visible year), so navigating far away never drops the current year off the list. Out-of-`[min, max]` entries have `disabled: true`, matching the `CalendarYearOption` shape. Both directives set the native `disabled` attribute on the `<select>` itself when the calendar is disabled.
@@ -399,13 +399,13 @@ The lower-level hooks (`visibleMonthNumber()`, `visibleYear()`, `monthOptions()`
 
 ### Pieces
 
-| Class                    | Selector                   | Role                                                                                                                  |
-| ------------------------ | -------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `ForCalendarViewTrigger` | `[forCalendarViewTrigger]` | Button that cycles the view: day → month → year. Auto-disabled when the calendar is disabled.                         |
+| Class                    | Selector                   | Role                                                                                                                    |
+| ------------------------ | -------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `ForCalendarViewTrigger` | `[forCalendarViewTrigger]` | Button that cycles the view: day → month → year. Auto-disabled when the calendar is disabled.                           |
 | `ForCalendarMonthGrid`   | `[forCalendarMonthGrid]`   | 4×3 month grid (`role="grid"`). Exposes `rows()`, an array of `CalendarMonthRow`, each with three `CalendarYearOption`. |
-| `ForCalendarMonthCell`   | `[forCalendarMonthCell]`   | One month (`role="gridcell"`). Requires `[month]` (1–12). Click drills down to day view for that month.               |
+| `ForCalendarMonthCell`   | `[forCalendarMonthCell]`   | One month (`role="gridcell"`). Requires `[month]` (1–12). Click drills down to day view for that month.                 |
 | `ForCalendarYearGrid`    | `[forCalendarYearGrid]`    | 4×3 year grid (`role="grid"`). Exposes `rows()`, an array of `CalendarYearRow`, each with three `CalendarYearOption`.   |
-| `ForCalendarYearCell`    | `[forCalendarYearCell]`    | One year (`role="gridcell"`). Requires `[year]`. Click drills down to month view for that year.                       |
+| `ForCalendarYearCell`    | `[forCalendarYearCell]`    | One year (`role="gridcell"`). Requires `[year]`. Click drills down to month view for that year.                         |
 
 ### `view` model — `ForCalendar`
 

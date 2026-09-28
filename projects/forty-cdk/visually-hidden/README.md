@@ -129,8 +129,8 @@ export class DemoAnnounce {
 
 ### `ForVisuallyHidden`
 
-| Property    | Type             | Description                                                                                                                                                           |
-| ----------- | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Property    | Type             | Description                                                                                                                                                                        |
+| ----------- | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `focusable` | `input<boolean>` | When `true`, the host implements the skip-link pattern: it un-clips while it or a descendant holds focus, then re-clips on blur. Accepts a bare attribute.<br>**Default:** `false` |
 
 | Data attribute        | Values  |

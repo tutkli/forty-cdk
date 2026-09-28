@@ -489,10 +489,10 @@ forty-cdk ships no styles. Add your own class to each piece. The `for*` selector
 
 | Custom property                           | Type / range        | Meaning                                                                                                      |
 | ----------------------------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `--for-floating-anchor-width`             | px                  | Anchor (trigger) width. Match it with `width: var(--for-floating-anchor-width)`.                            |
+| `--for-floating-anchor-width`             | px                  | Anchor (trigger) width. Match it with `width: var(--for-floating-anchor-width)`.                             |
 | `--for-floating-anchor-height`            | px                  | Anchor (trigger) height.                                                                                     |
-| `--for-floating-available-width`          | px                  | Space available along the inline axis (floating-ui `size` middleware). Clamp with `max-width`.              |
-| `--for-floating-available-height`         | px                  | Space available along the block axis. Clamp with `max-height`.                                              |
+| `--for-floating-available-width`          | px                  | Space available along the inline axis (floating-ui `size` middleware). Clamp with `max-width`.               |
+| `--for-floating-available-height`         | px                  | Space available along the block axis. Clamp with `max-height`.                                               |
 | `--for-floating-content-transform-origin` | `<origin>` keywords | `transform-origin` matching the resolved side / align, so a `scale` enter animation pivots from the trigger. |
 
 ```css
