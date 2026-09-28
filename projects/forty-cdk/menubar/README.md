@@ -199,11 +199,11 @@ forty-cdk ships no styles. Add your own class to each piece. The `for*` selector
 > Each trigger's menu surface is the shared `[forMenuContent]` (from [`menu/`](../menu/README.md)), which **portals to `document.body`**. Style it with global CSS or a class, because scoped/`:host` styles won't reach it. The portaled content also exposes the shared positioner custom properties (`--for-floating-anchor-width` / `-height`, `--for-floating-available-width` / `-height`, `--for-floating-content-transform-origin`); see [Styling floating content](../../../docs/styling-floating-content.md) for the full list and how to use them.
 
 ```css
-.menubar-trigger[data-state='open'] {
+.menubar-menu-trigger[data-state='open'] {
   background: var(--accent);
 }
 
-.menubar-trigger[data-disabled] {
+.menubar-menu-trigger[data-disabled] {
   opacity: 0.5;
 }
 ```

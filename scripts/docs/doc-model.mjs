@@ -633,7 +633,12 @@ export function compileDocument(source, { path, slug, kind }) {
   const headingsOf = (run) =>
     run
       .filter((entry) => entry.token.type === 'heading')
-      .map((entry) => ({ depth: entry.token.depth, text: entry.token.text, slug: entry.slug }));
+      .map((entry) => ({
+        depth: entry.token.depth,
+        text: entry.token.text,
+        slug: entry.slug,
+        line: entry.line,
+      }));
 
   /**
    * `## Examples` opens with the sentence the page prints above its hero, and

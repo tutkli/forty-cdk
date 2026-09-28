@@ -152,13 +152,13 @@ Implements the [WAI-ARIA Window Splitter pattern](https://www.w3.org/WAI/ARIA/ap
 forty-cdk ships no styles. Add your own class to each piece. The `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
 
 ```css
-.resizer[data-orientation='vertical'] {
+.pr-resizer[data-orientation='vertical'] {
   cursor: col-resize;
 }
-.resizer[data-orientation='horizontal'] {
+.pr-resizer[data-orientation='horizontal'] {
   cursor: row-resize;
 }
-.resizer[data-disabled] {
+.pr-resizer[data-disabled] {
   cursor: default;
   opacity: 0.5;
 }

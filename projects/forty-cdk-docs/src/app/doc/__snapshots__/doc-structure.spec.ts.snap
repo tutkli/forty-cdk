@@ -1886,7 +1886,7 @@ exports[`document structure > projects/forty-cdk/carousel/README.md declares the
       },
       {
         "depth": 3,
-        "slug": "reduced-motion-1",
+        "slug": "reduced-motion-styling",
       },
       {
         "depth": 3,
@@ -2144,7 +2144,7 @@ exports[`document structure > projects/forty-cdk/combobox/README.md declares the
       },
       {
         "depth": 3,
-        "slug": "api-1",
+        "slug": "action-item-api",
       },
     ],
     "slug": "action-items",
@@ -4287,7 +4287,7 @@ exports[`document structure > projects/forty-cdk/listbox/README.md declares the 
       },
       {
         "depth": 3,
-        "slug": "keyboard",
+        "slug": "reorder-keyboard",
       },
       {
         "depth": 3,
@@ -4462,7 +4462,7 @@ exports[`document structure > projects/forty-cdk/listbox/README.md declares the 
         "slug": "multi-mode-apg-recommended-range-selection",
       },
     ],
-    "slug": "keyboard-1",
+    "slug": "keyboard",
     "tables": [
       {
         "columns": [
@@ -7250,7 +7250,7 @@ exports[`document structure > projects/forty-cdk/table/README.md declares the se
       },
       {
         "depth": 3,
-        "slug": "fortableselectall-1",
+        "slug": "select-all-checkbox",
       },
       {
         "depth": 3,

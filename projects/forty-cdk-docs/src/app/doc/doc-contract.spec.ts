@@ -7,6 +7,7 @@ import {
   CANONICAL_SECTIONS,
   checkContract,
   checkHeadingAliases,
+  checkHeadingAnchors,
   checkSectionOrder,
   checkSectionRuns,
   checkSections,
@@ -725,6 +726,139 @@ describe('the one run the specific ring is written in', () => {
     expect(problems.filter((problem) => problem.message.startsWith('"## Mega-menu"'))).toHaveLength(
       1,
     );
+  });
+});
+
+describe('headings that slugify alike anywhere in a document', () => {
+  const markdownOf = (lines: readonly string[]) =>
+    `${['# T', '', 'Lede.', '', ...lines].join('\n')}\n`;
+
+  const guideOf = (...lines: readonly string[]) =>
+    compile({ path: 'docs/thing.md', slug: 'thing', markdown: markdownOf(lines) });
+
+  const lineOf = (lines: readonly string[], heading: string) =>
+    markdownOf(lines).split('\n').indexOf(heading) + 1;
+
+  it('reports a subsection that takes the plain anchor from a canonical section below it', () => {
+    const lines = [
+      '## Reordering',
+      '',
+      'Body.',
+      '',
+      '### Keyboard',
+      '',
+      'Chords.',
+      '',
+      '## Keyboard',
+    ];
+
+    expect(checkHeadingAnchors([guideOf(...lines)])).toEqual([
+      {
+        path: 'docs/thing.md',
+        line: lineOf(lines, '### Keyboard'),
+        message:
+          '"### Keyboard" under "## Reordering" slugs to "keyboard", as "## Keyboard" does, so ' +
+          '"### Keyboard" is published as #keyboard and "## Keyboard" as #keyboard-1. Whichever ' +
+          'heading comes first takes the plain anchor, and a link meant for the other lands on ' +
+          'it. Rename the heading that is not the reference one, and any link naming its anchor',
+      },
+    ]);
+  });
+
+  it('reports a subsection repeating a section written above it, naming where each sits', () => {
+    const lines = ['## API', '', 'Body.', '', '## Action items', '', 'Body.', '', '### API'];
+
+    expect(checkHeadingAnchors([guideOf(...lines)])).toEqual([
+      expect.objectContaining({
+        line: lineOf(lines, '## API'),
+        message: expect.stringContaining(
+          '"## API" slugs to "api", as "### API" under "## Action items" does, so "## API" is ' +
+            'published as #api and "### API" as #api-1',
+        ),
+      }),
+    ]);
+  });
+
+  it('reports two subsections that differ only in what the slug drops', () => {
+    const lines = [
+      '## Drag',
+      '',
+      '### Reduced motion',
+      '',
+      'Body.',
+      '',
+      '## Styling',
+      '',
+      '### Reduced-motion',
+    ];
+
+    expect(checkHeadingAnchors([guideOf(...lines)])).toEqual([
+      expect.objectContaining({
+        message: expect.stringContaining(
+          '"### Reduced motion" under "## Drag" slugs to "reduced-motion", as ' +
+            '"### Reduced-motion" under "## Styling" does',
+        ),
+      }),
+    ]);
+  });
+
+  it('places a heading written above the first section there', () => {
+    const [problem] = checkHeadingAnchors([guideOf('### Setup', '', 'Steps.', '', '## Setup')]);
+
+    expect(problem?.message).toContain(
+      '"### Setup" above the first section slugs to "setup", as "## Setup" does',
+    );
+  });
+
+  it('reports every heading past the first of a set, each against the first', () => {
+    const lines = ['## One', '', '### States', '', '## Two', '', '### States', '', '### States'];
+    const problems = checkHeadingAnchors([guideOf(...lines)]);
+
+    expect(problems.map((problem) => problem.line)).toEqual([
+      lineOf(lines, '### States'),
+      lineOf(lines, '### States'),
+    ]);
+    expect(problems[0]!.message).toContain('as #states and "### States" as #states-1.');
+    expect(problems[1]!.message).toContain('as #states and "### States" as #states-2.');
+  });
+
+  it('accepts headings whose words overlap without slugging alike', () => {
+    expect(
+      checkHeadingAnchors([guideOf('## Keyboard', '', '### Reorder keyboard', '', '## API')]),
+    ).toEqual([]);
+  });
+
+  it('holds a guide and a site page to it through the contract the corpus runs', () => {
+    const lines = ['## Setup', '', 'Body.', '', '### Setup'];
+    const page = compile({
+      path: 'docs/site/thing.md',
+      slug: 'thing',
+      markdown: markdownOf(lines),
+    });
+
+    const problems = checkContract([guideOf(...lines), page]).filter((problem) =>
+      problem.message.startsWith('"## Setup"'),
+    );
+
+    expect(problems.map((problem) => problem.path)).toEqual([
+      'docs/thing.md',
+      'docs/site/thing.md',
+    ]);
+  });
+
+  it('slugs every heading uniquely in every document the corpus compiles', () => {
+    const documents = SITE_DOCS.map((doc) => compile(doc));
+
+    expect(new Set(documents.map((document) => document.kind))).toEqual(
+      new Set(['primitive', 'guide', 'page']),
+    );
+    expect(checkHeadingAnchors(documents)).toEqual([]);
+  });
+
+  it('publishes listbox’s canonical keyboard section at the anchor every page gives it', () => {
+    const listbox = compile(PRIMITIVE_DOCS.find((doc) => doc.slug === 'listbox')!);
+
+    expect(listbox.sections.find((section) => section.title === 'Keyboard')?.slug).toBe('keyboard');
   });
 });
 

@@ -15,6 +15,7 @@ export interface DocHeading {
   /** The heading's markdown, which may carry inline code or emphasis. */
   readonly text: string;
   readonly slug: string;
+  readonly line: number;
 }
 
 /**

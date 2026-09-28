@@ -15,7 +15,7 @@ It is a pure visual utility that locks an element's box via the native CSS `aspe
 You don't need this primitive for a fixed, never-changing ratio, which is one line of CSS:
 
 ```css
-.card-cover {
+.box {
   aspect-ratio: 16 / 9;
 }
 ```

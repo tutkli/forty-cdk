@@ -434,7 +434,7 @@ describe('the classes a later fence names', () => {
       'const template = `',
       '  <fieldset class="set" [class.set--busy]="busy" animate.enter="set-in"></fieldset>',
       '`;',
-      "const options = { class: 'set-panel' };",
+      "const options = { class: 'set-panel', animateLeave: 'set-out' };",
       '',
     ].join('\n'),
   };
@@ -475,7 +475,13 @@ describe('the classes a later fence names', () => {
   });
 
   it('accepts every form in which the hero declares a class', () => {
-    const source = readme('```css', '.set, .set--busy, .set-in, .set-panel {', '}', '```', '');
+    const source = readme(
+      '```css',
+      '.set, .set--busy, .set-in, .set-panel, .set-out {',
+      '}',
+      '```',
+      '',
+    );
 
     expect(heroFenceProblems([{ path, source, hero }], [])).toEqual([]);
   });
@@ -530,7 +536,7 @@ describe('the classes a later fence names', () => {
       '## Styling',
       '',
       '```css',
-      '.elsewhere {',
+      '.own-composition {',
       '}',
       '```',
     );
@@ -587,6 +593,121 @@ describe('the classes a later fence names', () => {
         line: 1,
         message: expect.stringContaining('`x` in projects/forty-cdk/gone/README.md'),
       },
+    ]);
+  });
+});
+
+describe('the classes a stylesheet outside the section selects', () => {
+  const path = 'projects/forty-cdk/fieldset/README.md';
+  const hero = {
+    path: 'demos/fieldset/examples/default.example.ts',
+    code: 'const template = `<fieldset class="set"><p class="set-row"></p></fieldset>`;\n',
+  };
+  const readme = (before: readonly string[], after: readonly string[]) =>
+    md(
+      ...before,
+      '## Examples',
+      '',
+      'Caption.',
+      '',
+      '```ts',
+      hero.code.trimEnd(),
+      '```',
+      '',
+      '### Signal Forms',
+      '',
+      '```ts',
+      "const options = { class: 'set-panel', animateLeave: 'set-out' };",
+      '```',
+      '',
+      ...after,
+    );
+
+  it('names the README, the line and every class no fence in the README writes', () => {
+    const source = readme(
+      [],
+      ['## Styling', '', '```css', '.set .set-trigger, .chevron {', '}', '```'],
+    );
+
+    expect(heroFenceProblems([{ path, source, hero }], [])).toEqual([
+      {
+        path,
+        line: 17,
+        message: expect.stringContaining(
+          'classes `set-trigger`, `chevron`, which no ```html or ```ts fence in this README writes',
+        ),
+      },
+    ]);
+  });
+
+  it('accepts a class any html or ts fence in the README writes, hero or not', () => {
+    const source = readme(
+      ['## Anatomy', '', '```html', '<span class="set-hint"></span>', '```', ''],
+      ['## Styling', '', '```css', '.set .set-row, .set-hint, .set-panel, .set-out {', '}', '```'],
+    );
+
+    expect(heroFenceProblems([{ path, source, hero }], [])).toEqual([]);
+  });
+
+  it('holds a stylesheet above the section as well as below it', () => {
+    const source = readme(['## Why', '', '```css', '.card-cover {', '}', '```', ''], []);
+
+    expect(heroFenceProblems([{ path, source, hero }], [])).toEqual([
+      { path, line: 3, message: expect.stringContaining('the class `card-cover`') },
+    ]);
+  });
+
+  it('does not count a class another stylesheet selects as one the README writes', () => {
+    const source = readme(
+      [],
+      [
+        '## Styling',
+        '',
+        '```css',
+        '.sheet {',
+        '}',
+        '```',
+        '',
+        '## Behavior notes',
+        '',
+        '```css',
+        '.sheet[data-dragging] {',
+        '}',
+        '```',
+      ],
+    );
+
+    const problems = heroFenceProblems([{ path, source, hero }], []);
+
+    expect(problems.map((problem) => problem.line)).toEqual([17, 24]);
+  });
+
+  it('is judged whether or not the page projects a hero', () => {
+    const source = readme([], ['## Styling', '', '```css', '.chevron {', '}', '```']);
+
+    const problems = heroFenceProblems([{ path, source, hero: null }], []);
+
+    expect(problems.map((problem) => problem.line)).toEqual([17, 1]);
+  });
+
+  it('holds every stylesheet of a README declaring no "## Examples" to the rule', () => {
+    const source = md(
+      '## Anatomy',
+      '',
+      '```html',
+      '<span class="chevron"></span>',
+      '```',
+      '',
+      '## Styling',
+      '',
+      '```css',
+      '.chevron, .set-trigger {',
+      '}',
+      '```',
+    );
+
+    expect(heroFenceProblems([{ path, source, hero: null }], [])).toEqual([
+      { path, line: 9, message: expect.stringContaining('selects the class `set-trigger`,') },
     ]);
   });
 });

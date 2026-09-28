@@ -367,7 +367,7 @@ Actions live inside `[forComboboxContent]` and beside `[forComboboxList]` (never
 inside it, in either anatomy), so they are naturally "inside" the outside-pointer /
 outside-focus dismissal checks, exactly like the input.
 
-### API
+### Action item API
 
 | Member       | Type           | Notes                                                                                                      |
 | ------------ | -------------- | ---------------------------------------------------------------------------------------------------------- |
@@ -789,11 +789,11 @@ forty-cdk ships no styles. Add your own class to each piece. The for\* selectors
 > `[forComboboxContent]` is portaled to `document.body`, so it lives outside your component's view-encapsulated styles. Style it with global CSS (or a class you pass through) and the shared positioner properties above. See [Styling floating content](../../../docs/styling-floating-content.md) for the full positioner-variable list and the portal styling rules.
 
 ```css
-.option[data-highlighted] {
+.combobox-option[data-highlighted] {
   background: var(--accent);
 }
 
-.option:not([data-disabled]) {
+.combobox-option:not([data-disabled]) {
   cursor: pointer;
 }
 ```

@@ -230,10 +230,10 @@ forty-cdk ships no styles. Add your own class to each piece. The `for*` selector
 > `[forHoverCardContent]` (and the projected `[forHoverCardArrow]`) is portaled to `document.body`, so it sits outside your component's view-encapsulated styles. Style it with **global CSS or a class** you pass on the content element, because component-scoped styles won't reach it. The positioner also writes the shared geometry custom properties listed above (`--for-floating-anchor-width` / `-height`, `--for-floating-available-width` / `-height`, `--for-floating-content-transform-origin`); see [Styling floating content](../../../docs/styling-floating-content.md) for the full list and the side/align animation recipe.
 
 ```css
-.card[data-state='open'] {
+.hovercard[data-state='open'] {
   animation: card-in 120ms ease-out;
 }
-.card {
+.hovercard {
   max-width: var(--for-floating-available-width);
   transform-origin: var(--for-floating-content-transform-origin);
 }
@@ -244,7 +244,7 @@ forty-cdk ships no styles. Add your own class to each piece. The `for*` selector
 `[forHoverCard]` and `[forHoverCardContent]` reflect `data-reduced-motion` (present / absent) whenever the OS `prefers-reduced-motion: reduce` media query matches, so you can opt your own transitions out without re-deriving the query in CSS or TypeScript. The attribute flips reactively if the preference changes mid-session.
 
 ```css
-.card[data-reduced-motion] {
+.hovercard[data-reduced-motion] {
   animation: none;
   transition: none;
 }

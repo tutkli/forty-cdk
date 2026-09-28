@@ -221,7 +221,7 @@ forty-cdk ships no styles. Add your own class to each piece. The `for*` selector
   flex-direction: column;
 }
 
-.toolbar-button[data-disabled],
+.toolbar-btn[data-disabled],
 .toolbar-link[data-disabled] {
   opacity: 0.4;
   pointer-events: none;

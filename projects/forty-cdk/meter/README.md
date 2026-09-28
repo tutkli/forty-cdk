@@ -136,10 +136,10 @@ forty-cdk ships no styles. Add your own class to each piece. The `for*` selector
 | `--for-meter-percentage` | `value` as a CSS percentage of `[min, max]` (`0%`–`100%`), set on `[forMeterIndicator]`. Drive `width` / `transform` from it. |
 
 ```css
-.meter-indicator {
+.indicator {
   width: var(--for-meter-percentage, 0%);
 }
-.meter-indicator[data-quality='even-less-good'] {
+.indicator[data-quality='even-less-good'] {
   background: #dc2626;
 }
 ```

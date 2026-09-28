@@ -110,8 +110,8 @@ forty-cdk ships no styles. Add your own class to each piece. The `for*` selector
 | `--for-progress-percentage` | Completion as a CSS percentage (e.g. `25%`), set on `[forProgressIndicator]`. Absent while indeterminate (`value === null`). |
 
 ```css
-.progress-indicator[data-state='loading'] {
-  transform: scaleX(calc(var(--for-progress-percentage) / 100));
+.indicator[data-state='loading'] {
+  width: var(--for-progress-percentage, 0%);
 }
 ```
 

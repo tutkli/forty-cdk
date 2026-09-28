@@ -648,7 +648,7 @@ Accessible per-row selection checkbox (place inside any cell of each `[forTableR
 </div>
 ```
 
-### `[forTableSelectAll]`
+### Select-all checkbox
 
 Interactive header checkbox with tri-state. Reflects `aria-checked` and `data-state` derived from the aggregate selection state across all selectable rows. Clicking (or pressing Space / Enter) selects all when none or some are selected, and clears when all are. No-op outside `'multiple'` mode. Apply on a focusable element:
 

@@ -442,6 +442,7 @@ Pass them in **strictly increasing** order (closest-to-edge first); the directiv
 ```html
 <div
   forDrawer
+  class="sheet"
   [snapPoints]="['148px', '50%', 1]"
   [(activeSnapPoint)]="snap"
   [fadeFromIndex]="1"
