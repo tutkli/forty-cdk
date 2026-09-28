@@ -186,7 +186,7 @@ A pinned `[forComboboxAction]` is a `role=button` affordance — not an option �
 
 Click the `[forComboboxTrigger]` button, type into the search field inside the panel and pick a country: the button shows it and takes focus back. Reopen it and the search starts empty, with your pick checked. [Picker anatomy](#picker-anatomy) covers the `[forComboboxList]` part this also needs, the focus hand-off and the anchor order.
 
-### Object values
+### Binding whole objects
 
 `forCombobox` is generic over `T`: bind the whole object to `[forComboboxOption][value]` and configure three hooks — `[compareWith]` to match by a stable key, `[itemToStringLabel]` for the visible label, and `[itemToFormValue]` to serialize what a native form submits. `value()` holds the full object.
 

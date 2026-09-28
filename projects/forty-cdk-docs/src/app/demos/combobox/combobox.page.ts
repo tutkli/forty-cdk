@@ -62,7 +62,10 @@ import { DOC } from '../../../generated/docs/primitives/combobox.generated';
         <app-combobox-picker-example />
       </demo-layout>
 
-      <demo-layout heading="object-values" sourcePath="combobox/examples/object-values.example.ts">
+      <demo-layout
+        heading="binding-whole-objects"
+        sourcePath="combobox/examples/object-values.example.ts"
+      >
         <app-combobox-object-values-example />
       </demo-layout>
 

@@ -86,6 +86,10 @@ export declare function checkExampleHeadings(
   documents: readonly DocDocument[],
 ): readonly DocMetaProblem[];
 
+export declare function checkExampleAnchors(
+  documents: readonly DocDocument[],
+): readonly DocMetaProblem[];
+
 export declare function checkExemptions(
   documents: readonly DocDocument[],
 ): readonly DocMetaProblem[];

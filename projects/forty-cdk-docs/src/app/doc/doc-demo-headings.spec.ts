@@ -1,5 +1,9 @@
 import { demoHeadingProblems, demosOf } from '../../../../../scripts/lib/doc-demo-headings.mjs';
-import { checkExampleHeadings } from '../../../../../scripts/lib/doc-contract.mjs';
+import {
+  checkContract,
+  checkExampleAnchors,
+  checkExampleHeadings,
+} from '../../../../../scripts/lib/doc-contract.mjs';
 import { documentMarkdown } from '../../../../../scripts/docs/doc-markdown.mjs';
 import { renderDocument } from '../../../../../scripts/docs/doc-render.mjs';
 import { searchTextOf } from '../../../../../scripts/docs/doc-search.mjs';
@@ -296,6 +300,118 @@ describe('the contract a demo heading is held to across the corpus', () => {
         message: expect.stringContaining('does not open with a paragraph'),
       }),
     ]);
+  });
+});
+
+describe('the anchor a demo heading slugs to', () => {
+  const demo = (title: string) => [`### ${title}`, '', 'What it shows.', ''];
+  const examples = (...titles: readonly string[]) => [
+    '## Examples',
+    '',
+    'Caption.',
+    '',
+    ...titles.flatMap(demo),
+  ];
+
+  it('reports a demo sharing its title with a reference section, naming both headings', () => {
+    const shadowing = documentOf([
+      ...examples('Column resizing'),
+      '## Column resizing',
+      '',
+      'The contract.',
+    ]);
+
+    expect(checkExampleAnchors([shadowing])).toEqual([
+      {
+        path: 'projects/forty-cdk/fixture/README.md',
+        line: shadowing.examples[0]!.line,
+        message: expect.stringContaining(
+          '"### Column resizing" under "## Examples" slugs to "column-resizing", as ' +
+            '"## Column resizing" does, so the demo is published as #column-resizing and ' +
+            '"## Column resizing" as #column-resizing-1',
+        ),
+      },
+    ]);
+  });
+
+  it('reports a demo whose title differs from the section’s only in what the slug drops', () => {
+    const shadowing = documentOf([
+      ...examples('Swipe to dismiss'),
+      '## Swipe-to-dismiss',
+      '',
+      'The contract.',
+    ]);
+
+    expect(checkExampleAnchors([shadowing])).toEqual([
+      expect.objectContaining({
+        message: expect.stringContaining('as "## Swipe-to-dismiss" does'),
+      }),
+    ]);
+  });
+
+  it('reports a heading written above the demo, which leaves the demo the suffix', () => {
+    const shadowed = documentOf([
+      '## Anatomy',
+      '',
+      'Pieces.',
+      '',
+      '### States',
+      '',
+      'Three of them.',
+      '',
+      ...examples('States'),
+    ]);
+
+    expect(checkExampleAnchors([shadowed])).toEqual([
+      expect.objectContaining({
+        message: expect.stringContaining(
+          'as "### States" under "## Anatomy" does, so the demo is published as #states-1 and ' +
+            '"### States" as #states',
+        ),
+      }),
+    ]);
+  });
+
+  it('reports two demos that slug alike once, against the first of them', () => {
+    const twice = documentOf(examples('States', 'States'));
+
+    expect(checkExampleAnchors([twice])).toEqual([
+      expect.objectContaining({ line: twice.examples[0]!.line }),
+    ]);
+  });
+
+  it('accepts a demo whose title qualifies the section it shares words with', () => {
+    const qualified = documentOf([
+      ...examples('View switching (month / year picker)'),
+      '## View switching',
+      '',
+      'The contract.',
+    ]);
+
+    expect(checkExampleAnchors([qualified])).toEqual([]);
+  });
+
+  it('fails the contract the corpus is compiled against', () => {
+    const shadowing = documentOf([...examples('Snap points'), '## Snap points', '', 'Contract.']);
+
+    expect(
+      checkContract([shadowing]).filter((problem) =>
+        problem.message.startsWith('"### Snap points"'),
+      ),
+    ).toHaveLength(1);
+  });
+
+  it('is unique to its demo in every README the library ships', () => {
+    expect(checkExampleAnchors([...DOCUMENTS.values()])).toEqual([]);
+  });
+
+  it('leaves the plain anchor to the section a link names, as combobox’s intro expects', () => {
+    const combobox = DOCUMENTS.get('combobox')!;
+
+    expect(combobox.sections.find((section) => section.slug === 'object-values')?.title).toBe(
+      'Object values',
+    );
+    expect(combobox.examples.map((example) => example.slug)).not.toContain('object-values');
   });
 });
 

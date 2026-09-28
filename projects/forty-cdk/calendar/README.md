@@ -196,9 +196,9 @@ One class and one directive, three states. `disabled` turns off focus movement a
 
 `min` disables past dates and `isDateUnavailable` blocks weekends — both reflect `aria-disabled` and refuse selection, while arrows still move across them so navigation is never trapped. `firstDayOfWeek` starts the week on Monday.
 
-### Range selection
+### Range mode
 
-In `selectionMode="range"` the demo opens with a week already committed. Click a day to anchor a new range, hover or use the arrow keys to preview the band, then click or press `Enter` on a second day, on either side of the anchor, to commit it. [Range selection](#range-selection-1) lists the `data-range-*` facets to style and the length limits.
+In `selectionMode="range"` the demo opens with a week already committed. Click a day to anchor a new range, hover or use the arrow keys to preview the band, then click or press `Enter` on a second day, on either side of the anchor, to commit it. [Range selection](#range-selection) lists the `data-range-*` facets to style and the length limits.
 
 ### Month / year dropdowns
 

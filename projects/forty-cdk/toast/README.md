@@ -109,9 +109,9 @@ export class ToastDefaultExample {
 
 An action toast carries a `[forToastAction]` button that runs your handler and closes with reason `'action'`. The save flow shows `ref.update()` mutating a toast in place — 'Saving…' becomes 'Saved' with a new `variant` and `duration`, re-announced automatically when the text changes.
 
-### Swipe to dismiss
+### Swipe right to dismiss
 
-The viewport sets `swipeDirection="right"`: show the toast, then drag it to the right with a mouse or a finger. It follows the pointer, a release past the 60px `swipeThreshold` dismisses it, and a shorter drag springs it back. [Swipe-to-dismiss](#swipe-to-dismiss-1) has the attributes and variables the CSS keys off, and the spring-back recipe.
+The viewport sets `swipeDirection="right"`: show the toast, then drag it to the right with a mouse or a finger. It follows the pointer, a release past the 60px `swipeThreshold` dismisses it, and a shorter drag springs it back. [Swipe-to-dismiss](#swipe-to-dismiss) has the attributes and variables the CSS keys off, and the spring-back recipe.
 
 ## API
 
@@ -313,7 +313,7 @@ A bare number is shorthand for `{ duration }` with `linear` easing:
 
 Four things are worth knowing:
 
-- **The library drives `translate`, `transform` stays yours.** The glide is played on the individual `translate` property, which the browser applies _before_ `transform`, so the two compose. Nothing above changes: the [exit keyframes](#exit--enter-animations-programmatic) on `transform` and the [swipe recipe](#swipe-to-dismiss-1)'s `transform: translate3d(var(--for-toast-swipe-movement-x), …)` keep working with `[stackShift]` set, including while a row is mid-glide. The one thing to avoid is writing your own `translate` on `[forToast]` — an animation outranks every author declaration of the same property, inline ones included, so the glide would suppress it while it played.
+- **The library drives `translate`, `transform` stays yours.** The glide is played on the individual `translate` property, which the browser applies _before_ `transform`, so the two compose. Nothing above changes: the [exit keyframes](#exit--enter-animations-programmatic) on `transform` and the [swipe recipe](#swipe-to-dismiss)'s `transform: translate3d(var(--for-toast-swipe-movement-x), …)` keep working with `[stackShift]` set, including while a row is mid-glide. The one thing to avoid is writing your own `translate` on `[forToast]` — an animation outranks every author declaration of the same property, inline ones included, so the glide would suppress it while it played.
 - **Nothing moves by default.** Leaving `[stackShift]` unset keeps today's synchronous reflow, and `[stackShift]="0"` opts a single viewport out of a scope-level default.
 - **`prefers-reduced-motion: reduce` suppresses it** — the library skips the glide entirely, no consumer CSS needed. This is the one animation hook the directive gates for you, because the directive owns the motion rather than handing you a class.
 - **It is the programmatic path only.** On the declarative path the rows and their container are yours, so a directive of your own on that container is the right level.

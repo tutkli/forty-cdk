@@ -27,7 +27,7 @@ import { DOC } from '../../../generated/docs/primitives/tabs.generated';
       </demo-layout>
 
       <demo-layout
-        heading="manual-activation"
+        heading="focus-without-selecting"
         sourcePath="tabs/examples/manual-activation.example.ts"
       >
         <app-tabs-manual-activation-example />

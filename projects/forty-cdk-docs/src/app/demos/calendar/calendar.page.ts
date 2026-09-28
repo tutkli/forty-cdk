@@ -43,7 +43,7 @@ import { DOC } from '../../../generated/docs/primitives/calendar.generated';
         <app-calendar-constraints-example />
       </demo-layout>
 
-      <demo-layout heading="range-selection" sourcePath="calendar/examples/range.example.ts">
+      <demo-layout heading="range-mode" sourcePath="calendar/examples/range.example.ts">
         <app-calendar-range-example />
       </demo-layout>
 

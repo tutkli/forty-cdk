@@ -170,7 +170,7 @@ Set `slidesPerView` above `1` to show several slides at once. Each slide is `fle
 
 With `autoplay` set, the slides advance every three seconds, unless your system asks for reduced motion, in which case they wait for the rotation control. Hover the carousel or move focus into it and rotation pauses until you leave; stop it with the control and it stays stopped through hover and focus until you start it again. [Autoplay](#autoplay) has the full pause rules and why the control must be the first focusable child.
 
-### Drag / swipe
+### Pointer drag & touch swipe
 
 Add the opt-in `[forCarouselDrag]` directive to the viewport for pointer drag and touch swipe. The track follows the finger 1:1 via `--for-carousel-swipe-movement-x/y`, then snaps to the nearest slide on release.
 
