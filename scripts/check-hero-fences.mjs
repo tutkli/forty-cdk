@@ -86,7 +86,8 @@ const problems = heroFenceProblems(documents);
 if (problems.length === 0) {
   console.log(
     `[check-hero-fences] ok — ${documents.length} README(s) open "## Examples" with the hero ` +
-      'their page projects, and name no class below it that the hero does not declare',
+      'their page projects, name no class below it that the hero does not declare, and select ' +
+      'no class outside it that no fence writes',
   );
   process.exit(0);
 }

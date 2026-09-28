@@ -13,9 +13,9 @@ The focusable divider that resizes two panes is a separate primitive — [`ForPa
 ## Anatomy
 
 ```html
-<hr forSeparator />
+<hr forSeparator class="separator" />
 
-<span forSeparator orientation="vertical" decorative></span>
+<span forSeparator class="separator" orientation="vertical" decorative></span>
 ```
 
 ## Examples

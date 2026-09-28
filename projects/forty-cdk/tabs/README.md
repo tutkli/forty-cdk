@@ -189,16 +189,16 @@ Implements the [WAI-ARIA Tabs pattern](https://www.w3.org/WAI/ARIA/apg/patterns/
 forty-cdk ships no styles. Add your own class to each piece — the for\* selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected data-\* attributes listed per piece in the [API](#api) section.
 
 ```css
-.tabs-trigger[data-state='active'] {
+.tb-trigger[data-state='active'] {
   border-bottom: 2px solid currentColor;
 }
 
-.tabs-trigger[data-disabled] {
+.tb-trigger[data-disabled] {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.tabs-content[data-state='inactive'] {
+.tb-content[data-state='inactive'] {
   display: none;
 }
 ```
