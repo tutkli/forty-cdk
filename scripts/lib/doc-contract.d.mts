@@ -86,7 +86,7 @@ export declare function checkExampleHeadings(
   documents: readonly DocDocument[],
 ): readonly DocMetaProblem[];
 
-export declare function checkExampleAnchors(
+export declare function checkHeadingAnchors(
   documents: readonly DocDocument[],
 ): readonly DocMetaProblem[];
 

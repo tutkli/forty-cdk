@@ -548,7 +548,7 @@ control keeps its own accessible name either way, so the icons stay `aria-hidden
 | --------------- | ----------------------- | -------------------------------------- |
 | `data-dragging` | `[forCarouselViewport]` | Present while a drag gesture is armed. |
 
-### Reduced-motion
+### Reduced-motion styling
 
 The directive performs no animation itself. Add the following CSS to disable the transition
 for users who prefer reduced motion:

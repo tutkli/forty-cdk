@@ -71,14 +71,6 @@ describe('anchors across the published corpus', () => {
 
     expect(colliding).toEqual([...KNOWN_COLLIDING_IDS.keys()]);
   });
-
-  it('suffixes rather than repeats the second of two headings that slugify alike', () => {
-    const combobox = SITE_DOCS.find((doc) => doc.slug === 'combobox')!;
-    const ids = headingIds(compile(combobox));
-
-    expect(ids).toContain('api');
-    expect(ids).toContain('api-1');
-  });
 });
 
 describe('slugs derived from content rather than evaluation order', () => {

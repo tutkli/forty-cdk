@@ -113,7 +113,7 @@ describe('foldableOf', () => {
       sections: [
         {
           ...document.sections[0]!,
-          headings: [{ depth: 5, text: 'Deep', slug: 'deep' }],
+          headings: [{ depth: 5, text: 'Deep', slug: 'deep', line: 1 }],
         },
       ],
     };

@@ -275,7 +275,7 @@ export class DemoSortableTags {
 | `reorderDisabled` | `input<boolean>`       | Disable reorder while keeping selection / typeahead. The listbox's own `disabled` also disables reorder. Default `false`. |
 | `optionReorder`   | `output<{ from; to }>` | Fires once per committed reorder with the previous / new index (both 0-based, DOM order). Apply `moveItemInArray`.        |
 
-### Keyboard
+### Reorder keyboard
 
 - **Ctrl+Space** (or **Cmd+Space**) lifts the focused option.
 - While lifted: **arrow keys** step the target position (linearly in DOM order, so a wrapping grid sorts with either axis), **Home / End** jump to the ends, **Space / Enter** drop, **Escape / Tab** cancel.

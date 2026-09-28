@@ -1,8 +1,8 @@
 import { demoHeadingProblems, demosOf } from '../../../../../scripts/lib/doc-demo-headings.mjs';
 import {
   checkContract,
-  checkExampleAnchors,
   checkExampleHeadings,
+  checkHeadingAnchors,
 } from '../../../../../scripts/lib/doc-contract.mjs';
 import { documentMarkdown } from '../../../../../scripts/docs/doc-markdown.mjs';
 import { renderDocument } from '../../../../../scripts/docs/doc-render.mjs';
@@ -321,7 +321,7 @@ describe('the anchor a demo heading slugs to', () => {
       'The contract.',
     ]);
 
-    expect(checkExampleAnchors([shadowing])).toEqual([
+    expect(checkHeadingAnchors([shadowing])).toEqual([
       {
         path: 'projects/forty-cdk/fixture/README.md',
         line: shadowing.examples[0]!.line,
@@ -342,7 +342,7 @@ describe('the anchor a demo heading slugs to', () => {
       'The contract.',
     ]);
 
-    expect(checkExampleAnchors([shadowing])).toEqual([
+    expect(checkHeadingAnchors([shadowing])).toEqual([
       expect.objectContaining({
         message: expect.stringContaining('as "## Swipe-to-dismiss" does'),
       }),
@@ -362,7 +362,7 @@ describe('the anchor a demo heading slugs to', () => {
       ...examples('States'),
     ]);
 
-    expect(checkExampleAnchors([shadowed])).toEqual([
+    expect(checkHeadingAnchors([shadowed])).toEqual([
       expect.objectContaining({
         message: expect.stringContaining(
           'as "### States" under "## Anatomy" does, so the demo is published as #states-1 and ' +
@@ -375,9 +375,20 @@ describe('the anchor a demo heading slugs to', () => {
   it('reports two demos that slug alike once, against the first of them', () => {
     const twice = documentOf(examples('States', 'States'));
 
-    expect(checkExampleAnchors([twice])).toEqual([
+    expect(checkHeadingAnchors([twice])).toEqual([
       expect.objectContaining({ line: twice.examples[0]!.line }),
     ]);
+  });
+
+  it('names the demo as the side to rename, with the heading its page claims it by', () => {
+    const [problem] = checkHeadingAnchors([
+      documentOf(['## Anatomy', '', '### States', '', 'Three.', '', ...examples('States')]),
+    ]);
+
+    expect(problem?.message).toContain(
+      'Rename the demo heading and the `heading` its page names, since the anchor of a ' +
+        'reference heading is the one other documents link to',
+    );
   });
 
   it('accepts a demo whose title qualifies the section it shares words with', () => {
@@ -388,7 +399,7 @@ describe('the anchor a demo heading slugs to', () => {
       'The contract.',
     ]);
 
-    expect(checkExampleAnchors([qualified])).toEqual([]);
+    expect(checkHeadingAnchors([qualified])).toEqual([]);
   });
 
   it('fails the contract the corpus is compiled against', () => {
@@ -402,7 +413,7 @@ describe('the anchor a demo heading slugs to', () => {
   });
 
   it('is unique to its demo in every README the library ships', () => {
-    expect(checkExampleAnchors([...DOCUMENTS.values()])).toEqual([]);
+    expect(checkHeadingAnchors([...DOCUMENTS.values()])).toEqual([]);
   });
 
   it('leaves the plain anchor to the section a link names, as combobox’s intro expects', () => {
