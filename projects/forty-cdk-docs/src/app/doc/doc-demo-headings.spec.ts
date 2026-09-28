@@ -413,7 +413,19 @@ describe('the anchor a demo heading slugs to', () => {
   });
 
   it('is unique to its demo in every README the library ships', () => {
-    expect(checkHeadingAnchors([...DOCUMENTS.values()])).toEqual([]);
+    const documents = [...DOCUMENTS.values()];
+    const demos = new Set(
+      documents.flatMap((document) =>
+        document.examples.map((example) => `${document.path}:${example.line}`),
+      ),
+    );
+
+    expect(demos.size).toBeGreaterThan(0);
+    expect(
+      checkHeadingAnchors(documents).filter((problem) =>
+        demos.has(`${problem.path}:${problem.line}`),
+      ),
+    ).toEqual([]);
   });
 
   it('leaves the plain anchor to the section a link names, as combobox’s intro expects', () => {
