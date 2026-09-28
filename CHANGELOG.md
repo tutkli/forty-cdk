@@ -5,6 +5,83 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.27.0] - 2026-09-28
+
+A small release about the label of an overlay control and what the dev-mode console says. Pressing
+the `[forLabel]` of an open select, picker combobox, date picker or time picker dismissed the panel
+as an outside press and reopened it on the forwarded click, so the label could open the panel but
+never close it. The label now counts as part of the trigger, and each press toggles the panel once.
+The rest is the console: a checkbox left inside a structural tree node now says why its click does
+nothing, a plain structural swap no longer reports a duplicate slot, and the warnings that repeated
+on every change of state fire once per entry into it. The one change you receive without binding
+anything is on `[forLabel]`: it cancels the `mousedown` of a press outside its control, so a text
+selection can no longer start on a label.
+
+### Added
+
+- **Tree** — `FORCDK-TREE-006` flags a checkbox inside a structural node
+  ([#1973](https://github.com/tutkli/forty-cdk/issues/1973)). A `[forTreeItemCheckbox]` left inside
+  a `[selectable]="false"` node still painted its tri-state box, and its click selected nothing: the
+  pointer twin of the dead `Space` key that `[selectable]` was added to fix. The click now warns in
+  dev mode, naming the node by its value, and the fix it gives is to remove the piece. A header that
+  wants to show its group's roll-up reads `checkState()` off the node's `forTreeItem` export, which
+  stays derived on a structural node. `ForTreeItemContext` gains a required
+  `selectable: Signal<boolean>`, which `ForTreeItem`, its single implementor, already had as an
+  input.
+
+### Changed
+
+- **Field** — a press on `[forLabel]` no longer moves focus or starts a text selection
+  ([#2010](https://github.com/tutkli/forty-cdk/issues/2010)). The label cancels the primary-button
+  `mousedown` of any press that lands outside its control. Without that, focus moved to the nearest
+  focusable ancestor on `mousedown`, and when the field sat inside a popover or dialog surface with
+  `tabindex="-1"` the move tripped the overlay's focus-outside dismissal before the forwarded click
+  arrived. It applies to every `[forLabel]` inside a `[forField]` with a registered control,
+  whatever that control is, and needs no binding. A press on a control the label wraps is left
+  alone, and a standalone `[forLabel]` outside a field is unaffected. **The cost is that a text
+  selection can no longer be started on the label.**
+
+- **Field** — `ForFieldContext.registerLabel()` takes the label's host element
+  ([#2010](https://github.com/tutkli/forty-cdk/issues/2010)). The field now keeps its label hosts so
+  it can exempt them from the dismissal of the overlay it labels, which makes the signature
+  `registerLabel(element: HTMLElement)`, and `ForFieldContext` gains the required
+  `activationTarget` and `labelElements` signals. Only a consumer implementing `ForFieldContext`, or
+  registering a custom label piece against `FOR_FIELD_CONTEXT`, is affected: pass the host, as in
+  `registerLabel(inject(ElementRef).nativeElement)`. `FieldControlHandle` gains an optional
+  `activationTarget` for a control whose label should click a different element than the one it
+  names, which is how the picker combobox nominates its trigger.
+
+### Fixed
+
+- **Field** — pressing the label of an open select or picker closes it
+  ([#2010](https://github.com/tutkli/forty-cdk/issues/2010)). With the panel open, a press on the
+  `[forLabel]` of a `[forSelect]`, a picker-anatomy `[forCombobox]`, a `[forDatePicker]` or a
+  `[forTimePicker]` dismissed the panel as an outside press on `pointerdown` and reopened it on the
+  forwarded `click`: `openChange` emitted `false` then `true`, and the label could never close what
+  it had opened. The field now adds its labels to an overlay's dismissal exemptions whenever it
+  labels that overlay's trigger, so each press toggles the panel exactly once and focus lands on the
+  trigger. In the picker combobox the label keeps toggling through `[forComboboxTrigger]` even while
+  the open panel's search input carries the association, and a native `<label for>` pointing at
+  that input has its forwarding routed through the trigger the same way. Modal surfaces are
+  unchanged, since they inert the label.
+
+- **Search**, **Number input**, **File upload**, **Carousel** — a structural swap no longer
+  reports a duplicate ([#2008](https://github.com/tutkli/forty-cdk/issues/2008)). `FORCDK-CORE-005`
+  counted occupants at registration, so swapping `[forSearch]` between two sibling `@if` blocks
+  under one `[forSearchGroup]`, with the incoming block first in the template, warned
+  `but 2 are registered`: Angular creates the incoming piece before it destroys the outgoing one.
+  `[forNumberInput]`, `[forFileUploadInput]` and `[forCarouselViewport]` share the slot and the
+  false positive. The count is now read once the change-detection pass settles, the way
+  `[forField]` and `[forFieldset]` already read theirs, so only a duplicate that survives the pass
+  is reported.
+
+- **Field**, **Fieldset**, **Dialog** — a dev-mode warning fires once per entry into the invalid
+  state ([#2008](https://github.com/tutkli/forty-cdk/issues/2008)). `FORCDK-FIELD-002` and
+  `FORCDK-FIELDSET-001` warned again on every change of the registered count while it stayed above
+  one, and `FORCDK-DIALOG-002` on every open of a `[forDialogTrigger]` without `[controls]`. Each
+  now warns the first time the state is entered, and again only after it was left: the count back
+  to one, or `[controls]` set and then cleared. `FORCDK-CORE-005` follows the same rule.
+
 ## [0.26.0] - 2026-09-18
 
 A release about the text a collection searches and announces. Four primitives resolved it from the
@@ -2579,7 +2656,8 @@ primitives.
 - **Display** — avatar, progress, meter, tree.
 - `forty-cdk/internationalized-date` secondary entry point exposing the `@internationalized/date` adapters for the date and time primitives.
 
-[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.26.0...HEAD
+[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.27.0...HEAD
+[0.27.0]: https://github.com/tutkli/forty-cdk/compare/v0.26.0...v0.27.0
 [0.26.0]: https://github.com/tutkli/forty-cdk/compare/v0.25.2...v0.26.0
 [0.25.2]: https://github.com/tutkli/forty-cdk/compare/v0.25.1...v0.25.2
 [0.25.1]: https://github.com/tutkli/forty-cdk/compare/v0.25.0...v0.25.1
