@@ -299,6 +299,7 @@ describe('what a README writes below a demo caption, which the site never prints
     ['a list', ['- One.', '- Two.']],
     ['a table', ['| Key | Action |', '| --- | ------ |', '| A | B |']],
     ['a blockquote', ['> An aside.']],
+    ['a heading', ['#### Aside']],
   ])(
     'reports %s below the caption of a "###" whose demo the page projects, naming the README and the heading',
     (name, block) => {

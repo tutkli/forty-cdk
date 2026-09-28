@@ -442,7 +442,7 @@ function exampleHeadingsOf(run) {
     if (entry.token.type !== 'heading' || entry.token.depth !== 3) {
       continue;
     }
-    const body = blocksUntilHeading(run.slice(index + 1));
+    const body = blocksUntilDemoHeading(run.slice(index + 1));
     const opening = body[0]?.token.type === 'paragraph' ? body[0] : null;
     headings.push({
       title: entry.token.text,
@@ -455,8 +455,8 @@ function exampleHeadingsOf(run) {
   return headings;
 }
 
-function blocksUntilHeading(run) {
-  const end = run.findIndex(({ token }) => token.type === 'heading');
+function blocksUntilDemoHeading(run) {
+  const end = run.findIndex(({ token }) => token.type === 'heading' && token.depth <= 3);
   return run.slice(0, end === -1 ? run.length : end).filter(({ token }) => token.type !== 'space');
 }
 
@@ -679,7 +679,7 @@ export function compileDocument(source, { path, slug, kind }) {
     title: title.token.text,
     lede: ledeIndex === -1 ? null : introRun[ledeIndex].token.text,
     caption,
-    captionTrailing: caption === null ? [] : trailingOf(blocksUntilHeading(examples.run)),
+    captionTrailing: caption === null ? [] : trailingOf(blocksUntilDemoHeading(examples.run)),
     examples: exampleHeadingsOf(examples?.run ?? []),
     intro: blocksOf(introRun.filter((_, index) => index !== ledeIndex)),
     introHeadings: headingsOf(introRun),

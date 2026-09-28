@@ -163,6 +163,7 @@ const BLOCK_NAMES = {
   list: 'a list',
   table: 'a table',
   blockquote: 'a blockquote',
+  heading: 'a heading',
   html: 'an HTML block',
   hr: 'a thematic break',
 };
