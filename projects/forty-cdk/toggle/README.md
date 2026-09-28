@@ -50,7 +50,7 @@ One class and one directive, three states. Both `disabled` and `readonly` stay f
 
 ### ToggleGroup
 
-A group of toggles with roving tabindex. In `multiple` mode each item toggles independently. Arrows only move focus; selection needs `Space` / `Enter` or click.
+A group of toggles with roving tabindex. In `multiple` mode each item toggles independently, and arrows only move focus: selection needs `Space` / `Enter` or click. `value` is always a `readonly string[]`, carrying 0 or 1 entries in single mode, so flipping `multiple` needs no change to your state.
 
 ```ts
 import { Component, signal } from '@angular/core';
@@ -80,8 +80,6 @@ export class DemoAlignment {
   readonly format = signal<readonly string[]>([]);
 }
 ```
-
-`value` is always `readonly string[]`. In single mode it carries 0 or 1 entries; this lets consumers flip `multiple` without re-typing their state.
 
 ### Signal Forms
 

@@ -35,6 +35,12 @@ Both models are `readonly T[]` over the node value type, which `ForTree<T = stri
 </ul>
 ```
 
+Mounting is the consumer's responsibility: wrap `[forTreeGroup]` in `@if (expanded().includes(node.id))` so a collapsed parent drops its subtree.
+
+Trees are recursive, and the idiomatic Angular shape is a small **recursive component** for the node. This keeps dependency injection correct at every depth: each node component nests its element injector under its enclosing `[forTreeGroup]`, so `[forTreeItem]` resolves the right level / container automatically.
+
+> **Why not `ngTemplateOutlet`?** A single recursive `<ng-template>` instantiated with `[ngTemplateOutlet]` resolves dependency injection from where the template is **declared**, not where it is inserted. A nested `[forTreeItem]` would then inject the root tree as its container instead of its enclosing `[forTreeGroup]`, breaking `aria-level` and visible-order navigation. A recursive component avoids this. If you must use `ngTemplateOutlet`, pass an explicit `[ngTemplateOutletInjector]` captured at each insertion point.
+
 In `selectionMode="checkbox"`, place a checkbox surface inside the label:
 
 ```html
@@ -168,12 +174,6 @@ export class TreeDefaultExample {
   protected readonly expanded = signal<readonly string[]>(['src', 'app']);
 }
 ```
-
-Trees are recursive, and the idiomatic Angular shape is a small **recursive component** for the node. This keeps dependency injection correct at every depth: each node component nests its element injector under its enclosing `[forTreeGroup]`, so `[forTreeItem]` resolves the right level / container automatically.
-
-> **Why not `ngTemplateOutlet`?** A single recursive `<ng-template>` instantiated with `[ngTemplateOutlet]` resolves dependency injection from where the template is **declared**, not where it is inserted. A nested `[forTreeItem]` would therefore inject the root tree as its container instead of its enclosing `[forTreeGroup]`, breaking `aria-level` and visible-order navigation. The recursive component above avoids this. If you must use `ngTemplateOutlet`, pass an explicit `[ngTemplateOutletInjector]` captured at each insertion point.
-
-Mounting is the consumer's responsibility: wrap `[forTreeGroup]` in `@if (expanded().includes(node.id))` so a collapsed parent drops its subtree. A node is treated as a **parent** (and emits `aria-expanded` / `data-state`) only when a `[forTreeItemToggle]` is registered inside it. Leaves render no toggle and emit neither, matching the APG "end nodes lack `aria-expanded`" rule.
 
 ### Cascading checkboxes
 

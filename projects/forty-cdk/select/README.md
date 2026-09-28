@@ -216,10 +216,6 @@ With `position="item-aligned"`, open the list: Germany, the preselected country,
 </div>
 ```
 
-For a legacy `<form action="…">` flow, set `[name]` so that `[forSelect]` mirrors `[(value)]` into one `<input type="hidden">` per selected value (single produces 0–1 inputs, multi produces N). String values land verbatim in the hidden input; object values default to `JSON.stringify` (override via `[itemToFormValue]`, see below).
-
-A single-select field is modeled as the same `readonly T[]`, kept at length ≤ 1, and bound with `[formField]` directly. Single mode needs no adapter. A `FieldTree<T | null>` cannot bind here; map to that shape at the edge that needs it. See [the selection value-type contract](../../../docs/selection-value-type-contract.md).
-
 ### Virtualized (5,000 options)
 
 Setting `[totalCount]` switches `ForSelect` to the virtualized activedescendant model: `[forSelectContent]` becomes the single `Tab` stop and the active option is tracked by `aria-activedescendant`, so rows recycle as the listbox scrolls. The window is rendered with the library's `injectVirtualizer` core.
@@ -462,6 +458,8 @@ Three inputs configure the object behaviour. Defaults make string mode work unch
 | `[itemToFormValue]` | `(item) => typeof item === 'string' ? item : JSON.stringify(item)` | Serialize an item for the hidden input. Override to emit a per-item id (or any wire format your backend wants).                                                       |
 | `[itemToLabel]`     | `undefined`                                                        | Resolve a selected item's display label without the listbox mounted. Supply it when a pre-set object value must render before the listbox is ever opened (see below). |
 
+`[itemToFormValue]` feeds the hidden inputs of a legacy `<form action="…">` flow: set `[name]`, and `[forSelect]` mirrors `[(value)]` into one `<input type="hidden">` per selected value (0 or 1 in single mode, one per value in multi mode). String values land verbatim, and object values default to `JSON.stringify` until `[itemToFormValue]` says otherwise.
+
 The visible option label normally comes from the rendered `textContent`, so there's no separate label function: `[forSelectValue]` renders the matching option's text.
 
 ### Pre-set object values and the `@if (open())` pattern
@@ -631,6 +629,8 @@ readonly v = injectVirtualizer({
 ## Single mode (default)
 
 Click an option to replace the selection and close. `[(value)]` keeps 0 or 1 element. Read the sole value through the read-only `selected: Signal<T | null>` accessor (the form contract keeps `value` as `readonly T[]`; `selected()` is `value()[0]` or `null`).
+
+A single-select form field is modeled as the same `readonly T[]`, kept at length ≤ 1, and bound with `[formField]` directly, so single mode needs no adapter. A `FieldTree<T | null>` cannot bind here; map to that shape at the edge that needs it. See [the selection value-type contract](../../../docs/selection-value-type-contract.md).
 
 `[(value)]` is the selection (form state) and is always the consumer's. Open state is separate: `[forSelect]` owns it as a `model<boolean>`, so the `@if` gating the content reads it straight off the directive instance. `[forSelect]` is `exportAs: 'forSelect'`. Expose it with a template reference variable (`#select="forSelect"`) and gate `[forSelectContent]` on `select.open()`. The trigger toggles it; Escape, Tab, and outside-pointer flip it back. You need neither a separate `open` signal nor `[(open)]`. Bind `[(open)]="mySignal"` only when the component class needs to read or drive open state itself (open it programmatically, persist it, or react to it elsewhere).
 

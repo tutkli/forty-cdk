@@ -98,8 +98,6 @@ export class FileUploadDefaultExample {
 </div>
 ```
 
-With `multiple` off the zone keeps the first accepted file and surfaces the extras on `filesRejected` with the reason `'multiple'`. Nothing is discarded silently, so a consumer can tell the user why only one file went through. Combining `directory` with `multiple` off is therefore noisy by design: every file in the chosen folder past the first is reported as a `'multiple'` rejection.
-
 ### States
 
 One class and one directive, two states. `disabled` blocks the dialog and drops alike. It also reflects `data-disabled` on the zone, so the zone dims and ignores pointer events from the same stylesheet that styles `data-dragging`, without the input leaving the DOM.
@@ -116,6 +114,8 @@ Set `directory` to switch the native picker into folder mode. The input mirrors 
 ```
 
 ## Handling rejections
+
+With `multiple` off, the zone keeps the first accepted file and surfaces the extras on `filesRejected` with the reason `'multiple'`. Nothing is discarded silently, so you can tell the user why only one file went through. Combining `directory` with `multiple` off is therefore noisy by design: every file in the chosen folder past the first is reported as a `'multiple'` rejection.
 
 <!-- snippet: fragment -->
 

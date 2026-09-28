@@ -92,14 +92,6 @@ import { ForField, ForFieldControl, ForFieldDescription, ForLabel } from 'forty-
 export class FieldDefaultExample {}
 ```
 
-Style off the reflected state:
-
-```css
-.field[data-invalid] .field-label {
-  color: var(--color-danger);
-}
-```
-
 ### States
 
 One class and one directive, four states. The control's own `required`, `invalid` and `disabled` are reflected on the `[forField]` host as `data-required`, `data-invalid` and `data-disabled`, so the label, the input and the description all key on one element.

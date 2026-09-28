@@ -97,8 +97,6 @@ export class MenubarDefaultExample {
 }
 ```
 
-`@if (open() === '<value>')` controls each menu's mount, so Angular's `animate.enter` / `animate.leave` fire on the natural mount cycle. `[(value)]` is two-way bindable; the menubar flips it on trigger interaction, item activation, Escape, outside dismissal, and cross-menu navigation.
-
 ### Vertical & RTL
 
 The same menubar laid out as a vertical sidebar (`orientation='vertical'` makes `Up` / `Down` move between triggers) with `dir='rtl'`. RTL swaps the cross-menu arrow keys and floats each menu out of the opposite edge. The directive resolves the writing direction and positioning for you.
@@ -123,7 +121,7 @@ Only a plain `id="…"` **attribute** is preserved. A `[id]="expr"` property bin
 
 | Property             | Type                                                      | Description                                                                                                                                                                                                                                                                                                                 |
 | -------------------- | --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `value`              | `model<string \| null>`                                   | Two-way bindable. The open trigger's `value`, or `null` when none.<br>**Default:** `null`                                                                                                                                                                                                                                   |
+| `value`              | `model<string \| null>`                                   | Two-way bindable. The open trigger's `value`, or `null` when none. The menubar writes it on trigger interaction, item activation, Escape, outside dismissal and cross-menu navigation.<br>**Default:** `null`                                                                                                               |
 | `orientation`        | `input<string>`                                           | `'horizontal' \| 'vertical'`. Drives the trigger-row arrow keys (Left/Right horizontal, Up/Down vertical).<br>**Default:** `'horizontal'`                                                                                                                                                                                   |
 | `dir`                | `input<string>`                                           | Writing direction. RTL inverts ArrowLeft / ArrowRight on the trigger row and inside the open menu.<br>**Default:** `'ltr'`                                                                                                                                                                                                  |
 | `loop`               | `input<boolean>`                                          | When `true`, trigger-row navigation and cross-menu nav wrap at the ends.<br>**Default:** `true`                                                                                                                                                                                                                             |

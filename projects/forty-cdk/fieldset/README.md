@@ -76,15 +76,6 @@ import { ForInput } from 'forty-cdk/input';
 export class FieldsetDefaultExample {}
 ```
 
-On custom markup (no native `<fieldset>`), the same wiring yields `role="group"` + `aria-labelledby`:
-
-```html
-<div forFieldset class="set">
-  <span forFieldsetLegend>Shipping address</span>
-  <!-- … fields … -->
-</div>
-```
-
 ### Disable a group
 
 `disabled` emits the native `disabled` attribute, which disables every control inside in one move. The `data-disabled` hook flows to the fieldset and to each `forField` so the whole block can dim together.

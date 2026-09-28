@@ -20,6 +20,8 @@ The last case is common enough that this entry point also ships it as a service:
 - **Optional reveal on focus.** With `focusable`, the host implements the skip-link pattern: it un-clips while it (or a descendant) holds focus and re-clips on blur.
 - **SSR-safe.** The style is bound declaratively, so the server render matches and hydration is clean.
 
+Naming an icon-only button through a hidden `<span>` (rather than `aria-label`) keeps the name translatable by the same pipeline as the rest of your copy, and visible to text-only browsers.
+
 ## Anatomy
 
 ```html
@@ -94,8 +96,6 @@ import { ForVisuallyHidden } from 'forty-cdk/visually-hidden';
 })
 export class VisuallyHiddenDefaultExample {}
 ```
-
-Naming an icon-only button through a hidden `<span>` (rather than `aria-label`) keeps the name translatable by the same pipeline as the rest of your copy, and visible to text-only browsers.
 
 ### Announcing an event
 

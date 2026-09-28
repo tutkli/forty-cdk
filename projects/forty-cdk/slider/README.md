@@ -69,8 +69,6 @@ The `value` model is a `readonly number[]`; two `forSliderThumb` pieces, one per
 </div>
 ```
 
-With `priceRange = signal<readonly number[]>([200, 800])`, the non-passing constraint is enforced automatically (the lower thumb can't go above the upper, and vice versa). Use `[minStepsBetweenThumbs]="1"` to force a minimum gap.
-
 ### Vertical orientation
 
 `orientation='vertical'` reflects `data-orientation` on every piece and sets `aria-orientation` on the thumb. The exposed fractions are unchanged, and the consumer paints them along the Y axis. `ArrowUp` increases the value and `ArrowDown` decreases it.

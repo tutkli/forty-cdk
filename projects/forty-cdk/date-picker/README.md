@@ -47,6 +47,10 @@ All date math and formatting go through a `DateAdapter<D>`, shared with `ForCale
 </div>
 ```
 
+Bind the projected `[forCalendar]` to the picker: `[(value)]` to the same date signal, and forward `[min]` / `[max]` / `[isDateUnavailable]` from the picker's accessors (`#picker="forDatePicker"`). The picker observes the calendar's selection through a `contentChild` query and never mutates the calendar, so picking a date sets the value, flips `touched`, and (when `closeOnSelect` is on) closes the surface.
+
+Presence in the DOM is yours: wrap `[forDatePickerContent]` in `@if (picker.open())`, and `animate.enter` / `animate.leave` drive its transitions.
+
 ## Examples
 
 Open the popover from the trigger and pick a day: the trigger keeps `data-placeholder` until something is chosen, and its `data-state` follows the overlay.
@@ -175,10 +179,6 @@ export class DatePickerDefaultExample {
   protected readonly date = signal<CalendarDate | null>(null);
 }
 ```
-
-Bind the projected `[forCalendar]` to the picker: `[(value)]` to the same date signal, and forward `[min]` / `[max]` / `[isDateUnavailable]` from the picker's accessors (`#picker="forDatePicker"`). The picker observes the calendar's selection through a `contentChild` query without ever mutating the calendar, so picking a date sets the value, flips `touched`, and (when `closeOnSelect`) closes the surface.
-
-The library is styleless: presence in the DOM is the consumer's job (`@if (open())`), and `animate.enter` / `animate.leave` drive transitions. Style the `data-state="open" | "closed"` hooks (root + trigger + content) and `[data-disabled]` yourself.
 
 ### Date & time picker
 

@@ -95,14 +95,6 @@ export class BreakpointsActiveExample {
 }
 ```
 
-The returned handle captures its injection context, so the query methods can be called lazily from a `computed()` or a template, not only during construction:
-
-<!-- snippet: fragment -->
-
-```ts
-protected columns = computed(() => (this.bp.up('xl')() ? 4 : this.bp.up('md')() ? 2 : 1));
-```
-
 ### Responsive layout
 
 Derive UI from the breakpoint inside `computed()` and `@if` instead of repeating media queries in the template. The card grid picks its column count from `up('md')` / `up('lg')` / `up('xl')`, and the sidebar is only mounted at `lg` and wider.
@@ -143,6 +135,14 @@ Now `injectBreakpoints()` autocompletes `'mobile' | 'tablet' | 'laptop' | 'deskt
 | `only(name)`     | the breakpoint's own band, up to but not including the next-larger one         |
 | `active`         | the largest breakpoint whose `min-width` matches, or `null` below the smallest |
 | `matches(query)` | escape hatch for an arbitrary media query (orientation, `prefers-*`, …)        |
+
+The returned handle captures its injection context, so the query methods can be called lazily from a `computed()` or a template, not only during construction:
+
+<!-- snippet: fragment -->
+
+```ts
+protected columns = computed(() => (this.bp.up('xl')() ? 4 : this.bp.up('md')() ? 2 : 1));
+```
 
 ### `injectPrefersReducedMotion`
 

@@ -78,8 +78,6 @@ import { ForMenuContent, ForMenuItem, ForMenuSeparator } from 'forty-cdk/menu';
 export class DropdownMenuDefaultExample {}
 ```
 
-`@if` is what makes Angular's `animate.enter` / `animate.leave` work, because they fire on real mount / unmount.
-
 ### Checkbox & radio items
 
 A settings-style dropdown built from the full menu vocabulary: `forMenuGroup` with a `forMenuGroupLabel` header, `forMenuCheckboxItem` toggles (role `menuitemcheckbox`) and a `forMenuRadioGroup` of `forMenuRadioItem` options (role `menuitemradio`). Each item carries a `forMenuItemIndicator` that paints its checkmark / dot from the item's checked state. Calling `preventDefault()` on `(activate)` keeps the menu open so several options can be flipped in one pass. Try `Space` to toggle without closing.
