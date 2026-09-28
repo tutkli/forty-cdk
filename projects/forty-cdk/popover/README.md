@@ -27,7 +27,10 @@ Popover is the one floating surface that opens on activation, takes focus and st
 
 ```html
 <div forPopover #popover="forPopover" side="bottom" align="center">
-  <button forPopoverTrigger>Settings</button>
+  <button forPopoverTrigger class="popover-trigger">
+    Settings
+    <span class="chevron" aria-hidden="true"></span>
+  </button>
 
   <!-- @if (popover.open()) { -->
   <div forPopoverContent>
@@ -262,7 +265,7 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 `[forPopover]` and `[forPopoverContent]` reflect `data-reduced-motion` (present / absent) whenever the OS `prefers-reduced-motion: reduce` media query matches, so you can opt your own `animate.enter` / `animate.leave` and CSS transitions out without re-deriving the query. The attribute flips reactively if the preference changes mid-session. The popover toggles open / closed synchronously on click, so there is no JS-coordinated timing to skip — only the visual transitions (which are yours) opt out.
 
 ```css
-.popover-content[data-reduced-motion] {
+.popover[data-reduced-motion] {
   transition: none;
 }
 ```

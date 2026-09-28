@@ -65,9 +65,11 @@ async function heroOf(slug) {
 }
 
 const documents = [];
+const sectionless = [];
 for (const doc of readEntryPointDocs()) {
   const source = readFileSync(doc.file, 'utf8');
   if (heroFencePlacement(source) === null) {
+    sectionless.push({ path: doc.path, file: doc.file, source, hero: null });
     continue;
   }
   documents.push({ path: doc.path, file: doc.file, source, hero: await heroOf(doc.slug) });
@@ -81,12 +83,14 @@ if (documents.length < FLOOR) {
   process.exit(1);
 }
 
-const problems = heroFenceProblems(documents);
+const problems = heroFenceProblems([...documents, ...sectionless]);
 
 if (problems.length === 0) {
   console.log(
     `[check-hero-fences] ok — ${documents.length} README(s) open "## Examples" with the hero ` +
-      'their page projects, and name no class below it that the hero does not declare',
+      'their page projects, name no class below it that the hero does not declare, and select ' +
+      `no class outside it that no fence writes, nor do the ${sectionless.length} declaring no ` +
+      'such section',
   );
   process.exit(0);
 }
@@ -105,7 +109,7 @@ if (WRITE) {
     written.push(document.path);
     return { ...document, source: rewritten };
   });
-  const unrepaired = heroFenceProblems(repaired);
+  const unrepaired = heroFenceProblems([...repaired, ...sectionless]);
   console.log(`[check-hero-fences] wrote ${written.length} README fence(s) from their page hero`);
   for (const path of written) {
     console.log(`  ${path}`);

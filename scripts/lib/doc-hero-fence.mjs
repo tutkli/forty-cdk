@@ -314,6 +314,7 @@ const TEMPLATE_CLASS_LISTS = [
   /(?<![\w.[-])class="([^"]*)"/g,
   /(?<![\w[])animate\.(?:enter|leave)="([^"]*)"/g,
   /\bclass: '([^']*)'/g,
+  /\banimate(?:Enter|Leave): '([^']*)'/g,
 ];
 const TEMPLATE_CLASS_BINDING = /\[class\.(-?[_a-zA-Z][\w-]*)\]/g;
 const STYLESHEET_PRELUDE = /([^{};]*)\{/g;
@@ -393,6 +394,43 @@ function undeclaredClasses(document, examples, placement, exemptions, used) {
   return problems;
 }
 
+const CLASS_WRITERS = new Set(['html', FENCE_LANGUAGE]);
+
+function unwrittenClasses(document, examples) {
+  const fences =
+    examples?.fences ?? fencesOf(document.source).map((fence) => ({ ...fence, open: fence.line }));
+  const written = new Set(
+    fences
+      .filter((fence) => CLASS_WRITERS.has(fence.language))
+      .flatMap((fence) => [...templateClassesOf(fence.code)]),
+  );
+  const inExamples = (fence) =>
+    examples !== null && fence.open > examples.section && fence.open <= examples.end;
+  const problems = [];
+
+  for (const fence of fences) {
+    if (fence.language !== 'css' || inExamples(fence)) {
+      continue;
+    }
+    const unwritten = [...stylesheetClassesOf(fence.code)].filter((name) => !written.has(name));
+    if (unwritten.length === 0) {
+      continue;
+    }
+    const names = unwritten.map((name) => `\`${name}\``).join(', ');
+    problems.push({
+      path: document.path,
+      line: fence.open,
+      message:
+        `this \`\`\`${fence.lang} fence selects ${unwritten.length === 1 ? 'the class' : 'classes'} ` +
+        `${names}, which no \`\`\`html or \`\`\`ts fence in this README writes, so it styles ` +
+        'nothing the document shows; select the class the hero gives that piece, or write the ' +
+        'class on the fence that shows the piece',
+    });
+  }
+
+  return problems;
+}
+
 /**
  * Every README whose `## Examples` has stopped agreeing with the hero its page
  * projects, stated over documents the caller has already read.
@@ -407,6 +445,12 @@ function undeclaredClasses(document, examples, placement, exemptions, used) {
  * section's reference composition, so a class it does not write is one a
  * reader cannot follow back to anything. `exemptions` defaults to
  * {@link CLASS_EXEMPTIONS}, and an entry that exempts nothing is reported too.
+ *
+ * Outside the section, every class a `css` fence selects must be one some
+ * `html` or `ts` fence in the same README writes, hero or not, and in a README
+ * declaring no such section every `css` fence is outside it. That is looser
+ * than the rule inside it, and it takes no exemptions: a selector naming a
+ * class the document never writes styles nothing, whoever reads it.
  */
 export function heroFenceProblems(documents, exemptions = CLASS_EXEMPTIONS) {
   const problems = [];
@@ -415,6 +459,7 @@ export function heroFenceProblems(documents, exemptions = CLASS_EXEMPTIONS) {
 
   for (const document of documents) {
     const examples = examplesOf(document.source);
+    problems.push(...unwrittenClasses(document, examples));
     if (examples === null) {
       continue;
     }

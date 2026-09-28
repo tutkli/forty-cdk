@@ -271,6 +271,15 @@ removed, stays in the alias list so it cannot come back.
   [Styling forty-cdk](styling.md), then the `data-*` hooks the consumer keys CSS off. For portaled
   overlays, the global-CSS / `class` caveat.
 
+  Every class a `css` fence outside `## Examples` selects must be one some `html` or `ts` fence in
+  the same README writes ([#2022](https://github.com/tutkli/forty-cdk/issues/2022)). Most of those
+  fences are this section's, which the site publishes as written. A selector naming a class the
+  document never writes styles nothing, and it is what a rename leaves behind when it moves one
+  fence and not the others, so move the class in every fence of the README at once. Select the
+  class the hero gives the piece; where the hero gives that piece none, write the class on the
+  fence that shows it. `pnpm check:hero-fences` fails a selector that breaks the rule, naming the
+  README, the line and the class, and the rule takes no exemptions.
+
 - **`## SSR`** — Only when the primitive has server-side behaviour worth stating (a guarded
   `matchMedia`, a `document` access behind `isPlatformBrowser`, "every query reads false on the
   server"). Skip for primitives with nothing SSR-specific to say.

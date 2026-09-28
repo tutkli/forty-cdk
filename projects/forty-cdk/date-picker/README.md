@@ -412,10 +412,10 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
   color: var(--muted-foreground);
 }
 
-.date-picker-trigger .chevron {
+.date-picker-trigger .date-picker-chevron {
   transition: transform 150ms;
 }
-.date-picker-trigger[data-state='open'] .chevron {
+.date-picker-trigger[data-state='open'] .date-picker-chevron {
   transform: rotate(180deg);
 }
 ```

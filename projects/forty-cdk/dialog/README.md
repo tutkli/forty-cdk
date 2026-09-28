@@ -350,7 +350,7 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
   background: rgb(0 0 0 / 0.5);
 }
 
-.my-trigger[data-state='open'] {
+.anatomy-btn--primary[data-state='open'] {
   background: var(--accent);
 }
 ```

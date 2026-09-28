@@ -211,12 +211,12 @@ The label may instead point at a visible heading with `aria-labelledby`. The lib
 forty-cdk ships no styles. Add your own class to each piece — the for\* selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected data-\* attributes listed per piece in the [API](#api) section.
 
 ```css
-.scroll-area-scrollbar[data-state='hidden'] {
+.sa-scrollbar[data-state='hidden'] {
   opacity: 0;
   pointer-events: none;
 }
 
-.scroll-area-scrollbar[data-orientation='vertical'] {
+.sa-scrollbar[data-orientation='vertical'] {
   width: 8px;
 }
 ```
@@ -227,28 +227,28 @@ forty-cdk ships no styles. Add your own class to each piece — the for\* select
 - **Reserving the gutter with `type="always"` is the consumer's layout job.** forty-cdk is headless and does not own layout, so it cannot literally reserve a gutter — `always` only guarantees the track stays painted. To get "no content shift" behavior, lay the scrollbar out _in flow_ (a grid column) rather than `position: absolute`, so the always-present track occupies real space:
 
   ```css
-  .scroll-area {
+  .sa {
     display: grid;
     grid-template-columns: 1fr auto; /* content | reserved scrollbar gutter */
     grid-template-rows: 1fr auto;
     width: 240px;
     height: 240px;
   }
-  .scroll-area-viewport {
+  .sa-viewport {
     grid-column: 1;
     grid-row: 1;
   }
-  .scroll-area-scrollbar[orientation='vertical'] {
+  .sa-scrollbar[orientation='vertical'] {
     grid-column: 2;
     grid-row: 1;
     width: 8px;
   }
-  .scroll-area-scrollbar[orientation='horizontal'] {
+  .sa-scrollbar[orientation='horizontal'] {
     grid-column: 1;
     grid-row: 2;
     height: 8px;
   }
-  .scroll-area-corner {
+  .sa-corner {
     grid-column: 2;
     grid-row: 2;
   }
@@ -272,11 +272,11 @@ forty-cdk ships no styles. Add your own class to each piece — the for\* select
 - **Motion is yours: the library writes plain `scrollTop` / `scrollLeft`.** No `behavior: 'smooth'` is shipped, so animate a track press by setting `scroll-behavior` on `[forScrollAreaViewport]` and gating it yourself — that is also the primitive's `prefers-reduced-motion` hook:
 
   ```css
-  .scroll-area-viewport {
+  .sa-viewport {
     scroll-behavior: smooth;
   }
   @media (prefers-reduced-motion: reduce) {
-    .scroll-area-viewport {
+    .sa-viewport {
       scroll-behavior: auto;
     }
   }

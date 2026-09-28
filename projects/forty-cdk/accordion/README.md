@@ -178,11 +178,11 @@ A disabled item cannot be toggled and is skipped by the arrow keys, while stayin
 forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
 
 ```css
-.trigger-chevron {
+.chevron {
   transition: transform 150ms ease;
 }
 
-.accordion-trigger[data-state='open'] .trigger-chevron {
+.acc-trigger[data-state='open'] .chevron {
   transform: rotate(180deg);
 }
 ```

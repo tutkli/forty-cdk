@@ -363,14 +363,14 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
   transform: rotate(180deg);
 }
 
-.navigation-menu-indicator {
+.navmenu-indicator {
   transform: translateX(var(--for-navigation-menu-indicator-x));
   width: var(--for-navigation-menu-indicator-width);
   transition:
     transform 200ms,
     width 200ms;
 }
-.navigation-menu-indicator[data-state='hidden'] {
+.navmenu-indicator[data-state='hidden'] {
   opacity: 0;
 }
 ```

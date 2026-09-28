@@ -203,16 +203,16 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 Pair with `data-orientation` on every piece to pick the right axis from CSS.
 
 ```css
-.thumb {
+.sl-thumb {
   inset-inline-start: calc(var(--for-slider-thumb-position) * 100%);
 }
 
-.range {
+.sl-range {
   inset-inline-start: calc(var(--for-slider-range-start) * 100%);
   inline-size: calc(var(--for-slider-range-size) * 100%);
 }
 
-.thumb[data-disabled] {
+.sl-thumb[data-disabled] {
   opacity: 0.5;
 }
 ```

@@ -27,11 +27,11 @@ Shared surface and item directives consumed by `[forDropdownMenu]` (button trigg
 
   <div forMenuRadioGroup [(value)]="sortBy">
     <div forMenuGroupLabel>Sort by</div>
-    <button forMenuRadioItem value="name">
+    <button forMenuRadioItem class="menu-radio-item" value="name">
       <span forMenuItemIndicator [forceMount]="true">●</span>
       Name
     </button>
-    <button forMenuRadioItem value="date">Date modified</button>
+    <button forMenuRadioItem class="menu-radio-item" value="date">Date modified</button>
   </div>
 
   <hr forMenuSeparator />
@@ -501,7 +501,7 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 .menu-radio-item[data-highlighted] {
   background: rgba(0, 0, 0, 0.06);
 }
-.menu-sub-trigger[data-state='open'] .chevron {
+.menu-item[data-state='open'] .menu-sub-arrow {
   transform: rotate(90deg);
 }
 ```

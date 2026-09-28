@@ -15,7 +15,7 @@ Pure visual utility — it locks an element's box via the native CSS `aspect-rat
 A fixed, never-changing ratio is one line of CSS — you don't need this primitive for that:
 
 ```css
-.card-cover {
+.box {
   aspect-ratio: 16 / 9;
 }
 ```
