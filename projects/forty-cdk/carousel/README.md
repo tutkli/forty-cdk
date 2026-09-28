@@ -473,7 +473,7 @@ Implements the [WAI-ARIA Carousel pattern](https://www.w3.org/WAI/ARIA/apg/patte
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). The directive publishes geometry as CSS custom properties on the root element so they cascade to the track. The consumer applies the transform and transition.
+forty-cdk ships no styles. Add your own class to each piece. The `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). The directive publishes geometry as CSS custom properties on the root element so they cascade to the track. The consumer applies the transform and transition.
 
 ```css
 [forCarouselViewport] {

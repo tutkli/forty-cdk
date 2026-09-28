@@ -117,6 +117,6 @@ readonly detector = injectInfiniteScroll({
 
 ## Related
 
-- **[Table: virtualized rows](../../../docs/table-virtualized-rows.md)** — the full guide, including `<for-table-body>` integration and total-aware selection.
-- **[`forty-cdk/virtualization`](../virtualization/README.md)** — the windowing core this adapter builds on.
-- **[`forty-cdk/table`](../table/README.md)** — the table primitive it composes.
+- **[Table: virtualized rows](../../../docs/table-virtualized-rows.md)**: the full guide, including `<for-table-body>` integration and total-aware selection.
+- **[`forty-cdk/virtualization`](../virtualization/README.md)**: the windowing core this adapter builds on.
+- **[`forty-cdk/table`](../table/README.md)**: the table primitive it composes.

@@ -14,9 +14,9 @@ Use it for profile snapshots, link previews, definition cards — any complement
 
 ## When to choose
 
-- **Hover Card** — a preview opened by hover or focus, whose content may be interactive. It adds no ARIA relationship to its trigger, so the card may only enrich what the trigger already conveys.
-- **[Tooltip](../tooltip/README.md)** — the same hover / focus cadence, but the content is non-interactive and becomes the trigger's `aria-describedby` description. Choose it when the text _is_ the trigger's hint.
-- **[Popover](../popover/README.md)** — opens on activation rather than on hover, and focus moves into the surface. Choose it when the content must be reachable from the keyboard.
+- **Hover Card**: a preview opened by hover or focus, whose content may be interactive. It adds no ARIA relationship to its trigger, so the card may only enrich what the trigger already conveys.
+- **[Tooltip](../tooltip/README.md)**: the same hover / focus cadence, but the content is non-interactive and becomes the trigger's `aria-describedby` description. Choose it when the text _is_ the trigger's hint.
+- **[Popover](../popover/README.md)**: opens on activation rather than on hover, and focus moves into the surface. Choose it when the content must be reachable from the keyboard.
 
 ## Anatomy
 
@@ -212,7 +212,7 @@ For an **instant, unconditional** open or close that ignores the delays and ever
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
+forty-cdk ships no styles. Add your own class to each piece. The `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
 
 ### CSS custom properties
 

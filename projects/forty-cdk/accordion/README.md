@@ -11,9 +11,9 @@ A stack of collapsible sections, optionally allowing multiple panels open at onc
 
 ## When to choose
 
-- **Accordion** — a group of collapsible items under one root. `[(value)]` holds which are open, `multiple` decides whether more than one may be, and ArrowUp / ArrowDown / Home / End move focus across the triggers.
-- **[Disclosure](../disclosure/README.md)** — a single trigger and its region, with no shared state and no arrow-key navigation. Stacking several of them is not an accordion, and that is the right shape when the panels are unrelated.
-- **[Tabs](../tabs/README.md)** — when exactly one panel is ever visible and the panels are alternatives rather than sections the reader may open together.
+- **Accordion**: a group of collapsible items under one root. `[(value)]` holds which are open, `multiple` decides whether more than one may be, and ArrowUp / ArrowDown / Home / End move focus across the triggers.
+- **[Disclosure](../disclosure/README.md)**: a single trigger and its region, with no shared state and no arrow-key navigation. Stacking several of them is not an accordion, and that is the right shape when the panels are unrelated.
+- **[Tabs](../tabs/README.md)**: when exactly one panel is ever visible and the panels are alternatives rather than sections the reader may open together.
 
 ## Anatomy
 
@@ -168,14 +168,14 @@ A disabled item cannot be toggled and is skipped by the arrow keys, while stayin
 - **Use a real `<button type="button">` for the trigger.** Native Enter / Space activation and focus come for free; the directive does not synthesize them.
 - **`role="region"`** is added to every panel automatically. APG recommends suppressing it on accordions with 6+ panels to avoid landmark proliferation; there is currently no opt-out.
 - **Closed panels leave the accessibility tree.** While closed, `ForAccordionContent` sets `aria-hidden="true"` and `inert` on the panel, removing it from both the accessibility tree and the focus order. The directive does **not** apply `[hidden]`, so pick how to hide it visually:
-  - **Mount / unmount with `@if (item.expanded())`** — the panel is absent from the DOM while closed; the cleanest path for `animate.enter` / `animate.leave`. The trigger emits `aria-controls` only while expanded, so the reference never dangles at an unmounted panel.
-  - **Leave it mounted** — preserve internal state or run CSS-only transitions off `data-state`. Add `display: none` (or your own collapse animation) keyed on `[data-state="closed"]` to also hide it visually.
+  - **Mount / unmount with `@if (item.expanded())`**: the panel is absent from the DOM while closed; the cleanest path for `animate.enter` / `animate.leave`. The trigger emits `aria-controls` only while expanded, so the reference never dangles at an unmounted panel.
+  - **Leave it mounted**: preserve internal state or run CSS-only transitions off `data-state`. Add `display: none` (or your own collapse animation) keyed on `[data-state="closed"]` to also hide it visually.
 - **`aria-disabled`** is applied to the open trigger only when single mode is active and `collapsible=false`, indicating the user cannot collapse it from this trigger.
 - **A truly disabled item (`[disabled]` on `[forAccordionItem]`) uses the native `disabled` attribute on the trigger, by design.** The trigger is a real single-purpose `<button>`, not a roving-tabindex collection item (each trigger stays independently in the Tab order; arrow-key navigation is the APG-optional enhancement on top). The disabled trigger leaves the Tab order and the arrow-key navigation (which already skips it), but stays in the accessibility tree so screen readers announce it as unavailable in browse mode. The [APG Accordion pattern](https://www.w3.org/WAI/ARIA/apg/patterns/accordion/) does not require disabled headers to remain focusable.
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
+forty-cdk ships no styles. Add your own class to each piece. The `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
 
 ```css
 .trigger-chevron {

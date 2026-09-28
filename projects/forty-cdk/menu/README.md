@@ -363,7 +363,7 @@ Exactly one instance is open at a time, and everything the mounted surface resol
 
 Two boundaries worth knowing:
 
-- **`[forContextMenuTrigger]` must be bound explicitly** — `[forContextMenuTrigger]="row"` with `#row="forMenu"`. It resolves `FOR_CONTEXT_MENU_CONTEXT`, which `[forMenu]` deliberately does not provide (`forty-cdk/menu` must not depend on `forty-cdk/context-menu`). `[forDropdownMenuTrigger]` resolves this root through DI like any other menu piece, so binding it is optional.
+- **`[forContextMenuTrigger]` must be bound explicitly**: `[forContextMenuTrigger]="row"` with `#row="forMenu"`. It resolves `FOR_CONTEXT_MENU_CONTEXT`, which `[forMenu]` deliberately does not provide (`forty-cdk/menu` must not depend on `forty-cdk/context-menu`). `[forDropdownMenuTrigger]` resolves this root through DI like any other menu piece, so binding it is optional.
 - **A shared menu with any region opener still wants `[ariaLabel]`.** The per-opener fallback covers the button openers for free, so a button-only shared menu needs no name hook at all; but a right-click region cannot name the surface, so an instance it opened has no accessible name unless `[ariaLabel]` (or your own static `aria-labelledby` on the content) supplies one. `[ariaLabel]` wins over the fallback for every opener, giving the menu one name regardless of how it was opened.
 
 ### Per-opener positioning
@@ -441,14 +441,14 @@ Outputs match the other trigger-anchored overlays: `(escapeKeyDown)`, `(pointerD
 
 ## Keyboard
 
-- **ArrowDown / ArrowUp** — move focus to the next / previous enabled item, wrapping by default.
-- **Home / End** — jump to first / last enabled item.
-- **Enter / click** — activate the focused item via native `<button>` semantics. Closes the menu unless the consumer calls `event.preventDefault()` on `(activate)`.
+- **ArrowDown / ArrowUp**: move focus to the next / previous enabled item, wrapping by default.
+- **Home / End**: jump to first / last enabled item.
+- **Enter / click**: activate the focused item via native `<button>` semantics. Closes the menu unless the consumer calls `event.preventDefault()` on `(activate)`.
 - **Space** — activates the focused item:
   - On a plain `[forMenuItem]`, behaves like Enter / click (closes the menu).
   - On `[forMenuCheckboxItem]` and `[forMenuRadioItem]`, toggles `checked` / sets the group `value`, emits `(activate)`, and **never closes** the menu — per APG, so users can flip several options before dismissing. Calling `event.preventDefault()` on `(activate)` is unnecessary for Space (the menu already stays open) but is still respected on Enter / click.
-- **Tab / Shift+Tab** — close the menu and return focus to the trigger. Inside a submenu, propagates upward and tears down the entire chain.
-- **Escape** — close the menu and return focus to the trigger. Inside a submenu, closes only that level (parent stays open).
+- **Tab / Shift+Tab**: close the menu and return focus to the trigger. Inside a submenu, propagates upward and tears down the entire chain.
+- **Escape**: close the menu and return focus to the trigger. Inside a submenu, closes only that level (parent stays open).
 - **ArrowRight** (on a `[forMenuSubTrigger]`) — open the submenu and focus its first item. (LTR.)
 - **ArrowLeft** (on an item inside a submenu) — close the submenu and return focus to the `[forMenuSubTrigger]`.
 - **Typeahead** — single printable characters move focus to the first item whose text starts with the buffered string. Disabled items are skipped. By default the match is run against the item's **accessible text**, so an `aria-hidden` subtree — the `[forMenuItemIndicator]` glyph, a decorative icon — never bleeds into it, while visually-hidden but announced content still counts. Pass `textValue="…"` on `[forMenuItem]`, `[forMenuCheckboxItem]`, or `[forMenuRadioItem]` to override the matched string when announced text such as a kbd hint or a badge would otherwise bleed into it.
@@ -479,7 +479,7 @@ Implements the [WAI-ARIA Menu pattern](https://www.w3.org/WAI/ARIA/apg/patterns/
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
+forty-cdk ships no styles. Add your own class to each piece. The `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
 
 > `[forMenuContent]` / `[forMenuSubContent]` portal to `document.body`, so a class scoped to your trigger's component cannot reach the surface. Style it with **global CSS** or a class you pass through (see [Styling floating content](../../../docs/styling-floating-content.md)). The content host also exposes the shared positioner custom properties — `--for-floating-anchor-width` / `--for-floating-anchor-height`, `--for-floating-available-width` / `--for-floating-available-height`, and `--for-floating-content-transform-origin` — tabulated below and documented in full in [Styling floating content](../../../docs/styling-floating-content.md).
 

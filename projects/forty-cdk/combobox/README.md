@@ -18,14 +18,14 @@ Supports both single (default) and multi-select. Multi mode renders the selected
 Two anatomies share the same core:
 
 - **Editable** _(default)_ — the input is the visible field, the floating anchor, and the keyboard owner; `[forComboboxContent]` is the listbox. This is the APG editable combobox.
-- **Picker** — a `[forComboboxTrigger]` `<button>` keeps showing the committed selection while the search input lives **inside** the panel (a "combobox with trigger" picker). Add a `[forComboboxList]` so the popup can hold an input without violating ARIA owned-elements. See [Picker anatomy](#picker-anatomy).
+- **Picker**: a `[forComboboxTrigger]` `<button>` keeps showing the committed selection while the search input lives **inside** the panel (a "combobox with trigger" picker). Add a `[forComboboxList]` so the popup can hold an input without violating ARIA owned-elements. See [Picker anatomy](#picker-anatomy).
 
 `[forCombobox]` is generic over the option value type `T` (default `string`). Bind primitive ids for the simple case or full objects for richer models — the directive infers `T` from `[(value)]` and `[forComboboxOption][value]`. See [Object values](#object-values) for the object-mode contract.
 
 ## When to choose
 
-- **Combobox** — an editable `<input>` that filters a `role="listbox"` popup as the user types, with `aria-activedescendant` keeping DOM focus in the field.
-- **[Select](../select/README.md)** — the same popup with a non-editable trigger. Choose it when the value must come from the options and typing is only typeahead.
+- **Combobox**: an editable `<input>` that filters a `role="listbox"` popup as the user types, with `aria-activedescendant` keeping DOM focus in the field.
+- **[Select](../select/README.md)**: the same popup with a non-editable trigger. Choose it when the value must come from the options and typing is only typeahead.
 - **[Listbox](../listbox/README.md)** — no overlay and no field: an in-page list of options, always visible.
 
 The picker anatomy blurs the line on purpose — a `[forComboboxTrigger]` button shows the committed value while the search input lives inside the panel. Reach for it when the collapsed control should read like a Select but the list still needs filtering.
@@ -253,8 +253,8 @@ The default (editable) anatomy is a text field that filters in place. A **picker
 
 Add two parts:
 
-- **`[forComboboxTrigger]`** — a real `<button>` outside the `@if (open())`. It opens the panel, becomes the default positioning anchor, and is where focus returns on close.
-- **`[forComboboxList]`** — the `role="listbox"` element nested inside `[forComboboxContent]`, next to the input. It owns the options and the labelled role; `[forComboboxContent]` becomes a neutral popup surface.
+- **`[forComboboxTrigger]`**: a real `<button>` outside the `@if (open())`. It opens the panel, becomes the default positioning anchor, and is where focus returns on close.
+- **`[forComboboxList]`**: the `role="listbox"` element nested inside `[forComboboxContent]`, next to the input. It owns the options and the labelled role; `[forComboboxContent]` becomes a neutral popup surface.
 
 ```html
 <div forCombobox #combobox="forCombobox" [(value)]="value" [(query)]="query" [(open)]="open">
@@ -498,9 +498,9 @@ When the input is empty (no query) and the user presses Backspace, focus jumps t
 
 The `autocompleteMode` input mirrors the WAI-ARIA `aria-autocomplete` property:
 
-- **`'none'`** — input is a free-text query; no completion.
+- **`'none'`**: input is a free-text query; no completion.
 - **`'list'`** _(default)_ — listbox shows filtered options; input shows verbatim what the user typed.
-- **`'inline'`** — the rest of the first matching label is auto-completed into the input as selected text; no listbox popup.
+- **`'inline'`**: the rest of the first matching label is auto-completed into the input as selected text; no listbox popup.
 - **`'both'`** — combines `'list'` and `'inline'`: listbox opens _and_ the input is auto-completed.
 
 Inline completion preserves the user's typed prefix as unselected and selects the appended remainder, so the next keystroke replaces the selection (matching native browser autofill behavior). Backspace deletes the selection without re-completing, so the user can always shorten the query.
@@ -673,7 +673,7 @@ When `[totalCount]` is omitted, the directive falls back to `options().length` a
 
 `[forCombobox]` exposes a `dir: 'ltr' | 'rtl'` input (default `'ltr'`). It drives:
 
-- **Chip keyboard navigation** — ArrowLeft / ArrowRight roles swap so they follow the visual order of the chip cluster, not the DOM order. See _Chip keyboard_ above.
+- **Chip keyboard navigation**: ArrowLeft / ArrowRight roles swap so they follow the visual order of the chip cluster, not the DOM order. See _Chip keyboard_ above.
 - **Default popover placement** — `align` defaults to `'start'` in LTR and `'end'` in RTL so the listbox anchors to the visually-leading edge of the input (`side` defaults to `'bottom'` in both). A consumer-provided `[align]` is honoured as-is — no automatic flip — so advanced layouts can pin an alignment regardless of writing direction. `provideForComboboxDefaults({ align })` pins it for a whole scope the same way; its default is `null`, which is what "follow the writing direction" is spelled as there. `side` is scope-defaultable through the same provider, with the plain `'bottom'` fallback — writing direction does not enter into it.
 
 The native `<input>` handles caret movement and BiDi from the document's CSS `direction` already, so there's nothing extra to do for the typed text itself.
@@ -772,7 +772,7 @@ Implements the [WAI-ARIA Combobox pattern](https://www.w3.org/WAI/ARIA/apg/patte
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the for\* selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected data-\* attributes listed under [Data attributes](#data-attributes).
+forty-cdk ships no styles. Add your own class to each piece. The for\* selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected data-\* attributes listed under [Data attributes](#data-attributes).
 
 ### CSS custom properties
 

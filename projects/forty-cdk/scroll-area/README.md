@@ -208,7 +208,7 @@ The label may instead point at a visible heading with `aria-labelledby`. The lib
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the for\* selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected data-\* attributes listed per piece in the [API](#api) section.
+forty-cdk ships no styles. Add your own class to each piece. The for\* selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected data-\* attributes listed per piece in the [API](#api) section.
 
 ```css
 .scroll-area-scrollbar[data-state='hidden'] {

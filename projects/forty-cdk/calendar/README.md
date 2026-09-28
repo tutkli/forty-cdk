@@ -16,8 +16,8 @@ Headless and styleless — the date table at the heart of the APG [Date Picker D
 ## When to choose
 
 - **Calendar** — the date grid itself, always visible, exposing `[(value)]` as a model. It is a widget, not a form control: it implements no `FormValueControl` contract, so `[formField]` binds a picker or a field instead.
-- **[Date Picker](../date-picker/README.md)** — wraps this same grid in a trigger-anchored floating surface and _is_ the form value. Choose it when a form owns the date and the grid should stay collapsed until asked for.
-- **[Date Field](../date-field/README.md)** — segmented typed entry with no grid. Choose it when the date is known rather than browsed.
+- **[Date Picker](../date-picker/README.md)**: wraps this same grid in a trigger-anchored floating surface and _is_ the form value. Choose it when a form owns the date and the grid should stay collapsed until asked for.
+- **[Date Field](../date-field/README.md)**: segmented typed entry with no grid. Choose it when the date is known rather than browsed.
 
 ## Date adapter
 
@@ -571,7 +571,7 @@ Implements the [WAI-ARIA Grid pattern](https://www.w3.org/WAI/ARIA/apg/patterns/
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `forCalendar*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
+forty-cdk ships no styles. Add your own class to each piece. The `forCalendar*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
 
 ```css
 .calendar-cell {

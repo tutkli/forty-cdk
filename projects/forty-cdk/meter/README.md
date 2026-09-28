@@ -14,8 +14,8 @@ Mirrors the HTML5 `<meter>` element: a **measurement** — battery, disk space, 
 ## When to choose
 
 - **Meter** — `role="meter"`, a measurement within a known range, bucketed into quality bands by `low` / `high` / `optimum`. Always determinate: a meter has no unknown state.
-- **[Progress](../progress/README.md)** — `role="progressbar"`, for a task moving toward completion, including the indeterminate case (`value` of `null`). Choose it whenever the number is going somewhere.
-- **[Slider](../slider/README.md)** — when the number is one the user sets rather than one they read.
+- **[Progress](../progress/README.md)**: `role="progressbar"`, for a task moving toward completion, including the indeterminate case (`value` of `null`). Choose it whenever the number is going somewhere.
+- **[Slider](../slider/README.md)**: when the number is one the user sets rather than one they read.
 
 ## Anatomy
 
@@ -127,7 +127,7 @@ Implements the [WAI-ARIA Meter pattern](https://www.w3.org/WAI/ARIA/apg/patterns
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
+forty-cdk ships no styles. Add your own class to each piece. The `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
 
 ### CSS custom properties
 

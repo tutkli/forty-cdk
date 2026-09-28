@@ -14,8 +14,8 @@ It also supports typeahead and `FormValueControl<readonly T[]>` integration. `[f
 ## When to choose
 
 - **Listbox** — an in-page list of options with roving tabindex and typeahead. No trigger, no overlay, no text field: the options are always visible.
-- **[Select](../select/README.md)** — the same option semantics behind a trigger that opens a portaled popup. Choose it when the list should stay collapsed until asked for.
-- **[Combobox](../combobox/README.md)** — a popup driven by an editable input, so the user narrows the list by typing.
+- **[Select](../select/README.md)**: the same option semantics behind a trigger that opens a portaled popup. Choose it when the list should stay collapsed until asked for.
+- **[Combobox](../combobox/README.md)**: a popup driven by an editable input, so the user narrows the list by typing.
 - **[Dropdown Menu](../dropdown-menu/README.md)** — for commands rather than a value: menu items run an action and the surface holds no selection.
 
 ## Anatomy
@@ -529,7 +529,7 @@ Implements the [WAI-ARIA Listbox pattern](https://www.w3.org/WAI/ARIA/apg/patter
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
+forty-cdk ships no styles. Add your own class to each piece. The `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
 
 ```css
 .listbox-option[data-highlighted] {

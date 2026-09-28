@@ -174,7 +174,7 @@ A display-only status tracker: the list renders as a plain ordered list with `ar
 `ForStepper` exposes two members for the terminal completed state:
 
 - **`isCompleted`** (`Signal<boolean>`) — true when `selectedIndex()` has reached `count()` (one past the last step). Read it via a `#stepper="forStepper"` template reference.
-- **`(complete)`** — output that fires once each time the stepper enters the completed state. Retreating via `[forStepperPrevious]` and re-entering emits again.
+- **`(complete)`**: output that fires once each time the stepper enters the completed state. Retreating via `[forStepperPrevious]` and re-entering emits again.
 
 ### `ForStepperItem`
 
@@ -403,8 +403,8 @@ Or purely via CSS:
 
 **The panel's focusable-content detection does not re-measure across a shadow boundary, nor on a CSS-only visibility flip.** In `mode="interactive"` the measurement runs on the panel's first render and again on mutations of its own subtree, filtered to the attributes that change whether an element is focusable (`disabled`, `hidden`, `inert`, `tabindex`, `type`, `contenteditable`). Two changes are therefore invisible to it and leave the previous answer standing:
 
-- **Focusable content appearing (or disappearing) inside a shadow root** — a web component in the panel that renders its controls on a later tick, or swaps them. The shadow root's own subtree is not observable, so a panel that gains its first focusable control that way keeps its redundant `tabindex="0"`, and one that loses its last keeps none, leaving the panel unreachable by keyboard for a screen-reader user reading it. Nothing in the DOM looks wrong.
-- **A visibility flip driven purely by a stylesheet** — the measurement excludes CSS-hidden elements, but `class` and `style` are not watched, so toggling a class that hides or reveals the panel's only control does not re-measure.
+- **Focusable content appearing (or disappearing) inside a shadow root**: a web component in the panel that renders its controls on a later tick, or swaps them. The shadow root's own subtree is not observable, so a panel that gains its first focusable control that way keeps its redundant `tabindex="0"`, and one that loses its last keeps none, leaving the panel unreachable by keyboard for a screen-reader user reading it. Nothing in the DOM looks wrong.
+- **A visibility flip driven purely by a stylesheet**: the measurement excludes CSS-hidden elements, but `class` and `style` are not watched, so toggling a class that hides or reveals the panel's only control does not re-measure.
 
 **Workaround.** Render the panel's focusable content in the light tree, or remount the panel with `@if` when its content changes — a fresh directive instance measures again. Stepper exposes no override input for the detection; [`ForTabsContent`](../tabs/README.md#fortabscontent), which shares the mechanism, has `[interactiveContent]` for it.
 
@@ -439,7 +439,7 @@ Implements the [WAI-ARIA Tabs pattern](https://www.w3.org/WAI/ARIA/apg/patterns/
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the `data-state` vocabulary and boolean `data-*` attributes listed under [Data attributes](#data-attributes).
+forty-cdk ships no styles. Add your own class to each piece. The `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the `data-state` vocabulary and boolean `data-*` attributes listed under [Data attributes](#data-attributes).
 
 ## Wrapping in a design system
 

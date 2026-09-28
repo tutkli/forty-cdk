@@ -17,10 +17,10 @@ A popover is a non-modal dialog: focus moves into the surface on open and return
 
 Popover is the one floating surface that opens on activation, takes focus and still leaves the page usable — which is what separates it from both the modal surfaces and the hover ones.
 
-- **Popover** — non-modal `role="dialog"`, opened from its trigger. Focus moves into the surface and returns on close, but Tab may leave and nothing behind it is inert or scroll-locked.
-- **[Dialog](../dialog/README.md)** / **[Drawer](../drawer/README.md)** — modal. Choose either when the rest of the page must be unreachable until the task ends; Drawer adds the edge anchoring, swipe-to-dismiss and snap points.
+- **Popover**: non-modal `role="dialog"`, opened from its trigger. Focus moves into the surface and returns on close, but Tab may leave and nothing behind it is inert or scroll-locked.
+- **[Dialog](../dialog/README.md)** / **[Drawer](../drawer/README.md)**: modal. Choose either when the rest of the page must be unreachable until the task ends; Drawer adds the edge anchoring, swipe-to-dismiss and snap points.
 - **[Tooltip](../tooltip/README.md)** — opens on hover or focus, never takes focus, and its content must be non-interactive: it is the trigger's description, wired with `aria-describedby`.
-- **[Hover Card](../hover-card/README.md)** — opens on hover or focus and may hold interactive content, but it adds no ARIA relationship to its trigger. Choose it only for a preview whose trigger already stands on its own.
+- **[Hover Card](../hover-card/README.md)**: opens on hover or focus and may hold interactive content, but it adds no ARIA relationship to its trigger. Choose it only for a preview whose trigger already stands on its own.
 - For a list of commands reach for [Dropdown Menu](../dropdown-menu/README.md), and for a value picked from options [Select](../select/README.md) — `role="dialog"` announces neither.
 
 ## Anatomy
@@ -231,7 +231,7 @@ Implements the [WAI-ARIA Modeless Dialog pattern](https://www.w3.org/WAI/ARIA/ap
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
+forty-cdk ships no styles. Add your own class to each piece. The `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
 
 ### CSS custom properties
 

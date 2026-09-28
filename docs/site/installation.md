@@ -52,8 +52,8 @@ The reason is bundle size. Each entry point builds to a module of its own, so im
 
 Two entry points are shared rather than per-primitive:
 
-- **`forty-cdk/shared`** — the cross-primitive contracts a consumer meets in more than one place, and the accessibility limits that apply library-wide.
-- **`forty-cdk/internationalized-date`** — the `@internationalized/date` calendar adapters, kept apart so only consumers who provide one need that peer.
+- **`forty-cdk/shared`**: the cross-primitive contracts a consumer meets in more than one place, and the accessibility limits that apply library-wide.
+- **`forty-cdk/internationalized-date`**: the `@internationalized/date` calendar adapters, kept apart so only consumers who provide one need that peer.
 
 ## Angular version support
 

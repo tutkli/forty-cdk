@@ -13,10 +13,10 @@ A button that opens a menu of actions, with full keyboard navigation, typeahead 
 
 ## When to choose
 
-- **Dropdown Menu** — a `<button>` that opens a menu of commands. Items run an action and close the surface; the menu carries no form value.
-- **[Context Menu](../context-menu/README.md)** — the same [menu surface](../menu/README.md), opened by right-click, long-press, `Shift+F10` or the `ContextMenu` key and anchored at the pointer. Choose it when the actions belong to a region instead of to a visible control.
-- **[Menubar](../menubar/README.md)** — a persistent bar of triggers with roving tabindex and cross-menu arrow navigation. Choose it when several menus sit together, as in a desktop application.
-- **[Select](../select/README.md)** — when the surface produces a value. `role="menu"` announces commands; `role="listbox"` announces options.
+- **Dropdown Menu**: a `<button>` that opens a menu of commands. Items run an action and close the surface; the menu carries no form value.
+- **[Context Menu](../context-menu/README.md)**: the same [menu surface](../menu/README.md), opened by right-click, long-press, `Shift+F10` or the `ContextMenu` key and anchored at the pointer. Choose it when the actions belong to a region instead of to a visible control.
+- **[Menubar](../menubar/README.md)**: a persistent bar of triggers with roving tabindex and cross-menu arrow navigation. Choose it when several menus sit together, as in a desktop application.
+- **[Select](../select/README.md)**: when the surface produces a value. `role="menu"` announces commands; `role="listbox"` announces options.
 
 ## Anatomy
 
@@ -145,7 +145,7 @@ A disabled trigger (its own `[disabled]`, or the root's) reflects through a **si
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
+forty-cdk ships no styles. Add your own class to each piece. The `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
 
 > The menu content (`[forMenuContent]`) portals to `document.body`, so a class scoped to your trigger's component cannot reach it. Style it with **global CSS** or a class you pass through (see [Styling floating content](../../../docs/styling-floating-content.md)). The content host also exposes the shared positioner custom properties — `--for-floating-anchor-width` / `--for-floating-anchor-height`, `--for-floating-available-width` / `--for-floating-available-height`, and `--for-floating-content-transform-origin` — documented in full in [Styling floating content](../../../docs/styling-floating-content.md).
 

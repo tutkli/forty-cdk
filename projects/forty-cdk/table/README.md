@@ -329,7 +329,7 @@ Implements the [WAI-ARIA Table pattern](https://www.w3.org/WAI/ARIA/apg/patterns
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the `data-*` attributes and CSS custom properties listed under [Data attributes](#data-attributes).
+forty-cdk ships no styles. Add your own class to each piece. The `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the `data-*` attributes and CSS custom properties listed under [Data attributes](#data-attributes).
 
 ## Native `<table>` mode
 
@@ -501,11 +501,11 @@ Spanning the row visually stays yours: `grid-column: 1 / -1` in a `<div>` grid, 
 
 `mode="treegrid"` sets `role="treegrid"` on the root. Rows are a flat sibling list in the DOM; hierarchy is expressed through ARIA attributes, not DOM nesting.
 
-- **`[level]`** — 1-based tree depth, reflected as `aria-level`. Default `1`.
-- **`[expandable]`** — marks a row as a parent; emits `aria-expanded="true"|"false"` and `data-state="open"|"closed"`. Leaf rows emit neither.
-- **`[(expanded)]`** — two-way bindable `readonly T[]` of open parent-row values (keyed by row `[value]`), the same shape `ForTree.expanded` uses for its open nodes. Use `compareWith` for object values.
-- **`aria-posinset` / `aria-setsize`** — auto-recomputed from the rendered flat list on every expand/collapse.
-- **ArrowRight / ArrowLeft** — expand / collapse the focused parent row, falling through to grid cell navigation on a leaf or a row already in that state; RTL-mirrored. See [Keyboard](#keyboard).
+- **`[level]`**: 1-based tree depth, reflected as `aria-level`. Default `1`.
+- **`[expandable]`**: marks a row as a parent; emits `aria-expanded="true"|"false"` and `data-state="open"|"closed"`. Leaf rows emit neither.
+- **`[(expanded)]`**: two-way bindable `readonly T[]` of open parent-row values (keyed by row `[value]`), the same shape `ForTree.expanded` uses for its open nodes. Use `compareWith` for object values.
+- **`aria-posinset` / `aria-setsize`**: auto-recomputed from the rendered flat list on every expand/collapse.
+- **ArrowRight / ArrowLeft**: expand / collapse the focused parent row, falling through to grid cell navigation on a leaf or a row already in that state; RTL-mirrored. See [Keyboard](#keyboard).
 - Consumer mounts/unmounts child rows with `@if` driven by `expanded()`. A `#r="forTableRow"` template ref exposes `r.toggleExpanded()` for pointer-driven expand buttons.
 
 ```html

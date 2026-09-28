@@ -13,7 +13,7 @@ Pass a numeric `value` for a determinate bar, or `null` for indeterminate ("load
 
 ## When to choose
 
-- **Progress** — `role="progressbar"`, for a task advancing toward completion. `value` accepts `null` for the indeterminate "working…" state, and `announceCompletion` announces the end of the task.
+- **Progress**: `role="progressbar"`, for a task advancing toward completion. `value` accepts `null` for the indeterminate "working…" state, and `announceCompletion` announces the end of the task.
 - **[Meter](../meter/README.md)** — `role="meter"`, for a measurement inside a known range (disk used, battery, score), always determinate and bucketed into quality bands. Screen readers announce the two roles differently, so the choice is meaning rather than appearance: if the number is not going anywhere, it is a meter.
 
 ## Anatomy
@@ -101,7 +101,7 @@ Implements the [WAI-ARIA Meter pattern](https://www.w3.org/WAI/ARIA/apg/patterns
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
+forty-cdk ships no styles. Add your own class to each piece. The `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
 
 ### CSS custom properties
 

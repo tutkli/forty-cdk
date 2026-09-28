@@ -18,9 +18,9 @@ It implements the select-only combobox pattern (`role="combobox"` on the trigger
 ## When to choose
 
 - **Select** — a trigger that opens a portaled `role="listbox"` popup. There is no text entry: the value comes from the options, and typing only jumps to a matching one (typeahead). Choose it when the option set is short enough to scan.
-- **[Combobox](../combobox/README.md)** — the same popup behind an editable `<input>`, where typing filters the list as the user goes. Choose it when the list is long enough that scanning it is the slow part.
+- **[Combobox](../combobox/README.md)**: the same popup behind an editable `<input>`, where typing filters the list as the user goes. Choose it when the list is long enough that scanning it is the slow part.
 - **[Listbox](../listbox/README.md)** — the same option semantics with no overlay and no trigger: an in-page list under roving tabindex. Choose it when the choices should stay visible.
-- **[Dropdown Menu](../dropdown-menu/README.md)** — when the surface runs commands rather than holding a value. A menu is not a form control.
+- **[Dropdown Menu](../dropdown-menu/README.md)**: when the surface runs commands rather than holding a value. A menu is not a form control.
 
 ## Anatomy
 
@@ -659,24 +659,24 @@ In the default (non-virtualized) path the full APG range keyboard works while th
 
 ### Trigger (closed)
 
-- **Click / Enter / Space** — open (focus selected, else first).
-- **ArrowDown** — open (focus selected, else first).
-- **ArrowUp** — open (focus selected, else last).
+- **Click / Enter / Space**: open (focus selected, else first).
+- **ArrowDown**: open (focus selected, else first).
+- **ArrowUp**: open (focus selected, else last).
 - **Typeahead** _(single mode only)_ — printable keys select the matching option immediately without opening, mirroring native `<select>`. The lookup goes through a cached snapshot of options (the live registry is empty while `[forSelectContent]` is unmounted); the cache is populated the first time the listbox opens, so closed-state typeahead is available after the user has interacted with the listbox at least once.
 
 ### Listbox (open)
 
-- **ArrowDown / ArrowUp** — move focus to next / previous enabled option, wrapping by default.
-- **Home / End** — jump to first / last enabled option.
-- **PageUp / PageDown** — jump to first / last enabled option.
+- **ArrowDown / ArrowUp**: move focus to next / previous enabled option, wrapping by default.
+- **Home / End**: jump to first / last enabled option.
+- **PageUp / PageDown**: jump to first / last enabled option.
 - **Enter / Space** — activate the focused option (native `<button>` semantics): select + close in single mode, toggle (stay open) in multi mode.
 - **Shift+ArrowDown / Shift+ArrowUp** _(multi mode, non-virtualized)_ — move focus to the next / previous enabled option **and** toggle it. Non-wrapping. Does not move the range anchor.
 - **Shift+Space** _(multi mode, non-virtualized)_ — select the contiguous range from the anchor (last clicked / activated option) to the focused option, preserving selection outside the span. Falls back to selecting just the focused option when no anchor exists.
 - **Ctrl/Cmd+A** _(multi mode, non-virtualized)_ — select every enabled option, or clear the selection when all enabled options are already selected (toggle).
 - **Ctrl+Shift+Home / Ctrl+Shift+End** _(multi mode, non-virtualized)_ — extend the selection from the focused option to the first / last option and move focus to that edge.
-- **Escape** — close without changing selection. Returns focus to the trigger.
+- **Escape**: close without changing selection. Returns focus to the trigger.
 - **Tab / Shift+Tab** — commit the focused option (single mode only — multi-mode keeps the existing selection) and let the browser advance focus to the next / previous focusable, mirroring native `<select>`. The directive does **not** `preventDefault`, so form workflows keep flowing through tab order.
-- **Typeahead** — single printable characters move focus to the first option whose text starts with the buffered string. Disabled options are skipped.
+- **Typeahead**: single printable characters move focus to the first option whose text starts with the buffered string. Disabled options are skipped.
 
 ## Accessibility
 
@@ -692,7 +692,7 @@ Implements the [WAI-ARIA select-only combobox pattern](https://www.w3.org/WAI/AR
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
+forty-cdk ships no styles. Add your own class to each piece. The `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
 
 ### CSS custom properties
 

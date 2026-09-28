@@ -15,9 +15,9 @@ A modal window overlaid on the page, with a focus trap, scroll lock and Escape /
 
 All three modal-family surfaces float above the page; what separates them is what they do to focus and to everything behind them.
 
-- **Dialog** — modal. Focus is trapped inside the surface, the background is inert and body scroll is locked, so the task has to be finished or dismissed before anything else is reachable.
-- **[Drawer](../drawer/README.md)** — the same modal engine anchored to an edge, plus a pointer drag with swipe-to-dismiss and snap points. Choose it when the surface slides in from a side and the user may drag it.
-- **[Popover](../popover/README.md)** — non-modal. Focus moves in and returns to the trigger on close, but Tab is free to leave and the page behind stays interactive. Choose it when the user should be able to keep working around the surface.
+- **Dialog**: modal. Focus is trapped inside the surface, the background is inert and body scroll is locked, so the task has to be finished or dismissed before anything else is reachable.
+- **[Drawer](../drawer/README.md)**: the same modal engine anchored to an edge, plus a pointer drag with swipe-to-dismiss and snap points. Choose it when the surface slides in from a side and the user may drag it.
+- **[Popover](../popover/README.md)**: non-modal. Focus moves in and returns to the trigger on close, but Tab is free to leave and the page behind stays interactive. Choose it when the user should be able to keep working around the surface.
 
 ## Two flows, one engine
 
@@ -333,7 +333,7 @@ Implements the [WAI-ARIA Modal Dialog pattern](https://www.w3.org/WAI/ARIA/apg/p
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
+forty-cdk ships no styles. Add your own class to each piece. The `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
 
 > **This dialog portals to `document.body`.** CSS scoped to ancestors of `[forDialog]` (or `[forDialogBackdrop]`) will not apply once the surface is moved to the body. Style it with **global CSS** or a class. Declaratively you write the surface yourself, so add the class directly (`<div forDialog class="my-dialog">`); for programmatically opened instances pass `class` / `classList` on the `ForDialogManager.open()` config — they land on the same `[forDialog]` host that carries `data-state` / `role` / `aria-modal`, merged and never clobbering them.
 
@@ -378,7 +378,7 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 - **Vetoable dismissals**. Each of `(escapeKeyDown)`, `(pointerDownOutside)`, `(focusOutside)`, `(interactOutside)` fires before the corresponding `(dismiss)`. Call `preventDefault()` on the event to keep the dialog open (e.g. to ask "are you sure?" first).
 - **Focus callbacks are inputs, not outputs.** The `autoFocusOnOpen` / `autoFocusOnClose` shape mirrors `ForDialogManager`'s `config.autoFocusOn*` callbacks and guarantees the `autoFocusOnClose` callback fires reliably on every close path — including a direct `open.set(false)` that bypasses the `(dismiss)` output. The trigger-anchored overlays (Popover, DropdownMenu, Select, …) expose the same pair as **outputs** instead, because every close transition there runs through their own `[(open)]` model, so no path can bypass the emitter.
 - **The close button** (`[forDialogClose]`) always requests close, regardless of `dismissible`. Reason emitted is `'closeButton'`.
-- **Both flows share the same engine** — the focus trap, scroll lock, dismissible layer, and portal in `ForDialogManager.open()` use the same `_internal/` utilities as the directive. Behavior is identical.
+- **Both flows share the same engine**: the focus trap, scroll lock, dismissible layer, and portal in `ForDialogManager.open()` use the same `_internal/` utilities as the directive. Behavior is identical.
 
 ### Per-channel dismissal (Escape-only dialogs)
 

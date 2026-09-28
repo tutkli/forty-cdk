@@ -102,8 +102,8 @@ export class TabsDefaultExample {
 
 **The panel's focusable-content detection does not re-measure across a shadow boundary, nor on a CSS-only visibility flip.** The measurement runs on the panel's first render and again on mutations of its own subtree, filtered to the attributes that change whether an element is focusable (`disabled`, `hidden`, `inert`, `tabindex`, `type`, `contenteditable`). Two changes are therefore invisible to it and leave the previous answer standing:
 
-- **Focusable content appearing (or disappearing) inside a shadow root** — a web component in the panel that renders its controls on a later tick, or swaps them. The shadow root's own subtree is not observable, so a panel that gains its first focusable control that way keeps its redundant `tabindex="0"`, and one that loses its last keeps none, leaving the panel unreachable by keyboard for a screen-reader user reading it. Nothing in the DOM looks wrong.
-- **A visibility flip driven purely by a stylesheet** — the measurement excludes CSS-hidden elements, but `class` and `style` are not watched, so toggling a class that hides or reveals the panel's only control does not re-measure.
+- **Focusable content appearing (or disappearing) inside a shadow root**: a web component in the panel that renders its controls on a later tick, or swaps them. The shadow root's own subtree is not observable, so a panel that gains its first focusable control that way keeps its redundant `tabindex="0"`, and one that loses its last keeps none, leaving the panel unreachable by keyboard for a screen-reader user reading it. Nothing in the DOM looks wrong.
+- **A visibility flip driven purely by a stylesheet**: the measurement excludes CSS-hidden elements, but `class` and `style` are not watched, so toggling a class that hides or reveals the panel's only control does not re-measure.
 
 **Workaround.** Bind `[interactiveContent]` — an explicit `true` / `false` wins over the detection in either direction, so the stale measurement stops driving the `tabindex`. It is the right channel whenever you know the answer for a panel, which is the usual case for a panel whose content is a web component. Remounting the panel with `@if` also re-measures, since a fresh directive instance measures again.
 
@@ -165,7 +165,7 @@ Reflects: `id`, `role="tabpanel"`, `aria-labelledby` (the matching trigger's id)
 The directive does **not** apply `[hidden]`. Two patterns work:
 
 - **Leave all panels mounted** (idiomatic) — preserves scroll/input state across activations. While inactive, the directive sets `aria-hidden="true"` and `inert` so each non-selected panel is out of the accessibility tree and focus order. Hide the inactive ones visually with CSS keyed on `[data-state="inactive"]` (e.g. `display: none`).
-- **Mount/unmount with `@if (active() === 'tab')`** — the panel is absent while inactive; useful for heavy panels or when you want `animate.enter` / `animate.leave`.
+- **Mount/unmount with `@if (active() === 'tab')`**: the panel is absent while inactive; useful for heavy panels or when you want `animate.enter` / `animate.leave`.
 
 ## Keyboard
 
@@ -186,7 +186,7 @@ Implements the [WAI-ARIA Tabs pattern](https://www.w3.org/WAI/ARIA/apg/patterns/
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the for\* selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected data-\* attributes listed per piece in the [API](#api) section.
+forty-cdk ships no styles. Add your own class to each piece. The for\* selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected data-\* attributes listed per piece in the [API](#api) section.
 
 ```css
 .tabs-trigger[data-state='active'] {

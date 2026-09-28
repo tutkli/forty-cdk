@@ -315,7 +315,7 @@ Four things are worth knowing:
 
 - **The library drives `translate`, `transform` stays yours.** The glide is played on the individual `translate` property, which the browser applies _before_ `transform`, so the two compose. Nothing above changes: the [exit keyframes](#exit--enter-animations-programmatic) on `transform` and the [swipe recipe](#swipe-to-dismiss)'s `transform: translate3d(var(--for-toast-swipe-movement-x), …)` keep working with `[stackShift]` set, including while a row is mid-glide. The one thing to avoid is writing your own `translate` on `[forToast]` — an animation outranks every author declaration of the same property, inline ones included, so the glide would suppress it while it played.
 - **Nothing moves by default.** Leaving `[stackShift]` unset keeps today's synchronous reflow, and `[stackShift]="0"` opts a single viewport out of a scope-level default.
-- **`prefers-reduced-motion: reduce` suppresses it** — the library skips the glide entirely, no consumer CSS needed. This is the one animation hook the directive gates for you, because the directive owns the motion rather than handing you a class.
+- **`prefers-reduced-motion: reduce` suppresses it**: the library skips the glide entirely, no consumer CSS needed. This is the one animation hook the directive gates for you, because the directive owns the motion rather than handing you a class.
 - **It is the programmatic path only.** On the declarative path the rows and their container are yours, so a directive of your own on that container is the right level.
 
 Set it for a whole scope with `provideForToastDefaults({ stackShift: 200 })`; a viewport's own `[stackShift]` wins.
@@ -515,7 +515,7 @@ ref.update({ title: 'Saved', variant: 'success', duration: 3000 });
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
+forty-cdk ships no styles. Add your own class to each piece. The `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
 
 Toast pieces (`[forToast]`, `[forToastTitle]`, `[forToastDescription]`, `[forToastAction]`, `[forToastClose]`) are rendered _inside_ the library's `<for-toast-viewport>` component on the programmatic path, so they cannot take a consumer class directly — style them with **global attribute selectors** (e.g. `[forToast][data-variant='error']`). The exception is per-toast `class` / `classList` in the `show()` config, which the viewport applies to the `[forToast]` root for you (see [Per-toast classes](#per-toast-classes)). Only `<for-toast-viewport>` itself lives in the consumer's own template, so it is the one element that can take an ordinary `class`. Declarative toasts (`<div forToast class="…">`) take consumer classes the native way.
 

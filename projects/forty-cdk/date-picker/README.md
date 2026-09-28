@@ -15,9 +15,9 @@ Reinterpreted idiomatically for modern Angular: a focusable trigger that opens a
 
 ## When to choose
 
-- **Date Picker** — a trigger plus a floating [Calendar](../calendar/README.md), and the form value itself (`FormValueControl<D | null>`). Choose it when the date is found by looking and the grid should stay out of the way until asked for.
-- **[Calendar](../calendar/README.md)** — the same grid inline and always visible. It exposes `[(value)]` as a model but implements no form-control contract, so a form binds the picker rather than the calendar.
-- **[Date Field](../date-field/README.md)** — segmented keyboard entry with no grid and no popup. Choose it when the user already knows the date and typing is the fast path.
+- **Date Picker**: a trigger plus a floating [Calendar](../calendar/README.md), and the form value itself (`FormValueControl<D | null>`). Choose it when the date is found by looking and the grid should stay out of the way until asked for.
+- **[Calendar](../calendar/README.md)**: the same grid inline and always visible. It exposes `[(value)]` as a model but implements no form-control contract, so a form binds the picker rather than the calendar.
+- **[Date Field](../date-field/README.md)**: segmented keyboard entry with no grid and no popup. Choose it when the user already knows the date and typing is the fast path.
 
 ## Date adapter
 
@@ -403,7 +403,7 @@ Implements the [WAI-ARIA Date Picker Dialog pattern](https://www.w3.org/WAI/ARIA
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
+forty-cdk ships no styles. Add your own class to each piece. The `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
 
 > `[forDatePickerContent]` is portaled to `document.body`, so it lives outside your component's view-encapsulated styles. Style it with **global CSS** (or a class you pass through) rather than component-scoped rules — see [Styling floating content](../../../docs/styling-floating-content.md). In non-modal (anchored) mode the surface also exposes the shared positioner custom properties (`--for-floating-anchor-width` / `--for-floating-anchor-height`, `--for-floating-available-width` / `--for-floating-available-height`, `--for-floating-content-transform-origin`); that same guide tabulates the full set.
 

@@ -189,7 +189,7 @@ Two escape hatches:
 
 - **Focus something yourself** inside the `(dragDrop)` handler (a status region, a toolbar, the next
   row). The restore only fires when focus has already fallen to `<body>`, so whatever you focus wins.
-- **Pointer drops are untouched** — focus is never moved after a mouse / touch / pen drop.
+- **Pointer drops are untouched**: focus is never moved after a mouse / touch / pen drop.
 
 If your handler leaves the data unchanged, nothing is detached and focus simply stays on the item.
 
@@ -331,9 +331,9 @@ String selector form (resolved via `closest()` on the list host):
 
 Add `[animateReorder]="true"` to `[forDropList]` to animate committed drops. When enabled:
 
-- **FLIP reorder** — displaced sibling items transition smoothly from their old positions to their
+- **FLIP reorder**: displaced sibling items transition smoothly from their old positions to their
   new ones instead of snapping.
-- **Drop-settle** — on a pointer drag, the floating preview transitions from its release position
+- **Drop-settle**: on a pointer drag, the floating preview transitions from its release position
   into the final item slot before it is removed.
 
 Both are opt-in and fully skipped under `prefers-reduced-motion: reduce`. They work for both
@@ -363,8 +363,8 @@ preview is destroyed promptly.
 `[forDropList]` resolves the live drop index along its `orientation`:
 
 - **`"vertical"`** (default) — a stacked column; the index is resolved by the pointer's `y`.
-- **`"horizontal"`** — a single row; the index is resolved by the pointer's `x` (RTL-aware).
-- **`"mixed"`** — a wrapping grid (`flex-wrap` / CSS grid) of **uniformly-sized** items. The index
+- **`"horizontal"`**: a single row; the index is resolved by the pointer's `x` (RTL-aware).
+- **`"mixed"`**: a wrapping grid (`flex-wrap` / CSS grid) of **uniformly-sized** items. The index
   is resolved in 2D, so an item dragged across a wrapped row lands in the slot under the pointer's
   row **and** column instead of mis-resolving to the nearest single-axis slot. A `"mixed"` list that
   happens to render as a single row or single column resolves identically to `"horizontal"` /

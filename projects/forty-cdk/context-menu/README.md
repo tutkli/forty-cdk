@@ -16,9 +16,9 @@ Opened via the `contextmenu` event (right-click, long-press on touch) and via th
 ## When to choose
 
 - **Context Menu** — actions for a region, opened by right-click, long-press, `Shift+F10` or the `ContextMenu` key and anchored at the pointer. It is a single-opener preset: one root, one region.
-- **[Dropdown Menu](../dropdown-menu/README.md)** — the same [menu surface](../menu/README.md) opened from a visible `<button>`. Choose it when the actions need a control the user can see and reach with Tab.
-- **[Menu](../menu/README.md)** — the opener-agnostic root, for when one menu definition must be driven by several openers at once (a right-click region _and_ a kebab button).
-- **[Menubar](../menubar/README.md)** — a persistent bar of menus with arrow navigation between them.
+- **[Dropdown Menu](../dropdown-menu/README.md)**: the same [menu surface](../menu/README.md) opened from a visible `<button>`. Choose it when the actions need a control the user can see and reach with Tab.
+- **[Menu](../menu/README.md)**: the opener-agnostic root, for when one menu definition must be driven by several openers at once (a right-click region _and_ a kebab button).
+- **[Menubar](../menubar/README.md)**: a persistent bar of menus with arrow navigation between them.
 
 ## Anatomy
 
@@ -124,7 +124,7 @@ Same vetoable dismiss API as DropdownMenu. Call `preventDefault()` on the emitte
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the for\* selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected data-\* attributes listed under [Data attributes](#data-attributes).
+forty-cdk ships no styles. Add your own class to each piece. The for\* selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected data-\* attributes listed under [Data attributes](#data-attributes).
 
 > The menu content (`[forMenuContent]`, from the [`menu/`](../menu/README.md) folder) portals to `document.body`, so it sits outside the trigger's DOM subtree — descendant selectors won't reach it. Style it with **global CSS** or a class on the content element. The content host also exposes the shared positioner custom properties (`--for-floating-anchor-width` / `--for-floating-anchor-height`, `--for-floating-available-width` / `--for-floating-available-height`, `--for-floating-content-transform-origin`); see [Styling floating content](../../../docs/styling-floating-content.md) for the full list and the animation rules.
 

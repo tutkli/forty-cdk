@@ -12,7 +12,7 @@ It renders **nothing** and imposes no layout, and there is **no control contract
 
 ## When to choose
 
-- **Field** — the wiring, not the control. It owns the control's id, ties `[forLabel]`, `[forFieldDescription]` and `[forFieldError]` to it through `aria-labelledby` / `aria-describedby` / `aria-errormessage`, and reflects validation state as `data-*`. It renders no element and holds no value.
+- **Field**: the wiring, not the control. It owns the control's id, ties `[forLabel]`, `[forFieldDescription]` and `[forFieldError]` to it through `aria-labelledby` / `aria-describedby` / `aria-errormessage`, and reflects validation state as `data-*`. It renders no element and holds no value.
 - **[Input](../input/README.md)** — and every other form primitive — is what holds the value. A field wraps exactly one of them; it never stands in for one.
 - **[Fieldset](../fieldset/README.md)** — the grouping above it: one accessible name and an optional shared disabled state over several fields.
 
@@ -160,7 +160,7 @@ Opt-in marker (`[forFieldControl]`) for a **native** `<input>` / `<textarea>` / 
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the for\* selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected data-\* attributes listed per piece in the [API](#api) section.
+forty-cdk ships no styles. Add your own class to each piece. The for\* selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected data-\* attributes listed per piece in the [API](#api) section.
 
 ```css
 .field[data-invalid] .field-label {

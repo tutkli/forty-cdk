@@ -13,7 +13,7 @@ A button toggles the visibility of a content region, wired with `aria-expanded` 
 
 ## When to choose
 
-- **Disclosure** — one trigger and one region, independent of everything around it. Nothing coordinates it with a neighbour, so several on a page open and close freely.
+- **Disclosure**: one trigger and one region, independent of everything around it. Nothing coordinates it with a neighbour, so several on a page open and close freely.
 - **[Accordion](../accordion/README.md)** — a group of items under one root sharing a `[(value)]`: single mode closes the open panel when another opens, `multiple` allows several, and arrow keys move focus between the triggers. Choose it when the sections belong together and their open state is one decision.
 
 ## Anatomy
@@ -116,8 +116,8 @@ Reflects on its host: `id`, `data-state`, `data-disabled`, `aria-hidden` (when c
 
 The directive does **not** apply `[hidden]` or otherwise control DOM presence. Two patterns work:
 
-- **Mount/unmount with `@if (open())`** — the panel is absent from the DOM while closed; idiomatic for `animate.enter` / `animate.leave`.
-- **Leave it mounted** — preserve scroll/input state or run CSS-only transitions off `data-state`. While closed, the directive sets `aria-hidden="true"` and `inert` on the host so the panel is removed from the accessibility tree and focus order. Add `display: none` (or your own collapse animation) keyed on `[data-state="closed"]` to also hide it visually.
+- **Mount/unmount with `@if (open())`**: the panel is absent from the DOM while closed; idiomatic for `animate.enter` / `animate.leave`.
+- **Leave it mounted**: preserve scroll/input state or run CSS-only transitions off `data-state`. While closed, the directive sets `aria-hidden="true"` and `inert` on the host so the panel is removed from the accessibility tree and focus order. Add `display: none` (or your own collapse animation) keyed on `[data-state="closed"]` to also hide it visually.
 
 If the panel is a semantic region, add `role="region"` and `aria-labelledby="..."` pointing to the trigger.
 
@@ -131,7 +131,7 @@ Implements the [WAI-ARIA Disclosure pattern](https://www.w3.org/WAI/ARIA/apg/pat
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
+forty-cdk ships no styles. Add your own class to each piece. The `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
 
 ```css
 .disclosure-trigger .chevron {

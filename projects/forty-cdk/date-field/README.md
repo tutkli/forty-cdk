@@ -17,7 +17,7 @@ The keyboard-first counterpart to [Calendar](../calendar/README.md): each day / 
 
 - **Date Field** — typed entry: one `role="spinbutton"` per date part, in the runtime locale's own order, with no popup at all. Choose it when the user knows the date — a birth date, an expiry — and typing beats pointing.
 - **[Date Picker](../date-picker/README.md)** — a trigger that opens a floating [Calendar](../calendar/README.md), and the form value itself. Choose it when the date is found by looking: the next free Tuesday, a day near the end of the month.
-- **[Calendar](../calendar/README.md)** — that same grid inline and always visible. It is a widget with a `[(value)]` model rather than a form control.
+- **[Calendar](../calendar/README.md)**: that same grid inline and always visible. It is a widget with a `[(value)]` model rather than a form control.
 
 ## Date adapter
 
@@ -323,7 +323,7 @@ Composes the [WAI-ARIA Spinbutton pattern](https://www.w3.org/WAI/ARIA/apg/patte
 
 The library is styleless: style the boolean `data-*` hooks on the segments yourself — `[data-highlighted]` (the focused/roving segment), `[data-placeholder]` (empty), `[data-disabled]`, `[data-readonly]` — and `[data-empty]` / `[data-disabled]` / `[data-readonly]` on the root group.
 
-forty-cdk ships no styles. Add your own class to each piece — the for\* selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected data-\* attributes listed under [Data attributes](#data-attributes).
+forty-cdk ships no styles. Add your own class to each piece. The for\* selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected data-\* attributes listed under [Data attributes](#data-attributes).
 
 ```css
 .date-field-segment[data-placeholder] {
