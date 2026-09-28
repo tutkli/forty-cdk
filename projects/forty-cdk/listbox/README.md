@@ -226,7 +226,7 @@ export class DemoCities {
 
 ## Reordering
 
-Add `[forListboxReorder]` on the same element as `[forListbox]` to make a listbox **sortable** — a selectable _and_ sortable list (e.g. a chip grid) in one composition, with no `@angular/cdk/drag-drop`.
+Add `[forListboxReorder]` on the same element as `[forListbox]` to make a listbox **sortable** — a selectable _and_ sortable list (e.g. a chip grid) in one composition.
 
 `[forDraggable]` can't stack on a `[forListboxOption]`: both manage the option's roving tabindex and keyboard, so they collide on `tabindex`, on Space / Enter activation, and on `orientation`. `[forListboxReorder]` is a container-level coordinator (the same shape as `[forTreeNodeDrag]` / `[forTableRowReorder]`): it lives on the listbox, **never touches the option's roving tabindex**, intercepts keys in the capture phase with a dedicated lift chord, and owns its own 2D drop geometry — so selection, typeahead, and arrow navigation keep working unchanged.
 

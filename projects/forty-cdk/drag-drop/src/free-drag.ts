@@ -82,8 +82,8 @@ export class ForFreeDrag implements ForDraggableContext {
 
   /**
    * The element actually moved: an `HTMLElement`, or a selector resolved via `closest()` from the
-   * host. `null` (the default) moves the host itself. Mirrors CDK's `cdkDragRootElement` — drag a
-   * child handle, move an ancestor (e.g. drag a whole dialog by its header).
+   * host. `null` (the default) moves the host itself. Set it to drag a child handle and move an
+   * ancestor, e.g. a whole dialog dragged by its header.
    */
   readonly rootElement = input<HTMLElement | string | null>(null);
 

@@ -13,11 +13,12 @@ import { type ForTooltipContext, injectTooltipTriggerContext } from './tooltip-c
  * does not.
  *
  * Activating the trigger dismisses the tooltip: `pointerdown` schedules an
- * immediate close (mirroring Radix / Base UI), so the bubble doesn't cover the
- * result of a click. The focus the same press induces does NOT reopen it —
- * only keyboard focus opens the tooltip. The open-on-focus path fires solely
- * when focus was not preceded by a pointer interaction (mouse, pen, or touch):
- * hover already covers pointer users, so pointer-induced focus is ignored.
+ * immediate close. The user is acting on the control rather than asking for
+ * its description, so the bubble must not cover the result of the click. The
+ * focus the same press induces does NOT reopen it — only keyboard focus opens
+ * the tooltip. The open-on-focus path fires solely when focus was not
+ * preceded by a pointer interaction (mouse, pen, or touch): hover already
+ * covers pointer users, so pointer-induced focus is ignored.
  *
  * This makes a touch tap a no-op on both the hover-open and the focus-open
  * paths, because a tap is not a hover and the APG flags hover-tooltips as
