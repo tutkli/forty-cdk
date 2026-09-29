@@ -188,7 +188,7 @@ Implements the [WAI-ARIA Checkbox pattern](https://www.w3.org/WAI/ARIA/apg/patte
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece. The for\* selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected data-\* attributes listed per piece in the [API](#api) section.
+forty-cdk ships no styles: put your own class on each piece and key your CSS off the `data-*` attributes listed under [API](#api), not off the `for*` selectors ([Styling forty-cdk](../../../docs/styling.md) explains why).
 
 ```css
 .cb-check {
@@ -213,4 +213,4 @@ forty-cdk ships no styles. Add your own class to each piece. The for\* selectors
 
 ## Wrapping in a design system
 
-Both supported wrapper patterns are documented in [Wrapping form primitives](../../../docs/wrapping-form-primitives.md): `hostDirectives` with the exported `FOR_CHECKBOX_HOST_DIRECTIVE_INPUTS` / `FOR_CHECKBOX_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing.
+[Wrapping form primitives](../../../docs/wrapping-form-primitives.md) documents both supported wrapper patterns: `hostDirectives` with the exported `FOR_CHECKBOX_HOST_DIRECTIVE_INPUTS` / `FOR_CHECKBOX_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing.

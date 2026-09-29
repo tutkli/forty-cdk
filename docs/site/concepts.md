@@ -45,7 +45,7 @@ Every piece of logical state a primitive holds is written to the DOM as a `data-
 | `active` \| `inactive`                      | one-of-N in a tablist | Tabs                                      |
 | `checked` \| `unchecked` \| `indeterminate` | form-control state    | Switch, Checkbox, Radio, selectable items |
 
-Enumerated state is a value you match on; boolean state (`data-disabled`, `data-highlighted`, `data-selected`, …) is **present when true and absent when false**, so it is styled with `[data-disabled]` and `:not([data-disabled])` rather than a `'false'` string that is never written.
+Enumerated state is a value you match on; boolean state (`data-disabled`, `data-highlighted`, `data-selected`, …) is **written only while true**. [Styling forty-cdk](../styling.md) shows the selectors for both.
 
 The point is that state is stylable without being readable in TypeScript. You do not subscribe to a signal to change an appearance; the attribute is already there.
 

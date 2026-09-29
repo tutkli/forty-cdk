@@ -122,7 +122,7 @@ Same vetoable dismiss API as DropdownMenu. Call `preventDefault()` on the emitte
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece. The for\* selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected data-\* attributes listed under [Data attributes](#data-attributes).
+forty-cdk ships no styles: put your own class on each piece and key your CSS off the `data-*` attributes listed under [Data attributes](#data-attributes), not off the `for*` selectors ([Styling forty-cdk](../../../docs/styling.md) explains why).
 
 > The menu content (`[forMenuContent]`, from the [`menu/`](../menu/README.md) folder) portals to `document.body`, so it sits outside the trigger's DOM subtree and descendant selectors won't reach it. Style it with **global CSS** or a class on the content element. The content host also exposes the shared positioner custom properties (`--for-floating-anchor-width` / `--for-floating-anchor-height`, `--for-floating-available-width` / `--for-floating-available-height`, `--for-floating-content-transform-origin`); see [Styling floating content](../../../docs/styling-floating-content.md) for the full list and the animation rules.
 
@@ -201,4 +201,4 @@ Both triggers carry `[menuPositioning]`, a partial `{ side, align, sideOffset, a
 
 ## Wrapping in a design system
 
-Subclassing the root is the supported pattern; the subclass must re-provide `FOR_MENU_CONTEXT` because Angular does not inherit a directive's `providers`, and every projected piece resolves its context through it. See [Wrapping non-form roots](../../../docs/wrapping-non-form-roots.md).
+Subclass the root and re-provide `FOR_MENU_CONTEXT` with `useExisting` pointing at the subclass, since Angular does not inherit a directive's `providers`; [Wrapping non-form roots](../../../docs/wrapping-non-form-roots.md) walks the pattern.

@@ -333,7 +333,7 @@ Implements the [WAI-ARIA Modal Dialog pattern](https://www.w3.org/WAI/ARIA/apg/p
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece. The `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
+forty-cdk ships no styles: put your own class on each piece and key your CSS off the `data-*` attributes listed under [API](#api), not off the `for*` selectors ([Styling forty-cdk](../../../docs/styling.md) explains why).
 
 > **This dialog portals to `document.body`.** CSS scoped to ancestors of `[forDialog]` (or `[forDialogBackdrop]`) will not apply once the surface is moved to the body. Style it with **global CSS** or a class. Declaratively you write the surface yourself, so add the class directly (`<div forDialog class="my-dialog">`); for programmatically opened instances pass `class` / `classList` on the `ForDialogManager.open()` config. They land on the same `[forDialog]` host that carries `data-state` / `role` / `aria-modal`, merged and never clobbering them.
 
@@ -471,4 +471,4 @@ Pass `[container]` to portal the dialog surface into a specific element instead 
 
 ## Wrapping in a design system
 
-Subclassing the root is the supported pattern; the subclass must re-provide `FOR_DIALOG_CONTEXT` because Angular does not inherit a directive's `providers`, and every projected piece resolves its context through it. See [Wrapping non-form roots](../../../docs/wrapping-non-form-roots.md).
+Subclass the root and re-provide `FOR_DIALOG_CONTEXT` with `useExisting` pointing at the subclass, since Angular does not inherit a directive's `providers`; [Wrapping non-form roots](../../../docs/wrapping-non-form-roots.md) walks the pattern.

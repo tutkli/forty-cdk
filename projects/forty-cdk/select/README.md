@@ -692,7 +692,7 @@ Implements the [WAI-ARIA select-only combobox pattern](https://www.w3.org/WAI/AR
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece. The `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
+forty-cdk ships no styles: put your own class on each piece and key your CSS off the `data-*` attributes listed under [Data attributes](#data-attributes), not off the `for*` selectors ([Styling forty-cdk](../../../docs/styling.md) explains why).
 
 ### CSS custom properties
 

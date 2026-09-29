@@ -146,7 +146,7 @@ A disabled trigger (its own `[disabled]`, or the root's) reflects through a **si
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece. The `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
+forty-cdk ships no styles: put your own class on each piece and key your CSS off the `data-*` attributes listed under [Data attributes](#data-attributes), not off the `for*` selectors ([Styling forty-cdk](../../../docs/styling.md) explains why).
 
 > The menu content (`[forMenuContent]`) portals to `document.body`, so a class scoped to your trigger's component cannot reach it. Style it with **global CSS** or a class you pass through (see [Styling floating content](../../../docs/styling-floating-content.md)). The content host also exposes the shared positioner custom properties (`--for-floating-anchor-width` / `--for-floating-anchor-height`, `--for-floating-available-width` / `--for-floating-available-height`, and `--for-floating-content-transform-origin`), documented in full in [Styling floating content](../../../docs/styling-floating-content.md).
 
@@ -216,4 +216,4 @@ Angular resolves `ng-template` DI at the template's **declaration** site, not wh
 
 ## Wrapping in a design system
 
-Subclassing the root is the supported pattern; the subclass must re-provide `FOR_MENU_CONTEXT` because Angular does not inherit a directive's `providers`, and every projected piece resolves its context through it. See [Wrapping non-form roots](../../../docs/wrapping-non-form-roots.md).
+Subclass the root and re-provide `FOR_MENU_CONTEXT` with `useExisting` pointing at the subclass, since Angular does not inherit a directive's `providers`; [Wrapping non-form roots](../../../docs/wrapping-non-form-roots.md) walks the pattern.

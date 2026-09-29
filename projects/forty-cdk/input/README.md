@@ -186,7 +186,7 @@ Bound through `[formField]`, `forInput` auto-associates inside `forField`: the l
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece. The `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
+forty-cdk ships no styles: put your own class on each piece and key your CSS off the `data-*` attributes listed under [API](#api), not off the `for*` selectors ([Styling forty-cdk](../../../docs/styling.md) explains why).
 
 `[forInput]` and `[forTextarea]` reflect the identical set of attributes on their native host element.
 

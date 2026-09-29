@@ -439,8 +439,8 @@ Implements the [WAI-ARIA Tabs pattern](https://www.w3.org/WAI/ARIA/apg/patterns/
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece. The `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the `data-state` vocabulary and boolean `data-*` attributes listed under [Data attributes](#data-attributes).
+forty-cdk ships no styles: put your own class on each piece and key your CSS off the `data-state` vocabulary and boolean `data-*` attributes listed under [Data attributes](#data-attributes), not off the `for*` selectors ([Styling forty-cdk](../../../docs/styling.md) explains why).
 
 ## Wrapping in a design system
 
-Subclassing the root is the supported pattern; the subclass must re-provide `FOR_STEPPER_CONTEXT` because Angular does not inherit a directive's `providers`, and every projected piece resolves its context through it. See [Wrapping non-form roots](../../../docs/wrapping-non-form-roots.md).
+Subclass the root and re-provide `FOR_STEPPER_CONTEXT` with `useExisting` pointing at the subclass, since Angular does not inherit a directive's `providers`; [Wrapping non-form roots](../../../docs/wrapping-non-form-roots.md) walks the pattern.

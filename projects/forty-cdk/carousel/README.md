@@ -473,7 +473,7 @@ Implements the [WAI-ARIA Carousel pattern](https://www.w3.org/WAI/ARIA/apg/patte
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece. The `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). The directive publishes geometry as CSS custom properties on the root element so they cascade to the track. The consumer applies the transform and transition.
+forty-cdk ships no styles: put your own class on each piece rather than styling the `for*` selectors ([Styling forty-cdk](../../../docs/styling.md) explains why). The directive publishes geometry as CSS custom properties on the root element so they cascade to the track. The consumer applies the transform and transition.
 
 ```css
 [forCarouselViewport] {
@@ -577,4 +577,4 @@ The example CSS above is LTR-only by default.
 
 ## Wrapping in a design system
 
-Subclassing the root is the supported pattern; the subclass must re-provide `FOR_CAROUSEL_CONTEXT` with `useExisting` pointing at itself, because Angular does not inherit a directive's `providers` and every projected piece resolves its context through that token. See [Wrapping non-form roots](../../../docs/wrapping-non-form-roots.md).
+Subclass the root and re-provide `FOR_CAROUSEL_CONTEXT` with `useExisting` pointing at the subclass, since Angular does not inherit a directive's `providers`; [Wrapping non-form roots](../../../docs/wrapping-non-form-roots.md) walks the pattern.

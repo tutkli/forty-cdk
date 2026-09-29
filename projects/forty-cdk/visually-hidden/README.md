@@ -150,7 +150,7 @@ Pick `'assertive'` only for something the user must act on now, such as an error
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece. The `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). This primitive is the one exception to "no styles": it writes the clip rectangle as an inline style, because that is its entire purpose. With `focusable`, the inline style is dropped while focused, so your own `:focus` rules apply unopposed. Style the revealed state through a class on the host.
+forty-cdk ships no styles: put your own class on the host rather than styling the `for*` selector ([Styling forty-cdk](../../../docs/styling.md) explains why). This primitive is the one exception to "no styles": it writes the clip rectangle as an inline style, because that is its entire purpose. With `focusable`, the inline style is dropped while focused, so your own `:focus` rules apply unopposed. Style the revealed state through a class on the host.
 
 ## SSR
 
