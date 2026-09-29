@@ -311,7 +311,7 @@ Composes the [WAI-ARIA Spinbutton pattern](https://www.w3.org/WAI/ARIA/apg/patte
 
 The library is styleless: style the boolean `data-*` hooks yourself. The segments carry `[data-highlighted]` (the focused/roving segment), `[data-placeholder]` (empty), `[data-disabled]` and `[data-readonly]`, and the root group carries `[data-empty]` / `[data-disabled]` / `[data-readonly]`.
 
-forty-cdk ships no styles. Add your own class to each piece. The `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
+forty-cdk ships no styles: put your own class on each piece and key your CSS off the `data-*` attributes listed under [Data attributes](#data-attributes), not off the `for*` selectors ([Styling forty-cdk](../../../docs/styling.md) explains why).
 
 ```css
 .time-field-segment[data-placeholder] {

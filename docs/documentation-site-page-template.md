@@ -278,9 +278,10 @@ removed, stays in the alias list so it cannot come back.
 - **`## Accessibility`** — Roles, `aria-*` mapping, focus management, APG-conformance notes, and any
   sanctioned APG deviations (with the issue link, as Accordion does for #561).
 
-- **`## Styling`** — The standard "forty-cdk ships no styles" preamble + a link to
-  [Styling forty-cdk](styling.md), then the `data-*` hooks the consumer keys CSS off. For portaled
-  overlays, the global-CSS / `class` caveat.
+- **`## Styling`** — The one-sentence "forty-cdk ships no styles: put your own class on each piece
+  and key your CSS off the `data-*` attributes listed under API, not off the `for*` selectors"
+  preamble, closing on a link to [Styling forty-cdk](styling.md), then the `data-*`
+  hooks the consumer keys CSS off. For portaled overlays, the global-CSS / `class` caveat.
 
   Every class a `css` fence outside `## Examples` selects must be one some `html` or `ts` fence in
   the same README writes ([#2022](https://github.com/tutkli/forty-cdk/issues/2022)). Most of those
