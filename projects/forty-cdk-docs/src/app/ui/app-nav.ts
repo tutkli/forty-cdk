@@ -28,15 +28,16 @@ interface RailGroup {
 const DOCS_RAIL: readonly RailGroup[] = [
   {
     label: 'Introduction',
-    entries: [
-      ...SITE_PAGE_INDEX.map((page) => ({ title: page.title, path: `/${page.slug}` })),
-      { title: 'Error codes', path: '/errors' },
-    ],
+    entries: SITE_PAGE_INDEX.map((page) => ({ title: page.title, path: `/${page.slug}` })),
   },
   ...DOCS_GROUPS.map((group) => ({
     label: group.label,
     entries: group.primitives.map((item) => ({ title: item.title, path: `/${item.slug}` })),
   })),
+  {
+    label: 'Reference',
+    entries: [{ title: 'Error codes', path: '/errors' }],
+  },
 ];
 
 const GUIDES_RAIL: readonly RailGroup[] = GUIDE_INDEX.map((group) => ({

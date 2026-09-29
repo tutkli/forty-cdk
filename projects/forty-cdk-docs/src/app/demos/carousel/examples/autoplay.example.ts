@@ -13,7 +13,8 @@ import {
 
 interface Slide {
   readonly id: number;
-  readonly label: string;
+  readonly title: string;
+  readonly summary: string;
 }
 
 @Component({
@@ -90,7 +91,8 @@ interface Slide {
         <div forCarouselTrack class="acar-track">
           @for (slide of slides; track slide.id; let i = $index) {
             <div forCarouselSlide class="acar-slide" [class]="'acar-slide--' + (i + 1)">
-              <span class="acar-slide-label">{{ slide.label }}</span>
+              <p class="acar-slide-title">{{ slide.title }}</p>
+              <p class="acar-slide-summary">{{ slide.summary }}</p>
             </div>
           }
         </div>
@@ -214,9 +216,12 @@ interface Slide {
     .acar-slide {
       flex: 0 0 calc(100% / var(--for-carousel-slides-per-view));
       min-height: 160px;
+      box-sizing: border-box;
+      padding: 1.25rem 1.5rem;
       display: flex;
-      align-items: center;
-      justify-content: center;
+      flex-direction: column;
+      justify-content: flex-end;
+      gap: 0.35rem;
       border-radius: var(--ex-radius, 22px);
       corner-shape: squircle;
     }
@@ -234,10 +239,17 @@ interface Slide {
       background: color-mix(in srgb, var(--ex-accent, #0e7c6b) 35%, var(--ex-surface, #ffffff));
     }
 
-    .acar-slide-label {
+    .acar-slide-title {
+      margin: 0;
       font-size: 1.1rem;
       font-weight: 700;
       color: var(--ex-text, #17191c);
+    }
+
+    .acar-slide-summary {
+      margin: 0;
+      font-size: 0.9rem;
+      color: var(--ex-muted, #585d66);
     }
 
     .acar-indicators {
@@ -274,10 +286,18 @@ interface Slide {
 })
 export class CarouselAutoplayExample {
   protected readonly slides: readonly Slide[] = [
-    { id: 1, label: 'Slide 1' },
-    { id: 2, label: 'Slide 2' },
-    { id: 3, label: 'Slide 3' },
-    { id: 4, label: 'Slide 4' },
+    {
+      id: 1,
+      title: 'Free shipping this week',
+      summary: 'Every order over $50 ships free until Sunday.',
+    },
+    { id: 2, title: 'Dark mode has landed', summary: 'Switch it on from the appearance settings.' },
+    {
+      id: 3,
+      title: 'Planned maintenance',
+      summary: 'Sign-in pauses on Sunday from 02:00 to 03:00 UTC.',
+    },
+    { id: 4, title: 'Spring webinars', summary: 'Four live sessions, one topic a week, all free.' },
   ];
 
   protected readonly activeIndex = signal(0);
