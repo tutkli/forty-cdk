@@ -12,7 +12,8 @@ import {
 
 interface Slide {
   readonly id: number;
-  readonly label: string;
+  readonly name: string;
+  readonly price: string;
 }
 
 @Component({
@@ -69,7 +70,8 @@ interface Slide {
         <div forCarouselTrack class="mcar-track">
           @for (slide of slides; track slide.id; let i = $index) {
             <div forCarouselSlide class="mcar-slide" [class]="'mcar-slide--' + ((i % 5) + 1)">
-              <span class="mcar-slide-label">{{ slide.label }}</span>
+              <p class="mcar-slide-name">{{ slide.name }}</p>
+              <p class="mcar-slide-price">{{ slide.price }}</p>
             </div>
           }
         </div>
@@ -160,9 +162,12 @@ interface Slide {
             var(--for-carousel-slides-per-view)
         );
       min-height: 120px;
+      box-sizing: border-box;
+      padding: 0.75rem;
       display: flex;
-      align-items: center;
-      justify-content: center;
+      flex-direction: column;
+      justify-content: flex-end;
+      gap: 0.15rem;
       border-radius: var(--ex-radius-sm, 14px);
     }
 
@@ -182,10 +187,17 @@ interface Slide {
       background: color-mix(in srgb, var(--ex-success, #1f7a4d) 35%, var(--ex-surface, #ffffff));
     }
 
-    .mcar-slide-label {
+    .mcar-slide-name {
+      margin: 0;
       font-size: 0.9rem;
       font-weight: 700;
       color: var(--ex-text, #17191c);
+    }
+
+    .mcar-slide-price {
+      margin: 0;
+      font-size: 0.85rem;
+      color: var(--ex-muted, #585d66);
     }
 
     .mcar-indicators {
@@ -222,12 +234,12 @@ interface Slide {
 })
 export class CarouselMultipleSlidesExample {
   protected readonly slides: readonly Slide[] = [
-    { id: 1, label: 'Slide 1' },
-    { id: 2, label: 'Slide 2' },
-    { id: 3, label: 'Slide 3' },
-    { id: 4, label: 'Slide 4' },
-    { id: 5, label: 'Slide 5' },
-    { id: 6, label: 'Slide 6' },
+    { id: 1, name: 'Linen shirt', price: '$48' },
+    { id: 2, name: 'Canvas tote', price: '$22' },
+    { id: 3, name: 'Wool beanie', price: '$19' },
+    { id: 4, name: 'Leather belt', price: '$35' },
+    { id: 5, name: 'Rain jacket', price: '$89' },
+    { id: 6, name: 'Cotton socks', price: '$9' },
   ];
 
   protected readonly activeIndex = signal(0);

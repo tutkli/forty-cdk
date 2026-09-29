@@ -13,7 +13,8 @@ import {
 
 interface Slide {
   readonly id: number;
-  readonly label: string;
+  readonly title: string;
+  readonly summary: string;
 }
 
 @Component({
@@ -69,7 +70,8 @@ interface Slide {
         <div forCarouselTrack class="dcar-track">
           @for (slide of slides; track slide.id; let i = $index) {
             <div forCarouselSlide class="dcar-slide" [class]="'dcar-slide--' + (i + 1)">
-              <span class="dcar-slide-label">{{ slide.label }}</span>
+              <p class="dcar-slide-title">{{ slide.title }}</p>
+              <p class="dcar-slide-summary">{{ slide.summary }}</p>
             </div>
           }
         </div>
@@ -167,9 +169,12 @@ interface Slide {
     .dcar-slide {
       flex: 0 0 calc(100% / var(--for-carousel-slides-per-view));
       min-height: 160px;
+      box-sizing: border-box;
+      padding: 1.25rem 1.5rem;
       display: flex;
-      align-items: center;
-      justify-content: center;
+      flex-direction: column;
+      justify-content: flex-end;
+      gap: 0.35rem;
       border-radius: var(--ex-radius, 22px);
       corner-shape: squircle;
     }
@@ -190,10 +195,17 @@ interface Slide {
       background: color-mix(in srgb, var(--ex-success, #1f7a4d) 35%, var(--ex-surface, #ffffff));
     }
 
-    .dcar-slide-label {
+    .dcar-slide-title {
+      margin: 0;
       font-size: 1.1rem;
       font-weight: 700;
       color: var(--ex-text, #17191c);
+    }
+
+    .dcar-slide-summary {
+      margin: 0;
+      font-size: 0.9rem;
+      color: var(--ex-muted, #585d66);
     }
 
     .dcar-indicators {
@@ -230,11 +242,19 @@ interface Slide {
 })
 export class CarouselDragExample {
   protected readonly slides: readonly Slide[] = [
-    { id: 1, label: 'Slide 1' },
-    { id: 2, label: 'Slide 2' },
-    { id: 3, label: 'Slide 3' },
-    { id: 4, label: 'Slide 4' },
-    { id: 5, label: 'Slide 5' },
+    {
+      id: 1,
+      title: 'Harbour at dusk',
+      summary: 'Fishing boats back in before the lights come on.',
+    },
+    { id: 2, title: 'Pine ridge', summary: 'The last climb of the trail, above the tree line.' },
+    { id: 3, title: 'Salt flats', summary: 'A white horizon that turns pink at sunrise.' },
+    {
+      id: 4,
+      title: 'Old town steps',
+      summary: 'Two hundred stairs between the market and the fort.',
+    },
+    { id: 5, title: 'Glacier lake', summary: 'Still water, cold enough to hurt your hands.' },
   ];
 
   protected readonly activeIndex = signal(0);

@@ -12,7 +12,8 @@ import {
 
 interface Slide {
   readonly id: number;
-  readonly label: string;
+  readonly title: string;
+  readonly summary: string;
 }
 
 @Component({
@@ -36,7 +37,7 @@ interface Slide {
       loop
       orientation="horizontal"
       align="start"
-      ariaLabel="Featured slides"
+      ariaLabel="Featured stories"
     >
       <div class="car-controls-row">
         <button forCarouselPrevious class="car-btn" aria-label="Previous slide">
@@ -69,7 +70,8 @@ interface Slide {
         <div forCarouselTrack class="car-track">
           @for (slide of slides; track slide.id; let i = $index) {
             <div forCarouselSlide class="car-slide" [class]="'car-slide--' + (i + 1)">
-              <span class="car-slide-label">{{ slide.label }}</span>
+              <p class="car-slide-title">{{ slide.title }}</p>
+              <p class="car-slide-summary">{{ slide.summary }}</p>
             </div>
           }
         </div>
@@ -155,9 +157,12 @@ interface Slide {
     .car-slide {
       flex: 0 0 calc(100% / var(--for-carousel-slides-per-view));
       min-height: 160px;
+      box-sizing: border-box;
+      padding: 1.25rem 1.5rem;
       display: flex;
-      align-items: center;
-      justify-content: center;
+      flex-direction: column;
+      justify-content: flex-end;
+      gap: 0.35rem;
       border-radius: var(--ex-radius, 22px);
       corner-shape: squircle;
     }
@@ -178,10 +183,17 @@ interface Slide {
       background: color-mix(in srgb, var(--ex-success, #1f7a4d) 35%, var(--ex-surface, #ffffff));
     }
 
-    .car-slide-label {
+    .car-slide-title {
+      margin: 0;
       font-size: 1.1rem;
       font-weight: 700;
       color: var(--ex-text, #17191c);
+    }
+
+    .car-slide-summary {
+      margin: 0;
+      font-size: 0.9rem;
+      color: var(--ex-muted, #585d66);
     }
 
     .car-indicators {
@@ -218,11 +230,27 @@ interface Slide {
 })
 export class CarouselDefaultExample {
   protected readonly slides: readonly Slide[] = [
-    { id: 1, label: 'Slide 1' },
-    { id: 2, label: 'Slide 2' },
-    { id: 3, label: 'Slide 3' },
-    { id: 4, label: 'Slide 4' },
-    { id: 5, label: 'Slide 5' },
+    {
+      id: 1,
+      title: 'The coast road north',
+      summary: 'Four days, three ferries and one small car.',
+    },
+    {
+      id: 2,
+      title: 'Markets before dawn',
+      summary: 'Where the city buys its fish, flowers and coffee.',
+    },
+    {
+      id: 3,
+      title: 'A week without screens',
+      summary: 'What changed, and the one habit that stuck.',
+    },
+    { id: 4, title: 'Bread, slowly', summary: 'A starter, a schedule and a forgiving first loaf.' },
+    {
+      id: 5,
+      title: 'Mapping the old river',
+      summary: 'Tracing a buried stream through five neighbourhoods.',
+    },
   ];
 
   protected readonly activeIndex = signal(0);
