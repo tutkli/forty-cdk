@@ -1,5 +1,6 @@
 import { computed, DestroyRef, Directive, ElementRef, inject } from '@angular/core';
 
+import { crossesInteractiveContent, resolveEventTarget } from 'forty-cdk/core';
 import { FOR_FIELD_CONTEXT } from './field-context';
 
 /**
@@ -19,6 +20,12 @@ import { FOR_FIELD_CONTEXT } from './field-context';
  * that originated on the control (when the control is nested inside the label
  * host) is not re-forwarded, so a label-wrapping layout toggles once, matching
  * native `<label>` semantics.
+ *
+ * A press on other interactive content inside the label host (a `<button>`, an
+ * `<a href>`, a form element, a `<summary>` or any element with a `tabindex`)
+ * belongs to that element, as it does inside a native `<label>`: the control
+ * is neither clicked nor focused, the element takes focus as usual, and an open
+ * panel treats the press as an outside press.
  *
  * Pressing the label is pressing the control's trigger: on an overlay control
  * (`[forSelect]`, a picker-anatomy `[forCombobox]`, `[forDatePicker]`,
@@ -95,6 +102,9 @@ export class ForLabel {
     const target = this.ctx?.activationTarget() ?? null;
     const origin = event.target as Node | null;
     if (!target || (origin && target.contains(origin))) {
+      return null;
+    }
+    if (crossesInteractiveContent(resolveEventTarget(event), this.#host.nativeElement)) {
       return null;
     }
     return target;

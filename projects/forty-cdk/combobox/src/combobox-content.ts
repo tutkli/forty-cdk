@@ -5,6 +5,7 @@ import {
   hostAriaLabel,
   hostLabelledBy,
   injectFieldLabelExemption,
+  FOR_FIELD_CONTEXT,
 } from 'forty-cdk/core';
 import {
   injectOverlayShell,
@@ -59,6 +60,9 @@ import { injectComboboxContext } from './combobox-context';
  * already open does not pull focus out of wherever the user left it, but it does
  * take over the return focus, `(autoFocusOnClose)` and the Escape fallback from
  * there on.
+ *
+ * A field boundary: a control inside it never registers with an ancestor
+ * `[forField]`, and a `[forField]` inside it still wires its own control.
  */
 @Directive({
   selector: '[forComboboxContent]',
@@ -72,6 +76,7 @@ import { injectComboboxContext } from './combobox-context';
     '[attr.aria-multiselectable]': 'hasList() ? null : (ctx.multiple() ? "true" : null)',
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
   },
+  providers: [{ provide: FOR_FIELD_CONTEXT, useValue: null }],
 })
 export class ForComboboxContent {
   protected readonly ctx = injectComboboxContext('ForComboboxContent');

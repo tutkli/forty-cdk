@@ -88,9 +88,11 @@ export interface DismissibleLayerActivateOptions {
   /**
    * Extra elements whose subtrees count as "inside" for outside-pointer /
    * outside-focus checks (e.g. a portaled popover content owned by this
-   * layer). Recomputed on every event so that DOM mutations are picked up.
+   * layer). Recomputed on every event so that DOM mutations are picked up,
+   * and handed the node being tested so an owner can leave part of an exempt
+   * subtree outside.
    */
-  exemptElements?: () => readonly Element[];
+  exemptElements?: (target: Node) => readonly Element[];
 }
 
 const EMPTY_ACTIVATE_OPTIONS: DismissibleLayerActivateOptions = { channels: [] };
@@ -384,7 +386,7 @@ export class DismissibleLayer {
     if (composedContains(this.#host, target)) {
       return true;
     }
-    const exempt = this.#options.exemptElements?.();
+    const exempt = this.#options.exemptElements?.(target);
     if (!exempt) {
       return false;
     }

@@ -10,10 +10,13 @@ import {
 import { form, FormField, validate } from '@angular/forms/signals';
 import { TestBed } from '@angular/core/testing';
 
+import { By } from '@angular/platform-browser';
+
 import { renderHost } from '../../src/test-utils/render';
-import { FormUiControlBase } from 'forty-cdk/core';
+import { FOR_FIELD_CONTEXT, FormUiControlBase } from 'forty-cdk/core';
 import { ForSwitch } from 'forty-cdk/switch';
 import { ForField } from './field';
+import { ForFieldBoundary } from './field-boundary';
 import { ForFieldControl } from './field-control';
 import { ForFieldDescription } from './field-description';
 import { ForFieldError } from './field-error';
@@ -268,6 +271,86 @@ describe('ForField', () => {
       await flush();
 
       expect(field.hasAttribute('data-invalid')).toBe(true);
+    });
+  });
+
+  describe('field boundary', () => {
+    @Directive({ selector: '[fieldProbe]' })
+    class FieldProbe {
+      readonly ctx = inject(FOR_FIELD_CONTEXT, { optional: true });
+    }
+
+    @Component({
+      imports: [ForField, ForFieldBoundary, FieldProbe],
+      template: `
+        <div forField>
+          <span fieldProbe data-test-id="outer"></span>
+          <div forFieldBoundary>
+            <span fieldProbe data-test-id="inner"></span>
+          </div>
+        </div>
+      `,
+    })
+    class ProbeHost {}
+
+    @Component({
+      imports: [ForField, ForFieldBoundary, ForFieldControl, ForLabel, ForSwitch],
+      template: `
+        <div forField data-test-id="field">
+          <label forLabel data-test-id="label">Start time</label>
+          <input forFieldControl [invalid]="true" data-test-id="primary" />
+          <button forSwitch forFieldBoundary data-test-id="aux-host"></button>
+          <div forFieldBoundary>
+            <button forSwitch data-test-id="aux-inner"></button>
+          </div>
+        </div>
+      `,
+    })
+    class AuxiliaryControlHost {}
+
+    @Component({
+      imports: [ForField, ForFieldBoundary, ForFieldControl, ForLabel],
+      template: `
+        <div forField>
+          <label forLabel data-test-id="outer-label">Outer</label>
+          <input forFieldControl data-test-id="outer" />
+          <div forFieldBoundary>
+            <div forField>
+              <label forLabel data-test-id="inner-label">Inner</label>
+              <input forFieldControl data-test-id="inner" />
+            </div>
+          </div>
+        </div>
+      `,
+    })
+    class NestedFieldHost {}
+
+    it('resolves FOR_FIELD_CONTEXT to null inside the boundary', () => {
+      const { fixture } = renderHost(ProbeHost);
+      const probe = (testId: string) =>
+        fixture.debugElement.query(By.css(`[data-test-id="${testId}"]`)).injector.get(FieldProbe);
+      const field = fixture.debugElement.query(By.directive(ForField)).injector.get(ForField);
+
+      expect(probe('outer').ctx).toBe(field);
+      expect(probe('inner').ctx).toBeNull();
+    });
+
+    it('keeps a control on or inside the boundary from taking over the field', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const { el } = renderHost(AuxiliaryControlHost);
+
+      expect(warn).not.toHaveBeenCalled();
+      expect(q(el, 'label').getAttribute('for')).toBe(q(el, 'primary').id);
+      expect(q(el, 'field').hasAttribute('data-invalid')).toBe(true);
+      expect(q(el, 'aux-host').hasAttribute('aria-labelledby')).toBe(false);
+      expect(q(el, 'aux-inner').hasAttribute('aria-labelledby')).toBe(false);
+    });
+
+    it('lets a [forField] inside the boundary wire its own control', () => {
+      const { el } = renderHost(NestedFieldHost);
+
+      expect(q(el, 'inner').getAttribute('aria-labelledby')).toBe(q(el, 'inner-label').id);
+      expect(q(el, 'outer').getAttribute('aria-labelledby')).toBe(q(el, 'outer-label').id);
     });
   });
 

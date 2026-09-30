@@ -38,6 +38,22 @@ It renders **nothing** and imposes no layout, and there is **no control contract
 
 **One control per field.** A `[forField]` owns a single `controlId`, so wrap each control in its own field and group related fields with `[forFieldset]`. Registering a second control logs a dev-mode warning; the last one registered wins, and unmounting it falls back to the previous still-mounted control.
 
+**Overlay surfaces are field boundaries.** A control inside `[forDatePickerContent]`, `[forTimePickerContent]`, `[forSelectContent]`, `[forComboboxContent]`, `[forPopoverContent]`, `[forDialog]` or `[forDrawer]` never registers with a `[forField]` around the overlay, so a date-time picker's time field leaves the field reflecting the picker while its panel is open. A `[forField]` placed inside the surface still wires the control next to it.
+
+For an auxiliary control that only writes into the field's control, such as a picker beside a segmented time field, put `[forFieldBoundary]` on its root. The field keeps reflecting the control it labels:
+
+```html
+<div forField>
+  <span forLabel>Start time</span>
+  <div forTimeField [formField]="form.start">…</div>
+  <div forTimePicker forFieldBoundary [value]="form.start().value()" (valueChange)="commit($event)">
+    …
+  </div>
+</div>
+```
+
+Inside a boundary `FOR_FIELD_CONTEXT` resolves to `null`, so `[forFieldDescription]` and `[forFieldError]` need a `[forField]` of their own there.
+
 ## `ForFieldError` — automatic Signal Forms errors
 
 `ForFieldError` reads the control's `errors()` automatically and exposes them as signals:
@@ -57,6 +73,8 @@ Clicking the label activates the control on both host shapes, not just focuses i
 > Note: composite controls whose host is not the focusable element (`forListbox`, `forSelect`, `forCombobox`) still receive `aria-labelledby` correctly, and a label click is forwarded to the control's nominated focusable element rather than the wrapper host: the Select trigger, the input of an editable Combobox, or the trigger of a picker-anatomy Combobox, even while its open panel holds the input the label names.
 
 Pressing the label of an overlay control (`forSelect`, a picker-anatomy `forCombobox`, `forDatePicker`, `forTimePicker`) is pressing its trigger: it opens a closed panel and closes an open one, with one `openChange` per press, and focus lands on the trigger when the panel closes. That holds inside a focusable container such as a popover or dialog surface, because a press on the label moves focus nowhere but the control. The cost is that a text selection cannot start on the label.
+
+A press on other interactive content inside the label (a `<button>`, an `<a href>`, a form element, a `<summary>` or any element with a `tabindex`) belongs to that element, as it does inside a native `<label>`. The control is neither clicked nor focused, the element takes focus as usual, and an open panel closes as it does on any outside press. A help button or a "learn more" link can therefore sit inside the label.
 
 Where a composite is named on the wrapper itself (the `role="group"` of `[forDateField]`, `[forTimeField]`, `[forDateRangeField]` and `[forTimeRangeField]`), the association stays on that group and the label click moves focus to the control's own entry point instead: the first editable segment, or nowhere while the field is disabled. A native `<label>` reaches it too, because `for` pointing at a `role="group"` is not a [labelable element](https://html.spec.whatwg.org/multipage/forms.html#category-label) and the browser forwards nothing there, so the directive forwards it. Any control implementing `FormValueControl.focus` gets the same treatment.
 
@@ -131,6 +149,10 @@ Error region (`[forFieldError]`, `role="alert"`). Reads the control's Signal For
 | `messages`  | `Signal<readonly string[]>` | Human-readable messages derived from `errors`.     |
 | `hasErrors` | `Signal<boolean>`           | `true` when the control has at least one error.    |
 | `shown`     | `Signal<boolean>`           | `true` when the control is invalid and has errors. |
+
+### `ForFieldBoundary`
+
+Field boundary (`[forFieldBoundary]`). A control on its host or inside it does not register with an ancestor `[forField]`, and a `[forField]` inside it wires its own control. It has no inputs.
 
 ### `ForFieldControl`
 

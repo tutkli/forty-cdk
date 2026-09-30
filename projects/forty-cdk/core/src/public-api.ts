@@ -156,6 +156,7 @@ export {
   type UnresolvedRootSpec,
 } from './errors/orphan-context';
 export {
+  crossesInteractiveContent,
   type FieldControlHandle,
   FOR_FIELD_CONTEXT,
   type ForFieldContext,

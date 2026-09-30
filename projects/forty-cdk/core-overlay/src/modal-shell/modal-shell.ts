@@ -48,9 +48,9 @@ export interface ModalShellDismissConfig {
    *
    * The shell always merges every `MODAL_EXEMPT_ATTRIBUTE` overlay (e.g. toast
    * viewports) on top of whatever this returns, so a primitive only lists its
-   * *own* extra exemptions here.
+   * *own* extra exemptions here. It is handed the node being tested.
    */
-  readonly exemptElements?: () => readonly Element[];
+  readonly exemptElements?: (target: Node) => readonly Element[];
 }
 
 /**
@@ -249,8 +249,8 @@ export function injectModalShell(config: ModalShellConfig): ModalShellHandle {
     if (dismissCfg !== undefined) {
       dismissible.activate({
         channels: outsideVetoChannels(dismissCfg),
-        exemptElements: () => [
-          ...(dismissCfg.exemptElements?.() ?? []),
+        exemptElements: (target) => [
+          ...(dismissCfg.exemptElements?.(target) ?? []),
           ...resolveModalExemptOverlays(document),
         ],
         onEscapeKeyDown: (event) => {

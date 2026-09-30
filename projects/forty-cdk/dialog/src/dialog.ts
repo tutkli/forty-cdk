@@ -9,7 +9,7 @@ import {
   type Signal,
 } from '@angular/core';
 
-import { createSingleSlot } from 'forty-cdk/core';
+import { createSingleSlot, FOR_FIELD_CONTEXT } from 'forty-cdk/core';
 import { injectModalShell, ModalSurfaceBase, warnIfDialogUnnamed } from 'forty-cdk/core-overlay';
 import {
   FOR_DIALOG_CONTEXT,
@@ -56,6 +56,9 @@ import { DialogDepthRegistry } from './dialog-depth';
  *
  * `data-depth` and `--for-dialog-depth` carry the dialog's stacking position among the mounted
  * dialogs (`0` for the first), so a consumer can write one z-index rule for every level.
+ *
+ * A field boundary: a control inside it never registers with an ancestor
+ * `[forField]`, and a `[forField]` inside it still wires its own control.
  */
 @Directive({
   selector: '[forDialog]',
@@ -64,7 +67,10 @@ import { DialogDepthRegistry } from './dialog-depth';
     '[attr.data-depth]': 'depth()',
     '[style.--for-dialog-depth]': 'depth()',
   },
-  providers: [{ provide: FOR_DIALOG_CONTEXT, useExisting: ForDialog }],
+  providers: [
+    { provide: FOR_DIALOG_CONTEXT, useExisting: ForDialog },
+    { provide: FOR_FIELD_CONTEXT, useValue: null },
+  ],
 })
 export class ForDialog extends ModalSurfaceBase<ForDialogCloseReason> implements ForDialogContext {
   readonly #defaults = inject(FOR_DIALOG_DEFAULTS);
