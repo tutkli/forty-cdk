@@ -49,6 +49,15 @@ export type ForComboboxAutocomplete = 'none' | 'list' | 'inline' | 'both';
  */
 export type ForComboboxInitialFocus = 'first' | 'last' | 'selected';
 
+/**
+ * Where the editable anatomy's highlight lands when the listbox opens from focus, click,
+ * ArrowDown / ArrowUp or `openOverlay()` without an argument. `'first'` highlights the first
+ * enabled option (ArrowUp: the last). `'selected'` highlights the committed selection, falling
+ * back to the first enabled option (ArrowUp: the last) when there is none. Opening from a typed
+ * query always highlights the first match.
+ */
+export type ForComboboxOpenHighlight = 'first' | 'selected';
+
 export interface ForComboboxOptionHandle<T = unknown> extends CollectionHandle {
   /**
    * Narrowed from {@link CollectionHandle}'s `Node`: the root scrolls the
@@ -215,6 +224,7 @@ export interface ComboboxPieceContext<T = unknown> {
   readonly autocompleteMode: Signal<ForComboboxAutocomplete>;
   readonly openOnFocus: Signal<boolean>;
   readonly openOnQuery: Signal<boolean>;
+  readonly openHighlight: Signal<ForComboboxOpenHighlight>;
   readonly commitOnSelect: Signal<boolean>;
   readonly clearOnQueryChange: Signal<boolean>;
 
@@ -271,6 +281,13 @@ export interface ComboboxPieceContext<T = unknown> {
   readonly trigger: Signal<HTMLElement | null>;
 
   readonly content: Signal<HTMLElement | null>;
+
+  /**
+   * The registered `[forComboboxToggle]` buttons (editable anatomy). Exempt from
+   * the popup's outside-pointer dismissal and treated as inside by the root's
+   * focus-out check, so a press on one toggles instead of dismissing.
+   */
+  readonly toggles: Signal<readonly HTMLElement[]>;
 
   /**
    * The optional `[forComboboxList]` listbox surface (picker anatomy). When
@@ -373,6 +390,12 @@ export interface ComboboxPieceContext<T = unknown> {
   navigate(direction: 'next' | 'prev' | 'first' | 'last'): void;
   /** Activate the option currently marked as activedescendant (Enter from the input). */
   activateActive(): boolean;
+  /**
+   * Open from ArrowDown (`'first'`) / ArrowUp (`'last'`) on the editable input:
+   * seeds the selection under `openHighlight="selected"` and the extreme otherwise,
+   * so ArrowUp with nothing selected still lands on the last enabled option.
+   */
+  openFromExtreme(extreme: 'first' | 'last'): void;
 
   /** Set the typed query. Emits inline completion / openOnQuery side-effects via the input directive. */
   setQueryFromInput(query: string): void;
@@ -459,6 +482,10 @@ export interface ComboboxRegistrationContext<T = unknown> {
   registerTrigger(el: HTMLElement): void;
   /** Unregisters the trigger button. Reference-based. */
   unregisterTrigger(el: HTMLElement): void;
+  /** Registers a `[forComboboxToggle]` button without switching the anatomy. */
+  registerToggle(el: HTMLElement): void;
+  /** Unregisters a toggle button. Reference-based. */
+  unregisterToggle(el: HTMLElement): void;
   /** Registers the `[forComboboxContent]` popup surface. */
   registerContent(el: HTMLElement): void;
   /** Unregisters the popup surface. Reference-based. */

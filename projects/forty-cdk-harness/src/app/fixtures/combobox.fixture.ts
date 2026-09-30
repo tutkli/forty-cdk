@@ -11,6 +11,7 @@ import {
   ForComboboxInput,
   ForComboboxList,
   ForComboboxOption,
+  ForComboboxToggle,
   ForComboboxTrigger,
 } from 'forty-cdk/combobox';
 import { type VetoableEvent } from 'forty-cdk/core';
@@ -37,6 +38,7 @@ const LONG_FRUITS = Array.from({ length: 60 }, (_, i) => `item-${i}`);
     ForComboboxChips,
     ForComboboxChip,
     ForComboboxChipRemove,
+    ForComboboxToggle,
   ],
   styles: [
     `
@@ -173,6 +175,7 @@ const LONG_FRUITS = Array.from({ length: 60 }, (_, i) => `item-${i}`);
         [(value)]="value"
         [(open)]="open"
         [autocompleteMode]="autocompleteMode"
+        [restoreQueryOnClose]="restore"
         ariaLabel="Fruit search"
         (autoFocusOnOpen)="onAutoFocusOnOpen($event)"
         (autoFocusOnClose)="onAutoFocusOnClose($event)"
@@ -188,6 +191,9 @@ const LONG_FRUITS = Array.from({ length: 60 }, (_, i) => `item-${i}`);
           </div>
         } @else {
           <input data-testid="combo-input" forComboboxInput placeholder="Search fruits…" />
+          @if (toggle) {
+            <button data-testid="toggle" forComboboxToggle>▾</button>
+          }
         }
         @if (open()) {
           <div forComboboxContent data-testid="content">
@@ -269,6 +275,8 @@ export class ComboboxFixture {
   // `[forComboboxList]` inside `[forComboboxContent]`. Drives the focus hand-off
   // specs (focus → input on open, → trigger on close).
   protected readonly picker = queryFlag('picker');
+  protected readonly toggle = queryFlag('toggle');
+  protected readonly restore = queryFlag('restore');
   // `?lateTrigger=1` puts the picker's trigger in an embedded view declared
   // AFTER `[forComboboxContent]`, so with `?open=1` the surface is constructed
   // before the trigger registers (#1581). `?deferTrigger=1` pushes the trigger

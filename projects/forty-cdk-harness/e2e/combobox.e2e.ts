@@ -484,4 +484,59 @@ test.describe('Combobox', () => {
       await expectFocused(el(page, 'combo-input'));
     });
   });
+
+  test.describe('toggle button (editable anatomy)', () => {
+    test('a press on an open listbox closes it and keeps focus in the input', async ({ page }) => {
+      await gotoFixture(page, 'combobox', { toggle: '1' });
+      const input = el(page, 'combo-input');
+      await input.click();
+      await input.pressSequentially('ap');
+      await expect(el(page, 'content')).toBeVisible();
+
+      await el(page, 'toggle').click();
+
+      await expect(el(page, 'content')).toHaveCount(0);
+      await expectFocused(input);
+      await expect(input).toHaveValue('ap');
+    });
+
+    test('a press on a closed listbox opens it on the committed option, focus in the input', async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'combobox', { toggle: '1' });
+      const input = el(page, 'combo-input');
+      await input.click();
+      await input.press('ArrowDown');
+      await el(page, 'opt-banana').click();
+      await expect(el(page, 'content')).toHaveCount(0);
+      await el(page, 'before').focus();
+
+      await el(page, 'toggle').click();
+
+      await expect(el(page, 'content')).toBeVisible();
+      await expect(el(page, 'opt-banana')).toHaveAttribute('data-highlighted', '');
+      await expectFocused(input);
+      await expect(el(page, 'toggle')).toHaveAttribute('aria-expanded', 'true');
+    });
+  });
+
+  test.describe('restoreQueryOnClose', () => {
+    test('Escape restores the selected label while focus stays in the input', async ({ page }) => {
+      await gotoFixture(page, 'combobox', { restore: '1' });
+      const input = el(page, 'combo-input');
+      await input.click();
+      await input.press('ArrowDown');
+      await el(page, 'opt-banana').click();
+      await expect(input).toHaveValue('banana');
+
+      await input.fill('');
+      await input.pressSequentially('ap');
+      await expect(el(page, 'content')).toBeVisible();
+      await input.press('Escape');
+
+      await expect(el(page, 'content')).toHaveCount(0);
+      await expect(input).toHaveValue('banana');
+      await expectFocused(input);
+    });
+  });
 });

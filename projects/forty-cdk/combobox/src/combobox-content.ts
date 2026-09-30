@@ -34,8 +34,8 @@ import { injectComboboxContext } from './combobox-context';
  * Mount/unmount of the visible content is the consumer's responsibility —
  * wrap with `@if (open())` so `animate.enter` / `animate.leave` fire on the
  * natural mount cycle. While mounted, the surface dismisses on pointer-down
- * outside / focus outside; the input and (picker anatomy) the trigger are
- * exempt from outside checks.
+ * outside / focus outside; the input, any `[forComboboxToggle]` and (picker
+ * anatomy) the trigger are exempt from outside checks.
  *
  * Focus:
  * - **Editable anatomy (no trigger)** — focus normally stays in the input
@@ -155,6 +155,7 @@ export class ForComboboxContent {
           const trigger = ctx.trigger();
           if (trigger) els.push(trigger);
           for (const chip of ctx.chips()) els.push(chip.host);
+          els.push(...ctx.toggles());
           return els;
         }),
       },

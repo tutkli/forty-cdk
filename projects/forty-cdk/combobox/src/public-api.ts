@@ -1,6 +1,7 @@
 export { ForCombobox } from './combobox';
 export { ForComboboxAnchor } from './combobox-anchor';
 export { ForComboboxTrigger } from './combobox-trigger';
+export { ForComboboxToggle } from './combobox-toggle';
 export { ForComboboxInput } from './combobox-input';
 export { ForComboboxContent } from './combobox-content';
 export { ForComboboxList } from './combobox-list';
@@ -24,6 +25,7 @@ export {
   type ForComboboxCloseReason,
   type ForComboboxContext,
   type ForComboboxInitialFocus,
+  type ForComboboxOpenHighlight,
   type ForComboboxOptionHandle,
 } from './combobox-context';
 export {

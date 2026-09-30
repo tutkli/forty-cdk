@@ -11,6 +11,7 @@ import {
   ForComboboxInput,
   ForComboboxList,
   ForComboboxOption,
+  ForComboboxToggle,
 } from 'forty-cdk/combobox';
 import {
   ForListbox,
@@ -139,12 +140,14 @@ class SelectBare {
     ForComboboxAction,
     ForComboboxClear,
     ForComboboxChips,
+    ForComboboxToggle,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `<div forCombobox [(query)]="query" [(value)]="value" [(open)]="open" multiple>
     <div forComboboxChips aria-label="Probe chips"></div>
     <input forComboboxInput id="probe-input" />
     <button forComboboxClear aria-label="Probe reset">x</button>
+    <button forComboboxToggle aria-label="Probe toggle">v</button>
     @if (open()) {
       <div
         forComboboxContent
@@ -186,12 +189,14 @@ class ComboboxAdopted {
     ForComboboxAction,
     ForComboboxClear,
     ForComboboxChips,
+    ForComboboxToggle,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `<div forCombobox [(query)]="query" [(value)]="value" [(open)]="open" multiple>
     <div forComboboxChips></div>
     <input forComboboxInput />
     <button forComboboxClear>x</button>
+    <button forComboboxToggle>v</button>
     @if (open()) {
       <div forComboboxContent>
         <div forComboboxList>
@@ -542,6 +547,14 @@ export const COLLECTION_FAMILY_ADOPTERS: readonly StaticAdoptionAdopter[] = [
         seam: 'hostAriaLabel',
         probe: 'Probe chips',
         fallback: 'Selected items',
+      },
+      {
+        key: '[forComboboxToggle]',
+        channel: 'aria-label',
+        source: 'combobox/src/combobox-toggle.ts',
+        seam: 'hostAriaLabel',
+        probe: 'Probe toggle',
+        fallback: 'Show options',
       },
     ],
   },

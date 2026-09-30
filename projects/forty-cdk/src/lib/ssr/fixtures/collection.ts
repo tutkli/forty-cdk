@@ -6,6 +6,7 @@ import {
   ForComboboxInput,
   ForComboboxList,
   ForComboboxOption,
+  ForComboboxToggle,
 } from 'forty-cdk/combobox';
 import { ForListbox, ForListboxOption, ForListboxReorder } from 'forty-cdk/listbox';
 import {
@@ -69,10 +70,12 @@ export class SelectVirtualizedOpenFixture {
     ForComboboxList,
     ForComboboxOption,
     ForComboboxAction,
+    ForComboboxToggle,
   ],
   template: `
     <div forCombobox [open]="true">
       <input forComboboxInput />
+      <button forComboboxToggle></button>
       <div forComboboxContent>
         <button forComboboxAction>Create new</button>
         <div forComboboxList>
