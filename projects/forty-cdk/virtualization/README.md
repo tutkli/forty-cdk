@@ -46,6 +46,11 @@ The viewport forces `overflow: auto` on its host; give it a fixed size (e.g. `he
 The template context exposes `row` (`$implicit`), `virtualItem`, `index`, and `count`. Do not set
 `position` / `transform` on the row yourself, because the directive owns them.
 
+`*forVirtualFor` writes the flat `aria-setsize` (the total count) and `aria-posinset` (`index + 1`)
+on each row root on every render, so it fits a flat list. A collection that binds its own positions,
+such as a tree whose `[forTreeItem]` binds `[setSize]` / `[posInSet]` per level, uses `injectVirtualizer`
+directly, as the [Tree README's virtualized example](../tree/README.md#consumer-example) does.
+
 For full control (custom DOM, dynamic per-item measurement, a window/document scroller) use the
 headless `injectVirtualizer` core directly, documented below.
 

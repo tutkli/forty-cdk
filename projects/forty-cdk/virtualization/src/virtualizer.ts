@@ -128,6 +128,46 @@ function toVirtualItem(item: CoreVirtualItem): VirtualItem {
   };
 }
 
+type OffsetObserver = CoreVirtualizerOptions<HTMLElement, HTMLElement>['observeElementOffset'];
+
+function readElementOffset(
+  instance: Virtualizer<HTMLElement, HTMLElement>,
+  element: HTMLElement,
+): number {
+  const { horizontal, isRtl } = instance.options;
+  if (!horizontal) return element.scrollTop;
+  return isRtl ? -element.scrollLeft : element.scrollLeft;
+}
+
+const observeOffsetAcrossReattach: OffsetObserver = (instance, cb) => {
+  const element = instance.scrollElement;
+  if (element === null) {
+    return observeElementOffset(instance, cb);
+  }
+  const unsubscribe = observeElementOffset(instance, (offset, isScrolling) =>
+    cb(isScrolling ? offset : readElementOffset(instance, element), isScrolling),
+  );
+  const targetWindow = instance.targetWindow;
+  if (targetWindow === null || typeof targetWindow.ResizeObserver !== 'function') {
+    return unsubscribe;
+  }
+  let collapsed = false;
+  const observer = new targetWindow.ResizeObserver(() => {
+    if (element.offsetWidth === 0 || element.offsetHeight === 0) {
+      collapsed = true;
+      return;
+    }
+    if (!collapsed) return;
+    collapsed = false;
+    cb(readElementOffset(instance, element), false);
+  });
+  observer.observe(element, { box: 'border-box' });
+  return () => {
+    unsubscribe?.();
+    observer.disconnect();
+  };
+};
+
 function virtualItemsEqual(a: readonly VirtualItem[], b: readonly VirtualItem[]): boolean {
   if (a === b) return true;
   if (a.length !== b.length) return false;
@@ -153,7 +193,13 @@ function virtualItemsEqual(a: readonly VirtualItem[], b: readonly VirtualItem[])
  * first real window is produced after the first browser render.
  *
  * Must be called from an injection context (a component/directive constructor
- * or field initializer).
+ * or field initializer). `count` and `scrollElement` are first read during the
+ * first change detection, so either may derive from an `input.required` or a
+ * `viewChild.required`.
+ *
+ * When the scroll element is detached and re-attached (e.g. content projected
+ * into an overlay that closes and reopens), the window follows the element's
+ * current scroll offset as soon as its box is laid out again.
  *
  * @param options Reactive count, size estimator, scroll element and tuning.
  * @returns A {@link ForVirtualizer} handle of signals + imperative methods.
@@ -190,13 +236,11 @@ export function injectVirtualizer(options: VirtualizerOptions): ForVirtualizer {
     scrollMargin,
     scrollToFn: elementScroll,
     observeElementRect,
-    observeElementOffset,
+    observeElementOffset: observeOffsetAcrossReattach,
     onChange: () => notify.set(0),
   });
 
-  const virtualizer = new Virtualizer<HTMLElement, HTMLElement>(
-    buildCoreOptions(options.count(), options.scrollElement()),
-  );
+  const virtualizer = new Virtualizer<HTMLElement, HTMLElement>(buildCoreOptions(0, null));
 
   // @sanctioned-effect(external-source): `notify` is a change-notification
   // bridge from the imperative `@tanstack/virtual-core` core into the signal

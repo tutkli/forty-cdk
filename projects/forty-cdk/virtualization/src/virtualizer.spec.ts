@@ -3,6 +3,7 @@ import {
   type ElementRef,
   PLATFORM_ID,
   computed,
+  input,
   provideZonelessChangeDetection,
   signal,
   viewChild,
@@ -551,6 +552,233 @@ describe('injectVirtualizer', () => {
       const fixture = await mount();
       const { v } = fixture.componentInstance;
       expect(() => v.measureElement(null)).not.toThrow();
+    });
+  });
+
+  describe('re-attached scroll element', () => {
+    class ControlledResizeObserver {
+      static instances: ControlledResizeObserver[] = [];
+      readonly targets = new Set<Element>();
+      constructor(readonly callback: ResizeObserverCallback) {
+        ControlledResizeObserver.instances.push(this);
+      }
+      observe(el: Element): void {
+        this.targets.add(el);
+      }
+      unobserve(el: Element): void {
+        this.targets.delete(el);
+      }
+      disconnect(): void {
+        this.targets.clear();
+      }
+      static fire(el: HTMLElement): void {
+        const entry = {
+          target: el,
+          borderBoxSize: [{ inlineSize: el.offsetWidth, blockSize: el.offsetHeight }],
+        } as unknown as ResizeObserverEntry;
+        for (const instance of ControlledResizeObserver.instances) {
+          if (instance.targets.has(el)) {
+            instance.callback([entry], instance as unknown as ResizeObserver);
+          }
+        }
+      }
+    }
+
+    let priorResizeObserver: unknown;
+
+    beforeEach(() => {
+      ControlledResizeObserver.instances = [];
+      priorResizeObserver = (globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver;
+      (globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver =
+        ControlledResizeObserver;
+    });
+
+    afterEach(() => {
+      (globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver = priorResizeObserver;
+    });
+
+    function setScrollTop(el: HTMLElement, value: number): void {
+      Object.defineProperty(el, 'scrollTop', { configurable: true, writable: true, value });
+    }
+
+    function scrollTo(el: HTMLElement, value: number): void {
+      setScrollTop(el, value);
+      el.dispatchEvent(new Event('scroll'));
+    }
+
+    function detachAndReattach(el: HTMLElement, height: number): void {
+      fakeLayoutProps(el, 0, 0);
+      setScrollTop(el, 0);
+      ControlledResizeObserver.fire(el);
+      fakeLayoutProps(el, height);
+      ControlledResizeObserver.fire(el);
+    }
+
+    async function mount(): Promise<{
+      fixture: ReturnType<typeof TestBed.createComponent<Host>>;
+      el: HTMLElement;
+    }> {
+      const fixture = TestBed.createComponent(Host);
+      const el = fixture.nativeElement.querySelector('div') as HTMLElement;
+      fakeLayoutProps(el, 200);
+      fixture.detectChanges();
+      await flush(fixture);
+      return { fixture, el };
+    }
+
+    it('renders the window at the current scrollTop after a scrolled list is re-attached', async () => {
+      const { fixture, el } = await mount();
+      const { v } = fixture.componentInstance;
+      scrollTo(el, 4000);
+      await flush(fixture);
+      expect(v.range()[0]).toBeGreaterThan(90);
+
+      detachAndReattach(el, 200);
+      await flush(fixture);
+
+      expect(v.range()).toEqual([0, 10]);
+      expect(v.virtualItems()[0]).toEqual({ index: 0, key: 0, start: 0, size: 40 });
+    });
+
+    it('keeps the re-attached window once the scroll that preceded the detach settles', async () => {
+      const { fixture, el } = await mount();
+      const { v } = fixture.componentInstance;
+      scrollTo(el, 4000);
+      detachAndReattach(el, 200);
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      await flush(fixture);
+
+      expect(v.range()).toEqual([0, 10]);
+    });
+
+    it('keeps the first window of a never-scrolled list across a re-attach', async () => {
+      const { fixture, el } = await mount();
+      const { v } = fixture.componentInstance;
+      const before = v.virtualItems();
+      expect(v.range()).toEqual([0, 10]);
+
+      detachAndReattach(el, 200);
+      await flush(fixture);
+
+      expect(v.virtualItems()).toBe(before);
+    });
+
+    it('does not re-read the offset when a visible scroll element only resizes', async () => {
+      const { fixture, el } = await mount();
+      const { v } = fixture.componentInstance;
+      scrollTo(el, 4000);
+      await flush(fixture);
+      const scrolledRange = v.range();
+
+      setScrollTop(el, 0);
+      fakeLayoutProps(el, 240);
+      ControlledResizeObserver.fire(el);
+      await flush(fixture);
+
+      expect(v.range()[0]).toBe(scrolledRange[0]);
+    });
+
+    it('stops observing the scroll element when the host is destroyed', async () => {
+      const { fixture, el } = await mount();
+      expect(ControlledResizeObserver.instances.some((i) => i.targets.has(el))).toBe(true);
+
+      fixture.destroy();
+
+      expect(ControlledResizeObserver.instances.some((i) => i.targets.has(el))).toBe(false);
+    });
+
+    it('wires a new scroll element through the identity path', async () => {
+      @Component({
+        selector: 'swap-host',
+        template: `
+          <div #first style="overflow:auto; height:200px"></div>
+          <div #second style="overflow:auto; height:200px"></div>
+        `,
+      })
+      class SwapHost {
+        readonly first = viewChild.required<ElementRef<HTMLElement>>('first');
+        readonly second = viewChild.required<ElementRef<HTMLElement>>('second');
+        readonly useSecond = signal(false);
+        readonly v = injectVirtualizer({
+          count: signal(1000),
+          estimateSize: () => 40,
+          scrollElement: computed(
+            () => (this.useSecond() ? this.second() : this.first()).nativeElement,
+          ),
+        });
+      }
+
+      const fixture = TestBed.createComponent(SwapHost);
+      const [first, second] = Array.from(
+        fixture.nativeElement.querySelectorAll('div') as NodeListOf<HTMLElement>,
+      );
+      fakeLayoutProps(first!, 200);
+      fakeLayoutProps(second!, 200);
+      fixture.detectChanges();
+      await flush(fixture);
+      const { v } = fixture.componentInstance;
+
+      fixture.componentInstance.useSecond.set(true);
+      await flush(fixture);
+      scrollTo(second!, 4000);
+      await flush(fixture);
+
+      expect(v.range()[0]).toBeGreaterThan(90);
+      expect(ControlledResizeObserver.instances.some((i) => i.targets.has(first!))).toBe(false);
+    });
+  });
+
+  describe('construction from a field initializer', () => {
+    @Component({
+      selector: 'required-list',
+      template: `
+        <div #scroll style="overflow:auto; height:200px">
+          <div [style.height.px]="v.totalSize()"></div>
+        </div>
+      `,
+    })
+    class RequiredList {
+      readonly items = input.required<readonly number[]>();
+      readonly scrollRef = viewChild.required<ElementRef<HTMLElement>>('scroll');
+      readonly v = injectVirtualizer({
+        count: computed(() => this.items().length),
+        estimateSize: () => 40,
+        scrollElement: computed(() => this.scrollRef().nativeElement),
+      });
+    }
+
+    @Component({
+      selector: 'required-parent',
+      imports: [RequiredList],
+      template: `<required-list [items]="items" />`,
+    })
+    class RequiredParent {
+      readonly items = Array.from({ length: 300 }, (_, i) => i);
+      readonly list = viewChild.required(RequiredList);
+    }
+
+    it('accepts a count derived from input.required and a viewChild.required scroll element', async () => {
+      const fixture = TestBed.createComponent(RequiredParent);
+      const el = fixture.nativeElement.querySelector('required-list div') as HTMLElement;
+      fakeLayoutProps(el, 200);
+      fixture.detectChanges();
+      await flush(fixture);
+      const { v } = fixture.componentInstance.list();
+
+      expect(v.totalSize()).toBe(300 * 40);
+      expect(v.range()).toEqual([0, 10]);
+    });
+
+    it('keeps the first window and totalSize of a signal-backed call site', async () => {
+      const fixture = TestBed.createComponent(Host);
+      const el = fixture.nativeElement.querySelector('div') as HTMLElement;
+      fakeLayoutProps(el, 200);
+      fixture.detectChanges();
+      await flush(fixture);
+      const { v } = fixture.componentInstance;
+
+      expect(v.totalSize()).toBe(1000 * 40);
+      expect(v.range()).toEqual([0, 10]);
     });
   });
 
