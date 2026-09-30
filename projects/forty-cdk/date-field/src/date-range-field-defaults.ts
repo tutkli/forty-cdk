@@ -46,6 +46,11 @@ export interface ForDateRangeFieldDefaults {
    * used when `[forDateRangeFieldEnd]` has no explicit `ariaLabel`.
    */
   endLabel: LocalizableText;
+  /**
+   * 12- or 24-hour cycle for range fields that don't bind `[hourCycle]`. Library
+   * fallback `null`, which derives the cycle from the locale.
+   */
+  hourCycle: 12 | 24 | null;
 }
 
 /**
@@ -75,6 +80,7 @@ export const FOR_DATE_RANGE_FIELD_FALLBACK_DEFAULTS: ForDateRangeFieldDefaults =
   placeholder: {},
   startLabel: 'Start date',
   endLabel: 'End date',
+  hourCycle: null,
 };
 
 const { token, provideDefaults } = createDefaults<ForDateRangeFieldDefaults>(

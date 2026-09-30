@@ -87,7 +87,7 @@ export class DateFieldEngine<D> extends DateTimeFieldEngineBase<D, DateTimeParts
     if (granularity !== 'day') {
       assertTimeCapable(this.#config.adapter, this.#config.piece, { scope: this.#config.scope });
     }
-    return buildDateTimeSegments(this.#config.locale() ?? undefined, granularity, this.cycle());
+    return buildDateTimeSegments(this.locale(), granularity, this.cycle());
   });
 
   /**
@@ -217,7 +217,7 @@ export class DateFieldEngine<D> extends DateTimeFieldEngineBase<D, DateTimeParts
     return this.#config.adapter.format(
       this.#config.adapter.createDate(RESOLVER_YEAR, month, 1),
       { month: 'long' },
-      this.#config.locale() ?? undefined,
+      this.locale(),
     );
   }
 

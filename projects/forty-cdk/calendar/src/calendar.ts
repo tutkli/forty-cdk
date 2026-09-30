@@ -206,8 +206,9 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
   /**
    * BCP 47 locale tag governing the formatted month / weekday / cell-label names
    * (heading, weekday headers, month-picker options, gridcell `aria-label`).
-   * When `null` (default), the adapter formats through the runtime's default
-   * locale. Does not change the calendar system, which stays Gregorian.
+   * When `null` (default), the adapter formats in its own `locale()`, then the
+   * runtime's default locale. Does not change the calendar system, which stays
+   * Gregorian.
    */
   readonly locale = input<string | null>(null);
 

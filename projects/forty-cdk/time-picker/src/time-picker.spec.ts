@@ -28,6 +28,7 @@ import {
   ForTimePickerOption,
   ForTimePickerTrigger,
   ForTimePickerValue,
+  provideForTimePickerDefaults,
 } from './public-api';
 
 const BASE_IMPORTS = [
@@ -421,6 +422,57 @@ describe('ForTimePicker', () => {
 
       expect(enValue).not.toBe(frValue);
       expect(enMidnight).not.toBe(frMidnight);
+    });
+  });
+
+  describe('scoped hourCycle default', () => {
+    @Component({
+      imports: [ForTimePicker, ForTimePickerTrigger, ForTimePickerValue, ForTimePickerContent],
+      providers: [
+        ...provideNativeDateAdapter(),
+        ...provideForTimePickerDefaults({ hourCycle: 24 }),
+      ],
+      template: `
+        <div
+          forTimePicker
+          [(value)]="value"
+          [(open)]="open"
+          [step]="60"
+          [hourCycle]="hourCycle()"
+          [locale]="'en-US'"
+          #picker="forTimePicker"
+        >
+          <button forTimePickerTrigger><span forTimePickerValue></span></button>
+          @if (open()) {
+            <div forTimePickerContent>
+              @for (slot of picker.slots(); track slot.id) {
+                <div data-testid="slot">{{ slot.label }}</div>
+              }
+            </div>
+          }
+        </div>
+      `,
+    })
+    class ScopedHourCycleHost {
+      readonly value = signal<Date | null>(new Date(2000, 0, 1, 14, 0));
+      readonly open = signal(true);
+      readonly hourCycle = signal<12 | 24 | null>(null);
+    }
+
+    it('formats slots and the trigger value with the scope cycle, and a per-instance [hourCycle] over it', async () => {
+      const r = renderHost(ScopedHourCycleHost);
+      await flush(r.fixture);
+      const text = () => r.query('[forTimePickerValue]')!.textContent!.trim();
+      const slot = (hour: number) =>
+        document.querySelectorAll('[data-testid="slot"]')[hour]!.textContent!.trim();
+      expect(text()).toContain('14:00');
+      expect(slot(13)).toContain('13:00');
+
+      r.instance.hourCycle.set(12);
+      await flush(r.fixture);
+
+      expect(text()).toMatch(/2:00\sPM/);
+      expect(slot(13)).toMatch(/1:00\sPM/);
     });
   });
 

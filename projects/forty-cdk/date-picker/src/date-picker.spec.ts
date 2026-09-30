@@ -1,5 +1,11 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { Component, Directive, provideZonelessChangeDetection, signal } from '@angular/core';
+import {
+  Component,
+  Directive,
+  ErrorHandler,
+  provideZonelessChangeDetection,
+  signal,
+} from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { form, FormField, required as requiredRule } from '@angular/forms/signals';
@@ -27,6 +33,7 @@ import {
   type VetoableNativeEvent,
 } from 'forty-cdk/core';
 import {
+  FOR_CALENDAR_CONTEXT,
   ForCalendar,
   ForCalendarCell,
   ForCalendarGrid,
@@ -51,6 +58,7 @@ import { ForField, ForFieldDescription, ForFieldError, ForLabel } from 'forty-cd
 import { ForDatePicker } from './date-picker';
 import { ForDatePickerAnchor } from './date-picker-anchor';
 import { ForDatePickerContent } from './date-picker-content';
+import { provideForDatePickerDefaults } from './date-picker-defaults';
 import { ForDatePickerTrigger } from './date-picker-trigger';
 import { ForDatePickerValue } from './date-picker-value';
 
@@ -1349,6 +1357,222 @@ describe('ForDatePicker', () => {
       expect(adapter.getHours(value)).toBe(15);
       expect(adapter.getDate(value)).toBe(15);
       expect(adapter.getMinutes(value)).toBe(30);
+    });
+  });
+
+  describe('calendar bridge resolves a wrapped calendar', () => {
+    @Directive({
+      selector: '[myCalendar]',
+      exportAs: 'myCalendar',
+      providers: [{ provide: FOR_CALENDAR_CONTEXT, useExisting: MyCalendar }],
+    })
+    class MyCalendar extends ForCalendar<Date> {}
+
+    @Component({
+      selector: '[myHostCalendar]',
+      hostDirectives: [{ directive: ForCalendar, inputs: ['value'] }],
+      template: '<ng-content />',
+    })
+    class MyHostCalendar {}
+
+    @Directive({
+      selector: '[myForeignCalendar]',
+      providers: [
+        { provide: FOR_CALENDAR_CONTEXT, useExisting: MyForeignCalendar },
+        ...provideNativeDateAdapter(),
+      ],
+    })
+    class MyForeignCalendar extends ForCalendar<Date> {}
+
+    @Component({
+      imports: [
+        ForDatePicker,
+        ForDatePickerTrigger,
+        ForDatePickerContent,
+        ForCalendarGrid,
+        ForCalendarCell,
+        MyCalendar,
+        MyHostCalendar,
+        MyForeignCalendar,
+      ],
+      providers: [...provideNativeDateAdapter()],
+      template: `
+        <div forDatePicker [(value)]="value" [(open)]="open" #picker="forDatePicker">
+          <button data-testid="trigger" forDatePickerTrigger>Pick</button>
+          @if (open()) {
+            <div forDatePickerContent>
+              @switch (wrapper()) {
+                @case ('subclass') {
+                  <div myCalendar [value]="picker.value()">
+                    <table forCalendarGrid #g="forCalendarGrid">
+                      <tbody>
+                        @for (week of g.weeks(); track week.key) {
+                          <tr>
+                            @for (c of week.days; track c.key) {
+                              <td
+                                forCalendarCell
+                                [date]="c.date"
+                                [attr.data-testid]="'cell-' + c.key"
+                              >
+                                {{ c.label }}
+                              </td>
+                            }
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                }
+                @case ('hostDirectives') {
+                  <div myHostCalendar [value]="picker.value()">
+                    <table forCalendarGrid #g="forCalendarGrid">
+                      <tbody>
+                        @for (week of g.weeks(); track week.key) {
+                          <tr>
+                            @for (c of week.days; track c.key) {
+                              <td
+                                forCalendarCell
+                                [date]="c.date"
+                                [attr.data-testid]="'cell-' + c.key"
+                              >
+                                {{ c.label }}
+                              </td>
+                            }
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                }
+                @case ('foreignAdapter') {
+                  <div myForeignCalendar [value]="picker.value()">
+                    <table forCalendarGrid #g="forCalendarGrid">
+                      <tbody>
+                        @for (week of g.weeks(); track week.key) {
+                          <tr>
+                            @for (c of week.days; track c.key) {
+                              <td
+                                forCalendarCell
+                                [date]="c.date"
+                                [attr.data-testid]="'cell-' + c.key"
+                              >
+                                {{ c.label }}
+                              </td>
+                            }
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                }
+              }
+            </div>
+          }
+        </div>
+      `,
+    })
+    class WrappedCalendarHost {
+      readonly value = signal<Date | null>(null);
+      readonly open = signal(false);
+      readonly wrapper = signal<'subclass' | 'hostDirectives' | 'foreignAdapter'>('subclass');
+    }
+
+    type WR = RenderResult<WrappedCalendarHost>;
+    const pickerRoot = (r: WR) => r.query('[forDatePicker]')!;
+
+    for (const wrapper of ['subclass', 'hostDirectives'] as const) {
+      it(`a pick in a one-way bound ${wrapper} calendar sets the value, marks touched, and closes`, async () => {
+        const r = renderHost(WrappedCalendarHost);
+        r.instance.wrapper.set(wrapper);
+        r.instance.open.set(true);
+        await flush(r.fixture);
+
+        cell('2026-6-20')!.click();
+        await flush(r.fixture);
+
+        expect(r.instance.value()?.getTime()).toBe(new Date(2026, 5, 20).getTime());
+        expect(pickerRoot(r).hasAttribute('data-touched')).toBe(true);
+        expect(r.instance.open()).toBe(false);
+        expect(content()).toBeNull();
+      });
+
+      it(`opening focuses the ${wrapper} calendar's active cell`, async () => {
+        const r = renderHost(WrappedCalendarHost);
+        r.instance.wrapper.set(wrapper);
+        r.instance.value.set(new Date(2026, 5, 18));
+        await flush(r.fixture);
+
+        r.query<HTMLElement>('[data-testid="trigger"]')!.click();
+        await flush(r.fixture);
+
+        expect(document.activeElement).toBe(cell('2026-6-18'));
+      });
+    }
+
+    it('reports FORCDK-DATE-PICKER-001 for a subclassed calendar on a different adapter', async () => {
+      const captured: unknown[] = [];
+      class CapturingHandler implements ErrorHandler {
+        handleError(err: unknown): void {
+          captured.push(err);
+        }
+      }
+      TestBed.configureTestingModule({
+        rethrowApplicationErrors: false,
+        providers: [
+          provideZonelessChangeDetection(),
+          { provide: ErrorHandler, useClass: CapturingHandler },
+        ],
+      });
+      const fixture = TestBed.createComponent(WrappedCalendarHost);
+      fixture.componentInstance.wrapper.set('foreignAdapter');
+      fixture.componentInstance.open.set(true);
+      try {
+        await flush(fixture);
+      } catch (err) {
+        captured.push(err);
+      }
+
+      expect(captured.map((err) => (err as Error).message).join('\n')).toContain(
+        'FORCDK-DATE-PICKER-001',
+      );
+    });
+  });
+
+  describe('scoped hourCycle default', () => {
+    @Component({
+      imports: [ForDatePicker, ForDatePickerTrigger, ForDatePickerValue],
+      providers: [
+        ...provideNativeDateAdapter(),
+        ...provideForDatePickerDefaults({ hourCycle: 24 }),
+      ],
+      template: `
+        <div
+          forDatePicker
+          [(value)]="value"
+          granularity="minute"
+          [hourCycle]="hourCycle()"
+          [locale]="'en-US'"
+        >
+          <button forDatePickerTrigger><span forDatePickerValue></span></button>
+        </div>
+      `,
+    })
+    class ScopedHourCycleHost {
+      readonly value = signal<Date | null>(new Date(2026, 5, 15, 14, 30));
+      readonly hourCycle = signal<12 | 24 | null>(null);
+    }
+
+    it('formats the trigger value with the scope cycle, and a per-instance [hourCycle] over it', async () => {
+      const r = renderHost(ScopedHourCycleHost);
+      const text = () => r.query('[forDatePickerValue]')!.textContent!.trim();
+      expect(text()).toContain('14:30');
+      expect(text()).not.toMatch(/PM/);
+
+      r.instance.hourCycle.set(12);
+      await flush(r.fixture);
+
+      expect(text()).toContain('2:30');
+      expect(text()).toMatch(/PM/);
     });
   });
 

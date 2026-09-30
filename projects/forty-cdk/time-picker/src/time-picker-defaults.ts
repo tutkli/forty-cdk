@@ -35,6 +35,11 @@ export interface ForTimePickerDefaults extends AnchoredPositioningSeedDefaults {
    * `flip` / `shift` runs.
    */
   collisionPadding: number;
+  /**
+   * 12- or 24-hour cycle for pickers that don't bind `[hourCycle]`. Library
+   * fallback `null`, which derives the cycle from the locale.
+   */
+  hourCycle: 12 | 24 | null;
 }
 
 /**
@@ -47,6 +52,7 @@ export const FOR_TIME_PICKER_FALLBACK_DEFAULTS: ForTimePickerDefaults = {
   align: 'start',
   sideOffset: 4,
   collisionPadding: 8,
+  hourCycle: null,
 };
 
 const { token, provideDefaults } = createDefaults<ForTimePickerDefaults>(

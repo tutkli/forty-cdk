@@ -135,13 +135,17 @@ export class ForDateField<D>
   readonly granularity = input<FieldGranularity>('day');
 
   /**
-   * 12- or 24-hour cycle for the time segments. When `null` (default) it is
-   * derived from the locale. A 12-hour cycle adds the AM/PM `dayPeriod` segment.
+   * 12- or 24-hour cycle for the time segments. When `null` (default) the
+   * scope's `hourCycle` (`provideForDateFieldDefaults`) applies, then the
+   * locale's. A 12-hour cycle adds the AM/PM `dayPeriod` segment.
    * Only meaningful when `granularity > 'day'`.
    */
   readonly hourCycle = input<12 | 24 | null>(null);
 
-  /** BCP 47 locale driving segment order and separators. Defaults to the runtime locale. */
+  /**
+   * BCP 47 locale driving segment order and separators. When `null` (default) the adapter's
+   * `locale()` applies, then the runtime locale.
+   */
   readonly locale = input<string | null>(null);
 
   /**
@@ -194,7 +198,7 @@ export class ForDateField<D>
       readonly: this.readonly,
       roving: this.roving,
       granularity: this.granularity,
-      hourCycle: this.hourCycle,
+      hourCycle: computed(() => this.hourCycle() ?? this.#defaults.hourCycle),
       locale: this.locale,
       placeholder: computed(() =>
         resolveTextRecord(this.#defaults.placeholder, this.placeholder()),

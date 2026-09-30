@@ -59,7 +59,7 @@ export class TimeFieldEngine<D> extends DateTimeFieldEngineBase<D, TimeParts, Ti
   readonly #config: TimeFieldEngineConfig<D>;
 
   protected readonly specs = computed<readonly FieldSpec[]>(() =>
-    buildTimeSegments(this.#config.locale() ?? undefined, this.cycle(), this.#config.granularity()),
+    buildTimeSegments(this.locale(), this.cycle(), this.#config.granularity()),
   );
 
   /**

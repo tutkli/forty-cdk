@@ -126,13 +126,15 @@ export class ForTimePicker<D>
   readonly granularity = input<TimePickerGranularity>('minute');
 
   /**
-   * 12- or 24-hour cycle for slot label formatting. When `null` (default) it
-   * is derived from the runtime locale.
+   * 12- or 24-hour cycle for slot label formatting. When `null` (default)
+   * the scope's `hourCycle` (`provideForTimePickerDefaults`) applies, then
+   * the locale's.
    */
   readonly hourCycle = input<12 | 24 | null>(null);
 
   /**
-   * BCP 47 locale driving slot label formatting. Defaults to the runtime locale.
+   * BCP 47 locale driving slot label formatting. When `null` (default) the
+   * adapter formats in its own `locale()`, then the runtime locale.
    */
   readonly locale = input<string | null>(null);
 
@@ -283,7 +285,7 @@ export class ForTimePicker<D>
     ) {
       return options;
     }
-    const cycle = this.hourCycle();
+    const cycle = this.hourCycle() ?? this.positioningDefaults.hourCycle;
     const granularity = this.granularity();
     return {
       ...options,

@@ -141,12 +141,16 @@ export class ForDateRangeField<D>
   readonly granularity = input<FieldGranularity>('day');
 
   /**
-   * 12- or 24-hour cycle for the time segments. When `null` (default) it is
-   * derived from the locale. Only meaningful when `granularity > 'day'`.
+   * 12- or 24-hour cycle for the time segments. When `null` (default) the
+   * scope's `hourCycle` (`provideForDateRangeFieldDefaults`) applies, then
+   * the locale's. Only meaningful when `granularity > 'day'`.
    */
   readonly hourCycle = input<12 | 24 | null>(null);
 
-  /** BCP 47 locale driving segment order and separators. Defaults to the runtime locale. */
+  /**
+   * BCP 47 locale driving segment order and separators. When `null` (default) the adapter's
+   * `locale()` applies, then the runtime locale.
+   */
   readonly locale = input<string | null>(null);
 
   /**
@@ -218,13 +222,14 @@ export class ForDateRangeField<D>
     const placeholder = computed(() =>
       resolveTextRecord(this.#defaults.placeholder, this.placeholder()),
     );
+    const hourCycle = computed(() => this.hourCycle() ?? this.#defaults.hourCycle);
     this.#startEngine = new DateFieldEngine<D>({
       adapter: this.adapter,
       disabled: this.effectiveDisabled,
       readonly: this.readonly,
       roving: this.#composer.startRoving,
       granularity: this.granularity,
-      hourCycle: this.hourCycle,
+      hourCycle,
       locale: this.locale,
       placeholder,
       emptySegmentText,
@@ -241,7 +246,7 @@ export class ForDateRangeField<D>
       readonly: this.readonly,
       roving: this.#composer.endRoving,
       granularity: this.granularity,
-      hourCycle: this.hourCycle,
+      hourCycle,
       locale: this.locale,
       placeholder,
       emptySegmentText,

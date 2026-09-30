@@ -99,8 +99,8 @@ export interface CalendarDayCell<D> {
  * @typeParam D The adapter's date type.
  * @param date The cell's date.
  * @param context Formatting context: the active {@link DateAdapter}, whether the
- *   date falls outside the visible month, and the calendar's resolved `locale`
- *   (`null` = runtime default) to forward to `adapter.format`.
+ *   date falls outside the visible month, and the calendar's `locale` input
+ *   (`null` = the adapter's own locale) to forward to `adapter.format`.
  */
 export type CalendarDateLabelFormatter<D> = (
   date: D,

@@ -42,7 +42,16 @@ exports[`document structure > docs/date-adapters.md declares the sections and ta
   {
     "headings": [],
     "slug": "writing-your-own-adapter",
-    "tables": [],
+    "tables": [
+      {
+        "columns": [
+          "Part",
+          "Produced by",
+        ],
+        "role": "plain",
+        "rows": 3,
+      },
+    ],
     "title": "Writing your own adapter",
   },
   {
@@ -7835,7 +7844,7 @@ exports[`document structure > projects/forty-cdk/time-picker/README.md declares 
           "Meaning",
         ],
         "role": "plain",
-        "rows": 4,
+        "rows": 5,
       },
     ],
     "title": "Scoped defaults",

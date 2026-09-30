@@ -145,9 +145,18 @@ export interface DateAdapter<D> {
   isValid(date: D): boolean;
 
   /**
-   * Formats `date` for display. When `locale` is omitted the runtime's default
-   * locale is used; pass one to force a specific locale for month / weekday /
-   * day-period names.
+   * The locale this adapter formats in, or `null` for the runtime default. A
+   * segmented date / time field with no `[locale]` of its own takes its segment
+   * order, separators, hour cycle and AM/PM names from it, so they match what
+   * {@link format} produces. Reading a signal here makes every field and
+   * formatted value follow a runtime language switch.
+   */
+  locale?(): string | null;
+
+  /**
+   * Formats `date` for display. When `locale` is omitted the adapter's own
+   * {@link locale} is used, else the runtime's default locale; pass one to
+   * force a specific locale for month / weekday / day-period names.
    *
    * **SSR / hydration caveat.** With no `locale` the result resolves against the
    * runtime's default locale, so a server render and a client hydration can
@@ -164,7 +173,8 @@ export interface DateAdapter<D> {
    *   `{ month: 'long', year: 'numeric' }` for a calendar heading,
    *   `{ weekday: 'short' }` for a column header).
    * @param locale Optional BCP 47 locale tag governing the formatted names;
-   *   falls back to the runtime's default locale when omitted.
+   *   falls back to {@link locale}, then the runtime's default locale, when
+   *   omitted.
    */
   format(date: D, options: Intl.DateTimeFormatOptions, locale?: string): string;
 

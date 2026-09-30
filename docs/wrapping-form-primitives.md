@@ -273,6 +273,10 @@ table above. Its decorator provides both tokens, and a subclass that projects th
 own segment pieces _and_ feeds a date-time picker re-provides each. A subclass that only feeds
 the date-picker bridge (no projected child pieces) re-provides `FOR_TIME_VALUE_SOURCE` alone.
 
+The calendar half of a date picker needs no bridge token of its own. The picker finds its calendar
+through `contentChild(FOR_CALENDAR_CONTEXT)`, the token a `ForCalendar` subclass re-provides anyway
+(see [Wrapping non-form roots](wrapping-non-form-roots.md)).
+
 ## Choosing a pattern
 
 - **`hostDirectives`** composes without touching the class hierarchy: the wrapper is a
