@@ -404,6 +404,13 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'virtualization-reattach',
+    loadComponent: () =>
+      import('./fixtures/virtualization-reattach.fixture').then(
+        (m) => m.VirtualizationReattachFixture,
+      ),
+  },
+  {
     path: 'pagination',
     loadComponent: () => import('./fixtures/pagination.fixture').then((m) => m.PaginationFixture),
   },

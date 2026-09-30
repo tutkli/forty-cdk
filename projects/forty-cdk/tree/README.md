@@ -425,6 +425,8 @@ providers: [provideForTreeDefaults({ selectionFollowsFocus: true })];
 
 For very large trees (thousands of nodes) bind `[totalCount]` to switch to an **activedescendant focus model** over a consumer-owned virtualized window.
 
+Render that window with `injectVirtualizer`, not the [`*forVirtualFor` ergonomic layer](../virtualization/README.md#ergonomic-layer). `*forVirtualFor` writes the flat `aria-setsize` / `aria-posinset` on each row root on every render, which overwrites the per-level values `[forTreeItem]` binds from `[setSize]` / `[posInSet]` once the window moves.
+
 ### Opt-in API
 
 #### `ForTree` additions
