@@ -148,8 +148,9 @@ itself there once it mounts. Component-scoped styles
 **global stylesheet** (or use `::ng-deep` sparingly) and target your class there.
 
 The full set of rules for positioned content lives in
-[Styling floating content](./styling-floating-content.md): `animate.enter` only, animate
-`scale`/`opacity` not `transform`, never set `position`/`top`/`left`, and the arrow recipe.
+[Styling floating content](./styling-floating-content.md): `animate.enter` and `animate.leave`
+both work, the positioner owns `translate` while `transform` / `scale` / `rotate` stay yours,
+never set `position`/`top`/`left`, and the arrow recipe.
 
 ## Programmatic overlays → `class` / `classList` on the config
 
@@ -240,7 +241,7 @@ Paint the bar/fill from a `--for-*-percentage` custom property; color by `data-s
 
 ### Trigger-anchored overlays (portal + floating-ui)
 
-Global CSS, `animate.enter` only, anchor/origin custom properties, `data-state`
+Global CSS, `animate.enter` and `animate.leave`, anchor/origin custom properties, `data-state`
 `open`/`closed`. See [Styling floating content](./styling-floating-content.md) and, for
 menu checkmark alignment, [Selected-indicator alignment](./selected-indicator-pattern.md).
 

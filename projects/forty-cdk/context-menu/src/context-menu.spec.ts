@@ -9,7 +9,13 @@ import {
 } from '../../src/test-utils/contract';
 import { type VetoableEvent, type VetoableNativeEvent } from 'forty-cdk/core';
 import { FOR_MENU_CONTEXT } from 'forty-cdk/core-overlay';
-import { ForMenuContent, ForMenuItem, ForMenuSub, ForMenuSubTrigger } from 'forty-cdk/menu';
+import {
+  ForMenu,
+  ForMenuContent,
+  ForMenuItem,
+  ForMenuSub,
+  ForMenuSubTrigger,
+} from 'forty-cdk/menu';
 
 import { ForContextMenu } from './context-menu';
 import { FOR_CONTEXT_MENU_CONTEXT } from './context-menu-context';
@@ -1109,6 +1115,162 @@ describe('ForContextMenu', () => {
       r.instance.open.set(false);
       await flush(r.fixture);
       expect(document.querySelector('[forMenuContent]')).toBeNull();
+    });
+  });
+
+  describe('an open that renders no content (#2064)', () => {
+    @Component({
+      imports: [ForContextMenu, ForContextMenuTrigger, ForMenuContent, ForMenuItem],
+      template: `
+        <div forContextMenu [(open)]="open" ariaLabel="Column actions">
+          <div id="region" forContextMenuTrigger>Column</div>
+          @if (open() && hasActions()) {
+            <div forMenuContent>
+              <button id="sort" forMenuItem>Sort</button>
+            </div>
+          }
+        </div>
+      `,
+    })
+    class EmptyMenuHost {
+      readonly open = signal(false);
+      readonly hasActions = signal(false);
+    }
+
+    @Component({
+      imports: [ForMenu, ForContextMenuTrigger, ForMenuContent, ForMenuItem],
+      template: `
+        <div forMenu #row="forMenu" [(open)]="open" ariaLabel="Row actions">
+          <div id="region" [forContextMenuTrigger]="row">Row</div>
+          @if (open() && hasActions()) {
+            <div forMenuContent>
+              <button id="remove" forMenuItem>Remove</button>
+            </div>
+          }
+        </div>
+      `,
+    })
+    class SharedEmptyMenuHost {
+      readonly open = signal(false);
+      readonly hasActions = signal(false);
+    }
+
+    const WARNING = /\[forty-cdk\/context-menu\] FORCDK-CONTEXT-MENU-002: .*\[disabled\]/s;
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    const warnings = (spy: { mock: { calls: unknown[][] } }): string[] =>
+      spy.mock.calls.map((call) => String(call[0])).filter((m) => m.includes('FORCDK-'));
+
+    it('closes a right-click open that mounted nothing, and warns once naming [disabled]', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+      const r = renderHost(EmptyMenuHost);
+      await flush(r.fixture);
+      const region = r.query<HTMLElement>('#region')!;
+
+      const event = rightClick(region, 10, 10);
+      await flush(r.fixture);
+
+      expect(event.defaultPrevented).toBe(true);
+      expect(r.instance.open()).toBe(false);
+      expect(region.getAttribute('data-state')).toBe('closed');
+
+      rightClick(region, 10, 10);
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+      expect(warnings(warn)).toHaveLength(1);
+      expect(warnings(warn)[0]).toMatch(WARNING);
+    });
+
+    it('closes a Shift+F10 open that mounted nothing', async () => {
+      vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+      const r = renderHost(EmptyMenuHost);
+      await flush(r.fixture);
+      const region = r.query<HTMLElement>('#region')!;
+      region.focus();
+
+      pressKey(region, 'F10', { shiftKey: true });
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+    });
+
+    it('closes a ContextMenu-key open that mounted nothing', async () => {
+      vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+      const r = renderHost(EmptyMenuHost);
+      await flush(r.fixture);
+      const region = r.query<HTMLElement>('#region')!;
+      region.focus();
+
+      pressKey(region, 'ContextMenu');
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+    });
+
+    it('closes a touch long-press open that mounted nothing', async () => {
+      vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+      const r = renderHost(EmptyMenuHost);
+      await flush(r.fixture);
+      const region = r.query<HTMLElement>('#region')!;
+
+      vi.useFakeTimers();
+      region.dispatchEvent(
+        new PointerEvent('pointerdown', {
+          bubbles: true,
+          pointerType: 'touch',
+          clientX: 5,
+          clientY: 5,
+        }),
+      );
+      vi.advanceTimersByTime(500);
+      r.fixture.detectChanges();
+      vi.useRealTimers();
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+    });
+
+    it('leaves an open whose content mounts alone, with no warning', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+      const r = renderHost(EmptyMenuHost);
+      r.instance.hasActions.set(true);
+      await flush(r.fixture);
+
+      rightClick(r.query<HTMLElement>('#region')!, 10, 10);
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(true);
+      expect(document.querySelector('[forMenuContent]')).not.toBeNull();
+      expect(warnings(warn)).toEqual([]);
+    });
+
+    it('closes an empty open of a shared [forMenu] root the same way', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+      const r = renderHost(SharedEmptyMenuHost);
+      await flush(r.fixture);
+
+      rightClick(r.query<HTMLElement>('#region')!, 10, 10);
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+      expect(warnings(warn)).toHaveLength(1);
+      expect(warnings(warn)[0]).toMatch(WARNING);
+    });
+
+    it('keeps a shared [forMenu] root open when its content mounts', async () => {
+      vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+      const r = renderHost(SharedEmptyMenuHost);
+      r.instance.hasActions.set(true);
+      await flush(r.fixture);
+
+      rightClick(r.query<HTMLElement>('#region')!, 10, 10);
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(true);
     });
   });
 });

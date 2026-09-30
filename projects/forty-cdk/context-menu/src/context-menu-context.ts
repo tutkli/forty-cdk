@@ -1,7 +1,7 @@
 import { computed, inject, InjectionToken, type Signal } from '@angular/core';
 
-import { unresolvedRootError } from 'forty-cdk/core';
-import { type MenuActivationModality } from 'forty-cdk/core-overlay';
+import { assertRootContext, unresolvedRootError } from 'forty-cdk/core';
+import { type ForMenuCloseReason, type MenuActivationModality } from 'forty-cdk/core-overlay';
 
 /**
  * Coordination contract `[forContextMenuTrigger]` resolves from its enclosing
@@ -66,10 +66,28 @@ export interface ForContextMenuContext {
   openMenu(initialFocus?: 'first' | 'last', modality?: MenuActivationModality): void;
 }
 
+/** What `[forContextMenuTrigger]` reads off the root that no consumer has a call to touch. */
+export interface ContextMenuPieceContext {
+  /** The mounted `[forMenuContent]` element, or `null` while none is registered. */
+  readonly content: Signal<HTMLElement | null>;
+  /** Closes the menu with `reason`. */
+  closeMenu(reason: ForMenuCloseReason): void;
+}
+
+/**
+ * The trigger's internal view of the root: everything {@link ForContextMenuContext} publishes plus
+ * the content read-back the trigger uses to close an open that mounted nothing. `[forContextMenu]`
+ * and `[forMenu]` both satisfy it.
+ */
+export interface ContextMenuContext extends ForContextMenuContext, ContextMenuPieceContext {}
+
 /**
  * Token under which `[forContextMenu]` exposes the {@link ForContextMenuContext}
  * surface to its `[forContextMenuTrigger]`. Subclassed roots re-provide it with
- * `{ provide: FOR_CONTEXT_MENU_CONTEXT, useExisting: MySubclass }`.
+ * `{ provide: FOR_CONTEXT_MENU_CONTEXT, useExisting: MySubclass }`. The trigger
+ * reads the same token at an internal type that also reaches the root's mounted
+ * content, so a value that merely satisfies the declared type is rejected in dev
+ * mode by the trigger that resolves it.
  */
 export const FOR_CONTEXT_MENU_CONTEXT = new InjectionToken<ForContextMenuContext>(
   'FOR_CONTEXT_MENU_CONTEXT',
@@ -84,22 +102,28 @@ export const FOR_CONTEXT_MENU_CONTEXT = new InjectionToken<ForContextMenuContext
  */
 export function injectContextMenuContext(
   explicitRoot: Signal<ForContextMenuContext | ''>,
-): Signal<ForContextMenuContext> {
+): Signal<ContextMenuContext> {
   const injected = inject(FOR_CONTEXT_MENU_CONTEXT, { optional: true });
   return computed(() => {
     const explicit = explicitRoot();
-    if (explicit !== '') {
-      return explicit;
+    const resolved = explicit === '' ? injected : explicit;
+    if (!resolved) {
+      throw unresolvedRootError({
+        code: 'FORCDK-CONTEXT-MENU-001',
+        trigger: '[forContextMenuTrigger]',
+        root: '[forContextMenu]',
+        token: 'FOR_CONTEXT_MENU_CONTEXT',
+        exportAs: 'forContextMenu',
+      });
     }
-    if (injected) {
-      return injected;
-    }
-    throw unresolvedRootError({
-      code: 'FORCDK-CONTEXT-MENU-001',
-      trigger: '[forContextMenuTrigger]',
-      root: '[forContextMenu]',
+    const widened = resolved as unknown as ContextMenuContext;
+    assertRootContext({
+      entryPoint: 'context-menu',
       token: 'FOR_CONTEXT_MENU_CONTEXT',
-      exportAs: 'forContextMenu',
+      root: '[forContextMenu]',
+      piece: 'ForContextMenuTrigger',
+      probe: () => widened.closeMenu,
     });
+    return widened;
   });
 }

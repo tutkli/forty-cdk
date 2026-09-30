@@ -140,6 +140,8 @@ export interface PopoverRegistrationContext {
 export interface PopoverPieceContext {
   /** The element `[forPopoverInitialFocus]` registered, or `null`. */
   readonly initialFocusTarget: Signal<HTMLElement | null>;
+  /** Which open overlays an outside pointer press closes, bound on `[forPopover]`. */
+  readonly lightDismiss: Signal<'topmost' | 'stack'>;
 }
 
 /**

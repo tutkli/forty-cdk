@@ -1,4 +1,5 @@
 import {
+  afterNextRender,
   booleanAttribute,
   computed,
   DestroyRef,
@@ -7,17 +8,23 @@ import {
   effect,
   ElementRef,
   inject,
+  Injector,
   input,
 } from '@angular/core';
 
-import { hostId } from 'forty-cdk/core';
+import { fortyWarn, hostId } from 'forty-cdk/core';
 import {
   asMenuOpenerRegistration,
   createDebouncedAction,
   type DebouncedAction,
+  type MenuActivationModality,
   type MenuOpenerPositioning,
 } from 'forty-cdk/core-overlay';
-import { type ForContextMenuContext, injectContextMenuContext } from './context-menu-context';
+import {
+  type ContextMenuContext,
+  type ForContextMenuContext,
+  injectContextMenuContext,
+} from './context-menu-context';
 
 const LONG_PRESS_DELAY_MS = 500;
 const LONG_PRESS_MOVE_TOLERANCE_PX = 10;
@@ -63,6 +70,11 @@ const LONG_PRESS_MOVE_TOLERANCE_PX = 10;
  * disabled, only `data-disabled` is reflected: the trigger is a generic region
  * with no interactive ARIA role, so it emits neither the native `disabled`
  * attribute nor `aria-disabled`, and the native browser menu shows through.
+ *
+ * An open that renders no `[forMenuContent]` is closed again after the next
+ * render, with reason `'programmatic'`, and warns once in dev mode. The native
+ * menu cannot come back for that gesture, so bind `[disabled]` to the same
+ * condition that renders the content.
  */
 @Directive({
   selector: '[forContextMenuTrigger]',
@@ -83,6 +95,8 @@ const LONG_PRESS_MOVE_TOLERANCE_PX = 10;
 export class ForContextMenuTrigger {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
   readonly #document = inject(DOCUMENT);
+  readonly #injector = inject(Injector);
+  #warnedNothingMounted = false;
   #pointerActivation = false;
   #longPressOpened = false;
   #pressX = 0;
@@ -208,7 +222,7 @@ export class ForContextMenuTrigger {
     if (pointerActivation) {
       this.#activate();
       this.ctx().setVirtualAnchor(event.clientX, event.clientY);
-      this.ctx().openMenu('first', 'pointer');
+      this.#openMenu('pointer');
       return;
     }
     if (this.ctx().open()) {
@@ -239,7 +253,7 @@ export class ForContextMenuTrigger {
     this.#longPressOpened = true;
     this.#activate();
     this.ctx().setVirtualAnchor(this.#pressX, this.#pressY);
-    this.ctx().openMenu('first', 'pointer');
+    this.#openMenu('pointer');
   }
 
   #openFromFocusedRect(): void {
@@ -250,10 +264,41 @@ export class ForContextMenuTrigger {
     const anchorEl = focused && trigger.contains(focused) ? focused : trigger;
     this.#activate();
     this.ctx().setVirtualAnchorFromRect(anchorEl.getBoundingClientRect());
-    this.ctx().openMenu('first');
+    this.#openMenu('keyboard');
   }
 
   #activate(): void {
     this.#openerRegistration()?.activateOpener(this.#host.nativeElement);
+  }
+
+  #openMenu(modality: MenuActivationModality): void {
+    const ctx = this.ctx();
+    ctx.openMenu('first', modality);
+    if (!ctx.open()) {
+      return;
+    }
+    afterNextRender(() => this.#closeIfNothingMounted(ctx), { injector: this.#injector });
+  }
+
+  #closeIfNothingMounted(ctx: ContextMenuContext): void {
+    if (!ctx.open() || ctx.content() !== null) {
+      return;
+    }
+    ctx.closeMenu('programmatic');
+    if (this.#warnedNothingMounted) {
+      return;
+    }
+    this.#warnedNothingMounted = true;
+    fortyWarn({
+      code: 'FORCDK-CONTEXT-MENU-002',
+      message:
+        '[forContextMenuTrigger] opened a menu that rendered no [forMenuContent], so it was closed again.',
+      cause:
+        "The trigger suppresses the browser's own menu before it opens, so an open that mounts " +
+        'nothing leaves the user with no menu at all.',
+      fix:
+        'Bind [disabled] on the trigger to the same condition that renders the content, so the ' +
+        'browser menu shows through when there is nothing to offer.',
+    });
   }
 }

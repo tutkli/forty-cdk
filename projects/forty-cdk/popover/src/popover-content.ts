@@ -81,6 +81,7 @@ export class ForPopoverContent {
           const trigger = this.ctx.trigger();
           return trigger ? [trigger] : [];
         },
+        cascadeOutsidePress: () => this.ctx.lightDismiss() === 'stack',
       },
       // `initialFocus()` is read once when the content mounts. The directive
       // re-mounts on every open (consumer wraps with `@if(open())`), so the

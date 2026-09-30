@@ -859,9 +859,9 @@ exports[`document structure > docs/your-first-overlay.md declares the sections a
   },
   {
     "headings": [],
-    "slug": "step-4--adding-an-enter-animation",
+    "slug": "step-4--adding-enter-and-exit-animations",
     "tables": [],
-    "title": "Step 4 — adding an enter animation",
+    "title": "Step 4 — adding enter and exit animations",
   },
   {
     "headings": [
@@ -5546,7 +5546,7 @@ exports[`document structure > projects/forty-cdk/popover/README.md declares the 
           "Description",
         ],
         "role": "api",
-        "rows": 19,
+        "rows": 20,
       },
       {
         "columns": [
@@ -5649,6 +5649,10 @@ exports[`document structure > projects/forty-cdk/popover/README.md declares the 
   },
   {
     "headings": [
+      {
+        "depth": 3,
+        "slug": "stacked-overlays",
+      },
       {
         "depth": 3,
         "slug": "popoverforpopover-vs-open",
