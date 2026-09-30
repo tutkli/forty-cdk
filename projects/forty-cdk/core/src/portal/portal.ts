@@ -1,7 +1,7 @@
 import { DOCUMENT, PLATFORM_ID, DestroyRef, ElementRef, inject } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 
-import { afterNextRenderCancellable } from 'forty-cdk/core';
+import { afterNextRenderCancellable } from '../after-next-render-cancellable/after-next-render-cancellable';
 
 export interface PortalConfig {
   /**

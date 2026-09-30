@@ -12,12 +12,14 @@ import {
   numberAttribute,
   PLATFORM_ID,
   type Signal,
+  type TemplateRef,
 } from '@angular/core';
 import { isPlatformBrowser, NgTemplateOutlet } from '@angular/common';
 
 import {
   fortyWarn,
   hostAriaLabel,
+  injectPortal,
   injectPrefersReducedMotion,
   resolveConfigClass,
 } from 'forty-cdk/core';
@@ -26,6 +28,7 @@ import {
   type ForToastCloseReason,
   type ForToastInstance,
   type ForToastSwipeDirection,
+  type ForToastTemplateContext,
 } from './toast-context';
 import { FOR_TOAST_DEFAULTS } from './toast-defaults';
 import { ForToastManager, type ForToastViewportRegistration } from './toast-manager';
@@ -47,16 +50,24 @@ import { ForToastTitle } from './toast-title';
  * toast inline. Position the viewport from CSS (`position: fixed`,
  * `top|bottom`, `left|right`) — the directive doesn't impose any.
  *
+ * Placement: after its first render the host moves itself to `document.body`,
+ * or into `[container]` when one is bound, wherever it was declared. Styles
+ * scoped to an ancestor of the declaration site therefore do not reach it;
+ * style it with global CSS or a class on the host. On the server it renders in
+ * place.
+ *
  * Custom rendering: if a toast's config has `template`, that
  * `TemplateRef<ForToastTemplateContext>` is used instead of the default
- * title / description / action / close shape. The template receives
+ * title / description / action / close shape; set a viewport-wide default with
+ * `[template]` (per-toast wins). The template receives
  * `$implicit: instance` and `data: instance.config.data`, and is rendered
  * with the `[forToast]` injection context in scope (via `ForToastOutlet`),
  * so `[forToastTitle]` / `[forToastDescription]` / `[forToastAction]` /
  * `[forToastClose]` keep their automatic a11y / close wiring inside it.
  *
- * Per-toast classes: a config's `class` / `classList` is applied to the
- * rendered toast root, merged with the directive's own host attributes.
+ * Toast classes: `[toastClass]` and a config's `class` / `classList` are
+ * applied to the rendered toast root, merged with each other and with the
+ * directive's own host attributes.
  *
  * Enter / exit animations: a toast renders inside this viewport's `@for`, so a
  * `[animate.leave]` on the row defers the unmount natively — the toast stays
@@ -120,7 +131,7 @@ import { ForToastTitle } from './toast-title';
     @for (toast of visible(); track toast.id; let i = $index) {
       <div
         forToast
-        [class]="toastClass(toast)"
+        [class]="rowClass(toast)"
         [animate.enter]="toastAnimateEnter(toast)"
         [animate.leave]="toastAnimateLeave(toast)"
         [variant]="toast.config.variant ?? 'info'"
@@ -132,11 +143,11 @@ import { ForToastTitle } from './toast-title';
         [attr.data-front-stack-index]="i"
         (dismiss)="onClose(toast, $event)"
       >
-        @if (toast.config.template; as template) {
+        @if (rowTemplate(toast); as tpl) {
           <ng-container
             forToastOutlet
             #outlet="forToastOutlet"
-            [ngTemplateOutlet]="template"
+            [ngTemplateOutlet]="tpl"
             [ngTemplateOutletContext]="{ $implicit: toast, data: toast.config.data }"
             [ngTemplateOutletInjector]="outlet.injector"
           />
@@ -194,6 +205,15 @@ export class ForToastViewport {
    */
   readonly region = input<string>(DEFAULT_TOAST_REGION);
 
+  /**
+   * Element the viewport moves into instead of `document.body`, for a viewport
+   * scoped to a region of the page. Read once, at the first render. Over an
+   * open modal a contained viewport follows its container: it stays
+   * interactive when the container is inside the modal, and is inerted with it
+   * otherwise.
+   */
+  readonly container = input<HTMLElement | null>(null);
+
   /** Hotkey to focus the viewport. Default reads from `provideForToastDefaults`, falling back to `F6`. */
   readonly hotkey = input<string>('');
 
@@ -246,6 +266,21 @@ export class ForToastViewport {
    * the DOM.
    */
   readonly animateLeave = input<string>('');
+
+  /**
+   * Template for every programmatic toast whose config sets no `template`.
+   * `null` (the default) renders the built-in title / description / action /
+   * close shape. Resolved while the viewport renders, so a toast shown before
+   * the viewport's first render still picks it up.
+   */
+  readonly template = input<TemplateRef<ForToastTemplateContext> | null>(null);
+
+  /**
+   * Class(es) applied to every programmatic toast root, merged with the
+   * toast's own `class` / `classList` rather than replaced by them. Resolved
+   * while the viewport renders, like {@link template}.
+   */
+  readonly toastClass = input<string>('');
 
   /**
    * Motion applied to the toasts a mutation of the stack pushes to a new
@@ -304,6 +339,8 @@ export class ForToastViewport {
   });
 
   constructor() {
+    injectPortal({ target: () => this.container() });
+
     const registration: ForToastViewportRegistration = {
       region: this.region,
       hotkey: () => this.hotkey() || this.#manager.hotkey(),
@@ -360,13 +397,23 @@ export class ForToastViewport {
   }
 
   /**
-   * Consumer class(es) for a toast row, resolved from its config's `class` /
-   * `classList`. Returns `''` when neither is set so the `[class]` host
-   * binding emits no extra tokens and leaves the directive's own host
-   * attributes untouched.
+   * Consumer class(es) for a toast row: the viewport-level `[toastClass]`
+   * merged with the config's `class` / `classList`. Returns `''` when none is
+   * set so the `[class]` binding emits no extra tokens and leaves the
+   * directive's own host attributes untouched.
    */
-  protected toastClass(toast: ForToastInstance): string {
-    return resolveConfigClass(toast.config) ?? '';
+  protected rowClass(toast: ForToastInstance): string {
+    const { class: own, classList } = toast.config;
+    return resolveConfigClass({ class: [this.toastClass(), own].join(' '), classList }) ?? '';
+  }
+
+  /**
+   * Template for a toast row: its per-toast `template` config when set,
+   * otherwise the viewport-level `[template]`. `null` renders the built-in
+   * shape.
+   */
+  protected rowTemplate(toast: ForToastInstance): TemplateRef<ForToastTemplateContext> | null {
+    return toast.config.template ?? this.template();
   }
 
   /**

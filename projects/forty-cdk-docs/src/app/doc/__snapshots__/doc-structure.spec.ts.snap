@@ -7849,7 +7849,12 @@ exports[`document structure > projects/forty-cdk/time-picker/README.md declares 
 exports[`document structure > projects/forty-cdk/toast/README.md declares the sections and table shapes it declared before 1`] = `
 [
   {
-    "headings": [],
+    "headings": [
+      {
+        "depth": 3,
+        "slug": "scoping-the-viewport-to-a-region",
+      },
+    ],
     "slug": "mount-the-viewport-once",
     "tables": [],
     "title": "Mount the viewport once",
@@ -7948,9 +7953,23 @@ exports[`document structure > projects/forty-cdk/toast/README.md declares the se
         "depth": 3,
         "slug": "custom-rendering-with-a-template",
       },
+      {
+        "depth": 3,
+        "slug": "viewport-wide-defaults",
+      },
     ],
     "slug": "composition--styling-model",
-    "tables": [],
+    "tables": [
+      {
+        "columns": [
+          "Viewport input",
+          "Per-toast field",
+          "When both are set",
+        ],
+        "role": "plain",
+        "rows": 4,
+      },
+    ],
     "title": "Composition + styling model",
   },
   {

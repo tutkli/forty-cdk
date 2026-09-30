@@ -6,6 +6,7 @@ import {
   createVetoableNativeEvent,
   findFirstFocusable,
   injectFocusTrap,
+  injectPortal,
   isInitialFocusTarget,
   MODAL_EXEMPT_ATTRIBUTE,
   resolveActiveElement,
@@ -16,7 +17,6 @@ import { BodyScrollLock } from '../body-scroll-lock/body-scroll-lock';
 import { injectDismissibleLayer } from '../dismissible-layer/dismissible-layer';
 import { type InertSiblingsHandle, InertSiblingsStack } from '../inert-siblings/inert-siblings';
 import { buildOutsideVetoOptions, outsideVetoChannels } from '../overlay-controller/outside-veto';
-import { injectPortal } from '../portal/portal';
 
 /**
  * Dismissal wiring for a modal surface.

@@ -13,8 +13,8 @@
  *
  * The overlay machinery — the positioning engine, both shells, the
  * dismissible-layer / inert-siblings / body-scroll-lock / drawer stacks, the
- * menu and listbox overlay controllers, the imperative manager core, the
- * portal and the hover-intent schedulers — is NOT here. It ships as
+ * menu and listbox overlay controllers, the imperative manager core and the
+ * hover-intent schedulers — is NOT here. It ships as
  * `forty-cdk/core-overlay`, whose barrel header records why
  * ([#1723](https://github.com/tutkli/forty-cdk/issues/1723)). The edge runs
  * one way only: that entry point imports this one, and nothing here may import
@@ -201,6 +201,7 @@ export {
 export { injectPauseController, type PauseController } from './pausable/pause-controller';
 export { isHoverCapablePointer, isNonTouchPointer } from './pointer/pointer-capability';
 export { createPointerSuppression, type PointerSuppression } from './pointer/pointer-suppression';
+export { injectPortal } from './portal/portal';
 export { assertRootContext } from './root-context/root-context';
 export {
   FOR_HOST_ROVING_CONTEXT,
