@@ -10,6 +10,7 @@ import {
   type ForDraggableLiftGuard,
   type ForDropListRovingDelegate,
   moveItemInArray,
+  provideForDragDropDefaults,
 } from 'forty-cdk/drag-drop';
 import { translateWindowReorder } from 'forty-cdk/core';
 import { hostHasSortActivation, injectTableContext } from './table-context';
@@ -79,6 +80,7 @@ export interface TableColumnReorderDescriptor {
   exportAs: 'forTableColumnReorder',
   providers: [
     { provide: FOR_DROP_LIST_DEFAULT_ORIENTATION, useValue: 'horizontal' },
+    provideForDragDropDefaults({ itemRoleDescription: '' }),
     {
       provide: FOR_DROP_LIST_ROVING_DELEGATE,
       useFactory: (): ForDropListRovingDelegate => {

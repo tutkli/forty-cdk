@@ -20,8 +20,8 @@ import { createDefaults, type LocalizableText } from 'forty-cdk/core';
  */
 export interface ForDragDropDefaults {
   /**
-   * `aria-roledescription` applied to each draggable item. Empty string disables
-   * the attribute.
+   * `aria-roledescription` applied to each draggable item while it can be lifted;
+   * an item that cannot be lifted emits none. Empty string disables the attribute.
    */
   itemRoleDescription: LocalizableText;
   /**

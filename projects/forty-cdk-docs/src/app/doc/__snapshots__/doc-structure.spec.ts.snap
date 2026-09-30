@@ -3197,6 +3197,10 @@ exports[`document structure > projects/forty-cdk/drag-drop/README.md declares th
     "headings": [
       {
         "depth": 3,
+        "slug": "role-description",
+      },
+      {
+        "depth": 3,
         "slug": "focus-after-a-keyboard-drop",
       },
     ],
@@ -3213,6 +3217,10 @@ exports[`document structure > projects/forty-cdk/drag-drop/README.md declares th
       {
         "depth": 3,
         "slug": "optional-drag-handle",
+      },
+      {
+        "depth": 3,
+        "slug": "nested-controls",
       },
       {
         "depth": 3,

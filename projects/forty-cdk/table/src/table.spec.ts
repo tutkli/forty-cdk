@@ -11,7 +11,7 @@ import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
 import { installObserverPolyfills, pointerEvent, renderHost } from '../../src/test-utils';
-import { ForDraggable, moveItemInArray } from 'forty-cdk/drag-drop';
+import { ForDraggable, moveItemInArray, provideForDragDropDefaults } from 'forty-cdk/drag-drop';
 import { TABLE_REGISTRATION_CONTEXT, type TableRegistrationContext } from 'forty-cdk/core';
 
 import { ForTable } from './table';
@@ -1086,6 +1086,41 @@ class SortInteractiveHeaderHost {
 class SortReorderTableHost {
   readonly columns = signal<readonly string[]>(['name', 'role']);
   lastSort: TableSortDescriptor | null = null;
+}
+
+@Component({
+  imports: [
+    ForTable,
+    ForTableHeaderRow,
+    ForTableHeaderCell,
+    ForTableSortHeader,
+    ForTableColumnReorder,
+    ForDraggable,
+  ],
+  template: `
+    <div forTable [mode]="mode()">
+      <div forTableHeaderRow forTableColumnReorder>
+        @for (col of columns; track col) {
+          <div
+            forTableHeaderCell
+            [name]="col"
+            forTableSortHeader
+            [column]="col"
+            [sortable]="col !== 'role'"
+            forDraggable
+            [dragData]="col"
+            [dragDisabled]="col === 'name'"
+          >
+            {{ col }}
+          </div>
+        }
+      </div>
+    </div>
+  `,
+})
+class ModeReorderTableHost {
+  readonly columns = ['name', 'role', 'dept'] as const;
+  readonly mode = signal<TableMode>('table');
 }
 
 @Component({
@@ -3691,6 +3726,40 @@ describe('ForTable', () => {
     it('yields via the drag-drop DOM marker, not a drag-drop context import (no forDraggable → sort owns "0")', () => {
       const { el } = renderHost(SortTableHost);
       expect(el.querySelector('[data-testid="sort-name"]')!.getAttribute('tabindex')).toBe('0');
+    });
+  });
+
+  describe('column-reorder header cells keep the columnheader role name (#2078)', () => {
+    const roleDescriptions = (el: HTMLElement) =>
+      Array.from(el.querySelectorAll<HTMLElement>('[forTableHeaderCell]')).map((cell) =>
+        cell.getAttribute('aria-roledescription'),
+      );
+
+    for (const mode of ['table', 'grid', 'treegrid'] as const) {
+      it(`emits no aria-roledescription on any header cell, pinned or liftable, in mode="${mode}"`, async () => {
+        const { el, instance, flush } = renderHost(ModeReorderTableHost);
+        instance.mode.set(mode);
+        await flush();
+        const headers = Array.from(el.querySelectorAll<HTMLElement>('[forTableHeaderCell]'));
+        expect(headers.map((cell) => cell.getAttribute('role'))).toEqual([
+          'columnheader',
+          'columnheader',
+          'columnheader',
+        ]);
+        expect(roleDescriptions(el)).toEqual([null, null, null]);
+      });
+    }
+
+    it('overrides a consumer-scoped itemRoleDescription for the header cells', () => {
+      TestBed.configureTestingModule({
+        providers: [
+          provideZonelessChangeDetection(),
+          provideForDragDropDefaults({ itemRoleDescription: 'movable' }),
+        ],
+      });
+      const fixture = TestBed.createComponent(ModeReorderTableHost);
+      fixture.detectChanges();
+      expect(roleDescriptions(fixture.nativeElement as HTMLElement)).toEqual([null, null, null]);
     });
   });
 

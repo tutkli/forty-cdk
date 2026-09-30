@@ -484,6 +484,82 @@ describe('ForDropList + ForDraggable', () => {
     });
   });
 
+  describe('aria-roledescription (#2078)', () => {
+    it('describes every liftable item as "sortable" by default', () => {
+      const { el } = renderHost(SingleListHost);
+      expect(draggables(el).map((item) => item.getAttribute('aria-roledescription'))).toEqual([
+        'sortable',
+        'sortable',
+        'sortable',
+      ]);
+    });
+
+    it('drops the description from an item pinned with [dragDisabled] and restores it on unpin', async () => {
+      const { el, fixture } = renderHost(SingleListHost);
+      fixture.componentInstance.rows.set([
+        { id: 1, label: 'Alpha', disabled: true },
+        { id: 2, label: 'Beta' },
+      ]);
+      fixture.detectChanges();
+      await flush(fixture);
+      expect(itemEl(el, 1).hasAttribute('aria-roledescription')).toBe(false);
+      expect(itemEl(el, 2).getAttribute('aria-roledescription')).toBe('sortable');
+
+      fixture.componentInstance.rows.set([
+        { id: 1, label: 'Alpha' },
+        { id: 2, label: 'Beta' },
+      ]);
+      fixture.detectChanges();
+      await flush(fixture);
+      expect(itemEl(el, 1).getAttribute('aria-roledescription')).toBe('sortable');
+    });
+
+    it('drops the description from every item of a disabled list', async () => {
+      const { el, fixture } = renderHost(SingleListHost);
+      fixture.componentInstance.listDisabled.set(true);
+      fixture.detectChanges();
+      await flush(fixture);
+      expect(draggables(el).some((item) => item.hasAttribute('aria-roledescription'))).toBe(false);
+    });
+
+    it('drops the description from a delegate-governed pinned item', () => {
+      const { el } = renderHost(DelegateGovernsPinnedHost);
+      expect(itemEl(el, 1).hasAttribute('aria-roledescription')).toBe(false);
+      expect(itemEl(el, 2).getAttribute('aria-roledescription')).toBe('sortable');
+    });
+
+    it('emits the scoped itemRoleDescription, and none for an empty string', () => {
+      TestBed.configureTestingModule({
+        providers: [
+          provideZonelessChangeDetection(),
+          provideForDragDropDefaults({ itemRoleDescription: 'movable' }),
+        ],
+      });
+      const custom = TestBed.createComponent(SingleListHost);
+      custom.detectChanges();
+      expect(
+        (custom.nativeElement as HTMLElement)
+          .querySelector('[forDraggable]')!
+          .getAttribute('aria-roledescription'),
+      ).toBe('movable');
+
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({
+        providers: [
+          provideZonelessChangeDetection(),
+          provideForDragDropDefaults({ itemRoleDescription: '' }),
+        ],
+      });
+      const off = TestBed.createComponent(SingleListHost);
+      off.detectChanges();
+      expect(
+        (off.nativeElement as HTMLElement)
+          .querySelector('[forDraggable]')!
+          .hasAttribute('aria-roledescription'),
+      ).toBe(false);
+    });
+  });
+
   describe('roving tabindex delegate (FOR_DROP_LIST_ROVING_DELEGATE)', () => {
     it('defers each item tabindex to the delegate when it governs the tab order', () => {
       const { el } = renderHost(DelegateGovernsHost);
