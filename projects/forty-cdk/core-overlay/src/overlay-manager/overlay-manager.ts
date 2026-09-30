@@ -6,13 +6,20 @@ import {
   EnvironmentInjector,
   inject,
   Injector,
+  PLATFORM_ID,
   type Provider,
   type ProviderToken,
   type Signal,
   signal,
 } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 
-import { composedClosest, IdGenerator, resolveActiveElement } from 'forty-cdk/core';
+import {
+  composedClosest,
+  IdGenerator,
+  MODAL_PEER_ATTRIBUTE,
+  resolveActiveElement,
+} from 'forty-cdk/core';
 import type { OverlayRef } from './overlay-ref';
 
 /**
@@ -116,8 +123,14 @@ export interface OverlayManagerConfig<TEntry extends OverlayManagerEntry> {
 /**
  * Shared imperative-overlay engine behind `ForDialogManager` and
  * `ForDrawerManager`. Owns the entries signal, the reactive `openCount`, the
- * lazily-created outlet, the destroy-time close-all sweep, the exit-animation
- * `beginLeave` driver, and the parent-cached per-component `Injector` factory.
+ * lazily-created outlet, the public `closeAll()` and the destroy-time close-all
+ * sweep, the exit-animation `beginLeave` driver, and the parent-cached
+ * per-component `Injector` factory.
+ *
+ * In the browser the outlet host is appended to `document.body` before its
+ * first render, as a `display: contents` modal peer, so opened content is
+ * connected (and never under an `inert` ancestor) from its first render on
+ * rather than only once its row is portaled.
  * The two managers differ only in their entry shape and directive-input
  * mapping; everything structural lives here once.
  *
@@ -128,13 +141,17 @@ export class OverlayManagerCore<TEntry extends OverlayManagerEntry> {
   readonly #appRef = inject(ApplicationRef);
   readonly #envInjector = inject(EnvironmentInjector);
   readonly #document = inject(DOCUMENT);
+  readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
   protected readonly idGen = inject(IdGenerator);
 
   readonly #entries = signal<readonly TEntry[]>([]);
   readonly #surfaces = new Map<string, OverlaySurface>();
   readonly #config: OverlayManagerConfig<TEntry>;
 
-  /** Reactive count of currently open programmatic overlays. */
+  /**
+   * Reactive count of the overlays this manager has open. A closed overlay stops counting once its
+   * exit animation finishes.
+   */
   readonly openCount = computed(() => this.#entries().length);
 
   #outletRef: ComponentRef<OverlayManagerOutlet<TEntry>> | null = null;
@@ -341,6 +358,18 @@ export class OverlayManagerCore<TEntry extends OverlayManagerEntry> {
     }
   }
 
+  /**
+   * Closes every overlay this manager has open, topmost first, with reason `'programmatic'` and
+   * `result` as each close result. Each ref's `closed` resolves as it does for `ref.close()`, exit
+   * animations still play, and focus ends where the bottom overlay's return focus sends it. A no-op
+   * when nothing is open.
+   */
+  closeAll(result?: unknown): void {
+    for (const entry of [...this.#entries()].reverse()) {
+      entry.ref.close(result);
+    }
+  }
+
   #closeAllForDestroy(): void {
     this.#destroying = true;
     for (const entry of this.#entries()) {
@@ -354,6 +383,13 @@ export class OverlayManagerCore<TEntry extends OverlayManagerEntry> {
     }
     const outletRef = this.#config.createOutlet(this.#envInjector);
     this.#appRef.attachView(outletRef.hostView);
+    if (this.#isBrowser) {
+      const outletHost = outletRef.location.nativeElement as HTMLElement;
+      outletHost.style.display = 'contents';
+      outletHost.setAttribute(MODAL_PEER_ATTRIBUTE, '');
+      this.#document.body.appendChild(outletHost);
+      outletRef.onDestroy(() => outletHost.remove());
+    }
     outletRef.instance.init({
       entries: this.#entries.asReadonly(),
       closeAllForDestroy: () => this.#closeAllForDestroy(),

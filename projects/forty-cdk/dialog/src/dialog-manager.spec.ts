@@ -1,6 +1,9 @@
 import {
+  afterNextRender,
+  afterRenderEffect,
   Component,
   effect,
+  ElementRef,
   inject,
   Injector,
   InjectionToken,
@@ -1130,6 +1133,226 @@ describe('ForDialogManager (programmatic)', () => {
 
       expect(document.querySelector('[role="dialog"]')).not.toBeNull();
       expect(document.querySelector('#message')?.textContent).toBe('from effect');
+    });
+  });
+
+  describe('first render of the opened content (#2055)', () => {
+    interface FirstRenderLog {
+      effect?: boolean;
+      afterNextRender?: boolean;
+      afterRenderEffect?: boolean;
+      inertAncestor?: boolean;
+    }
+
+    const FIRST_RENDER_LOG = new InjectionToken<FirstRenderLog>('FIRST_RENDER_LOG');
+
+    @Component({
+      host: { 'data-fixture': 'first-render-probe-dialog' },
+      template: `<button id="probe">probe</button>`,
+    })
+    class FirstRenderProbeDialog {
+      constructor() {
+        const host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+        const log = inject(FIRST_RENDER_LOG);
+        effect(() => {
+          log.effect ??= host.isConnected;
+          log.inertAncestor ??= host.closest('[inert]') !== null;
+        });
+        afterNextRender(() => {
+          log.afterNextRender = host.isConnected;
+        });
+        afterRenderEffect(() => {
+          log.afterRenderEffect ??= host.isConnected;
+        });
+      }
+    }
+
+    @Component({
+      imports: [ForDialogBackdrop],
+      host: { 'data-fixture': 'backdrop-dialog' },
+      template: `<div forDialogBackdrop></div>
+        <button>ok</button>`,
+    })
+    class BackdropDialog {}
+
+    function openProbe(dialogs: ForDialogManager, log: FirstRenderLog): void {
+      dialogs.open(FirstRenderProbeDialog, {
+        providers: [{ provide: FIRST_RENDER_LOG, useValue: log }],
+      });
+    }
+
+    it('runs the content effect, afterNextRender and afterRenderEffect with the host connected', () => {
+      const { dialogs } = setup();
+      const log: FirstRenderLog = {};
+
+      openProbe(dialogs, log);
+      TestBed.tick();
+
+      expect(log).toEqual({
+        effect: true,
+        afterNextRender: true,
+        afterRenderEffect: true,
+        inertAncestor: false,
+      });
+    });
+
+    it('keeps a dialog opened over a modal one out of any inert ancestor on its first render', () => {
+      const { dialogs } = setup();
+      dialogs.open(ConfirmDialog, { data: { message: 'below' } });
+      TestBed.tick();
+      const log: FirstRenderLog = {};
+
+      openProbe(dialogs, log);
+      TestBed.tick();
+
+      expect(log).toEqual({
+        effect: true,
+        afterNextRender: true,
+        afterRenderEffect: true,
+        inertAncestor: false,
+      });
+    });
+
+    it('holds for a dialog whose mount is deferred because open() ran inside an effect', async () => {
+      const log: FirstRenderLog = {};
+
+      @Component({ host: { 'data-fixture': 'deferred-probe-opener' }, template: `` })
+      class DeferredProbeOpener {
+        readonly #dialogs = inject(ForDialogManager);
+        readonly openNow = signal(false);
+        constructor() {
+          effect(() => {
+            if (this.openNow()) {
+              openProbe(this.#dialogs, log);
+            }
+          });
+        }
+      }
+
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(DeferredProbeOpener);
+      fixture.detectChanges();
+
+      fixture.componentInstance.openNow.set(true);
+      await flush(fixture);
+
+      expect(log).toEqual({
+        effect: true,
+        afterNextRender: true,
+        afterRenderEffect: true,
+        inertAncestor: false,
+      });
+    });
+
+    it('still portals every surface and backdrop to document.body in open order', () => {
+      const { dialogs } = setup();
+      dialogs.open(BackdropDialog);
+      dialogs.open(BackdropDialog);
+      TestBed.tick();
+
+      const surfaces = Array.from(document.querySelectorAll<HTMLElement>('[role="dialog"]'));
+      const backdrops = Array.from(
+        document.querySelectorAll<HTMLElement>('[data-for-dialog-backdrop]'),
+      );
+      expect(surfaces).toHaveLength(2);
+      expect(backdrops).toHaveLength(2);
+      for (const el of [...surfaces, ...backdrops]) {
+        expect(el.parentElement).toBe(document.body);
+      }
+      const [first, second] = surfaces;
+      expect(first!.compareDocumentPosition(second!) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
+        Node.DOCUMENT_POSITION_FOLLOWING,
+      );
+      expect(document.querySelector('for-dialog-outlet')!.children).toHaveLength(0);
+    });
+  });
+
+  describe('closeAll() (#2062)', () => {
+    it('closes every open dialog with reason programmatic and drops openCount to 0', async () => {
+      const { dialogs } = setup();
+      const a = dialogs.open(ConfirmDialog, { data: { message: 'a' } });
+      const b = dialogs.open(ConfirmDialog, { data: { message: 'b' } });
+      expect(dialogs.openCount()).toBe(2);
+
+      dialogs.closeAll('done');
+
+      await expect(a.closed).resolves.toEqual({ reason: 'programmatic', result: 'done' });
+      await expect(b.closed).resolves.toEqual({ reason: 'programmatic', result: 'done' });
+      TestBed.tick();
+      expect(dialogs.openCount()).toBe(0);
+      expect(document.querySelector('[role="dialog"]')).toBeNull();
+    });
+
+    it('closes the topmost dialog first', async () => {
+      const { dialogs } = setup();
+      const order: string[] = [];
+      const a = dialogs.open(ConfirmDialog, { data: { message: 'a' } });
+      const b = dialogs.open(ConfirmDialog, { data: { message: 'b' } });
+      void a.closed.then(() => order.push('a'));
+      void b.closed.then(() => order.push('b'));
+
+      dialogs.closeAll();
+      await Promise.all([a.closed, b.closed]);
+
+      expect(order).toEqual(['b', 'a']);
+    });
+
+    it('returns focus to the element that opened the first dialog', async () => {
+      const { dialogs, trigger } = setup();
+      const a = dialogs.open(ConfirmDialog, { data: { message: 'a' } });
+      TestBed.tick();
+      const b = dialogs.open(ConfirmDialog, { data: { message: 'b' } });
+      TestBed.tick();
+      expect(document.activeElement).not.toBe(trigger);
+
+      dialogs.closeAll();
+      await Promise.all([a.closed, b.closed]);
+      TestBed.tick();
+
+      expect(document.activeElement).toBe(trigger);
+    });
+
+    it('plays each exit animation before tearing the dialogs down', async () => {
+      const { dialogs } = setup();
+      const a = dialogs.open(ConfirmDialog, { data: { message: 'a' }, animateLeave: 'out' });
+      const b = dialogs.open(ConfirmDialog, { data: { message: 'b' }, animateLeave: 'out' });
+      TestBed.tick();
+      let finish!: () => void;
+      const finished = new Promise<void>((resolve) => (finish = resolve));
+      const hosts = Array.from(document.querySelectorAll<HTMLElement>('[role="dialog"]'));
+      for (const host of hosts) {
+        host.getAnimations = () => [{ finished }] as unknown as Animation[];
+      }
+      const nextFrame = (): Promise<void> =>
+        new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve)));
+
+      dialogs.closeAll();
+      await Promise.all([a.closed, b.closed]);
+      await nextFrame();
+      TestBed.tick();
+
+      expect(hosts.map((host) => host.classList.contains('out'))).toEqual([true, true]);
+      expect(hosts.map((host) => host.isConnected)).toEqual([true, true]);
+      expect(dialogs.openCount()).toBe(2);
+
+      finish();
+      await nextFrame();
+      TestBed.tick();
+      await nextFrame();
+
+      expect(dialogs.openCount()).toBe(0);
+      expect(document.querySelector('[role="dialog"]')).toBeNull();
+    });
+
+    it('leaves the manager usable when called with nothing open', () => {
+      const { dialogs } = setup();
+
+      dialogs.closeAll();
+      dialogs.open(ConfirmDialog, { data: { message: 'after' } });
+      TestBed.tick();
+
+      expect(dialogs.openCount()).toBe(1);
+      expect(document.querySelector('#message')?.textContent).toBe('after');
     });
   });
 });

@@ -1,12 +1,23 @@
-import { booleanAttribute, Directive, inject, input } from '@angular/core';
+import {
+  booleanAttribute,
+  DestroyRef,
+  Directive,
+  ElementRef,
+  inject,
+  input,
+  signal,
+  type Signal,
+} from '@angular/core';
 
-import { injectModalShell, ModalSurfaceBase } from 'forty-cdk/core-overlay';
+import { createSingleSlot } from 'forty-cdk/core';
+import { injectModalShell, ModalSurfaceBase, warnIfDialogUnnamed } from 'forty-cdk/core-overlay';
 import {
   FOR_DIALOG_CONTEXT,
   type ForDialogCloseReason,
   type ForDialogContext,
 } from './dialog-context';
 import { FOR_DIALOG_DEFAULTS } from './dialog-defaults';
+import { DialogDepthRegistry } from './dialog-depth';
 
 /**
  * Headless implementation of the [WAI-ARIA Modal Dialog pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/).
@@ -42,10 +53,17 @@ import { FOR_DIALOG_DEFAULTS } from './dialog-defaults';
  * is the consumer's `animate.leave` (see the usage example above), not a
  * `data-state="closed"` selector — so a `[data-state="closed"]` rule would
  * never match and is not a bug.
+ *
+ * `data-depth` and `--for-dialog-depth` carry the dialog's stacking position among the mounted
+ * dialogs (`0` for the first), so a consumer can write one z-index rule for every level.
  */
 @Directive({
   selector: '[forDialog]',
   exportAs: 'forDialog',
+  host: {
+    '[attr.data-depth]': 'depth()',
+    '[style.--for-dialog-depth]': 'depth()',
+  },
   providers: [{ provide: FOR_DIALOG_CONTEXT, useExisting: ForDialog }],
 })
 export class ForDialog extends ModalSurfaceBase<ForDialogCloseReason> implements ForDialogContext {
@@ -76,6 +94,24 @@ export class ForDialog extends ModalSurfaceBase<ForDialogCloseReason> implements
 
   protected readonly entryPoint = 'dialog';
 
+  readonly #depthHandle = inject(DialogDepthRegistry).claim(
+    inject<ElementRef<HTMLElement>>(ElementRef).nativeElement,
+  );
+
+  /**
+   * Stacking position among the dialogs mounted when this one mounted: `0` for the first, one above
+   * the deepest one still mounted otherwise. Fixed for the dialog's lifetime.
+   */
+  readonly depth: Signal<number> = signal(this.#depthHandle.depth).asReadonly();
+
+  readonly #initialFocusSlot = createSingleSlot<HTMLElement>({
+    primitive: 'dialog',
+    owner: '[forDialog]',
+    claimant: '[forDialogInitialFocus]',
+  });
+
+  protected readonly initialFocusTarget = this.#initialFocusSlot.value;
+
   constructor() {
     // The shared modal-shell handles portal + dismissible layer (with the
     // triple-veto pattern this directive used to implement inline) + modal
@@ -85,5 +121,20 @@ export class ForDialog extends ModalSurfaceBase<ForDialogCloseReason> implements
     // registration) lives on the shared ModalSurfaceBase.
     super();
     injectModalShell(this.modalShellConfig());
+    warnIfDialogUnnamed({
+      primitive: 'dialog',
+      piece: '[forDialog]',
+      title: '[forDialogTitle]',
+      ariaLabelOn: '[forDialog] (or pass `ariaLabel` to `ForDialogManager.open()`)',
+    });
+    inject(DestroyRef).onDestroy(() => this.#depthHandle.release());
+  }
+
+  private registerInitialFocus(el: HTMLElement): void {
+    this.#initialFocusSlot.register(el);
+  }
+
+  private unregisterInitialFocus(el: HTMLElement): void {
+    this.#initialFocusSlot.unregister(el);
   }
 }

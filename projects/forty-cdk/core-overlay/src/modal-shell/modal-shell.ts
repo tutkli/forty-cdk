@@ -6,6 +6,7 @@ import {
   createVetoableNativeEvent,
   findFirstFocusable,
   injectFocusTrap,
+  isInitialFocusTarget,
   MODAL_EXEMPT_ATTRIBUTE,
   resolveActiveElement,
   type VetoableEvent,
@@ -109,6 +110,12 @@ export interface ModalShellConfig {
    */
   readonly initialFocus: Signal<'first' | 'container'> | ModalShellInitialFocusConfig;
   /**
+   * Element the consumer marked as the initial focus target, read once at mount. Honoured with the
+   * literal `initialFocus` form only: when it resolves to an element that passes
+   * `isInitialFocusTarget`, focus lands there, and otherwise the literal applies.
+   */
+  readonly initialFocusTarget?: () => HTMLElement | null;
+  /**
    * `(autoFocusOnOpen)` veto. Bound as a function reference (not as an
    * Angular `output()`) so the shell can invoke it during the destroy hook
    * without depending on `OutputEmitterRef` lifecycle. Read at every mount;
@@ -210,6 +217,11 @@ export function injectModalShell(config: ModalShellConfig): ModalShellHandle {
   let inertHandle: InertSiblingsHandle | null = null;
   let activatedContainer: HTMLElement | null = null;
 
+  const resolveMarkedTarget = (): HTMLElement | null => {
+    const target = config.initialFocusTarget?.() ?? null;
+    return target !== null && isInitialFocusTarget(target, host.nativeElement) ? target : null;
+  };
+
   // 3. Side-effect setup runs after Angular has applied input bindings.
   //    Reading `config.modal()` etc. in the constructor would always see the
   //    default value because the input writes haven't flowed through yet.
@@ -264,6 +276,7 @@ export function injectModalShell(config: ModalShellConfig): ModalShellHandle {
       typeof initialFocusCfg === 'function' ? null : initialFocusCfg;
     const literalFocus: 'first' | 'container' | null =
       typeof initialFocusCfg === 'function' ? initialFocusCfg() : null;
+    const markedTarget = literalFocus === null ? null : resolveMarkedTarget();
 
     // 3c. `(autoFocusOnOpen)` veto — read once for this mount. The move-config
     //     carries its own boolean veto (mirroring `injectOverlayShell`); the
@@ -298,7 +311,7 @@ export function injectModalShell(config: ModalShellConfig): ModalShellHandle {
         }
       } else {
         focusTrap.activate({
-          initialFocus: literalFocus ?? 'first',
+          initialFocus: markedTarget ?? literalFocus ?? 'first',
           preventInitialFocus: skipInitialFocus,
           returnFocus: returnFocusTarget,
         });
@@ -314,6 +327,8 @@ export function injectModalShell(config: ModalShellConfig): ModalShellHandle {
         if (!moveCfg.move()) {
           (findFirstFocusable(el) ?? el).focus();
         }
+      } else if (markedTarget) {
+        markedTarget.focus();
       } else if (literalFocus === 'container') {
         el.focus();
       } else {

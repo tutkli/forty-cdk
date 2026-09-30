@@ -45,6 +45,8 @@ export const REGISTRATION_SURFACES = {
     'ForCarouselViewportHandle',
   ],
   combobox: ['ComboboxContext', 'ComboboxPieceContext', 'ComboboxRegistrationContext'],
+  dialog: ['DialogContext', 'DialogRegistrationContext'],
+  drawer: ['DrawerContext', 'DrawerRegistrationContext'],
   listbox: ['ListboxContext', 'ListboxPieceContext'],
   'navigation-menu': [
     'NavigationMenuContext',
@@ -52,6 +54,7 @@ export const REGISTRATION_SURFACES = {
     'ForNavigationMenuTriggerHandle',
     'ForNavigationMenuViewportHandle',
   ],
+  popover: ['PopoverContext', 'PopoverPieceContext', 'PopoverRegistrationContext'],
   'radio-group': ['RadioGroupContext', 'ForRadioHandle'],
   select: ['SelectContext', 'SelectPieceContext', 'ForSelectOverlayContext'],
   table: [

@@ -12,6 +12,9 @@ import { FOR_DIALOG_INSTANCE_ID, injectDialogContext } from './dialog-context';
  * The directive applies no visual styles — set `position: fixed; inset: 0;
  * background: rgba(0,0,0,0.5)` (or whatever) yourself. For a backdrop inside a
  * scoped `container`, use `position: absolute` so it is bounded to that box.
+ *
+ * Mirrors its dialog's stacking position as `data-depth` and `--for-dialog-depth`, so a backdrop
+ * can sit one step below its own dialog and above every dialog underneath it.
  */
 @Directive({
   selector: '[forDialogBackdrop]',
@@ -24,6 +27,8 @@ import { FOR_DIALOG_INSTANCE_ID, injectDialogContext } from './dialog-context';
     'data-for-modal-peer': '',
     'data-state': 'open',
     '[attr.data-for-dialog-id]': 'instanceId',
+    '[attr.data-depth]': 'ctx.depth()',
+    '[style.--for-dialog-depth]': 'ctx.depth()',
     '(click)': 'onClick($event)',
   },
 })

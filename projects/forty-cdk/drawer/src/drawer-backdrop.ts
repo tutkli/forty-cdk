@@ -30,6 +30,9 @@ import { FOR_DRAWER_INSTANCE_ID, injectDrawerContext } from './drawer-context';
  * }
  * ```
  *
+ * Mirrors its drawer's nesting position as `data-depth` and `--for-drawer-depth`, so a nested
+ * drawer's backdrop can paint above its parent drawer.
+ *
  * The directive applies no visual styles itself.
  */
 @Directive({
@@ -46,6 +49,8 @@ import { FOR_DRAWER_INSTANCE_ID, injectDrawerContext } from './drawer-context';
     '[attr.data-fade-from-active]': 'ctx.fadeFromActive() ? "" : null',
     '[attr.data-dragging]': 'ctx.dragging() ? "" : null',
     '[style.--for-drawer-swipe-progress]': 'ctx.swipeProgress()',
+    '[attr.data-depth]': 'ctx.depth()',
+    '[style.--for-drawer-depth]': 'ctx.depth()',
     '(click)': 'onClick($event)',
   },
 })

@@ -2845,6 +2845,10 @@ exports[`document structure > projects/forty-cdk/dialog/README.md declares the s
         "depth": 3,
         "slug": "fordialogclose",
       },
+      {
+        "depth": 3,
+        "slug": "fordialoginitialfocus",
+      },
     ],
     "slug": "api",
     "tables": [
@@ -2863,7 +2867,7 @@ exports[`document structure > projects/forty-cdk/dialog/README.md declares the s
           "Values",
         ],
         "role": "plain",
-        "rows": 1,
+        "rows": 2,
       },
       {
         "columns": [
@@ -2888,7 +2892,7 @@ exports[`document structure > projects/forty-cdk/dialog/README.md declares the s
           "Values",
         ],
         "role": "plain",
-        "rows": 2,
+        "rows": 3,
       },
       {
         "columns": [
@@ -2943,9 +2947,23 @@ exports[`document structure > projects/forty-cdk/dialog/README.md declares the s
     "title": "Accessibility",
   },
   {
-    "headings": [],
+    "headings": [
+      {
+        "depth": 3,
+        "slug": "css-custom-properties",
+      },
+    ],
     "slug": "styling",
-    "tables": [],
+    "tables": [
+      {
+        "columns": [
+          "Property",
+          "Meaning",
+        ],
+        "role": "plain",
+        "rows": 1,
+      },
+    ],
     "title": "Styling",
   },
   {
@@ -3360,6 +3378,10 @@ exports[`document structure > projects/forty-cdk/drawer/README.md declares the s
       },
       {
         "depth": 3,
+        "slug": "fordrawerinitialfocus",
+      },
+      {
+        "depth": 3,
         "slug": "fordrawertrigger",
       },
       {
@@ -3396,7 +3418,7 @@ exports[`document structure > projects/forty-cdk/drawer/README.md declares the s
           "Values",
         ],
         "role": "plain",
-        "rows": 3,
+        "rows": 4,
       },
       {
         "columns": [
@@ -3503,7 +3525,7 @@ exports[`document structure > projects/forty-cdk/drawer/README.md declares the s
           "Meaning",
         ],
         "role": "plain",
-        "rows": 3,
+        "rows": 4,
       },
     ],
     "title": "Styling",
@@ -5497,6 +5519,10 @@ exports[`document structure > projects/forty-cdk/popover/README.md declares the 
       {
         "depth": 3,
         "slug": "forpopoverarrow",
+      },
+      {
+        "depth": 3,
+        "slug": "forpopoverinitialfocus",
       },
     ],
     "slug": "api",

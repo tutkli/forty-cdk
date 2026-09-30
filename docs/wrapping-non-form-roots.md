@@ -106,7 +106,8 @@ not in this table, because it needs `provideForTable()` instead (see the section
 | `ForTree`                                           | `FOR_TREE_CONTEXT`             |
 | `ForVirtualViewport`                                | `FOR_VIRTUAL_VIEWPORT_CONTEXT` |
 
-Several of these roots (Accordion, Carousel, NavigationMenu, Tabs, Toast) split their coordination
+Several of these roots (Accordion, Avatar, Carousel, Dialog, Drawer, NavigationMenu, Popover, Tabs,
+Toast) split their coordination
 surface in two: the public `FOR_<PRIMITIVE>_CONTEXT` above, and an internal interface carrying the
 piece-registration protocol that is deliberately **not** exported
 ([#1399](https://github.com/tutkli/forty-cdk/issues/1399),

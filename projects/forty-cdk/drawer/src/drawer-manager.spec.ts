@@ -1,6 +1,9 @@
 import {
+  afterNextRender,
+  afterRenderEffect,
   Component,
   effect,
+  ElementRef,
   inject,
   Injector,
   InjectionToken,
@@ -1123,6 +1126,106 @@ describe('ForDrawerManager (programmatic)', () => {
 
       expect(document.querySelector('[role="dialog"]')).not.toBeNull();
       expect(document.querySelector('#message')?.textContent).toBe('from effect');
+    });
+  });
+
+  describe('first render of the opened content (#2055)', () => {
+    interface FirstRenderLog {
+      effect?: boolean;
+      afterNextRender?: boolean;
+      afterRenderEffect?: boolean;
+      inertAncestor?: boolean;
+    }
+
+    const FIRST_RENDER_LOG = new InjectionToken<FirstRenderLog>('FIRST_RENDER_LOG');
+
+    @Component({
+      host: { 'data-fixture': 'first-render-probe-drawer' },
+      template: `<button id="probe">probe</button>`,
+    })
+    class FirstRenderProbeDrawer {
+      constructor() {
+        const host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+        const log = inject(FIRST_RENDER_LOG);
+        effect(() => {
+          log.effect ??= host.isConnected;
+          log.inertAncestor ??= host.closest('[inert]') !== null;
+        });
+        afterNextRender(() => {
+          log.afterNextRender = host.isConnected;
+        });
+        afterRenderEffect(() => {
+          log.afterRenderEffect ??= host.isConnected;
+        });
+      }
+    }
+
+    it('runs the content effect, afterNextRender and afterRenderEffect with the host connected', () => {
+      const { drawers } = setup();
+      const log: FirstRenderLog = {};
+
+      drawers.open(FirstRenderProbeDrawer, {
+        providers: [{ provide: FIRST_RENDER_LOG, useValue: log }],
+      });
+      TestBed.tick();
+
+      expect(log).toEqual({
+        effect: true,
+        afterNextRender: true,
+        afterRenderEffect: true,
+        inertAncestor: false,
+      });
+    });
+
+    it('keeps a drawer opened over a modal one out of any inert ancestor on its first render', () => {
+      const { drawers } = setup();
+      drawers.open(SheetDrawer, { data: { message: 'below' } });
+      TestBed.tick();
+      const log: FirstRenderLog = {};
+
+      drawers.open(FirstRenderProbeDrawer, {
+        providers: [{ provide: FIRST_RENDER_LOG, useValue: log }],
+      });
+      TestBed.tick();
+
+      expect(log).toEqual({
+        effect: true,
+        afterNextRender: true,
+        afterRenderEffect: true,
+        inertAncestor: false,
+      });
+    });
+  });
+
+  describe('closeAll() (#2062)', () => {
+    it('closes every open drawer with reason programmatic and drops openCount to 0', async () => {
+      const { drawers } = setup();
+      const a = drawers.open(SheetDrawer, { data: { message: 'a' } });
+      const b = drawers.open(SheetDrawer, { data: { message: 'b' } });
+      expect(drawers.openCount()).toBe(2);
+
+      drawers.closeAll('done');
+
+      await expect(a.closed).resolves.toEqual({ reason: 'programmatic', result: 'done' });
+      await expect(b.closed).resolves.toEqual({ reason: 'programmatic', result: 'done' });
+      TestBed.tick();
+      expect(drawers.openCount()).toBe(0);
+      expect(document.querySelector('[role="dialog"]')).toBeNull();
+    });
+
+    it('returns focus to the element that opened the first drawer', async () => {
+      const { drawers, trigger } = setup();
+      const a = drawers.open(SheetDrawer, { data: { message: 'a' } });
+      TestBed.tick();
+      const b = drawers.open(SheetDrawer, { data: { message: 'b' } });
+      TestBed.tick();
+      expect(document.activeElement).not.toBe(trigger);
+
+      drawers.closeAll();
+      await Promise.all([a.closed, b.closed]);
+      TestBed.tick();
+
+      expect(document.activeElement).toBe(trigger);
     });
   });
 });

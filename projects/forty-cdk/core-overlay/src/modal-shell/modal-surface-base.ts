@@ -154,6 +154,13 @@ export abstract class ModalSurfaceBase<Reason extends string> {
   protected abstract readonly entryPoint: string;
 
   /**
+   * The element the primitive's initial-focus marker registered inside the surface, or `null`.
+   * Implemented by the subclass, which owns the marker's registration slot. The shell focuses it on
+   * mount when it is a usable target, and falls back to {@link initialFocus} otherwise.
+   */
+  protected abstract readonly initialFocusTarget: Signal<HTMLElement | null>;
+
+  /**
    * Emitted when the surface wants to close. Consumers wire this to flip the
    * signal that gates the surrounding `@if`. The reason union is
    * primitive-specific.
@@ -286,6 +293,7 @@ export abstract class ModalSurfaceBase<Reason extends string> {
       returnFocus: this.returnFocus,
       returnFocusTarget: this.returnFocusTarget,
       initialFocus: this.initialFocus,
+      initialFocusTarget: () => this.initialFocusTarget(),
       container: this.container,
       autoFocusOnOpen: () => this.autoFocusOnOpen(),
       autoFocusOnClose: () => this.autoFocusOnClose(),

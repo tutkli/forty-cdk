@@ -23,6 +23,7 @@ class TestSurface extends ModalSurfaceBase<TestReason> {
   readonly initialFocus = input<'first' | 'container'>('first');
 
   protected readonly entryPoint = 'test-surface';
+  protected readonly initialFocusTarget = signal<HTMLElement | null>(null);
 
   constructor() {
     super();

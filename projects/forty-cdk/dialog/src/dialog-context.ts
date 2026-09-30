@@ -1,6 +1,6 @@
 import { inject, InjectionToken, type Signal } from '@angular/core';
 
-import { orphanContextError } from 'forty-cdk/core';
+import { assertRootContext, orphanContextError } from 'forty-cdk/core';
 
 export type ForDialogCloseReason =
   | 'escape'
@@ -34,6 +34,12 @@ export interface ForDialogContext {
    * input; read once per mount.
    */
   readonly container: Signal<HTMLElement | null>;
+  /**
+   * Stacking position among the dialogs mounted when this one mounted: `0` for the first, one above
+   * the deepest one still mounted otherwise. Fixed for the dialog's lifetime. Reflected as
+   * `data-depth` and `--for-dialog-depth` on the surface and its backdrop.
+   */
+  readonly depth: Signal<number>;
 
   registerLabel(id: string): void;
   unregisterLabel(id: string): void;
@@ -68,6 +74,33 @@ export interface ForDialogContext {
   requestClose(reason: ForDialogCloseReason, value?: unknown): void;
 }
 
+/**
+ * The registration protocol `[forDialogInitialFocus]` drives. Never exported from
+ * `public-api.ts`; `ForDialog` declares both members TS-`private`.
+ */
+export interface DialogRegistrationContext {
+  /** Registers the element the dialog focuses on mount. */
+  registerInitialFocus(el: HTMLElement): void;
+  /** Removes a previously registered initial-focus element. */
+  unregisterInitialFocus(el: HTMLElement): void;
+}
+
+/**
+ * The dialog's internal coordination surface: everything {@link ForDialogContext} publishes plus
+ * the {@link DialogRegistrationContext} protocol. It is the type the pieces read
+ * {@link FOR_DIALOG_CONTEXT} at.
+ */
+export interface DialogContext extends ForDialogContext, DialogRegistrationContext {}
+
+/**
+ * DI token for the dialog's coordination surface, provided by `[forDialog]`.
+ *
+ * Publicly typed as the read surface {@link ForDialogContext}. The pieces read the same token at an
+ * internal type that adds the initial-focus registration, so a wrapper re-providing it must alias it
+ * to the root: `{ provide: FOR_DIALOG_CONTEXT, useExisting: MyDialog }`, where `MyDialog` extends
+ * `ForDialog`. A value that merely satisfies the declared type resolves too, and is rejected in dev
+ * mode by the first piece to resolve it.
+ */
 export const FOR_DIALOG_CONTEXT = new InjectionToken<ForDialogContext>('FOR_DIALOG_CONTEXT');
 
 /**
@@ -79,7 +112,7 @@ export const FOR_DIALOG_CONTEXT = new InjectionToken<ForDialogContext>('FOR_DIAL
  */
 export const FOR_DIALOG_INSTANCE_ID = new InjectionToken<string>('FOR_DIALOG_INSTANCE_ID');
 
-export function injectDialogContext(piece: string): ForDialogContext {
+export function injectDialogContext(piece: string): DialogContext {
   const ctx = inject(FOR_DIALOG_CONTEXT, { optional: true });
   if (!ctx) {
     throw orphanContextError({
@@ -89,5 +122,13 @@ export function injectDialogContext(piece: string): ForDialogContext {
       token: 'FOR_DIALOG_CONTEXT',
     });
   }
-  return ctx;
+  const widened = ctx as unknown as DialogContext;
+  assertRootContext({
+    entryPoint: 'dialog',
+    token: 'FOR_DIALOG_CONTEXT',
+    root: '[forDialog]',
+    piece,
+    probe: () => widened.registerInitialFocus,
+  });
+  return widened;
 }
