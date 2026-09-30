@@ -61,9 +61,13 @@ export const FOR_TIME_PICKER_DEFAULTS = token;
  * Configures forty-cdk time picker defaults for this injector scope. Partial
  * overrides inherit unspecified keys from the parent scope (or library defaults
  * at the root).
+ *
+ * Pass a function instead of an object to build the overrides where
+ * `inject()` is available; it runs once per injector that resolves the
+ * defaults.
  */
 export function provideForTimePickerDefaults(
-  defaults: Partial<ForTimePickerDefaults> = {},
+  defaults: Partial<ForTimePickerDefaults> | (() => Partial<ForTimePickerDefaults>) = {},
 ): Provider[] {
   return provideDefaults(defaults);
 }

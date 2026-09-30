@@ -1,6 +1,6 @@
 import { type Provider } from '@angular/core';
 
-import { createDefaults } from 'forty-cdk/core';
+import { createDefaults, type LocalizableText } from 'forty-cdk/core';
 
 /**
  * Defaults inherited by descendant progress bars in the surrounding injector
@@ -21,7 +21,7 @@ export interface ForProgressDefaults {
    * override it per scope to localize the announcement; defaults to the
    * English `'Complete'`.
    */
-  completeAnnouncement: string;
+  completeAnnouncement: LocalizableText;
 }
 
 /**
@@ -46,9 +46,13 @@ export const FOR_PROGRESS_DEFAULTS = token;
  * Configures forty-cdk progress defaults for this injector scope. Partial
  * overrides inherit unspecified keys from the parent scope (or library
  * defaults at the root).
+ *
+ * Pass a function instead of an object to build the overrides where
+ * `inject()` is available; it runs once per injector that resolves the
+ * defaults.
  */
 export function provideForProgressDefaults(
-  defaults: Partial<ForProgressDefaults> = {},
+  defaults: Partial<ForProgressDefaults> | (() => Partial<ForProgressDefaults>) = {},
 ): Provider[] {
   return provideDefaults(defaults);
 }

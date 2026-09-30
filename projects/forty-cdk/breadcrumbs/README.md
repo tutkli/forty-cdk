@@ -100,6 +100,8 @@ bootstrapApplication(App, {
 });
 ```
 
+For a language the app sets or switches after bootstrap, pass `label` as a function and the overrides as a factory, as [Localizing default text](../shared/README.md#localizing-default-text) shows.
+
 ## API
 
 ### `ForBreadcrumbs`

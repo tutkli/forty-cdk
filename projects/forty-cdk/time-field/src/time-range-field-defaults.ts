@@ -1,6 +1,6 @@
 import { type Provider } from '@angular/core';
 
-import { createDefaults, type TimeSegmentType } from 'forty-cdk/core';
+import { createDefaults, type LocalizableText, type TimeSegmentType } from 'forty-cdk/core';
 
 /**
  * Accessible name announced for each editable segment, keyed by its part type.
@@ -8,7 +8,7 @@ import { createDefaults, type TimeSegmentType } from 'forty-cdk/core';
  * falls back to the library default for that part — so overriding just
  * `dayPeriod` keeps the English labels for the rest.
  */
-export type ForTimeRangeFieldSegmentLabels = Partial<Record<TimeSegmentType, string>>;
+export type ForTimeRangeFieldSegmentLabels = Partial<Record<TimeSegmentType, LocalizableText>>;
 
 /**
  * Defaults inherited by descendant `[forTimeRangeField]` controls in the
@@ -22,7 +22,7 @@ export interface ForTimeRangeFieldDefaults {
    * segment, so screen readers report the segment's empty state instead of
    * silence. Override for localization.
    */
-  emptySegmentText: string;
+  emptySegmentText: LocalizableText;
   /**
    * Accessible names announced for each editable segment (via `aria-label`),
    * keyed by part type, used when a segment has no explicit `ariaLabel`. The
@@ -31,15 +31,21 @@ export interface ForTimeRangeFieldDefaults {
    */
   segmentLabels: ForTimeRangeFieldSegmentLabels;
   /**
+   * Placeholder each empty editable segment shows, keyed by part type, for
+   * fields whose `[placeholder]` doesn't name that part. Unset parts fall back
+   * to a letter-repeat default (`hh` / `mm` / `ss` / `--`).
+   */
+  placeholder: Partial<Record<TimeSegmentType, LocalizableText>>;
+  /**
    * Accessible name announced (via `aria-label`) for the start endpoint group,
    * used when `[forTimeRangeFieldStart]` has no explicit `ariaLabel`.
    */
-  startLabel: string;
+  startLabel: LocalizableText;
   /**
    * Accessible name announced (via `aria-label`) for the end endpoint group,
    * used when `[forTimeRangeFieldEnd]` has no explicit `ariaLabel`.
    */
-  endLabel: string;
+  endLabel: LocalizableText;
 }
 
 /**
@@ -63,6 +69,7 @@ export const DEFAULT_TIME_RANGE_FIELD_SEGMENT_LABELS: Readonly<Record<TimeSegmen
 export const FOR_TIME_RANGE_FIELD_FALLBACK_DEFAULTS: ForTimeRangeFieldDefaults = {
   emptySegmentText: 'Empty',
   segmentLabels: DEFAULT_TIME_RANGE_FIELD_SEGMENT_LABELS,
+  placeholder: {},
   startLabel: 'Start time',
   endLabel: 'End time',
 };
@@ -79,9 +86,13 @@ export const FOR_TIME_RANGE_FIELD_DEFAULTS = token;
  * Configures forty-cdk time-range-field defaults for this injector scope.
  * Partial overrides inherit unspecified keys from the parent scope (or library
  * defaults at the root).
+ *
+ * Pass a function instead of an object to build the overrides where
+ * `inject()` is available; it runs once per injector that resolves the
+ * defaults.
  */
 export function provideForTimeRangeFieldDefaults(
-  defaults: Partial<ForTimeRangeFieldDefaults> = {},
+  defaults: Partial<ForTimeRangeFieldDefaults> | (() => Partial<ForTimeRangeFieldDefaults>) = {},
 ): Provider[] {
   return provideDefaults(defaults);
 }

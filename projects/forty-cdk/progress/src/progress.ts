@@ -1,6 +1,14 @@
-import { booleanAttribute, computed, Directive, effect, inject, input } from '@angular/core';
+import {
+  booleanAttribute,
+  computed,
+  Directive,
+  effect,
+  inject,
+  input,
+  untracked,
+} from '@angular/core';
 
-import { LiveAnnouncer, clamp, hostAriaLabel } from 'forty-cdk/core';
+import { LiveAnnouncer, clamp, hostAriaLabel, resolveText } from 'forty-cdk/core';
 import {
   FOR_PROGRESS_CONTEXT,
   type ForProgressContext,
@@ -153,7 +161,7 @@ export class ForProgress implements ForProgressContext {
       }
       if (next === 'complete' && this.announceCompletion()) {
         this.#announcer.announce(
-          this.ariaValueText() ?? this.#defaults.completeAnnouncement,
+          this.ariaValueText() ?? untracked(() => resolveText(this.#defaults.completeAnnouncement)),
           'polite',
         );
       }

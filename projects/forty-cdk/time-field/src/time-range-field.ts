@@ -11,6 +11,8 @@ import {
   injectHiddenInput,
   injectTextDirection,
   RangeFieldComposer,
+  resolveText,
+  resolveTextRecord,
   type SegmentEditorContext,
   serializeISOTime,
   type TimeCapableDateAdapter,
@@ -178,7 +180,8 @@ export class ForTimeRangeField<D>
 
   /**
    * Per-segment placeholder shown while empty, applied to both endpoints.
-   * Unspecified parts fall back to `hh` / `mm` / `ss` / `--`.
+   * Unspecified parts fall back to the scope's `placeholder`
+   * (`provideForTimeRangeFieldDefaults`), then to `hh` / `mm` / `ss` / `--`.
    */
   readonly placeholder = input<Partial<Record<TimeSegmentType, string>>>({});
 
@@ -205,8 +208,8 @@ export class ForTimeRangeField<D>
   readonly #startContext: SegmentEditorContext;
   readonly #endContext: SegmentEditorContext;
 
-  readonly #startLabel = computed<string | null>(() => this.#defaults.startLabel);
-  readonly #endLabel = computed<string | null>(() => this.#defaults.endLabel);
+  readonly #startLabel = computed<string | null>(() => resolveText(this.#defaults.startLabel));
+  readonly #endLabel = computed<string | null>(() => resolveText(this.#defaults.endLabel));
 
   /** `aria-invalid` reflects the form-driven invalidity OR a self-detected disorder. */
   protected readonly ariaInvalid = computed(() => this.invalid() || this.#composer.disordered());
@@ -253,7 +256,10 @@ export class ForTimeRangeField<D>
           ? composeWithTime(this.adapter, timeSentinel(this.adapter), value)
           : value,
     });
-    const emptySegmentText = computed(() => this.#defaults.emptySegmentText);
+    const emptySegmentText = computed(() => resolveText(this.#defaults.emptySegmentText));
+    const placeholder = computed(() =>
+      resolveTextRecord(this.#defaults.placeholder, this.placeholder()),
+    );
     this.#startEngine = new TimeFieldEngine<D>({
       adapter: this.adapter,
       disabled: this.effectiveDisabled,
@@ -262,7 +268,7 @@ export class ForTimeRangeField<D>
       granularity: this.granularity,
       hourCycle: this.hourCycle,
       locale: this.locale,
-      placeholder: this.placeholder,
+      placeholder,
       emptySegmentText,
       minTime: this.minTime,
       maxTime: this.maxTime,
@@ -277,7 +283,7 @@ export class ForTimeRangeField<D>
       granularity: this.granularity,
       hourCycle: this.hourCycle,
       locale: this.locale,
-      placeholder: this.placeholder,
+      placeholder,
       emptySegmentText,
       minTime: this.minTime,
       maxTime: this.maxTime,

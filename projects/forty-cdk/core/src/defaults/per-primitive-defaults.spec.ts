@@ -1,5 +1,5 @@
 import {
-  type InjectionToken,
+  InjectionToken,
   type Provider,
   inject,
   provideZonelessChangeDetection,
@@ -211,13 +211,14 @@ interface DefaultsCase<D extends object> {
   /** The production fallback exported from the primitive's `*-defaults.ts`. */
   readonly fallback: D;
   /**
-   * Provider factory under test. Almost every helper takes `Partial<D>` and
-   * drops in directly; a helper whose signature is not the partial shape
-   * (`provideForBreakpointsDefaults(breakpoints)`) is adapted by a lambda here,
-   * so the three assertions below stay identical across every case.
+   * Provider factory under test. Almost every helper takes `Partial<D>` or a
+   * factory returning one and drops in directly; a helper whose signature is
+   * not the partial shape (`provideForBreakpointsDefaults(breakpoints)`) is
+   * adapted by a lambda here, so the four assertions below stay identical
+   * across every case.
    */
-  readonly provide: (overrides: Partial<D>) => Provider[];
-  /** A single key whose override value differs from the fallback. */
+  readonly provide: (overrides: Partial<D> | (() => Partial<D>)) => Provider[];
+  /** An override whose first key's value differs from the fallback. */
   readonly override: Partial<D>;
 }
 
@@ -364,14 +365,21 @@ const CASES: readonly DefaultsCase<object>[] = [
     token: FOR_CAROUSEL_DEFAULTS,
     fallback: FOR_CAROUSEL_FALLBACK_DEFAULTS,
     provide: provideForCarouselDefaults,
-    override: { slidesPerView: 3 },
+    override: {
+      slidesPerView: 3,
+      roleDescription: 'carrusel',
+      slideRoleDescription: 'diapositiva',
+    },
   }),
   defaultsCase({
     name: 'provideForCalendarDefaults',
     token: FOR_CALENDAR_DEFAULTS,
     fallback: FOR_CALENDAR_FALLBACK_DEFAULTS,
     provide: provideForCalendarDefaults,
-    override: { firstDayOfWeek: 1 },
+    override: {
+      firstDayOfWeek: 1,
+      outsideMonthLabel: (formattedDate) => `${formattedDate} (fuera del mes)`,
+    },
   }),
   defaultsCase({
     name: 'provideForDatePickerDefaults',
@@ -462,41 +470,44 @@ const CASES: readonly DefaultsCase<object>[] = [
     token: FOR_TOAST_DEFAULTS,
     fallback: FOR_TOAST_FALLBACK_DEFAULTS,
     provide: provideForToastDefaults,
-    override: { viewportAriaLabel: 'Notificaciones' },
+    override: { viewportAriaLabel: 'Notificaciones', closeAriaLabel: 'Cerrar' },
   }),
   defaultsCase({
     name: 'provideForDateFieldDefaults',
     token: FOR_DATE_FIELD_DEFAULTS,
     fallback: FOR_DATE_FIELD_FALLBACK_DEFAULTS,
     provide: provideForDateFieldDefaults,
-    override: { emptySegmentText: 'Vacío' },
+    override: { emptySegmentText: 'Vacío', placeholder: { year: 'aaaa' } },
   }),
   defaultsCase({
     name: 'provideForDateRangeFieldDefaults',
     token: FOR_DATE_RANGE_FIELD_DEFAULTS,
     fallback: FOR_DATE_RANGE_FIELD_FALLBACK_DEFAULTS,
     provide: provideForDateRangeFieldDefaults,
-    override: { startLabel: 'Fecha de inicio' },
+    override: { startLabel: 'Fecha de inicio', placeholder: { year: 'aaaa' } },
   }),
   defaultsCase({
     name: 'provideForTimeFieldDefaults',
     token: FOR_TIME_FIELD_DEFAULTS,
     fallback: FOR_TIME_FIELD_FALLBACK_DEFAULTS,
     provide: provideForTimeFieldDefaults,
-    override: { emptySegmentText: 'Vacío' },
+    override: { emptySegmentText: 'Vacío', placeholder: { dayPeriod: 'a. m.' } },
   }),
   defaultsCase({
     name: 'provideForTimeRangeFieldDefaults',
     token: FOR_TIME_RANGE_FIELD_DEFAULTS,
     fallback: FOR_TIME_RANGE_FIELD_FALLBACK_DEFAULTS,
     provide: provideForTimeRangeFieldDefaults,
-    override: { startLabel: 'Hora de inicio' },
+    override: { startLabel: 'Hora de inicio', placeholder: { dayPeriod: 'a. m.' } },
   }),
   defaultsCase({
     name: 'provideForBreakpointsDefaults',
     token: FOR_BREAKPOINTS_DEFAULTS,
     fallback: FOR_BREAKPOINTS_FALLBACK_DEFAULTS,
-    provide: ({ breakpoints }) => provideForBreakpointsDefaults(breakpoints!),
+    provide: (overrides) =>
+      provideForBreakpointsDefaults(
+        typeof overrides === 'function' ? () => overrides().breakpoints! : overrides.breakpoints!,
+      ),
     override: { breakpoints: { mobile: 0, tablet: 768, desktop: 1280 } },
   }),
 ];
@@ -572,6 +583,18 @@ describe('per-primitive defaults providers', () => {
         expect(fallback[overrideKey]).not.toEqual(override[overrideKey]);
 
         TestBed.configureTestingModule({ providers: [c.provide(c.override)] });
+        const resolved = TestBed.runInInjectionContext(() => inject(c.token));
+        expect(resolved).toEqual({ ...c.fallback, ...c.override });
+      });
+
+      it('merges the same override built by a factory that calls inject()', () => {
+        const OVERRIDE = new InjectionToken<object>('OVERRIDE');
+        TestBed.configureTestingModule({
+          providers: [
+            { provide: OVERRIDE, useValue: c.override },
+            c.provide(() => inject(OVERRIDE)),
+          ],
+        });
         const resolved = TestBed.runInInjectionContext(() => inject(c.token));
         expect(resolved).toEqual({ ...c.fallback, ...c.override });
       });

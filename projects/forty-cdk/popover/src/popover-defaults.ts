@@ -69,7 +69,13 @@ export const FOR_POPOVER_DEFAULTS = token;
  * Configures forty-cdk popover defaults for this injector scope. Partial
  * overrides inherit unspecified keys from the parent scope (or library
  * defaults at the root).
+ *
+ * Pass a function instead of an object to build the overrides where
+ * `inject()` is available; it runs once per injector that resolves the
+ * defaults.
  */
-export function provideForPopoverDefaults(defaults: Partial<ForPopoverDefaults> = {}): Provider[] {
+export function provideForPopoverDefaults(
+  defaults: Partial<ForPopoverDefaults> | (() => Partial<ForPopoverDefaults>) = {},
+): Provider[] {
   return provideDefaults(defaults);
 }

@@ -1,6 +1,6 @@
 import { Directive, inject, input } from '@angular/core';
 
-import { hostAriaLabel } from 'forty-cdk/core';
+import { hostAriaLabel, resolveTextInput } from 'forty-cdk/core';
 import { FOR_BREADCRUMBS_DEFAULTS } from './breadcrumbs-defaults';
 
 /**
@@ -53,7 +53,9 @@ export class ForBreadcrumbs {
    * breadcrumb trail and they need to be told apart; set it to `null` to drop
    * the attribute and rely on `aria-labelledby`.
    */
-  readonly ariaLabel = input<string | null>(this.#defaults.label);
+  readonly ariaLabel = input<string | null>();
 
-  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
+  protected readonly resolvedAriaLabel = hostAriaLabel(
+    () => resolveTextInput(this.ariaLabel(), this.#defaults.label) || null,
+  );
 }

@@ -132,7 +132,7 @@ const FAMILIES: readonly DefaultsKeyFamily[] = [
   },
   {
     name: 'datetime segment fields',
-    keys: ['emptySegmentText', 'segmentLabels'],
+    keys: ['emptySegmentText', 'segmentLabels', 'placeholder'],
     members: [
       'date-field/src/date-field-defaults.ts',
       'date-field/src/date-range-field-defaults.ts',

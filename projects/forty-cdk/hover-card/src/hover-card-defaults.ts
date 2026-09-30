@@ -99,9 +99,13 @@ export class HoverCardCoordinator extends SkipDelayCoordinator {
  * Partial overrides inherit unspecified keys from the parent scope (or
  * library defaults at the root). Each call establishes a new coordinator
  * scope.
+ *
+ * Pass a function instead of an object to build the overrides where
+ * `inject()` is available; it runs once per injector that resolves the
+ * defaults.
  */
 export function provideForHoverCardDefaults(
-  defaults: Partial<ForHoverCardDefaults> = {},
+  defaults: Partial<ForHoverCardDefaults> | (() => Partial<ForHoverCardDefaults>) = {},
 ): Provider[] {
   return [...provideDefaults(defaults), HoverCardCoordinator];
 }

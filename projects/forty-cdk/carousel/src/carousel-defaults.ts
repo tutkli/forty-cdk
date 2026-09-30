@@ -1,6 +1,6 @@
 import { type Provider } from '@angular/core';
 
-import { createDefaults } from 'forty-cdk/core';
+import { createDefaults, type LocalizableText } from 'forty-cdk/core';
 import { type CarouselAlign } from './carousel-context';
 
 /**
@@ -55,14 +55,26 @@ export interface ForCarouselDefaults {
    * `[startLabel]` locally. Localize it here to translate every carousel
    * rotation control in the scope.
    */
-  rotationStartLabel: string;
+  rotationStartLabel: LocalizableText;
   /**
    * Accessible name for `[forCarouselRotationControl]` while rotation is
    * **playing** (activating the control stops it), for controls that don't set
    * `[stopLabel]` locally. Localize it here to translate every carousel
    * rotation control in the scope.
    */
-  rotationStopLabel: string;
+  rotationStopLabel: LocalizableText;
+  /**
+   * `aria-roledescription` of the carousel root, spoken in place of its
+   * `group` role. Localize it here to translate every carousel in the scope;
+   * an empty string drops the attribute.
+   */
+  roleDescription: LocalizableText;
+  /**
+   * `aria-roledescription` of each `[forCarouselSlide]`, spoken in place of
+   * its `group` role. Localize it here to translate every slide in the scope;
+   * an empty string drops the attribute.
+   */
+  slideRoleDescription: LocalizableText;
 }
 
 /**
@@ -81,6 +93,8 @@ export const FOR_CAROUSEL_FALLBACK_DEFAULTS: ForCarouselDefaults = {
   indicatorLabel: (position) => `Go to slide ${position}`,
   rotationStartLabel: 'Start automatic slide show',
   rotationStopLabel: 'Stop automatic slide show',
+  roleDescription: 'carousel',
+  slideRoleDescription: 'slide',
 };
 
 const { token, provideDefaults } = createDefaults<ForCarouselDefaults>(
@@ -95,9 +109,13 @@ export const FOR_CAROUSEL_DEFAULTS = token;
  * Configures forty-cdk carousel defaults for this injector scope. Partial
  * overrides inherit unspecified keys from the parent scope (or library
  * defaults at the root).
+ *
+ * Pass a function instead of an object to build the overrides where
+ * `inject()` is available; it runs once per injector that resolves the
+ * defaults.
  */
 export function provideForCarouselDefaults(
-  defaults: Partial<ForCarouselDefaults> = {},
+  defaults: Partial<ForCarouselDefaults> | (() => Partial<ForCarouselDefaults>) = {},
 ): Provider[] {
   return provideDefaults(defaults);
 }

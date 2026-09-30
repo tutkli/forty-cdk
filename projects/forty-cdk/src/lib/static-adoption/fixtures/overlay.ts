@@ -9,7 +9,13 @@ import {
   ForPopoverTitle,
   ForPopoverTrigger,
 } from 'forty-cdk/popover';
-import { ForToast, ForToastDescription, ForToastTitle, ForToastViewport } from 'forty-cdk/toast';
+import {
+  ForToast,
+  ForToastClose,
+  ForToastDescription,
+  ForToastTitle,
+  ForToastViewport,
+} from 'forty-cdk/toast';
 import { ForTooltip, ForTooltipContent, ForTooltipTrigger } from 'forty-cdk/tooltip';
 
 import type { StaticAdoptionAdopter } from './mount';
@@ -165,7 +171,7 @@ class TooltipBare {
 }
 
 @Component({
-  imports: [ForToast, ForToastTitle, ForToastDescription, ForToastViewport],
+  imports: [ForToast, ForToastTitle, ForToastDescription, ForToastClose, ForToastViewport],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `<div forToastViewport aria-label="Probe notifications"></div>
     @if (open()) {
@@ -177,6 +183,7 @@ class TooltipBare {
       >
         <div forToastTitle id="probe-title">Saved</div>
         <div forToastDescription id="probe-description">Changes are live.</div>
+        <button forToastClose aria-label="Probe close"></button>
       </div>
     }`,
 })
@@ -185,13 +192,14 @@ class ToastAdopted {
 }
 
 @Component({
-  imports: [ForToast, ForToastTitle, ForToastDescription, ForToastViewport],
+  imports: [ForToast, ForToastTitle, ForToastDescription, ForToastClose, ForToastViewport],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `<div forToastViewport></div>
     @if (open()) {
       <div forToast (dismiss)="open.set(false)">
         <div forToastTitle>Saved</div>
         <div forToastDescription>Changes are live.</div>
+        <button forToastClose></button>
       </div>
     }`,
 })
@@ -438,6 +446,14 @@ export const OVERLAY_FAMILY_ADOPTERS: readonly StaticAdoptionAdopter[] = [
         seam: 'hostAriaLabel',
         probe: 'Probe notifications',
         fallback: 'Notifications',
+      },
+      {
+        key: '[forToastClose]',
+        channel: 'aria-label',
+        source: 'toast/src/toast-close.ts',
+        seam: 'hostAriaLabel',
+        probe: 'Probe close',
+        fallback: 'Close',
       },
     ],
   },

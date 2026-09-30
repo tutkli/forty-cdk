@@ -1,6 +1,6 @@
 import { type Provider } from '@angular/core';
 
-import { createDefaults, type SegmentType } from 'forty-cdk/core';
+import { createDefaults, type LocalizableText, type SegmentType } from 'forty-cdk/core';
 
 /**
  * Accessible name announced for each editable segment, keyed by its part type.
@@ -8,7 +8,7 @@ import { createDefaults, type SegmentType } from 'forty-cdk/core';
  * falls back to the library default for that part — so overriding just
  * `dayPeriod` keeps the English labels for the rest.
  */
-export type ForDateRangeFieldSegmentLabels = Partial<Record<SegmentType, string>>;
+export type ForDateRangeFieldSegmentLabels = Partial<Record<SegmentType, LocalizableText>>;
 
 /**
  * Defaults inherited by descendant `[forDateRangeField]` controls in the
@@ -22,7 +22,7 @@ export interface ForDateRangeFieldDefaults {
    * segment, so screen readers report the segment's empty state instead of
    * silence. Override for localization.
    */
-  emptySegmentText: string;
+  emptySegmentText: LocalizableText;
   /**
    * Accessible names announced for each editable segment (via `aria-label`),
    * keyed by part type, used when a segment has no explicit `ariaLabel`. The
@@ -31,15 +31,21 @@ export interface ForDateRangeFieldDefaults {
    */
   segmentLabels: ForDateRangeFieldSegmentLabels;
   /**
+   * Placeholder each empty editable segment shows, keyed by part type, for
+   * fields whose `[placeholder]` doesn't name that part. Unset parts fall back
+   * to a letter-repeat default (`dd` / `mm` / `yyyy` / `hh` / `mm` / `ss` / `--`).
+   */
+  placeholder: Partial<Record<SegmentType, LocalizableText>>;
+  /**
    * Accessible name announced (via `aria-label`) for the start endpoint group,
    * used when `[forDateRangeFieldStart]` has no explicit `ariaLabel`.
    */
-  startLabel: string;
+  startLabel: LocalizableText;
   /**
    * Accessible name announced (via `aria-label`) for the end endpoint group,
    * used when `[forDateRangeFieldEnd]` has no explicit `ariaLabel`.
    */
-  endLabel: string;
+  endLabel: LocalizableText;
 }
 
 /**
@@ -66,6 +72,7 @@ export const DEFAULT_DATE_RANGE_FIELD_SEGMENT_LABELS: Readonly<Record<SegmentTyp
 export const FOR_DATE_RANGE_FIELD_FALLBACK_DEFAULTS: ForDateRangeFieldDefaults = {
   emptySegmentText: 'Empty',
   segmentLabels: DEFAULT_DATE_RANGE_FIELD_SEGMENT_LABELS,
+  placeholder: {},
   startLabel: 'Start date',
   endLabel: 'End date',
 };
@@ -82,9 +89,13 @@ export const FOR_DATE_RANGE_FIELD_DEFAULTS = token;
  * Configures forty-cdk date-range-field defaults for this injector scope.
  * Partial overrides inherit unspecified keys from the parent scope (or library
  * defaults at the root).
+ *
+ * Pass a function instead of an object to build the overrides where
+ * `inject()` is available; it runs once per injector that resolves the
+ * defaults.
  */
 export function provideForDateRangeFieldDefaults(
-  defaults: Partial<ForDateRangeFieldDefaults> = {},
+  defaults: Partial<ForDateRangeFieldDefaults> | (() => Partial<ForDateRangeFieldDefaults>) = {},
 ): Provider[] {
   return provideDefaults(defaults);
 }

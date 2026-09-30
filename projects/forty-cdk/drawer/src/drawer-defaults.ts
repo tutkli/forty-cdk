@@ -151,7 +151,13 @@ export const FOR_DRAWER_DEFAULTS = token;
  * (root-provided) only sees an application-root configuration unless the caller
  * passes its `injector` on the `open()` config — see the scope caveat on
  * {@link ForDrawerDefaults}.
+ *
+ * Pass a function instead of an object to build the overrides where
+ * `inject()` is available; it runs once per injector that resolves the
+ * defaults.
  */
-export function provideForDrawerDefaults(defaults: Partial<ForDrawerDefaults> = {}): Provider[] {
+export function provideForDrawerDefaults(
+  defaults: Partial<ForDrawerDefaults> | (() => Partial<ForDrawerDefaults>) = {},
+): Provider[] {
   return provideDefaults(defaults);
 }

@@ -154,17 +154,17 @@ export class ApptTimeFormField {
 
 ### `ForTimeField`
 
-| Property      | Type                                              | Description                                                                                                                             |
-| ------------- | ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `value`       | `model<D \| null>`                                | Two-way bindable entered time, or `null` while any visible segment is empty. The `FormValueControl` backing.<br>**Default:** `null`     |
-| `minTime`     | `input<D \| null>`                                | Earliest time-of-day (inclusive). A composed value earlier in the day is clamped up. Named `minTime` (see note).<br>**Default:** `null` |
-| `maxTime`     | `input<D \| null>`                                | Latest time-of-day (inclusive). A composed value later in the day is clamped down.<br>**Default:** `null`                               |
-| `hourCycle`   | `input<12 \| 24 \| null>`                         | 12- or 24-hour cycle. `null` → derived from the locale. 12-hour adds the AM/PM segment.<br>**Default:** `null`                          |
-| `granularity` | `input<'hour' \| 'minute' \| 'second'>`           | Smallest editable unit.<br>**Default:** `'minute'`                                                                                      |
-| `locale`      | `input<string \| null>`                           | BCP 47 locale driving segment order, separators, and AM/PM names. `null` → runtime locale.<br>**Default:** `null`                       |
-| `placeholder` | `input<Partial<Record<TimeSegmentType, string>>>` | Per-segment placeholder while empty. Unspecified parts fall back to `hh` / `mm` / `ss` / `--`.<br>**Default:** `{}`                     |
-| `ariaLabel`   | `input<string \| null>`                           | Accessible name for the group. Emits no `aria-label` while `null`.<br>**Default:** `null`                                               |
-| `dir`         | `input<'ltr' \| 'rtl' \| null>`                   | Writing direction. `null` resolves the ambient direction; mirrors ArrowLeft / ArrowRight segment navigation.<br>**Default:** `null`     |
+| Property      | Type                                              | Description                                                                                                                                            |
+| ------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `value`       | `model<D \| null>`                                | Two-way bindable entered time, or `null` while any visible segment is empty. The `FormValueControl` backing.<br>**Default:** `null`                    |
+| `minTime`     | `input<D \| null>`                                | Earliest time-of-day (inclusive). A composed value earlier in the day is clamped up. Named `minTime` (see note).<br>**Default:** `null`                |
+| `maxTime`     | `input<D \| null>`                                | Latest time-of-day (inclusive). A composed value later in the day is clamped down.<br>**Default:** `null`                                              |
+| `hourCycle`   | `input<12 \| 24 \| null>`                         | 12- or 24-hour cycle. `null` → derived from the locale. 12-hour adds the AM/PM segment.<br>**Default:** `null`                                         |
+| `granularity` | `input<'hour' \| 'minute' \| 'second'>`           | Smallest editable unit.<br>**Default:** `'minute'`                                                                                                     |
+| `locale`      | `input<string \| null>`                           | BCP 47 locale driving segment order, separators, and AM/PM names. `null` → runtime locale.<br>**Default:** `null`                                      |
+| `placeholder` | `input<Partial<Record<TimeSegmentType, string>>>` | Per-segment placeholder while empty. Unspecified parts fall back to the scope's `placeholder`, then to `hh` / `mm` / `ss` / `--`.<br>**Default:** `{}` |
+| `ariaLabel`   | `input<string \| null>`                           | Accessible name for the group. Emits no `aria-label` while `null`.<br>**Default:** `null`                                                              |
+| `dir`         | `input<'ltr' \| 'rtl' \| null>`                   | Writing direction. `null` resolves the ambient direction; mirrors ArrowLeft / ArrowRight segment navigation.<br>**Default:** `null`                    |
 
 Plus the shared `FormUiControl` members from `@angular/forms/signals`: `disabled`, `readonly`, `required`, `invalid`, `name`, `errors`, `touched` (bound automatically by `[formField]`).
 
@@ -189,17 +189,22 @@ Plus the shared `FormUiControl` members from `@angular/forms/signals`: `disabled
 ```ts
 import { provideForTimeFieldDefaults } from 'forty-cdk/time-field';
 
-// app config or a component's providers — localize segment labels and the
-// empty-segment announcement for every nested [forTimeField].
+// app config or a component's providers — localize segment labels, the
+// empty-segment announcement and the placeholders for every nested [forTimeField].
 providers: [
   provideForTimeFieldDefaults({
     emptySegmentText: 'Vacío',
     segmentLabels: { hour: 'hora', minute: 'minuto', second: 'segundo', dayPeriod: 'AM/PM' },
+    placeholder: { dayPeriod: 'a. m.' },
   }),
 ];
 ```
 
 `segmentLabels` supplies each segment's default `aria-label`, keyed by part type. Unset keys keep the library default (the part name, and `'AM/PM'` for the `dayPeriod` segment), so overriding a single key never wipes the rest. A segment's own `[ariaLabel]` still wins over the scope default.
+
+`placeholder` is the text an empty segment shows, keyed the same way. A field's own `[placeholder]` wins for the parts it names and only those, and a part neither names keeps the letter-repeat default. `provideForTimeRangeFieldDefaults` takes the same three keys for `[forTimeRangeField]`.
+
+For a language the app sets or switches after bootstrap, pass the text keys as functions and the overrides as a factory, as [Localizing default text](../shared/README.md#localizing-default-text) shows.
 
 ## Range selection — `ForTimeRangeField`
 
@@ -254,7 +259,7 @@ readonly schedule = form(this.model);
 | `granularity`    | `input<'hour' \| 'minute' \| 'second'>`           | Smallest editable unit shared by both endpoints.<br>**Default:** `'minute'`                                                                                                                                                                                                       |
 | `hourCycle`      | `input<12 \| 24 \| null>`                         | 12/24-hour cycle. `null` → locale. 12-hour adds the AM/PM segment to each endpoint.<br>**Default:** `null`                                                                                                                                                                        |
 | `locale`         | `input<string \| null>`                           | BCP 47 locale driving segment order, separators, and AM/PM names. `null` → runtime locale.<br>**Default:** `null`                                                                                                                                                                 |
-| `placeholder`    | `input<Partial<Record<TimeSegmentType, string>>>` | Per-segment placeholder while empty, applied to both endpoints.<br>**Default:** `{}`                                                                                                                                                                                              |
+| `placeholder`    | `input<Partial<Record<TimeSegmentType, string>>>` | Per-segment placeholder while empty, applied to both endpoints. Unspecified parts fall back to the scope's `placeholder`.<br>**Default:** `{}`                                                                                                                                    |
 | `ariaLabel`      | `input<string \| null>`                           | Accessible name for the whole range field group. Emits no `aria-label` while `null`.<br>**Default:** `null`                                                                                                                                                                       |
 | `dir`            | `input<'ltr' \| 'rtl' \| null>`                   | Writing direction. `null` resolves the ambient direction; mirrors ArrowLeft / ArrowRight segment navigation.<br>**Default:** `null`                                                                                                                                               |
 

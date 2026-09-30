@@ -1,6 +1,6 @@
 import { computed, Directive, inject, input } from '@angular/core';
 
-import { hostButtonType } from 'forty-cdk/core';
+import { hostButtonType, resolveTextInput } from 'forty-cdk/core';
 import { injectCarouselContext } from './carousel-context';
 import { FOR_CAROUSEL_DEFAULTS } from './carousel-defaults';
 
@@ -40,7 +40,7 @@ export class ForCarouselRotationControl {
    * show'` unless overridden via `provideForCarouselDefaults`); set `null` to
    * drop `aria-label` when the button already carries a visible text label.
    */
-  readonly startLabel = input<string | null>(this.#defaults.rotationStartLabel);
+  readonly startLabel = input<string | null>();
 
   /**
    * Accessible name shown while rotation is **playing** (the button will stop
@@ -48,10 +48,13 @@ export class ForCarouselRotationControl {
    * show'` unless overridden via `provideForCarouselDefaults`); set `null` to
    * drop `aria-label` when the button already carries a visible text label.
    */
-  readonly stopLabel = input<string | null>(this.#defaults.rotationStopLabel);
+  readonly stopLabel = input<string | null>();
 
   /** The current accessible name — `stopLabel` while playing, else `startLabel`. */
   protected readonly label = computed(
-    () => (this.ctx.playing() ? this.stopLabel() : this.startLabel()) || null,
+    () =>
+      (this.ctx.playing()
+        ? resolveTextInput(this.stopLabel(), this.#defaults.rotationStopLabel)
+        : resolveTextInput(this.startLabel(), this.#defaults.rotationStartLabel)) || null,
   );
 }

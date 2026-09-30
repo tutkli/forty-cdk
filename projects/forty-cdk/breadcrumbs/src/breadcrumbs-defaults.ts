@@ -1,6 +1,6 @@
 import { type Provider } from '@angular/core';
 
-import { createDefaults } from 'forty-cdk/core';
+import { createDefaults, type LocalizableText } from 'forty-cdk/core';
 
 /**
  * Defaults inherited by descendant breadcrumb trails in the surrounding
@@ -14,7 +14,7 @@ export interface ForBreadcrumbsDefaults {
    * don't set `[ariaLabel]` locally. Localize it here to translate every
    * breadcrumb landmark in the scope.
    */
-  label: string;
+  label: LocalizableText;
 }
 
 /**
@@ -38,9 +38,13 @@ export const FOR_BREADCRUMBS_DEFAULTS = token;
  * Configures forty-cdk breadcrumbs defaults for this injector scope. Partial
  * overrides inherit unspecified keys from the parent scope (or library
  * defaults at the root).
+ *
+ * Pass a function instead of an object to build the overrides where
+ * `inject()` is available; it runs once per injector that resolves the
+ * defaults.
  */
 export function provideForBreadcrumbsDefaults(
-  defaults: Partial<ForBreadcrumbsDefaults> = {},
+  defaults: Partial<ForBreadcrumbsDefaults> | (() => Partial<ForBreadcrumbsDefaults>) = {},
 ): Provider[] {
   return provideDefaults(defaults);
 }

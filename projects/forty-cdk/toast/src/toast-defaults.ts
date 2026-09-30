@@ -1,6 +1,6 @@
 import { type Provider } from '@angular/core';
 
-import { createDefaults } from 'forty-cdk/core';
+import { createDefaults, type LocalizableText } from 'forty-cdk/core';
 import { type ForToastStackShift } from './toast-stack-shift';
 
 /**
@@ -22,7 +22,13 @@ export interface ForToastDefaults {
    * `role="region"`), for viewports that don't set `[ariaLabel]` locally.
    * Localize it here to translate every toast viewport in the scope.
    */
-  viewportAriaLabel: string;
+  viewportAriaLabel: LocalizableText;
+  /**
+   * Accessible name for the close button (`[forToastClose]`), for close
+   * buttons that don't set `[ariaLabel]` locally. Localize it here to
+   * translate every toast close button in the scope.
+   */
+  closeAriaLabel: LocalizableText;
   /**
    * How toast viewports in this scope behave over an open modal `ForDialog` /
    * `ForDrawer`. Default `'peer'`.
@@ -56,6 +62,7 @@ export const FOR_TOAST_FALLBACK_DEFAULTS: ForToastDefaults = {
   hotkey: 'F6',
   maxVisible: Infinity,
   viewportAriaLabel: 'Notifications',
+  closeAriaLabel: 'Close',
   overModal: 'peer',
   stackShift: null,
 };
@@ -76,7 +83,13 @@ export const FOR_TOAST_DEFAULTS = token;
  * Configures forty-cdk toast defaults for this injector scope. Partial
  * overrides inherit unspecified keys from the parent scope (or library
  * defaults at the root).
+ *
+ * Pass a function instead of an object to build the overrides where
+ * `inject()` is available; it runs once per injector that resolves the
+ * defaults.
  */
-export function provideForToastDefaults(defaults: Partial<ForToastDefaults> = {}): Provider[] {
+export function provideForToastDefaults(
+  defaults: Partial<ForToastDefaults> | (() => Partial<ForToastDefaults>) = {},
+): Provider[] {
   return provideDefaults(defaults);
 }

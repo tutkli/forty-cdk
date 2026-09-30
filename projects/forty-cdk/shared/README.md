@@ -19,7 +19,7 @@ import { ForTabs, ForTabsList, ForTabsTrigger } from 'forty-cdk/tabs';
 import type { WritingDirection } from 'forty-cdk/shared';
 ```
 
-There is nothing to install and, unless you mount more than one forty-cdk app on a page (see [Multiple apps on one page](#multiple-apps-on-one-page)), nothing to provide: 34 of the 42 exports are structural types erased at compile time, and the eight runtime values resolve to the same singly-compiled module every primitive already loads.
+There is nothing to install and, unless you mount more than one forty-cdk app on a page (see [Multiple apps on one page](#multiple-apps-on-one-page)), nothing to provide: 35 of the 43 exports are structural types erased at compile time, and the eight runtime values resolve to the same singly-compiled module every primitive already loads.
 
 ## What it exports
 
@@ -32,6 +32,7 @@ There is nothing to install and, unless you mount more than one forty-cdk app on
 | **Menu family**            | `FOR_MENU_CONTEXT`, `ForMenuContext`, `ForMenuCloseReason`, `ForMenuItemHandle`, `MenuActivationModality`, `MenuOpenerPositioning`, `MenuSiblingNavigator`                                                                                                                                       |
 | **Fieldset**               | `FOR_FIELDSET_CONTEXT`, `ForFieldsetContext`                                                                                                                                                                                                                                                     |
 | **Accessible text**        | `accessibleTextContent`                                                                                                                                                                                                                                                                          |
+| **Localization**           | `LocalizableText`                                                                                                                                                                                                                                                                                |
 | **Id generation**          | `FOR_ID_SALT`, `provideForIdSalt`                                                                                                                                                                                                                                                                |
 | **Other**                  | `ListboxOverlayContext`, `DragPreview`, `SwipeDirection`, `SwipeEventDetail`                                                                                                                                                                                                                     |
 
@@ -52,6 +53,31 @@ const label = accessibleTextContent(host).trim();
 ```
 
 The result is untrimmed, so apply your own `.trim()` when comparing. Deriving the text yourself with `textContent` works until an `aria-hidden` glyph appears inside the host, at which point your definition and the library's silently disagree.
+
+## Localizing default text
+
+Every `provideFor<X>Defaults` key that holds text a screen reader speaks or a field shows is typed `LocalizableText`: a string, or a function returning one. The library calls the function each time it renders or announces the text, so a function that reads a signal keeps the text in the current language. A plain string behaves as it always has.
+
+Every provider also accepts a factory in place of the object. It runs in an injection context, so it can `inject()` the service that holds your translations:
+
+<!-- snippet: fragment -->
+
+```ts
+import { inject } from '@angular/core';
+import { provideForComboboxDefaults } from 'forty-cdk/combobox';
+
+provideForComboboxDefaults(() => {
+  const i18n = inject(AppI18n);
+  return {
+    clearAriaLabel: () => i18n.t('combobox.clear'),
+    chipRemoveLabel: (label) => i18n.t('combobox.remove', { label }),
+  };
+});
+```
+
+An app that loads or switches its language after bootstrap needs both. The factory runs once per injector, so on its own it only reads the translations available at that moment; the functions it returns are what follow a later switch. The label builders (`chipRemoveLabel`, `slideLabel`, `stepValueText` and the rest) are functions already, and follow a signal they read in the same way.
+
+A per-instance input still wins over the key: `[ariaLabel]="'Clear search'"` names that one control, and `[ariaLabel]="null"` drops the attribute.
 
 ## Multiple apps on one page
 

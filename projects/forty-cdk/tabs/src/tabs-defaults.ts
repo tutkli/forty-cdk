@@ -46,7 +46,13 @@ export const FOR_TABS_DEFAULTS = token;
  * Configures forty-cdk tabs defaults for this injector scope. Partial
  * overrides inherit unspecified keys from the parent scope (or library
  * defaults at the root).
+ *
+ * Pass a function instead of an object to build the overrides where
+ * `inject()` is available; it runs once per injector that resolves the
+ * defaults.
  */
-export function provideForTabsDefaults(defaults: Partial<ForTabsDefaults> = {}): Provider[] {
+export function provideForTabsDefaults(
+  defaults: Partial<ForTabsDefaults> | (() => Partial<ForTabsDefaults>) = {},
+): Provider[] {
   return provideDefaults(defaults);
 }

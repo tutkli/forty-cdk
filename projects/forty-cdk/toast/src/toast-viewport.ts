@@ -22,6 +22,7 @@ import {
   injectPortal,
   injectPrefersReducedMotion,
   resolveConfigClass,
+  resolveTextInput,
 } from 'forty-cdk/core';
 import {
   DEFAULT_TOAST_REGION,
@@ -192,9 +193,11 @@ export class ForToastViewport {
    * `null` to drop the attribute. A static `aria-label` on the host replaces
    * both the default and this input.
    */
-  readonly ariaLabel = input<string | null>(this.#defaults.viewportAriaLabel);
+  readonly ariaLabel = input<string | null>();
 
-  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
+  protected readonly resolvedAriaLabel = hostAriaLabel(
+    () => resolveTextInput(this.ariaLabel(), this.#defaults.viewportAriaLabel) || null,
+  );
 
   /**
    * The toast region this viewport renders. Only toasts whose `region` matches

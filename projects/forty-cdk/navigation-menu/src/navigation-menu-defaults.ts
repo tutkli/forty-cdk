@@ -43,9 +43,13 @@ export const FOR_NAVIGATION_MENU_DEFAULTS = token;
  * Configures forty-cdk navigation-menu defaults for this injector scope.
  * Partial overrides inherit unspecified keys from the parent scope (or
  * library defaults at the root).
+ *
+ * Pass a function instead of an object to build the overrides where
+ * `inject()` is available; it runs once per injector that resolves the
+ * defaults.
  */
 export function provideForNavigationMenuDefaults(
-  defaults: Partial<ForNavigationMenuDefaults> = {},
+  defaults: Partial<ForNavigationMenuDefaults> | (() => Partial<ForNavigationMenuDefaults>) = {},
 ): Provider[] {
   return provideDefaults(defaults);
 }

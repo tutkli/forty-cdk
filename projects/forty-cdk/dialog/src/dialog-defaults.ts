@@ -81,7 +81,13 @@ export const FOR_DIALOG_DEFAULTS = token;
  * (root-provided) only sees an application-root configuration unless the caller
  * passes its `injector` on the `open()` config — see the scope caveat on
  * {@link ForDialogDefaults}.
+ *
+ * Pass a function instead of an object to build the overrides where
+ * `inject()` is available; it runs once per injector that resolves the
+ * defaults.
  */
-export function provideForDialogDefaults(defaults: Partial<ForDialogDefaults> = {}): Provider[] {
+export function provideForDialogDefaults(
+  defaults: Partial<ForDialogDefaults> | (() => Partial<ForDialogDefaults>) = {},
+): Provider[] {
   return provideDefaults(defaults);
 }

@@ -5,7 +5,9 @@ import { injectCarouselContext } from './carousel-context';
 
 /**
  * One slide in the carousel track. Carries `role="group"` and
- * `aria-roledescription="slide"` per the WAI-ARIA APG Carousel pattern.
+ * `aria-roledescription="slide"` per the WAI-ARIA APG Carousel pattern; the
+ * role description is localizable through `provideForCarouselDefaults`'s
+ * `slideRoleDescription`.
  *
  * The default `aria-label` is the positional `"N of M"` string (APG mandates
  * a positional label on each slide). Set `ariaLabel` to override with a
@@ -20,7 +22,7 @@ import { injectCarouselContext } from './carousel-context';
   exportAs: 'forCarouselSlide',
   host: {
     role: 'group',
-    'aria-roledescription': 'slide',
+    '[attr.aria-roledescription]': 'roleDescription()',
     '[attr.aria-label]': 'ariaLabel() || positionLabel()',
     '[attr.data-state]': 'current() ? "active" : "inactive"',
     '[attr.data-in-view]': 'inView() ? "" : null',
@@ -48,6 +50,8 @@ export class ForCarouselSlide {
 
   /** Whether this slide is within the visible window. */
   protected readonly inView = computed(() => this.ctx.isInView(this.#index()));
+
+  protected readonly roleDescription = computed(() => this.ctx.slideRoleDescription());
 
   /** The positional `"N of M"` label used when no explicit `ariaLabel` is set. */
   protected readonly positionLabel = computed(() => {

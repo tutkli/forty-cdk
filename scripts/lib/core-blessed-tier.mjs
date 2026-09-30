@@ -24,6 +24,7 @@ export const CORE_PUBLISHERS = {
     'injectDateAdapter',
     'ListboxOverlayContext',
     'ListNavigationAction',
+    'LocalizableText',
     'MenuActivationModality',
     'MenuOpenerPositioning',
     'MenuSiblingNavigator',

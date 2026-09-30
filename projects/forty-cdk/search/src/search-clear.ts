@@ -1,6 +1,6 @@
 import { computed, Directive, inject, input } from '@angular/core';
 
-import { hostButtonType, hostAriaLabel, reflectDisabled } from 'forty-cdk/core';
+import { hostButtonType, hostAriaLabel, reflectDisabled, resolveTextInput } from 'forty-cdk/core';
 import { injectSearchGroup } from './search-context';
 import { FOR_SEARCH_DEFAULTS } from './search-defaults';
 
@@ -57,9 +57,11 @@ export class ForSearchClear {
    * `provideForSearchDefaults`); set `[ariaLabel]` to override per-instance, or
    * `null` to drop the attribute.
    */
-  readonly ariaLabel = input<string | null>(this.#defaults.clearAriaLabel);
+  readonly ariaLabel = input<string | null>();
 
-  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
+  protected readonly resolvedAriaLabel = hostAriaLabel(
+    () => resolveTextInput(this.ariaLabel(), this.#defaults.clearAriaLabel) || null,
+  );
 
   /** `true` while there is text to clear; drives the self-hide logic. */
   protected readonly hasContent = computed(() => (this.group.field()?.value().length ?? 0) > 0);

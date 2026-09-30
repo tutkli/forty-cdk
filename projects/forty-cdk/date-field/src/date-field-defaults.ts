@@ -1,6 +1,6 @@
 import { type Provider } from '@angular/core';
 
-import { createDefaults, type SegmentType } from 'forty-cdk/core';
+import { createDefaults, type LocalizableText, type SegmentType } from 'forty-cdk/core';
 
 /**
  * Accessible name announced for each editable segment, keyed by its part type.
@@ -8,7 +8,7 @@ import { createDefaults, type SegmentType } from 'forty-cdk/core';
  * falls back to the library default for that part — so overriding just
  * `dayPeriod` keeps the English labels for the rest.
  */
-export type ForDateFieldSegmentLabels = Partial<Record<SegmentType, string>>;
+export type ForDateFieldSegmentLabels = Partial<Record<SegmentType, LocalizableText>>;
 
 /**
  * Defaults inherited by descendant `[forDateField]` controls in the
@@ -22,7 +22,7 @@ export interface ForDateFieldDefaults {
    * segment, so screen readers report the segment's empty state instead of
    * silence. Override for localization.
    */
-  emptySegmentText: string;
+  emptySegmentText: LocalizableText;
   /**
    * Accessible names announced for each editable segment (via `aria-label`),
    * keyed by part type, used when a segment has no explicit `ariaLabel`. The
@@ -30,6 +30,12 @@ export interface ForDateFieldDefaults {
    * Override for localization; unset keys keep the library default.
    */
   segmentLabels: ForDateFieldSegmentLabels;
+  /**
+   * Placeholder each empty editable segment shows, keyed by part type, for
+   * fields whose `[placeholder]` doesn't name that part. Unset parts fall back
+   * to a letter-repeat default (`dd` / `mm` / `yyyy` / `hh` / `mm` / `ss` / `--`).
+   */
+  placeholder: Partial<Record<SegmentType, LocalizableText>>;
 }
 
 /**
@@ -55,6 +61,7 @@ export const DEFAULT_DATE_FIELD_SEGMENT_LABELS: Readonly<Record<SegmentType, str
 export const FOR_DATE_FIELD_FALLBACK_DEFAULTS: ForDateFieldDefaults = {
   emptySegmentText: 'Empty',
   segmentLabels: DEFAULT_DATE_FIELD_SEGMENT_LABELS,
+  placeholder: {},
 };
 
 const { token, provideDefaults } = createDefaults<ForDateFieldDefaults>(
@@ -69,9 +76,13 @@ export const FOR_DATE_FIELD_DEFAULTS = token;
  * Configures forty-cdk date-field defaults for this injector scope. Partial
  * overrides inherit unspecified keys from the parent scope (or library
  * defaults at the root).
+ *
+ * Pass a function instead of an object to build the overrides where
+ * `inject()` is available; it runs once per injector that resolves the
+ * defaults.
  */
 export function provideForDateFieldDefaults(
-  defaults: Partial<ForDateFieldDefaults> = {},
+  defaults: Partial<ForDateFieldDefaults> | (() => Partial<ForDateFieldDefaults>) = {},
 ): Provider[] {
   return provideDefaults(defaults);
 }

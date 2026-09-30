@@ -121,9 +121,10 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
    * Formats the full accessible date string each gridcell exposes as its
    * `aria-label` (the visible content stays the bare day number). Defaults to
    * the localized full date (e.g. `"Monday, June 15, 2026"`), with
-   * outside-month padding days suffixed (`" (outside month)"`) so assistive
-   * tech can tell them apart from the visible month. Override to localize that
-   * suffix or change the format entirely.
+   * outside-month padding days passed through the scope's `outsideMonthLabel`
+   * (`"<date> (outside month)"` unless localized via `provideForCalendarDefaults`)
+   * so assistive tech can tell them apart from the visible month. Override to
+   * change the format entirely.
    */
   readonly dateLabel = input<CalendarDateLabelFormatter<D>>(
     (date, { adapter, outsideMonth, locale }) => {
@@ -132,7 +133,7 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
         { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' },
         locale ?? undefined,
       );
-      return outsideMonth ? `${formatted} (outside month)` : formatted;
+      return outsideMonth ? this.#defaults.outsideMonthLabel(formatted) : formatted;
     },
   );
 

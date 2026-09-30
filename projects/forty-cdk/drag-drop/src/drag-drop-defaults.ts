@@ -1,6 +1,6 @@
 import { type Provider } from '@angular/core';
 
-import { createDefaults } from 'forty-cdk/core';
+import { createDefaults, type LocalizableText } from 'forty-cdk/core';
 
 /**
  * Defaults inherited by descendant drag-drop lists in the surrounding injector
@@ -23,7 +23,7 @@ export interface ForDragDropDefaults {
    * `aria-roledescription` applied to each draggable item. Empty string disables
    * the attribute.
    */
-  itemRoleDescription: string;
+  itemRoleDescription: LocalizableText;
   /**
    * Announcement when an item is lifted. `index` / `total` describe the source
    * list, per the positional contract above.
@@ -75,9 +75,13 @@ export const FOR_DRAG_DROP_DEFAULTS = token;
  * Configures forty-cdk drag-drop defaults for this injector scope. Partial
  * overrides inherit unspecified keys from the parent scope (or library
  * defaults at the root).
+ *
+ * Pass a function instead of an object to build the overrides where
+ * `inject()` is available; it runs once per injector that resolves the
+ * defaults.
  */
 export function provideForDragDropDefaults(
-  defaults: Partial<ForDragDropDefaults> = {},
+  defaults: Partial<ForDragDropDefaults> | (() => Partial<ForDragDropDefaults>) = {},
 ): Provider[] {
   return provideDefaults(defaults);
 }

@@ -220,7 +220,7 @@ describe('the rail the published corpus renders', () => {
   it('renders /shared unchanged, having no template sections to separate from', () => {
     const items = railOf('shared');
 
-    expect(items).toHaveLength(7);
+    expect(items).toHaveLength(8);
     expect(items.every((item) => item.disclosure === undefined)).toBe(true);
   });
 
