@@ -82,7 +82,7 @@ import {
       app-toast-fixture [data-testid='enqueue'] {
         padding: 8px 16px;
       }
-      app-toast-fixture for-toast-viewport {
+      for-toast-viewport.toast-fixture-viewport {
         position: fixed;
         display: flex;
         flex-direction: column;
@@ -91,33 +91,33 @@ import {
         padding: 16px;
         pointer-events: none;
       }
-      app-toast-fixture for-toast-viewport[data-side='top-right'] {
+      for-toast-viewport.toast-fixture-viewport[data-side='top-right'] {
         top: 0;
         right: 0;
       }
-      app-toast-fixture for-toast-viewport[data-side='top-left'] {
+      for-toast-viewport.toast-fixture-viewport[data-side='top-left'] {
         top: 0;
         left: 0;
       }
-      app-toast-fixture for-toast-viewport[data-side='top-center'] {
+      for-toast-viewport.toast-fixture-viewport[data-side='top-center'] {
         top: 0;
         left: 50%;
         transform: translateX(-50%);
       }
-      app-toast-fixture for-toast-viewport[data-side='bottom-right'] {
+      for-toast-viewport.toast-fixture-viewport[data-side='bottom-right'] {
         bottom: 0;
         right: 0;
       }
-      app-toast-fixture for-toast-viewport[data-side='bottom-left'] {
+      for-toast-viewport.toast-fixture-viewport[data-side='bottom-left'] {
         bottom: 0;
         left: 0;
       }
-      app-toast-fixture for-toast-viewport[data-side='bottom-center'] {
+      for-toast-viewport.toast-fixture-viewport[data-side='bottom-center'] {
         bottom: 0;
         left: 50%;
         transform: translateX(-50%);
       }
-      app-toast-fixture [forToast] {
+      .toast-fixture-viewport [forToast] {
         display: block;
         width: 280px;
         padding: 12px 16px;
@@ -132,7 +132,7 @@ import {
           var(--for-toast-swipe-movement-y, 0px)
         );
       }
-      app-toast-fixture [forToast][data-swipe='cancel'] {
+      .toast-fixture-viewport [forToast][data-swipe='cancel'] {
         transition: transform 200ms ease;
         transform: translate(0, 0);
       }
@@ -144,8 +144,8 @@ import {
           opacity: 0;
         }
       }
-      app-toast-fixture [forToast].leaving-own,
-      app-toast-fixture [forToast].leaving-vp {
+      .toast-fixture-viewport [forToast].leaving-own,
+      .toast-fixture-viewport [forToast].leaving-vp {
         animation: app-toast-out 300ms ease forwards;
       }
     `,
@@ -158,6 +158,7 @@ import {
     <button data-testid="grow" type="button" (click)="grow()">Grow last toast</button>
 
     <for-toast-viewport
+      class="toast-fixture-viewport"
       [attr.data-testid]="'viewport'"
       [attr.data-side]="side"
       [swipeDirection]="swipeDirection"

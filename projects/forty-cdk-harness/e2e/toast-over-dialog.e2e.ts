@@ -22,6 +22,37 @@ test.describe('Toast over a modal dialog (#1083)', () => {
     await expect(el(page, 'last-close-reason')).toHaveText('none');
   });
 
+  test('the viewport declared in the fixture sits in the body with no inert ancestor under the dialog', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'toast-over-dialog');
+
+    await el(page, 'trigger').click();
+    await expect(el(page, 'dialog')).toBeVisible();
+
+    const placement = await el(page, 'viewport').evaluate((viewport) => ({
+      parentIsBody: viewport.parentElement === document.body,
+      hiddenAncestor: viewport.closest('[inert], [aria-hidden="true"]') !== null,
+    }));
+    expect(placement).toEqual({ parentIsBody: true, hiddenAncestor: false });
+  });
+
+  test('F6 focuses the first toast while the dialog is open', async ({ page }) => {
+    await gotoFixture(page, 'toast-over-dialog');
+
+    await el(page, 'trigger').click();
+    await expect(el(page, 'dialog')).toBeVisible();
+
+    await el(page, 'show-toast').click();
+    await expect(el(page, 'toast-action')).toBeVisible();
+
+    await page.keyboard.press('F6');
+
+    await expect(el(page, 'viewport').locator('[forToast]')).toBeFocused();
+    await expect(el(page, 'dialog')).toBeVisible();
+    await expect(el(page, 'last-close-reason')).toHaveText('none');
+  });
+
   test('a pointer-down genuinely outside still closes the dialog', async ({ page }) => {
     await gotoFixture(page, 'toast-over-dialog');
 

@@ -9,17 +9,17 @@
  * — `@floating-ui/dom` plus `core/floating`, 25.5 KB of the 47.72 KB the
  * measurement attributed to this family — was merged into the chunk a
  * `[forSwitch]` route also loads. Splitting the family into its own FESM
- * leaves it in a chunk only the entry points that actually anchor, trap, or
- * portal a surface reach.
+ * leaves it in a chunk only the entry points that actually anchor or trap a
+ * surface reach.
  *
  * The cut has one direction and it is load-bearing: `forty-cdk/core-overlay`
  * imports `forty-cdk/core`, and `forty-cdk/core` imports nothing from here.
  * A single edge the other way would merge the two chunks again and undo the
  * split — which is why `MODAL_PEER_ATTRIBUTE` / `MODAL_EXEMPT_ATTRIBUTE`
- * (read by `LiveAnnouncer`) and `resolveConfigClass` (read by
- * `ForToastManager`) stayed behind in `forty-cdk/core`, and why
- * `core/swipe-dismiss` did too: `forty-cdk/carousel` is one of its consumers
- * and anchors nothing.
+ * (read by `LiveAnnouncer`), `resolveConfigClass` (read by
+ * `ForToastManager`) and `injectPortal` (called by `ForToastViewport`) live
+ * in `forty-cdk/core`, and why `core/swipe-dismiss` does too:
+ * `forty-cdk/carousel` is one of its consumers and anchors nothing.
  *
  * THIS ENTRY POINT IS NOT PUBLIC. Like `forty-cdk/core` it carries no semver
  * guarantees and is exported only so forty-cdk's own entry points share one
@@ -144,5 +144,4 @@ export {
   type Point,
   resolveGraceSide,
 } from './pointer-grace/pointer-grace';
-export { injectPortal } from './portal/portal';
 export { ScrollDismissDispatcher } from './scroll-dismiss/scroll-dismiss-dispatcher';

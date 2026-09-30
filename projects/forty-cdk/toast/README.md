@@ -38,6 +38,22 @@ The directive doesn't impose layout, so position the viewport from CSS:
 }
 ```
 
+Wherever you declare it, the viewport moves itself to `document.body` after its first render, so a modal opened later never hides it with the rest of the page (see [Toasts over a modal dialog / drawer](#toasts-over-a-modal-dialog--drawer)). On the server it renders in place.
+
+> **The viewport portals to `document.body`.** CSS scoped to ancestors of `<for-toast-viewport>` will not apply once it moves. Style it with global CSS or with a class on the host, as above.
+
+### Scoping the viewport to a region
+
+Bind `[container]` to move the viewport into a specific element instead of `document.body`, for toasts bounded to a panel:
+
+```html
+<section #panel class="panel">
+  <for-toast-viewport [container]="panel" />
+</section>
+```
+
+The container must be positioned (`position: relative`) and the viewport `position: absolute`, so it is bounded to the container's box. `[container]` is read once, at the first render. Over an open modal a contained viewport follows its container: it stays interactive when the container is inside the modal, and is inerted with it otherwise.
+
 ## Anatomy
 
 Mount one viewport near the app root and drive it programmatically through `ForToastManager`:
@@ -180,7 +196,7 @@ Showing a confirmation or error toast from a flow inside a modal `ForDialog` / `
 - leaves the viewport out of its inert pass (the toast stays interactive instead of being disabled with the rest of the background), and
 - treats a click on a toast as "inside", so clicking a toast never dismisses the modal.
 
-No wiring is needed on your side: no manual `data-for-modal-peer` stamping and no `(pointerDownOutside)` veto. The one thing you control is layout: for the toast to stay interactive over the modal, mount the viewport as a child of `document.body` (or `position: fixed` it there) rather than nested inside a region that the modal inerts.
+No wiring is needed on your side: no manual `data-for-modal-peer` stamping, no `(pointerDownOutside)` veto and no relocation. The viewport already sits directly in `document.body`, which is where the modal reads the marker, so one declared in your app shell stays interactive, focusable with the hotkey and audible to a screen reader. A viewport moved into a [`[container]`](#scoping-the-viewport-to-a-region) follows that container instead.
 
 ### Sitting behind the modal instead
 
@@ -234,7 +250,7 @@ Like every other primitive, Toast is "bring your own markup + classes", even on 
 
 ### Per-toast classes
 
-Pass `class` (a single token or a space-separated string) or `classList` (a string or an array of tokens) in the `show()` config. They are applied to the rendered toast root (the `[forToast]` element) and merged with the directive's own host attributes, so they never clobber `data-state` / `data-variant` / the swipe CSS hooks.
+Pass `class` (a single token or a space-separated string) or `classList` (a string or an array of tokens) in the `show()` config. They are applied to the rendered toast root (the `[forToast]` element) and merged with the viewport's [`[toastClass]`](#viewport-wide-defaults) and with the directive's own host attributes, so they never clobber `data-state` / `data-variant` / the swipe CSS hooks.
 
 <!-- snippet: fragment -->
 
@@ -360,6 +376,28 @@ The template context is `{ $implicit: ForToastInstance, data: T }`. Use `toast.d
 ```
 
 `[forToastAction]` / `[forToastClose]` emit `(dismiss)` (reason `'action'` / `'manual'`) through the same context as the default shape, so there is no need to call `toast.dismiss()` manually for those. (`toast.dismiss()` from `$implicit` is still available for arbitrary buttons that aren't action / close.) This combines with per-toast `class`: add a `class` for the root and your own classes on the helper elements.
+
+### Viewport-wide defaults
+
+An app with one toast design sets it once on the viewport instead of on every `show()`. Four viewport inputs default a per-toast config field for every toast the viewport renders:
+
+| Viewport input   | Per-toast field       | When both are set           |
+| ---------------- | --------------------- | --------------------------- |
+| `[template]`     | `template`            | the per-toast template wins |
+| `[toastClass]`   | `class` / `classList` | the classes merge           |
+| `[animateEnter]` | `animateEnter`        | the per-toast class wins    |
+| `[animateLeave]` | `animateLeave`        | the per-toast class wins    |
+
+```html
+<for-toast-viewport [template]="toastTpl" toastClass="toast" animateLeave="toast-out" />
+
+<ng-template #toastTpl let-toast>
+  <div forToastTitle>{{ toast.config.title }}</div>
+  <button forToastClose aria-label="Dismiss">×</button>
+</ng-template>
+```
+
+The viewport resolves them while it renders, so a toast shown before its first render (an error raised while the app bootstraps, say) still gets them. The class merges rather than replaces because a base class on the viewport plus a modifier per toast is the common split: `show({ class: 'toast--error' })` renders a root carrying both `toast` and `toast--error`.
 
 ## Declarative usage
 
@@ -517,7 +555,7 @@ ref.update({ title: 'Saved', variant: 'success', duration: 3000 });
 
 forty-cdk ships no styles: put your own class on each piece and key your CSS off the `data-*` attributes listed under [API](#api), not off the `for*` selectors ([Styling forty-cdk](../../../docs/styling.md) explains why).
 
-Toast pieces (`[forToast]`, `[forToastTitle]`, `[forToastDescription]`, `[forToastAction]`, `[forToastClose]`) are rendered _inside_ the library's `<for-toast-viewport>` component on the programmatic path, so they cannot take a consumer class directly. Style them with **global attribute selectors** (e.g. `[forToast][data-variant='error']`). The exception is per-toast `class` / `classList` in the `show()` config, which the viewport applies to the `[forToast]` root for you (see [Per-toast classes](#per-toast-classes)). Only `<for-toast-viewport>` itself lives in the consumer's own template, so it is the one element that can take an ordinary `class`. Declarative toasts (`<div forToast class="…">`) take consumer classes the native way.
+Toast pieces (`[forToast]`, `[forToastTitle]`, `[forToastDescription]`, `[forToastAction]`, `[forToastClose]`) are rendered _inside_ the library's `<for-toast-viewport>` component on the programmatic path, so they cannot take a consumer class directly. Style them with **global attribute selectors** (e.g. `[forToast][data-variant='error']`). The exceptions are the viewport's `[toastClass]` and the per-toast `class` / `classList` in the `show()` config, which the viewport applies to the `[forToast]` root for you (see [Viewport-wide defaults](#viewport-wide-defaults) and [Per-toast classes](#per-toast-classes)). Only `<for-toast-viewport>` itself lives in the consumer's own template, so it is the one element that can take an ordinary `class`; it moves to `document.body`, so style that class globally. Declarative toasts (`<div forToast class="…">`) take consumer classes the native way.
 
 ### CSS custom properties
 

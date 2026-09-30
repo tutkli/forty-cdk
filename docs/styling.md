@@ -142,7 +142,8 @@ origin. See [Styling floating content](./styling-floating-content.md).
 ## Overlays portal to `document.body` → use global CSS
 
 Every overlay that floats (Popover, Tooltip, Menu, Select, …) and every modal (Dialog,
-Drawer) **moves its content to `document.body`** when open. Component-scoped styles
+Drawer) **moves its content to `document.body`** when open, and the Toast viewport moves
+itself there once it mounts. Component-scoped styles
 (Angular view encapsulation) don't reach a portaled node. Put overlay styles in a
 **global stylesheet** (or use `::ng-deep` sparingly) and target your class there.
 
@@ -267,8 +268,8 @@ Both expose `data-state`; Drawer adds `data-side` / drag state.
 - [Listbox](../projects/forty-cdk/listbox/README.md): inline (not portaled);
   roving tabindex, `data-orientation`, options carry `data-state` + `data-highlighted`.
 - [Toast](../projects/forty-cdk/toast/README.md): rendered by the library's
-  viewport, so style its pieces via global attribute selectors; `data-variant`,
-  `data-swipe`, `data-paused`.
+  viewport, which moves itself to `document.body`, so style its pieces via global
+  attribute selectors; `data-variant`, `data-swipe`, `data-paused`.
 
 ### Layout & display
 

@@ -1,5 +1,6 @@
 import {
   Component,
+  ElementRef,
   inject,
   provideZonelessChangeDetection,
   signal,
@@ -52,6 +53,7 @@ function pointer(
   template: `
     <button #opener type="button" data-test-id="opener">Opener</button>
     <for-toast-viewport
+      [container]="host"
       [maxVisible]="maxVisible()"
       [hotkey]="hotkey()"
       [animateEnter]="vpAnimateEnter()"
@@ -70,6 +72,7 @@ function pointer(
   `,
 })
 class ProgrammaticHost {
+  readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   readonly toasts = inject(ForToastManager);
   readonly maxVisible = signal<number | null>(null);
   readonly hotkey = signal<string>('');
@@ -180,14 +183,15 @@ class AltTextHost {
   template: `
     <button #opener type="button" data-test-id="opener">Opener</button>
     @if (showA()) {
-      <for-toast-viewport [region]="regionA()" data-test-id="vp-a" />
+      <for-toast-viewport [container]="host" [region]="regionA()" data-test-id="vp-a" />
     }
     @if (showB()) {
-      <for-toast-viewport [region]="regionB()" data-test-id="vp-b" />
+      <for-toast-viewport [container]="host" [region]="regionB()" data-test-id="vp-b" />
     }
   `,
 })
 class MultiViewportHost {
+  readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   readonly toasts = inject(ForToastManager);
   readonly showA = signal(true);
   readonly showB = signal(true);
@@ -1399,9 +1403,10 @@ describe('ForToastManager (programmatic)', () => {
 
 @Component({
   imports: [ForToastViewport],
-  template: `<for-toast-viewport [ariaLabel]="ariaLabel()" />`,
+  template: `<for-toast-viewport [container]="host" [ariaLabel]="ariaLabel()" />`,
 })
 class ViewportAriaLabelHost {
+  readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   readonly ariaLabel = signal<string | null>('Alerts');
 }
 
@@ -1428,9 +1433,11 @@ describe('ForToastViewport', () => {
   it('a static aria-label on the host wins over the default', () => {
     @Component({
       imports: [ForToastViewport],
-      template: `<for-toast-viewport aria-label="Static name" />`,
+      template: `<for-toast-viewport [container]="host" aria-label="Static name" />`,
     })
-    class StaticAriaLabelHost {}
+    class StaticAriaLabelHost {
+      readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+    }
 
     const r = renderHost(StaticAriaLabelHost);
     const v = r.el.querySelector<HTMLElement>('for-toast-viewport')!;
@@ -1494,6 +1501,176 @@ describe('ForToastViewport', () => {
     );
     await r.flush();
     expect(document.activeElement).toBe(r.el.querySelector('[forToast]'));
+  });
+});
+
+@Component({
+  host: { 'data-fixture': 'shell-viewport-host' },
+  imports: [ForToastViewport],
+  template: `
+    <main>
+      <section data-test-id="shell">
+        <for-toast-viewport />
+      </section>
+    </main>
+  `,
+})
+class ShellViewportHost {
+  readonly toasts = inject(ForToastManager);
+}
+
+@Component({
+  host: { 'data-fixture': 'contained-viewport-host' },
+  imports: [ForToastViewport],
+  template: `
+    <div data-test-id="region" #region></div>
+    <for-toast-viewport [container]="region" />
+  `,
+})
+class ContainedViewportHost {}
+
+describe('ForToastViewport placement', () => {
+  afterEachOverlayCleanup();
+
+  it('moves a viewport declared deep in a template to a direct child of document.body', async () => {
+    const r = renderHost(ShellViewportHost);
+    await r.flush();
+    r.instance.toasts.show({ title: 'Saved' });
+    await r.flush();
+
+    const viewport = document.querySelector<HTMLElement>('for-toast-viewport')!;
+    expect(viewport.parentElement).toBe(document.body);
+    expect(r.el.contains(viewport)).toBe(false);
+    expect(viewport.querySelector('[forToastTitle]')!.textContent).toContain('Saved');
+  });
+
+  it('[container] moves the viewport into the bound element instead', async () => {
+    const r = renderHost(ContainedViewportHost);
+    await r.flush();
+
+    const viewport = document.querySelector<HTMLElement>('for-toast-viewport')!;
+    expect(viewport.parentElement).toBe(r.query('[data-test-id="region"]'));
+  });
+
+  it('removes its node from the document when the view that declared it is destroyed', async () => {
+    const r = renderHost(ShellViewportHost);
+    await r.flush();
+    expect(document.querySelector('for-toast-viewport')).not.toBeNull();
+
+    r.fixture.destroy();
+
+    expect(document.querySelector('for-toast-viewport')).toBeNull();
+  });
+});
+
+@Component({
+  host: { 'data-fixture': 'viewport-defaults-host' },
+  imports: [ForToastViewport, ForToastTitle, ForToastClose],
+  template: `
+    <for-toast-viewport
+      [container]="host"
+      [template]="useViewportTemplate() ? viewportTpl : null"
+      [toastClass]="toastClass()"
+    />
+    <ng-template #viewportTpl let-toast>
+      <div forToastTitle data-test-id="viewport-title">{{ toast.config.title }}</div>
+      <button forToastClose data-test-id="viewport-close" aria-label="Dismiss">×</button>
+    </ng-template>
+    <ng-template #ownTpl let-toast>
+      <span data-test-id="own-title">{{ toast.config.title }}</span>
+    </ng-template>
+  `,
+})
+class ViewportDefaultsHost {
+  readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+  readonly toasts = inject(ForToastManager);
+  readonly useViewportTemplate = signal(true);
+  readonly toastClass = signal('');
+  readonly ownTpl = viewChild.required<TemplateRef<ForToastTemplateContext>>('ownTpl');
+}
+
+describe('ForToastViewport [template] / [toastClass]', () => {
+  afterEachOverlayCleanup();
+
+  it('renders the viewport [template] for a show() that sets no template', async () => {
+    const r = renderHost(ViewportDefaultsHost);
+    await r.flush();
+    r.instance.toasts.show({ title: 'Saved' });
+    await r.flush();
+
+    expect(r.query('[data-test-id="viewport-title"]')!.textContent).toContain('Saved');
+    expect(r.query('[data-test-id="viewport-close"]')!.getAttribute('aria-label')).toBe('Dismiss');
+    expect(r.query('[forToast]')!.getAttribute('aria-labelledby')).toBe(
+      r.query('[data-test-id="viewport-title"]')!.id,
+    );
+  });
+
+  it('a per-toast template still wins over the viewport [template]', async () => {
+    const r = renderHost(ViewportDefaultsHost);
+    await r.flush();
+    r.instance.toasts.show({ title: 'Own', template: r.instance.ownTpl() });
+    await r.flush();
+
+    expect(r.query('[data-test-id="own-title"]')!.textContent).toContain('Own');
+    expect(r.query('[data-test-id="viewport-title"]')).toBeNull();
+  });
+
+  it('falls back to the built-in shape when the viewport [template] is null', async () => {
+    const r = renderHost(ViewportDefaultsHost);
+    r.instance.useViewportTemplate.set(false);
+    await r.flush();
+    r.instance.toasts.show({ title: 'Plain' });
+    await r.flush();
+
+    expect(r.query('[data-test-id="viewport-title"]')).toBeNull();
+    expect(r.query('[forToastTitle]')!.textContent).toContain('Plain');
+  });
+
+  it('a toast shown before the viewport first renders picks up its [template]', async () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+    TestBed.inject(ForToastManager).show({ title: 'Early' });
+
+    const fixture = TestBed.createComponent(ViewportDefaultsHost);
+    fixture.detectChanges();
+    await flush(fixture);
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('[data-test-id="viewport-title"]')!.textContent).toContain('Early');
+  });
+
+  it('[toastClass] lands on every toast root, merged with its class / classList', async () => {
+    const r = renderHost(ViewportDefaultsHost);
+    r.instance.toastClass.set('toast toast--base');
+    await r.flush();
+    r.instance.toasts.show({ title: 'A', class: 'toast--success', classList: ['toast', 'extra'] });
+    r.instance.toasts.show({ title: 'B', variant: 'error' });
+    await r.flush();
+
+    const [first, second] = r.queryAll('[forToast]');
+    expect([...first!.classList].sort()).toEqual([
+      'extra',
+      'toast',
+      'toast--base',
+      'toast--success',
+    ]);
+    expect([...second!.classList].sort()).toEqual(['toast', 'toast--base']);
+    expect(second!.getAttribute('data-state')).toBe('open');
+    expect(second!.getAttribute('data-variant')).toBe('error');
+    expect(second!.getAttribute('role')).toBe('alert');
+  });
+
+  it('a [toastClass] change reaches the toasts already rendered', async () => {
+    const r = renderHost(ViewportDefaultsHost);
+    await r.flush();
+    r.instance.toasts.show({ title: 'A', class: 'own' });
+    await r.flush();
+    expect([...r.query('[forToast]')!.classList]).toEqual(['own']);
+
+    r.instance.toastClass.set('base');
+    await r.flush();
+
+    expect([...r.query('[forToast]')!.classList].sort()).toEqual(['base', 'own']);
   });
 });
 
@@ -1842,9 +2019,10 @@ describe('programmatic auto-dismiss', () => {
 
 @Component({
   imports: [ForToastViewport],
-  template: ` <for-toast-viewport [stackShift]="stackShift()" /> `,
+  template: ` <for-toast-viewport [container]="host" [stackShift]="stackShift()" /> `,
 })
 class StackShiftHost {
+  readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   readonly toasts = inject(ForToastManager);
   readonly stackShift = signal<ForToastStackShift | number | null>(null);
 }

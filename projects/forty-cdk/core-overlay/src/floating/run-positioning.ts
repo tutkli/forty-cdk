@@ -16,7 +16,7 @@ import {
   type ReferenceElement,
 } from '@floating-ui/dom';
 
-import { injectPortal } from '../portal/portal';
+import { injectPortal } from 'forty-cdk/core';
 
 /**
  * The positioner-specific work for a single open run, returned by

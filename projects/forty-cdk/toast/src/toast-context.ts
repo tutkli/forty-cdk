@@ -86,8 +86,9 @@ export interface ForToastConfig<D = unknown> {
    * Consumer CSS class(es) applied to the rendered toast root (the
    * `[forToast]` element). Pass a single class (`'toast--compact'`) or a
    * space-separated string (`'toast toast--compact'`). Merged with the
-   * directive's own host attributes — it never clobbers `data-state` /
-   * `data-variant` / the swipe hooks.
+   * viewport-level `[toastClass]` and with the directive's own host
+   * attributes — it never clobbers `data-state` / `data-variant` / the swipe
+   * hooks.
    *
    * Use this to carry design-system classes onto programmatic toasts so you
    * are not forced to style globally by the `[forToast]` attribute selector.
@@ -97,7 +98,8 @@ export interface ForToastConfig<D = unknown> {
   /**
    * Consumer CSS class(es) applied to the rendered toast root, as an array
    * (`['toast', 'toast--compact']`) or a space-separated string. Merged with
-   * {@link class} and with the directive's own host attributes.
+   * {@link class}, with the viewport-level `[toastClass]` and with the
+   * directive's own host attributes.
    */
   classList?: string | readonly string[];
   /**
@@ -123,7 +125,10 @@ export interface ForToastConfig<D = unknown> {
   animateLeave?: string;
   /** Arbitrary payload passed to `template` context as `data`. */
   data?: D;
-  /** Override the default rendering with a `TemplateRef`. */
+  /**
+   * Override the default rendering with a `TemplateRef`. When unset, falls
+   * through to the viewport-level `[template]`, then to the built-in shape.
+   */
   template?: TemplateRef<ForToastTemplateContext<D>>;
 }
 
