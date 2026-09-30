@@ -5,6 +5,7 @@ import {
   type AnchoredPositioningSeedDefaults,
   type FloatingAlign,
   type FloatingSide,
+  provideSkipDelayScope,
   SkipDelayCoordinator,
 } from 'forty-cdk/core-overlay';
 
@@ -97,11 +98,11 @@ const { token, provideDefaults } = createDefaults<ForTooltipDefaults>(
 export const FOR_TOOLTIP_DEFAULTS = token;
 
 /**
- * Per-injector-scope state owned by forty-cdk tooltip. Thin subclass of the
- * shared `SkipDelayCoordinator` bound to this primitive's own DI token, so
- * each call to `provideForTooltipDefaults` re-provides it and the
- * corresponding subtree gets its own skip-delay window, independent from any
- * hover-card scope. Tooltips inject it on construction.
+ * Skip-delay window of one tooltip scope. Thin subclass of the shared
+ * `SkipDelayCoordinator` bound to this primitive's own DI token, so its
+ * window is independent from any hover-card scope. `provideForTooltipDefaults`
+ * decides whether a scope re-provides it or shares its parent's. Tooltips
+ * inject it on construction.
  */
 @Injectable({ providedIn: 'root' })
 export class TooltipCoordinator extends SkipDelayCoordinator {
@@ -110,12 +111,26 @@ export class TooltipCoordinator extends SkipDelayCoordinator {
   }
 }
 
+/** Options for a `provideForTooltipDefaults` call. */
+export interface TooltipDefaultsOptions {
+  /**
+   * Whether the scope shares its parent's skip-delay window (`'inherit'`) or
+   * starts its own (`'own'`). When omitted, a call that sets `openDelay`,
+   * `closeDelay` or `skipDelayDuration` starts its own and any other call
+   * shares its parent's. A scope that shares its parent's window keeps the
+   * parent's `skipDelayDuration` for it; its own `openDelay` and `closeDelay`
+   * apply either way.
+   */
+  skipDelayScope?: 'inherit' | 'own';
+}
+
 /**
  * Configures forty-cdk tooltip defaults for this injector scope.
  * Partial overrides inherit unspecified keys from the parent scope (or
- * library defaults at the root). Each call establishes a new
- * coordinator scope: peer tooltips inside the scope share a skip-delay
- * window; tooltips in other scopes don't.
+ * library defaults at the root). Peer tooltips that share a skip-delay window
+ * open instantly right after one of them closes; tooltips in scopes with
+ * different windows don't. See `TooltipDefaultsOptions.skipDelayScope` for
+ * when a call starts a new window.
  *
  * Pass a function instead of an object to build the overrides where
  * `inject()` is available; it runs once per injector that resolves the
@@ -128,16 +143,29 @@ export class TooltipCoordinator extends SkipDelayCoordinator {
  *   providers: [provideForTooltipDefaults({ openDelay: 500 })],
  * });
  *
- * // component-level override (e.g. a toolbar with its own cadence)
+ * // component-level override (e.g. a toolbar with its own cadence and window)
  * @Component({
  *   providers: [provideForTooltipDefaults({ skipDelayDuration: 100 })],
  *   ...
  * })
  * class Toolbar {}
+ *
+ * // placement-only override, still sharing the application's window
+ * @Component({
+ *   providers: [provideForTooltipDefaults({ side: 'right' })],
+ *   ...
+ * })
+ * class Sidebar {}
  * ```
  */
 export function provideForTooltipDefaults(
   defaults: Partial<ForTooltipDefaults> | (() => Partial<ForTooltipDefaults>) = {},
+  options: TooltipDefaultsOptions = {},
 ): Provider[] {
-  return [...provideDefaults(defaults), TooltipCoordinator];
+  return provideSkipDelayScope(
+    TooltipCoordinator,
+    provideDefaults,
+    defaults,
+    options.skipDelayScope,
+  );
 }

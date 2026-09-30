@@ -209,8 +209,8 @@ export class ForTooltip extends AnchoredOverlayPositioningBase implements ForToo
     this.#hoverIntent = createHoverIntent({
       open: this.open,
       isDisabled: () => this.disabled(),
-      openDelay: () => this.openDelay() ?? this.#coordinator.openDelay,
-      closeDelay: () => this.closeDelay() ?? this.#coordinator.closeDelay,
+      openDelay: () => this.openDelay() ?? this.positioningDefaults.openDelay,
+      closeDelay: () => this.closeDelay() ?? this.positioningDefaults.closeDelay,
       coordinator: this.#coordinator,
     });
 

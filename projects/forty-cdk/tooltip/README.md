@@ -142,7 +142,7 @@ With `hoverableContent` the bubble keeps `pointer-events`, so the pointer can re
 
 ## Scoped defaults
 
-`provideForTooltipDefaults` configures defaults for an injector subtree, whether at the application root or in any component's `providers` array. Partial overrides inherit unspecified keys from the parent scope (or the library fallbacks at the root). Each call also establishes a fresh skip-delay coordinator scope: peer tooltips inside the scope share a skip-delay window; tooltips in other scopes don't.
+`provideForTooltipDefaults` configures defaults for an injector subtree, whether at the application root or in any component's `providers` array. Partial overrides inherit unspecified keys from the parent scope (or the library fallbacks at the root). Peer tooltips that share a skip-delay window open instantly when one of them closes and the next is hovered within `skipDelayDuration`.
 
 | Key                 | Library fallback | Meaning                                                                                    |
 | ------------------- | ---------------- | ------------------------------------------------------------------------------------------ |
@@ -158,6 +158,8 @@ With `hoverableContent` the bubble keeps `pointer-events`, so the pointer can re
 | `hoverableContent`  | `true`           | Allow hovering into the content, for tooltips that don't set it themselves.                |
 
 Per-instance inputs always win over the scope defaults.
+
+A scoped call starts its own skip-delay window only when it sets `openDelay`, `closeDelay` or `skipDelayDuration`. A call that changes only placement or behaviour keys (`side`, `sideOffset`, `showOnOverflow`, …) joins the window of its parent scope, so moving from a tooltip outside the scope to one inside it still opens instantly. Pass `{ skipDelayScope: 'own' }` or `{ skipDelayScope: 'inherit' }` as the second argument to choose either way. A scope that joins its parent's window keeps the parent's `skipDelayDuration` for it, while its own `openDelay` and `closeDelay` still apply.
 
 <!-- snippet: fragment -->
 
@@ -175,6 +177,20 @@ bootstrapApplication(App, {
   ...
 })
 class Toolbar {}
+
+// placement-only override, sharing the parent scope's skip-delay window
+@Component({
+  providers: [provideForTooltipDefaults({ side: 'left' })],
+  ...
+})
+class Sidebar {}
+
+// a separate window without changing any timing
+@Component({
+  providers: [provideForTooltipDefaults({}, { skipDelayScope: 'own' })],
+  ...
+})
+class Panel {}
 ```
 
 ## Imperative show and hide

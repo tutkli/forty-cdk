@@ -1,5 +1,11 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
+import {
+  Component,
+  type Provider,
+  provideZonelessChangeDetection,
+  signal,
+  type Type,
+} from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
@@ -796,7 +802,93 @@ describe('ForHoverCard', () => {
       expect(document.body.querySelectorAll('[forHoverCardContent]').length).toBe(1);
     });
 
-    it('is callable with no arguments to establish a fresh coordinator scope', async () => {
+    describe('nested scopes', () => {
+      @Component({
+        selector: 'scoped-card',
+        imports: [ForHoverCard, ForHoverCardTrigger, ForHoverCardContent],
+        template: `
+          <span forHoverCard #card="forHoverCard">
+            <a forHoverCardTrigger href="/scoped">Scoped</a>
+            @if (card.open()) {
+              <div forHoverCardContent class="scoped-content">Scoped</div>
+            }
+          </span>
+        `,
+      })
+      class ScopedCard {}
+
+      function hostWith(providers: Provider[]): Type<unknown> {
+        @Component({
+          selector: 'card-scope-boundary',
+          imports: [ScopedCard],
+          providers,
+          template: `<scoped-card />`,
+        })
+        class ScopeBoundary {}
+
+        @Component({
+          imports: [ForHoverCard, ForHoverCardTrigger, ForHoverCardContent, ScopeBoundary],
+          template: `
+            <span forHoverCard #root="forHoverCard" [openDelay]="500" [closeDelay]="0">
+              <a forHoverCardTrigger href="/root">Root</a>
+              @if (root.open()) {
+                <div forHoverCardContent>Root</div>
+              }
+            </span>
+            <card-scope-boundary />
+          `,
+        })
+        class Host {}
+
+        return Host;
+      }
+
+      async function hoverScopedAfterRootCloses(providers: Provider[]): Promise<boolean> {
+        const { queryAll, flush } = renderHost(hostWith(providers));
+        await flush();
+        const [rootLink, scopedLink] = queryAll<HTMLAnchorElement>('a');
+
+        rootLink!.dispatchEvent(pointerEvent('pointerenter'));
+        await flush();
+        vi.advanceTimersByTime(500);
+        await flush();
+        rootLink!.dispatchEvent(pointerEvent('pointerleave'));
+        await flush();
+        pointerMoveAway();
+        await flush();
+        expect(document.body.querySelectorAll('[forHoverCardContent]').length).toBe(0);
+
+        scopedLink!.dispatchEvent(pointerEvent('pointerenter'));
+        await flush();
+        vi.advanceTimersByTime(0);
+        await flush();
+        return document.body.querySelector('.scoped-content') !== null;
+      }
+
+      it('opens a card in a placement-only scope instantly after a root-scope peer closes', async () => {
+        expect(
+          await hoverScopedAfterRootCloses([provideForHoverCardDefaults({ side: 'right' })]),
+        ).toBe(true);
+      });
+
+      it('waits the full openDelay in a scope that sets a timing key', async () => {
+        expect(
+          await hoverScopedAfterRootCloses([
+            provideForHoverCardDefaults({ skipDelayDuration: 50 }),
+          ]),
+        ).toBe(false);
+      });
+
+      it("waits the full openDelay in a scope that asks for skipDelayScope: 'own'", async () => {
+        const providers = [
+          provideForHoverCardDefaults({ side: 'right' }, { skipDelayScope: 'own' }),
+        ];
+
+        expect(await hoverScopedAfterRootCloses(providers)).toBe(false);
+      });
+    });
+
+    it('is callable with no arguments', async () => {
       @Component({
         imports: [ForHoverCard, ForHoverCardTrigger, ForHoverCardContent],
         providers: [provideForHoverCardDefaults()],

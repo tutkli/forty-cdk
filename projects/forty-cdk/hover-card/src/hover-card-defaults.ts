@@ -5,6 +5,7 @@ import {
   type AnchoredPositioningSeedDefaults,
   type FloatingAlign,
   type FloatingSide,
+  provideSkipDelayScope,
   SkipDelayCoordinator,
 } from 'forty-cdk/core-overlay';
 
@@ -80,12 +81,11 @@ const { token, provideDefaults } = createDefaults<ForHoverCardDefaults>(
 export const FOR_HOVER_CARD_DEFAULTS = token;
 
 /**
- * Per-injector-scope coordinator: thin subclass of the shared
- * `SkipDelayCoordinator` bound to this primitive's own DI token. Each
- * `provideForHoverCardDefaults` call re-provides it so the corresponding
- * subtree gets its own skip-delay window. Independent from
- * `TooltipCoordinator` — tooltips and hover-cards have different cadences and
- * separate scopes.
+ * Skip-delay window of one hover-card scope: thin subclass of the shared
+ * `SkipDelayCoordinator` bound to this primitive's own DI token.
+ * `provideForHoverCardDefaults` decides whether a scope re-provides it or
+ * shares its parent's. Independent from `TooltipCoordinator` — tooltips and
+ * hover-cards have different cadences and separate scopes.
  */
 @Injectable({ providedIn: 'root' })
 export class HoverCardCoordinator extends SkipDelayCoordinator {
@@ -94,11 +94,26 @@ export class HoverCardCoordinator extends SkipDelayCoordinator {
   }
 }
 
+/** Options for a `provideForHoverCardDefaults` call. */
+export interface HoverCardDefaultsOptions {
+  /**
+   * Whether the scope shares its parent's skip-delay window (`'inherit'`) or
+   * starts its own (`'own'`). When omitted, a call that sets `openDelay`,
+   * `closeDelay` or `skipDelayDuration` starts its own and any other call
+   * shares its parent's. A scope that shares its parent's window keeps the
+   * parent's `skipDelayDuration` for it; its own `openDelay` and `closeDelay`
+   * apply either way.
+   */
+  skipDelayScope?: 'inherit' | 'own';
+}
+
 /**
  * Configures forty-cdk hover-card defaults for this injector scope.
  * Partial overrides inherit unspecified keys from the parent scope (or
- * library defaults at the root). Each call establishes a new coordinator
- * scope.
+ * library defaults at the root). Peer cards that share a skip-delay window
+ * open instantly right after one of them closes; see
+ * `HoverCardDefaultsOptions.skipDelayScope` for when a call starts a new
+ * window.
  *
  * Pass a function instead of an object to build the overrides where
  * `inject()` is available; it runs once per injector that resolves the
@@ -106,6 +121,12 @@ export class HoverCardCoordinator extends SkipDelayCoordinator {
  */
 export function provideForHoverCardDefaults(
   defaults: Partial<ForHoverCardDefaults> | (() => Partial<ForHoverCardDefaults>) = {},
+  options: HoverCardDefaultsOptions = {},
 ): Provider[] {
-  return [...provideDefaults(defaults), HoverCardCoordinator];
+  return provideSkipDelayScope(
+    HoverCardCoordinator,
+    provideDefaults,
+    defaults,
+    options.skipDelayScope,
+  );
 }

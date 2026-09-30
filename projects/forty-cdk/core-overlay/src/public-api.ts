@@ -76,7 +76,11 @@ export {
   forceCloseWhenDisabled,
   type HoverIntentScheduler,
 } from './hover-intent/hover-intent';
-export { createSkipDelayWindow, SkipDelayCoordinator } from './hover-intent/skip-delay';
+export {
+  createSkipDelayWindow,
+  provideSkipDelayScope,
+  SkipDelayCoordinator,
+} from './hover-intent/skip-delay';
 export { InertSiblingsStack } from './inert-siblings/inert-siblings';
 export {
   type ListboxOverlayContext,
