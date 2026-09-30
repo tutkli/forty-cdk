@@ -2672,6 +2672,17 @@ describe('ForTableBody', () => {
       ]);
     });
 
+    it('stamps no aria-roledescription on the reorderable header cells (#2078)', () => {
+      const { queryAll } = renderHost(ReorderBodyHost);
+      const draggables = queryAll('[forTableHeaderCell][forDraggable]');
+      expect(draggables).toHaveLength(3);
+      expect(draggables.map((h) => h.getAttribute('aria-roledescription'))).toEqual([
+        null,
+        null,
+        null,
+      ]);
+    });
+
     it('leaves the header row static with no reorderable column', () => {
       const { query, queryAll } = renderHost(BodyHost);
       expect(query('[forTableColumnReorder]')).toBeNull();

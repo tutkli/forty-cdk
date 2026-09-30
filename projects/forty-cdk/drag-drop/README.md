@@ -178,6 +178,23 @@ Arrow direction follows the list's `orientation` and respects RTL via `dir`. In
 
 Keyboard lifting, stepping, dropping, and cancellation are announced via ARIA live regions. Override the default messages at any injector scope via `provideForDragDropDefaults` (see Announcement customisation below). Free-drag is pointer-only. There is no WAI-ARIA pattern for "reposition an element", so `[forFreeDrag]` owns no role or ARIA state; the consumer is responsible for keeping the moved element fully usable at its default position.
 
+### Role description
+
+Each `[forDraggable]` that can be lifted carries `aria-roledescription`, `"sortable"` by default.
+An item that cannot be lifted, through `[dragDisabled]` or a disabled `[forDropList]`, emits none.
+A screen reader that honors the attribute speaks it in place of the element's role name, so
+change it, or turn it off with an empty string, through `itemRoleDescription` at any injector
+scope:
+
+<!-- snippet: fragment -->
+
+```ts
+providers: [provideForDragDropDefaults({ itemRoleDescription: 'movable item' })];
+```
+
+`[forTableColumnReorder]` turns it off for its header cells, which keep the `columnheader` role
+name and leave "sortable" to `aria-sort`.
+
 ### Focus after a keyboard drop
 
 Applying the move in `(dragDrop)` destroys or re-inserts the lifted element, which would otherwise
@@ -243,6 +260,29 @@ unaffected.
   {{ item.label }}
 </li>
 ```
+
+### Nested controls
+
+A control inside a draggable item keeps its press from starting a drag by calling
+`preventDefault()` on its own `pointerdown`. The item stands down on the first pointer move, so
+the press stays with the control; lifting with the keyboard is unaffected.
+
+```html
+<li forDraggable [dragData]="item">
+  {{ item.label }}
+  <button type="button" (pointerdown)="$event.preventDefault()" (click)="remove(item)">
+    Remove
+  </button>
+</li>
+```
+
+- The check lives in the pointer session every drag surface shares, so it holds for
+  `[forDraggable]`, `[forFreeDrag]`, `[forListboxReorder]`, `[forTableRowReorder]`,
+  `[forTreeNodeDrag]` and `[forVirtualReorder]` alike.
+- A nested control that runs a drag of its own still starts it: the item around it is what
+  stands down. That is how a `[forTableColumnResizer]` resizes inside a reorderable header cell.
+- A canceled `pointerdown` suppresses the compatibility mouse events of that press (`mousedown`,
+  `mouseup`), so the control must not rely on them. `click` still fires.
 
 ### Custom preview & placeholder
 

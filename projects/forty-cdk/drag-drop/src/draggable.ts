@@ -51,7 +51,7 @@ const POINTER_ARM_THRESHOLD_PX = 5;
   providers: [{ provide: FOR_DRAGGABLE_CONTEXT, useExisting: ForDraggable }],
   host: {
     '[attr.tabindex]': 'tabindex()',
-    '[attr.aria-roledescription]': 'roleDescription() || null',
+    '[attr.aria-roledescription]': 'roleDescription()',
     '[attr.aria-disabled]': 'ariaDisabled()',
     '[attr.data-dragging]': "dragging() ? '' : null",
     '[attr.data-disabled]': "effectiveDisabled() ? '' : null",
@@ -125,9 +125,12 @@ export class ForDraggable implements ForDraggableContext {
     this.#list.isItemHighlighted(this.#host.nativeElement),
   );
 
-  /** `aria-roledescription` value from defaults. */
-  protected readonly roleDescription = computed(() =>
-    resolveText(this.#defaults.itemRoleDescription),
+  /**
+   * `aria-roledescription` from the defaults while this item can be lifted; `null` while it
+   * cannot, so an item that cannot move keeps the role name of its own element.
+   */
+  protected readonly roleDescription = computed<string | null>(() =>
+    this.effectiveDisabled() ? null : resolveText(this.#defaults.itemRoleDescription) || null,
   );
 
   /**
