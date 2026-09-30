@@ -128,6 +128,11 @@ export const routes: Routes = [
     loadComponent: () => import('./fixtures/select.fixture').then((m) => m.SelectFixture),
   },
   {
+    path: 'field-anchor',
+    loadComponent: () =>
+      import('./fixtures/field-anchor.fixture').then((m) => m.FieldAnchorFixture),
+  },
+  {
     path: 'listbox',
     loadComponent: () => import('./fixtures/listbox.fixture').then((m) => m.ListboxFixture),
   },

@@ -46,7 +46,14 @@ export const CORE_PUBLISHERS = {
   ],
   breakpoints: ['injectPrefersReducedMotion'],
   drawer: ['ForDrawerSide'],
-  field: ['FieldControlHandle', 'FOR_FIELD_CONTEXT', 'ForFieldContext', 'injectFieldWiring'],
+  field: [
+    'FieldControlHandle',
+    'FOR_FIELD_ANCHOR_CONTEXT',
+    'FOR_FIELD_CONTEXT',
+    'ForFieldAnchorContext',
+    'ForFieldContext',
+    'injectFieldWiring',
+  ],
   'visually-hidden': ['ForVisuallyHidden', 'LiveAnnouncer'],
 };
 

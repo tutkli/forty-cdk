@@ -231,7 +231,7 @@ By default the listbox is positioned against `[forTimePickerTrigger]`. When the 
 </div>
 ```
 
-`[forTimePickerAnchor]` changes **only** positioning. The trigger keeps `aria-haspopup` / `aria-expanded` / `aria-controls`, the click toggle, focus return on close, and its exemption from outside-pointer dismissal. Without an anchor the listbox falls back to the trigger, so existing markup is unaffected. A `[forTimePicker]` takes at most one `[forTimePickerAnchor]`, and a second one throws `[forty-cdk/time-picker]`.
+`[forTimePickerAnchor]` changes **only** positioning. The trigger keeps `aria-haspopup` / `aria-expanded` / `aria-controls`, the click toggle, focus return on close, and its exemption from outside-pointer dismissal. Without an anchor the listbox falls back to the trigger, so existing markup is unaffected. It wins over a surrounding field's [`[forFieldAnchor]`](../field/README.md#positioning-anchor). A `[forTimePicker]` takes one `[forTimePickerAnchor]`, and a second one warns in dev mode.
 
 ## Date-time composition
 

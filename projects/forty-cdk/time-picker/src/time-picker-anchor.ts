@@ -15,8 +15,9 @@ import { injectTimePickerContext } from './time-picker-context';
  * from outside-pointer dismissal. If no anchor is registered the listbox falls
  * back to anchoring against the trigger, so existing usages are unaffected.
  *
- * At most one `[forTimePickerAnchor]` may be registered per `[forTimePicker]`;
- * a second one throws.
+ * It wins over a surrounding field's `[forFieldAnchor]`. One
+ * `[forTimePickerAnchor]` per `[forTimePicker]`; a second one warns in dev
+ * mode.
  *
  * ```html
  * <div forTimePicker [(value)]="time">

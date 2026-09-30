@@ -5,6 +5,7 @@ import {
   hostAriaLabel,
   hostLabelledBy,
   injectFieldLabelExemption,
+  FOR_FIELD_ANCHOR_CONTEXT,
   FOR_FIELD_CONTEXT,
 } from 'forty-cdk/core';
 import {
@@ -76,7 +77,10 @@ import { injectComboboxContext } from './combobox-context';
     '[attr.aria-multiselectable]': 'hasList() ? null : (ctx.multiple() ? "true" : null)',
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
   },
-  providers: [{ provide: FOR_FIELD_CONTEXT, useValue: null }],
+  providers: [
+    { provide: FOR_FIELD_CONTEXT, useValue: null },
+    { provide: FOR_FIELD_ANCHOR_CONTEXT, useValue: null },
+  ],
 })
 export class ForComboboxContent {
   protected readonly ctx = injectComboboxContext('ForComboboxContent');

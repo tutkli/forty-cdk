@@ -6,6 +6,7 @@ import {
   inject,
   provideZonelessChangeDetection,
   signal,
+  viewChild,
 } from '@angular/core';
 import { form, FormField, validate } from '@angular/forms/signals';
 import { TestBed } from '@angular/core/testing';
@@ -13,9 +14,10 @@ import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
 import { renderHost } from '../../src/test-utils/render';
-import { FOR_FIELD_CONTEXT, FormUiControlBase } from 'forty-cdk/core';
+import { FOR_FIELD_ANCHOR_CONTEXT, FOR_FIELD_CONTEXT, FormUiControlBase } from 'forty-cdk/core';
 import { ForSwitch } from 'forty-cdk/switch';
 import { ForField } from './field';
+import { ForFieldAnchor } from './field-anchor';
 import { ForFieldBoundary } from './field-boundary';
 import { ForFieldControl } from './field-control';
 import { ForFieldDescription } from './field-description';
@@ -271,6 +273,129 @@ describe('ForField', () => {
       await flush();
 
       expect(field.hasAttribute('data-invalid')).toBe(true);
+    });
+  });
+
+  describe('positioning anchor', () => {
+    @Component({
+      imports: [ForField, ForFieldAnchor],
+      template: `
+        <div forField #field="forField">
+          @if (showAnchor()) {
+            <div forFieldAnchor data-test-id="box"></div>
+          }
+        </div>
+      `,
+    })
+    class AnchorHost {
+      readonly showAnchor = signal(true);
+      readonly field = viewChild.required<ForField>('field');
+    }
+
+    @Component({
+      imports: [ForField, ForFieldAnchor],
+      template: `
+        <div forField #field="forField">
+          @if (mode() === 'a') {
+            <div forFieldAnchor data-test-id="a"></div>
+          }
+          @if (mode() === 'b') {
+            <div forFieldAnchor data-test-id="b"></div>
+          }
+        </div>
+      `,
+    })
+    class AnchorSwapHost {
+      readonly mode = signal<'a' | 'b'>('b');
+      readonly field = viewChild.required<ForField>('field');
+    }
+
+    @Component({
+      imports: [ForField, ForFieldAnchor],
+      template: `
+        <div forField #field="forField">
+          <div forFieldAnchor data-test-id="first"></div>
+          @if (showSecond()) {
+            <div forFieldAnchor data-test-id="second"></div>
+          }
+        </div>
+      `,
+    })
+    class TwoAnchorsHost {
+      readonly showSecond = signal(true);
+      readonly field = viewChild.required<ForField>('field');
+    }
+
+    @Directive({ selector: '[anchorProbe]' })
+    class AnchorProbe {
+      readonly ctx = inject(FOR_FIELD_ANCHOR_CONTEXT, { optional: true });
+    }
+
+    @Component({
+      imports: [ForField, ForFieldBoundary, AnchorProbe],
+      template: `
+        <div forField>
+          <div forFieldBoundary>
+            <span anchorProbe data-test-id="probe"></span>
+          </div>
+        </div>
+      `,
+    })
+    class BoundaryProbeHost {}
+
+    it('exposes the [forFieldAnchor] host as the field anchor and drops it on destroy', async () => {
+      const { el, fixture, flush } = renderHost(AnchorHost);
+      expect(fixture.componentInstance.field().anchor()).toBe(q(el, 'box'));
+
+      fixture.componentInstance.showAnchor.set(false);
+      await flush();
+
+      expect(fixture.componentInstance.field().anchor()).toBeNull();
+    });
+
+    it('keeps the anchor slot reachable behind a [forFieldBoundary]', () => {
+      const { fixture } = renderHost(BoundaryProbeHost);
+      const probe = fixture.debugElement.query(By.directive(AnchorProbe)).injector.get(AnchorProbe);
+      expect(probe.ctx).toBeInstanceOf(ForField);
+    });
+
+    it('throws a FORCDK-FIELD-003 orphan error outside a [forField]', () => {
+      @Component({
+        imports: [ForFieldAnchor],
+        template: `<div forFieldAnchor></div>`,
+      })
+      class OrphanHost {}
+
+      expect(() => renderHost(OrphanHost)).toThrow(
+        /\[forty-cdk\/field\] FORCDK-FIELD-003: ForFieldAnchor must be used inside a \[forField\] element/,
+      );
+    });
+
+    it('warns once when a second [forFieldAnchor] stays registered and restores the first when it leaves', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const { el, fixture, flush } = renderHost(TwoAnchorsHost);
+
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn.mock.calls[0]![0]).toMatch(
+        /\[forty-cdk\/field\] FORCDK-CORE-005: A \[forField\] coordinates a single \[forFieldAnchor\], but 2 are registered/,
+      );
+      expect(fixture.componentInstance.field().anchor()).toBe(q(el, 'second'));
+
+      fixture.componentInstance.showSecond.set(false);
+      await flush();
+
+      expect(fixture.componentInstance.field().anchor()).toBe(q(el, 'first'));
+    });
+
+    it('does not warn when a structural swap mounts the replacement anchor before the outgoing one is destroyed', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const { el, fixture, flush } = renderHost(AnchorSwapHost);
+
+      fixture.componentInstance.mode.set('a');
+      await flush();
+
+      expect(warn).not.toHaveBeenCalled();
+      expect(fixture.componentInstance.field().anchor()).toBe(q(el, 'a'));
     });
   });
 

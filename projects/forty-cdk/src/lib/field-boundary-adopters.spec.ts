@@ -210,6 +210,8 @@ const BOUNDARIES: readonly {
 ];
 
 const BOUNDARY_PROVIDER = /\{\s*provide:\s*FOR_FIELD_CONTEXT,\s*useValue:\s*null\s*\}/;
+const ANCHOR_BOUNDARY_PROVIDER =
+  /\{\s*provide:\s*FOR_FIELD_ANCHOR_CONTEXT,\s*useValue:\s*null\s*\}/;
 
 const byTestId = (testId: string) =>
   document.querySelector<HTMLElement>(`[data-test-id="${testId}"]`);
@@ -226,6 +228,15 @@ describe('overlay surfaces are field boundaries', () => {
     expect(providers).toEqual(
       [...BOUNDARIES.map((b) => b.source), 'field/src/field-boundary.ts'].sort(),
     );
+  });
+
+  it('cuts the field anchor on every overlay surface, but not on [forFieldBoundary]', () => {
+    const providers = [...LIBRARY_CODE]
+      .filter(([, code]) => ANCHOR_BOUNDARY_PROVIDER.test(code))
+      .map(([path]) => path)
+      .sort();
+
+    expect(providers).toEqual(BOUNDARIES.map((b) => b.source).sort());
   });
 
   for (const { piece, host } of BOUNDARIES) {

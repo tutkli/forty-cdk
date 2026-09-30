@@ -274,7 +274,7 @@ By default the surface is positioned against `[forDatePickerTrigger]`. When the 
 </div>
 ```
 
-`[forDatePickerAnchor]` changes **only** positioning. The trigger keeps `aria-haspopup` / `aria-expanded` / `aria-controls`, the click toggle, focus return on close, and its exemption from outside-pointer dismissal. Without an anchor the surface falls back to the trigger, so existing markup is unaffected. Each `[forDatePicker]` accepts at most one `[forDatePickerAnchor]`, and a second one throws `[forty-cdk/date-picker]`. (A calendar has its own intrinsic width and ignores `--for-floating-anchor-width`, so the anchor mainly affects start / side alignment to the box edge.)
+`[forDatePickerAnchor]` changes **only** positioning. The trigger keeps `aria-haspopup` / `aria-expanded` / `aria-controls`, the click toggle, focus return on close, and its exemption from outside-pointer dismissal. Without an anchor the surface falls back to the trigger, so existing markup is unaffected. It wins over a surrounding field's [`[forFieldAnchor]`](../field/README.md#positioning-anchor). Each `[forDatePicker]` accepts one `[forDatePickerAnchor]`, and a second one warns in dev mode. (A calendar has its own intrinsic width and ignores `--for-floating-anchor-width`, so the anchor mainly affects start / side alignment to the box edge.)
 
 ## Modal vs non-modal
 

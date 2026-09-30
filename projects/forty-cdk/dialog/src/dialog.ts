@@ -9,7 +9,7 @@ import {
   type Signal,
 } from '@angular/core';
 
-import { createSingleSlot, FOR_FIELD_CONTEXT } from 'forty-cdk/core';
+import { createSingleSlot, FOR_FIELD_ANCHOR_CONTEXT, FOR_FIELD_CONTEXT } from 'forty-cdk/core';
 import { injectModalShell, ModalSurfaceBase, warnIfDialogUnnamed } from 'forty-cdk/core-overlay';
 import {
   FOR_DIALOG_CONTEXT,
@@ -70,6 +70,7 @@ import { DialogDepthRegistry } from './dialog-depth';
   providers: [
     { provide: FOR_DIALOG_CONTEXT, useExisting: ForDialog },
     { provide: FOR_FIELD_CONTEXT, useValue: null },
+    { provide: FOR_FIELD_ANCHOR_CONTEXT, useValue: null },
   ],
 })
 export class ForDialog extends ModalSurfaceBase<ForDialogCloseReason> implements ForDialogContext {

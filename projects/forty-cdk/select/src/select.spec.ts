@@ -2775,30 +2775,56 @@ describe('ForSelect', () => {
       expect(document.querySelector<HTMLElement>('[forSelectContent]')).not.toBeNull();
     });
 
-    it('throws when two [forSelectAnchor] are registered inside the same [forSelect]', () => {
-      // `@if` defers directive construction to the change-detection pass so the
-      // duplicate-registration throw surfaces from `detectChanges()`.
+    it('warns once when two [forSelectAnchor] are registered inside the same [forSelect]', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
       @Component({
         imports: [ForSelect, ForSelectAnchor, ForSelectTrigger],
         template: `
-          @if (show()) {
-            <div forSelect>
-              <div forSelectAnchor></div>
-              <div forSelectAnchor></div>
-              <button forSelectTrigger>Open</button>
-            </div>
-          }
+          <div forSelect>
+            <div forSelectAnchor></div>
+            <div forSelectAnchor></div>
+            <button forSelectTrigger>Open</button>
+          </div>
         `,
       })
-      class TwoAnchorsHost {
-        readonly show = signal(true);
+      class TwoAnchorsHost {}
+
+      renderHost(TwoAnchorsHost);
+
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn.mock.calls[0]![0]).toMatch(
+        /\[forty-cdk\/select\] FORCDK-CORE-005: A \[forSelect\] coordinates a single \[forSelectAnchor\], but 2 are registered/,
+      );
+    });
+
+    it('does not warn when a structural swap mounts the replacement [forSelectAnchor] first', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      @Component({
+        imports: [ForSelect, ForSelectAnchor, ForSelectTrigger],
+        template: `
+          <div forSelect>
+            @if (mode() === 'a') {
+              <div forSelectAnchor data-test-id="a"></div>
+            }
+            @if (mode() === 'b') {
+              <div forSelectAnchor data-test-id="b"></div>
+            }
+            <button forSelectTrigger>Open</button>
+          </div>
+        `,
+      })
+      class AnchorSwapHost {
+        readonly mode = signal<'a' | 'b'>('b');
       }
 
-      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
-      const fixture = TestBed.createComponent(TwoAnchorsHost);
-      expect(() => fixture.detectChanges()).toThrow(
-        /\[forty-cdk\/select\] FORCDK-SELECT-005: A \[forSelect\] registered a second \[forSelectAnchor\]/,
-      );
+      const swap = renderHost(AnchorSwapHost);
+      swap.instance.mode.set('a');
+      await swap.flush();
+
+      expect(swap.query('[data-test-id="a"]')).not.toBeNull();
+      expect(warn).not.toHaveBeenCalled();
     });
   });
 

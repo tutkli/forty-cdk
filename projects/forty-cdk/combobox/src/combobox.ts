@@ -16,7 +16,7 @@ import {
   Collection,
   createPointerSuppression,
   defaultItemToFormValue,
-  formatFortyMessage,
+  injectFieldAnchor,
   injectHiddenInput,
   injectTextDirection,
   isInArray,
@@ -391,13 +391,11 @@ export class ForCombobox<T = string>
   });
 
   readonly #listSlot = injectIdentifiedSlot('for-combobox', 'list');
-  readonly #anchorSlot = anchorSlot(
-    formatFortyMessage({
-      code: 'FORCDK-COMBOBOX-007',
-      message: 'A [forCombobox] registered a second [forComboboxAnchor]; only one is allowed.',
-      fix: 'Keep a single [forComboboxAnchor] per [forCombobox].',
-    }),
-  );
+  readonly #anchorSlot = anchorSlot({
+    primitive: 'combobox',
+    owner: '[forCombobox]',
+    claimant: '[forComboboxAnchor]',
+  });
 
   readonly inputId = this.#inputSlot.id;
   readonly contentId = this.#overlay.contentId;
@@ -409,13 +407,14 @@ export class ForCombobox<T = string>
 
   /**
    * Element floating-ui anchors the listbox against. Resolution order:
-   * explicit `[forComboboxAnchor]` → `[forComboboxTrigger]` (picker anatomy) →
-   * the input (editable anatomy fallback, so existing comboboxes keep their
-   * behavior). Decoupled from `input` so the input keeps driving
-   * `aria-controls`, `aria-activedescendant`, keyboard interaction, and its
-   * dismissal exemption regardless of where the listbox paints.
+   * explicit `[forComboboxAnchor]` → the surrounding field's `[forFieldAnchor]`
+   * → `[forComboboxTrigger]` (picker anatomy) → the input (editable anatomy
+   * fallback, so existing comboboxes keep their behavior). Decoupled from
+   * `input` so the input keeps driving `aria-controls`,
+   * `aria-activedescendant`, keyboard interaction, and its dismissal
+   * exemption regardless of where the listbox paints.
    */
-  readonly anchor = this.#anchorSlot.resolve(this.trigger, this.input);
+  readonly anchor = this.#anchorSlot.resolve(injectFieldAnchor(), this.trigger, this.input);
 
   readonly content = this.#overlay.content;
 

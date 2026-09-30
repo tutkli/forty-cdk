@@ -70,14 +70,21 @@ describe('ForCombobox subclass wrapper (#1593)', () => {
     expect(wrapper.anchor()).toBe(root);
   });
 
-  it('rejects a second anchor registered through the public surface', () => {
-    const { fixture } = renderHost(WrapperHost);
+  it('warns about a second anchor registered through the public surface', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { fixture, flush } = renderHost(WrapperHost);
     const wrapper = fixture.debugElement
       .query(By.directive(WrapperCombobox))
       .injector.get(WrapperCombobox);
 
-    expect(() => wrapper.registerAnchor(document.createElement('div'))).toThrowError(
-      '[forty-cdk/combobox] FORCDK-COMBOBOX-007: A [forCombobox] registered a second [forComboboxAnchor]; only one is allowed.',
+    const second = document.createElement('div');
+    wrapper.registerAnchor(second);
+    await flush();
+
+    expect(wrapper.anchor()).toBe(second);
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0]![0]).toContain(
+      '[forty-cdk/combobox] FORCDK-CORE-005: A [forCombobox] coordinates a single [forComboboxAnchor], but 2 are registered.',
     );
   });
 });

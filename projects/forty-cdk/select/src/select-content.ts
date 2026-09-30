@@ -5,6 +5,7 @@ import {
   hostAriaLabel,
   hostLabelledBy,
   injectFieldLabelExemption,
+  FOR_FIELD_ANCHOR_CONTEXT,
   FOR_FIELD_CONTEXT,
 } from 'forty-cdk/core';
 import {
@@ -71,7 +72,10 @@ import { injectSelectContext, type SelectContext } from './select-context';
     '(keydown)': 'onKeyDown($event)',
     '(pointerleave)': 'onPointerLeave()',
   },
-  providers: [{ provide: FOR_FIELD_CONTEXT, useValue: null }],
+  providers: [
+    { provide: FOR_FIELD_CONTEXT, useValue: null },
+    { provide: FOR_FIELD_ANCHOR_CONTEXT, useValue: null },
+  ],
 })
 export class ForSelectContent {
   readonly #select = injectSelectContext('ForSelectContent');

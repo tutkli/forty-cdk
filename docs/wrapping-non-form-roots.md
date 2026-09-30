@@ -106,6 +106,10 @@ not in this table, because it needs `provideForTable()` instead (see the section
 | `ForTree`                                           | `FOR_TREE_CONTEXT`             |
 | `ForVirtualViewport`                                | `FOR_VIRTUAL_VIEWPORT_CONTEXT` |
 
+`ForField` also provides `FOR_FIELD_ANCHOR_CONTEXT`, the slot `[forFieldAnchor]` fills, so a
+subclass re-provides both tokens with `useExisting` or the overlay controls inside it stop seeing
+the field anchor.
+
 Several of these roots (Accordion, Avatar, Carousel, Dialog, Drawer, NavigationMenu, Popover, Tabs,
 Toast) split their coordination
 surface in two: the public `FOR_<PRIMITIVE>_CONTEXT` above, and an internal interface carrying the

@@ -60,14 +60,19 @@ describe('ForSelect subclass wrapper (#1593)', () => {
     expect(trigger?.getAttribute('aria-controls')).toBe(content?.id);
   });
 
-  it('registered the subclass constructor anchor through the public facade', () => {
-    const { fixture } = renderHost(WrapperHost);
+  it('registered the subclass constructor anchor through the public facade', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { fixture, flush } = renderHost(WrapperHost);
     const wrapper = fixture.debugElement
       .query(By.directive(WrapperSelect))
       .injector.get(WrapperSelect);
 
-    expect(() => wrapper.overlay.registerAnchor(document.createElement('div'))).toThrowError(
-      /\[forty-cdk\/select\] FORCDK-SELECT-005: A \[forSelect\] registered a second \[forSelectAnchor\]/,
+    wrapper.overlay.registerAnchor(document.createElement('div'));
+    await flush();
+
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0]![0]).toContain(
+      '[forty-cdk/select] FORCDK-CORE-005: A [forSelect] coordinates a single [forSelectAnchor], but 2 are registered.',
     );
   });
 });

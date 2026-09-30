@@ -113,9 +113,25 @@ describe('elementSlot', () => {
   });
 });
 
+const ANCHOR_CONFIG = {
+  primitive: 'combobox',
+  owner: '[forCombobox]',
+  claimant: '[forComboboxAnchor]',
+};
+
+function makeAnchorSlot() {
+  return TestBed.runInInjectionContext(() => anchorSlot(ANCHOR_CONFIG));
+}
+
 describe('anchorSlot', () => {
+  beforeEach(configure);
+
+  afterEach(() => {
+    TestBed.resetTestingModule();
+  });
+
   it('resolves to the first non-null fallback until an explicit anchor registers', () => {
-    const slot = anchorSlot('[forty-cdk/test] multiple anchors');
+    const slot = makeAnchorSlot();
     const trigger = signal<HTMLElement | null>(null);
     const input = signal<HTMLElement | null>(null);
     const anchor = slot.resolve(trigger, input);
@@ -138,26 +154,57 @@ describe('anchorSlot', () => {
     expect(anchor()).toBe(triggerEl);
   });
 
-  it('throws the configured error when a second, different anchor registers', () => {
-    const slot = anchorSlot('[forty-cdk/test] multiple anchors');
-    slot.register(document.createElement('div'));
-    expect(() => slot.register(document.createElement('div'))).toThrowError(
-      '[forty-cdk/test] multiple anchors',
+  it('uses the newest anchor and warns once when a second one stays registered', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const slot = makeAnchorSlot();
+    const first = document.createElement('div');
+    const second = document.createElement('div');
+    slot.register(first);
+    slot.register(second);
+    TestBed.tick();
+
+    expect(slot.element()).toBe(second);
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(String(warn.mock.calls[0]?.[0])).toMatch(
+      /\[forty-cdk\/combobox\] FORCDK-CORE-005: A \[forCombobox\] coordinates a single \[forComboboxAnchor\], but 2 are registered/,
     );
+
+    slot.unregister(second);
+    expect(slot.element()).toBe(first);
+  });
+
+  it('does not warn when the second anchor leaves within the same pass', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const slot = makeAnchorSlot();
+    const outgoing = document.createElement('div');
+    const incoming = document.createElement('div');
+    slot.register(outgoing);
+    TestBed.tick();
+    slot.register(incoming);
+    slot.unregister(outgoing);
+    TestBed.tick();
+
+    expect(slot.element()).toBe(incoming);
+    expect(warn).not.toHaveBeenCalled();
   });
 
   it('re-registering the same anchor is idempotent', () => {
-    const slot = anchorSlot('[forty-cdk/test] multiple anchors');
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const slot = makeAnchorSlot();
     const el = document.createElement('div');
     slot.register(el);
-    expect(() => slot.register(el)).not.toThrow();
+    slot.register(el);
+    TestBed.tick();
+
     expect(slot.element()).toBe(el);
+    expect(warn).not.toHaveBeenCalled();
+    slot.unregister(el);
+    expect(slot.element()).toBeNull();
   });
 });
 
 describe('the dependency-free slot factories', () => {
   it('construct with no injection context available', () => {
     expect(() => elementSlot()).not.toThrow();
-    expect(() => anchorSlot('[forty-cdk/test] multiple anchors')).not.toThrow();
   });
 });
