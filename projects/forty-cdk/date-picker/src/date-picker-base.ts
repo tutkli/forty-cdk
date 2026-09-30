@@ -6,6 +6,7 @@ import {
   input,
   isDevMode,
   model,
+  type ModelSignal,
   output,
   signal,
   type Signal,
@@ -17,6 +18,7 @@ import {
   adoptHostId,
   createVetoableNativeEvent,
   type DateAdapter,
+  type DateRange,
   fortyError,
   IdGenerator,
   injectFieldAnchor,
@@ -27,8 +29,26 @@ import {
   type WritingDirection,
 } from 'forty-cdk/core';
 import { AnchoredFormValueControlBase, anchorSlot } from 'forty-cdk/core-overlay';
-import { ForCalendar } from 'forty-cdk/calendar';
+import { FOR_CALENDAR_CONTEXT, type ForCalendarContext } from 'forty-cdk/calendar';
 import type { ForDatePickerContext } from './date-picker-context';
+
+/**
+ * The projected calendar as a picker reads it: the public
+ * {@link ForCalendarContext} plus the `value` / `range` models a pick writes.
+ * `FOR_CALENDAR_CONTEXT` is aliased to the calendar itself, so a `ForCalendar`,
+ * a subclass re-providing the token, and a `hostDirectives` wrapper all
+ * satisfy it.
+ *
+ * Internal — not re-exported from `public-api.ts`.
+ *
+ * @typeParam D The adapter's immutable date type.
+ */
+export interface ProjectedCalendar<D> extends ForCalendarContext<D> {
+  /** The calendar's single-date selection model. */
+  readonly value: ModelSignal<D | null>;
+  /** The calendar's range selection model. */
+  readonly range: ModelSignal<DateRange<D> | null>;
+}
 
 /**
  * Shared overlay / trigger / anchor / content / dismiss / focus machinery for
@@ -118,7 +138,8 @@ export abstract class DatePickerBase<D>
 
   /**
    * BCP 47 locale tag driving the text rendered by `[forDatePickerValue]`. When
-   * `null` (default), the adapter formats through the runtime's default locale.
+   * `null` (default), the adapter formats in its own `locale()`, then the
+   * runtime's default locale.
    * The projected `ForCalendar` is not forwarded this value — bind its own
    * `[locale]` directly, mirroring how `minDate` / `maxDate` are forwarded.
    */
@@ -200,8 +221,10 @@ export abstract class DatePickerBase<D>
   readonly content = this.#contentEl.asReadonly();
 
   /**
-   * The projected `ForCalendar`. Mounts only while the surface is open, so the
-   * query resolves to the live instance on open and to `undefined` on close.
+   * The projected calendar, found through the `FOR_CALENDAR_CONTEXT` it
+   * provides rather than its class, so a subclass or a `hostDirectives`
+   * wrapper is found too. Mounts only while the surface is open, so the query
+   * resolves to the live instance on open and to `undefined` on close.
    * Its `valueChange` / `rangeChange` is the single signal that a selection
    * happened inside the grid — each concrete root wires the matching one in its
    * constructor.
@@ -212,7 +235,9 @@ export abstract class DatePickerBase<D>
    * via a cast; a mismatched adapter would leak a wrong-shaped date through that
    * seam. {@link assertSameAdapter} catches it early in dev mode.
    */
-  protected readonly calendar = contentChild(ForCalendar, { descendants: true });
+  protected readonly calendar = contentChild(FOR_CALENDAR_CONTEXT, {
+    descendants: true,
+  }) as Signal<ProjectedCalendar<unknown> | undefined>;
 
   /**
    * Dev-mode guard for a concrete root's calendar-selection bridge: throws when
@@ -220,7 +245,7 @@ export abstract class DatePickerBase<D>
    * root, which would leak a wrong-shaped date through the generic-erased
    * `contentChild` seam.
    */
-  protected assertSameAdapter(calendar: ForCalendar<unknown>): void {
+  protected assertSameAdapter(calendar: ProjectedCalendar<unknown>): void {
     if (isDevMode() && calendar.adapter !== (this.adapter as DateAdapter<unknown>)) {
       throw fortyError({
         code: 'FORCDK-DATE-PICKER-001',

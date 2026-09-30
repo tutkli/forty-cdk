@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, Directive, signal } from '@angular/core';
 import { By } from '@angular/platform-browser';
 import { form, FormField, required as requiredRule } from '@angular/forms/signals';
 
@@ -14,6 +14,7 @@ import {
   type FormControlMountResult,
 } from '../../src/test-utils/contract';
 import {
+  FOR_CALENDAR_CONTEXT,
   ForCalendar,
   ForCalendarCell,
   ForCalendarGrid,
@@ -361,6 +362,71 @@ describe('ForDateRangePicker', () => {
 
       expect(r.instance.value()).toBeNull();
       expect(guardTouched(r)).toBe(false);
+    });
+  });
+
+  describe('calendar bridge resolves a subclassed calendar', () => {
+    @Directive({
+      selector: '[myRangeCalendar]',
+      providers: [{ provide: FOR_CALENDAR_CONTEXT, useExisting: MyRangeCalendar }],
+    })
+    class MyRangeCalendar extends ForCalendar<Date> {}
+
+    @Component({
+      imports: [
+        ForDateRangePicker,
+        ForDatePickerTrigger,
+        ForDatePickerContent,
+        ForCalendarGrid,
+        ForCalendarCell,
+        MyRangeCalendar,
+      ],
+      providers: [...provideNativeDateAdapter()],
+      template: `
+        <div forDateRangePicker [(value)]="value" [(open)]="open" #picker="forDateRangePicker">
+          <button data-testid="trigger" forDatePickerTrigger>Open</button>
+          @if (open()) {
+            <div forDatePickerContent>
+              <div myRangeCalendar selectionMode="range" [range]="picker.value()">
+                <table forCalendarGrid #grid="forCalendarGrid">
+                  <tbody>
+                    @for (week of grid.weeks(); track week.key) {
+                      <tr>
+                        @for (c of week.days; track c.key) {
+                          <td forCalendarCell [date]="c.date" [attr.data-testid]="'cell-' + c.key">
+                            {{ c.label }}
+                          </td>
+                        }
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          }
+        </div>
+      `,
+    })
+    class SubclassHost {
+      readonly value = signal<DateRange<Date> | null>(null);
+      readonly open = signal(false);
+    }
+
+    it('a range pick in a one-way bound subclassed calendar sets the value, marks touched, and closes', async () => {
+      const r = renderHost(SubclassHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      cell('2026-6-10').click();
+      await flush(r.fixture);
+      cell('2026-6-15').click();
+      await flush(r.fixture);
+
+      const range = r.instance.value()!;
+      expect(range.start.getTime()).toBe(new Date(2026, 5, 10).getTime());
+      expect(range.end.getTime()).toBe(new Date(2026, 5, 15).getTime());
+      expect(r.query('[forDateRangePicker]')!.hasAttribute('data-touched')).toBe(true);
+      expect(r.instance.open()).toBe(false);
     });
   });
 

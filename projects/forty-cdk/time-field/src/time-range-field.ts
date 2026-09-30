@@ -170,12 +170,16 @@ export class ForTimeRangeField<D>
   readonly granularity = input<TimeGranularity>('minute');
 
   /**
-   * 12- or 24-hour cycle. When `null` (default) it is derived from the locale.
-   * A 12-hour cycle adds the AM/PM `dayPeriod` segment to each endpoint.
+   * 12- or 24-hour cycle. When `null` (default) the scope's `hourCycle`
+   * (`provideForTimeRangeFieldDefaults`) applies, then the locale's. A 12-hour
+   * cycle adds the AM/PM `dayPeriod` segment to each endpoint.
    */
   readonly hourCycle = input<12 | 24 | null>(null);
 
-  /** BCP 47 locale driving segment order, separators, and AM/PM names. Defaults to the runtime locale. */
+  /**
+   * BCP 47 locale driving segment order, separators, and AM/PM names. When
+   * `null` (default) the adapter's `locale()` applies, then the runtime locale.
+   */
   readonly locale = input<string | null>(null);
 
   /**
@@ -260,13 +264,14 @@ export class ForTimeRangeField<D>
     const placeholder = computed(() =>
       resolveTextRecord(this.#defaults.placeholder, this.placeholder()),
     );
+    const hourCycle = computed(() => this.hourCycle() ?? this.#defaults.hourCycle);
     this.#startEngine = new TimeFieldEngine<D>({
       adapter: this.adapter,
       disabled: this.effectiveDisabled,
       readonly: this.readonly,
       roving: this.#composer.startRoving,
       granularity: this.granularity,
-      hourCycle: this.hourCycle,
+      hourCycle,
       locale: this.locale,
       placeholder,
       emptySegmentText,
@@ -281,7 +286,7 @@ export class ForTimeRangeField<D>
       readonly: this.readonly,
       roving: this.#composer.endRoving,
       granularity: this.granularity,
-      hourCycle: this.hourCycle,
+      hourCycle,
       locale: this.locale,
       placeholder,
       emptySegmentText,

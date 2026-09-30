@@ -141,6 +141,18 @@ const FAMILIES: readonly DefaultsKeyFamily[] = [
     ],
   },
   {
+    name: 'hour-cycle-capable date and time roots',
+    keys: ['hourCycle'],
+    members: [
+      'date-field/src/date-field-defaults.ts',
+      'date-field/src/date-range-field-defaults.ts',
+      'date-picker/src/date-picker-defaults.ts',
+      'time-field/src/time-field-defaults.ts',
+      'time-field/src/time-range-field-defaults.ts',
+      'time-picker/src/time-picker-defaults.ts',
+    ],
+  },
+  {
     name: 'range field endpoint labels',
     keys: ['startLabel', 'endLabel'],
     members: [

@@ -63,7 +63,36 @@ Two limits are worth knowing before you start.
 
 **The seam abstracts the date library, not the calendar system.** The grid, the month picker and the date field all assume a Gregorian-structured year: exactly twelve months, `month` numbered 1–12, the year ending at month 12. Both `@internationalized/date` adapters build Gregorian dates regardless of the runtime locale. An adapter over a calendar with a different month structure (a 13-month year, say) is not supported, and the optional `compareDate` hook overrides day-only _ordering_ only; it does not make the grid non-Gregorian.
 
-**Formatting is the adapter's, and it is locale-aware.** Month names, weekday headers and the parts a segmented field edits all come from the adapter, so a locale change is an adapter concern rather than a per-primitive input.
+**Formatting is the adapter's, and so is the locale.** Every date and time primitive resolves one locale: its own `[locale]` input when you bind it, then the adapter's optional `locale()`, then the runtime default. Every localized part follows that one locale:
+
+| Part                                                                         | Produced by                                    |
+| ---------------------------------------------------------------------------- | ---------------------------------------------- |
+| Month names, weekday headers, cell labels, picker value text and slot labels | `adapter.format()`                             |
+| A segmented field's segment order and separators                             | `Intl.DateTimeFormat` over the resolved locale |
+| A field's hour cycle and AM/PM names                                         | `Intl.DateTimeFormat` over the resolved locale |
+
+`[hourCycle]`, or the `hourCycle` key of the primitive's defaults provider, sets the cycle regardless of the locale.
+
+The shipped adapters report `null`, so the runtime locale applies until you say otherwise. To keep every field in the application's language, report it from the adapter once instead of binding `[locale]` on each field. A `locale()` that reads a signal makes every mounted field and formatted value follow a runtime language switch:
+
+```ts
+import { Injectable, signal } from '@angular/core';
+import { NativeDateAdapter } from 'forty-cdk/calendar';
+import { FOR_DATE_ADAPTER } from 'forty-cdk/shared';
+
+@Injectable({ providedIn: 'root' })
+export class AppDateAdapter extends NativeDateAdapter {
+  readonly language = signal('es-ES');
+
+  override locale(): string | null {
+    return this.language();
+  }
+}
+
+export const appDateAdapterProviders = [{ provide: FOR_DATE_ADAPTER, useExisting: AppDateAdapter }];
+```
+
+A custom adapter that implements `format` itself should fall back to its own `locale()` when no `locale` argument is passed, as the shipped ones do, so its formatted names and its fields' layout never disagree.
 
 ## Related
 

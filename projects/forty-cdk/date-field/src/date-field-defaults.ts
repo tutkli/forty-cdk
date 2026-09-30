@@ -36,6 +36,11 @@ export interface ForDateFieldDefaults {
    * to a letter-repeat default (`dd` / `mm` / `yyyy` / `hh` / `mm` / `ss` / `--`).
    */
   placeholder: Partial<Record<SegmentType, LocalizableText>>;
+  /**
+   * 12- or 24-hour cycle for fields that don't bind `[hourCycle]`. Library
+   * fallback `null`, which derives the cycle from the locale.
+   */
+  hourCycle: 12 | 24 | null;
 }
 
 /**
@@ -62,6 +67,7 @@ export const FOR_DATE_FIELD_FALLBACK_DEFAULTS: ForDateFieldDefaults = {
   emptySegmentText: 'Empty',
   segmentLabels: DEFAULT_DATE_FIELD_SEGMENT_LABELS,
   placeholder: {},
+  hourCycle: null,
 };
 
 const { token, provideDefaults } = createDefaults<ForDateFieldDefaults>(

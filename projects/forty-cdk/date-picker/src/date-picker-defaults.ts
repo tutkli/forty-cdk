@@ -36,6 +36,11 @@ export interface ForDatePickerDefaults extends AnchoredPositioningSeedDefaults {
    * runs.
    */
   collisionPadding: number;
+  /**
+   * 12- or 24-hour cycle for pickers that don't bind `[hourCycle]`. Library
+   * fallback `null`, which derives the cycle from the locale.
+   */
+  hourCycle: 12 | 24 | null;
 }
 
 /**
@@ -48,6 +53,7 @@ export const FOR_DATE_PICKER_FALLBACK_DEFAULTS: ForDatePickerDefaults = {
   align: 'start',
   sideOffset: 8,
   collisionPadding: 8,
+  hourCycle: null,
 };
 
 const { token, provideDefaults } = createDefaults<ForDatePickerDefaults>(

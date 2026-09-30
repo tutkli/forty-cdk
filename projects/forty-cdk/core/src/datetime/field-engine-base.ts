@@ -1,6 +1,7 @@
 import { computed, type Signal, type WritableSignal } from '@angular/core';
 
 import type { RovingTabindex } from '../roving-tabindex/roving-tabindex';
+import type { DateAdapter } from './date-adapter';
 import { dayPeriodNames, resolveHourCycle } from './hour-cycle';
 import {
   type FieldSegment,
@@ -21,6 +22,8 @@ import {
  * @typeParam D The adapter's immutable date (or date-time) type.
  */
 export interface BaseFieldEngineConfig<D> {
+  /** The active date adapter; its `locale()` backs an unset {@link locale}. */
+  readonly adapter: DateAdapter<D>;
   /** Whether editing is disabled (the field's effective disabled). */
   readonly disabled: Signal<boolean>;
   /** Whether editing is read-only. */
@@ -29,7 +32,10 @@ export interface BaseFieldEngineConfig<D> {
   readonly roving: RovingTabindex;
   /** 12- / 24-hour override, or `null` to derive from the locale. */
   readonly hourCycle: Signal<12 | 24 | null>;
-  /** BCP 47 locale driving segment order, separators, and AM/PM names. */
+  /**
+   * BCP 47 locale driving segment order, separators, and AM/PM names, or `null`
+   * for the adapter's `locale()`, then the runtime default.
+   */
   readonly locale: Signal<string | null>;
   /** Accessible `aria-valuetext` announced for an empty editable segment. */
   readonly emptySegmentText: Signal<string>;
@@ -67,8 +73,13 @@ export abstract class DateTimeFieldEngineBase<
 > {
   protected readonly config: BaseFieldEngineConfig<D>;
 
+  /** The effective locale: the field's own, then the adapter's, then the runtime default. */
+  protected readonly locale = computed<string | undefined>(
+    () => this.config.locale() ?? this.config.adapter.locale?.() ?? undefined,
+  );
+
   protected readonly cycle = computed(() =>
-    resolveHourCycle(this.config.locale() ?? undefined, this.config.hourCycle()),
+    resolveHourCycle(this.locale(), this.config.hourCycle()),
   );
 
   /** The ordered, locale-derived spec list (editable + literals). */
@@ -83,9 +94,7 @@ export abstract class DateTimeFieldEngineBase<
       .map((spec) => spec.type),
   );
 
-  protected readonly periodNames = computed(() =>
-    dayPeriodNames(this.config.locale() ?? undefined),
-  );
+  protected readonly periodNames = computed(() => dayPeriodNames(this.locale()));
 
   protected editor!: SegmentEditor<P, T>;
 

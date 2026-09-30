@@ -145,15 +145,19 @@ export class ForTimeField<D>
   readonly maxTime = input<D | null>(null);
 
   /**
-   * 12- or 24-hour cycle. When `null` (default) it is derived from the runtime
-   * locale. A 12-hour cycle adds the AM/PM `dayPeriod` segment.
+   * 12- or 24-hour cycle. When `null` (default) the scope's `hourCycle`
+   * (`provideForTimeFieldDefaults`) applies, then the locale's. A 12-hour
+   * cycle adds the AM/PM `dayPeriod` segment.
    */
   readonly hourCycle = input<12 | 24 | null>(null);
 
   /** Smallest editable unit: `'hour'`, `'minute'` (default), or `'second'`. */
   readonly granularity = input<TimeGranularity>('minute');
 
-  /** BCP 47 locale driving segment order, separators, and AM/PM names. Defaults to the runtime locale. */
+  /**
+   * BCP 47 locale driving segment order, separators, and AM/PM names. When
+   * `null` (default) the adapter's `locale()` applies, then the runtime locale.
+   */
   readonly locale = input<string | null>(null);
 
   /**
@@ -206,7 +210,7 @@ export class ForTimeField<D>
       readonly: this.readonly,
       roving: this.roving,
       granularity: this.granularity,
-      hourCycle: this.hourCycle,
+      hourCycle: computed(() => this.hourCycle() ?? this.#defaults.hourCycle),
       locale: this.locale,
       placeholder: computed(() =>
         resolveTextRecord(this.#defaults.placeholder, this.placeholder()),

@@ -134,7 +134,8 @@ export class ForDatePicker<D>
   /**
    * 12- or 24-hour cycle forwarded to `[forDatePickerValue]`'s formatting (and
    * typically to the projected `[forTimeField][hourCycle]`). When `null`
-   * (default) it is derived from the runtime locale. Only meaningful when
+   * (default) the scope's `hourCycle` (`provideForDatePickerDefaults`)
+   * applies, then the locale's. Only meaningful when
    * `granularity > 'day'`.
    */
   readonly hourCycle = input<12 | 24 | null>(null);
@@ -156,7 +157,7 @@ export class ForDatePicker<D>
     ) {
       return options;
     }
-    const cycle = this.hourCycle();
+    const cycle = this.hourCycle() ?? this.positioningDefaults.hourCycle;
     return {
       ...options,
       hour: 'numeric',

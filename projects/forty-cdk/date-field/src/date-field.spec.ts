@@ -4,7 +4,14 @@ import { By } from '@angular/platform-browser';
 import { form, FormField, required as requiredRule } from '@angular/forms/signals';
 import { CalendarDate, CalendarDateTime } from '@internationalized/date';
 
-import { flush, pressKey, renderHost, type RenderResult } from '../../src/test-utils';
+import {
+  flush,
+  injectLocaleReportingAdapter,
+  pressKey,
+  provideLocaleReportingAdapter,
+  renderHost,
+  type RenderResult,
+} from '../../src/test-utils';
 import {
   assertFormControlContract,
   type FormControlMountResult,
@@ -1240,5 +1247,113 @@ describe('ForDateField', () => {
       expect(segEl('day').textContent?.trim()).toBe('dd');
       expect(host.querySelector('[forDateField]')!.getAttribute('data-empty')).toBe('');
     });
+  });
+});
+
+describe('ForDateField locale and hour-cycle resolution', () => {
+  @Component({
+    imports: [ForDateField, ForDateFieldSegment, ForDateFieldLiteral],
+    providers: [...provideLocaleReportingAdapter()],
+    template: `
+      <div
+        forDateField
+        [(value)]="value"
+        [granularity]="'minute'"
+        [locale]="locale()"
+        [hourCycle]="hourCycle()"
+        #field="forDateField"
+      >
+        @for (seg of field.segments(); track seg.id) {
+          @if (seg.isLiteral) {
+            <span forDateFieldLiteral data-testid="literal">{{ seg.text }}</span>
+          } @else {
+            <span forDateFieldSegment [segment]="seg.type!" [attr.data-testid]="seg.type">{{
+              seg.text
+            }}</span>
+          }
+        }
+      </div>
+    `,
+  })
+  class AdapterLocaleHost {
+    readonly adapter = injectLocaleReportingAdapter();
+    readonly value = signal<Date | null>(new Date(2026, 1, 3, 9, 30));
+    readonly locale = signal<string | null>(null);
+    readonly hourCycle = signal<12 | 24 | null>(null);
+  }
+
+  @Component({
+    imports: [ForDateField, ForDateFieldSegment],
+    providers: [
+      ...provideLocaleReportingAdapter(),
+      ...provideForDateFieldDefaults({ hourCycle: 24 }),
+    ],
+    template: `
+      <div forDateField [granularity]="'minute'" [hourCycle]="hourCycle()" #field="forDateField">
+        @for (seg of field.segments(); track seg.id) {
+          @if (!seg.isLiteral) {
+            <span forDateFieldSegment [segment]="seg.type!" [attr.data-testid]="seg.type">{{
+              seg.text
+            }}</span>
+          }
+        }
+      </div>
+    `,
+  })
+  class ScopedHourCycleHost {
+    readonly hourCycle = signal<12 | 24 | null>(null);
+  }
+
+  const partsOf = (r: RenderResult<unknown>) =>
+    r.queryAll('[forDateFieldSegment]').map((s) => s.getAttribute('data-testid'));
+  const separatorOf = (r: RenderResult<unknown>) =>
+    r.query('[data-testid="literal"]')!.textContent?.trim();
+
+  it('lays out the segments in the adapter locale when [locale] is unset', async () => {
+    const r = renderHost(AdapterLocaleHost);
+    expect(partsOf(r).slice(0, 3)).toEqual(['month', 'day', 'year']);
+    expect(partsOf(r)).toContain('dayPeriod');
+
+    r.instance.adapter.reported.set('es-ES');
+    await r.flush();
+
+    expect(partsOf(r)).toEqual(['day', 'month', 'year', 'hour', 'minute']);
+    expect(separatorOf(r)).toBe('/');
+  });
+
+  it('announces the month name in the adapter locale when [locale] is unset', async () => {
+    const r = renderHost(AdapterLocaleHost);
+    const month = () => r.query('[data-testid="month"]')!.getAttribute('aria-valuetext');
+    expect(month()).toBe('February');
+
+    r.instance.adapter.reported.set('es-ES');
+    await r.flush();
+
+    expect(month()).toBe('febrero');
+  });
+
+  it('lets a per-instance [locale] win over the adapter locale', async () => {
+    const r = renderHost(AdapterLocaleHost);
+    r.instance.adapter.reported.set('es-ES');
+    r.instance.locale.set('de-DE');
+    await r.flush();
+
+    expect(separatorOf(r)).toBe('.');
+    r.instance.locale.set('en-US');
+    await r.flush();
+    expect(partsOf(r).slice(0, 3)).toEqual(['month', 'day', 'year']);
+    expect(partsOf(r)).toContain('dayPeriod');
+  });
+
+  it('applies the scope hourCycle over the locale, and a per-instance [hourCycle] over both', async () => {
+    const r = renderHost(ScopedHourCycleHost);
+    expect(partsOf(r)).not.toContain('dayPeriod');
+    expect(r.query('[data-testid="hour"]')!.getAttribute('aria-valuemax')).toBe('23');
+
+    r.instance.hourCycle.set(12);
+    await r.flush();
+
+    expect(partsOf(r)).toContain('dayPeriod');
+    expect(r.query('[data-testid="hour"]')!.getAttribute('aria-valuemax')).toBe('12');
   });
 });

@@ -25,3 +25,8 @@ export {
   withFlippableReducedMotion,
   withReducedMotion,
 } from './reduced-motion';
+export {
+  injectLocaleReportingAdapter,
+  LocaleReportingAdapter,
+  provideLocaleReportingAdapter,
+} from './locale-reporting-adapter';

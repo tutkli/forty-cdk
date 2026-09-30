@@ -3,7 +3,14 @@ import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { form, FormField, required as requiredRule } from '@angular/forms/signals';
 
-import { flush, pressKey, renderHost, type RenderResult } from '../../src/test-utils';
+import {
+  flush,
+  injectLocaleReportingAdapter,
+  pressKey,
+  provideLocaleReportingAdapter,
+  renderHost,
+  type RenderResult,
+} from '../../src/test-utils';
 import {
   assertFormControlContract,
   type FormControlMountResult,
@@ -863,5 +870,85 @@ describe('ForTimeField', () => {
       expect(segEl('hour').textContent?.trim()).toBe('hh');
       expect(host.querySelector('[forTimeField]')!.getAttribute('data-empty')).toBe('');
     });
+  });
+});
+
+describe('ForTimeField locale and hour-cycle resolution', () => {
+  @Component({
+    imports: [ForTimeField, ForTimeFieldSegment, ForTimeFieldLiteral],
+    providers: [...provideLocaleReportingAdapter()],
+    template: `
+      <div forTimeField [locale]="locale()" [hourCycle]="hourCycle()" #field="forTimeField">
+        @for (seg of field.segments(); track seg.id) {
+          @if (seg.isLiteral) {
+            <span forTimeFieldLiteral>{{ seg.text }}</span>
+          } @else {
+            <span forTimeFieldSegment [segment]="seg.type!" [attr.data-testid]="seg.type">{{
+              seg.text
+            }}</span>
+          }
+        }
+      </div>
+    `,
+  })
+  class AdapterLocaleHost {
+    readonly adapter = injectLocaleReportingAdapter();
+    readonly locale = signal<string | null>(null);
+    readonly hourCycle = signal<12 | 24 | null>(null);
+  }
+
+  @Component({
+    imports: [ForTimeField, ForTimeFieldSegment],
+    providers: [
+      ...provideLocaleReportingAdapter(),
+      ...provideForTimeFieldDefaults({ hourCycle: 24 }),
+    ],
+    template: `
+      <div forTimeField [hourCycle]="hourCycle()" #field="forTimeField">
+        @for (seg of field.segments(); track seg.id) {
+          @if (!seg.isLiteral) {
+            <span forTimeFieldSegment [segment]="seg.type!" [attr.data-testid]="seg.type">{{
+              seg.text
+            }}</span>
+          }
+        }
+      </div>
+    `,
+  })
+  class ScopedHourCycleHost {
+    readonly hourCycle = signal<12 | 24 | null>(null);
+  }
+
+  const partsOf = (r: RenderResult<unknown>) =>
+    r.queryAll('[forTimeFieldSegment]').map((s) => s.getAttribute('data-testid'));
+
+  it('takes the hour cycle from the adapter locale when [locale] is unset', async () => {
+    const r = renderHost(AdapterLocaleHost);
+    expect(partsOf(r)).toEqual(['hour', 'minute', 'dayPeriod']);
+
+    r.instance.adapter.reported.set('es-ES');
+    await r.flush();
+
+    expect(partsOf(r)).toEqual(['hour', 'minute']);
+    expect(r.query('[data-testid="hour"]')!.getAttribute('aria-valuemax')).toBe('23');
+  });
+
+  it('lets a per-instance [locale] win over the adapter locale', async () => {
+    const r = renderHost(AdapterLocaleHost);
+    r.instance.adapter.reported.set('es-ES');
+    r.instance.locale.set('en-US');
+    await r.flush();
+
+    expect(partsOf(r)).toEqual(['hour', 'minute', 'dayPeriod']);
+  });
+
+  it('applies the scope hourCycle over the locale, and a per-instance [hourCycle] over both', async () => {
+    const r = renderHost(ScopedHourCycleHost);
+    expect(partsOf(r)).toEqual(['hour', 'minute']);
+
+    r.instance.hourCycle.set(12);
+    await r.flush();
+
+    expect(partsOf(r)).toEqual(['hour', 'minute', 'dayPeriod']);
   });
 });

@@ -110,6 +110,12 @@ not in this table, because it needs `provideForTable()` instead (see the section
 subclass re-provides both tokens with `useExisting` or the overlay controls inside it stop seeing
 the field anchor.
 
+`ForDatePicker` and `ForDateRangePicker` find their projected calendar through the same token,
+with `contentChild(FOR_CALENDAR_CONTEXT)`, so the `ForCalendar` row above is also what lets a
+picker read a subclassed calendar's selections and focus its active cell. A wrapper that composes
+`ForCalendar` through `hostDirectives` is found the same way, because the host directive provides
+the token itself.
+
 Several of these roots (Accordion, Avatar, Carousel, Dialog, Drawer, NavigationMenu, Popover, Tabs,
 Toast) split their coordination
 surface in two: the public `FOR_<PRIMITIVE>_CONTEXT` above, and an internal interface carrying the

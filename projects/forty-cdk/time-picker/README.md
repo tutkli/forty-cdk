@@ -126,22 +126,22 @@ One class and one directive, three states. `disabled` removes the trigger from t
 
 ### `ForTimePicker`
 
-| Property        | Type                             | Description                                             |
-| --------------- | -------------------------------- | ------------------------------------------------------- |
-| `value`         | `D \| null`                      | Selected time (two-way)<br>**Default:** `null`          |
-| `open`          | `boolean`                        | Open state (two-way)<br>**Default:** `false`            |
-| `step`          | `number`                         | Slot interval in minutes<br>**Default:** `30`           |
-| `granularity`   | `'hour' \| 'minute' \| 'second'` | Selection precision<br>**Default:** `'minute'`          |
-| `hourCycle`     | `12 \| 24 \| null`               | Hour cycle for labels<br>**Default:** `null`            |
-| `locale`        | `string \| null`                 | BCP 47 locale for labels<br>**Default:** `null`         |
-| `minTime`       | `D \| null`                      | Earliest selectable time<br>**Default:** `null`         |
-| `maxTime`       | `D \| null`                      | Latest selectable time<br>**Default:** `null`           |
-| `closeOnSelect` | `boolean`                        | Close on slot selection<br>**Default:** `true`          |
-| `modal`         | `boolean`                        | Modal (focus-trapped) mode<br>**Default:** `false`      |
-| `dismissible`   | `boolean`                        | Escape / outside close<br>**Default:** `true`           |
-| `returnFocus`   | `boolean`                        | Return focus to trigger on close<br>**Default:** `true` |
-| `placeholder`   | `string`                         | Value display placeholder<br>**Default:** `''`          |
-| `formatOptions` | `Intl.DateTimeFormatOptions`     | Override slot label format<br>**Default:** `{}`         |
+| Property        | Type                             | Description                                                                                                 |
+| --------------- | -------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `value`         | `D \| null`                      | Selected time (two-way)<br>**Default:** `null`                                                              |
+| `open`          | `boolean`                        | Open state (two-way)<br>**Default:** `false`                                                                |
+| `step`          | `number`                         | Slot interval in minutes<br>**Default:** `30`                                                               |
+| `granularity`   | `'hour' \| 'minute' \| 'second'` | Selection precision<br>**Default:** `'minute'`                                                              |
+| `hourCycle`     | `12 \| 24 \| null`               | Hour cycle for labels. `null` → the scope's `hourCycle`, then the locale<br>**Default:** `null`             |
+| `locale`        | `string \| null`                 | BCP 47 locale for labels. `null` → the adapter's `locale()`, then the runtime locale<br>**Default:** `null` |
+| `minTime`       | `D \| null`                      | Earliest selectable time<br>**Default:** `null`                                                             |
+| `maxTime`       | `D \| null`                      | Latest selectable time<br>**Default:** `null`                                                               |
+| `closeOnSelect` | `boolean`                        | Close on slot selection<br>**Default:** `true`                                                              |
+| `modal`         | `boolean`                        | Modal (focus-trapped) mode<br>**Default:** `false`                                                          |
+| `dismissible`   | `boolean`                        | Escape / outside close<br>**Default:** `true`                                                               |
+| `returnFocus`   | `boolean`                        | Return focus to trigger on close<br>**Default:** `true`                                                     |
+| `placeholder`   | `string`                         | Value display placeholder<br>**Default:** `''`                                                              |
+| `formatOptions` | `Intl.DateTimeFormatOptions`     | Override slot label format<br>**Default:** `{}`                                                             |
 
 Inherits all `FormUiControl` inputs (`disabled`, `readonly`, `required`, `invalid`,
 `errors`, `touched`, `name`, `pending`) for `[formField]` auto-wiring.
@@ -181,14 +181,15 @@ A hover on a disabled slot is ignored, and the highlight falls back to the focus
 
 `provideForTimePickerDefaults` configures positioning defaults for an injector subtree, either at the application root or in any component's `providers` array. Partial overrides inherit unspecified keys from the parent scope (or the library fallbacks at the root).
 
-| Key                | Library fallback | Meaning                                                                          |
-| ------------------ | ---------------- | -------------------------------------------------------------------------------- |
-| `side`             | `'bottom'`       | Anchor side for time pickers that don't set `side` themselves.                   |
-| `align`            | `'start'`        | Alignment along `side` for time pickers that don't set `align` themselves.       |
-| `sideOffset`       | `4`              | Main-axis gap (px) for time pickers that don't set `sideOffset` themselves.      |
-| `collisionPadding` | `8`              | Collision-middleware padding (px) for time pickers that don't set it themselves. |
+| Key                | Library fallback | Meaning                                                                                                         |
+| ------------------ | ---------------- | --------------------------------------------------------------------------------------------------------------- |
+| `side`             | `'bottom'`       | Anchor side for time pickers that don't set `side` themselves.                                                  |
+| `align`            | `'start'`        | Alignment along `side` for time pickers that don't set `align` themselves.                                      |
+| `sideOffset`       | `4`              | Main-axis gap (px) for time pickers that don't set `sideOffset` themselves.                                     |
+| `collisionPadding` | `8`              | Collision-middleware padding (px) for time pickers that don't set it themselves.                                |
+| `hourCycle`        | `null`           | 12- or 24-hour cycle for time pickers that don't set `hourCycle` themselves. `null` derives it from the locale. |
 
-Per-instance inputs always win over the scope defaults. All four are no-ops when `modal` is set: `[forTimePickerContent]` mounts the modal shell instead of the anchored positioner, so the surface is never positioned against the trigger and the consumer's own CSS places it.
+Per-instance inputs always win over the scope defaults. The four positioning keys are no-ops when `modal` is set: `[forTimePickerContent]` mounts the modal shell instead of the anchored positioner, so the surface is never positioned against the trigger and the consumer's own CSS places it.
 
 <!-- snippet: fragment -->
 

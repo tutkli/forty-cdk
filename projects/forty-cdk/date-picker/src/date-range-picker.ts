@@ -18,7 +18,6 @@ import {
   injectHiddenInput,
   serializeISODate,
 } from 'forty-cdk/core';
-import { type ForCalendar } from 'forty-cdk/calendar';
 import { DatePickerBase } from './date-picker-base';
 import { FOR_DATE_PICKER_CONTEXT } from './date-picker-context';
 import {
@@ -192,7 +191,7 @@ export class ForDateRangePicker<D>
           fix: 'Set selectionMode="range" on the projected [forCalendar].',
         });
       }
-      const sub = (calendar as ForCalendar<D>).range.subscribe((next) => {
+      const sub = calendar.range.subscribe((next) => {
         if (this.readonly() || this.effectiveDisabled()) {
           return;
         }
