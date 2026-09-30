@@ -2,6 +2,7 @@ export { ForDrawer } from './drawer';
 export { ForDrawerTrigger } from './drawer-trigger';
 export { ForDrawerBackdrop } from './drawer-backdrop';
 export { ForDrawerHandle } from './drawer-handle';
+export { ForDrawerInitialFocus } from './drawer-initial-focus';
 export { ForDrawerTitle } from './drawer-title';
 export { ForDrawerDescription } from './drawer-description';
 export { ForDrawerClose } from './drawer-close';

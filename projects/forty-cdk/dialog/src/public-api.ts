@@ -4,6 +4,7 @@ export { ForDialogTitle } from './dialog-title';
 export { ForDialogDescription } from './dialog-description';
 export { ForDialogClose } from './dialog-close';
 export { ForDialogBackdrop } from './dialog-backdrop';
+export { ForDialogInitialFocus } from './dialog-initial-focus';
 export {
   FOR_DIALOG_CONTEXT,
   type ForDialogCloseReason,

@@ -109,6 +109,23 @@ export function isTabbableCandidate(el: HTMLElement, root: HTMLElement): boolean
   return el.tabIndex >= 0 && isFocusableCandidate(el, root);
 }
 
+/**
+ * Reports whether `el` can take an explicit initial-focus move into `root`: it lives inside `root`
+ * in the composed tree, is not `:disabled`, is focusable natively or through a `tabindex`
+ * attribute (`tabindex="-1"` included, so a static heading qualifies), and is a focusable
+ * candidate under {@link isFocusableCandidate}.
+ *
+ * Reads `getComputedStyle`, so callers must gate it behind `isPlatformBrowser`.
+ */
+export function isInitialFocusTarget(el: HTMLElement, root: HTMLElement): boolean {
+  return (
+    composedContains(root, el) &&
+    !el.matches(':disabled') &&
+    (el.matches(FOCUSABLE_SELECTOR) || el.hasAttribute('tabindex')) &&
+    isFocusableCandidate(el, root)
+  );
+}
+
 /** The two ends of a container's Tab cycle, as resolved by {@link findTabbableEdges}. */
 export interface TabbableEdges {
   /** First tabbable descendant in candidate order, or `null` when the container has none. */

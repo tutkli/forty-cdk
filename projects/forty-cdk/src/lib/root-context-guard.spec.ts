@@ -7,6 +7,8 @@ import {
 } from 'forty-cdk/accordion';
 import { FOR_AVATAR_CONTEXT, ForAvatarFallback } from 'forty-cdk/avatar';
 import { FOR_CAROUSEL_CONTEXT, ForCarouselPrevious } from 'forty-cdk/carousel';
+import { FOR_DIALOG_CONTEXT, ForDialogTitle } from 'forty-cdk/dialog';
+import { FOR_DRAWER_CONTEXT, ForDrawerTitle } from 'forty-cdk/drawer';
 import {
   FOR_COMBOBOX_CONTEXT,
   ForComboboxClear,
@@ -15,6 +17,7 @@ import {
 } from 'forty-cdk/combobox';
 import { FOR_LISTBOX_CONTEXT, ForListboxOption } from 'forty-cdk/listbox';
 import { FOR_NAVIGATION_MENU_CONTEXT, ForNavigationMenuList } from 'forty-cdk/navigation-menu';
+import { FOR_POPOVER_CONTEXT, ForPopoverClose } from 'forty-cdk/popover';
 import { FOR_RADIO_GROUP_CONTEXT, ForRadio } from 'forty-cdk/radio-group';
 import {
   FOR_SELECT_CONTEXT,
@@ -40,7 +43,7 @@ import { LIBRARY_CODE, LIBRARY_SOURCES } from '../test-utils/source-scan';
  * **The derived property is "this entry point splits its context"** — a source
  * module declaring `interface <X>Context extends For<X>Context`, which is what
  * puts an unchecked cast inside its `inject<Primitive>Context`. It is exact in
- * both directions today: twelve modules match, Avatar and Table having joined
+ * both directions today: fifteen modules match, Avatar and Table having joined
  * with [#1722](https://github.com/tutkli/forty-cdk/issues/1722)'s inverted
  * default — Table's own second token is a *registration* protocol living in
  * `forty-cdk/core`, aliased to a separate provider, and is a different surface
@@ -49,8 +52,10 @@ import { LIBRARY_CODE, LIBRARY_SOURCES } from '../test-utils/source-scan';
  * [#1781](https://github.com/tutkli/forty-cdk/issues/1781), joined by TimePicker
  * when [#1784](https://github.com/tutkli/forty-cdk/issues/1784) gave the same
  * channel to `[forTimePickerOption]`: the inverted default applied to one new
- * member rather than a full pass over the surface behind it. So a
- * thirteenth split root cannot land without either calling the guard or turning
+ * member rather than a full pass over the surface behind it. Dialog, Drawer and
+ * Popover joined the same way with the initial-focus marker of
+ * [#2056](https://github.com/tutkli/forty-cdk/issues/2056). So a sixteenth split
+ * root cannot land without either calling the guard or turning
  * this file red — which the count-per-module case extends to a *second* resolver
  * added to a module that already calls it once.
  *
@@ -125,6 +130,22 @@ class ImpostorCarouselHost {}
 class ImpostorComboboxHost {}
 
 @Component({
+  imports: [ForDialogTitle],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [{ provide: FOR_DIALOG_CONTEXT, useValue: {} }],
+  template: `<h2 forDialogTitle>Confirm</h2>`,
+})
+class ImpostorDialogHost {}
+
+@Component({
+  imports: [ForDrawerTitle],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [{ provide: FOR_DRAWER_CONTEXT, useValue: {} }],
+  template: `<h2 forDrawerTitle>Filters</h2>`,
+})
+class ImpostorDrawerHost {}
+
+@Component({
   imports: [ForListboxOption],
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [{ provide: FOR_LISTBOX_CONTEXT, useValue: {} }],
@@ -139,6 +160,14 @@ class ImpostorListboxHost {}
   template: `<ul forNavigationMenuList></ul>`,
 })
 class ImpostorNavigationMenuHost {}
+
+@Component({
+  imports: [ForPopoverClose],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [{ provide: FOR_POPOVER_CONTEXT, useValue: {} }],
+  template: `<button type="button" forPopoverClose>Close</button>`,
+})
+class ImpostorPopoverHost {}
 
 @Component({
   imports: [ForRadio],
@@ -226,6 +255,24 @@ const GUARDED: readonly GuardedRoot[] = [
     host: ImpostorComboboxHost,
   },
   {
+    entryPoint: 'dialog',
+    source: 'dialog/src/dialog-context.ts',
+    calls: 1,
+    token: 'FOR_DIALOG_CONTEXT',
+    root: '[forDialog]',
+    piece: 'ForDialogTitle',
+    host: ImpostorDialogHost,
+  },
+  {
+    entryPoint: 'drawer',
+    source: 'drawer/src/drawer-context.ts',
+    calls: 1,
+    token: 'FOR_DRAWER_CONTEXT',
+    root: '[forDrawer]',
+    piece: 'ForDrawerTitle',
+    host: ImpostorDrawerHost,
+  },
+  {
     entryPoint: 'listbox',
     source: 'listbox/src/listbox-context.ts',
     calls: 1,
@@ -242,6 +289,15 @@ const GUARDED: readonly GuardedRoot[] = [
     root: '[forNavigationMenu]',
     piece: 'ForNavigationMenuList',
     host: ImpostorNavigationMenuHost,
+  },
+  {
+    entryPoint: 'popover',
+    source: 'popover/src/popover-context.ts',
+    calls: 1,
+    token: 'FOR_POPOVER_CONTEXT',
+    root: '[forPopover]',
+    piece: 'ForPopoverClose',
+    host: ImpostorPopoverHost,
   },
   {
     entryPoint: 'radio-group',

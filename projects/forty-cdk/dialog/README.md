@@ -168,9 +168,10 @@ Open a component imperatively and await its result. The manager mounts it under 
 | `focusOutside`       | `OutputEmitterRef<VetoableNativeEvent<FocusEvent>>`                 | Output. Focus moves outside the dialog.<br>**Default:** —                                                                                                                                                                                                         |
 | `interactOutside`    | `OutputEmitterRef<VetoableNativeEvent<PointerEvent \| FocusEvent>>` | Output. Composite: fires alongside both of the above (and shares their veto state).<br>**Default:** —                                                                                                                                                             |
 
-| Data attribute | Values                                                                        |
-| -------------- | ----------------------------------------------------------------------------- |
-| `data-state`   | `open` (always: the host is only mounted while open, so it is never `closed`) |
+| Data attribute | Values                                                                                                                  |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `data-state`   | `open` (always: the host is only mounted while open, so it is never `closed`)                                           |
+| `data-depth`   | `0` for the first mounted dialog, one above the deepest dialog still mounted otherwise. Fixed for the dialog's lifetime |
 
 ### Inputs — focus callbacks
 
@@ -194,12 +195,27 @@ The auto-focus pair is bound as **function references** (input callbacks), not a
 | -------------------------- | ---------------------------------------------------------------------------------------- |
 | `data-state`               | `open` (always, since it is mounted alongside the dialog)                                |
 | `data-for-dialog-backdrop` | present (stable marker; portaled alongside the dialog, so use it to select the backdrop) |
+| `data-depth`               | its dialog's `data-depth`                                                                |
 
 ### `ForDialogClose`
 
 | Data attribute | Values                                                    |
 | -------------- | --------------------------------------------------------- |
 | `data-state`   | `open` (always, since it is mounted alongside the dialog) |
+
+### `ForDialogInitialFocus`
+
+`[forDialogInitialFocus]` marks the element that receives focus when the enclosing dialog opens, in place of the one `initialFocus` picks. It takes no inputs, and it works inside a component opened with `ForDialogManager.open()` as well, since the marker lives in the content rather than in the caller. When the marked element is missing, disabled or hidden at mount, focus falls back to `initialFocus`; a vetoed `autoFocusOnOpen` still skips the move. Mark one element per dialog: a second marker warns in dev mode and only the newest is used.
+
+```html
+<div forDialog (dismiss)="open.set(false)">
+  <h2 forDialogTitle>Delete view</h2>
+  <button forDialogClose aria-label="Close">×</button>
+  <p>This cannot be undone.</p>
+  <button forDialogClose forDialogInitialFocus>Cancel</button>
+  <button (click)="deleteView()">Delete</button>
+</div>
+```
 
 ## Programmatic API
 
@@ -284,12 +300,12 @@ this.dialogs.open(ConfirmDialog, {
 
 Set them once for a scope with `provideForDialogDefaults({ animateEnter, animateLeave })`; a per-`open()` value always wins over the scope default.
 
-| Symbol                  | Description                                                                                                                                                   |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ForDialogManager`      | Injectable. `open(component, config?)` returns a `ForDialogRef<R>`.                                                                                           |
-| `ForDialogRef<R>`       | `close(result?)`, `closed: Promise<{ reason: ForDialogCloseReason; result: R \| undefined }>`, `result: Signal<R \| undefined>`, `isClosed: Signal<boolean>`. |
-| `FOR_DIALOG_DATA`       | Token for the `data` payload. Inject in the opened component.                                                                                                 |
-| `injectDialogData<T>()` | Typed accessor for `FOR_DIALOG_DATA`. Returns `T \| null` (`null` when `open()` got no `data`).                                                               |
+| Symbol                  | Description                                                                                                                                                                                                                                                                                                                                                        |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `ForDialogManager`      | Injectable. `open(component, config?)` returns a `ForDialogRef<R>`. `closeAll(result?)` closes every open dialog, topmost first, with reason `'programmatic'`; exit animations still play and focus ends where the bottom dialog returns it. `openCount` is a `Signal<number>` of the dialogs still open, counting a closed one until its exit animation finishes. |
+| `ForDialogRef<R>`       | `close(result?)`, `closed: Promise<{ reason: ForDialogCloseReason; result: R \| undefined }>`, `result: Signal<R \| undefined>`, `isClosed: Signal<boolean>`.                                                                                                                                                                                                      |
+| `FOR_DIALOG_DATA`       | Token for the `data` payload. Inject in the opened component.                                                                                                                                                                                                                                                                                                      |
+| `injectDialogData<T>()` | Typed accessor for `FOR_DIALOG_DATA`. Returns `T \| null` (`null` when `open()` got no `data`).                                                                                                                                                                                                                                                                    |
 
 ### `ForDialogOpenConfig`
 
@@ -326,7 +342,8 @@ The four dismiss callbacks mirror the declarative `(escapeKeyDown)` / `(pointerD
 
 Implements the [WAI-ARIA Modal Dialog pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/).
 
-- Always provide an accessible name: render a `[forDialogTitle]` (sets `aria-labelledby`) or pass `ariaLabel`.
+- Always provide an accessible name: render a `[forDialogTitle]` (sets `aria-labelledby`) or pass `ariaLabel`. A dialog that mounts with neither logs a dev-mode warning (`FORCDK-CORE-011`) after its first render, because a WCAG-tagged audit does not report the missing name.
+- Initial focus follows the APG guidance by default (the first focusable element). When the step is hard to undo, or focusing the first control would scroll the start of the content out of view, mark the least destructive action or a static heading carrying `tabindex="-1"` with [`[forDialogInitialFocus]`](#fordialoginitialfocus).
 - `[forDialogDescription]` is optional. Use it for non-title supporting copy (the question of a confirm, the rationale of an alert).
 - `alert: true` interrupts assistive tech aggressively, so use it only for genuine alerts (lost connection, unsaved changes warning), not for general confirms.
 - Don't put interactive overlays (popovers, menus) outside the focus trap while a modal dialog is open, because they won't be reachable. For a non-modal floating surface anchored to a trigger, use `[forPopover]` instead.
@@ -354,6 +371,24 @@ forty-cdk ships no styles: put your own class on each piece and key your CSS off
   background: var(--accent);
 }
 ```
+
+**Stacked dialogs.** Each surface and its backdrop publish their stacking position as `data-depth` and `--for-dialog-depth` (`0` for the first dialog, `1` above it, …), shared by declarative and managed dialogs. One rule then covers every level, with each backdrop one step below its own dialog and above every dialog underneath it:
+
+```css
+.my-dialog {
+  z-index: calc(1010 + var(--for-dialog-depth) * 10);
+}
+
+.my-backdrop {
+  z-index: calc(1009 + var(--for-dialog-depth) * 10);
+}
+```
+
+### CSS custom properties
+
+| Property             | Meaning                                                                                                                                                                                                  |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--for-dialog-depth` | Written on `[forDialog]` and `[forDialogBackdrop]`. The dialog's stacking position as a unitless integer, `0` for the first mounted dialog. Fixed for the dialog's lifetime, so a level is never reused. |
 
 ## Behavior notes
 

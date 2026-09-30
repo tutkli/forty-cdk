@@ -155,6 +155,8 @@ class DemoHost {
 
 Drawers opened by the manager join the same `ForDrawerStack` as declarative ones, so mixed stacking (a programmatic drawer over a declarative parent, or vice versa) reflects correct `data-depth` / `data-state-nested` and routes Escape through the LIFO dismissible layer.
 
+`ForDrawerManager.openCount` is a `Signal<number>` of the drawers it has open, counting a closed one until its exit animation finishes. `closeAll(result?)` closes every one of them, topmost first, with reason `'programmatic'`: each `ref.closed` resolves as it does for `ref.close()`, exit animations still play, and focus ends where the bottom drawer returns it.
+
 **Styling the programmatic overlay root.** The manager creates the `[forDrawer]` host for you and it is class-less. Pass `class` / `classList` to style it. The tokens land on the real host alongside `data-side` / `data-state` / the `--for-drawer-swipe-movement-x` / `-y` custom properties, so positioning CSS keyed on `data-side` works:
 
 <!-- snippet: fragment -->
@@ -404,11 +406,16 @@ Press the button: the manager opens the confirmation as a bottom drawer, and the
 
 ### `ForDrawerBackdrop`
 
-| Data attribute          | Values           |
-| ----------------------- | ---------------- |
-| `data-state`            | `open`           |
-| `data-fade-from-active` | present / absent |
-| `data-dragging`         | present / absent |
+| Data attribute          | Values                    |
+| ----------------------- | ------------------------- |
+| `data-state`            | `open`                    |
+| `data-fade-from-active` | present / absent          |
+| `data-dragging`         | present / absent          |
+| `data-depth`            | its drawer's `data-depth` |
+
+### `ForDrawerInitialFocus`
+
+`[forDrawerInitialFocus]` marks the element that receives focus when the enclosing drawer opens, in place of the one `initialFocus` picks. It takes no inputs, and it works inside a component opened with `ForDrawerManager.open()` as well. When the marked element is missing, disabled or hidden at mount, focus falls back to `initialFocus`; a vetoed `autoFocusOnOpen` still skips the move. Mark one element per drawer: a second marker warns in dev mode and only the newest is used.
 
 ### `ForDrawerTrigger`
 
@@ -716,6 +723,8 @@ A third known limit does not apply to this primitive but is easy to hit inside o
 
 Implements the [WAI-ARIA Modal Dialog pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/). `role="dialog"` (or `"alertdialog"` when `alert`), `aria-modal="true"` in modal mode, `aria-labelledby` / `aria-describedby` auto-wired by `[forDrawerTitle]` / `[forDrawerDescription]`. Modal mode applies `inert` and `aria-hidden="true"` to body siblings so AT cannot reach them. The handle is `aria-hidden="true"` because keyboard users dismiss via Escape or `[forDrawerClose]`.
 
+A drawer that mounts with neither a `[forDrawerTitle]` nor an `ariaLabel` logs a dev-mode warning (`FORCDK-CORE-011`) after its first render. To land focus somewhere other than the first focusable element on open, such as the least destructive action or a static heading carrying `tabindex="-1"`, mark it with [`[forDrawerInitialFocus]`](#fordrawerinitialfocus).
+
 Keyboard: **Escape** closes the topmost drawer when `dismissible`; **Tab / Shift+Tab** cycles focus inside the drawer when `modal`; **Click** on `[forDrawerBackdrop]` closes when `dismissible`.
 
 ## Styling
@@ -731,6 +740,7 @@ forty-cdk ships no styles: put your own class on each piece and key your CSS off
 | `--for-drawer-swipe-movement-x` | Written on `[forDrawer]` (the surface). Live swipe displacement in CSS px along the x axis (`0px` at rest; only the dismissal axis is ever non-zero). Compose with `translate: var(--for-drawer-swipe-movement-x, 0px) var(--for-drawer-swipe-movement-y, 0px)`. See [Positioning the snaps](#positioning-the-snaps-css-contract). |
 | `--for-drawer-swipe-movement-y` | Written on `[forDrawer]` (the surface). Live swipe displacement in CSS px along the y axis (`0px` at rest; only the dismissal axis is ever non-zero). Compose with `translate: var(--for-drawer-swipe-movement-x, 0px) var(--for-drawer-swipe-movement-y, 0px)`. See [Positioning the snaps](#positioning-the-snaps-css-contract). |
 | `--for-drawer-swipe-progress`   | Written on `[forDrawerBackdrop]`. Swipe progress toward the anchored edge, a unitless fraction `0` (at rest) → `1` (fully swiped off-screen). Fade with `opacity: calc(1 - var(--for-drawer-swipe-progress, 0))`. See [Backdrop swipe-fade](#backdrop-swipe-fade-css-contract).                                                    |
+| `--for-drawer-depth`            | Written on `[forDrawer]` and `[forDrawerBackdrop]`. The drawer's nesting depth as a unitless integer, `0` for a root drawer, mirroring `data-depth`. Stack a nested drawer's backdrop above its parent with `z-index: calc(1009 + var(--for-drawer-depth) * 10)`.                                                                  |
 
 ```css
 .sheet[data-active-snap-point] {

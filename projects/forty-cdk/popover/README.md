@@ -183,6 +183,10 @@ The popover opens / closes alongside the input but never steals focus from it. T
 | -------------------- | ------- |
 | `data-popover-arrow` | present |
 
+### `ForPopoverInitialFocus`
+
+`[forPopoverInitialFocus]` marks the element inside `[forPopoverContent]` that receives focus when the popover opens, in place of the one `initialFocus` picks: a primary action rather than the close button leading the header, for instance. It takes no inputs. When the marked element is missing, disabled or hidden at mount, focus falls back to `initialFocus`; a vetoed `(autoFocusOnOpen)` still skips the move. Mark one element per popover: a second marker warns in dev mode and only the newest is used.
+
 ## Scoped defaults
 
 `provideForPopoverDefaults` configures positioning defaults for an injector subtree, either at the application root or in any component's `providers` array. Partial overrides inherit unspecified keys from the parent scope (or the library fallbacks at the root).
@@ -225,7 +229,7 @@ class Toolbar {}
 
 Implements the [WAI-ARIA Modeless Dialog pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/).
 
-- Always provide an accessible name: render a `[forPopoverTitle]` or pass `ariaLabel`.
+- Always provide an accessible name: render a `[forPopoverTitle]` or pass `ariaLabel`. A `[forPopoverContent]` that mounts with neither logs a dev-mode warning (`FORCDK-CORE-011`) after its first render, because a WCAG-tagged audit does not report the missing name.
 - `[forPopoverDescription]` is optional. Use it for explanatory copy beyond the title.
 - `aria-haspopup="dialog"` advertises the popover as a dialog (matches `role="dialog"` on the content). For menus or listboxes, build a different primitive.
 - The popover is not modal: assistive tech users can still navigate around it. That's intentional, because modeless surfaces should not interrupt.

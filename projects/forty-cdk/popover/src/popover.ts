@@ -12,6 +12,7 @@ import {
 
 import {
   adoptHostId,
+  createSingleSlot,
   IdGenerator,
   injectPrefersReducedMotion,
   emitVetoableNativeEvent,
@@ -187,6 +188,14 @@ export class ForPopover extends AnchoredOverlayPositioningBase implements ForPop
   readonly #arrowEl = signal<HTMLElement | null>(null);
   readonly arrow = this.#arrowEl.asReadonly();
 
+  readonly #initialFocusSlot = createSingleSlot<HTMLElement>({
+    primitive: 'popover',
+    owner: '[forPopover]',
+    claimant: '[forPopoverInitialFocus]',
+  });
+
+  private readonly initialFocusTarget = this.#initialFocusSlot.value;
+
   readonly #labelIds = signal<readonly string[]>([]);
   readonly #describedByIds = signal<readonly string[]>([]);
 
@@ -243,6 +252,14 @@ export class ForPopover extends AnchoredOverlayPositioningBase implements ForPop
     if (this.#arrowEl() === el) {
       this.#arrowEl.set(null);
     }
+  }
+
+  private registerInitialFocus(el: HTMLElement): void {
+    this.#initialFocusSlot.register(el);
+  }
+
+  private unregisterInitialFocus(el: HTMLElement): void {
+    this.#initialFocusSlot.unregister(el);
   }
 
   registerLabel(id: string): void {

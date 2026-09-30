@@ -3,6 +3,7 @@ import { DestroyRef, ElementRef, inject, type Signal } from '@angular/core';
 import {
   afterNextRenderCancellable,
   findFirstFocusable,
+  isInitialFocusTarget,
   MODAL_PEER_ATTRIBUTE,
   type VetoableNativeEvent,
 } from 'forty-cdk/core';
@@ -110,6 +111,11 @@ export type OverlayShellInitialFocusMove = 'first' | 'container' | (() => boolea
 export interface OverlayShellInitialFocusConfig {
   readonly move: OverlayShellInitialFocusMove;
   readonly veto?: () => boolean;
+  /**
+   * Element the consumer marked as the initial focus target, read once at mount. When it resolves
+   * to an element that passes `isInitialFocusTarget`, focus lands there instead of running `move`.
+   */
+  readonly target?: () => HTMLElement | null;
 }
 
 /**
@@ -258,8 +264,11 @@ export function injectOverlayShell(config: OverlayShellConfig): void {
       if (focusCfg.veto?.()) {
         return;
       }
+      const marked = focusCfg.target?.() ?? null;
       const move = focusCfg.move;
-      if (move === 'first') {
+      if (marked !== null && isInitialFocusTarget(marked, el)) {
+        marked.focus();
+      } else if (move === 'first') {
         (findFirstFocusable(el) ?? el).focus();
       } else if (move === 'container') {
         el.focus();

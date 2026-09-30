@@ -4,6 +4,7 @@ import { hostAriaLabel, hostDescribedBy, hostLabelledBy } from 'forty-cdk/core';
 import {
   toFloatingPositioner,
   injectOverlayShell,
+  warnIfDialogUnnamed,
   warnIfMountedWhileClosed,
 } from 'forty-cdk/core-overlay';
 import { injectPopoverContext } from './popover-context';
@@ -54,6 +55,12 @@ export class ForPopoverContent {
       condition: 'popover.open()',
       open: this.ctx.open,
     });
+    warnIfDialogUnnamed({
+      primitive: 'popover',
+      piece: '[forPopoverContent]',
+      title: '[forPopoverTitle]',
+      ariaLabelOn: '[forPopover]',
+    });
     injectOverlayShell({
       positioner: toFloatingPositioner(this.ctx, this.ctx.reference),
       dismiss: {
@@ -78,6 +85,7 @@ export class ForPopoverContent {
       initialFocus: {
         move: this.ctx.initialFocus() === 'container' ? 'container' : 'first',
         veto: () => this.ctx.emitAutoFocusOnOpen(),
+        target: () => this.ctx.initialFocusTarget(),
       },
       returnFocus: {
         enabled: this.ctx.returnFocus,

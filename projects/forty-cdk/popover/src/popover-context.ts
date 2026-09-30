@@ -1,6 +1,11 @@
 import { computed, inject, InjectionToken, type Signal } from '@angular/core';
 
-import { orphanContextError, unresolvedRootError, type VetoableNativeEvent } from 'forty-cdk/core';
+import {
+  assertRootContext,
+  orphanContextError,
+  unresolvedRootError,
+  type VetoableNativeEvent,
+} from 'forty-cdk/core';
 import { type AnchoredPositioningContext } from 'forty-cdk/core-overlay';
 
 /**
@@ -120,9 +125,42 @@ export interface ForPopoverContext extends AnchoredPositioningContext {
   emitAutoFocusOnClose(): boolean;
 }
 
+/**
+ * The registration protocol `[forPopoverInitialFocus]` drives. Never exported from
+ * `public-api.ts`; `ForPopover` declares both members TS-`private`.
+ */
+export interface PopoverRegistrationContext {
+  /** Registers the element the content focuses on mount. */
+  registerInitialFocus(el: HTMLElement): void;
+  /** Removes a previously registered initial-focus element. */
+  unregisterInitialFocus(el: HTMLElement): void;
+}
+
+/** What `[forPopoverContent]` reads off the root that no consumer has a call to touch. */
+export interface PopoverPieceContext {
+  /** The element `[forPopoverInitialFocus]` registered, or `null`. */
+  readonly initialFocusTarget: Signal<HTMLElement | null>;
+}
+
+/**
+ * The popover's internal coordination surface: everything {@link ForPopoverContext} publishes plus
+ * the initial-focus protocol. It is the type the pieces read {@link FOR_POPOVER_CONTEXT} at.
+ */
+export interface PopoverContext
+  extends ForPopoverContext, PopoverRegistrationContext, PopoverPieceContext {}
+
+/**
+ * DI token for the popover's coordination surface, provided by `[forPopover]`.
+ *
+ * Publicly typed as the read surface {@link ForPopoverContext}. The pieces read the same token at
+ * an internal type that adds the initial-focus registration, so a wrapper re-providing it must alias
+ * it to the root: `{ provide: FOR_POPOVER_CONTEXT, useExisting: MyPopover }`, where `MyPopover`
+ * extends `ForPopover`. A value that merely satisfies the declared type resolves too, and is
+ * rejected in dev mode by the first piece to resolve it.
+ */
 export const FOR_POPOVER_CONTEXT = new InjectionToken<ForPopoverContext>('FOR_POPOVER_CONTEXT');
 
-export function injectPopoverContext(piece: string): ForPopoverContext {
+export function injectPopoverContext(piece: string): PopoverContext {
   const ctx = inject(FOR_POPOVER_CONTEXT, { optional: true });
   if (!ctx) {
     throw orphanContextError({
@@ -132,7 +170,15 @@ export function injectPopoverContext(piece: string): ForPopoverContext {
       token: 'FOR_POPOVER_CONTEXT',
     });
   }
-  return ctx;
+  const widened = ctx as unknown as PopoverContext;
+  assertRootContext({
+    entryPoint: 'popover',
+    token: 'FOR_POPOVER_CONTEXT',
+    root: '[forPopover]',
+    piece,
+    probe: () => widened.registerInitialFocus,
+  });
+  return widened;
 }
 
 /**

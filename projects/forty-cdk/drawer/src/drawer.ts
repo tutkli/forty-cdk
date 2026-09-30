@@ -13,8 +13,13 @@ import {
   signal,
 } from '@angular/core';
 
-import { fortyError } from 'forty-cdk/core';
-import { ForDrawerStack, injectModalShell, ModalSurfaceBase } from 'forty-cdk/core-overlay';
+import { createSingleSlot, fortyError } from 'forty-cdk/core';
+import {
+  ForDrawerStack,
+  injectModalShell,
+  ModalSurfaceBase,
+  warnIfDialogUnnamed,
+} from 'forty-cdk/core-overlay';
 import { validateCloseThreshold } from './snap-points';
 import { ForDrawerScaleCoordinator } from './drawer-scale-coordinator';
 import {
@@ -59,6 +64,7 @@ import { injectDrawerDrag } from './drawer-drag';
     '[attr.data-dragging]': 'dragging() ? "" : null',
     '[attr.data-scale-background]': 'scaleBackgroundActive() ? "" : null',
     '[attr.data-depth]': 'depthAttr()',
+    '[style.--for-drawer-depth]': 'depth()',
     '[attr.data-state-nested]': 'hasChild() ? "" : null',
   },
   providers: [{ provide: FOR_DRAWER_CONTEXT, useExisting: ForDrawer }],
@@ -67,6 +73,14 @@ export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements
   readonly #defaults = inject(FOR_DRAWER_DEFAULTS);
 
   protected readonly entryPoint = 'drawer';
+
+  readonly #initialFocusSlot = createSingleSlot<HTMLElement>({
+    primitive: 'drawer',
+    owner: '[forDrawer]',
+    claimant: '[forDrawerInitialFocus]',
+  });
+
+  protected readonly initialFocusTarget = this.#initialFocusSlot.value;
 
   /**
    * Edge the drawer is anchored to. Default `'bottom'` — the most common
@@ -282,6 +296,9 @@ export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements
   readonly #depth = signal<number>(0);
   readonly depthAttr = computed<string>(() => String(this.#depth()));
 
+  /** Nesting position in the drawer stack: `0` for a root drawer, one more per parent drawer. */
+  readonly depth = this.#depth.asReadonly();
+
   /**
    * `true` while at least one descendant `[forDrawer]` is registered with
    * `ForDrawerStack` underneath this one — reflected as the presence-only
@@ -371,6 +388,12 @@ export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements
     // instead of firing `pointerDownOutside`) is owned by the shared
     // ModalSurfaceBase config.
     injectModalShell(this.modalShellConfig());
+    warnIfDialogUnnamed({
+      primitive: 'drawer',
+      piece: '[forDrawer]',
+      title: '[forDrawerTitle]',
+      ariaLabelOn: '[forDrawer] (or pass `ariaLabel` to `ForDrawerManager.open()`)',
+    });
 
     // ---- Post-shell setup. Runs in its own afterNextRender registered
     // AFTER injectModalShell so swipe-dismiss arms on a host already attached
@@ -435,5 +458,13 @@ export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements
       });
     }
     this.#handleEl.set(el);
+  }
+
+  private registerInitialFocus(el: HTMLElement): void {
+    this.#initialFocusSlot.register(el);
+  }
+
+  private unregisterInitialFocus(el: HTMLElement): void {
+    this.#initialFocusSlot.unregister(el);
   }
 }

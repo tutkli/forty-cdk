@@ -1,6 +1,6 @@
 import { inject, InjectionToken, type Signal } from '@angular/core';
 
-import { orphanContextError } from 'forty-cdk/core';
+import { assertRootContext, orphanContextError } from 'forty-cdk/core';
 import { type ForDrawerSide } from 'forty-cdk/core-overlay';
 
 export { type ForDrawerSide };
@@ -84,6 +84,12 @@ export interface ForDrawerContext {
    */
   readonly hostElement: HTMLElement;
 
+  /**
+   * Nesting position in the drawer stack: `0` for a root drawer, one more per parent drawer.
+   * Reflected as `data-depth` and `--for-drawer-depth` on the surface and its backdrop.
+   */
+  readonly depth: Signal<number>;
+
   registerLabel(id: string): void;
   unregisterLabel(id: string): void;
   registerDescription(id: string): void;
@@ -121,6 +127,33 @@ export interface ForDrawerContext {
   requestClose(reason: ForDrawerCloseReason, value?: unknown): void;
 }
 
+/**
+ * The registration protocol `[forDrawerInitialFocus]` drives. Never exported from
+ * `public-api.ts`; `ForDrawer` declares both members TS-`private`.
+ */
+export interface DrawerRegistrationContext {
+  /** Registers the element the drawer focuses on mount. */
+  registerInitialFocus(el: HTMLElement): void;
+  /** Removes a previously registered initial-focus element. */
+  unregisterInitialFocus(el: HTMLElement): void;
+}
+
+/**
+ * The drawer's internal coordination surface: everything {@link ForDrawerContext} publishes plus
+ * the {@link DrawerRegistrationContext} protocol. It is the type the pieces read
+ * {@link FOR_DRAWER_CONTEXT} at.
+ */
+export interface DrawerContext extends ForDrawerContext, DrawerRegistrationContext {}
+
+/**
+ * DI token for the drawer's coordination surface, provided by `[forDrawer]`.
+ *
+ * Publicly typed as the read surface {@link ForDrawerContext}. The pieces read the same token at an
+ * internal type that adds the initial-focus registration, so a wrapper re-providing it must alias it
+ * to the root: `{ provide: FOR_DRAWER_CONTEXT, useExisting: MyDrawer }`, where `MyDrawer` extends
+ * `ForDrawer`. A value that merely satisfies the declared type resolves too, and is rejected in dev
+ * mode by the first piece to resolve it.
+ */
 export const FOR_DRAWER_CONTEXT = new InjectionToken<ForDrawerContext>('FOR_DRAWER_CONTEXT');
 
 /**
@@ -132,7 +165,7 @@ export const FOR_DRAWER_CONTEXT = new InjectionToken<ForDrawerContext>('FOR_DRAW
  */
 export const FOR_DRAWER_INSTANCE_ID = new InjectionToken<string>('FOR_DRAWER_INSTANCE_ID');
 
-export function injectDrawerContext(piece: string): ForDrawerContext {
+export function injectDrawerContext(piece: string): DrawerContext {
   const ctx = inject(FOR_DRAWER_CONTEXT, { optional: true });
   if (!ctx) {
     throw orphanContextError({
@@ -142,7 +175,15 @@ export function injectDrawerContext(piece: string): ForDrawerContext {
       token: 'FOR_DRAWER_CONTEXT',
     });
   }
-  return ctx;
+  const widened = ctx as unknown as DrawerContext;
+  assertRootContext({
+    entryPoint: 'drawer',
+    token: 'FOR_DRAWER_CONTEXT',
+    root: '[forDrawer]',
+    piece,
+    probe: () => widened.registerInitialFocus,
+  });
+  return widened;
 }
 
 /**

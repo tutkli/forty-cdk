@@ -129,6 +129,7 @@ export {
   type OverlayShellConfig,
   type OverlayShellPositionerConfig,
 } from './overlay-controller/overlay-shell';
+export { type UnnamedDialogConfig, warnIfDialogUnnamed } from './overlay-controller/unnamed-dialog';
 export {
   OverlayManagerCore,
   type OverlayManagerEntry,
