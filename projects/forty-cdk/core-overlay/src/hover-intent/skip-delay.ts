@@ -1,4 +1,12 @@
-import { DestroyRef, inject, signal, type Signal } from '@angular/core';
+import {
+  DestroyRef,
+  inject,
+  InjectionToken,
+  type Provider,
+  signal,
+  type Signal,
+  type Type,
+} from '@angular/core';
 
 import type { HoverIntentCoordinator } from './hover-intent';
 
@@ -54,41 +62,49 @@ export function createSkipDelayWindow(duration: () => number): SkipDelayWindow {
 }
 
 /**
- * Resolved cadence the {@link SkipDelayCoordinator} needs from its primitive's
- * defaults scope. Tooltip and Hover-card resolve these from their respective
- * `ForTooltipDefaults` / `ForHoverCardDefaults` tokens and hand them down.
+ * Resolved window duration the {@link SkipDelayCoordinator} reads from its
+ * primitive's defaults scope.
  */
 export interface SkipDelayCoordinatorDefaults {
-  /** Resolved default open delay (ms) for primitives in this scope. */
-  openDelay: number;
-  /** Resolved default close delay (ms) for primitives in this scope. */
-  closeDelay: number;
   /** Resolved skip-delay window (ms) for primitives in this scope. */
   skipDelayDuration: number;
 }
 
 /**
- * Per-injector-scope skip-delay coordinator shared by Tooltip and Hover-card.
+ * The hover timing keys of a primitive's defaults. Setting any of them in a
+ * scoped `provideFor<Primitive>Defaults` call starts a new skip-delay window
+ * unless the call says otherwise.
+ */
+export interface SkipDelayScopeDefaults extends SkipDelayCoordinatorDefaults {
+  /** Resolved default open delay (ms) for primitives in this scope. */
+  openDelay: number;
+  /** Resolved default close delay (ms) for primitives in this scope. */
+  closeDelay: number;
+}
+
+/**
+ * Whether a defaults scope joins its parent's skip-delay window (`'inherit'`)
+ * or starts its own (`'own'`).
+ */
+export type SkipDelayScope = 'inherit' | 'own';
+
+/**
+ * Per-injector-scope skip-delay window shared by Tooltip and Hover-card.
  *
- * Wraps the shared `createSkipDelayWindow` timer core and adds the two things
- * only an injector-scoped coordinator needs: the resolved cadence its
- * primitives read when arming open / close timers, and a `DestroyRef` hook
- * that closes the window with the scope. Subclassed once per primitive so each
- * keeps its own DI token (and therefore its own independent skip-delay scope);
- * `[forNavigationMenu]` reuses the same timer core directly, per instance,
- * because its window is not shared across an injector scope.
+ * Wraps the shared `createSkipDelayWindow` timer core and adds a `DestroyRef`
+ * hook that closes the window with the scope. Subclassed once per primitive so
+ * each keeps its own DI token (and therefore its own independent skip-delay
+ * scope); `[forNavigationMenu]` reuses the same timer core directly, per
+ * instance, because its window is not shared across an injector scope. The
+ * open and close delays are not part of it: primitives read them from their
+ * own defaults token, so a scope can change them while sharing its parent's
+ * window.
  *
  * Satisfies {@link HoverIntentCoordinator} so the shared hover-intent
  * scheduler consumes it directly.
  */
 export abstract class SkipDelayCoordinator implements HoverIntentCoordinator {
-  /** Resolved default open delay (ms) for primitives in this scope. */
-  readonly openDelay: number;
-
-  /** Resolved default close delay (ms) for primitives in this scope. */
-  readonly closeDelay: number;
-
-  /** Resolved skip-delay window (ms) for primitives in this scope. */
+  /** Resolved skip-delay window (ms) for the scope that owns this window. */
   readonly skipDelayDuration: number;
 
   readonly #window = createSkipDelayWindow(() => this.skipDelayDuration);
@@ -97,8 +113,6 @@ export abstract class SkipDelayCoordinator implements HoverIntentCoordinator {
   readonly skipDelay = this.#window.active;
 
   constructor(defaults: SkipDelayCoordinatorDefaults) {
-    this.openDelay = defaults.openDelay;
-    this.closeDelay = defaults.closeDelay;
     this.skipDelayDuration = defaults.skipDelayDuration;
     inject(DestroyRef).onDestroy(() => this.cancelSkipDelay());
   }
@@ -112,4 +126,56 @@ export abstract class SkipDelayCoordinator implements HoverIntentCoordinator {
   cancelSkipDelay(): void {
     this.#window.cancel();
   }
+}
+
+/**
+ * Builds the providers of a scoped `provideFor<Primitive>Defaults` call for a
+ * primitive with a skip-delay window: the merged defaults plus the scope's
+ * coordinator.
+ *
+ * The coordinator is a new window when `scope` is `'own'`, or when `scope`
+ * is omitted and the overrides set `openDelay`, `closeDelay` or
+ * `skipDelayDuration`. Otherwise it is the parent scope's coordinator, so a
+ * scope that only changes placement keeps sharing its parent's window. A
+ * scope with no parent coordinator always gets a new one.
+ *
+ * The overrides are resolved once per injector and read by both providers, so
+ * a factory form runs once, and inside an injection context, as
+ * `createDefaults` documents.
+ */
+export function provideSkipDelayScope<D extends SkipDelayScopeDefaults>(
+  coordinator: Type<SkipDelayCoordinator>,
+  provideDefaults: (overrides: () => Partial<D>) => Provider[],
+  defaults: Partial<D> | (() => Partial<D>),
+  scope: SkipDelayScope | undefined,
+): Provider[] {
+  const overrides = new InjectionToken<Partial<D>>('SKIP_DELAY_SCOPE_OVERRIDES');
+  const resolveOverrides = typeof defaults === 'function' ? defaults : (): Partial<D> => defaults;
+  return [
+    { provide: overrides, useFactory: resolveOverrides },
+    ...provideDefaults(() => inject(overrides)),
+    {
+      provide: coordinator,
+      useFactory: (): SkipDelayCoordinator => {
+        const parent = ownsSkipDelayWindow(inject(overrides), scope)
+          ? null
+          : inject(coordinator, { skipSelf: true, optional: true });
+        return parent ?? new coordinator();
+      },
+    },
+  ];
+}
+
+function ownsSkipDelayWindow(
+  overrides: Partial<SkipDelayScopeDefaults>,
+  scope: SkipDelayScope | undefined,
+): boolean {
+  if (scope !== undefined) {
+    return scope === 'own';
+  }
+  return (
+    overrides.openDelay !== undefined ||
+    overrides.closeDelay !== undefined ||
+    overrides.skipDelayDuration !== undefined
+  );
 }

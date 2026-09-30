@@ -93,10 +93,10 @@ export class ForHoverCard extends AnchoredOverlayPositioningBase implements ForH
     transform: numberAttribute,
   });
 
-  /** Per-card override for open delay (ms). Falls back to coordinator (700ms). */
+  /** Per-card override for open delay (ms). Falls back to `ForHoverCardDefaults.openDelay` (700ms). */
   readonly openDelay = input<number | undefined>(undefined);
 
-  /** Per-card override for close delay (ms). Falls back to coordinator (300ms). */
+  /** Per-card override for close delay (ms). Falls back to `ForHoverCardDefaults.closeDelay` (300ms). */
   readonly closeDelay = input<number | undefined>(undefined);
 
   /** When true, all hover / focus interaction is ignored and any open card is forced closed. */
@@ -153,8 +153,8 @@ export class ForHoverCard extends AnchoredOverlayPositioningBase implements ForH
     this.#hoverIntent = createHoverIntent({
       open: this.open,
       isDisabled: () => this.disabled(),
-      openDelay: () => this.openDelay() ?? this.#coordinator.openDelay,
-      closeDelay: () => this.closeDelay() ?? this.#coordinator.closeDelay,
+      openDelay: () => this.openDelay() ?? this.positioningDefaults.openDelay,
+      closeDelay: () => this.closeDelay() ?? this.positioningDefaults.closeDelay,
       coordinator: this.#coordinator,
     });
 

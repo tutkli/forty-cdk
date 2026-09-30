@@ -1,5 +1,12 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
+import {
+  Component,
+  type Provider,
+  provideZonelessChangeDetection,
+  signal,
+  type Type,
+  type WritableSignal,
+} from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
@@ -1347,7 +1354,115 @@ describe('ForTooltip', () => {
       expect(r.instance.open()).toBe(false);
     });
 
-    it('is callable with no arguments to establish a fresh coordinator scope', async () => {
+    describe('nested scopes and the skip-delay window', () => {
+      @Component({
+        selector: 'scoped-tip',
+        imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
+        template: `
+          <div forTooltip [(open)]="open" [hoverableContent]="false">
+            <button type="button" forTooltipTrigger>Scoped</button>
+            @if (open()) {
+              <div forTooltipContent>Scoped</div>
+            }
+          </div>
+        `,
+      })
+      class ScopedTip {
+        readonly open = signal(false);
+      }
+
+      interface NestedScopeHost {
+        readonly rootOpen: WritableSignal<boolean>;
+      }
+
+      function hostWith(providers: Provider[]): Type<NestedScopeHost> {
+        @Component({
+          selector: 'scope-boundary',
+          imports: [ScopedTip],
+          providers,
+          template: `<scoped-tip />`,
+        })
+        class ScopeBoundary {}
+
+        @Component({
+          imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent, ScopeBoundary],
+          template: `
+            <div
+              forTooltip
+              [(open)]="rootOpen"
+              [openDelay]="500"
+              [closeDelay]="0"
+              [hoverableContent]="false"
+            >
+              <button type="button" forTooltipTrigger>Root</button>
+              @if (rootOpen()) {
+                <div forTooltipContent>Root</div>
+              }
+            </div>
+            <scope-boundary />
+          `,
+        })
+        class Host implements NestedScopeHost {
+          readonly rootOpen = signal(false);
+        }
+
+        return Host;
+      }
+
+      async function hoverScoped(providers: Provider[], closeRootFirst: boolean): Promise<boolean> {
+        const r = renderHost(hostWith(providers));
+        await flush(r.fixture);
+        const [rootTrigger, scopedTrigger] = r.queryAll<HTMLButtonElement>('button');
+        const scoped = r.fixture.debugElement.query(By.directive(ScopedTip))
+          .componentInstance as ScopedTip;
+
+        if (closeRootFirst) {
+          r.instance.rootOpen.set(true);
+          await flush(r.fixture);
+          rootTrigger!.dispatchEvent(new PointerEvent('pointerleave', { bubbles: true }));
+          await flush(r.fixture);
+          expect(r.instance.rootOpen()).toBe(false);
+        }
+
+        scopedTrigger!.dispatchEvent(new PointerEvent('pointerenter', { bubbles: true }));
+        await flush(r.fixture);
+        return scoped.open();
+      }
+
+      it('opens a tooltip in a placement-only scope instantly after a root-scope peer closes', async () => {
+        expect(await hoverScoped([provideForTooltipDefaults({ side: 'right' })], true)).toBe(true);
+      });
+
+      it('waits the full openDelay in a scope that sets a timing key', async () => {
+        expect(
+          await hoverScoped([provideForTooltipDefaults({ skipDelayDuration: 1000 })], true),
+        ).toBe(false);
+      });
+
+      it("waits the full openDelay in a scope that asks for skipDelayScope: 'own'", async () => {
+        const providers = [provideForTooltipDefaults({ side: 'right' }, { skipDelayScope: 'own' })];
+
+        expect(await hoverScoped(providers, true)).toBe(false);
+      });
+
+      it("opens instantly in a timing scope that asks for skipDelayScope: 'inherit'", async () => {
+        const providers = [
+          provideForTooltipDefaults({ closeDelay: 0 }, { skipDelayScope: 'inherit' }),
+        ];
+
+        expect(await hoverScoped(providers, true)).toBe(true);
+      });
+
+      it("applies the scoped openDelay inside a scope that shares its parent's window", async () => {
+        const providers = [
+          provideForTooltipDefaults({ openDelay: 0 }, { skipDelayScope: 'inherit' }),
+        ];
+
+        expect(await hoverScoped(providers, false)).toBe(true);
+      });
+    });
+
+    it('is callable with no arguments', async () => {
       @Component({
         imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
         providers: [provideForTooltipDefaults()],

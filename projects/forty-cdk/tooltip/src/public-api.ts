@@ -6,6 +6,7 @@ export {
   FOR_TOOLTIP_DEFAULTS,
   provideForTooltipDefaults,
   type ForTooltipDefaults,
+  type TooltipDefaultsOptions,
 } from './tooltip-defaults';
 export {
   FOR_TOOLTIP_CONTEXT,
