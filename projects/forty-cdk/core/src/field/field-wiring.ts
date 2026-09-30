@@ -1,6 +1,7 @@
 import { DestroyRef, effect, ElementRef, inject, InjectionToken, type Signal } from '@angular/core';
 import type { ValidationError } from '@angular/forms/signals';
 
+import { composedParentElement } from '../composed-tree/composed-tree';
 import { composeIds } from '../host-attributes/host-aria';
 
 /**
@@ -154,8 +155,15 @@ export interface ForFieldContext {
   clickControl(): void;
 }
 
-/** Injection token for the surrounding `ForField` coordination contract. */
-export const FOR_FIELD_CONTEXT = new InjectionToken<ForFieldContext>('FOR_FIELD_CONTEXT');
+/**
+ * Injection token for the surrounding `ForField` coordination contract.
+ * Resolves to `null` under a field boundary (`[forFieldBoundary]` and every
+ * overlay surface that can host a control), so inject it with
+ * `{ optional: true }` and treat `null` as "no field".
+ */
+export const FOR_FIELD_CONTEXT = new InjectionToken<ForFieldContext | null>('FOR_FIELD_CONTEXT');
+
+const INTERACTIVE_CONTENT = 'a[href], button, input, select, textarea, summary, [tabindex]';
 
 function applyAttr(el: HTMLElement, name: string, value: string | null): void {
   if (value === null) {
@@ -272,18 +280,31 @@ function clearFieldAttrs(
   }
 }
 
+export function crossesInteractiveContent(target: Node | null, boundary: Element): boolean {
+  for (let node = target; node !== null && node !== boundary; node = composedParentElement(node)) {
+    if (node.nodeType === node.ELEMENT_NODE && (node as Element).matches(INTERACTIVE_CONTENT)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 export function injectFieldLabelExemption(
   exempt: () => readonly Element[],
-): () => readonly Element[] {
-  const field = inject(FOR_FIELD_CONTEXT, { optional: true });
+): (target: Node) => readonly Element[] {
+  const field = inject(FOR_FIELD_CONTEXT, { optional: true, skipSelf: true });
   if (!field) {
     return exempt;
   }
-  return () => {
+  return (target) => {
     const elements = exempt();
-    const target = field.activationTarget();
-    return target !== null && elements.includes(target)
-      ? [...elements, ...field.labelElements()]
-      : elements;
+    const control = field.activationTarget();
+    if (control === null || !elements.includes(control)) {
+      return elements;
+    }
+    const labels = field
+      .labelElements()
+      .filter((label) => !crossesInteractiveContent(target, label));
+    return [...elements, ...labels];
   };
 }

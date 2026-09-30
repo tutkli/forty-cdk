@@ -13,7 +13,7 @@ import {
   signal,
 } from '@angular/core';
 
-import { createSingleSlot, fortyError } from 'forty-cdk/core';
+import { createSingleSlot, fortyError, FOR_FIELD_CONTEXT } from 'forty-cdk/core';
 import {
   ForDrawerStack,
   injectModalShell,
@@ -54,6 +54,9 @@ import { injectDrawerDrag } from './drawer-drag';
  *
  * For programmatic use (open arbitrary components imperatively, manage
  * lifecycle externally), see `ForDrawerManager.open()`.
+ *
+ * A field boundary: a control inside it never registers with an ancestor
+ * `[forField]`, and a `[forField]` inside it still wires its own control.
  */
 @Directive({
   selector: '[forDrawer]',
@@ -67,7 +70,10 @@ import { injectDrawerDrag } from './drawer-drag';
     '[style.--for-drawer-depth]': 'depth()',
     '[attr.data-state-nested]': 'hasChild() ? "" : null',
   },
-  providers: [{ provide: FOR_DRAWER_CONTEXT, useExisting: ForDrawer }],
+  providers: [
+    { provide: FOR_DRAWER_CONTEXT, useExisting: ForDrawer },
+    { provide: FOR_FIELD_CONTEXT, useValue: null },
+  ],
 })
 export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements ForDrawerContext {
   readonly #defaults = inject(FOR_DRAWER_DEFAULTS);

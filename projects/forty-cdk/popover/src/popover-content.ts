@@ -1,6 +1,6 @@
 import { Directive, ElementRef, inject } from '@angular/core';
 
-import { hostAriaLabel, hostDescribedBy, hostLabelledBy } from 'forty-cdk/core';
+import { hostAriaLabel, hostDescribedBy, hostLabelledBy, FOR_FIELD_CONTEXT } from 'forty-cdk/core';
 import {
   toFloatingPositioner,
   injectOverlayShell,
@@ -25,6 +25,8 @@ import { injectPopoverContext } from './popover-context';
  * it again just toggles via the trigger directive — no double-close
  * race.
  *
+ * A field boundary: a control inside it never registers with an ancestor
+ * `[forField]`, and a `[forField]` inside it still wires its own control.
  */
 @Directive({
   selector: '[forPopoverContent]',
@@ -39,6 +41,7 @@ import { injectPopoverContext } from './popover-context';
     '[attr.data-reduced-motion]': 'ctx.reducedMotion() ? "" : null',
     tabindex: '-1',
   },
+  providers: [{ provide: FOR_FIELD_CONTEXT, useValue: null }],
 })
 export class ForPopoverContent {
   protected readonly ctx = injectPopoverContext('ForPopoverContent');

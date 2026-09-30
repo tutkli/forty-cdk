@@ -5,6 +5,7 @@ import {
   hostAriaLabel,
   hostLabelledBy,
   injectFieldLabelExemption,
+  FOR_FIELD_CONTEXT,
 } from 'forty-cdk/core';
 import {
   injectModalShell,
@@ -48,6 +49,9 @@ import { injectSelectContext, type SelectContext } from './select-context';
  *   unchanged. Modality is conveyed by the `inert` siblings and reflected as
  *   `data-modal` for styling; `role="listbox"` does not support `aria-modal`,
  *   so it is not emitted.
+ *
+ * A field boundary: a control inside it never registers with an ancestor
+ * `[forField]`, and a `[forField]` inside it still wires its own control.
  */
 @Directive({
   selector: '[forSelectContent]',
@@ -67,6 +71,7 @@ import { injectSelectContext, type SelectContext } from './select-context';
     '(keydown)': 'onKeyDown($event)',
     '(pointerleave)': 'onPointerLeave()',
   },
+  providers: [{ provide: FOR_FIELD_CONTEXT, useValue: null }],
 })
 export class ForSelectContent {
   readonly #select = injectSelectContext('ForSelectContent');

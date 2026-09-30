@@ -5,6 +5,7 @@ import {
   hostAriaLabel,
   hostLabelledBy,
   injectFieldLabelExemption,
+  FOR_FIELD_CONTEXT,
 } from 'forty-cdk/core';
 import {
   injectModalShell,
@@ -33,6 +34,9 @@ import { injectDatePickerContext } from './date-picker-context';
  * Mount/unmount of the surface is the consumer's responsibility — wrap with
  * `@if (open())` so `animate.enter` / `animate.leave` fire on the natural
  * mount cycle.
+ *
+ * A field boundary: a control inside it never registers with an ancestor
+ * `[forField]`, and a `[forField]` inside it still wires its own control.
  */
 @Directive({
   selector: '[forDatePickerContent]',
@@ -46,6 +50,7 @@ import { injectDatePickerContext } from './date-picker-context';
     '[attr.aria-modal]': 'ctx.modal() ? "true" : null',
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
   },
+  providers: [{ provide: FOR_FIELD_CONTEXT, useValue: null }],
 })
 export class ForDatePickerContent {
   protected readonly ctx = injectDatePickerContext('ForDatePickerContent');

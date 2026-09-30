@@ -74,9 +74,9 @@ export interface OverlayShellDismissConfig {
    * Extra elements whose subtrees count as "inside" for outside-pointer /
    * outside-focus checks (e.g. an anchored trigger that lives outside the
    * portaled content). Recomputed on every event so DOM mutations are
-   * picked up.
+   * picked up, and handed the node being tested.
    */
-  readonly exemptElements?: () => readonly Element[];
+  readonly exemptElements?: (target: Node) => readonly Element[];
   /**
    * Declared nesting position of this surface inside a chain of structurally
    * nested overlays (a menu and its submenus). Forwarded verbatim to the

@@ -5,6 +5,7 @@ import {
   hostAriaLabel,
   hostLabelledBy,
   injectFieldLabelExemption,
+  FOR_FIELD_CONTEXT,
 } from 'forty-cdk/core';
 import {
   injectModalShell,
@@ -33,6 +34,9 @@ import { injectTimePickerContext } from './time-picker-context';
  * the shell applies — and reflected as `data-modal` for styling. `aria-modal`
  * is not emitted: `role="listbox"` does not support it, so the
  * attribute would be an `aria-allowed-attr` violation that announces nothing.
+ *
+ * A field boundary: a control inside it never registers with an ancestor
+ * `[forField]`, and a `[forField]` inside it still wires its own control.
  */
 @Directive({
   selector: '[forTimePickerContent]',
@@ -49,6 +53,7 @@ import { injectTimePickerContext } from './time-picker-context';
     '[attr.data-modal]': 'ctx.modal() ? "" : null',
     '(pointerleave)': 'onPointerLeave()',
   },
+  providers: [{ provide: FOR_FIELD_CONTEXT, useValue: null }],
 })
 export class ForTimePickerContent {
   protected readonly ctx = injectTimePickerContext('ForTimePickerContent');

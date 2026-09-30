@@ -1552,6 +1552,94 @@ describe('ForDatePicker', () => {
         expect(content()).not.toBeNull();
       });
     });
+
+    describe('a date-time picker inside the field', () => {
+      @Component({
+        imports: [
+          ForDatePicker,
+          ForDatePickerTrigger,
+          ForDatePickerContent,
+          ForTimeField,
+          ForTimeFieldSegment,
+          ForTimeFieldLiteral,
+          ForField,
+          ForLabel,
+          ForFieldError,
+        ],
+        providers: [...provideNativeDateAdapter()],
+        template: `
+          <div forField #field="forField">
+            <span forLabel data-testid="label">Appointment</span>
+            <div
+              forDatePicker
+              [(open)]="open"
+              granularity="minute"
+              [hourCycle]="24"
+              [invalid]="true"
+              [errors]="errors"
+              #picker="forDatePicker"
+            >
+              <button forDatePickerTrigger data-testid="trigger">Pick date & time</button>
+              @if (open()) {
+                <div forDatePickerContent data-testid="content">
+                  <div
+                    forTimeField
+                    [value]="picker.value()"
+                    [hourCycle]="24"
+                    [locale]="'en-US'"
+                    data-testid="time-field"
+                    #tf="forTimeField"
+                  >
+                    @for (seg of tf.segments(); track seg.id) {
+                      @if (seg.isLiteral) {
+                        <span forTimeFieldLiteral>{{ seg.text }}</span>
+                      } @else {
+                        <span forTimeFieldSegment [segment]="seg.type!">{{ seg.text }}</span>
+                      }
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+            <p forFieldError #err="forFieldError" data-testid="error">
+              {{ err.messages().join(', ') }}
+            </p>
+          </div>
+        `,
+      })
+      class DateTimeFieldHost {
+        readonly open = signal(false);
+        readonly errors = [{ kind: 'required', message: 'Pick an appointment' }];
+      }
+
+      it('keeps the picker as the field control while the time field is open', async () => {
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        const r = renderHost(DateTimeFieldHost);
+        await r.flush();
+        const field = r.fixture.debugElement.query(By.directive(ForField)).injector.get(ForField);
+        const error = () => r.el.querySelector<HTMLElement>('[data-testid="error"]')!;
+        const control = field.control();
+        const controlId = field.controlId();
+        expect(control?.host).toBe(wrapper(r.el));
+        expect(error().textContent).toContain('Pick an appointment');
+
+        pressWithMouse(fieldLabel(r.el));
+        await r.flush();
+        const timeField = document.querySelector<HTMLElement>('[data-testid="time-field"]');
+
+        expect(field.control()).toBe(control);
+        expect(field.controlId()).toBe(controlId);
+        expect(field.invalid()).toBe(true);
+        expect(error().textContent).toContain('Pick an appointment');
+        expect(timeField!.hasAttribute('aria-labelledby')).toBe(false);
+        expect(warn.mock.calls.flat().join(' ')).not.toContain('FORCDK-FIELD-002');
+
+        pressWithMouse(fieldLabel(r.el));
+        await r.flush();
+        expect(r.instance.open()).toBe(false);
+        expect(document.querySelector('[data-testid="content"]')).toBeNull();
+      });
+    });
   });
 
   describe('focus (focus-on-error)', () => {
