@@ -2,6 +2,7 @@ import { type Provider } from '@angular/core';
 
 import { createDefaults, type LocalizableText } from 'forty-cdk/core';
 import { type FloatingAlign, type FloatingSide } from 'forty-cdk/core-overlay';
+import type { ForComboboxOpenHighlight } from './combobox-context';
 
 /**
  * Defaults inherited by descendant comboboxes in the surrounding injector
@@ -37,6 +38,23 @@ export interface ForComboboxDefaults {
    */
   collisionPadding: number;
   /**
+   * Where the editable anatomy's highlight lands on open, for comboboxes that
+   * don't set `openHighlight` locally. Library fallback `'first'`.
+   */
+  openHighlight: ForComboboxOpenHighlight;
+  /**
+   * Whether a single-select editable combobox restores the selected option's
+   * label into `query` when its listbox closes without a pick, for comboboxes
+   * that don't set `restoreQueryOnClose` locally. Library fallback `false`.
+   */
+  restoreQueryOnClose: boolean;
+  /**
+   * Accessible name for the chevron button (`[forComboboxToggle]`), for toggles
+   * that don't set `[ariaLabel]` locally. Localize it here to translate every
+   * combobox toggle in the scope.
+   */
+  toggleAriaLabel: LocalizableText;
+  /**
    * Accessible name for the multi-mode chips cluster (`[forComboboxChips]`,
    * `role="group"`), for chip clusters that don't set `[ariaLabel]` locally.
    * Localize it here to translate every combobox chip group in the scope.
@@ -68,6 +86,9 @@ export const FOR_COMBOBOX_FALLBACK_DEFAULTS: ForComboboxDefaults = {
   align: null,
   sideOffset: 4,
   collisionPadding: 8,
+  openHighlight: 'first',
+  restoreQueryOnClose: false,
+  toggleAriaLabel: 'Show options',
   chipsAriaLabel: 'Selected items',
   clearAriaLabel: 'Clear',
   chipRemoveLabel: (label) => `Remove ${label}`,

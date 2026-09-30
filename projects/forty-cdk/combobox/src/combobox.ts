@@ -8,6 +8,7 @@ import {
   model,
   numberAttribute,
   output,
+  signal,
 } from '@angular/core';
 import type { FormValueControl } from '@angular/forms/signals';
 
@@ -47,6 +48,7 @@ import {
   type ForComboboxCloseReason,
   type ForComboboxContext,
   type ForComboboxInitialFocus,
+  type ForComboboxOpenHighlight,
   type ForComboboxOptionHandle,
 } from './combobox-context';
 import { FOR_COMBOBOX_DEFAULTS } from './combobox-defaults';
@@ -126,7 +128,7 @@ export class ForCombobox<T = string>
    * Two-way bindable. Visible input text. The `model()` change emitter
    * (`(queryChange)`) fires only on internal mutations (option activation
    * commit, `clear()`, multi-mode select reset, picker-anatomy reset on
-   * close), never on consumer writes via `[(query)]`.
+   * close, `restoreQueryOnClose`), never on consumer writes via `[(query)]`.
    */
   readonly query = model<string>('');
 
@@ -207,6 +209,17 @@ export class ForCombobox<T = string>
   readonly openOnQuery = input(true, { transform: booleanAttribute });
 
   /**
+   * Where the highlight lands when the editable anatomy opens from focus, click,
+   * ArrowDown / ArrowUp, or `openOverlay()` called without an argument. `'selected'`
+   * highlights the committed selection, falling back to the first enabled option
+   * (ArrowUp: the last) when nothing is selected. Opening from a typed query always
+   * highlights the first match, while the picker anatomy and a `[forComboboxToggle]`
+   * press always open on the selection. Defaults to the scope's `openHighlight`
+   * (`'first'` unless overridden via `provideForComboboxDefaults`).
+   */
+  readonly openHighlight = input<ForComboboxOpenHighlight>(this.#defaults.openHighlight);
+
+  /**
    * In single mode, copy the activated option's label into `query`. In
    * multi mode, instead **clear** the query so the user can search the
    * next item. On by default in both. Set `false` to leave `query`
@@ -218,6 +231,18 @@ export class ForCombobox<T = string>
    * skipped and `query` resets to `''` on close regardless of this flag.
    */
   readonly commitOnSelect = input(true, { transform: booleanAttribute });
+
+  /**
+   * In single mode, restore the selected option's label into `query` whenever the
+   * listbox closes without a pick (Escape, an outside press, Tab, a toggle press,
+   * or `closeOverlay()`), and clear it when nothing is selected. A pick keeps the
+   * `commitOnSelect` behavior. Ignored in multi mode and in the picker anatomy.
+   * Defaults to the scope's `restoreQueryOnClose` (`false` unless overridden via
+   * `provideForComboboxDefaults`).
+   */
+  readonly restoreQueryOnClose = input(this.#defaults.restoreQueryOnClose, {
+    transform: booleanAttribute,
+  });
 
   /** When the user edits the query, automatically clear the committed `value`. Off by default — most apps want the value preserved across query edits. Single-mode only. */
   readonly clearOnQueryChange = input(false, { transform: booleanAttribute });
@@ -362,7 +387,7 @@ export class ForCombobox<T = string>
     emit: this,
     escapeReason: 'escape',
     programmaticReason: 'programmatic',
-    onClose: () => this.#resetAfterClose(),
+    onClose: (reason) => this.#resetAfterClose(reason),
   });
 
   readonly #listSlot = injectIdentifiedSlot('for-combobox', 'list');
@@ -393,6 +418,9 @@ export class ForCombobox<T = string>
   readonly anchor = this.#anchorSlot.resolve(this.trigger, this.input);
 
   readonly content = this.#overlay.content;
+
+  readonly #toggles = signal<readonly HTMLElement[]>([]);
+  private readonly toggles = this.#toggles.asReadonly();
 
   readonly list = this.#listSlot.element;
   /** True once a `[forComboboxList]` has registered (picker anatomy). */
@@ -625,6 +653,13 @@ export class ForCombobox<T = string>
     this.#overlay.unregisterTrigger(el);
   }
 
+  private registerToggle(el: HTMLElement): void {
+    this.#toggles.update((list) => (list.includes(el) ? list : [...list, el]));
+  }
+  private unregisterToggle(el: HTMLElement): void {
+    this.#toggles.update((list) => list.filter((x) => x !== el));
+  }
+
   private registerContent(el: HTMLElement): void {
     this.#overlay.registerContent(el);
   }
@@ -846,7 +881,7 @@ export class ForCombobox<T = string>
     const mode = this.autocompleteMode();
     const hasListbox = mode === 'list' || mode === 'both';
     if (this.openOnQuery() && hasListbox && query.length > 0 && !this.open()) {
-      this.openOverlay();
+      this.openOverlay('first');
     }
   }
 
@@ -939,16 +974,26 @@ export class ForCombobox<T = string>
   }
 
   /**
-   * Opens the listbox, seeding where the auto-highlight lands. Idempotent: an
-   * open on a listbox that is already open re-arms nothing, so an ArrowDown that
-   * finds the surface mounted leaves the current activedescendant where the
-   * user navigated it.
+   * Opens the listbox, seeding where the auto-highlight lands. Without an
+   * argument the seed follows `openHighlight`: the committed selection for
+   * `'selected'`, the first enabled option otherwise. Idempotent: an open on a
+   * listbox that is already open re-arms nothing, so an ArrowDown that finds the
+   * surface mounted leaves the current activedescendant where the user
+   * navigated it.
    */
-  openOverlay(initialFocus: ForComboboxInitialFocus = 'first'): void {
+  openOverlay(initialFocus?: ForComboboxInitialFocus): void {
     if (this.open()) {
       return;
     }
-    this.#overlay.open(initialFocus);
+    this.#overlay.open(initialFocus ?? this.openHighlight());
+  }
+
+  private openFromExtreme(extreme: 'first' | 'last'): void {
+    const seed =
+      this.openHighlight() === 'selected' && (extreme === 'first' || this.value().length > 0)
+        ? 'selected'
+        : extreme;
+    this.openOverlay(seed);
   }
 
   /**
@@ -969,14 +1014,22 @@ export class ForCombobox<T = string>
    * Close side effects, run after the open state flips: the activedescendant is
    * dropped, the virtualized navigator's pending move discarded, and — in the
    * picker anatomy, where the in-panel input is a transient filter rather than
-   * the value display — the query reset.
+   * the value display — the query reset. A single-select editable combobox with
+   * `restoreQueryOnClose` instead restores the selected label on any close but a
+   * pick.
    */
-  #resetAfterClose(): void {
+  #resetAfterClose(reason: ForComboboxCloseReason): void {
     this.#activeId.set(null);
     this.#navigator?.resetPending();
     if (this.trigger() !== null) {
       this.query.set('');
       this.#syncInputValue('');
+      return;
+    }
+    if (this.restoreQueryOnClose() && !this.multiple() && reason !== 'select') {
+      const label = this.selected()[0]?.label ?? '';
+      this.query.set(label);
+      this.#syncInputValue(label);
     }
   }
 
@@ -1046,6 +1099,9 @@ export class ForCombobox<T = string>
         if (chip.host.contains(next)) {
           return;
         }
+      }
+      if (this.#toggles().some((toggle) => toggle.contains(next))) {
+        return;
       }
     }
     this.markTouched();

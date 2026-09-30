@@ -678,6 +678,11 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
         attributes: { role: 'combobox', 'aria-haspopup': 'listbox', 'aria-expanded': 'true' },
         pairs: { 'aria-controls': '[forComboboxList]' },
       },
+      {
+        select: '[forComboboxToggle]',
+        attributes: { tabindex: '-1', 'aria-label': 'Show options', 'aria-expanded': 'true' },
+        pairs: { 'aria-controls': '[forComboboxList]' },
+      },
       { select: '[forComboboxContent]', attributes: { role: null } },
       { select: '[forComboboxList]', attributes: { role: 'listbox' } },
       { select: '[forComboboxAction]', attributes: { role: 'button' } },

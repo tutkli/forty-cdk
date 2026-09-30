@@ -251,7 +251,7 @@ export class ForComboboxInput {
           // navigate('next') won't fire here because items aren't registered
           // yet; the root's `activeId` linkedSignal seeds the activedescendant
           // once the options register.
-          this.ctx.openOverlay('first');
+          this.ctx.openFromExtreme('first');
         } else {
           this.ctx.navigate('next');
         }
@@ -260,7 +260,7 @@ export class ForComboboxInput {
       case 'ArrowUp':
         event.preventDefault();
         if (!this.ctx.open()) {
-          this.ctx.openOverlay('last');
+          this.ctx.openFromExtreme('last');
         } else {
           this.ctx.navigate('prev');
         }

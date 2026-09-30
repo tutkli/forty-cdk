@@ -207,6 +207,8 @@ Input tables are not yet tabulated for this primitive. See the feature sections 
 | `[forCombobox]`          | `data-readonly`    | present / absent                                                    |
 | `[forComboboxInput]`     | `data-state`       | `open` \| `closed`                                                  |
 | `[forComboboxInput]`     | `data-disabled`    | present / absent                                                    |
+| `[forComboboxToggle]`    | `data-state`       | `open` \| `closed`                                                  |
+| `[forComboboxToggle]`    | `data-disabled`    | present / absent                                                    |
 | `[forComboboxContent]`   | `data-state`       | `open` \| `closed`                                                  |
 | `[forComboboxOption]`    | `data-state`       | `checked` \| `unchecked` (membership in `value()`, both modes)      |
 | `[forComboboxOption]`    | `data-highlighted` | present / absent (the current `aria-activedescendant`)              |
@@ -246,6 +248,30 @@ By default the listbox is positioned against `[forComboboxInput]`. When the inpu
 ```
 
 `[forComboboxAnchor]` changes **only** positioning. The input keeps `aria-controls` / `aria-expanded` / `aria-activedescendant`, all keyboard interaction, and its exemption from outside-pointer dismissal. Without an anchor the listbox falls back to the input, so existing markup is unaffected. Each `[forCombobox]` takes at most one `[forComboboxAnchor]`, and a second one throws `[forty-cdk/combobox]`. In multi mode, wrap `[forComboboxChips]` (which already wraps the chips + input) to anchor against the full chip cluster.
+
+## Toggle button
+
+An editable combobox often carries a chevron button next to the input, as in the APG's [editable combobox examples](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/examples/combobox-autocomplete-list/). Put `[forComboboxToggle]` on a real `<button>`:
+
+```html
+<div forCombobox #combobox="forCombobox" [(query)]="query" [(value)]="value">
+  <div forComboboxAnchor class="field-box">
+    <input forComboboxInput placeholder="Search a fruit…" />
+    <button forComboboxToggle>▾</button>
+  </div>
+  @if (combobox.open()) {
+  <div forComboboxContent>
+    @for (it of filtered; track it.id) {
+    <div forComboboxOption [value]="it.id" [label]="it.label">{{ it.label }}</div>
+    }
+  </div>
+  }
+</div>
+```
+
+A press closes an open listbox, or opens a closed one with the committed selection highlighted (the first enabled option when nothing is selected) and moves focus into the input. The press never takes focus itself, so an input that already has focus keeps it and the combobox is not marked touched. The button is exempt from the listbox's outside-pointer dismissal, so one press is one `(openChange)`.
+
+Unlike `[forComboboxTrigger]`, a toggle keeps the editable anatomy: `commitOnSelect` still copies the picked label into the input, and `query` survives a close. The button is out of the Tab sequence (`tabindex="-1"`) because the input already owns the keyboard, reflects `aria-expanded` and `aria-controls` (the listbox, while open), and carries native `disabled` from the combobox's effective disabled. Its accessible name defaults to `'Show options'`; override it per instance with `[ariaLabel]`, or for the scope with `provideForComboboxDefaults({ toggleAriaLabel })`.
 
 ## Picker anatomy
 
@@ -402,6 +428,7 @@ They diverge while the user types and resync on activation:
   - **Multi mode** → option's value is toggled in/out of `value`. If `commitOnSelect` is on (default), `query` is **cleared** so the user can search the next item. Listbox stays open.
 - Clear button → both reset.
 - `clearOnQueryChange` (off by default, **single mode only**): flip on to drop `value` automatically whenever the query is edited (useful when the user editing means "I'm picking a new one").
+- `restoreQueryOnClose` (off by default, **single mode only**): flip on to put the selected label back into the input when the listbox closes without a pick. See [`restoreQueryOnClose`](#restorequeryonclose).
 
 ### `commitOnSelect`: single vs multi
 
@@ -428,6 +455,19 @@ Multi, commitOnSelect=false
 ```
 
 Disable `commitOnSelect` when your filter logic compares against `query` directly and the listbox should keep showing the just-narrowed set after activation, instead of resetting to "everything matches the picked label".
+
+### `restoreQueryOnClose`
+
+In the editable anatomy, closing the listbox leaves `query` as the user left it, so typing "ap" over a committed "Banana" and pressing Escape keeps showing "ap". With `[restoreQueryOnClose]="true"`, a single-select combobox restores the selected option's label on every close that is not a pick (Escape, an outside press, Tab, a `[forComboboxToggle]` press, `closeOverlay()`), and clears the input when nothing is selected. The input keeps focus on Escape, and the restored text reaches it even while focused. A pick still follows `commitOnSelect`.
+
+```text
+Single, restoreQueryOnClose=true
+  user activates "Banana" → query="Banana" value=["banana"]
+  user types "ap"         → query="ap"     value=["banana"]
+  user presses Escape     → query="Banana" value=["banana"]   ← label restored, listbox closes
+```
+
+The label is the one `selected()` resolves: the option's own label once it has rendered, `[itemToStringLabel]` before that (a value bound before the listbox ever opened). Multi mode and the picker anatomy ignore the input. Enable it for the whole scope with `provideForComboboxDefaults({ restoreQueryOnClose: true })`.
 
 ## Multi mode
 
@@ -493,6 +533,10 @@ When the input is empty (no query) and the user presses Backspace, focus jumps t
 | Auto-highlight first option             | `true`  | `[autoHighlight]="false"` to require arrowing to an option first |
 | Commit label / clear query on select    | `true`  | `[commitOnSelect]="false"`                                       |
 | Clear value on query edit (single only) | `false` | `[clearOnQueryChange]="true"`                                    |
+| Highlight the selection on open         | `first` | `openHighlight="selected"`                                       |
+| Restore label on close (single only)    | `false` | `[restoreQueryOnClose]="true"`                                   |
+
+`openHighlight` decides where the editable anatomy's highlight lands when the listbox opens from focus, click, ArrowDown / ArrowUp or `openOverlay()` without an argument. With `'selected'`, a single-select combobox showing "Spain" reopens on "Spain" rather than on the first option; with nothing selected, ArrowDown still lands on the first option and ArrowUp on the last. Opening from a typed query always highlights the first match, because the list is a filter result there, and the picker anatomy always opens on the selection. Both inputs take their default from the scope: `provideForComboboxDefaults({ openHighlight: 'selected', restoreQueryOnClose: true })`.
 
 ## Autocomplete modes
 
@@ -735,20 +779,20 @@ A single-select field is modeled as the same `readonly T[]`, kept at length ≤ 
 
 Focus stays in the input throughout: arrow keys move the listbox's _active descendant_ (the highlighted option), not DOM focus.
 
-| Key                                          | Action                                                                                                                         |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| **ArrowDown**                                | Open listbox + move activedescendant to next enabled option (or first when none).                                              |
-| **ArrowUp**                                  | Open listbox + move activedescendant to previous enabled option (or last when none).                                           |
-| **Home** _(open)_                            | Move activedescendant to first enabled option.                                                                                 |
-| **End** _(open)_                             | Move activedescendant to last enabled option.                                                                                  |
-| **PageUp** _(open)_                          | Move activedescendant to first enabled option.                                                                                 |
-| **PageDown** _(open)_                        | Move activedescendant to last enabled option.                                                                                  |
-| **Enter** _(open)_                           | Activate the activedescendant (single: replace + close; multi: toggle + stay open).                                            |
-| **Escape** _(open)_                          | Close the listbox. Focus stays in the input.                                                                                   |
-| **Tab** _(open, no action)_                  | Close the listbox and let Tab flow to the next focusable.                                                                      |
-| **Tab / Shift+Tab** _(open, action present)_ | Move focus around the input↔actions ring without dismissing (see [Action items](#action-items)).                               |
-| **Backspace** _(empty input, multi only)_    | Focus the last chip; a second Backspace there removes it.                                                                      |
-| Printable keys                               | Update `query`. With `'inline'` / `'both'` autocomplete, complete the rest of the first match into the input as selected text. |
+| Key                                          | Action                                                                                                                               |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| **ArrowDown**                                | Open listbox + move activedescendant to next enabled option (or first when none; the selection under `openHighlight="selected"`).    |
+| **ArrowUp**                                  | Open listbox + move activedescendant to previous enabled option (or last when none; the selection under `openHighlight="selected"`). |
+| **Home** _(open)_                            | Move activedescendant to first enabled option.                                                                                       |
+| **End** _(open)_                             | Move activedescendant to last enabled option.                                                                                        |
+| **PageUp** _(open)_                          | Move activedescendant to first enabled option.                                                                                       |
+| **PageDown** _(open)_                        | Move activedescendant to last enabled option.                                                                                        |
+| **Enter** _(open)_                           | Activate the activedescendant (single: replace + close; multi: toggle + stay open).                                                  |
+| **Escape** _(open)_                          | Close the listbox. Focus stays in the input.                                                                                         |
+| **Tab** _(open, no action)_                  | Close the listbox and let Tab flow to the next focusable.                                                                            |
+| **Tab / Shift+Tab** _(open, action present)_ | Move focus around the input↔actions ring without dismissing (see [Action items](#action-items)).                                     |
+| **Backspace** _(empty input, multi only)_    | Focus the last chip; a second Backspace there removes it.                                                                            |
+| Printable keys                               | Update `query`. With `'inline'` / `'both'` autocomplete, complete the rest of the first match into the input as selected text.       |
 
 Hovering an option also makes it the activedescendant, so mouse and keyboard intent stay synchronized.
 
@@ -760,6 +804,7 @@ Implements the [WAI-ARIA Combobox pattern](https://www.w3.org/WAI/ARIA/apg/patte
 - `role="listbox"` lives on `[forComboboxContent]` in the editable anatomy and on `[forComboboxList]` in the picker anatomy; the input's `aria-controls` targets whichever carries it. In the picker anatomy the popup surface (`[forComboboxContent]`) is role-less so it can hold the input next to the list without an `aria-required-owned-elements` violation.
 - `aria-multiselectable="true"` (multi mode) and the labelled role (`aria-label` / `aria-labelledby`, pointing at the input) sit on whichever element carries `role="listbox"`: content in the editable anatomy, the list in the picker anatomy.
 - `[forComboboxTrigger]` (picker anatomy) is a real `<button>` reflecting `aria-haspopup="listbox"`, `aria-expanded`, `aria-controls` (the popup surface, while open), and native `disabled` from the combobox's effective disabled. It is exempt from the popup's outside-pointer dismissal layer, like the input.
+- `[forComboboxToggle]` (editable anatomy) is a real `<button>` with `tabindex="-1"`, a localizable `aria-label`, `aria-expanded`, `aria-controls` (the listbox, while open) and native `disabled`. It cancels `mousedown` so focus stays in the input, and it is exempt from the outside-pointer dismissal layer.
 - In single mode, `aria-selected="true"` follows the activedescendant (the option Enter would activate). In multi mode it follows membership in `value()`, so every selected option carries `aria-selected="true"` simultaneously.
 - `data-state="checked" | "unchecked"` always reflects membership in `value()`, so consumers can paint a checkmark icon with pure CSS regardless of mode.
 - `data-highlighted=""` marks the option that is the current `aria-activedescendant`. Because focus stays on the `<input>`, there is no `:focus` on the option to style. `data-highlighted` is the canonical CSS hook.
