@@ -67,7 +67,14 @@ export const FOR_BREAKPOINTS_DEFAULTS = token;
  * Providing it again on a component injector replaces the map for that subtree
  * only (the nearest scope wins; the map is replaced wholesale, never merged
  * key-by-key). Omit it entirely to use {@link forBreakpointsTailwind}.
+ *
+ * Pass a function instead of a map to build it where `inject()` is available;
+ * it runs once per injector that resolves the defaults.
  */
-export function provideForBreakpointsDefaults(breakpoints: BreakpointMap): Provider[] {
-  return provideDefaults({ breakpoints });
+export function provideForBreakpointsDefaults(
+  breakpoints: BreakpointMap | (() => BreakpointMap),
+): Provider[] {
+  return provideDefaults(
+    typeof breakpoints === 'function' ? () => ({ breakpoints: breakpoints() }) : { breakpoints },
+  );
 }

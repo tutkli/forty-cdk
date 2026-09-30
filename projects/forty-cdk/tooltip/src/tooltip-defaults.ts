@@ -117,6 +117,10 @@ export class TooltipCoordinator extends SkipDelayCoordinator {
  * coordinator scope: peer tooltips inside the scope share a skip-delay
  * window; tooltips in other scopes don't.
  *
+ * Pass a function instead of an object to build the overrides where
+ * `inject()` is available; it runs once per injector that resolves the
+ * defaults.
+ *
  * @example
  * ```ts
  * // application-level
@@ -132,6 +136,8 @@ export class TooltipCoordinator extends SkipDelayCoordinator {
  * class Toolbar {}
  * ```
  */
-export function provideForTooltipDefaults(defaults: Partial<ForTooltipDefaults> = {}): Provider[] {
+export function provideForTooltipDefaults(
+  defaults: Partial<ForTooltipDefaults> | (() => Partial<ForTooltipDefaults>) = {},
+): Provider[] {
   return [...provideDefaults(defaults), TooltipCoordinator];
 }

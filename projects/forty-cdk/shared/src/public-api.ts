@@ -9,6 +9,7 @@ export type {
   ForFieldsetContext,
   HostRovingItemHandle,
   ListNavigationAction,
+  LocalizableText,
   RovingTabindex,
   SegmentEditorContext,
   SegmentEditorDelegate,

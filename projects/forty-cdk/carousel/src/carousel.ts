@@ -29,6 +29,7 @@ import {
   type ListNavigationAction,
   moveIndex,
   type PauseController,
+  resolveText,
   RovingTabindex,
   type WritingDirection,
 } from 'forty-cdk/core';
@@ -59,7 +60,7 @@ import { FOR_CAROUSEL_DEFAULTS } from './carousel-defaults';
   exportAs: 'forCarousel',
   host: {
     role: 'group',
-    'aria-roledescription': 'carousel',
+    '[attr.aria-roledescription]': 'roleDescription()',
     '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.data-orientation]': 'orientation()',
     '[attr.data-align]': 'align()',
@@ -133,6 +134,10 @@ export class ForCarousel implements ForCarouselContext {
   readonly ariaLabel = input<string | null>(null);
 
   protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
+
+  protected readonly roleDescription = computed(
+    () => resolveText(this.#defaults.roleDescription) || null,
+  );
 
   /**
    * Whether the carousel auto-rotates. When `true` and the user has not
@@ -381,6 +386,10 @@ export class ForCarousel implements ForCarouselContext {
    */
   private indicatorLabel(position: number): string {
     return this.#defaults.indicatorLabel(position);
+  }
+
+  private slideRoleDescription(): string | null {
+    return resolveText(this.#defaults.slideRoleDescription) || null;
   }
 
   /** Returns `true` when `index` is the current active slide index. */

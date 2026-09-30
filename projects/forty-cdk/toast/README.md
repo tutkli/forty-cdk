@@ -506,7 +506,7 @@ bootstrapApplication(App, {
 
 Per-viewport overrides take precedence: `<for-toast-viewport [maxVisible]="3" hotkey="F8" />`.
 
-`viewportAriaLabel` (default `'Notifications'`) is the localizable accessible name of every viewport in the scope; `[ariaLabel]` overrides it per viewport.
+`viewportAriaLabel` (default `'Notifications'`) is the localizable accessible name of every viewport in the scope; `[ariaLabel]` overrides it per viewport. `closeAriaLabel` (default `'Close'`) names every `[forToastClose]` in the scope the same way, and its `[ariaLabel]` overrides it per button. For a language the app sets or switches after bootstrap, pass the text keys as functions and the overrides as a factory, as [Localizing default text](../shared/README.md#localizing-default-text) shows.
 
 `overModal` (`'peer'` | `'inert'`, default `'peer'`) is also a defaults key. See [Sitting behind the modal instead](#sitting-behind-the-modal-instead).
 

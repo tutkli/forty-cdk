@@ -1,6 +1,6 @@
 import { computed, Directive, inject, input } from '@angular/core';
 
-import { hostButtonType, hostAriaLabel, reflectDisabled } from 'forty-cdk/core';
+import { hostButtonType, hostAriaLabel, reflectDisabled, resolveTextInput } from 'forty-cdk/core';
 import { injectComboboxContext } from './combobox-context';
 import { FOR_COMBOBOX_DEFAULTS } from './combobox-defaults';
 
@@ -43,9 +43,11 @@ export class ForComboboxClear {
    * `provideForComboboxDefaults`); set `[ariaLabel]` to override per-instance,
    * or `null` to drop the attribute.
    */
-  readonly ariaLabel = input<string | null>(this.#defaults.clearAriaLabel);
+  readonly ariaLabel = input<string | null>();
 
-  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
+  protected readonly resolvedAriaLabel = hostAriaLabel(
+    () => resolveTextInput(this.ariaLabel(), this.#defaults.clearAriaLabel) || null,
+  );
 
   protected readonly hasContent = computed(
     () => this.ctx.value().length > 0 || this.ctx.query().length > 0,

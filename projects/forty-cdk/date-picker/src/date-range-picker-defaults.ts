@@ -63,9 +63,13 @@ export const FOR_DATE_RANGE_PICKER_DEFAULTS = token;
  * Configures forty-cdk date-range-picker defaults for this injector scope.
  * Partial overrides inherit unspecified keys from the parent scope (or library
  * defaults at the root).
+ *
+ * Pass a function instead of an object to build the overrides where
+ * `inject()` is available; it runs once per injector that resolves the
+ * defaults.
  */
 export function provideForDateRangePickerDefaults(
-  defaults: Partial<ForDateRangePickerDefaults> = {},
+  defaults: Partial<ForDateRangePickerDefaults> | (() => Partial<ForDateRangePickerDefaults>) = {},
 ): Provider[] {
   return provideDefaults(defaults);
 }

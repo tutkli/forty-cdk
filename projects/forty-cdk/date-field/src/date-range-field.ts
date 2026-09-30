@@ -12,6 +12,8 @@ import {
   injectHiddenInput,
   injectTextDirection,
   RangeFieldComposer,
+  resolveText,
+  resolveTextRecord,
   type SegmentEditorContext,
   type SegmentType,
   serializeISODate,
@@ -149,8 +151,9 @@ export class ForDateRangeField<D>
 
   /**
    * Per-segment placeholder shown while empty, applied to both endpoints.
-   * Unspecified parts fall back to a letter-repeat default (`dd` / `mm` /
-   * `yyyy` / `hh` / `mm` / `ss` / `--`).
+   * Unspecified parts fall back to the scope's `placeholder`
+   * (`provideForDateRangeFieldDefaults`), then to a letter-repeat default (`dd`
+   * / `mm` / `yyyy` / `hh` / `mm` / `ss` / `--`).
    */
   readonly placeholder = input<Partial<Record<SegmentType, string>>>({});
 
@@ -177,8 +180,8 @@ export class ForDateRangeField<D>
   readonly #startContext: SegmentEditorContext;
   readonly #endContext: SegmentEditorContext;
 
-  readonly #startLabel = computed<string | null>(() => this.#defaults.startLabel);
-  readonly #endLabel = computed<string | null>(() => this.#defaults.endLabel);
+  readonly #startLabel = computed<string | null>(() => resolveText(this.#defaults.startLabel));
+  readonly #endLabel = computed<string | null>(() => resolveText(this.#defaults.endLabel));
 
   /** `aria-invalid` reflects the form-driven invalidity OR a self-detected disorder. */
   protected readonly ariaInvalid = computed(() => this.invalid() || this.#composer.disordered());
@@ -211,7 +214,10 @@ export class ForDateRangeField<D>
       compose: (start, end) => (this.adapter.compare(start, end) <= 0 ? { start, end } : null),
       disordered: (start, end) => this.adapter.compare(start, end) > 0,
     });
-    const emptySegmentText = computed(() => this.#defaults.emptySegmentText);
+    const emptySegmentText = computed(() => resolveText(this.#defaults.emptySegmentText));
+    const placeholder = computed(() =>
+      resolveTextRecord(this.#defaults.placeholder, this.placeholder()),
+    );
     this.#startEngine = new DateFieldEngine<D>({
       adapter: this.adapter,
       disabled: this.effectiveDisabled,
@@ -220,7 +226,7 @@ export class ForDateRangeField<D>
       granularity: this.granularity,
       hourCycle: this.hourCycle,
       locale: this.locale,
-      placeholder: this.placeholder,
+      placeholder,
       emptySegmentText,
       minDate: this.minDate,
       maxDate: this.maxDate,
@@ -237,7 +243,7 @@ export class ForDateRangeField<D>
       granularity: this.granularity,
       hourCycle: this.hourCycle,
       locale: this.locale,
-      placeholder: this.placeholder,
+      placeholder,
       emptySegmentText,
       minDate: this.minDate,
       maxDate: this.maxDate,

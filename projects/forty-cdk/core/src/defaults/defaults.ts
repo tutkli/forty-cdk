@@ -20,6 +20,9 @@ import { InjectionToken, Optional, type Provider, SkipSelf } from '@angular/core
  *   means a component-level `provideFor<X>Defaults({ a: 1 })` overlaid on an
  *   app-level `provideFor<X>Defaults({ a: 0, b: 2 })` resolves to
  *   `{ a: 1, b: 2 }` — partial overrides only touch the keys they list.
+ * - `overrides` may instead be a function returning them. It is called inside
+ *   the provider factory, so it can `inject()`, once per injector that
+ *   resolves the token.
  * - Returns a `Provider[]` so callers can spread additional providers
  *   (e.g. a per-scope coordinator class) into the same array.
  *
@@ -41,17 +44,22 @@ export function createDefaults<D extends object>(
   /** Token consumers inject to read the resolved defaults for the current scope. */
   token: InjectionToken<D>;
   /** Provider factory that merges overrides with the parent scope and the fallback. */
-  provideDefaults: (overrides?: Partial<D>) => Provider[];
+  provideDefaults: (overrides?: Partial<D> | (() => Partial<D>)) => Provider[];
 } {
   const token = new InjectionToken<D>(name, {
     providedIn: 'root',
     factory: () => fallback,
   });
 
-  const provideDefaults = (overrides: Partial<D> = {}): Provider[] => [
+  const provideDefaults = (overrides: Partial<D> | (() => Partial<D>) = {}): Provider[] => [
     {
       provide: token,
-      useFactory: (parent: D | null): D => mergeDefaults(overrides, parent, fallback),
+      useFactory: (parent: D | null): D =>
+        mergeDefaults(
+          typeof overrides === 'function' ? (overrides as () => Partial<D>)() : overrides,
+          parent,
+          fallback,
+        ),
       deps: [[new SkipSelf(), new Optional(), token]],
     },
   ];

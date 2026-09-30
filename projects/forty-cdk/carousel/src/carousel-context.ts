@@ -95,6 +95,7 @@ export interface CarouselPieceContext {
   slideLabel(position: number): string;
   /** Resolve the indicator `aria-label` (`"Go to slide N"` by default). `position` is 1-based. */
   indicatorLabel(position: number): string;
+  slideRoleDescription(): string | null;
 
   isInView(index: number): boolean;
 }

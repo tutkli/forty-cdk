@@ -1,6 +1,6 @@
 import { computed, Directive, inject, input } from '@angular/core';
 
-import { ForDateTimeSegmentBase, type SegmentType } from 'forty-cdk/core';
+import { ForDateTimeSegmentBase, resolveText, type SegmentType } from 'forty-cdk/core';
 import { injectDateRangeFieldSegmentContext } from './date-range-field-context';
 import {
   DEFAULT_DATE_RANGE_FIELD_SEGMENT_LABELS,
@@ -45,10 +45,10 @@ export class ForDateRangeFieldSegment extends ForDateTimeSegmentBase {
 
   protected override readonly resolvedAriaLabel = computed(() => {
     const type = this.segment();
+    const scoped = this.#defaults.segmentLabels[type];
     return (
       this.ariaLabel() ??
-      this.#defaults.segmentLabels[type] ??
-      DEFAULT_DATE_RANGE_FIELD_SEGMENT_LABELS[type]
+      (scoped === undefined ? DEFAULT_DATE_RANGE_FIELD_SEGMENT_LABELS[type] : resolveText(scoped))
     );
   });
 

@@ -1,6 +1,6 @@
 import { type Provider } from '@angular/core';
 
-import { createDefaults } from 'forty-cdk/core';
+import { createDefaults, type LocalizableText } from 'forty-cdk/core';
 
 /**
  * Defaults inherited by descendant search fields in the surrounding injector
@@ -14,7 +14,7 @@ export interface ForSearchDefaults {
    * buttons that don't set `[ariaLabel]` locally. Localize it here to
    * translate every search clear button in the scope.
    */
-  clearAriaLabel: string;
+  clearAriaLabel: LocalizableText;
 }
 
 /**
@@ -38,7 +38,13 @@ export const FOR_SEARCH_DEFAULTS = token;
  * Configures forty-cdk search defaults for this injector scope. Partial
  * overrides inherit unspecified keys from the parent scope (or library
  * defaults at the root).
+ *
+ * Pass a function instead of an object to build the overrides where
+ * `inject()` is available; it runs once per injector that resolves the
+ * defaults.
  */
-export function provideForSearchDefaults(defaults: Partial<ForSearchDefaults> = {}): Provider[] {
+export function provideForSearchDefaults(
+  defaults: Partial<ForSearchDefaults> | (() => Partial<ForSearchDefaults>) = {},
+): Provider[] {
   return provideDefaults(defaults);
 }

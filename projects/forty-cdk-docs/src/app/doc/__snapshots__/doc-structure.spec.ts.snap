@@ -6479,7 +6479,7 @@ exports[`document structure > projects/forty-cdk/shared/README.md declares the s
           "Exports",
         ],
         "role": "plain",
-        "rows": 9,
+        "rows": 10,
       },
     ],
     "title": "What it exports",
@@ -6489,6 +6489,12 @@ exports[`document structure > projects/forty-cdk/shared/README.md declares the s
     "slug": "reading-a-controls-accessible-text",
     "tables": [],
     "title": "Reading a control's accessible text",
+  },
+  {
+    "headings": [],
+    "slug": "localizing-default-text",
+    "tables": [],
+    "title": "Localizing default text",
   },
   {
     "headings": [],

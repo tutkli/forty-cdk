@@ -36,9 +36,13 @@ export const FOR_PAGINATION_DEFAULTS = token;
  * Configures forty-cdk pagination defaults for this injector scope. Partial
  * overrides inherit unspecified keys from the parent scope (or library defaults
  * at the root).
+ *
+ * Pass a function instead of an object to build the overrides where
+ * `inject()` is available; it runs once per injector that resolves the
+ * defaults.
  */
 export function provideForPaginationDefaults(
-  defaults: Partial<ForPaginationDefaults> = {},
+  defaults: Partial<ForPaginationDefaults> | (() => Partial<ForPaginationDefaults>) = {},
 ): Provider[] {
   return provideDefaults(defaults);
 }

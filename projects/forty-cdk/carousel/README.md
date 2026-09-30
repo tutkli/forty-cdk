@@ -357,9 +357,11 @@ captured, so page scrolling on the perpendicular axis is unaffected.
 
 Each slide's default `aria-label` is the positional `"N of M"` string, each
 indicator's is `"Go to slide N"`, and the rotation control's swaps between
-`"Start automatic slide show"` and `"Stop automatic slide show"`. Localize them
-all centrally with `provideForCarouselDefaults` instead of setting `ariaLabel` on
-every slide and indicator:
+`"Start automatic slide show"` and `"Stop automatic slide show"`. The root and
+each slide also carry an `aria-roledescription` (`"carousel"` / `"slide"`), which
+a screen reader speaks in place of the `group` role. Localize them all centrally
+with `provideForCarouselDefaults` instead of setting `ariaLabel` on every slide
+and indicator:
 
 <!-- snippet: fragment -->
 
@@ -370,6 +372,8 @@ providers: [
     indicatorLabel: (position) => `Ir a la diapositiva ${position}`,
     rotationStartLabel: 'Iniciar la presentación',
     rotationStopLabel: 'Detener la presentación',
+    roleDescription: 'carrusel',
+    slideRoleDescription: 'diapositiva',
   }),
 ];
 ```
@@ -378,7 +382,10 @@ providers: [
 merge with the parent scope, so you can localize just the labels and inherit the
 rest of the defaults. A per-element `ariaLabel` on `[forCarouselSlide]` /
 `[forCarouselIndicator]` still takes precedence over the localized default, as do
-`[startLabel]` / `[stopLabel]` on `[forCarouselRotationControl]`.
+`[startLabel]` / `[stopLabel]` on `[forCarouselRotationControl]`. For a language
+the app sets or switches after bootstrap, pass the text keys as functions and the
+overrides as a factory, as
+[Localizing default text](../shared/README.md#localizing-default-text) shows.
 
 ## Indicators map 1:1 to slides
 
@@ -473,7 +480,8 @@ Implements the [WAI-ARIA Carousel pattern](https://www.w3.org/WAI/ARIA/apg/patte
   should describe the carousel's purpose without using the word "carousel" (APG guidance).
 - Each slide carries `role="group"`, `aria-roledescription="slide"`, and
   `aria-label="N of M"` by default. Override per slide with the `ariaLabel` input,
-  or localize the default format app-wide with `provideForCarouselDefaults` (see
+  or localize the default format and both role descriptions app-wide with
+  `provideForCarouselDefaults` (see
   [Localizing the default labels](#localizing-the-default-labels)).
 - Off-view slides receive `aria-hidden="true"` and `inert` to remove them from the
   accessibility tree and focus order.

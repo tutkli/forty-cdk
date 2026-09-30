@@ -62,9 +62,13 @@ export const FOR_DATE_PICKER_DEFAULTS = token;
  * Configures forty-cdk date-picker defaults for this injector scope. Partial
  * overrides inherit unspecified keys from the parent scope (or library
  * defaults at the root).
+ *
+ * Pass a function instead of an object to build the overrides where
+ * `inject()` is available; it runs once per injector that resolves the
+ * defaults.
  */
 export function provideForDatePickerDefaults(
-  defaults: Partial<ForDatePickerDefaults> = {},
+  defaults: Partial<ForDatePickerDefaults> | (() => Partial<ForDatePickerDefaults>) = {},
 ): Provider[] {
   return provideDefaults(defaults);
 }

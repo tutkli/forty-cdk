@@ -145,13 +145,23 @@ function writingDirection(files) {
  * `ariaLabel` inputs whose default is not `null` — the pieces whose accessible
  * name is mandatory, so the English fallback lives in the scope defaults.
  * Reports the defaults key each one reads, because the key naming is itself a
- * convention (`*AriaLabel`).
+ * convention (`*AriaLabel`). Such a piece leaves the input unset and resolves
+ * it against the key (`resolveTextInput(this.ariaLabel(), this.#defaults.<key>)`);
+ * any other non-`null` initial value is reported as written, so a hardcoded
+ * literal shows up here.
  */
 function ariaLabelDefaults(files) {
   const members = [];
   for (const { id, text } of files) {
     const match = text.match(/readonly ariaLabel = input<[^>]*>\(\s*([^)]*?)\s*\)/);
     if (!match) {
+      continue;
+    }
+    const resolved = text.match(
+      /resolveTextInput\(\s*this\.ariaLabel\(\),\s*this\.#defaults\.([A-Za-z]+)\s*\)/,
+    );
+    if (resolved) {
+      members.push(`${id} → \`${resolved[1]}\``);
       continue;
     }
     const argument = match[1];

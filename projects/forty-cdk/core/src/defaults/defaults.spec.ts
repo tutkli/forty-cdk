@@ -1,4 +1,4 @@
-import { Component, inject, provideZonelessChangeDetection } from '@angular/core';
+import { Component, InjectionToken, inject, provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import { createDefaults } from './defaults';
@@ -104,6 +104,57 @@ describe('createDefaults', () => {
     fixture.detectChanges();
 
     expect(fixture.componentInstance.value.handler).toBeNull();
+  });
+
+  it('builds the overrides from a factory that can inject()', () => {
+    const LABEL = new InjectionToken<string>('LABEL');
+    const { token, provideDefaults } = createDefaults<SampleDefaults>('SAMPLE_DEFAULTS', FALLBACK);
+    TestBed.configureTestingModule({
+      providers: [
+        provideZonelessChangeDetection(),
+        { provide: LABEL, useValue: 'injected' },
+        provideDefaults(() => ({ label: inject(LABEL) })),
+      ],
+    });
+    const value = TestBed.runInInjectionContext(() => inject(token));
+    expect(value).toEqual({ delay: 100, flag: false, label: 'injected' });
+  });
+
+  it('merges a factory child over its parent exactly like an object child', () => {
+    const { token, provideDefaults } = createDefaults<SampleDefaults>('SAMPLE_DEFAULTS', FALLBACK);
+
+    @Component({
+      template: '',
+      providers: [provideDefaults(() => ({ delay: 800, flag: undefined }))],
+    })
+    class Child {
+      readonly value = inject(token);
+    }
+
+    TestBed.configureTestingModule({
+      imports: [Child],
+      providers: [
+        provideZonelessChangeDetection(),
+        provideDefaults({ delay: 200, flag: true, label: 'parent' }),
+      ],
+    });
+    const fixture = TestBed.createComponent(Child);
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.value).toEqual({ delay: 800, flag: true, label: 'parent' });
+  });
+
+  it('calls the factory once per injector that resolves the token', () => {
+    const { token, provideDefaults } = createDefaults<SampleDefaults>('SAMPLE_DEFAULTS', FALLBACK);
+    const factory = vi.fn(() => ({ delay: 1 }));
+    TestBed.configureTestingModule({
+      providers: [provideZonelessChangeDetection(), provideDefaults(factory)],
+    });
+
+    TestBed.runInInjectionContext(() => inject(token));
+    TestBed.runInInjectionContext(() => inject(token));
+
+    expect(factory).toHaveBeenCalledTimes(1);
   });
 
   it('skips undefined keys in overrides so they fall back to the parent', () => {

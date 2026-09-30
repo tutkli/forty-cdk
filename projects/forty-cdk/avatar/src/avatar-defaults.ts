@@ -39,7 +39,13 @@ export const FOR_AVATAR_DEFAULTS = token;
  * Configures forty-cdk avatar defaults for this injector scope. Partial
  * overrides inherit unspecified keys from the parent scope (or library
  * defaults at the root).
+ *
+ * Pass a function instead of an object to build the overrides where
+ * `inject()` is available; it runs once per injector that resolves the
+ * defaults.
  */
-export function provideForAvatarDefaults(defaults: Partial<ForAvatarDefaults> = {}): Provider[] {
+export function provideForAvatarDefaults(
+  defaults: Partial<ForAvatarDefaults> | (() => Partial<ForAvatarDefaults>) = {},
+): Provider[] {
   return provideDefaults(defaults);
 }

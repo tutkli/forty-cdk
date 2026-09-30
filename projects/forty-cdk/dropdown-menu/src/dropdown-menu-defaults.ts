@@ -71,9 +71,13 @@ export const FOR_DROPDOWN_MENU_DEFAULTS = token;
  * Configures forty-cdk dropdown-menu defaults for this injector scope.
  * Partial overrides inherit unspecified keys from the parent scope (or
  * library defaults at the root).
+ *
+ * Pass a function instead of an object to build the overrides where
+ * `inject()` is available; it runs once per injector that resolves the
+ * defaults.
  */
 export function provideForDropdownMenuDefaults(
-  defaults: Partial<ForDropdownMenuDefaults> = {},
+  defaults: Partial<ForDropdownMenuDefaults> | (() => Partial<ForDropdownMenuDefaults>) = {},
 ): Provider[] {
   return provideDefaults(defaults);
 }

@@ -23,6 +23,7 @@ import {
   type PointerDragSession,
   createTemplatePreview,
   type DragPreview,
+  resolveText,
 } from 'forty-cdk/core';
 import { createPointerHandleGuard } from './handle-guard';
 import {
@@ -125,7 +126,9 @@ export class ForDraggable implements ForDraggableContext {
   );
 
   /** `aria-roledescription` value from defaults. */
-  protected readonly roleDescription = computed(() => this.#defaults.itemRoleDescription);
+  protected readonly roleDescription = computed(() =>
+    resolveText(this.#defaults.itemRoleDescription),
+  );
 
   /**
    * `'true'` while this item cannot be lifted, except where a roving delegate governs the

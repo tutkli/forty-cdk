@@ -16,6 +16,13 @@ export interface ForCalendarDefaults {
    * wins over this scope default.
    */
   firstDayOfWeek: number | null;
+  /**
+   * Builds the accessible date of an outside-month padding day from the
+   * formatted full date (default `"<date> (outside month)"`), so assistive tech
+   * can tell it apart from the visible month. Used by the default `dateLabel`
+   * formatter; a `ForCalendar` bound to its own `[dateLabel]` ignores it.
+   */
+  outsideMonthLabel: (formattedDate: string) => string;
 }
 
 /**
@@ -25,6 +32,7 @@ export interface ForCalendarDefaults {
  */
 export const FOR_CALENDAR_FALLBACK_DEFAULTS: ForCalendarDefaults = {
   firstDayOfWeek: null,
+  outsideMonthLabel: (formattedDate) => `${formattedDate} (outside month)`,
 };
 
 const { token, provideDefaults } = createDefaults<ForCalendarDefaults>(
@@ -39,9 +47,13 @@ export const FOR_CALENDAR_DEFAULTS = token;
  * Configures forty-cdk calendar defaults for this injector scope. Partial
  * overrides inherit unspecified keys from the parent scope (or library
  * defaults at the root).
+ *
+ * Pass a function instead of an object to build the overrides where
+ * `inject()` is available; it runs once per injector that resolves the
+ * defaults.
  */
 export function provideForCalendarDefaults(
-  defaults: Partial<ForCalendarDefaults> = {},
+  defaults: Partial<ForCalendarDefaults> | (() => Partial<ForCalendarDefaults>) = {},
 ): Provider[] {
   return provideDefaults(defaults);
 }

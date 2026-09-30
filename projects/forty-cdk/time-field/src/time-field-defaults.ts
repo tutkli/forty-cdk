@@ -1,6 +1,6 @@
 import { type Provider } from '@angular/core';
 
-import { createDefaults, type TimeSegmentType } from 'forty-cdk/core';
+import { createDefaults, type LocalizableText, type TimeSegmentType } from 'forty-cdk/core';
 
 /**
  * Accessible name announced for each editable segment, keyed by its part type.
@@ -8,7 +8,7 @@ import { createDefaults, type TimeSegmentType } from 'forty-cdk/core';
  * falls back to the library default for that part — so overriding just
  * `dayPeriod` keeps the English labels for the rest.
  */
-export type ForTimeFieldSegmentLabels = Partial<Record<TimeSegmentType, string>>;
+export type ForTimeFieldSegmentLabels = Partial<Record<TimeSegmentType, LocalizableText>>;
 
 /**
  * Defaults inherited by descendant `[forTimeField]` controls in the
@@ -22,7 +22,7 @@ export interface ForTimeFieldDefaults {
    * segment, so screen readers report the segment's empty state instead of
    * silence. Override for localization.
    */
-  emptySegmentText: string;
+  emptySegmentText: LocalizableText;
   /**
    * Accessible names announced for each editable segment (via `aria-label`),
    * keyed by part type, used when a segment has no explicit `ariaLabel`. The
@@ -30,6 +30,12 @@ export interface ForTimeFieldDefaults {
    * Override for localization; unset keys keep the library default.
    */
   segmentLabels: ForTimeFieldSegmentLabels;
+  /**
+   * Placeholder each empty editable segment shows, keyed by part type, for
+   * fields whose `[placeholder]` doesn't name that part. Unset parts fall back
+   * to a letter-repeat default (`hh` / `mm` / `ss` / `--`).
+   */
+  placeholder: Partial<Record<TimeSegmentType, LocalizableText>>;
 }
 
 /**
@@ -52,6 +58,7 @@ export const DEFAULT_TIME_FIELD_SEGMENT_LABELS: Readonly<Record<TimeSegmentType,
 export const FOR_TIME_FIELD_FALLBACK_DEFAULTS: ForTimeFieldDefaults = {
   emptySegmentText: 'Empty',
   segmentLabels: DEFAULT_TIME_FIELD_SEGMENT_LABELS,
+  placeholder: {},
 };
 
 const { token, provideDefaults } = createDefaults<ForTimeFieldDefaults>(
@@ -66,9 +73,13 @@ export const FOR_TIME_FIELD_DEFAULTS = token;
  * Configures forty-cdk time-field defaults for this injector scope. Partial
  * overrides inherit unspecified keys from the parent scope (or library
  * defaults at the root).
+ *
+ * Pass a function instead of an object to build the overrides where
+ * `inject()` is available; it runs once per injector that resolves the
+ * defaults.
  */
 export function provideForTimeFieldDefaults(
-  defaults: Partial<ForTimeFieldDefaults> = {},
+  defaults: Partial<ForTimeFieldDefaults> | (() => Partial<ForTimeFieldDefaults>) = {},
 ): Provider[] {
   return provideDefaults(defaults);
 }

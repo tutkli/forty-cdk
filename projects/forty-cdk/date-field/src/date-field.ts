@@ -7,6 +7,8 @@ import {
   DateFieldEngine,
   type FieldGranularity,
   type FieldSegment,
+  resolveText,
+  resolveTextRecord,
   type SegmentType,
   type SegmentEditorDelegate,
   serializeISODate,
@@ -143,7 +145,8 @@ export class ForDateField<D>
   readonly locale = input<string | null>(null);
 
   /**
-   * Per-segment placeholder shown while empty. Unspecified parts fall back to a
+   * Per-segment placeholder shown while empty. Unspecified parts fall back to
+   * the scope's `placeholder` (`provideForDateFieldDefaults`), then to a
    * letter-repeat default (`dd` / `mm` / `yyyy` / `hh` / `mm` / `ss` / `--`).
    */
   readonly placeholder = input<Partial<Record<SegmentType, string>>>({});
@@ -193,8 +196,10 @@ export class ForDateField<D>
       granularity: this.granularity,
       hourCycle: this.hourCycle,
       locale: this.locale,
-      placeholder: this.placeholder,
-      emptySegmentText: computed(() => this.#defaults.emptySegmentText),
+      placeholder: computed(() =>
+        resolveTextRecord(this.#defaults.placeholder, this.placeholder()),
+      ),
+      emptySegmentText: computed(() => resolveText(this.#defaults.emptySegmentText)),
       minDate: this.minDate,
       maxDate: this.maxDate,
       source: this.value,

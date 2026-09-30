@@ -71,7 +71,13 @@ export const FOR_MENUBAR_DEFAULTS = token;
  * Configures forty-cdk menubar defaults for this injector scope. Partial
  * overrides inherit unspecified keys from the parent scope (or library
  * defaults at the root).
+ *
+ * Pass a function instead of an object to build the overrides where
+ * `inject()` is available; it runs once per injector that resolves the
+ * defaults.
  */
-export function provideForMenubarDefaults(defaults: Partial<ForMenubarDefaults> = {}): Provider[] {
+export function provideForMenubarDefaults(
+  defaults: Partial<ForMenubarDefaults> | (() => Partial<ForMenubarDefaults>) = {},
+): Provider[] {
   return provideDefaults(defaults);
 }

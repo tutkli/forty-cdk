@@ -9,6 +9,8 @@ import {
   injectDateAdapter,
   injectHiddenInput,
   injectTextDirection,
+  resolveText,
+  resolveTextRecord,
   RovingTabindex,
   type SegmentEditorDelegate,
   serializeISOTime,
@@ -156,7 +158,8 @@ export class ForTimeField<D>
 
   /**
    * Per-segment placeholder shown while empty. Unspecified parts fall back to
-   * `hh` / `mm` / `ss` / `--`.
+   * the scope's `placeholder` (`provideForTimeFieldDefaults`), then to `hh` /
+   * `mm` / `ss` / `--`.
    */
   readonly placeholder = input<Partial<Record<TimeSegmentType, string>>>({});
 
@@ -205,8 +208,10 @@ export class ForTimeField<D>
       granularity: this.granularity,
       hourCycle: this.hourCycle,
       locale: this.locale,
-      placeholder: this.placeholder,
-      emptySegmentText: computed(() => this.#defaults.emptySegmentText),
+      placeholder: computed(() =>
+        resolveTextRecord(this.#defaults.placeholder, this.placeholder()),
+      ),
+      emptySegmentText: computed(() => resolveText(this.#defaults.emptySegmentText)),
       minTime: this.minTime,
       maxTime: this.maxTime,
       source: this.value,

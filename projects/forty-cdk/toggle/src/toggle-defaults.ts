@@ -37,7 +37,13 @@ export const FOR_TOGGLE_DEFAULTS = token;
  * Configures forty-cdk toggle defaults for this injector scope. Partial
  * overrides inherit unspecified keys from the parent scope (or library
  * defaults at the root).
+ *
+ * Pass a function instead of an object to build the overrides where
+ * `inject()` is available; it runs once per injector that resolves the
+ * defaults.
  */
-export function provideForToggleDefaults(defaults: Partial<ForToggleDefaults> = {}): Provider[] {
+export function provideForToggleDefaults(
+  defaults: Partial<ForToggleDefaults> | (() => Partial<ForToggleDefaults>) = {},
+): Provider[] {
   return provideDefaults(defaults);
 }

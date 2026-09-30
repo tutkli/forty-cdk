@@ -37,9 +37,13 @@ export const FOR_NUMBER_INPUT_DEFAULTS = token;
  * Configures forty-cdk number-input defaults for this injector scope. Partial
  * overrides inherit unspecified keys from the parent scope (or library
  * defaults at the root).
+ *
+ * Pass a function instead of an object to build the overrides where
+ * `inject()` is available; it runs once per injector that resolves the
+ * defaults.
  */
 export function provideForNumberInputDefaults(
-  defaults: Partial<ForNumberInputDefaults> = {},
+  defaults: Partial<ForNumberInputDefaults> | (() => Partial<ForNumberInputDefaults>) = {},
 ): Provider[] {
   return provideDefaults(defaults);
 }

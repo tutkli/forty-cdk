@@ -220,7 +220,7 @@ Click the heading button to cycle from day → month → year view. Click a mont
 | `min`               | `input<D \| null>`                     | Minimum selectable date (inclusive). Earlier dates are unavailable.<br>**Default:** `null`                                                                                                   |
 | `max`               | `input<D \| null>`                     | Maximum selectable date (inclusive). Later dates are unavailable.<br>**Default:** `null`                                                                                                     |
 | `isDateUnavailable` | `input<(date: D) => boolean>`          | Per-date predicate marking a date unavailable (present but not selectable).<br>**Default:** `() => false`                                                                                    |
-| `dateLabel`         | `input<CalendarDateLabelFormatter<D>>` | Formats each gridcell's `aria-label` (full accessible date).<br>**Default:** localized full date, outside-month days suffixed                                                                |
+| `dateLabel`         | `input<CalendarDateLabelFormatter<D>>` | Formats each gridcell's `aria-label` (full accessible date).<br>**Default:** localized full date, outside-month days through the scope's `outsideMonthLabel`                                 |
 | `disabled`          | `input<boolean>`                       | Disables the whole calendar (no focus movement, no selection). Reflected as `data-disabled`.<br>**Default:** —                                                                               |
 | `readonly`          | `input<boolean>`                       | Read-only: dates stay focusable, selection is blocked. Reflected as `data-readonly`.<br>**Default:** —                                                                                       |
 | `firstDayOfWeek`    | `input<number \| null>`                | First column's weekday, **0-6** (`0` = Sunday).<br>**Default:** `null` → the adapter's value (or `provideForCalendarDefaults`)                                                               |
@@ -538,8 +538,15 @@ Auto-disabled when the entire previous / next page would be outside `[min, max]`
 import { provideForCalendarDefaults } from 'forty-cdk/calendar';
 
 // app config or a component's providers — Monday-first weeks for this scope
-providers: [provideForCalendarDefaults({ firstDayOfWeek: 1 })];
+providers: [
+  provideForCalendarDefaults({
+    firstDayOfWeek: 1,
+    outsideMonthLabel: (formattedDate) => `${formattedDate} (fuera del mes)`,
+  }),
+];
 ```
+
+`outsideMonthLabel` builds the `aria-label` of a padding day outside the visible month from its formatted full date (default `"<date> (outside month)"`), so assistive tech can tell it apart from the month on screen. A calendar bound to its own `[dateLabel]` formatter ignores it.
 
 ## Keyboard
 

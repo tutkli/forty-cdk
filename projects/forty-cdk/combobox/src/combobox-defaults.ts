@@ -1,6 +1,6 @@
 import { type Provider } from '@angular/core';
 
-import { createDefaults } from 'forty-cdk/core';
+import { createDefaults, type LocalizableText } from 'forty-cdk/core';
 import { type FloatingAlign, type FloatingSide } from 'forty-cdk/core-overlay';
 
 /**
@@ -41,13 +41,13 @@ export interface ForComboboxDefaults {
    * `role="group"`), for chip clusters that don't set `[ariaLabel]` locally.
    * Localize it here to translate every combobox chip group in the scope.
    */
-  chipsAriaLabel: string;
+  chipsAriaLabel: LocalizableText;
   /**
    * Accessible name for the clear button (`[forComboboxClear]`), for clear
    * buttons that don't set `[ariaLabel]` locally. Localize it here to
    * translate every combobox clear button in the scope.
    */
-  clearAriaLabel: string;
+  clearAriaLabel: LocalizableText;
   /**
    * Builds the `aria-label` for a chip's remove button
    * (`[forComboboxChipRemove]`) from the chip's resolved option label.
@@ -85,9 +85,13 @@ export const FOR_COMBOBOX_DEFAULTS = token;
  * Configures forty-cdk combobox defaults for this injector scope. Partial
  * overrides inherit unspecified keys from the parent scope (or library
  * defaults at the root).
+ *
+ * Pass a function instead of an object to build the overrides where
+ * `inject()` is available; it runs once per injector that resolves the
+ * defaults.
  */
 export function provideForComboboxDefaults(
-  defaults: Partial<ForComboboxDefaults> = {},
+  defaults: Partial<ForComboboxDefaults> | (() => Partial<ForComboboxDefaults>) = {},
 ): Provider[] {
   return provideDefaults(defaults);
 }
