@@ -5,6 +5,216 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.28.0] - 2026-09-30
+
+A release about overlays that stack and default text that follows the language. Content opened
+through `ForDialogManager` / `ForDrawerManager` is in the document from its first render, both
+managers gain `closeAll()`, and the modal surfaces publish a stacking depth, take an initial-focus
+marker and warn in dev mode when they have no accessible name. A popover can opt into closing
+together with the menu stacked above it, and a context menu with nothing to show closes instead of
+staying open. Every text key of a `provideFor<X>Defaults` accepts a function, and every provider
+accepts a factory that can `inject()`, so the library's default labels can follow a runtime language
+change. Three changes arrive without binding anything: `<for-toast-viewport>` moves itself to
+`document.body`, a control inside an open overlay panel or a modal surface no longer registers with
+the `[forField]` around it, and a scoped tooltip or hover-card defaults call that sets no delay now
+shares its parent's skip-delay window.
+
+### Added
+
+- **Dialog**, **Drawer** — `closeAll()` closes every managed overlay
+  ([#2062](https://github.com/tutkli/forty-cdk/issues/2062)). `ForDialogManager` and
+  `ForDrawerManager` gain `closeAll(result?)`, which closes every open entry topmost first with
+  reason `'programmatic'`. Unlike the sweep that runs when the manager is destroyed, it plays each
+  exit animation, and focus ends on the origin of the bottom entry.
+
+- **Dialog**, **Drawer**, **Popover** — an initial-focus marker
+  ([#2056](https://github.com/tutkli/forty-cdk/issues/2056)). `[forDialogInitialFocus]`,
+  `[forDrawerInitialFocus]` and `[forPopoverInitialFocus]` name the element the surface focuses on
+  mount, which `initialFocus` could not target. The surface falls back to `initialFocus` when the
+  marked element is missing, disabled or hidden, a vetoed `(autoFocusOnOpen)` still skips the move,
+  and a second marker in one surface warns with `FORCDK-CORE-005`.
+
+- **Dialog**, **Drawer** — a stacking depth for the surface and its backdrop
+  ([#2063](https://github.com/tutkli/forty-cdk/issues/2063)). `[forDialog]` and
+  `[forDialogBackdrop]` reflect `data-depth` and `--for-dialog-depth`: `0` for the first dialog
+  mounted, one above the deepest dialog still mounted otherwise, fixed for the dialog's lifetime and
+  shared by declarative and managed dialogs. `ForDialogContext` publishes it as `depth`.
+  `[forDrawerBackdrop]` now mirrors its drawer's `data-depth`, both drawer pieces publish
+  `--for-drawer-depth`, and `ForDrawerContext` gains `depth`. The dialog README's Styling section
+  carries the `z-index` recipe.
+
+- **Dialog**, **Drawer**, **Popover** — `FORCDK-CORE-011` flags a surface with no accessible name
+  ([#2061](https://github.com/tutkli/forty-cdk/issues/2061)). After its first render, a
+  `[forDialog]`, `[forDrawer]` or `[forPopoverContent]` that resolved neither `aria-labelledby` nor
+  a non-empty `aria-label` warns once per instance in dev mode, under the primitive's own prefix. A
+  production build registers no hook.
+
+- **Field** — `[forFieldBoundary]` keeps a control from registering with an ancestor field
+  ([#2044](https://github.com/tutkli/forty-cdk/issues/2044)). It is the provider the overlay
+  surfaces now carry (see Changed), as a directive, for an auxiliary control such as a picker beside
+  a segmented field that only writes into it. A control on its host or inside it does not register
+  with the `[forField]` around it, and a `[forField]` inside it still wires its own control.
+
+- **Popover** — `lightDismiss="stack"` closes the popover with the overlay above it
+  ([#2060](https://github.com/tutkli/forty-cdk/issues/2060)). An outside press went only to the
+  topmost overlay, so a context menu opened over a popover closed alone and the popover took a
+  second press. With `lightDismiss="stack"` on `[forPopover]`, a press outside both closes both,
+  each with reason `'pointerDownOutside'`. The press walks down one layer at a time and stops at a
+  layer that contains it, a layer whose close was vetoed, a layer that did not opt in, or a modal
+  surface. The default `'topmost'` keeps the old behaviour, and `Escape` still closes one layer per
+  press.
+
+- **Shared** — default text can follow a runtime language change
+  ([#2035](https://github.com/tutkli/forty-cdk/issues/2035)). Every text key of a
+  `provideFor<X>Defaults` is typed `LocalizableText`, that is `string | (() => string)`, published
+  from `forty-cdk/shared`. The piece calls a function inside the `computed` or announcement that
+  already reads the key, so a function reading a language signal re-renders when the language
+  changes, and a string behaves as before. The keys are the breadcrumbs `label`, the combobox
+  `chipsAriaLabel` / `clearAriaLabel`, the search `clearAriaLabel`, the toast `viewportAriaLabel`,
+  the carousel `rotationStartLabel` / `rotationStopLabel`, the `emptySegmentText`, `segmentLabels`
+  and range `startLabel` / `endLabel` of the four date and time field defaults, the drag-drop
+  `itemRoleDescription` and the progress `completeAnnouncement`. Every one of the 39 providers,
+  `provideForBreakpointsDefaults` included, also accepts a factory in place of the object: it runs
+  once per injector in an injection context, so it can `inject()` the service that holds the
+  language, and its result merges with the parent scope like an object. The label builders
+  (`chipRemoveLabel`, `slideLabel`, `indicatorLabel`, `stepValueText`, `progressValueText`) already
+  re-rendered on their own and needed only the factory to reach that service. The shared README's
+  _Localizing default text_ section has the example.
+
+- **Calendar**, **Toast**, **Carousel**, **Date field**, **Time field** — four texts that could not
+  be localized get a key ([#2036](https://github.com/tutkli/forty-cdk/issues/2036)).
+  `ForCalendarDefaults.outsideMonthLabel(formattedDate)` feeds the default `dateLabel` formatter.
+  `ForToastDefaults.closeAriaLabel` names `[forToastClose]`, which also gains an `ariaLabel` input.
+  `ForCarouselDefaults.roleDescription` and `slideRoleDescription` set the `aria-roledescription` of
+  the root and of each slide. The date field, date range field, time field and time range field
+  defaults gain `placeholder`, which a per-instance `[placeholder]` overrides part by part. The
+  toast, carousel and field keys are `LocalizableText`, the calendar one is a builder like the other
+  label builders, and each default renders exactly what the piece rendered before.
+
+- **Toast** — viewport-wide `[template]` and `[toastClass]`
+  ([#2058](https://github.com/tutkli/forty-cdk/issues/2058)). A `show()` without `template` renders
+  the viewport's `[template]`, a per-toast `template` still wins, and `null` keeps the built-in
+  shape. `[toastClass]` merges with each toast's `class` / `classList` and leaves the row's own host
+  attributes alone. Both apply to a toast shown before the viewport's first render.
+
+- **Tooltip**, **Hover card** — `skipDelayScope` chooses whether a scope starts its own skip-delay
+  window ([#2059](https://github.com/tutkli/forty-cdk/issues/2059)). `provideForTooltipDefaults` and
+  `provideForHoverCardDefaults` take a second argument, `{ skipDelayScope: 'inherit' | 'own' }`,
+  typed `TooltipDefaultsOptions` / `HoverCardDefaultsOptions`, that overrides the choice described
+  under Changed. A scope's own `openDelay` and `closeDelay` apply whichever window it uses.
+
+- **Context menu** — `FORCDK-CONTEXT-MENU-002` flags a menu with nothing to show
+  ([#2064](https://github.com/tutkli/forty-cdk/issues/2064)). A `[forContextMenuTrigger]` whose menu
+  registered no `[forMenuContent]` suppressed the native menu and then stayed open with nothing
+  rendered. On all three open paths (right-click, `Shift+F10` or the `ContextMenu` key, and touch
+  long-press) the trigger now closes the menu after the next render with reason `'programmatic'`,
+  and warns once per trigger in dev mode, naming `[disabled]` as the fix.
+
+### Changed
+
+- **Toast** — `<for-toast-viewport>` moves itself to `document.body`
+  ([#2057](https://github.com/tutkli/forty-cdk/issues/2057)). A viewport declared in the app shell
+  sat under whatever a modal dialog inerted, so its toasts could not be clicked, `F6` did not reach
+  them, and an `error` toast was a live region inside a hidden ancestor. After its first render the
+  viewport now portals to `document.body` wherever it is declared, outside the modal's inert pass,
+  and a new `[container]` input moves it into an element of your choosing instead, as on
+  `[forDialog]`. `provideForToastDefaults({ overModal: 'inert' })` still inerts it. The server
+  renders it in place, and destroying the view that declared it removes the node. **CSS that reaches
+  the viewport or its toasts through an ancestor stops applying**: a descendant selector from a
+  parent, an encapsulated `:host` rule, a `position: absolute` inside a positioned parent. Give the
+  viewport host a class and style it globally, or bind `[container]` to keep it inside a region.
+
+- **Field** — overlay panels and modal surfaces are field boundaries
+  ([#2044](https://github.com/tutkli/forty-cdk/issues/2044)). A control inside an open panel
+  registered with the `[forField]` around the overlay and took it over: a date-time picker's time
+  field replaced the picker as the field's `control()`, `controlId()`, `invalid()` and error
+  messages, and opening the panel fired `FORCDK-FIELD-002`. `[forDatePickerContent]`,
+  `[forTimePickerContent]`, `[forSelectContent]`, `[forComboboxContent]`, `[forPopoverContent]`,
+  `[forDialog]` and `[forDrawer]` now provide `FOR_FIELD_CONTEXT` as `null`, so the field keeps the
+  picker. **A control inside one of them that you meant to be labelled by a field outside it**, such
+  as a `[forListbox]` inside a popover, no longer registers with that field: wrap the control in its
+  own `[forField]` inside the surface. `FOR_FIELD_CONTEXT` is now typed
+  `InjectionToken<ForFieldContext | null>`, so a non-optional `inject(FOR_FIELD_CONTEXT)` reads
+  `ForFieldContext | null`.
+
+- **Shared** — default text keys are `LocalizableText`
+  ([#2035](https://github.com/tutkli/forty-cdk/issues/2035)). Code that reads a text key of an
+  injected `For<X>Defaults` as a `string` no longer typechecks, and `ForDateFieldSegmentLabels` and
+  its three siblings widen the same way; handle the function form where you read one. The
+  `ariaLabel` input of `[forBreadcrumbs]`, `[forComboboxChips]`, `[forComboboxClear]`,
+  `[forSearchClear]`, `[forToastViewport]` and `[forCarouselRotationControl]`, and the rotation
+  control's `startLabel` / `stopLabel`, started at the scope's text and now read `undefined` when
+  unbound. The rendered attribute is unchanged, and `[ariaLabel]="null"` still drops it.
+
+- **Toast**, **Carousel** — attributes that were static are now bound
+  ([#2036](https://github.com/tutkli/forty-cdk/issues/2036)). `[forToastClose]` binds its
+  `aria-label`, and the carousel root and slides bind `aria-roledescription`. A consumer
+  `[attr.aria-label]` on `[forToastClose]`, the channel its JSDoc used to recommend, therefore
+  renders `'Close'` until its own value next changes, and a static `aria-roledescription` on a
+  carousel root or slide is overwritten. Move the first to `[ariaLabel]` or `closeAriaLabel`, and
+  the second to `roleDescription` / `slideRoleDescription`. A static `aria-label` on
+  `[forToastClose]` is adopted and still wins.
+
+- **Dialog**, **Drawer**, **Popover**, **Context menu** — a re-provided context must alias its root
+  ([#2056](https://github.com/tutkli/forty-cdk/issues/2056),
+  [#2064](https://github.com/tutkli/forty-cdk/issues/2064)). `FOR_DIALOG_CONTEXT`,
+  `FOR_DRAWER_CONTEXT`, `FOR_POPOVER_CONTEXT` and `FOR_CONTEXT_MENU_CONTEXT` are now read at an
+  internal type that adds a registration protocol, as the other split roots already were, so a
+  wrapper that re-provides one with `useValue` instead of `useExisting` pointing at a subclass of
+  the root fails in dev mode with `FORCDK-CORE-007` from the first piece that resolves it.
+  `ForDialogContext` and `ForDrawerContext` gain the required `depth` signal.
+
+- **Tooltip**, **Hover card** — a scope that sets no delay shares its parent's skip-delay window
+  ([#2059](https://github.com/tutkli/forty-cdk/issues/2059)). Every `provideForTooltipDefaults` /
+  `provideForHoverCardDefaults` call started its own window, so a scope that only moved `side` made
+  its tooltips wait the full `openDelay` right after one outside it had closed. A scoped call now
+  starts its own window only when it sets `openDelay`, `closeDelay` or `skipDelayDuration`, and
+  otherwise joins its parent's, a bare `provideForTooltipDefaults()` included. Pass
+  `{ skipDelayScope: 'own' }` to keep a separate window. A scope that shares its parent's window
+  keeps the parent's `skipDelayDuration` for it.
+
+### Fixed
+
+- **Dialog**, **Drawer** — managed content is in the document from its first render
+  ([#2055](https://github.com/tutkli/forty-cdk/issues/2055)). Content opened with `ForDialogManager`
+  / `ForDrawerManager` first rendered into an outlet that was not yet attached, so `isConnected`
+  read `false` in its constructor's `effect()`, in `afterNextRender` and in `afterRenderEffect`, and
+  whatever it measured or focused there was a detached node. The outlet host is now appended to
+  `document.body` before that render, as a `display: contents` element, and removed with the outlet,
+  including for a second dialog over a modal one and for a mount deferred because `open()` ran
+  inside change detection. The server render is unchanged.
+
+- **Field** — a press on interactive content inside `[forLabel]` stays with that content
+  ([#2046](https://github.com/tutkli/forty-cdk/issues/2046)). A `<button>` or an `<a href>` inside
+  the label had its `mousedown` cancelled and its press forwarded to the control, so the inner
+  element never took focus and pressing it also activated the control; with an overlay control's
+  panel open, the press counted as a press on the label and did not dismiss the panel. When the
+  press crosses `a[href]`, `button`, `input`, `select`, `textarea`, `summary` or a `[tabindex]`
+  element other than the control, the label now handles neither `mousedown` nor `click`, as a native
+  `<label>` does, and an open panel dismisses.
+
+- **Virtualization** — a re-attached scroll element renders at its current offset
+  ([#2066](https://github.com/tutkli/forty-cdk/issues/2066)). When the scroll element of an
+  `injectVirtualizer` list or a `[forVirtualViewport]` was detached and re-attached, or hidden with
+  `display: none` and shown again, the window kept the `scrollOffset` from before, so the rows
+  rendered off-screen and the list read as blank. The virtualizer now reads the element's live
+  offset when its box comes back, and again when a scroll settles, so a panel closed within 150 ms
+  of a scroll does not go blank on reopen.
+
+- **Virtualization** — `count` and `scrollElement` can derive from required inputs and queries
+  ([#2067](https://github.com/tutkli/forty-cdk/issues/2067)). `injectVirtualizer` read `count()` at
+  construction, which threw `NG0950` for a count derived from `input.required` in a field
+  initializer, and a `scrollElement` from `viewChild.required` had the same problem. The first
+  values are now applied before the virtualizer mounts, so both can derive from required signals.
+
+- **Drag-drop**, **Table** — `aria-roledescription` only on an item that can be lifted
+  ([#2078](https://github.com/tutkli/forty-cdk/issues/2078)). `[forDraggable]` announced `sortable`
+  on every item, so a reorderable table header lost its `columnheader` role name, pinned columns
+  included, and an item under `[dragDisabled]` or inside a disabled `[forDropList]` was announced as
+  sortable although nothing could move it. The description is now emitted only while the item can be
+  lifted, and `[forTableColumnReorder]` scopes `itemRoleDescription: ''` to its own providers, so a
+  reorderable header cell stays a `columnheader` in every table mode and under any scope you set.
+
 ## [0.27.0] - 2026-09-28
 
 A small release about the label of an overlay control and what the dev-mode console says. Pressing
@@ -2656,7 +2866,8 @@ primitives.
 - **Display** — avatar, progress, meter, tree.
 - `forty-cdk/internationalized-date` secondary entry point exposing the `@internationalized/date` adapters for the date and time primitives.
 
-[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.27.0...HEAD
+[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.28.0...HEAD
+[0.28.0]: https://github.com/tutkli/forty-cdk/compare/v0.27.0...v0.28.0
 [0.27.0]: https://github.com/tutkli/forty-cdk/compare/v0.26.0...v0.27.0
 [0.26.0]: https://github.com/tutkli/forty-cdk/compare/v0.25.2...v0.26.0
 [0.25.2]: https://github.com/tutkli/forty-cdk/compare/v0.25.1...v0.25.2
