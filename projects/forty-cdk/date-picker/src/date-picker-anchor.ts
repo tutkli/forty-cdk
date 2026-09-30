@@ -19,8 +19,9 @@ import { injectDatePickerContext } from './date-picker-context';
  * `--for-floating-anchor-width`, so the practical effect is mostly start / side
  * alignment to the box edge.
  *
- * At most one `[forDatePickerAnchor]` may be registered per `[forDatePicker]`;
- * a second one throws.
+ * It wins over a surrounding field's `[forFieldAnchor]`. One
+ * `[forDatePickerAnchor]` per `[forDatePicker]`; a second one warns in dev
+ * mode.
  *
  * ```html
  * <div forDatePicker [(value)]="date">

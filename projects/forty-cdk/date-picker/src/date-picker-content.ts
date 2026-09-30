@@ -5,6 +5,7 @@ import {
   hostAriaLabel,
   hostLabelledBy,
   injectFieldLabelExemption,
+  FOR_FIELD_ANCHOR_CONTEXT,
   FOR_FIELD_CONTEXT,
 } from 'forty-cdk/core';
 import {
@@ -50,7 +51,10 @@ import { injectDatePickerContext } from './date-picker-context';
     '[attr.aria-modal]': 'ctx.modal() ? "true" : null',
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
   },
-  providers: [{ provide: FOR_FIELD_CONTEXT, useValue: null }],
+  providers: [
+    { provide: FOR_FIELD_CONTEXT, useValue: null },
+    { provide: FOR_FIELD_ANCHOR_CONTEXT, useValue: null },
+  ],
 })
 export class ForDatePickerContent {
   protected readonly ctx = injectDatePickerContext('ForDatePickerContent');

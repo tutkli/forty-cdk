@@ -84,7 +84,7 @@ export {
   registerA11yName,
   registerHandle,
 } from './collection/register-handle';
-export { createSingleSlot } from './collection/single-slot';
+export { createSingleSlot, type SingleSlot, type SingleSlotConfig } from './collection/single-slot';
 export {
   composedClosest,
   composedContains,
@@ -161,6 +161,11 @@ export {
   unresolvedRootError,
   type UnresolvedRootSpec,
 } from './errors/orphan-context';
+export {
+  FOR_FIELD_ANCHOR_CONTEXT,
+  type ForFieldAnchorContext,
+  injectFieldAnchor,
+} from './field/field-anchor';
 export {
   crossesInteractiveContent,
   type FieldControlHandle,

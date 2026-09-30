@@ -1162,29 +1162,58 @@ describe('ForTimePicker', () => {
       expect(getContent()).not.toBeNull();
     });
 
-    it('throws when two [forTimePickerAnchor] are registered inside the same [forTimePicker]', () => {
+    it('warns once when two [forTimePickerAnchor] are registered inside the same [forTimePicker]', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
       @Component({
         imports: [ForTimePicker, ForTimePickerAnchor, ForTimePickerTrigger],
         providers: [...provideNativeDateAdapter()],
         template: `
-          @if (show()) {
-            <div forTimePicker>
-              <div forTimePickerAnchor></div>
-              <div forTimePickerAnchor></div>
-              <button forTimePickerTrigger>Open</button>
-            </div>
-          }
+          <div forTimePicker>
+            <div forTimePickerAnchor></div>
+            <div forTimePickerAnchor></div>
+            <button forTimePickerTrigger>Open</button>
+          </div>
         `,
       })
-      class TwoAnchorsHost {
-        readonly show = signal(true);
+      class TwoAnchorsHost {}
+
+      renderHost(TwoAnchorsHost);
+
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn.mock.calls[0]![0]).toMatch(
+        /\[forty-cdk\/time-picker\] FORCDK-CORE-005: A \[forTimePicker\] coordinates a single \[forTimePickerAnchor\], but 2 are registered/,
+      );
+    });
+
+    it('does not warn when a structural swap mounts the replacement [forTimePickerAnchor] first', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      @Component({
+        imports: [ForTimePicker, ForTimePickerAnchor, ForTimePickerTrigger],
+        providers: [...provideNativeDateAdapter()],
+        template: `
+          <div forTimePicker>
+            @if (mode() === 'a') {
+              <div forTimePickerAnchor data-test-id="a"></div>
+            }
+            @if (mode() === 'b') {
+              <div forTimePickerAnchor data-test-id="b"></div>
+            }
+            <button forTimePickerTrigger>Open</button>
+          </div>
+        `,
+      })
+      class AnchorSwapHost {
+        readonly mode = signal<'a' | 'b'>('b');
       }
 
-      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
-      const fixture = TestBed.createComponent(TwoAnchorsHost);
-      expect(() => fixture.detectChanges()).toThrow(
-        /\[forty-cdk\/time-picker\] FORCDK-TIME-PICKER-003: A \[forTimePicker\] registered a second \[forTimePickerAnchor\]/,
-      );
+      const swap = renderHost(AnchorSwapHost);
+      swap.instance.mode.set('a');
+      await swap.flush();
+
+      expect(swap.query('[data-test-id="a"]')).not.toBeNull();
+      expect(warn).not.toHaveBeenCalled();
     });
   });
 

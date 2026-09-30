@@ -16,7 +16,6 @@ import type { FormValueControl } from '@angular/forms/signals';
 import {
   accessibleTextContent,
   createPointerSuppression,
-  formatFortyMessage,
   injectHiddenInput,
   isRangeSelectShortcut,
   LabelCache,
@@ -355,11 +354,7 @@ export class ForSelect<T = string>
     ForSelectCloseReason
   >({
     idPrefix: 'for-select',
-    multipleAnchorsError: formatFortyMessage({
-      code: 'FORCDK-SELECT-005',
-      message: 'A [forSelect] registered a second [forSelectAnchor]; only one is allowed.',
-      fix: 'Keep a single [forSelectAnchor] per [forSelect].',
-    }),
+    anchorSlot: { primitive: 'select', owner: '[forSelect]', claimant: '[forSelectAnchor]' },
     defaultInitialFocus: 'selected',
     effectiveDisabled: this.effectiveDisabled,
     setOpen: (open) => this.open.set(open),

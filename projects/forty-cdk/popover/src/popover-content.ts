@@ -1,6 +1,12 @@
 import { Directive, ElementRef, inject } from '@angular/core';
 
-import { hostAriaLabel, hostDescribedBy, hostLabelledBy, FOR_FIELD_CONTEXT } from 'forty-cdk/core';
+import {
+  hostAriaLabel,
+  hostDescribedBy,
+  hostLabelledBy,
+  FOR_FIELD_ANCHOR_CONTEXT,
+  FOR_FIELD_CONTEXT,
+} from 'forty-cdk/core';
 import {
   toFloatingPositioner,
   injectOverlayShell,
@@ -41,7 +47,10 @@ import { injectPopoverContext } from './popover-context';
     '[attr.data-reduced-motion]': 'ctx.reducedMotion() ? "" : null',
     tabindex: '-1',
   },
-  providers: [{ provide: FOR_FIELD_CONTEXT, useValue: null }],
+  providers: [
+    { provide: FOR_FIELD_CONTEXT, useValue: null },
+    { provide: FOR_FIELD_ANCHOR_CONTEXT, useValue: null },
+  ],
 })
 export class ForPopoverContent {
   protected readonly ctx = injectPopoverContext('ForPopoverContent');

@@ -15,8 +15,8 @@ import { injectSelectContext } from './select-context';
  * from outside-pointer dismissal. If no anchor is registered the listbox falls
  * back to anchoring against the trigger, so existing usages are unaffected.
  *
- * At most one `[forSelectAnchor]` may be registered per `[forSelect]`; a second
- * one throws.
+ * It wins over a surrounding field's `[forFieldAnchor]`. One
+ * `[forSelectAnchor]` per `[forSelect]`; a second one warns in dev mode.
  *
  * ```html
  * <div forSelect [(value)]="v">

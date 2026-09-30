@@ -3697,6 +3697,12 @@ exports[`document structure > projects/forty-cdk/field/README.md declares the se
   },
   {
     "headings": [],
+    "slug": "positioning-anchor",
+    "tables": [],
+    "title": "Positioning anchor",
+  },
+  {
+    "headings": [],
     "slug": "forfielderror--automatic-signal-forms-errors",
     "tables": [],
     "title": "\`ForFieldError\` — automatic Signal Forms errors",
@@ -3743,6 +3749,10 @@ exports[`document structure > projects/forty-cdk/field/README.md declares the se
       {
         "depth": 3,
         "slug": "forfieldboundary",
+      },
+      {
+        "depth": 3,
+        "slug": "forfieldanchor",
       },
       {
         "depth": 3,

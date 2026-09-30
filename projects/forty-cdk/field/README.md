@@ -54,6 +54,41 @@ For an auxiliary control that only writes into the field's control, such as a pi
 
 Inside a boundary `FOR_FIELD_CONTEXT` resolves to `null`, so `[forFieldDescription]` and `[forFieldError]` need a `[forField]` of their own there.
 
+## Positioning anchor
+
+A design-system form field usually draws the decorated box around the control it projects, in its own template. A `[forSelectAnchor]` / `[forComboboxAnchor]` / `[forDatePickerAnchor]` / `[forTimePickerAnchor]` on that box cannot reach the projected root, but a `[forFieldAnchor]` can, because both sides reach the field. `[forSelect]`, `[forCombobox]`, `[forDatePicker]` and `[forTimePicker]` inside the field then position their panel against the box, and `--for-floating-anchor-width` reports its width:
+
+```ts
+import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ForField, ForFieldAnchor } from 'forty-cdk/field';
+
+@Component({
+  selector: 'app-form-field',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  hostDirectives: [ForField],
+  imports: [ForFieldAnchor],
+  template: `
+    <ng-content select="[forLabel]" />
+    <div forFieldAnchor class="field-box">
+      <ng-content />
+    </div>
+  `,
+})
+export class AppFormField {}
+```
+
+```html
+<app-form-field>
+  <label forLabel>Country</label>
+  <div forSelect [(value)]="country">
+    <button forSelectTrigger><span forSelectValue placeholder="Pick one"></span></button>
+    …
+  </div>
+</app-form-field>
+```
+
+A control resolves its anchor in this order: its own `[for…Anchor]`, then the field's `[forFieldAnchor]`, then its trigger or input. Without a `[forFieldAnchor]` nothing moves. `[forFieldBoundary]` leaves the anchor in place, so an auxiliary picker behind it still aligns to the box, while a control inside an overlay surface ignores the anchor of a field around that surface. One `[forFieldAnchor]` per field; a second one warns in dev mode.
+
 ## `ForFieldError` — automatic Signal Forms errors
 
 `ForFieldError` reads the control's `errors()` automatically and exposes them as signals:
@@ -154,6 +189,10 @@ Error region (`[forFieldError]`, `role="alert"`). Reads the control's Signal For
 
 Field boundary (`[forFieldBoundary]`). A control on its host or inside it does not register with an ancestor `[forField]`, and a `[forField]` inside it wires its own control. It has no inputs.
 
+### `ForFieldAnchor`
+
+Positioning anchor (`[forFieldAnchor]`). Its host becomes the element the overlay controls inside the field position against when they have no anchor of their own. It has no inputs; see [Positioning anchor](#positioning-anchor).
+
 ### `ForFieldControl`
 
 Opt-in marker (`[forFieldControl]`) for a **native** `<input>` / `<textarea>` / `<select>` (forty-cdk controls auto-wire and don't need it). Validation state is consumer-driven. Reflects `aria-invalid` on its own host while `invalid` is true (an ARIA hook, not a styling one).
@@ -184,4 +223,4 @@ forty-cdk ships no styles: put your own class on each piece and key your CSS off
 
 ## Wrapping in a design system
 
-Subclass the root and re-provide `FOR_FIELD_CONTEXT` with `useExisting` pointing at the subclass, since Angular does not inherit a directive's `providers`; [Wrapping non-form roots](../../../docs/wrapping-non-form-roots.md) walks the pattern.
+Subclass the root and re-provide `FOR_FIELD_CONTEXT` and `FOR_FIELD_ANCHOR_CONTEXT` with `useExisting` pointing at the subclass, since Angular does not inherit a directive's `providers`; [Wrapping non-form roots](../../../docs/wrapping-non-form-roots.md) walks the pattern.

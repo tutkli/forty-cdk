@@ -77,7 +77,8 @@ export interface ForDatePickerContext {
 
   /**
    * Register / unregister an optional `[forDatePickerAnchor]` positioning
-   * element. At most one anchor per root; a second registration throws.
+   * element. One anchor per root: a second one warns in dev mode, and the
+   * most recently registered one is used.
    * Reference-based unregister, so an anchor torn down inside `@if` restores
    * the trigger fallback cleanly.
    */

@@ -1,6 +1,14 @@
 import { computed, Directive, effect, inject, isDevMode, type Signal, signal } from '@angular/core';
 
-import { adoptHostId, FOR_FIELDSET_CONTEXT, fortyWarn, IdGenerator } from 'forty-cdk/core';
+import {
+  adoptHostId,
+  createSingleSlot,
+  FOR_FIELD_ANCHOR_CONTEXT,
+  FOR_FIELDSET_CONTEXT,
+  type ForFieldAnchorContext,
+  fortyWarn,
+  IdGenerator,
+} from 'forty-cdk/core';
 import { FOR_FIELD_CONTEXT, type FieldControlHandle, type ForFieldContext } from './field-context';
 
 /**
@@ -39,9 +47,12 @@ import { FOR_FIELD_CONTEXT, type FieldControlHandle, type ForFieldContext } from
     '[attr.data-required]': 'required() ? "" : null',
     '[attr.data-touched]': 'touched() ? "" : null',
   },
-  providers: [{ provide: FOR_FIELD_CONTEXT, useExisting: ForField }],
+  providers: [
+    { provide: FOR_FIELD_CONTEXT, useExisting: ForField },
+    { provide: FOR_FIELD_ANCHOR_CONTEXT, useExisting: ForField },
+  ],
 })
-export class ForField implements ForFieldContext {
+export class ForField implements ForFieldContext, ForFieldAnchorContext {
   readonly #idGen = inject(IdGenerator);
   readonly #fieldset = inject(FOR_FIELDSET_CONTEXT, { optional: true });
 
@@ -53,6 +64,11 @@ export class ForField implements ForFieldContext {
   readonly #labelCount = computed(() => this.#labels().length);
   readonly #descriptionCount = signal(0);
   readonly #errorCount = signal(0);
+  readonly #anchorSlot = createSingleSlot<HTMLElement>({
+    primitive: 'field',
+    owner: '[forField]',
+    claimant: '[forFieldAnchor]',
+  });
 
   constructor() {
     if (isDevMode()) {
@@ -86,6 +102,13 @@ export class ForField implements ForFieldContext {
 
   /** The host elements of the registered `[forLabel]`s, in registration order. */
   readonly labelElements = this.#labels.asReadonly();
+
+  /**
+   * The element registered by `[forFieldAnchor]`, or `null`. The overlay
+   * controls inside the field position their panel against it when they have
+   * no anchor of their own.
+   */
+  readonly anchor = this.#anchorSlot.value;
 
   /**
    * Id assigned to the control; a label's `for` points here. Adopts a
@@ -183,6 +206,23 @@ export class ForField implements ForFieldContext {
   registerLabel(element: HTMLElement): () => void {
     this.#labels.update((labels) => [...labels, element]);
     return () => this.#labels.update((labels) => labels.filter((l) => l !== element));
+  }
+
+  /**
+   * Register the field's positioning anchor. One `[forFieldAnchor]` per field is
+   * the supported shape: a second one still registered once the pass settles
+   * warns in dev mode, and the most recently registered one is used.
+   */
+  registerAnchor(el: HTMLElement): void {
+    if (this.anchor() === el) {
+      return;
+    }
+    this.#anchorSlot.register(el);
+  }
+
+  /** Remove a previously registered anchor. */
+  unregisterAnchor(el: HTMLElement): void {
+    this.#anchorSlot.unregister(el);
   }
 
   /** Register the description slot; returns an unregister callback. See {@link registerLabel} for the counted single-instance-per-slot contract. */

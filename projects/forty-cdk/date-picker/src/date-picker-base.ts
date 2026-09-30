@@ -1,6 +1,5 @@
 import {
   booleanAttribute,
-  computed,
   contentChild,
   Directive,
   inject,
@@ -20,13 +19,14 @@ import {
   type DateAdapter,
   fortyError,
   IdGenerator,
+  injectFieldAnchor,
   injectTextDirection,
   injectVetoableEmitter,
   type VetoableEvent,
   type VetoableNativeEvent,
   type WritingDirection,
 } from 'forty-cdk/core';
-import { AnchoredFormValueControlBase } from 'forty-cdk/core-overlay';
+import { AnchoredFormValueControlBase, anchorSlot } from 'forty-cdk/core-overlay';
 import { ForCalendar } from 'forty-cdk/calendar';
 import type { ForDatePickerContext } from './date-picker-context';
 
@@ -176,18 +176,24 @@ export abstract class DatePickerBase<D>
   readonly #triggerEl = signal<HTMLElement | null>(null);
   readonly trigger = this.#triggerEl.asReadonly();
 
-  readonly #anchorEl = signal<HTMLElement | null>(null);
+  readonly #anchorSlot = anchorSlot({
+    primitive: 'date-picker',
+    owner: 'picker root',
+    claimant: '[forDatePickerAnchor]',
+  });
 
   /**
    * Element floating-ui anchors the surface against. Prefers an optional
-   * `[forDatePickerAnchor]` when registered, otherwise falls back to the
-   * trigger so existing pickers without an anchor keep their behavior.
+   * `[forDatePickerAnchor]` when registered, then the surrounding field's
+   * `[forFieldAnchor]`, otherwise falls back to the trigger so existing
+   * pickers without an anchor keep their behavior.
    * Decoupled from `trigger` so the trigger keeps driving `aria-controls`, the
    * click toggle, focus return, and its dismissal exemption regardless of where
    * the surface paints.
    */
-  readonly reference = computed<ReferenceElement | null>(
-    () => this.#anchorEl() ?? this.#triggerEl(),
+  readonly reference: Signal<ReferenceElement | null> = this.#anchorSlot.resolve(
+    injectFieldAnchor(),
+    this.trigger,
   );
 
   readonly #contentEl = signal<HTMLElement | null>(null);
@@ -238,20 +244,10 @@ export abstract class DatePickerBase<D>
   }
 
   registerAnchor(el: HTMLElement): void {
-    const current = this.#anchorEl();
-    if (current !== null && current !== el) {
-      throw fortyError({
-        code: 'FORCDK-DATE-PICKER-002',
-        message: 'A picker root registered a second [forDatePickerAnchor]; only one is allowed.',
-        fix: 'Keep a single [forDatePickerAnchor] per picker root.',
-      });
-    }
-    this.#anchorEl.set(el);
+    this.#anchorSlot.register(el);
   }
   unregisterAnchor(el: HTMLElement): void {
-    if (this.#anchorEl() === el) {
-      this.#anchorEl.set(null);
-    }
+    this.#anchorSlot.unregister(el);
   }
 
   registerContent(el: HTMLElement): void {

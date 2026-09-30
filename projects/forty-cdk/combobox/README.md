@@ -247,7 +247,7 @@ By default the listbox is positioned against `[forComboboxInput]`. When the inpu
 </div>
 ```
 
-`[forComboboxAnchor]` changes **only** positioning. The input keeps `aria-controls` / `aria-expanded` / `aria-activedescendant`, all keyboard interaction, and its exemption from outside-pointer dismissal. Without an anchor the listbox falls back to the input, so existing markup is unaffected. Each `[forCombobox]` takes at most one `[forComboboxAnchor]`, and a second one throws `[forty-cdk/combobox]`. In multi mode, wrap `[forComboboxChips]` (which already wraps the chips + input) to anchor against the full chip cluster.
+`[forComboboxAnchor]` changes **only** positioning. The input keeps `aria-controls` / `aria-expanded` / `aria-activedescendant`, all keyboard interaction, and its exemption from outside-pointer dismissal. Without an anchor the listbox falls back to the input, so existing markup is unaffected. It wins over a surrounding field's [`[forFieldAnchor]`](../field/README.md#positioning-anchor). Each `[forCombobox]` takes one `[forComboboxAnchor]`, and a second one warns in dev mode. In multi mode, wrap `[forComboboxChips]` (which already wraps the chips + input) to anchor against the full chip cluster.
 
 ## Toggle button
 

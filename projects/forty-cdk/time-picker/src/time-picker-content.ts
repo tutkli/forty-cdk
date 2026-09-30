@@ -5,6 +5,7 @@ import {
   hostAriaLabel,
   hostLabelledBy,
   injectFieldLabelExemption,
+  FOR_FIELD_ANCHOR_CONTEXT,
   FOR_FIELD_CONTEXT,
 } from 'forty-cdk/core';
 import {
@@ -53,7 +54,10 @@ import { injectTimePickerContext } from './time-picker-context';
     '[attr.data-modal]': 'ctx.modal() ? "" : null',
     '(pointerleave)': 'onPointerLeave()',
   },
-  providers: [{ provide: FOR_FIELD_CONTEXT, useValue: null }],
+  providers: [
+    { provide: FOR_FIELD_CONTEXT, useValue: null },
+    { provide: FOR_FIELD_ANCHOR_CONTEXT, useValue: null },
+  ],
 })
 export class ForTimePickerContent {
   protected readonly ctx = injectTimePickerContext('ForTimePickerContent');

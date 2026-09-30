@@ -7,7 +7,9 @@ import { FOR_FIELD_CONTEXT } from './field-context';
  * host, from reaching an ancestor `[forField]`. Put it on an auxiliary control
  * that only writes into the field's control (a picker beside a segmented
  * field), so the field keeps reflecting the control it labels. A `[forField]`
- * inside the boundary still wires the controls inside it.
+ * inside the boundary still wires the controls inside it. The field's
+ * `[forFieldAnchor]` stays reachable, so a picker behind the boundary still
+ * aligns to the field box.
  *
  * Every overlay surface that can host a control is already a boundary:
  * `[forDatePickerContent]`, `[forTimePickerContent]`, `[forSelectContent]`,

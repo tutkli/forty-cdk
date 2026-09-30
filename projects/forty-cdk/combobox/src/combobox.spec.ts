@@ -2772,30 +2772,56 @@ describe('ForCombobox', () => {
       expect(document.querySelector<HTMLElement>('[forComboboxContent]')).not.toBeNull();
     });
 
-    it('throws when two [forComboboxAnchor] are registered inside the same [forCombobox]', () => {
-      // `@if` defers directive construction to the change-detection pass so the
-      // duplicate-registration throw surfaces from `detectChanges()`.
+    it('warns once when two [forComboboxAnchor] are registered inside the same [forCombobox]', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
       @Component({
         imports: [ForCombobox, ForComboboxAnchor, ForComboboxInput],
         template: `
-          @if (show()) {
-            <div forCombobox>
-              <div forComboboxAnchor></div>
-              <div forComboboxAnchor></div>
-              <input forComboboxInput />
-            </div>
-          }
+          <div forCombobox>
+            <div forComboboxAnchor></div>
+            <div forComboboxAnchor></div>
+            <input forComboboxInput />
+          </div>
         `,
       })
-      class TwoAnchorsHost {
-        readonly show = signal(true);
+      class TwoAnchorsHost {}
+
+      renderHost(TwoAnchorsHost);
+
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn.mock.calls[0]![0]).toMatch(
+        /\[forty-cdk\/combobox\] FORCDK-CORE-005: A \[forCombobox\] coordinates a single \[forComboboxAnchor\], but 2 are registered/,
+      );
+    });
+
+    it('does not warn when a structural swap mounts the replacement [forComboboxAnchor] first', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      @Component({
+        imports: [ForCombobox, ForComboboxAnchor, ForComboboxInput],
+        template: `
+          <div forCombobox>
+            @if (mode() === 'a') {
+              <div forComboboxAnchor data-test-id="a"></div>
+            }
+            @if (mode() === 'b') {
+              <div forComboboxAnchor data-test-id="b"></div>
+            }
+            <input forComboboxInput />
+          </div>
+        `,
+      })
+      class AnchorSwapHost {
+        readonly mode = signal<'a' | 'b'>('b');
       }
 
-      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
-      const fixture = TestBed.createComponent(TwoAnchorsHost);
-      expect(() => fixture.detectChanges()).toThrow(
-        /\[forty-cdk\/combobox\] FORCDK-COMBOBOX-007: A \[forCombobox\] registered a second \[forComboboxAnchor\]/,
-      );
+      const swap = renderHost(AnchorSwapHost);
+      swap.instance.mode.set('a');
+      await swap.flush();
+
+      expect(swap.query('[data-test-id="a"]')).not.toBeNull();
+      expect(warn).not.toHaveBeenCalled();
     });
   });
 });

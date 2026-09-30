@@ -4,9 +4,11 @@ import type { ReferenceElement } from '@floating-ui/dom';
 import {
   Collection,
   firstEnabledHost,
+  injectFieldAnchor,
   lastEnabledHost,
   type ListNavigationAction,
   nextEnabledHandle,
+  type SingleSlotConfig,
   type VetoableNativeEvent,
 } from 'forty-cdk/core';
 import {
@@ -48,13 +50,8 @@ export interface ListboxOverlayControllerDeps<
 > {
   /** Id-generator prefix base, e.g. `'for-select'` (suffixed with `-trigger` / `-content`). */
   readonly idPrefix: string;
-  /**
-   * Message thrown when a second anchor registers. Pass `formatFortyMessage(…)`
-   * — the `FORCDK-*` code belongs to the primitive that owns the anchor, so the
-   * caller supplies the whole message rather than a prefix this shared
-   * controller would have to build by hand.
-   */
-  readonly multipleAnchorsError: string;
+  /** Names the root and its anchor piece in the dev-mode duplicate-anchor warning. */
+  readonly anchorSlot: SingleSlotConfig;
   /** Default initial-focus target when none is set explicitly. */
   readonly defaultInitialFocus: Focus;
   /** The control's effective disabled — gates open / navigate / toggle. */
@@ -207,8 +204,9 @@ export class ListboxOverlayController<
 
   /**
    * Element floating-ui anchors the listbox against. Prefers an optional
-   * registered anchor, otherwise falls back to the trigger so primitives
-   * without an anchor keep their behavior.
+   * registered anchor, then the surrounding field's `[forFieldAnchor]`,
+   * otherwise falls back to the trigger so primitives without an anchor keep
+   * their behavior.
    */
   readonly anchor: Signal<ReferenceElement | null>;
 
@@ -234,14 +232,14 @@ export class ListboxOverlayController<
       onClose: deps.onClose,
       onDismiss: deps.markTouched,
     });
-    this.#anchorSlot = anchorSlot(deps.multipleAnchorsError);
+    this.#anchorSlot = anchorSlot(deps.anchorSlot);
     this.triggerId = this.#controller.triggerId;
     this.contentId = this.#controller.contentId;
     this.initialFocus = this.#controller.initialFocus;
     this.lastCloseReason = this.#controller.lastCloseReason;
     this.trigger = this.#controller.trigger;
     this.content = this.#controller.content;
-    this.anchor = this.#anchorSlot.resolve(this.#controller.trigger);
+    this.anchor = this.#anchorSlot.resolve(injectFieldAnchor(), this.#controller.trigger);
     this.options = this.#items.items;
   }
 

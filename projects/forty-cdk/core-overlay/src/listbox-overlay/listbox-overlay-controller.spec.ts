@@ -93,7 +93,7 @@ function createHarness(opts: { withNavigateFocus?: boolean } = {}): Harness {
 
     const controller = new ListboxOverlayController<FakeHandle, Focus, CloseReason>({
       idPrefix: 'for-listbox-test',
-      multipleAnchorsError: '[forty-cdk/test] Multiple anchors; only one is allowed.',
+      anchorSlot: { primitive: 'select', owner: '[forSelect]', claimant: '[forSelectAnchor]' },
       defaultInitialFocus: 'selected',
       effectiveDisabled,
       setOpen: (v) => open.set(v),
@@ -173,11 +173,18 @@ describe('ListboxOverlayController', () => {
     expect(controller.anchor()).toBe(trigger);
   });
 
-  it('throws the configured error when a second anchor registers', () => {
+  it('warns under the configured names when a second anchor stays registered', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const { controller } = createHarness();
     controller.registerAnchor(document.createElement('div'));
-    expect(() => controller.registerAnchor(document.createElement('div'))).toThrowError(
-      '[forty-cdk/test] Multiple anchors; only one is allowed.',
+    const second = document.createElement('div');
+    controller.registerAnchor(second);
+    TestBed.tick();
+
+    expect(controller.anchor()).toBe(second);
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(String(warn.mock.calls[0]?.[0])).toContain(
+      'A [forSelect] coordinates a single [forSelectAnchor], but 2 are registered.',
     );
   });
 

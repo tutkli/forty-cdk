@@ -13,7 +13,12 @@ import {
   signal,
 } from '@angular/core';
 
-import { createSingleSlot, fortyError, FOR_FIELD_CONTEXT } from 'forty-cdk/core';
+import {
+  createSingleSlot,
+  fortyError,
+  FOR_FIELD_ANCHOR_CONTEXT,
+  FOR_FIELD_CONTEXT,
+} from 'forty-cdk/core';
 import {
   ForDrawerStack,
   injectModalShell,
@@ -73,6 +78,7 @@ import { injectDrawerDrag } from './drawer-drag';
   providers: [
     { provide: FOR_DRAWER_CONTEXT, useExisting: ForDrawer },
     { provide: FOR_FIELD_CONTEXT, useValue: null },
+    { provide: FOR_FIELD_ANCHOR_CONTEXT, useValue: null },
   ],
 })
 export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements ForDrawerContext {

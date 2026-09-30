@@ -160,8 +160,8 @@ export interface ForComboboxContext<T = unknown> {
    * input. The declarative `[forComboboxAnchor]` covers the common case; call
    * this directly when the anchor element is only reachable imperatively — it
    * lives in an ancestor component's template, so a directive placed on it would
-   * resolve DI outside this root. At most one anchor may be registered per
-   * `[forCombobox]`; a second one throws.
+   * resolve DI outside this root. One anchor per `[forCombobox]`: a second one
+   * warns in dev mode, and the most recently registered one is used.
    */
   registerAnchor(el: HTMLElement): void;
   /**

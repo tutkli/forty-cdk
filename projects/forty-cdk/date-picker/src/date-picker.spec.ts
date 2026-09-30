@@ -498,29 +498,58 @@ describe('ForDatePicker', () => {
       expect(document.querySelector<HTMLElement>('[forDatePickerContent]')).not.toBeNull();
     });
 
-    it('throws when two [forDatePickerAnchor] are registered inside the same [forDatePicker]', () => {
+    it('warns once when two [forDatePickerAnchor] are registered inside the same [forDatePicker]', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
       @Component({
         imports: [ForDatePicker, ForDatePickerAnchor, ForDatePickerTrigger],
         providers: [...provideNativeDateAdapter()],
         template: `
-          @if (show()) {
-            <div forDatePicker>
-              <div forDatePickerAnchor></div>
-              <div forDatePickerAnchor></div>
-              <button forDatePickerTrigger>Open</button>
-            </div>
-          }
+          <div forDatePicker>
+            <div forDatePickerAnchor></div>
+            <div forDatePickerAnchor></div>
+            <button forDatePickerTrigger>Open</button>
+          </div>
         `,
       })
-      class TwoAnchorsHost {
-        readonly show = signal(true);
+      class TwoAnchorsHost {}
+
+      renderHost(TwoAnchorsHost);
+
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn.mock.calls[0]![0]).toMatch(
+        /\[forty-cdk\/date-picker\] FORCDK-CORE-005: A picker root coordinates a single \[forDatePickerAnchor\], but 2 are registered/,
+      );
+    });
+
+    it('does not warn when a structural swap mounts the replacement [forDatePickerAnchor] first', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      @Component({
+        imports: [ForDatePicker, ForDatePickerAnchor, ForDatePickerTrigger],
+        providers: [...provideNativeDateAdapter()],
+        template: `
+          <div forDatePicker>
+            @if (mode() === 'a') {
+              <div forDatePickerAnchor data-test-id="a"></div>
+            }
+            @if (mode() === 'b') {
+              <div forDatePickerAnchor data-test-id="b"></div>
+            }
+            <button forDatePickerTrigger>Open</button>
+          </div>
+        `,
+      })
+      class AnchorSwapHost {
+        readonly mode = signal<'a' | 'b'>('b');
       }
 
-      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
-      const fixture = TestBed.createComponent(TwoAnchorsHost);
-      expect(() => fixture.detectChanges()).toThrow(
-        /\[forty-cdk\/date-picker\] FORCDK-DATE-PICKER-002: A picker root registered a second \[forDatePickerAnchor\]/,
-      );
+      const swap = renderHost(AnchorSwapHost);
+      swap.instance.mode.set('a');
+      await swap.flush();
+
+      expect(swap.query('[data-test-id="a"]')).not.toBeNull();
+      expect(warn).not.toHaveBeenCalled();
     });
   });
 

@@ -324,7 +324,7 @@ By default the listbox is positioned against `[forSelectTrigger]`. When the trig
 </div>
 ```
 
-`[forSelectAnchor]` changes **only** positioning. The trigger keeps `aria-haspopup` / `aria-expanded` / `aria-controls`, the click toggle, focus return on close, and its exemption from outside-pointer dismissal. Without an anchor the listbox falls back to the trigger, so existing markup is unaffected. A `[forSelect]` accepts at most one `[forSelectAnchor]`, and a second one throws `[forty-cdk/select]`.
+`[forSelectAnchor]` changes **only** positioning. The trigger keeps `aria-haspopup` / `aria-expanded` / `aria-controls`, the click toggle, focus return on close, and its exemption from outside-pointer dismissal. Without an anchor the listbox falls back to the trigger, so existing markup is unaffected. It wins over a surrounding field's [`[forFieldAnchor]`](../field/README.md#positioning-anchor). A `[forSelect]` accepts one `[forSelectAnchor]`, and a second one warns in dev mode.
 
 ## Triggers stamped from outside-declared templates
 

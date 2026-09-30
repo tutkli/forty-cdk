@@ -16,8 +16,8 @@ import { injectComboboxContext } from './combobox-context';
  * listbox falls back to anchoring against the input, so existing usages are
  * unaffected.
  *
- * At most one `[forComboboxAnchor]` may be registered per `[forCombobox]`; a
- * second one throws.
+ * It wins over a surrounding field's `[forFieldAnchor]`. One
+ * `[forComboboxAnchor]` per `[forCombobox]`; a second one warns in dev mode.
  *
  * ```html
  * <div forCombobox [(value)]="v" [(query)]="q">

@@ -1,7 +1,13 @@
 import { computed, inject, type Signal, signal, type WritableSignal } from '@angular/core';
 import type { ReferenceElement } from '@floating-ui/dom';
 
-import { adoptHostId, IdGenerator } from 'forty-cdk/core';
+import {
+  adoptHostId,
+  createSingleSlot,
+  IdGenerator,
+  type SingleSlot,
+  type SingleSlotConfig,
+} from 'forty-cdk/core';
 
 /**
  * A registered overlay element whose aria-wiring id the surface exposes. Backs
@@ -86,56 +92,54 @@ export class ElementSlot<E extends HTMLElement = HTMLElement> {
 }
 
 /**
- * The floating-ui anchor slot shared by the listbox overlays and combobox. An
- * explicit `[for…Anchor]` registers here; the resolved {@link anchor} prefers it
- * and otherwise walks the fallback chain (trigger, then input) so a primitive
- * without an explicit anchor keeps its behaviour. A second, different anchor is
- * rejected with the controller-supplied error, matching the single-anchor
- * contract each overlay used to enforce inline.
+ * The floating-ui anchor slot shared by the listbox overlays, combobox and the
+ * date pickers. An explicit `[for…Anchor]` registers here; the resolved
+ * anchor prefers it and otherwise walks the fallback chain (field anchor,
+ * trigger, input) so a primitive without an explicit anchor keeps its
+ * behaviour.
  *
- * The message is supplied rather than built here because its `FORCDK-*` code
- * belongs to the primitive that owns the anchor; pass `formatFortyMessage(…)`
- * so it carries one.
+ * Registrations are stacked like a core `createSingleSlot`: the newest
+ * anchor is the one used, unregistering it restores the previous survivor,
+ * and a second anchor still registered once the change-detection pass
+ * settles warns in dev mode. A structural swap that mounts the replacement
+ * anchor before destroying the outgoing one is therefore not reported.
  */
 export class AnchorSlot {
-  readonly #el = signal<HTMLElement | null>(null);
-  readonly #multipleError: string;
+  readonly #slot: SingleSlot<HTMLElement>;
 
   /** The explicitly-registered anchor element, or `null`. */
-  readonly element: Signal<HTMLElement | null> = this.#el.asReadonly();
+  readonly element: Signal<HTMLElement | null>;
 
-  constructor(multipleError: string) {
-    this.#multipleError = multipleError;
+  constructor(config: SingleSlotConfig) {
+    this.#slot = createSingleSlot<HTMLElement>(config);
+    this.element = this.#slot.value;
   }
 
   /**
-   * Register the explicit anchor. Throws the controller-supplied error when a
-   * second, different anchor registers under the same overlay.
+   * Register the explicit anchor, making it the one the overlay positions
+   * against. Registering the current anchor again is a no-op.
    */
   register(el: HTMLElement): void {
-    const current = this.#el();
-    if (current !== null && current !== el) {
-      throw new Error(this.#multipleError);
+    if (this.element() === el) {
+      return;
     }
-    this.#el.set(el);
+    this.#slot.register(el);
   }
 
   /** Deregister the anchor (no-op unless the same node registered). */
   unregister(el: HTMLElement): void {
-    if (this.#el() === el) {
-      this.#el.set(null);
-    }
+    this.#slot.unregister(el);
   }
 
   /**
    * Build the resolved-anchor signal: the explicit anchor, otherwise the first
-   * non-null fallback in order (trigger → input). Decoupled from those elements
-   * so they keep driving their own aria-wiring / keyboard interaction
-   * regardless of where the surface paints.
+   * non-null fallback in order (field anchor → trigger → input). Decoupled from
+   * those elements so they keep driving their own aria-wiring / keyboard
+   * interaction regardless of where the surface paints.
    */
   resolve(...fallbacks: Signal<HTMLElement | null>[]): Signal<ReferenceElement | null> {
     return computed<ReferenceElement | null>(() => {
-      const explicit = this.#el();
+      const explicit = this.element();
       if (explicit !== null) {
         return explicit;
       }
@@ -192,13 +196,12 @@ export function elementSlot<E extends HTMLElement = HTMLElement>(): ElementSlot<
 }
 
 /**
- * The floating-ui anchor slot with the single-anchor guard + fallback chain.
- * Depends on nothing, so it needs no injection context.
+ * The floating-ui anchor slot with the settled single-anchor warning + fallback
+ * chain. Must be called in an injection context, which a directive field
+ * initializer is, because the dev-mode duplicate warning runs on an `effect`.
  *
- * @param multipleError Message thrown when a second, different anchor registers
- *   under the same overlay. Pass `formatFortyMessage(…)` so it carries the
- *   `FORCDK-*` code of the primitive that owns the anchor.
+ * @param config Names the root and its anchor piece in the duplicate warning.
  */
-export function anchorSlot(multipleError: string): AnchorSlot {
-  return new AnchorSlot(multipleError);
+export function anchorSlot(config: SingleSlotConfig): AnchorSlot {
+  return new AnchorSlot(config);
 }
