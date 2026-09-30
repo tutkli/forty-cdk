@@ -64,8 +64,12 @@ export interface DismissibleLayerActivateOptions {
   /** Fired when the user presses `Escape` while this is the topmost layer. */
   onEscapeKeyDown?: (event: KeyboardEvent) => void;
 
-  /** Fired when the user pointer-downs outside this layer's host. */
-  onPointerDownOutside?: (event: PointerEvent) => void;
+  /**
+   * Fired when the user pointer-downs outside this layer's host. Return `true` when the handler
+   * closed the layer: only then is the press offered to the pointer layer below, and only when that
+   * layer opted in through {@link DismissibleLayerActivateOptions.cascadeOutsidePress}.
+   */
+  onPointerDownOutside?: (event: PointerEvent) => unknown;
 
   /**
    * Fired when the user pointer-downs **inside** this layer's host or one of its `exemptElements`
@@ -93,6 +97,23 @@ export interface DismissibleLayerActivateOptions {
    * subtree outside.
    */
   exemptElements?: (target: Node) => readonly Element[];
+
+  /**
+   * Whether this layer also closes on an outside press that the pointer layer directly above it
+   * closed on. Read on every press. Without it, an outside press reaches only the topmost pointer
+   * layer.
+   *
+   * The cascade walks down one pointer layer at a time and stops at the first layer that contains
+   * the press, keeps itself open, did not opt in, or is
+   * {@link DismissibleLayerActivateOptions.modal | modal}.
+   */
+  cascadeOutsidePress?: () => boolean;
+
+  /**
+   * Whether this layer is a modal surface. A modal layer ends an outside-press cascade: a press it
+   * receives is never offered to the layers beneath it.
+   */
+  modal?: boolean;
 }
 
 const EMPTY_ACTIVATE_OPTIONS: DismissibleLayerActivateOptions = { channels: [] };
@@ -145,7 +166,18 @@ export class DismissibleLayerStack {
     if (this.#suppressDepth > 0) {
       return;
     }
-    this.#topmostForChannel('pointer')?.handlePointerDown(event as PointerEvent);
+    const [topmost, ...below] = this.#layersForChannel('pointer');
+    if (!topmost?.handlePointerDown(event as PointerEvent) || topmost.isModal) {
+      return;
+    }
+    for (const layer of below) {
+      if (!layer.isActive || !layer.cascadesOutsidePress()) {
+        return;
+      }
+      if (!layer.handlePointerDown(event as PointerEvent) || layer.isModal) {
+        return;
+      }
+    }
   };
   readonly #onFocusIn = (event: Event): void => {
     if (this.#suppressDepth > 0) {
@@ -264,6 +296,17 @@ export class DismissibleLayerStack {
     return this.#stack[this.#stack.length - 1];
   }
 
+  #layersForChannel(channel: DismissibleLayerChannel): DismissibleLayer[] {
+    const layers: DismissibleLayer[] = [];
+    for (let i = this.#stack.length - 1; i >= 0; i--) {
+      const layer = this.#stack[i];
+      if (layer && layer.ownsChannel(channel)) {
+        layers.push(layer);
+      }
+    }
+    return layers;
+  }
+
   #topmostForChannel(channel: DismissibleLayerChannel): DismissibleLayer | undefined {
     for (let i = this.#stack.length - 1; i >= 0; i--) {
       const layer = this.#stack[i];
@@ -288,7 +331,9 @@ export class DismissibleLayerStack {
  * focus for the real dismissible layers beneath it, so a tooltip visible over
  * an open menu never shadows the menu's outside-click dismissal. Nested
  * real layers (a popover inside a dialog) still resolve to a single topmost
- * handler per channel, so single-dismiss semantics hold.
+ * handler per channel, so single-dismiss semantics hold — unless a lower layer
+ * opts into `cascadeOutsidePress`, in which case an outside press the layer
+ * above it closed on reaches it too.
  *
  * Containment is stack-aware: an interaction inside a layer stacked *above* the
  * chosen handler counts as "inside", so an interactive Escape-only surface (a
@@ -409,20 +454,38 @@ export class DismissibleLayer {
 
   /**
    * @internal Dispatched by {@link DismissibleLayerStack} to the topmost layer
-   * declaring the `'pointer'` channel on an outside `pointerdown`. See
-   * {@link handleEscape}.
+   * declaring the `'pointer'` channel on an outside `pointerdown`, and to each
+   * layer below it an outside-press cascade reaches. Returns whether the press
+   * was outside and the layer closed on it. See {@link handleEscape}.
    */
-  handlePointerDown(event: PointerEvent): void {
+  handlePointerDown(event: PointerEvent): boolean {
     const target = resolveEventTarget(event);
     if (!target) {
-      return;
+      return false;
     }
     if (this.#stack.containsFromLayer(this, target)) {
       this.#options.onPointerDownInside?.(event);
-      return;
+      return false;
     }
-    this.#options.onPointerDownOutside?.(event);
+    const closed = this.#options.onPointerDownOutside?.(event) === true;
     this.#options.onInteractOutside?.(event);
+    return closed;
+  }
+
+  /**
+   * @internal Whether this layer declared itself modal at `activate`. Read by
+   * {@link DismissibleLayerStack} to end an outside-press cascade.
+   */
+  get isModal(): boolean {
+    return this.#options.modal === true;
+  }
+
+  /**
+   * @internal Whether this layer currently opts into an outside-press cascade.
+   * Read by {@link DismissibleLayerStack} on every press.
+   */
+  cascadesOutsidePress(): boolean {
+    return this.#options.cascadeOutsidePress?.() === true;
   }
 
   /**

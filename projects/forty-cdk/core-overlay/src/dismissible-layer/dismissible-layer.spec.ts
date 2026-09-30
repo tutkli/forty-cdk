@@ -786,6 +786,136 @@ describe('DismissibleLayer', () => {
     });
   });
 
+  describe('outside-press cascade (#2060)', () => {
+    let aboveHost: HTMLElement;
+    let topHost: HTMLElement;
+    const layers: DismissibleLayer[] = [];
+
+    beforeEach(() => {
+      aboveHost = document.createElement('div');
+      aboveHost.innerHTML = `<button id="above-btn">menu item</button>`;
+      document.body.appendChild(aboveHost);
+      topHost = document.createElement('div');
+      document.body.appendChild(topHost);
+    });
+
+    afterEach(() => {
+      for (const stacked of layers.splice(0)) {
+        stacked.deactivate();
+      }
+    });
+
+    const stack = (
+      el: HTMLElement,
+      name: string,
+      calls: string[],
+      opts: { closes?: boolean; cascade?: boolean; modal?: boolean } = {},
+    ): DismissibleLayer => {
+      const stacked = makeLayer(el);
+      stacked.activate({
+        channels: ['pointer'],
+        modal: opts.modal,
+        cascadeOutsidePress: () => opts.cascade === true,
+        onPointerDownOutside: () => {
+          calls.push(`${name}-outside`);
+          return opts.closes ?? true;
+        },
+        onPointerDownInside: () => calls.push(`${name}-inside`),
+        onEscapeKeyDown: () => calls.push(`${name}-escape`),
+      });
+      layers.push(stacked);
+      return stacked;
+    };
+
+    it('closes an opted-in layer below when the press is outside it and the layer above closed', () => {
+      const calls: string[] = [];
+      stack(host, 'below', calls, { cascade: true });
+      stack(aboveHost, 'above', calls);
+
+      document.dispatchEvent(pointerDown(outside));
+
+      expect(calls).toEqual(['above-outside', 'below-outside']);
+    });
+
+    it('leaves the press to the topmost layer when the layer below did not opt in', () => {
+      const calls: string[] = [];
+      stack(host, 'below', calls);
+      stack(aboveHost, 'above', calls);
+
+      document.dispatchEvent(pointerDown(outside));
+
+      expect(calls).toEqual(['above-outside']);
+    });
+
+    it('stops when the layer above kept itself open', () => {
+      const calls: string[] = [];
+      stack(host, 'below', calls, { cascade: true });
+      stack(aboveHost, 'above', calls, { closes: false });
+
+      document.dispatchEvent(pointerDown(outside));
+
+      expect(calls).toEqual(['above-outside']);
+    });
+
+    it('stops at the opted-in layer that contains the press', () => {
+      const calls: string[] = [];
+      stack(host, 'below', calls, { cascade: true });
+      stack(aboveHost, 'above', calls);
+
+      document.dispatchEvent(pointerDown(host.querySelector('#inside')!));
+
+      expect(calls).toEqual(['above-outside', 'below-inside']);
+    });
+
+    it('never offers a press past a modal layer, opted-in or not', () => {
+      const calls: string[] = [];
+      stack(host, 'below', calls, { cascade: true });
+      stack(aboveHost, 'modal', calls, { cascade: true, modal: true });
+      stack(topHost, 'top', calls);
+
+      document.dispatchEvent(pointerDown(outside));
+
+      expect(calls).toEqual(['top-outside', 'modal-outside']);
+    });
+
+    it('walks down every opted-in layer and stops at the first that did not opt in', () => {
+      const calls: string[] = [];
+      const bottomHost = document.createElement('div');
+      document.body.appendChild(bottomHost);
+      stack(bottomHost, 'bottom', calls);
+      stack(host, 'middle', calls, { cascade: true });
+      stack(aboveHost, 'lower', calls, { cascade: true });
+      stack(topHost, 'top', calls);
+
+      document.dispatchEvent(pointerDown(outside));
+
+      expect(calls).toEqual(['top-outside', 'lower-outside', 'middle-outside']);
+    });
+
+    it('skips a layer that owns no pointer channel on the way down', () => {
+      const calls: string[] = [];
+      stack(host, 'below', calls, { cascade: true });
+      const escapeOnly = makeLayer(topHost);
+      escapeOnly.activate({ channels: [], cascadeOutsidePress: () => true });
+      layers.push(escapeOnly);
+      stack(aboveHost, 'above', calls);
+
+      document.dispatchEvent(pointerDown(outside));
+
+      expect(calls).toEqual(['above-outside', 'below-outside']);
+    });
+
+    it('still closes one layer per Escape', () => {
+      const calls: string[] = [];
+      stack(host, 'below', calls, { cascade: true });
+      stack(aboveHost, 'above', calls);
+
+      pressKey(document, 'Escape');
+
+      expect(calls).toEqual(['above-escape']);
+    });
+  });
+
   describe('document listener refcounting (#1379)', () => {
     const isLayerEvent = (name: unknown): boolean =>
       name === 'keydown' || name === 'pointerdown' || name === 'focusin';

@@ -117,6 +117,7 @@ The trigger sits in a tight, scrollable frame. `sideOffset` nudges the surface o
 | `arrowPadding`       | `input<number>`                                                     | Padding (px) keeping `[forPopoverArrow]` clear of the content edges. Falls back to `provideForPopoverDefaults`.<br>**Default:** `0`       |
 | `disabled`           | `input<boolean>`                                                    | When `true`, trigger does not toggle.<br>**Default:** `false`                                                                             |
 | `dismissible`        | `input<boolean>`                                                    | When `false`, Escape / outside-pointer / outside-focus do not close.<br>**Default:** `true`                                               |
+| `lightDismiss`       | `input<string>`                                                     | `'stack'` also closes it when the overlay above closes on a press. See [Stacked overlays](#stacked-overlays).<br>**Default:** `'topmost'` |
 | `returnFocus`        | `input<boolean>`                                                    | Focus returns to the trigger on close.<br>**Default:** `true`                                                                             |
 | `initialFocus`       | `input<string>`                                                     | `'first'` (first focusable inside content) or `'container'` (the content host).<br>**Default:** `'first'`                                 |
 | `ariaLabel`          | `input<string \| null>`                                             | Manual `aria-label` on the content when no `[forPopoverTitle]` is rendered.<br>**Default:** `null`                                        |
@@ -282,6 +283,28 @@ forty-cdk ships no styles: put your own class on each piece and key your CSS off
 - **No backdrop**: popovers don't render an overlay. Outside dismissal is event-driven.
 - **Focus return**: on unmount, focus is sent back to the registered trigger element (unless `returnFocus="false"`). The one exception is an **outside-interaction close**, meaning a pointer-down or focus-out that lands outside the popover. After such a close, focus stays where the interaction moved it instead of snapping back to the trigger, matching `[forDropdownMenu]` (so a popover on a trigger that also carries a tooltip doesn't rip focus back and re-open that tooltip). Escape and programmatic closes still return focus. The return happens before the portal helper removes the node, so the trigger receives `focusin` against a stable layout.
 - **Arrow offset**: `[forPopoverArrow]` writes `position: absolute`, the floating-ui-resolved `left` / `top`, and `var(--for-floating-arrow-offset, 0px)` on the side opposite the popover (so the arrow points back at the trigger). Set `--for-floating-arrow-offset` on the arrow element (or any ancestor) to control how far the arrow pokes out. A negative `px` value such as `-4px` is typical. Defaults to `0px` (flush with the popover edge); the helper ships no default visual.
+
+### Stacked overlays
+
+An outside press reaches one overlay by default: whichever is stacked on top. That is right for a popover inside a modal dialog: a press outside the popover closes the popover and leaves the dialog alone. It is less right for two non-modal overlays side by side, such as a context menu opened over an open popover on the same chip: a press outside both closes the menu and leaves the popover open until a second press.
+
+Set `lightDismiss="stack"` to close the popover on that first press too:
+
+```html
+<div forContextMenu #chipMenu="forContextMenu" ariaLabel="Chip actions">
+  <div forPopover #filter="forPopover" lightDismiss="stack" ariaLabel="Status filter">
+    <button forPopoverTrigger forContextMenuTrigger>Status: open</button>
+    @if (filter.open()) {
+    <div forPopoverContent>…</div>
+    }
+  </div>
+  @if (chipMenu.open()) {
+  <div forMenuContent>…</div>
+  }
+</div>
+```
+
+The popover then closes, with reason `'pointerDownOutside'`, when the overlay directly above it closed on the press and the press also landed outside the popover. It stays open when the press lands inside its content, when the overlay above vetoes through `(pointerDownOutside)` or `(interactOutside)`, and when the overlay above is modal. Escape still closes one overlay per press.
 
 ### `#popover="forPopover"` vs `[(open)]`
 

@@ -249,6 +249,7 @@ export function injectModalShell(config: ModalShellConfig): ModalShellHandle {
     if (dismissCfg !== undefined) {
       dismissible.activate({
         channels: outsideVetoChannels(dismissCfg),
+        modal: isModal,
         exemptElements: (target) => [
           ...(dismissCfg.exemptElements?.(target) ?? []),
           ...resolveModalExemptOverlays(document),

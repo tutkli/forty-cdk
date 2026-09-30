@@ -101,6 +101,16 @@ export class ForPopover extends AnchoredOverlayPositioningBase implements ForPop
    */
   readonly dismissible = input(true, { transform: booleanAttribute });
 
+  /**
+   * Which open overlays a pointer press outside closes. `'topmost'` (default)
+   * leaves the press to whichever overlay is stacked on top, so a menu opened
+   * over the popover closes alone. `'stack'` closes the popover too, with
+   * reason `'pointerDownOutside'`, when the press is outside it as well and the
+   * overlay above it closed without a veto. A modal dialog above the popover
+   * still keeps the press to itself.
+   */
+  readonly lightDismiss = input<'topmost' | 'stack'>('topmost');
+
   /** When true (default), focus returns to the trigger on close. */
   readonly returnFocus = input(true, { transform: booleanAttribute });
 

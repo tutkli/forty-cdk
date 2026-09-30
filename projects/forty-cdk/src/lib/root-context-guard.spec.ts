@@ -7,6 +7,7 @@ import {
 } from 'forty-cdk/accordion';
 import { FOR_AVATAR_CONTEXT, ForAvatarFallback } from 'forty-cdk/avatar';
 import { FOR_CAROUSEL_CONTEXT, ForCarouselPrevious } from 'forty-cdk/carousel';
+import { FOR_CONTEXT_MENU_CONTEXT, ForContextMenuTrigger } from 'forty-cdk/context-menu';
 import { FOR_DIALOG_CONTEXT, ForDialogTitle } from 'forty-cdk/dialog';
 import { FOR_DRAWER_CONTEXT, ForDrawerTitle } from 'forty-cdk/drawer';
 import {
@@ -43,7 +44,7 @@ import { LIBRARY_CODE, LIBRARY_SOURCES } from '../test-utils/source-scan';
  * **The derived property is "this entry point splits its context"** — a source
  * module declaring `interface <X>Context extends For<X>Context`, which is what
  * puts an unchecked cast inside its `inject<Primitive>Context`. It is exact in
- * both directions today: fifteen modules match, Avatar and Table having joined
+ * both directions today: sixteen modules match, Avatar and Table having joined
  * with [#1722](https://github.com/tutkli/forty-cdk/issues/1722)'s inverted
  * default — Table's own second token is a *registration* protocol living in
  * `forty-cdk/core`, aliased to a separate provider, and is a different surface
@@ -54,8 +55,10 @@ import { LIBRARY_CODE, LIBRARY_SOURCES } from '../test-utils/source-scan';
  * channel to `[forTimePickerOption]`: the inverted default applied to one new
  * member rather than a full pass over the surface behind it. Dialog, Drawer and
  * Popover joined the same way with the initial-focus marker of
- * [#2056](https://github.com/tutkli/forty-cdk/issues/2056). So a sixteenth split
- * root cannot land without either calling the guard or turning
+ * [#2056](https://github.com/tutkli/forty-cdk/issues/2056), and ContextMenu
+ * with the trigger's content read-back of
+ * [#2064](https://github.com/tutkli/forty-cdk/issues/2064). So a seventeenth
+ * split root cannot land without either calling the guard or turning
  * this file red — which the count-per-module case extends to a *second* resolver
  * added to a module that already calls it once.
  *
@@ -128,6 +131,14 @@ class ImpostorCarouselHost {}
   template: `<button type="button" forComboboxClear></button>`,
 })
 class ImpostorComboboxHost {}
+
+@Component({
+  imports: [ForContextMenuTrigger],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [{ provide: FOR_CONTEXT_MENU_CONTEXT, useValue: {} }],
+  template: `<div forContextMenuTrigger>Row</div>`,
+})
+class ImpostorContextMenuHost {}
 
 @Component({
   imports: [ForDialogTitle],
@@ -253,6 +264,15 @@ const GUARDED: readonly GuardedRoot[] = [
     root: '[forCombobox]',
     piece: 'ForComboboxClear',
     host: ImpostorComboboxHost,
+  },
+  {
+    entryPoint: 'context-menu',
+    source: 'context-menu/src/context-menu-context.ts',
+    calls: 1,
+    token: 'FOR_CONTEXT_MENU_CONTEXT',
+    root: '[forContextMenu]',
+    piece: 'ForContextMenuTrigger',
+    host: ImpostorContextMenuHost,
   },
   {
     entryPoint: 'dialog',

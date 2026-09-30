@@ -54,6 +54,8 @@ export interface OutsideVetoConfig {
  * `requestClose(reason)` with the channel's reason (`'pointerDownOutside'` /
  * `'focusOutside'`). A `preventDefault()` from either the specific or the
  * composite subscriber suppresses the close, since both observe the same veto.
+ * The pointer handler returns whether it closed, which is what lets an outside
+ * press cascade to a lower layer that opted in.
  *
  * `onPointerDownOutside` is registered when either the specific
  * `emitPointerDownOutside` or the composite `emitInteractOutside` is wired, and
@@ -83,7 +85,9 @@ export function buildOutsideVetoOptions(
       emitInteractOutside?.(veto);
       if (!veto.defaultPrevented && dismissible?.() && requestClose) {
         requestClose('pointerDownOutside');
+        return true;
       }
+      return false;
     };
   }
 

@@ -139,17 +139,24 @@ Then add the class to the content element:
 
 ---
 
-## Step 4 — adding an enter animation
+## Step 4 — adding enter and exit animations
 
-Because positioned content portals to `document.body`, there is one extra animation rule: use **`animate.enter` only**, not `animate.leave`. The full explanation and the arrow recipe live in [Styling floating content](./styling-floating-content.md). This step gives you a minimal working animation.
+Both of Angular's animation hooks work on positioned content. The positioner keeps the content's position through the close, and the portal waits for the exit animation to finish before it removes the node, so `animate.enter` and `animate.leave` can sit side by side. The full explanation and the arrow recipe live in [Styling floating content](./styling-floating-content.md). This step gives you a minimal working pair.
 
-Animated with standalone `scale` and `opacity` (not `transform`, which floating-ui already owns for positioning):
+The positioner owns the `translate` property and nothing else, so `transform`, `scale` and `rotate` are yours to animate. This example uses standalone `scale` and `opacity`:
 
 ```css
 /* styles.css */
 
 @keyframes popover-in {
   from {
+    opacity: 0;
+    scale: 0.95;
+  }
+}
+
+@keyframes popover-out {
+  to {
     opacity: 0;
     scale: 0.95;
   }
@@ -164,21 +171,29 @@ Animated with standalone `scale` and `opacity` (not `transform`, which floating-
   min-width: 240px;
 
   transform-origin: var(--for-floating-content-transform-origin, center);
-  animation: popover-in 0.15s ease-out both;
+}
+
+.my-popover.popover-in {
+  animation: popover-in 0.15s ease-out;
+}
+
+.my-popover.popover-out {
+  animation: popover-out 0.1s ease-in forwards;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .my-popover {
+  .my-popover.popover-in,
+  .my-popover.popover-out {
     animation-duration: 0.01ms;
   }
 }
 ```
 
-Apply the animation in the template with `animate.enter`:
+Apply both classes in the template with `animate.enter` and `animate.leave`:
 
 ```html
 @if (popover.open()) {
-<div forPopoverContent class="my-popover" animate.enter="popover-in">
+<div forPopoverContent class="my-popover" animate.enter="popover-in" animate.leave="popover-out">
   <h2 forPopoverTitle>Display settings</h2>
   <p forPopoverDescription>Adjust the theme and density.</p>
   <button forPopoverClose>Close</button>
@@ -186,7 +201,7 @@ Apply the animation in the template with `animate.enter`:
 }
 ```
 
-`--for-floating-content-transform-origin` is a custom property the library sets on the content element while open. It resolves to the corner or edge closest to the trigger so the content appears to grow out of the anchor point rather than from its own center.
+`--for-floating-content-transform-origin` is a custom property the library sets on the content element while open. It resolves to the corner or edge closest to the trigger so the content appears to grow out of the anchor point rather than from its own center, and it is kept through the close, so the exit animation shrinks back toward the trigger too.
 
 The complete template at this point:
 
@@ -216,7 +231,12 @@ import {
       <button forPopoverTrigger>Settings</button>
 
       @if (popover.open()) {
-        <div forPopoverContent class="my-popover" animate.enter="popover-in">
+        <div
+          forPopoverContent
+          class="my-popover"
+          animate.enter="popover-in"
+          animate.leave="popover-out"
+        >
           <h2 forPopoverTitle>Display settings</h2>
           <p forPopoverDescription>Adjust the theme and density.</p>
           <button forPopoverClose>Close</button>

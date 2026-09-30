@@ -84,6 +84,11 @@ export interface OverlayShellDismissConfig {
    * order the levels happened to render in. Omit for a standalone overlay.
    */
   readonly nesting?: DismissibleLayerNesting;
+  /**
+   * Whether the surface also closes on an outside press the overlay stacked directly above it
+   * closed on, instead of leaving that press to the topmost overlay alone. Read on every press.
+   */
+  readonly cascadeOutsidePress?: () => boolean;
 }
 
 /**
@@ -246,6 +251,9 @@ export function injectOverlayShell(config: OverlayShellConfig): void {
       }
       if (dismissCfg.nesting) {
         options.nesting = dismissCfg.nesting;
+      }
+      if (dismissCfg.cascadeOutsidePress) {
+        options.cascadeOutsidePress = dismissCfg.cascadeOutsidePress;
       }
       // Escape: forwarded verbatim. The consumer owns the emit + close
       // decision (combobox routes it through its input directive instead and
