@@ -3970,7 +3970,7 @@ exports[`document structure > projects/forty-cdk/file-upload/README.md declares 
           "Description",
         ],
         "role": "api",
-        "rows": 4,
+        "rows": 5,
       },
       {
         "columns": [

@@ -10,8 +10,9 @@ import { injectFileUploadContext } from './file-upload-context';
  * The directive forces `type="file"` and mirrors `accept`, `multiple`,
  * `directory` (as `webkitdirectory`), and `disabled` from the root context.
  * When the user selects files via the native dialog the `change` event routes
- * them through the root's shared `accept` filter — so a selection made through
- * the dialog's "All files" override is rejected consistently with a drop —
+ * them through the root's shared `accept` and `maxSize` filters — so a
+ * selection made through the dialog's "All files" override, or an oversized
+ * one, is rejected consistently with a drop —
  * emitting `filesChange` (accepted) / `filesRejected` (rejected) on the root.
  *
  * Consumers are expected to visually hide this input with their own CSS

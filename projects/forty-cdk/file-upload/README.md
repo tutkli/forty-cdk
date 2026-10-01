@@ -115,7 +115,14 @@ Set `directory` to switch the native picker into folder mode. The input mirrors 
 
 ## Handling rejections
 
-With `multiple` off, the zone keeps the first accepted file and surfaces the extras on `filesRejected` with the reason `'multiple'`. Nothing is discarded silently, so you can tell the user why only one file went through. Combining `directory` with `multiple` off is therefore noisy by design: every file in the chosen folder past the first is reported as a `'multiple'` rejection.
+Every file the zone refuses arrives on `filesRejected` with the reason it was refused, and never reaches `filesChange` or the native input's `files`. A file outside `accept` is rejected with `'accept'`, and a file larger than `maxSize` bytes with `'size'`; a file of exactly `maxSize` bytes is accepted. With `multiple` off, the zone keeps the first accepted file and surfaces the extras with the reason `'multiple'`. That cap is applied last, so a refused file never takes the one slot from a valid file behind it. Nothing is discarded silently, so you can tell the user why a file did not go through. Combining `directory` with `multiple` off is noisy by design: every file in the chosen folder past the first is reported as a `'multiple'` rejection.
+
+```html
+<div forFileUpload accept="image/*" [maxSize]="5000000" (filesRejected)="onRejected($event)">
+  <input forFileUploadInput aria-label="Upload an image" class="sr-only" />
+  <button forFileUploadTrigger>Choose an image</button>
+</div>
+```
 
 <!-- snippet: fragment -->
 
@@ -140,17 +147,18 @@ onRejected(rejections: ForFileUploadRejection[]): void {
 
 ### `ForFileUpload`
 
-| Property    | Type             | Description                                                                                           |
-| ----------- | ---------------- | ----------------------------------------------------------------------------------------------------- |
-| `accept`    | `string \| null` | MIME types or file extensions accepted by the chooser (e.g. `"image/*,.pdf"`).<br>**Default:** `null` |
-| `multiple`  | `boolean`        | Whether multiple files can be selected at once.<br>**Default:** `false`                               |
-| `directory` | `boolean`        | Whether the picker selects a whole folder (mirrored as `webkitdirectory`).<br>**Default:** `false`    |
-| `disabled`  | `boolean`        | Whether the zone and all its pieces are disabled.<br>**Default:** `false`                             |
+| Property    | Type             | Description                                                                                                                 |
+| ----------- | ---------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `accept`    | `string \| null` | MIME types or file extensions accepted by the chooser (e.g. `"image/*,.pdf"`).<br>**Default:** `null`                       |
+| `multiple`  | `boolean`        | Whether multiple files can be selected at once.<br>**Default:** `false`                                                     |
+| `directory` | `boolean`        | Whether the picker selects a whole folder (mirrored as `webkitdirectory`).<br>**Default:** `false`                          |
+| `maxSize`   | `number \| null` | Largest accepted file size, in bytes; a file of exactly this size is accepted. `null` sets no limit.<br>**Default:** `null` |
+| `disabled`  | `boolean`        | Whether the zone and all its pieces are disabled.<br>**Default:** `false`                                                   |
 
-| Output          | Type                       | Description                                                                                                                                                                                                                         |
-| --------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `filesChange`   | `FileList`                 | Files chosen via the dialog or dropped onto the zone, filtered against `accept` before emission through either path.                                                                                                                |
-| `filesRejected` | `ForFileUploadRejection[]` | Files refused by `accept` or by the single-file cap of `multiple="false"`, each paired with the reason (`'accept'` / `'multiple'`). Fires only when at least one file was refused; every selected file lands in exactly one output. |
+| Output          | Type                       | Description                                                                                                                                                                                                                                                  |
+| --------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `filesChange`   | `FileList`                 | Files chosen via the dialog or dropped onto the zone, filtered against `accept` and `maxSize` before emission through either path.                                                                                                                           |
+| `filesRejected` | `ForFileUploadRejection[]` | Files refused by `accept`, by `maxSize` or by the single-file cap of `multiple="false"`, each paired with the reason (`'accept'` / `'size'` / `'multiple'`). Fires only when at least one file was refused; every selected file lands in exactly one output. |
 
 | Data attribute  | Values                                                              |
 | --------------- | ------------------------------------------------------------------- |
