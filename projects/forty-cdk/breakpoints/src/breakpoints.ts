@@ -1,6 +1,6 @@
-import { Injector, computed, inject, runInInjectionContext, type Signal } from '@angular/core';
+import { computed, inject, type Signal } from '@angular/core';
 
-import { fortyError, injectMediaQuery } from 'forty-cdk/core';
+import { MediaQueryRegistry, fortyError } from 'forty-cdk/core';
 import { FOR_BREAKPOINTS_DEFAULTS, type TailwindBreakpointName } from './breakpoints-defaults';
 
 /**
@@ -82,33 +82,26 @@ export interface ForBreakpoints<K extends string = BreakpointName> {
  * protected active = this.bp.active;
  * ```
  *
- * Each query method returns a `Signal<boolean>` backed by a cached
- * `MediaQueryList`. The returned handle captures the calling injection
- * context, so its methods can be invoked lazily from `computed()` or a
- * template — not only during construction. Listeners are torn down with the
- * injector. `active`'s per-breakpoint queries are materialized eagerly at call
- * time, so reading `active` never attaches a listener from inside a reactive
- * computation or after teardown. On the server (or where `matchMedia` is
- * unavailable) every signal reads `false` and `active` reads `null`.
+ * Each query method returns a `Signal<boolean>` backed by a `MediaQueryList`
+ * shared across the application: any number of calls reading the same query
+ * open it once, and its listener lives as long as the application. The
+ * methods need no injection context, so they can be invoked lazily from
+ * `computed()` or a template — not only during construction. `active`'s
+ * per-breakpoint queries are materialized eagerly at call time, so reading
+ * `active` never attaches a listener from inside a reactive computation. On
+ * the server (or where `matchMedia` is unavailable) every signal reads
+ * `false` and `active` reads `null`.
  *
  * Must be called from an injection context.
  *
  * @returns A {@link ForBreakpoints} handle of reactive query methods.
  */
 export function injectBreakpoints(): ForBreakpoints {
-  const injector = inject(Injector);
+  const registry = inject(MediaQueryRegistry);
   const map = inject(FOR_BREAKPOINTS_DEFAULTS).breakpoints;
   const names = Object.keys(map).sort((a, b) => map[a]! - map[b]!);
-  const cache = new Map<string, Signal<boolean>>();
 
-  const observe = (query: string): Signal<boolean> => {
-    let result = cache.get(query);
-    if (result === undefined) {
-      result = runInInjectionContext(injector, () => injectMediaQuery(query));
-      cache.set(query, result);
-    }
-    return result;
-  };
+  const observe = (query: string): Signal<boolean> => registry.observe(query);
 
   const thresholdOf = (name: string): number => {
     const value = map[name];

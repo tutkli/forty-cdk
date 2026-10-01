@@ -904,7 +904,7 @@ Both halves are guarded. [`src/lib/auto-focus-on-close-teardown.spec.ts`](../../
 - **`injectBreakpoints` (breakpoints) implements no WAI-ARIA APG pattern, owns no DOM and ships no
   directive at all.** It is the same species of exception as `injectVirtualizer` — a headless
   composable, not a UI pattern: `injectBreakpoints()` returns `up` / `down` / `between` / `only`
-  signal factories over `injectMediaQuery`, so it has no role, no keyboard interaction, no ARIA
+  signal factories over `MediaQueryRegistry`, so it has no role, no keyboard interaction, no ARIA
   state and no host to decorate, and "declare which APG pattern you implement before writing code"
   has no answer. It differs from `injectVirtualizer` in one way worth stating: virtualization at
   least has an inverted a11y responsibility (don't destroy the windowed content's semantics), while

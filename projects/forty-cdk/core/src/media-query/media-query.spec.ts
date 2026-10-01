@@ -1,7 +1,7 @@
 import { Component, PLATFORM_ID, type Signal, provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { injectMediaQuery, injectPrefersReducedMotion } from './media-query';
+import { MediaQueryRegistry, injectMediaQuery, injectPrefersReducedMotion } from './media-query';
 
 interface FakeMql {
   matches: boolean;
@@ -114,11 +114,45 @@ describe('injectMediaQuery', () => {
     expect(fixture.componentInstance.value()).toBe(false);
   });
 
-  it('removes the listener on DestroyRef.onDestroy', () => {
+  it('shares one MediaQueryList and one listener across every call reading the same query', () => {
+    let calls = 0;
+    restore();
+    restore = withMatchMedia((query) => {
+      calls++;
+      mql.media = query;
+      return mql as unknown as MediaQueryList;
+    });
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+    const fixtures = [1, 2, 3].map(() => TestBed.createComponent(Host));
+    expect(calls).toBe(1);
+    expect(mql.listeners).toHaveLength(1);
+    mql.dispatch(true);
+    for (const fixture of fixtures) {
+      expect(fixture.componentInstance.value()).toBe(true);
+    }
+  });
+
+  it('keeps the listener past a component destruction and removes it with the application', () => {
     TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
     const fixture = TestBed.createComponent(Host);
-    expect(mql.listeners).toHaveLength(1);
     fixture.destroy();
+    expect(mql.listeners).toHaveLength(1);
+    TestBed.resetTestingModule();
+    expect(mql.listeners).toHaveLength(0);
+  });
+
+  it('attaches nothing for a query first read after the application is destroyed', () => {
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+    const registry = TestBed.inject(MediaQueryRegistry);
+    TestBed.resetTestingModule();
+    let calls = 0;
+    restore();
+    restore = withMatchMedia(() => {
+      calls++;
+      return mql as unknown as MediaQueryList;
+    });
+    expect(registry.observe('(orientation: portrait)')()).toBe(false);
+    expect(calls).toBe(0);
     expect(mql.listeners).toHaveLength(0);
   });
 
@@ -165,5 +199,19 @@ describe('injectPrefersReducedMotion', () => {
     const fixture = TestBed.createComponent(ReducedMotionHost);
     expect(fixture.componentInstance.value()).toBe(true);
     expect(askedQuery).toBe('(prefers-reduced-motion: reduce)');
+  });
+
+  it('opens one MediaQueryList however many instances read the preference', () => {
+    let calls = 0;
+    restore = withMatchMedia((query) => {
+      calls++;
+      return makeMql(query, false) as unknown as MediaQueryList;
+    });
+
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+    for (let i = 0; i < 5; i++) {
+      TestBed.createComponent(ReducedMotionHost);
+    }
+    expect(calls).toBe(1);
   });
 });

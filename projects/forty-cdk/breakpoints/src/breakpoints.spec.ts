@@ -243,14 +243,16 @@ describe('injectBreakpoints', () => {
     expect(env.listenerCount()).toBe(0);
   });
 
-  it('removes listeners when the injector is destroyed', () => {
+  it('keeps listeners past a component destruction and removes them with the application', () => {
     const fixture = create();
     const bp = fixture.componentInstance.bp;
     bp.up('sm');
-    bp.up('md');
+    bp.down('md');
     bp.active();
-    expect(env.listenerCount()).toBeGreaterThan(0);
+    expect(env.listenerCount()).toBe(6);
     fixture.destroy();
+    expect(env.listenerCount()).toBe(6);
+    TestBed.resetTestingModule();
     expect(env.listenerCount()).toBe(0);
   });
 
@@ -260,23 +262,49 @@ describe('injectBreakpoints', () => {
     expect(env.calls.filter((q) => /min-width/.test(q))).toHaveLength(5);
   });
 
-  it('reading active after the injector is destroyed neither throws nor attaches a listener', () => {
+  it('opens one MediaQueryList per query however many injectBreakpoints() calls read it', () => {
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+    const handles = Array.from(
+      { length: 8 },
+      () => TestBed.createComponent(Host).componentInstance.bp,
+    );
+    const downs = handles.map((bp) => bp.down('md'));
+    expect(env.calls).toHaveLength(6);
+    expect(env.calls.filter((q) => q === '(max-width: 767.98px)')).toHaveLength(1);
+    expect(env.listenerCount()).toBe(6);
+    env.setWidth(500);
+    expect(downs.every((down) => down())).toBe(true);
+    expect(handles.every((bp) => bp.active() === null)).toBe(true);
+  });
+
+  it('reading active after the component is destroyed neither throws nor attaches a listener', () => {
     const fixture = create();
     const bp = fixture.componentInstance.bp;
     fixture.destroy();
-    expect(env.listenerCount()).toBe(0);
     expect(() => bp.active()).not.toThrow();
-    expect(env.listenerCount()).toBe(0);
+    expect(env.listenerCount()).toBe(5);
     expect(bp.active()).toBeNull();
   });
 
-  it('reading active for the first time during injector destruction leaks no listener', () => {
+  it('reading active for the first time during component destruction attaches no listener', () => {
     const fixture = create();
     const bp = fixture.componentInstance.bp;
     fixture.componentRef.onDestroy(() => {
       bp.active();
     });
     fixture.destroy();
+    expect(env.listenerCount()).toBe(5);
+    TestBed.resetTestingModule();
+    expect(env.listenerCount()).toBe(0);
+  });
+
+  it('a query first read after the application is destroyed attaches no listener', () => {
+    const bp = create().componentInstance.bp;
+    TestBed.resetTestingModule();
+    const calls = env.calls.length;
+    expect(bp.matches('(orientation: portrait)')()).toBe(false);
+    expect(() => bp.active()).not.toThrow();
+    expect(env.calls).toHaveLength(calls);
     expect(env.listenerCount()).toBe(0);
   });
 });

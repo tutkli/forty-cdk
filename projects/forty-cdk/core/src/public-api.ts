@@ -210,7 +210,11 @@ export {
   type WritingDirection,
 } from './keyboard-navigation/keyboard-navigation';
 export { LiveAnnouncer } from './live-announcer/live-announcer';
-export { injectMediaQuery, injectPrefersReducedMotion } from './media-query/media-query';
+export {
+  injectMediaQuery,
+  injectPrefersReducedMotion,
+  MediaQueryRegistry,
+} from './media-query/media-query';
 export {
   clamp,
   decimalPlaces,
