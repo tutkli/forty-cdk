@@ -200,30 +200,28 @@ export class ForDatePicker<D>
     claimant: '[forDateField]',
   });
 
-  /**
-   * `formatOptions` augmented with time fields when `granularity > 'day'` and
-   * the consumer hasn't already specified any — so a date-time picker's value
-   * display shows the time without extra wiring, while an explicit
-   * `formatOptions` is always honoured verbatim.
-   */
   readonly #effectiveFormatOptions = computed<Intl.DateTimeFormatOptions>(() => {
     const options = this.formatOptions();
     const granularity = this.granularity();
-    if (
-      granularity === 'day' ||
-      options.hour !== undefined ||
-      options.minute !== undefined ||
-      options.second !== undefined
-    ) {
+    const hasTime =
+      options.hour !== undefined || options.minute !== undefined || options.second !== undefined;
+    if (!hasTime && granularity === 'day') {
       return options;
     }
     const cycle = this.resolvedHourCycle();
+    const cycleOptions =
+      cycle === null || options.hour12 !== undefined || options.hourCycle !== undefined
+        ? {}
+        : { hour12: cycle === 12 };
+    if (hasTime) {
+      return { ...options, ...cycleOptions };
+    }
     return {
       ...options,
-      hour: 'numeric',
+      hour: '2-digit',
       minute: '2-digit',
       ...(granularity === 'second' ? { second: '2-digit' } : {}),
-      ...(cycle !== null ? { hour12: cycle === 12 } : {}),
+      ...cycleOptions,
     };
   });
 

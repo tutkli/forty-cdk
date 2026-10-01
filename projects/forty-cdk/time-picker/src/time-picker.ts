@@ -215,9 +215,11 @@ export class ForTimePicker<D>
   readonly placeholder = input<string>('');
 
   /**
-   * `Intl.DateTimeFormat` options driving slot label formatting. When none of
-   * `hour` / `minute` / `second` are specified, sensible defaults are filled in
-   * automatically based on `granularity` and `hourCycle`.
+   * `Intl.DateTimeFormat` options driving slot label and `[forTimePickerValue]`
+   * formatting. When none of `hour` / `minute` / `second` are specified, a
+   * two-digit hour and minute (plus seconds at `granularity="second"`) are filled
+   * in, matching `[forTimeField]`. The resolved hour cycle applies unless the
+   * options set `hour12` or `hourCycle` themselves.
    */
   readonly formatOptions = input<Intl.DateTimeFormatOptions>({});
 
@@ -338,21 +340,24 @@ export class ForTimePicker<D>
 
   readonly #effectiveFormatOptions = computed<Intl.DateTimeFormatOptions>(() => {
     const options = this.formatOptions();
+    const cycle = this.resolvedHourCycle();
+    const cycleOptions =
+      cycle === null || options.hour12 !== undefined || options.hourCycle !== undefined
+        ? {}
+        : { hour12: cycle === 12 };
     if (
       options.hour !== undefined ||
       options.minute !== undefined ||
       options.second !== undefined
     ) {
-      return options;
+      return { ...options, ...cycleOptions };
     }
-    const cycle = this.resolvedHourCycle();
-    const granularity = this.granularity();
     return {
       ...options,
-      hour: 'numeric',
+      hour: '2-digit',
       minute: '2-digit',
-      ...(granularity === 'second' ? { second: '2-digit' } : {}),
-      ...(cycle !== null ? { hour12: cycle === 12 } : {}),
+      ...(this.granularity() === 'second' ? { second: '2-digit' } : {}),
+      ...cycleOptions,
     };
   });
 

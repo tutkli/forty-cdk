@@ -64,6 +64,7 @@ const BASE_IMPORTS = [
       [readonly]="readonly()"
       [loop]="loop()"
       [locale]="locale()"
+      [formatOptions]="formatOptions()"
       #picker="forTimePicker"
     >
       <button data-testid="trigger" forTimePickerTrigger>
@@ -100,6 +101,7 @@ class TimePickerHost {
   readonly loop = signal(true);
   readonly placeholder = signal('Pick a time');
   readonly locale = signal<string | null>(null);
+  readonly formatOptions = signal<Intl.DateTimeFormatOptions>({});
 }
 
 @Component({
@@ -430,6 +432,65 @@ describe('ForTimePicker', () => {
 
       expect(enValue).not.toBe(frValue);
       expect(enMidnight).not.toBe(frMidnight);
+    });
+
+    it('pads the hour of slot labels and the trigger value in es-ES, fr-FR, en-GB and en-US by default (#2103)', async () => {
+      const r = renderHost(TimePickerHost);
+      r.instance.step.set(30);
+      r.instance.value.set(new Date(2000, 0, 1, 1, 30, 0));
+      r.instance.open.set(true);
+      const valueText = () => document.querySelector('[forTimePickerValue]')!.textContent!.trim();
+      const slotText = () => getSlots()[3]!.textContent!.trim();
+
+      for (const locale of ['es-ES', 'fr-FR', 'en-GB', 'en-US']) {
+        for (const cycle of [24, 12] as const) {
+          r.instance.locale.set(locale);
+          r.instance.hourCycle.set(cycle);
+          await flush(r.fixture);
+
+          expect(slotText(), `${locale} h${cycle}`).toMatch(/^01\D30/);
+          expect(valueText(), `${locale} h${cycle}`).toMatch(/^01\D30/);
+        }
+      }
+    });
+
+    it('keeps applying [hourCycle] to formatOptions that set only hour / minute (#2103)', async () => {
+      const r = renderHost(TimePickerHost);
+      r.instance.step.set(60);
+      r.instance.locale.set('en-US');
+      r.instance.hourCycle.set(24);
+      r.instance.formatOptions.set({ hour: 'numeric', minute: '2-digit' });
+      r.instance.value.set(new Date(2000, 0, 1, 13, 0, 0));
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      const valueText = () => document.querySelector('[forTimePickerValue]')!.textContent!.trim();
+      const slotText = () => getSlots()[13]!.textContent!.trim();
+
+      expect(slotText()).toBe('13:00');
+      expect(valueText()).toBe('13:00');
+
+      r.instance.hourCycle.set(12);
+      await flush(r.fixture);
+
+      expect(slotText()).toMatch(/^1:00\sPM$/);
+      expect(valueText()).toMatch(/^1:00\sPM$/);
+    });
+
+    it('lets formatOptions that set hour12 or hourCycle override [hourCycle] (#2103)', async () => {
+      const r = renderHost(TimePickerHost);
+      r.instance.step.set(60);
+      r.instance.locale.set('en-GB');
+      r.instance.hourCycle.set(24);
+      r.instance.formatOptions.set({ hour: '2-digit', minute: '2-digit', hour12: true });
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      expect(getSlots()[13]!.textContent!.trim()).toMatch(/^01:00\s?pm$/i);
+
+      r.instance.formatOptions.set({ hour: '2-digit', minute: '2-digit', hourCycle: 'h11' });
+      await flush(r.fixture);
+
+      expect(getSlots()[13]!.textContent!.trim()).toMatch(/^01:00\s?pm$/i);
     });
   });
 
