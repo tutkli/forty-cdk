@@ -1,13 +1,13 @@
 import { isPlatformBrowser } from '@angular/common';
 import {
   booleanAttribute,
-  computed,
   Directive,
   effect,
   ElementRef,
   inject,
   input,
   PLATFORM_ID,
+  signal,
 } from '@angular/core';
 import type { FormValueControl } from '@angular/forms/signals';
 
@@ -31,6 +31,10 @@ import { injectElementSize, TextValueControlBase } from 'forty-cdk/core';
  * every edit, programmatic value change, and width reflow, and reflects
  * `data-autosize` for styling (pair it with `resize: none; overflow: hidden;`).
  * Autosize is a DOM side effect gated to the browser, so it is inert under SSR.
+ *
+ * `overflowing` reports whether the content is taller than the visible box and
+ * reflects `data-overflowing`, so a height-capped textarea can offer a
+ * "Read more" toggle.
  *
  * @example
  * ```html
@@ -58,6 +62,7 @@ import { injectElementSize, TextValueControlBase } from 'forty-cdk/core';
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.data-readonly]': 'readonly() ? "" : null',
     '[attr.data-autosize]': 'autosize() ? "" : null',
+    '[attr.data-overflowing]': 'overflowing() ? "" : null',
     '[attr.name]': 'name() || null',
     '[attr.data-empty]': 'value() === "" ? "" : null',
     '(input)': 'onInput($event)',
@@ -79,21 +84,44 @@ export class ForTextarea extends TextValueControlBase implements FormValueContro
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
   readonly #box = injectElementSize(
-    computed(() => (this.autosize() && this.#isBrowser ? this.#element.nativeElement : null)),
+    signal(
+      this.#isBrowser && typeof ResizeObserver !== 'undefined' ? this.#element.nativeElement : null,
+    ),
   );
+
+  readonly #overflowing = signal(false);
+
+  /**
+   * Whether the content is taller than the visible box, as with a
+   * `max-height` cap on an `autosize` textarea or a fixed-height one. Holds
+   * with and without `autosize`, follows every value change and resize, and
+   * ignores a difference of 1px or less. Always `false` under SSR. Reflected
+   * as `data-overflowing`.
+   */
+  readonly overflowing = this.#overflowing.asReadonly();
+
+  #sized = false;
 
   constructor() {
     super();
 
+    // @sanctioned-effect(external-source): `#overflowing` mirrors the element's
+    // measured scroll and client heights, and the effect never reads it.
     effect(() => {
       const el = this.#element.nativeElement;
       this.value();
       this.#box();
-      if (!this.autosize() || !this.#isBrowser) {
-        el.style.height = '';
+      if (!this.#isBrowser) {
         return;
       }
-      this.#resizeToContent(el);
+      if (this.autosize()) {
+        this.#resizeToContent(el);
+        this.#sized = true;
+      } else if (this.#sized) {
+        el.style.height = '';
+        this.#sized = false;
+      }
+      this.#overflowing.set(el.scrollHeight - el.clientHeight > 1);
     });
   }
 

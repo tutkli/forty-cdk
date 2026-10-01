@@ -116,7 +116,30 @@ One class and one directive, three states. `disabled` reflects native `disabled`
 
 ### Auto-sizing textarea
 
-`autosize` makes the textarea's height track its content: type a few lines and delete them, and it grows and shrinks with each edit. It also recomputes on programmatic `value` writes and when the width reflows. The directive sets only `height`, so pair it with `resize: none; overflow: hidden` keyed off the reflected `data-autosize`. The measurement is browser-only, so it is inert under SSR and hydrates without a layout jump.
+`autosize` makes the textarea's height track its content: type a few lines and delete them, and it grows and shrinks with each edit. It also recomputes on programmatic `value` writes and when the width reflows. The directive sets only `height`, so pair it with `resize: none; overflow: hidden` keyed off the reflected `data-autosize`. Cap it with a `max-height` and `overflowing()` tells you when the content runs past the cap, on every edit including the ones that leave the box the same size, so a "Read more" toggle can lift the cap. The measurement is browser-only, so it is inert under SSR and hydrates without a layout jump.
+
+```html
+<textarea
+  forTextarea
+  #notes="forTextarea"
+  class="input area"
+  autosize
+  aria-label="Release notes"
+  [attr.data-capped]="expanded() ? null : ''"
+  [(value)]="text"
+></textarea>
+@if (notes.overflowing() || expanded()) {
+<button type="button" [attr.aria-expanded]="expanded()" (click)="expanded.set(!expanded())">
+  {{ expanded() ? 'Show less' : 'Read more' }}
+</button>
+}
+```
+
+```css
+.area[data-capped] {
+  max-height: 6.5rem;
+}
+```
 
 ### Signal Forms validation
 
@@ -151,30 +174,32 @@ Bound through `[formField]`, `forInput` auto-associates inside `forField`: the l
 
 ### `ForTextarea`
 
-| Property   | Type                                                      | Description                                                                                                               |
-| ---------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `value`    | `model<string>`                                           | Two-way bindable text value. Defaults to `''`; reflected as `data-empty` while empty.<br>**Default:** —                   |
-| `disabled` | `input<boolean>`                                          | Reflects native `disabled` + `data-disabled` (no `aria-disabled`).<br>**Default:** —                                      |
-| `readonly` | `input<boolean>`                                          | Reflects native `readonly` + `aria-readonly="true"` + `data-readonly`.<br>**Default:** —                                  |
-| `required` | `input<boolean>`                                          | Reflects `aria-required="true"`.<br>**Default:** —                                                                        |
-| `invalid`  | `input<boolean>`                                          | Reflects `aria-invalid="true"` + `data-invalid`.<br>**Default:** —                                                        |
-| `pending`  | `input<boolean>`                                          | Reflects `aria-busy="true"` + `data-pending` while async validation is in flight.<br>**Default:** —                       |
-| `dirty`    | `input<boolean>`                                          | Reflects `data-dirty`.<br>**Default:** —                                                                                  |
-| `name`     | `input<string>`                                           | Reflected on the native `name` attribute for form submission.<br>**Default:** —                                           |
-| `errors`   | `input<readonly ValidationError.WithOptionalFieldTree[]>` | Validation errors fed by `[formField]`. The directive does not render them. That is consumer territory.<br>**Default:** — |
-| `touched`  | `model<boolean>`                                          | Set to `true` on blur. Two-way so the field can read it back.<br>**Default:** —                                           |
-| `autosize` | `input<boolean>`                                          | Grows/shrinks the height to fit content; reflects `data-autosize`.<br>**Default:** `false`                                |
+| Property      | Type                                                      | Description                                                                                                                                                                           |
+| ------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`       | `model<string>`                                           | Two-way bindable text value. Defaults to `''`; reflected as `data-empty` while empty.<br>**Default:** —                                                                               |
+| `disabled`    | `input<boolean>`                                          | Reflects native `disabled` + `data-disabled` (no `aria-disabled`).<br>**Default:** —                                                                                                  |
+| `readonly`    | `input<boolean>`                                          | Reflects native `readonly` + `aria-readonly="true"` + `data-readonly`.<br>**Default:** —                                                                                              |
+| `required`    | `input<boolean>`                                          | Reflects `aria-required="true"`.<br>**Default:** —                                                                                                                                    |
+| `invalid`     | `input<boolean>`                                          | Reflects `aria-invalid="true"` + `data-invalid`.<br>**Default:** —                                                                                                                    |
+| `pending`     | `input<boolean>`                                          | Reflects `aria-busy="true"` + `data-pending` while async validation is in flight.<br>**Default:** —                                                                                   |
+| `dirty`       | `input<boolean>`                                          | Reflects `data-dirty`.<br>**Default:** —                                                                                                                                              |
+| `name`        | `input<string>`                                           | Reflected on the native `name` attribute for form submission.<br>**Default:** —                                                                                                       |
+| `errors`      | `input<readonly ValidationError.WithOptionalFieldTree[]>` | Validation errors fed by `[formField]`. The directive does not render them. That is consumer territory.<br>**Default:** —                                                             |
+| `touched`     | `model<boolean>`                                          | Set to `true` on blur. Two-way so the field can read it back.<br>**Default:** —                                                                                                       |
+| `autosize`    | `input<boolean>`                                          | Grows/shrinks the height to fit content; reflects `data-autosize`.<br>**Default:** `false`                                                                                            |
+| `overflowing` | `Signal<boolean>`                                         | Whether the content is taller than the visible box, with or without `autosize`; a 1px difference counts as fitting. `false` under SSR. Reflects `data-overflowing`.<br>**Default:** — |
 
-| Data attribute  | Values                           |
-| --------------- | -------------------------------- |
-| `data-empty`    | present (value is `''`) / absent |
-| `data-disabled` | present / absent                 |
-| `data-readonly` | present / absent                 |
-| `data-touched`  | present / absent                 |
-| `data-dirty`    | present / absent                 |
-| `data-pending`  | present / absent                 |
-| `data-invalid`  | present / absent                 |
-| `data-autosize` | present (`autosize` on) / absent |
+| Data attribute     | Values                                         |
+| ------------------ | ---------------------------------------------- |
+| `data-empty`       | present (value is `''`) / absent               |
+| `data-disabled`    | present / absent                               |
+| `data-readonly`    | present / absent                               |
+| `data-touched`     | present / absent                               |
+| `data-dirty`       | present / absent                               |
+| `data-pending`     | present / absent                               |
+| `data-invalid`     | present / absent                               |
+| `data-autosize`    | present (`autosize` on) / absent               |
+| `data-overflowing` | present (content taller than the box) / absent |
 
 ## Accessibility
 

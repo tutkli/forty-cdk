@@ -1,4 +1,10 @@
-import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
+import {
+  Component,
+  PLATFORM_ID,
+  provideZonelessChangeDetection,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { form, FormField, required } from '@angular/forms/signals';
 
@@ -83,6 +89,47 @@ class TextareaHost {
 class AutosizeTextareaHost {
   readonly autosize = signal(false);
 }
+
+@Component({
+  imports: [ForTextarea],
+  template: `<textarea forTextarea [autosize]="autosize()" [(value)]="text"></textarea>`,
+})
+class OverflowTextareaHost {
+  readonly autosize = signal(false);
+  readonly text = signal('');
+  readonly textarea = viewChild.required(ForTextarea);
+}
+
+class ControlledResizeObserver {
+  static instances: ControlledResizeObserver[] = [];
+  #observed: Element | null = null;
+  constructor(private readonly callback: ResizeObserverCallback) {
+    ControlledResizeObserver.instances.push(this);
+  }
+  observe(el: Element): void {
+    this.#observed = el;
+  }
+  unobserve(): void {
+    this.#observed = null;
+  }
+  disconnect(): void {
+    this.#observed = null;
+  }
+  fire(): void {
+    if (this.#observed) {
+      this.callback([], this as unknown as ResizeObserver);
+    }
+  }
+}
+
+const stubHeights = (
+  el: HTMLElement,
+  heights: { scroll: number; client: number },
+): { scroll: number; client: number } => {
+  Object.defineProperty(el, 'scrollHeight', { configurable: true, get: () => heights.scroll });
+  Object.defineProperty(el, 'clientHeight', { configurable: true, get: () => heights.client });
+  return heights;
+};
 
 const inputOf = (host: HTMLElement) => host.querySelector<HTMLInputElement>('input')!;
 const textareaOf = (host: HTMLElement) => host.querySelector<HTMLTextAreaElement>('textarea')!;
@@ -455,6 +502,116 @@ describe('ForTextarea', () => {
       fixture.componentInstance.autosize.set(true);
       await flush(fixture);
       expect(textarea.getAttribute('data-autosize')).toBe('');
+    });
+  });
+
+  describe('overflowing', () => {
+    beforeEach(() => {
+      ControlledResizeObserver.instances = [];
+      vi.stubGlobal('ResizeObserver', ControlledResizeObserver);
+    });
+    afterEach(() => vi.unstubAllGlobals());
+
+    const fireResize = (): void => {
+      for (const observer of ControlledResizeObserver.instances) {
+        observer.fire();
+      }
+    };
+
+    it('follows value edits that leave the capped autosize box unchanged', async () => {
+      const { el, fixture, flush } = renderHost(OverflowTextareaHost);
+      fixture.componentInstance.autosize.set(true);
+      await flush();
+      const textarea = textareaOf(el);
+      const heights = stubHeights(textarea, { scroll: 60, client: 60 });
+
+      heights.scroll = 140;
+      typeInto(textarea, 'one\ntwo\nthree\nfour\nfive\nsix\nseven');
+      await flush();
+      expect(fixture.componentInstance.textarea().overflowing()).toBe(true);
+      expect(textarea.getAttribute('data-overflowing')).toBe('');
+
+      heights.scroll = 60;
+      typeInto(textarea, 'one');
+      await flush();
+      expect(fixture.componentInstance.textarea().overflowing()).toBe(false);
+      expect(textarea.hasAttribute('data-overflowing')).toBe(false);
+    });
+
+    it('tracks a fixed-height textarea without autosize, on edits and programmatic writes', async () => {
+      const { el, fixture, flush } = renderHost(OverflowTextareaHost);
+      const textarea = textareaOf(el);
+      const heights = stubHeights(textarea, { scroll: 40, client: 40 });
+
+      heights.scroll = 120;
+      typeInto(textarea, 'a\nb\nc\nd');
+      await flush();
+      expect(textarea.getAttribute('data-overflowing')).toBe('');
+
+      heights.scroll = 40;
+      fixture.componentInstance.text.set('a');
+      await flush();
+      expect(textarea.hasAttribute('data-overflowing')).toBe(false);
+    });
+
+    it('re-evaluates on resize when the value has not changed', async () => {
+      const { el, fixture, flush } = renderHost(OverflowTextareaHost);
+      const textarea = textareaOf(el);
+      const heights = stubHeights(textarea, { scroll: 100, client: 100 });
+      fireResize();
+      await flush();
+      expect(fixture.componentInstance.textarea().overflowing()).toBe(false);
+
+      heights.client = 50;
+      fireResize();
+      await flush();
+      expect(fixture.componentInstance.textarea().overflowing()).toBe(true);
+
+      heights.client = 100;
+      fireResize();
+      await flush();
+      expect(fixture.componentInstance.textarea().overflowing()).toBe(false);
+    });
+
+    it('leaves a consumer-set height alone without autosize', async () => {
+      const { el, flush } = renderHost(OverflowTextareaHost);
+      const textarea = textareaOf(el);
+      textarea.style.height = '120px';
+
+      typeInto(textarea, 'note');
+      fireResize();
+      await flush();
+
+      expect(textarea.style.height).toBe('120px');
+    });
+
+    it('clears the height it wrote once autosize turns off', async () => {
+      const { el, fixture, flush } = renderHost(OverflowTextareaHost);
+      const textarea = textareaOf(el);
+      fixture.componentInstance.autosize.set(true);
+      await flush();
+      expect(textarea.style.height).not.toBe('');
+
+      fixture.componentInstance.autosize.set(false);
+      await flush();
+      expect(textarea.style.height).toBe('');
+    });
+
+    it('stays false and constructs no observer under SSR', async () => {
+      TestBed.configureTestingModule({
+        providers: [provideZonelessChangeDetection(), { provide: PLATFORM_ID, useValue: 'server' }],
+      });
+      const fixture = TestBed.createComponent(OverflowTextareaHost);
+      const textarea = textareaOf(fixture.nativeElement);
+      stubHeights(textarea, { scroll: 200, client: 40 });
+      await flush(fixture);
+
+      fixture.componentInstance.text.set('a\nb\nc');
+      await flush(fixture);
+
+      expect(fixture.componentInstance.textarea().overflowing()).toBe(false);
+      expect(textarea.hasAttribute('data-overflowing')).toBe(false);
+      expect(ControlledResizeObserver.instances).toHaveLength(0);
     });
   });
 });

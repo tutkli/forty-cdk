@@ -51,3 +51,61 @@ test.describe('Textarea autosize (geometry)', () => {
     await expect.poll(() => heightOf(page)).toBe(grown);
   });
 });
+
+const THREE_LINES = ['a', 'b', 'c'].join('\n');
+const FOUR_LINES = ['a', 'b', 'c', 'd'].join('\n');
+
+test.describe('Textarea overflowing (geometry)', () => {
+  test('flips on edits past a max-height cap that leave the box size unchanged', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'textarea', { capped: '1' });
+    const ta = el(page, 'ta');
+    await waitForMeasured(page);
+
+    await ta.fill(THREE_LINES);
+    await expect.poll(() => heightOf(page)).toBe(80);
+    await expect(ta).not.toHaveAttribute('data-overflowing');
+
+    await ta.fill(FOUR_LINES);
+    await expect(ta).toHaveAttribute('data-overflowing', '');
+    expect(await heightOf(page)).toBe(80);
+
+    await ta.fill(THREE_LINES);
+    await expect(ta).not.toHaveAttribute('data-overflowing');
+    expect(await heightOf(page)).toBe(80);
+  });
+
+  test('follows programmatic writes under the cap', async ({ page }) => {
+    await gotoFixture(page, 'textarea', { capped: '1' });
+    const ta = el(page, 'ta');
+    await waitForMeasured(page);
+    await expect(ta).not.toHaveAttribute('data-overflowing');
+
+    await el(page, 'set-long').click();
+    await expect(ta).toHaveAttribute('data-overflowing', '');
+
+    await el(page, 'set-short').click();
+    await expect(ta).not.toHaveAttribute('data-overflowing');
+  });
+
+  test('tracks a fixed-height textarea without autosize, on edits and on resize', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'textarea', { fixed: '1' });
+    const ta = el(page, 'ta');
+    await expect.poll(() => heightOf(page)).toBe(80);
+    await expect(ta).not.toHaveAttribute('data-autosize');
+    await expect(ta).not.toHaveAttribute('data-overflowing');
+
+    await ta.fill(SIX_LINES);
+    await expect(ta).toHaveAttribute('data-overflowing', '');
+
+    await ta.fill(THREE_LINES);
+    await expect(ta).not.toHaveAttribute('data-overflowing');
+
+    await el(page, 'shrink').click();
+    await expect.poll(() => heightOf(page)).toBe(60);
+    await expect(ta).toHaveAttribute('data-overflowing', '');
+  });
+});

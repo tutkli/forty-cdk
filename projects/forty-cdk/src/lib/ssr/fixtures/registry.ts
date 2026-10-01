@@ -506,6 +506,9 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
   {
     component: TextareaFixture,
     noWiring: 'a native <textarea>; autosize writes inline style only',
+    markup: [
+      { select: '[forTextarea]', attributes: { 'data-autosize': '', 'data-overflowing': null } },
+    ],
   },
   {
     component: SearchFixture,
