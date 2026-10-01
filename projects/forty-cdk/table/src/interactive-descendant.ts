@@ -34,17 +34,17 @@ const INTERACTIVE_DESCENDANT_SELECTOR = [
 ].join(', ');
 
 /**
- * Whether `event` originated from an interactive element nested inside the row it
- * is bound to — a consumer-placed `button`, `a[href]`, `input`, `select`,
- * `textarea`, `summary`, `label`, `audio`/`video[controls]`, an editable
- * `contenteditable` region (`""` / `"true"` / `"plaintext-only"`, but not
- * `"false"`), or an element carrying an interactive ARIA `role` descendant of the
- * row host. Resolves the event target's closest interactive element and reports
- * `true` only when it is a strict descendant of `event.currentTarget` (the row),
- * so a plain click on cell text, the gaps between cells, or the row host itself
- * reports `false`. Shared by the two row-interaction call sites — `ForTableBody`'s
- * whole-row activation and `ForTableRow`'s selection — so both skip firing for
- * clicks the inner control owns.
+ * Whether `event` originated from an interactive element nested inside the element
+ * whose listener received it (`event.currentTarget`, typically a row): a `button`,
+ * `a[href]`, `input`, `select`, `textarea`, `summary`, `label`,
+ * `audio`/`video[controls]`, an editable `contenteditable` region (`""` / `"true"` /
+ * `"plaintext-only"`, but not `"false"`), or an element carrying an interactive ARIA
+ * `role`. A click on cell text, the gaps between cells, or the listening element
+ * itself reports `false`.
+ *
+ * The table's own row activation, row-click selection and sort headers use this definition
+ * to leave a click or `Enter` to the inner control that owns it; call it from a row listener
+ * of your own to skip the same events.
  */
 export function eventFromInteractiveDescendant(event: Event): boolean {
   const target = event.target;

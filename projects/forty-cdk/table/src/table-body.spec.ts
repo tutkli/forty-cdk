@@ -2041,7 +2041,7 @@ describe('ForTableBody', () => {
       expect(instance.lastContextMenu()?.event).toBe(menu);
     });
 
-    it('keeps the keyboard half in table mode: no row tab stop and Enter stays cell-entry in grid (#1835)', () => {
+    it('in grid mode the row takes no tab stop and an Enter on the row host itself emits nothing (#1835)', () => {
       const { instance, queryAll, fixture } = renderHost(RowInteractionHost);
       instance.mode.set('grid');
       fixture.detectChanges();
@@ -2052,6 +2052,47 @@ describe('ForTableBody', () => {
       rows[1]!.dispatchEvent(enter);
       expect(instance.lastActivate()).toBeNull();
       expect(enter.defaultPrevented).toBe(false);
+    });
+
+    it('emits rowActivate for Enter on a widget-free data cell in grid mode, with no row tab stop (#2070)', () => {
+      const { instance, queryAll, fixture } = renderHost(RowInteractionHost);
+      instance.mode.set('grid');
+      fixture.detectChanges();
+      const row = queryAll('[forTableRow]')[2]!;
+      const cell = row.querySelector<HTMLElement>('[forTableCell]')!;
+
+      const enter = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+      cell.dispatchEvent(enter);
+
+      expect(instance.lastActivate()?.row.name).toBe('Grace');
+      expect(instance.lastActivate()?.index).toBe(2);
+      expect(instance.lastActivate()?.event).toBe(enter);
+      expect(enter.defaultPrevented).toBe(true);
+      expect(row.hasAttribute('tabindex')).toBe(false);
+    });
+
+    it('does not emit rowActivate for a grid-mode cell Enter when interactiveRows is unset (#2070)', () => {
+      const { instance, queryAll, fixture } = renderHost(RowInteractionHost);
+      instance.mode.set('grid');
+      instance.interactive.set(false);
+      fixture.detectChanges();
+      const cell = queryAll('[forTableRow]')[1]!.querySelector<HTMLElement>('[forTableCell]')!;
+      cell.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }),
+      );
+      expect(instance.lastActivate()).toBeNull();
+    });
+
+    it('a grid-mode Enter on a cell holding a widget enters it instead of activating the row (#2070)', async () => {
+      const { instance, query, flush } = renderHost(SelectAndActivateHost);
+      const cell = query('[data-testid="name-1"]')!.closest<HTMLElement>('[forTableCell]')!;
+      cell.focus();
+      cell.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }),
+      );
+      await flush();
+      expect(document.activeElement).toBe(query('[data-testid="action-1"]'));
+      expect(instance.lastActivate()).toBeNull();
     });
 
     it('does not activate a variant row from a pointer click in grid mode (#1835)', () => {

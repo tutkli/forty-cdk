@@ -7116,7 +7116,7 @@ exports[`document structure > projects/forty-cdk/table/README.md declares the se
           "Description",
         ],
         "role": "api",
-        "rows": 11,
+        "rows": 12,
       },
       {
         "columns": [
@@ -7152,7 +7152,7 @@ exports[`document structure > projects/forty-cdk/table/README.md declares the se
           "Description",
         ],
         "role": "api",
-        "rows": 1,
+        "rows": 3,
       },
       {
         "columns": [
@@ -7292,6 +7292,14 @@ exports[`document structure > projects/forty-cdk/table/README.md declares the se
     "headings": [
       {
         "depth": 3,
+        "slug": "activating-a-cell",
+      },
+      {
+        "depth": 3,
+        "slug": "controls-inside-a-cell",
+      },
+      {
+        "depth": 3,
         "slug": "full-span-rows-group-separators-section-headers-summaries",
       },
     ],
@@ -7338,6 +7346,10 @@ exports[`document structure > projects/forty-cdk/table/README.md declares the se
       {
         "depth": 3,
         "slug": "total-aware-aggregates-under-virtualization-selectablevalues",
+      },
+      {
+        "depth": 3,
+        "slug": "selection-the-table-cannot-enumerate-state",
       },
       {
         "depth": 3,

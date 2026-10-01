@@ -599,11 +599,12 @@ emits the row datum, its dataset index, and the originating event on a pointer c
 `(rowContextMenu)` for the right-click / menu key. Full-span `[forTableRowDef]` variant rows stay
 non-interactive.
 
-The **keyboard** half is scoped to the default `mode="table"`: there each data row also becomes a
-focusable tab stop (`tabindex="0"`) and `Enter` activates it. In `grid` / `treegrid` mode the row takes
-no tab stop and `Enter` keeps its cell-entry meaning, because the roving 2D navigation owns the
-keyboard. A grid that needs a keyboard path to the same action therefore puts an `<a href>` or a `<button>`
-in a cell, which the interactive-descendant guard below already routes correctly.
+The **keyboard** half depends on `mode`. In the default `mode="table"` each data row also becomes a
+focusable tab stop (`tabindex="0"`) and `Enter` activates it. In `grid` mode the row takes no tab stop,
+because the roving 2D navigation owns the keyboard: `Enter` on a focused data cell activates the row
+when the cell holds no widget, and enters the widget when it holds one, so a cell's link or button keeps
+its own action. The root reports the same press as
+[`(cellActivate)`](../projects/forty-cdk/table/README.md#activating-a-cell), with the column name.
 
 ```html
 <div forTable mode="table" ariaLabel="Requests">
@@ -699,8 +700,8 @@ row-opens-the-record shape most data tables on the web use.
 `[headerClass]` / `[cellClass]` on `[forTableColumnDef]` style a stamped **cell** by column, but a row's
 appearance often depends on its **data**: an error row, a dimmed row, the "menu-open" highlight above.
 `[rowClass]` and `[rowAttrs]` are the seam for that: both take a `(row, index) => …` function the body
-calls per stamped row, and (unlike the activation hooks, which skip variant rows and keep their
-keyboard half in `table` mode) apply to **both** data and variant rows in **every** mode.
+calls per stamped row, and (unlike the activation hooks, which skip variant rows) apply to **both**
+data and variant rows in **every** mode.
 
 - **`[rowClass]`** returns a class string or a `{ className: boolean }` map, applied to the row host.
 - **`[rowAttrs]`** returns an attribute map applied to the row host; a key mapped to `null` (or dropped
