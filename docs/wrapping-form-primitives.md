@@ -277,7 +277,7 @@ A picker composed with `anatomy="field"` is found the other way round: the proje
 `ForDateField` / `ForTimeField` injects `FOR_DATE_FIELD_HOST` / `FOR_TIME_FIELD_HOST`, which
 `ForDatePicker` / `ForTimePicker` provide from their own decorator. A subclassed picker used in
 that anatomy re-provides its token the same way, or no field is adopted and opening the picker
-throws `FORCDK-DATE-PICKER-007` / `FORCDK-TIME-PICKER-003` in dev mode:
+throws `FORCDK-DATE-PICKER-007` / `FORCDK-TIME-PICKER-004` in dev mode:
 
 ```ts
 import { Directive } from '@angular/core';

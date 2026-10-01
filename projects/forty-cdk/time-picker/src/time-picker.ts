@@ -538,7 +538,7 @@ export class ForTimePicker<D>
 function assertFieldProjected(field: AdoptedField | null): AdoptedField | null {
   if (isDevMode() && field === null) {
     throw fortyError({
-      code: 'FORCDK-TIME-PICKER-003',
+      code: 'FORCDK-TIME-PICKER-004',
       message: '[forTimePicker] has anatomy="field" but no [forTimeField] is projected inside it.',
       cause:
         'In the field anatomy the projected time field is the control the picker labels, ' +

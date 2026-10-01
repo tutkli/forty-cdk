@@ -325,7 +325,7 @@ With the field adopted:
 - **The field is the control.** A surrounding `[forField]` names and describes the field's `role="group"`, `aria-invalid` lands there, a label press focuses its first segment, and the picker's `focus()` goes there too.
 - **The trigger is a plain button.** It drops `role="combobox"` and the form-control `aria-*` state, and keeps `aria-haspopup="listbox"`, `aria-expanded` and `aria-controls`. Give it a name of its own.
 
-With `anatomy="field"` and no projected `[forTimeField]`, opening the listbox or calling `focus()` throws `FORCDK-TIME-PICKER-003` in dev mode.
+With `anatomy="field"` and no projected `[forTimeField]`, opening the listbox or calling `focus()` throws `FORCDK-TIME-PICKER-004` in dev mode.
 
 ## Keyboard
 
