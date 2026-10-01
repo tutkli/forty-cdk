@@ -1,6 +1,7 @@
 import { inject, InjectionToken, type Signal } from '@angular/core';
 
 import {
+  assertRootContext,
   type ListNavigationAction,
   orphanContextError,
   type RovingTabindex,
@@ -187,6 +188,34 @@ export interface ForTreeContext<T = unknown> {
   readonly visibleNodes: Signal<readonly ForTreeVisibleNode<T>[]>;
 }
 
+/**
+ * Channel the tree's pieces report a press through, so the root emits
+ * `(itemActivate)` before the selection is applied.
+ */
+export interface TreePieceContext<T = unknown> {
+  /**
+   * Activates `item` from the press `event`: emits the root's `(itemActivate)`,
+   * then selects the node unless the handler vetoed it. A no-op on a disabled
+   * node or one whose `[value]` binding is not written yet.
+   */
+  activateItem(item: ForTreeItemContext<T>, event: MouseEvent | KeyboardEvent): void;
+}
+
+/** What the tree's pieces resolve `FOR_TREE_CONTEXT` as. */
+export interface TreeContext<T = unknown> extends ForTreeContext<T>, TreePieceContext<T> {}
+
+/**
+ * DI token for the tree's coordination surface, provided by `[forTree]`.
+ *
+ * Publicly typed as the read surface {@link ForTreeContext}. The pieces read the
+ * same token at an internal type that adds the activation channel, so a wrapper
+ * re-providing it must alias it to the root, together with the container token
+ * root-level items register through:
+ * `{ provide: FOR_TREE_CONTEXT, useExisting: MyTree }` and
+ * `{ provide: FOR_TREE_CONTAINER_CONTEXT, useExisting: MyTree }`, where `MyTree`
+ * extends `ForTree`. A value that merely satisfies the declared type resolves
+ * too, and is rejected in dev mode by the first piece to reach the channel.
+ */
 export const FOR_TREE_CONTEXT = new InjectionToken<ForTreeContext>('FOR_TREE_CONTEXT');
 
 /**
@@ -229,6 +258,8 @@ export interface ForTreeItemContext<T = unknown> {
    * `aria-selected` state). Always `false` on a `[selectable]="false"` node.
    */
   readonly selected: Signal<boolean>;
+  /** Whether this node is disabled, by its own `[disabled]` or the root's. */
+  readonly effectiveDisabled: Signal<boolean>;
   /** Tri-state checkbox status of this node (`'true'` / `'false'` / `'mixed'`). */
   readonly checkState: Signal<'true' | 'false' | 'mixed'>;
   /** Register a toggle. Presence makes the item expandable (D4). Returns an unregister fn. */
@@ -239,7 +270,10 @@ export interface ForTreeItemContext<T = unknown> {
   setLabel(el: HTMLElement | null): void;
   /** Toggle expansion. No-op on leaves or when disabled. */
   toggle(): void;
-  /** Select / activate the item. No-op when disabled or not selectable. */
+  /**
+   * Select the item, without emitting the root's `(itemActivate)`. No-op when
+   * disabled or not selectable.
+   */
   select(): void;
   /** Move roving focus to the item. No-op when disabled. */
   focusItem(): void;
@@ -250,7 +284,7 @@ export const FOR_TREE_ITEM_CONTEXT = new InjectionToken<ForTreeItemContext>(
 );
 
 /** Injects the nearest {@link ForTreeContext}, throwing a prefixed error if absent. */
-export function injectTreeContext<T = unknown>(piece: string): ForTreeContext<T> {
+export function injectTreeContext<T = unknown>(piece: string): TreeContext<T> {
   const ctx = inject(FOR_TREE_CONTEXT, { optional: true });
   if (!ctx) {
     throw orphanContextError({
@@ -260,7 +294,15 @@ export function injectTreeContext<T = unknown>(piece: string): ForTreeContext<T>
       token: 'FOR_TREE_CONTEXT',
     });
   }
-  return ctx as unknown as ForTreeContext<T>;
+  const widened = ctx as unknown as TreeContext<T>;
+  assertRootContext({
+    entryPoint: 'tree',
+    token: 'FOR_TREE_CONTEXT',
+    root: '[forTree]',
+    piece,
+    probe: () => widened.activateItem,
+  });
+  return widened;
 }
 
 /** Injects the nearest {@link ForTreeContainerContext} (the root or a group). */

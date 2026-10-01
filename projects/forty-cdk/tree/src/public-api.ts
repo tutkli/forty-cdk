@@ -25,4 +25,5 @@ export {
 } from './tree-node-drag';
 export { ForTreeNodeDragHandle } from './tree-node-drag-handle';
 export { type ForTreeDragDropEvent } from './tree-drag-drop-event';
+export { type ForTreeItemActivateEvent } from './tree-item-activate-event';
 export { moveTreeNode, type MoveTreeNodeOptions } from './move-tree-node';
