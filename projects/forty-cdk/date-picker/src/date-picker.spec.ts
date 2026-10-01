@@ -1582,6 +1582,106 @@ describe('ForDatePicker', () => {
       expect(text()).toContain('2:30');
       expect(text()).toMatch(/PM/);
     });
+
+    @Component({
+      imports: [
+        ForDatePicker,
+        ForDatePickerTrigger,
+        ForDatePickerContent,
+        ForDatePickerValue,
+        ForTimeField,
+        ForTimeFieldSegment,
+        ForTimeFieldLiteral,
+      ],
+      providers: [
+        ...provideNativeDateAdapter(),
+        ...provideForDatePickerDefaults({ hourCycle: 24 }),
+      ],
+      template: `
+        <div
+          forDatePicker
+          [(value)]="value"
+          [(open)]="open"
+          granularity="minute"
+          [hourCycle]="hourCycle()"
+          [locale]="locale()"
+          #picker="forDatePicker"
+        >
+          <button forDatePickerTrigger><span forDatePickerValue></span></button>
+          @if (open()) {
+            <div forDatePickerContent>
+              <div
+                forTimeField
+                [value]="picker.value()"
+                [hourCycle]="picker.resolvedHourCycle()"
+                [locale]="locale()"
+                #tf="forTimeField"
+              >
+                @for (seg of tf.segments(); track seg.id) {
+                  @if (seg.isLiteral) {
+                    <span forTimeFieldLiteral>{{ seg.text }}</span>
+                  } @else {
+                    <span
+                      forTimeFieldSegment
+                      [segment]="seg.type!"
+                      [attr.data-testid]="'time-' + seg.type"
+                      >{{ seg.text }}</span
+                    >
+                  }
+                }
+              </div>
+            </div>
+          }
+        </div>
+      `,
+    })
+    class ScopedHourCycleTimeFieldHost {
+      readonly value = signal<Date | null>(new Date(2026, 5, 15, 14, 30));
+      readonly open = signal(true);
+      readonly hourCycle = signal<12 | 24 | null>(null);
+      readonly locale = signal('en-US');
+    }
+
+    function renderScopedTimeField(): {
+      r: RenderResult<ScopedHourCycleTimeFieldHost>;
+      trigger: () => string;
+      segment: (type: string) => HTMLElement | null;
+    } {
+      const r = renderHost(ScopedHourCycleTimeFieldHost);
+      return {
+        r,
+        trigger: () => r.query('[forDatePickerValue]')!.textContent!.trim(),
+        segment: (type) => document.querySelector<HTMLElement>(`[data-testid="time-${type}"]`),
+      };
+    }
+
+    it('shows the scope cycle on the trigger and the projected time field in en-US and de-DE', async () => {
+      const { r, trigger, segment } = renderScopedTimeField();
+
+      for (const locale of ['en-US', 'de-DE']) {
+        r.instance.locale.set(locale);
+        await flush(r.fixture);
+
+        expect(trigger(), locale).toContain('14:30');
+        expect(trigger(), locale).not.toMatch(/PM/);
+        expect(segment('hour')?.textContent?.trim(), locale).toBe('14');
+        expect(segment('dayPeriod'), locale).toBeNull();
+      }
+    });
+
+    it('carries a per-instance [hourCycle] to the trigger and the projected time field', async () => {
+      const { r, trigger, segment } = renderScopedTimeField();
+
+      for (const locale of ['en-US', 'de-DE']) {
+        r.instance.locale.set(locale);
+        r.instance.hourCycle.set(12);
+        await flush(r.fixture);
+
+        expect(trigger(), locale).toMatch(/PM/);
+        expect(segment('hour')?.textContent?.trim(), locale).not.toBe('14');
+        expect(segment('dayPeriod')?.textContent?.trim(), locale).toBe('PM');
+      }
+    });
   });
 
   describe('date-time trigger value format (#2103)', () => {
