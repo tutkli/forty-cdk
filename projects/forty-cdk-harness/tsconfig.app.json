@@ -13,6 +13,7 @@
       "forty-cdk/carousel": ["../forty-cdk/carousel/src/public-api.ts"],
       "forty-cdk/stepper": ["../forty-cdk/stepper/src/public-api.ts"],
       "forty-cdk/calendar": ["../forty-cdk/calendar/src/public-api.ts"],
+      "forty-cdk/date-adapter": ["../forty-cdk/date-adapter/src/public-api.ts"],
       "forty-cdk/date-field": ["../forty-cdk/date-field/src/public-api.ts"],
       "forty-cdk/date-picker": ["../forty-cdk/date-picker/src/public-api.ts"],
       "forty-cdk/time-field": ["../forty-cdk/time-field/src/public-api.ts"],

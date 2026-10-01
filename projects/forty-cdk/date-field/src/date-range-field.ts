@@ -2,7 +2,6 @@ import { computed, Directive, ElementRef, inject, input, model, type Signal } fr
 import type { FormValueControl } from '@angular/forms/signals';
 
 import {
-  type DateAdapter,
   type DateRange,
   DateFieldEngine,
   type FieldGranularity,
@@ -20,6 +19,7 @@ import {
   type WritingDirection,
   hostAriaLabel,
 } from 'forty-cdk/core';
+import { type DateAdapter } from 'forty-cdk/date-adapter';
 import {
   type DateRangeFieldEndpoint,
   FOR_DATE_RANGE_FIELD_CONTEXT,

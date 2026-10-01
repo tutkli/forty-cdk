@@ -12,13 +12,13 @@ import {
 import type { FormValueControl } from '@angular/forms/signals';
 
 import {
-  type DateAdapter,
   type DateRange,
   fortyError,
   injectDateAdapter,
   injectHiddenInput,
   serializeISODate,
 } from 'forty-cdk/core';
+import { type DateAdapter } from 'forty-cdk/date-adapter';
 import { DatePickerBase } from './date-picker-base';
 import { FOR_DATE_PICKER_CONTEXT, type ForDatePickerAnatomy } from './date-picker-context';
 import {

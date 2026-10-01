@@ -14,7 +14,6 @@ import {
 } from '@angular/core';
 
 import {
-  type DateAdapter,
   type DateRange,
   injectDateAdapter,
   adoptHostId,
@@ -23,6 +22,7 @@ import {
   type WritingDirection,
   injectTextDirection,
 } from 'forty-cdk/core';
+import { type DateAdapter } from 'forty-cdk/date-adapter';
 import { CalendarBounds } from './calendar-bounds';
 import {
   type CalendarDateLabelFormatter,

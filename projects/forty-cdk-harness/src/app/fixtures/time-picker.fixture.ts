@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { provideNativeDateAdapter } from 'forty-cdk/shared';
+import { provideNativeDateAdapter } from 'forty-cdk/date-adapter';
 import {
   ForTimePicker,
   ForTimePickerContent,

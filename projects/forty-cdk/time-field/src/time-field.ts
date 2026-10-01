@@ -18,13 +18,13 @@ import {
   RovingTabindex,
   type SegmentEditorDelegate,
   serializeISOTime,
-  type TimeCapableDateAdapter,
   TimeFieldEngine,
   type TimeGranularity,
   type TimeSegmentType,
   type WritingDirection,
   hostAriaLabel,
 } from 'forty-cdk/core';
+import { type TimeCapableDateAdapter } from 'forty-cdk/date-adapter';
 import { FOR_TIME_FIELD_CONTEXT, type ForTimeFieldContext } from './time-field-context';
 import { FOR_TIME_FIELD_DEFAULTS } from 'forty-cdk/defaults';
 

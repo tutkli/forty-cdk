@@ -27,6 +27,10 @@
         "./dist/forty-cdk/calendar",
         "./projects/forty-cdk/calendar/src/public-api.ts"
       ],
+      "forty-cdk/date-adapter": [
+        "./dist/forty-cdk/date-adapter",
+        "./projects/forty-cdk/date-adapter/src/public-api.ts"
+      ],
       "forty-cdk/date-field": [
         "./dist/forty-cdk/date-field",
         "./projects/forty-cdk/date-field/src/public-api.ts"

@@ -1,7 +1,7 @@
 import { computed, type Signal, type WritableSignal } from '@angular/core';
 
 import type { RovingTabindex } from '../roving-tabindex/roving-tabindex';
-import type { DateAdapter } from './date-adapter';
+import type { DateAdapter } from 'forty-cdk/date-adapter';
 import { dayPeriodNames, resolveHourCycle } from './hour-cycle';
 import {
   type FieldSegment,

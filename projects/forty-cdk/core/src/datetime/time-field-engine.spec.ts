@@ -1,7 +1,7 @@
 import { signal, type WritableSignal } from '@angular/core';
 import { NativeDateAdapter } from 'forty-cdk/shared';
 
-import { type TimeCapableDateAdapter } from './date-adapter';
+import type { TimeCapableDateAdapter } from 'forty-cdk/date-adapter';
 import { RovingTabindex } from '../roving-tabindex/roving-tabindex';
 import { type SegmentType } from './segment-editor';
 import { type TimeSegmentType } from './segment-types';

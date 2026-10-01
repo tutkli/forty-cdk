@@ -33,4 +33,4 @@ export {
   provideForCalendarDefaults,
   type ForCalendarDefaults,
 } from 'forty-cdk/defaults';
-export { NativeDateAdapter, provideNativeDateAdapter } from 'forty-cdk/shared';
+export { NativeDateAdapter, provideNativeDateAdapter } from 'forty-cdk/date-adapter';

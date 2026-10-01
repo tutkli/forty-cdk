@@ -1,6 +1,7 @@
 import { Injectable, type Provider } from '@angular/core';
 
-import { createFormatterCache, type DateAdapter, FOR_DATE_ADAPTER } from 'forty-cdk/core';
+import { type DateAdapter, FOR_DATE_ADAPTER } from './date-adapter';
+import { createFormatterCache } from './formatter-cache';
 
 function isLeapYear(year: number): boolean {
   return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;

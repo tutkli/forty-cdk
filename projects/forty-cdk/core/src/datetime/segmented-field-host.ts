@@ -1,6 +1,6 @@
 import { computed, InjectionToken, type Signal } from '@angular/core';
 
-import type { DateAdapter } from './date-adapter';
+import type { DateAdapter } from 'forty-cdk/date-adapter';
 import type { FieldGranularity } from './date-segments';
 import type { SegmentEditorContext } from './segment-directive';
 import type { TimeGranularity } from './time-segments';

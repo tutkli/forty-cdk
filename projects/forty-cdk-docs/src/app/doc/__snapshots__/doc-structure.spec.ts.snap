@@ -2478,6 +2478,43 @@ exports[`document structure > projects/forty-cdk/context-menu/README.md declares
 ]
 `;
 
+exports[`document structure > projects/forty-cdk/date-adapter/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "headings": [],
+    "slug": "why-this-exists",
+    "tables": [
+      {
+        "columns": [
+          "Also at the root",
+          "main size (raw / gzip)",
+          "Shared chunks the lazy routes load",
+        ],
+        "role": "plain",
+        "rows": 4,
+      },
+    ],
+    "title": "Why this exists",
+  },
+  {
+    "headings": [],
+    "slug": "api",
+    "tables": [
+      {
+        "columns": [
+          "Export",
+          "Kind",
+          "Contract",
+        ],
+        "role": "plain",
+        "rows": 6,
+      },
+    ],
+    "title": "API",
+  },
+]
+`;
+
 exports[`document structure > projects/forty-cdk/date-field/README.md declares the sections and table shapes it declared before 1`] = `
 [
   {
