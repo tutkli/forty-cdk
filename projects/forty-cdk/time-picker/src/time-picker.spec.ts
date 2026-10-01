@@ -1651,16 +1651,16 @@ describe('ForTimePicker', () => {
       })
       class MissingFieldHost {}
 
-      it('throws FORCDK-TIME-PICKER-003 from focus()', () => {
+      it('throws FORCDK-TIME-PICKER-004 from focus()', () => {
         const r = renderHost(MissingFieldHost);
         const picker = r.fixture.debugElement
           .query(By.directive(ForTimePicker))
           .injector.get(ForTimePicker);
 
-        expect(() => picker.focus()).toThrow(/FORCDK-TIME-PICKER-003/);
+        expect(() => picker.focus()).toThrow(/FORCDK-TIME-PICKER-004/);
       });
 
-      it('reports FORCDK-TIME-PICKER-003 when the trigger opens the listbox', async () => {
+      it('reports FORCDK-TIME-PICKER-004 when the trigger opens the listbox', async () => {
         const captured: unknown[] = [];
         class CapturingHandler implements ErrorHandler {
           handleError(err: unknown): void {
@@ -1681,7 +1681,7 @@ describe('ForTimePicker', () => {
         await flush(fixture);
 
         expect(captured.map((err) => (err as Error).message).join('\n')).toContain(
-          'FORCDK-TIME-PICKER-003',
+          'FORCDK-TIME-PICKER-004',
         );
       });
     });
