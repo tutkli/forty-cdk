@@ -15,6 +15,7 @@ import {
 
 import {
   Collection,
+  createVetoableNativeEvent,
   firstEnabledHost,
   isInArray,
   isUnset,
@@ -41,9 +42,11 @@ import {
   FOR_TREE_CONTEXT,
   type ForTreeContainerContext,
   type ForTreeContext,
+  type ForTreeItemContext,
   type ForTreeItemHandle,
   type ForTreeVisibleNode,
 } from './tree-context';
+import type { ForTreeItemActivateEvent } from './tree-item-activate-event';
 import { FOR_TREE_DEFAULTS } from './tree-defaults';
 import { defaultTreeCompareWith, treeMembership } from './tree-identity';
 import { TreeSelection } from './tree-selection';
@@ -206,6 +209,20 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
    * `scrollToIndex` so the correct node mounts.
    */
   readonly scrollToIndex = output<number>();
+
+  /**
+   * Emitted once per press on a node — a click on its `[forTreeItemLabel]` or
+   * `[forTreeItemCheckbox]`, or `Enter` / `Space` on the focused node, on the
+   * roving and the virtualized path alike — before the selection is applied.
+   * `event` is the `click` or `keydown` of that press.
+   *
+   * Calling `preventDefault()` skips the selection, so `[(value)]` stays as it
+   * was and `(valueChange)` does not fire; focus (or `aria-activedescendant`)
+   * still moves to the node. Fires for a `[selectable]="false"` node too, where
+   * the press selects nothing and `preventDefault()` has nothing to veto. Never
+   * fires for a disabled node, nor for {@link ForTree.select} called directly.
+   */
+  readonly itemActivate = output<ForTreeItemActivateEvent<T>>();
 
   /**
    * Manual `aria-label` for the tree. Use this when no visible label element
@@ -598,7 +615,7 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
     }
     if (event.key === 'Enter' || event.key === ' ' || event.key === 'Spacebar') {
       event.preventDefault();
-      this.#activateActiveDescendant();
+      this.#activateActiveDescendant(event);
       return;
     }
     const action = resolveListNavigation(event, {
@@ -639,13 +656,29 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
     if (target) this.#setActiveId(target.id());
   }
 
-  #activateActiveDescendant(): void {
+  #activateActiveDescendant(event: KeyboardEvent): void {
     const model = this.#focusModel();
     const cur = model.current();
     if (!cur || cur.disabled) return;
     model.resumeActive();
-    if (!cur.selectable) return;
+    if (this.#activationVetoed(cur.value, event) || !cur.selectable) return;
     this.select(cur.value);
+  }
+
+  private activateItem(item: ForTreeItemContext<T>, event: MouseEvent | KeyboardEvent): void {
+    if (item.effectiveDisabled() || this.#activationVetoed(item.value(), event)) {
+      return;
+    }
+    item.select();
+  }
+
+  #activationVetoed(value: T, event: MouseEvent | KeyboardEvent): boolean {
+    if (isUnset(value)) {
+      return true;
+    }
+    const activation = Object.assign(createVetoableNativeEvent(event), { value });
+    this.itemActivate.emit(activation);
+    return activation.defaultPrevented;
   }
 
   #isMultiSelectShortcut(event: KeyboardEvent): boolean {

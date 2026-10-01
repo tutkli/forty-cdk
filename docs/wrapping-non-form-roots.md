@@ -106,6 +106,10 @@ not in this table, because it needs `provideForTable()` instead (see the section
 | `ForTree`                                           | `FOR_TREE_CONTEXT`             |
 | `ForVirtualViewport`                                | `FOR_VIRTUAL_VIEWPORT_CONTEXT` |
 
+`ForTree` also provides `FOR_TREE_CONTAINER_CONTEXT`, the container every root-level `[forTreeItem]`
+registers through, so a subclass re-provides both tokens with `useExisting`. With only the first
+one, the first root-level item throws `FORCDK-TREE-002`.
+
 `ForField` also provides `FOR_FIELD_ANCHOR_CONTEXT`, the slot `[forFieldAnchor]` fills, so a
 subclass re-provides both tokens with `useExisting` or the overlay controls inside it stop seeing
 the field anchor.
@@ -117,7 +121,7 @@ picker read a subclassed calendar's selections and focus its active cell. A wrap
 the token itself.
 
 Several of these roots (Accordion, Avatar, Carousel, Dialog, Drawer, NavigationMenu, Popover, Tabs,
-Toast) split their coordination
+Toast, Tree) split their coordination
 surface in two: the public `FOR_<PRIMITIVE>_CONTEXT` above, and an internal interface carrying the
 piece-registration protocol that is deliberately **not** exported
 ([#1399](https://github.com/tutkli/forty-cdk/issues/1399),

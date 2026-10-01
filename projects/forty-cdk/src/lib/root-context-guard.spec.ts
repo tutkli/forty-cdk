@@ -32,6 +32,7 @@ import { FOR_TABLE_CONTEXT, ForTableSelectAll } from 'forty-cdk/table';
 import { FOR_TABS_CONTEXT, ForTabsList } from 'forty-cdk/tabs';
 import { FOR_TIME_PICKER_CONTEXT, ForTimePickerValue } from 'forty-cdk/time-picker';
 import { FOR_TOAST_CONTEXT, ForToastTitle } from 'forty-cdk/toast';
+import { FOR_TREE_CONTEXT, ForTreeItemLabel } from 'forty-cdk/tree';
 
 import { renderHost } from '../test-utils/render';
 import { LIBRARY_CODE, LIBRARY_SOURCES } from '../test-utils/source-scan';
@@ -237,6 +238,14 @@ class ImpostorTimePickerHost {}
 })
 class ImpostorToastHost {}
 
+@Component({
+  imports: [ForTreeItemLabel],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [{ provide: FOR_TREE_CONTEXT, useValue: {} }],
+  template: `<span forTreeItemLabel>Docs</span>`,
+})
+class ImpostorTreeHost {}
+
 const GUARDED: readonly GuardedRoot[] = [
   {
     entryPoint: 'accordion',
@@ -390,6 +399,15 @@ const GUARDED: readonly GuardedRoot[] = [
     root: '[forToast]',
     piece: 'ForToastTitle',
     host: ImpostorToastHost,
+  },
+  {
+    entryPoint: 'tree',
+    source: 'tree/src/tree-context.ts',
+    calls: 1,
+    token: 'FOR_TREE_CONTEXT',
+    root: '[forTree]',
+    piece: 'ForTreeItemLabel',
+    host: ImpostorTreeHost,
   },
 ];
 

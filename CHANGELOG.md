@@ -1150,10 +1150,10 @@ like `ForTable` does. Five breaking changes, all of them a find-and-replace or a
   same holds for every other generic contract the barrel exports — `ForTreeItemHandle`,
   `ForTreeVisibleNode`, `ForTreeContainerContext`, `ForTreeItemContext` — and for
   `ForTreeNodeDragContext.dropIndicator`; `ForTreeContext` additionally gains a `compareWith` member.
-  **Migration:** pass the node value type where you inject the context (`injectTreeContext<string>()`
-  restores the old shape exactly). Every other public signature is source-compatible thanks to the
-  `= string` defaults on `ForTreeDragDropEvent`, `ForTreeDropIndicator`, `ForTreeNodeDrag`,
-  `moveTreeNode` and `expandToReveal`.
+  **Migration:** pass the node value type where you inject the context
+  (`inject<ForTreeContext<string>>(FOR_TREE_CONTEXT)` restores the old shape exactly). Every other
+  public signature is source-compatible thanks to the `= string` defaults on `ForTreeDragDropEvent`,
+  `ForTreeDropIndicator`, `ForTreeNodeDrag`, `moveTreeNode` and `expandToReveal`.
 
 ## [0.21.1] - 2026-08-07
 
