@@ -1584,6 +1584,65 @@ describe('ForDatePicker', () => {
     });
   });
 
+  describe('date-time trigger value format (#2103)', () => {
+    @Component({
+      imports: [ForDatePicker, ForDatePickerTrigger, ForDatePickerValue],
+      providers: [...provideNativeDateAdapter()],
+      template: `
+        <div
+          forDatePicker
+          [(value)]="value"
+          granularity="minute"
+          [hourCycle]="hourCycle()"
+          [locale]="locale()"
+          [formatOptions]="formatOptions()"
+        >
+          <button forDatePickerTrigger><span forDatePickerValue></span></button>
+        </div>
+      `,
+    })
+    class DateTimeFormatHost {
+      readonly value = signal<Date | null>(new Date(2026, 5, 15, 1, 30));
+      readonly hourCycle = signal<12 | 24 | null>(24);
+      readonly locale = signal('en-US');
+      readonly formatOptions = signal<Intl.DateTimeFormatOptions>({
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+    }
+
+    it('pads the hour in es-ES, fr-FR, en-GB and en-US by default', async () => {
+      const r = renderHost(DateTimeFormatHost);
+      const text = () => r.query('[forDatePickerValue]')!.textContent!.trim();
+
+      for (const locale of ['es-ES', 'fr-FR', 'en-GB', 'en-US']) {
+        for (const cycle of [24, 12] as const) {
+          r.instance.locale.set(locale);
+          r.instance.hourCycle.set(cycle);
+          await flush(r.fixture);
+
+          expect(text(), `${locale} h${cycle}`).toMatch(/\b01\D30\b/);
+        }
+      }
+    });
+
+    it('keeps applying [hourCycle] to formatOptions that set only hour / minute', async () => {
+      const r = renderHost(DateTimeFormatHost);
+      const text = () => r.query('[forDatePickerValue]')!.textContent!.trim();
+      r.instance.value.set(new Date(2026, 5, 15, 13, 0));
+      r.instance.formatOptions.set({ hour: 'numeric', minute: '2-digit' });
+      await flush(r.fixture);
+
+      expect(text()).toBe('13:00');
+
+      r.instance.hourCycle.set(12);
+      await flush(r.fixture);
+
+      expect(text()).toMatch(/^1:00\sPM$/);
+    });
+  });
+
   describe('Signal Forms via [formField]', () => {
     interface Profile {
       dob: Date | null;

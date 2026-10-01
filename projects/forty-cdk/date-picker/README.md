@@ -328,7 +328,7 @@ The content is a field boundary. Inside a [`[forField]`](../field/README.md#how-
 </div>
 ```
 
-The value display (`[forDatePickerValue]`) automatically appends the time to its formatting when `granularity > 'day'` and you haven't set time fields in `formatOptions`.
+The value display (`[forDatePickerValue]`) automatically appends a two-digit hour and minute to its formatting when `granularity > 'day'` and you haven't set time fields in `formatOptions`, so it matches the projected `[forTimeField]`. The resolved `hourCycle` applies to that default and to time fields you set yourself, unless `formatOptions` sets `hour12` or `hourCycle`.
 
 ## Field anatomy
 
