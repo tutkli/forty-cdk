@@ -9,6 +9,10 @@ import { injectOtpInputContext } from './otp-input-context';
  * nothing structural: it exposes the slot's character and active state, and
  * reflects boolean `data-active` / `data-empty` for CSS.
  *
+ * The slot is hidden from assistive technology (`aria-hidden="true"`): the
+ * injected input is the only element in the group that exposes the code, so
+ * the character rendered inside a slot is never read a second time.
+ *
  * The slot has no click handler by design — the real input overlays the slots
  * (the consumer styles it to fill the group), so pointer events land on the
  * input and native caret positioning drives which slot is active.
@@ -25,6 +29,7 @@ import { injectOtpInputContext } from './otp-input-context';
   selector: '[forOtpInputSlot]',
   exportAs: 'forOtpInputSlot',
   host: {
+    'aria-hidden': 'true',
     '[attr.data-active]': 'active() ? "" : null',
     '[attr.data-empty]': 'char() === null ? "" : null',
   },

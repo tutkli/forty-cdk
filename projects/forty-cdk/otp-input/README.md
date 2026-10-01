@@ -12,7 +12,7 @@ Headless and styleless. One real `<input maxlength=N>` carries the whole code as
 
 ## How it works
 
-Apply `[forOtpInput]` on a **wrapper** element. It becomes a `role="group"` and the directive injects the single visually-hidden-but-interactive `<input>` inside it. You style that input to **overlay the slots** (typically `position: absolute; inset: 0` with a transparent or `caret-color`-only appearance); pointer events land on it and native caret positioning drives which slot is active. The slots are inert visual boxes.
+Apply `[forOtpInput]` on a **wrapper** element. It becomes a `role="group"` and the directive injects the single visually-hidden-but-interactive `<input>` inside it. You style that input to **overlay the slots** (typically `position: absolute; inset: 0` with a transparent or `caret-color`-only appearance); pointer events land on it and native caret positioning drives which slot is active. Put a class on that input with `inputClass`, since you never write it in your template. The slots are visual boxes hidden from assistive technology.
 
 The focusable, submittable control is the injected `<input>`, not the `role="group"` host. Form-control state, the field association, and native `name` submission therefore all live on that input.
 
@@ -35,6 +35,8 @@ The focusable, submittable control is the injected `<input>`, not the `role="gro
   </div>
 </div>
 ```
+
+Each `[forOtpInputSlot]` host carries `aria-hidden="true"`, so the injected input is the only element in the group that exposes the code. If you render a slot without the directive, mark it `aria-hidden="true"` yourself, or screen readers read its character and then the same code again from the input.
 
 ## Exported pattern constants
 
@@ -100,6 +102,7 @@ import { ForOtpInput, ForOtpInputSlot } from 'forty-cdk/otp-input';
     <div
       forOtpInput
       class="otp"
+      inputClass="otp-control"
       [(value)]="code"
       [length]="6"
       type="numeric"
@@ -140,6 +143,7 @@ export class OtpDefaultExample {
 | `oneTimeCode`                                                          | `input<boolean>`                                     | Toggle `autocomplete="one-time-code"` for SMS autofill.<br>**Default:** `true`                                                                        |
 | `pasteTransformer`                                                     | `input<((pasted: string) => string) \| null>`        | Rewrite pasted text before it fills the slots (e.g. strip separators).<br>**Default:** —                                                              |
 | `ariaLabel`                                                            | `input<string \| null>`                              | Accessible name for the group, also reflected onto the real input when no field label applies. Emits `aria-label` only when truthy.<br>**Default:** — |
+| `inputClass`                                                           | `input<string \| null>`                              | Class(es) applied to the injected real input, for global or utility styles. `null` adds no `class` attribute.<br>**Default:** —                       |
 | `disabled` / `readonly` / `required` / `invalid` / `pending` / `dirty` | `input<boolean>`                                     | Shared form-control flags (see [Field](../field/README.md)).<br>**Default:** —                                                                        |
 | `name`                                                                 | `input<string>`                                      | Reflected as the real input's `name` for native form submission.<br>**Default:** —                                                                    |
 | `touched`                                                              | `model<boolean>`                                     | Set to `true` on blur.<br>**Default:** —                                                                                                              |
@@ -172,9 +176,11 @@ The injected real `<input>` (created inside the `[forOtpInput]` wrapper) additio
 | `data-active`  | present / absent (current caret slot) |
 | `data-empty`   | present / absent (no character)       |
 
+The slot host also carries a static `aria-hidden="true"`.
+
 ## Accessibility
 
-- **One real text field, not N boxes.** The `role="group"` wrapper carries the `ariaLabel`; the single `<input>` inside it is the focusable control, and it reflects the same `ariaLabel` as its own `aria-label` whenever no field-provided `aria-labelledby` applies (a `[forField]` label always wins). Screen readers announce the group name on entry and treat the code as one ordinary, named text field.
+- **One real text field, not N boxes.** The `role="group"` wrapper carries the `ariaLabel`; the single `<input>` inside it is the focusable control, and it reflects the same `ariaLabel` as its own `aria-label` whenever no field-provided `aria-labelledby` applies (a `[forField]` label always wins). Screen readers announce the group name on entry and treat the code as one ordinary, named text field. Every slot is `aria-hidden="true"`, so neither its character nor the `mask` bullet is read alongside the input; a slot you render without `[forOtpInputSlot]` needs the same attribute.
 - **Mobile autofill & keypad.** `autocomplete="one-time-code"` (toggle with `oneTimeCode`) drives SMS autofill; `inputmode` is `numeric` for `type="numeric"` (plus a legacy `pattern="[0-9]*"` for older iOS), `text` otherwise.
 - **Character filtering happens live.** Rejected characters (per `type` / `allowedPattern`) are dropped before they reach the value and fire `(reject)`. Paste runs through `pasteTransformer`, is filtered, and sliced to `length`. A rejected keystroke never moves the insertion point: the caret stays at the position it was being edited at, so typing a disallowed character mid-code leaves the next character landing in the slot the user was on. A paste replaces the whole code and leaves the caret at the end.
 - **Fake caret is yours to style.** The slot exposes `hasFakeCaret()`; render and animate the blink in CSS, gated on `prefers-reduced-motion`. There is no JS-driven blink.
@@ -195,7 +201,7 @@ forty-cdk ships no styles: put your own class on each piece and key your CSS off
 }
 ```
 
-The one rule the layout has to keep: make the injected `<input>` overlay the slots so it stays the interactive surface.
+The one rule the layout has to keep: make the injected `<input>` overlay the slots so it stays the interactive surface. Reach it through `inputClass` (`inputClass="otp-control"` here). The directive creates that input at runtime, so it never carries your component's encapsulation attribute: put the rule in a global stylesheet, or use utility classes, rather than in component-scoped CSS.
 
 ```css
 .otp-slot {
@@ -208,7 +214,7 @@ The one rule the layout has to keep: make the injected `<input>` overlay the slo
   display: flex;
   gap: 0.5rem;
 }
-.otp > input {
+.otp-control {
   position: absolute;
   inset: 0;
   opacity: 0;

@@ -26,6 +26,7 @@ import { OTP_REGEXP_ONLY_DIGITS } from './otp-patterns';
       [oneTimeCode]="oneTimeCode()"
       [pasteTransformer]="pasteTransformer()"
       [ariaLabel]="ariaLabel()"
+      [inputClass]="inputClass()"
       [disabled]="isDisabled()"
       [readonly]="isReadonly()"
       [required]="isRequired()"
@@ -58,6 +59,7 @@ class OtpHost {
   readonly oneTimeCode = signal(true);
   readonly pasteTransformer = signal<((pasted: string) => string) | null>(null);
   readonly ariaLabel = signal<string | null>(null);
+  readonly inputClass = signal<string | null>(null);
   readonly isDisabled = signal(false);
   readonly isReadonly = signal(false);
   readonly isRequired = signal(false);
@@ -116,6 +118,17 @@ const slot = (group: HTMLElement, index: number): HTMLElement =>
 
 const slotChar = (group: HTMLElement, index: number): string =>
   slot(group, index).querySelector('.char')!.textContent!.trim();
+
+const exposedText = (group: HTMLElement): string => {
+  const walker = group.ownerDocument.createTreeWalker(group, NodeFilter.SHOW_TEXT);
+  let text = '';
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    if (!node.parentElement!.closest('[aria-hidden="true"]')) {
+      text += node.textContent;
+    }
+  }
+  return text.trim();
+};
 
 describe('ForOtpInput', () => {
   describe('static accessibility', () => {
@@ -198,6 +211,60 @@ describe('ForOtpInput', () => {
       instance.oneTimeCode.set(false);
       await flush();
       expect(input.getAttribute('autocomplete')).toBe('off');
+    });
+
+    it('hides every slot from assistive technology', async () => {
+      const { group } = await mountOtp();
+      const slots = Array.from(group.querySelectorAll('[data-test-id^="slot-"]'));
+      expect(slots.length).toBe(6);
+      for (const s of slots) {
+        expect(s.getAttribute('aria-hidden')).toBe('true');
+      }
+      expect(group.querySelector('input')!.hasAttribute('aria-hidden')).toBe(false);
+    });
+
+    it('exposes the code only through the injected input', async () => {
+      const { group, input, flush } = await mountOtp();
+      typeInto(input, '123456');
+      await flush();
+      expect(slotChar(group, 0)).toBe('1');
+      expect(input.value).toBe('123456');
+      expect(exposedText(group)).toBe('');
+    });
+
+    it('exposes no mask characters outside the injected input', async () => {
+      const { group, input, instance, flush } = await mountOtp();
+      instance.mask.set(true);
+      await flush();
+      typeInto(input, '1234');
+      await flush();
+      expect(slotChar(group, 0)).toBe('•');
+      expect(exposedText(group)).toBe('');
+    });
+  });
+
+  describe('inputClass', () => {
+    it('puts inputClass on the injected input and swaps it when the binding changes', async () => {
+      const { input, instance, flush } = await mountOtp();
+      instance.inputClass.set('otp-control');
+      await flush();
+      expect(input.className).toBe('otp-control');
+
+      instance.inputClass.set('otp-control-alt otp-wide');
+      await flush();
+      expect(input.classList.contains('otp-control')).toBe(false);
+      expect(Array.from(input.classList)).toEqual(['otp-control-alt', 'otp-wide']);
+    });
+
+    it('leaves the injected input without a class attribute while inputClass is null', async () => {
+      const { input, instance, flush } = await mountOtp();
+      expect(input.hasAttribute('class')).toBe(false);
+
+      instance.inputClass.set('otp-control');
+      await flush();
+      instance.inputClass.set(null);
+      await flush();
+      expect(input.hasAttribute('class')).toBe(false);
     });
   });
 

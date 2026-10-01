@@ -432,7 +432,7 @@ describe('the classes a later fence names', () => {
     path: 'demos/fieldset/examples/default.example.ts',
     code: [
       'const template = `',
-      '  <fieldset class="set" [class.set--busy]="busy" animate.enter="set-in"></fieldset>',
+      '  <fieldset class="set" [class.set--busy]="busy" animate.enter="set-in" legendClass="set-legend"></fieldset>',
       '`;',
       "const options = { class: 'set-panel', animateLeave: 'set-out' };",
       '',
@@ -477,7 +477,7 @@ describe('the classes a later fence names', () => {
   it('accepts every form in which the hero declares a class', () => {
     const source = readme(
       '```css',
-      '.set, .set--busy, .set-in, .set-panel, .set-out {',
+      '.set, .set--busy, .set-in, .set-panel, .set-out, .set-legend {',
       '}',
       '```',
       '',
@@ -509,7 +509,7 @@ describe('the classes a later fence names', () => {
   it('reads a template’s static class names, not the bindings beside them', () => {
     const source = readme(
       '```html',
-      '<div class="set {{ variant }}" [class]="dynamic" [attr.class]="other" data-class="x"></div>',
+      '<div class="set {{ variant }}" [class]="dynamic" [attr.class]="other" data-class="x" [legendClass]="bound"></div>',
       '```',
       '',
     );
