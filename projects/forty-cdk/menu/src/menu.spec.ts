@@ -1,13 +1,14 @@
 import { Component, Directive, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { afterEachOverlayCleanup, flush, pressKey, renderHost } from '../../src/test-utils';
+import { afterEachOverlayCleanup, flush, renderHost } from '../../src/test-utils';
 import {
   assertDataStateContract,
   assertSingleValueModelContract,
 } from '../../src/test-utils/contract';
 import type { VetoableEvent } from 'forty-cdk/core';
 import { ForDropdownMenu, ForDropdownMenuTrigger } from 'forty-cdk/dropdown-menu';
+import { pressKey } from 'forty-cdk/testing';
 
 import { FOR_MENU_CHECKBOX_ITEM, ForMenuCheckboxItem } from './menu-checkbox-item';
 import { ForMenuContent } from './menu-content';

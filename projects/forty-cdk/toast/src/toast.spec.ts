@@ -18,7 +18,6 @@ import { By } from '@angular/platform-browser';
 import { afterEachOverlayCleanup } from '../../src/test-utils/overlay-cleanup';
 import { flush, nextMacrotask } from '../../src/test-utils/flush';
 import { renderHost } from '../../src/test-utils/render';
-import { withFlippableReducedMotion, withReducedMotion } from '../../src/test-utils/reduced-motion';
 import { ForToast } from './toast';
 import { ForToastAction } from './toast-action';
 import { ForToastClose } from './toast-close';
@@ -29,6 +28,7 @@ import { provideForToastDefaults } from './toast-defaults';
 import { ForToastManager } from './toast-manager';
 import { type ForToastStackShift } from './toast-stack-shift';
 import { type SwipeEventDetail } from 'forty-cdk/core';
+import { withFlippableReducedMotion, withReducedMotion } from 'forty-cdk/testing';
 
 function pointer(
   el: HTMLElement,
@@ -2171,7 +2171,7 @@ interface ReflowProbe {
  * into the same delivery.
  *
  * Restoring is gated on the captured global being a *usable* constructor, for the
- * reason `test-utils/observers.ts` documents: a presence check would happily put
+ * reason `installObserverPolyfills` gates on it: a presence check would happily put
  * back a broken value an earlier spec left behind.
  */
 function installResizeObserverStub(): ReflowProbe {

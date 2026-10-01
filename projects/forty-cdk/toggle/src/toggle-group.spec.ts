@@ -3,7 +3,9 @@ import { form, FormField, required, requiredError, validate } from '@angular/for
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
-import { pressKey, renderHost } from '../../src/test-utils';
+import { pressKey } from 'forty-cdk/testing';
+
+import { renderHost } from '../../src/test-utils';
 import {
   assertDataStateContract,
   assertFormControlContract,

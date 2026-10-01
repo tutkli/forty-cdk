@@ -2,7 +2,8 @@ import { Component, provideZonelessChangeDetection, signal } from '@angular/core
 import { form, FormField, readonly as fieldReadonly, required } from '@angular/forms/signals';
 import { TestBed } from '@angular/core/testing';
 
-import { pressKey } from '../../src/test-utils';
+import { pressKey } from 'forty-cdk/testing';
+
 import { renderHost } from '../../src/test-utils/render';
 import {
   assertDataStateContract,

@@ -1,7 +1,9 @@
 import { Component, Directive, provideZonelessChangeDetection, signal } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { flush, nextMacrotask, pressKey, renderHost } from '../../../src/test-utils';
+import { pressKey } from 'forty-cdk/testing';
+
+import { flush, nextMacrotask, renderHost } from '../../../src/test-utils';
 import { injectModalShell, type ModalShellConfig, type ModalShellHandle } from './modal-shell';
 
 /**

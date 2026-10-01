@@ -8,7 +8,7 @@ import {
   type DateRange,
   type TimeCapableDateAdapter,
 } from 'forty-cdk/core';
-import { flush, pressKey, renderHost, type RenderResult } from '../../src/test-utils';
+import { flush, renderHost, type RenderResult } from '../../src/test-utils';
 import { buildMonthMatrix } from './build-month-matrix';
 import { ForCalendar } from './calendar';
 import { ForCalendarCell } from './calendar-cell';
@@ -31,6 +31,7 @@ import {
   provideInternationalizedDateAdapter,
   provideInternationalizedDateTimeAdapter,
 } from 'forty-cdk/internationalized-date';
+import { pressKey } from 'forty-cdk/testing';
 import { NativeDateAdapter, provideNativeDateAdapter } from './native-date-adapter';
 
 const adapter = new NativeDateAdapter();

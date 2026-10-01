@@ -10,14 +10,7 @@ import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
 import { isUnset, unsetInput, type VetoableEvent, type VetoableNativeEvent } from 'forty-cdk/core';
-import {
-  afterEachOverlayCleanup,
-  flush,
-  flushPositioning,
-  pressKey,
-  pressWithMouse,
-  renderHost,
-} from '../../src/test-utils';
+import { afterEachOverlayCleanup, flush, flushPositioning, renderHost } from '../../src/test-utils';
 import {
   assertDataStateContract,
   assertDismissibleLayerContract,
@@ -27,6 +20,7 @@ import {
 } from '../../src/test-utils/contract';
 import { ForField, ForFieldDescription, ForFieldError, ForLabel } from 'forty-cdk/field';
 import { ForDialog } from 'forty-cdk/dialog';
+import { pressKey, pressWithMouse } from 'forty-cdk/testing';
 import { ForCombobox } from './combobox';
 import { ForComboboxAnchor } from './combobox-anchor';
 import { ForComboboxChip } from './combobox-chip';

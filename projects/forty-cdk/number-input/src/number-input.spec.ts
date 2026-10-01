@@ -8,10 +8,10 @@ import {
   type FormControlMountResult,
 } from '../../src/test-utils/contract';
 import { flush } from '../../src/test-utils';
-import { pressKey } from '../../src/test-utils/keyboard';
 import { renderHost } from '../../src/test-utils/render';
 import { ForField, ForFieldDescription, ForLabel } from 'forty-cdk/field';
 import { ForFieldset } from 'forty-cdk/fieldset';
+import { pressKey } from 'forty-cdk/testing';
 import { ForNumberInput } from './number-input';
 import { ForNumberInputDecrement } from './number-input-decrement';
 import { ForNumberInputGroup } from './number-input-group';

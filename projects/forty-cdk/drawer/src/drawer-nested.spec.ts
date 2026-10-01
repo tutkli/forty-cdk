@@ -1,12 +1,8 @@
 import { Component, signal } from '@angular/core';
 
-import {
-  afterEachOverlayCleanup,
-  flush,
-  pressKey,
-  renderHost,
-  withReducedMotion,
-} from '../../src/test-utils';
+import { pressKey, withReducedMotion } from 'forty-cdk/testing';
+
+import { afterEachOverlayCleanup, flush, renderHost } from '../../src/test-utils';
 import { ForDrawer } from './drawer';
 import type { ForDrawerCloseReason, ForDrawerSide } from './drawer-context';
 

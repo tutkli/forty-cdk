@@ -12,8 +12,9 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { ForDragPlaceholder } from 'forty-cdk/drag-drop';
 import { unsetInput } from 'forty-cdk/core';
+import { installObserverPolyfills } from 'forty-cdk/testing';
 
-import { installObserverPolyfills, renderHost } from '../../src/test-utils';
+import { renderHost } from '../../src/test-utils';
 
 import {
   ForTableCellDef,

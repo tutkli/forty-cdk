@@ -2,7 +2,7 @@ import { NgTemplateOutlet } from '@angular/common';
 import { Component, Directive, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { afterEachOverlayCleanup, flush, pressKey, renderHost } from '../../src/test-utils';
+import { afterEachOverlayCleanup, flush, renderHost } from '../../src/test-utils';
 import {
   assertDataStateContract,
   assertDismissibleLayerContract,
@@ -16,6 +16,7 @@ import {
   ForMenuSub,
   ForMenuSubTrigger,
 } from 'forty-cdk/menu';
+import { pressKey } from 'forty-cdk/testing';
 
 import { ForContextMenu } from './context-menu';
 import { FOR_CONTEXT_MENU_CONTEXT } from './context-menu-context';

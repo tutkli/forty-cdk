@@ -24,9 +24,9 @@ import {
 import { ForSelect, ForSelectContent, ForSelectTrigger } from 'forty-cdk/select';
 import { ForSlider, ForSliderThumb } from 'forty-cdk/slider';
 import { ForTimePicker, ForTimePickerContent, ForTimePickerTrigger } from 'forty-cdk/time-picker';
+import { installObserverPolyfills } from 'forty-cdk/testing';
 
 import { assertStaticAdoptionContract } from '../../test-utils/contract';
-import { installObserverPolyfills } from '../../test-utils/observers';
 import { afterEachOverlayCleanup } from '../../test-utils/overlay-cleanup';
 import { mount, mountStaticAdoptionFixture } from './fixtures/mount';
 import { STATIC_ADOPTION_ADOPTERS } from './fixtures/registry';

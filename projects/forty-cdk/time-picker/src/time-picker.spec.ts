@@ -12,8 +12,6 @@ import {
 import {
   afterEachOverlayCleanup,
   flush,
-  pressKey,
-  pressWithMouse,
   renderHost,
   type RenderResult,
 } from '../../src/test-utils';
@@ -29,6 +27,7 @@ import { type DateAdapter, FOR_DATE_ADAPTER, type VetoableNativeEvent } from 'fo
 import { provideNativeDateAdapter } from 'forty-cdk/calendar';
 import { ForField, ForFieldError, ForLabel } from 'forty-cdk/field';
 import { ForTimeField, ForTimeFieldLiteral, ForTimeFieldSegment } from 'forty-cdk/time-field';
+import { pressKey, pressWithMouse } from 'forty-cdk/testing';
 import {
   ForTimePicker,
   ForTimePickerAnchor,

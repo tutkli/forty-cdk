@@ -562,7 +562,7 @@ const fortyCdkPlugin = {
     //     spec swaps the global per test).
     //
     // Prefer the `installObserverPolyfills()` helper in
-    // `projects/forty-cdk/src/test-utils/observers.ts`, which already pairs
+    // `forty-cdk/testing`, which already pairs
     // install with restore and is a no-op for cases where jsdom already
     // ships the global.
     //
@@ -578,7 +578,7 @@ const fortyCdkPlugin = {
         schema: [],
         messages: {
           unrestored:
-            'Spec installs `globalThis.{{ name }}` but does not restore it. Pair with `afterEach`/`afterAll` (capture before, restore after) or use `installObserverPolyfills()` from `test-utils/observers.ts`. (CLAUDE.md § "Test isolation — non-negotiables" rule 2.)',
+            'Spec installs `globalThis.{{ name }}` but does not restore it. Pair with `afterEach`/`afterAll` (capture before, restore after) or use `installObserverPolyfills()` from `forty-cdk/testing`. (CLAUDE.md § "Test isolation — non-negotiables" rule 2.)',
         },
       },
       create(context) {
@@ -591,7 +591,7 @@ const fortyCdkPlugin = {
         ]);
         // The helper file owns its own install/restore contract and is exempt.
         const filename = (context.filename || context.getFilename()).replace(/\\/g, '/');
-        if (filename.endsWith('/projects/forty-cdk/src/test-utils/observers.ts')) {
+        if (filename.endsWith('/projects/forty-cdk/testing/src/observers.ts')) {
           return {};
         }
         const installs = new Map(); // name -> node[]

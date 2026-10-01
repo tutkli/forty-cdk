@@ -6,7 +6,6 @@
  */
 export { renderHost, type RenderResult } from './render';
 export { flush, flushPositioning, nextMacrotask } from './flush';
-export { pressKey, type PressKeyOptions } from './keyboard';
 export {
   hydrationHarness,
   settleHydration,
@@ -16,15 +15,8 @@ export {
 export { assertA11yLabelledBy } from './a11y';
 export { mountOverlay, type MountOverlayResult } from './overlay';
 export { afterEachOverlayCleanup } from './overlay-cleanup';
-export { installObserverPolyfills } from './observers';
 export { pointerDownOn, focusInOn } from './outside-events';
 export { TestStackedLayer } from './stacked-layer';
-export { pointerEvent, pressWithMouse } from './pointer';
-export {
-  type FlippableReducedMotion,
-  withFlippableReducedMotion,
-  withReducedMotion,
-} from './reduced-motion';
 export {
   injectLocaleReportingAdapter,
   LocaleReportingAdapter,

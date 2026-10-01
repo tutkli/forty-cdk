@@ -10,8 +10,9 @@ import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
 import { isUnset, unsetInput } from 'forty-cdk/core';
+import { pressKey } from 'forty-cdk/testing';
 
-import { afterEachOverlayCleanup, flush, pressKey, renderHost } from '../../src/test-utils';
+import { afterEachOverlayCleanup, flush, renderHost } from '../../src/test-utils';
 import {
   assertDataStateContract,
   assertFormControlContract,

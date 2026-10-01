@@ -4,12 +4,12 @@ import { ForContextMenu, ForContextMenuTrigger } from 'forty-cdk/context-menu';
 import { ForDialog } from 'forty-cdk/dialog';
 import { ForMenuContent, ForMenuItem } from 'forty-cdk/menu';
 import { ForPopover, ForPopoverContent, ForPopoverTrigger } from 'forty-cdk/popover';
+import { pressKey } from 'forty-cdk/testing';
 
 import {
   afterEachOverlayCleanup,
   flush,
   pointerDownOn,
-  pressKey,
   renderHost,
   type RenderResult,
 } from '../test-utils';

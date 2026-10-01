@@ -1,7 +1,9 @@
 import { Component, provideZonelessChangeDetection, signal, viewChild } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { flush, installObserverPolyfills, renderHost } from '../../src/test-utils';
+import { installObserverPolyfills } from 'forty-cdk/testing';
+
+import { flush, renderHost } from '../../src/test-utils';
 import { ForScrollArea } from './scroll-area';
 import { ForScrollAreaContent } from './scroll-area-content';
 import { ForScrollAreaCorner } from './scroll-area-corner';

@@ -6,7 +6,6 @@ import { form, FormField, required as requiredRule } from '@angular/forms/signal
 import {
   flush,
   injectLocaleReportingAdapter,
-  pressKey,
   provideLocaleReportingAdapter,
   renderHost,
   type RenderResult,
@@ -18,6 +17,7 @@ import {
 import { NativeDateAdapter, provideNativeDateAdapter } from 'forty-cdk/calendar';
 import { ForField, ForFieldDescription, ForLabel } from 'forty-cdk/field';
 import type { TimeSegmentType } from 'forty-cdk/core';
+import { pressKey } from 'forty-cdk/testing';
 import { ForTimeField } from './time-field';
 import { provideForTimeFieldDefaults } from './time-field-defaults';
 import { ForTimeFieldLiteral } from './time-field-literal';

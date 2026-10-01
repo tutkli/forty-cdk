@@ -2,8 +2,9 @@ import { Component, provideZonelessChangeDetection, signal } from '@angular/core
 import { TestBed } from '@angular/core/testing';
 
 import { flickVelocity, FLICK_VELOCITY_PX_PER_MS } from 'forty-cdk/core';
+import { installObserverPolyfills } from 'forty-cdk/testing';
 
-import { installObserverPolyfills, renderHost } from '../../src/test-utils';
+import { renderHost } from '../../src/test-utils';
 import { ForCarousel } from './carousel';
 import { ForCarouselDrag, resolveDragIndex } from './carousel-drag';
 import { ForCarouselSlide } from './carousel-slide';

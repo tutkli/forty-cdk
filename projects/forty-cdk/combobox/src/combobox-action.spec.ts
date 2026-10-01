@@ -1,7 +1,9 @@
 import { Component, ErrorHandler, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { afterEachOverlayCleanup, flush, pressKey, renderHost } from '../../src/test-utils';
+import { pressKey } from 'forty-cdk/testing';
+
+import { afterEachOverlayCleanup, flush, renderHost } from '../../src/test-utils';
 import { ForCombobox } from './combobox';
 import { ForComboboxAction } from './combobox-action';
 import { ForComboboxContent } from './combobox-content';

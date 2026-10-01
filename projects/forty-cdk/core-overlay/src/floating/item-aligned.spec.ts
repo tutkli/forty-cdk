@@ -7,7 +7,9 @@ import {
 } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { flushPositioning, installObserverPolyfills } from '../../../src/test-utils';
+import { installObserverPolyfills } from 'forty-cdk/testing';
+
+import { flushPositioning } from '../../../src/test-utils';
 import {
   injectItemAlignedPositioner,
   offsetCenterWithinListbox,

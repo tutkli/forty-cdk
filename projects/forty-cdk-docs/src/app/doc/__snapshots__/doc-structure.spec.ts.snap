@@ -7624,6 +7624,55 @@ exports[`document structure > projects/forty-cdk/tabs/README.md declares the sec
 ]
 `;
 
+exports[`document structure > projects/forty-cdk/testing/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "headings": [
+      {
+        "depth": 3,
+        "slug": "events",
+      },
+      {
+        "depth": 3,
+        "slug": "browser-apis-jsdom-lacks",
+      },
+      {
+        "depth": 3,
+        "slug": "dialog-and-drawer-content",
+      },
+    ],
+    "slug": "api",
+    "tables": [
+      {
+        "columns": [
+          "Export",
+          "What it dispatches, that a bare dispatchEvent or .click() does not",
+        ],
+        "role": "plain",
+        "rows": 3,
+      },
+      {
+        "columns": [
+          "Export",
+          "What it installs",
+        ],
+        "role": "plain",
+        "rows": 3,
+      },
+      {
+        "columns": [
+          "Export",
+          "What it provides",
+        ],
+        "role": "plain",
+        "rows": 4,
+      },
+    ],
+    "title": "API",
+  },
+]
+`;
+
 exports[`document structure > projects/forty-cdk/time-field/README.md declares the sections and table shapes it declared before 1`] = `
 [
   {

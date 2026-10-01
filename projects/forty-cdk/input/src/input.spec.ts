@@ -13,9 +13,9 @@ import {
   type FormControlMountResult,
 } from '../../src/test-utils/contract';
 import { flush } from '../../src/test-utils';
-import { installObserverPolyfills } from '../../src/test-utils/observers';
 import { renderHost } from '../../src/test-utils/render';
 import { ForField, ForFieldDescription, ForLabel } from 'forty-cdk/field';
+import { installObserverPolyfills } from 'forty-cdk/testing';
 import { ForInput } from './input';
 import { ForTextarea } from './textarea';
 

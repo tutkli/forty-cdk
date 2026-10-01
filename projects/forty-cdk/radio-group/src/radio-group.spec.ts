@@ -2,7 +2,9 @@ import { Component, Directive, provideZonelessChangeDetection, signal } from '@a
 import { form, FormField, required } from '@angular/forms/signals';
 import { TestBed } from '@angular/core/testing';
 
-import { pressKey, renderHost } from '../../src/test-utils';
+import { pressKey } from 'forty-cdk/testing';
+
+import { renderHost } from '../../src/test-utils';
 import {
   assertDataStateContract,
   assertFormControlContract,

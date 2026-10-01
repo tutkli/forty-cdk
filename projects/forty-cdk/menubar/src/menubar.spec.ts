@@ -7,7 +7,6 @@ import {
   flush,
   focusInOn,
   pointerDownOn,
-  pressKey,
   renderHost,
 } from '../../src/test-utils';
 import {
@@ -26,6 +25,7 @@ import {
   ForMenuSub,
   ForMenuSubTrigger,
 } from 'forty-cdk/menu';
+import { pressKey } from 'forty-cdk/testing';
 
 import { ForMenubar } from './menubar';
 import { ForMenubarTrigger } from './menubar-trigger';

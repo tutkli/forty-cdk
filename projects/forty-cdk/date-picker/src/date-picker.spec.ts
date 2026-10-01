@@ -19,8 +19,6 @@ import {
 import {
   afterEachOverlayCleanup,
   flush,
-  pressKey,
-  pressWithMouse,
   renderHost,
   type RenderResult,
 } from '../../src/test-utils';
@@ -62,6 +60,7 @@ import {
   ForTimePickerTrigger,
 } from 'forty-cdk/time-picker';
 import { ForField, ForFieldDescription, ForFieldError, ForLabel } from 'forty-cdk/field';
+import { pressKey, pressWithMouse } from 'forty-cdk/testing';
 
 import { ForDatePicker } from './date-picker';
 import { ForDatePickerAnchor } from './date-picker-anchor';

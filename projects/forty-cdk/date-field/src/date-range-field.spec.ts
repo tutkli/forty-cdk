@@ -6,7 +6,6 @@ import { form, FormField, required as requiredRule } from '@angular/forms/signal
 import {
   flush,
   injectLocaleReportingAdapter,
-  pressKey,
   provideLocaleReportingAdapter,
   renderHost,
   type RenderResult,
@@ -19,6 +18,7 @@ import { NativeDateAdapter, provideNativeDateAdapter } from 'forty-cdk/calendar'
 import { type DateRange } from 'forty-cdk/shared';
 import { ForField, ForFieldDescription, ForLabel } from 'forty-cdk/field';
 import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized-date';
+import { pressKey } from 'forty-cdk/testing';
 import { ForDateRangeField } from './date-range-field';
 import { ForDateRangeFieldEnd, ForDateRangeFieldStart } from './date-range-field-endpoint';
 import { ForDateRangeFieldLiteral } from './date-range-field-literal';

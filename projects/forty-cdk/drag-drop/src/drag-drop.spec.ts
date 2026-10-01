@@ -8,9 +8,9 @@ import {
 } from '@angular/core';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 
-import { withReducedMotion } from '../../src/test-utils/reduced-motion';
+import { withReducedMotion, pressKey } from 'forty-cdk/testing';
 
-import { flush, nextMacrotask, pressKey, renderHost } from '../../src/test-utils';
+import { flush, nextMacrotask, renderHost } from '../../src/test-utils';
 import { assertRovingTabindexContract } from '../../src/test-utils/contract';
 import { provideForDragDropDefaults } from './drag-drop-defaults';
 import { ForDragHandle } from './drag-handle';

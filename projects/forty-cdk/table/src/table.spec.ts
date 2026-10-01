@@ -10,7 +10,7 @@ import {
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
-import { installObserverPolyfills, pointerEvent, renderHost } from '../../src/test-utils';
+import { renderHost } from '../../src/test-utils';
 import { ForDraggable, moveItemInArray, provideForDragDropDefaults } from 'forty-cdk/drag-drop';
 import { TABLE_REGISTRATION_CONTEXT, type TableRegistrationContext } from 'forty-cdk/core';
 
@@ -44,6 +44,7 @@ import {
   type TableRowReorderDescriptor,
 } from './table-row-reorder';
 import { ForTableVirtualized } from 'forty-cdk/table-virtualization';
+import { installObserverPolyfills, pointerEvent } from 'forty-cdk/testing';
 
 const TABLE_IMPORTS = [
   ForTable,

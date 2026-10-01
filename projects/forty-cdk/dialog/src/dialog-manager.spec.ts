@@ -12,7 +12,9 @@ import {
 } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { afterEachOverlayCleanup, flush, pressKey } from '../../src/test-utils';
+import { pressKey } from 'forty-cdk/testing';
+
+import { afterEachOverlayCleanup, flush } from '../../src/test-utils';
 import { ForDialogBackdrop } from './dialog-backdrop';
 import { ForDialogClose } from './dialog-close';
 import { ForDialogDescription } from './dialog-description';
