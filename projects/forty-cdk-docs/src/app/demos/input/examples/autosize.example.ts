@@ -9,13 +9,25 @@ import { ForTextarea } from 'forty-cdk/input';
     <div class="stack">
       <textarea
         forTextarea
+        #notes="forTextarea"
         class="input area"
         autosize
         rows="2"
         aria-label="Release notes"
         placeholder="Type a few lines…"
+        [attr.data-capped]="expanded() ? null : ''"
         [(value)]="text"
       ></textarea>
+      @if (notes.overflowing() || expanded()) {
+        <button
+          type="button"
+          class="more"
+          [attr.aria-expanded]="expanded()"
+          (click)="expanded.set(!expanded())"
+        >
+          {{ expanded() ? 'Show less' : 'Read more' }}
+        </button>
+      }
     </div>
   `,
   styles: `
@@ -46,10 +58,33 @@ import { ForTextarea } from 'forty-cdk/input';
       resize: none;
       overflow: hidden;
     }
+
+    .area[data-capped] {
+      max-height: 6.5rem;
+    }
+
+    .more {
+      margin-top: 0.4rem;
+      padding: 0;
+      border: 0;
+      background: none;
+      font: inherit;
+      font-size: 0.85rem;
+      color: var(--ex-accent, #0e7c6b);
+      cursor: pointer;
+    }
   `,
 })
 export class InputAutosizeExample {
   protected readonly text = signal(
-    'forty-cdk 0.1.0\n— Breadcrumbs, Search, Pagination\n— File Upload, Button',
+    [
+      'forty-cdk 0.1.0',
+      '— Breadcrumbs, Search, Pagination',
+      '— File Upload, Button',
+      '— Slider, Switch, Toggle',
+      '— Tabs, Accordion, Disclosure',
+      '— Dialog, Drawer, Popover',
+    ].join('\n'),
   );
+  protected readonly expanded = signal(false);
 }

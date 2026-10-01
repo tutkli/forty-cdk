@@ -10,9 +10,11 @@ import { queryFlag } from './_query-flag';
     <textarea
       data-testid="ta"
       forTextarea
-      autosize
+      [autosize]="!fixed"
       [(value)]="value"
       [style.box-sizing]="contentBox ? 'content-box' : 'border-box'"
+      [style.max-height.px]="capped ? 80 : null"
+      [style.height.px]="fixed ? fixedHeight() : null"
       style="
         display: block;
         width: 300px;
@@ -27,11 +29,15 @@ import { queryFlag } from './_query-flag';
     <button data-testid="set-long" type="button" (click)="setLong()">long</button>
     <button data-testid="set-short" type="button" (click)="value.set('one line')">short</button>
     <button data-testid="clear" type="button" (click)="value.set('')">clear</button>
+    <button data-testid="shrink" type="button" (click)="fixedHeight.set(60)">shrink</button>
   `,
 })
 export class TextareaFixture {
   protected readonly value = signal('one line');
   protected readonly contentBox = queryFlag('contentBox');
+  protected readonly capped = queryFlag('capped');
+  protected readonly fixed = queryFlag('fixed');
+  protected readonly fixedHeight = signal(80);
 
   protected setLong(): void {
     this.value.set(Array.from({ length: 6 }, (_, i) => `programmatic line ${i + 1}`).join('\n'));
