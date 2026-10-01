@@ -273,6 +273,28 @@ table above. Its decorator provides both tokens, and a subclass that projects th
 own segment pieces _and_ feeds a date-time picker re-provides each. A subclass that only feeds
 the date-picker bridge (no projected child pieces) re-provides `FOR_TIME_VALUE_SOURCE` alone.
 
+A picker composed with `anatomy="field"` is found the other way round: the projected
+`ForDateField` / `ForTimeField` injects `FOR_DATE_FIELD_HOST` / `FOR_TIME_FIELD_HOST`, which
+`ForDatePicker` / `ForTimePicker` provide from their own decorator. A subclassed picker used in
+that anatomy re-provides its token the same way, or no field is adopted and opening the picker
+throws `FORCDK-DATE-PICKER-007` / `FORCDK-TIME-PICKER-003` in dev mode:
+
+```ts
+import { Directive } from '@angular/core';
+import { FOR_DATE_FIELD_HOST } from 'forty-cdk/core';
+import { FOR_DATE_PICKER_CONTEXT, ForDatePicker } from 'forty-cdk/date-picker';
+
+@Directive({
+  selector: '[myDatePicker]',
+  exportAs: 'myDatePicker',
+  providers: [
+    { provide: FOR_DATE_PICKER_CONTEXT, useExisting: MyDatePicker },
+    { provide: FOR_DATE_FIELD_HOST, useExisting: MyDatePicker },
+  ],
+})
+export class MyDatePicker<D> extends ForDatePicker<D> {}
+```
+
 The calendar half of a date picker needs no bridge token of its own. The picker finds its calendar
 through `contentChild(FOR_CALENDAR_CONTEXT)`, the token a `ForCalendar` subclass re-provides anyway
 (see [Wrapping non-form roots](wrapping-non-form-roots.md)).

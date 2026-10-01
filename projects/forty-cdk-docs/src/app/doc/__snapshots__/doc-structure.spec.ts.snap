@@ -2723,7 +2723,7 @@ exports[`document structure > projects/forty-cdk/date-picker/README.md declares 
           "Description",
         ],
         "role": "api",
-        "rows": 16,
+        "rows": 17,
       },
       {
         "columns": [
@@ -2760,6 +2760,12 @@ exports[`document structure > projects/forty-cdk/date-picker/README.md declares 
     "slug": "date-time-picker",
     "tables": [],
     "title": "Date-time picker",
+  },
+  {
+    "headings": [],
+    "slug": "field-anatomy",
+    "tables": [],
+    "title": "Field anatomy",
   },
   {
     "headings": [],
@@ -7813,7 +7819,7 @@ exports[`document structure > projects/forty-cdk/time-picker/README.md declares 
           "Description",
         ],
         "role": "api",
-        "rows": 14,
+        "rows": 15,
       },
       {
         "columns": [
@@ -7866,6 +7872,12 @@ exports[`document structure > projects/forty-cdk/time-picker/README.md declares 
     "slug": "signal-forms",
     "tables": [],
     "title": "Signal Forms",
+  },
+  {
+    "headings": [],
+    "slug": "field-anatomy",
+    "tables": [],
+    "title": "Field anatomy",
   },
   {
     "headings": [],

@@ -126,22 +126,23 @@ One class and one directive, three states. `disabled` removes the trigger from t
 
 ### `ForTimePicker`
 
-| Property        | Type                             | Description                                                                                                 |
-| --------------- | -------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `value`         | `D \| null`                      | Selected time (two-way)<br>**Default:** `null`                                                              |
-| `open`          | `boolean`                        | Open state (two-way)<br>**Default:** `false`                                                                |
-| `step`          | `number`                         | Slot interval in minutes<br>**Default:** `30`                                                               |
-| `granularity`   | `'hour' \| 'minute' \| 'second'` | Selection precision<br>**Default:** `'minute'`                                                              |
-| `hourCycle`     | `12 \| 24 \| null`               | Hour cycle for labels. `null` → the scope's `hourCycle`, then the locale<br>**Default:** `null`             |
-| `locale`        | `string \| null`                 | BCP 47 locale for labels. `null` → the adapter's `locale()`, then the runtime locale<br>**Default:** `null` |
-| `minTime`       | `D \| null`                      | Earliest selectable time<br>**Default:** `null`                                                             |
-| `maxTime`       | `D \| null`                      | Latest selectable time<br>**Default:** `null`                                                               |
-| `closeOnSelect` | `boolean`                        | Close on slot selection<br>**Default:** `true`                                                              |
-| `modal`         | `boolean`                        | Modal (focus-trapped) mode<br>**Default:** `false`                                                          |
-| `dismissible`   | `boolean`                        | Escape / outside close<br>**Default:** `true`                                                               |
-| `returnFocus`   | `boolean`                        | Return focus to trigger on close<br>**Default:** `true`                                                     |
-| `placeholder`   | `string`                         | Value display placeholder<br>**Default:** `''`                                                              |
-| `formatOptions` | `Intl.DateTimeFormatOptions`     | Override slot label format<br>**Default:** `{}`                                                             |
+| Property        | Type                             | Description                                                                                                                                                                          |
+| --------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `value`         | `D \| null`                      | Selected time (two-way)<br>**Default:** `null`                                                                                                                                       |
+| `open`          | `boolean`                        | Open state (two-way)<br>**Default:** `false`                                                                                                                                         |
+| `anatomy`       | `'trigger' \| 'field'`           | Which piece is the control. `'field'` makes a projected `[forTimeField]` the control and the trigger a plain button; see [Field anatomy](#field-anatomy)<br>**Default:** `'trigger'` |
+| `step`          | `number`                         | Slot interval in minutes<br>**Default:** `30`                                                                                                                                        |
+| `granularity`   | `'hour' \| 'minute' \| 'second'` | Selection precision<br>**Default:** `'minute'`                                                                                                                                       |
+| `hourCycle`     | `12 \| 24 \| null`               | Hour cycle for labels. `null` → the scope's `hourCycle`, then the locale<br>**Default:** `null`                                                                                      |
+| `locale`        | `string \| null`                 | BCP 47 locale for labels. `null` → the adapter's `locale()`, then the runtime locale<br>**Default:** `null`                                                                          |
+| `minTime`       | `D \| null`                      | Earliest selectable time<br>**Default:** `null`                                                                                                                                      |
+| `maxTime`       | `D \| null`                      | Latest selectable time<br>**Default:** `null`                                                                                                                                        |
+| `closeOnSelect` | `boolean`                        | Close on slot selection<br>**Default:** `true`                                                                                                                                       |
+| `modal`         | `boolean`                        | Modal (focus-trapped) mode<br>**Default:** `false`                                                                                                                                   |
+| `dismissible`   | `boolean`                        | Escape / outside close<br>**Default:** `true`                                                                                                                                        |
+| `returnFocus`   | `boolean`                        | Return focus to trigger on close<br>**Default:** `true`                                                                                                                              |
+| `placeholder`   | `string`                         | Value display placeholder<br>**Default:** `''`                                                                                                                                       |
+| `formatOptions` | `Intl.DateTimeFormatOptions`     | Override slot label format<br>**Default:** `{}`                                                                                                                                      |
 
 Inherits all `FormUiControl` inputs (`disabled`, `readonly`, `required`, `invalid`,
 `errors`, `touched`, `name`, `pending`) for `[formField]` auto-wiring.
@@ -280,6 +281,52 @@ resolves it automatically via `contentChild` to graft time changes onto the comm
 </div>
 ```
 
+## Field anatomy
+
+By default the trigger is the control and shows the value. Set `anatomy="field"` and project a [`[forTimeField]`](../time-field/README.md) inside the picker to make the typed field the control instead, with the trigger as a plain button that opens the slot listbox beside it.
+
+```html
+<div forField>
+  <label forLabel>Start time</label>
+  <div
+    forTimePicker
+    anatomy="field"
+    [formField]="form.start"
+    [step]="15"
+    [minTime]="opening"
+    #picker="forTimePicker"
+  >
+    <div forTimeField #field="forTimeField">
+      @for (seg of field.segments(); track seg.id) { @if (seg.isLiteral) {
+      <span forTimeFieldLiteral>{{ seg.text }}</span>
+      } @else {
+      <span forTimeFieldSegment [segment]="seg.type!">{{ seg.text }}</span>
+      } }
+    </div>
+    <button forTimePickerTrigger aria-label="Choose a time">…icon…</button>
+
+    @if (picker.open()) {
+    <div forTimePickerContent>
+      @for (slot of picker.slots(); track slot.id) {
+      <div forTimePickerOption [value]="slot.value" [disabled]="slot.disabled">
+        {{ slot.label }}
+      </div>
+      }
+    </div>
+    }
+  </div>
+</div>
+```
+
+With the field adopted:
+
+- **One form control.** `[formField]` binds once, on the picker. A typed time and a picked slot both write the picker's value and mark it dirty; focus leaving the field or the trigger marks it touched.
+- **State is set once.** `minTime`, `maxTime`, `disabled`, `readonly`, `granularity`, `hourCycle` and `locale` on the picker apply to the field. A read-only picker blocks typing and picking alike.
+- **The field is the control.** A surrounding `[forField]` names and describes the field's `role="group"`, `aria-invalid` lands there, a label press focuses its first segment, and the picker's `focus()` goes there too.
+- **The trigger is a plain button.** It drops `role="combobox"` and the form-control `aria-*` state, and keeps `aria-haspopup="listbox"`, `aria-expanded` and `aria-controls`. Give it a name of its own.
+
+With `anatomy="field"` and no projected `[forTimeField]`, opening the listbox or calling `focus()` throws `FORCDK-TIME-PICKER-003` in dev mode.
+
 ## Keyboard
 
 | Key                     | Behavior                                  |
@@ -295,11 +342,11 @@ resolves it automatically via `contentChild` to graft time changes onto the comm
 
 Implements the [WAI-ARIA Listbox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/listbox/).
 
-- **`role="combobox"`** on the trigger (`[forTimePickerTrigger]`) with `aria-haspopup="listbox"` and `aria-expanded` reflecting `open`.
+- **`role="combobox"`** on the trigger (`[forTimePickerTrigger]`) with `aria-haspopup="listbox"` and `aria-expanded` reflecting `open`. In the [field anatomy](#field-anatomy) the trigger is a plain button with the same popup attributes, and the time field carries the form-control state.
 - **`role="listbox"`** on the portaled content (`[forTimePickerContent]`); each slot is `role="option"` with `aria-selected` and `aria-disabled`.
 - When used inside `[forDatePickerContent]` alongside a `[forCalendar]`, the time picker delegates its value to `[forDatePicker]` via `FOR_TIME_VALUE_SOURCE`, so the combined date-time value is surfaced on the date picker's form-control ARIA.
 - **`data-highlighted=""`** is reflected on the active slot (the hovered one, else the focused one), so it is the one hook to style rather than pairing it with `:hover` (see [Pointer highlight](#pointer-highlight)).
-- **Inside a `[forField]` the labelled element is the trigger**, not the `[forTimePicker]` wrapper: the field's `controlId` and its `aria-labelledby` / `aria-describedby` / `aria-errormessage` land on `[forTimePickerTrigger]`, so `[forLabel]`'s `for` points at the element that takes focus, clicking a non-`<label>` `[forLabel]` opens the listbox, and Signal Forms' focus-on-error reaches the trigger.
+- **Inside a `[forField]` the labelled element is the trigger**, not the `[forTimePicker]` wrapper: the field's `controlId` and its `aria-labelledby` / `aria-describedby` / `aria-errormessage` land on `[forTimePickerTrigger]`, so `[forLabel]`'s `for` points at the element that takes focus, clicking a non-`<label>` `[forLabel]` opens the listbox, and Signal Forms' focus-on-error reaches the trigger. In the [field anatomy](#field-anatomy) the association lands on the time field's `role="group"` instead, and a label press focuses its first segment.
 
 ## Wrapping in a design system
 

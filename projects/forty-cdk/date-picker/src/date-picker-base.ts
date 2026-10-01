@@ -289,7 +289,7 @@ export abstract class DatePickerBase<D>
     return this.#triggerEl();
   }
 
-  protected override fieldLabelledElementId(): string {
+  protected override fieldLabelledElementId(): string | null {
     return this.triggerId();
   }
 

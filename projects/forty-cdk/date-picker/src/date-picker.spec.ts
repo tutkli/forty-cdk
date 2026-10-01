@@ -8,7 +8,13 @@ import {
 } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
-import { form, FormField, required as requiredRule } from '@angular/forms/signals';
+import {
+  disabled as disabledRule,
+  form,
+  FormField,
+  readonly as readonlyRule,
+  required as requiredRule,
+} from '@angular/forms/signals';
 
 import {
   afterEachOverlayCleanup,
@@ -29,9 +35,11 @@ import {
 import {
   assertTimeCapable,
   type DateAdapter,
+  type FieldGranularity,
   FOR_TIME_VALUE_SOURCE,
   type VetoableNativeEvent,
 } from 'forty-cdk/core';
+import { ForDateField, ForDateFieldLiteral, ForDateFieldSegment } from 'forty-cdk/date-field';
 import {
   FOR_CALENDAR_CONTEXT,
   ForCalendar,
@@ -1936,6 +1944,345 @@ describe('ForDatePicker', () => {
       r.instance.open.set(false);
       await flush(r.fixture);
       expect(content()).toBeNull();
+    });
+  });
+
+  describe('field anatomy (#2041)', () => {
+    interface Booking {
+      when: Date | null;
+    }
+
+    @Component({
+      imports: [
+        ForDatePicker,
+        ForDatePickerTrigger,
+        ForDatePickerContent,
+        ForDateField,
+        ForDateFieldSegment,
+        ForDateFieldLiteral,
+        FormField,
+        ForField,
+        ForLabel,
+        ForFieldError,
+        ForCalendar,
+        ForCalendarGrid,
+        ForCalendarCell,
+      ],
+      providers: [...provideNativeDateAdapter()],
+      template: `
+        <button data-testid="outside">Elsewhere</button>
+        <div forField>
+          <span forLabel data-testid="label">Appointment</span>
+          <div
+            forDatePicker
+            anatomy="field"
+            [formField]="booking.when"
+            [(open)]="open"
+            [granularity]="granularity()"
+            [hourCycle]="24"
+            [locale]="locale()"
+            [minDate]="minDate()"
+            #picker="forDatePicker"
+          >
+            <div forDateField data-testid="group" #field="forDateField">
+              @for (s of field.segments(); track s.id) {
+                @if (s.isLiteral) {
+                  <span forDateFieldLiteral>{{ s.text }}</span>
+                } @else {
+                  <span forDateFieldSegment [segment]="s.type!" [attr.data-testid]="s.type">{{
+                    s.text
+                  }}</span>
+                }
+              }
+            </div>
+            <button forDatePickerTrigger data-testid="trigger" aria-label="Open calendar">
+              Calendar
+            </button>
+            @if (open()) {
+              <div forDatePickerContent>
+                <div forCalendar [value]="picker.value()" [min]="picker.minDate()">
+                  <table forCalendarGrid #grid="forCalendarGrid">
+                    <tbody>
+                      @for (week of grid.weeks(); track week.key) {
+                        <tr>
+                          @for (c of week.days; track c.key) {
+                            <td
+                              forCalendarCell
+                              [date]="c.date"
+                              [attr.data-testid]="'cell-' + c.key"
+                            >
+                              {{ c.label }}
+                            </td>
+                          }
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            }
+          </div>
+          <p forFieldError data-testid="error">Required.</p>
+        </div>
+      `,
+    })
+    class FieldAnatomyHost {
+      readonly open = signal(false);
+      readonly granularity = signal<FieldGranularity>('day');
+      readonly locale = signal('en-US');
+      readonly minDate = signal<Date | null>(null);
+      readonly locked = signal(false);
+      readonly off = signal(false);
+      readonly model = signal<Booking>({ when: null });
+      readonly booking = form(this.model, (p) => {
+        requiredRule(p.when);
+        readonlyRule(p.when, () => this.locked());
+        disabledRule(p.when, () => this.off());
+      });
+    }
+
+    type FR = RenderResult<FieldAnatomyHost>;
+    const at = (r: FR, id: string) => r.query<HTMLElement>(`[data-testid="${id}"]`)!;
+    const pickerOf = (r: FR) =>
+      r.fixture.debugElement.query(By.directive(ForDatePicker)).injector.get(ForDatePicker);
+    const segmentTypes = (r: FR) =>
+      r.queryAll('[forDateFieldSegment]').map((s) => s.getAttribute('data-testid'));
+
+    async function typeInto(r: FR, segment: string, digits: string): Promise<void> {
+      for (const digit of digits) {
+        pressKey(at(r, segment), digit);
+      }
+      await r.flush();
+    }
+
+    async function typeDate(r: FR, month: string, day: string, year: string): Promise<void> {
+      await typeInto(r, 'month', month);
+      await typeInto(r, 'day', day);
+      await typeInto(r, 'year', year);
+    }
+
+    async function blurField(r: FR): Promise<void> {
+      at(r, 'group').dispatchEvent(
+        new FocusEvent('focusout', { bubbles: true, relatedTarget: at(r, 'outside') }),
+      );
+      await r.flush();
+    }
+
+    it('writes a typed date into the form bound on the picker, dirty then touched on blur', async () => {
+      const r = renderHost(FieldAnatomyHost);
+      await typeDate(r, '06', '20', '2026');
+
+      const when = r.instance.booking.when();
+      expect(r.instance.model().when?.getTime()).toBe(new Date(2026, 5, 20).getTime());
+      expect(when.dirty()).toBe(true);
+      expect(when.touched()).toBe(false);
+
+      await blurField(r);
+      expect(when.touched()).toBe(true);
+    });
+
+    it('writes a calendar pick into the form, marks it dirty and touched, and shows it in the field', async () => {
+      const r = renderHost(FieldAnatomyHost);
+      at(r, 'trigger').click();
+      await r.flush();
+
+      cell('2026-6-12')!.click();
+      await r.flush();
+
+      const when = r.instance.booking.when();
+      expect(r.instance.model().when?.getTime()).toBe(new Date(2026, 5, 12).getTime());
+      expect(when.dirty()).toBe(true);
+      expect(when.touched()).toBe(true);
+      expect(r.instance.open()).toBe(false);
+      expect(at(r, 'day').getAttribute('aria-valuenow')).toBe('12');
+    });
+
+    it('shows a form value written from outside in the field', async () => {
+      const r = renderHost(FieldAnatomyHost);
+      r.instance.model.set({ when: new Date(2026, 2, 9) });
+      await r.flush();
+
+      expect(at(r, 'month').getAttribute('aria-valuenow')).toBe('3');
+      expect(at(r, 'day').getAttribute('aria-valuenow')).toBe('9');
+      expect(at(r, 'year').getAttribute('aria-valuenow')).toBe('2026');
+    });
+
+    it('applies the picker granularity and hourCycle to the field', async () => {
+      const r = renderHost(FieldAnatomyHost);
+      expect(segmentTypes(r)).toEqual(['month', 'day', 'year']);
+
+      r.instance.granularity.set('minute');
+      await r.flush();
+
+      expect(segmentTypes(r)).toEqual(['month', 'day', 'year', 'hour', 'minute']);
+    });
+
+    it('applies the picker locale to the field segment order', async () => {
+      const r = renderHost(FieldAnatomyHost);
+      r.instance.locale.set('de-DE');
+      await r.flush();
+
+      expect(segmentTypes(r)).toEqual(['day', 'month', 'year']);
+    });
+
+    it('clamps a typed date to the picker minDate', async () => {
+      const r = renderHost(FieldAnatomyHost);
+      r.instance.minDate.set(new Date(2026, 5, 10));
+      await r.flush();
+
+      await typeDate(r, '06', '05', '2026');
+
+      expect(r.instance.model().when?.getTime()).toBe(new Date(2026, 5, 10).getTime());
+    });
+
+    it('a read-only picker marks the segments read-only and blocks typing and picking', async () => {
+      const r = renderHost(FieldAnatomyHost);
+      r.instance.model.set({ when: new Date(2026, 5, 15) });
+      r.instance.locked.set(true);
+      await r.flush();
+
+      expect(at(r, 'day').getAttribute('aria-readonly')).toBe('true');
+      expect(at(r, 'group').hasAttribute('data-readonly')).toBe(true);
+
+      pressKey(at(r, 'day'), 'ArrowUp');
+      await r.flush();
+      expect(r.instance.model().when?.getTime()).toBe(new Date(2026, 5, 15).getTime());
+
+      at(r, 'trigger').click();
+      await r.flush();
+      cell('2026-6-20')!.click();
+      await r.flush();
+      expect(r.instance.model().when?.getTime()).toBe(new Date(2026, 5, 15).getTime());
+    });
+
+    it('a disabled picker disables the field and its segments', async () => {
+      const r = renderHost(FieldAnatomyHost);
+      r.instance.off.set(true);
+      await r.flush();
+
+      expect(at(r, 'group').getAttribute('aria-disabled')).toBe('true');
+      expect(at(r, 'month').getAttribute('aria-disabled')).toBe('true');
+
+      await typeInto(r, 'month', '06');
+      expect(at(r, 'month').getAttribute('aria-valuenow')).toBeNull();
+    });
+
+    it('makes the trigger a plain popup button without the form-control state', async () => {
+      const r = renderHost(FieldAnatomyHost);
+      r.instance.locked.set(true);
+      await r.flush();
+      const trigger = at(r, 'trigger');
+
+      expect(trigger.hasAttribute('role')).toBe(false);
+      expect(trigger.hasAttribute('aria-required')).toBe(false);
+      expect(trigger.hasAttribute('aria-invalid')).toBe(false);
+      expect(trigger.hasAttribute('aria-readonly')).toBe(false);
+      expect(trigger.getAttribute('aria-haspopup')).toBe('dialog');
+      expect(trigger.getAttribute('aria-expanded')).toBe('false');
+
+      trigger.click();
+      await r.flush();
+
+      expect(trigger.getAttribute('aria-expanded')).toBe('true');
+      expect(trigger.getAttribute('aria-controls')).toBe(content()!.id);
+    });
+
+    it('names and validates the date field group through [forField], not the trigger', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+      const r = renderHost(FieldAnatomyHost);
+      await r.flush();
+      const group = at(r, 'group');
+
+      expect(group.getAttribute('aria-labelledby')).toBe(at(r, 'label').id);
+      expect(group.getAttribute('aria-invalid')).toBe('true');
+      expect(group.getAttribute('aria-errormessage')).toBe(at(r, 'error').id);
+      expect(group.hasAttribute('data-required')).toBe(true);
+      expect(at(r, 'trigger').hasAttribute('aria-labelledby')).toBe(false);
+      expect(warn).not.toHaveBeenCalled();
+    });
+
+    it('focuses the first segment when the label is pressed', async () => {
+      const r = renderHost(FieldAnatomyHost);
+      await r.flush();
+
+      at(r, 'label').click();
+
+      expect(document.activeElement).toBe(at(r, 'month'));
+      expect(r.instance.open()).toBe(false);
+    });
+
+    it('moves focus() to the first segment of the field', async () => {
+      const r = renderHost(FieldAnatomyHost);
+      await r.flush();
+
+      pickerOf(r).focus();
+
+      expect(document.activeElement).toBe(at(r, 'month'));
+    });
+
+    it('keeps the typed time on a day pick and closes at minute granularity', async () => {
+      const r = renderHost(FieldAnatomyHost);
+      r.instance.granularity.set('minute');
+      r.instance.model.set({ when: new Date(2026, 5, 15, 14, 30) });
+      await r.flush();
+
+      at(r, 'trigger').click();
+      await r.flush();
+      cell('2026-6-20')!.click();
+      await r.flush();
+
+      const value = r.instance.model().when!;
+      expect(adapter.getDate(value)).toBe(20);
+      expect(adapter.getHours(value)).toBe(14);
+      expect(adapter.getMinutes(value)).toBe(30);
+      expect(r.instance.open()).toBe(false);
+    });
+
+    describe('without a projected [forDateField]', () => {
+      @Component({
+        imports: [ForDatePicker, ForDatePickerTrigger],
+        providers: [...provideNativeDateAdapter()],
+        template: `
+          <div forDatePicker anatomy="field">
+            <button forDatePickerTrigger data-testid="trigger">Open</button>
+          </div>
+        `,
+      })
+      class MissingFieldHost {}
+
+      it('throws FORCDK-DATE-PICKER-007 from focus()', () => {
+        const r = renderHost(MissingFieldHost);
+        const picker = r.fixture.debugElement
+          .query(By.directive(ForDatePicker))
+          .injector.get(ForDatePicker);
+
+        expect(() => picker.focus()).toThrow(/FORCDK-DATE-PICKER-007/);
+      });
+
+      it('reports FORCDK-DATE-PICKER-007 when the trigger opens the calendar', async () => {
+        const captured: unknown[] = [];
+        class CapturingHandler implements ErrorHandler {
+          handleError(err: unknown): void {
+            captured.push(err);
+          }
+        }
+        TestBed.configureTestingModule({
+          rethrowApplicationErrors: false,
+          providers: [
+            provideZonelessChangeDetection(),
+            { provide: ErrorHandler, useClass: CapturingHandler },
+          ],
+        });
+        const fixture = TestBed.createComponent(MissingFieldHost);
+        fixture.detectChanges();
+
+        fixture.nativeElement.querySelector('[data-testid="trigger"]').click();
+        await flush(fixture);
+
+        expect(captured.map((err) => (err as Error).message).join('\n')).toContain(
+          'FORCDK-DATE-PICKER-007',
+        );
+      });
     });
   });
 });

@@ -2,7 +2,11 @@ import { computed, Directive, ElementRef, inject, input, model, type Signal } fr
 import type { FormValueControl } from '@angular/forms/signals';
 
 import {
+  type AdoptedField,
   assertTimeCapable,
+  FOR_TIME_FIELD_HOST,
+  registerHandle,
+  type TimeFieldHost,
   type FieldSegment,
   FOR_TIME_VALUE_SOURCE,
   FormUiControlBase,
@@ -55,6 +59,12 @@ import { FOR_TIME_FIELD_DEFAULTS } from './time-field-defaults';
  * The bounds are named `minTime` / `maxTime` because `min` / `max` are reserved `FormUiControl`
  * members typed for numeric validators. Only their time-of-day component is considered.
  *
+ * Projected inside a `[forTimePicker]` with `anatomy="field"`, the field is adopted: it displays
+ * and edits the picker's value, takes the picker's bounds, `granularity`, `hourCycle` and `locale`,
+ * adds the picker's disabled / read-only / required / invalid states to its own, and leaves the
+ * `[formField]` binding and a surrounding `[forField]` to the picker. Its own `value` model is not
+ * written while adopted.
+ *
  * @typeParam D The adapter's immutable, time-capable date-time type.
  *
  * @example
@@ -78,11 +88,11 @@ import { FOR_TIME_FIELD_DEFAULTS } from './time-field-defaults';
     role: 'group',
     '[attr.dir]': 'dir()',
     '[attr.aria-label]': 'resolvedAriaLabel()',
-    '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
-    '[attr.aria-invalid]': 'invalid() ? "true" : null',
-    '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
-    '[attr.data-required]': 'required() ? "" : null',
-    '[attr.data-readonly]': 'readonly() ? "" : null',
+    '[attr.aria-disabled]': 'resolvedDisabled() ? "true" : null',
+    '[attr.aria-invalid]': 'effectiveInvalid() ? "true" : null',
+    '[attr.data-disabled]': 'resolvedDisabled() ? "" : null',
+    '[attr.data-required]': 'resolvedRequired() ? "" : null',
+    '[attr.data-readonly]': 'resolvedReadonly() ? "" : null',
     '[attr.data-empty]': 'empty() ? "" : null',
     '(focusout)': 'onFocusOut($event)',
   },
@@ -97,6 +107,17 @@ export class ForTimeField<D>
 {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
   readonly #defaults = inject(FOR_TIME_FIELD_DEFAULTS);
+  readonly #fieldHost = inject(FOR_TIME_FIELD_HOST, { optional: true }) as TimeFieldHost<D> | null;
+  readonly #adopter = computed(() => (this.#fieldHost?.adoptsField() ? this.#fieldHost : null));
+  protected readonly resolvedDisabled = computed(
+    () => this.effectiveDisabled() || (this.#adopter()?.effectiveDisabled() ?? false),
+  );
+  protected readonly resolvedReadonly = computed(
+    () => this.readonly() || (this.#adopter()?.readonly() ?? false),
+  );
+  protected readonly resolvedRequired = computed(
+    () => this.required() || (this.#adopter()?.required() ?? false),
+  );
 
   /**
    * The active, time-capable date adapter, resolved from `FOR_DATE_ADAPTER`
@@ -206,24 +227,51 @@ export class ForTimeField<D>
     super();
     this.#engine = new TimeFieldEngine<D>({
       adapter: this.adapter,
-      disabled: this.effectiveDisabled,
-      readonly: this.readonly,
+      disabled: this.resolvedDisabled,
+      readonly: this.resolvedReadonly,
       roving: this.roving,
-      granularity: this.granularity,
-      hourCycle: computed(() => this.hourCycle() ?? this.#defaults.hourCycle),
-      locale: this.locale,
+      granularity: computed(() => this.#adopter()?.granularity() ?? this.granularity()),
+      hourCycle: computed(
+        () => this.#adopter()?.resolvedHourCycle() ?? this.hourCycle() ?? this.#defaults.hourCycle,
+      ),
+      locale: computed(() => this.#adopter()?.locale() ?? this.locale()),
       placeholder: computed(() =>
         resolveTextRecord(this.#defaults.placeholder, this.placeholder()),
       ),
       emptySegmentText: computed(() => resolveText(this.#defaults.emptySegmentText)),
-      minTime: this.minTime,
-      maxTime: this.maxTime,
-      source: this.value,
-      onCommit: (next) => this.value.set(next),
+      minTime: computed(() => {
+        const adopter = this.#adopter();
+        return adopter ? adopter.minTime() : this.minTime();
+      }),
+      maxTime: computed(() => {
+        const adopter = this.#adopter();
+        return adopter ? adopter.maxTime() : this.maxTime();
+      }),
+      source: computed(() => {
+        const adopter = this.#adopter();
+        return adopter ? adopter.value() : this.value();
+      }),
+      onCommit: (next) => {
+        const adopter = this.#adopter();
+        if (adopter) {
+          adopter.commitFieldValue(next);
+        } else {
+          this.value.set(next);
+        }
+      },
     });
     this.delegate = this.#engine;
     this.segments = this.#engine.segments;
     this.empty = this.#engine.empty;
+
+    const fieldHost = this.#fieldHost;
+    if (fieldHost) {
+      registerHandle<AdoptedField>(
+        { element: this.#host.nativeElement, focus: (options) => this.focus(options) },
+        (field) => fieldHost.registerField(field),
+        (field) => fieldHost.unregisterField(field),
+      );
+    }
 
     injectHiddenInput({
       name: this.name,
@@ -245,15 +293,29 @@ export class ForTimeField<D>
    * focusable — so focus-on-error would silently go nowhere. No-op when disabled.
    */
   override focus(options?: FocusOptions): void {
-    if (this.effectiveDisabled()) {
+    if (this.resolvedDisabled()) {
       return;
     }
     this.#engine.focusFirstSegment(options);
   }
 
+  protected override fieldAdopted(): boolean {
+    return this.#adopter() !== null;
+  }
+
+  protected override effectiveInvalid(): boolean {
+    return this.invalid() || (this.#adopter()?.invalid() ?? false);
+  }
+
   protected onFocusOut(event: FocusEvent): void {
     const next = event.relatedTarget as Node | null;
-    if (!next || !this.#host.nativeElement.contains(next)) {
+    if (next && this.#host.nativeElement.contains(next)) {
+      return;
+    }
+    const adopter = this.#adopter();
+    if (adopter) {
+      adopter.markTouched();
+    } else {
       this.markTouched();
     }
   }

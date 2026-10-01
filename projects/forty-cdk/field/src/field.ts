@@ -58,8 +58,11 @@ export class ForField implements ForFieldContext, ForFieldAnchorContext {
 
   readonly #controlId = signal(this.#idGen.next('for-field-control'));
   readonly #controls = signal<readonly FieldControlHandle[]>([]);
-  readonly #controlCount = computed(() => this.#controls().length);
-  readonly #control = computed<FieldControlHandle | null>(() => this.#controls().at(-1) ?? null);
+  readonly #ownControls = computed(() =>
+    this.#controls().filter((control) => !(control.adopted?.() ?? false)),
+  );
+  readonly #controlCount = computed(() => this.#ownControls().length);
+  readonly #control = computed<FieldControlHandle | null>(() => this.#ownControls().at(-1) ?? null);
   readonly #labels = signal<readonly HTMLElement[]>([]);
   readonly #labelCount = computed(() => this.#labels().length);
   readonly #descriptionCount = signal(0);
@@ -127,7 +130,9 @@ export class ForField implements ForFieldContext, ForFieldAnchorContext {
    * The currently registered control handle, or null. A `[forField]` targets a
    * single control; if several register, the last one wins and unregistering it
    * falls back to the previous still-mounted one (mirroring the counted label /
-   * description / error slots). A duplicate emits a dev-mode warning.
+   * description / error slots). A duplicate emits a dev-mode warning. A control
+   * a composite currently adopts is never resolved here and never counts as a
+   * duplicate: the adopting composite is the control.
    */
   readonly control = this.#control;
 

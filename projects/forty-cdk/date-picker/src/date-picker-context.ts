@@ -1,8 +1,20 @@
 import { computed, inject, InjectionToken, type Signal } from '@angular/core';
 import type { ReferenceElement } from '@floating-ui/dom';
 
-import { orphanContextError, unresolvedRootError, type VetoableNativeEvent } from 'forty-cdk/core';
+import {
+  assertRootContext,
+  orphanContextError,
+  unresolvedRootError,
+  type VetoableNativeEvent,
+} from 'forty-cdk/core';
 import { type FloatingAlign, type FloatingSide } from 'forty-cdk/core-overlay';
+
+/**
+ * How a `[forDatePicker]` is composed. `'trigger'`: the trigger is the control
+ * and shows the value. `'field'`: a projected `[forDateField]` is the control
+ * and the trigger only opens the calendar beside it.
+ */
+export type ForDatePickerAnatomy = 'trigger' | 'field';
 
 /**
  * Coordination contract owned by `[forDatePicker]` (the root). The trigger,
@@ -136,7 +148,27 @@ export interface ForDatePickerContext {
   emitAutoFocusOnClose(): boolean;
 }
 
-/** Injection token for {@link ForDatePickerContext}, provided by `ForDatePicker`. */
+/**
+ * The date picker's internal coordination surface: everything
+ * {@link ForDatePickerContext} publishes plus the members only its own pieces
+ * read. Never exported from `public-api.ts`. It is the type the trigger reads
+ * {@link FOR_DATE_PICKER_CONTEXT} at; `ForDateRangePicker` declares its member
+ * TS-`protected`, which keeps it out of the emitted `.d.ts` while `useExisting`
+ * still satisfies this contract at runtime.
+ */
+export interface DatePickerContext extends ForDatePickerContext {
+  /** How the picker is composed. */
+  readonly anatomy: Signal<ForDatePickerAnatomy>;
+}
+
+/**
+ * Injection token for {@link ForDatePickerContext}, provided by `ForDatePicker`
+ * and `ForDateRangePicker`. The trigger reads it at an internal type that adds
+ * the anatomy, so a wrapper re-providing it must alias it to the root:
+ * `{ provide: FOR_DATE_PICKER_CONTEXT, useExisting: MyDatePicker }`, where
+ * `MyDatePicker` extends `ForDatePicker`. A value that merely satisfies the
+ * declared type resolves too, and is rejected in dev mode by the trigger.
+ */
 export const FOR_DATE_PICKER_CONTEXT = new InjectionToken<ForDatePickerContext>(
   'FOR_DATE_PICKER_CONTEXT',
 );
@@ -169,22 +201,28 @@ export function injectDatePickerContext(piece: string): ForDatePickerContext {
  */
 export function injectDatePickerTriggerContext(
   explicitRoot: Signal<ForDatePickerContext | ''>,
-): Signal<ForDatePickerContext> {
+): Signal<DatePickerContext> {
   const injected = inject(FOR_DATE_PICKER_CONTEXT, { optional: true });
   return computed(() => {
     const explicit = explicitRoot();
-    if (explicit !== '') {
-      return explicit;
+    const resolved = explicit === '' ? injected : explicit;
+    if (!resolved) {
+      throw unresolvedRootError({
+        code: 'FORCDK-DATE-PICKER-004',
+        trigger: '[forDatePickerTrigger]',
+        root: '[forDatePicker]',
+        token: 'FOR_DATE_PICKER_CONTEXT',
+        exportAs: 'forDatePicker',
+      });
     }
-    if (injected) {
-      return injected;
-    }
-    throw unresolvedRootError({
-      code: 'FORCDK-DATE-PICKER-004',
-      trigger: '[forDatePickerTrigger]',
-      root: '[forDatePicker]',
+    const widened = resolved as DatePickerContext;
+    assertRootContext({
+      entryPoint: 'date-picker',
       token: 'FOR_DATE_PICKER_CONTEXT',
-      exportAs: 'forDatePicker',
+      root: '[forDatePicker]',
+      piece: 'ForDatePickerTrigger',
+      probe: () => widened.anatomy,
     });
+    return widened;
   });
 }

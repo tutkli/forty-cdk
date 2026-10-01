@@ -12,11 +12,14 @@ import {
 import type { FormValueControl } from '@angular/forms/signals';
 
 import {
+  type AdoptedField,
   assertTimeCapable,
   clampToBounds,
   composeWithTime,
+  createSingleSlot,
   type DateAdapter,
   type FieldGranularity,
+  FOR_DATE_FIELD_HOST,
   FOR_TIME_VALUE_SOURCE,
   fortyError,
   injectDateAdapter,
@@ -24,7 +27,11 @@ import {
   serializeISODate,
 } from 'forty-cdk/core';
 import { DatePickerBase } from './date-picker-base';
-import { FOR_DATE_PICKER_CONTEXT, type ForDatePickerContext } from './date-picker-context';
+import {
+  FOR_DATE_PICKER_CONTEXT,
+  type ForDatePickerAnatomy,
+  type ForDatePickerContext,
+} from './date-picker-context';
 import { FOR_DATE_PICKER_DEFAULTS } from './date-picker-defaults';
 
 /**
@@ -47,6 +54,13 @@ import { FOR_DATE_PICKER_DEFAULTS } from './date-picker-defaults';
  * Setting `granularity` finer than `'day'` makes it a date-time picker: project a `[forTimeField]`
  * beside the calendar and bind both children **one-way** to `picker.value()`, and the picker grafts
  * the entered time onto each selection. That requires a time-capable adapter.
+ *
+ * Set `anatomy="field"` to make a projected `[forDateField]` the control instead of the trigger,
+ * the shape of the APG example: the field shows and edits the value, carries the label and the
+ * validity, and receives `focus()`; the trigger is a plain button that opens the calendar. Bind
+ * `[formField]`, the bounds, `granularity`, `hourCycle` and `locale` once, on the picker — the field
+ * takes them from there. A day picked in the calendar keeps the field's time and closes the surface
+ * at any granularity, since the time is typed in the field.
  *
  * For range selection use `ForDateRangePicker`.
  *
@@ -86,6 +100,22 @@ import { FOR_DATE_PICKER_DEFAULTS } from './date-picker-defaults';
  *   }
  * </div>
  * ```
+ *
+ * @example Field anatomy: a typed date field with a calendar button beside it:
+ * ```html
+ * <div forDatePicker anatomy="field" [formField]="form.when" granularity="minute"
+ *      [minDate]="min" [maxDate]="max" #picker="forDatePicker">
+ *   <div forDateField #field="forDateField">…segments…</div>
+ *   <button forDatePickerTrigger aria-label="Open calendar">…icon…</button>
+ *   @if (picker.open()) {
+ *     <div forDatePickerContent>
+ *       <div forCalendar [value]="picker.value()" [min]="picker.minDate()" [max]="picker.maxDate()">
+ *         …
+ *       </div>
+ *     </div>
+ *   }
+ * </div>
+ * ```
  */
 @Directive({
   selector: '[forDatePicker]',
@@ -96,7 +126,10 @@ import { FOR_DATE_PICKER_DEFAULTS } from './date-picker-defaults';
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.data-readonly]': 'readonly() ? "" : null',
   },
-  providers: [{ provide: FOR_DATE_PICKER_CONTEXT, useExisting: ForDatePicker }],
+  providers: [
+    { provide: FOR_DATE_PICKER_CONTEXT, useExisting: ForDatePicker },
+    { provide: FOR_DATE_FIELD_HOST, useExisting: ForDatePicker },
+  ],
 })
 export class ForDatePicker<D>
   extends DatePickerBase<D>
@@ -141,6 +174,33 @@ export class ForDatePicker<D>
   readonly hourCycle = input<12 | 24 | null>(null);
 
   /**
+   * How the picker is composed. `'trigger'` (default): the trigger is the
+   * focusable control and shows the value. `'field'`: a projected
+   * `[forDateField]` is the control — it shows and edits the value, is named by
+   * a surrounding `[forField]`, and receives `focus()` — and the trigger is a
+   * plain button that opens the calendar. Opening the calendar or calling
+   * `focus()` with no projected field throws in dev mode.
+   */
+  readonly anatomy = input<ForDatePickerAnatomy>('trigger');
+
+  /** Whether a projected `[forDateField]` is the control (`anatomy="field"`). */
+  readonly adoptsField = computed(() => this.anatomy() === 'field');
+
+  /**
+   * The effective hour cycle: `hourCycle`, then the scope's
+   * (`provideForDatePickerDefaults`), or `null` to follow the locale.
+   */
+  readonly resolvedHourCycle = computed(
+    () => this.hourCycle() ?? this.positioningDefaults.hourCycle,
+  );
+
+  readonly #fieldSlot = createSingleSlot<AdoptedField>({
+    primitive: 'date-picker',
+    owner: '[forDatePicker]',
+    claimant: '[forDateField]',
+  });
+
+  /**
    * `formatOptions` augmented with time fields when `granularity > 'day'` and
    * the consumer hasn't already specified any — so a date-time picker's value
    * display shows the time without extra wiring, while an explicit
@@ -157,7 +217,7 @@ export class ForDatePicker<D>
     ) {
       return options;
     }
-    const cycle = this.hourCycle() ?? this.positioningDefaults.hourCycle;
+    const cycle = this.resolvedHourCycle();
     return {
       ...options,
       hour: 'numeric',
@@ -258,8 +318,8 @@ export class ForDatePicker<D>
         }
         this.markTouched();
         // A date-time picker stays open after a day is picked so the time can
-        // still be edited; only a pure day picker honours `closeOnSelect`.
-        if (this.closeOnSelect() && this.granularity() === 'day') {
+        // still be edited; only a pure day picker or the field anatomy honours `closeOnSelect`.
+        if (this.closeOnSelect() && (this.granularity() === 'day' || this.adoptsField())) {
           this.close();
         }
       });
@@ -312,8 +372,86 @@ export class ForDatePicker<D>
     });
   }
 
+  /** Registers a projected `[forDateField]`; the field calls it on creation. */
+  protected registerField(field: AdoptedField): void {
+    this.#fieldSlot.register(field);
+  }
+
+  /** Removes a projected `[forDateField]`; the field calls it on destroy. */
+  protected unregisterField(field: AdoptedField): void {
+    this.#fieldSlot.unregister(field);
+  }
+
+  /** Writes a value typed in the adopted `[forDateField]`. Ignored while read-only or disabled. */
+  protected commitFieldValue(value: D | null): void {
+    if (this.readonly() || this.effectiveDisabled()) {
+      return;
+    }
+    this.value.set(value);
+  }
+
+  /**
+   * Toggles the surface from the trigger. In the field anatomy, throws in dev
+   * mode when no `[forDateField]` is projected.
+   */
+  override toggle(): void {
+    if (this.adoptsField()) {
+      this.#adoptedField();
+    }
+    super.toggle();
+  }
+
+  /**
+   * Moves focus into the control: the trigger, or in the field anatomy the
+   * projected `[forDateField]`'s first segment. No-op when disabled. In the
+   * field anatomy, throws in dev mode when no field is projected.
+   */
+  override focus(options?: FocusOptions): void {
+    if (!this.adoptsField()) {
+      super.focus(options);
+      return;
+    }
+    const field = this.#adoptedField();
+    if (!this.effectiveDisabled()) {
+      field?.focus(options);
+    }
+  }
+
+  protected override fieldLabelledElement(): HTMLElement | null {
+    return this.adoptsField()
+      ? (this.#fieldSlot.value()?.element ?? null)
+      : super.fieldLabelledElement();
+  }
+
+  protected override fieldLabelledElementId(): string | null {
+    return this.adoptsField() ? null : super.fieldLabelledElementId();
+  }
+
+  #adoptedField(): AdoptedField | null {
+    return assertFieldProjected(this.#fieldSlot.value());
+  }
+
   /** The active adapter, narrowed to a time-capable one; throws when it is day-only. */
   #time() {
     return assertTimeCapable(this.adapter, 'ForDatePicker', { scope: 'date-picker' });
   }
+}
+
+/**
+ * Returns the `[forDateField]` a field-anatomy picker adopted, throwing in dev
+ * mode when none is projected. A production build returns `null` and the call
+ * it guards degrades to a no-op.
+ */
+function assertFieldProjected(field: AdoptedField | null): AdoptedField | null {
+  if (isDevMode() && field === null) {
+    throw fortyError({
+      code: 'FORCDK-DATE-PICKER-007',
+      message: '[forDatePicker] has anatomy="field" but no [forDateField] is projected inside it.',
+      cause:
+        'In the field anatomy the projected date field is the control the picker labels, ' +
+        'focuses and shows its value in, so without one the value has nowhere to show.',
+      fix: 'Project a [forDateField] inside the [forDatePicker] element, or remove anatomy="field".',
+    });
+  }
+  return field;
 }

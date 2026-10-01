@@ -108,6 +108,15 @@ export { ForDateTimeLiteralBase } from './datetime/literal-directive';
 export { RangeFieldComposer } from './datetime/range-field-composer';
 export { ForDateTimeSegmentBase, type SegmentEditorContext } from './datetime/segment-directive';
 export {
+  type AdoptedField,
+  adoptedSegmentContext,
+  type DateFieldHost,
+  FOR_DATE_FIELD_HOST,
+  FOR_TIME_FIELD_HOST,
+  type SegmentedFieldHost,
+  type TimeFieldHost,
+} from './datetime/segmented-field-host';
+export {
   type DateSegmentType,
   type FieldSegment,
   type SegmentEditorDelegate,

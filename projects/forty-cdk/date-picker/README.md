@@ -18,6 +18,7 @@ Reinterpreted idiomatically for modern Angular: a focusable trigger that opens a
 - **Date Picker**: a trigger plus a floating [Calendar](../calendar/README.md), and the form value itself (`FormValueControl<D | null>`). Choose it when the date is found by looking and the grid should stay out of the way until asked for.
 - **[Calendar](../calendar/README.md)**: the same grid inline and always visible. It exposes `[(value)]` as a model but implements no form-control contract, so a form binds the picker rather than the calendar.
 - **[Date Field](../date-field/README.md)**: segmented keyboard entry with no grid and no popup. Choose it when the user already knows the date and typing is the fast path.
+- **Both at once**: a date field the user types into, with a calendar button beside it. That is this picker's [field anatomy](#field-anatomy).
 
 ## Date adapter
 
@@ -203,7 +204,8 @@ Open the picker and click a first day: the trigger keeps its placeholder, becaus
 | `minDate`           | `input<D \| null>`                               | Minimum selectable date (inclusive). Forward to the projected calendar's `[min]`.<br>**Default:** `null`                                                                                                       |
 | `maxDate`           | `input<D \| null>`                               | Maximum selectable date (inclusive). Forward to the projected calendar's `[max]`.<br>**Default:** `null`                                                                                                       |
 | `isDateUnavailable` | `input<(date: D) => boolean>`                    | Per-date predicate. Forward to the projected calendar's `[isDateUnavailable]`.<br>**Default:** `() => false`                                                                                                   |
-| `closeOnSelect`     | `input<boolean>`                                 | Close the surface after a date is picked. Honoured only at `granularity="day"`.<br>**Default:** `true`                                                                                                         |
+| `closeOnSelect`     | `input<boolean>`                                 | Close the surface after a date is picked. Honoured at `granularity="day"`, and at any granularity with `anatomy="field"`.<br>**Default:** `true`                                                               |
+| `anatomy`           | `input<'trigger' \| 'field'>`                    | Which piece is the control. `'field'` makes a projected `[forDateField]` the control and the trigger a plain button; see [Field anatomy](#field-anatomy).<br>**Default:** `'trigger'`                          |
 | `granularity`       | `input<'day' \| 'hour' \| 'minute' \| 'second'>` | Date-time precision. `'day'` (default) is a pure date picker; coarser-than-day off composes a time field.<br>**Default:** `'day'`                                                                              |
 | `hourCycle`         | `input<12 \| 24 \| null>`                        | 12/24-hour cycle for the value display (and typically the projected `[forTimeField]`).<br>**Default:** `null` → the scope's `hourCycle` (`provideForDatePickerDefaults`), then the locale                      |
 | `modal`             | `input<boolean>`                                 | Trap focus + inert background + scroll lock (centered dialog) instead of an anchored popover.<br>**Default:** `false`                                                                                          |
@@ -328,6 +330,52 @@ The content is a field boundary. Inside a [`[forField]`](../field/README.md#how-
 
 The value display (`[forDatePickerValue]`) automatically appends the time to its formatting when `granularity > 'day'` and you haven't set time fields in `formatOptions`.
 
+## Field anatomy
+
+The default anatomy makes the trigger the control: it shows the value and takes the label. The common form-field composite is the other way round, and so is the APG example: an editable field that holds the value, plus a separate button that opens the calendar. Set `anatomy="field"` and project a [`[forDateField]`](../date-field/README.md) inside the picker to get that shape.
+
+```html
+<div forField>
+  <label forLabel>Appointment</label>
+  <div
+    forDatePicker
+    anatomy="field"
+    [formField]="form.when"
+    granularity="minute"
+    [minDate]="min"
+    [maxDate]="max"
+    #picker="forDatePicker"
+  >
+    <div forDateField #field="forDateField">
+      @for (seg of field.segments(); track seg.id) { @if (seg.isLiteral) {
+      <span forDateFieldLiteral>{{ seg.text }}</span>
+      } @else {
+      <span forDateFieldSegment [segment]="seg.type!">{{ seg.text }}</span>
+      } }
+    </div>
+    <button forDatePickerTrigger aria-label="Open calendar">…icon…</button>
+
+    @if (picker.open()) {
+    <div forDatePickerContent>
+      <div forCalendar [value]="picker.value()" [min]="picker.minDate()" [max]="picker.maxDate()">
+        <!-- …calendar header + grid… -->
+      </div>
+    </div>
+    }
+  </div>
+</div>
+```
+
+With the field adopted:
+
+- **One form control.** The picker stays the `FormValueControl`, so `[formField]` binds once, on the picker. A typed date and a calendar pick both write the picker's value, and both mark it dirty; a pick marks it touched, and so does focus leaving the field.
+- **State is set once.** `minDate`, `maxDate`, `disabled`, `readonly`, `granularity`, `hourCycle` and `locale` on the picker apply to the field. A read-only picker blocks typing and picking alike.
+- **The field is the control.** A surrounding `[forField]` names and describes the field's `role="group"`, `aria-invalid` lands there, a label press focuses its first segment, and the picker's `focus()` goes there too.
+- **The trigger is a plain button.** It drops `role="combobox"` and the form-control `aria-*` state, and keeps `aria-haspopup="dialog"`, `aria-expanded` and `aria-controls`. Give it a name of its own.
+- **A pick closes the surface at any granularity.** The time is typed in the field rather than in the surface, so a picked day keeps the field's time and the surface closes (unless `closeOnSelect` is off).
+
+The anatomy is explicit, so a date field placed inside the surface of a trigger-anatomy picker changes nothing. With `anatomy="field"` and no projected `[forDateField]`, opening the calendar or calling `focus()` throws `FORCDK-DATE-PICKER-007` in dev mode.
+
 ## Range selection — `ForDateRangePicker`
 
 For date-range selection use the dedicated `ForDateRangePicker` root (selector `[forDateRangePicker]`). It is the root **and** the form value, implementing `FormValueControl<DateRange<D> | null>`, so the committed range auto-wires with `[formField]` exactly like any other control.
@@ -396,10 +444,10 @@ Inside the surface, the projected `ForCalendar` owns the full grid keyboard map 
 
 Implements the [WAI-ARIA Date Picker Dialog pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/examples/datepicker-dialog/).
 
-- **`role="combobox"`** on the trigger with **`aria-haspopup="dialog"`**, `aria-expanded` reflecting `open()`, and `aria-controls` pointing at the surface while open. This is the same shape `[forSelectTrigger]` / `[forTimePickerTrigger]` ship, with the `dialog` popup token ARIA 1.2 allows for a combobox surface. The role is also what makes the form-control ARIA below legal: `role="button"` supports neither `aria-readonly` nor `aria-required`.
+- **`role="combobox"`** on the trigger with **`aria-haspopup="dialog"`**, `aria-expanded` reflecting `open()`, and `aria-controls` pointing at the surface while open. This is the same shape `[forSelectTrigger]` / `[forTimePickerTrigger]` ship, with the `dialog` popup token ARIA 1.2 allows for a combobox surface. The role is also what makes the form-control ARIA below legal: `role="button"` supports neither `aria-readonly` nor `aria-required`. In the [field anatomy](#field-anatomy) the trigger is a plain button with the same three popup attributes and none of the form-control state, which the date field carries instead.
 - **`role="dialog"`** on the surface, named by `[ariaLabel]` (or `aria-labelledby` the trigger when no label is set). `aria-modal="true"` only in modal mode (truthy-only).
 - **Form-control ARIA** (`aria-readonly` / `aria-required` / `aria-invalid` / `aria-busy`) is reflected on the focusable trigger so assistive tech announces validity on the element that takes focus, alongside the `data-readonly` styling hook. The disabled state is the exception. It reflects through one channel only: the native `disabled` attribute (plus `data-disabled`), never `aria-disabled`.
-- **Inside a `[forField]` the labelled element is the trigger**, not the `[forDatePicker]` / `[forDateRangePicker]` wrapper: the field's `controlId` and its `aria-labelledby` / `aria-describedby` / `aria-errormessage` land on `[forDatePickerTrigger]`, so `[forLabel]`'s `for` points at the element that takes focus, clicking a non-`<label>` `[forLabel]` opens the surface, and Signal Forms' focus-on-error reaches the trigger. `role="combobox"` takes its name from the author, so this is the channel that names the control. The root's `[ariaLabel]` names the `role="dialog"` surface instead.
+- **Inside a `[forField]` the labelled element is the trigger**, not the `[forDatePicker]` / `[forDateRangePicker]` wrapper: the field's `controlId` and its `aria-labelledby` / `aria-describedby` / `aria-errormessage` land on `[forDatePickerTrigger]`, so `[forLabel]`'s `for` points at the element that takes focus, clicking a non-`<label>` `[forLabel]` opens the surface, and Signal Forms' focus-on-error reaches the trigger. `role="combobox"` takes its name from the author, so this is the channel that names the control. The root's `[ariaLabel]` names the `role="dialog"` surface instead. In the [field anatomy](#field-anatomy) the same association lands on the date field's `role="group"` instead, and a label press focuses its first segment.
 - **Focus management**: focus enters the surface on open (the calendar's roving cell in non-modal mode) and returns to the trigger on close, both vetoable via `(autoFocusOnOpen)` / `(autoFocusOnClose)`.
 - **Dismissal**: Escape (`(escapeKeyDown)`) and outside-pointer (`(pointerDownOutside)` / `(interactOutside)`) close the surface, each vetoable.
 

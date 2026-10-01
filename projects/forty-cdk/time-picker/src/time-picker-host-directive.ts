@@ -28,6 +28,7 @@ export const FOR_TIME_PICKER_HOST_DIRECTIVE_INPUTS = [
   'open',
   'align',
   'alignOffset',
+  'anatomy',
   'ariaLabel',
   'avoidCollisions',
   'clipUntilPositioned',
