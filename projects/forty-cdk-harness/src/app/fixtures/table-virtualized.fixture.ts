@@ -116,7 +116,6 @@ function buildRows(): readonly Row[] {
             #row
             forTableRow
             [virtualIndex]="vrow.index"
-            [attr.data-index]="vrow.index"
             [style.transform]="'translateY(' + vrow.start + 'px)'"
             [style.height.px]="measured ? measuredRowHeight(vrow.index) : null"
             [attr.data-testid]="'row-' + vrow.index"

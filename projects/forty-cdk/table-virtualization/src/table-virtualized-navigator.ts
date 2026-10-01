@@ -116,6 +116,11 @@ export class TableVirtualizedNavigator {
     return this.#deps.scrollViewportRect();
   }
 
+  /** The count of rows the virtualizer can place, which bounds cross-window navigation. */
+  placeableRowCount(): number {
+    return this.#deps.rowCount();
+  }
+
   /**
    * Resolve a pending cross-window navigation: once the row carrying the pending
    * absolute index mounts, focus its cell and clear the pending target. Returns

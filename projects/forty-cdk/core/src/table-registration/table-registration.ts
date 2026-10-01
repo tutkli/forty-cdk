@@ -71,7 +71,8 @@ export interface TableVirtualWindow {
    * calls it once per stamped row (browser-only, after render) when its
    * `measureRows` input is set, so a window mixing row shapes (denser variant
    * rows, group separators) stays contiguous after scroll. The element must
-   * carry the `data-index` attribute the body stamps.
+   * carry the `data-index` attribute a `[forTableRow]` reflects from its
+   * `virtualIndex`.
    *
    * `<for-table-body>` also calls it with `null` after measuring the rendered
    * rows to sweep detached rows recycled out of the window, evicting them from
@@ -108,6 +109,13 @@ export interface TableVirtualRowNavigation {
    * drop to a far row), without depending on `ForTableVirtualized` directly.
    */
   scrollViewportRect(): DOMRect | null;
+  /**
+   * The count of rows the virtualizer can place — `[virtualRowCount]`, else the
+   * table's resolved row count, else `0`. `ForTable` bounds row-crossing grid
+   * actions by it rather than by the `aria-rowcount` total, which stays unknown
+   * for a windowed grid whose server reports no total.
+   */
+  placeableRowCount(): number;
   /**
    * Drop any stashed cross-window target. `ForTable` calls this on the next
    * keyboard interaction that reaches the grid, so a pending move set by an

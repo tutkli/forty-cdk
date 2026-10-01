@@ -1,8 +1,12 @@
 import {
+  afterEveryRender,
   Component,
+  computed,
+  type ElementRef,
   provideZonelessChangeDetection,
   signal,
   viewChild,
+  viewChildren,
   type WritableSignal,
 } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
@@ -27,7 +31,13 @@ import {
   type ForTableContext,
 } from 'forty-cdk/table';
 
-import { flush, installObserverPolyfills, pressKey, renderHost } from '../../src/test-utils';
+import {
+  flush,
+  installObserverPolyfills,
+  pressKey,
+  renderHost,
+  type RenderResult,
+} from '../../src/test-utils';
 import { ForTableVirtualized } from './table-virtualized';
 
 describe('ForTableVirtualized', () => {
@@ -234,12 +244,13 @@ class DeclarativeAppendHost {
       forTable
       forTableVirtualized
       mode="grid"
-      [rowCount]="SERVER_TOTAL"
+      [rowCount]="serverTotal()"
       [virtualRowCount]="loaded()"
     >
       <div role="rowgroup">
-        @for (vi of windowIndices(); track vi) {
-          <div forTableRow [virtualIndex]="vi">
+        @for (row of windowRows(); track row.index) {
+          @let vi = row.index;
+          <div forTableRow [virtualIndex]="vi" [attr.data-testid]="'row-' + vi">
             <div forTableCell name="a" [attr.data-testid]="'cell-' + vi + '-a'">{{ vi }}</div>
           </div>
         }
@@ -248,9 +259,53 @@ class DeclarativeAppendHost {
   `,
 })
 class AppendCrossWindowHost {
-  protected readonly SERVER_TOTAL = SERVER_TOTAL;
+  readonly serverTotal = signal<number | undefined>(SERVER_TOTAL);
   readonly loaded = signal<number | undefined>(LOADED);
   readonly windowIndices = signal<readonly number[]>([0, 1, 2]);
+  readonly windowRows = computed(() => this.windowIndices().map((index) => ({ index })));
+}
+
+const MEASURED_TOTAL = 100;
+const MEASURED_ROW_SIZE = 90;
+
+@Component({
+  imports: [ForTable, ForTableVirtualized, ForTableRow, ForTableCell],
+  template: `
+    <div
+      forTable
+      forTableVirtualized
+      mode="grid"
+      [rowCount]="total"
+      [estimateRowSize]="rowSize"
+      #v="forTableVirtualized"
+    >
+      <div role="rowgroup" [style.height.px]="v.totalSize()">
+        @for (row of windowRows(); track row.index) {
+          @let vi = row.index;
+          <div #row forTableRow [virtualIndex]="vi">
+            <div forTableCell name="a">{{ vi }}</div>
+          </div>
+        }
+      </div>
+    </div>
+  `,
+})
+class MeasuredRawRowsHost {
+  protected readonly total = MEASURED_TOTAL;
+  protected readonly rowSize = ROW_SIZE;
+  readonly windowIndices = signal<readonly number[]>([0, 1, 2]);
+  readonly windowRows = computed(() => this.windowIndices().map((index) => ({ index })));
+  private readonly v = viewChild.required(ForTableVirtualized);
+  private readonly rowEls = viewChildren<ElementRef<HTMLElement>>('row');
+
+  constructor() {
+    afterEveryRender(() => {
+      for (const row of this.rowEls()) {
+        this.v().measureRow(row.nativeElement);
+      }
+      this.v().measureRow(null);
+    });
+  }
 }
 
 @Component({
@@ -489,5 +544,143 @@ describe('ForTableVirtualized — ArrowUp over a variant row above the dataset (
 
     expect(document.activeElement).toBe(start);
     expect(event.defaultPrevented).toBe(true);
+  });
+});
+
+describe('ForTableVirtualized — measuring raw [forTableRow]s (#2068)', () => {
+  let restoreObservers: () => void;
+  beforeAll(() => {
+    restoreObservers = installObserverPolyfills();
+  });
+  afterAll(() => restoreObservers());
+
+  beforeEach(() => {
+    vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockImplementation(function (
+      this: HTMLElement,
+    ) {
+      return this.getAttribute('role') === 'row' ? MEASURED_ROW_SIZE : 0;
+    });
+  });
+
+  const rowgroupHeight = (query: (selector: string) => HTMLElement | null): string =>
+    query('[role="rowgroup"]')!.style.height;
+
+  it('replaces the estimate of every row the documented snippet measures, without a missing-index warning', async () => {
+    const warn = vi.spyOn(console, 'warn');
+    const { query, flush } = renderHost(MeasuredRawRowsHost);
+    await flush();
+
+    expect(rowgroupHeight(query)).toBe(
+      `${(MEASURED_TOTAL - 3) * ROW_SIZE + 3 * MEASURED_ROW_SIZE}px`,
+    );
+    expect(warn).not.toHaveBeenCalledWith(expect.stringContaining('Missing attribute'));
+  });
+
+  it('measures the rows a scroll recycles into the window at their new index', async () => {
+    const { instance, query, flush } = renderHost(MeasuredRawRowsHost);
+    await flush();
+
+    instance.windowIndices.set([40, 41]);
+    await flush();
+
+    expect(rowgroupHeight(query)).toBe(
+      `${(MEASURED_TOTAL - 5) * ROW_SIZE + 5 * MEASURED_ROW_SIZE}px`,
+    );
+  });
+});
+
+describe('ForTableVirtualized — a windowed grid with no server total (#2069)', () => {
+  let restoreObservers: () => void;
+  beforeAll(() => {
+    restoreObservers = installObserverPolyfills();
+  });
+  afterAll(() => restoreObservers());
+
+  const byId = (el: HTMLElement, id: string): HTMLElement =>
+    el.querySelector<HTMLElement>(`[data-testid="${id}"]`)!;
+  const rowCountAttr = (el: HTMLElement): string | null =>
+    el.querySelector('[forTable]')!.getAttribute('aria-rowcount');
+  const press = (
+    cell: HTMLElement,
+    key: string,
+    modifiers: Partial<KeyboardEventInit> = {},
+  ): void => {
+    cell.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, ...modifiers }));
+  };
+
+  async function renderWithoutTotal(): Promise<RenderResult<AppendCrossWindowHost>> {
+    const rendered = renderHost(AppendCrossWindowHost);
+    rendered.instance.serverTotal.set(undefined);
+    await rendered.flush();
+    return rendered;
+  }
+
+  it('reports an unknown aria-rowcount while rows are mounted', async () => {
+    const { el } = await renderWithoutTotal();
+
+    expect(el.querySelectorAll('[role="row"]')).toHaveLength(3);
+    expect(rowCountAttr(el)).toBe('-1');
+  });
+
+  it('keeps each row on its absolute aria-rowindex past the first window', async () => {
+    const { el, instance, flush } = await renderWithoutTotal();
+    instance.windowIndices.set([20, 21, 22]);
+    await flush();
+
+    expect(byId(el, 'row-22').getAttribute('aria-rowindex')).toBe('23');
+    expect(rowCountAttr(el)).toBe('-1');
+  });
+
+  it('reports the declared total again once [rowCount] is bound', async () => {
+    const { el, instance, flush } = await renderWithoutTotal();
+    instance.serverTotal.set(SERVER_TOTAL);
+    await flush();
+
+    expect(rowCountAttr(el)).toBe(String(SERVER_TOTAL));
+  });
+
+  it('sends Ctrl+End to the last loaded row', async () => {
+    const scrollToRow = vi.spyOn(ForTableVirtualized.prototype, 'scrollToRow');
+    const { el, flush } = await renderWithoutTotal();
+    const start = byId(el, 'cell-0-a');
+    start.focus();
+    await flush();
+    scrollToRow.mockClear();
+
+    press(start, 'End', { ctrlKey: true });
+    await flush();
+
+    expect(scrollToRow).toHaveBeenCalledWith(LOADED - 1);
+  });
+
+  it('crosses the window on ArrowDown from the last mounted row', async () => {
+    const scrollToRow = vi.spyOn(ForTableVirtualized.prototype, 'scrollToRow');
+    const { el, instance, flush } = await renderWithoutTotal();
+    const start = byId(el, 'cell-2-a');
+    start.focus();
+    await flush();
+    scrollToRow.mockClear();
+
+    press(start, 'ArrowDown');
+    await flush();
+    expect(scrollToRow).toHaveBeenCalledWith(3);
+
+    instance.windowIndices.set([2, 3, 4]);
+    await flush();
+    expect(document.activeElement).toBe(byId(el, 'cell-3-a'));
+  });
+
+  it('crosses the window on PageDown by one rendered page', async () => {
+    const scrollToRow = vi.spyOn(ForTableVirtualized.prototype, 'scrollToRow');
+    const { el, flush } = await renderWithoutTotal();
+    const start = byId(el, 'cell-0-a');
+    start.focus();
+    await flush();
+    scrollToRow.mockClear();
+
+    press(start, 'PageDown');
+    await flush();
+
+    expect(scrollToRow).toHaveBeenCalledWith(3);
   });
 });

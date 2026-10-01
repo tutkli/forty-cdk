@@ -118,7 +118,6 @@ function buildRows(): readonly Row[] {
             [virtualIndex]="vrow.index"
             forDraggable
             [dragData]="vrow.index"
-            [attr.data-index]="vrow.index"
             [style.transform]="'translateY(' + vrow.start + 'px)'"
             [attr.data-testid]="'row-' + vrow.index"
           >

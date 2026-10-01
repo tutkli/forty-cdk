@@ -189,7 +189,9 @@ export class ForTableVirtualized {
 
   /**
    * Record the measured size of a rendered row element (dynamic / measured row heights).
-   * Passing `null` sweeps evicted rows recycled out of the window from the measurement cache.
+   * The element must be a `[forTableRow]` bound to its `[virtualIndex]`, whose reflected
+   * `data-index` identifies the row being measured. Passing `null` sweeps evicted rows
+   * recycled out of the window from the measurement cache.
    */
   measureRow(element: HTMLElement | null): void {
     this.#virtualizer.measureElement(element);

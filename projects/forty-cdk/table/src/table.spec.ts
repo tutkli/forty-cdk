@@ -4822,6 +4822,24 @@ describe('ForTable', () => {
       expect(row52.getAttribute('aria-rowindex')).toBe('53');
     });
 
+    it('reflects each row virtualIndex as data-index, in step with a scroll (#2068)', async () => {
+      const { el, instance, flush } = renderHost(VirtualizedTableHost);
+      expect(el.querySelector('[data-testid="row-51"]')!.getAttribute('data-index')).toBe('51');
+
+      instance.windowIndices.set([51, 52, 53]);
+      await flush();
+      expect(
+        [...el.querySelectorAll('[role="row"]')].map((row) => row.getAttribute('data-index')),
+      ).toEqual(['51', '52', '53']);
+    });
+
+    it('emits no data-index on a row without virtualIndex (#2068)', () => {
+      const { el } = renderHost(GridTableHost);
+      const rows = [...el.querySelectorAll('[role="row"]')];
+      expect(rows.length).toBeGreaterThan(0);
+      expect(rows.filter((row) => row.hasAttribute('data-index'))).toEqual([]);
+    });
+
     it('the companion builds and coexists with ForTable without throwing', () => {
       const { el } = renderHost(VirtualizedTableHost);
       expect(rootEl(el).hasAttribute('forTableVirtualized')).toBe(true);

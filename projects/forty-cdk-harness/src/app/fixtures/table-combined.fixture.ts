@@ -263,7 +263,6 @@ function makeRows(start: number, length: number): Row[] {
             class="row"
             [style.gridTemplateColumns]="gridCols()"
             [style.transform]="'translateY(' + vrow.start + 'px)'"
-            [attr.data-index]="vrow.index"
             [attr.data-testid]="'row-' + vrow.index"
           >
             @if (selectionMode() !== 'none') {
