@@ -135,7 +135,6 @@ export {
 export { TimeFieldEngine } from './datetime/time-field-engine';
 export { type TimeGranularity } from './datetime/time-segments';
 export { FOR_TIME_VALUE_SOURCE } from './datetime/time-value-source';
-export { createDefaults } from './defaults/defaults';
 export {
   type LocalizableText,
   resolveText,

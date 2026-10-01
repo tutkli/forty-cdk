@@ -1,5 +1,5 @@
 import type { DateAdapter, TimeCapableDateAdapter } from './date-adapter';
-import { NativeDateAdapter } from 'forty-cdk/calendar';
+import { NativeDateAdapter } from 'forty-cdk/shared';
 import {
   clampToBounds,
   composeWithTime,

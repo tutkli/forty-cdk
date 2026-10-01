@@ -17,7 +17,7 @@ import {
   ForAccordionItem,
   ForAccordionTrigger,
 } from 'forty-cdk/accordion';
-import { provideNativeDateAdapter } from 'forty-cdk/calendar';
+import { provideNativeDateAdapter } from 'forty-cdk/shared';
 import { ForCombobox, ForComboboxContent, ForComboboxInput } from 'forty-cdk/combobox';
 import { ForDatePicker, ForDatePickerContent, ForDatePickerTrigger } from 'forty-cdk/date-picker';
 import { ForDisclosure, ForDisclosureContent, ForDisclosureTrigger } from 'forty-cdk/disclosure';

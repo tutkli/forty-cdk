@@ -10,7 +10,7 @@ import {
 } from '../../src/test-utils/contract';
 import { ForNavigationMenu } from './navigation-menu';
 import { ForNavigationMenuContent } from './navigation-menu-content';
-import { provideForNavigationMenuDefaults } from './navigation-menu-defaults';
+import { provideForNavigationMenuDefaults } from 'forty-cdk/defaults';
 import { ForNavigationMenuItem } from './navigation-menu-item';
 import { ForNavigationMenuLink } from './navigation-menu-link';
 import { ForNavigationMenuList } from './navigation-menu-list';

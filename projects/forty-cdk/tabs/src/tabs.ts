@@ -17,7 +17,7 @@ import {
   type ForTabsTriggerHandle,
   type TabsActivationMode,
 } from './tabs-context';
-import { FOR_TABS_DEFAULTS } from './tabs-defaults';
+import { FOR_TABS_DEFAULTS } from 'forty-cdk/defaults';
 
 /**
  * Root of the Tabs primitive. Owns the selected value, activation mode,

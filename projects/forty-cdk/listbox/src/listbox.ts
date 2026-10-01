@@ -45,7 +45,7 @@ import {
   type ForListboxContext,
   type ForListboxOptionHandle,
 } from './listbox-context';
-import { FOR_LISTBOX_DEFAULTS } from './listbox-defaults';
+import { FOR_LISTBOX_DEFAULTS } from 'forty-cdk/defaults';
 import {
   createListboxVirtualizedNavigator,
   type ListboxVirtualizedNavigator,

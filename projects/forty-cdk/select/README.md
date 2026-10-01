@@ -261,7 +261,7 @@ Per-instance inputs always win over the scope defaults. `side` / `align` / `side
 <!-- snippet: fragment -->
 
 ```ts
-import { provideForSelectDefaults } from 'forty-cdk/select';
+import { provideForSelectDefaults } from 'forty-cdk/defaults';
 
 // Every select in the app opens above its trigger, aligned to the end edge
 bootstrapApplication(App, {

@@ -9,4 +9,4 @@ export {
   FOR_MENUBAR_DEFAULTS,
   provideForMenubarDefaults,
   type ForMenubarDefaults,
-} from './menubar-defaults';
+} from 'forty-cdk/defaults';

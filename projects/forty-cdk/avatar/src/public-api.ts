@@ -6,4 +6,4 @@ export {
   FOR_AVATAR_DEFAULTS,
   provideForAvatarDefaults,
   type ForAvatarDefaults,
-} from './avatar-defaults';
+} from 'forty-cdk/defaults';

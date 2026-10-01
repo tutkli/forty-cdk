@@ -1,6 +1,6 @@
 import { inject, Injectable, type Provider, signal } from '@angular/core';
 
-import { NativeDateAdapter } from 'forty-cdk/calendar';
+import { NativeDateAdapter } from 'forty-cdk/shared';
 import { FOR_DATE_ADAPTER } from 'forty-cdk/core';
 
 /**

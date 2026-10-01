@@ -6,7 +6,7 @@ import { entryPointOf, LIBRARY_SOURCES } from '../test-utils/source-scan';
  * shared vocabulary on their `For<Primitive>Defaults` interface, and the
  * declaration of who is in each.
  *
- * `core/defaults/per-primitive-defaults.spec.ts` covers each provider on its
+ * `defaults/src/per-primitive-defaults.spec.ts` covers each provider on its
  * own — the fallback resolves, an override merges per key — and derives the
  * provider set from source so a fortieth cannot go uncovered. What it cannot see
  * is a family drifting: a tunable added to one member and not its siblings, or
@@ -75,46 +75,46 @@ const FAMILIES: readonly DefaultsKeyFamily[] = [
     name: 'anchored positioning seeds',
     keys: ANCHORED_SEEDS,
     members: [
-      'combobox/src/combobox-defaults.ts',
-      'context-menu/src/context-menu-defaults.ts',
-      'date-picker/src/date-picker-defaults.ts',
-      'date-picker/src/date-range-picker-defaults.ts',
-      'dropdown-menu/src/dropdown-menu-defaults.ts',
-      'hover-card/src/hover-card-defaults.ts',
-      'menu/src/menu-defaults.ts',
-      'menubar/src/menubar-defaults.ts',
-      'popover/src/popover-defaults.ts',
-      'select/src/select-defaults.ts',
-      'time-picker/src/time-picker-defaults.ts',
-      'tooltip/src/tooltip-defaults.ts',
+      'defaults/src/combobox-defaults.ts',
+      'defaults/src/context-menu-defaults.ts',
+      'defaults/src/date-picker-defaults.ts',
+      'defaults/src/date-range-picker-defaults.ts',
+      'defaults/src/dropdown-menu-defaults.ts',
+      'defaults/src/hover-card-defaults.ts',
+      'defaults/src/menu-defaults.ts',
+      'defaults/src/menubar-defaults.ts',
+      'defaults/src/popover-defaults.ts',
+      'defaults/src/select-defaults.ts',
+      'defaults/src/time-picker-defaults.ts',
+      'defaults/src/tooltip-defaults.ts',
     ],
   },
   {
     name: 'menu viewport degradation',
     keys: ['fallbackAxisSideDirection'],
     members: [
-      'context-menu/src/context-menu-defaults.ts',
-      'dropdown-menu/src/dropdown-menu-defaults.ts',
-      'menu/src/menu-defaults.ts',
-      'menubar/src/menubar-defaults.ts',
+      'defaults/src/context-menu-defaults.ts',
+      'defaults/src/dropdown-menu-defaults.ts',
+      'defaults/src/menu-defaults.ts',
+      'defaults/src/menubar-defaults.ts',
     ],
   },
   {
     name: 'arrow-capable anchored overlays',
     keys: ['arrowPadding'],
     members: [
-      'hover-card/src/hover-card-defaults.ts',
-      'popover/src/popover-defaults.ts',
-      'tooltip/src/tooltip-defaults.ts',
+      'defaults/src/hover-card-defaults.ts',
+      'defaults/src/popover-defaults.ts',
+      'defaults/src/tooltip-defaults.ts',
     ],
   },
   {
     name: 'hover-scheduled overlays',
     keys: ['openDelay', 'closeDelay', 'skipDelayDuration'],
     members: [
-      'hover-card/src/hover-card-defaults.ts',
-      'navigation-menu/src/navigation-menu-defaults.ts',
-      'tooltip/src/tooltip-defaults.ts',
+      'defaults/src/hover-card-defaults.ts',
+      'defaults/src/navigation-menu-defaults.ts',
+      'defaults/src/tooltip-defaults.ts',
     ],
   },
   {
@@ -128,64 +128,64 @@ const FAMILIES: readonly DefaultsKeyFamily[] = [
       'animateLeave',
       'backdropAnimateLeave',
     ],
-    members: ['dialog/src/dialog-defaults.ts', 'drawer/src/drawer-defaults.ts'],
+    members: ['defaults/src/dialog-defaults.ts', 'defaults/src/drawer-defaults.ts'],
   },
   {
     name: 'datetime segment fields',
     keys: ['emptySegmentText', 'segmentLabels', 'placeholder'],
     members: [
-      'date-field/src/date-field-defaults.ts',
-      'date-field/src/date-range-field-defaults.ts',
-      'time-field/src/time-field-defaults.ts',
-      'time-field/src/time-range-field-defaults.ts',
+      'defaults/src/date-field-defaults.ts',
+      'defaults/src/date-range-field-defaults.ts',
+      'defaults/src/time-field-defaults.ts',
+      'defaults/src/time-range-field-defaults.ts',
     ],
   },
   {
     name: 'hour-cycle-capable date and time roots',
     keys: ['hourCycle'],
     members: [
-      'date-field/src/date-field-defaults.ts',
-      'date-field/src/date-range-field-defaults.ts',
-      'date-picker/src/date-picker-defaults.ts',
-      'time-field/src/time-field-defaults.ts',
-      'time-field/src/time-range-field-defaults.ts',
-      'time-picker/src/time-picker-defaults.ts',
+      'defaults/src/date-field-defaults.ts',
+      'defaults/src/date-range-field-defaults.ts',
+      'defaults/src/date-picker-defaults.ts',
+      'defaults/src/time-field-defaults.ts',
+      'defaults/src/time-range-field-defaults.ts',
+      'defaults/src/time-picker-defaults.ts',
     ],
   },
   {
     name: 'range field endpoint labels',
     keys: ['startLabel', 'endLabel'],
     members: [
-      'date-field/src/date-range-field-defaults.ts',
-      'time-field/src/time-range-field-defaults.ts',
+      'defaults/src/date-range-field-defaults.ts',
+      'defaults/src/time-range-field-defaults.ts',
     ],
   },
   {
     name: 'roving collections with a wrap policy',
     keys: ['loop'],
     members: [
-      'carousel/src/carousel-defaults.ts',
-      'radio-group/src/radio-group-defaults.ts',
-      'stepper/src/stepper-defaults.ts',
-      'tabs/src/tabs-defaults.ts',
-      'toggle/src/toggle-defaults.ts',
-      'toolbar/src/toolbar-defaults.ts',
+      'defaults/src/carousel-defaults.ts',
+      'defaults/src/radio-group-defaults.ts',
+      'defaults/src/stepper-defaults.ts',
+      'defaults/src/tabs-defaults.ts',
+      'defaults/src/toggle-defaults.ts',
+      'defaults/src/toolbar-defaults.ts',
     ],
   },
   {
     name: 'tablist-backboned collections',
     keys: ['activationMode'],
-    members: ['stepper/src/stepper-defaults.ts', 'tabs/src/tabs-defaults.ts'],
+    members: ['defaults/src/stepper-defaults.ts', 'defaults/src/tabs-defaults.ts'],
   },
   {
     name: 'step-grid page keys',
     keys: ['stepMultiplier'],
-    members: ['number-input/src/number-input-defaults.ts', 'slider/src/slider-defaults.ts'],
+    members: ['defaults/src/number-input-defaults.ts', 'defaults/src/slider-defaults.ts'],
   },
   {
     name: 'selection-follows-focus collections',
     keys: ['selectionFollowsFocus'],
-    members: ['listbox/src/listbox-defaults.ts', 'tree/src/tree-defaults.ts'],
+    members: ['defaults/src/listbox-defaults.ts', 'defaults/src/tree-defaults.ts'],
   },
 ];
 
@@ -205,6 +205,36 @@ function anchoredEntryPoints(): Set<string> {
   return entries;
 }
 
+/**
+ * The entry point whose barrel re-exports each defaults file's provider. Every
+ * defaults file lives in `forty-cdk/defaults`, so its own path names no
+ * primitive; the re-export is what ties it back to the root that reads it.
+ */
+function owningEntryPoints(): Map<string, string> {
+  const ownerOfProvider = new Map<string, string>();
+  for (const [path, source] of LIBRARY_SOURCES) {
+    if (path.endsWith('/src/public-api.ts') && entryPointOf(path) !== 'defaults') {
+      for (const match of source.matchAll(/\b(provideFor[A-Za-z]+Defaults)\b/g)) {
+        ownerOfProvider.set(match[1]!, entryPointOf(path));
+      }
+    }
+  }
+  const owners = new Map<string, string>();
+  for (const path of DECLARED_KEYS.keys()) {
+    const provider = LIBRARY_SOURCES.get(path)!.match(
+      /^export function (provideFor[A-Za-z]+Defaults)/m,
+    )?.[1];
+    const owner = provider === undefined ? undefined : ownerOfProvider.get(provider);
+    if (owner !== undefined) {
+      owners.set(path, owner);
+    }
+  }
+  return owners;
+}
+
+const OWNING_ENTRY_POINTS = owningEntryPoints();
+const owningEntryPointOf = (path: string): string => OWNING_ENTRY_POINTS.get(path) ?? path;
+
 const anchoredFamily = FAMILIES.find((family) => family.name === 'anchored positioning seeds')!;
 const sorted = (values: Iterable<string>): string[] => [...values].sort();
 
@@ -216,6 +246,12 @@ describe('defaults-key parity families (meta-guard)', () => {
     expect(sorted(DECLARED_KEYS.keys())).toEqual(sorted(shipped));
   });
 
+  it('ties every defaults file to the entry point re-exporting its provider', () => {
+    const orphans = [...DECLARED_KEYS.keys()].filter((path) => !OWNING_ENTRY_POINTS.has(path));
+
+    expect(sorted(orphans)).toEqual([]);
+  });
+
   it('names only defaults files the library still ships', () => {
     const claimed = new Set(FAMILIES.flatMap((family) => family.members));
     const unknown = [...claimed].filter((member) => !DECLARED_KEYS.has(member));
@@ -224,7 +260,7 @@ describe('defaults-key parity families (meta-guard)', () => {
   });
 
   it('puts a defaults file from every anchored entry point in the anchored family', () => {
-    const covered = new Set(anchoredFamily.members.map(entryPointOf));
+    const covered = new Set(anchoredFamily.members.map(owningEntryPointOf));
     const missing = [...anchoredEntryPoints()].filter((entry) => !covered.has(entry));
 
     expect(sorted(missing)).toEqual([]);
@@ -232,7 +268,9 @@ describe('defaults-key parity families (meta-guard)', () => {
 
   it('claims no anchored member from an entry point with no anchored root', () => {
     const anchored = anchoredEntryPoints();
-    const stale = anchoredFamily.members.map(entryPointOf).filter((entry) => !anchored.has(entry));
+    const stale = anchoredFamily.members
+      .map(owningEntryPointOf)
+      .filter((entry) => !anchored.has(entry));
 
     expect(sorted(new Set(stale))).toEqual([]);
   });

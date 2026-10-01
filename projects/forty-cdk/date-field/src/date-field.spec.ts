@@ -21,11 +21,11 @@ import {
   provideInternationalizedDateAdapter,
   provideInternationalizedDateTimeAdapter,
 } from 'forty-cdk/internationalized-date';
-import { NativeDateAdapter, provideNativeDateAdapter } from 'forty-cdk/calendar';
+import { NativeDateAdapter, provideNativeDateAdapter } from 'forty-cdk/shared';
 import { ForField, ForFieldDescription, ForLabel } from 'forty-cdk/field';
 import { pressKey } from 'forty-cdk/testing';
 import { ForDateField } from './date-field';
-import { provideForDateFieldDefaults } from './date-field-defaults';
+import { provideForDateFieldDefaults } from 'forty-cdk/defaults';
 import { ForDateFieldLiteral } from './date-field-literal';
 import { ForDateFieldSegment } from './date-field-segment';
 

@@ -7,9 +7,9 @@ import {
   type RovingTabindex,
   type WritingDirection,
 } from 'forty-cdk/core';
+import { type CarouselAlign } from 'forty-cdk/defaults';
 
-/** Alignment of the active slide within the viewport. */
-export type CarouselAlign = 'start' | 'center' | 'end';
+export { type CarouselAlign };
 
 /**
  * Internal handle for a registered slide. Part of the registration protocol, so

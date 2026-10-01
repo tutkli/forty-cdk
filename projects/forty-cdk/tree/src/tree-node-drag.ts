@@ -40,7 +40,7 @@ import {
   treeParentLabel,
 } from './tree-drag-rows';
 import { injectTreeContext, type ForTreeVisibleNode } from './tree-context';
-import { FOR_TREE_DEFAULTS } from './tree-defaults';
+import { FOR_TREE_DEFAULTS } from 'forty-cdk/defaults';
 import type { ForTreeDragDropEvent } from './tree-drag-drop-event';
 
 const POINTER_ARM_THRESHOLD_PX = 5;

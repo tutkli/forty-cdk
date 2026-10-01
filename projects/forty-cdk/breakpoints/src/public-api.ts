@@ -5,7 +5,7 @@ export {
   type BreakpointMap,
   type ForBreakpointsDefaults,
   type TailwindBreakpointName,
-} from './breakpoints-defaults';
+} from 'forty-cdk/defaults';
 export {
   injectBreakpoints,
   type BreakpointName,

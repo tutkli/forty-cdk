@@ -38,14 +38,13 @@ import {
   type VetoableNativeEvent,
 } from 'forty-cdk/core';
 import { ForDateField, ForDateFieldLiteral, ForDateFieldSegment } from 'forty-cdk/date-field';
+import { NativeDateAdapter, provideNativeDateAdapter } from 'forty-cdk/shared';
 import {
   FOR_CALENDAR_CONTEXT,
   ForCalendar,
   ForCalendarCell,
   ForCalendarGrid,
   ForCalendarGridHeader,
-  NativeDateAdapter,
-  provideNativeDateAdapter,
 } from 'forty-cdk/calendar';
 import {
   FOR_TIME_FIELD_CONTEXT,
@@ -65,7 +64,7 @@ import { pressKey, pressWithMouse } from 'forty-cdk/testing';
 import { ForDatePicker } from './date-picker';
 import { ForDatePickerAnchor } from './date-picker-anchor';
 import { ForDatePickerContent } from './date-picker-content';
-import { provideForDatePickerDefaults } from './date-picker-defaults';
+import { provideForDatePickerDefaults } from 'forty-cdk/defaults';
 import { ForDatePickerTrigger } from './date-picker-trigger';
 import { ForDatePickerValue } from './date-picker-value';
 

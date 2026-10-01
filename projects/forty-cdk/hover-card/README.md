@@ -150,7 +150,7 @@ The HoverCard coordinator is **independent** from `TooltipCoordinator`, because 
 <!-- snippet: fragment -->
 
 ```ts
-import { provideForHoverCardDefaults } from 'forty-cdk/hover-card';
+import { provideForHoverCardDefaults } from 'forty-cdk/defaults';
 
 // Right-aligned profile cards app-wide
 bootstrapApplication(App, {

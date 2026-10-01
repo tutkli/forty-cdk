@@ -5,7 +5,7 @@ import { injectTimeRangeFieldSegmentContext } from './time-range-field-context';
 import {
   DEFAULT_TIME_RANGE_FIELD_SEGMENT_LABELS,
   FOR_TIME_RANGE_FIELD_DEFAULTS,
-} from './time-range-field-defaults';
+} from 'forty-cdk/defaults';
 
 /**
  * One editable spinbutton segment of a `[forTimeRangeFieldStart]` /

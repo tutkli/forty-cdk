@@ -20,7 +20,7 @@ import { ForDialogClose } from './dialog-close';
 import { ForDialogDescription } from './dialog-description';
 import { ForDialogRef } from './dialog-ref';
 import { ForDialogManager, FOR_DIALOG_DATA, injectDialogData } from './dialog-manager';
-import { provideForDialogDefaults } from './dialog-defaults';
+import { provideForDialogDefaults } from 'forty-cdk/defaults';
 import { ForDialogTitle } from './dialog-title';
 
 interface ConfirmData {

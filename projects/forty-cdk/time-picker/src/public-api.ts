@@ -17,7 +17,7 @@ export {
   FOR_TIME_PICKER_DEFAULTS,
   provideForTimePickerDefaults,
   type ForTimePickerDefaults,
-} from './time-picker-defaults';
+} from 'forty-cdk/defaults';
 export {
   FOR_TIME_PICKER_HOST_DIRECTIVE_INPUTS,
   FOR_TIME_PICKER_HOST_DIRECTIVE_OUTPUTS,

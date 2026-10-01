@@ -47,7 +47,7 @@ import {
   type ForTreeVisibleNode,
 } from './tree-context';
 import type { ForTreeItemActivateEvent } from './tree-item-activate-event';
-import { FOR_TREE_DEFAULTS } from './tree-defaults';
+import { FOR_TREE_DEFAULTS } from 'forty-cdk/defaults';
 import { defaultTreeCompareWith, treeMembership } from './tree-identity';
 import { TreeSelection } from './tree-selection';
 

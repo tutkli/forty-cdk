@@ -2,7 +2,7 @@ import { computed, Directive, inject, input } from '@angular/core';
 
 import { hostButtonType, hostAriaLabel, reflectDisabled, resolveTextInput } from 'forty-cdk/core';
 import { injectComboboxContext } from './combobox-context';
-import { FOR_COMBOBOX_DEFAULTS } from './combobox-defaults';
+import { FOR_COMBOBOX_DEFAULTS } from 'forty-cdk/defaults';
 
 /**
  * Optional clear button. Apply on a `<button type="button">` so Space /

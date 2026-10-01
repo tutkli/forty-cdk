@@ -25,7 +25,7 @@ import {
   type WritingDirection,
 } from 'forty-cdk/core';
 import { injectListboxContext, type ForListboxContext } from './listbox-context';
-import { FOR_LISTBOX_DEFAULTS } from './listbox-defaults';
+import { FOR_LISTBOX_DEFAULTS } from 'forty-cdk/defaults';
 
 const POINTER_ARM_THRESHOLD_PX = 5;
 

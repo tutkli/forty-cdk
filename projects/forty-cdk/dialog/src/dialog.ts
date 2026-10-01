@@ -16,7 +16,7 @@ import {
   type ForDialogCloseReason,
   type ForDialogContext,
 } from './dialog-context';
-import { FOR_DIALOG_DEFAULTS } from './dialog-defaults';
+import { FOR_DIALOG_DEFAULTS } from 'forty-cdk/defaults';
 import { DialogDepthRegistry } from './dialog-depth';
 
 /**

@@ -24,7 +24,7 @@ import {
   hostAriaLabel,
 } from 'forty-cdk/core';
 import { FOR_DATE_FIELD_CONTEXT, type ForDateFieldContext } from './date-field-context';
-import { FOR_DATE_FIELD_DEFAULTS } from './date-field-defaults';
+import { FOR_DATE_FIELD_DEFAULTS } from 'forty-cdk/defaults';
 
 /**
  * Headless, segmented, spin-editable date input — the keyboard-first

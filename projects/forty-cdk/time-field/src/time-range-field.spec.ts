@@ -14,8 +14,7 @@ import {
   assertFormControlContract,
   type FormControlMountResult,
 } from '../../src/test-utils/contract';
-import { NativeDateAdapter, provideNativeDateAdapter } from 'forty-cdk/calendar';
-import { type DateRange } from 'forty-cdk/shared';
+import { type DateRange, NativeDateAdapter, provideNativeDateAdapter } from 'forty-cdk/shared';
 import { ForField, ForFieldDescription, ForLabel } from 'forty-cdk/field';
 import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized-date';
 import { pressKey } from 'forty-cdk/testing';
@@ -23,7 +22,7 @@ import { ForTimeRangeField } from './time-range-field';
 import { ForTimeRangeFieldEnd, ForTimeRangeFieldStart } from './time-range-field-endpoint';
 import { ForTimeRangeFieldLiteral } from './time-range-field-literal';
 import { ForTimeRangeFieldSegment } from './time-range-field-segment';
-import { provideForTimeRangeFieldDefaults } from './time-range-field-defaults';
+import { provideForTimeRangeFieldDefaults } from 'forty-cdk/defaults';
 
 const adapter = new NativeDateAdapter();
 

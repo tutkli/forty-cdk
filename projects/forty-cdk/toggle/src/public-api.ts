@@ -10,7 +10,7 @@ export {
   FOR_TOGGLE_DEFAULTS,
   provideForToggleDefaults,
   type ForToggleDefaults,
-} from './toggle-defaults';
+} from 'forty-cdk/defaults';
 export {
   FOR_TOGGLE_HOST_DIRECTIVE_INPUTS,
   FOR_TOGGLE_HOST_DIRECTIVE_OUTPUTS,

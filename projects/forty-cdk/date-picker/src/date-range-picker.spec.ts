@@ -18,10 +18,8 @@ import {
   ForCalendar,
   ForCalendarCell,
   ForCalendarGrid,
-  NativeDateAdapter,
-  provideNativeDateAdapter,
 } from 'forty-cdk/calendar';
-import { type DateRange } from 'forty-cdk/shared';
+import { type DateRange, NativeDateAdapter, provideNativeDateAdapter } from 'forty-cdk/shared';
 import { ForField, ForFieldDescription, ForFieldError, ForLabel } from 'forty-cdk/field';
 
 import { ForDatePickerContent } from './date-picker-content';

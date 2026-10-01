@@ -20,7 +20,7 @@ import {
   RovingTabindex,
   injectTextDirection,
 } from 'forty-cdk/core';
-import { FOR_TOGGLE_DEFAULTS } from './toggle-defaults';
+import { FOR_TOGGLE_DEFAULTS } from 'forty-cdk/defaults';
 import {
   FOR_TOGGLE_GROUP_CONTEXT,
   type ForToggleGroupContext,

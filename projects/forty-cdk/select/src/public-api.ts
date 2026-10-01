@@ -19,7 +19,7 @@ export {
   FOR_SELECT_DEFAULTS,
   provideForSelectDefaults,
   type ForSelectDefaults,
-} from './select-defaults';
+} from 'forty-cdk/defaults';
 export {
   FOR_SELECT_HOST_DIRECTIVE_INPUTS,
   FOR_SELECT_HOST_DIRECTIVE_OUTPUTS,

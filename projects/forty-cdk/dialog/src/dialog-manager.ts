@@ -15,7 +15,7 @@ import {
   type ForDialogCloseReason,
   FOR_DIALOG_INSTANCE_ID,
 } from './dialog-context';
-import { FOR_DIALOG_DEFAULTS } from './dialog-defaults';
+import { FOR_DIALOG_DEFAULTS } from 'forty-cdk/defaults';
 import type { ForDialogEntry } from './dialog-outlet';
 import { ForDialogOutlet } from './dialog-outlet';
 import { ForDialogRef } from './dialog-ref';

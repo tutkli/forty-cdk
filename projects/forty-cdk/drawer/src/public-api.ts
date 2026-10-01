@@ -27,4 +27,4 @@ export {
   FOR_DRAWER_DEFAULTS,
   provideForDrawerDefaults,
   type ForDrawerDefaults,
-} from './drawer-defaults';
+} from 'forty-cdk/defaults';

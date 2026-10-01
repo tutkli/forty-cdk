@@ -3,7 +3,7 @@ import { computed, Directive, inject } from '@angular/core';
 import { hostButtonType, orphanContextError, reflectDisabled } from 'forty-cdk/core';
 import { injectComboboxContext } from './combobox-context';
 import { ForComboboxChip } from './combobox-chip';
-import { FOR_COMBOBOX_DEFAULTS } from './combobox-defaults';
+import { FOR_COMBOBOX_DEFAULTS } from 'forty-cdk/defaults';
 
 /**
  * Remove button inside a `[forComboboxChip]`. Apply on a

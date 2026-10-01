@@ -13,7 +13,7 @@ import { ForDialog } from './dialog';
 import { ForDialogBackdrop } from './dialog-backdrop';
 import { ForDialogClose } from './dialog-close';
 import type { ForDialogCloseReason } from './dialog-context';
-import { provideForDialogDefaults } from './dialog-defaults';
+import { provideForDialogDefaults } from 'forty-cdk/defaults';
 import { ForDialogDescription } from './dialog-description';
 import { ForDialogTitle } from './dialog-title';
 import { ForDialogTrigger } from './dialog-trigger';

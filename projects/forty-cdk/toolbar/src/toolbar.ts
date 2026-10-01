@@ -16,7 +16,7 @@ import {
   type ForToolbarContext,
   type ForToolbarItemHandle,
 } from './toolbar-context';
-import { FOR_TOOLBAR_DEFAULTS } from './toolbar-defaults';
+import { FOR_TOOLBAR_DEFAULTS } from 'forty-cdk/defaults';
 
 /**
  * Headless implementation of the

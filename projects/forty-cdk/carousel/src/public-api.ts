@@ -17,4 +17,4 @@ export {
   FOR_CAROUSEL_DEFAULTS,
   provideForCarouselDefaults,
   type ForCarouselDefaults,
-} from './carousel-defaults';
+} from 'forty-cdk/defaults';

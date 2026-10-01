@@ -10,6 +10,9 @@ import {
   type WritingDirection,
 } from 'forty-cdk/core';
 import { type FloatingAlign, type FloatingSide } from 'forty-cdk/core-overlay';
+import { type ForComboboxOpenHighlight } from 'forty-cdk/defaults';
+
+export { type ForComboboxOpenHighlight };
 
 /**
  * Why the combobox closed. Mirrors the menu / select vocabulary so consumers
@@ -48,15 +51,6 @@ export type ForComboboxAutocomplete = 'none' | 'list' | 'inline' | 'both';
  * back to the first enabled option when there is no selection or it is filtered out.
  */
 export type ForComboboxInitialFocus = 'first' | 'last' | 'selected';
-
-/**
- * Where the editable anatomy's highlight lands when the listbox opens from focus, click,
- * ArrowDown / ArrowUp or `openOverlay()` without an argument. `'first'` highlights the first
- * enabled option (ArrowUp: the last). `'selected'` highlights the committed selection, falling
- * back to the first enabled option (ArrowUp: the last) when there is none. Opening from a typed
- * query always highlights the first match.
- */
-export type ForComboboxOpenHighlight = 'first' | 'selected';
 
 export interface ForComboboxOptionHandle<T = unknown> extends CollectionHandle {
   /**

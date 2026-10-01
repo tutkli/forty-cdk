@@ -8,7 +8,7 @@ import {
   type TimeSegmentType,
 } from 'forty-cdk/core';
 import { injectTimeFieldContext } from './time-field-context';
-import { DEFAULT_TIME_FIELD_SEGMENT_LABELS, FOR_TIME_FIELD_DEFAULTS } from './time-field-defaults';
+import { DEFAULT_TIME_FIELD_SEGMENT_LABELS, FOR_TIME_FIELD_DEFAULTS } from 'forty-cdk/defaults';
 
 /**
  * One editable spinbutton segment of a `[forTimeField]` — the hour, minute,

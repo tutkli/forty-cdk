@@ -12,4 +12,4 @@ export {
   provideForHoverCardDefaults,
   type ForHoverCardDefaults,
   type HoverCardDefaultsOptions,
-} from './hover-card-defaults';
+} from 'forty-cdk/defaults';

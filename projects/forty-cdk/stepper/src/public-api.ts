@@ -24,4 +24,4 @@ export {
   FOR_STEPPER_DEFAULTS,
   provideForStepperDefaults,
   type ForStepperDefaults,
-} from './stepper-defaults';
+} from 'forty-cdk/defaults';

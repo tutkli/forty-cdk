@@ -34,7 +34,7 @@ import {
   type ForTooltipContext,
   type TooltipScheduleReason,
 } from './tooltip-context';
-import { FOR_TOOLTIP_DEFAULTS, TooltipCoordinator } from './tooltip-defaults';
+import { FOR_TOOLTIP_DEFAULTS, TooltipCoordinator } from 'forty-cdk/defaults';
 
 /**
  * Headless implementation of the [WAI-ARIA Tooltip pattern](https://www.w3.org/WAI/ARIA/apg/patterns/tooltip/).

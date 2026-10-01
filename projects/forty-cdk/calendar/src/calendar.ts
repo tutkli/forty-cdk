@@ -37,7 +37,7 @@ import {
   type ForCalendarYearCellHandle,
 } from './calendar-context';
 import { CalendarDayNavigator } from './calendar-day-navigator';
-import { FOR_CALENDAR_DEFAULTS } from './calendar-defaults';
+import { FOR_CALENDAR_DEFAULTS } from 'forty-cdk/defaults';
 import { CalendarMonthNavigator } from './calendar-month-navigator';
 import { CalendarNavigation } from './calendar-navigation';
 import { CalendarRangeSelection } from './calendar-range-selection';

@@ -28,7 +28,7 @@ import { ForComboboxChipRemove } from './combobox-chip-remove';
 import { ForComboboxChips } from './combobox-chips';
 import { ForComboboxClear } from './combobox-clear';
 import { ForComboboxContent } from './combobox-content';
-import { provideForComboboxDefaults } from './combobox-defaults';
+import { provideForComboboxDefaults } from 'forty-cdk/defaults';
 import { ForComboboxEmpty } from './combobox-empty';
 import { ForComboboxGroup } from './combobox-group';
 import { ForComboboxGroupLabel } from './combobox-group-label';

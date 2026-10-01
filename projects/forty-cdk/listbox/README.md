@@ -286,7 +286,7 @@ While a reorder is in flight, `data-dragging` is reflected on two pieces:
 While a reorder is in flight, `[forListboxReorder]` announces lift / move / drop / cancel through an off-screen live region. The phrasing is English by default; override it per injector scope with `provideForListboxDefaults` so screen readers speak the consumer's language. `index` / `total` are 1-based.
 
 ```ts
-import { provideForListboxDefaults } from 'forty-cdk/listbox';
+import { provideForListboxDefaults } from 'forty-cdk/defaults';
 
 provideForListboxDefaults({
   reorderAnnounceLift: (label, index, total) => `${label} levantado. ${index} de ${total}.`,

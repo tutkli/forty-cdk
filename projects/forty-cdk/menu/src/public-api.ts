@@ -15,4 +15,8 @@ export {
   type ForMenuRadioGroupContext,
 } from './menu-radio-group-context';
 export { FOR_MENU_GROUP_CONTEXT, type ForMenuGroupContext } from './menu-group-context';
-export { FOR_MENU_DEFAULTS, provideForMenuDefaults, type ForMenuDefaults } from './menu-defaults';
+export {
+  FOR_MENU_DEFAULTS,
+  provideForMenuDefaults,
+  type ForMenuDefaults,
+} from 'forty-cdk/defaults';

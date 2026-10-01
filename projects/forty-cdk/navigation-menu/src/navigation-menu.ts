@@ -23,11 +23,8 @@ import {
   injectTextDirection,
   hostAriaLabel,
 } from 'forty-cdk/core';
-import {
-  injectDismissibleLayer,
-  createDebouncedAction,
-  createSkipDelayWindow,
-} from 'forty-cdk/core-overlay';
+import { injectDismissibleLayer, createDebouncedAction } from 'forty-cdk/core-overlay';
+import { createSkipDelayWindow, FOR_NAVIGATION_MENU_DEFAULTS } from 'forty-cdk/defaults';
 import {
   FOR_NAVIGATION_MENU_CONTEXT,
   type ForNavigationMenuContentHandle,
@@ -37,7 +34,6 @@ import {
   type ForNavigationMenuViewportHandle,
   type NavigationMenuScheduleReason,
 } from './navigation-menu-context';
-import { FOR_NAVIGATION_MENU_DEFAULTS } from './navigation-menu-defaults';
 
 /**
  * Headless implementation of the

@@ -497,7 +497,7 @@ The **Announced** column is the politeness a screen reader hears. It is delivere
 <!-- snippet: fragment -->
 
 ```ts
-import { provideForToastDefaults } from 'forty-cdk/toast';
+import { provideForToastDefaults } from 'forty-cdk/defaults';
 
 bootstrapApplication(App, {
   providers: [provideForToastDefaults({ duration: 4000, hotkey: 'F6', maxVisible: 5 })],

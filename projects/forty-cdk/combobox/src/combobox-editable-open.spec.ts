@@ -11,7 +11,7 @@ import {
 import { ForCombobox } from './combobox';
 import { ForComboboxContent } from './combobox-content';
 import { type ForComboboxOpenHighlight } from './combobox-context';
-import { provideForComboboxDefaults } from './combobox-defaults';
+import { provideForComboboxDefaults } from 'forty-cdk/defaults';
 import { ForComboboxInput } from './combobox-input';
 import { ForComboboxOption } from './combobox-option';
 import { ForComboboxToggle } from './combobox-toggle';

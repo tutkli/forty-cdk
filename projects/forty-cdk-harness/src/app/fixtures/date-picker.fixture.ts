@@ -7,9 +7,8 @@ import {
   ForCalendarHeading,
   ForCalendarNextButton,
   ForCalendarPrevButton,
-  provideNativeDateAdapter,
 } from 'forty-cdk/calendar';
-import { type DateRange } from 'forty-cdk/shared';
+import { type DateRange, provideNativeDateAdapter } from 'forty-cdk/shared';
 import { type VetoableEvent } from 'forty-cdk/core';
 import {
   ForDatePicker,

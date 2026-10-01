@@ -215,6 +215,10 @@
         "./dist/forty-cdk/testing",
         "./projects/forty-cdk/testing/src/public-api.ts"
       ],
+      "forty-cdk/defaults": [
+        "./dist/forty-cdk/defaults",
+        "./projects/forty-cdk/defaults/src/public-api.ts"
+      ],
       "forty-cdk/visually-hidden": [
         "./dist/forty-cdk/visually-hidden",
         "./projects/forty-cdk/visually-hidden/src/public-api.ts"

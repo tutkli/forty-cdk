@@ -21,7 +21,7 @@ import {
 import { ForTooltip } from './tooltip';
 import { ForTooltipArrow } from './tooltip-arrow';
 import { ForTooltipContent } from './tooltip-content';
-import { provideForTooltipDefaults } from './tooltip-defaults';
+import { provideForTooltipDefaults } from 'forty-cdk/defaults';
 import { ForTooltipTrigger } from './tooltip-trigger';
 
 @Component({

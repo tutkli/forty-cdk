@@ -205,7 +205,7 @@ Per-instance inputs always win over the scope defaults.
 <!-- snippet: fragment -->
 
 ```ts
-import { provideForPopoverDefaults } from 'forty-cdk/popover';
+import { provideForPopoverDefaults } from 'forty-cdk/defaults';
 
 // Top-anchored popovers app-wide
 bootstrapApplication(App, {

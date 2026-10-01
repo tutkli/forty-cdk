@@ -24,4 +24,4 @@ export {
   FOR_DRAG_DROP_DEFAULTS,
   provideForDragDropDefaults,
   type ForDragDropDefaults,
-} from './drag-drop-defaults';
+} from 'forty-cdk/defaults';

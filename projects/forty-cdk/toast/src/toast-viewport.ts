@@ -31,7 +31,7 @@ import {
   type ForToastSwipeDirection,
   type ForToastTemplateContext,
 } from './toast-context';
-import { FOR_TOAST_DEFAULTS } from './toast-defaults';
+import { FOR_TOAST_DEFAULTS } from 'forty-cdk/defaults';
 import { ForToastManager, type ForToastViewportRegistration } from './toast-manager';
 import {
   createToastStackShifter,

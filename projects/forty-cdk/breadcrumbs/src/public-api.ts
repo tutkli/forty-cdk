@@ -5,4 +5,4 @@ export {
   FOR_BREADCRUMBS_DEFAULTS,
   provideForBreadcrumbsDefaults,
   type ForBreadcrumbsDefaults,
-} from './breadcrumbs-defaults';
+} from 'forty-cdk/defaults';

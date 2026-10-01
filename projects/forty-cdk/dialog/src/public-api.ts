@@ -21,4 +21,4 @@ export {
   FOR_DIALOG_DEFAULTS,
   provideForDialogDefaults,
   type ForDialogDefaults,
-} from './dialog-defaults';
+} from 'forty-cdk/defaults';

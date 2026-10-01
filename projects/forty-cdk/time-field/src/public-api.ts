@@ -9,11 +9,16 @@ export {
 } from './time-field-context';
 export {
   DEFAULT_TIME_FIELD_SEGMENT_LABELS,
+  DEFAULT_TIME_RANGE_FIELD_SEGMENT_LABELS,
   FOR_TIME_FIELD_DEFAULTS,
-  provideForTimeFieldDefaults,
+  FOR_TIME_RANGE_FIELD_DEFAULTS,
   type ForTimeFieldDefaults,
   type ForTimeFieldSegmentLabels,
-} from './time-field-defaults';
+  type ForTimeRangeFieldDefaults,
+  type ForTimeRangeFieldSegmentLabels,
+  provideForTimeFieldDefaults,
+  provideForTimeRangeFieldDefaults,
+} from 'forty-cdk/defaults';
 export {
   FOR_TIME_FIELD_HOST_DIRECTIVE_INPUTS,
   FOR_TIME_FIELD_HOST_DIRECTIVE_OUTPUTS,
@@ -29,13 +34,6 @@ export {
   type TimeRangeFieldEndpoint,
   type TimeRangeFieldSegment,
 } from './time-range-field-context';
-export {
-  DEFAULT_TIME_RANGE_FIELD_SEGMENT_LABELS,
-  FOR_TIME_RANGE_FIELD_DEFAULTS,
-  provideForTimeRangeFieldDefaults,
-  type ForTimeRangeFieldDefaults,
-  type ForTimeRangeFieldSegmentLabels,
-} from './time-range-field-defaults';
 export {
   FOR_TIME_RANGE_FIELD_HOST_DIRECTIVE_INPUTS,
   FOR_TIME_RANGE_FIELD_HOST_DIRECTIVE_OUTPUTS,

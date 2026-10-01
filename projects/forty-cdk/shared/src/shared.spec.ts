@@ -1,7 +1,10 @@
 import { provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { NativeDateAdapter, provideNativeDateAdapter } from 'forty-cdk/calendar';
+import {
+  NativeDateAdapter as CalendarNativeDateAdapter,
+  provideNativeDateAdapter as calendarProvideNativeDateAdapter,
+} from 'forty-cdk/calendar';
 import {
   accessibleTextContent as coreAccessibleTextContent,
   assertTimeCapable as coreAssertTimeCapable,
@@ -17,6 +20,8 @@ import {
   FOR_FIELDSET_CONTEXT,
   FOR_MENU_CONTEXT,
   injectDateAdapter,
+  NativeDateAdapter,
+  provideNativeDateAdapter,
 } from 'forty-cdk/shared';
 
 describe('forty-cdk/shared', () => {
@@ -36,7 +41,12 @@ describe('forty-cdk/shared', () => {
     expect(accessibleTextContent(host).trim()).toBe('Apple');
   });
 
-  it('resolves a token provided through a primitive entry point', () => {
+  it('publishes the native adapter forty-cdk/calendar re-exports, as one object', () => {
+    expect(CalendarNativeDateAdapter).toBe(NativeDateAdapter);
+    expect(calendarProvideNativeDateAdapter).toBe(provideNativeDateAdapter);
+  });
+
+  it('resolves the token the native adapter provider binds', () => {
     TestBed.configureTestingModule({
       providers: [provideZonelessChangeDetection(), ...provideNativeDateAdapter()],
     });

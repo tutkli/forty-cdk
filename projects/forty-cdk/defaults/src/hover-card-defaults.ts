@@ -1,0 +1,133 @@
+import { inject, Injectable, InjectionToken, type Provider } from '@angular/core';
+
+import type {
+  AnchoredPositioningSeedDefaults,
+  FloatingAlign,
+  FloatingSide,
+} from 'forty-cdk/core-overlay';
+
+import { provideDefaults } from './defaults';
+import { SkipDelayCoordinator, provideSkipDelayScope } from './skip-delay';
+
+/**
+ * Defaults inherited by descendant hover-cards in the surrounding injector
+ * scope. Configure with `provideForHoverCardDefaults` at the app root or in
+ * any component's `providers`.
+ */
+export interface ForHoverCardDefaults extends AnchoredPositioningSeedDefaults {
+  /** Open delay (ms) for cards that don't override `openDelay` locally. */
+  openDelay: number;
+  /** Close delay (ms) for cards that don't override `closeDelay` locally. */
+  closeDelay: number;
+  /**
+   * Window (ms) after a peer card in this scope closes during which the
+   * next open is instant — useful for adjacent profile cards in a list,
+   * so cursor movement doesn't feel sluggish.
+   */
+  skipDelayDuration: number;
+  /**
+   * Side the card is anchored to for cards that don't override `side`
+   * locally. Library fallback `'top'`.
+   */
+  side: FloatingSide;
+  /**
+   * Alignment along the chosen `side` for cards that don't override `align`
+   * locally. Library fallback `'center'`.
+   */
+  align: FloatingAlign;
+  /**
+   * Gap (px) between trigger and card along the main axis for cards that
+   * don't override `sideOffset` locally.
+   * Library fallback `8`.
+   */
+  sideOffset: number;
+  /**
+   * Padding (px) applied uniformly to the `flip`, `shift`, and `size`
+   * middlewares for cards that don't override `collisionPadding` locally.
+   * Library fallback `8`.
+   */
+  collisionPadding: number;
+  /**
+   * Padding (px) keeping the `[forHoverCardArrow]` element that far from the
+   * edges of the content, for cards that don't override `arrowPadding`
+   * locally. Only consulted when an arrow is registered — floating-ui installs
+   * the `arrow` middleware only then. Library fallback `0`.
+   */
+  arrowPadding: number;
+}
+
+/**
+ * Library fallback for hover-card defaults, read at the root injector when no
+ * consumer has called `provideForHoverCardDefaults`. Exported for the shared
+ * defaults contract spec; not re-exported from the primitive's public entry.
+ */
+export const FOR_HOVER_CARD_FALLBACK_DEFAULTS: ForHoverCardDefaults = {
+  openDelay: 700,
+  closeDelay: 300,
+  skipDelayDuration: 300,
+  side: 'top',
+  align: 'center',
+  sideOffset: 8,
+  collisionPadding: 8,
+  arrowPadding: 0,
+};
+
+/** Token holding the resolved hover-card defaults for the current scope. */
+export const FOR_HOVER_CARD_DEFAULTS = new InjectionToken<ForHoverCardDefaults>(
+  'FOR_HOVER_CARD_DEFAULTS',
+  {
+    providedIn: 'root',
+    factory: () => FOR_HOVER_CARD_FALLBACK_DEFAULTS,
+  },
+);
+
+/**
+ * The skip-delay window of a hover-card scope: right after a card in the scope
+ * closes, the next one opens without its open delay for `skipDelayDuration`
+ * ms. `provideForHoverCardDefaults` decides whether a scope starts its own
+ * window or shares its parent's; no tooltip scope ever shares it.
+ */
+@Injectable({ providedIn: 'root' })
+export class HoverCardCoordinator extends SkipDelayCoordinator {
+  constructor() {
+    super(inject(FOR_HOVER_CARD_DEFAULTS));
+  }
+}
+
+/** Options for a `provideForHoverCardDefaults` call. */
+export interface HoverCardDefaultsOptions {
+  /**
+   * Whether the scope shares its parent's skip-delay window (`'inherit'`) or
+   * starts its own (`'own'`). When omitted, a call that sets `openDelay`,
+   * `closeDelay` or `skipDelayDuration` starts its own and any other call
+   * shares its parent's. A scope that shares its parent's window keeps the
+   * parent's `skipDelayDuration` for it; its own `openDelay` and `closeDelay`
+   * apply either way.
+   */
+  skipDelayScope?: 'inherit' | 'own';
+}
+
+/**
+ * Configures forty-cdk hover-card defaults for this injector scope.
+ * Partial overrides inherit unspecified keys from the parent scope (or
+ * library defaults at the root). Peer cards that share a skip-delay window
+ * open instantly right after one of them closes; see
+ * `HoverCardDefaultsOptions.skipDelayScope` for when a call starts a new
+ * window.
+ *
+ * Pass a function instead of an object to build the overrides where
+ * `inject()` is available; it runs once per injector that resolves the
+ * defaults.
+ */
+export function provideForHoverCardDefaults(
+  defaults: Partial<ForHoverCardDefaults> | (() => Partial<ForHoverCardDefaults>) = {},
+  options: HoverCardDefaultsOptions = {},
+): Provider[] {
+  return provideSkipDelayScope(
+    HoverCardCoordinator,
+    (overrides) =>
+      provideDefaults(FOR_HOVER_CARD_DEFAULTS, FOR_HOVER_CARD_FALLBACK_DEFAULTS, overrides),
+    defaults,
+    options.skipDelayScope,
+  );
+}

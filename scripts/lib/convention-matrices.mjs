@@ -174,13 +174,22 @@ function ariaLabelDefaults(files) {
   return [{ key: 'non-`null` `ariaLabel` defaults', count: members.length, members }];
 }
 
-/** Entry points shipping a `provideFor<Primitive>Defaults` helper. */
+/**
+ * Entry points re-exporting a `provideFor<Primitive>Defaults` helper from
+ * their barrel. Every helper is declared in `forty-cdk/defaults`, so the barrel
+ * is what still ties a provider to the primitive it configures.
+ */
 function defaultsProviders(files) {
   const members = [];
-  for (const { entry, text } of files) {
-    const match = text.match(/^export function (provideFor[A-Za-z]+Defaults)/m);
-    if (match) {
-      members.push(`${entry} → \`${match[1]}\``);
+  for (const { entry, file, text } of files) {
+    if (entry === 'defaults' || file !== 'public-api.ts') {
+      continue;
+    }
+    const names = new Set(
+      [...text.matchAll(/\b(provideFor[A-Za-z]+Defaults)\b/g)].map((m) => m[1]),
+    );
+    for (const name of [...names].sort()) {
+      members.push(`${entry} → \`${name}\``);
     }
   }
   return [{ key: 'defaults providers', count: members.length, members }];

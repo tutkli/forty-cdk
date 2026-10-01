@@ -36,7 +36,7 @@ import {
   type ForDrawerSwipeEndEvent,
   type ForDrawerSwipeEvent,
 } from './drawer-context';
-import { FOR_DRAWER_DEFAULTS } from './drawer-defaults';
+import { FOR_DRAWER_DEFAULTS } from 'forty-cdk/defaults';
 import { injectDrawerDrag } from './drawer-drag';
 
 /**

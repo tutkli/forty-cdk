@@ -24,7 +24,7 @@ import {
   type ForRadioGroupContext,
   type ForRadioHandle,
 } from './radio-group-context';
-import { FOR_RADIO_GROUP_DEFAULTS } from './radio-group-defaults';
+import { FOR_RADIO_GROUP_DEFAULTS } from 'forty-cdk/defaults';
 
 /**
  * Root of the Radio Group primitive. Owns the selected value, orientation,

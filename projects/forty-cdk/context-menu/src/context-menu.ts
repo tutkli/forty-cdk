@@ -15,7 +15,7 @@ import {
   type ForMenuContext,
 } from 'forty-cdk/core-overlay';
 import { FOR_CONTEXT_MENU_CONTEXT, type ForContextMenuContext } from './context-menu-context';
-import { FOR_CONTEXT_MENU_DEFAULTS } from './context-menu-defaults';
+import { FOR_CONTEXT_MENU_DEFAULTS } from 'forty-cdk/defaults';
 
 /**
  * Headless implementation of a right-click / `Shift+F10` menu (variant of

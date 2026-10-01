@@ -8,7 +8,7 @@ import { entryPointOf, LIBRARY_SOURCES, SPEC_SOURCES } from '../test-utils/sourc
  *
  * Both halves are derived from library source rather than declared here, for
  * the reason `form-control-adopters.spec.ts` and
- * `core/src/defaults/per-primitive-defaults.spec.ts` were written: a missing
+ * `defaults/src/per-primitive-defaults.spec.ts` were written: a missing
  * adopter is *invisible* otherwise. The suite reports N green primitives
  * whether the roster lists N or N + 1, so the twenty-fifth `data-state`
  * emitter would ship uncovered and nothing would turn red — which is exactly

@@ -10,7 +10,7 @@ import {
 
 import { type WritingDirection, clamp, injectTextDirection, hostAriaLabel } from 'forty-cdk/core';
 import { FOR_PAGINATION_CONTEXT, type ForPaginationContext } from './pagination-context';
-import { FOR_PAGINATION_DEFAULTS } from './pagination-defaults';
+import { FOR_PAGINATION_DEFAULTS } from 'forty-cdk/defaults';
 import { computePaginationItems, type PaginationItem } from './pagination-range';
 
 /**

@@ -39,7 +39,7 @@ import {
   type ForSliderThumbHandle,
   type SliderArrowKey,
 } from './slider-context';
-import { FOR_SLIDER_DEFAULTS } from './slider-defaults';
+import { FOR_SLIDER_DEFAULTS } from 'forty-cdk/defaults';
 
 /**
  * Headless implementation of the [WAI-ARIA Slider pattern](https://www.w3.org/WAI/ARIA/apg/patterns/slider/)

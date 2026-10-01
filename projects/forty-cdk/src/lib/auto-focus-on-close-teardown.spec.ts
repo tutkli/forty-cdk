@@ -1,6 +1,6 @@
 import { Component, signal, type Type, type WritableSignal } from '@angular/core';
 
-import { provideNativeDateAdapter } from 'forty-cdk/calendar';
+import { provideNativeDateAdapter } from 'forty-cdk/shared';
 import {
   ForCombobox,
   ForComboboxContent,

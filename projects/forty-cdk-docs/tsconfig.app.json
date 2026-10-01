@@ -64,6 +64,7 @@
       "forty-cdk/virtualization": ["../forty-cdk/virtualization/src/public-api.ts"],
       "forty-cdk/virtual-reorder": ["../forty-cdk/virtual-reorder/src/public-api.ts"],
       "forty-cdk/testing": ["../forty-cdk/testing/src/public-api.ts"],
+      "forty-cdk/defaults": ["../forty-cdk/defaults/src/public-api.ts"],
       "forty-cdk/visually-hidden": ["../forty-cdk/visually-hidden/src/public-api.ts"]
     }
   },

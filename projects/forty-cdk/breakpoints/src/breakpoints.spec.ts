@@ -7,7 +7,7 @@ import {
 import { TestBed } from '@angular/core/testing';
 
 import { type ForBreakpoints, injectBreakpoints } from './breakpoints';
-import { provideForBreakpointsDefaults } from './breakpoints-defaults';
+import { provideForBreakpointsDefaults } from 'forty-cdk/defaults';
 
 interface FakeMql {
   matches: boolean;

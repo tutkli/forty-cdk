@@ -15,7 +15,7 @@ import { ForPopoverAnchor } from './popover-anchor';
 import { ForPopoverArrow } from './popover-arrow';
 import { ForPopoverClose } from './popover-close';
 import { ForPopoverContent } from './popover-content';
-import { provideForPopoverDefaults } from './popover-defaults';
+import { provideForPopoverDefaults } from 'forty-cdk/defaults';
 import { ForPopoverDescription } from './popover-description';
 import { ForPopoverTitle } from './popover-title';
 import { ForPopoverTrigger } from './popover-trigger';

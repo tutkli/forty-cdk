@@ -1,5 +1,5 @@
 import { signal, type WritableSignal } from '@angular/core';
-import { NativeDateAdapter } from 'forty-cdk/calendar';
+import { NativeDateAdapter } from 'forty-cdk/shared';
 
 import { RovingTabindex } from '../roving-tabindex/roving-tabindex';
 import { type FieldGranularity } from './date-segments';

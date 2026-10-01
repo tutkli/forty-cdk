@@ -9,4 +9,4 @@ export {
   FOR_PROGRESS_DEFAULTS,
   provideForProgressDefaults,
   type ForProgressDefaults,
-} from './progress-defaults';
+} from 'forty-cdk/defaults';

@@ -589,7 +589,7 @@ Always nest the child's `@if` inside the parent's `@if`. That guarantees Angular
 <!-- snippet: fragment -->
 
 ```ts
-import { provideForDrawerDefaults } from 'forty-cdk/drawer';
+import { provideForDrawerDefaults } from 'forty-cdk/defaults';
 
 bootstrapApplication(App, {
   providers: [

@@ -12,7 +12,7 @@ export {
   FOR_NUMBER_INPUT_DEFAULTS,
   provideForNumberInputDefaults,
   type ForNumberInputDefaults,
-} from './number-input-defaults';
+} from 'forty-cdk/defaults';
 export {
   FOR_NUMBER_INPUT_HOST_DIRECTIVE_INPUTS,
   FOR_NUMBER_INPUT_HOST_DIRECTIVE_OUTPUTS,

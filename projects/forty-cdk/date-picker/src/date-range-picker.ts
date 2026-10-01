@@ -25,7 +25,7 @@ import {
   FOR_DATE_RANGE_PICKER_CONTEXT,
   type ForDateRangePickerContext,
 } from './date-range-picker-context';
-import { FOR_DATE_RANGE_PICKER_DEFAULTS } from './date-range-picker-defaults';
+import { FOR_DATE_RANGE_PICKER_DEFAULTS } from 'forty-cdk/defaults';
 
 /**
  * Headless date **range** picker — the form-capable sibling of `ForDatePicker`.

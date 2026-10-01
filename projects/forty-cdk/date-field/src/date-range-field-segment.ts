@@ -5,7 +5,7 @@ import { injectDateRangeFieldSegmentContext } from './date-range-field-context';
 import {
   DEFAULT_DATE_RANGE_FIELD_SEGMENT_LABELS,
   FOR_DATE_RANGE_FIELD_DEFAULTS,
-} from './date-range-field-defaults';
+} from 'forty-cdk/defaults';
 
 /**
  * One editable spinbutton segment of a `[forDateRangeFieldStart]` /

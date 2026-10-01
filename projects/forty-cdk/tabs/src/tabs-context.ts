@@ -7,8 +7,9 @@ import {
   type RovingTabindex,
   type WritingDirection,
 } from 'forty-cdk/core';
+import { type TabsActivationMode } from 'forty-cdk/defaults';
 
-export type TabsActivationMode = 'automatic' | 'manual';
+export { type TabsActivationMode };
 
 /**
  * Registry entry for one `ForTabsTrigger`. Part of the registration protocol,

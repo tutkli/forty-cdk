@@ -32,7 +32,7 @@ import {
   type ForDatePickerAnatomy,
   type ForDatePickerContext,
 } from './date-picker-context';
-import { FOR_DATE_PICKER_DEFAULTS } from './date-picker-defaults';
+import { FOR_DATE_PICKER_DEFAULTS } from 'forty-cdk/defaults';
 
 /**
  * Headless date picker — the [WAI-ARIA Date Picker Dialog pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/examples/datepicker-dialog/)

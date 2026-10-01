@@ -51,7 +51,7 @@ import {
   type ForComboboxOpenHighlight,
   type ForComboboxOptionHandle,
 } from './combobox-context';
-import { FOR_COMBOBOX_DEFAULTS } from './combobox-defaults';
+import { FOR_COMBOBOX_DEFAULTS } from 'forty-cdk/defaults';
 import { mergeOffWindowEntries } from './combobox-off-window-merge';
 import {
   type ComboboxVirtualizedNavigator,

@@ -33,7 +33,7 @@ import {
   type Point,
   resolveGraceSide,
 } from 'forty-cdk/core-overlay';
-import { FOR_MENU_DEFAULTS } from './menu-defaults';
+import { FOR_MENU_DEFAULTS } from 'forty-cdk/defaults';
 
 /**
  * Root for a nested submenu inside a parent `[forDropdownMenu]` /

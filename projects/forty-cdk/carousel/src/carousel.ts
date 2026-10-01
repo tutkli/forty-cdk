@@ -41,7 +41,7 @@ import {
   type ForCarouselSlideHandle,
   type ForCarouselViewportHandle,
 } from './carousel-context';
-import { FOR_CAROUSEL_DEFAULTS } from './carousel-defaults';
+import { FOR_CAROUSEL_DEFAULTS } from 'forty-cdk/defaults';
 
 /**
  * Root of the Carousel primitive. Owns the active index, slide collection,

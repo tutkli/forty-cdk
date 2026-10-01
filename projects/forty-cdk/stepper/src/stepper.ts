@@ -27,7 +27,7 @@ import {
   type StepperActivationMode,
   type StepperMode,
 } from './stepper-context';
-import { FOR_STEPPER_DEFAULTS } from './stepper-defaults';
+import { FOR_STEPPER_DEFAULTS } from 'forty-cdk/defaults';
 
 /**
  * Root of the Stepper primitive. Owns the selected step index, linear

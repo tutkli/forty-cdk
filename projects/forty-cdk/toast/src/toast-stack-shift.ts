@@ -1,23 +1,9 @@
 import { isDevMode } from '@angular/core';
 
 import { fortyWarn } from 'forty-cdk/core';
+import { type ForToastStackShift } from 'forty-cdk/defaults';
 
-/**
- * Motion applied to the toasts a mutation of the stack pushes to a new
- * position. Set it on `[forToastViewport]` via `[stackShift]`, or per scope
- * with `provideForToastDefaults({ stackShift })`. The glide is played on
- * `translate`, leaving `transform` to the consumer.
- *
- * `animate.enter` / `animate.leave` cover the row that mounts or unmounts;
- * this covers its siblings, which reflow to their new spot in a single frame
- * with no property of their own for CSS to transition.
- */
-export interface ForToastStackShift {
-  /** Duration in ms of the glide to the new position. Must be greater than `0`. */
-  duration: number;
-  /** Easing of the glide, as a CSS easing function. Defaults to `'linear'`. */
-  easing?: string;
-}
+export { type ForToastStackShift };
 
 const DEFAULT_EASING = 'linear';
 

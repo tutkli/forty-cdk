@@ -535,7 +535,7 @@ Auto-disabled when the entire previous / next page would be outside `[min, max]`
 ## Scoped defaults
 
 ```ts
-import { provideForCalendarDefaults } from 'forty-cdk/calendar';
+import { provideForCalendarDefaults } from 'forty-cdk/defaults';
 
 // app config or a component's providers — Monday-first weeks for this scope
 providers: [

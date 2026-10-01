@@ -22,7 +22,7 @@ import {
   type MenuActivationModality,
 } from 'forty-cdk/core-overlay';
 import { injectMenubarContext } from './menubar-context';
-import { FOR_MENUBAR_DEFAULTS } from './menubar-defaults';
+import { FOR_MENUBAR_DEFAULTS } from 'forty-cdk/defaults';
 
 /**
  * One trigger inside `[forMenubar]`. Apply on a `<button>` so Space / Enter

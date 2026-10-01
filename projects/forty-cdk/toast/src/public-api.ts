@@ -9,7 +9,7 @@ export {
   FOR_TOAST_DEFAULTS,
   provideForToastDefaults,
   type ForToastDefaults,
-} from './toast-defaults';
+} from 'forty-cdk/defaults';
 export { ForToastRef } from './toast-ref';
 export { type ForToastStackShift } from './toast-stack-shift';
 export {

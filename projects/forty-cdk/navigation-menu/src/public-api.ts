@@ -18,4 +18,4 @@ export {
   FOR_NAVIGATION_MENU_DEFAULTS,
   provideForNavigationMenuDefaults,
   type ForNavigationMenuDefaults,
-} from './navigation-menu-defaults';
+} from 'forty-cdk/defaults';

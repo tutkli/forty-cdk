@@ -6,7 +6,7 @@ export {
   FOR_RADIO_GROUP_DEFAULTS,
   provideForRadioGroupDefaults,
   type ForRadioGroupDefaults,
-} from './radio-group-defaults';
+} from 'forty-cdk/defaults';
 export {
   FOR_RADIO_GROUP_HOST_DIRECTIVE_INPUTS,
   FOR_RADIO_GROUP_HOST_DIRECTIVE_OUTPUTS,

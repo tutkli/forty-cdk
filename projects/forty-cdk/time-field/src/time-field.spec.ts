@@ -14,12 +14,12 @@ import {
   assertFormControlContract,
   type FormControlMountResult,
 } from '../../src/test-utils/contract';
-import { NativeDateAdapter, provideNativeDateAdapter } from 'forty-cdk/calendar';
+import { NativeDateAdapter, provideNativeDateAdapter } from 'forty-cdk/shared';
 import { ForField, ForFieldDescription, ForLabel } from 'forty-cdk/field';
 import type { TimeSegmentType } from 'forty-cdk/core';
 import { pressKey } from 'forty-cdk/testing';
 import { ForTimeField } from './time-field';
-import { provideForTimeFieldDefaults } from './time-field-defaults';
+import { provideForTimeFieldDefaults } from 'forty-cdk/defaults';
 import { ForTimeFieldLiteral } from './time-field-literal';
 import { ForTimeFieldSegment } from './time-field-segment';
 

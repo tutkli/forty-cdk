@@ -66,6 +66,7 @@
       "forty-cdk/virtualization": ["./virtualization/src/public-api.ts"],
       "forty-cdk/virtual-reorder": ["./virtual-reorder/src/public-api.ts"],
       "forty-cdk/testing": ["./testing/src/public-api.ts"],
+      "forty-cdk/defaults": ["./defaults/src/public-api.ts"],
       "forty-cdk/visually-hidden": ["./visually-hidden/src/public-api.ts"]
     }
   },
@@ -134,6 +135,7 @@
     "virtualization/src/**/*.spec.ts",
     "virtual-reorder/src/**/*.spec.ts",
     "testing/src/**/*.spec.ts",
+    "defaults/src/**/*.spec.ts",
     "visually-hidden/src/**/*.spec.ts"
   ]
 }

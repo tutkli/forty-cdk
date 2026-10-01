@@ -91,6 +91,7 @@
               "../virtualization/src/**/*.spec.ts",
               "../virtual-reorder/src/**/*.spec.ts",
               "../testing/src/**/*.spec.ts",
+              "../defaults/src/**/*.spec.ts",
               "../visually-hidden/src/**/*.spec.ts"
             ]
           }

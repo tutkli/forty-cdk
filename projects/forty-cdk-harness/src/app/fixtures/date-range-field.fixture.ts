@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
-import { provideNativeDateAdapter } from 'forty-cdk/calendar';
+import { provideNativeDateAdapter } from 'forty-cdk/shared';
 import { type DateRange } from 'forty-cdk/shared';
 import {
   ForDateRangeField,

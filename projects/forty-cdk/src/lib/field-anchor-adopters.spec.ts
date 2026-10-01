@@ -15,7 +15,7 @@ import {
   renderHost,
 } from '../test-utils';
 
-import { provideNativeDateAdapter } from 'forty-cdk/calendar';
+import { provideNativeDateAdapter } from 'forty-cdk/shared';
 import {
   ForCombobox,
   ForComboboxAnchor,

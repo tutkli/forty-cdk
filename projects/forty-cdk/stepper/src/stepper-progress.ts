@@ -3,7 +3,7 @@ import { computed, Directive, inject, input } from '@angular/core';
 import { hostAriaLabel } from 'forty-cdk/core';
 
 import { injectStepperContext } from './stepper-context';
-import { FOR_STEPPER_DEFAULTS } from './stepper-defaults';
+import { FOR_STEPPER_DEFAULTS } from 'forty-cdk/defaults';
 
 /**
  * Optional progress indicator for the Stepper. Reads the stepper context and

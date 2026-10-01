@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 
-import { provideNativeDateAdapter } from 'forty-cdk/calendar';
+import { provideNativeDateAdapter } from 'forty-cdk/shared';
 import { ForCarousel, ForCarouselSlide, ForCarouselTrack } from 'forty-cdk/carousel';
 import {
   ForCombobox,

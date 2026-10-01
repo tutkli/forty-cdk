@@ -5,7 +5,7 @@ import { renderHost } from '../../src/test-utils/render';
 import { nextMacrotask } from '../../src/test-utils/flush';
 import { ForProgress } from './progress';
 import { ForProgressIndicator } from './progress-indicator';
-import { provideForProgressDefaults } from './progress-defaults';
+import { provideForProgressDefaults } from 'forty-cdk/defaults';
 
 @Component({
   imports: [ForProgress, ForProgressIndicator],

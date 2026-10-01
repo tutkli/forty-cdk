@@ -11,12 +11,8 @@ import {
   ForNumberInputGroup,
   ForNumberInputIncrement,
 } from 'forty-cdk/number-input';
-import {
-  ForCalendar,
-  ForCalendarNextButton,
-  ForCalendarPrevButton,
-  provideNativeDateAdapter,
-} from 'forty-cdk/calendar';
+import { provideNativeDateAdapter } from 'forty-cdk/shared';
+import { ForCalendar, ForCalendarNextButton, ForCalendarPrevButton } from 'forty-cdk/calendar';
 import { ForDatePicker, ForDatePickerTrigger } from 'forty-cdk/date-picker';
 
 import {

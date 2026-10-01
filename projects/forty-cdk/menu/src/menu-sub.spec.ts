@@ -14,7 +14,7 @@ import { ForDropdownMenu, ForDropdownMenuTrigger } from 'forty-cdk/dropdown-menu
 import { pressKey } from 'forty-cdk/testing';
 
 import { ForMenuContent } from './menu-content';
-import { provideForMenuDefaults } from './menu-defaults';
+import { provideForMenuDefaults } from 'forty-cdk/defaults';
 import { ForMenuItem } from './menu-item';
 import { ForMenuSub } from './menu-sub';
 import { ForMenuSubTrigger } from './menu-sub-trigger';
