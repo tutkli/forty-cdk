@@ -15,4 +15,4 @@ export {
   FOR_SCROLL_AREA_DEFAULTS,
   provideForScrollAreaDefaults,
   type ForScrollAreaDefaults,
-} from './scroll-area-defaults';
+} from 'forty-cdk/defaults';

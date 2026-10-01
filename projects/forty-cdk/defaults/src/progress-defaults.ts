@@ -1,0 +1,61 @@
+import { InjectionToken, type Provider } from '@angular/core';
+
+import type { LocalizableText } from 'forty-cdk/core';
+
+import { provideDefaults } from './defaults';
+
+/**
+ * Defaults inherited by descendant progress bars in the surrounding injector
+ * scope. Configure with `provideForProgressDefaults` either at the
+ * application root or in any component's `providers` array; partial
+ * overrides merge with the parent scope.
+ */
+export interface ForProgressDefaults {
+  /**
+   * Whether to announce completion (or the label) once via `aria-live` on
+   * the loading→complete transition. Opt-in — useful on flows where the
+   * user explicitly waits for completion (uploads, submissions).
+   */
+  announceCompletion: boolean;
+  /**
+   * String announced via `aria-live` on the loading→complete transition when
+   * no `aria-valuetext` is available. A screen reader verbalizes it, so
+   * override it per scope to localize the announcement; defaults to the
+   * English `'Complete'`.
+   */
+  completeAnnouncement: LocalizableText;
+}
+
+/**
+ * Library fallback for progress defaults, read at the root injector when no
+ * consumer has called `provideForProgressDefaults`. Exported for the shared defaults
+ * contract spec; not re-exported from the primitive's public entry.
+ */
+export const FOR_PROGRESS_FALLBACK_DEFAULTS: ForProgressDefaults = {
+  announceCompletion: false,
+  completeAnnouncement: 'Complete',
+};
+
+/** Token holding the resolved progress defaults for the current scope. */
+export const FOR_PROGRESS_DEFAULTS = new InjectionToken<ForProgressDefaults>(
+  'FOR_PROGRESS_DEFAULTS',
+  {
+    providedIn: 'root',
+    factory: () => FOR_PROGRESS_FALLBACK_DEFAULTS,
+  },
+);
+
+/**
+ * Configures forty-cdk progress defaults for this injector scope. Partial
+ * overrides inherit unspecified keys from the parent scope (or library
+ * defaults at the root).
+ *
+ * Pass a function instead of an object to build the overrides where
+ * `inject()` is available; it runs once per injector that resolves the
+ * defaults.
+ */
+export function provideForProgressDefaults(
+  defaults: Partial<ForProgressDefaults> | (() => Partial<ForProgressDefaults>) = {},
+): Provider[] {
+  return provideDefaults(FOR_PROGRESS_DEFAULTS, FOR_PROGRESS_FALLBACK_DEFAULTS, defaults);
+}

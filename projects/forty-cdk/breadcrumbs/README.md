@@ -93,7 +93,7 @@ The primitive renders whatever items you give it, so collapsing a deep path is a
 <!-- snippet: fragment -->
 
 ```ts
-import { provideForBreadcrumbsDefaults } from 'forty-cdk/breadcrumbs';
+import { provideForBreadcrumbsDefaults } from 'forty-cdk/defaults';
 
 bootstrapApplication(App, {
   providers: [provideForBreadcrumbsDefaults({ label: 'Ruta de navegación' })],

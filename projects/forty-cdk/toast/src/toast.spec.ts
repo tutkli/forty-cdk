@@ -24,7 +24,7 @@ import { ForToastClose } from './toast-close';
 import { ForToastDescription } from './toast-description';
 import { ForToastTitle } from './toast-title';
 import { ForToastViewport } from './toast-viewport';
-import { provideForToastDefaults } from './toast-defaults';
+import { provideForToastDefaults } from 'forty-cdk/defaults';
 import { ForToastManager } from './toast-manager';
 import { type ForToastStackShift } from './toast-stack-shift';
 import { type SwipeEventDetail } from 'forty-cdk/core';

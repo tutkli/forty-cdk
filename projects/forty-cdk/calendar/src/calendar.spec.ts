@@ -32,7 +32,7 @@ import {
   provideInternationalizedDateTimeAdapter,
 } from 'forty-cdk/internationalized-date';
 import { pressKey } from 'forty-cdk/testing';
-import { NativeDateAdapter, provideNativeDateAdapter } from './native-date-adapter';
+import { NativeDateAdapter, provideNativeDateAdapter } from 'forty-cdk/shared';
 
 const adapter = new NativeDateAdapter();
 

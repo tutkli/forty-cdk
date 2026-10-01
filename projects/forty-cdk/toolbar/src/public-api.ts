@@ -11,4 +11,4 @@ export {
   FOR_TOOLBAR_DEFAULTS,
   provideForToolbarDefaults,
   type ForToolbarDefaults,
-} from './toolbar-defaults';
+} from 'forty-cdk/defaults';

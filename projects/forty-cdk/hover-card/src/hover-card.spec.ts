@@ -20,7 +20,7 @@ import { ForHoverCard } from './hover-card';
 import { ForHoverCardArrow } from './hover-card-arrow';
 import { ForHoverCardContent } from './hover-card-content';
 import { ForHoverCardTrigger } from './hover-card-trigger';
-import { provideForHoverCardDefaults } from './hover-card-defaults';
+import { provideForHoverCardDefaults } from 'forty-cdk/defaults';
 
 @Component({
   imports: [ForHoverCard, ForHoverCardTrigger, ForHoverCardContent],

@@ -4,12 +4,12 @@ import { TestBed } from '@angular/core/testing';
 import { afterEachOverlayCleanup, renderHost } from '../test-utils';
 
 import { ForBreadcrumbs, provideForBreadcrumbsDefaults } from 'forty-cdk/breadcrumbs';
+import { provideNativeDateAdapter } from 'forty-cdk/shared';
 import {
   ForCalendar,
   ForCalendarCell,
   ForCalendarGrid,
   provideForCalendarDefaults,
-  provideNativeDateAdapter,
 } from 'forty-cdk/calendar';
 import {
   ForCarousel,

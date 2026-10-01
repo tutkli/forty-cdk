@@ -2,7 +2,7 @@ import { Directive, inject, input } from '@angular/core';
 
 import { hostAriaLabel, resolveTextInput } from 'forty-cdk/core';
 import { injectComboboxContext } from './combobox-context';
-import { FOR_COMBOBOX_DEFAULTS } from './combobox-defaults';
+import { FOR_COMBOBOX_DEFAULTS } from 'forty-cdk/defaults';
 
 /**
  * Multi-mode chips area. Wrap the chips and the `<input>` together so the

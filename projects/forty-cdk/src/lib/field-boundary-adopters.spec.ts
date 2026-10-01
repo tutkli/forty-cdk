@@ -4,7 +4,7 @@ import { By } from '@angular/platform-browser';
 import { afterEachOverlayCleanup, renderHost } from '../test-utils';
 import { LIBRARY_CODE } from '../test-utils/source-scan';
 
-import { provideNativeDateAdapter } from 'forty-cdk/calendar';
+import { provideNativeDateAdapter } from 'forty-cdk/shared';
 import { ForCombobox, ForComboboxContent, ForComboboxInput } from 'forty-cdk/combobox';
 import { ForDatePicker, ForDatePickerContent, ForDatePickerTrigger } from 'forty-cdk/date-picker';
 import { ForDialog } from 'forty-cdk/dialog';

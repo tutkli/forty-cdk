@@ -6,9 +6,9 @@ import {
   type RovingTabindex,
   type WritingDirection,
 } from 'forty-cdk/core';
+import { type StepperActivationMode } from 'forty-cdk/defaults';
 
-/** Activation timing for interactive-mode arrow navigation. */
-export type StepperActivationMode = 'automatic' | 'manual';
+export { type StepperActivationMode };
 
 /** Accessibility model: interactive Tabs pattern vs display-only progress list. */
 export type StepperMode = 'interactive' | 'progress';

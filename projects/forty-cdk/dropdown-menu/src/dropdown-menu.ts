@@ -14,7 +14,7 @@ import {
   FOR_MENU_CONTEXT,
   type ForMenuContext,
 } from 'forty-cdk/core-overlay';
-import { FOR_DROPDOWN_MENU_DEFAULTS } from './dropdown-menu-defaults';
+import { FOR_DROPDOWN_MENU_DEFAULTS } from 'forty-cdk/defaults';
 
 /**
  * Headless implementation of the [WAI-ARIA Menu Button pattern](https://www.w3.org/WAI/ARIA/apg/patterns/menu-button/).

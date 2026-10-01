@@ -32,7 +32,7 @@ export {
   FOR_COMBOBOX_DEFAULTS,
   provideForComboboxDefaults,
   type ForComboboxDefaults,
-} from './combobox-defaults';
+} from 'forty-cdk/defaults';
 export {
   FOR_COMBOBOX_HOST_DIRECTIVE_INPUTS,
   FOR_COMBOBOX_HOST_DIRECTIVE_OUTPUTS,

@@ -8,7 +8,7 @@ import {
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
-import { provideNativeDateAdapter } from 'forty-cdk/calendar';
+import { provideNativeDateAdapter } from 'forty-cdk/shared';
 import { ForCombobox, provideForComboboxDefaults } from 'forty-cdk/combobox';
 import { ForContextMenu, provideForContextMenuDefaults } from 'forty-cdk/context-menu';
 import {

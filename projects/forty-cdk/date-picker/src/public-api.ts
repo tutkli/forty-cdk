@@ -10,9 +10,12 @@ export {
 } from './date-picker-context';
 export {
   FOR_DATE_PICKER_DEFAULTS,
-  provideForDatePickerDefaults,
+  FOR_DATE_RANGE_PICKER_DEFAULTS,
   type ForDatePickerDefaults,
-} from './date-picker-defaults';
+  type ForDateRangePickerDefaults,
+  provideForDatePickerDefaults,
+  provideForDateRangePickerDefaults,
+} from 'forty-cdk/defaults';
 export {
   FOR_DATE_PICKER_HOST_DIRECTIVE_INPUTS,
   FOR_DATE_PICKER_HOST_DIRECTIVE_OUTPUTS,
@@ -23,11 +26,6 @@ export {
   FOR_DATE_RANGE_PICKER_CONTEXT,
   type ForDateRangePickerContext,
 } from './date-range-picker-context';
-export {
-  FOR_DATE_RANGE_PICKER_DEFAULTS,
-  provideForDateRangePickerDefaults,
-  type ForDateRangePickerDefaults,
-} from './date-range-picker-defaults';
 export {
   FOR_DATE_RANGE_PICKER_HOST_DIRECTIVE_INPUTS,
   FOR_DATE_RANGE_PICKER_HOST_DIRECTIVE_OUTPUTS,

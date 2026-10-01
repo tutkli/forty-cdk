@@ -45,6 +45,13 @@ export const THIRD_PARTY_EXEMPTIONS = [
       'forBreakpointsTailwind, is named after it on purpose: the name tells a consumer which ' +
       'breakpoints they get without reading the numbers, so the docs have to name it too.',
   },
+  {
+    name: 'Tailwind',
+    entryPoint: 'defaults',
+    reason:
+      'The same Tailwind CSS scale, documented where the breakpoints defaults pair is declared: ' +
+      'forBreakpointsTailwind and the TailwindBreakpointName union live in forty-cdk/defaults.',
+  },
 ];
 
 const FIX =

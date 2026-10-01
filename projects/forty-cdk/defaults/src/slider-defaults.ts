@@ -1,0 +1,47 @@
+import { InjectionToken, type Provider } from '@angular/core';
+
+import { provideDefaults } from './defaults';
+
+/**
+ * Defaults inherited by descendant sliders in the surrounding injector
+ * scope. Configure with `provideForSliderDefaults` either at the
+ * application root or in any component's `providers` array; partial
+ * overrides merge with the parent scope.
+ */
+export interface ForSliderDefaults {
+  /**
+   * Multiplier applied to `step` for `PageUp` / `PageDown`. Defaults to `10`,
+   * so a step of `1` pages by `10`.
+   */
+  stepMultiplier: number;
+}
+
+/**
+ * Library fallback for slider defaults, read at the root injector when no
+ * consumer has called `provideForSliderDefaults`. Exported for the shared defaults
+ * contract spec; not re-exported from the primitive's public entry.
+ */
+export const FOR_SLIDER_FALLBACK_DEFAULTS: ForSliderDefaults = {
+  stepMultiplier: 10,
+};
+
+/** Token holding the resolved slider defaults for the current scope. */
+export const FOR_SLIDER_DEFAULTS = new InjectionToken<ForSliderDefaults>('FOR_SLIDER_DEFAULTS', {
+  providedIn: 'root',
+  factory: () => FOR_SLIDER_FALLBACK_DEFAULTS,
+});
+
+/**
+ * Configures forty-cdk slider defaults for this injector scope. Partial
+ * overrides inherit unspecified keys from the parent scope (or library
+ * defaults at the root).
+ *
+ * Pass a function instead of an object to build the overrides where
+ * `inject()` is available; it runs once per injector that resolves the
+ * defaults.
+ */
+export function provideForSliderDefaults(
+  defaults: Partial<ForSliderDefaults> | (() => Partial<ForSliderDefaults>) = {},
+): Provider[] {
+  return provideDefaults(FOR_SLIDER_DEFAULTS, FOR_SLIDER_FALLBACK_DEFAULTS, defaults);
+}

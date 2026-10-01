@@ -12,7 +12,7 @@ import {
   assertRovingTabindexContract,
   type FormControlMountResult,
 } from '../../src/test-utils/contract';
-import { provideForToggleDefaults } from './toggle-defaults';
+import { provideForToggleDefaults } from 'forty-cdk/defaults';
 import { ForToggleGroup } from './toggle-group';
 import { ForToggleGroupItem } from './toggle-group-item';
 

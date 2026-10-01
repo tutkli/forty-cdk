@@ -25,7 +25,7 @@ import {
   FOR_DATE_RANGE_FIELD_CONTEXT,
   type ForDateRangeFieldContext,
 } from './date-range-field-context';
-import { FOR_DATE_RANGE_FIELD_DEFAULTS } from './date-range-field-defaults';
+import { FOR_DATE_RANGE_FIELD_DEFAULTS } from 'forty-cdk/defaults';
 
 /**
  * Headless, segmented, spin-editable date **range** input — the keyboard-first,

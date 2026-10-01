@@ -11,7 +11,6 @@ import {
   ForCalendarYearCell,
   ForCalendarYearGrid,
   ForCalendarYearSelect,
-  provideNativeDateAdapter,
 } from 'forty-cdk/calendar';
 import {
   ForDateField,
@@ -30,7 +29,7 @@ import {
   ForDatePickerValue,
   ForDateRangePicker,
 } from 'forty-cdk/date-picker';
-import { type DateRange } from 'forty-cdk/shared';
+import { type DateRange, provideNativeDateAdapter } from 'forty-cdk/shared';
 import {
   ForTimeField,
   ForTimeFieldLiteral,

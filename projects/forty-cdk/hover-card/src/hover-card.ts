@@ -31,7 +31,7 @@ import {
   type ForHoverCardContext,
   type HoverCardScheduleReason,
 } from './hover-card-context';
-import { FOR_HOVER_CARD_DEFAULTS, HoverCardCoordinator } from './hover-card-defaults';
+import { FOR_HOVER_CARD_DEFAULTS, HoverCardCoordinator } from 'forty-cdk/defaults';
 
 /**
  * Headless hover-preview card. Use it to surface rich, interactive previews

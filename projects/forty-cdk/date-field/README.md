@@ -205,7 +205,7 @@ On the AM/PM segment, `a` / `p` set the period and ArrowUp / ArrowDown toggle it
 ## Scoped defaults
 
 ```ts
-import { provideForDateFieldDefaults } from 'forty-cdk/date-field';
+import { provideForDateFieldDefaults } from 'forty-cdk/defaults';
 
 // app config or a component's providers — localize segment labels, the
 // empty-segment announcement and the placeholders for every nested [forDateField].

@@ -6,7 +6,7 @@ import { ForCombobox } from './combobox';
 import { ForComboboxChip } from './combobox-chip';
 import { ForComboboxChipRemove } from './combobox-chip-remove';
 import { ForComboboxChips } from './combobox-chips';
-import { provideForComboboxDefaults } from './combobox-defaults';
+import { provideForComboboxDefaults } from 'forty-cdk/defaults';
 import { ForComboboxInput } from './combobox-input';
 
 const CHIPS_IMPORTS = [ForCombobox, ForComboboxInput, ForComboboxChips];

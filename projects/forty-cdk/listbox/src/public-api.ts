@@ -13,7 +13,7 @@ export {
   FOR_LISTBOX_DEFAULTS,
   provideForListboxDefaults,
   type ForListboxDefaults,
-} from './listbox-defaults';
+} from 'forty-cdk/defaults';
 export {
   FOR_LISTBOX_HOST_DIRECTIVE_INPUTS,
   FOR_LISTBOX_HOST_DIRECTIVE_OUTPUTS,

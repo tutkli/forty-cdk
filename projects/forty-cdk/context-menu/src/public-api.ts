@@ -5,4 +5,4 @@ export {
   FOR_CONTEXT_MENU_DEFAULTS,
   provideForContextMenuDefaults,
   type ForContextMenuDefaults,
-} from './context-menu-defaults';
+} from 'forty-cdk/defaults';

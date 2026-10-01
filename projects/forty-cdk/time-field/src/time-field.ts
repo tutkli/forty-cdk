@@ -26,7 +26,7 @@ import {
   hostAriaLabel,
 } from 'forty-cdk/core';
 import { FOR_TIME_FIELD_CONTEXT, type ForTimeFieldContext } from './time-field-context';
-import { FOR_TIME_FIELD_DEFAULTS } from './time-field-defaults';
+import { FOR_TIME_FIELD_DEFAULTS } from 'forty-cdk/defaults';
 
 /**
  * Headless, segmented, spin-editable time-of-day input — the time counterpart

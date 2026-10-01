@@ -8,7 +8,7 @@ import {
   type SegmentType,
 } from 'forty-cdk/core';
 import { injectDateFieldContext } from './date-field-context';
-import { DEFAULT_DATE_FIELD_SEGMENT_LABELS, FOR_DATE_FIELD_DEFAULTS } from './date-field-defaults';
+import { DEFAULT_DATE_FIELD_SEGMENT_LABELS, FOR_DATE_FIELD_DEFAULTS } from 'forty-cdk/defaults';
 
 /**
  * One editable spinbutton segment of a `[forDateField]` — the day, month, or

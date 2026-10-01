@@ -3,7 +3,7 @@ import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { renderHost } from '../../src/test-utils';
 import { moveItemInArray } from 'forty-cdk/drag-drop';
 import { ForListbox } from './listbox';
-import { provideForListboxDefaults } from './listbox-defaults';
+import { provideForListboxDefaults } from 'forty-cdk/defaults';
 import { ForListboxOption } from './listbox-option';
 import { ForListboxReorder, type ForListboxReorderEvent } from './listbox-reorder';
 

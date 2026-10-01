@@ -7,7 +7,7 @@ export {
   provideForTooltipDefaults,
   type ForTooltipDefaults,
   type TooltipDefaultsOptions,
-} from './tooltip-defaults';
+} from 'forty-cdk/defaults';
 export {
   FOR_TOOLTIP_CONTEXT,
   type ForTooltipContext,

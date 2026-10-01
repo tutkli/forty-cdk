@@ -13,7 +13,7 @@ export {
   FOR_SLIDER_DEFAULTS,
   provideForSliderDefaults,
   type ForSliderDefaults,
-} from './slider-defaults';
+} from 'forty-cdk/defaults';
 export {
   FOR_SLIDER_HOST_DIRECTIVE_INPUTS,
   FOR_SLIDER_HOST_DIRECTIVE_OUTPUTS,

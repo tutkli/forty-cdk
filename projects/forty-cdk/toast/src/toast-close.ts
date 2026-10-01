@@ -2,7 +2,7 @@ import { Directive, inject, input } from '@angular/core';
 
 import { hostAriaLabel, hostButtonType, resolveTextInput } from 'forty-cdk/core';
 import { injectToastContext } from './toast-context';
-import { FOR_TOAST_DEFAULTS } from './toast-defaults';
+import { FOR_TOAST_DEFAULTS } from 'forty-cdk/defaults';
 
 /**
  * Close button inside a toast. Apply on a `<button type="button">` so

@@ -14,7 +14,7 @@ import {
   type ForProgressContext,
   type ForProgressState,
 } from './progress-context';
-import { FOR_PROGRESS_DEFAULTS } from './progress-defaults';
+import { FOR_PROGRESS_DEFAULTS } from 'forty-cdk/defaults';
 
 /**
  * Headless progress bar. Implements the

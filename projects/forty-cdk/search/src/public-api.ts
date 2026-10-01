@@ -15,4 +15,4 @@ export {
   FOR_SEARCH_DEFAULTS,
   provideForSearchDefaults,
   type ForSearchDefaults,
-} from './search-defaults';
+} from 'forty-cdk/defaults';

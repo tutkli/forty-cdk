@@ -35,7 +35,7 @@ import {
   type ForDraggableContext,
   type ForDraggableHandle,
 } from './drag-drop-context';
-import { FOR_DRAG_DROP_DEFAULTS } from './drag-drop-defaults';
+import { FOR_DRAG_DROP_DEFAULTS } from 'forty-cdk/defaults';
 import { ForDragPreview } from './drag-preview';
 import { ForDragPlaceholder } from './drag-placeholder';
 

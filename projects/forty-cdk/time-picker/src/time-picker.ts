@@ -47,7 +47,7 @@ import {
   type ForTimePickerOptionHandle,
   type ForTimePickerOverlayContext,
 } from './time-picker-context';
-import { FOR_TIME_PICKER_DEFAULTS } from './time-picker-defaults';
+import { FOR_TIME_PICKER_DEFAULTS } from 'forty-cdk/defaults';
 
 /**
  * Root of the headless time picker, implementing the

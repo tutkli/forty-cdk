@@ -7,10 +7,10 @@ import { ForDropdownMenu, provideForDropdownMenuDefaults } from 'forty-cdk/dropd
 import { ForMenu, ForMenuSub, provideForMenuDefaults } from 'forty-cdk/menu';
 import { ForMenubar, ForMenubarTrigger, provideForMenubarDefaults } from 'forty-cdk/menubar';
 
-import { FOR_CONTEXT_MENU_FALLBACK_DEFAULTS } from '../../../context-menu/src/context-menu-defaults';
-import { FOR_DROPDOWN_MENU_FALLBACK_DEFAULTS } from '../../../dropdown-menu/src/dropdown-menu-defaults';
-import { FOR_MENU_FALLBACK_DEFAULTS } from '../../../menu/src/menu-defaults';
-import { FOR_MENUBAR_FALLBACK_DEFAULTS } from '../../../menubar/src/menubar-defaults';
+import { FOR_CONTEXT_MENU_FALLBACK_DEFAULTS } from '../../../defaults/src/context-menu-defaults';
+import { FOR_DROPDOWN_MENU_FALLBACK_DEFAULTS } from '../../../defaults/src/dropdown-menu-defaults';
+import { FOR_MENU_FALLBACK_DEFAULTS } from '../../../defaults/src/menu-defaults';
+import { FOR_MENUBAR_FALLBACK_DEFAULTS } from '../../../defaults/src/menubar-defaults';
 import {
   MenubarMenuContext,
   type MenubarMenuHost,

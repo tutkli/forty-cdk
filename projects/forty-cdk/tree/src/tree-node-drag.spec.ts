@@ -9,7 +9,7 @@ import { TestBed } from '@angular/core/testing';
 
 import { flush, renderHost } from '../../src/test-utils';
 import { ForTree } from './tree';
-import { provideForTreeDefaults } from './tree-defaults';
+import { provideForTreeDefaults } from 'forty-cdk/defaults';
 import { ForTreeGroup } from './tree-group';
 import { ForTreeItem } from './tree-item';
 import { ForTreeItemLabel } from './tree-item-label';

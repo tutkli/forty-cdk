@@ -1585,7 +1585,7 @@ const fortyCdkPlugin = {
     },
 
     // Enforces CLAUDE.md § "Defaults providers": a primitive must ship a
-    // sibling <name>-defaults.ts ONLY when it actually consumes scoped
+    // <name>-defaults.ts in forty-cdk/defaults ONLY when it actually consumes scoped
     // defaults — i.e. some non-defaults source file in the entry's src/
     // injects the `FOR_<PRIMITIVE>_DEFAULTS` token. Primitives with no
     // per-scope tunables omit the file entirely (no empty stub). Recognises
@@ -1605,12 +1605,12 @@ const fortyCdkPlugin = {
         type: 'problem',
         docs: {
           description:
-            'A primitive that injects `FOR_<PRIMITIVE>_DEFAULTS` must expose a sibling `<name>-defaults.ts` per CLAUDE.md § "Defaults providers".',
+            'A primitive that injects `FOR_<PRIMITIVE>_DEFAULTS` must have a `<name>-defaults.ts` in `forty-cdk/defaults` per CLAUDE.md § "Defaults providers".',
         },
         schema: [],
         messages: {
           missing:
-            'Primitive `{{name}}` injects `{{token}}` but the required `{{name}}-defaults.ts` sibling file is missing (CLAUDE.md § "Defaults providers"). Add the sibling declaring `provideFor<Primitive>Defaults` + `{{token}}`.',
+            'Primitive `{{name}}` injects `{{token}}` but the required `{{name}}-defaults.ts` is missing from `projects/forty-cdk/defaults/src/` (CLAUDE.md § "Defaults providers"). Add it there, declaring `provideFor<Primitive>Defaults` + `{{token}}`.',
         },
       },
       create(context) {
@@ -1622,11 +1622,17 @@ const fortyCdkPlugin = {
         function primitiveRootOf(normalized, dir) {
           const entry = normalized.match(/\/projects\/forty-cdk\/([^/]+)\/src\/([^/]+)\.ts$/);
           if (entry && entry[1] === entry[2]) {
-            return INTERNAL_TIER_ENTRY_POINTS.has(entry[1]) ? null : { primitive: entry[1], dir };
+            return INTERNAL_TIER_ENTRY_POINTS.has(entry[1]) || entry[1] === 'defaults'
+              ? null
+              : {
+                  primitive: entry[1],
+                  dir,
+                  defaultsDir: path.join(dir, '..', '..', 'defaults', 'src'),
+                };
           }
           const legacy = normalized.match(/\/projects\/forty-cdk\/src\/lib\/([^/]+)\/([^/]+)\.ts$/);
           if (legacy && legacy[1] === legacy[2]) {
-            return { primitive: legacy[1], dir };
+            return { primitive: legacy[1], dir, defaultsDir: dir };
           }
           return null;
         }
@@ -1675,7 +1681,7 @@ const fortyCdkPlugin = {
               // not trip this Program-level filesystem check.
               const base = path.basename(filename, '.ts');
               if (base !== 'require-defaults-sibling.fixture') return;
-              info = { primitive: base, dir };
+              info = { primitive: base, dir, defaultsDir: dir };
             } else {
               info = primitiveRootOf(normalized, dir);
             }
@@ -1684,7 +1690,7 @@ const fortyCdkPlugin = {
             // Only require the sibling when the primitive actually consumes
             // scoped defaults (some non-defaults source injects the token).
             if (!anySiblingInjectsToken(info.dir, info.primitive, token)) return;
-            const sibling = path.join(info.dir, `${info.primitive}-defaults.ts`);
+            const sibling = path.join(info.defaultsDir, `${info.primitive}-defaults.ts`);
             if (!fs.existsSync(sibling)) {
               context.report({
                 node,
@@ -1700,20 +1706,19 @@ const fortyCdkPlugin = {
 
     // Companion (reverse direction) of `require-defaults-sibling`: flags a
     // `<name>-defaults.ts` sibling whose exported defaults token is never
-    // injected by a non-defaults, non-spec source file in the same entry — a
+    // injected by a non-defaults, non-spec source file in any primitive entry — a
     // dead defaults file that still enlarges the public API (token + provider +
     // interface) with nothing consuming it. `require-defaults-sibling` closes
     // the "primitive injects the token but the file is missing" direction; this
     // rule closes the "file ships but nothing injects the token" direction
     // (#1258 inverted the former and left the latter unguarded).
     //
-    // The token identifier is read from the defaults file's own exports (the
-    // `export const FOR_<X> = token;` shape from `createDefaults`, or a bare
-    // `= new InjectionToken(...)`) rather than derived from the primitive name,
+    // The token identifier is read from the defaults file's own exports (its
+    // `export const FOR_<X> = new InjectionToken(...)` declaration) rather than derived from the primitive name,
     // so it stays correct for secondary defaults files that don't match the
-    // entry name (`date-picker/src/date-range-picker-defaults.ts` exports
+    // entry name (`defaults/src/date-range-picker-defaults.ts` exports
     // `FOR_DATE_RANGE_PICKER_DEFAULTS`). Recognises both library layouts:
-    //   - per-entry-point:  projects/forty-cdk/<entry>/src/<name>-defaults.ts
+    //   - defaults entry:   projects/forty-cdk/defaults/src/<name>-defaults.ts
     //   - legacy folder:    projects/forty-cdk/src/lib/<name>/<name>-defaults.ts
     // The `core` entry holds the cross-cutting utilities and is exempt, as are
     // `_internal` / `test-utils`. A file exporting no defaults token is out of
@@ -1739,7 +1744,7 @@ const fortyCdkPlugin = {
         schema: [],
         messages: {
           unused:
-            'The defaults file `{{ name }}-defaults.ts` exports `{{ token }}` but no non-defaults, non-spec sibling in its entry ever injects it — a dead defaults file that still enlarges the public API (token + provider + interface). Remove it, or inject the token where the scoped defaults are read (CLAUDE.md § "Defaults providers").',
+            'The defaults file `{{ name }}-defaults.ts` exports `{{ token }}` but no non-spec source of any primitive entry ever injects it — a dead defaults file that still enlarges the public API (token + provider + interface). Remove it, or inject the token where the scoped defaults are read (CLAUDE.md § "Defaults providers").',
         },
       },
       create(context) {
@@ -1766,7 +1771,7 @@ const fortyCdkPlugin = {
           const legacy = normalized.match(
             /\/projects\/forty-cdk\/src\/lib\/[^/]+\/([^/]+)-defaults\.ts$/,
           );
-          if (entry && !INTERNAL_TIER_ENTRY_POINTS.has(entry[1])) {
+          if (entry && entry[1] === 'defaults') {
             name = entry[2];
           } else if (legacy) {
             name = legacy[1];
@@ -1780,7 +1785,6 @@ const fortyCdkPlugin = {
         const tokenNames = [];
         function isTokenInit(init) {
           if (!init) return false;
-          if (init.type === 'Identifier' && init.name === 'token') return true;
           return (
             init.type === 'NewExpression' &&
             init.callee.type === 'Identifier' &&
@@ -1798,26 +1802,41 @@ const fortyCdkPlugin = {
         // (the exact case it targets — one that "still enlarges the public API")
         // is by definition re-exported from the barrel. See #1262.
         const BARRELS = new Set(['public-api.ts', 'index.ts']);
-        function anySiblingInjectsToken() {
+        function consumerDirs() {
+          if (!normalized.includes('/projects/forty-cdk/defaults/src/')) return [dir];
+          const libDir = path.join(dir, '..', '..');
           let entries;
           try {
-            entries = fs.readdirSync(dir);
+            entries = fs.readdirSync(libDir);
           } catch {
-            return false;
+            return [];
           }
-          const self = path.basename(filename);
-          for (const entryName of entries) {
-            if (!entryName.endsWith('.ts')) continue;
-            if (entryName === self) continue;
-            if (entryName.endsWith('.spec.ts')) continue;
-            if (BARRELS.has(entryName)) continue;
-            let source;
+          return entries
+            .filter((entry) => entry !== 'defaults' && !INTERNAL_TIER_ENTRY_POINTS.has(entry))
+            .map((entry) => path.join(libDir, entry, 'src'));
+        }
+        function anySiblingInjectsToken() {
+          const self = path.resolve(filename);
+          for (const consumerDir of consumerDirs()) {
+            let entries;
             try {
-              source = fs.readFileSync(path.join(dir, entryName), 'utf8');
+              entries = fs.readdirSync(consumerDir);
             } catch {
               continue;
             }
-            if (tokenNames.some((token) => source.includes(token))) return true;
+            for (const entryName of entries) {
+              if (!entryName.endsWith('.ts')) continue;
+              if (path.resolve(consumerDir, entryName) === self) continue;
+              if (entryName.endsWith('.spec.ts')) continue;
+              if (BARRELS.has(entryName)) continue;
+              let source;
+              try {
+                source = fs.readFileSync(path.join(consumerDir, entryName), 'utf8');
+              } catch {
+                continue;
+              }
+              if (tokenNames.some((token) => source.includes(token))) return true;
+            }
           }
           return false;
         }

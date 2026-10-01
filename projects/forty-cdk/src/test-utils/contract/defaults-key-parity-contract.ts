@@ -2,7 +2,7 @@
  * Shared contract for **defaults-key parity**: primitives of the same family
  * expose the same keys on their `For<Primitive>Defaults` interface.
  *
- * `core/defaults/per-primitive-defaults.spec.ts` proves each provider resolves
+ * `defaults/src/per-primitive-defaults.spec.ts` proves each provider resolves
  * its fallback and merges per key, and derives the set of providers from source
  * so a fortieth cannot go uncovered. What no gate stated is that the *keys*
  * mean the same thing across a family, so a family could drift one key at a

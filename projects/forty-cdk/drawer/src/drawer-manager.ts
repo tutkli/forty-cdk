@@ -21,7 +21,7 @@ import {
   type ForDrawerSwipeEndEvent,
   type ForDrawerSwipeEvent,
 } from './drawer-context';
-import { FOR_DRAWER_DEFAULTS } from './drawer-defaults';
+import { FOR_DRAWER_DEFAULTS } from 'forty-cdk/defaults';
 import type { ForDrawerEntry } from './drawer-outlet';
 import { ForDrawerOutlet } from './drawer-outlet';
 import { ForDrawerRef } from './drawer-ref';

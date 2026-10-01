@@ -4,7 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { renderHost } from '../../src/test-utils';
 import { ForBreadcrumbItem } from './breadcrumb-item';
 import { ForBreadcrumbSeparator } from './breadcrumb-separator';
-import { provideForBreadcrumbsDefaults } from './breadcrumbs-defaults';
+import { provideForBreadcrumbsDefaults } from 'forty-cdk/defaults';
 import { ForBreadcrumbs } from './breadcrumbs';
 
 @Component({

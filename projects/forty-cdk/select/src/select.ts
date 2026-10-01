@@ -47,7 +47,7 @@ import {
   type ForSelectOptionHandle,
   type ForSelectOverlayFacade,
 } from './select-context';
-import { FOR_SELECT_DEFAULTS } from './select-defaults';
+import { FOR_SELECT_DEFAULTS } from 'forty-cdk/defaults';
 import {
   createSelectVirtualizedNavigator,
   type SelectVirtualizedNavigator,

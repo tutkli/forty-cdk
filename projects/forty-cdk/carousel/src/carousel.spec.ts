@@ -9,7 +9,7 @@ import {
   assertRovingTabindexContract,
 } from '../../src/test-utils/contract';
 import { ForCarousel } from './carousel';
-import { provideForCarouselDefaults } from './carousel-defaults';
+import { provideForCarouselDefaults } from 'forty-cdk/defaults';
 import { ForCarouselIndicator } from './carousel-indicator';
 import { ForCarouselIndicators } from './carousel-indicators';
 import { ForCarouselNext } from './carousel-next';

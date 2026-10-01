@@ -15,7 +15,7 @@ import {
   FOR_MENU_CONTEXT,
   type ForMenuContext,
 } from 'forty-cdk/core-overlay';
-import { FOR_MENU_DEFAULTS } from './menu-defaults';
+import { FOR_MENU_DEFAULTS } from 'forty-cdk/defaults';
 
 /**
  * Opener-agnostic menu root: one `[forMenuContent]` definition that any number

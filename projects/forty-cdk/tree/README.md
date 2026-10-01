@@ -415,7 +415,7 @@ ancestorsOf = (id: string): readonly string[] => { /* walk roots, return the pat
 ## Scoped defaults
 
 ```ts
-import { provideForTreeDefaults } from 'forty-cdk/tree';
+import { provideForTreeDefaults } from 'forty-cdk/defaults';
 
 // app config or a component's providers
 providers: [provideForTreeDefaults({ selectionFollowsFocus: true })];
@@ -793,7 +793,7 @@ While a drag is in flight, `[forTreeNodeDrag]` announces lift / move / drop / ca
 The `label` and `parentLabel` a formatter receives are the node's `[textValue]` when it carries one, and the accessible text of its `[forTreeItemLabel]` otherwise. That is the same text typeahead matches against, so a node is announced by the name the user types to reach it, and `aria-hidden` decoration inside the label (a toggle caret, a checkbox glyph) is excluded from both.
 
 ```ts
-import { provideForTreeDefaults } from 'forty-cdk/tree';
+import { provideForTreeDefaults } from 'forty-cdk/defaults';
 
 provideForTreeDefaults({
   dragAnnounceLift: (label) =>

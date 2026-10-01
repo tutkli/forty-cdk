@@ -23,7 +23,7 @@ import { ForDrawerHandle } from './drawer-handle';
 import { ForDrawerManager, FOR_DRAWER_DATA, injectDrawerData } from './drawer-manager';
 import { ForDrawerRef } from './drawer-ref';
 import { ForDrawerTitle } from './drawer-title';
-import { provideForDrawerDefaults } from './drawer-defaults';
+import { provideForDrawerDefaults } from 'forty-cdk/defaults';
 
 interface SheetData {
   message: string;

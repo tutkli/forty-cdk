@@ -28,7 +28,7 @@ import {
   type ForTimeRangeFieldContext,
   type TimeRangeFieldEndpoint,
 } from './time-range-field-context';
-import { FOR_TIME_RANGE_FIELD_DEFAULTS } from './time-range-field-defaults';
+import { FOR_TIME_RANGE_FIELD_DEFAULTS } from 'forty-cdk/defaults';
 
 /**
  * Headless, segmented, spin-editable time-of-day **range** input — the

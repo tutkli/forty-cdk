@@ -187,7 +187,7 @@ Plus the shared `FormUiControl` members from `@angular/forms/signals`: `disabled
 ## Scoped defaults
 
 ```ts
-import { provideForTimeFieldDefaults } from 'forty-cdk/time-field';
+import { provideForTimeFieldDefaults } from 'forty-cdk/defaults';
 
 // app config or a component's providers — localize segment labels, the
 // empty-segment announcement and the placeholders for every nested [forTimeField].

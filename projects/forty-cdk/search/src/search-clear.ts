@@ -2,7 +2,7 @@ import { computed, Directive, inject, input } from '@angular/core';
 
 import { hostButtonType, hostAriaLabel, reflectDisabled, resolveTextInput } from 'forty-cdk/core';
 import { injectSearchGroup } from './search-context';
-import { FOR_SEARCH_DEFAULTS } from './search-defaults';
+import { FOR_SEARCH_DEFAULTS } from 'forty-cdk/defaults';
 
 /**
  * Optional clear button for `[forSearch]`. Apply on a `<button>` element inside

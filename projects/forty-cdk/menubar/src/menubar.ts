@@ -31,7 +31,7 @@ import {
   type ForMenubarContext,
   type ForMenubarTriggerHandle,
 } from './menubar-context';
-import { FOR_MENUBAR_DEFAULTS } from './menubar-defaults';
+import { FOR_MENUBAR_DEFAULTS } from 'forty-cdk/defaults';
 
 /**
  * Headless implementation of the

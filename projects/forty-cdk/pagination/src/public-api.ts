@@ -8,4 +8,4 @@ export {
   FOR_PAGINATION_DEFAULTS,
   provideForPaginationDefaults,
   type ForPaginationDefaults,
-} from './pagination-defaults';
+} from 'forty-cdk/defaults';

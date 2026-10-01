@@ -2809,6 +2809,57 @@ exports[`document structure > projects/forty-cdk/date-picker/README.md declares 
 ]
 `;
 
+exports[`document structure > projects/forty-cdk/defaults/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "headings": [],
+    "slug": "why-this-exists",
+    "tables": [
+      {
+        "columns": [
+          "Imported from",
+          "main holds",
+          "main size (raw / gzip)",
+        ],
+        "role": "plain",
+        "rows": 3,
+      },
+    ],
+    "title": "Why this exists",
+  },
+  {
+    "headings": [
+      {
+        "depth": 3,
+        "slug": "skip-delay-windows",
+      },
+    ],
+    "slug": "api",
+    "tables": [
+      {
+        "columns": [
+          "Configures",
+          "Provider",
+          "Token",
+          "Also exported",
+        ],
+        "role": "plain",
+        "rows": 39,
+      },
+      {
+        "columns": [
+          "Export",
+          "What it is",
+        ],
+        "role": "plain",
+        "rows": 4,
+      },
+    ],
+    "title": "API",
+  },
+]
+`;
+
 exports[`document structure > projects/forty-cdk/dialog/README.md declares the sections and table shapes it declared before 1`] = `
 [
   {

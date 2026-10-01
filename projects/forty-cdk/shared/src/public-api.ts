@@ -47,3 +47,4 @@ export type {
   Point,
 } from 'forty-cdk/core-overlay';
 export { FOR_MENU_CONTEXT } from 'forty-cdk/core-overlay';
+export { NativeDateAdapter, provideNativeDateAdapter } from './native-date-adapter';

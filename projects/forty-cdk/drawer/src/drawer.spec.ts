@@ -22,7 +22,7 @@ import type {
   ForDrawerSwipeEvent,
 } from './drawer-context';
 import { ForDrawerDescription } from './drawer-description';
-import { provideForDrawerDefaults } from './drawer-defaults';
+import { provideForDrawerDefaults } from 'forty-cdk/defaults';
 import { ForDrawerHandle } from './drawer-handle';
 import { ForDrawerTitle } from './drawer-title';
 import { ForDrawerTrigger } from './drawer-trigger';

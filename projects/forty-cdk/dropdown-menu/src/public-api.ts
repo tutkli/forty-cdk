@@ -4,4 +4,4 @@ export {
   FOR_DROPDOWN_MENU_DEFAULTS,
   provideForDropdownMenuDefaults,
   type ForDropdownMenuDefaults,
-} from './dropdown-menu-defaults';
+} from 'forty-cdk/defaults';

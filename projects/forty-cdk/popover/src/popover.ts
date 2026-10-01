@@ -26,7 +26,7 @@ import {
   type ForPopoverCloseReason,
   type ForPopoverContext,
 } from './popover-context';
-import { FOR_POPOVER_DEFAULTS } from './popover-defaults';
+import { FOR_POPOVER_DEFAULTS } from 'forty-cdk/defaults';
 
 /**
  * Headless implementation of the [WAI-ARIA Modeless Dialog pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/),

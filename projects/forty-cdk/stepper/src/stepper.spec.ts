@@ -21,7 +21,7 @@ import { ForStepperPrevious } from './stepper-previous';
 import { ForStepperProgress } from './stepper-progress';
 import { ForStepperSeparator } from './stepper-separator';
 import { ForStepperTrigger } from './stepper-trigger';
-import { provideForStepperDefaults } from './stepper-defaults';
+import { provideForStepperDefaults } from 'forty-cdk/defaults';
 
 const STEPPER_IMPORTS = [
   ForStepper,

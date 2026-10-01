@@ -2,7 +2,7 @@ import { computed, Directive, inject, input } from '@angular/core';
 
 import { hostButtonType, resolveTextInput } from 'forty-cdk/core';
 import { injectCarouselContext } from './carousel-context';
-import { FOR_CAROUSEL_DEFAULTS } from './carousel-defaults';
+import { FOR_CAROUSEL_DEFAULTS } from 'forty-cdk/defaults';
 
 /**
  * Play/pause control for carousel auto-rotation. Apply on a `<button>` so

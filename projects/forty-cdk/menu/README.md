@@ -289,7 +289,7 @@ Tune the timings per injector scope with `provideForMenuDefaults` (applies to ev
 <!-- snippet: fragment -->
 
 ```ts
-import { provideForMenuDefaults } from 'forty-cdk/menu';
+import { provideForMenuDefaults } from 'forty-cdk/defaults';
 
 bootstrapApplication(App, {
   providers: [provideForMenuDefaults({ subMenuOpenDelay: 150, subMenuCloseDelay: 200 })],
@@ -318,7 +318,7 @@ Whether a clipped surface may drop to a perpendicular side is usually an app-wid
 <!-- snippet: fragment -->
 
 ```ts
-import { provideForMenuDefaults } from 'forty-cdk/menu';
+import { provideForMenuDefaults } from 'forty-cdk/defaults';
 
 bootstrapApplication(App, {
   providers: [provideForMenuDefaults({ fallbackAxisSideDirection: 'end' })],

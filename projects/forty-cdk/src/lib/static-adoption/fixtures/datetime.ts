@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 
+import { provideNativeDateAdapter } from 'forty-cdk/shared';
 import {
   ForCalendar,
   ForCalendarCell,
@@ -9,7 +10,6 @@ import {
   ForCalendarNextButton,
   ForCalendarPrevButton,
   ForCalendarYearGrid,
-  provideNativeDateAdapter,
 } from 'forty-cdk/calendar';
 import {
   ForDateField,

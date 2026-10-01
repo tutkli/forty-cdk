@@ -1,7 +1,7 @@
 import { Directive, inject, input } from '@angular/core';
 
 import { hostAriaLabel, resolveTextInput } from 'forty-cdk/core';
-import { FOR_BREADCRUMBS_DEFAULTS } from './breadcrumbs-defaults';
+import { FOR_BREADCRUMBS_DEFAULTS } from 'forty-cdk/defaults';
 
 /**
  * Headless breadcrumb trail implementing the

@@ -9,11 +9,16 @@ export {
 } from './date-field-context';
 export {
   DEFAULT_DATE_FIELD_SEGMENT_LABELS,
+  DEFAULT_DATE_RANGE_FIELD_SEGMENT_LABELS,
   FOR_DATE_FIELD_DEFAULTS,
-  provideForDateFieldDefaults,
+  FOR_DATE_RANGE_FIELD_DEFAULTS,
   type ForDateFieldDefaults,
   type ForDateFieldSegmentLabels,
-} from './date-field-defaults';
+  type ForDateRangeFieldDefaults,
+  type ForDateRangeFieldSegmentLabels,
+  provideForDateFieldDefaults,
+  provideForDateRangeFieldDefaults,
+} from 'forty-cdk/defaults';
 export {
   FOR_DATE_FIELD_HOST_DIRECTIVE_INPUTS,
   FOR_DATE_FIELD_HOST_DIRECTIVE_OUTPUTS,
@@ -29,13 +34,6 @@ export {
   type DateRangeFieldSegment,
   type ForDateRangeFieldContext,
 } from './date-range-field-context';
-export {
-  DEFAULT_DATE_RANGE_FIELD_SEGMENT_LABELS,
-  FOR_DATE_RANGE_FIELD_DEFAULTS,
-  provideForDateRangeFieldDefaults,
-  type ForDateRangeFieldDefaults,
-  type ForDateRangeFieldSegmentLabels,
-} from './date-range-field-defaults';
 export {
   FOR_DATE_RANGE_FIELD_HOST_DIRECTIVE_INPUTS,
   FOR_DATE_RANGE_FIELD_HOST_DIRECTIVE_OUTPUTS,

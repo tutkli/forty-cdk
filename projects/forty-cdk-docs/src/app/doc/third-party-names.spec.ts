@@ -122,8 +122,11 @@ describe('the exemption list', () => {
   it('carries exactly the Tailwind preset, with the reason it stays', () => {
     expect(THIRD_PARTY_EXEMPTIONS.map(({ name, entryPoint }) => ({ name, entryPoint }))).toEqual([
       { name: 'Tailwind', entryPoint: 'breakpoints' },
+      { name: 'Tailwind', entryPoint: 'defaults' },
     ]);
-    expect(THIRD_PARTY_EXEMPTIONS[0]!.reason).toContain('forBreakpointsTailwind');
+    for (const exemption of THIRD_PARTY_EXEMPTIONS) {
+      expect(exemption.reason).toContain('forBreakpointsTailwind');
+    }
   });
 });
 

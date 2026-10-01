@@ -16,7 +16,7 @@ Configuring is optional: without a provider the Tailwind scale (`sm` 640, `md` 7
 
 ```ts
 import { ApplicationConfig } from '@angular/core';
-import { provideForBreakpointsDefaults } from 'forty-cdk/breakpoints';
+import { provideForBreakpointsDefaults } from 'forty-cdk/defaults';
 
 export const appConfig: ApplicationConfig = {
   providers: [

@@ -164,7 +164,7 @@ A scoped call starts its own skip-delay window only when it sets `openDelay`, `c
 <!-- snippet: fragment -->
 
 ```ts
-import { provideForTooltipDefaults } from 'forty-cdk/tooltip';
+import { provideForTooltipDefaults } from 'forty-cdk/defaults';
 
 // Bottom-anchored tooltips app-wide
 bootstrapApplication(App, {

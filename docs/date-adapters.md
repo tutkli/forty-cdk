@@ -11,7 +11,7 @@ An adapter is required. The date primitives resolve it through `injectDateAdapte
 | Provider                                | Date type `D`                              | Install                                                      |
 | --------------------------------------- | ------------------------------------------ | ------------------------------------------------------------ |
 | `provideInternationalizedDateAdapter()` | `CalendarDate` (`@internationalized/date`) | `@internationalized/date`, an optional peer you add yourself |
-| `provideNativeDateAdapter()`            | `Date`                                     | Nothing; it ships with `forty-cdk/calendar`                  |
+| `provideNativeDateAdapter()`            | `Date`                                     | Nothing; it ships with `forty-cdk/shared`                    |
 
 <!-- snippet: fragment -->
 
@@ -77,7 +77,7 @@ The shipped adapters report `null`, so the runtime locale applies until you say 
 
 ```ts
 import { Injectable, signal } from '@angular/core';
-import { NativeDateAdapter } from 'forty-cdk/calendar';
+import { NativeDateAdapter } from 'forty-cdk/shared';
 import { FOR_DATE_ADAPTER } from 'forty-cdk/shared';
 
 @Injectable({ providedIn: 'root' })

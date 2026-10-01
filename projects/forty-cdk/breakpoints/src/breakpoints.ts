@@ -1,7 +1,7 @@
 import { computed, inject, type Signal } from '@angular/core';
 
 import { MediaQueryRegistry, fortyError } from 'forty-cdk/core';
-import { FOR_BREAKPOINTS_DEFAULTS, type TailwindBreakpointName } from './breakpoints-defaults';
+import { FOR_BREAKPOINTS_DEFAULTS, type TailwindBreakpointName } from 'forty-cdk/defaults';
 
 /**
  * Extension point for typing custom breakpoint names. Augment it via module

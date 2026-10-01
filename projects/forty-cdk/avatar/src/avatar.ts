@@ -13,7 +13,7 @@ import {
 } from '@angular/core';
 
 import { FOR_AVATAR_CONTEXT, type ForAvatarContext, type ForAvatarStatus } from './avatar-context';
-import { FOR_AVATAR_DEFAULTS } from './avatar-defaults';
+import { FOR_AVATAR_DEFAULTS } from 'forty-cdk/defaults';
 
 /**
  * Headless avatar root. Tracks the load lifecycle of an inner

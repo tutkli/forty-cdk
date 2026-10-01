@@ -44,7 +44,7 @@ import {
   type ForDraggableHandle,
   type ForDropListContext,
 } from './drag-drop-context';
-import { FOR_DRAG_DROP_DEFAULTS } from './drag-drop-defaults';
+import { FOR_DRAG_DROP_DEFAULTS } from 'forty-cdk/defaults';
 import { FOR_DROP_LIST_GROUP } from './drop-list-group';
 import { PlaceholderSorter } from './placeholder-sorter';
 import { ReorderAnimator } from './reorder-animator';

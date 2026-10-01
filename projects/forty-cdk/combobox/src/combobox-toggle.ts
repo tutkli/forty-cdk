@@ -8,7 +8,7 @@ import {
   resolveTextInput,
 } from 'forty-cdk/core';
 import { injectComboboxContext } from './combobox-context';
-import { FOR_COMBOBOX_DEFAULTS } from './combobox-defaults';
+import { FOR_COMBOBOX_DEFAULTS } from 'forty-cdk/defaults';
 
 /**
  * Chevron button next to the editable anatomy's `[forComboboxInput]`, as in the

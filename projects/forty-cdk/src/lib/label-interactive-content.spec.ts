@@ -2,7 +2,7 @@ import { Component, signal, type Type } from '@angular/core';
 
 import { afterEachOverlayCleanup, renderHost } from '../test-utils';
 
-import { provideNativeDateAdapter } from 'forty-cdk/calendar';
+import { provideNativeDateAdapter } from 'forty-cdk/shared';
 import {
   ForCombobox,
   ForComboboxContent,

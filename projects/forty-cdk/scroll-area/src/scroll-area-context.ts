@@ -1,18 +1,12 @@
 import { inject, InjectionToken, type Signal } from '@angular/core';
 
 import { orphanContextError, type WritingDirection } from 'forty-cdk/core';
+import { type ForScrollAreaTrackPress } from 'forty-cdk/defaults';
+
+export { type ForScrollAreaTrackPress };
 
 export type ForScrollAreaType = 'auto' | 'always' | 'scroll' | 'hover';
 export type ForScrollbarOrientation = 'horizontal' | 'vertical';
-
-/**
- * What a primary-button press on bare scrollbar track does:
- * - `'page'` — step one page toward the press and auto-repeat while held,
- *   stopping when the thumb reaches the pointer (platform default).
- * - `'jump'` — centre the thumb on the press point, then scrub while held.
- * - `'none'` — the library ignores track presses entirely.
- */
-export type ForScrollAreaTrackPress = 'none' | 'page' | 'jump';
 
 /** Read surface `[forScrollArea]` publishes through {@link FOR_SCROLL_AREA_CONTEXT}. */
 export interface ForScrollAreaContext {

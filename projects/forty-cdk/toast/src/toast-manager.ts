@@ -16,7 +16,7 @@ import {
   type ForToastConfig,
   type ForToastInstance,
 } from './toast-context';
-import { FOR_TOAST_DEFAULTS } from './toast-defaults';
+import { FOR_TOAST_DEFAULTS } from 'forty-cdk/defaults';
 import { ForToastRef } from './toast-ref';
 
 /**

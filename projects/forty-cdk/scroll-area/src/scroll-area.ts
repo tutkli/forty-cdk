@@ -7,7 +7,7 @@ import {
   type ForScrollAreaTrackPress,
   type ForScrollAreaType,
 } from './scroll-area-context';
-import { FOR_SCROLL_AREA_DEFAULTS } from './scroll-area-defaults';
+import { FOR_SCROLL_AREA_DEFAULTS } from 'forty-cdk/defaults';
 
 /**
  * Root of the custom-scrollbar primitive. Owns the viewport reference,

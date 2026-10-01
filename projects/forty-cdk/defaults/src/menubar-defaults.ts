@@ -1,0 +1,82 @@
+import { InjectionToken, type Provider } from '@angular/core';
+
+import type {
+  AnchoredPositioningSeedDefaults,
+  FloatingAlign,
+  FloatingFallbackAxisSideDirection,
+  FloatingSide,
+} from 'forty-cdk/core-overlay';
+
+import { provideDefaults } from './defaults';
+
+/**
+ * Defaults inherited by descendant menubars in the surrounding injector
+ * scope. Configure with `provideForMenubarDefaults` either at the
+ * application root or in any component's `providers` array; partial
+ * overrides merge with the parent scope.
+ */
+export interface ForMenubarDefaults extends AnchoredPositioningSeedDefaults {
+  /**
+   * Side a menubar trigger's menu is anchored to, for triggers that don't
+   * override `side` locally. Library fallback `'bottom'`.
+   */
+  side: FloatingSide;
+  /**
+   * Alignment along the chosen `side`, for triggers that don't override
+   * `align` locally. Library fallback `'start'`.
+   */
+  align: FloatingAlign;
+  /**
+   * Distance (px) between a menubar trigger and its floating menu along the
+   * resolved `side` axis.
+   */
+  sideOffset: number;
+  /**
+   * Padding (px) added to the viewport edges for collision-aware positioning.
+   * Higher values keep the open menu further from the edge when `flip` /
+   * `shift` runs.
+   */
+  collisionPadding: number;
+  /**
+   * Direction `flip` falls back to on the perpendicular axis when both sides
+   * of the preferred axis overflow. `'none'` (default) keeps only the opposite
+   * same-axis placement; `'start'` / `'end'` let a menu clipped on a narrow
+   * viewport drop to a perpendicular side. Only consulted when
+   * `avoidCollisions` is on.
+   */
+  fallbackAxisSideDirection: FloatingFallbackAxisSideDirection;
+}
+
+/**
+ * Library fallback for menubar defaults, read at the root injector when no
+ * consumer has called `provideForMenubarDefaults`. Exported for the shared
+ * defaults contract spec; not re-exported from the primitive's public entry.
+ */
+export const FOR_MENUBAR_FALLBACK_DEFAULTS: ForMenubarDefaults = {
+  side: 'bottom',
+  align: 'start',
+  sideOffset: 4,
+  collisionPadding: 8,
+  fallbackAxisSideDirection: 'none',
+};
+
+/** Token holding the resolved menubar defaults for the current scope. */
+export const FOR_MENUBAR_DEFAULTS = new InjectionToken<ForMenubarDefaults>('FOR_MENUBAR_DEFAULTS', {
+  providedIn: 'root',
+  factory: () => FOR_MENUBAR_FALLBACK_DEFAULTS,
+});
+
+/**
+ * Configures forty-cdk menubar defaults for this injector scope. Partial
+ * overrides inherit unspecified keys from the parent scope (or library
+ * defaults at the root).
+ *
+ * Pass a function instead of an object to build the overrides where
+ * `inject()` is available; it runs once per injector that resolves the
+ * defaults.
+ */
+export function provideForMenubarDefaults(
+  defaults: Partial<ForMenubarDefaults> | (() => Partial<ForMenubarDefaults>) = {},
+): Provider[] {
+  return provideDefaults(FOR_MENUBAR_DEFAULTS, FOR_MENUBAR_FALLBACK_DEFAULTS, defaults);
+}

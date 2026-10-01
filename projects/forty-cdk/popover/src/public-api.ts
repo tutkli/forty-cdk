@@ -16,4 +16,4 @@ export {
   FOR_POPOVER_DEFAULTS,
   provideForPopoverDefaults,
   type ForPopoverDefaults,
-} from './popover-defaults';
+} from 'forty-cdk/defaults';

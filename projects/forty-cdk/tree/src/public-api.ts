@@ -13,7 +13,11 @@ export {
   type ForTreeItemHandle,
   type ForTreeVisibleNode,
 } from './tree-context';
-export { FOR_TREE_DEFAULTS, provideForTreeDefaults, type ForTreeDefaults } from './tree-defaults';
+export {
+  FOR_TREE_DEFAULTS,
+  provideForTreeDefaults,
+  type ForTreeDefaults,
+} from 'forty-cdk/defaults';
 export { ForTreeItemCheckbox } from './tree-item-checkbox';
 export { ForTreeItemCheckboxIndicator } from './tree-item-checkbox-indicator';
 export { expandToReveal } from './tree-filter';

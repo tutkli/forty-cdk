@@ -12,7 +12,7 @@ import { withReducedMotion, pressKey } from 'forty-cdk/testing';
 
 import { flush, nextMacrotask, renderHost } from '../../src/test-utils';
 import { assertRovingTabindexContract } from '../../src/test-utils/contract';
-import { provideForDragDropDefaults } from './drag-drop-defaults';
+import { provideForDragDropDefaults } from 'forty-cdk/defaults';
 import { ForDragHandle } from './drag-handle';
 import { ForDragPlaceholder } from './drag-placeholder';
 import { ForDragPreview } from './drag-preview';
