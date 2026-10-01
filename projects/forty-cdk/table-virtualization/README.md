@@ -85,17 +85,38 @@ They diverge for an **append-style infinite list**, the load-30-concatenate-load
 
 Without it the scroll range stretches over thousands of rows the virtualizer will never place, so the thumb shrinks to a sliver and the viewport scrolls into empty space. The only workaround is then to report the loaded count as `aria-rowcount`, which is wrong on every page but the last. `[virtualRowCount]` also bounds cross-window keyboard navigation, so `Ctrl+End` lands on the last loaded row instead of stashing a focus move that resolves only when a far page appends.
 
+When the server returns no total at all, leave `[rowCount]` unbound and keep `[virtualRowCount]` on the loaded count. `aria-rowcount` then reports `-1`, the value ARIA reserves for an unknown total, for as long as the grid is windowed, and keyboard navigation still crosses the window up to the last loaded row.
+
 A declarative `<for-table-body>` derives the loaded count from its own dataset for the navigation bound, but the scroll range still comes from these two inputs. Both shapes therefore reach the channel the same way, and raw-primitive rendering (no `<for-table-body>`) has no other way to reach it at all.
 
 ## Measured row heights
 
-Pass each rendered row element to `measureRow` when heights vary, and the core replaces the estimate with the measured size:
+Pass each rendered row element to `measureRow` after every render when heights vary, and the core replaces the estimate with the measured size. A `[forTableRow]` reflects its `[virtualIndex]` as `data-index`, which is how the core knows which row it is measuring, so tag the row with a template reference and nothing else:
 
 ```html
-<div forTableRow [virtualIndex]="vrow.index" #row (attached)="v.measureRow(row)">…</div>
+<div forTableRow [virtualIndex]="vrow.index" #row>…</div>
 ```
 
-Passing `null` sweeps a row recycled out of the window from the measurement cache.
+<!-- snippet: fragment -->
+
+```ts
+import { afterEveryRender, type ElementRef, viewChild, viewChildren } from '@angular/core';
+import { ForTableVirtualized } from 'forty-cdk/table-virtualization';
+
+private readonly v = viewChild.required(ForTableVirtualized);
+private readonly rowEls = viewChildren<ElementRef<HTMLElement>>('row');
+
+constructor() {
+  afterEveryRender(() => {
+    for (const row of this.rowEls()) {
+      this.v().measureRow(row.nativeElement);
+    }
+    this.v().measureRow(null);
+  });
+}
+```
+
+Passing `null` sweeps a row recycled out of the window from the measurement cache. A declarative `<for-table-body>` does all of this for you when its `measureRows` input is set.
 
 ## Keyboard navigation across the window
 

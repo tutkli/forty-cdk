@@ -136,10 +136,11 @@ export class ForTable<T = unknown> implements ForTableContext {
    * body-derived count. Defaults to the body count, else the rendered data-row
    * count plus the header offset — so an empty non-virtualized grid with a header
    * row reports `aria-rowcount="1"`, because its rendered rows are all the rows it
-   * has. A **windowed** grid rendering no data row is the one shape whose total is
-   * unknowable, and there `aria-rowcount` reports `-1`, the value ARIA reserves for
-   * an unknown total. An explicit value is emitted verbatim, including `0`. Ignored
-   * in `mode="table"`.
+   * has. A **windowed** grid with neither is the one shape whose total is
+   * unknowable — its mounted rows are a slice of an uncounted dataset — so there
+   * `aria-rowcount` reports `-1`, the value ARIA reserves for an unknown total,
+   * whether or not rows are mounted. An explicit value is emitted verbatim,
+   * including `0`. Ignored in `mode="table"`.
    */
   readonly _rowCountInput = input<number | undefined>(undefined, { alias: 'rowCount' });
 
@@ -402,11 +403,10 @@ export class ForTable<T = unknown> implements ForTableContext {
     if (total !== undefined) {
       return total + this.dataRowIndexOffset();
     }
-    const rendered = this.#registry.rows().length;
-    if (rendered === 0 && this.#windowed()) {
+    if (this.#windowed()) {
       return UNKNOWN_COUNT;
     }
-    return rendered + this.dataRowIndexOffset();
+    return this.#registry.rows().length + this.dataRowIndexOffset();
   });
   protected readonly colCountAttr = computed<number | null>(() => {
     if (this.mode() === 'table') {
@@ -789,7 +789,7 @@ export class ForTable<T = unknown> implements ForTableContext {
 
     const navigation = this.#registry.virtualRowNavigation();
     const fromRow = this.focusedRowIndex();
-    const total = this.rowCount();
+    const total = navigation?.placeableRowCount() ?? 0;
     const pageSize = this.#pageSize();
     const headerIsRowTarget =
       this.#headerParticipates() && targetsHeaderRow(action, fromRow, pageSize);
@@ -798,7 +798,7 @@ export class ForTable<T = unknown> implements ForTableContext {
     }
     if (
       navigation !== null &&
-      total !== undefined &&
+      total > 0 &&
       fromRow !== null &&
       ROW_CROSSING_ACTIONS.has(action) &&
       !headerIsRowTarget
@@ -836,8 +836,9 @@ export class ForTable<T = unknown> implements ForTableContext {
 
 /**
  * Resolves the absolute `(row, 0-based column)` target and travel `direction`
- * for a row-crossing grid action against the true `total` row count. Arrow
- * row-moves preserve the current column; `page-up` / `page-down` move by
+ * for a row-crossing grid action against the `total` count of rows the
+ * virtualizer can place. Arrow row-moves preserve the current column;
+ * `page-up` / `page-down` move by
  * `pageSize` rows (the caller's `#pageSize()` is already at least 1, and the
  * move is clamped to the dataset bounds) preserving the column;
  * `last` jumps to the last cell of the whole grid. The `direction` (`+1` for

@@ -629,7 +629,7 @@ class SvgFocusTargetHost {
     <div forTable mode="grid" ariaLabel="Reorderable rows">
       <div role="rowgroup" forTableRowReorder (rowReorder)="onReorder($event)">
         @for (row of rows; track row) {
-          <div forTableRow forDraggable [dragData]="row" [attr.data-index]="row">
+          <div forTableRow forDraggable [dragData]="row" [attr.data-testid]="'row-' + row">
             <div forTableCell name="a" [attr.data-testid]="'cell-' + row">{{ row }}</div>
           </div>
         }
@@ -735,7 +735,7 @@ describe('ForTableRowReorder — the lifted row reflects data-dragging (#1693)',
     press(lifted, ' ', { ctrlKey: true });
     await settle();
 
-    expect(query('[data-index="1"]').getAttribute('data-dragging')).toBe('');
+    expect(query('[data-testid="row-1"]').getAttribute('data-dragging')).toBe('');
     expect(query('[forTableRowReorder]').getAttribute('data-dragging')).toBe('');
 
     press(lifted, 'ArrowDown');
@@ -743,7 +743,7 @@ describe('ForTableRowReorder — the lifted row reflects data-dragging (#1693)',
     await settle();
 
     expect(instance.last).toEqual({ from: 1, to: 2 });
-    expect(query('[data-index="1"]').hasAttribute('data-dragging')).toBe(false);
+    expect(query('[data-testid="row-1"]').hasAttribute('data-dragging')).toBe(false);
     expect(query('[forTableRowReorder]').hasAttribute('data-dragging')).toBe(false);
   });
 });

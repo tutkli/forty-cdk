@@ -299,7 +299,6 @@ interface RenderRow<T> {
             forTableRow
             [value]="r.value"
             [virtualIndex]="r.virtualIndex"
-            [attr.data-index]="r.virtualIndex"
             [attr.tabindex]="rowTabIndex(r)"
             [class]="rowClassFor(r)"
             [forTableRowAttrs]="rowAttrsFor(r)"

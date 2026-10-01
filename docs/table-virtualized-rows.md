@@ -35,6 +35,7 @@ Place `[forTableVirtualized]` on the same element as `[forTable]`. Set `[rowCoun
   <div role="rowgroup" [style.height.px]="v.totalSize()" style="position: relative">
     @for (vrow of v.virtualRows(); track vrow.index) {
     <div
+      #row
       forTableRow
       [virtualIndex]="vrow.index"
       [style.transform]="'translateY(' + vrow.start + 'px)'"
@@ -54,19 +55,25 @@ Key points:
 - Each row is `position: absolute; transform: translateY(vrow.start + 'px')`. Do not use `top`, because `transform` avoids layout thrashing.
 - Bind `[virtualIndex]="vrow.index"` on each `[forTableRow]`. This is what drives the absolute 1-based `aria-rowindex` (`vrow.index + 1`) rather than the DOM-order index.
 - The **focused row stays mounted** even when scrolled out of the window. The roving-focused `gridcell` is never unmounted; roving navigation is unchanged.
-- For measured (variable) row heights, call `v.measureRow(el)` per rendered row in `afterEveryRender`.
+- For measured (variable) row heights, call `v.measureRow(el)` per rendered row in `afterEveryRender`. Each `[forTableRow]` reflects its `[virtualIndex]` as `data-index`, the attribute the core reads to know which row an element is, so give the rows a template reference (`#row`) and query them; `measureRow(null)` then sweeps the rows recycled out of the window.
 
 <!-- snippet: fragment -->
 
 ```ts
-import { afterEveryRender } from '@angular/core';
+import { afterEveryRender, type ElementRef, viewChild, viewChildren } from '@angular/core';
 import { ForTableVirtualized } from 'forty-cdk/table-virtualization';
 
-afterEveryRender(() => {
-  for (const el of this.rowEls()) {
-    this.v.measureRow(el.nativeElement);
-  }
-});
+private readonly v = viewChild.required(ForTableVirtualized);
+private readonly rowEls = viewChildren<ElementRef<HTMLElement>>('row');
+
+constructor() {
+  afterEveryRender(() => {
+    for (const row of this.rowEls()) {
+      this.v().measureRow(row.nativeElement);
+    }
+    this.v().measureRow(null);
+  });
+}
 ```
 
 ## Append-style lists: `[virtualRowCount]`
@@ -87,6 +94,8 @@ An **append-style** infinite list (load 30, concatenate, load 30 more at the bot
 ```
 
 Both halves matter. Raising `[rowCount]` alone inflates the scroll range with rows that will never mount (the thumb shrinks to a sliver and the viewport scrolls into empty space), while lowering it to the loaded count announces an `aria-rowcount` that is wrong on every page but the last. `[virtualRowCount]` also bounds cross-window keyboard navigation, so `Ctrl+End` lands on the last loaded row rather than stashing a focus move that only resolves when a far page appends.
+
+A server that returns no total is the same shape with `[rowCount]` left unbound: `aria-rowcount` reports `-1`, the value ARIA reserves for an unknown total, rather than the number of mounted rows, and `[virtualRowCount]` alone bounds the scroll range and the cross-window navigation.
 
 Raw-primitive rendering has no other channel for that count: `<for-table-body>` derives the loaded count from its own dataset (for the navigation bound), a table rendering its own rows does not.
 

@@ -142,7 +142,6 @@ const VIEWPORT_HEIGHT = 400;
               forTableRow
               [virtualIndex]="vrow.index"
               [value]="vrow.index"
-              [attr.data-index]="vrow.index"
               [style.transform]="'translateY(' + vrow.start + 'px)'"
             >
               @for (col of cols; track col) {

@@ -38,6 +38,7 @@ import {
   host: {
     role: 'row',
     '[attr.aria-rowindex]': 'rowIndex()',
+    '[attr.data-index]': 'virtualIndex()',
     '[attr.aria-selected]': 'ariaSelected()',
     '[attr.data-selected]': 'selected() ? "" : null',
     '[attr.aria-level]': 'ariaLevel()',
@@ -78,8 +79,10 @@ export class ForTableRow implements ForTableRowContext {
   /**
    * Absolute 0-based index of this row in the full virtualized dataset. Set by the
    * consumer when rendering a window via `[forTableVirtualized]`; drives the absolute
-   * `aria-rowindex` and keeps the focused row mounted across recycling. Leave unset
-   * (default `null`) for non-virtualized tables. Ignored in `mode="table"`.
+   * `aria-rowindex` (except in `mode="table"`) and keeps the focused row mounted
+   * across recycling. Reflected as `data-index`, the attribute
+   * `ForTableVirtualized.measureRow` reads the row's index from. Leave unset
+   * (default `null`) for non-virtualized tables, which then emit no `data-index`.
    */
   readonly virtualIndex = input<number | null, unknown>(null, {
     transform: (v) => (v == null ? null : numberAttribute(v)),
