@@ -106,6 +106,19 @@ export abstract class FormUiControlBase {
    */
   focus?(options?: FocusOptions): void;
 
+  /**
+   * Whether a composite around this control currently stands in for it with a
+   * surrounding `[forField]` — a field-anatomy picker adopting its segmented
+   * field. While it returns `true` the field neither resolves nor wires this
+   * control. Declared without an implementation so only a control that can be
+   * adopted pays for the extra reactive read.
+   *
+   * A subclass must declare this as a **method**, for the same reason as
+   * {@link focus}. It is read lazily, so it may reference the subclass's own
+   * fields.
+   */
+  protected fieldAdopted?(): boolean;
+
   readonly #fieldset = inject(FOR_FIELDSET_CONTEXT, { optional: true });
 
   /**
@@ -205,7 +218,9 @@ export abstract class FormUiControlBase {
       target.toggleAttribute('data-pending', this.pending());
       target.toggleAttribute('data-invalid', this.effectiveInvalid());
     });
+    const fieldAdopted = this.fieldAdopted?.bind(this);
     injectFieldWiring({
+      adopted: fieldAdopted ? computed(fieldAdopted) : undefined,
       invalid: computed(() => this.effectiveInvalid()),
       required: this.required,
       disabled: this.effectiveDisabled,

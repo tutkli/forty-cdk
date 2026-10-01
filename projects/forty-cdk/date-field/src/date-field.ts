@@ -2,9 +2,13 @@ import { computed, Directive, ElementRef, inject, input, model, type Signal } fr
 import type { FormValueControl } from '@angular/forms/signals';
 
 import {
+  type AdoptedField,
   type DateAdapter,
+  type DateFieldHost,
+  FOR_DATE_FIELD_HOST,
   injectDateAdapter,
   DateFieldEngine,
+  registerHandle,
   type FieldGranularity,
   type FieldSegment,
   resolveText,
@@ -53,6 +57,12 @@ import { FOR_DATE_FIELD_DEFAULTS } from './date-field-defaults';
  * The bounds are named `minDate` / `maxDate` because `min` / `max` are reserved `FormUiControl`
  * members typed for numeric validators.
  *
+ * Projected inside a `[forDatePicker]` with `anatomy="field"`, the field is adopted: it displays
+ * and edits the picker's value, takes the picker's bounds, `granularity`, `hourCycle` and `locale`,
+ * adds the picker's disabled / read-only / required / invalid states to its own, and leaves the
+ * `[formField]` binding and a surrounding `[forField]` to the picker. Its own `value` model is not
+ * written while adopted.
+ *
  * @typeParam D The adapter's immutable date (or, with `granularity > 'day'`, date-time) type.
  *
  * @example
@@ -76,11 +86,11 @@ import { FOR_DATE_FIELD_DEFAULTS } from './date-field-defaults';
     role: 'group',
     '[attr.dir]': 'dir()',
     '[attr.aria-label]': 'resolvedAriaLabel()',
-    '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
-    '[attr.aria-invalid]': 'invalid() ? "true" : null',
-    '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
-    '[attr.data-required]': 'required() ? "" : null',
-    '[attr.data-readonly]': 'readonly() ? "" : null',
+    '[attr.aria-disabled]': 'resolvedDisabled() ? "true" : null',
+    '[attr.aria-invalid]': 'effectiveInvalid() ? "true" : null',
+    '[attr.data-disabled]': 'resolvedDisabled() ? "" : null',
+    '[attr.data-required]': 'resolvedRequired() ? "" : null',
+    '[attr.data-readonly]': 'resolvedReadonly() ? "" : null',
     '[attr.data-empty]': 'empty() ? "" : null',
     '(focusout)': 'onFocusOut($event)',
   },
@@ -92,6 +102,17 @@ export class ForDateField<D>
 {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
   readonly #defaults = inject(FOR_DATE_FIELD_DEFAULTS);
+  readonly #fieldHost = inject(FOR_DATE_FIELD_HOST, { optional: true }) as DateFieldHost<D> | null;
+  readonly #adopter = computed(() => (this.#fieldHost?.adoptsField() ? this.#fieldHost : null));
+  protected readonly resolvedDisabled = computed(
+    () => this.effectiveDisabled() || (this.#adopter()?.effectiveDisabled() ?? false),
+  );
+  protected readonly resolvedReadonly = computed(
+    () => this.readonly() || (this.#adopter()?.readonly() ?? false),
+  );
+  protected readonly resolvedRequired = computed(
+    () => this.required() || (this.#adopter()?.required() ?? false),
+  );
 
   /** The active date adapter, resolved from `FOR_DATE_ADAPTER` (shared with `ForCalendar`). */
   readonly adapter: DateAdapter<D> = injectDateAdapter<D>('ForDateField', {
@@ -194,26 +215,53 @@ export class ForDateField<D>
     super();
     this.#engine = new DateFieldEngine<D>({
       adapter: this.adapter,
-      disabled: this.effectiveDisabled,
-      readonly: this.readonly,
+      disabled: this.resolvedDisabled,
+      readonly: this.resolvedReadonly,
       roving: this.roving,
-      granularity: this.granularity,
-      hourCycle: computed(() => this.hourCycle() ?? this.#defaults.hourCycle),
-      locale: this.locale,
+      granularity: computed(() => this.#adopter()?.granularity() ?? this.granularity()),
+      hourCycle: computed(
+        () => this.#adopter()?.resolvedHourCycle() ?? this.hourCycle() ?? this.#defaults.hourCycle,
+      ),
+      locale: computed(() => this.#adopter()?.locale() ?? this.locale()),
       placeholder: computed(() =>
         resolveTextRecord(this.#defaults.placeholder, this.placeholder()),
       ),
       emptySegmentText: computed(() => resolveText(this.#defaults.emptySegmentText)),
-      minDate: this.minDate,
-      maxDate: this.maxDate,
-      source: this.value,
-      onCommit: (next) => this.value.set(next),
+      minDate: computed(() => {
+        const adopter = this.#adopter();
+        return adopter ? adopter.minDate() : this.minDate();
+      }),
+      maxDate: computed(() => {
+        const adopter = this.#adopter();
+        return adopter ? adopter.maxDate() : this.maxDate();
+      }),
+      source: computed(() => {
+        const adopter = this.#adopter();
+        return adopter ? adopter.value() : this.value();
+      }),
+      onCommit: (next) => {
+        const adopter = this.#adopter();
+        if (adopter) {
+          adopter.commitFieldValue(next);
+        } else {
+          this.value.set(next);
+        }
+      },
       piece: 'ForDateField',
       scope: 'date-field',
     });
     this.delegate = this.#engine;
     this.segments = this.#engine.segments;
     this.empty = this.#engine.empty;
+
+    const fieldHost = this.#fieldHost;
+    if (fieldHost) {
+      registerHandle<AdoptedField>(
+        { element: this.#host.nativeElement, focus: (options) => this.focus(options) },
+        (field) => fieldHost.registerField(field),
+        (field) => fieldHost.unregisterField(field),
+      );
+    }
 
     injectHiddenInput({
       name: this.name,
@@ -235,15 +283,29 @@ export class ForDateField<D>
    * focusable — so focus-on-error would silently go nowhere. No-op when disabled.
    */
   override focus(options?: FocusOptions): void {
-    if (this.effectiveDisabled()) {
+    if (this.resolvedDisabled()) {
       return;
     }
     this.#engine.focusFirstSegment(options);
   }
 
+  protected override fieldAdopted(): boolean {
+    return this.#adopter() !== null;
+  }
+
+  protected override effectiveInvalid(): boolean {
+    return this.invalid() || (this.#adopter()?.invalid() ?? false);
+  }
+
   protected onFocusOut(event: FocusEvent): void {
     const next = event.relatedTarget as Node | null;
-    if (!next || !this.#host.nativeElement.contains(next)) {
+    if (next && this.#host.nativeElement.contains(next)) {
+      return;
+    }
+    const adopter = this.#adopter();
+    if (adopter) {
+      adopter.markTouched();
+    } else {
       this.markTouched();
     }
   }

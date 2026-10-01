@@ -22,6 +22,13 @@ import { type ForDatePickerContext, injectDatePickerTriggerContext } from './dat
  * `[forSelectTrigger]` and `[forTimePickerTrigger]` already ship, with
  * `dialog` as the popup token ARIA 1.2 allows for a combobox surface.
  *
+ * With the root's `anatomy="field"` the projected `[forDateField]` is the
+ * control and carries the value, the label and the validity, so the trigger is
+ * a plain button that opens the calendar: no `role="combobox"` and none of the
+ * form-control `aria-*` state, while `aria-haspopup="dialog"`, `aria-expanded`
+ * and `aria-controls` stay. Give it an accessible name of its own
+ * (`aria-label="Open calendar"`).
+ *
  * Disabling: the native `disabled` attribute is the single reflection channel
  * — no `aria-disabled` is emitted, because on a real single-purpose `<button>`
  * trigger the native attribute already conveys the state to assistive
@@ -44,15 +51,15 @@ import { type ForDatePickerContext, injectDatePickerTriggerContext } from './dat
   exportAs: 'forDatePickerTrigger',
   host: {
     '[attr.type]': 'buttonType()',
-    role: 'combobox',
+    '[attr.role]': 'fieldAnatomy() ? null : "combobox"',
     '[id]': 'ctx().triggerId()',
     '[attr.aria-haspopup]': '"dialog"',
     '[attr.aria-expanded]': 'ctx().open() ? "true" : "false"',
     '[attr.aria-controls]': 'ctx().open() ? ctx().contentId() : null',
-    '[attr.aria-readonly]': 'ctx().readonly() ? "true" : null',
-    '[attr.aria-required]': 'ctx().required() ? "true" : null',
-    '[attr.aria-invalid]': 'ctx().invalid() ? "true" : null',
-    '[attr.aria-busy]': 'ctx().pending() ? "true" : null',
+    '[attr.aria-readonly]': '!fieldAnatomy() && ctx().readonly() ? "true" : null',
+    '[attr.aria-required]': '!fieldAnatomy() && ctx().required() ? "true" : null',
+    '[attr.aria-invalid]': '!fieldAnatomy() && ctx().invalid() ? "true" : null',
+    '[attr.aria-busy]': '!fieldAnatomy() && ctx().pending() ? "true" : null',
     '[attr.data-state]': 'ctx().open() ? "open" : "closed"',
     '[attr.data-disabled]': 'ctx().effectiveDisabled() ? "" : null',
     '[attr.data-readonly]': 'ctx().readonly() ? "" : null',
@@ -78,6 +85,8 @@ export class ForDatePickerTrigger {
   readonly forDatePickerTrigger = input<ForDatePickerContext | ''>('');
 
   protected readonly ctx = injectDatePickerTriggerContext(this.forDatePickerTrigger);
+
+  protected readonly fieldAnatomy = computed(() => this.ctx().anatomy() === 'field');
 
   constructor() {
     const el = this.#host.nativeElement;

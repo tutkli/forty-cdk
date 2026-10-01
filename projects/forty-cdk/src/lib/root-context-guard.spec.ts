@@ -8,6 +8,7 @@ import {
 import { FOR_AVATAR_CONTEXT, ForAvatarFallback } from 'forty-cdk/avatar';
 import { FOR_CAROUSEL_CONTEXT, ForCarouselPrevious } from 'forty-cdk/carousel';
 import { FOR_CONTEXT_MENU_CONTEXT, ForContextMenuTrigger } from 'forty-cdk/context-menu';
+import { FOR_DATE_PICKER_CONTEXT, ForDatePickerTrigger } from 'forty-cdk/date-picker';
 import { FOR_DIALOG_CONTEXT, ForDialogTitle } from 'forty-cdk/dialog';
 import { FOR_DRAWER_CONTEXT, ForDrawerTitle } from 'forty-cdk/drawer';
 import {
@@ -139,6 +140,14 @@ class ImpostorComboboxHost {}
   template: `<div forContextMenuTrigger>Row</div>`,
 })
 class ImpostorContextMenuHost {}
+
+@Component({
+  imports: [ForDatePickerTrigger],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [{ provide: FOR_DATE_PICKER_CONTEXT, useValue: {} }],
+  template: `<button forDatePickerTrigger>Pick a date</button>`,
+})
+class ImpostorDatePickerHost {}
 
 @Component({
   imports: [ForDialogTitle],
@@ -273,6 +282,15 @@ const GUARDED: readonly GuardedRoot[] = [
     root: '[forContextMenu]',
     piece: 'ForContextMenuTrigger',
     host: ImpostorContextMenuHost,
+  },
+  {
+    entryPoint: 'date-picker',
+    source: 'date-picker/src/date-picker-context.ts',
+    calls: 1,
+    token: 'FOR_DATE_PICKER_CONTEXT',
+    root: '[forDatePicker]',
+    piece: 'ForDatePickerTrigger',
+    host: ImpostorDatePickerHost,
   },
   {
     entryPoint: 'dialog',

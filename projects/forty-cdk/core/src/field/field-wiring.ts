@@ -75,6 +75,14 @@ export interface FieldControlHandle {
   readonly touched?: Signal<boolean>;
   /** Validation errors surfaced by Signal Forms; read by `ForFieldError`. */
   readonly errors?: Signal<readonly ValidationError.WithOptionalFieldTree[]>;
+  /**
+   * Whether a composite control around this one currently stands in for it —
+   * a field-anatomy `[forDatePicker]` adopting its `[forDateField]`. While
+   * `true` the field neither resolves this handle as its control nor wires its
+   * association attributes onto it; the adopting composite registers its own
+   * handle and nominates this control's host as its labelled element.
+   */
+  readonly adopted?: Signal<boolean>;
 }
 
 /**
@@ -218,6 +226,7 @@ export function injectFieldWiring(handle: Omit<FieldControlHandle, 'host'> = {})
   inject(DestroyRef).onDestroy(() => field.unregisterControl(fullHandle));
 
   const labelledElement = handle.labelledElement;
+  const adopted = handle.adopted;
   let previousTarget: HTMLElement | null = null;
   let ownsId = false;
   let consumerDescribedBy: string | null = null;
@@ -227,7 +236,7 @@ export function injectFieldWiring(handle: Omit<FieldControlHandle, 'host'> = {})
     // `labelledElement` is declared, else the host. A declared-but-unresolved
     // labelled element (its directive registers after this runs) yields `null`
     // here, and we wire nothing — never the wrapper host — until it appears.
-    const target = labelledElement ? labelledElement() : el;
+    const target = adopted?.() ? null : labelledElement ? labelledElement() : el;
 
     if (previousTarget !== target) {
       if (previousTarget) {

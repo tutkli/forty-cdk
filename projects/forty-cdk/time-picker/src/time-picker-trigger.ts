@@ -25,6 +25,13 @@ import { type ForTimePickerContext, injectTimePickerTriggerContext } from './tim
  * its own `data-readonly=""` styling hook — `readonly` is not a valid attribute
  * of `<button>`, so a `data-*` channel is the only one available there.
  *
+ * With the root's `anatomy="field"` the projected `[forTimeField]` is the
+ * control and carries the value, the label and the validity, so the trigger is
+ * a plain button that opens the listbox: no `role="combobox"` and none of the
+ * form-control `aria-*` state, while `aria-haspopup="listbox"`,
+ * `aria-expanded` and `aria-controls` stay. Give it an accessible name of its
+ * own (`aria-label="Choose a time"`).
+ *
  * Keyboard:
  * - **Click / Enter / Space** — toggle (open focuses the selected slot, or first).
  * - **ArrowDown** — open + focus selected slot (or first).
@@ -35,15 +42,15 @@ import { type ForTimePickerContext, injectTimePickerTriggerContext } from './tim
   exportAs: 'forTimePickerTrigger',
   host: {
     '[attr.type]': 'buttonType()',
-    role: 'combobox',
+    '[attr.role]': 'fieldAnatomy() ? null : "combobox"',
     '[id]': 'ctx().overlay.triggerId()',
     '[attr.aria-haspopup]': '"listbox"',
     '[attr.aria-expanded]': 'ctx().open() ? "true" : "false"',
     '[attr.aria-controls]': 'ctx().open() ? ctx().overlay.contentId() : null',
-    '[attr.aria-readonly]': 'ctx().readonly() ? "true" : null',
-    '[attr.aria-required]': 'ctx().required() ? "true" : null',
-    '[attr.aria-invalid]': 'ctx().invalid() ? "true" : null',
-    '[attr.aria-busy]': 'ctx().pending() ? "true" : null',
+    '[attr.aria-readonly]': '!fieldAnatomy() && ctx().readonly() ? "true" : null',
+    '[attr.aria-required]': '!fieldAnatomy() && ctx().required() ? "true" : null',
+    '[attr.aria-invalid]': '!fieldAnatomy() && ctx().invalid() ? "true" : null',
+    '[attr.aria-busy]': '!fieldAnatomy() && ctx().pending() ? "true" : null',
     '[attr.data-state]': 'ctx().open() ? "open" : "closed"',
     '[attr.data-disabled]': 'ctx().effectiveDisabled() ? "" : null',
     '[attr.data-readonly]': 'ctx().readonly() ? "" : null',
@@ -67,6 +74,8 @@ export class ForTimePickerTrigger<D = unknown> {
   readonly forTimePickerTrigger = input<ForTimePickerContext<D> | ''>('');
 
   protected readonly ctx = injectTimePickerTriggerContext<D>(this.forTimePickerTrigger);
+
+  protected readonly fieldAnatomy = computed(() => this.ctx().anatomy?.() === 'field');
 
   constructor() {
     const el = this.#host.nativeElement;

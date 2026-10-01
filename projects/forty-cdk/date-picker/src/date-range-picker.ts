@@ -7,6 +7,7 @@ import {
   isDevMode,
   model,
   signal,
+  type Signal,
 } from '@angular/core';
 import type { FormValueControl } from '@angular/forms/signals';
 
@@ -19,7 +20,7 @@ import {
   serializeISODate,
 } from 'forty-cdk/core';
 import { DatePickerBase } from './date-picker-base';
-import { FOR_DATE_PICKER_CONTEXT } from './date-picker-context';
+import { FOR_DATE_PICKER_CONTEXT, type ForDatePickerAnatomy } from './date-picker-context';
 import {
   FOR_DATE_RANGE_PICKER_CONTEXT,
   type ForDateRangePickerContext,
@@ -97,6 +98,9 @@ export class ForDateRangePicker<D>
   readonly adapter: DateAdapter<D> = injectDateAdapter<D>('ForDateRangePicker', {
     scope: 'date-picker',
   });
+
+  protected readonly anatomy: Signal<ForDatePickerAnatomy> =
+    signal<ForDatePickerAnatomy>('trigger').asReadonly();
 
   readonly triggerId = signal(this.idGen.next('for-date-range-picker-trigger'));
   readonly contentId = signal(this.idGen.next('for-date-range-picker-content'));

@@ -59,6 +59,13 @@ export type ForTimePickerOverlayContext = ListboxOverlayContext<
 >;
 
 /**
+ * How a `[forTimePicker]` is composed. `'trigger'`: the trigger is the control
+ * and shows the value. `'field'`: a projected `[forTimeField]` is the control
+ * and the trigger only opens the slot listbox beside it.
+ */
+export type ForTimePickerAnatomy = 'trigger' | 'field';
+
+/**
  * Coordination contract owned by `[forTimePicker]`. The shared overlay-listbox
  * surface (trigger / anchor / content registration, navigation, the open /
  * close machine, dismiss forwarders) is reached through
@@ -176,7 +183,10 @@ export interface TimePickerPieceContext {
  * runtime.
  */
 export interface TimePickerContext<D = unknown>
-  extends ForTimePickerContext<D>, TimePickerPieceContext {}
+  extends ForTimePickerContext<D>, TimePickerPieceContext {
+  /** How the picker is composed; absent on a root with only the trigger anatomy. */
+  readonly anatomy?: Signal<ForTimePickerAnatomy>;
+}
 
 /**
  * DI token for the time picker's coordination surface, provided by
@@ -218,7 +228,7 @@ export function injectTimePickerContext<D = unknown>(piece: string): TimePickerC
 
 export function injectTimePickerTriggerContext<D = unknown>(
   explicitRoot: Signal<ForTimePickerContext<D> | ''>,
-): Signal<ForTimePickerContext<D>> {
+): Signal<ForTimePickerContext<D> & Pick<TimePickerContext<D>, 'anatomy'>> {
   const injected = inject(FOR_TIME_PICKER_CONTEXT, { optional: true });
   return computed(() => {
     const explicit = explicitRoot();

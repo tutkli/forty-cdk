@@ -6,6 +6,7 @@ export { ForTimePickerContent } from './time-picker-content';
 export { ForTimePickerOption } from './time-picker-option';
 export {
   FOR_TIME_PICKER_CONTEXT,
+  type ForTimePickerAnatomy,
   type ForTimePickerCloseReason,
   type ForTimePickerContext,
   type ForTimePickerInitialFocus,

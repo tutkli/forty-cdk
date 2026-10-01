@@ -1,7 +1,13 @@
-import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
+import { Component, ErrorHandler, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
-import { form, FormField, required } from '@angular/forms/signals';
+import {
+  disabled as disabledRule,
+  form,
+  FormField,
+  readonly as readonlyRule,
+  required,
+} from '@angular/forms/signals';
 
 import {
   afterEachOverlayCleanup,
@@ -9,6 +15,7 @@ import {
   pressKey,
   pressWithMouse,
   renderHost,
+  type RenderResult,
 } from '../../src/test-utils';
 import {
   assertDataStateContract,
@@ -20,7 +27,8 @@ import {
 } from '../../src/test-utils/contract';
 import { type DateAdapter, FOR_DATE_ADAPTER, type VetoableNativeEvent } from 'forty-cdk/core';
 import { provideNativeDateAdapter } from 'forty-cdk/calendar';
-import { ForField, ForLabel } from 'forty-cdk/field';
+import { ForField, ForFieldError, ForLabel } from 'forty-cdk/field';
+import { ForTimeField, ForTimeFieldLiteral, ForTimeFieldSegment } from 'forty-cdk/time-field';
 import {
   ForTimePicker,
   ForTimePickerAnchor,
@@ -1398,6 +1406,284 @@ describe('ForTimePicker', () => {
       await press();
       expect(r.instance.openChanges).toEqual([true, false, true]);
       expect(getContent()).not.toBeNull();
+    });
+  });
+
+  describe('field anatomy (#2041)', () => {
+    interface Meeting {
+      start: Date | null;
+    }
+
+    @Component({
+      imports: [
+        ...BASE_IMPORTS,
+        ForTimeField,
+        ForTimeFieldSegment,
+        ForTimeFieldLiteral,
+        FormField,
+        ForField,
+        ForLabel,
+        ForFieldError,
+      ],
+      providers: [...provideNativeDateAdapter()],
+      template: `
+        <button data-testid="outside">Elsewhere</button>
+        <div forField>
+          <span forLabel data-testid="label">Start time</span>
+          <div
+            forTimePicker
+            anatomy="field"
+            [formField]="meeting.start"
+            [(open)]="open"
+            [step]="60"
+            [granularity]="granularity()"
+            [hourCycle]="hourCycle()"
+            [locale]="'en-US'"
+            [minTime]="minTime()"
+            #picker="forTimePicker"
+          >
+            <div forTimeField data-testid="group" #field="forTimeField">
+              @for (s of field.segments(); track s.id) {
+                @if (s.isLiteral) {
+                  <span forTimeFieldLiteral>{{ s.text }}</span>
+                } @else {
+                  <span forTimeFieldSegment [segment]="s.type!" [attr.data-testid]="s.type">{{
+                    s.text
+                  }}</span>
+                }
+              }
+            </div>
+            <button forTimePickerTrigger data-testid="trigger" aria-label="Choose a time">
+              Slots
+            </button>
+            @if (open()) {
+              <div forTimePickerContent>
+                @for (slot of picker.slots(); track slot.id) {
+                  <div
+                    forTimePickerOption
+                    [value]="slot.value"
+                    [disabled]="slot.disabled"
+                    [attr.data-testid]="slot.id"
+                  >
+                    {{ slot.label }}
+                  </div>
+                }
+              </div>
+            }
+          </div>
+          <p forFieldError data-testid="error">Required.</p>
+        </div>
+      `,
+    })
+    class TimeFieldAnatomyHost {
+      readonly open = signal(false);
+      readonly granularity = signal<'minute' | 'second'>('minute');
+      readonly hourCycle = signal<12 | 24>(24);
+      readonly minTime = signal<Date | null>(null);
+      readonly locked = signal(false);
+      readonly off = signal(false);
+      readonly model = signal<Meeting>({ start: null });
+      readonly meeting = form(this.model, (p) => {
+        required(p.start);
+        readonlyRule(p.start, () => this.locked());
+        disabledRule(p.start, () => this.off());
+      });
+    }
+
+    type TR = RenderResult<TimeFieldAnatomyHost>;
+    const at = (r: TR, id: string) => r.query<HTMLElement>(`[data-testid="${id}"]`)!;
+    const slot = (id: string) => document.querySelector<HTMLElement>(`[data-testid="${id}"]`);
+    const segmentTypes = (r: TR) =>
+      r.queryAll('[forTimeFieldSegment]').map((s) => s.getAttribute('data-testid'));
+    const hoursAndMinutes = (date: Date | null) =>
+      date === null ? null : [date.getHours(), date.getMinutes()];
+
+    async function typeInto(r: TR, segment: string, digits: string): Promise<void> {
+      for (const digit of digits) {
+        pressKey(at(r, segment), digit);
+      }
+      await r.flush();
+    }
+
+    it('writes a typed time into the form bound on the picker, dirty then touched on blur', async () => {
+      const r = renderHost(TimeFieldAnatomyHost);
+      await typeInto(r, 'hour', '09');
+      await typeInto(r, 'minute', '15');
+
+      const start = r.instance.meeting.start();
+      expect(hoursAndMinutes(r.instance.model().start)).toEqual([9, 15]);
+      expect(start.dirty()).toBe(true);
+      expect(start.touched()).toBe(false);
+
+      at(r, 'group').dispatchEvent(
+        new FocusEvent('focusout', { bubbles: true, relatedTarget: at(r, 'outside') }),
+      );
+      await r.flush();
+      expect(start.touched()).toBe(true);
+    });
+
+    it('writes a slot pick into the form, dirty, shown in the field, touched once focus leaves', async () => {
+      const r = renderHost(TimeFieldAnatomyHost);
+      at(r, 'trigger').click();
+      await r.flush();
+
+      slot('slot-36000')!.click();
+      await r.flush();
+
+      const start = r.instance.meeting.start();
+      expect(hoursAndMinutes(r.instance.model().start)).toEqual([10, 0]);
+      expect(start.dirty()).toBe(true);
+      expect(r.instance.open()).toBe(false);
+      expect(at(r, 'hour').getAttribute('aria-valuenow')).toBe('10');
+
+      at(r, 'trigger').dispatchEvent(
+        new FocusEvent('focusout', { bubbles: true, relatedTarget: at(r, 'outside') }),
+      );
+      await r.flush();
+      expect(start.touched()).toBe(true);
+    });
+
+    it('applies the picker granularity and hourCycle to the field', async () => {
+      const r = renderHost(TimeFieldAnatomyHost);
+      expect(segmentTypes(r)).toEqual(['hour', 'minute']);
+
+      r.instance.granularity.set('second');
+      r.instance.hourCycle.set(12);
+      await r.flush();
+
+      expect(segmentTypes(r)).toEqual(['hour', 'minute', 'second', 'dayPeriod']);
+    });
+
+    it('clamps a typed time to the picker minTime', async () => {
+      const r = renderHost(TimeFieldAnatomyHost);
+      r.instance.minTime.set(new Date(2000, 0, 1, 9, 0));
+      await r.flush();
+
+      await typeInto(r, 'hour', '07');
+      await typeInto(r, 'minute', '30');
+
+      expect(hoursAndMinutes(r.instance.model().start)).toEqual([9, 0]);
+    });
+
+    it('a read-only picker marks the segments read-only and blocks typing and picking', async () => {
+      const r = renderHost(TimeFieldAnatomyHost);
+      r.instance.model.set({ start: new Date(2000, 0, 1, 9, 0) });
+      r.instance.locked.set(true);
+      await r.flush();
+
+      expect(at(r, 'hour').getAttribute('aria-readonly')).toBe('true');
+
+      pressKey(at(r, 'hour'), 'ArrowUp');
+      await r.flush();
+      expect(hoursAndMinutes(r.instance.model().start)).toEqual([9, 0]);
+
+      at(r, 'trigger').click();
+      await r.flush();
+      slot('slot-36000')!.click();
+      await r.flush();
+      expect(hoursAndMinutes(r.instance.model().start)).toEqual([9, 0]);
+    });
+
+    it('a disabled picker disables the field and its segments', async () => {
+      const r = renderHost(TimeFieldAnatomyHost);
+      r.instance.off.set(true);
+      await r.flush();
+
+      expect(at(r, 'group').getAttribute('aria-disabled')).toBe('true');
+      expect(at(r, 'hour').getAttribute('aria-disabled')).toBe('true');
+    });
+
+    it('makes the trigger a plain popup button without the form-control state', async () => {
+      const r = renderHost(TimeFieldAnatomyHost);
+      await r.flush();
+      const trigger = at(r, 'trigger');
+
+      expect(trigger.hasAttribute('role')).toBe(false);
+      expect(trigger.hasAttribute('aria-required')).toBe(false);
+      expect(trigger.hasAttribute('aria-invalid')).toBe(false);
+      expect(trigger.getAttribute('aria-haspopup')).toBe('listbox');
+      expect(trigger.getAttribute('aria-expanded')).toBe('false');
+
+      trigger.click();
+      await r.flush();
+
+      expect(trigger.getAttribute('aria-expanded')).toBe('true');
+      expect(trigger.getAttribute('aria-controls')).toBe(getContent()!.id);
+    });
+
+    it('names and validates the time field group through [forField], not the trigger', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+      const r = renderHost(TimeFieldAnatomyHost);
+      await r.flush();
+      const group = at(r, 'group');
+
+      expect(group.getAttribute('aria-labelledby')).toBe(at(r, 'label').id);
+      expect(group.getAttribute('aria-invalid')).toBe('true');
+      expect(group.getAttribute('aria-errormessage')).toBe(at(r, 'error').id);
+      expect(at(r, 'trigger').hasAttribute('aria-labelledby')).toBe(false);
+      expect(warn).not.toHaveBeenCalled();
+    });
+
+    it('focuses the first segment from a label press and from focus()', async () => {
+      const r = renderHost(TimeFieldAnatomyHost);
+      await r.flush();
+
+      at(r, 'label').click();
+      expect(document.activeElement).toBe(at(r, 'hour'));
+
+      at(r, 'outside').focus();
+      const picker = r.fixture.debugElement
+        .query(By.directive(ForTimePicker))
+        .injector.get(ForTimePicker);
+      picker.focus();
+      expect(document.activeElement).toBe(at(r, 'hour'));
+    });
+
+    describe('without a projected [forTimeField]', () => {
+      @Component({
+        imports: [ForTimePicker, ForTimePickerTrigger],
+        providers: [...provideNativeDateAdapter()],
+        template: `
+          <div forTimePicker anatomy="field">
+            <button forTimePickerTrigger data-testid="trigger">Open</button>
+          </div>
+        `,
+      })
+      class MissingFieldHost {}
+
+      it('throws FORCDK-TIME-PICKER-003 from focus()', () => {
+        const r = renderHost(MissingFieldHost);
+        const picker = r.fixture.debugElement
+          .query(By.directive(ForTimePicker))
+          .injector.get(ForTimePicker);
+
+        expect(() => picker.focus()).toThrow(/FORCDK-TIME-PICKER-003/);
+      });
+
+      it('reports FORCDK-TIME-PICKER-003 when the trigger opens the listbox', async () => {
+        const captured: unknown[] = [];
+        class CapturingHandler implements ErrorHandler {
+          handleError(err: unknown): void {
+            captured.push(err);
+          }
+        }
+        TestBed.configureTestingModule({
+          rethrowApplicationErrors: false,
+          providers: [
+            provideZonelessChangeDetection(),
+            { provide: ErrorHandler, useClass: CapturingHandler },
+          ],
+        });
+        const fixture = TestBed.createComponent(MissingFieldHost);
+        fixture.detectChanges();
+
+        fixture.nativeElement.querySelector('[data-testid="trigger"]').click();
+        await flush(fixture);
+
+        expect(captured.map((err) => (err as Error).message).join('\n')).toContain(
+          'FORCDK-TIME-PICKER-003',
+        );
+      });
     });
   });
 });

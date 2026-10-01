@@ -4,6 +4,7 @@ import {
   Directive,
   inject,
   input,
+  isDevMode,
   model,
   numberAttribute,
   output,
@@ -12,8 +13,12 @@ import {
 import type { FormValueControl } from '@angular/forms/signals';
 
 import {
+  type AdoptedField,
   assertTimeCapable,
   createPointerSuppression,
+  createSingleSlot,
+  FOR_TIME_FIELD_HOST,
+  fortyError,
   injectDateAdapter,
   type TimeCapableDateAdapter,
   type WritingDirection,
@@ -35,6 +40,7 @@ import {
 } from './build-time-slots';
 import {
   FOR_TIME_PICKER_CONTEXT,
+  type ForTimePickerAnatomy,
   type ForTimePickerCloseReason,
   type ForTimePickerContext,
   type ForTimePickerInitialFocus,
@@ -53,7 +59,28 @@ import { FOR_TIME_PICKER_DEFAULTS } from './time-picker-defaults';
  * `[formField]` auto-wiring. Requires a time-capable adapter
  * (`provideNativeDateAdapter()` or `provideInternationalizedDateTimeAdapter()`).
  *
+ * Set `anatomy="field"` to make a projected `[forTimeField]` the control instead of the trigger:
+ * the field shows and edits the value, carries the label and the validity, and receives
+ * `focus()`; the trigger is a plain button that opens the slot listbox. Bind `[formField]`, the
+ * bounds, `granularity`, `hourCycle` and `locale` once, on the picker — the field takes them from
+ * there.
+ *
  * @typeParam D The adapter's immutable date-time type.
+ *
+ * @example Field anatomy: a typed time field with a slot button beside it:
+ * ```html
+ * <div forTimePicker anatomy="field" [formField]="form.start" [step]="15" #picker="forTimePicker">
+ *   <div forTimeField>…segments…</div>
+ *   <button forTimePickerTrigger aria-label="Choose a time">…icon…</button>
+ *   @if (picker.open()) {
+ *     <div forTimePickerContent>
+ *       @for (slot of picker.slots(); track slot.id) {
+ *         <div forTimePickerOption [value]="slot.value">{{ slot.label }}</div>
+ *       }
+ *     </div>
+ *   }
+ * </div>
+ * ```
  */
 @Directive({
   selector: '[forTimePicker]',
@@ -67,6 +94,7 @@ import { FOR_TIME_PICKER_DEFAULTS } from './time-picker-defaults';
   providers: [
     { provide: FOR_TIME_PICKER_CONTEXT, useExisting: ForTimePicker },
     { provide: FOR_TIME_VALUE_SOURCE, useExisting: ForTimePicker },
+    { provide: FOR_TIME_FIELD_HOST, useExisting: ForTimePicker },
   ],
 })
 export class ForTimePicker<D>
@@ -131,6 +159,33 @@ export class ForTimePicker<D>
    * the locale's.
    */
   readonly hourCycle = input<12 | 24 | null>(null);
+
+  /**
+   * How the picker is composed. `'trigger'` (default): the trigger is the
+   * focusable control and shows the value. `'field'`: a projected
+   * `[forTimeField]` is the control — it shows and edits the value, is named by
+   * a surrounding `[forField]`, and receives `focus()` — and the trigger is a
+   * plain button that opens the listbox. Opening the listbox or calling
+   * `focus()` with no projected field throws in dev mode.
+   */
+  readonly anatomy = input<ForTimePickerAnatomy>('trigger');
+
+  /** Whether a projected `[forTimeField]` is the control (`anatomy="field"`). */
+  readonly adoptsField = computed(() => this.anatomy() === 'field');
+
+  /**
+   * The effective hour cycle: `hourCycle`, then the scope's
+   * (`provideForTimePickerDefaults`), or `null` to follow the locale.
+   */
+  readonly resolvedHourCycle = computed(
+    () => this.hourCycle() ?? this.positioningDefaults.hourCycle,
+  );
+
+  readonly #fieldSlot = createSingleSlot<AdoptedField>({
+    primitive: 'time-picker',
+    owner: '[forTimePicker]',
+    claimant: '[forTimeField]',
+  });
 
   /**
    * BCP 47 locale driving slot label formatting. When `null` (default) the
@@ -236,7 +291,12 @@ export class ForTimePicker<D>
     },
     defaultInitialFocus: 'selected',
     effectiveDisabled: this.effectiveDisabled,
-    setOpen: (open) => this.open.set(open),
+    setOpen: (open) => {
+      if (open && this.adoptsField()) {
+        this.#adoptedField();
+      }
+      this.open.set(open);
+    },
     isOpen: () => this.open(),
     emit: {
       escapeKeyDown: this.escapeKeyDown,
@@ -285,7 +345,7 @@ export class ForTimePicker<D>
     ) {
       return options;
     }
-    const cycle = this.hourCycle() ?? this.positioningDefaults.hourCycle;
+    const cycle = this.resolvedHourCycle();
     const granularity = this.granularity();
     return {
       ...options,
@@ -326,25 +386,58 @@ export class ForTimePicker<D>
   });
 
   protected override fieldLabelledElement(): HTMLElement | null {
-    return this.#controller.trigger();
+    return this.adoptsField()
+      ? (this.#fieldSlot.value()?.element ?? null)
+      : this.#controller.trigger();
   }
 
-  protected override fieldLabelledElementId(): string {
-    return this.#controller.triggerId();
+  protected override fieldLabelledElementId(): string | null {
+    return this.adoptsField() ? null : this.#controller.triggerId();
   }
 
   /**
    * Move focus to the trigger, implementing `FormValueControl.focus` from
-   * `@angular/forms/signals`. Without this override Signal Forms would focus the
-   * host `[forTimePicker]` wrapper — which carries no focusable role — so
-   * focus-on-error would silently go nowhere. No-op when disabled or before the
-   * trigger has registered.
+   * `@angular/forms/signals` — or, in the field anatomy, to the projected
+   * `[forTimeField]`'s first segment. Without this override Signal Forms would
+   * focus the host `[forTimePicker]` wrapper — which carries no focusable role —
+   * so focus-on-error would silently go nowhere. No-op when disabled or before
+   * the trigger has registered. In the field anatomy, throws in dev mode when no
+   * field is projected.
    */
   override focus(options?: FocusOptions): void {
+    if (this.adoptsField()) {
+      const field = this.#adoptedField();
+      if (!this.effectiveDisabled()) {
+        field?.focus(options);
+      }
+      return;
+    }
     if (this.effectiveDisabled()) {
       return;
     }
     this.#controller.trigger()?.focus(options);
+  }
+
+  /** Registers a projected `[forTimeField]`; the field calls it on creation. */
+  protected registerField(field: AdoptedField): void {
+    this.#fieldSlot.register(field);
+  }
+
+  /** Removes a projected `[forTimeField]`; the field calls it on destroy. */
+  protected unregisterField(field: AdoptedField): void {
+    this.#fieldSlot.unregister(field);
+  }
+
+  /** Writes a value typed in the adopted `[forTimeField]`. Ignored while read-only or disabled. */
+  protected commitFieldValue(value: D | null): void {
+    if (this.readonly() || this.effectiveDisabled()) {
+      return;
+    }
+    this.value.set(value);
+  }
+
+  #adoptedField(): AdoptedField | null {
+    return assertFieldProjected(this.#fieldSlot.value());
   }
 
   constructor() {
@@ -435,4 +528,23 @@ export class ForTimePicker<D>
   override markTouched(): void {
     super.markTouched();
   }
+}
+
+/**
+ * Returns the `[forTimeField]` a field-anatomy picker adopted, throwing in dev
+ * mode when none is projected. A production build returns `null` and the call
+ * it guards degrades to a no-op.
+ */
+function assertFieldProjected(field: AdoptedField | null): AdoptedField | null {
+  if (isDevMode() && field === null) {
+    throw fortyError({
+      code: 'FORCDK-TIME-PICKER-003',
+      message: '[forTimePicker] has anatomy="field" but no [forTimeField] is projected inside it.',
+      cause:
+        'In the field anatomy the projected time field is the control the picker labels, ' +
+        'focuses and shows its value in, so without one the value has nowhere to show.',
+      fix: 'Project a [forTimeField] inside the [forTimePicker] element, or remove anatomy="field".',
+    });
+  }
+  return field;
 }

@@ -1,6 +1,12 @@
 import { computed, Directive, inject, input } from '@angular/core';
 
-import { ForDateTimeSegmentBase, resolveText, type TimeSegmentType } from 'forty-cdk/core';
+import {
+  adoptedSegmentContext,
+  FOR_TIME_FIELD_HOST,
+  ForDateTimeSegmentBase,
+  resolveText,
+  type TimeSegmentType,
+} from 'forty-cdk/core';
 import { injectTimeFieldContext } from './time-field-context';
 import { DEFAULT_TIME_FIELD_SEGMENT_LABELS, FOR_TIME_FIELD_DEFAULTS } from './time-field-defaults';
 
@@ -28,7 +34,10 @@ import { DEFAULT_TIME_FIELD_SEGMENT_LABELS, FOR_TIME_FIELD_DEFAULTS } from './ti
   exportAs: 'forTimeFieldSegment',
 })
 export class ForTimeFieldSegment extends ForDateTimeSegmentBase {
-  protected readonly ctx = injectTimeFieldContext('ForTimeFieldSegment');
+  protected readonly ctx = adoptedSegmentContext(
+    injectTimeFieldContext('ForTimeFieldSegment'),
+    inject(FOR_TIME_FIELD_HOST, { optional: true }),
+  );
   readonly #defaults = inject(FOR_TIME_FIELD_DEFAULTS);
 
   /** Which time part this segment edits. */
