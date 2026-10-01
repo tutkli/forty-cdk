@@ -145,19 +145,20 @@ One grid-mode table composing six features on the same element: multiple row sel
 
 ### `ForTable`
 
-| Property            | Type                               | Description                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| ------------------- | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `mode`              | `'table' \| 'grid' \| 'treegrid'`  | ARIA role emitted on the host.<br>**Default:** `'table'`                                                                                                                                                                                                                                                                                                                                                                                 |
-| `ariaLabel`         | `string \| null`                   | Reactive accessible label.<br>**Default:** `null`                                                                                                                                                                                                                                                                                                                                                                                        |
-| `dir`               | `'ltr' \| 'rtl' \| null`           | Writing direction; resolves ambient when unset.<br>**Default:** `null`                                                                                                                                                                                                                                                                                                                                                                   |
-| `rowCount`          | `number`                           | True total data-row count for `aria-rowcount`. Optional with `<for-table-body>` (its dataset length is used); bind it only for a server-known total larger than the loaded rows. It also sizes the virtualized scroll range unless `[forTableVirtualized]` narrows that with `[virtualRowCount]`. Ignored in `table` mode.<br>**Default:** body dataset length, else `-1` when virtualized, else rendered count (plus the header offset) |
-| `colCount`          | `number`                           | True total column count for `aria-colcount`. Ignored in `table` mode.<br>**Default:** rendered count, else `-1`                                                                                                                                                                                                                                                                                                                          |
-| `selectionMode`     | `'none' \| 'single' \| 'multiple'` | Row selection mode.<br>**Default:** `'none'`                                                                                                                                                                                                                                                                                                                                                                                             |
-| `selectionBehavior` | `'toggle' \| 'replace' \| 'none'`  | How a row click mutates selection (modifier-aware in `replace` mode; `'none'` leaves it to the selector / select-all / Space).<br>**Default:** `'toggle'`                                                                                                                                                                                                                                                                                |
-| `value`             | `model<readonly T[]>([])`          | Two-way bindable selected row values. Infers the row-value type `T`.<br>**Default:** `[]`                                                                                                                                                                                                                                                                                                                                                |
-| `compareWith`       | `(a: T, b: T) => boolean`          | Equality comparator for row values. Override for object rows.<br>**Default:** `===`                                                                                                                                                                                                                                                                                                                                                      |
-| `selectableValues`  | `readonly T[] \| null`             | Full ordered set of selectable values for total-aware aggregates under virtualization; `null` uses the rendered rows.<br>**Default:** `null`                                                                                                                                                                                                                                                                                             |
-| `expanded`          | `model<readonly T[]>([])`          | Two-way bindable open parent-row values for `mode="treegrid"`. Ignored in other modes.<br>**Default:** `[]`                                                                                                                                                                                                                                                                                                                              |
+| Property            | Type                                | Description                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ------------------- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `mode`              | `'table' \| 'grid' \| 'treegrid'`   | ARIA role emitted on the host.<br>**Default:** `'table'`                                                                                                                                                                                                                                                                                                                                                                                 |
+| `ariaLabel`         | `string \| null`                    | Reactive accessible label.<br>**Default:** `null`                                                                                                                                                                                                                                                                                                                                                                                        |
+| `dir`               | `'ltr' \| 'rtl' \| null`            | Writing direction; resolves ambient when unset.<br>**Default:** `null`                                                                                                                                                                                                                                                                                                                                                                   |
+| `rowCount`          | `number`                            | True total data-row count for `aria-rowcount`. Optional with `<for-table-body>` (its dataset length is used); bind it only for a server-known total larger than the loaded rows. It also sizes the virtualized scroll range unless `[forTableVirtualized]` narrows that with `[virtualRowCount]`. Ignored in `table` mode.<br>**Default:** body dataset length, else `-1` when virtualized, else rendered count (plus the header offset) |
+| `colCount`          | `number`                            | True total column count for `aria-colcount`. Ignored in `table` mode.<br>**Default:** rendered count, else `-1`                                                                                                                                                                                                                                                                                                                          |
+| `selectionMode`     | `'none' \| 'single' \| 'multiple'`  | Row selection mode.<br>**Default:** `'none'`                                                                                                                                                                                                                                                                                                                                                                                             |
+| `selectionBehavior` | `'toggle' \| 'replace' \| 'none'`   | How a row click mutates selection (modifier-aware in `replace` mode; `'none'` leaves it to the selector / select-all / Space).<br>**Default:** `'toggle'`                                                                                                                                                                                                                                                                                |
+| `value`             | `model<readonly T[]>([])`           | Two-way bindable selected row values. Infers the row-value type `T`.<br>**Default:** `[]`                                                                                                                                                                                                                                                                                                                                                |
+| `compareWith`       | `(a: T, b: T) => boolean`           | Equality comparator for row values. Override for object rows.<br>**Default:** `===`                                                                                                                                                                                                                                                                                                                                                      |
+| `selectableValues`  | `readonly T[] \| null`              | Full ordered set of selectable values for total-aware aggregates under virtualization; `null` uses the rendered rows.<br>**Default:** `null`                                                                                                                                                                                                                                                                                             |
+| `expanded`          | `model<readonly T[]>([])`           | Two-way bindable open parent-row values for `mode="treegrid"`. Ignored in other modes.<br>**Default:** `[]`                                                                                                                                                                                                                                                                                                                              |
+| `cellActivate`      | `output<TableCellActivateEvent<T>>` | `grid` / `treegrid` only: fires on `Enter` on a focused data cell holding no widget, with the row's `[value]` (`undefined` when it has none), the column `name` and the event. See [Activating a cell](#activating-a-cell).                                                                                                                                                                                                              |
 
 ### `ForTableHeaderCell`
 
@@ -184,9 +185,11 @@ One grid-mode table composing six features on the same element: multiple row sel
 
 ### `ForTableSelectAll`
 
-| Property    | Type             | Description                                                                                     |
-| ----------- | ---------------- | ----------------------------------------------------------------------------------------------- |
-| `ariaLabel` | `string \| null` | Accessible label for the select-all checkbox (e.g. `"Select all rows"`).<br>**Default:** `null` |
+| Property    | Type                                | Description                                                                                                                                                                            |
+| ----------- | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ariaLabel` | `string \| null`                    | Accessible label for the select-all checkbox (e.g. `"Select all rows"`).<br>**Default:** `null`                                                                                        |
+| `state`     | `'none' \| 'some' \| 'all' \| null` | Externally owned tri-state. When bound, `aria-checked` / `data-state` follow it and an activation emits `toggleAll` instead of writing the table's `[(value)]`.<br>**Default:** `null` |
+| `toggleAll` | `output<void>`                      | Fires on a click, `Space` or `Enter` while `[state]` is bound.                                                                                                                         |
 
 ### `ForTableSortHeader`
 
@@ -278,12 +281,12 @@ Two regimes, chosen by `mode`. The default `mode="table"` adds no navigation of 
 
 `grid` / `treegrid`. The APG cell-entry mode that reaches a widget rendered inside a cell.
 
-| Key                 | Action                                                                                                                                                                 |
-| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `F2`                | Move focus **into** the focused cell's first focusable widget. No-op on a cell holding none.                                                                           |
-| `Enter`             | The same entry, on a cell whose keys no other affordance owns. [Sorting, resizing and reordering](#sorting-resizing-and-reordering) covers the two that do.            |
-| `Tab` / `Shift+Tab` | While inside an entered cell: move between **that cell's** widgets, wrapping at both ends. Focus cannot leave the cell for another cell or the next document tab stop. |
-| `Escape`            | While inside an entered cell: return focus to the owning cell and leave interaction mode.                                                                              |
+| Key                 | Action                                                                                                                                                                                                                                                                                                                                        |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `F2`                | Move focus **into** the focused cell's first focusable widget. No-op on a cell holding none, and never emits `cellActivate`.                                                                                                                                                                                                                  |
+| `Enter`             | The same entry, on a cell whose keys no other affordance owns. [Sorting, resizing and reordering](#sorting-resizing-and-reordering) covers the two that do. On a data cell holding no widget it emits `cellActivate` instead, and `rowActivate` on a `<for-table-body>` with `interactiveRows` (see [Activating a cell](#activating-a-cell)). |
+| `Tab` / `Shift+Tab` | While inside an entered cell: move between **that cell's** widgets, wrapping at both ends. Focus cannot leave the cell for another cell or the next document tab stop.                                                                                                                                                                        |
+| `Escape`            | While inside an entered cell: return focus to the owning cell and leave interaction mode.                                                                                                                                                                                                                                                     |
 
 The cycle reaches every focusable in the cell, `tabindex="-1"` included, so a header cell holding a column-menu button **and** a `[forTableColumnResizer]` resize handle is fully keyboard-operable. "Focusable" is the same set `Enter` / `F2` enters: a natively-focusable element still counts while grid mode holds it at `tabindex="-1"`, but an element focusable _only_ because you gave it a `tabindex` does not. A `<span forTableSelectAll>` is therefore reachable in `mode="table"` and not in a grid; put it on a `<button type="button">` to keep it in the cycle. While focus is inside a cell's widget, Arrow keys act on the widget rather than on the grid, and anything else that moves focus out of the cell ends interaction mode too. A cell holding one widget wraps back to that widget, so `Tab` there moves nothing and `Escape` is the only way out. This is a deliberate reading of the APG grid pattern, whose `Tab` "may wrap inside a single cell", applied uniformly rather than only to cells that happen to hold two.
 
@@ -397,24 +400,44 @@ declarative layer costs over hand-written cells.
 
 ## Sticky header + CSS custom property
 
-`ForTable` measures the header row height with `ResizeObserver` and exposes it as `--for-table-header-height` on the root host (the header row must generate a box, so use `display: grid` / `flex` on `[forTableHeaderRow]`, not `display: contents`). Use it to keep data cells stuck below the header row without hard-coding a pixel offset that drifts when the header content wraps:
+`ForTable` measures the header row height with `ResizeObserver` and exposes it as `--for-table-header-height` on the root host (the header row must generate a box, so use `display: grid` / `flex` on `[forTableHeaderRow]`, not `display: contents`). The rules below are written for rows that are boxes of their own: that header row, the absolutely positioned rows of a [virtualized](#virtualized-rows) grid, and every row `<for-table-body>` stamps. The header **row** sticks to the top, and a sticky column sticks its header and data cells alike to the inline edges:
 
 ```css
-[forTableHeaderCell][data-sticky] {
+[forTableHeaderRow] {
   position: sticky;
   top: 0;
-  z-index: 1;
+  z-index: 2;
 }
 
-[forTableCell][data-sticky] {
+[forTableHeaderRow],
+[forTableRow] {
+  min-width: min-content;
+}
+
+[forTableHeaderCell][data-sticky=''],
+[forTableCell][data-sticky=''] {
   position: sticky;
-  left: 0; /* start-edge sticky */
+  inset-inline-start: 0;
   z-index: 1;
 }
 
+[forTableHeaderCell][data-sticky='end'],
 [forTableCell][data-sticky='end'] {
   position: sticky;
-  right: 0; /* end-edge sticky */
+  inset-inline-end: 0;
+  z-index: 1;
+}
+```
+
+A sticky cell never leaves its row's box, so a row only as wide as the scroller lets its start-edge cells scroll away once the column tracks add up to more. `min-width: min-content` floors the row at the width of its tracks: while they fit, `width: 100%` (or the `left: 0; right: 0` of a windowed row) still sets the width and `fr` tracks keep shrinking, and once they overflow the row grows with them and its sticky cells stay put. The logical offsets follow the table's resolved `dir`, so the same rules pin the right-hand columns in `rtl`. The [`<div>` mode](#div-mode) example above keeps `top: 0` on its header cells instead, because its header row is `display: contents` and generates no box to stick.
+
+`--for-table-header-height` places anything else that sticks below the header without a hard-coded offset that drifts when the header content wraps. In a non-virtualized grid, a [full-span](#full-span-rows-group-separators-section-headers-summaries) group row, found by the `data-row-variant` hook on its cell, stays under the header as its section scrolls by:
+
+```css
+[forTableRow]:has([data-row-variant]) {
+  position: sticky;
+  top: var(--for-table-header-height, 0px);
+  z-index: 1;
 }
 ```
 
@@ -457,6 +480,35 @@ The root emits `aria-rowcount` and `aria-colcount`. Per ARIA 1.2 and the APG Dat
 
 [forTableCell][data-disabled] {
   opacity: 0.4;
+}
+```
+
+### Activating a cell
+
+`Enter` keeps its APG cell-entry meaning on a cell that holds a widget. On a data cell that holds none, the root emits `(cellActivate)` with the owning row's `[value]` (`undefined` when the row has none), the cell's column `name` and the `Enter` event, already `preventDefault`ed. A grid can therefore open its record from the keyboard without spending a column on a link or a button. `F2`, header cells, disabled cells and `mode="table"` never emit, and a sortable header keeps sorting on `Enter`.
+
+```html
+<div forTable mode="grid" ariaLabel="Requests" (cellActivate)="open($event.row, $event.column)">
+  …
+</div>
+```
+
+With `interactiveRows`, `<for-table-body>` forwards the same `Enter` as `(rowActivate)`, so a grid gets the keyboard half of whole-row activation while its rows still take no tab stop.
+
+### Controls inside a cell
+
+The library's in-cell pieces (`[forTableRowSelector]`, `[forTableSelectAll]`, `[forTableColumnResizer]`) are their own tab stop in `mode="table"` and take `tabindex="-1"` in `grid` / `treegrid`, where cell entry reaches them and the grid keeps its single tab stop. The cells do not demote their descendants, so a control you add to a cell follows the same rule through `injectTableCellTabIndex()`. It answers `0` outside a `[forTable]`, so a control that also renders elsewhere can call it unconditionally:
+
+```ts
+import { Directive } from '@angular/core';
+import { injectTableCellTabIndex } from 'forty-cdk/table';
+
+@Directive({
+  selector: 'button[appPriorityPicker]',
+  host: { '[attr.tabindex]': 'tabindex()' },
+})
+export class PriorityPicker {
+  protected readonly tabindex = injectTableCellTabIndex();
 }
 ```
 
@@ -615,6 +667,17 @@ Controls how a row click (on the row or on a cell) mutates the selection:
 </div>
 ```
 
+When you render the rows yourself, guard your own row `(click)` with `eventFromInteractiveDescendant(event)` from `forty-cdk/table`. It is the definition the table's own row interactions use, so a click on an inner control is left to that control:
+
+<!-- snippet: fragment -->
+
+```ts
+protected openFromRow(request: Request, event: MouseEvent): void {
+  if (eventFromInteractiveDescendant(event)) return;
+  this.open(request);
+}
+```
+
 **Interactive content in a data cell owns its click.** A click on a per-row action `<button>` (or an `<a href>`, `<input>`, `<select>`, `<textarea>`, `<summary>`, or `contenteditable` descendant) runs that control **without also** changing the row's selection. A selectable table with a trailing actions column therefore behaves as expected, and you never have to `stopPropagation()` on every control. A plain click anywhere else on the row (cell text, the gaps between cells, the row itself) still selects, including the `Ctrl`/`Cmd`/`Shift` modifier behaviour above. `[forTableRowSelector]` is unaffected. This mirrors the whole-row-activation guard in [Whole-row navigation lists](../../../docs/table-declarative-columns.md#whole-row-navigation-lists).
 
 ### `[(value)]`
@@ -650,7 +713,7 @@ Accessible per-row selection checkbox (place inside any cell of each `[forTableR
 
 ### Select-all checkbox
 
-Interactive header checkbox with tri-state. Reflects `aria-checked` and `data-state` derived from the aggregate selection state across all selectable rows. Clicking (or pressing Space / Enter) selects all when none or some are selected, and clears when all are. No-op outside `'multiple'` mode. Apply on a focusable element:
+Interactive header checkbox with tri-state. Reflects `aria-checked` and `data-state` derived from the aggregate selection state across all selectable rows. Clicking (or pressing Space / Enter) selects all when none or some are selected, and clears when all are. No-op outside `'multiple'` mode. A selection the table cannot enumerate drives it from outside through [`[state]`](#selection-the-table-cannot-enumerate-state). Apply on a focusable element:
 
 ```html
 <div forTableHeaderRow>
@@ -691,6 +754,33 @@ Per-row selection (`[forTableRowSelector]`, row click, Space) is unaffected, bec
 
 ```ts
 protected readonly peopleIds = computed(() => this.people().map((p) => p.id));
+```
+
+### Selection the table cannot enumerate: `[state]`
+
+`[selectableValues]` needs every value in hand. A server-paged list offering "select all matching the filter" has thousands of matches and one or two pages loaded, so its selection is a predicate ("everything the query matches, minus these exclusions") whose tri-state only its owner knows. Bind that tri-state to `[forTableSelectAll]`'s `[state]` and handle `(toggleAll)`: the checkbox reflects your state in `aria-checked` / `data-state`, and a click, `Space` or `Enter` emits `toggleAll` instead of writing the table's `[(value)]`. Feed `[(value)]` the loaded rows your predicate selects, so each row's `aria-selected` stays right. The `tabindex` still follows the table mode.
+
+```html
+<div forTableHeaderCell name="sel">
+  <button
+    type="button"
+    forTableSelectAll
+    ariaLabel="Select all matching requests"
+    [state]="matchState()"
+    (toggleAll)="toggleAllMatching()"
+  ></button>
+</div>
+```
+
+<!-- snippet: fragment -->
+
+```ts
+protected readonly matchState = computed<TableSelectAllState>(() => {
+  if (this.allMatching()) {
+    return this.excluded().size === 0 ? 'all' : 'some';
+  }
+  return this.picked().size > 0 ? 'some' : 'none';
+});
 ```
 
 ### Minimal multiple-select example

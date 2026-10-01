@@ -1,4 +1,6 @@
-export { ForTable, provideForTable } from './table';
+export { ForTable, provideForTable, type TableCellActivateEvent } from './table';
+export { injectTableCellTabIndex } from './cell-tab-index';
+export { eventFromInteractiveDescendant } from './interactive-descendant';
 export {
   ForTableColumnDef,
   ForTableHeaderCellDef,

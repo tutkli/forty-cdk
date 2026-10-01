@@ -14,7 +14,8 @@ import { installObserverPolyfills, pointerEvent, renderHost } from '../../src/te
 import { ForDraggable, moveItemInArray, provideForDragDropDefaults } from 'forty-cdk/drag-drop';
 import { TABLE_REGISTRATION_CONTEXT, type TableRegistrationContext } from 'forty-cdk/core';
 
-import { ForTable } from './table';
+import { ForTable, type TableCellActivateEvent } from './table';
+import { injectTableCellTabIndex } from './cell-tab-index';
 import { TableRegistry } from './table-registry';
 import { ForTableCell } from './table-cell';
 import { ForTableHeaderCell } from './table-header-cell';
@@ -25,6 +26,7 @@ import { ForTableSelectAll } from './table-select-all';
 import {
   FOR_TABLE_CONTEXT,
   type TableMode,
+  type TableSelectAllState,
   type TableSelectionMode,
   type TableSelectionBehavior,
 } from './table-context';
@@ -608,6 +610,115 @@ class GridWithHeaderHost {
 })
 class CellEntryGridHost {
   readonly rows = signal([{ id: 0 }, { id: 1 }]);
+}
+
+@Component({
+  imports: [
+    ForTable,
+    ForTableHeaderRow,
+    ForTableHeaderCell,
+    ForTableSortHeader,
+    ForTableRow,
+    ForTableCell,
+  ],
+  template: `
+    <div forTable [mode]="mode()" (cellActivate)="activations.push($event)">
+      <div role="rowgroup">
+        <div forTableHeaderRow>
+          <div forTableHeaderCell name="a" forTableSortHeader column="a" data-testid="h-a">A</div>
+          <div forTableHeaderCell name="b" data-testid="h-b">B</div>
+          <div forTableHeaderCell name="c" data-testid="h-c">C</div>
+        </div>
+      </div>
+      <div role="rowgroup">
+        @for (row of rows; track row.id) {
+          <div forTableRow [value]="row.id">
+            <div forTableCell name="a" [attr.data-testid]="'c-a-' + row.id">
+              <button type="button" [attr.data-testid]="'btn-' + row.id">edit</button>
+            </div>
+            <div forTableCell name="b" [attr.data-testid]="'c-b-' + row.id">
+              <span [attr.data-testid]="'text-' + row.id">{{ row.id }}</span>
+            </div>
+            <div forTableCell name="c" disabled [attr.data-testid]="'c-c-' + row.id">x</div>
+          </div>
+        }
+        <div forTableRow>
+          <div forTableCell name="a">-</div>
+          <div forTableCell name="b" data-testid="c-b-none">-</div>
+          <div forTableCell name="c">-</div>
+        </div>
+      </div>
+    </div>
+  `,
+})
+class CellActivateHost {
+  readonly mode = signal<TableMode>('grid');
+  readonly rows = [{ id: 1 }, { id: 2 }];
+  readonly activations: TableCellActivateEvent<unknown>[] = [];
+}
+
+@Component({
+  imports: [
+    ForTable,
+    ForTableHeaderRow,
+    ForTableHeaderCell,
+    ForTableRow,
+    ForTableCell,
+    ForTableSelectAll,
+  ],
+  template: `
+    <div forTable [mode]="mode()" selectionMode="multiple" [(value)]="selection">
+      <div forTableHeaderRow>
+        <div forTableHeaderCell name="sel">
+          <button
+            type="button"
+            forTableSelectAll
+            ariaLabel="Select all"
+            data-testid="select-all"
+            [state]="state()"
+            (toggleAll)="toggles = toggles + 1"
+          ></button>
+        </div>
+      </div>
+      @for (row of rows; track row) {
+        <div forTableRow [value]="row">
+          <div forTableCell name="sel">{{ row }}</div>
+        </div>
+      }
+    </div>
+  `,
+})
+class ControlledSelectAllHost {
+  readonly mode = signal<TableMode>('table');
+  readonly state = signal<TableSelectAllState | null>('none');
+  readonly selection = signal<readonly unknown[]>([]);
+  readonly rows = [1, 2, 3];
+  toggles = 0;
+}
+
+@Directive({
+  selector: '[tabIndexProbe]',
+  host: { '[attr.tabindex]': 'tabindex()' },
+})
+class TabIndexProbe {
+  readonly tabindex = injectTableCellTabIndex();
+}
+
+@Component({
+  imports: [ForTable, ForTableRow, ForTableCell, TabIndexProbe],
+  template: `
+    <div forTable [mode]="mode()">
+      <div forTableRow>
+        <div forTableCell name="a">
+          <button type="button" tabIndexProbe data-testid="in-table">edit</button>
+        </div>
+      </div>
+    </div>
+    <button type="button" tabIndexProbe data-testid="outside">edit</button>
+  `,
+})
+class CellTabIndexHost {
+  readonly mode = signal<TableMode>('table');
 }
 
 @Component({
@@ -2281,15 +2392,6 @@ describe('ForTable', () => {
       expect(document.activeElement).toBe(cell);
     });
 
-    it('Enter on a cell with no interactive content is not consumed', async () => {
-      const { el, flush } = renderHost(CellEntryGridHost);
-      const plainCell = el.querySelector<HTMLElement>('[data-testid="c-b-0"]')!;
-      plainCell.focus();
-      const ev = press(plainCell, 'Enter');
-      await flush();
-      expect(ev.defaultPrevented).toBe(false);
-    });
-
     it('an ArrowRight bubbling from inside a cell widget does not navigate the grid', async () => {
       const { el, flush } = renderHost(CellEntryGridHost);
       const cell = el.querySelector<HTMLElement>('[data-testid="c-a-0"]')!;
@@ -2312,6 +2414,88 @@ describe('ForTable', () => {
       await flush();
       expect(ev.defaultPrevented).toBe(true);
       expect(document.activeElement).toBe(visible);
+    });
+  });
+
+  describe('cellActivate (#2070)', () => {
+    const cellOf = (el: HTMLElement, id: string) =>
+      el.querySelector<HTMLElement>(`[data-testid="${id}"]`)!;
+
+    it('Enter on a widget-free data cell emits once with the row value and column, prevents default and keeps focus', async () => {
+      const { el, instance, flush } = renderHost(CellActivateHost);
+      const cell = cellOf(el, 'c-b-2');
+      cell.focus();
+      const ev = press(cell, 'Enter');
+      await flush();
+      expect(ev.defaultPrevented).toBe(true);
+      expect(instance.activations).toHaveLength(1);
+      expect(instance.activations[0]).toEqual({ row: 2, column: 'b', event: ev });
+      expect(document.activeElement).toBe(cell);
+    });
+
+    it('reports an undefined row for a row without a [value]', async () => {
+      const { el, instance, flush } = renderHost(CellActivateHost);
+      const cell = cellOf(el, 'c-b-none');
+      cell.focus();
+      press(cell, 'Enter');
+      await flush();
+      expect(instance.activations).toHaveLength(1);
+      expect(instance.activations[0]!.row).toBeUndefined();
+    });
+
+    it('Enter on a cell holding a widget enters it and emits nothing', async () => {
+      const { el, instance, flush } = renderHost(CellActivateHost);
+      const cell = cellOf(el, 'c-a-1');
+      cell.focus();
+      press(cell, 'Enter');
+      await flush();
+      expect(document.activeElement).toBe(cellOf(el, 'btn-1'));
+      expect(instance.activations).toHaveLength(0);
+    });
+
+    it('F2, an Enter bubbling from a nested element and Enter on a disabled cell never emit', async () => {
+      const { el, instance, flush } = renderHost(CellActivateHost);
+      const cell = cellOf(el, 'c-b-1');
+      cell.focus();
+      const f2 = press(cell, 'F2');
+      press(cellOf(el, 'text-1'), 'Enter');
+      const disabled = cellOf(el, 'c-c-1');
+      disabled.focus();
+      const onDisabled = press(disabled, 'Enter');
+      await flush();
+      expect(f2.defaultPrevented).toBe(false);
+      expect(onDisabled.defaultPrevented).toBe(false);
+      expect(instance.activations).toHaveLength(0);
+    });
+
+    it('Enter on a sortable header still sorts, and no header cell emits', async () => {
+      const { el, instance, flush } = renderHost(CellActivateHost);
+      const sortable = cellOf(el, 'h-a');
+      sortable.focus();
+      press(sortable, 'Enter');
+      const plain = cellOf(el, 'h-b');
+      plain.focus();
+      const onPlain = press(plain, 'Enter');
+      await flush();
+      expect(sortable.getAttribute('aria-sort')).toBe('ascending');
+      expect(onPlain.defaultPrevented).toBe(false);
+      expect(instance.activations).toHaveLength(0);
+    });
+
+    it('treegrid emits like grid, and mode="table" never emits nor prevents default', async () => {
+      const { el, instance, flush } = renderHost(CellActivateHost);
+      instance.mode.set('treegrid');
+      await flush();
+      press(cellOf(el, 'c-b-1'), 'Enter');
+      await flush();
+      expect(instance.activations.map((a) => a.row)).toEqual([1]);
+
+      instance.mode.set('table');
+      await flush();
+      const ev = press(cellOf(el, 'c-b-2'), 'Enter');
+      await flush();
+      expect(ev.defaultPrevented).toBe(false);
+      expect(instance.activations).toHaveLength(1);
     });
   });
 
@@ -3066,6 +3250,97 @@ describe('ForTable', () => {
       instance.mode.set('treegrid');
       await flush();
       expect(selectAll.getAttribute('tabindex')).toBe('-1');
+    });
+
+    it('select-all with [state] bound reflects that state whatever the table aggregates say (#2071)', async () => {
+      const { el, instance, flush } = renderHost(ControlledSelectAllHost);
+      const selectAll = el.querySelector<HTMLElement>('[data-testid="select-all"]')!;
+
+      instance.state.set('all');
+      await flush();
+      expect(selectAll.getAttribute('aria-checked')).toBe('true');
+      expect(selectAll.getAttribute('data-state')).toBe('checked');
+
+      instance.state.set('some');
+      await flush();
+      expect(selectAll.getAttribute('aria-checked')).toBe('mixed');
+      expect(selectAll.getAttribute('data-state')).toBe('indeterminate');
+
+      instance.selection.set([1, 2, 3]);
+      instance.state.set('none');
+      await flush();
+      expect(selectAll.getAttribute('aria-checked')).toBe('false');
+      expect(selectAll.getAttribute('data-state')).toBe('unchecked');
+    });
+
+    it('select-all with [state] bound emits toggleAll once per click, Space or Enter and leaves the table value alone (#2071)', async () => {
+      const { el, instance, flush } = renderHost(ControlledSelectAllHost);
+      const selectAll = el.querySelector<HTMLElement>('[data-testid="select-all"]')!;
+
+      selectAll.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      await flush();
+      expect(instance.toggles).toBe(1);
+
+      const space = press(selectAll, ' ');
+      await flush();
+      expect(space.defaultPrevented).toBe(true);
+      expect(instance.toggles).toBe(2);
+
+      const enter = press(selectAll, 'Enter');
+      await flush();
+      expect(enter.defaultPrevented).toBe(true);
+      expect(instance.toggles).toBe(3);
+
+      expect(instance.selection()).toEqual([]);
+      expect(selectAll.getAttribute('aria-checked')).toBe('false');
+    });
+
+    it('select-all with [state] unset toggles the table value and never emits toggleAll (#2071)', async () => {
+      const { el, instance, flush } = renderHost(ControlledSelectAllHost);
+      instance.state.set(null);
+      await flush();
+      const selectAll = el.querySelector<HTMLElement>('[data-testid="select-all"]')!;
+
+      selectAll.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      await flush();
+      expect(instance.selection()).toEqual([1, 2, 3]);
+      expect(selectAll.getAttribute('aria-checked')).toBe('true');
+
+      press(selectAll, 'Enter');
+      await flush();
+      expect(instance.selection()).toEqual([]);
+      expect(instance.toggles).toBe(0);
+    });
+
+    it('select-all tabindex follows the table mode with [state] bound or unset (#2071)', async () => {
+      const { el, instance, flush } = renderHost(ControlledSelectAllHost);
+      const selectAll = el.querySelector<HTMLElement>('[data-testid="select-all"]')!;
+      for (const state of ['some', null] as const) {
+        instance.state.set(state);
+        instance.mode.set('table');
+        await flush();
+        expect(selectAll.getAttribute('tabindex')).toBe('0');
+        instance.mode.set('grid');
+        await flush();
+        expect(selectAll.getAttribute('tabindex')).toBe('-1');
+      }
+    });
+
+    it('injectTableCellTabIndex answers 0 in table mode, -1 in grid / treegrid, and 0 outside a table (#2072)', async () => {
+      const { el, instance, flush } = renderHost(CellTabIndexHost);
+      const inTable = el.querySelector<HTMLElement>('[data-testid="in-table"]')!;
+      const outside = el.querySelector<HTMLElement>('[data-testid="outside"]')!;
+      expect(inTable.getAttribute('tabindex')).toBe('0');
+      expect(outside.getAttribute('tabindex')).toBe('0');
+
+      instance.mode.set('grid');
+      await flush();
+      expect(inTable.getAttribute('tabindex')).toBe('-1');
+
+      instance.mode.set('treegrid');
+      await flush();
+      expect(inTable.getAttribute('tabindex')).toBe('-1');
+      expect(outside.getAttribute('tabindex')).toBe('0');
     });
 
     it('Space on a focused cell toggles its row and prevents default; Space from an inner element does not toggle', async () => {

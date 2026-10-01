@@ -145,8 +145,14 @@ export interface TablePieceContext {
   isCellHighlighted(host: HTMLElement): boolean;
   /** Promotes a data cell to the active roving cell (called on the cell's `(focus)`). */
   activateCell(host: HTMLElement): void;
-  /** Resolves and applies a keydown originating on a data cell: 2D move + focus. */
-  handleCellKeydown(event: KeyboardEvent, host: HTMLElement): void;
+  /**
+   * Resolves and applies a keydown originating on a grid cell: cell entry, the row keys,
+   * and 2D move + focus. A data cell passes its `column`, which makes an `Enter` with no
+   * widget to enter emit the root's `cellActivate`.
+   */
+  handleCellKeydown(event: KeyboardEvent, host: HTMLElement, column?: string): void;
+  /** Whether `event` is an `Enter` keydown the root already resolved as a `cellActivate`. */
+  isCellActivation(event: Event): boolean;
   /**
    * Resolves grid navigation and APG cell entry for a header cell that yields its host
    * interaction to a co-located `[forDraggable]`. `[forTableColumnReorder]` calls this

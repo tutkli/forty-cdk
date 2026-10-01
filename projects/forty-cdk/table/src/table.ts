@@ -5,6 +5,7 @@ import {
   inject,
   input,
   model,
+  output,
   type Provider,
   type Signal,
   signal,
@@ -58,6 +59,19 @@ import { TableExpansion } from './table-expansion';
  * than a resolvable state. See `colCount`.
  */
 const UNKNOWN_COUNT = -1;
+
+/**
+ * Payload emitted by {@link ForTable.cellActivate} when `Enter` lands on a grid data
+ * cell that holds no widget to enter.
+ */
+export interface TableCellActivateEvent<T> {
+  /** The owning row's `[value]`, or `undefined` when the row carries none. */
+  readonly row: T | undefined;
+  /** The cell's column `name`. */
+  readonly column: string;
+  /** The originating `Enter` keydown, already `preventDefault`ed. */
+  readonly event: KeyboardEvent;
+}
 
 /** Grid actions whose target may lie on a row outside the rendered virtualized window. */
 const ROW_CROSSING_ACTIONS: ReadonlySet<GridNavigationAction> = new Set([
@@ -232,10 +246,19 @@ export class ForTable<T = unknown> implements ForTableContext {
    */
   readonly expanded = model<readonly T[]>([]);
 
+  /**
+   * Fires in `grid` / `treegrid` mode when `Enter` lands on a focused data cell that
+   * holds no widget to enter, carrying the row's `[value]`, the cell's column `name` and
+   * the event. A cell holding a widget still enters it on `Enter` and emits nothing; `F2`,
+   * header cells, disabled cells and `mode="table"` never emit.
+   */
+  readonly cellActivate = output<TableCellActivateEvent<T>>();
+
   protected readonly headerSize = injectElementSize(this.#registry.headerRowEl);
 
   readonly #roving = new RovingTabindex(() => this.#flatCells());
   readonly #enteredCell = signal<HTMLElement | null>(null);
+  readonly #activations = new WeakSet<Event>();
 
   /**
    * The cell interaction mode was last suspended from, held only between the focusout that left
@@ -613,11 +636,15 @@ export class ForTable<T = unknown> implements ForTableContext {
     }
   }
 
-  private handleCellKeydown(event: KeyboardEvent, host: HTMLElement): void {
+  private handleCellKeydown(event: KeyboardEvent, host: HTMLElement, column?: string): void {
     if (this.mode() === 'table') {
       return;
     }
-    this.#resolveCellKeydown(event, host, { rowActions: true, enterEntersCell: true });
+    this.#resolveCellKeydown(event, host, { rowActions: true, enterEntersCell: true, column });
+  }
+
+  private isCellActivation(event: Event): boolean {
+    return this.#activations.has(event);
   }
 
   /**
@@ -646,13 +673,14 @@ export class ForTable<T = unknown> implements ForTableContext {
    * a data cell owns, then 2D grid navigation. Returns `true` when the key was consumed.
    *
    * `rowActions` adds the selection / expansion keys a data cell owns and a header cell has
-   * no row for. `enterEntersCell` is `false` where a co-located `[forDraggable]` owns
-   * `Enter` for the lift and the sort activation.
+   * no row for, plus the `Enter` activation when the data cell passes its `column`.
+   * `enterEntersCell` is `false` where a co-located `[forDraggable]` owns `Enter` for the
+   * lift and the sort activation.
    */
   #resolveCellKeydown(
     event: KeyboardEvent,
     host: HTMLElement,
-    options: { rowActions: boolean; enterEntersCell: boolean },
+    options: { rowActions: boolean; enterEntersCell: boolean; column?: string },
   ): boolean {
     this.#registry.virtualRowNavigation()?.clearPending();
     if (
@@ -669,6 +697,12 @@ export class ForTable<T = unknown> implements ForTableContext {
         return true;
       }
       if (this.#handleExpansionKeydown(event, host)) {
+        return true;
+      }
+      if (
+        options.column !== undefined &&
+        this.#handleActivationKeydown(event, host, options.column)
+      ) {
         return true;
       }
     }
@@ -725,6 +759,26 @@ export class ForTable<T = unknown> implements ForTableContext {
       return true;
     }
     return false;
+  }
+
+  #handleActivationKeydown(event: KeyboardEvent, host: HTMLElement, column: string): boolean {
+    if (event.key !== 'Enter') {
+      return false;
+    }
+    const row = this.#rowOfCell(host);
+    if (
+      !row ||
+      row
+        .cells()
+        .find((cell) => cell.host === host)
+        ?.disabled()
+    ) {
+      return false;
+    }
+    event.preventDefault();
+    this.#activations.add(event);
+    this.cellActivate.emit({ row: row.value() as T | undefined, column, event });
+    return true;
   }
 
   #handleSelectionKeydown(event: KeyboardEvent, host: HTMLElement): boolean {

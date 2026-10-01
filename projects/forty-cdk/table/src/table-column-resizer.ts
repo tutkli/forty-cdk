@@ -22,6 +22,7 @@ import {
   type PointerDragSession,
   DRAG_DEAD_ZONE_PX,
 } from 'forty-cdk/core';
+import { injectTableCellTabIndex } from './cell-tab-index';
 import { assertColumnName, injectTableContext, injectTableRegistration } from './table-context';
 import { ForTableHeaderCell } from './table-header-cell';
 
@@ -162,7 +163,7 @@ export class ForTableColumnResizer {
     Number.isFinite(this.max()) ? this.max() : null,
   );
 
-  protected readonly tabindex = computed<0 | -1>(() => (this.ctx.mode() === 'table' ? 0 : -1));
+  protected readonly tabindex = injectTableCellTabIndex();
 
   readonly #resizing = signal(false);
 

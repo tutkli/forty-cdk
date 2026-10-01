@@ -495,11 +495,11 @@ export class ForTableBody<T = unknown> {
    * context-menu key) emits `rowContextMenu`, in every `mode`. Full-span
    * `[forTableRowDef]` variant rows stay non-interactive.
    *
-   * The **keyboard** half is scoped to the default `mode="table"`: there each data row
+   * The **keyboard** half depends on `mode`. In the default `mode="table"` each data row
    * also becomes a focusable tab stop (`tabindex="0"`) and `Enter` emits `rowActivate`.
-   * In `grid` / `treegrid` mode the row takes no tab stop and `Enter` keeps its
-   * cell-entry meaning, so the roving 2D navigation stays intact — bind a cell-level
-   * affordance for the keyboard path there.
+   * In `grid` / `treegrid` mode the row takes no tab stop, so the roving 2D navigation
+   * stays intact: `Enter` on a focused data cell emits `rowActivate` when the cell holds
+   * no widget to enter (the root's `cellActivate`), and enters the widget otherwise.
    *
    * Pair it with `selectionBehavior="none"` on the root to get the "checkbox selects,
    * row opens the record" shape: with any other behavior a row click in a selectable
@@ -518,9 +518,10 @@ export class ForTableBody<T = unknown> {
   readonly interactiveRows = input(false, { transform: booleanAttribute });
 
   /**
-   * Fires when a data row is activated by a pointer click, or by `Enter` in
-   * `mode="table"`, carrying the row datum, its dataset index, and the originating
-   * event. Requires `interactiveRows`.
+   * Fires when a data row is activated by a pointer click, by `Enter` on the row in
+   * `mode="table"`, or by `Enter` on a widget-free data cell in `grid` / `treegrid`,
+   * carrying the row datum, its dataset index, and the originating event. Requires
+   * `interactiveRows`.
    */
   readonly rowActivate = output<TableRowActivateEvent<T>>();
 
@@ -800,8 +801,14 @@ export class ForTableBody<T = unknown> {
   }
 
   protected onRowEnter(row: RenderRow<T>, event: Event): void {
-    if (this.rowsKeyboardInteractive() && this.#activateRow(row, event)) {
-      event.preventDefault();
+    if (this.rowsKeyboardInteractive()) {
+      if (this.#activateRow(row, event)) {
+        event.preventDefault();
+      }
+      return;
+    }
+    if (this.interactiveRows() && this.#ctx.isCellActivation(event)) {
+      this.#activateRow(row, event);
     }
   }
 

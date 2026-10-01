@@ -2,6 +2,7 @@ import { computed, Directive, input } from '@angular/core';
 
 import { hostAriaLabel } from 'forty-cdk/core';
 
+import { injectTableCellTabIndex } from './cell-tab-index';
 import { injectTableContext, injectTableRowContext } from './table-context';
 
 /**
@@ -41,7 +42,7 @@ export class ForTableRowSelector {
 
   protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 
-  protected readonly tabindex = computed<0 | -1>(() => (this.ctx.mode() === 'table' ? 0 : -1));
+  protected readonly tabindex = injectTableCellTabIndex();
 
   protected readonly ariaChecked = computed<'true' | 'false'>(() =>
     this.row.selected() ? 'true' : 'false',

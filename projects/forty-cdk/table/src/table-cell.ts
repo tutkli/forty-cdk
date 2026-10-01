@@ -23,7 +23,8 @@ import {
  * mode the cell is a roving-tabindex target — the single active cell carries
  * `tabindex="0"` (others `-1`), reflects `data-highlighted` when focused, and
  * carries a 1-based `aria-colindex`. Arrow / Home / End / Ctrl+Home / Ctrl+End /
- * PageUp / PageDown move focus between cells. Requires a `name` input that
+ * PageUp / PageDown move focus between cells, and `Enter` on a cell holding no widget
+ * emits the root's `cellActivate`. Requires a `name` input that
  * identifies the column — reflected as `data-column`. Optionally sticky and
  * optionally disabled (disabled cells are skipped during navigation).
  */
@@ -109,6 +110,6 @@ export class ForTableCell {
   }
 
   protected onKeyDown(event: KeyboardEvent): void {
-    this.ctx.handleCellKeydown(event, this.#host);
+    this.ctx.handleCellKeydown(event, this.#host, this.name());
   }
 }
