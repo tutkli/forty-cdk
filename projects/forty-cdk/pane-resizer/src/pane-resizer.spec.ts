@@ -1,7 +1,9 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { pointerEvent, pressKey, renderHost } from '../../src/test-utils';
+import { pointerEvent, pressKey } from 'forty-cdk/testing';
+
+import { renderHost } from '../../src/test-utils';
 import { ForPaneResizer } from './pane-resizer';
 
 @Component({

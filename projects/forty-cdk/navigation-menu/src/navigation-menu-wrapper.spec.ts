@@ -1,7 +1,9 @@
 import { Component, Directive, signal } from '@angular/core';
 import { describe, expect, it } from 'vitest';
 
-import { pressKey, renderHost } from '../../src/test-utils';
+import { pressKey } from 'forty-cdk/testing';
+
+import { renderHost } from '../../src/test-utils';
 
 import { ForNavigationMenu } from './navigation-menu';
 import { ForNavigationMenuContent } from './navigation-menu-content';

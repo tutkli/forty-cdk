@@ -1,9 +1,10 @@
 import { Component, signal } from '@angular/core';
 import { vi } from 'vitest';
 
-import { pressKey, renderHost } from '../../src/test-utils';
+import { renderHost } from '../../src/test-utils';
 import { assertRovingTabindexContract } from '../../src/test-utils/contract';
 import { ForToggleGroup, ForToggleGroupItem } from 'forty-cdk/toggle';
+import { pressKey } from 'forty-cdk/testing';
 import { ForToolbar } from './toolbar';
 import { ForToolbarButton } from './toolbar-button';
 import { ForToolbarLink } from './toolbar-link';

@@ -1,7 +1,9 @@
 import { Component, Directive } from '@angular/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { installObserverPolyfills, renderHost } from '../../src/test-utils';
+import { installObserverPolyfills } from 'forty-cdk/testing';
+
+import { renderHost } from '../../src/test-utils';
 
 import { ForCarousel } from './carousel';
 import { FOR_CAROUSEL_CONTEXT } from './carousel-context';

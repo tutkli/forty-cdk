@@ -1,7 +1,9 @@
 import { Component, signal, viewChild } from '@angular/core';
 import { describe, expect, it } from 'vitest';
 
-import { flush, pressKey, renderHost } from '../../src/test-utils';
+import { pressKey } from 'forty-cdk/testing';
+
+import { flush, renderHost } from '../../src/test-utils';
 import { ForTree } from './tree';
 import { ForTreeItem } from './tree-item';
 import type { ForTreeItemActivateEvent } from './tree-item-activate-event';

@@ -10,13 +10,8 @@ import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
 import { type VetoableNativeEvent } from 'forty-cdk/core';
-import {
-  afterEachOverlayCleanup,
-  flushPositioning,
-  pressKey,
-  renderHost,
-  withReducedMotion,
-} from '../../src/test-utils';
+import { pressKey, withReducedMotion } from 'forty-cdk/testing';
+import { afterEachOverlayCleanup, flushPositioning, renderHost } from '../../src/test-utils';
 import {
   assertDataStateContract,
   assertDismissibleLayerContract,

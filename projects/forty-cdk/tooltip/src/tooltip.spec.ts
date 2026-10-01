@@ -12,15 +12,8 @@ import { By } from '@angular/platform-browser';
 
 import { ForDialog } from 'forty-cdk/dialog';
 import { type VetoableNativeEvent } from 'forty-cdk/core';
-import {
-  afterEachOverlayCleanup,
-  flush,
-  flushPositioning,
-  installObserverPolyfills,
-  pressKey,
-  renderHost,
-  withReducedMotion,
-} from '../../src/test-utils';
+import { installObserverPolyfills, pressKey, withReducedMotion } from 'forty-cdk/testing';
+import { afterEachOverlayCleanup, flush, flushPositioning, renderHost } from '../../src/test-utils';
 import {
   assertDataStateContract,
   assertDismissibleLayerContract,

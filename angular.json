@@ -90,6 +90,7 @@
               "../internationalized-date/src/**/*.spec.ts",
               "../virtualization/src/**/*.spec.ts",
               "../virtual-reorder/src/**/*.spec.ts",
+              "../testing/src/**/*.spec.ts",
               "../visually-hidden/src/**/*.spec.ts"
             ]
           }

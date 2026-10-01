@@ -211,6 +211,10 @@
         "./dist/forty-cdk/virtual-reorder",
         "./projects/forty-cdk/virtual-reorder/src/public-api.ts"
       ],
+      "forty-cdk/testing": [
+        "./dist/forty-cdk/testing",
+        "./projects/forty-cdk/testing/src/public-api.ts"
+      ],
       "forty-cdk/visually-hidden": [
         "./dist/forty-cdk/visually-hidden",
         "./projects/forty-cdk/visually-hidden/src/public-api.ts"

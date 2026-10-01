@@ -1,6 +1,6 @@
 import { Component, signal, type Type } from '@angular/core';
 
-import { afterEachOverlayCleanup, pressWithMouse, renderHost } from '../test-utils';
+import { afterEachOverlayCleanup, renderHost } from '../test-utils';
 
 import { provideNativeDateAdapter } from 'forty-cdk/calendar';
 import {
@@ -15,6 +15,7 @@ import { ForDatePicker, ForDatePickerContent, ForDatePickerTrigger } from 'forty
 import { ForField, ForFieldControl, ForLabel } from 'forty-cdk/field';
 import { ForSelect, ForSelectContent, ForSelectOption, ForSelectTrigger } from 'forty-cdk/select';
 import { ForTimePicker, ForTimePickerContent, ForTimePickerTrigger } from 'forty-cdk/time-picker';
+import { pressWithMouse } from 'forty-cdk/testing';
 
 let nativeLabel = false;
 

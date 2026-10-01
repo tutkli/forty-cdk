@@ -2,13 +2,7 @@ import { Component, provideZonelessChangeDetection, signal } from '@angular/core
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
-import {
-  afterEachOverlayCleanup,
-  flush,
-  flushPositioning,
-  pressKey,
-  renderHost,
-} from '../../src/test-utils';
+import { afterEachOverlayCleanup, flush, flushPositioning, renderHost } from '../../src/test-utils';
 import {
   assertDataStateContract,
   assertDismissibleLayerContract,
@@ -17,6 +11,7 @@ import {
 import { type VetoableNativeEvent, type WritingDirection } from 'forty-cdk/core';
 import { ForContextMenu } from 'forty-cdk/context-menu';
 import { ForDropdownMenu, ForDropdownMenuTrigger } from 'forty-cdk/dropdown-menu';
+import { pressKey } from 'forty-cdk/testing';
 
 import { ForMenuContent } from './menu-content';
 import { provideForMenuDefaults } from './menu-defaults';

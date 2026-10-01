@@ -2,7 +2,8 @@ import { Component, provideZonelessChangeDetection, signal } from '@angular/core
 import { TestBed } from '@angular/core/testing';
 
 import { type VetoableEvent } from 'forty-cdk/core';
-import { afterEachOverlayCleanup, flush, pressKey, renderHost } from '../../src/test-utils';
+import { pressKey } from 'forty-cdk/testing';
+import { afterEachOverlayCleanup, flush, renderHost } from '../../src/test-utils';
 import { ForDialog } from './dialog';
 import { ForDialogClose } from './dialog-close';
 import { ForDialogInitialFocus } from './dialog-initial-focus';

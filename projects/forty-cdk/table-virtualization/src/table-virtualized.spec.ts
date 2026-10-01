@@ -30,14 +30,9 @@ import {
   ForTableVariantCell,
   type ForTableContext,
 } from 'forty-cdk/table';
+import { installObserverPolyfills, pressKey } from 'forty-cdk/testing';
 
-import {
-  flush,
-  installObserverPolyfills,
-  pressKey,
-  renderHost,
-  type RenderResult,
-} from '../../src/test-utils';
+import { flush, renderHost, type RenderResult } from '../../src/test-utils';
 import { ForTableVirtualized } from './table-virtualized';
 
 describe('ForTableVirtualized', () => {

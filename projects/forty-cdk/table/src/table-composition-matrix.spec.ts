@@ -4,8 +4,9 @@ import { By } from '@angular/platform-browser';
 
 import { TABLE_REGISTRATION_CONTEXT, type TableRegistrationContext } from 'forty-cdk/core';
 
-import { installObserverPolyfills, renderHost } from '../../src/test-utils';
+import { renderHost } from '../../src/test-utils';
 import { ForTableVirtualized } from 'forty-cdk/table-virtualization';
+import { installObserverPolyfills } from 'forty-cdk/testing';
 
 import {
   ForTableCellDef,

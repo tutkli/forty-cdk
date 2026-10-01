@@ -1,10 +1,10 @@
 import { Component, computed, signal } from '@angular/core';
 
+import { pressKey, pressWithMouse } from 'forty-cdk/testing';
+
 import {
   afterEachOverlayCleanup,
   flush,
-  pressKey,
-  pressWithMouse,
   type RenderResult,
   renderHost,
 } from '../../src/test-utils';

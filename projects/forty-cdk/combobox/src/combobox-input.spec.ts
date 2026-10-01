@@ -1,6 +1,8 @@
 import { Component, computed, signal } from '@angular/core';
 
-import { afterEachOverlayCleanup, flush, pressKey, renderHost } from '../../src/test-utils';
+import { pressKey } from 'forty-cdk/testing';
+
+import { afterEachOverlayCleanup, flush, renderHost } from '../../src/test-utils';
 import { ForCombobox } from './combobox';
 import { ForComboboxContent } from './combobox-content';
 import { ForComboboxInput } from './combobox-input';

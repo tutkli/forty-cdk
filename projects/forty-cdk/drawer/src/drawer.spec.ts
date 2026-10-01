@@ -3,14 +3,9 @@ import { TestBed } from '@angular/core/testing';
 
 import { type VetoableEvent, type VetoableNativeEvent } from 'forty-cdk/core';
 import { ForDrawerStack, type DrawerStackHandle } from 'forty-cdk/core-overlay';
+import { pressKey, withReducedMotion } from 'forty-cdk/testing';
 import { ForDrawerScaleCoordinator } from './drawer-scale-coordinator';
-import {
-  afterEachOverlayCleanup,
-  flush,
-  pressKey,
-  renderHost,
-  withReducedMotion,
-} from '../../src/test-utils';
+import { afterEachOverlayCleanup, flush, renderHost } from '../../src/test-utils';
 import {
   assertDataStateContract,
   assertDismissibleLayerContract,

@@ -1,7 +1,8 @@
 import { TestBed } from '@angular/core/testing';
 import { provideZonelessChangeDetection } from '@angular/core';
 
-import { pressKey } from '../../../src/test-utils';
+import { pressKey } from 'forty-cdk/testing';
+
 import { DismissibleLayer, DismissibleLayerStack } from './dismissible-layer';
 
 function pointerDown(target: Node): PointerEvent {

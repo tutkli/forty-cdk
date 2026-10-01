@@ -4,7 +4,7 @@
  * A spec that installs a global polyfill (`globalThis.ResizeObserver = …`)
  * must restore it — either via an `afterAll` that `delete`s the global, or
  * via a paired `beforeEach`/`afterEach` capture-restore. The
- * `installObserverPolyfills()` helper in `test-utils/observers.ts` already
+ * `installObserverPolyfills()` helper in `forty-cdk/testing` already
  * does this. See CLAUDE.md > Testing notes > Test isolation —
  * non-negotiables > rule 2.
  *

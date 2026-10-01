@@ -1,9 +1,10 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
+import { withReducedMotion } from 'forty-cdk/testing';
+
 import { assertDataStateContract } from '../../src/test-utils/contract';
 import { renderHost } from '../../src/test-utils/render';
-import { withReducedMotion } from '../../src/test-utils/reduced-motion';
 import { ForDisclosure } from './disclosure';
 import { ForDisclosureContent } from './disclosure-content';
 import { ForDisclosureTrigger } from './disclosure-trigger';

@@ -7,7 +7,6 @@ import { CalendarDate, CalendarDateTime } from '@internationalized/date';
 import {
   flush,
   injectLocaleReportingAdapter,
-  pressKey,
   provideLocaleReportingAdapter,
   renderHost,
   type RenderResult,
@@ -24,6 +23,7 @@ import {
 } from 'forty-cdk/internationalized-date';
 import { NativeDateAdapter, provideNativeDateAdapter } from 'forty-cdk/calendar';
 import { ForField, ForFieldDescription, ForLabel } from 'forty-cdk/field';
+import { pressKey } from 'forty-cdk/testing';
 import { ForDateField } from './date-field';
 import { provideForDateFieldDefaults } from './date-field-defaults';
 import { ForDateFieldLiteral } from './date-field-literal';

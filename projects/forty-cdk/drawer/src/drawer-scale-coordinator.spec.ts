@@ -8,7 +8,8 @@ import {
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { type DrawerStackNode, type ForDrawerSide, ForDrawerStack } from 'forty-cdk/core-overlay';
-import { flush, withReducedMotion } from '../../src/test-utils';
+import { withReducedMotion } from 'forty-cdk/testing';
+import { flush } from '../../src/test-utils';
 import { ForDrawerScaleCoordinator, type ForDrawerScaleConfig } from './drawer-scale-coordinator';
 
 const DEFAULT_CONFIG: ForDrawerScaleConfig = {

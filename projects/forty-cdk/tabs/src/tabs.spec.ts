@@ -1,7 +1,9 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { pressKey, renderHost, withReducedMotion } from '../../src/test-utils';
+import { pressKey, withReducedMotion } from 'forty-cdk/testing';
+
+import { renderHost } from '../../src/test-utils';
 import {
   assertDataStateContract,
   assertRovingTabindexContract,

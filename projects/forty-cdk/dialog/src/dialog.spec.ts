@@ -2,13 +2,8 @@ import { Component, provideZonelessChangeDetection, signal } from '@angular/core
 import { TestBed } from '@angular/core/testing';
 
 import { type VetoableEvent, type VetoableNativeEvent } from 'forty-cdk/core';
-import {
-  afterEachOverlayCleanup,
-  flush,
-  pressKey,
-  renderHost,
-  withReducedMotion,
-} from '../../src/test-utils';
+import { pressKey, withReducedMotion } from 'forty-cdk/testing';
+import { afterEachOverlayCleanup, flush, renderHost } from '../../src/test-utils';
 import {
   assertDataStateContract,
   assertDismissibleLayerContract,

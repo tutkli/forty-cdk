@@ -1,7 +1,7 @@
 import { Component, Injectable, inject, signal, type Type } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { afterEachOverlayCleanup, installObserverPolyfills, renderHost } from '../test-utils';
+import { afterEachOverlayCleanup, renderHost } from '../test-utils';
 
 import { ForBreadcrumbs, provideForBreadcrumbsDefaults } from 'forty-cdk/breadcrumbs';
 import {
@@ -73,6 +73,7 @@ import {
   provideForToastDefaults,
 } from 'forty-cdk/toast';
 import { LiveAnnouncer } from 'forty-cdk/visually-hidden';
+import { installObserverPolyfills } from 'forty-cdk/testing';
 
 @Injectable({ providedIn: 'root' })
 class Lang {

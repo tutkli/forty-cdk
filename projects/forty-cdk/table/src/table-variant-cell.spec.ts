@@ -1,8 +1,9 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { installObserverPolyfills, renderHost } from '../../src/test-utils';
+import { renderHost } from '../../src/test-utils';
 import { ForTableVirtualized } from 'forty-cdk/table-virtualization';
+import { installObserverPolyfills } from 'forty-cdk/testing';
 
 import { ForTable } from './table';
 import { ForTableCell } from './table-cell';

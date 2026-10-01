@@ -9,7 +9,9 @@ import {
 import { TestBed } from '@angular/core/testing';
 import type { ComputePositionReturn, Placement } from '@floating-ui/dom';
 
-import { flushPositioning, installObserverPolyfills } from '../../../src/test-utils';
+import { installObserverPolyfills } from 'forty-cdk/testing';
+
+import { flushPositioning } from '../../../src/test-utils';
 import { buildFlipOptions, injectFloating } from './floating';
 import { runPositioning } from './run-positioning';
 

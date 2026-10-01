@@ -1,7 +1,9 @@
 import { Component, provideZonelessChangeDetection, signal, viewChild } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { flush, pressKey, renderHost, TestStackedLayer } from '../../src/test-utils';
+import { pressKey } from 'forty-cdk/testing';
+
+import { flush, renderHost, TestStackedLayer } from '../../src/test-utils';
 import {
   assertDataStateContract,
   assertSingleValueModelContract,

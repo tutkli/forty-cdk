@@ -1,7 +1,9 @@
 import { Component, Directive, input } from '@angular/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { installObserverPolyfills, renderHost } from '../../src/test-utils';
+import { installObserverPolyfills } from 'forty-cdk/testing';
+
+import { renderHost } from '../../src/test-utils';
 
 import { ForTable, provideForTable } from './table';
 import { ForTableCell } from './table-cell';

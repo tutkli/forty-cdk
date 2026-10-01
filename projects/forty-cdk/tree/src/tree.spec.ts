@@ -9,8 +9,9 @@ import {
 import { TestBed } from '@angular/core/testing';
 
 import { isUnset, unsetInput } from 'forty-cdk/core';
+import { pressKey } from 'forty-cdk/testing';
 
-import { flush, pressKey, renderHost } from '../../src/test-utils';
+import { flush, renderHost } from '../../src/test-utils';
 import {
   assertDataStateContract,
   assertRovingTabindexContract,

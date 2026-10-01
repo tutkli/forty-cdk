@@ -2,13 +2,7 @@ import { NgTemplateOutlet } from '@angular/common';
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import {
-  afterEachOverlayCleanup,
-  flush,
-  pointerDownOn,
-  pressKey,
-  renderHost,
-} from '../../src/test-utils';
+import { afterEachOverlayCleanup, flush, pointerDownOn, renderHost } from '../../src/test-utils';
 import {
   assertDataStateContract,
   assertDismissibleLayerContract,
@@ -16,6 +10,7 @@ import {
 } from '../../src/test-utils/contract';
 import { type VetoableNativeEvent } from 'forty-cdk/core';
 import { ForMenuContent, ForMenuItem } from 'forty-cdk/menu';
+import { pressKey } from 'forty-cdk/testing';
 
 import { ForDropdownMenu } from './dropdown-menu';
 import { ForDropdownMenuTrigger } from './dropdown-menu-trigger';

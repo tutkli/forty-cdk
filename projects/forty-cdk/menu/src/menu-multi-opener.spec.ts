@@ -6,14 +6,9 @@ import { ForContextMenuTrigger } from 'forty-cdk/context-menu';
 import type { VetoableNativeEvent } from 'forty-cdk/core';
 import type { MenuOpenerPositioning } from 'forty-cdk/core-overlay';
 import { ForDropdownMenu, ForDropdownMenuTrigger } from 'forty-cdk/dropdown-menu';
+import { pressKey } from 'forty-cdk/testing';
 
-import {
-  afterEachOverlayCleanup,
-  flush,
-  flushPositioning,
-  pressKey,
-  renderHost,
-} from '../../src/test-utils';
+import { afterEachOverlayCleanup, flush, flushPositioning, renderHost } from '../../src/test-utils';
 import {
   assertDataStateContract,
   assertDismissibleLayerContract,

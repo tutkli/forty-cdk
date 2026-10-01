@@ -2,7 +2,9 @@ import { Component, Directive, provideZonelessChangeDetection, signal } from '@a
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import type { ReferenceElement } from '@floating-ui/dom';
 
-import { flush, nextMacrotask, pressKey, renderHost } from '../../../src/test-utils';
+import { pressKey } from 'forty-cdk/testing';
+
+import { flush, nextMacrotask, renderHost } from '../../../src/test-utils';
 import { type InertSiblingsHandle, InertSiblingsStack } from '../inert-siblings/inert-siblings';
 import { injectOverlayShell, type OverlayShellConfig } from './overlay-shell';
 

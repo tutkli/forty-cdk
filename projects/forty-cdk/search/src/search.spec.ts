@@ -5,10 +5,11 @@ import {
   assertFormControlContract,
   type FormControlMountResult,
 } from '../../src/test-utils/contract';
-import { afterEachOverlayCleanup, pressKey } from '../../src/test-utils';
+import { afterEachOverlayCleanup } from '../../src/test-utils';
 import { renderHost } from '../../src/test-utils/render';
 import { ForDialog } from 'forty-cdk/dialog';
 import { ForField, ForLabel } from 'forty-cdk/field';
+import { pressKey } from 'forty-cdk/testing';
 import { ForSearchClear } from './search-clear';
 import { provideForSearchDefaults } from './search-defaults';
 import { ForSearchGroup } from './search-group';

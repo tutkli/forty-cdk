@@ -25,7 +25,7 @@ export class ForDrawerRef<R = unknown> extends OverlayRef<R, ForDrawerCloseReaso
    */
   readonly activeSnapPoint: Signal<ForDrawerSnapPoint | null>;
 
-  /** @internal */
+  /** Internal composition surface (no semver guarantees). */
   constructor(
     teardown: () => void,
     defaultReason: ForDrawerCloseReason,

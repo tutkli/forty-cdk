@@ -1,7 +1,9 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { flush, pressKey, renderHost, withReducedMotion } from '../../src/test-utils';
+import { pressKey, withReducedMotion } from 'forty-cdk/testing';
+
+import { flush, renderHost } from '../../src/test-utils';
 import { assertDataStateContract } from '../../src/test-utils/contract';
 import { ForAccordion } from './accordion';
 import { ForAccordionContent } from './accordion-content';

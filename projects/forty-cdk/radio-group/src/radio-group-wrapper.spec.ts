@@ -1,7 +1,9 @@
 import { Component, Directive } from '@angular/core';
 import { describe, expect, it } from 'vitest';
 
-import { pressKey, renderHost } from '../../src/test-utils';
+import { pressKey } from 'forty-cdk/testing';
+
+import { renderHost } from '../../src/test-utils';
 
 import { ForRadio } from './radio';
 import { ForRadioGroup } from './radio-group';
