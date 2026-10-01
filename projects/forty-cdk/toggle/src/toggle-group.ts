@@ -45,7 +45,8 @@ import {
  * - single (`multiple=false`, default): clicking selects exclusively;
  *   clicking an already-selected item de-selects it (you can land on `[]`).
  *   Matches an "alignment toolbar" (Left, Center, Right) where users may
- *   want to clear the choice.
+ *   want to clear the choice. With `deselectable=false` the pressed item
+ *   stays pressed instead, for a segmented button that keeps its choice.
  *
  * `value` is always `readonly string[]` so consumers can flip `multiple`
  * without re-typing their state. In single mode the array carries 0 or
@@ -103,10 +104,18 @@ export class ForToggleGroup
 
   /**
    * When false (default), only one item can be pressed at a time. Clicking
-   * an already-pressed item clears the selection. When true, clicks toggle
-   * each item independently.
+   * an already-pressed item clears the selection unless `deselectable` is
+   * false. When true, clicks toggle each item independently.
    */
   readonly multiple = input(false, { transform: booleanAttribute });
+
+  /**
+   * In single mode, whether pressing the pressed item clears the selection.
+   * When false, that press is a no-op and the item stays pressed; a group
+   * with no value still starts empty. Multi mode ignores it. The default is
+   * read from `provideForToggleDefaults` for the surrounding scope.
+   */
+  readonly deselectable = input(this.#defaults.deselectable, { transform: booleanAttribute });
 
   /** Layout direction for keyboard navigation. */
   readonly orientation = input<'horizontal' | 'vertical'>('horizontal');
@@ -192,7 +201,9 @@ export class ForToggleGroup
       this.value.set(isSelected ? current.filter((x) => x !== v) : [...current, v]);
       return;
     }
-    // Single: clicking the pressed item clears, otherwise replace.
+    if (isSelected && !this.deselectable()) {
+      return;
+    }
     this.value.set(isSelected ? [] : [v]);
   }
 

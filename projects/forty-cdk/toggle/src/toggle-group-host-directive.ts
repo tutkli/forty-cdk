@@ -26,6 +26,7 @@
  */
 export const FOR_TOGGLE_GROUP_HOST_DIRECTIVE_INPUTS = [
   'value',
+  'deselectable',
   'dir',
   'dirty',
   'disabled',

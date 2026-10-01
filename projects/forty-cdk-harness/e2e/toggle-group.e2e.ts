@@ -1,4 +1,4 @@
-import { test } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import {
   el,
   expectFocused,
@@ -62,4 +62,25 @@ test.describe('ToggleGroup', () => {
     await page.keyboard.press('Shift+Tab');
     await expectFocused(el(page, 'tg-right'));
   });
+
+  for (const key of ['Space', 'Enter'] as const) {
+    test(`${key} on the pressed item keeps it pressed when deselectable is false`, async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'toggle-group', { mode: 'segmented' });
+      await focusRovingItem(page, 'tg-center');
+
+      await page.keyboard.press(key);
+      await expect(el(page, 'tg-center')).toHaveAttribute('aria-pressed', 'true');
+
+      await page.keyboard.press(key);
+      await expect(el(page, 'tg-center')).toHaveAttribute('aria-pressed', 'true');
+
+      await page.keyboard.press('ArrowRight');
+      await expectRovingFocus(page, 'tg-right');
+      await page.keyboard.press(key);
+      await expect(el(page, 'tg-right')).toHaveAttribute('aria-pressed', 'true');
+      await expect(el(page, 'tg-center')).toHaveAttribute('aria-pressed', 'false');
+    });
+  }
 });

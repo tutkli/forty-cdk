@@ -18,6 +18,8 @@ import { ForToggleGroup, ForToggleGroupItem } from 'forty-cdk/toggle';
  *  - `?orientation=vertical` — switch the keyboard axis to ArrowUp /
  *    ArrowDown. Default `horizontal`.
  *  - `?dir=rtl` — set `dir="rtl"` on the group for horizontal RTL inversion.
+ *  - `?mode=segmented` — single mode with `deselectable=false`, so the pressed
+ *    item stays pressed. Default multiple mode.
  */
 @Component({
   selector: 'app-toggle-group-fixture',
@@ -28,7 +30,8 @@ import { ForToggleGroup, ForToggleGroupItem } from 'forty-cdk/toggle';
     <div
       data-testid="group"
       forToggleGroup
-      multiple
+      [multiple]="!segmented"
+      [deselectable]="!segmented"
       [(value)]="value"
       [orientation]="orientation"
       [dir]="dir"
@@ -59,6 +62,8 @@ export class ToggleGroupFixture {
 
   protected readonly dir: 'ltr' | 'rtl' =
     this.#route.snapshot.queryParamMap.get('dir') === 'rtl' ? 'rtl' : 'ltr';
+
+  protected readonly segmented = this.#route.snapshot.queryParamMap.get('mode') === 'segmented';
 
   protected readonly value = signal<readonly string[]>([]);
 }
