@@ -5,6 +5,151 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.29.0] - 2026-10-01
+
+A release about form fields that hold an overlay control and date and time fields that follow the
+app's language. A design-system field can mark the box its panel aligns to with `[forFieldAnchor]`,
+and the date and time pickers gain a field anatomy where a typed `[forDateField]` / `[forTimeField]`
+is the control and the trigger only opens the panel. A `DateAdapter` can now report its locale,
+which sets the segment order, separators, hour cycle and AM/PM names of every field with no
+`[locale]` of its own, and the six date and time defaults take an `hourCycle` key. The editable
+combobox gains a toggle button, a selected-option highlight on open and a query restore on close,
+`ForToggleGroup` can keep its pressed item pressed, `ForTextarea` reports when its content
+overflows, and `ForOtpInput` gets a class hook for the input it injects. Three changes arrive
+without binding anything: the OTP slots leave the accessibility tree, a second positioning anchor on
+a select, combobox, date picker or time picker warns instead of throwing, and a textarea without
+`autosize` keeps the inline height you or its resize handle set.
+
+### Added
+
+- **Field**, **Select**, **Combobox**, **Date picker**, **Time picker** — `[forFieldAnchor]`
+  positions an overlay control against the field box
+  ([#2045](https://github.com/tutkli/forty-cdk/issues/2045)). A form field that renders a decorated
+  box around a projected control marks that box with `[forFieldAnchor]`, and a `[forSelect]`,
+  `[forCombobox]`, `[forDatePicker]` or `[forTimePicker]` inside the field positions its panel
+  against it, without a subclass per root. A control's own anchor still wins, then the field anchor,
+  then the trigger or input. The seven overlay surfaces that are field boundaries also hide the
+  anchor from what they contain, so a time picker inside a date picker's panel does not align to the
+  field box outside it. `FOR_FIELD_ANCHOR_CONTEXT` and `ForFieldAnchorContext` are published from
+  `forty-cdk/field`, and an anchor outside a `[forField]` throws `FORCDK-FIELD-003`. The field
+  README's _Positioning anchor_ section has the recipe.
+
+- **Date picker**, **Time picker** — a field anatomy
+  ([#2041](https://github.com/tutkli/forty-cdk/issues/2041)). `anatomy="field"` on `[forDatePicker]`
+  or `[forTimePicker]` makes a projected `[forDateField]` / `[forTimeField]` the control. The picker
+  stays the one `FormValueControl`, so `[formField]` binds once, and the adopted field takes the
+  picker's value, bounds, `granularity`, `hourCycle`, `locale` and its disabled, read-only, required
+  and invalid states, so `aria-invalid` and `aria-errormessage` land on the field's group. The
+  `[forField]` around it registers the field's group as its only control. In this anatomy the
+  trigger is a plain button that opens the panel: it drops `role="combobox"` and the form-control
+  `aria-*` state, keeps `aria-haspopup`, `aria-expanded` and `aria-controls`, and needs an
+  accessible name of its own. A day pick keeps the field's time and closes the calendar at any
+  granularity. With no projected field, `focus()` and opening the panel throw
+  `FORCDK-DATE-PICKER-007` / `FORCDK-TIME-PICKER-004` in dev mode. The default `'trigger'` anatomy
+  renders the same attributes as before.
+
+- **Date field**, **Time field**, **Date picker**, **Time picker** — the adapter's locale lays out
+  every field ([#2039](https://github.com/tutkli/forty-cdk/issues/2039)). `DateAdapter` gains an
+  optional `locale(): string | null`. A segmented field with no `[locale]` of its own takes its
+  segment order, separators, hour cycle, AM/PM names and month `aria-valuetext` from it before
+  falling back to the runtime locale, so they match what the adapter's `format` produces. An adapter
+  that reads a signal in `locale()` re-renders mounted fields and formatted values on a language
+  switch. `NativeDateAdapter` and the two `forty-cdk/internationalized-date` adapters return `null`
+  and fall back to it in `format`, so a subclass that overrides only `locale()` gets consistent
+  names and layout. [docs/date-adapters.md](docs/date-adapters.md) has the signal-backed example.
+
+- **Date field**, **Time field**, **Date picker**, **Time picker** — an `hourCycle` defaults key
+  ([#2038](https://github.com/tutkli/forty-cdk/issues/2038)). `ForDateFieldDefaults`,
+  `ForDateRangeFieldDefaults`, `ForTimeFieldDefaults`, `ForTimeRangeFieldDefaults`,
+  `ForDatePickerDefaults` and `ForTimePickerDefaults` take `hourCycle: 12 | 24 | null`, with a
+  `null` fallback, so a 24-hour app sets it once per scope instead of binding `[hourCycle]` on every
+  field and picker. A per-instance `[hourCycle]` still wins, and the locale decides when both are
+  `null`.
+
+- **Combobox** — a toggle button for the editable anatomy
+  ([#2048](https://github.com/tutkli/forty-cdk/issues/2048)). `[forComboboxToggle]`
+  (`ForComboboxToggle`) is a chevron beside the input: `tabindex="-1"`, `aria-expanded`,
+  `aria-controls` while open, native `disabled`, `data-state` / `data-disabled`, and an `aria-label`
+  from the new `toggleAriaLabel` defaults key, `'Show options'` by default. A press keeps focus in
+  the input, closes an open listbox, or opens a closed one on the committed selection. It does not
+  count as an outside press, and leaving the input for it does not mark the control touched.
+
+- **Combobox** — `openHighlight` chooses the option highlighted on open
+  ([#2047](https://github.com/tutkli/forty-cdk/issues/2047)). With `openHighlight="selected"` (type
+  `ForComboboxOpenHighlight`, defaults key `openHighlight`), opening the editable anatomy by focus,
+  click, `ArrowDown` / `ArrowUp` or `openOverlay()` highlights the committed selection. With nothing
+  selected, `ArrowDown` still lands on the first option and `ArrowUp` on the last. Opening from a
+  typed query always highlights the first match, and the default `'first'` keeps the old behaviour.
+
+- **Combobox** — `restoreQueryOnClose` puts the selected label back
+  ([#2049](https://github.com/tutkli/forty-cdk/issues/2049)). With `restoreQueryOnClose` (also a
+  defaults key, `false` by default) on a single-select editable combobox, every close other than a
+  pick sets `query` to the selected option's label, or `''` with nothing selected, and syncs the
+  input, including while it has focus. Multiple mode and the picker anatomy ignore it.
+
+- **Toggle** — `deselectable` keeps a single-mode group's item pressed
+  ([#2050](https://github.com/tutkli/forty-cdk/issues/2050)). With `deselectable="false"` on a
+  single-mode `[forToggleGroup]`, pressing the pressed item again does nothing: `value` and
+  `aria-pressed` stay, and no `valueChange` is emitted. Pressing another item still replaces the
+  selection, and multiple mode ignores the input. This is the segmented-button case, where
+  `[forRadioGroup]` does not fit because its arrows move the selection. The default `true` keeps the
+  old behaviour, and `provideForToggleDefaults` takes the key.
+
+- **Input** — `ForTextarea` reports whether its content overflows
+  ([#2051](https://github.com/tutkli/forty-cdk/issues/2051)). `overflowing: Signal<boolean>`,
+  reflected as `data-overflowing`, is `true` while the content is taller than the visible box by
+  more than 1px, with or without `autosize`, and follows every value change and resize, so a
+  `max-height`-capped textarea can offer a "Read more" toggle without its own `ResizeObserver`. It
+  is always `false` under SSR.
+
+- **OTP input** — `inputClass` styles the injected input
+  ([#2053](https://github.com/tutkli/forty-cdk/issues/2053)). The string is reflected as the `class`
+  of the `<input>` that `[forOtpInput]` creates, and `null` or `''` renders none. The input is
+  created at runtime and never carries the component's encapsulation attribute, so the class is for
+  global or utility styles.
+
+### Changed
+
+- **Select**, **Combobox**, **Date picker**, **Time picker** — a second positioning anchor warns
+  instead of throwing ([#2045](https://github.com/tutkli/forty-cdk/issues/2045)). A structural swap,
+  such as two sibling `@if` blocks, creates the incoming `[forSelectAnchor]`, `[forComboboxAnchor]`,
+  `[forDatePickerAnchor]` or `[forTimePickerAnchor]` before it destroys the outgoing one, and the
+  root threw for a layout that was valid once the swap settled. A second anchor now uses the newest
+  one and warns once in dev mode with `FORCDK-CORE-005`, read from the settled count.
+  `FORCDK-SELECT-005`, `FORCDK-COMBOBOX-007`, `FORCDK-DATE-PICKER-002` and `FORCDK-TIME-PICKER-003`
+  are retired.
+
+### Fixed
+
+- **OTP input** — the slots leave the accessibility tree
+  ([#2052](https://github.com/tutkli/forty-cdk/issues/2052)). Each `[forOtpInputSlot]` exposed its
+  character, or a row of `•` under `mask`, so browse mode read the code once per slot and again from
+  the input. The slots now carry `aria-hidden="true"`, and the injected input is the only element
+  that exposes the code. **A slot you render without the directive needs `aria-hidden="true"` too.**
+
+- **Input** — a textarea without `autosize` keeps its inline height
+  ([#2051](https://github.com/tutkli/forty-cdk/issues/2051)). `[forTextarea]` cleared `style.height`
+  on every value change while `autosize` was off, so a height you set inline, or the one a native
+  resize handle writes, was wiped as soon as the user typed. It now removes only a height it wrote
+  itself, when `autosize` turns off.
+
+- **Date picker** — a subclassed calendar is found
+  ([#2040](https://github.com/tutkli/forty-cdk/issues/2040)). `[forDatePicker]` and
+  `[forDateRangePicker]` queried their calendar by the `ForCalendar` class, so a `ForCalendar`
+  subclass that re-provides `FOR_CALENDAR_CONTEXT`, the wrapping guide's default pattern, and a
+  `hostDirectives` wrapper were not found and their selections were ignored. Both pickers now query
+  the token.
+
+### Performance
+
+- **Breakpoints**, **Tooltip**, **Popover**, **Hover card** — one `MediaQueryList` per query for the
+  whole application ([#2043](https://github.com/tutkli/forty-cdk/issues/2043)). Every
+  `[forTooltip]`, `[forPopover]` and `[forHoverCard]` opened its own
+  `(prefers-reduced-motion: reduce)` query, and every `injectBreakpoints()` call opened one per
+  breakpoint before any read. Each distinct query is now opened once, with one `change` listener
+  shared by every caller for the lifetime of the application, so N instances cost one listener
+  instead of N.
+
 ## [0.28.0] - 2026-09-30
 
 A release about overlays that stack and default text that follows the language. Content opened
@@ -2866,7 +3011,8 @@ primitives.
 - **Display** — avatar, progress, meter, tree.
 - `forty-cdk/internationalized-date` secondary entry point exposing the `@internationalized/date` adapters for the date and time primitives.
 
-[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.28.0...HEAD
+[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.29.0...HEAD
+[0.29.0]: https://github.com/tutkli/forty-cdk/compare/v0.28.0...v0.29.0
 [0.28.0]: https://github.com/tutkli/forty-cdk/compare/v0.27.0...v0.28.0
 [0.27.0]: https://github.com/tutkli/forty-cdk/compare/v0.26.0...v0.27.0
 [0.26.0]: https://github.com/tutkli/forty-cdk/compare/v0.25.2...v0.26.0
