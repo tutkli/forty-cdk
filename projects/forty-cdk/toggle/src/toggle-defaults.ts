@@ -14,6 +14,11 @@ export interface ForToggleDefaults {
    * toggle-group item. Mirrors `ForRadioGroup`'s `loop` default.
    */
   loop: boolean;
+  /**
+   * Whether a single-mode toggle group lets the user clear its selection by
+   * pressing the pressed item. Multi-mode groups ignore it.
+   */
+  deselectable: boolean;
 }
 
 /**
@@ -23,6 +28,7 @@ export interface ForToggleDefaults {
  */
 export const FOR_TOGGLE_FALLBACK_DEFAULTS: ForToggleDefaults = {
   loop: true,
+  deselectable: true,
 };
 
 const { token, provideDefaults } = createDefaults<ForToggleDefaults>(

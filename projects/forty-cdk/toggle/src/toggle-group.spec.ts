@@ -378,6 +378,108 @@ describe('ForToggleGroup', () => {
     });
   });
 
+  describe('deselectable', () => {
+    @Component({
+      imports: [ForToggleGroup, ForToggleGroupItem],
+      template: `
+        <div
+          forToggleGroup
+          [(value)]="value"
+          [multiple]="multiple()"
+          [deselectable]="deselectable()"
+          (valueChange)="emits = emits + 1"
+        >
+          <button forToggleGroupItem value="list" data-test-id="list">List</button>
+          <button forToggleGroupItem value="grid" data-test-id="grid">Grid</button>
+        </div>
+      `,
+    })
+    class DeselectableHost {
+      readonly value = signal<readonly string[]>([]);
+      readonly multiple = signal(false);
+      readonly deselectable = signal(false);
+      emits = 0;
+    }
+
+    it('keeps the pressed item pressed in single mode when deselectable is false', async () => {
+      const r = renderHost(DeselectableHost);
+      expect(r.instance.value()).toEqual([]);
+
+      itemOf(r.el, 'list').click();
+      await r.flush();
+      expect(r.instance.value()).toEqual(['list']);
+      expect(r.instance.emits).toBe(1);
+
+      itemOf(r.el, 'list').click();
+      await r.flush();
+      expect(r.instance.value()).toEqual(['list']);
+      expect(r.instance.emits).toBe(1);
+      expect(itemOf(r.el, 'list').getAttribute('aria-pressed')).toBe('true');
+    });
+
+    it('still replaces the selection when another item is pressed', async () => {
+      const r = renderHost(DeselectableHost);
+      r.instance.value.set(['list']);
+      await r.flush();
+
+      itemOf(r.el, 'grid').click();
+      await r.flush();
+
+      expect(r.instance.value()).toEqual(['grid']);
+      expect(r.instance.emits).toBe(1);
+      expect(itemOf(r.el, 'list').getAttribute('aria-pressed')).toBe('false');
+      expect(itemOf(r.el, 'grid').getAttribute('aria-pressed')).toBe('true');
+    });
+
+    it('clears the selection in single mode when deselectable flips back to true', async () => {
+      const r = renderHost(DeselectableHost);
+      r.instance.value.set(['list']);
+      r.instance.deselectable.set(true);
+      await r.flush();
+
+      itemOf(r.el, 'list').click();
+      await r.flush();
+
+      expect(r.instance.value()).toEqual([]);
+      expect(r.instance.emits).toBe(1);
+    });
+
+    it('is ignored in multiple mode', async () => {
+      const r = renderHost(DeselectableHost);
+      r.instance.multiple.set(true);
+      r.instance.value.set(['list', 'grid']);
+      await r.flush();
+
+      itemOf(r.el, 'list').click();
+      await r.flush();
+
+      expect(r.instance.value()).toEqual(['grid']);
+    });
+
+    it('reads the deselectable default from provideForToggleDefaults when no input is set', async () => {
+      @Component({
+        imports: [ForToggleGroup, ForToggleGroupItem],
+        providers: [provideForToggleDefaults({ deselectable: false })],
+        template: `
+          <div forToggleGroup [(value)]="value">
+            <button forToggleGroupItem value="list" data-test-id="list">List</button>
+            <button forToggleGroupItem value="grid" data-test-id="grid">Grid</button>
+          </div>
+        `,
+      })
+      class ScopedDeselectableHost {
+        readonly value = signal<readonly string[]>(['list']);
+      }
+
+      const r = renderHost(ScopedDeselectableHost);
+
+      itemOf(r.el, 'list').click();
+      await r.flush();
+
+      expect(r.instance.value()).toEqual(['list']);
+    });
+  });
+
   describe('multiple mode', () => {
     it('toggles items independently', async () => {
       const r = renderHost(ToggleGroupHost);
