@@ -10,6 +10,7 @@ import { ForOtpInput, ForOtpInputSlot } from 'forty-cdk/otp-input';
     <div
       forOtpInput
       class="otp"
+      inputClass="otp-control"
       [(value)]="code"
       [length]="6"
       type="numeric"
@@ -37,7 +38,7 @@ import { ForOtpInput, ForOtpInputSlot } from 'forty-cdk/otp-input';
       gap: 0.5rem;
     }
 
-    .otp > input {
+    .otp-control {
       position: absolute;
       inset: 0;
       width: 100%;

@@ -312,6 +312,7 @@ export const CLASS_EXEMPTIONS = [];
 const CLASS_NAME = /^-?[_a-zA-Z][\w-]*$/;
 const TEMPLATE_CLASS_LISTS = [
   /(?<![\w.[-])class="([^"]*)"/g,
+  /(?<![\w.[-])[a-z][a-zA-Z]*Class="([^"]*)"/g,
   /(?<![\w[])animate\.(?:enter|leave)="([^"]*)"/g,
   /\bclass: '([^']*)'/g,
   /\banimate(?:Enter|Leave): '([^']*)'/g,

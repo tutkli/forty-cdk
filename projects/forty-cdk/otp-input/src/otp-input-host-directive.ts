@@ -31,6 +31,7 @@ export const FOR_OTP_INPUT_HOST_DIRECTIVE_INPUTS = [
   'dirty',
   'disabled',
   'errors',
+  'inputClass',
   'invalid',
   'length',
   'mask',

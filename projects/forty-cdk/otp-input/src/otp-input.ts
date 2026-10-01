@@ -151,6 +151,13 @@ export class ForOtpInput
 
   protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 
+  /**
+   * Class(es) applied to the injected `<input>`, which the consumer never writes in
+   * the template. Component-scoped CSS still cannot reach that input, so target the
+   * class from global or utility styles. `null` (default) adds no `class` attribute.
+   */
+  readonly inputClass = input<string | null>(null);
+
   /** Fires when every slot is filled (by typing or paste). */
   readonly complete = output<string>();
 
@@ -202,6 +209,7 @@ export class ForOtpInput
       // Legacy iOS numeric-keypad hint; modern browsers honour inputmode.
       setAttr(el, 'pattern', this.#inputMode() === 'numeric' ? '[0-9]*' : null);
       setAttr(el, 'name', this.name() || null);
+      setAttr(el, 'class', this.inputClass() || null);
       el.toggleAttribute('disabled', this.effectiveDisabled());
       el.toggleAttribute('readonly', this.readonly());
       setAttr(el, 'aria-label', this.#field?.labelledBy() ? null : this.ariaLabel() || null);

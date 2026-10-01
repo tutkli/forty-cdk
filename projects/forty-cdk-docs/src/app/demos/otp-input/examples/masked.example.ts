@@ -10,6 +10,7 @@ import { ForOtpInput, ForOtpInputSlot } from 'forty-cdk/otp-input';
     <div
       forOtpInput
       class="masked-otp"
+      inputClass="masked-otp-control"
       [(value)]="pin"
       [length]="6"
       type="numeric"
@@ -39,7 +40,7 @@ import { ForOtpInput, ForOtpInputSlot } from 'forty-cdk/otp-input';
       gap: 0.5rem;
     }
 
-    .masked-otp > input {
+    .masked-otp-control {
       position: absolute;
       inset: 0;
       width: 100%;
