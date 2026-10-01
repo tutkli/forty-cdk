@@ -1,4 +1,5 @@
-import { type TimeCapableDateAdapter, secondsOfDay, timeSentinel } from 'forty-cdk/core';
+import { secondsOfDay, timeSentinel } from 'forty-cdk/core';
+import { type TimeCapableDateAdapter } from 'forty-cdk/date-adapter';
 
 /** The time granularity at which the picker operates. */
 export type TimePickerGranularity = 'hour' | 'minute' | 'second';

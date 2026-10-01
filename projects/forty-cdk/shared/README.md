@@ -19,7 +19,7 @@ import { ForTabs, ForTabsList, ForTabsTrigger } from 'forty-cdk/tabs';
 import type { WritingDirection } from 'forty-cdk/shared';
 ```
 
-There is nothing to install and, unless you mount more than one forty-cdk app on a page (see [Multiple apps on one page](#multiple-apps-on-one-page)), nothing to provide: 35 of the 45 exports are structural types erased at compile time, the eight runtime values re-exported from core resolve to the same singly-compiled module every primitive already loads, and `NativeDateAdapter` is the one implementation declared here.
+There is nothing to install and, unless you mount more than one forty-cdk app on a page (see [Multiple apps on one page](#multiple-apps-on-one-page)), nothing to provide: 35 of the 45 exports are structural types erased at compile time, seven runtime values are re-exported from core and resolve to the same singly-compiled module every primitive already loads, and `FOR_DATE_ADAPTER`, `NativeDateAdapter` and `provideNativeDateAdapter` are re-exported from [`forty-cdk/date-adapter`](../date-adapter). Import those three from `forty-cdk/date-adapter` when you provide an adapter at the application root: this entry point loads the core, so a root import of it puts the code every primitive shares in your `main` bundle.
 
 ## What it exports
 

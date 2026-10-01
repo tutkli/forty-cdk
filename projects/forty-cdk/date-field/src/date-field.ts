@@ -3,7 +3,6 @@ import type { FormValueControl } from '@angular/forms/signals';
 
 import {
   type AdoptedField,
-  type DateAdapter,
   type DateFieldHost,
   FOR_DATE_FIELD_HOST,
   injectDateAdapter,
@@ -23,6 +22,7 @@ import {
   injectTextDirection,
   hostAriaLabel,
 } from 'forty-cdk/core';
+import { type DateAdapter } from 'forty-cdk/date-adapter';
 import { FOR_DATE_FIELD_CONTEXT, type ForDateFieldContext } from './date-field-context';
 import { FOR_DATE_FIELD_DEFAULTS } from 'forty-cdk/defaults';
 

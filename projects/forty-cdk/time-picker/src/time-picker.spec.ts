@@ -23,7 +23,8 @@ import {
   type DismissibleLayerMountOptions,
   type FormControlMountResult,
 } from '../../src/test-utils/contract';
-import { type DateAdapter, FOR_DATE_ADAPTER, type VetoableNativeEvent } from 'forty-cdk/core';
+import { type VetoableNativeEvent } from 'forty-cdk/core';
+import { type DateAdapter, FOR_DATE_ADAPTER } from 'forty-cdk/date-adapter';
 import { provideNativeDateAdapter } from 'forty-cdk/shared';
 import { ForField, ForFieldError, ForLabel } from 'forty-cdk/field';
 import { ForTimeField, ForTimeFieldLiteral, ForTimeFieldSegment } from 'forty-cdk/time-field';

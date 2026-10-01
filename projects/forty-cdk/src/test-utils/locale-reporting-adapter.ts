@@ -1,7 +1,7 @@
 import { inject, Injectable, type Provider, signal } from '@angular/core';
 
 import { NativeDateAdapter } from 'forty-cdk/shared';
-import { FOR_DATE_ADAPTER } from 'forty-cdk/core';
+import { FOR_DATE_ADAPTER } from 'forty-cdk/date-adapter';
 
 /**
  * A `NativeDateAdapter` whose `locale()` reads a writable signal, standing in

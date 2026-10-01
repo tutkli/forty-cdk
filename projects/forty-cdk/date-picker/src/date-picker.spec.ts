@@ -32,11 +32,11 @@ import {
 } from '../../src/test-utils/contract';
 import {
   assertTimeCapable,
-  type DateAdapter,
   type FieldGranularity,
   FOR_TIME_VALUE_SOURCE,
   type VetoableNativeEvent,
 } from 'forty-cdk/core';
+import { type DateAdapter } from 'forty-cdk/date-adapter';
 import { ForDateField, ForDateFieldLiteral, ForDateFieldSegment } from 'forty-cdk/date-field';
 import { NativeDateAdapter, provideNativeDateAdapter } from 'forty-cdk/shared';
 import {

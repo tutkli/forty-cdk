@@ -2,12 +2,8 @@ import { Component, model, provideZonelessChangeDetection, signal, viewChild } f
 import { TestBed } from '@angular/core/testing';
 import { CalendarDate, CalendarDateTime } from '@internationalized/date';
 
-import {
-  compareDateOf,
-  type DateAdapter,
-  type DateRange,
-  type TimeCapableDateAdapter,
-} from 'forty-cdk/core';
+import { compareDateOf, type DateRange } from 'forty-cdk/core';
+import { type DateAdapter, type TimeCapableDateAdapter } from 'forty-cdk/date-adapter';
 import { flush, renderHost, type RenderResult } from '../../src/test-utils';
 import { buildMonthMatrix } from './build-month-matrix';
 import { ForCalendar } from './calendar';

@@ -1,4 +1,5 @@
-import { assertTimeCapable, type DateAdapter, type TimeCapableDateAdapter } from './date-adapter';
+import type { DateAdapter, TimeCapableDateAdapter } from 'forty-cdk/date-adapter';
+import { assertTimeCapable } from './date-adapter';
 
 /**
  * The granularity at which a date control serializes its value: a bare calendar

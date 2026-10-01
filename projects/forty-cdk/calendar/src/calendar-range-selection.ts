@@ -1,6 +1,7 @@
 import { computed, signal, type Signal, type WritableSignal } from '@angular/core';
 
-import { compareDateOf, type DateAdapter, type DateRange } from 'forty-cdk/core';
+import { compareDateOf, type DateRange } from 'forty-cdk/core';
+import { type DateAdapter } from 'forty-cdk/date-adapter';
 
 /**
  * The reactive surface a `ForCalendar` root supplies to its

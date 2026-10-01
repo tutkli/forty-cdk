@@ -2,7 +2,6 @@ export const CORE_PUBLISHERS = {
   shared: [
     'accessibleTextContent',
     'assertTimeCapable',
-    'DateAdapter',
     'DateRange',
     'DateSegmentType',
     'DragPreview',
@@ -12,7 +11,6 @@ export const CORE_PUBLISHERS = {
     'FloatingAlign',
     'FloatingFallbackAxisSideDirection',
     'FloatingSide',
-    'FOR_DATE_ADAPTER',
     'FOR_FIELDSET_CONTEXT',
     'FOR_ID_SALT',
     'FOR_MENU_CONTEXT',
@@ -37,7 +35,6 @@ export const CORE_PUBLISHERS = {
     'SegmentType',
     'SwipeDirection',
     'SwipeEventDetail',
-    'TimeCapableDateAdapter',
     'TimeGranularity',
     'TimeSegmentType',
     'VetoableEvent',

@@ -1,5 +1,4 @@
 export type {
-  DateAdapter,
   DateRange,
   DateSegmentType,
   DragPreview,
@@ -17,7 +16,6 @@ export type {
   SegmentType,
   SwipeDirection,
   SwipeEventDetail,
-  TimeCapableDateAdapter,
   TimeGranularity,
   TimeSegmentType,
   VetoableEvent,
@@ -27,7 +25,6 @@ export type {
 export {
   accessibleTextContent,
   assertTimeCapable,
-  FOR_DATE_ADAPTER,
   FOR_FIELDSET_CONTEXT,
   FOR_ID_SALT,
   injectDateAdapter,
@@ -47,4 +44,9 @@ export type {
   Point,
 } from 'forty-cdk/core-overlay';
 export { FOR_MENU_CONTEXT } from 'forty-cdk/core-overlay';
-export { NativeDateAdapter, provideNativeDateAdapter } from './native-date-adapter';
+export type { DateAdapter, TimeCapableDateAdapter } from 'forty-cdk/date-adapter';
+export {
+  FOR_DATE_ADAPTER,
+  NativeDateAdapter,
+  provideNativeDateAdapter,
+} from 'forty-cdk/date-adapter';

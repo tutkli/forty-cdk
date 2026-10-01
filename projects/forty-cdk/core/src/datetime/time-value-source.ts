@@ -1,5 +1,5 @@
 import { InjectionToken, type ModelSignal } from '@angular/core';
-import type { DateAdapter } from './date-adapter';
+import type { DateAdapter } from 'forty-cdk/date-adapter';
 
 /**
  * Shared contract implemented by both `ForTimeField` and `ForTimePicker`. The

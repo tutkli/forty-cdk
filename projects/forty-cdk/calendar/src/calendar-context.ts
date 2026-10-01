@@ -1,6 +1,7 @@
 import { inject, InjectionToken, type Signal } from '@angular/core';
 
-import { type DateAdapter, orphanContextError, type WritingDirection } from 'forty-cdk/core';
+import { orphanContextError, type WritingDirection } from 'forty-cdk/core';
+import { type DateAdapter } from 'forty-cdk/date-adapter';
 
 /** The active display mode of a `ForCalendar`. */
 export type CalendarView = 'day' | 'month' | 'year';

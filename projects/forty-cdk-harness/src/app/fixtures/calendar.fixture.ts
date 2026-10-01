@@ -15,7 +15,8 @@ import {
   ForCalendarYearGrid,
   ForCalendarYearSelect,
 } from 'forty-cdk/calendar';
-import { type DateRange, provideNativeDateAdapter } from 'forty-cdk/shared';
+import { provideNativeDateAdapter } from 'forty-cdk/date-adapter';
+import { type DateRange } from 'forty-cdk/shared';
 
 import { queryFlag } from './_query-flag';
 

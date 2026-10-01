@@ -8,7 +8,6 @@ import {
 import {
   accessibleTextContent as coreAccessibleTextContent,
   assertTimeCapable as coreAssertTimeCapable,
-  FOR_DATE_ADAPTER as CORE_FOR_DATE_ADAPTER,
   FOR_FIELDSET_CONTEXT as CORE_FOR_FIELDSET_CONTEXT,
   injectDateAdapter as coreInjectDateAdapter,
 } from 'forty-cdk/core';
@@ -26,7 +25,6 @@ import {
 
 describe('forty-cdk/shared', () => {
   it('re-exports the core runtime values rather than redeclaring them', () => {
-    expect(FOR_DATE_ADAPTER).toBe(CORE_FOR_DATE_ADAPTER);
     expect(FOR_FIELDSET_CONTEXT).toBe(CORE_FOR_FIELDSET_CONTEXT);
     expect(FOR_MENU_CONTEXT).toBe(CORE_FOR_MENU_CONTEXT);
     expect(assertTimeCapable).toBe(coreAssertTimeCapable);

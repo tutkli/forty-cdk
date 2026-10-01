@@ -15,7 +15,6 @@ import {
   resolveTextRecord,
   type SegmentEditorContext,
   serializeISOTime,
-  type TimeCapableDateAdapter,
   TimeFieldEngine,
   type TimeGranularity,
   type TimeSegmentType,
@@ -23,6 +22,7 @@ import {
   type WritingDirection,
   hostAriaLabel,
 } from 'forty-cdk/core';
+import { type TimeCapableDateAdapter } from 'forty-cdk/date-adapter';
 import {
   FOR_TIME_RANGE_FIELD_CONTEXT,
   type ForTimeRangeFieldContext,

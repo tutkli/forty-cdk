@@ -12,7 +12,7 @@ A trigger that opens a floating listbox of generated time slots over a pluggable
 Headless and styleless: a combobox trigger opens a floating listbox of generated time slots. Value is typed as your adapter's date-time type `D`.
 
 Requires a time-capable adapter:
-[`provideNativeDateAdapter()`](../shared/src/native-date-adapter.ts) or the
+[`provideNativeDateAdapter()`](../date-adapter) or the
 `@internationalized/date` adapter from `forty-cdk/internationalized-date`.
 
 ## Anatomy

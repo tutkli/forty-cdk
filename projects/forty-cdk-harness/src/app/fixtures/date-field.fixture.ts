@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
-import { provideNativeDateAdapter } from 'forty-cdk/shared';
+import { provideNativeDateAdapter } from 'forty-cdk/date-adapter';
 import { ForDateField, ForDateFieldLiteral, ForDateFieldSegment } from 'forty-cdk/date-field';
 
 import { queryFlag } from './_query-flag';

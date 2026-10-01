@@ -17,7 +17,6 @@ import {
   clampToBounds,
   composeWithTime,
   createSingleSlot,
-  type DateAdapter,
   type FieldGranularity,
   FOR_DATE_FIELD_HOST,
   FOR_TIME_VALUE_SOURCE,
@@ -26,6 +25,7 @@ import {
   injectHiddenInput,
   serializeISODate,
 } from 'forty-cdk/core';
+import { type DateAdapter } from 'forty-cdk/date-adapter';
 import { DatePickerBase } from './date-picker-base';
 import {
   FOR_DATE_PICKER_CONTEXT,

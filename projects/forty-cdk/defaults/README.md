@@ -38,7 +38,7 @@ Measured on a production build of an app with four lazy routes and these provide
 
 A pair you do not import is not bundled: every token is a top-level `new InjectionToken(...)`, which a bundler drops when nothing reads it.
 
-`NativeDateAdapter` and `provideNativeDateAdapter` follow the same rule from `forty-cdk/shared`, next to the `FOR_DATE_ADAPTER` token they provide; `forty-cdk/calendar` re-exports them too.
+A date adapter follows the same rule from [`forty-cdk/date-adapter`](../date-adapter): `NativeDateAdapter`, `provideNativeDateAdapter` and the `FOR_DATE_ADAPTER` token they provide import nothing but `@angular/core`, so providing one next to these pairs keeps the primitives and the code they share out of `main`.
 
 ## API
 

@@ -1,6 +1,7 @@
 import { computed } from '@angular/core';
 
-import { Collection, type DateAdapter } from 'forty-cdk/core';
+import { Collection } from 'forty-cdk/core';
+import { type DateAdapter } from 'forty-cdk/date-adapter';
 import { buildMonthMatrix } from './build-month-matrix';
 import type { CalendarWeek, CalendarWeekday, ForCalendarCellHandle } from './calendar-context';
 import { isCalendarActivationKey, resolveCalendarGridMove } from './calendar-keyboard';

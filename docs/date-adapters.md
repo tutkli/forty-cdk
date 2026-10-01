@@ -11,7 +11,7 @@ An adapter is required. The date primitives resolve it through `injectDateAdapte
 | Provider                                | Date type `D`                              | Install                                                      |
 | --------------------------------------- | ------------------------------------------ | ------------------------------------------------------------ |
 | `provideInternationalizedDateAdapter()` | `CalendarDate` (`@internationalized/date`) | `@internationalized/date`, an optional peer you add yourself |
-| `provideNativeDateAdapter()`            | `Date`                                     | Nothing; it ships with `forty-cdk/shared`                    |
+| `provideNativeDateAdapter()`            | `Date`                                     | Nothing; it ships with `forty-cdk/date-adapter`              |
 
 <!-- snippet: fragment -->
 
@@ -23,6 +23,8 @@ bootstrapApplication(App, {
   providers: [provideInternationalizedDateAdapter()],
 });
 ```
+
+Import `provideNativeDateAdapter`, `NativeDateAdapter` and `FOR_DATE_ADAPTER` from [`forty-cdk/date-adapter`](../projects/forty-cdk/date-adapter/README.md). `forty-cdk/shared` re-exports them, but a root provider imported from there loads the code every primitive shares before the application bootstraps, about 36 kB in a four-primitive app; the entry point's README has the measurement.
 
 **Prefer the `@internationalized/date` adapter.** Its values are immutable, so a new value is a new reference and a `computed()` over a date recomputes when, and only when, the date actually changed. `Date` is mutable and compares by identity, which makes the same derivation a source of missed updates in code that does not defensively copy. The package works in every browser today with no polyfill.
 
@@ -57,7 +59,7 @@ It stays a **peer** rather than a bundled dependency for a second reason: you co
 
 ## Writing your own adapter
 
-`DateAdapter<D>` is published from [`forty-cdk/shared`](../projects/forty-cdk/shared/README.md) and carries the library's semver guarantee, so an adapter over another date package (Temporal, Luxon, `date-fns`) is a supported thing to write. Implement the contract, provide it through `FOR_DATE_ADAPTER`, and the whole family works over your type.
+`DateAdapter<D>` is published from [`forty-cdk/date-adapter`](../projects/forty-cdk/date-adapter/README.md) and carries the library's semver guarantee, so an adapter over another date package (Temporal, Luxon, `date-fns`) is a supported thing to write. Implement the contract, provide it through `FOR_DATE_ADAPTER`, and the whole family works over your type.
 
 Two limits are worth knowing before you start.
 
@@ -77,8 +79,7 @@ The shipped adapters report `null`, so the runtime locale applies until you say 
 
 ```ts
 import { Injectable, signal } from '@angular/core';
-import { NativeDateAdapter } from 'forty-cdk/shared';
-import { FOR_DATE_ADAPTER } from 'forty-cdk/shared';
+import { FOR_DATE_ADAPTER, NativeDateAdapter } from 'forty-cdk/date-adapter';
 
 @Injectable({ providedIn: 'root' })
 export class AppDateAdapter extends NativeDateAdapter {
@@ -99,4 +100,5 @@ A custom adapter that implements `format` itself should fall back to its own `lo
 - [Calendar](../projects/forty-cdk/calendar/README.md): the grid, and the adapter table in its own words.
 - [Date Field](../projects/forty-cdk/date-field/README.md) and [Time Field](../projects/forty-cdk/time-field/README.md): the segmented editors, where granularity decides which contract is required.
 - [Date Picker](../projects/forty-cdk/date-picker/README.md) and [Time Picker](../projects/forty-cdk/time-picker/README.md): the overlay compositions.
-- [Shared](../projects/forty-cdk/shared/README.md): where `DateAdapter`, `TimeCapableDateAdapter` and `DateRange` are declared.
+- [Date adapter](../projects/forty-cdk/date-adapter/README.md): where `DateAdapter`, `TimeCapableDateAdapter`, `FOR_DATE_ADAPTER` and `NativeDateAdapter` are declared.
+- [Shared](../projects/forty-cdk/shared/README.md): where `DateRange` and the segment types are published.

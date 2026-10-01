@@ -92,18 +92,10 @@ export {
   resolveActiveElement,
   resolveEventTarget,
 } from './composed-tree/composed-tree';
-export {
-  assertTimeCapable,
-  compareDateOf,
-  type DateAdapter,
-  FOR_DATE_ADAPTER,
-  injectDateAdapter,
-  type TimeCapableDateAdapter,
-} from './datetime/date-adapter';
+export { assertTimeCapable, compareDateOf, injectDateAdapter } from './datetime/date-adapter';
 export { DateFieldEngine } from './datetime/date-field-engine';
 export { type DateRange } from './datetime/date-range';
 export { type FieldGranularity } from './datetime/date-segments';
-export { createFormatterCache } from './datetime/formatter-cache';
 export { ForDateTimeLiteralBase } from './datetime/literal-directive';
 export { RangeFieldComposer } from './datetime/range-field-composer';
 export { ForDateTimeSegmentBase, type SegmentEditorContext } from './datetime/segment-directive';

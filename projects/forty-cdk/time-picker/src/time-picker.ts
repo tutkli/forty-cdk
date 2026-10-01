@@ -20,7 +20,6 @@ import {
   FOR_TIME_FIELD_HOST,
   fortyError,
   injectDateAdapter,
-  type TimeCapableDateAdapter,
   type WritingDirection,
   injectHiddenInput,
   type VetoableEvent,
@@ -31,6 +30,7 @@ import {
   timeSentinel,
   composeWithTime,
 } from 'forty-cdk/core';
+import { type TimeCapableDateAdapter } from 'forty-cdk/date-adapter';
 import { AnchoredFormValueControlBase, ListboxOverlayController } from 'forty-cdk/core-overlay';
 import {
   buildTimeSlots,

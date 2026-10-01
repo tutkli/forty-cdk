@@ -17,7 +17,6 @@ import type { ReferenceElement } from '@floating-ui/dom';
 import {
   adoptHostId,
   createVetoableNativeEvent,
-  type DateAdapter,
   type DateRange,
   fortyError,
   IdGenerator,
@@ -28,6 +27,7 @@ import {
   type VetoableNativeEvent,
   type WritingDirection,
 } from 'forty-cdk/core';
+import { type DateAdapter } from 'forty-cdk/date-adapter';
 import { AnchoredFormValueControlBase, anchorSlot } from 'forty-cdk/core-overlay';
 import { FOR_CALENDAR_CONTEXT, type ForCalendarContext } from 'forty-cdk/calendar';
 import type { ForDatePickerContext } from './date-picker-context';

@@ -1,4 +1,4 @@
-import { type DateAdapter } from 'forty-cdk/core';
+import { type DateAdapter } from 'forty-cdk/date-adapter';
 
 /**
  * The reactive root surface every calendar sub-grid (day / month / year) reads

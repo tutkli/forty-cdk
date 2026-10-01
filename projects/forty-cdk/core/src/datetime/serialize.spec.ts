@@ -1,4 +1,4 @@
-import type { DateAdapter, TimeCapableDateAdapter } from './date-adapter';
+import type { DateAdapter, TimeCapableDateAdapter } from 'forty-cdk/date-adapter';
 import { NativeDateAdapter } from 'forty-cdk/shared';
 import {
   clampToBounds,
