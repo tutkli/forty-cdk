@@ -15,6 +15,7 @@ import { ForFileUploadTrigger } from './file-upload-trigger';
       forFileUpload
       [accept]="accept()"
       [multiple]="multiple()"
+      [maxSize]="maxSize()"
       [directory]="directory()"
       [disabled]="disabled()"
       (filesChange)="onFiles($event)"
@@ -28,6 +29,7 @@ import { ForFileUploadTrigger } from './file-upload-trigger';
 class FileUploadHost {
   readonly accept = signal<string | null>(null);
   readonly multiple = signal(false);
+  readonly maxSize = signal<number | null>(null);
   readonly directory = signal(false);
   readonly disabled = signal(false);
   readonly capturedFiles = signal<FileList | null>(null);
@@ -572,6 +574,138 @@ describe('ForFileUpload', () => {
 
       expect(instance.rejectedFiles()?.map((r) => r.file.name)).toEqual(['b.exe']);
       expect(setValue).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('size limit', () => {
+    beforeEach(() => {
+      vi.stubGlobal(
+        'DataTransfer',
+        class {
+          readonly #files: File[] = [];
+          readonly items = { add: (file: File): void => void this.#files.push(file) };
+          get files(): FileList {
+            return this.#files as unknown as FileList;
+          }
+        },
+      );
+    });
+
+    const setInputFiles = (input: HTMLInputElement, files: File[]): void => {
+      Object.defineProperty(input, 'files', {
+        value: files as unknown as FileList,
+        configurable: true,
+        writable: true,
+      });
+    };
+
+    const setup = async (maxSize: number | null, multiple = false) => {
+      const { el, instance, flush } = renderHost(FileUploadHost);
+      instance.maxSize.set(maxSize);
+      instance.multiple.set(multiple);
+      await flush();
+      const input = el.querySelector<HTMLInputElement>('input[forFileUploadInput]')!;
+      setInputFiles(input, []);
+      const zone = el.querySelector<HTMLElement>('[forFileUpload]')!;
+      const drop = async (files: File[]): Promise<void> => {
+        const event = new Event('drop', { bubbles: true, cancelable: true });
+        Object.defineProperty(event, 'dataTransfer', {
+          value: { files: files as unknown as FileList, dropEffect: 'none' },
+        });
+        zone.dispatchEvent(event);
+        await flush();
+      };
+      const choose = async (files: File[]): Promise<void> => {
+        setInputFiles(input, files);
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+        await flush();
+      };
+      return { instance, flush, input, drop, choose };
+    };
+
+    const file = (name: string, bytes: number): File =>
+      new File(['x'.repeat(bytes)], name, { type: 'text/plain' });
+
+    const names = (files: FileList | null | undefined): string[] =>
+      Array.from(files ?? []).map((f) => f.name);
+
+    const reasons = (rejections: ForFileUploadRejection[] | null): [string, string][] =>
+      (rejections ?? []).map((r) => [r.file.name, r.reason]);
+
+    it('rejects a dropped file larger than maxSize with reason "size" and keeps it out of the input', async () => {
+      const { instance, input, drop } = await setup(4, true);
+
+      await drop([file('big.txt', 5), file('small.txt', 3)]);
+
+      expect(names(instance.capturedFiles())).toEqual(['small.txt']);
+      expect(reasons(instance.rejectedFiles())).toEqual([['big.txt', 'size']]);
+      expect(names(input.files)).toEqual(['small.txt']);
+    });
+
+    it('rejects an oversized dialog selection with reason "size" and clears the native input', async () => {
+      const { instance, input, choose } = await setup(4);
+      const setValue = vi.spyOn(input, 'value', 'set');
+
+      await choose([file('big.txt', 5)]);
+
+      expect(instance.capturedFiles()).toBeNull();
+      expect(reasons(instance.rejectedFiles())).toEqual([['big.txt', 'size']]);
+      expect(setValue).toHaveBeenCalledWith('');
+    });
+
+    it('removes an oversized file from a mixed dialog selection before syncing the input', async () => {
+      const { instance, input, choose } = await setup(4, true);
+
+      await choose([file('big.txt', 5), file('small.txt', 2)]);
+
+      expect(names(instance.capturedFiles())).toEqual(['small.txt']);
+      expect(reasons(instance.rejectedFiles())).toEqual([['big.txt', 'size']]);
+      expect(names(input.files)).toEqual(['small.txt']);
+    });
+
+    it('accepts a file of exactly maxSize bytes', async () => {
+      const { instance, drop } = await setup(4);
+
+      await drop([file('exact.txt', 4)]);
+
+      expect(names(instance.capturedFiles())).toEqual(['exact.txt']);
+      expect(instance.rejectedFiles()).toBeNull();
+    });
+
+    it('does not let an oversized first file take the single slot when multiple is off', async () => {
+      const { instance, drop } = await setup(4);
+
+      await drop([file('big.txt', 5), file('first.txt', 1), file('second.txt', 1)]);
+
+      expect(names(instance.capturedFiles())).toEqual(['first.txt']);
+      expect(reasons(instance.rejectedFiles())).toEqual([
+        ['big.txt', 'size'],
+        ['second.txt', 'multiple'],
+      ]);
+    });
+
+    it('reports a file that fails both accept and maxSize as "accept"', async () => {
+      const { instance, flush, drop } = await setup(4);
+      instance.accept.set('image/*');
+      await flush();
+
+      await drop([file('notes.txt', 5)]);
+
+      expect(instance.capturedFiles()).toBeNull();
+      expect(reasons(instance.rejectedFiles())).toEqual([['notes.txt', 'accept']]);
+    });
+
+    it('lifts the limit when maxSize returns to null', async () => {
+      const { instance, flush, drop } = await setup(4);
+
+      await drop([file('big.txt', 5)]);
+      expect(instance.capturedFiles()).toBeNull();
+
+      instance.maxSize.set(null);
+      await flush();
+      await drop([file('big.txt', 5)]);
+
+      expect(names(instance.capturedFiles())).toEqual(['big.txt']);
     });
   });
 

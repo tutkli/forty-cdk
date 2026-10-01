@@ -1,4 +1,4 @@
-import { booleanAttribute, Directive, input, output, signal } from '@angular/core';
+import { booleanAttribute, Directive, input, numberAttribute, output, signal } from '@angular/core';
 import { createSingleSlot } from 'forty-cdk/core';
 
 import { FOR_FILE_UPLOAD_CONTEXT, type ForFileUploadContext } from './file-upload-context';
@@ -18,9 +18,10 @@ import type { ForFileUploadRejection } from './file-upload-rejection';
  * dialog's default filter, so a drop, or a dialog selection made through the
  * "All files" override, could otherwise leak a rejected file into `filesChange`
  * and into the input's `files` (native form submission). Files that fail the
- * filter are emitted on `filesRejected` instead, as are valid files that
- * arrive past the single-file cap of `multiple="false"` — every selected file
- * lands in exactly one of the two outputs.
+ * filter are emitted on `filesRejected` instead, as are files larger than
+ * `maxSize` and valid files that arrive past the single-file cap of
+ * `multiple="false"` — every selected file lands in exactly one of the two
+ * outputs.
  *
  * Reflects `data-dragging` while files are dragged over the zone and
  * `data-disabled` when the input is disabled.
@@ -49,6 +50,13 @@ export class ForFileUpload implements ForFileUploadContext {
    * `webkitRelativePath` so the consumer can reconstruct the tree).
    */
   readonly directory = input(false, { transform: booleanAttribute });
+  /**
+   * Largest accepted file size, in bytes; a file of exactly this size is
+   * accepted. `null` (default) sets no limit.
+   */
+  readonly maxSize = input<number | null>(null, {
+    transform: (v: unknown): number | null => (v == null ? null : numberAttribute(v)),
+  });
   /** Whether the file upload zone and all its pieces are disabled. */
   readonly disabled = input(false, { transform: booleanAttribute });
   /** Emitted when files are chosen via the dialog or dropped onto the zone. */
@@ -57,8 +65,9 @@ export class ForFileUpload implements ForFileUploadContext {
    * Emitted with the files that were not accepted, each paired with the
    * constraint that refused it: `'accept'` for a file that failed the `accept`
    * filter (from a drop or a dialog selection made through the "All files"
-   * override), `'multiple'` for a valid file that arrived past the single-file
-   * cap of `multiple="false"`. Fires only when at least one file was refused.
+   * override), `'size'` for a file larger than `maxSize`, `'multiple'` for a
+   * valid file that arrived past the single-file cap of `multiple="false"`.
+   * Fires only when at least one file was refused.
    */
   readonly filesRejected = output<ForFileUploadRejection[]>();
 
@@ -92,11 +101,11 @@ export class ForFileUpload implements ForFileUploadContext {
   }
 
   /**
-   * Filters `files` against `accept` and against the single-file cap of
-   * `multiple="false"`, syncs the registered input's `files` for native form
-   * submission, then emits `filesChange` with the accepted set and
+   * Filters `files` against `accept`, `maxSize` and the single-file cap of
+   * `multiple="false"`, in that order, syncs the registered input's `files`
+   * for native form submission, then emits `filesChange` with the accepted set and
    * `filesRejected` with every refused file plus the reason it was refused.
-   * Shared by the drag&drop and dialog paths so both constraints are enforced
+   * Shared by the drag&drop and dialog paths so every constraint is enforced
    * identically through either entry point and they cannot diverge. Every
    * selected file lands in exactly one of the two outputs. When nothing is
    * accepted and `files` is the registered input's own `FileList` (the dialog
@@ -109,10 +118,12 @@ export class ForFileUpload implements ForFileUploadContext {
 
     const input = this.#input.value();
     const single = !this.multiple();
+    const maxSize = this.maxSize();
     const accepted: File[] = [];
     const rejected: ForFileUploadRejection[] = [];
     for (const file of all) {
       if (!this.#acceptsFile(file)) rejected.push({ file, reason: 'accept' });
+      else if (maxSize !== null && file.size > maxSize) rejected.push({ file, reason: 'size' });
       else if (single && accepted.length === 1) rejected.push({ file, reason: 'multiple' });
       else accepted.push(file);
     }
