@@ -207,7 +207,8 @@ Open the picker and click a first day: the trigger keeps its placeholder, becaus
 | `closeOnSelect`     | `input<boolean>`                                 | Close the surface after a date is picked. Honoured at `granularity="day"`, and at any granularity with `anatomy="field"`.<br>**Default:** `true`                                                               |
 | `anatomy`           | `input<'trigger' \| 'field'>`                    | Which piece is the control. `'field'` makes a projected `[forDateField]` the control and the trigger a plain button; see [Field anatomy](#field-anatomy).<br>**Default:** `'trigger'`                          |
 | `granularity`       | `input<'day' \| 'hour' \| 'minute' \| 'second'>` | Date-time precision. `'day'` (default) is a pure date picker; coarser-than-day off composes a time field.<br>**Default:** `'day'`                                                                              |
-| `hourCycle`         | `input<12 \| 24 \| null>`                        | 12/24-hour cycle for the value display (and typically the projected `[forTimeField]`).<br>**Default:** `null` → the scope's `hourCycle` (`provideForDatePickerDefaults`), then the locale                      |
+| `hourCycle`         | `input<12 \| 24 \| null>`                        | 12/24-hour cycle for the value display; a projected time field takes `resolvedHourCycle()`.<br>**Default:** `null` → the scope's `hourCycle` (`provideForDatePickerDefaults`), then the locale                 |
+| `resolvedHourCycle` | `Signal<12 \| 24 \| null>`                       | The effective cycle: `hourCycle`, then the scope's, or `null` for the locale. Bind it to a projected time field's `[hourCycle]`.<br>**Default:** —                                                             |
 | `modal`             | `input<boolean>`                                 | Trap focus + inert background + scroll lock (centered dialog) instead of an anchored popover.<br>**Default:** `false`                                                                                          |
 | `dismissible`       | `input<boolean>`                                 | Escape / outside-pointer dismiss the surface.<br>**Default:** `true`                                                                                                                                           |
 | `returnFocus`       | `input<boolean>`                                 | Return focus to the trigger on close.<br>**Default:** `true`                                                                                                                                                   |
@@ -314,7 +315,7 @@ The content is a field boundary. Inside a [`[forField]`](../field/README.md#how-
     <div
       forTimeField
       [value]="picker.value()"
-      [hourCycle]="picker.hourCycle()"
+      [hourCycle]="picker.resolvedHourCycle()"
       #field="forTimeField"
     >
       @for (seg of field.segments(); track seg.id) { @if (seg.isLiteral) {
@@ -329,6 +330,8 @@ The content is a field boundary. Inside a [`[forField]`](../field/README.md#how-
 ```
 
 The value display (`[forDatePickerValue]`) automatically appends a two-digit hour and minute to its formatting when `granularity > 'day'` and you haven't set time fields in `formatOptions`, so it matches the projected `[forTimeField]`. The resolved `hourCycle` applies to that default and to time fields you set yourself, unless `formatOptions` sets `hour12` or `hourCycle`.
+
+Bind the time field's `[hourCycle]` to `picker.resolvedHourCycle()`, not `picker.hourCycle()`. The raw input is `null` when the cycle comes from `provideForDatePickerDefaults`, and the time field would then fall back to its own defaults and the locale, so an `en-US` browser would show `14:30` on the trigger and `2:30 PM` in the panel. The same applies to a projected `[forTimePicker]`.
 
 ## Field anatomy
 

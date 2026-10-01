@@ -95,7 +95,7 @@ import { FOR_DATE_PICKER_DEFAULTS } from './date-picker-defaults';
  *   @if (open()) {
  *     <div forDatePickerContent>
  *       <div forCalendar [value]="picker.value()" [min]="picker.minDate()">…</div>
- *       <div forTimeField [value]="picker.value()" [hourCycle]="picker.hourCycle()">…</div>
+ *       <div forTimeField [value]="picker.value()" [hourCycle]="picker.resolvedHourCycle()">…</div>
  *     </div>
  *   }
  * </div>
@@ -165,11 +165,11 @@ export class ForDatePicker<D>
   readonly granularity = input<FieldGranularity>('day');
 
   /**
-   * 12- or 24-hour cycle forwarded to `[forDatePickerValue]`'s formatting (and
-   * typically to the projected `[forTimeField][hourCycle]`). When `null`
+   * 12- or 24-hour cycle for `[forDatePickerValue]`'s formatting. When `null`
    * (default) the scope's `hourCycle` (`provideForDatePickerDefaults`)
    * applies, then the locale's. Only meaningful when
-   * `granularity > 'day'`.
+   * `granularity > 'day'`. A projected time field or time picker takes
+   * `resolvedHourCycle()`, not this input.
    */
   readonly hourCycle = input<12 | 24 | null>(null);
 
@@ -188,7 +188,9 @@ export class ForDatePicker<D>
 
   /**
    * The effective hour cycle: `hourCycle`, then the scope's
-   * (`provideForDatePickerDefaults`), or `null` to follow the locale.
+   * (`provideForDatePickerDefaults`), or `null` to follow the locale. Bind it
+   * to a projected `[forTimeField]` / `[forTimePicker]`'s `[hourCycle]` so the
+   * surface shows the same cycle as the value display.
    */
   readonly resolvedHourCycle = computed(
     () => this.hourCycle() ?? this.positioningDefaults.hourCycle,
