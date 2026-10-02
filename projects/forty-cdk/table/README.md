@@ -177,11 +177,12 @@ One grid-mode table composing six features on the same element: multiple row sel
 
 ### `ForTableRow`
 
-| Property     | Type      | Description                                                                                           |
-| ------------ | --------- | ----------------------------------------------------------------------------------------------------- |
-| `value`      | `unknown` | Selection identity for this row. Leave unset for non-selectable rows.<br>**Default:** `undefined`     |
-| `level`      | `number`  | 1-based tree depth for `aria-level` in `mode="treegrid"`. Ignored in other modes.<br>**Default:** `1` |
-| `expandable` | `boolean` | Marks this row as an expandable parent; emits `aria-expanded` + `data-state`.<br>**Default:** `false` |
+| Property     | Type                               | Description                                                                                                                                                                                                                |
+| ------------ | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`      | `unknown`                          | Selection identity for this row. Leave unset for non-selectable rows.<br>**Default:** `undefined`                                                                                                                          |
+| `level`      | `number`                           | 1-based tree depth for `aria-level` in `mode="treegrid"`. Ignored in other modes.<br>**Default:** `1`                                                                                                                      |
+| `expandable` | `boolean`                          | Marks this row as an expandable parent; emits `aria-expanded` + `data-state`.<br>**Default:** `false`                                                                                                                      |
+| `activate`   | `output<TableRawRowActivateEvent>` | `grid` / `treegrid` only: fires on a row click outside an interactive descendant and on the `Enter` the root emits as `cellActivate`, with the row's `[value]` and the event. See [Activating a cell](#activating-a-cell). |
 
 ### `ForTableSelectAll`
 
@@ -495,6 +496,18 @@ The root emits `aria-rowcount` and `aria-colcount`. Per ARIA 1.2 and the APG Dat
 
 With `interactiveRows`, `<for-table-body>` forwards the same `Enter` as `(rowActivate)`, so a grid gets the keyboard half of whole-row activation while its rows still take no tab stop.
 
+A row you render yourself gets both halves from `(activate)` on `[forTableRow]`: it fires for a click anywhere on the row except an interactive descendant, and for the same `Enter` as `(cellActivate)`, with the row's `[value]` and the event. The row binds no `(click)`, so the keyboard half is never lost, and `Enter` that enters a widget, `Enter` or a click from an inner control, and `mode="table"` never emit.
+
+```html
+<div forTable mode="grid" ariaLabel="Requests" selectionBehavior="none">
+  <div role="rowgroup">
+    @for (request of requests(); track request.id) {
+    <div forTableRow [value]="request.id" (activate)="open(request)">…</div>
+    }
+  </div>
+</div>
+```
+
 ### Controls inside a cell
 
 The library's in-cell pieces (`[forTableRowSelector]`, `[forTableSelectAll]`, `[forTableColumnResizer]`) are their own tab stop in `mode="table"` and take `tabindex="-1"` in `grid` / `treegrid`, where cell entry reaches them and the grid keeps its single tab stop. The cells do not demote their descendants, so a control you add to a cell follows the same rule through `injectTableCellTabIndex()`. It answers `0` outside a `[forTable]`, so a control that also renders elsewhere can call it unconditionally:
@@ -667,12 +680,12 @@ Controls how a row click (on the row or on a cell) mutates the selection:
 </div>
 ```
 
-When you render the rows yourself, guard your own row `(click)` with `eventFromInteractiveDescendant(event)` from `forty-cdk/table`. It is the definition the table's own row interactions use, so a click on an inner control is left to that control:
+When you render the rows yourself in `grid` / `treegrid` mode, bind `(activate)` on each `[forTableRow]` instead (see [Activating a cell](#activating-a-cell)): one binding covers the click and the `Enter`, and a click on an inner control is left to that control. In `mode="table"`, where `(activate)` never fires, guard a row listener of your own with `eventFromInteractiveDescendant(event)` from `forty-cdk/table`, the definition the table's own row interactions use:
 
 <!-- snippet: fragment -->
 
 ```ts
-protected openFromRow(request: Request, event: MouseEvent): void {
+protected openFromRow(request: Request, event: MouseEvent | KeyboardEvent): void {
   if (eventFromInteractiveDescendant(event)) return;
   this.open(request);
 }

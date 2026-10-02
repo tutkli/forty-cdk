@@ -5,6 +5,20 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Table** — one activation channel for a row you render yourself
+  ([#2112](https://github.com/tutkli/forty-cdk/issues/2112)). `[forTableRow]` emits `(activate)`
+  in `grid` / `treegrid` mode for a click anywhere on the row except an interactive descendant, and
+  for the `Enter` the root emits as `cellActivate`, carrying the row's `[value]` and the event as
+  a `TableRawRowActivateEvent`. The row binds no `(click)`, so it passes
+  `@angular-eslint/template/click-events-have-key-events`, and `Enter` that enters a widget, an
+  `Enter` or a click from an inner control, and `mode="table"` never emit. **A hand-rendered row
+  that paired a guarded `(click)` with the root's `(cellActivate)` can bind `(activate)`
+  alone.**
+
 ## [0.30.0] - 2026-10-02
 
 A release about what an application loads at startup and the hooks a consumer grid or tree used to
@@ -97,8 +111,8 @@ hour cycle over your own `formatOptions`, and a windowed grid with no known tota
   un-`preventDefault`ed. It now emits `cellActivate`, is `preventDefault`ed, and on a
   `<for-table-body>` with `interactiveRows` emits `rowActivate`, which before fired only for a
   pointer click in grid mode. **A row listener that opened the record by reading `defaultPrevented`
-  on `Enter` now sees `true`**: move it to `(cellActivate)`, or drop it when `rowActivate` already
-  opens the record.
+  on `Enter` now sees `true`**: move it to `(cellActivate)`, to `[forTableRow]`'s `(activate)` on a
+  row you render yourself (0.31.0), or drop it when `rowActivate` already opens the record.
 
 - **Tree** — a `FOR_TREE_CONTEXT` provider that is not the root throws in dev mode
   ([#2074](https://github.com/tutkli/forty-cdk/issues/2074)). `[forTreeItemLabel]` and
