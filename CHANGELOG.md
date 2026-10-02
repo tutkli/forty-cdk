@@ -5,6 +5,141 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.30.0] - 2026-10-02
+
+A release about what an application loads at startup and the hooks a consumer grid or tree used to
+subclass for. Three new entry points: `forty-cdk/defaults` holds every defaults pair and
+`forty-cdk/date-adapter` the date adapter contract, so configuring the library at the application
+root no longer pulls primitives into `main`, and `forty-cdk/testing` publishes the spec helpers the
+library drives its own primitives with. A grid table emits `cellActivate` when `Enter` lands on a
+cell with no widget, `[forTableSelectAll]` takes a selection the table cannot enumerate, and a
+control you add to a cell gets its `tabindex` from `injectTableCellTabIndex()`. A tree reports every
+press on a node through a vetoable `(itemActivate)`, and its checkbox reflects `data-disabled`. A
+file upload zone rejects files larger than `maxSize`. Four changes arrive without binding anything:
+`Enter` on a widget-free grid cell is claimed, a provider of `FOR_TREE_CONTEXT` that is not the root
+throws in dev mode, the time and date-time pickers format the hour with two digits and honour the
+hour cycle over your own `formatOptions`, and a windowed grid with no known total reports
+`aria-rowcount="-1"`.
+
+### Added
+
+- **Defaults** — every defaults pair from one entry point that loads no primitive
+  ([#2037](https://github.com/tutkli/forty-cdk/issues/2037)). Each `provideFor<Primitive>Defaults`,
+  its `FOR_<PRIMITIVE>_DEFAULTS` token and its `For<Primitive>Defaults` interface are now published
+  from `forty-cdk/defaults`, which imports nothing but `@angular/core`. A provider imported from a
+  primitive's own entry point put that primitive's directives in `main`, because a root `providers`
+  array is in the startup graph and a published entry point is one module; imported from
+  `forty-cdk/defaults`, the directives stay in the lazy chunks of the routes that render them. On an
+  app with four lazy routes and the tooltip, calendar, combobox and menu pairs at the root, `main`
+  went from 281,035 B to 209,552 B raw. Each primitive still re-exports its own pair, and both paths
+  name the same token. **Import root providers from `forty-cdk/defaults`** to get the saving. The
+  defaults README lists every pair.
+
+- **Date adapter** — the adapter contract from an entry point that loads no date primitive
+  ([#2109](https://github.com/tutkli/forty-cdk/issues/2109)). `DateAdapter`,
+  `TimeCapableDateAdapter`, `FOR_DATE_ADAPTER`, `createFormatterCache`, `NativeDateAdapter` and
+  `provideNativeDateAdapter` are published from `forty-cdk/date-adapter`, which imports nothing but
+  `@angular/core`. A root date adapter imported from `forty-cdk/shared` or `forty-cdk/calendar`
+  moved the code the date and time primitives share into `main`; on the same probe app a
+  `NativeDateAdapter` subclass costs 246,013 B of `main` from `forty-cdk/shared` and 212,012 B from
+  `forty-cdk/date-adapter`. `forty-cdk/shared` and `forty-cdk/calendar` keep re-exporting the same
+  objects. **Import your adapter, or the token a hand-written one provides, from
+  `forty-cdk/date-adapter`.** The `provideInternationalizedDate*Adapter()` pair already reads from
+  it.
+
+- **Testing** — the spec helpers as `forty-cdk/testing`
+  ([#2042](https://github.com/tutkli/forty-cdk/issues/2042)). `pressKey` dispatches a cancelable
+  `keydown`, so `defaultPrevented` tells whether a primitive claimed the key; `pressWithMouse` sends
+  the `pointerdown` … `click` sequence and the focus move a dismissible overlay reacts to;
+  `pointerEvent` builds a real `PointerEvent`. `installObserverPolyfills`, `withReducedMotion` and
+  `withFlippableReducedMotion` stub the browser APIs jsdom lacks, and `createForDialogRef` /
+  `provideForDialogTesting` and `createForDrawerRef` / `provideForDrawerTesting` give a component
+  mounted outside its manager a working ref and context. The entry point imports no test runner, and
+  the library's own suite uses the same helpers. The testing README has a recipe for each.
+
+- **Table** — `cellActivate` and hooks for controls inside a cell
+  ([#2070](https://github.com/tutkli/forty-cdk/issues/2070),
+  [#2071](https://github.com/tutkli/forty-cdk/issues/2071),
+  [#2072](https://github.com/tutkli/forty-cdk/issues/2072)). In `grid` / `treegrid`, `Enter` on a
+  focused data cell that holds no widget emits the root's `(cellActivate)` with a
+  `TableCellActivateEvent` carrying the row's `[value]`, the column `name` and the event, so a grid
+  opens its record from the keyboard without a column of links; a `<for-table-body>` with
+  `interactiveRows` forwards it as `rowActivate`. `[forTableSelectAll]` gains a controlled mode for
+  a selection only its owner can count, such as "every row matching the filter": bind `[state]` and
+  handle `(toggleAll)`, and the table's `[(value)]` is left alone. `injectTableCellTabIndex()`
+  returns the `tabindex` a control you add to a cell carries (`0` in `mode="table"` or outside a
+  table, `-1` in a grid), and `eventFromInteractiveDescendant(event)` tells a row listener of your
+  own whether the event came from an inner control. All four are published from `forty-cdk/table`;
+  the README's _Activating a cell_, _Controls inside a cell_ and _Selection the table cannot
+  enumerate_ sections have the recipes.
+
+- **Tree** — a vetoable `(itemActivate)` and `data-disabled` on the checkbox
+  ([#2074](https://github.com/tutkli/forty-cdk/issues/2074),
+  [#2077](https://github.com/tutkli/forty-cdk/issues/2077)). `[forTree]` emits `(itemActivate)` once
+  per press on a node, a click on its label or checkbox or `Enter` / `Space`, on the roving and the
+  virtualized paths alike, before the selection is applied. The `ForTreeItemActivateEvent` carries
+  the node's `value` and the originating `click` / `keydown`, so modifier keys are readable, and
+  `preventDefault()` skips the selection while focus still moves. `[forTreeItemCheckbox]` reflects
+  `data-disabled` while its node is disabled by its own `[disabled]` or the root's, and
+  `ForTreeItemContext` gains `effectiveDisabled`.
+
+- **File upload** — `maxSize` rejects oversized files
+  ([#2054](https://github.com/tutkli/forty-cdk/issues/2054)). `[forFileUpload]` takes a `maxSize` in
+  bytes (default `null`, no limit); a larger file is emitted on `filesRejected` with the new reason
+  `'size'` and never reaches `filesChange` or the native input's `files`, on the dialog and the drop
+  path alike. A file of exactly `maxSize` bytes is accepted. **A `switch` over
+  `ForFileUploadRejectionReason` that checks for exhaustiveness needs a `'size'` case.**
+
+### Changed
+
+- **Table** — `Enter` on a widget-free grid data cell is claimed
+  ([#2070](https://github.com/tutkli/forty-cdk/issues/2070)). It used to do nothing and stay
+  un-`preventDefault`ed. It now emits `cellActivate`, is `preventDefault`ed, and on a
+  `<for-table-body>` with `interactiveRows` emits `rowActivate`, which before fired only for a
+  pointer click in grid mode. **A row listener that opened the record by reading `defaultPrevented`
+  on `Enter` now sees `true`**: move it to `(cellActivate)`, or drop it when `rowActivate` already
+  opens the record.
+
+- **Tree** — a `FOR_TREE_CONTEXT` provider that is not the root throws in dev mode
+  ([#2074](https://github.com/tutkli/forty-cdk/issues/2074)). `[forTreeItemLabel]` and
+  `[forTreeItemCheckbox]` report presses to the root through that token, so a value that only
+  satisfies `ForTreeContext` now throws `FORCDK-CORE-007` from the first of them to render. **A
+  wrapper aliases both tokens to its `ForTree` subclass**:
+  `{ provide: FOR_TREE_CONTEXT, useExisting: MyTree }` and
+  `{ provide: FOR_TREE_CONTAINER_CONTEXT, useExisting: MyTree }`. The tree README's _Wrapping in a
+  design system_ section and the 0.22.0 migration note now name both tokens and the
+  `inject<ForTreeContext<string>>(FOR_TREE_CONTEXT)` form that compiles
+  ([#2075](https://github.com/tutkli/forty-cdk/issues/2075)).
+
+### Fixed
+
+- **Time picker**, **Date picker** — the hour reads the same in the field and the panel
+  ([#2103](https://github.com/tutkli/forty-cdk/issues/2103)). With no time unit in `formatOptions`,
+  the time picker's slots and `[forTimePickerValue]`, and a date-time picker's
+  `[forDatePickerValue]`, formatted the hour as `'numeric'` while `[forTimeField]` pads it, so one
+  value read `1:30` beside `01 30`. They now fill in a two-digit hour. A `formatOptions` naming
+  `hour`, `minute` or `second` also gets the resolved `hourCycle` now, unless it sets `hour12` or
+  `hourCycle` itself; before, the input and the scope default were ignored as soon as you passed
+  your own options.
+
+- **Date picker** — a projected time field follows the scope's hour cycle
+  ([#2092](https://github.com/tutkli/forty-cdk/issues/2092)). The documented composition bound
+  `[hourCycle]="picker.hourCycle()"`, the raw input, which is `null` under
+  `provideForDatePickerDefaults({ hourCycle: 24 })`, so a 12-hour browser showed `14:30` on the
+  trigger and `2:30 PM` in the panel. The README and the JSDoc example now bind
+  `picker.resolvedHourCycle()`. **Change `picker.hourCycle()` to `picker.resolvedHourCycle()`** on a
+  projected `[forTimeField]` or `[forTimePicker]`.
+
+- **Table**, **Table virtualization** — a windowed grid reports an unknown total and raw rows can be
+  measured ([#2068](https://github.com/tutkli/forty-cdk/issues/2068),
+  [#2069](https://github.com/tutkli/forty-cdk/issues/2069)). A windowed grid with no `[rowCount]`
+  reported the number of mounted rows as `aria-rowcount` while each row's `aria-rowindex` was
+  absolute; it now reports `-1` while rows are mounted, and cross-window navigation is bounded by
+  the count the virtualizer can place. `[forTableRow]` now reflects its `[virtualIndex]` as
+  `data-index`, which `measureRow` needs to know which row it measures, so the raw-row snippet in
+  the table-virtualization README's _Measured row heights_ section replaces the estimate instead of
+  logging a missing-attribute warning.
+
 ## [0.29.0] - 2026-10-01
 
 A release about form fields that hold an overlay control and date and time fields that follow the
@@ -3011,7 +3146,8 @@ primitives.
 - **Display** — avatar, progress, meter, tree.
 - `forty-cdk/internationalized-date` secondary entry point exposing the `@internationalized/date` adapters for the date and time primitives.
 
-[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.29.0...HEAD
+[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.30.0...HEAD
+[0.30.0]: https://github.com/tutkli/forty-cdk/compare/v0.29.0...v0.30.0
 [0.29.0]: https://github.com/tutkli/forty-cdk/compare/v0.28.0...v0.29.0
 [0.28.0]: https://github.com/tutkli/forty-cdk/compare/v0.27.0...v0.28.0
 [0.27.0]: https://github.com/tutkli/forty-cdk/compare/v0.26.0...v0.27.0
