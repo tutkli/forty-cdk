@@ -7,6 +7,7 @@ import {
   Injector,
   input,
   numberAttribute,
+  output,
   type Signal,
 } from '@angular/core';
 
@@ -24,6 +25,20 @@ import {
   injectTableContext,
   injectTableRegistration,
 } from './table-context';
+
+/**
+ * Payload emitted by {@link ForTableRow.activate} when a row you render yourself is activated in
+ * `grid` / `treegrid` mode.
+ */
+export interface TableRawRowActivateEvent {
+  /** The row's `[value]`, or `undefined` when the row carries none. */
+  readonly value: unknown;
+  /**
+   * The originating event: the `MouseEvent` of a click, or the `Enter` `KeyboardEvent` the root
+   * reported as `cellActivate`, already `preventDefault`ed.
+   */
+  readonly event: MouseEvent | KeyboardEvent;
+}
 
 /**
  * Marks a data row (`role="row"`). Owns the registry of its data cells (for
@@ -47,6 +62,7 @@ import {
     '[attr.aria-expanded]': 'ariaExpanded()',
     '[attr.data-state]': 'expandState()',
     '(click)': 'onClick($event)',
+    '(keydown)': 'onKeydown($event)',
   },
   providers: [
     { provide: FOR_TABLE_ROW_CONTEXT, useExisting: ForTableRow },
@@ -87,6 +103,20 @@ export class ForTableRow implements ForTableRowContext {
   readonly virtualIndex = input<number | null, unknown>(null, {
     transform: (v) => (v == null ? null : numberAttribute(v)),
   });
+
+  /**
+   * Fires in `grid` / `treegrid` mode when the row is activated, carrying its `[value]` and the
+   * event: a click anywhere on the row except on an interactive descendant (the definition
+   * `eventFromInteractiveDescendant` exports), or `Enter` on one of its data cells that holds no
+   * widget, the same press the root emits as `cellActivate`. One binding therefore covers the
+   * pointer and the keyboard, so the row needs no `(click)` of its own.
+   *
+   * `Enter` that enters a cell's widget, `Enter` or a click originating from an inner control,
+   * and every event in `mode="table"`, where the row has no keyboard path, never emit. In a
+   * selectable grid a click also mutates the selection unless the root sets
+   * `selectionBehavior="none"`.
+   */
+  readonly activate = output<TableRawRowActivateEvent>();
 
   protected readonly rowIndex = computed<number | null>(() => {
     if (this.ctx.mode() === 'table') {
@@ -188,6 +218,19 @@ export class ForTableRow implements ForTableRowContext {
   }
 
   protected onClick(event: MouseEvent): void {
+    this.#select(event);
+    if (this.ctx.mode() !== 'table' && !eventFromInteractiveDescendant(event)) {
+      this.activate.emit({ value: this.value(), event });
+    }
+  }
+
+  protected onKeydown(event: KeyboardEvent): void {
+    if (this.ctx.isCellActivation(event)) {
+      this.activate.emit({ value: this.value(), event });
+    }
+  }
+
+  #select(event: MouseEvent): void {
     const v = this.value();
     if (
       this.ctx.selectionMode() === 'none' ||
