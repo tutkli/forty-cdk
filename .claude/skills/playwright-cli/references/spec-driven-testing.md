@@ -8,6 +8,8 @@ End-to-end workflow for authoring and maintaining Playwright tests using `playwr
 
 All three lean on the same mechanic: run `npx playwright test --debug=cli` in the background, then `playwright-cli attach tw-XXXX` to drive the paused page interactively. See [playwright-tests.md](playwright-tests.md) for the debug/attach mechanics and [test-generation.md](test-generation.md) for how every `playwright-cli` action emits Playwright TypeScript.
 
+In forty-cdk, only `projects/forty-cdk-harness/e2e/*.e2e.ts` is collected (`playwright.config.ts` `testDir` / `testMatch`): read every `tests/…/*.spec.ts` path below as that folder. The seed is a test in the primitive's `<primitive>.e2e.ts` that calls `gotoFixture(page, '<route>')` from `./_helpers.ts` (in place of `./fixtures`), and a new scenario goes into the primitive's existing `.e2e.ts` file rather than one file per test. Conventions are in `.claude/rules/testing.md` § E2E.
+
 ---
 
 ## 1. Planning
@@ -99,8 +101,8 @@ Map out:
 - Persistence: reload, local/session storage, URL fragments.
 - Navigation: which controls change the URL, back/forward behaviour.
 
-**Important**: Do not just open the app url with playwright-cli, always go through the test to capture any custom setup done there.
-**Important**: Stop the background test when done exploring.
+Go through the seed test rather than opening the app URL directly, so its custom setup runs.
+Stop the background test when done exploring.
 
 ### 1.4 Write the spec file
 
@@ -172,8 +174,6 @@ playwright-cli attach tw-XXXX
 # resume
 ```
 
-**Do not** just open the app url with playwright-cli, always go through the test to capture any custom setup done there.
-
 Walk the scenario's `Steps:` one by one with `playwright-cli`, treating the spec as the plan and the live app as the source of truth. If a step is vague ("click the button" — which button?), references an element that no longer exists, or contradicts the app's actual behaviour, use your judgement: update the spec to match what the app really does, then keep going. Editing the spec mid-generation is expected.
 
 Every action prints the equivalent Playwright TypeScript (see [test-generation.md](test-generation.md)):
@@ -219,11 +219,11 @@ Rules:
 - Prefix each numbered step with a `// N. <step text>` comment before its actions.
 - Use the describe group name verbatim from the spec (no `1.` ordinal).
 - Import from `./fixtures` if the project has one; otherwise `@playwright/test`.
-- **Important**: close the CLI session and stop the background test before moving to the next scenario.
+- Close the CLI session and stop the background test before moving to the next scenario.
 
 ### 2.3 Generate multiple scenarios
 
-Loop 2.2 over the targeted scenarios one at a time, restarting the seed between each so every test starts from a clean page. This is safe to parallelise due to unique generated session names - just make sure each test run is stopped.
+Loop 2.2 over the targeted scenarios one at a time, restarting the seed between each so every test starts from a clean page. Stop each test run and close its CLI session before starting the next.
 
 ### 2.4 Run generated tests
 
@@ -264,7 +264,7 @@ The test is paused at the start. Step forward or run to until just before the fa
 ```bash
 playwright-cli snapshot                # did the element change / move / rename?
 playwright-cli console                 # app-side errors?
-playwright-cli network                 # failed request? wrong payload?
+playwright-cli requests                # failed request? wrong payload?
 playwright-cli show --annotate         # ask the user to point somewhere
 ```
 
