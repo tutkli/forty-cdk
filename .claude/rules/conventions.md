@@ -32,26 +32,7 @@ Four shapes are **not** archaeology and stay where they are:
 
 `pnpm measure:comment-density` reports it, and the script (`scripts/measure-comment-density.mjs`) is a measurement rather than a gate — it is not in `postbuild`, for the same reason coverage has no threshold: a ceiling set over a number nobody has read the composition of rewards deleting whatever is cheapest, which here is the internal JSDoc on the hardest code in the library.
 
-**The first measurement (2026-08-12, `main` at `aa00d852`) is 687 files and 83 443 non-blank lines**, of which 31 974 are comment — the 38.3% #1737 opened on. The partition is what makes the number actionable, and it inverts the issue's premise:
-
-| Bucket             |  Lines | Share of non-blank | Status                             |
-| ------------------ | -----: | -----------------: | ---------------------------------- |
-| public JSDoc       | 25 747 |              30.9% | mandatory — contract only          |
-| internal JSDoc     |  4 657 |               5.6% | governed by the policy above       |
-| plain comments     |  1 521 |               1.8% | governed by the policy above       |
-| sanctioned markers |     49 |               0.1% | 23 markers — the exception, immune |
-
-**The second measurement (2026-08-12, `main` at `54343841` plus the JSDoc audit) is 83 329 non-blank lines**, of which 31 860 are comment — 38.2%, one tenth off the figure #1737 opened on. Public JSDoc is 25 641 (30.8%), the governed bucket is 6 170 lines (7.4%) and the floor is 33.3%. The audit removed 117 lines, 112 of them public JSDoc — `54343841` measured 25 753 there, six more than the table above, which is two commits earlier.
-
-**That audit worked on JSDoc _quality_ rather than volume — the distinction the public row above now draws.** Across 87 files it removed implementation narration that had reached consumer-facing blocks: internal helper names (`injectOverlayShell`, `injectModalShell`, `DismissibleLayer`), Angular mechanics (NG8110, the lazy `computed()` read order), a `contentChild` seam, `{@link}`s to bases a consumer cannot import (`DatePickerBase`, `ForDateTimeSegmentBase`), a paragraph duplicated inside a single block, and the issue links in public JSDoc — the two barrel headers keep theirs, because a `postbuild` gate reads them as specifications. Twelve blocks were rewritten to the contract they had buried, five public `For*Context` interfaces gained the header they lacked, and no whole block was deleted.
-
-**Its second pass is worth repeating, because it is derived rather than read.** Cross-reference every symbol named in a consumer-facing JSDoc block against the set a consumer can actually import — every barrel except `core` / `core-overlay` — and what is left is mechanism by construction, not by taste. That found 98 mentions of 46 internal symbols, of which the widest was one boilerplate sentence repeated across nine public inputs: each explained that the input is seeded with the `unsetInput` sentinel "rather than declared `input.required`", naming a sentinel from the non-public entry point to say something the consumer only needs one clause of — that the input is mandatory and throws in dev mode when left unbound. The residue is legitimate: a base named in an `extends` clause, and the types already deferred in `scripts/lib/unnameable-public-types.mjs`.
-
-The audit is also what narrowed the mandate: the rule it ran under — contract, not mechanism — now sits in the root `CLAUDE.md` beside the sentence it qualifies, and the public row above reads contract-only rather than untouchable.
-
-**The 20% target #1737 proposed is arithmetically unreachable and is withdrawn.** Public JSDoc alone is 30.9% of non-blank lines, so deleting every governed line in the library — including the private-field descriptions and the marker ledger — lands at a **33.4%** floor. The issue's premise that "the volume is elsewhere: block comments that argue" is the same error measured from the other side: the arguing blocks are real (the `combobox.ts` bridge comment it quotes was one) but they live inside 7.4% of non-blank lines, not inside the 38.3%.
-
-**The first wave is this policy and the instrument, plus the one site #1737 quotes.** `combobox.ts`'s auto-highlight bridge comment restated both its helper's JSDoc and the shared-pull bullet in the next section, so the source keeps the pointer and loses the argument — three lines, which is the honest size of a wave attached to a file a PR was opening anyway.
+**Public JSDoc is the bulk of the comment volume and is mandatory, so no flat-density target is reachable or meaningful.** A wave works on JSDoc _quality_ — the contract-not-mechanism line in `CLAUDE.md` — and on the governed buckets (internal JSDoc, plain comments), never on public JSDoc volume. One check is derived rather than read: cross-reference every symbol named in a consumer-facing JSDoc block against the set a consumer can import (every barrel except `core` / `core-overlay`); what is left is mechanism by construction. The residue that stays is a base named in an `extends` clause and the types deferred in `scripts/lib/unnameable-public-types.mjs`.
 
 **No percentage replaces it.** The governed bucket is judged by content, not by volume: a file that grows a private field with a non-obvious invariant should grow its comment count, and a ceiling would report that as a regression. So a wave records the figure and what it moved; the flat density stops being read as a health number at all, since it is dominated by the one bucket no wave may touch. The `--top <n>` list names the files with the widest governed blocks, which is where a wave looks first — read it as candidates, not as a work order (`eslint-rules-fixtures/*` sits high on it, and its comments are the _subject_ of the lint-rule tests).
 
@@ -64,11 +45,11 @@ The audit is also what narrowed the mandate: the rule it ran under — contract,
 - **`resource()` / `httpResource()`** — async state driven by a signal source (loading, error, value already modeled).
 - **`toSignal()` / `toObservable()`** — bridge to/from RxJS without manual `effect`-based wiring.
 
-If you genuinely need to write a signal from an `effect` (rare — usually integrating an external imperative API), document why in a comment and isolate it.
+If you genuinely need to write a signal from an `effect` (rare — usually integrating an external imperative API), isolate it and mark it with the `@sanctioned-effect` marker below.
 
 ### The sanctioned-effect marker
 
-"Document why in a comment" was for years the whole contract, which meant every review had to rediscover each carve-out's justification from scratch and no tool could tell a reasoned exception from an accident. There is now **one canonical marker**, and `forty-cdk/require-sanctioned-effect-marker` (`eslint.config.js`) fails `pnpm lint` on any `.set(` / `.update(` call inside an `effect()` callback in library source that is not covered by one. The marker is a comment on the line(s) immediately above the `effect(` call:
+A sanctioned write carries **one canonical marker**, so a reviewer can tell a reasoned exception from an accident without rediscovering its justification, and `forty-cdk/require-sanctioned-effect-marker` (`eslint.config.js`) fails `pnpm lint` on any `.set(` / `.update(` call inside an `effect()` callback in library source that is not covered by one. The marker is a comment on the line(s) immediately above the `effect(` call:
 
 ```ts
 // @sanctioned-effect(<invariant>): <why the write cannot cycle>
