@@ -484,19 +484,15 @@ describe('injectVirtualizer', () => {
       disconnect(): void {}
     }
 
-    let priorResizeObserver: unknown;
     const appended: HTMLElement[] = [];
 
     beforeEach(() => {
       RecordingResizeObserver.observed = [];
       RecordingResizeObserver.unobserved = [];
-      priorResizeObserver = (globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver;
-      (globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver =
-        RecordingResizeObserver;
+      vi.stubGlobal('ResizeObserver', RecordingResizeObserver);
     });
 
     afterEach(() => {
-      (globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver = priorResizeObserver;
       for (const el of appended.splice(0)) {
         el.remove();
       }
@@ -584,17 +580,9 @@ describe('injectVirtualizer', () => {
       }
     }
 
-    let priorResizeObserver: unknown;
-
     beforeEach(() => {
       ControlledResizeObserver.instances = [];
-      priorResizeObserver = (globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver;
-      (globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver =
-        ControlledResizeObserver;
-    });
-
-    afterEach(() => {
-      (globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver = priorResizeObserver;
+      vi.stubGlobal('ResizeObserver', ControlledResizeObserver);
     });
 
     function setScrollTop(el: HTMLElement, value: number): void {

@@ -1,32 +1,27 @@
 # Nightly worst-case unit-test schedule.
 #
-# Runs the Vitest suite under a scheduler-hostile combination that exposes
-# cross-test state leaks (polyfills, live regions, fake timers, ad-hoc body
-# children) masked by the default isolated-file schedule used in PR CI.
+# Meant to run the Vitest suite under a scheduler-hostile combination that
+# exposes cross-test state leaks (polyfills, live regions, fake timers, ad-hoc
+# body children).
 #
 # ## What is actually exercised today
 #
 # The declared worst-case profile in `vitest.config.ts` is:
 #
 #   - pool: 'forks' + singleFork: true   — one worker, one process
-#   - isolate: false                     — no per-test isolation
+#   - isolate: false                     — no per-file isolation
 #   - fileParallelism: false             — files run sequentially
 #   - sequence.shuffle: { files, tests } — randomised order each run
 #
-# The `@angular/build:unit-test` builder propagates `pool` and `isolate`
-# through to the runner (verified by reading `__vitest_worker__.config` from
-# a setup hook on `@angular/build@21.2.9`), so those two flags take effect
-# today. `fileParallelism`, `maxWorkers`, and `sequence.*` are runner-
-# top-level settings and the builder currently strips them when wrapping the
-# user config into `test.projects[0]`. They are declared in `vitest.config.ts`
-# so the moment the builder propagates user config to the runner level the
-# full worst-case profile activates without a code change.
-#
-# Even in this partial form, `pool: 'forks'` + `isolate: false` exercises
-# shared in-process state across all specs in the same file (and within the
-# same file, across tests) — which catches most of the leak classes the
-# isolated default would have hidden. See the issue history at #231 for the
-# full rationale.
+# None of it reaches the runner. On `@angular/build@22.0.3`,
+# `__vitest_worker__.config` reads the builder defaults with or without
+# FORTY_CDK_TEST_WORST_CASE: the default forks pool with several workers,
+# `isolate: false`, no shuffle. So this job runs the same schedule as
+# `pnpm test` in PR CI, which is already non-isolated: spec files share forked
+# workers, and a leak surfaces as an order-dependent failure on whichever
+# run happens to schedule the leaking file before its victim. The flags stay
+# declared so they take effect if the builder ever propagates user config to
+# the runner. See the comment block in `vitest.config.ts`.
 #
 # ## Non-blocking by design
 #

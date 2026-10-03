@@ -6,11 +6,27 @@ type ObserverGlobals = {
 };
 
 const globals = globalThis as ObserverGlobals;
+const OBSERVER_NAMES = ['ResizeObserver', 'IntersectionObserver'] as const;
 
 describe('installObserverPolyfills', () => {
-  it('starts from an environment that ships neither observer', () => {
-    expect('ResizeObserver' in globalThis).toBe(false);
-    expect('IntersectionObserver' in globalThis).toBe(false);
+  let inherited: (PropertyDescriptor | undefined)[] = [];
+
+  beforeEach(() => {
+    inherited = OBSERVER_NAMES.map((name) => Object.getOwnPropertyDescriptor(globalThis, name));
+    for (const name of OBSERVER_NAMES) {
+      delete globals[name];
+    }
+  });
+
+  afterEach(() => {
+    OBSERVER_NAMES.forEach((name, index) => {
+      const descriptor = inherited[index];
+      if (descriptor) {
+        Object.defineProperty(globalThis, name, descriptor);
+      } else {
+        delete globals[name];
+      }
+    });
   });
 
   it('installs inert constructors and deletes them again on restore', () => {
