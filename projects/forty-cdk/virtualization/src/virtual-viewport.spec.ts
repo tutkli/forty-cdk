@@ -434,19 +434,16 @@ describe('ForVirtualViewport — detached-row sweep (#1424)', () => {
     readonly viewport = viewChild.required(ForVirtualViewport);
   }
 
-  let priorResizeObserver: unknown;
   const appended: HTMLElement[] = [];
 
   beforeEach(() => {
     RecordingResizeObserver.observed = [];
     RecordingResizeObserver.unobserved = [];
-    priorResizeObserver = (globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver;
-    (globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver = RecordingResizeObserver;
+    vi.stubGlobal('ResizeObserver', RecordingResizeObserver);
     TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
   });
 
   afterEach(() => {
-    (globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver = priorResizeObserver;
     for (const el of appended.splice(0)) {
       el.remove();
     }

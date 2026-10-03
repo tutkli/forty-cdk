@@ -29,8 +29,6 @@ import { defineConfig } from 'vitest/config';
  *   that adopt this pattern instead of `Object.defineProperty` get cleanup
  *   for free.
  * - `unstubEnvs: true` — same contract for `vi.stubEnv(...)`.
- * - `isolate: true` — explicit per-pool worker isolation. This is the Vitest
- *   default today, pinned here so a future CI pool change can't silently flip it.
  * - `testTimeout: 15000` — raised from Vitest's 5000ms default. The floating-ui
  *   overlay suites (select / combobox / popover / …) drain several real
  *   macrotask hops per `flush()`; under the default parallel jsdom schedule a
@@ -44,37 +42,40 @@ import { defineConfig } from 'vitest/config';
  * If a future `@angular/build` release wires user `test.*` invariants through
  * to the runtime config, the setup-file layer becomes redundant but harmless.
  *
+ * ### Spec files share workers
+ *
+ * No `test.*` flag in this file reaches the worker: on `@angular/build@22.0.3`
+ * `__vitest_worker__.config` reads `isolate: false`, the default `forks` pool
+ * and Vitest's defaults for every mock / unstub flag, with or without
+ * `FORTY_CDK_TEST_WORST_CASE`. `isolate: false` is the builder's own project
+ * default, so every run, local and CI, executes several spec files in turn in
+ * each forked worker, and a global one file leaves behind is visible to the
+ * next. Which files share a worker depends on how long each takes, so a leak
+ * fails a spec on one run and not on the next. The suite accepts that schedule
+ * instead of forcing isolation through the builder's `isolate` option: a spec
+ * restores every global it touches, and `vi.stubGlobal` is the shape that
+ * restores an absent global by deleting it rather than assigning `undefined`.
+ *
  * ### Worst-case (nightly) overrides
  *
  * When `FORTY_CDK_TEST_WORST_CASE=true` is set in the environment, the config
  * declares the scheduler-hostile combination intended to expose test leaks
- * (polyfills, live regions, fake timers) the default isolated schedule masks:
- * single forked worker, no per-test isolation, no file parallelism, and
- * randomised file + test order. This is the schedule the nightly
- * `.github/workflows/test-shuffle.yml` job runs against; locally a contributor
- * reproduces it with `FORTY_CDK_TEST_WORST_CASE=true pnpm test`. The branch
- * is intentionally a spread-when-true so the default `pnpm test` path is
- * byte-identical to before.
+ * (polyfills, live regions, fake timers): single forked worker, no per-test
+ * isolation, no file parallelism, and randomised file + test order. The
+ * nightly `.github/workflows/test-shuffle.yml` job sets the variable; locally
+ * a contributor sets it with `FORTY_CDK_TEST_WORST_CASE=true pnpm test`. The
+ * branch is a spread-when-true so the default `pnpm test` path is unchanged.
  *
- * **Builder propagation caveat.** The `@angular/build:unit-test` builder
- * (verified against `@angular/build@21.2.9`) injects this user config under
- * `test.projects[0]` rather than at the runner top level. Vitest's runtime
- * reads `pool` and `isolate` from the per-project config, so those two flags
- * take effect today (verified by inspecting `__vitest_worker__.config` from a
- * setup hook). `fileParallelism`, `maxWorkers`, and `sequence.*` are
- * runner-top-level settings — they are merged into the project config but
- * silently dropped by the orchestrator, and `sequence.shuffle.{files,tests}`
- * therefore does **not** activate today. The flags are kept here so they
- * activate automatically the moment the Angular builder propagates user
- * config to the runner level; until then the nightly job still exercises a
- * non-isolated, single-forked schedule, which is enough to surface most
- * cross-test state leaks (the original motivation of audit #231).
+ * **The profile is inert today.** For the reason in the previous section, none
+ * of these flags reaches the worker, so the nightly job runs the same
+ * multi-worker, non-isolated, fixed-order schedule as `pnpm test`. The flags
+ * are kept so they take effect if a future `@angular/build` release
+ * propagates user config to the runner.
  */
 const worstCase = process.env['FORTY_CDK_TEST_WORST_CASE'] === 'true';
 
 export default defineConfig({
   test: {
-    isolate: true,
     testTimeout: 15000,
     clearMocks: true,
     restoreMocks: true,
