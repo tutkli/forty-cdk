@@ -197,8 +197,6 @@ export class ForMenuSubTrigger {
       return;
     }
 
-    if (parent.handleTypeahead(event) && event.key === ' ') {
-      event.preventDefault();
-    }
+    parent.handleTypeahead(event);
   }
 }

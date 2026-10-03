@@ -861,6 +861,55 @@ describe('ForListbox', () => {
       expect(fixture.componentInstance.picked()).toEqual([]);
     });
 
+    it('reaches a multi-word label, consuming the Space typed mid-buffer (issue #2119)', async () => {
+      const { el, fixture, flush } = renderHost(ListboxHost);
+      fixture.componentInstance.options.set([
+        { value: 'uae', label: 'United Arab Emirates', disabled: false },
+        { value: 'uk', label: 'United Kingdom', disabled: false },
+        { value: 'us', label: 'United States', disabled: false },
+      ]);
+      await flush();
+      optOf(el, 'uae').focus();
+
+      for (const ch of 'united') {
+        pressKey(document.activeElement!, ch);
+      }
+      await flush();
+      expect(document.activeElement).toBe(optOf(el, 'uk'));
+
+      const space = pressKey(optOf(el, 'uk'), ' ');
+      pressKey(document.activeElement!, 's');
+      await flush();
+
+      expect(space.defaultPrevented).toBe(true);
+      expect(document.activeElement).toBe(optOf(el, 'us'));
+      expect(fixture.componentInstance.picked()).toEqual([]);
+    });
+
+    it('selects the typeahead match under selectionFollowsFocus (issue #2119)', async () => {
+      const { el, fixture, flush } = renderHost(ListboxHost);
+      fixture.componentInstance.follow.set(true);
+      await flush();
+      optOf(el, 'apple').focus();
+
+      pressKey(optOf(el, 'apple'), 'b');
+      await flush();
+
+      expect(document.activeElement).toBe(optOf(el, 'banana'));
+      expect(fixture.componentInstance.picked()).toEqual(['banana']);
+    });
+
+    it('leaves the selection alone on a typeahead match without selectionFollowsFocus', async () => {
+      const { el, fixture, flush } = renderHost(ListboxHost);
+      optOf(el, 'apple').focus();
+
+      pressKey(optOf(el, 'apple'), 'b');
+      await flush();
+
+      expect(document.activeElement).toBe(optOf(el, 'banana'));
+      expect(fixture.componentInstance.picked()).toEqual([]);
+    });
+
     it('cycles through same-initial options on repeated key with wrap', async () => {
       const { el, flush } = renderHost(ListboxHost);
 

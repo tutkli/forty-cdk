@@ -69,7 +69,47 @@ describe('Typeahead', () => {
     expect(t.handle(key('a', { ctrlKey: true }))).toBe(false);
     expect(t.handle(key('a', { altKey: true }))).toBe(false);
     expect(t.handle(key('a', { metaKey: true }))).toBe(false);
+    expect(t.handle(key('ł', { ctrlKey: true }))).toBe(false);
     expect(t.buffer()).toBe('');
+  });
+
+  it('accepts a letter composed through AltGr, which reports Ctrl and Alt on Windows', () => {
+    const t = new Typeahead();
+    const altGr = { ctrlKey: true, altKey: true, modifierAltGraph: true };
+    expect(t.handle(key('ł', altGr))).toBe(true);
+    expect(t.buffer()).toBe('ł');
+  });
+
+  it('accepts a non-ASCII letter composed through the macOS Option key', () => {
+    const t = new Typeahead();
+    expect(t.handle(key('ø', { altKey: true }))).toBe(true);
+    expect(t.buffer()).toBe('ø');
+  });
+
+  it('rejects an AltGr chord with Meta held', () => {
+    const t = new Typeahead();
+    const chord = { metaKey: true, modifierAltGraph: true };
+    expect(t.handle(key('ł', chord))).toBe(false);
+    expect(t.buffer()).toBe('');
+  });
+
+  it('prevents the default of a Space it accumulates, so a native button does not click', () => {
+    const t = new Typeahead();
+    const leading = key(' ', { cancelable: true });
+    expect(t.handle(leading)).toBe(false);
+    expect(leading.defaultPrevented).toBe(false);
+
+    t.handle(key('a', { cancelable: true }));
+    const midBuffer = key(' ', { cancelable: true });
+    expect(t.handle(midBuffer)).toBe(true);
+    expect(midBuffer.defaultPrevented).toBe(true);
+  });
+
+  it('leaves the default of an accumulated character alone', () => {
+    const t = new Typeahead();
+    const letter = key('a', { cancelable: true });
+    expect(t.handle(letter)).toBe(true);
+    expect(letter.defaultPrevented).toBe(false);
   });
 
   it('ignores keydowns during IME composition (isComposing)', () => {

@@ -87,8 +87,6 @@ export class ForMenuItem {
     if (this.interaction.handleNavigation(event)) {
       return;
     }
-    if (this.ctx.handleTypeahead(event) && event.key === ' ') {
-      event.preventDefault();
-    }
+    this.ctx.handleTypeahead(event);
   }
 }

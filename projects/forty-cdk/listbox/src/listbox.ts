@@ -232,8 +232,8 @@ export class ForListbox<T = string>
   readonly dir = injectTextDirection(this._dirInput);
 
   /**
-   * Single-mode only: when true, arrow nav also selects the focused option.
-   * APG calls this optional and recommends caution — leave off unless your
+   * Single-mode only: when true, a keyboard focus move (arrow navigation or a
+   * typeahead match) also selects the focused option. APG calls this optional and recommends caution — leave off unless your
    * UX truly benefits from selection following focus. Default `false`.
    * The default is read from `provideForListboxDefaults` for the surrounding
    * scope.
@@ -479,12 +479,7 @@ export class ForListbox<T = string>
     if (target === null) {
       return;
     }
-    this.#pointerSuppression.suppress();
-    target.host.focus();
-    target.host.scrollIntoView?.({ block: 'nearest' });
-    if (!this.multiple() && this.selectionFollowsFocus() && !this.readonly()) {
-      this.#rangeEngine.selectSingle(target.value());
-    }
+    this.#focusFromKeyboard(target);
   }
 
   handleTypeahead(event: KeyboardEvent): boolean {
@@ -495,14 +490,19 @@ export class ForListbox<T = string>
       getText: (o) => accessibleTextContent(o.host),
       isDisabled: (o) => o.disabled(),
     });
-    if (!handled) {
-      return false;
-    }
     if (match) {
-      this.#pointerSuppression.suppress();
-      match.host.focus();
+      this.#focusFromKeyboard(match);
     }
-    return true;
+    return handled;
+  }
+
+  #focusFromKeyboard(target: ForListboxOptionHandle<T>): void {
+    this.#pointerSuppression.suppress();
+    target.host.focus();
+    target.host.scrollIntoView?.({ block: 'nearest' });
+    if (!this.multiple() && this.selectionFollowsFocus() && !this.readonly()) {
+      this.#rangeEngine.selectSingle(target.value());
+    }
   }
 
   isFirstFocusableOption(el: HTMLElement): boolean {
@@ -582,6 +582,9 @@ export class ForListbox<T = string>
       });
       return;
     }
+    if (event.key === ' ' && this.#typeaheadVirtualized(event)) {
+      return;
+    }
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
       this.#activateActiveDescendant();
@@ -636,13 +639,18 @@ export class ForListbox<T = string>
    * the match is seeded rather than focused, so an off-window one emits
    * `(scrollToIndex)` and settles once the option mounts.
    */
-  #typeaheadVirtualized(event: KeyboardEvent): void {
+  #typeaheadVirtualized(event: KeyboardEvent): boolean {
     const navigator = this.#requireNavigator();
-    const { pos } = navigator.resolveTypeahead(this.#typeahead, event, (entry) => entry.label);
+    const { handled, pos } = navigator.resolveTypeahead(
+      this.#typeahead,
+      event,
+      (entry) => entry.label,
+    );
     if (pos !== null) {
       this.#assertSelectionFollowsFocusSupported();
       navigator.seedActive(pos);
     }
+    return handled;
   }
 
   protected onHostFocusIn(): void {

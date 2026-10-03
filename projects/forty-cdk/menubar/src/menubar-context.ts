@@ -168,9 +168,9 @@ export interface ForMenubarContext extends MenuSiblingNavigator {
    * the trigger's `textValue` when set, else its accessible text — so an
    * `aria-hidden` subtree (a decorative icon, a badge) never bleeds into the
    * match, while visually-hidden but announced content still counts unless the
-   * trigger overrides it.
+   * trigger overrides it. Returns `true` if the key was consumed by typeahead.
    */
-  handleTriggerTypeahead(event: KeyboardEvent): void;
+  handleTriggerTypeahead(event: KeyboardEvent): boolean;
 }
 
 export const FOR_MENUBAR_CONTEXT = new InjectionToken<ForMenubarContext>('FOR_MENUBAR_CONTEXT');

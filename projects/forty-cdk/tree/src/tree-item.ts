@@ -336,6 +336,9 @@ export class ForTreeItem<T = string> implements ForTreeItemContext<T> {
       }
     }
 
+    if (event.key === ' ' && tree.handleTypeahead(event)) {
+      return;
+    }
     if (event.key === 'Enter' || event.key === ' ' || event.key === 'Spacebar') {
       event.preventDefault();
       tree.activateItem(this, event);
