@@ -10,8 +10,9 @@ import { provideDefaults } from './defaults';
  */
 export interface ForTreeDefaults {
   /**
-   * Single-mode only: when `true`, arrow navigation also selects the focused
-   * node. APG calls this optional and recommends caution — leave `false`
+   * Single-mode only: when `true`, every keyboard focus move (arrow
+   * navigation, entering a child, leaving to the parent, a typeahead match)
+   * also selects the focused node. APG calls this optional and recommends caution — leave `false`
    * unless the UX truly benefits from selection following focus.
    */
   selectionFollowsFocus: boolean;

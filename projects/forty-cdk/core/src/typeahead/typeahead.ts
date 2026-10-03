@@ -29,35 +29,34 @@ export class Typeahead {
    * is a printable single character; returns `false` otherwise so the caller
    * can let the event keep flowing.
    *
-   * Modifier-only events (Ctrl, Alt, Meta) are ignored even if `event.key`
-   * looks printable — the user is not typing.
+   * A shortcut chord is not typing and is rejected: anything with Meta held,
+   * Ctrl without AltGr, or Alt without AltGr on an ASCII key (an accelerator
+   * or `accesskey` on Windows and Linux). A character composed through AltGr
+   * (`ł` on a Polish layout) or through the macOS Option key (`ø`) is typing
+   * and is accepted.
    *
    * Space is accepted **only while the buffer already holds at least one
    * character**, so multi-word labels ("New York") can accumulate past the
-   * first word. The first Space with an empty buffer is rejected (returns
-   * `false`) so widgets that use Space for activation keep that behavior
-   * when the user is not mid-typing. Consumers that own a Space activation
-   * path must therefore handle Space (or check `buffer()` non-empty) before
-   * delegating to `handle` if they need activation to win mid-typeahead;
-   * directives applied on native `<button>` activate on `keyup`, so a
-   * mid-buffer `keydown` Space accumulates here without blocking activation.
+   * first word. The first Space with an empty buffer is rejected so widgets
+   * that use Space for activation keep that behavior when the user is not
+   * mid-typing. A Space this method accepts is `preventDefault()`-ed, so a
+   * native `<button>` host never turns it into a click on `keyup`. A caller
+   * whose own Space branch activates must offer the key here first and
+   * activate only when this returns `false`.
    */
   handle(event: KeyboardEvent): boolean {
-    if (event.isComposing) {
-      return false;
-    }
-    if (event.ctrlKey || event.altKey || event.metaKey) {
+    if (event.isComposing || isShortcutChord(event)) {
       return false;
     }
     const ch = event.key;
     if (typeof ch !== 'string' || ch.length !== 1) {
-      // Length-1 only (skips ArrowUp, Enter, Tab, etc.).
       return false;
     }
-    if (ch === ' ' && this.#buffer() === '') {
-      // First Space with an empty buffer is left for widget activation
-      // (Space is a common activation key); only mid-buffer Space accumulates.
-      return false;
+    if (ch === ' ') {
+      if (this.#buffer() === '') {
+        return false;
+      }
+      event.preventDefault();
     }
 
     this.#buffer.update((current) => current + ch);
@@ -102,6 +101,19 @@ export class Typeahead {
       this.#timeoutId = null;
     }, this.#debounceMs);
   }
+}
+
+function isShortcutChord(event: KeyboardEvent): boolean {
+  if (event.metaKey) {
+    return true;
+  }
+  if (event.getModifierState?.('AltGraph')) {
+    return false;
+  }
+  if (event.ctrlKey) {
+    return true;
+  }
+  return event.altKey && event.key.length === 1 && event.key.charCodeAt(0) < 0x80;
 }
 
 /**

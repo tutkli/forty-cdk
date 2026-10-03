@@ -282,9 +282,10 @@ export class ForSelect<T = string>
   readonly dir = injectTextDirection(this._dirInput);
 
   /**
-   * Single-mode only. When true, arrow nav also selects the focused option
-   * while the listbox is open. APG calls this optional and recommends
-   * caution — leave off unless your UX truly benefits. Default `false`.
+   * Single-mode only. When true, a keyboard focus move (arrow navigation or a
+   * typeahead match) also selects the focused option while the listbox is
+   * open. APG calls this optional and recommends caution — leave off unless
+   * your UX truly benefits. Default `false`.
    *
    * Not supported together with virtualization (`totalCount` set): the
    * virtualized `aria-activedescendant` path resolves off-window navigation
@@ -378,12 +379,7 @@ export class ForSelect<T = string>
         this.#navigator?.resetPending();
       }
     },
-    onNavigateFocus: (target) => {
-      this.#scrollActiveIntoView(target.host);
-      if (!this.multiple() && this.selectionFollowsFocus() && !this.readonly()) {
-        this.#rangeEngine.selectSingle(target.value());
-      }
-    },
+    onNavigateFocus: (target) => this.#afterKeyboardFocus(target),
     onUnregisterOption: (handle) => {
       if (this.#virtualized() && this.#activeId() === handle.id()) {
         this.#activeId.set(null);
@@ -628,9 +624,9 @@ export class ForSelect<T = string>
     this.#rangeEngine.selectFromCurrentToEdge(currentOption, edge);
   }
 
-  private handleTypeahead(event: KeyboardEvent): void {
+  private handleTypeahead(event: KeyboardEvent): boolean {
     const options = this.#controller.options();
-    const { match } = resolveListTypeahead(this.#typeahead, event, {
+    const { handled, match } = resolveListTypeahead(this.#typeahead, event, {
       items: options,
       anchorIndex: options.findIndex((o) => o.host === event.target),
       getText: (o) => accessibleTextContent(o.host),
@@ -639,6 +635,15 @@ export class ForSelect<T = string>
     if (match) {
       this.#pointerSuppression.suppress();
       match.host.focus();
+      this.#afterKeyboardFocus(match);
+    }
+    return handled;
+  }
+
+  #afterKeyboardFocus(target: ForSelectOptionHandle<T>): void {
+    this.#scrollActiveIntoView(target.host);
+    if (!this.multiple() && this.selectionFollowsFocus() && !this.readonly()) {
+      this.#rangeEngine.selectSingle(target.value());
     }
   }
 
@@ -663,7 +668,7 @@ export class ForSelect<T = string>
         anchorIndex,
       },
       (o) => o.label,
-      () => false,
+      (o) => o.disabled,
     );
     if (match) {
       this.value.set([match.value]);
@@ -791,6 +796,9 @@ export class ForSelect<T = string>
       this.#commitActiveDescendantOnTab();
       return;
     }
+    if (event.key === ' ' && this.#typeaheadVirtualized(event)) {
+      return;
+    }
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
       this.#activateActiveDescendant();
@@ -892,12 +900,17 @@ export class ForSelect<T = string>
    * the match is seeded rather than focused, so an off-window one emits
    * `(scrollToIndex)` and settles once the option mounts.
    */
-  #typeaheadVirtualized(event: KeyboardEvent): void {
+  #typeaheadVirtualized(event: KeyboardEvent): boolean {
     const navigator = this.#requireNavigator();
-    const { pos } = navigator.resolveTypeahead(this.#typeahead, event, (entry) => entry.label);
+    const { handled, pos } = navigator.resolveTypeahead(
+      this.#typeahead,
+      event,
+      (entry) => entry.label,
+    );
     if (pos !== null) {
       this.#assertSelectionFollowsFocusSupported();
       navigator.seedActive(pos);
     }
+    return handled;
   }
 }

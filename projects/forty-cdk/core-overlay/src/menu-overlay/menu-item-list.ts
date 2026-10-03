@@ -114,11 +114,10 @@ export class MenuItemList<H extends MenuItemHandle = MenuItemHandle> {
    * diacritics-insensitively, so `e` reaches `Éditer`.
    * Returns `true` when the key was consumed as a typeahead character (a
    * printable char, or Space while the buffer is already non-empty), `false`
-   * otherwise. Items applied on a native `<button>` use the return value to
-   * `preventDefault()` a mid-typeahead Space so it extends the buffer instead
-   * of triggering the button's activation. The focus move passes
-   * `preventScroll` and reveals the match with `scrollIntoView({ block:
-   * 'nearest' })`.
+   * otherwise. A consumed Space is `preventDefault()`-ed, so it extends the
+   * buffer instead of triggering a native `<button>` item's activation. The
+   * focus move passes `preventScroll` and reveals the match with
+   * `scrollIntoView({ block: 'nearest' })`.
    */
   handleTypeahead(event: KeyboardEvent): boolean {
     const items = this.#items.items();

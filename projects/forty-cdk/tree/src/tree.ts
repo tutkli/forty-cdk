@@ -244,8 +244,9 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
   readonly dir = injectTextDirection(this._dirInput);
 
   /**
-   * Single-mode only: when true, arrow navigation also selects the focused
-   * node. The default is read from `provideForTreeDefaults` for the
+   * Single-mode only: when true, every keyboard focus move (arrow navigation,
+   * entering a child, leaving to the parent, a typeahead match) also selects
+   * the focused node. The default is read from `provideForTreeDefaults` for the
    * surrounding scope.
    *
    * Not supported together with virtualization (`totalCount` set): the
@@ -611,6 +612,9 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
     if (this.multiple() && this.#isMultiSelectShortcut(event)) {
       event.preventDefault();
       this.#throwUnsupportedVirtualizedMultiSelect();
+      return;
+    }
+    if (event.key === ' ' && this.handleTypeahead(event)) {
       return;
     }
     if (event.key === 'Enter' || event.key === ' ' || event.key === 'Spacebar') {

@@ -295,7 +295,7 @@ Moving the pointer over an enabled option hands it `data-highlighted`, so exactl
 
 Four properties of the pointer channel:
 
-- **It never selects and never moves DOM focus**, not even with `selectionFollowsFocus` set, because that input commits on every _navigation_ focus move and hovering is not one. The pointer's own click still activates, and the multi-select range anchor `Shift+Space` spans from is untouched.
+- **It never selects and never moves DOM focus**, not even with `selectionFollowsFocus` set, because that input commits on every _keyboard_ focus move and hovering is not one. The pointer's own click still activates, and the multi-select range anchor `Shift+Space` spans from is untouched.
 - **The keyboard takes it back on the next move.** In the default path the highlight falls back to the DOM-focused option, so the first arrow / typeahead move drops the pointer highlight; in the virtualized path (`totalCount` set) hover moves `aria-activedescendant` itself, so the highlight and the option `Enter` activates never disagree there.
 - **Moving the pointer off `[forSelectContent]` releases it.** In the default path the highlight goes back to the DOM-focused option (the one `Enter` activates), so an open listbox never keeps a row decorated with the cursor somewhere else on the page. Crossing between two adjacent options is not a leave: the highlight moves straight from one to the other without blinking off. In the virtualized path the pointer's claim persists, because there it _is_ `aria-activedescendant` and dropping it would leave the listbox with no active option.
 - **A programmatic scroll cannot hijack it.** Opening the listbox scrolls the selected option into view, and keyboard navigation scrolls the active one. Either can slide a different option under a stationary cursor and make the browser fire a synthetic `pointermove` for it. Moves arriving in a short window after such a scroll are ignored, so the selected option keeps the highlight a mouse-opened listbox gives it (see [Initial focus on open](#initial-focus-on-open)).
@@ -425,7 +425,7 @@ The mode is read **once** when `[forSelectContent]` mounts (the two shells are s
 
 ## Selection follows focus
 
-Single-mode only. Set `selectionFollowsFocus` to also commit `[(value)]` as arrow navigation moves focus, which is useful for "live preview" UX. Default off; APG calls it optional and recommends caution.
+Single-mode only. Set `selectionFollowsFocus` to also commit `[(value)]` as arrow navigation or a typeahead match moves focus, which is useful for "live preview" UX. Default off; APG calls it optional and recommends caution.
 
 ```html
 <div forSelect selectionFollowsFocus [(value)]="theme">…</div>
@@ -662,7 +662,7 @@ In the default (non-virtualized) path the full APG range keyboard works while th
 - **Click / Enter / Space**: open (focus selected, else first).
 - **ArrowDown**: open (focus selected, else first).
 - **ArrowUp**: open (focus selected, else last).
-- **Typeahead** _(single mode only)_: printable keys select the matching option immediately without opening, mirroring native `<select>`. The lookup goes through a cached snapshot of options (the live registry is empty while `[forSelectContent]` is unmounted); the cache is populated the first time the listbox opens, so closed-state typeahead is available after the user has interacted with the listbox at least once.
+- **Typeahead** _(single mode only)_: printable keys select the matching enabled option immediately without opening, mirroring native `<select>`, which skips disabled options too. The lookup goes through a cached snapshot of options (the live registry is empty while `[forSelectContent]` is unmounted); the cache is populated the first time the listbox opens, so closed-state typeahead is available after the user has interacted with the listbox at least once.
 
 ### Listbox (open)
 
