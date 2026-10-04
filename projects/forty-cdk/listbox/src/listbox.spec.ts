@@ -12,7 +12,12 @@ import { By } from '@angular/platform-browser';
 import { isUnset, unsetInput } from 'forty-cdk/core';
 import { pressKey, pressWithMouse } from 'forty-cdk/testing';
 
-import { afterEachOverlayCleanup, flush, renderHost } from '../../src/test-utils';
+import {
+  afterEachOverlayCleanup,
+  flush,
+  renderHost,
+  type RenderResult,
+} from '../../src/test-utils';
 import {
   assertDataStateContract,
   assertFormControlContract,
@@ -2528,6 +2533,88 @@ describe('ForListbox', () => {
       result.fixture.componentInstance.range.set([20, 30]);
       await flush(result.fixture);
       expect(lb.hasAttribute('aria-activedescendant')).toBe(false);
+    });
+
+    describe('resuming after the active option unmounts (issue #2123)', () => {
+      async function activateThirdThenScrollAway(): Promise<{
+        result: RenderResult<VirtualHost>;
+        lb: HTMLElement;
+      }> {
+        const result = renderHost(VirtualHost);
+        await result.flush();
+        const lb = lbOf(result.el);
+        lb.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+        await result.flush();
+        for (let i = 0; i < 3; i++) {
+          lb.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+          await result.flush();
+        }
+        expect(lb.getAttribute('aria-activedescendant')).toBe(
+          voptOf(result.el, 3).getAttribute('id'),
+        );
+        result.fixture.componentInstance.range.set([20, 30]);
+        await flush(result.fixture);
+        expect(lb.hasAttribute('aria-activedescendant')).toBe(false);
+        return { result, lb };
+      }
+
+      it('ArrowDown continues from the retained position instead of jumping to the first option', async () => {
+        const { result, lb } = await activateThirdThenScrollAway();
+
+        lb.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+        await flush(result.fixture);
+        await flush(result.fixture);
+
+        expect(result.fixture.componentInstance.scrolled()).toBe(4);
+        expect(lb.getAttribute('aria-activedescendant')).toBe(
+          voptOf(result.el, 4).getAttribute('id'),
+        );
+      });
+
+      it('ArrowUp continues backwards from the retained position instead of jumping to the last option', async () => {
+        const { result, lb } = await activateThirdThenScrollAway();
+
+        lb.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
+        await flush(result.fixture);
+        await flush(result.fixture);
+
+        expect(result.fixture.componentInstance.scrolled()).toBe(2);
+        expect(lb.getAttribute('aria-activedescendant')).toBe(
+          voptOf(result.el, 2).getAttribute('id'),
+        );
+      });
+
+      for (const key of ['Enter', ' ']) {
+        it(`${key === ' ' ? 'Space' : key} activates the retained option and scrolls it back into the window`, async () => {
+          const { result, lb } = await activateThirdThenScrollAway();
+
+          const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
+          lb.dispatchEvent(event);
+          await flush(result.fixture);
+          await flush(result.fixture);
+
+          expect(event.defaultPrevented).toBe(true);
+          expect(result.fixture.componentInstance.picked()).toEqual(['item-3']);
+          expect(result.fixture.componentInstance.scrolled()).toBe(3);
+          expect(lb.getAttribute('aria-activedescendant')).toBe(
+            voptOf(result.el, 3).getAttribute('id'),
+          );
+        });
+      }
+
+      it('a snapshot rebuild drops the retained position, so ArrowDown restarts at the first option', async () => {
+        const { result, lb } = await activateThirdThenScrollAway();
+
+        result.fixture.componentInstance.total.set(60);
+        await flush(result.fixture);
+        lb.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+        await flush(result.fixture);
+        expect(result.fixture.componentInstance.picked()).toEqual([]);
+
+        lb.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+        await flush(result.fixture);
+        expect(result.fixture.componentInstance.scrolled()).toBe(0);
+      });
     });
 
     it('non-virtualized path unchanged — no aria-activedescendant, arrow moves DOM focus', () => {

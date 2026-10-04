@@ -292,4 +292,8 @@ export {
   type VirtualizedNavigatorBridgeDeps,
   type VirtualizedNavigatorBridgeTarget,
 } from './virtualized-navigator/virtualized-navigator-bridge';
+export {
+  VirtualizedResume,
+  type VirtualizedResumeEntry,
+} from './virtualized-navigator/virtualized-resume';
 export { ForVisuallyHidden } from './visually-hidden/visually-hidden';

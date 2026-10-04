@@ -39,6 +39,7 @@ import {
   injectTypeahead,
   isUnset,
   hostAriaLabel,
+  VirtualizedResume,
 } from 'forty-cdk/core';
 import {
   FOR_LISTBOX_CONTEXT,
@@ -48,6 +49,7 @@ import {
 import { FOR_LISTBOX_DEFAULTS } from 'forty-cdk/defaults';
 import {
   createListboxVirtualizedNavigator,
+  type ListboxPositionEntry,
   type ListboxVirtualizedNavigator,
 } from './listbox-virtualized-navigator';
 
@@ -357,6 +359,12 @@ export class ForListbox<T = string>
 
   #navigator: ListboxVirtualizedNavigator<T> | null = null;
 
+  readonly #resume = new VirtualizedResume<T, ListboxPositionEntry<T>>({
+    totalCount: this.totalCount,
+    snapshotByPos: () => this.#requireNavigator().snapshotByPos(),
+    compareWith: this.compareWith,
+  });
+
   #requireNavigator(): ListboxVirtualizedNavigator<T> {
     return (this.#navigator ??= createListboxVirtualizedNavigator<T>(
       {
@@ -365,12 +373,20 @@ export class ForListbox<T = string>
         visibleRange: this.visibleRange,
         loop: this.loop,
         getActiveId: () => this.#activeId(),
-        setActiveId: (id) => this.#activeId.set(id),
+        setActiveId: (id) => this.#setActiveId(id),
         emitScrollToIndex: (idx) => this.scrollToIndex.emit(idx),
+        getResumePos: () => this.#resume.pos(),
         dataVersion: this.dataVersion,
       },
       (host) => this.#scrollActiveIntoView(host),
     ));
+  }
+
+  #setActiveId(id: string | null): void {
+    if (id !== null) {
+      this.#resume.clear();
+    }
+    this.#activeId.set(id);
   }
 
   /**
@@ -526,7 +542,7 @@ export class ForListbox<T = string>
       return;
     }
     if (this.#virtualized()) {
-      this.#activeId.set(id);
+      this.#setActiveId(id);
       return;
     }
     this.#pointerHost.set(host);
@@ -552,7 +568,7 @@ export class ForListbox<T = string>
     if (!this.#virtualized()) {
       return;
     }
-    this.#activeId.set(optionId);
+    this.#setActiveId(optionId);
     this.#host.nativeElement.focus();
   }
 
@@ -560,6 +576,7 @@ export class ForListbox<T = string>
     this.#options.unregister(handle);
     this.roving.unregister(handle.host);
     if (this.#virtualized() && this.#activeId() === handle.id()) {
+      this.#resume.retain(handle.posInSet(), handle.value());
       this.#activeId.set(null);
     }
   }
@@ -624,6 +641,7 @@ export class ForListbox<T = string>
   #activateActiveDescendant(): void {
     const id = this.#activeId();
     if (id === null) {
+      this.#activateResumed();
       return;
     }
     const handle = this.#options.items().find((o) => o.id() === id);
@@ -631,6 +649,15 @@ export class ForListbox<T = string>
       return;
     }
     this.activate(handle.value());
+  }
+
+  #activateResumed(): void {
+    const resumed = this.#resume.resolve();
+    if (resumed === null || resumed.entry.disabled) {
+      return;
+    }
+    this.#requireNavigator().seedActive(resumed.pos);
+    this.activate(resumed.entry.value);
   }
 
   /**
@@ -672,7 +699,7 @@ export class ForListbox<T = string>
     );
     const target = selectedFirst ?? ordered.find((o) => !o.disabled());
     if (target) {
-      this.#activeId.set(target.id());
+      this.#setActiveId(target.id());
     }
   }
 

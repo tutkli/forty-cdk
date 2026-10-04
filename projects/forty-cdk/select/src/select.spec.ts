@@ -10,7 +10,13 @@ import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
 import { isUnset, unsetInput, type VetoableNativeEvent } from 'forty-cdk/core';
-import { afterEachOverlayCleanup, flush, flushPositioning, renderHost } from '../../src/test-utils';
+import {
+  afterEachOverlayCleanup,
+  flush,
+  flushPositioning,
+  renderHost,
+  type RenderResult,
+} from '../../src/test-utils';
 import {
   assertDataStateContract,
   assertDismissibleLayerContract,
@@ -4020,6 +4026,176 @@ describe('ForSelect', () => {
       r.instance.range.set([20, 30]);
       await flush(r.fixture);
       expect(content.hasAttribute('aria-activedescendant')).toBe(false);
+    });
+
+    describe('resuming after the active option unmounts (issue #2123)', () => {
+      async function activateThirdThenScrollAway(): Promise<{
+        r: RenderResult<VirtualSelectHost>;
+        content: HTMLElement;
+      }> {
+        const r = renderHost(VirtualSelectHost);
+        r.instance.open.set(true);
+        await flush(r.fixture);
+        const content = contentEl();
+        content.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+        await flush(r.fixture);
+        for (let i = 0; i < 3; i++) {
+          content.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+          await flush(r.fixture);
+        }
+        expect(content.getAttribute('aria-activedescendant')).toBe(voptOf(3).getAttribute('id'));
+        r.instance.range.set([20, 30]);
+        await flush(r.fixture);
+        expect(content.hasAttribute('aria-activedescendant')).toBe(false);
+        return { r, content };
+      }
+
+      it('ArrowDown continues from the retained position instead of jumping to the first option', async () => {
+        const { r, content } = await activateThirdThenScrollAway();
+
+        content.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+        await flush(r.fixture);
+        await flush(r.fixture);
+
+        expect(r.instance.scrolled()).toBe(4);
+        expect(content.getAttribute('aria-activedescendant')).toBe(voptOf(4).getAttribute('id'));
+      });
+
+      it('ArrowUp continues backwards from the retained position instead of jumping to the last option', async () => {
+        const { r, content } = await activateThirdThenScrollAway();
+
+        content.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
+        await flush(r.fixture);
+        await flush(r.fixture);
+
+        expect(r.instance.scrolled()).toBe(2);
+        expect(content.getAttribute('aria-activedescendant')).toBe(voptOf(2).getAttribute('id'));
+      });
+
+      for (const key of ['Enter', ' ']) {
+        it(`${key === ' ' ? 'Space' : key} commits the retained option and closes`, async () => {
+          const { r, content } = await activateThirdThenScrollAway();
+
+          const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
+          content.dispatchEvent(event);
+          await flush(r.fixture);
+
+          expect(event.defaultPrevented).toBe(true);
+          expect(r.instance.value()).toEqual(['item-3']);
+          expect(r.instance.open()).toBe(false);
+        });
+      }
+
+      it('Tab commits the retained option before closing', async () => {
+        const { r, content } = await activateThirdThenScrollAway();
+
+        content.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+        await flush(r.fixture);
+
+        expect(r.instance.value()).toEqual(['item-3']);
+        expect(r.instance.open()).toBe(false);
+      });
+
+      it('a snapshot rebuild drops the retained position, so Tab closes without committing', async () => {
+        const { r, content } = await activateThirdThenScrollAway();
+
+        r.instance.total.set(60);
+        await flush(r.fixture);
+        content.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+        await flush(r.fixture);
+
+        expect(r.instance.value()).toEqual([]);
+        expect(r.instance.open()).toBe(false);
+      });
+
+      @Component({
+        imports: BASE_IMPORTS,
+        template: `
+          <div
+            forSelect
+            [(open)]="open"
+            [(value)]="value"
+            [totalCount]="50"
+            [visibleRange]="range()"
+            (autoFocusOnOpen)="vetoOpenFocus() && $event.preventDefault()"
+          >
+            <button forSelectTrigger>Fruit</button>
+            @if (open()) {
+              <div forSelectContent data-test-id="content">
+                @for (row of windowRows(); track row.index) {
+                  <button
+                    forSelectOption
+                    [value]="'item-' + row.index"
+                    [posInSet]="row.index"
+                    [attr.data-test-id]="'opt-' + row.index"
+                  >
+                    Item {{ row.index }}
+                  </button>
+                }
+              </div>
+            }
+          </div>
+        `,
+      })
+      class VetoableSelectHost {
+        readonly open = signal(true);
+        readonly value = signal<readonly string[]>([]);
+        readonly range = signal<readonly [number, number]>([0, 10]);
+        readonly vetoOpenFocus = signal(false);
+        windowRows() {
+          const [s, e] = this.range();
+          return Array.from({ length: e - s }, (_, k) => ({ index: s + k }));
+        }
+      }
+
+      async function reopenWithoutSeedingThenPressEnter(
+        r: RenderResult<VetoableSelectHost>,
+      ): Promise<void> {
+        r.instance.vetoOpenFocus.set(true);
+        r.instance.range.set([0, 10]);
+        r.instance.open.set(true);
+        await flush(r.fixture);
+        const content = contentEl();
+        expect(content.hasAttribute('aria-activedescendant')).toBe(false);
+        content.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+        await flush(r.fixture);
+      }
+
+      async function activateThird(r: RenderResult<VetoableSelectHost>): Promise<HTMLElement> {
+        await flush(r.fixture);
+        const content = contentEl();
+        for (let i = 0; i < 3; i++) {
+          content.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+          await flush(r.fixture);
+        }
+        expect(content.getAttribute('aria-activedescendant')).toBe(voptOf(3).getAttribute('id'));
+        return content;
+      }
+
+      it('dismissing forgets a retained position, so it is not activated after reopening', async () => {
+        const r = renderHost(VetoableSelectHost);
+        const content = await activateThird(r);
+        r.instance.range.set([20, 30]);
+        await flush(r.fixture);
+        content.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+        await flush(r.fixture);
+        expect(r.instance.open()).toBe(false);
+
+        await reopenWithoutSeedingThenPressEnter(r);
+
+        expect(r.instance.value()).toEqual([]);
+      });
+
+      it('options unmounting because the select closed retain nothing to activate after reopening', async () => {
+        const r = renderHost(VetoableSelectHost);
+        await activateThird(r);
+        r.instance.open.set(false);
+        await flush(r.fixture);
+
+        await reopenWithoutSeedingThenPressEnter(r);
+
+        expect(r.instance.value()).toEqual([]);
+      });
     });
 
     it('non-virtualized path unchanged — no aria-activedescendant, arrow moves DOM focus', async () => {

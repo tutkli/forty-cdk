@@ -11,6 +11,7 @@ import {
   type Typeahead,
   VirtualizedNavigator,
   type VirtualizedNavigatorDeps,
+  type VirtualizedResume,
 } from 'forty-cdk/core';
 import type { ForTreeItemHandle, ForTreeVisibleNode } from './tree-context';
 
@@ -207,7 +208,7 @@ export class RovingFocusModel<T = unknown> implements FocusModel<T> {
 }
 
 /** Position-snapshot entry carried by the tree's virtualized navigation engine. */
-interface PositionEntry<T> {
+export interface TreePositionEntry<T> {
   readonly id: string;
   readonly disabled: boolean;
   readonly selectable: boolean;
@@ -218,20 +219,10 @@ interface PositionEntry<T> {
 }
 
 /**
- * The position the tree resumes navigation from, paired with the node that
- * occupied it when the active node unmounted. The value is what makes the
- * position answer for its own identity across a snapshot rebuild.
- */
-export interface TreeResumeTarget<T = unknown> {
-  readonly pos: number;
-  readonly value: T;
-}
-
-/**
  * Wiring for {@link ActiveDescendantFocusModel} — the shared engine's own
  * dependencies, minus `loop` (a tree never wraps, so the model pins it to
  * `false`) and minus `getResumePos`, which the model supplies to the engine
- * itself from the root's retained target, so every intent resolves the resume
+ * itself from the root's resume position, so every intent resolves the resume
  * through the same validation.
  */
 export type ActiveDescendantFocusModelDeps<T = unknown> = Omit<
@@ -239,13 +230,10 @@ export type ActiveDescendantFocusModelDeps<T = unknown> = Omit<
   'loop' | 'getResumePos'
 > & {
   /**
-   * Last active absolute position and the node that occupied it, retained when
-   * the active node unmounts so navigation resumes from it instead of restarting
-   * at the edge. Returns `null` when there is nothing to resume from.
+   * The position retained when the active node unmounts, so every intent
+   * resumes from it instead of restarting at the edge.
    */
-  readonly getResumeTarget: () => TreeResumeTarget<T> | null;
-  /** Node identity, used to match a retained target against the snapshot. */
-  readonly compareWith: Signal<(a: T, b: T) => boolean>;
+  readonly resume: VirtualizedResume<T, TreePositionEntry<T>>;
   /** The root's typeahead buffer, shared with the other focus model. */
   readonly typeahead: Typeahead;
 };
@@ -263,12 +251,12 @@ export type ActiveDescendantFocusModelDeps<T = unknown> = Omit<
 export class ActiveDescendantFocusModel<T = unknown> implements FocusModel<T> {
   readonly #deps: ActiveDescendantFocusModelDeps<T>;
 
-  readonly #core: VirtualizedNavigator<ForTreeItemHandle<T>, PositionEntry<T>>;
+  readonly #core: VirtualizedNavigator<ForTreeItemHandle<T>, TreePositionEntry<T>>;
 
   constructor(deps: ActiveDescendantFocusModelDeps<T>) {
     this.#deps = deps;
     this.#core = new VirtualizedNavigator(
-      { ...deps, loop: () => false, getResumePos: () => this.#resumePos() },
+      { ...deps, loop: () => false, getResumePos: () => deps.resume.pos() },
       {
         posOf: (n) => n.itemIndex(),
         idOf: (n) => n.id(),
@@ -307,6 +295,11 @@ export class ActiveDescendantFocusModel<T = unknown> implements FocusModel<T> {
     this.#core.invalidateSnapshot();
   }
 
+  /** @see VirtualizedNavigator.snapshotByPos */
+  snapshotByPos(): ReadonlyMap<number, TreePositionEntry<T>> {
+    return this.#core.snapshotByPos();
+  }
+
   focusTarget(handle: ForTreeItemHandle<T>): void {
     this.#deps.setActiveId(handle.id());
   }
@@ -333,7 +326,7 @@ export class ActiveDescendantFocusModel<T = unknown> implements FocusModel<T> {
     if (this.#deps.getActiveId() !== null) {
       return;
     }
-    const resume = this.#resumePos();
+    const resume = this.#deps.resume.pos();
     if (resume === null) {
       return;
     }
@@ -445,17 +438,6 @@ export class ActiveDescendantFocusModel<T = unknown> implements FocusModel<T> {
     return null;
   }
 
-  /**
-   * The retained position, or `null` when it no longer names the node it was
-   * retained for. A snapshot rebuild — a `totalCount` transition, a
-   * `[dataVersion]` change or `invalidateSnapshot()` — drops the retained node's
-   * entry, so a refresh that moved it resolves to nothing instead of resuming on
-   * whatever now occupies that position.
-   */
-  #resumePos(): number | null {
-    return this.#resumeEntry()?.pos ?? null;
-  }
-
   /** The position entry the retained target resolves to in the snapshot. */
   #resumeEntry(): {
     pos: number;
@@ -465,20 +447,13 @@ export class ActiveDescendantFocusModel<T = unknown> implements FocusModel<T> {
     disabled: boolean;
     selectable: boolean;
   } | null {
-    const target = this.#deps.getResumeTarget();
-    if (target === null || target.pos < 0) {
+    const resumed = this.#deps.resume.resolve();
+    if (resumed === null) {
       return null;
     }
-    const total = this.#deps.totalCount();
-    if (total === undefined || target.pos >= total) {
-      return null;
-    }
-    const entry = this.#core.snapshotByPos().get(target.pos);
-    if (!entry || !this.#deps.compareWith()(entry.value, target.value)) {
-      return null;
-    }
+    const { pos, entry } = resumed;
     return {
-      pos: target.pos,
+      pos,
       value: entry.value,
       level: entry.level,
       expandable: entry.expandable,
