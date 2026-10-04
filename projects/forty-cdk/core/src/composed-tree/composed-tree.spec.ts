@@ -2,6 +2,7 @@ import {
   composedClosest,
   composedContains,
   composedParentElement,
+  composedPrecedes,
   resolveActiveElement,
   resolveEventTarget,
 } from './composed-tree';
@@ -183,6 +184,74 @@ describe('composed-tree', () => {
       inner.setAttribute('data-overlay-id', 'self');
 
       expect(composedClosest(inner, '[data-overlay-id]')).toBe(inner);
+    });
+  });
+
+  describe('composedPrecedes', () => {
+    it('orders two light-DOM siblings by document position', () => {
+      const a = document.createElement('button');
+      const b = document.createElement('button');
+      document.body.append(a, b);
+
+      expect(composedPrecedes(a, b)).toBe(true);
+      expect(composedPrecedes(b, a)).toBe(false);
+    });
+
+    it('places an ancestor before its descendants', () => {
+      const { container, inner } = mountShadowFixture();
+      const light = document.createElement('button');
+      container.appendChild(light);
+
+      expect(composedPrecedes(container, light)).toBe(true);
+      expect(composedPrecedes(light, container)).toBe(false);
+      expect(composedPrecedes(container, inner)).toBe(true);
+      expect(composedPrecedes(inner, container)).toBe(false);
+    });
+
+    it('places a shadow host before the contents of its shadow root', () => {
+      const { host, inner } = mountShadowFixture();
+
+      expect(composedPrecedes(host, inner)).toBe(true);
+      expect(composedPrecedes(inner, host)).toBe(false);
+    });
+
+    it('orders a shadow-nested node against light-DOM nodes on either side of its host', () => {
+      const { container, inner } = mountShadowFixture();
+      const before = document.createElement('button');
+      const after = document.createElement('button');
+      container.prepend(before);
+      container.append(after);
+
+      expect(composedPrecedes(before, inner)).toBe(true);
+      expect(composedPrecedes(inner, before)).toBe(false);
+      expect(composedPrecedes(inner, after)).toBe(true);
+      expect(composedPrecedes(after, inner)).toBe(false);
+    });
+
+    it('places shadow contents before the light children of the same host', () => {
+      const { host, inner } = mountShadowFixture();
+      const slotted = document.createElement('button');
+      host.appendChild(slotted);
+
+      expect(composedPrecedes(inner, slotted)).toBe(true);
+      expect(composedPrecedes(slotted, inner)).toBe(false);
+    });
+
+    it('orders nodes in two sibling shadow roots through nested hosts', () => {
+      const { shadow, inner } = mountShadowFixture();
+      const nestedHost = document.createElement('nested-widget');
+      shadow.appendChild(nestedHost);
+      const deepest = document.createElement('button');
+      nestedHost.attachShadow({ mode: 'open' }).appendChild(deepest);
+
+      expect(composedPrecedes(inner, deepest)).toBe(true);
+      expect(composedPrecedes(deepest, inner)).toBe(false);
+    });
+
+    it('reports false for the same node', () => {
+      const { inner } = mountShadowFixture();
+
+      expect(composedPrecedes(inner, inner)).toBe(false);
     });
   });
 });

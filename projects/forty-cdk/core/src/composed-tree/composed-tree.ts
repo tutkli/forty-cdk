@@ -95,6 +95,42 @@ export function composedClosest(node: Element, selector: string): HTMLElement | 
   return null;
 }
 
+/**
+ * Whether `a` comes before `b` in composed-tree order, where an ancestor precedes its descendants
+ * and a shadow host's shadow contents precede its light children — the order
+ * `queryFocusableCandidates` enumerates in.
+ *
+ * `Node.compareDocumentPosition` reports two nodes on opposite sides of a shadow boundary as
+ * disconnected, with an arbitrary order bit; this lifts each to its host in the lowest tree scope
+ * the two share before comparing. Reports `false` for the same node, and for nodes with no shared
+ * tree scope.
+ */
+export function composedPrecedes(a: Node, b: Node): boolean {
+  const chainB = hostChainOf(b);
+  for (const x of hostChainOf(a)) {
+    const scope = x.getRootNode();
+    const y = chainB.find((node) => node.getRootNode() === scope);
+    if (y === undefined) {
+      continue;
+    }
+    if (x === y) {
+      return x === a && y !== b;
+    }
+    return (x.compareDocumentPosition(y) & x.DOCUMENT_POSITION_FOLLOWING) !== 0;
+  }
+  return false;
+}
+
+function hostChainOf(node: Node): Node[] {
+  const chain: Node[] = [node];
+  let host = shadowHostOf(node);
+  while (host) {
+    chain.push(host);
+    host = shadowHostOf(host);
+  }
+  return chain;
+}
+
 function shadowHostOf(node: Node): Element | null {
   const root = node.getRootNode();
   return root !== node && isShadowRoot(root) ? root.host : null;

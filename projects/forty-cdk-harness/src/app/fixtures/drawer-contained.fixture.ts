@@ -49,6 +49,7 @@ import {
           ariaLabel="Contained drawer"
           [modal]="modal()"
           [container]="container"
+          [initialFocus]="initialFocus()"
           (dismiss)="onClose($event)"
         >
           <div forDrawerBackdrop data-testid="backdrop"></div>
@@ -69,6 +70,9 @@ export class DrawerContainedFixture {
   readonly open = signal(false);
   readonly lastCloseReason = signal<ForDrawerCloseReason | null>(null);
   protected readonly modal = signal(this.#route.snapshot.queryParamMap.get('modal') === 'true');
+  protected readonly initialFocus = signal<'first' | 'container'>(
+    this.#route.snapshot.queryParamMap.get('initialFocus') === 'container' ? 'container' : 'first',
+  );
 
   onClose(reason: ForDrawerCloseReason): void {
     this.lastCloseReason.set(reason);

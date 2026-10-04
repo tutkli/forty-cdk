@@ -9,13 +9,22 @@ import {
   PLATFORM_ID,
 } from '@angular/core';
 
-import { composedContains, resolveActiveElement } from '../composed-tree/composed-tree';
+import {
+  composedClosest,
+  composedContains,
+  composedPrecedes,
+  resolveActiveElement,
+} from '../composed-tree/composed-tree';
 import {
   findTabbableEdges,
   isFocusableCandidate,
   queryFocusableCandidates,
+  type TabbableEdges,
 } from './focusable-candidate';
 import { fortyWarn } from '../errors/errors';
+import { MODAL_EXEMPT_ATTRIBUTE, MODAL_PEER_ATTRIBUTE } from '../host-attributes/modal-attributes';
+
+const INDEPENDENT_SURFACE_SELECTOR = `[${MODAL_EXEMPT_ATTRIBUTE}], [${MODAL_PEER_ATTRIBUTE}]`;
 
 /**
  * Returns the first focusable descendant of `container`, or `null` if none exists.
@@ -99,6 +108,16 @@ export class FocusTrapStack {
  *
  * Both the tabbable set and the containment check are resolved against the composed tree, so
  * controls inside an open shadow root take part in the cycle. A closed shadow root stays opaque.
+ *
+ * Tab wraps whenever the browser's own move would leave the container: from the last tabbable, or
+ * from any focused element after it, Tab goes to the first; from the first tabbable, or from the
+ * container or any focused element before it, Shift+Tab goes to the last.
+ *
+ * A surface outside the container carrying `data-for-modal-exempt` or `data-for-modal-peer` (a
+ * toast viewport, a popover opened from inside the modal) keeps its own Tab sequence: Tab moves
+ * natively between its tabbables, and only a move past either end of it returns focus to the
+ * container — Tab to the first tabbable, Shift+Tab to the last. Focus anywhere else outside the
+ * container is pulled back to the first tabbable.
  *
  * Marking the rest of the page `inert` is out of scope — pointer isolation is the consumer's job.
  */
@@ -238,31 +257,51 @@ export class FocusTrap {
     if (!this.#stack.isTopmost(this)) {
       return;
     }
-    const { first, last } = findTabbableEdges(this.#container);
+    const backward = event.shiftKey;
     const active = resolveActiveElement(this.#document);
-    if (first === null || last === null) {
-      event.preventDefault();
-      if (!composedContains(this.#container, active)) {
-        this.#focusContainer();
+    if (composedContains(this.#container, active)) {
+      const edges = findTabbableEdges(this.#container);
+      if (leavesTabSequence(edges, active, backward)) {
+        event.preventDefault();
+        (backward ? edges.last : edges.first)?.focus();
       }
       return;
     }
 
-    if (!composedContains(this.#container, active)) {
-      // Focus jumped outside the trap (e.g. user clicked address bar then
-      // tabbed back). Pull it back in.
-      event.preventDefault();
-      first.focus();
+    const surface = this.#independentSurfaceOf(active);
+    if (surface !== null && !leavesTabSequence(findTabbableEdges(surface), active, backward)) {
       return;
     }
-    if (event.shiftKey && active === first) {
-      event.preventDefault();
-      last.focus();
-    } else if (!event.shiftKey && active === last) {
-      event.preventDefault();
-      first.focus();
+    event.preventDefault();
+    const { first, last } = findTabbableEdges(this.#container);
+    const target = surface !== null && backward ? last : first;
+    if (target) {
+      target.focus();
+    } else {
+      this.#focusContainer();
     }
   }
+
+  #independentSurfaceOf(active: Element | null): HTMLElement | null {
+    if (active === null) {
+      return null;
+    }
+    const surface = composedClosest(active, INDEPENDENT_SURFACE_SELECTOR);
+    return surface !== null && !composedContains(surface, this.#container) ? surface : null;
+  }
+}
+
+function leavesTabSequence(
+  { first, last }: TabbableEdges,
+  active: Element | null,
+  backward: boolean,
+): boolean {
+  if (first === null || last === null || active === null) {
+    return true;
+  }
+  return backward
+    ? active === first || composedPrecedes(active, first)
+    : active === last || composedPrecedes(last, active);
 }
 
 /**

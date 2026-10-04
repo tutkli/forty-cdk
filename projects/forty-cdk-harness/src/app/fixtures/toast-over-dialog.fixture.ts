@@ -67,6 +67,7 @@ import { ForToastManager, type ForToastTemplateContext, ForToastViewport } from 
       <button data-testid="toast-action" type="button" (click)="onToastClick()">
         Toast button
       </button>
+      <button data-testid="toast-secondary" type="button">Toast secondary</button>
     </ng-template>
 
     <output data-testid="last-close-reason">{{ lastCloseReason() ?? 'none' }}</output>
