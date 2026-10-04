@@ -3,7 +3,7 @@ import type { FormValueControl } from '@angular/forms/signals';
 
 import { reflectDisabled } from '../host-attributes/disabled-reflection';
 import { FormUiControlBase } from './form-ui-control-base';
-import { mirrorUnfocusedValue } from './unfocused-value-mirror';
+import { mirrorValue } from './value-mirror';
 
 /**
  * Shared base for the text-valued form controls `ForInput` and `ForTextarea`.
@@ -45,10 +45,11 @@ export abstract class TextValueControlBase
     // consumer-set `disabled` on the same element survives an enabled state.
     reflectDisabled(this.effectiveDisabled);
 
-    // Mirror external writes (consumer `[(value)]` or `[formField]`) back to
-    // the native element while it isn't focused. The user's own typing already
-    // flows in through the `(input)` listener, so this never fights live editing.
-    mirrorUnfocusedValue(() => this.#host.nativeElement, this.value);
+    mirrorValue(
+      () => this.#host.nativeElement,
+      this.value,
+      () => this.#composing,
+    );
   }
 
   /** Bridges the native `input` event into the `value` model. */
@@ -81,10 +82,8 @@ export abstract class TextValueControlBase
   }
 
   /**
-   * Marks the control touched and re-syncs the native element to `value()`.
-   * The mirror effect skips writes while focused (to protect the caret), so an
-   * external write made during editing leaves stale text; blur is the moment to
-   * reconcile the visible text with the model.
+   * Marks the control touched and re-syncs the native element to `value()`,
+   * discarding any text written to the element without an `input` event.
    */
   protected onBlur(): void {
     this.markTouched();
