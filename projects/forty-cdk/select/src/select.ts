@@ -37,6 +37,7 @@ import {
   injectTypeahead,
   type VetoableEvent,
   type VetoableNativeEvent,
+  VirtualizedResume,
 } from 'forty-cdk/core';
 import { AnchoredFormValueControlBase, ListboxOverlayController } from 'forty-cdk/core-overlay';
 import {
@@ -50,6 +51,7 @@ import {
 import { FOR_SELECT_DEFAULTS } from 'forty-cdk/defaults';
 import {
   createSelectVirtualizedNavigator,
+  type SelectPositionEntry,
   type SelectVirtualizedNavigator,
 } from './select-virtualized-navigator';
 
@@ -376,12 +378,16 @@ export class ForSelect<T = string>
     onClose: () => {
       if (this.#virtualized()) {
         this.#activeId.set(null);
+        this.#resume.clear();
         this.#navigator?.resetPending();
       }
     },
     onNavigateFocus: (target) => this.#afterKeyboardFocus(target),
     onUnregisterOption: (handle) => {
       if (this.#virtualized() && this.#activeId() === handle.id()) {
+        if (this.open()) {
+          this.#resume.retain(handle.posInSet(), handle.value());
+        }
         this.#activeId.set(null);
       }
     },
@@ -432,6 +438,13 @@ export class ForSelect<T = string>
   });
 
   #navigator: SelectVirtualizedNavigator<T> | null = null;
+
+  readonly #resume = new VirtualizedResume<T, SelectPositionEntry<T>>({
+    totalCount: this.totalCount,
+    snapshotByPos: () => this.#requireNavigator().snapshotByPos(),
+    compareWith: this.compareWith,
+  });
+
   #requireNavigator(): SelectVirtualizedNavigator<T> {
     return (this.#navigator ??= createSelectVirtualizedNavigator<T>(
       {
@@ -440,12 +453,20 @@ export class ForSelect<T = string>
         visibleRange: this.visibleRange,
         loop: this.loop,
         getActiveId: () => this.#activeId(),
-        setActiveId: (id) => this.#activeId.set(id),
+        setActiveId: (id) => this.#setActiveId(id),
         emitScrollToIndex: (idx) => this.scrollToIndex.emit(idx),
+        getResumePos: () => this.#resume.pos(),
         dataVersion: this.dataVersion,
       },
       (host) => this.#scrollActiveIntoView(host),
     ));
+  }
+
+  #setActiveId(id: string | null): void {
+    if (id !== null) {
+      this.#resume.clear();
+    }
+    this.#activeId.set(id);
   }
 
   /**
@@ -708,7 +729,7 @@ export class ForSelect<T = string>
       return;
     }
     if (this.#virtualized()) {
-      this.#activeId.set(id);
+      this.#setActiveId(id);
       return;
     }
     this.#pointerHost.set(host);
@@ -839,7 +860,7 @@ export class ForSelect<T = string>
     if (!this.#virtualized()) {
       return;
     }
-    this.#activeId.set(optionId);
+    this.#setActiveId(optionId);
     this.#controller.content()?.focus();
   }
 
@@ -872,23 +893,33 @@ export class ForSelect<T = string>
     return idx;
   }
 
-  #activateActiveDescendant(): void {
+  #activeTarget(): { readonly value: T; readonly resumePos: number | null } | null {
     const id = this.#activeId();
     if (id === null) {
-      return;
+      const resumed = this.#resume.resolve();
+      return resumed === null || resumed.entry.disabled
+        ? null
+        : { value: resumed.entry.value, resumePos: resumed.pos };
     }
     const handle = this.#controller.options().find((o) => o.id() === id);
-    if (!handle || handle.disabled()) {
+    return !handle || handle.disabled() ? null : { value: handle.value(), resumePos: null };
+  }
+
+  #activateActiveDescendant(): void {
+    const target = this.#activeTarget();
+    if (target === null) {
       return;
     }
-    this.activate(handle.value());
+    if (target.resumePos !== null) {
+      this.#requireNavigator().seedActive(target.resumePos);
+    }
+    this.activate(target.value);
   }
 
   #commitActiveDescendantOnTab(): void {
-    const id = this.#activeId();
-    const handle = id === null ? undefined : this.#controller.options().find((o) => o.id() === id);
-    if (handle && !handle.disabled()) {
-      this.commitOnTab(handle.value());
+    const target = this.#activeTarget();
+    if (target !== null) {
+      this.commitOnTab(target.value);
       return;
     }
     this.#controller.closeOverlay('tab');

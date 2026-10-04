@@ -30,12 +30,13 @@ import {
   injectTextDirection,
   injectTypeahead,
   hostAriaLabel,
+  VirtualizedResume,
 } from 'forty-cdk/core';
 import {
   ActiveDescendantFocusModel,
   type FocusModel,
   RovingFocusModel,
-  type TreeResumeTarget,
+  type TreePositionEntry,
 } from './focus-model';
 import {
   FOR_TREE_CONTAINER_CONTEXT,
@@ -341,7 +342,11 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
 
   readonly #activeId = signal<string | null>(null);
 
-  readonly #lastActive = signal<TreeResumeTarget<T> | null>(null);
+  readonly #resume = new VirtualizedResume<T, TreePositionEntry<T>>({
+    totalCount: this.totalCount,
+    snapshotByPos: () => this.#requireActiveDescendantModel().snapshotByPos(),
+    compareWith: this.compareWith,
+  });
 
   /**
    * The active node's `id` when using the activedescendant focus model,
@@ -392,8 +397,7 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
       getActiveId: () => this.#activeId(),
       setActiveId: (id) => this.#setActiveId(id),
       emitScrollToIndex: (idx) => this.scrollToIndex.emit(idx),
-      getResumeTarget: () => this.#lastActive(),
-      compareWith: this.compareWith,
+      resume: this.#resume,
       dataVersion: this.dataVersion,
       typeahead: this.#typeahead,
     }));
@@ -416,7 +420,7 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
 
   #setActiveId(id: string | null): void {
     if (id !== null) {
-      this.#lastActive.set(null);
+      this.#resume.clear();
     }
     this.#activeId.set(id);
   }
@@ -759,8 +763,7 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
     this.#items.unregister(handle);
     this.roving.unregister(handle.host);
     if (this.#virtualized() && this.#activeId() === handle.id()) {
-      const pos = handle.itemIndex();
-      this.#lastActive.set(pos === null ? null : { pos, value: handle.value() });
+      this.#resume.retain(handle.itemIndex(), handle.value());
       this.#activeId.set(null);
     }
   }
