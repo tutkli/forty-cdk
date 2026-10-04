@@ -482,6 +482,22 @@ describe('ForSelect', () => {
       expect(r.instance.value()).toEqual(['banana']);
     });
 
+    it('selectionFollowsFocus commits on a typeahead match (issue #2119)', async () => {
+      const r = renderHost(SelectHost);
+      r.instance.selectionFollowsFocus.set(true);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const apple = getOption('apple');
+      apple.focus();
+      pressKey(apple, 'd');
+      await flush(r.fixture);
+
+      expect(activeTestId()).toBe('date');
+      expect(r.instance.value()).toEqual(['date']);
+      expect(r.instance.open()).toBe(true);
+    });
+
     it('selectionFollowsFocus is ignored in readonly', async () => {
       const r = renderHost(SelectHost);
       r.instance.selectionFollowsFocus.set(true);
@@ -1284,6 +1300,28 @@ describe('ForSelect', () => {
         await flush(r.fixture);
         expect(r.instance.value()).toEqual(['avocado']);
         expect(r.instance.open()).toBe(false);
+      });
+
+      it('closed: skips a disabled option instead of committing it (issue #2119)', async () => {
+        const r = renderHost(TypeaheadSelectHost);
+        r.instance.apricotDisabled.set(true);
+        r.instance.open.set(true);
+        await flush(r.fixture);
+        r.instance.open.set(false);
+        await flush(r.fixture);
+
+        const trigger = r.query<HTMLButtonElement>('[forSelectTrigger]')!;
+        pressKey(trigger, 'a');
+        await flush(r.fixture);
+        expect(r.instance.value()).toEqual(['apple']);
+
+        pressKey(trigger, 'a');
+        await flush(r.fixture);
+        expect(r.instance.value()).toEqual(['avocado']);
+
+        pressKey(trigger, 'a');
+        await flush(r.fixture);
+        expect(r.instance.value()).toEqual(['apple']);
       });
 
       it('closed: anchors the next match on the current selection', async () => {

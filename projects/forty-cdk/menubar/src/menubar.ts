@@ -396,9 +396,9 @@ export class ForMenubar implements ForMenubarContext {
     this.value.set(value);
   }
 
-  handleTriggerTypeahead(event: KeyboardEvent): void {
+  handleTriggerTypeahead(event: KeyboardEvent): boolean {
     if (!this.#triggerTypeahead.handle(event)) {
-      return;
+      return false;
     }
     const items = this.#triggerCollection.items();
     const currentIndex = items.findIndex((t) => t.host === event.target);
@@ -415,10 +415,10 @@ export class ForMenubar implements ForMenubarContext {
       },
       (t) => t.disabled(),
     );
-    if (!match) {
-      return;
+    if (match) {
+      match.host.focus();
+      match.host.scrollIntoView?.({ block: 'nearest' });
     }
-    match.host.focus();
-    match.host.scrollIntoView?.({ block: 'nearest' });
+    return true;
   }
 }

@@ -2,7 +2,7 @@ import { type Signal } from '@angular/core';
 
 import {
   accessibleTextContent,
-  firstEnabledHost,
+  firstEnabledHandle,
   isUnset,
   type ListNavigationAction,
   moveIndex,
@@ -84,9 +84,10 @@ export interface RovingFocusModelDeps<T = unknown> {
   /** Visible node handles in flattened order. */
   readonly visibleHandles: Signal<readonly ForTreeItemHandle<T>[]>;
   /**
-   * Selection-follows-focus hook. Called with the destination value after a
-   * `navigate` when single-mode selection should track focus; a no-op when the
-   * tree is multi-select or the option is off.
+   * Selection-follows-focus hook. Called with the destination value after
+   * every keyboard focus move (navigation, entering a child, leaving to the
+   * parent, a typeahead match) when single-mode selection should track focus;
+   * a no-op when the tree is multi-select or the option is off.
    */
   readonly selectOnFocus: (value: T) => void;
 }
@@ -141,10 +142,7 @@ export class RovingFocusModel<T = unknown> implements FocusModel<T> {
     if (!target) {
       return;
     }
-    this.#deps.roving.focusActive(target.host);
-    if (target.selectable()) {
-      this.#deps.selectOnFocus(target.value());
-    }
+    this.#focusFromKeyboard(target);
   }
 
   enterChild(): void {
@@ -153,16 +151,20 @@ export class RovingFocusModel<T = unknown> implements FocusModel<T> {
       return;
     }
     const child = entry.handle.childContainer();
-    const firstChild = child ? firstEnabledHost(child.items()) : null;
+    const firstChild = child ? firstEnabledHandle(child.items()) : null;
     if (firstChild) {
-      this.#deps.roving.focusActive(firstChild);
+      this.#focusFromKeyboard(firstChild);
     }
   }
 
   moveToParent(): void {
-    const entry = this.#currentNode();
-    if (entry?.parentHost) {
-      this.#deps.roving.focusActive(entry.parentHost);
+    const parentHost = this.#currentNode()?.parentHost;
+    if (!parentHost) {
+      return;
+    }
+    const parent = this.#deps.visibleHandles().find((handle) => handle.host === parentHost);
+    if (parent) {
+      this.#focusFromKeyboard(parent);
     }
   }
 
@@ -183,9 +185,16 @@ export class RovingFocusModel<T = unknown> implements FocusModel<T> {
     });
     if (match) {
       beforeMove();
-      this.#deps.roving.focusActive(match.host);
+      this.#focusFromKeyboard(match);
     }
     return handled;
+  }
+
+  #focusFromKeyboard(target: ForTreeItemHandle<T>): void {
+    this.#deps.roving.focusActive(target.host);
+    if (target.selectable()) {
+      this.#deps.selectOnFocus(target.value());
+    }
   }
 
   #currentNode(): ForTreeVisibleNode<T> | null {

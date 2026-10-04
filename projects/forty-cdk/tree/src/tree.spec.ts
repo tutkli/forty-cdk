@@ -1038,6 +1038,90 @@ describe('ForTree', () => {
     });
   });
 
+  describe('selectionFollowsFocus on every keyboard move (issue #2119)', () => {
+    async function setupFollowing() {
+      const result = await setup((i) => {
+        i.follow.set(true);
+        i.open.set(['documents']);
+      });
+      itemOf(result.el, 'documents').focus();
+      await flush(result.fixture);
+      return result;
+    }
+
+    it('selects the first child entered with ArrowRight', async () => {
+      const { el, fixture } = await setupFollowing();
+
+      pressKey(itemOf(el, 'documents'), 'ArrowRight');
+      await flush(fixture);
+
+      expect(document.activeElement).toBe(itemOf(el, 'report'));
+      expect(fixture.componentInstance.picked()).toEqual(['report']);
+      expect(itemOf(el, 'report').getAttribute('aria-selected')).toBe('true');
+    });
+
+    it('selects the parent reached with ArrowLeft', async () => {
+      const { el, fixture } = await setupFollowing();
+      itemOf(el, 'report').focus();
+      await flush(fixture);
+
+      pressKey(itemOf(el, 'report'), 'ArrowLeft');
+      await flush(fixture);
+
+      expect(document.activeElement).toBe(itemOf(el, 'documents'));
+      expect(fixture.componentInstance.picked()).toEqual(['documents']);
+    });
+
+    it('selects the node a typeahead match lands on', async () => {
+      const { el, fixture } = await setupFollowing();
+
+      pressKey(itemOf(el, 'documents'), 'r');
+      await flush(fixture);
+
+      expect(document.activeElement).toBe(itemOf(el, 'report'));
+      expect(fixture.componentInstance.picked()).toEqual(['report']);
+    });
+
+    it('leaves the selection alone on those moves when the option is off', async () => {
+      const { el, fixture } = await setup((i) => i.open.set(['documents']));
+      itemOf(el, 'documents').focus();
+
+      pressKey(itemOf(el, 'documents'), 'ArrowRight');
+      pressKey(itemOf(el, 'report'), 'ArrowLeft');
+      pressKey(itemOf(el, 'documents'), 'r');
+      await flush(fixture);
+
+      expect(fixture.componentInstance.picked()).toEqual([]);
+    });
+  });
+
+  describe('Space typed mid-typeahead (issue #2119)', () => {
+    it('extends the buffer instead of activating the focused node', async () => {
+      const { el, fixture } = await setup();
+      itemOf(el, 'documents').focus();
+
+      pressKey(itemOf(el, 'documents'), 'd');
+      await flush(fixture);
+      expect(document.activeElement).toBe(itemOf(el, 'downloads'));
+
+      const space = pressKey(itemOf(el, 'downloads'), ' ');
+      await flush(fixture);
+
+      expect(space.defaultPrevented).toBe(true);
+      expect(fixture.componentInstance.picked()).toEqual([]);
+    });
+
+    it('still activates on a Space with an empty buffer', async () => {
+      const { el, fixture } = await setup();
+      itemOf(el, 'readme').focus();
+
+      pressKey(itemOf(el, 'readme'), ' ');
+      await flush(fixture);
+
+      expect(fixture.componentInstance.picked()).toEqual(['readme']);
+    });
+  });
+
   describe('reactive updates', () => {
     it('reflects an expanded write in aria-expanded', async () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });

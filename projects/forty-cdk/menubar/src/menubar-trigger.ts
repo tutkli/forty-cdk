@@ -221,7 +221,9 @@ export class ForMenubarTrigger extends AnchoredOverlayPositioningBase {
     const orientation = this.menubar.orientation();
     const dir = this.menubar.dir();
 
-    // Open / focus-on-open first.
+    if (event.key === ' ' && this.menubar.handleTriggerTypeahead(event)) {
+      return;
+    }
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
       this.menubar.openTrigger(this.value(), 'first');

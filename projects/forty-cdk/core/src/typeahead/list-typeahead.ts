@@ -188,7 +188,9 @@ export interface ListTypeaheadResult<H> {
  * `Typeahead` buffer, and — when consumed — run `findTypeaheadMatch` always
  * threading `repeated: isRepeatedChar()` and the caller-resolved `anchorIndex`.
  * Callers decide what to do with the match (focus it, or move
- * `aria-activedescendant`) and whether the consumed key ends the event.
+ * `aria-activedescendant`). A consumed Space is already `preventDefault()`-ed
+ * by the buffer, so a caller whose own Space branch activates offers the key
+ * here first and activates only when `handled` is `false`.
  */
 export function resolveListTypeahead<H>(
   typeahead: Typeahead,

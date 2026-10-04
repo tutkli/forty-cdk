@@ -10,8 +10,8 @@ import { provideDefaults } from './defaults';
  */
 export interface ForListboxDefaults {
   /**
-   * Single-mode only: when `true`, arrow navigation also selects the
-   * focused option. APG calls this optional and recommends caution —
+   * Single-mode only: when `true`, a keyboard focus move (arrow navigation
+   * or a typeahead match) also selects the focused option. APG calls this optional and recommends caution —
    * leave `false` unless the UX truly benefits from selection following
    * focus.
    */
