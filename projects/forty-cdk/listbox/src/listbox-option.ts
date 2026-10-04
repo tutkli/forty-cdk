@@ -15,6 +15,7 @@ import {
   isUnset,
   registerHandle,
   hostId,
+  preventPointerFocus,
   resolveListNavigation,
   unsetInput,
 } from 'forty-cdk/core';
@@ -88,8 +89,8 @@ export class ForListboxOption<T = string> {
    */
   readonly value = input(unsetInput<T>());
   /**
-   * Whether the option can be activated. A disabled option stays rendered and announced, and is
-   * skipped by arrow navigation and typeahead.
+   * Whether the option can be activated. A disabled option stays rendered and announced, is
+   * skipped by arrow navigation and typeahead, and a mouse press on it leaves focus where it was.
    */
   readonly disabled = input(false, { transform: booleanAttribute });
 
@@ -177,6 +178,7 @@ export class ForListboxOption<T = string> {
       (h) => this.#group.registerOption(h),
       (h) => this.#group.unregisterOption(h),
     );
+    preventPointerFocus(() => this.effectiveDisabled());
   }
 
   protected onClick(): void {

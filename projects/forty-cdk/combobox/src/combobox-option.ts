@@ -14,6 +14,7 @@ import {
   isUnset,
   registerHandle,
   hostId,
+  preventPointerFocus,
   unsetInput,
 } from 'forty-cdk/core';
 import { injectComboboxContext } from './combobox-context';
@@ -54,6 +55,8 @@ export const FOR_COMBOBOX_OPTION = new InjectionToken<ForComboboxOption>('FOR_CO
  *
  * Hovering an option also makes it the activedescendant, mirroring native
  * menu / select behavior so mouse and keyboard intent stay synchronized.
+ * Pressing one never moves DOM focus: the input keeps the keyboard, so typing
+ * and arrow keys carry on after a click.
  */
 @Directive({
   selector: '[forComboboxOption]',
@@ -180,6 +183,7 @@ export class ForComboboxOption<T = string> {
       (h) => this.#ctx.registerOption(h),
       (h) => this.#ctx.unregisterOption(h),
     );
+    preventPointerFocus();
   }
 
   protected onClick(): void {

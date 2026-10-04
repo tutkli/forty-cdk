@@ -52,6 +52,20 @@ test.describe('Combobox', () => {
     await expect(el(page, 'opt-apple')).toHaveAttribute('data-highlighted', '');
   });
 
+  test('clicking an option commits it and keeps focus on the input', async ({ page }) => {
+    await gotoFixture(page, 'combobox');
+    const input = el(page, 'combo-input');
+    await input.click();
+    await input.pressSequentially('ap');
+    await expect(el(page, 'content')).toBeVisible();
+
+    await el(page, 'opt-apricot').click();
+
+    await expect(el(page, 'content')).toHaveCount(0);
+    await expect(input).toHaveValue('apricot');
+    await expectFocused(input);
+  });
+
   test('Escape closes the listbox', async ({ page }) => {
     await gotoFixture(page, 'combobox');
     const input = el(page, 'combo-input');
@@ -457,6 +471,25 @@ test.describe('Combobox', () => {
       await expect(el(page, 'chip-apple')).toHaveCount(0);
       await expect(el(page, 'chip-banana')).toBeVisible();
       await expect(el(page, 'content')).toBeVisible();
+    });
+
+    test('clicking an option keeps focus on the input, which keeps driving the listbox', async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'combobox', { multi: '1', open: '1' });
+      await expect(el(page, 'content')).toBeVisible();
+      await el(page, 'combo-input').focus();
+
+      await el(page, 'opt-apricot').click();
+
+      await expect(el(page, 'chip-apricot')).toBeVisible();
+      await expect(el(page, 'content')).toBeVisible();
+      await expectFocused(el(page, 'combo-input'));
+
+      await page.keyboard.press('ArrowDown');
+      await expect(el(page, 'content').locator('[data-highlighted]')).toHaveCount(1);
+      await page.keyboard.type('bl');
+      await expect(el(page, 'combo-input')).toHaveValue('bl');
     });
 
     test('a genuine outside pointer still dismisses in multi mode', async ({ page }) => {

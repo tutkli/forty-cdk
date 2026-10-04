@@ -45,6 +45,31 @@ test.describe('Tree', () => {
     await expectFocused(el(page, 'item-notes'));
   });
 
+  test('clicking a toggle moves focus to its node and the arrow keys carry on', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'tree');
+
+    await el(page, 'toggle-documents').click();
+
+    await expect(el(page, 'item-documents')).toHaveAttribute('aria-expanded', 'true');
+    await expectFocused(el(page, 'item-documents'));
+    await page.keyboard.press('ArrowDown');
+    await expectFocused(el(page, 'item-resume'));
+  });
+
+  test('clicking a disabled node leaves focus on the focused node', async ({ page }) => {
+    await gotoFixture(page, 'tree');
+    await el(page, 'disable-notes').click();
+    await el(page, 'item-music').focus();
+
+    await el(page, 'label-notes').click();
+
+    await expectFocused(el(page, 'item-music'));
+    await page.keyboard.press('ArrowUp');
+    await expectFocused(el(page, 'item-documents'));
+  });
+
   test('ArrowRight expands a closed parent (focus stays) then enters the first child', async ({
     page,
   }) => {

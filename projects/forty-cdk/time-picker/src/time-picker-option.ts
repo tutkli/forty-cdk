@@ -8,7 +8,7 @@ import {
   signal,
 } from '@angular/core';
 
-import { registerHandle, hostId, resolveListNavigation } from 'forty-cdk/core';
+import { hostId, preventPointerFocus, registerHandle, resolveListNavigation } from 'forty-cdk/core';
 import { injectTimePickerContext } from './time-picker-context';
 
 /**
@@ -60,7 +60,10 @@ export class ForTimePickerOption<D = unknown> {
    */
   readonly value = input.required<D>();
 
-  /** When `true`, this option cannot be selected. */
+  /**
+   * When `true`, this option cannot be selected, and a mouse press on it leaves focus where it
+   * was.
+   */
   readonly disabled = input(false, { transform: booleanAttribute });
 
   readonly id = hostId('for-time-picker-option');
@@ -94,6 +97,7 @@ export class ForTimePickerOption<D = unknown> {
       (h) => this.#ctx.overlay.registerOption(h),
       (h) => this.#ctx.overlay.unregisterOption(h),
     );
+    preventPointerFocus(() => this.effectiveDisabled());
   }
 
   protected onClick(): void {

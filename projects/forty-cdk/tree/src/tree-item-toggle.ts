@@ -1,6 +1,6 @@
 import { DestroyRef, Directive, inject } from '@angular/core';
 
-import { hostButtonType } from 'forty-cdk/core';
+import { hostButtonType, preventPointerFocus } from 'forty-cdk/core';
 import { injectTreeItemContext } from './tree-context';
 
 /**
@@ -10,8 +10,9 @@ import { injectTreeItemContext } from './tree-context';
  * neither — matching the APG "end nodes lack `aria-expanded`" rule.
  *
  * Decorative: the enclosing `treeitem` owns `aria-expanded`, so the toggle is
- * `aria-hidden` and not separately focusable. Clicking it toggles expansion
- * without selecting the node.
+ * `aria-hidden` and never takes focus, from Tab or from a mouse press. Clicking
+ * it toggles expansion without selecting the node and moves roving focus to the
+ * `treeitem`, so the keyboard carries on from there.
  */
 @Directive({
   selector: '[forTreeItemToggle]',
@@ -32,10 +33,12 @@ export class ForTreeItemToggle {
   constructor() {
     const unregister = this.item.registerToggle();
     inject(DestroyRef).onDestroy(unregister);
+    preventPointerFocus();
   }
 
   protected onClick(event: MouseEvent): void {
     event.stopPropagation();
     this.item.toggle();
+    this.item.focusItem();
   }
 }

@@ -497,7 +497,7 @@ Optional slot inside an option. Mirrors `data-state` and self-hides while the op
 - **PageUp / PageDown** jump to first / last enabled option.
 - **Space / Enter** activate the focused option (toggles in multi, selects in single) via the underlying button.
 - **Typeahead**: typing characters focuses the first option whose visible text starts with the typed prefix (case-insensitive, debounced).
-- Disabled options are skipped on arrow nav. They keep `aria-disabled="true"` and `data-disabled=""` (no native `disabled` attribute, per APG): focusable for screen-reader announcement, but click and keyboard activation are no-ops.
+- Disabled options are skipped on arrow nav. They keep `aria-disabled="true"` and `data-disabled=""` (no native `disabled` attribute, per APG): still reachable by a screen reader, but click and keyboard activation are no-ops, and a mouse press on one leaves focus where it was, so arrow keys and typeahead carry on from the option that had it.
 
 ### Multi mode (APG-recommended range selection)
 

@@ -13,6 +13,7 @@ import {
   assertInputBound,
   registerHandle,
   hostId,
+  preventPointerFocus,
   resolveListNavigation,
   resolveTreeExpandCollapse,
   unsetInput,
@@ -84,7 +85,10 @@ export class ForTreeItem<T = string> implements ForTreeItemContext<T> {
    */
   readonly value = input(unsetInput<T>());
 
-  /** Disables this node: not selectable, skipped by keyboard navigation. */
+  /**
+   * Disables this node: not selectable, skipped by keyboard navigation, and a
+   * mouse press on it leaves focus where it was.
+   */
   readonly disabled = input(false, { transform: booleanAttribute });
 
   /**
@@ -246,6 +250,7 @@ export class ForTreeItem<T = string> implements ForTreeItemContext<T> {
       (h) => this.#container.registerItem(h),
       (h) => this.#container.unregisterItem(h),
     );
+    preventPointerFocus((event) => this.effectiveDisabled() && this.#ownsPress(event));
   }
 
   registerToggle(): () => void {
@@ -296,6 +301,13 @@ export class ForTreeItem<T = string> implements ForTreeItemContext<T> {
   protected onPointerDown(event: PointerEvent): void {
     if (!this.#virtualized()) return;
     event.preventDefault();
+  }
+
+  #ownsPress(event: MouseEvent): boolean {
+    const target = event.target;
+    return (
+      target instanceof Element && target.closest('[role="treeitem"]') === this.#host.nativeElement
+    );
   }
 
   protected onKeyDown(event: KeyboardEvent): void {
