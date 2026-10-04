@@ -1,7 +1,15 @@
-import { Component, Directive, ElementRef, inject, signal } from '@angular/core';
+import {
+  Component,
+  Directive,
+  ElementRef,
+  inject,
+  signal,
+  viewChild,
+  ViewEncapsulation,
+} from '@angular/core';
 
 import { renderHost } from '../../../src/test-utils/render';
-import { mirrorUnfocusedValue } from './unfocused-value-mirror';
+import { mirrorUnfocusedValue, mirrorValue } from './value-mirror';
 
 @Directive({
   selector: 'input[mirrorHost]',
@@ -26,6 +34,24 @@ class LazyMirrorHost {
 
   constructor() {
     mirrorUnfocusedValue(this.el, this.value);
+  }
+}
+
+@Directive({
+  selector: 'input[liveMirrorHost]',
+  exportAs: 'liveMirrorHost',
+})
+class LiveMirrorHost {
+  readonly #el = inject<ElementRef<HTMLInputElement>>(ElementRef).nativeElement;
+  readonly value = signal('');
+  composing = false;
+
+  constructor() {
+    mirrorValue(
+      () => this.#el,
+      this.value,
+      () => this.composing,
+    );
   }
 }
 
@@ -67,6 +93,39 @@ describe('mirrorUnfocusedValue', () => {
     });
   });
 
+  describe('element inside an open shadow root', () => {
+    @Component({
+      imports: [MirrorHost],
+      encapsulation: ViewEncapsulation.ShadowDom,
+      template: `<input mirrorHost />`,
+    })
+    class ShadowHost {
+      readonly mirror = viewChild.required(MirrorHost);
+    }
+
+    it('skips the write while the element is focused inside the shadow tree', async () => {
+      const { el, instance, flush } = renderHost(ShadowHost);
+      const input = el.shadowRoot!.querySelector('input')!;
+
+      input.focus();
+      expect(document.activeElement).toBe(el);
+      input.value = 'user typing';
+
+      instance.mirror().value.set('external');
+      await flush();
+      expect(input.value).toBe('user typing');
+    });
+
+    it('writes once focus has left the shadow tree', async () => {
+      const { el, instance, flush } = renderHost(ShadowHost);
+      const input = el.shadowRoot!.querySelector('input')!;
+
+      instance.mirror().value.set('external');
+      await flush();
+      expect(input.value).toBe('external');
+    });
+  });
+
   describe('element injected lazily', () => {
     @Component({
       imports: [LazyMirrorHost],
@@ -86,5 +145,42 @@ describe('mirrorUnfocusedValue', () => {
       await flush();
       expect(input.value).toBe('123');
     });
+  });
+});
+
+describe('mirrorValue', () => {
+  @Component({
+    imports: [LiveMirrorHost],
+    template: `<input liveMirrorHost />`,
+  })
+  class Host {
+    readonly mirror = viewChild.required(LiveMirrorHost);
+  }
+
+  it('writes a value that differs from the displayed text while the element is focused', async () => {
+    const { el, instance, flush } = renderHost(Host);
+    const input = el.querySelector('input')!;
+
+    instance.mirror().value.set('hello');
+    await flush();
+    input.focus();
+    expect(document.activeElement).toBe(input);
+
+    instance.mirror().value.set('');
+    await flush();
+    expect(input.value).toBe('');
+  });
+
+  it('skips the write while an IME composition is in progress', async () => {
+    const { el, instance, flush } = renderHost(Host);
+    const input = el.querySelector('input')!;
+
+    input.focus();
+    instance.mirror().composing = true;
+    input.value = 'かな';
+
+    instance.mirror().value.set('external');
+    await flush();
+    expect(input.value).toBe('かな');
   });
 });

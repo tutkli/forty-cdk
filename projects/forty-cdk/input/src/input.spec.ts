@@ -274,6 +274,51 @@ describe('ForInput', () => {
     });
   });
 
+  describe('a write made while focused reaches the DOM', () => {
+    it('clears the displayed text on a submit-and-clear write, keeping focus', async () => {
+      const { el, fixture, flush } = renderHost(InputHost);
+      const input = inputOf(el);
+
+      input.focus();
+      typeInto(input, 'hello');
+      await flush();
+
+      fixture.componentInstance.text.set('');
+      await flush();
+
+      expect(input.value).toBe('');
+      expect(document.activeElement).toBe(input);
+    });
+
+    it('lets the next keystroke build on the written value, not the old text', async () => {
+      const { el, fixture, flush } = renderHost(InputHost);
+      const input = inputOf(el);
+
+      input.focus();
+      typeInto(input, 'hello');
+      await flush();
+      fixture.componentInstance.text.set('');
+      await flush();
+
+      typeInto(input, input.value + 'x');
+      await flush();
+
+      expect(fixture.componentInstance.text()).toBe('x');
+    });
+
+    it('shows a reformat the consumer applies to the typed value', async () => {
+      const { el, fixture, flush } = renderHost(InputHost);
+      const input = inputOf(el);
+
+      input.focus();
+      typeInto(input, 'abc');
+      fixture.componentInstance.text.set(fixture.componentInstance.text().toUpperCase());
+      await flush();
+
+      expect(input.value).toBe('ABC');
+    });
+  });
+
   describe('blur re-syncs the DOM value', () => {
     it('reconciles a stale element value to the model on blur', async () => {
       const { el, fixture, flush } = renderHost(InputHost);
@@ -452,6 +497,51 @@ describe('ForTextarea', () => {
       );
       await flush();
       expect(fixture.componentInstance.text()).toBe('かな');
+    });
+  });
+
+  describe('a write made while focused reaches the DOM', () => {
+    it('clears the displayed text on a submit-and-clear write, keeping focus', async () => {
+      const { el, fixture, flush } = renderHost(TextareaHost);
+      const textarea = textareaOf(el);
+
+      textarea.focus();
+      typeInto(textarea, 'hello');
+      await flush();
+
+      fixture.componentInstance.text.set('');
+      await flush();
+
+      expect(textarea.value).toBe('');
+      expect(document.activeElement).toBe(textarea);
+    });
+
+    it('lets the next keystroke build on the written value, not the old text', async () => {
+      const { el, fixture, flush } = renderHost(TextareaHost);
+      const textarea = textareaOf(el);
+
+      textarea.focus();
+      typeInto(textarea, 'hello');
+      await flush();
+      fixture.componentInstance.text.set('');
+      await flush();
+
+      typeInto(textarea, textarea.value + 'x');
+      await flush();
+
+      expect(fixture.componentInstance.text()).toBe('x');
+    });
+
+    it('shows a reformat the consumer applies to the typed value', async () => {
+      const { el, fixture, flush } = renderHost(TextareaHost);
+      const textarea = textareaOf(el);
+
+      textarea.focus();
+      typeInto(textarea, 'abc');
+      fixture.componentInstance.text.set(fixture.componentInstance.text().toUpperCase());
+      await flush();
+
+      expect(textarea.value).toBe('ABC');
     });
   });
 

@@ -1,4 +1,9 @@
-import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
+import {
+  Component,
+  provideZonelessChangeDetection,
+  signal,
+  ViewEncapsulation,
+} from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { form, FormField, min as minRule, required } from '@angular/forms/signals';
@@ -929,6 +934,37 @@ describe('ForNumberInput', () => {
       typeInto(input, six);
       await flush();
       expect(fixture.componentInstance.qty()).toBe(6);
+    });
+  });
+
+  describe('inside a shadow root', () => {
+    @Component({
+      imports: [ForNumberInput],
+      encapsulation: ViewEncapsulation.ShadowDom,
+      template: `<input
+        forNumberInput
+        [(value)]="qty"
+        locale="en-US"
+        [formatOptions]="currency"
+      />`,
+    })
+    class ShadowNumberHost {
+      readonly qty = signal<number | null>(null);
+      readonly currency: Intl.NumberFormatOptions = { style: 'currency', currency: 'USD' };
+    }
+
+    it('leaves the typed text alone while focused, so a formatted value can be typed', async () => {
+      const { el, fixture, flush } = renderHost(ShadowNumberHost);
+      const input = el.shadowRoot!.querySelector('input')!;
+
+      input.focus();
+      typeInto(input, '1');
+      await flush();
+      typeInto(input, input.value + '2');
+      await flush();
+
+      expect(input.value).toBe('12');
+      expect(fixture.componentInstance.qty()).toBe(12);
     });
   });
 

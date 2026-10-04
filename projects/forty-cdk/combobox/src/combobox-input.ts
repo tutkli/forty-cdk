@@ -1,6 +1,11 @@
 import { computed, Directive, DOCUMENT, effect, ElementRef, inject } from '@angular/core';
 
-import { foldTypeaheadText, registerHandle, reflectDisabled } from 'forty-cdk/core';
+import {
+  foldTypeaheadText,
+  registerHandle,
+  reflectDisabled,
+  resolveActiveElement,
+} from 'forty-cdk/core';
 import { injectComboboxContext } from './combobox-context';
 
 /**
@@ -110,7 +115,7 @@ export class ForComboboxInput {
       if (el.value === q) {
         return;
       }
-      if (doc.activeElement !== el || closing) {
+      if (resolveActiveElement(doc) !== el || closing) {
         el.value = q;
       }
     });

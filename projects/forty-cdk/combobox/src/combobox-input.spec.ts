@@ -1,4 +1,4 @@
-import { Component, computed, signal } from '@angular/core';
+import { Component, computed, signal, ViewEncapsulation } from '@angular/core';
 
 import { pressKey } from 'forty-cdk/testing';
 
@@ -190,6 +190,19 @@ class InlineRemovalHost {
     { id: 'apple', label: 'apple' },
     { id: 'banana', label: 'banana' },
   ]);
+}
+
+@Component({
+  imports: [ForCombobox, ForComboboxInput],
+  encapsulation: ViewEncapsulation.ShadowDom,
+  template: `
+    <div forCombobox [(query)]="query" [openOnQuery]="false">
+      <input forComboboxInput />
+    </div>
+  `,
+})
+class ShadowQueryHost {
+  readonly query = signal('');
 }
 
 function getInput(): HTMLInputElement {
@@ -427,6 +440,25 @@ describe('ForComboboxInput', () => {
 
       expect(input.value).toBe('ap');
       expect(r.instance.query()).toBe('apricot');
+    });
+  });
+
+  describe('inside a shadow root', () => {
+    it('does not write a query change into the input while it is focused in the shadow tree', async () => {
+      const r = renderHost(ShadowQueryHost);
+      await flush(r.fixture);
+      const input = r.el.shadowRoot!.querySelector<HTMLInputElement>('input')!;
+
+      input.focus();
+      expect(document.activeElement).toBe(r.el);
+      fireInput(input, 'ap', 2, 'insertText');
+      await flush(r.fixture);
+      expect(r.instance.query()).toBe('ap');
+
+      r.instance.query.set('apricot');
+      await flush(r.fixture);
+
+      expect(input.value).toBe('ap');
     });
   });
 

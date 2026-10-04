@@ -181,7 +181,7 @@ export { injectHasFocusableContent } from './focus-trap/focusable-content';
 export { FormUiControlBase } from './form-ui-control/form-ui-control-base';
 export { injectHiddenInput } from './form-ui-control/hidden-input';
 export { TextValueControlBase } from './form-ui-control/text-value-control-base';
-export { mirrorUnfocusedValue } from './form-ui-control/unfocused-value-mirror';
+export { mirrorUnfocusedValue } from './form-ui-control/value-mirror';
 export { resolveConfigClass } from './host-attributes/config-class';
 export { reflectDisabled } from './host-attributes/disabled-reflection';
 export { hostAriaLabel, hostDescribedBy, hostLabelledBy } from './host-attributes/host-aria';
