@@ -1,6 +1,6 @@
 import { computed, DestroyRef, Directive, ElementRef, inject } from '@angular/core';
 
-import { crossesInteractiveContent, resolveEventTarget } from 'forty-cdk/core';
+import { crossesInteractiveContent, preventPointerFocus, resolveEventTarget } from 'forty-cdk/core';
 import { FOR_FIELD_CONTEXT } from './field-context';
 
 /**
@@ -50,7 +50,6 @@ import { FOR_FIELD_CONTEXT } from './field-context';
   host: {
     '[attr.id]': 'labelId()',
     '[attr.for]': 'forAttr()',
-    '(mousedown)': 'onMouseDown($event)',
     '(click)': 'onClick($event)',
   },
 })
@@ -75,12 +74,7 @@ export class ForLabel {
       const unregister = ctx.registerLabel(this.#host.nativeElement);
       inject(DestroyRef).onDestroy(unregister);
     }
-  }
-
-  protected onMouseDown(event: MouseEvent): void {
-    if (event.button === 0 && this.#pressedTarget(event)) {
-      event.preventDefault();
-    }
+    preventPointerFocus((event) => event.button === 0 && this.#pressedTarget(event) !== null);
   }
 
   protected onClick(event: MouseEvent): void {

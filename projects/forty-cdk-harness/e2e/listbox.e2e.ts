@@ -17,6 +17,19 @@ test.describe('Listbox', () => {
     await expect(el(page, 'opt-cherry')).toBeFocused();
   });
 
+  test('clicking a disabled option leaves focus where the arrow keys still work', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'listbox');
+    await el(page, 'opt-apple').focus();
+
+    await el(page, 'opt-banana').click({ force: true });
+
+    await expect(el(page, 'opt-apple')).toBeFocused();
+    await page.keyboard.press('ArrowDown');
+    await expect(el(page, 'opt-cherry')).toBeFocused();
+  });
+
   test('PageDown / PageUp jump to last / first enabled option', async ({ page }) => {
     await gotoFixture(page, 'listbox');
     await el(page, 'opt-apple').focus();

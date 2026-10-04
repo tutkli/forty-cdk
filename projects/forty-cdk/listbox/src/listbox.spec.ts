@@ -10,7 +10,7 @@ import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
 import { isUnset, unsetInput } from 'forty-cdk/core';
-import { pressKey } from 'forty-cdk/testing';
+import { pressKey, pressWithMouse } from 'forty-cdk/testing';
 
 import { afterEachOverlayCleanup, flush, renderHost } from '../../src/test-utils';
 import {
@@ -1521,6 +1521,30 @@ describe('ForListbox', () => {
       optOf(el, 'apple').click();
       await flush();
       expect(fixture.componentInstance.picked()).toEqual([]);
+    });
+
+    it('a mouse press on a disabled option leaves focus where arrows and typeahead still work', async () => {
+      const { el, fixture, flush } = renderHost(ListboxHost);
+      fixture.componentInstance.options.set([
+        { value: 'apple', label: 'Apple', disabled: false },
+        { value: 'banana', label: 'Banana', disabled: true },
+        { value: 'cherry', label: 'Cherry', disabled: false },
+      ]);
+      await flush();
+      optOf(el, 'apple').focus();
+      await flush();
+
+      pressWithMouse(optOf(el, 'banana'));
+      await flush();
+      expect(document.activeElement).toBe(optOf(el, 'apple'));
+
+      pressKey(document.activeElement!, 'ArrowDown');
+      await flush();
+      expect(document.activeElement).toBe(optOf(el, 'cherry'));
+
+      pressKey(document.activeElement!, 'a');
+      await flush();
+      expect(document.activeElement).toBe(optOf(el, 'apple'));
     });
 
     it('root disabled cascades and blocks selection', async () => {

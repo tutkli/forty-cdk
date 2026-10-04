@@ -683,7 +683,7 @@ In the default (non-virtualized) path the full APG range keyboard works while th
 Implements the [WAI-ARIA select-only combobox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/examples/combobox-select-only/).
 
 - Apply each option directive to a `<button>` so Space / Enter activation come from native button behavior. The listbox doesn't intercept them.
-- Disabled options keep `tabindex="-1"` and `aria-disabled="true"` (per APG): focusable for screen-reader announcement, but click and keyboard activation are no-ops.
+- Disabled options keep `tabindex="-1"` and `aria-disabled="true"` (per APG): still reachable by a screen reader, but click and keyboard activation are no-ops, and a mouse press on one leaves focus where it was, so arrow keys and typeahead carry on from the option that had it.
 - `[forSelectSeparator]` never registers with the listbox's option collection, so it's skipped during navigation and typeahead automatically. It carries `role="separator"` and emits `aria-orientation` only for `orientation="vertical"`, because `horizontal` is the ARIA default; `data-orientation` is always stamped for styling. Set `decorative` when the surrounding options already convey the split. `decorative` switches the line to `role="none"` and drops `aria-orientation`, matching the [shared separator emission policy](../separator/README.md#accessibility).
 - `[forSelectGroup]` is purely advisory grouping: options inside still register flatly with the root, so navigation flows through groups without interruption.
 - The trigger is exempt from the dismissible layer's outside-pointer checks, so a click on the trigger while the listbox is open routes through `(click)` (toggle) instead of double-firing as an outside dismissal.

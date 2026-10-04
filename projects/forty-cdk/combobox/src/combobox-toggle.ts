@@ -3,6 +3,7 @@ import { Directive, ElementRef, inject, input } from '@angular/core';
 import {
   hostAriaLabel,
   hostButtonType,
+  preventPointerFocus,
   reflectDisabled,
   registerHandle,
   resolveTextInput,
@@ -39,7 +40,6 @@ import { FOR_COMBOBOX_DEFAULTS } from 'forty-cdk/defaults';
     '[attr.aria-controls]': 'ctx.open() ? ctx.listboxId() : null',
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
     '[attr.data-disabled]': 'ctx.effectiveDisabled() ? "" : null',
-    '(mousedown)': 'onMouseDown($event)',
     '(click)': 'onClick()',
   },
 })
@@ -68,10 +68,7 @@ export class ForComboboxToggle {
       (el) => this.ctx.unregisterToggle(el),
     );
     reflectDisabled(this.ctx.effectiveDisabled);
-  }
-
-  protected onMouseDown(event: MouseEvent): void {
-    event.preventDefault();
+    preventPointerFocus();
   }
 
   protected onClick(): void {

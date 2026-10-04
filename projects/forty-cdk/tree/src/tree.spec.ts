@@ -9,7 +9,7 @@ import {
 import { TestBed } from '@angular/core/testing';
 
 import { isUnset, unsetInput } from 'forty-cdk/core';
-import { pressKey } from 'forty-cdk/testing';
+import { pressKey, pressWithMouse } from 'forty-cdk/testing';
 
 import { flush, renderHost } from '../../src/test-utils';
 import {
@@ -435,6 +435,20 @@ describe('ForTree', () => {
       expect(itemOf(el, 'documents').querySelector('[forTreeGroup]')).toBeNull();
     });
 
+    it('a mouse press on a toggle focuses its node, never the toggle, and arrows carry on', async () => {
+      const { el, fixture } = await setup();
+
+      pressWithMouse(toggleOf(el, 'documents'));
+      await flush(fixture);
+
+      expect(fixture.componentInstance.open()).toEqual(['documents']);
+      expect(document.activeElement).toBe(itemOf(el, 'documents'));
+
+      pressKey(document.activeElement!, 'ArrowDown');
+      await flush(fixture);
+      expect(document.activeElement).toBe(itemOf(el, 'report'));
+    });
+
     it('toggling a node does not change the selection', async () => {
       const { el, fixture } = await setup();
       toggleOf(el, 'documents').click();
@@ -821,6 +835,32 @@ describe('ForTree', () => {
       await flush(fixture);
       expect(fixture.componentInstance.picked()).toEqual([]);
       expect(readme.getAttribute('aria-selected')).toBe('false');
+    });
+
+    it('a mouse press on a disabled node leaves focus on the focused node', async () => {
+      const { el, fixture } = await setup((i) => i.disabledIds.set(['downloads']));
+      itemOf(el, 'documents').focus();
+      await flush(fixture);
+
+      pressWithMouse(labelOf(el, 'downloads'));
+      await flush(fixture);
+      expect(document.activeElement).toBe(itemOf(el, 'documents'));
+
+      pressKey(document.activeElement!, 'ArrowDown');
+      await flush(fixture);
+      expect(document.activeElement).toBe(itemOf(el, 'readme'));
+    });
+
+    it('a mouse press on an enabled child of a disabled node still focuses the child', async () => {
+      const { el, fixture } = await setup((i) => {
+        i.disabledIds.set(['documents']);
+        i.open.set(['documents']);
+      });
+
+      pressWithMouse(labelOf(el, 'report'));
+      await flush(fixture);
+
+      expect(document.activeElement).toBe(itemOf(el, 'report'));
     });
 
     it('a disabled root marks every node disabled and blocks selection', async () => {

@@ -601,4 +601,43 @@ describe('ForCombobox editable anatomy', () => {
       expect(r.instance.query()).toBe('Banana');
     });
   });
+  describe('option press', () => {
+    async function openWithFocus(multiple: boolean): Promise<RenderResult<RestoreHost>> {
+      const r = renderHost(RestoreHost);
+      r.instance.restore.set(false);
+      r.instance.multiple.set(multiple);
+      await flush(r.fixture);
+      getInput().focus();
+      pressKey(getInput(), 'ArrowDown');
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe(true);
+      return r;
+    }
+
+    it('keeps focus on the input after a single-mode press commits and closes', async () => {
+      const r = await openWithFocus(false);
+
+      pressWithMouse(getByTestId('apple'));
+      await flush(r.fixture);
+
+      expect(r.instance.value()).toEqual(['apple']);
+      expect(r.instance.open()).toBe(false);
+      expect(document.activeElement).toBe(getInput());
+    });
+
+    it('keeps the input driving the listbox after a multi-mode press', async () => {
+      const r = await openWithFocus(true);
+
+      pressWithMouse(getByTestId('apple'));
+      await flush(r.fixture);
+
+      expect(r.instance.value()).toEqual(['apple']);
+      expect(r.instance.open()).toBe(true);
+      expect(document.activeElement).toBe(getInput());
+
+      pressKey(document.activeElement!, 'ArrowDown');
+      await flush(r.fixture);
+      expect(activeOptionTestId()).toBe('apricot');
+    });
+  });
 });
