@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   Directive,
+  input,
   provideZonelessChangeDetection,
   signal,
 } from '@angular/core';
@@ -17,6 +18,7 @@ import { ForTreeItemToggle } from './tree-item-toggle';
 import { ForTreeNodeDrag } from './tree-node-drag';
 import { ForTreeNodeDragHandle } from './tree-node-drag-handle';
 import type { ForTreeDragDropEvent } from './tree-drag-drop-event';
+import { moveTreeNode } from './move-tree-node';
 
 @Component({
   imports: [
@@ -1131,5 +1133,127 @@ describe('ForTreeNodeDrag — the primary-button guard is scoped to a mouse pres
     await f();
 
     expect(instance.dropped()).toBeNull();
+  });
+});
+
+interface FileNode {
+  readonly id: string;
+  readonly name: string;
+  readonly children?: readonly FileNode[];
+}
+
+@Component({
+  selector: 'test-file-node',
+  imports: [ForTreeItem, ForTreeItemLabel, ForTreeGroup, FileNodeView],
+  host: { style: 'display: contents' },
+  template: `
+    <li forTreeItem [value]="node().id" [attr.data-testid]="node().id">
+      <div forTreeItemLabel>{{ node().name }}</div>
+      @if (node().children?.length && expanded().includes(node().id)) {
+        <ul forTreeGroup>
+          @for (child of node().children ?? []; track child.id) {
+            <test-file-node [node]="child" [expanded]="expanded()" />
+          }
+        </ul>
+      }
+    </li>
+  `,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class FileNodeView {
+  readonly node = input.required<FileNode>();
+  readonly expanded = input.required<readonly string[]>();
+}
+
+@Component({
+  imports: [ForTree, ForTreeNodeDrag, FileNodeView],
+  template: `
+    <ul forTree forTreeNodeDrag [(expanded)]="open" (nodeDrop)="onDrop($event)" aria-label="Files">
+      @for (n of roots(); track n.id) {
+        <test-file-node [node]="n" [expanded]="open()" />
+      }
+    </ul>
+  `,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class AppliedDropTreeHost {
+  readonly open = signal<readonly string[]>(['documents']);
+  readonly roots = signal<readonly FileNode[]>([
+    {
+      id: 'documents',
+      name: 'Documents',
+      children: [
+        { id: 'resume', name: 'Resume' },
+        { id: 'projects', name: 'Projects' },
+      ],
+    },
+    { id: 'readme', name: 'Readme' },
+  ]);
+
+  onDrop(event: ForTreeDragDropEvent): void {
+    this.roots.update((roots) =>
+      moveTreeNode(roots as FileNode[], {
+        event,
+        trackBy: (n) => n.id,
+        children: (n) => n.children as FileNode[] | undefined,
+        withChildren: (n, children) => ({ ...n, children: children as FileNode[] }),
+      }),
+    );
+  }
+}
+
+describe('ForTreeNodeDrag — focus follows the dropped node (#2118)', () => {
+  afterEach(() => {
+    document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
+  });
+
+  async function liftAndDrop(
+    keys: readonly string[],
+    open?: readonly string[],
+  ): Promise<{ query: (selector: string) => HTMLElement | null; dropped: HTMLElement }> {
+    const { instance, query, flush: f } = renderHost(AppliedDropTreeHost);
+    if (open !== undefined) {
+      instance.open.set(open);
+    }
+    await f();
+    const tree = query<HTMLElement>('[forTree]')!;
+    const readme = query<HTMLElement>('[data-testid="readme"]')!;
+    readme.focus();
+    dispatchKey(readme, ' ', { ctrlKey: true });
+    await f();
+    for (const key of keys) {
+      dispatchKey(tree, key);
+      await f();
+    }
+    dispatchKey(tree, ' ');
+    await f();
+    await f();
+    return { query: (selector) => query<HTMLElement>(selector), dropped: readme };
+  }
+
+  it('a re-parenting drop focuses the node in its new place, not <body>', async () => {
+    const { query, dropped } = await liftAndDrop(['ArrowRight']);
+
+    const moved = query('[data-testid="readme"]')!;
+    expect(moved).not.toBe(dropped);
+    expect(moved.parentElement?.closest('[data-testid="documents"]')).not.toBeNull();
+    expect(document.activeElement).toBe(moved);
+  });
+
+  it('a drop into a collapsed parent focuses that parent', async () => {
+    const { query } = await liftAndDrop(['ArrowRight'], []);
+
+    expect(query('[data-testid="readme"]')).toBeNull();
+    expect(document.activeElement).toBe(query('[data-testid="documents"]'));
+  });
+
+  it('a same-parent reorder keeps focus on the moved node', async () => {
+    const { query } = await liftAndDrop(['ArrowUp', 'ArrowUp', 'ArrowUp', 'ArrowLeft']);
+
+    const roots = Array.from(query('[forTree]')!.children).map((el) =>
+      el.querySelector('[forTreeItem]')?.getAttribute('data-testid'),
+    );
+    expect(roots).toEqual(['readme', 'documents']);
+    expect(document.activeElement).toBe(query('[data-testid="readme"]'));
   });
 });

@@ -265,7 +265,7 @@ export class DemoSortableTags {
 ### Reorder keyboard
 
 - **Ctrl+Space** (or **Cmd+Space**) lifts the focused option.
-- While lifted: **arrow keys** step the target position (linearly in DOM order, so a wrapping grid sorts with either axis), **Home / End** jump to the ends, **Space / Enter** drop, **Escape / Tab** cancel.
+- While lifted: **arrow keys** step the target position (linearly in DOM order, so a wrapping grid sorts with either axis), **Home / End** jump to the ends, **Space / Enter** drop, keeping focus on the dropped option, **Escape / Tab** cancel.
 - The lift chord is intercepted in the capture phase, so it never collides with the option's native Space / Enter selection or with arrow navigation while idle.
 
 ### Pointer

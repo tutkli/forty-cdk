@@ -454,3 +454,44 @@ describe('ForListboxReorder — i18n announcements', () => {
     expect(liveRegion('assertive')?.textContent).toBe('b, lifted. 2 of 4.');
   });
 });
+
+describe('ForListboxReorder — focus follows the dropped option (#2118)', () => {
+  async function drop(from: string, keys: readonly string[]) {
+    const harness = renderHost(ReorderHost);
+    await harness.flush();
+    const list = harness.query('[forListbox]')!;
+    const option = harness.query(`[data-testid="opt-${from}"]`)!;
+    option.focus();
+    dispatchKey(option, ' ', { ctrlKey: true });
+    await harness.flush();
+    for (const key of keys) {
+      dispatchKey(list, key);
+      await harness.flush();
+    }
+    dispatchKey(list, ' ');
+    await harness.flush();
+    await harness.flush();
+    return harness;
+  }
+
+  it('a keyboard drop moving an option down keeps focus on it', async () => {
+    const { query, queryAll } = await drop('b', ['ArrowDown']);
+
+    expect(order(queryAll)).toEqual(['a', 'c', 'b', 'd']);
+    expect(document.activeElement).toBe(query('[data-testid="opt-b"]'));
+  });
+
+  it('a keyboard drop moving an option up keeps focus on it', async () => {
+    const { query, queryAll } = await drop('c', ['ArrowUp']);
+
+    expect(order(queryAll)).toEqual(['a', 'c', 'b', 'd']);
+    expect(document.activeElement).toBe(query('[data-testid="opt-c"]'));
+  });
+
+  it('a keyboard drop to the start keeps focus on the moved option', async () => {
+    const { query, queryAll } = await drop('d', ['Home']);
+
+    expect(order(queryAll)).toEqual(['d', 'a', 'b', 'c']);
+    expect(document.activeElement).toBe(query('[data-testid="opt-d"]'));
+  });
+});

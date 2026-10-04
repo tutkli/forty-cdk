@@ -270,3 +270,55 @@ test.describe('Virtualized *forVirtualFor list reorder', () => {
     await expect(el(page, 'last-reorder')).toHaveText(`${from}->${target.index}`);
   });
 });
+
+test.describe('Virtualized list reorder: focus follows the keyboard (#2118)', () => {
+  test.beforeEach(async ({ page }) => {
+    await gotoFixture(page, 'virtual-reorder');
+  });
+
+  test('an in-window keyboard drop focuses the row rendering the moved item', async ({ page }) => {
+    const indices = await scrollAndSettle(page);
+    const from = indices[Math.floor(indices.length / 2)]!;
+
+    await el(page, `row-${from}`).focus();
+    await page.keyboard.press('Space');
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('Space');
+
+    await expect(el(page, 'last-reorder')).toHaveText(`${from}->${from + 1}`);
+    const landed = el(page, `row-${from + 1}`);
+    await expect(landed).toBeFocused();
+    await expect(landed).toHaveText(`Row ${from}`);
+  });
+
+  test('a keyboard drop after an End jump focuses the moved item at the dataset end', async ({
+    page,
+  }) => {
+    const indices = await scrollAndSettle(page);
+    const from = indices[Math.floor(indices.length / 2)]!;
+
+    await el(page, `row-${from}`).focus();
+    await page.keyboard.press('Space');
+    await page.keyboard.press('End');
+    await expect.poll(async () => (await renderedIndices(page)).at(-1) ?? -1).toBe(9999);
+    await page.keyboard.press('Space');
+
+    await expect(el(page, 'last-reorder')).toHaveText(`${from}->9999`);
+    const landed = el(page, 'row-9999');
+    await expect(landed).toBeFocused();
+    await expect(landed).toHaveText(`Row ${from}`);
+  });
+
+  test('idle End and Home focus the dataset ends, beyond the rendered window', async ({ page }) => {
+    const indices = await scrollAndSettle(page);
+    const from = indices[Math.floor(indices.length / 2)]!;
+
+    await el(page, `row-${from}`).focus();
+    await page.keyboard.press('End');
+    await expect(el(page, 'row-9999')).toBeFocused();
+
+    await page.keyboard.press('Home');
+    await expect(el(page, 'row-0')).toBeFocused();
+    await expect(el(page, 'last-reorder')).toHaveText('none');
+  });
+});

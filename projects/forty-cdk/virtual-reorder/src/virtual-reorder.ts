@@ -4,6 +4,7 @@ import {
   DOCUMENT,
   ElementRef,
   inject,
+  Injector,
   output,
   PLATFORM_ID,
 } from '@angular/core';
@@ -14,11 +15,14 @@ import {
   FOR_DROP_LIST_COORDINATOR,
   ForDropList,
   type ForDragDropEvent,
+  type ForDraggableHandle,
 } from 'forty-cdk/drag-drop';
 import {
   createKeyboardDragMediator,
   createPointerDragSession,
   dragAnnouncementLabel,
+  focusWhenMounted,
+  type FocusWhenMountedRef,
   fortyError,
   LiveAnnouncer,
   type PointerDragSession,
@@ -71,7 +75,8 @@ function injectViewport(): ForVirtualViewport {
  *   window past it without recycling it, and it keeps its DOM node — and therefore its focus —
  *   for the whole gesture.
  * - **Dataset-wide keyboard reorder** — keyboard stepping runs over the true total count,
- *   scrolling unmounted target rows into view, rather than being confined to the window.
+ *   scrolling unmounted target rows into view, rather than being confined to the window. An
+ *   idle `Home` / `End` likewise focuses the first / last item of the dataset.
  *
  * Every lift, move and drop announcement, pointer and keyboard alike, counts dataset positions
  * against the dataset size, and each row's `[forDraggable]` emits `dragStart` / `dragEnd` for a
@@ -140,6 +145,7 @@ export class ForVirtualReorder {
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
   readonly #announcer = inject(LiveAnnouncer);
   readonly #dragDefaults = inject(FOR_DRAG_DROP_DEFAULTS);
+  readonly #injector = inject(Injector);
 
   #mode: ReorderMode = 'idle';
   #kbLiftedHost: HTMLElement | null = null;
@@ -149,8 +155,16 @@ export class ForVirtualReorder {
   #pointerMain: number | null = null;
   #scrubEngaged = false;
   #pointerSession: PointerDragSession | null = null;
+  #pendingFocus: FocusWhenMountedRef | null = null;
 
-  /** Fires once per committed reorder gesture with the previous / new absolute item index. */
+  /**
+   * Fires once per committed reorder gesture with the previous / new absolute item index.
+   *
+   * After a **keyboard** drop made while focus was on the lifted row, focus moves to the row
+   * rendering index `to` once the next render settles, even when the window jumped past the
+   * row it was lifted from. Focus something else inside this handler to keep it; pointer drops
+   * never move focus.
+   */
   readonly itemReorder = output<ForVirtualReorderEvent>();
 
   constructor() {
@@ -195,7 +209,14 @@ export class ForVirtualReorder {
 
   #onIdleKeydown(event: KeyboardEvent): void {
     const key = event.key;
-    if (this.#mode !== 'idle' || (key !== ' ' && key !== 'Enter')) {
+    if (this.#mode !== 'idle') {
+      return;
+    }
+    if (key === 'Home' || key === 'End') {
+      this.#jumpToEdge(event, key === 'Home' ? 'first' : 'last');
+      return;
+    }
+    if (key !== ' ' && key !== 'Enter') {
       return;
     }
     const draggable = this.#list.items().find((h) => h.host === event.target);
@@ -254,7 +275,75 @@ export class ForVirtualReorder {
     }
   }
 
+  #jumpToEdge(event: KeyboardEvent, edge: 'first' | 'last'): void {
+    const draggable = this.#list.items().find((h) => h.host === event.target);
+    const count = this.count();
+    if (
+      draggable === undefined ||
+      draggable.disabled() ||
+      this.#list.effectiveDisabled() ||
+      count === 0
+    ) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    const index = edge === 'first' ? 0 : count - 1;
+    this.#followFocus(draggable.host, {
+      reveal: () => this.#viewport.scrollToIndex(index),
+      target: () => this.#edgeRow(index, edge === 'first' ? 1 : -1),
+    });
+  }
+
+  #edgeRow(index: number, step: 1 | -1): HTMLElement | null {
+    const rows = new Map<number, ForDraggableHandle>();
+    for (const item of this.#list.items()) {
+      const vi = this.#absoluteIndex(item.host);
+      if (vi !== null) {
+        rows.set(vi, item);
+      }
+    }
+    if (!rows.has(index)) {
+      return null;
+    }
+    for (let i = index; rows.has(i); i += step) {
+      const row = rows.get(i)!;
+      if (!row.disabled()) {
+        return row.host;
+      }
+    }
+    return null;
+  }
+
+  #followFocus(
+    from: HTMLElement,
+    step: { reveal: () => void; target: () => HTMLElement | null; release?: () => void },
+  ): void {
+    this.#cancelPendingFocus();
+    this.#pendingFocus = focusWhenMounted({
+      injector: this.#injector,
+      document: this.#document,
+      from,
+      reveal: step.reveal,
+      target: step.target,
+      release: () => {
+        this.#pendingFocus = null;
+        step.release?.();
+      },
+    });
+  }
+
+  #cancelPendingFocus(): void {
+    if (this.#pendingFocus === null) {
+      return;
+    }
+    this.#pendingFocus.cancel();
+    this.#pendingFocus = null;
+    this.#viewport.setReorderingIndex(null);
+  }
+
   #kbLift(host: HTMLElement, vi: number): void {
+    this.#cancelPendingFocus();
     this.#mode = 'keyboard';
     this.#kbLiftedHost = host;
     this.#kbFrom = vi;
@@ -276,12 +365,21 @@ export class ForVirtualReorder {
   }
 
   #kbCommit(): void {
-    this.itemReorder.emit({ from: this.#kbFrom, to: this.#kbTarget });
+    const lifted = this.#kbLiftedHost;
+    const to = this.#kbTarget;
+    this.itemReorder.emit({ from: this.#kbFrom, to });
     this.#announcer.announce(
-      this.#dragDefaults.announceDrop(this.#label(), this.#kbTarget + 1, this.count()),
+      this.#dragDefaults.announceDrop(this.#label(), to + 1, this.count()),
       'assertive',
     );
     this.#kbTeardown(true);
+    if (lifted !== null) {
+      this.#followFocus(lifted, {
+        reveal: () => this.#viewport.setReorderingIndex(to),
+        target: () => this.#rowAt(to),
+        release: () => this.#viewport.setReorderingIndex(null),
+      });
+    }
   }
 
   #kbCancel(): void {
@@ -342,6 +440,7 @@ export class ForVirtualReorder {
     if (host === null || this.#mode !== 'idle') {
       return false;
     }
+    this.#cancelPendingFocus();
     this.#mode = 'pointer';
     this.#viewport.setReorderingIndex(this.#absoluteIndex(host));
     return true;
@@ -369,6 +468,10 @@ export class ForVirtualReorder {
       return null;
     }
     return target.closest<HTMLElement>('[forDraggable]');
+  }
+
+  #rowAt(index: number): HTMLElement | null {
+    return this.#list.items().find((h) => this.#absoluteIndex(h.host) === index)?.host ?? null;
   }
 
   #absoluteIndex(host: HTMLElement): number | null {

@@ -627,16 +627,16 @@ Annotating a `viewChild` / `@ViewChild` reference (`ForTreeNodeDrag<FileNode>`) 
 
 ### Keyboard interaction
 
-| Key               | Behavior while **not** lifted | Behavior while **lifted**                                        |
-| ----------------- | ----------------------------- | ---------------------------------------------------------------- |
-| `Ctrl/Cmd+Space`  | Lifts the focused node.       | —                                                                |
-| `ArrowDown`       | Normal tree navigation.       | Moves the insertion point one row down.                          |
-| `ArrowUp`         | Normal tree navigation.       | Moves the insertion point one row up.                            |
-| `ArrowRight`      | Normal expand / enter.        | Deepens the target level by 1 (LTR; reversed under RTL).         |
-| `ArrowLeft`       | Normal collapse / leave.      | Shallows the target level by 1 (LTR; reversed under RTL).        |
-| `Space` / `Enter` | Normal select / activate.     | Drops the node at the current resolved position.                 |
-| `Escape`          | —                             | Cancels the drag; the node is returned to its original position. |
-| `Tab`             | Normal focus leave.           | Cancels the drag.                                                |
+| Key               | Behavior while **not** lifted | Behavior while **lifted**                                                                                                          |
+| ----------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `Ctrl/Cmd+Space`  | Lifts the focused node.       | —                                                                                                                                  |
+| `ArrowDown`       | Normal tree navigation.       | Moves the insertion point one row down.                                                                                            |
+| `ArrowUp`         | Normal tree navigation.       | Moves the insertion point one row up.                                                                                              |
+| `ArrowRight`      | Normal expand / enter.        | Deepens the target level by 1 (LTR; reversed under RTL).                                                                           |
+| `ArrowLeft`       | Normal collapse / leave.      | Shallows the target level by 1 (LTR; reversed under RTL).                                                                          |
+| `Space` / `Enter` | Normal select / activate.     | Drops the node at the current resolved position. Focus follows the node, or lands on its new parent when that parent is collapsed. |
+| `Escape`          | —                             | Cancels the drag; the node is returned to its original position.                                                                   |
+| `Tab`             | Normal focus leave.           | Cancels the drag.                                                                                                                  |
 
 ### Minimal example
 

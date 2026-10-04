@@ -7,6 +7,7 @@ import {
   ElementRef,
   InjectionToken,
   inject,
+  Injector,
   input,
   output,
   PLATFORM_ID,
@@ -15,6 +16,8 @@ import {
 } from '@angular/core';
 
 import {
+  focusWhenMounted,
+  type FocusWhenMountedRef,
   LiveAnnouncer,
   type PreviewPoint,
   PreviewController,
@@ -116,6 +119,7 @@ export class ForTreeNodeDrag<T = string> implements ForTreeNodeDragContext {
   readonly #announcer = inject(LiveAnnouncer);
   readonly #destroyRef = inject(DestroyRef);
   readonly #defaults = inject(FOR_TREE_DEFAULTS);
+  readonly #injector = inject(Injector);
 
   /** Disables all drag interactions on this tree. */
   readonly disabled = input(false, { transform: booleanAttribute });
@@ -126,7 +130,14 @@ export class ForTreeNodeDrag<T = string> implements ForTreeNodeDragContext {
    */
   readonly canDrop = input<((event: ForTreeDragDropEvent<T>) => boolean) | undefined>(undefined);
 
-  /** Emitted once per committed move. Apply `moveTreeNode` in the handler to update your data. */
+  /**
+   * Emitted once per committed move. Apply `moveTreeNode` in the handler to update your data.
+   *
+   * After a **keyboard** drop made while focus was on the lifted node, focus follows the node
+   * once the next render settles: onto the node in its new place, or onto its new parent when
+   * that parent is collapsed. Focus something else inside this handler to keep it; pointer
+   * drops never move focus.
+   */
   readonly nodeDrop = output<ForTreeDragDropEvent<T>>();
 
   protected readonly _dragging = signal(false);
@@ -152,6 +163,7 @@ export class ForTreeNodeDrag<T = string> implements ForTreeNodeDragContext {
   #label = '';
 
   #pointerSession: PointerDragSession | null = null;
+  #pendingFocus: FocusWhenMountedRef | null = null;
 
   constructor() {
     if (!this.#isBrowser) {
@@ -351,6 +363,8 @@ export class ForTreeNodeDrag<T = string> implements ForTreeNodeDragContext {
       return;
     }
 
+    this.#pendingFocus?.cancel();
+    this.#pendingFocus = null;
     this.#liftedValue = origin.value;
     this.#previousParent = origin.parentValue;
     this.#previousIndex = origin.previousIndex;
@@ -420,6 +434,9 @@ export class ForTreeNodeDrag<T = string> implements ForTreeNodeDragContext {
     }
 
     this.#restoreExpansion();
+    if (this.#mode === 'keyboard' && this.#liftedHost !== null) {
+      this.#followDroppedNode(this.#liftedHost, event.node, event.newParent);
+    }
     this.nodeDrop.emit(event);
     this.#announcer.announce(
       this.#defaults.dragAnnounceDrop(
@@ -431,6 +448,25 @@ export class ForTreeNodeDrag<T = string> implements ForTreeNodeDragContext {
       'assertive',
     );
     this.#clearSession();
+  }
+
+  #followDroppedNode(from: HTMLElement, node: T, parent: T | null): void {
+    this.#pendingFocus = focusWhenMounted({
+      injector: this.#injector,
+      document: this.#document,
+      from,
+      target: () => this.#visibleHost(node) ?? (parent === null ? null : this.#visibleHost(parent)),
+      release: () => {
+        this.#pendingFocus = null;
+      },
+    });
+  }
+
+  #visibleHost(value: T): HTMLElement | null {
+    const equals = this.#ctx.compareWith();
+    return (
+      this.#ctx.visibleNodes().find((e) => equals(e.handle.value(), value))?.handle.host ?? null
+    );
   }
 
   #cancelSession(restore: boolean): void {

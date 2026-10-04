@@ -8,7 +8,7 @@ import {
 import { TestBed } from '@angular/core/testing';
 
 import { flush } from '../../src/test-utils';
-import { ForDraggable } from 'forty-cdk/drag-drop';
+import { ForDraggable, moveItemInArray } from 'forty-cdk/drag-drop';
 import { ForTableVirtualized } from 'forty-cdk/table-virtualization';
 
 import { ForTable } from './table';
@@ -1120,5 +1120,131 @@ describe('ForTableRowReorder — announcements and drag outputs (#2124)', () => 
     expect(indices().length).toBeLessThan(100);
     document.dispatchEvent(pointer('pointercancel', 0, 120));
     await settle();
+  });
+});
+
+@Component({
+  imports: [ForTable, ForTableRow, ForTableCell, ForTableRowReorder, ForDraggable],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <div forTable mode="grid" ariaLabel="Reorderable rows">
+      <div role="rowgroup" forTableRowReorder (rowReorder)="onReorder($event)">
+        @for (row of rows(); track row) {
+          <div forTableRow forDraggable [dragData]="row" [attr.data-testid]="'row-' + row">
+            <div forTableCell name="a" [attr.data-testid]="'cell-' + row">{{ row }}</div>
+            <div forTableCell name="b" [attr.data-testid]="'cell-b-' + row">{{ row }}</div>
+          </div>
+        }
+      </div>
+    </div>
+  `,
+})
+class AppliedListRowReorderHost {
+  readonly rows = signal<readonly number[]>([0, 1, 2, 3, 4]);
+
+  protected onReorder(descriptor: TableRowReorderDescriptor): void {
+    this.rows.update((rows) => moveItemInArray(rows, descriptor.from, descriptor.to));
+  }
+}
+
+describe('ForTableRowReorder — focus follows the dropped row (#2118)', () => {
+  afterEach(() => {
+    document.querySelectorAll('[aria-live]').forEach((node) => node.remove());
+  });
+
+  it('a virtualized in-window drop focuses the same cell of the target row', async () => {
+    const { instance, settle, cell } = await mount();
+    const lifted = cell(2);
+    lifted.focus();
+
+    press(lifted, ' ', { ctrlKey: true });
+    await settle();
+    press(lifted, 'ArrowDown');
+    await settle();
+    press(lifted, ' ');
+    await settle();
+
+    expect(instance.last).toEqual({ from: 2, to: 3 });
+    expect(document.activeElement).toBe(cell(3));
+  });
+
+  it('a virtualized drop after an End jump focuses the target row, not <body>', async () => {
+    const { instance, settle, indices, cell } = await mount();
+    const from = Math.max(...indices());
+    const lifted = cell(from);
+    lifted.focus();
+
+    press(lifted, ' ', { ctrlKey: true });
+    await settle();
+    press(lifted, 'End');
+    await settle();
+    press(lifted, ' ');
+    await settle();
+
+    expect(instance.last).toEqual({ from, to: ROW_COUNT - 1 });
+    expect(document.activeElement).toBe(cell(ROW_COUNT - 1));
+  });
+
+  it('a virtualized drop releases the pin once focus has landed', async () => {
+    const { settle, indices, cell } = await mount();
+    const from = Math.max(...indices());
+    const lifted = cell(from);
+    lifted.focus();
+
+    press(lifted, ' ', { ctrlKey: true });
+    await settle();
+    press(lifted, 'End');
+    await settle();
+    press(lifted, ' ');
+    await settle();
+
+    const rendered = indices();
+    expect(Math.max(...rendered) - Math.min(...rendered)).toBe(rendered.length - 1);
+  });
+
+  it('a non-virtualized grid drop moving a row up keeps focus on the cell it was lifted from', async () => {
+    const { settle, query } = await render(AppliedListRowReorderHost);
+    const lifted = query('[data-testid="cell-b-3"]');
+    lifted.focus();
+
+    press(lifted, ' ', { ctrlKey: true });
+    await settle();
+    press(lifted, 'ArrowUp');
+    await settle();
+    press(lifted, ' ');
+    await settle();
+
+    const rows = Array.from(query('[role="rowgroup"]').querySelectorAll('[forTableRow]'));
+    expect(rows.map((r) => r.getAttribute('data-testid'))).toEqual([
+      'row-0',
+      'row-1',
+      'row-3',
+      'row-2',
+      'row-4',
+    ]);
+    expect(document.activeElement).toBe(query('[data-testid="cell-b-3"]'));
+  });
+
+  it('a non-virtualized grid drop keeps focus on the cell it was lifted from', async () => {
+    const { settle, query } = await render(AppliedListRowReorderHost);
+    const lifted = query('[data-testid="cell-b-1"]');
+    lifted.focus();
+
+    press(lifted, ' ', { ctrlKey: true });
+    await settle();
+    press(lifted, 'ArrowDown');
+    await settle();
+    press(lifted, ' ');
+    await settle();
+
+    const rows = Array.from(query('[role="rowgroup"]').querySelectorAll('[forTableRow]'));
+    expect(rows.map((r) => r.getAttribute('data-testid'))).toEqual([
+      'row-0',
+      'row-2',
+      'row-1',
+      'row-3',
+      'row-4',
+    ]);
+    expect(document.activeElement).toBe(query('[data-testid="cell-b-1"]'));
   });
 });
