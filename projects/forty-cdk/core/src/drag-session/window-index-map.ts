@@ -92,3 +92,45 @@ export function resolveScrubReorder(params: ScrubReorderParams): WindowReorderRe
   const target = Math.round(fraction * (params.count - 1));
   return { from: params.from, to: indexAfterRemoval(target, params.from) };
 }
+
+/** Inputs for {@link resolveWindowedReorder}. */
+export interface WindowedReorderParams {
+  /**
+   * Absolute index of every rendered row in DOM order, or `null` when a rendered row carries
+   * none — the list is then not windowed and the window-relative pair is reported unchanged.
+   */
+  readonly windowIndices: readonly number[] | null;
+  /** The lifted row's position in the rendered window. */
+  readonly previousIndex: number;
+  /** The resolved insertion index in the rendered window (post-removal space). */
+  readonly currentIndex: number;
+  /**
+   * Windowed-scrub geometry for {@link resolveScrubReorder}, without the `from` this resolver
+   * derives itself, or `null` when the list offers no scrub.
+   */
+  readonly scrub: Omit<ScrubReorderParams, 'from'> | null;
+}
+
+/**
+ * The dataset-absolute `from` / `to` pair a windowed reorder coordinator reports for one
+ * window-relative reorder: the windowed-scrub target when scrub is engaged, else the
+ * {@link translateWindowReorder} translation of the window pair. Every announcement and every
+ * emitted descriptor of the gesture resolves through it, so what a screen reader hears is
+ * where the item lands.
+ */
+export function resolveWindowedReorder(params: WindowedReorderParams): WindowReorderResult {
+  const { windowIndices, previousIndex, currentIndex, scrub } = params;
+  if (windowIndices === null) {
+    return { from: previousIndex, to: currentIndex };
+  }
+  if (scrub !== null) {
+    const scrubbed = resolveScrubReorder({
+      ...scrub,
+      from: windowIndices[previousIndex] ?? previousIndex,
+    });
+    if (scrubbed !== null) {
+      return scrubbed;
+    }
+  }
+  return translateWindowReorder(windowIndices, previousIndex, currentIndex);
+}

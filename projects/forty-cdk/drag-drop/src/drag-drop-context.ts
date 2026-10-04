@@ -13,6 +13,10 @@ export interface ForDraggableHandle {
   readonly data: Signal<unknown>;
   /** Effective disabled (item's own `dragDisabled` OR the list being disabled). */
   readonly disabled: Signal<boolean>;
+  /** Emit the item's `dragStart` for a drag of it starting at source `index`. */
+  emitDragStart(index: number): void;
+  /** Emit the item's `dragEnd`; `dropped` is `true` on a committed drop, `false` on cancel. */
+  emitDragEnd(dropped: boolean): void;
 }
 
 /**
@@ -50,7 +54,7 @@ export interface ForDropListContext {
   isItemHighlighted(el: HTMLElement): boolean;
   /**
    * Whether a live drag of `el` is in progress — this list's own keyboard / pointer lift, or a
-   * lift a composing coordinator owns and drives itself (`ForDropList.setCoordinatorLift`).
+   * lift a composing coordinator owns and drives itself (`ForDropList.beginCoordinatorLift`).
    * Drives `[forDraggable]`'s `data-dragging`.
    *
    * Broader than {@link isLifted}, which answers only for the list's own lift —
@@ -151,6 +155,32 @@ export const FOR_DROP_LIST_ROVING_DELEGATE = new InjectionToken<ForDropListRovin
 );
 
 /**
+ * A coordinator composing a `[forDropList]` over a rendered window of a larger dataset, provided
+ * on the list host — `[forVirtualReorder]` and `[forTableRowReorder]` provide one. With a
+ * coordinator in scope the list:
+ *
+ * - announces every lift, move and drop, and reports `[forDraggable]`'s `dragStart` index, at the
+ *   positions the coordinator resolves, counted against {@link count};
+ * - is a **closed** list: it joins no `[forDropListGroup]`, connects to no other list, and so can
+ *   neither send an item to another list nor receive one. The coordinator's output describes a
+ *   reorder within its own dataset, which a transfer is not.
+ */
+export interface ForDropListCoordinator {
+  /** The total every drag announcement counts positions against, such as the dataset size. */
+  count(): number;
+  /**
+   * The `from` / `to` positions the coordinator reports for the lifted item at window index
+   * `previousIndex` resolved to window insertion index `currentIndex`. A lift is resolved as
+   * `resolveReorder(from, from)` and reports its `from`.
+   */
+  resolveReorder(previousIndex: number, currentIndex: number): { from: number; to: number };
+}
+
+export const FOR_DROP_LIST_COORDINATOR = new InjectionToken<ForDropListCoordinator>(
+  'FOR_DROP_LIST_COORDINATOR',
+);
+
+/**
  * Optional DI seam, provided on an ancestor of the draggables, that restricts
  * which keys may start a keyboard lift on a `[forDraggable]`. When present,
  * `ForDraggable` consults it before lifting on Enter / Space and skips the lift
@@ -206,6 +236,10 @@ export interface ForDragDropEvent {
 /** Emitted by `ForDraggable` when a drag (keyboard or pointer) starts. */
 export interface ForDragStartEvent {
   readonly source: ForDropListContext;
+  /**
+   * The dragged item's source index in its list, or the position a `FOR_DROP_LIST_COORDINATOR`
+   * reports for it when one composes the list (a dataset index under virtualization).
+   */
   readonly index: number;
 }
 

@@ -222,4 +222,51 @@ test.describe('Virtualized *forVirtualFor list reorder', () => {
     // carried the drop target well beyond it (proving the cross-window pin).
     expect(movedTo).toBeGreaterThan(from + 10);
   });
+
+  test('a drop after auto-scroll lands on the row under the pointer, not one the window recycled past', async ({
+    page,
+  }) => {
+    const indices = await renderedIndices(page);
+    const from = indices[Math.floor(indices.length / 2)]!;
+
+    const fromRow = el(page, `row-${from}`);
+    const rootBox = await el(page, 'root').boundingBox();
+    const fromBox = await fromRow.boundingBox();
+    if (!rootBox || !fromBox) throw new Error('Elements not found');
+
+    const startX = fromBox.x + fromBox.width / 2;
+    const startY = fromBox.y + fromBox.height / 2;
+
+    await page.mouse.move(startX, startY);
+    await page.mouse.down();
+    await page.mouse.move(startX, startY + 5);
+    await holdPointerAtAutoScrollEdge(page, {
+      x: startX,
+      edgeY: rootBox.y + rootBox.height - 3,
+      untilIndex: from + 30,
+      readIndices: () => renderedIndices(page),
+    });
+
+    const middleY = rootBox.y + rootBox.height / 2;
+    await page.mouse.move(startX, middleY);
+    const target = await page
+      .locator('[forDraggable]:not([data-for-drag-preview]):not([data-dragging])')
+      .evaluateAll((nodes, y) => {
+        const row = nodes.find((n) => {
+          const box = n.getBoundingClientRect();
+          return box.top <= y && y < box.bottom;
+        });
+        if (!row) return null;
+        const box = row.getBoundingClientRect();
+        return { index: Number(row.getAttribute('data-index')), bottom: box.bottom };
+      }, middleY);
+    if (!target) throw new Error('No row under the viewport middle');
+    expect(target.index).toBeGreaterThan(from + 10);
+
+    await page.mouse.move(startX, target.bottom - 4);
+    await page.mouse.move(startX, target.bottom - 3);
+    await page.mouse.up();
+
+    await expect(el(page, 'last-reorder')).toHaveText(`${from}->${target.index}`);
+  });
 });

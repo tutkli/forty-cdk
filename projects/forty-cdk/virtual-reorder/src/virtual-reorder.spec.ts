@@ -10,7 +10,13 @@ import {
 import { TestBed } from '@angular/core/testing';
 
 import { flush } from '../../src/test-utils';
-import { ForDraggable, moveItemInArray } from 'forty-cdk/drag-drop';
+import {
+  ForDraggable,
+  ForDropList,
+  ForDropListGroup,
+  moveItemInArray,
+  type ForDragDropEvent,
+} from 'forty-cdk/drag-drop';
 import { ForVirtualFor, ForVirtualViewport } from 'forty-cdk/virtualization';
 
 import { ForVirtualReorder, type ForVirtualReorderEvent } from './virtual-reorder';
@@ -1018,5 +1024,186 @@ describe('ForVirtualReorder — the pointer guard set matches the sibling coordi
 
     expect(indices()).not.toContain(2);
     expect(Math.min(...indices())).toBeGreaterThan(100);
+  });
+});
+
+@Component({
+  imports: [ForVirtualViewport, ForVirtualFor, ForVirtualReorder, ForDraggable],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <div
+      forVirtualViewport
+      [virtualCount]="rows().length"
+      [estimateSize]="40"
+      forVirtualReorder
+      (itemReorder)="onReorder($event)"
+      style="height: 200px; width: 200px"
+    >
+      <div
+        *forVirtualFor="let row of rows()"
+        forDraggable
+        [dragData]="row.id"
+        [attr.data-testid]="'row-' + row.id"
+        (dragStart)="starts.push($event.index)"
+        (dragEnd)="ends.push($event.dropped)"
+      >
+        <span aria-hidden="true">⠿</span>{{ row.label }}
+      </div>
+    </div>
+  `,
+})
+class DragOutputsHost {
+  readonly rows = signal<readonly Row[]>(makeRows(1000));
+  readonly last = signal<ForVirtualReorderEvent | null>(null);
+  readonly viewport = viewChild.required(ForVirtualViewport);
+  readonly starts: number[] = [];
+  readonly ends: boolean[] = [];
+
+  onReorder(event: ForVirtualReorderEvent): void {
+    this.last.set(event);
+    this.rows.update((rows) => moveItemInArray(rows, event.from, event.to));
+  }
+}
+
+@Component({
+  imports: [
+    ForVirtualViewport,
+    ForVirtualFor,
+    ForVirtualReorder,
+    ForDraggable,
+    ForDropList,
+    ForDropListGroup,
+  ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <div forDropListGroup>
+      <div
+        forVirtualViewport
+        [virtualCount]="rows().length"
+        [estimateSize]="40"
+        forVirtualReorder
+        (itemReorder)="reorders.push($event)"
+        style="height: 200px; width: 200px"
+      >
+        <div
+          *forVirtualFor="let row of rows()"
+          forDraggable
+          [dragData]="row.id"
+          [attr.data-testid]="'row-' + row.id"
+        >
+          {{ row.label }}
+        </div>
+      </div>
+      <ul forDropList data-testid="plain" (dragDrop)="plainDrop.set($event)">
+        <li forDraggable dragData="x" data-testid="plain-0">X</li>
+        <li forDraggable dragData="y" data-testid="plain-1">Y</li>
+      </ul>
+    </div>
+  `,
+})
+class GroupedHost {
+  readonly rows = signal<readonly Row[]>(makeRows(1000));
+  readonly reorders: ForVirtualReorderEvent[] = [];
+  readonly plainDrop = signal<ForDragDropEvent | null>(null);
+}
+
+describe('ForVirtualReorder — announcements, outputs and transfers (#2124)', () => {
+  afterEach(() => {
+    document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
+  });
+
+  it('a pointer lift mid-dataset announces the dataset position against the dataset size', async () => {
+    const { viewport, indices, query, flush: f } = await mount();
+    viewport.scrollTo({ top: 20000 });
+    await f();
+    await f();
+    const rendered = indices();
+    const target = rendered[Math.floor(rendered.length / 2)]!;
+    expect(target).toBeGreaterThan(100);
+    const row = query(`[data-testid="row-${target}"]`)!;
+
+    row.dispatchEvent(pointer('pointerdown', 0, 100));
+    document.dispatchEvent(pointer('pointermove', 0, 120));
+    await f();
+
+    expect(assertiveText()).toContain(`Row ${target}, lifted. ${target + 1} of 1000.`);
+    document.dispatchEvent(pointer('pointercancel', 0, 120));
+    await f();
+  });
+
+  it('a Shift-scrub drop announces the position the item lands at', async () => {
+    const { instance, viewport, query, flush: f } = await mount();
+    viewport.getBoundingClientRect = () =>
+      ({ top: 0, bottom: 200, left: 0, right: 200, width: 200, height: 200 }) as DOMRect;
+    const row = query('[data-testid="row-2"]')!;
+
+    row.dispatchEvent(pointer('pointerdown', 0, 100, { shiftKey: true }));
+    document.dispatchEvent(pointer('pointermove', 0, 180, { shiftKey: true }));
+    document.dispatchEvent(pointer('pointermove', 0, 180, { shiftKey: true }));
+    document.dispatchEvent(pointer('pointerup', 0, 180, { shiftKey: true }));
+    await f();
+
+    const last = instance.last()!;
+    expect(last.from).toBe(2);
+    expect(last.to).toBeGreaterThan(100);
+    expect(assertiveText()).toContain(`dropped at position ${last.to + 1} of 1000.`);
+  });
+
+  it('a keyboard lift emits dragStart with the dataset index, and the drop emits dragEnd', async () => {
+    const { instance, query, flush: f } = await render(DragOutputsHost);
+    const row = query('[data-testid="row-2"]')!;
+    row.focus();
+
+    dispatchKey(row, ' ');
+    expect(instance.starts).toEqual([2]);
+    expect(instance.ends).toEqual([]);
+
+    dispatchKey(row, 'ArrowDown');
+    dispatchKey(row, ' ');
+    await f();
+
+    expect(instance.last()).toEqual({ from: 2, to: 3 });
+    expect(instance.starts).toEqual([2]);
+    expect(instance.ends).toEqual([true]);
+  });
+
+  it('a keyboard cancel emits dragEnd with dropped false', async () => {
+    const { instance, query } = await render(DragOutputsHost);
+    const row = query('[data-testid="row-4"]')!;
+    row.focus();
+
+    dispatchKey(row, ' ');
+    dispatchKey(row, 'Escape');
+
+    expect(instance.starts).toEqual([4]);
+    expect(instance.ends).toEqual([false]);
+  });
+
+  it('keyboard announcements leave an aria-hidden glyph out of the row name', async () => {
+    const { query, flush: f } = await render(DragOutputsHost);
+    const row = query('[data-testid="row-2"]')!;
+    row.focus();
+
+    dispatchKey(row, ' ');
+    await f();
+
+    expect(assertiveText()).toContain('Row 2, lifted. 3 of 1000.');
+    expect(assertiveText()).not.toContain('⠿');
+    dispatchKey(row, 'Escape');
+  });
+
+  it('stays out of a [forDropListGroup]: a sibling list lift never steps into it', async () => {
+    const { instance, query } = await render(GroupedHost);
+    const item = query('[data-testid="plain-0"]')!;
+    item.focus();
+
+    dispatchKey(item, ' ');
+    dispatchKey(item, 'End');
+    dispatchKey(item, ' ');
+
+    const drop = instance.plainDrop();
+    expect(drop?.container.host).toBe(query('[data-testid="plain"]'));
+    expect(drop?.currentIndex).toBe(1);
+    expect(instance.reorders).toEqual([]);
   });
 });

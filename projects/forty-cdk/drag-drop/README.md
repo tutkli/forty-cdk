@@ -149,7 +149,7 @@ than starting through `[forDraggable]` itself: the keyboard lift of `[forVirtual
 the virtualized branch of `[forTableRowReorder]`. Those intercept the lift key before the item
 sees it, so the list carries no lift state for the gesture, and the coordinator marks the item
 instead. Styling keyed off either attribute therefore behaves the same whether the collection is
-windowed or not.
+windowed or not, and the item's `(dragStart)` / `(dragEnd)` fire for those gestures too.
 
 The `data-for-drag-preview` row is also the supported hook for **keeping the clone out of element
 queries**. The default preview is a `cloneNode(true)` copy appended to `document.body`, so for the
@@ -514,6 +514,11 @@ keyboard target over the true total count. Holding **Shift** during a pointer dr
 additionally engages **windowed scrub**: the scroll viewport maps onto the whole
 dataset (top edge → first item, bottom edge → last), so one gesture drops the
 lifted row at an arbitrary far item without auto-scroll having to reach it.
+
+Every lift, move and drop announcement of either companion, pointer or keyboard,
+counts dataset positions against the dataset size. Both keep their list **closed**
+to transfers: inside a `[forDropListGroup]` it joins nothing and connects to no
+other list, because their reorder output describes a move within one dataset.
 
 ```html
 <div

@@ -17,8 +17,8 @@ import {
 import { isPlatformBrowser } from '@angular/common';
 
 import {
-  accessibleTextContent,
   Collection,
+  dragAnnouncementLabel,
   firstEnabledHost,
   registerHandle,
   resolveDropTarget,
@@ -39,10 +39,12 @@ import { createAutoScroller, type AutoScroller } from './auto-scroll';
 import { buildDragSlots, indexOfSlot, stepSlot } from './drag-positions';
 import {
   FOR_DROP_LIST_CONTEXT,
+  FOR_DROP_LIST_COORDINATOR,
   FOR_DROP_LIST_ROVING_DELEGATE,
   type ForDragDropEvent,
   type ForDraggableHandle,
   type ForDropListContext,
+  type ForDropListCoordinator,
 } from './drag-drop-context';
 import { FOR_DRAG_DROP_DEFAULTS } from 'forty-cdk/defaults';
 import { FOR_DROP_LIST_GROUP } from './drop-list-group';
@@ -62,6 +64,7 @@ export const FOR_DROP_LIST_DEFAULT_ORIENTATION = new InjectionToken<
 >('FOR_DROP_LIST_DEFAULT_ORIENTATION');
 
 interface DropListGeomEntry {
+  items: readonly ForDraggableHandle[];
   containerRect: DragRect;
   scrollLeft: number;
   scrollTop: number;
@@ -79,15 +82,6 @@ function shiftRect(rect: DragRect, dx: number, dy: number): DragRect {
     right: rect.right + dx,
     bottom: rect.bottom + dy,
   };
-}
-
-/**
- * The trimmed name every drag announcement calls the item by: the lifted host's accessible text,
- * excluding any `aria-hidden` subtree such as the decorative `[forDragHandle]` glyph, and keeping
- * visually-hidden but announced content.
- */
-function announcedLabel(host: HTMLElement): string {
-  return accessibleTextContent(host).trim();
 }
 
 /**
@@ -149,7 +143,8 @@ export class ForDropList implements ForDropListContext {
 
   /**
    * Other lists this one can transfer items into. Union'd with any `[forDropListGroup]`
-   * members. Disabled lists are excluded from the effective connected set.
+   * members. Disabled lists, and lists a `FOR_DROP_LIST_COORDINATOR` composes, are excluded
+   * from the effective connected set.
    */
   readonly connectedTo = input<readonly ForDropListContext[]>([]);
 
@@ -228,6 +223,20 @@ export class ForDropList implements ForDropListContext {
   readonly #flatIndex = signal(0);
   readonly #dragOver = signal<number | null>(null);
 
+  #coordinatorResolved = false;
+  #coordinatorValue: ForDropListCoordinator | null = null;
+
+  get #coordinator(): ForDropListCoordinator | null {
+    if (!this.#coordinatorResolved) {
+      this.#coordinatorResolved = true;
+      this.#coordinatorValue = this.#injector.get(FOR_DROP_LIST_COORDINATOR, null, {
+        self: true,
+        optional: true,
+      });
+    }
+    return this.#coordinatorValue;
+  }
+
   #previewController: PreviewController | null = null;
   #handedOffPreview: DragPreview | null = null;
   #pointerDrag = false;
@@ -242,7 +251,7 @@ export class ForDropList implements ForDropListContext {
 
   /**
    * `true` while a drag originating from this list is in progress — its own keyboard / pointer
-   * lift, or one a composing coordinator owns (see {@link setCoordinatorLift}). Reflected as
+   * lift, or one a composing coordinator owns (see {@link beginCoordinatorLift}). Reflected as
    * `data-dragging` on the list host.
    */
   readonly isDragging = computed(
@@ -320,19 +329,39 @@ export class ForDropList implements ForDropListContext {
   }
 
   /**
-   * Mark `el` as the item of a drag a **coordinator** composing this list owns end to end —
+   * Start a drag of `el` that a **coordinator** composing this list owns end to end —
    * `[forVirtualReorder]`, and the virtualized branch of `[forTableRowReorder]`. Those wrap the
    * list via `hostDirectives` and intercept the lift key in the capture phase, so `ForDraggable`
-   * never reaches {@link lift} and the list holds no lift state of its own for the gesture. The
-   * mark is what keeps {@link isItemDragging} and {@link isDragging} — and therefore the
-   * `data-dragging` hook on both the item and the list host — true for the whole gesture.
+   * never reaches {@link lift} and the list holds no lift state of its own for the gesture. For
+   * the whole gesture {@link isItemDragging} and {@link isDragging} — and therefore the
+   * `data-dragging` hook on both the item and the list host — read `true`, and the item's
+   * `[forDraggable]` emits `dragStart` with `index`, the position the coordinator reports.
    *
    * It is **not** folded into the list's own lift state: `moveLifted` / `drop` /
    * `cancel` still act on nothing, because the coordinator owns the target index, the
-   * announcements and the teardown. Pass `null` on drop, cancel, or destroy.
+   * announcements and the teardown. End it with {@link endCoordinatorLift}.
    */
-  setCoordinatorLift(el: HTMLElement | null): void {
+  beginCoordinatorLift(el: HTMLElement, index: number): void {
     this.#coordinatorLiftedHost.set(el);
+    this.#handleFor(el)?.emitDragStart(index);
+  }
+
+  /**
+   * End the coordinator-owned drag {@link beginCoordinatorLift} started: clears the dragging
+   * state and has the item's `[forDraggable]` emit `dragEnd` with `dropped`. A no-op when no
+   * coordinator drag is live.
+   */
+  endCoordinatorLift(dropped: boolean): void {
+    const el = this.#coordinatorLiftedHost();
+    if (el === null) {
+      return;
+    }
+    this.#coordinatorLiftedHost.set(null);
+    this.#handleFor(el)?.emitDragEnd(dropped);
+  }
+
+  #handleFor(el: HTMLElement): ForDraggableHandle | undefined {
+    return this.#items.items().find((h) => h.host === el);
   }
 
   setActiveItem(el: HTMLElement): void {
@@ -381,12 +410,25 @@ export class ForDropList implements ForDropListContext {
     this.#liftedHost.set(el);
     this.#flatIndex.set(flatIndex < 0 ? 0 : flatIndex);
     this.#dragOver.set(from);
-    const label = announcedLabel(el);
+    const position = this.#coordinator?.resolveReorder(from, from).from ?? from;
     this.#announcer.announce(
-      this.#defaults.announceLift(label, from + 1, items.length),
+      this.#defaults.announceLift(
+        dragAnnouncementLabel(el),
+        position + 1,
+        this.#positionCount(this),
+      ),
       'assertive',
     );
+    handle.emitDragStart(position);
     return from;
+  }
+
+  #reportedTarget(ctx: ForDropListContext, lifted: HTMLElement, index: number): number {
+    const coordinator = this.#coordinator;
+    if (!coordinator || ctx !== (this as ForDropListContext)) {
+      return index;
+    }
+    return coordinator.resolveReorder(this.#items.indexOfHost(lifted), index).to;
   }
 
   lift(el: HTMLElement): number {
@@ -481,9 +523,10 @@ export class ForDropList implements ForDropListContext {
     this.#flatIndex.set(flat);
     if (changed) {
       this.#sorter?.onTargetChange(targetCtx, target.index);
-      const label = announcedLabel(lifted);
+      const label = dragAnnouncementLabel(lifted);
+      const position = this.#reportedTarget(targetCtx, lifted, target.index);
       this.#announcer.announce(
-        this.#defaults.announceMove(label, target.index + 1, this.#positionCount(targetCtx)),
+        this.#defaults.announceMove(label, position + 1, this.#positionCount(targetCtx)),
         'polite',
       );
     }
@@ -499,12 +542,13 @@ export class ForDropList implements ForDropListContext {
   }
 
   #snapshotContainer(ctx: ForDropListContext, lifted: HTMLElement): DropListGeomEntry {
+    const items = ctx.items();
     return {
+      items,
       containerRect: freezeRect(ctx.host.getBoundingClientRect()),
       scrollLeft: ctx.host.scrollLeft,
       scrollTop: ctx.host.scrollTop,
-      itemRects: ctx
-        .items()
+      itemRects: items
         .filter((h) => h.host !== lifted)
         .map((h) => freezeRect(h.host.getBoundingClientRect())),
     };
@@ -513,9 +557,8 @@ export class ForDropList implements ForDropListContext {
   #geometryFor(ctx: ForDropListContext, lifted: HTMLElement): DropContainerGeometry {
     const cache = this.#geomCache;
     const cached = cache?.get(ctx);
-    const itemCount = ctx.items().filter((h) => h.host !== lifted).length;
     const axis = { orientation: ctx.orientation(), dir: ctx.dir() } as const;
-    if (!cache || !cached || cached.itemRects.length !== itemCount) {
+    if (!cache || !cached || cached.items !== ctx.items()) {
       const fresh = this.#snapshotContainer(ctx, lifted);
       cache?.set(ctx, fresh);
       return { rect: fresh.containerRect, itemRects: fresh.itemRects, ...axis };
@@ -535,6 +578,9 @@ export class ForDropList implements ForDropListContext {
   }
 
   #positionCount(ctx: ForDropListContext): number {
+    if (this.#coordinator && ctx === (this as ForDropListContext)) {
+      return this.#coordinator.count();
+    }
     const count = ctx.items().length;
     return ctx === (this as ForDropListContext) ? count : count + 1;
   }
@@ -623,9 +669,10 @@ export class ForDropList implements ForDropListContext {
     }
     this.#flatIndex.set(next);
     if (nextTarget) {
-      const label = announcedLabel(liftedHost);
+      const label = dragAnnouncementLabel(liftedHost);
+      const position = this.#reportedTarget(nextTarget, liftedHost, nextSlot.index);
       this.#announcer.announce(
-        this.#defaults.announceMove(label, nextSlot.index + 1, this.#positionCount(nextTarget)),
+        this.#defaults.announceMove(label, position + 1, this.#positionCount(nextTarget)),
         'polite',
       );
     }
@@ -644,17 +691,19 @@ export class ForDropList implements ForDropListContext {
       connected.map((c) => c.items().length),
     );
     const slot = slots[this.#flatIndex()];
+    const handle = items.find((h) => h.host === liftedHost);
     if (!slot) {
       this.#teardown(connected);
+      handle?.emitDragEnd(false);
       return;
     }
     const previousIndex = this.#items.indexOfHost(liftedHost);
     const currentIndex = slot.index;
     const container: ForDropListContext =
       slot.containerIndex === 0 ? this : (connected[slot.containerIndex - 1] ?? this);
-    const handle = items.find((h) => h.host === liftedHost);
     const item = handle ? handle.data() : undefined;
-    const label = announcedLabel(liftedHost);
+    const label = dragAnnouncementLabel(liftedHost);
+    const position = this.#reportedTarget(container, liftedHost, currentIndex);
 
     const moved = !(previousIndex === currentIndex && container === (this as ForDropListContext));
     const animate =
@@ -679,7 +728,7 @@ export class ForDropList implements ForDropListContext {
       currentIndex,
     });
     this.#announcer.announce(
-      this.#defaults.announceDrop(label, currentIndex + 1, this.#positionCount(container)),
+      this.#defaults.announceDrop(label, position + 1, this.#positionCount(container)),
       'assertive',
     );
 
@@ -696,6 +745,7 @@ export class ForDropList implements ForDropListContext {
     } else {
       this.#teardown(connected);
     }
+    handle?.emitDragEnd(true);
   }
 
   #restoreFocusAfterRender(container: ForDropListContext, index: number): void {
@@ -727,9 +777,11 @@ export class ForDropList implements ForDropListContext {
     if (liftedHost === null) {
       return;
     }
-    const label = announcedLabel(liftedHost);
+    const handle = this.#handleFor(liftedHost);
+    const label = dragAnnouncementLabel(liftedHost);
     this.#announcer.announce(this.#defaults.announceCancel(label), 'assertive');
     this.#teardown(this.#effectiveConnected());
+    handle?.emitDragEnd(false);
   }
 
   setDragOver(index: number | null): void {
@@ -741,13 +793,17 @@ export class ForDropList implements ForDropListContext {
   }
 
   readonly #effectiveConnected = computed((): readonly ForDropListContext[] => {
+    if (this.#coordinator) {
+      return [];
+    }
     const explicit = this.connectedTo();
     const groupMembers = this.#group?.members() ?? [];
     const seen = new Set<ForDropListContext>();
     seen.add(this);
     const result: ForDropListContext[] = [];
     for (const ctx of [...explicit, ...groupMembers]) {
-      if (!seen.has(ctx) && !ctx.disabled()) {
+      const closed = ctx instanceof ForDropList && ctx.#coordinator !== null;
+      if (!seen.has(ctx) && !ctx.disabled() && !closed) {
         seen.add(ctx);
         result.push(ctx);
       }

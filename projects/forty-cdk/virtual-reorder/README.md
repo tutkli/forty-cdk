@@ -66,9 +66,9 @@ It re-exposes `[forDropList]`'s `dir`, `disabled`, `autoScroll`, `animateReorder
 | `PageUp` / `PageDown`   | Step the target by one window                |
 | `Escape`                | Cancel the gesture and restore the origin    |
 
-Every lift, move, drop and cancel is announced through the live announcer using the `provideForDragDropDefaults` message builders, so a scope override localizes them centrally.
+Every lift, move, drop and cancel is announced through the live announcer using the `provideForDragDropDefaults` message builders, so a scope override localizes them centrally. Pointer and keyboard gestures alike announce dataset positions counted against the dataset size, and name the row by its accessible text, so an `aria-hidden` handle glyph is not read out.
 
-The lifted row carries drag-drop's `data-dragging` hook for the whole gesture (the coordinator owns the keyboard lift, so it marks the row on the drop list's behalf), and the viewport carries it too. Style either exactly as you would in a non-windowed `[forDropList]`.
+The lifted row carries drag-drop's `data-dragging` hook for the whole gesture (the coordinator owns the keyboard lift, so it marks the row on the drop list's behalf), and the viewport carries it too. Style either exactly as you would in a non-windowed `[forDropList]`. Each row's `[forDraggable]` emits `dragStart` and `dragEnd` for a keyboard gesture as it does for a pointer one, and `dragStart.index` is the dataset index.
 
 ## What it adds over a bare `[forDropList]`
 
@@ -76,9 +76,11 @@ The lifted row carries drag-drop's `data-dragging` hook for the whole gesture (t
 - **Lifted-row pinning**: the lifted row is pinned into the window through the viewport's reordering index, so auto-scroll and a keyboard jump can both carry the window past it without recycling it. The pinned row keeps its DOM node, so it stays focused across the jump and the gesture survives to the drop.
 - **Dataset-wide keyboard reorder**: keyboard stepping runs over the true total count, scrolling unmounted target rows into view rather than being confined to the window.
 
+The list is **closed** to transfers: placed inside a `[forDropListGroup]`, it joins no group and connects to no other `[forDropList]`, so no item moves into or out of it. `itemReorder` only describes a move within this dataset.
+
 ## Windowed scrub
 
-Hold **Shift** during a pointer drag to map the viewport onto the whole dataset (top edge → first item, bottom edge → last), so a single gesture drops the lifted item at an arbitrary far item without waiting for auto-scroll to reach it. Without Shift, pointer resolution is unchanged.
+Hold **Shift** during a pointer drag to map the viewport onto the whole dataset (top edge → first item, bottom edge → last), so a single gesture drops the lifted item at an arbitrary far item without waiting for auto-scroll to reach it. The drop announcement names the position the item lands at. Without Shift, pointer resolution is unchanged.
 
 ## Related
 

@@ -1,5 +1,6 @@
 import {
   Component,
+  Directive,
   provideZonelessChangeDetection,
   signal,
   TemplateRef,
@@ -22,8 +23,12 @@ import { ForDropListGroup } from './drop-list-group';
 import { moveItemInArray, transferArrayItem } from './move-item-in-array';
 import {
   FOR_DRAGGABLE_LIFT_GUARD,
+  FOR_DROP_LIST_COORDINATOR,
   FOR_DROP_LIST_ROVING_DELEGATE,
   type ForDragDropEvent,
+  type ForDragEndEvent,
+  type ForDragStartEvent,
+  type ForDropListCoordinator,
   type ForDraggableLiftGuard,
   type ForDropListRovingDelegate,
 } from './drag-drop-context';
@@ -3109,5 +3114,322 @@ describe('ForDropList + ForDraggable', () => {
       expect(hidden.hasAttribute('data-drag-animating')).toBe(false);
       expect(el.querySelectorAll('[data-drag-animating]')).toHaveLength(0);
     });
+  });
+});
+
+function pointerAt(type: string, x: number, y: number): PointerEvent {
+  return new PointerEvent(type, {
+    clientX: x,
+    clientY: y,
+    button: 0,
+    pointerId: 1,
+    bubbles: true,
+    cancelable: true,
+  });
+}
+
+function liveText(politeness: 'assertive' | 'polite'): string {
+  return Array.from(document.querySelectorAll(`[aria-live="${politeness}"]`))
+    .map((node) => node.textContent ?? '')
+    .join(' ');
+}
+
+const WINDOW_OFFSET = 500;
+
+@Directive({
+  selector: '[testWindowCoordinator]',
+  providers: [
+    {
+      provide: FOR_DROP_LIST_COORDINATOR,
+      useValue: {
+        count: () => 1000,
+        resolveReorder: (previousIndex: number, currentIndex: number) => ({
+          from: previousIndex + WINDOW_OFFSET,
+          to: currentIndex + WINDOW_OFFSET,
+        }),
+      } satisfies ForDropListCoordinator,
+    },
+  ],
+})
+class TestWindowCoordinator {}
+
+@Component({
+  imports: [...DND_IMPORTS],
+  template: `
+    <ul forDropList (dragDrop)="lastDrop.set($event)">
+      @for (row of rows(); track row.id) {
+        <li
+          forDraggable
+          [dragData]="row"
+          [attr.data-test-id]="row.id"
+          (dragStart)="starts.push($event)"
+          (dragEnd)="ends.push($event)"
+        >
+          {{ row.label }}
+        </li>
+      }
+    </ul>
+  `,
+})
+class DragOutputsHost {
+  readonly rows: WritableSignal<Row[]> = signal([
+    { id: 1, label: 'Alpha' },
+    { id: 2, label: 'Beta' },
+    { id: 3, label: 'Gamma' },
+  ]);
+  readonly lastDrop = signal<ForDragDropEvent | null>(null);
+  readonly starts: ForDragStartEvent[] = [];
+  readonly ends: ForDragEndEvent[] = [];
+}
+
+@Component({
+  imports: [...GROUP_IMPORTS, TestWindowCoordinator],
+  template: `
+    <div forDropListGroup>
+      <ul forDropList testWindowCoordinator (dragDrop)="lastDropA.set($event)">
+        @for (row of rowsA(); track row.id) {
+          <li
+            forDraggable
+            [dragData]="row"
+            [attr.data-test-id]="'a-' + row.id"
+            (dragStart)="starts.push($event)"
+          >
+            <span aria-hidden="true">⠿</span>{{ row.label }}
+          </li>
+        }
+      </ul>
+      <ul forDropList (dragDrop)="lastDropB.set($event)">
+        @for (row of rowsB(); track row.id) {
+          <li forDraggable [dragData]="row" [attr.data-test-id]="'b-' + row.id">
+            {{ row.label }}
+          </li>
+        }
+      </ul>
+    </div>
+  `,
+})
+class CoordinatedGroupHost {
+  readonly rowsA: WritableSignal<Row[]> = signal([
+    { id: 1, label: 'Alpha' },
+    { id: 2, label: 'Beta' },
+    { id: 3, label: 'Gamma' },
+  ]);
+  readonly rowsB: WritableSignal<Row[]> = signal([
+    { id: 1, label: 'Delta' },
+    { id: 2, label: 'Epsilon' },
+  ]);
+  readonly lastDropA = signal<ForDragDropEvent | null>(null);
+  readonly lastDropB = signal<ForDragDropEvent | null>(null);
+  readonly starts: ForDragStartEvent[] = [];
+}
+
+describe('ForDropList — windowed coordinator seam (#2124)', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
+  });
+
+  it('announces lift, move and drop at the positions the coordinator reports, against its count', () => {
+    vi.useFakeTimers();
+    const { el, fixture } = renderHost(CoordinatedGroupHost);
+    const first = itemEl(el, 'a-1');
+    first.focus();
+
+    pressKey(first, ' ');
+    vi.runAllTimers();
+    expect(liveText('assertive')).toContain('Alpha, lifted. 501 of 1000.');
+
+    pressKey(first, 'ArrowDown');
+    vi.runAllTimers();
+    expect(liveText('polite')).toContain('Alpha, moved to position 502 of 1000.');
+
+    pressKey(first, ' ');
+    vi.runAllTimers();
+    fixture.detectChanges();
+    expect(liveText('assertive')).toContain('Alpha, dropped at position 502 of 1000.');
+    expect(fixture.componentInstance.lastDropA()?.currentIndex).toBe(1);
+  });
+
+  it('reports the coordinator position as the dragStart index', () => {
+    const { el, fixture } = renderHost(CoordinatedGroupHost);
+    const second = itemEl(el, 'a-2');
+    second.focus();
+
+    pressKey(second, ' ');
+
+    expect(fixture.componentInstance.starts.map((e) => e.index)).toEqual([501]);
+  });
+
+  it('leaves an aria-hidden glyph out of the announced item name', () => {
+    vi.useFakeTimers();
+    const { el } = renderHost(CoordinatedGroupHost);
+    const first = itemEl(el, 'a-1');
+    first.focus();
+
+    pressKey(first, ' ');
+    vi.runAllTimers();
+
+    expect(liveText('assertive')).toContain('Alpha, lifted.');
+    expect(liveText('assertive')).not.toContain('⠿');
+  });
+
+  it('keeps a coordinated list out of its group: its lift never steps into a sibling list', () => {
+    const { el, fixture } = renderHost(CoordinatedGroupHost);
+    const first = itemEl(el, 'a-1');
+    first.focus();
+
+    pressKey(first, ' ');
+    pressKey(first, 'End');
+    pressKey(first, ' ');
+
+    const drop = fixture.componentInstance.lastDropA();
+    expect(drop?.container.host).toBe(listEl(el, 0));
+    expect(drop?.currentIndex).toBe(2);
+  });
+
+  it('keeps a coordinated list out of its group: a sibling lift never steps into it', () => {
+    const { el, fixture } = renderHost(CoordinatedGroupHost);
+    const first = itemEl(el, 'b-1');
+    first.focus();
+
+    pressKey(first, ' ');
+    pressKey(first, 'Home');
+    pressKey(first, 'ArrowUp');
+    pressKey(first, 'End');
+    pressKey(first, ' ');
+
+    const drop = fixture.componentInstance.lastDropB();
+    expect(drop?.container.host).toBe(listEl(el, 1));
+    expect(drop?.currentIndex).toBe(1);
+  });
+});
+
+describe('ForDraggable — dragStart / dragEnd fire once per gesture (#2124)', () => {
+  afterEach(() => {
+    document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
+  });
+
+  it('a keyboard lift and drop emit dragStart with the source index, then dragEnd dropped', () => {
+    const { el, fixture } = renderHost(DragOutputsHost);
+    const second = itemEl(el, 2);
+    second.focus();
+
+    pressKey(second, ' ');
+    pressKey(second, 'ArrowDown');
+    pressKey(second, ' ');
+
+    const host = fixture.componentInstance;
+    expect(host.starts.map((e) => e.index)).toEqual([1]);
+    expect(host.ends).toEqual([{ dropped: true }]);
+  });
+
+  it('a keyboard cancel emits dragEnd with dropped false', () => {
+    const { el, fixture } = renderHost(DragOutputsHost);
+    const first = itemEl(el, 1);
+    first.focus();
+
+    pressKey(first, ' ');
+    pressKey(first, 'Escape');
+
+    const host = fixture.componentInstance;
+    expect(host.starts.map((e) => e.index)).toEqual([0]);
+    expect(host.ends).toEqual([{ dropped: false }]);
+  });
+
+  it('a pointer drag emits dragStart once and dragEnd once', async () => {
+    const { el, fixture } = renderHost(DragOutputsHost);
+    const first = itemEl(el, 1);
+
+    first.dispatchEvent(pointerAt('pointerdown', 10, 10));
+    document.dispatchEvent(pointerAt('pointermove', 10, 30));
+    document.dispatchEvent(pointerAt('pointerup', 10, 30));
+    await flush(fixture);
+
+    const host = fixture.componentInstance;
+    expect(host.starts.map((e) => e.index)).toEqual([0]);
+    expect(host.ends).toEqual([{ dropped: true }]);
+  });
+
+  it('a lift through the list API emits the outputs a keyboard lift does', () => {
+    const { el, fixture } = renderHost(DragOutputsHost);
+    const list = fixture.debugElement.children[0]!.injector.get(ForDropList);
+
+    list.lift(itemEl(el, 3));
+    list.cancel();
+
+    const host = fixture.componentInstance;
+    expect(host.starts.map((e) => e.index)).toEqual([2]);
+    expect(host.ends).toEqual([{ dropped: false }]);
+  });
+
+  it('a coordinator-owned lift emits dragStart with its index and dragEnd once on its end', () => {
+    const { el, fixture } = renderHost(DragOutputsHost);
+    const list = fixture.debugElement.children[0]!.injector.get(ForDropList);
+
+    list.beginCoordinatorLift(itemEl(el, 2), 4321);
+    list.endCoordinatorLift(true);
+    list.endCoordinatorLift(true);
+
+    const host = fixture.componentInstance;
+    expect(host.starts.map((e) => e.index)).toEqual([4321]);
+    expect(host.ends).toEqual([{ dropped: true }]);
+  });
+});
+
+describe('ForDropList — geometry follows a window that recycles its rows (#2124)', () => {
+  function rect(top: number, bottom: number): DOMRect {
+    return {
+      left: 0,
+      top,
+      right: 200,
+      bottom,
+      width: 200,
+      height: bottom - top,
+      x: 0,
+      y: top,
+      toJSON() {},
+    };
+  }
+
+  afterEach(() => {
+    document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
+  });
+
+  it('resolves against the rows rendered now when the window recycles at a constant count', async () => {
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+    const fixture = TestBed.createComponent(SingleListHost);
+    const host = fixture.componentInstance;
+    host.rows.set(Array.from({ length: 6 }, (_, i) => ({ id: i + 1, label: `Row ${i + 1}` })));
+    fixture.detectChanges();
+    await flush(fixture);
+    const el = fixture.nativeElement as HTMLElement;
+    const listHost = listEl(el);
+    let scrollTop = 0;
+    Object.defineProperty(listHost, 'scrollTop', { configurable: true, get: () => scrollTop });
+    listHost.getBoundingClientRect = () => rect(0, 120);
+    const layoutRows = (): void => {
+      for (const item of draggables(el)) {
+        const top = (Number(item.getAttribute('data-test-id')) - 1) * 20 - scrollTop;
+        item.getBoundingClientRect = () => rect(top, top + 20);
+      }
+    };
+    layoutRows();
+    const list = fixture.debugElement.children[0]!.injector.get(ForDropList);
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation(() => 1);
+    vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => undefined);
+
+    list.pointerLift(itemEl(el, 1), { x: 100, y: 10 });
+
+    scrollTop = 20;
+    host.rows.update((rows) => [...rows.filter((row) => row.id !== 2), { id: 7, label: 'Row 7' }]);
+    fixture.detectChanges();
+    await flush(fixture);
+    layoutRows();
+    expect(list.items().length).toBe(6);
+
+    list.pointerMove({ x: 100, y: 25 });
+    list.drop();
+
+    expect(host.lastDrop()?.currentIndex).toBe(0);
   });
 });

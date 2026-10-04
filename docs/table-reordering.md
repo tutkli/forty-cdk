@@ -85,6 +85,13 @@ Supported today:
   rendered window; `Space` / `Enter` drop and emit absolute `from` / `to`; `Escape` / `Tab` cancel.
   As the target steps past the rendered window the target row is scrolled into view and the lifted
   row stays pinned mounted throughout. `rowReorder` always emits absolute `from` / `to`.
+- **Announcements at dataset positions.** Every lift, move and drop, pointer or keyboard, is
+  announced at the position `rowReorder` reports and counted against the dataset size, and a
+  Shift-scrub drop names the row it lands at. Each row's `(dragStart)` / `(dragEnd)` fire for a
+  keyboard gesture as they do for a pointer one.
+
+The rowgroup is a **closed** list in either mode: inside a `[forDropListGroup]` it joins nothing and
+connects to no other `[forDropList]`, because `rowReorder` describes a move within the table only.
 
 ```html
 <div

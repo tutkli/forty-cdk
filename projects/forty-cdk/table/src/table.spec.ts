@@ -38,11 +38,7 @@ import {
 import { ForTableColumnResizer, type TableResizeDescriptor } from './table-column-resizer';
 import { ForTableColumnLabel } from './table-column-label';
 import { ForTableColumnReorder, type TableColumnReorderDescriptor } from './table-column-reorder';
-import {
-  ForTableRowReorder,
-  translateRowReorderIndices,
-  type TableRowReorderDescriptor,
-} from './table-row-reorder';
+import { ForTableRowReorder, type TableRowReorderDescriptor } from './table-row-reorder';
 import { ForTableVirtualized } from 'forty-cdk/table-virtualization';
 import { installObserverPolyfills, pointerEvent } from 'forty-cdk/testing';
 
@@ -5647,27 +5643,5 @@ describe('focusHeaderCell — the header-crossing resolver (#1841)', () => {
     });
 
     expect(TestBed.inject(TableRegistry).focusHeaderCell(0)).toBe(false);
-  });
-});
-
-describe('translateRowReorderIndices', () => {
-  it('is the identity when the window spans the whole dataset (contiguous from 0)', () => {
-    expect(translateRowReorderIndices([0, 1, 2, 3, 4], 0, 2)).toEqual({ from: 0, to: 2 });
-    expect(translateRowReorderIndices([0, 1, 2, 3, 4], 3, 1)).toEqual({ from: 3, to: 1 });
-    expect(translateRowReorderIndices([0, 1, 2, 3, 4], 1, 4)).toEqual({ from: 1, to: 4 });
-  });
-
-  it('maps a contiguous mid-dataset window to absolute indices', () => {
-    expect(translateRowReorderIndices([50, 51, 52, 53, 54], 1, 2)).toEqual({ from: 51, to: 52 });
-    expect(translateRowReorderIndices([50, 51, 52, 53, 54], 0, 3)).toEqual({ from: 50, to: 53 });
-  });
-
-  it('handles a non-contiguous window (pinned lifted row far from the visible block)', () => {
-    expect(translateRowReorderIndices([3, 80, 81, 82, 83], 0, 2)).toEqual({ from: 3, to: 81 });
-    expect(translateRowReorderIndices([3, 80, 81, 82, 83], 0, 4)).toEqual({ from: 3, to: 83 });
-  });
-
-  it('returns a no-op move for a single-row window', () => {
-    expect(translateRowReorderIndices([7], 0, 0)).toEqual({ from: 7, to: 7 });
   });
 });

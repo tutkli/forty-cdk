@@ -1,4 +1,4 @@
-import { accessibleTextContent } from 'forty-cdk/core';
+import { dragAnnouncementLabel } from 'forty-cdk/core';
 
 import type { ForTreeVisibleNode } from './tree-context';
 import { type TreeDropRow } from './tree-drop-resolver';
@@ -53,7 +53,7 @@ export function buildTreeDropRows<T>(
 export function treeNodeLabel(entry: ForTreeVisibleNode<unknown>): string {
   const handle = entry.handle;
   const override = handle.textValue();
-  return (override || accessibleTextContent(handle.labelEl() ?? handle.host)).trim();
+  return override ? override.trim() : dragAnnouncementLabel(handle.labelEl() ?? handle.host);
 }
 
 /**

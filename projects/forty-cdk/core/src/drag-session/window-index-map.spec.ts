@@ -1,4 +1,8 @@
-import { resolveScrubReorder, translateWindowReorder } from './window-index-map';
+import {
+  resolveScrubReorder,
+  resolveWindowedReorder,
+  translateWindowReorder,
+} from './window-index-map';
 
 describe('translateWindowReorder', () => {
   it('is the identity when the window spans the whole dataset (contiguous from 0)', () => {
@@ -72,5 +76,59 @@ describe('resolveScrubReorder', () => {
     expect(
       resolveScrubReorder({ ...base, viewportStart: 0, viewportEnd: 100, pointer: 0 }),
     ).toEqual({ from: 50, to: 0 });
+  });
+});
+
+describe('resolveWindowedReorder', () => {
+  const scrub = { engaged: true, pointer: 500, viewportStart: 100, viewportEnd: 500, count: 10000 };
+
+  it('reports the window pair unchanged when a rendered row carries no absolute index', () => {
+    expect(
+      resolveWindowedReorder({ windowIndices: null, previousIndex: 1, currentIndex: 3, scrub }),
+    ).toEqual({ from: 1, to: 3 });
+  });
+
+  it('translates the window pair when scrub is absent', () => {
+    expect(
+      resolveWindowedReorder({
+        windowIndices: [3, 80, 81, 82, 83],
+        previousIndex: 0,
+        currentIndex: 2,
+        scrub: null,
+      }),
+    ).toEqual({ from: 3, to: 81 });
+  });
+
+  it('translates the window pair when scrub is not engaged', () => {
+    expect(
+      resolveWindowedReorder({
+        windowIndices: [50, 51, 52, 53, 54],
+        previousIndex: 1,
+        currentIndex: 2,
+        scrub: { ...scrub, engaged: false },
+      }),
+    ).toEqual({ from: 51, to: 52 });
+  });
+
+  it('reports the scrub target, from the absolute index of the lifted row, when scrub is engaged', () => {
+    expect(
+      resolveWindowedReorder({
+        windowIndices: [50, 51, 52, 53, 54],
+        previousIndex: 0,
+        currentIndex: 1,
+        scrub,
+      }),
+    ).toEqual({ from: 50, to: 9998 });
+  });
+
+  it('reports a lift as its own absolute index, which is the from of a same-slot pair', () => {
+    expect(
+      resolveWindowedReorder({
+        windowIndices: [5000, 5001, 5002],
+        previousIndex: 1,
+        currentIndex: 1,
+        scrub: null,
+      }).from,
+    ).toBe(5001);
   });
 });

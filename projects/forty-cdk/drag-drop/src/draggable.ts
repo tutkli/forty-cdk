@@ -96,10 +96,16 @@ export class ForDraggable implements ForDraggableContext {
    */
   readonly dragDisabled = input(false, { transform: booleanAttribute });
 
-  /** Emitted when a drag (keyboard or pointer) starts from this item. */
+  /**
+   * Emitted when a drag (keyboard or pointer) starts from this item, including one a coordinator
+   * composing the list owns (`[forVirtualReorder]`, `[forTableRowReorder]`).
+   */
   readonly dragStart = output<ForDragStartEvent>();
 
-  /** Emitted when a drag originating from this item ends (committed or cancelled). */
+  /**
+   * Emitted when a drag originating from this item ends (committed or cancelled), including one a
+   * coordinator composing the list owns. Not emitted when the item is destroyed mid-drag.
+   */
   readonly dragEnd = output<ForDragEndEvent>();
 
   readonly effectiveDisabled = computed(() => this.dragDisabled() || this.#list.disabled());
@@ -164,6 +170,16 @@ export class ForDraggable implements ForDraggableContext {
       host: this.#host.nativeElement,
       data: this.dragData,
       disabled: this.effectiveDisabled,
+      emitDragStart: (index) => {
+        if (!this.#destroyRef.destroyed) {
+          this.dragStart.emit({ source: this.#list, index });
+        }
+      },
+      emitDragEnd: (dropped) => {
+        if (!this.#destroyRef.destroyed) {
+          this.dragEnd.emit({ dropped });
+        }
+      },
     };
     registerHandle(
       handle,
@@ -215,7 +231,6 @@ export class ForDraggable implements ForDraggableContext {
     }
     this.#renderPlaceholder();
     this.#pointerDragging = true;
-    this.dragStart.emit({ source: this.#list, index });
     return true;
   }
 
@@ -230,7 +245,6 @@ export class ForDraggable implements ForDraggableContext {
     } finally {
       this.#clearPlaceholder();
     }
-    this.dragEnd.emit({ dropped: true });
   }
 
   #onPointerCancel(): void {
@@ -240,7 +254,6 @@ export class ForDraggable implements ForDraggableContext {
     this.#pointerDragging = false;
     this.#clearPlaceholder();
     this.#list.cancel();
-    this.dragEnd.emit({ dropped: false });
   }
 
   #buildPreview(): DragPreview | null {
@@ -286,7 +299,6 @@ export class ForDraggable implements ForDraggableContext {
   protected onBlur(): void {
     if (this.lifted() && !this.#pointerDragging) {
       this.#list.cancel();
-      this.dragEnd.emit({ dropped: false });
     }
   }
 
@@ -299,14 +311,12 @@ export class ForDraggable implements ForDraggableContext {
       if (event.key === ' ' || event.key === 'Enter') {
         event.preventDefault();
         this.#list.drop();
-        this.dragEnd.emit({ dropped: true });
         return;
       }
       if (event.key === 'Escape') {
         event.preventDefault();
         event.stopPropagation();
         this.#list.cancel();
-        this.dragEnd.emit({ dropped: false });
         return;
       }
       const action = resolveListNavigation(event, {
@@ -327,10 +337,7 @@ export class ForDraggable implements ForDraggableContext {
         return;
       }
       event.preventDefault();
-      const index = this.#list.lift(host);
-      if (index >= 0) {
-        this.dragStart.emit({ source: this.#list, index });
-      }
+      this.#list.lift(host);
       return;
     }
     const action = resolveListNavigation(event, {

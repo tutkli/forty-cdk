@@ -143,6 +143,7 @@ export {
   type DropContainerGeometry,
   resolveDropTarget,
 } from './drag-session/drag-geometry';
+export { dragAnnouncementLabel } from './drag-session/drag-announcement-label';
 export { createTemplatePreview, type DragPreview } from './drag-session/drag-preview';
 export { isDragLiftKey, resolveLiftedDragControl } from './drag-session/keyboard-drag-keys';
 export { createKeyboardDragMediator } from './drag-session/keyboard-drag-mediator';
@@ -152,7 +153,7 @@ export {
   type PointerDragSession,
 } from './drag-session/pointer-session';
 export { PreviewController } from './drag-session/preview-controller';
-export { resolveScrubReorder, translateWindowReorder } from './drag-session/window-index-map';
+export { resolveWindowedReorder, translateWindowReorder } from './drag-session/window-index-map';
 export { type ElementBox, injectElementSize } from './element-size/element-size';
 export { formatFortyMessage, fortyError, type FortyMessageSpec, fortyWarn } from './errors/errors';
 export {
