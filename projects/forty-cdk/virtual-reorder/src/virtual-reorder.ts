@@ -9,15 +9,20 @@ import {
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 
-import { FOR_DRAG_DROP_DEFAULTS, ForDropList, type ForDragDropEvent } from 'forty-cdk/drag-drop';
+import {
+  FOR_DRAG_DROP_DEFAULTS,
+  FOR_DROP_LIST_COORDINATOR,
+  ForDropList,
+  type ForDragDropEvent,
+} from 'forty-cdk/drag-drop';
 import {
   createKeyboardDragMediator,
   createPointerDragSession,
+  dragAnnouncementLabel,
   fortyError,
   LiveAnnouncer,
   type PointerDragSession,
-  resolveScrubReorder,
-  translateWindowReorder,
+  resolveWindowedReorder,
 } from 'forty-cdk/core';
 import { ForVirtualViewport } from 'forty-cdk/virtualization';
 
@@ -68,6 +73,14 @@ function injectViewport(): ForVirtualViewport {
  * - **Dataset-wide keyboard reorder** — keyboard stepping runs over the true total count,
  *   scrolling unmounted target rows into view, rather than being confined to the window.
  *
+ * Every lift, move and drop announcement, pointer and keyboard alike, counts dataset positions
+ * against the dataset size, and each row's `[forDraggable]` emits `dragStart` / `dragEnd` for a
+ * keyboard gesture as it does for a pointer one.
+ *
+ * The list is **closed**: it joins no `[forDropListGroup]` and connects to no other
+ * `[forDropList]`, so no item is transferred into or out of it. `itemReorder` describes a move
+ * within this dataset only.
+ *
  * **One gesture at a time**. The pin is
  * written when a pointer drag **arms**, not when the press lands, and released on its commit or
  * cancel — so an ordinary click on a row pins nothing and leaves no retained node behind. Pointer
@@ -84,8 +97,8 @@ function injectViewport(): ForVirtualViewport {
  *
  * Hold **Shift** during a pointer drag to engage **windowed scrub**: the viewport maps onto the
  * whole dataset (top edge → first item, bottom edge → last), so a single gesture drops the lifted
- * item at an arbitrary far item without waiting for auto-scroll to reach it. Without Shift, pointer
- * resolution is unchanged.
+ * item at an arbitrary far item without waiting for auto-scroll to reach it, and the drop
+ * announcement names the position it lands at. Without Shift, pointer resolution is unchanged.
  *
  * It **never reorders the items itself** (BYO-data): apply the move to your own array inside
  * the `(itemReorder)` handler. Vertical lists only (the default scroll axis).
@@ -103,6 +116,7 @@ function injectViewport(): ForVirtualViewport {
 @Directive({
   selector: '[forVirtualReorder]',
   exportAs: 'forVirtualReorder',
+  providers: [{ provide: FOR_DROP_LIST_COORDINATOR, useExisting: ForVirtualReorder }],
   hostDirectives: [
     {
       directive: ForDropList,
@@ -142,7 +156,7 @@ export class ForVirtualReorder {
   constructor() {
     const destroyRef = inject(DestroyRef);
     const sub = this.#list.dragDrop.subscribe((event: ForDragDropEvent) =>
-      this.itemReorder.emit(this.#resolveDescriptor(event)),
+      this.itemReorder.emit(this.resolveReorder(event.previousIndex, event.currentIndex)),
     );
     destroyRef.onDestroy(() => sub.unsubscribe());
 
@@ -223,7 +237,7 @@ export class ForVirtualReorder {
       event.stopPropagation();
       this.#kbApplyTarget();
     } else if (key === 'End') {
-      this.#setTarget(this.#count() - 1);
+      this.#setTarget(this.count() - 1);
       event.preventDefault();
       event.stopPropagation();
       this.#kbApplyTarget();
@@ -246,9 +260,9 @@ export class ForVirtualReorder {
     this.#kbFrom = vi;
     this.#kbTarget = vi;
     this.#viewport.setReorderingIndex(vi);
-    this.#list.setCoordinatorLift(host);
+    this.#list.beginCoordinatorLift(host, vi);
     this.#announcer.announce(
-      this.#dragDefaults.announceLift(this.#label(), vi + 1, this.#count()),
+      this.#dragDefaults.announceLift(this.#label(), vi + 1, this.count()),
       'assertive',
     );
   }
@@ -256,7 +270,7 @@ export class ForVirtualReorder {
   #kbApplyTarget(): void {
     this.#viewport.scrollToIndex(this.#kbTarget);
     this.#announcer.announce(
-      this.#dragDefaults.announceMove(this.#label(), this.#kbTarget + 1, this.#count()),
+      this.#dragDefaults.announceMove(this.#label(), this.#kbTarget + 1, this.count()),
       'polite',
     );
   }
@@ -264,27 +278,27 @@ export class ForVirtualReorder {
   #kbCommit(): void {
     this.itemReorder.emit({ from: this.#kbFrom, to: this.#kbTarget });
     this.#announcer.announce(
-      this.#dragDefaults.announceDrop(this.#label(), this.#kbTarget + 1, this.#count()),
+      this.#dragDefaults.announceDrop(this.#label(), this.#kbTarget + 1, this.count()),
       'assertive',
     );
-    this.#kbTeardown();
+    this.#kbTeardown(true);
   }
 
   #kbCancel(): void {
     this.#announcer.announce(this.#dragDefaults.announceCancel(this.#label()), 'assertive');
-    this.#kbTeardown();
+    this.#kbTeardown(false);
   }
 
-  #kbTeardown(): void {
+  #kbTeardown(dropped: boolean): void {
     this.#mode = 'idle';
     this.#kbLiftedHost = null;
     this.#kbFrom = 0;
     this.#kbTarget = 0;
     this.#viewport.setReorderingIndex(null);
-    this.#list.setCoordinatorLift(null);
+    this.#list.endCoordinatorLift(dropped);
   }
 
-  #count(): number {
+  private count(): number {
     return this.#viewport.count();
   }
 
@@ -293,11 +307,11 @@ export class ForVirtualReorder {
   }
 
   #label(): string {
-    return (this.#kbLiftedHost?.textContent ?? '').trim();
+    return this.#kbLiftedHost === null ? '' : dragAnnouncementLabel(this.#kbLiftedHost);
   }
 
   #setTarget(value: number): void {
-    this.#kbTarget = Math.max(0, Math.min(this.#count() - 1, value));
+    this.#kbTarget = Math.max(0, Math.min(this.count() - 1, value));
   }
 
   #trackPointerPress(event: PointerEvent): boolean {
@@ -366,35 +380,31 @@ export class ForVirtualReorder {
     return Number.isNaN(index) ? null : index;
   }
 
-  #resolveDescriptor(event: ForDragDropEvent): ForVirtualReorderEvent {
-    const fallback: ForVirtualReorderEvent = {
-      from: event.previousIndex,
-      to: event.currentIndex,
-    };
-    if (event.container !== event.previousContainer) {
-      return fallback;
-    }
-    const windowIndices: number[] = [];
+  #windowIndices(): number[] | null {
+    const indices: number[] = [];
     for (const item of this.#list.items()) {
       const index = this.#absoluteIndex(item.host);
       if (index === null) {
-        return fallback;
+        return null;
       }
-      windowIndices.push(index);
+      indices.push(index);
     }
-    const from = windowIndices[event.previousIndex] ?? event.previousIndex;
+    return indices;
+  }
+
+  private resolveReorder(previousIndex: number, currentIndex: number): ForVirtualReorderEvent {
     const rect = this.#host.getBoundingClientRect();
-    const scrub = resolveScrubReorder({
-      engaged: this.#scrubEngaged,
-      pointer: this.#pointerMain ?? rect.top,
-      viewportStart: rect.top,
-      viewportEnd: rect.bottom,
-      from,
-      count: this.#count(),
+    return resolveWindowedReorder({
+      windowIndices: this.#windowIndices(),
+      previousIndex,
+      currentIndex,
+      scrub: {
+        engaged: this.#scrubEngaged,
+        pointer: this.#pointerMain ?? rect.top,
+        viewportStart: rect.top,
+        viewportEnd: rect.bottom,
+        count: this.count(),
+      },
     });
-    if (scrub !== null) {
-      return scrub;
-    }
-    return translateWindowReorder(windowIndices, event.previousIndex, event.currentIndex);
   }
 }

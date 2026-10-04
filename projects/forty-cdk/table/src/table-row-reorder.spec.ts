@@ -956,3 +956,169 @@ describe('ForTableRowReorder — the restored focus target may be an SVGElement 
     expect(instance.last).toEqual({ from, to: ROW_COUNT - 1 });
   });
 });
+
+@Component({
+  imports: [
+    ForTable,
+    ForTableVirtualized,
+    ForTableRow,
+    ForTableCell,
+    ForTableRowReorder,
+    ForDraggable,
+  ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <div
+      forTable
+      forTableVirtualized
+      mode="grid"
+      ariaLabel="Virtualized rows with drag outputs"
+      [rowCount]="rowCount"
+      [estimateRowSize]="rowHeight"
+      #v="forTableVirtualized"
+      style="height: 200px; overflow: auto"
+    >
+      <div
+        role="rowgroup"
+        forTableRowReorder
+        [style.height.px]="v.totalSize()"
+        (rowReorder)="last = $event"
+      >
+        @for (vrow of v.virtualRows(); track vrow.index) {
+          <div
+            forTableRow
+            [virtualIndex]="vrow.index"
+            forDraggable
+            [dragData]="vrow.index"
+            [attr.data-index]="vrow.index"
+            (dragStart)="starts.push($event.index)"
+            (dragEnd)="ends.push($event.dropped)"
+          >
+            <div forTableCell name="a" [attr.data-testid]="'cell-' + vrow.index">
+              <span aria-hidden="true">⠿</span>Row {{ vrow.index }}
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  `,
+})
+class VirtualizedDragOutputsHost {
+  protected readonly rowCount = ROW_COUNT;
+  protected readonly rowHeight = ROW_HEIGHT;
+  last: TableRowReorderDescriptor | null = null;
+  readonly starts: number[] = [];
+  readonly ends: boolean[] = [];
+}
+
+@Component({
+  imports: [ForTable, ForTableRow, ForTableCell, ForTableRowReorder, ForDraggable],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <div forTable mode="grid" ariaLabel="Reorderable rows with drag outputs">
+      <div role="rowgroup" forTableRowReorder (rowReorder)="last = $event">
+        @for (row of rows; track row) {
+          <div
+            forTableRow
+            forDraggable
+            [dragData]="row"
+            (dragStart)="starts.push($event.index)"
+            (dragEnd)="ends.push($event.dropped)"
+          >
+            <div forTableCell name="a" [attr.data-testid]="'cell-' + row">{{ row }}</div>
+          </div>
+        }
+      </div>
+    </div>
+  `,
+})
+class ListDragOutputsHost {
+  readonly rows = [0, 1, 2, 3];
+  last: TableRowReorderDescriptor | null = null;
+  readonly starts: number[] = [];
+  readonly ends: boolean[] = [];
+}
+
+describe('ForTableRowReorder — announcements and drag outputs (#2124)', () => {
+  afterEach(() => {
+    document.querySelectorAll('[aria-live]').forEach((node) => node.remove());
+  });
+
+  it('a virtualized keyboard lift emits dragStart with the dataset index, and the drop emits dragEnd', async () => {
+    const { instance, settle, indices, cell } = await render(VirtualizedDragOutputsHost);
+    const from = Math.max(...indices());
+    const lifted = cell(from);
+    lifted.focus();
+
+    press(lifted, ' ', { ctrlKey: true });
+    await settle();
+    expect(instance.starts).toEqual([from]);
+    expect(instance.ends).toEqual([]);
+
+    press(lifted, ' ');
+    await settle();
+
+    expect(instance.last).toEqual({ from, to: from });
+    expect(instance.ends).toEqual([true]);
+  });
+
+  it('a virtualized keyboard cancel emits dragEnd with dropped false', async () => {
+    const { instance, settle, indices, cell } = await render(VirtualizedDragOutputsHost);
+    const from = Math.max(...indices());
+    const lifted = cell(from);
+    lifted.focus();
+
+    press(lifted, ' ', { ctrlKey: true });
+    press(lifted, 'Escape');
+    await settle();
+
+    expect(instance.starts).toEqual([from]);
+    expect(instance.ends).toEqual([false]);
+  });
+
+  it('the non-virtualized grid lift emits dragStart and dragEnd on the lifted row', async () => {
+    const { instance, settle, query } = await render(ListDragOutputsHost);
+    const lifted = query('[data-testid="cell-1"]');
+    lifted.focus();
+
+    press(lifted, ' ', { ctrlKey: true });
+    press(lifted, 'ArrowDown');
+    press(lifted, ' ');
+    await settle();
+
+    expect(instance.last).toEqual({ from: 1, to: 2 });
+    expect(instance.starts).toEqual([1]);
+    expect(instance.ends).toEqual([true]);
+  });
+
+  it('keyboard announcements leave an aria-hidden glyph out of the row name', async () => {
+    const { settle, indices, cell } = await render(VirtualizedDragOutputsHost);
+    const from = Math.max(...indices());
+    const lifted = cell(from);
+    lifted.focus();
+
+    press(lifted, ' ', { ctrlKey: true });
+    await settle();
+
+    expect(liveRegionText()).toContain(`Row ${from}, lifted. ${from + 1} of ${ROW_COUNT}.`);
+    expect(liveRegionText()).not.toContain('⠿');
+    press(lifted, 'Escape');
+  });
+
+  it('a virtualized pointer lift announces the dataset position against the row count', async () => {
+    const { settle, indices, cell, scrollTo } = await render(VirtualizedDragOutputsHost);
+    await scrollTo(200 * ROW_HEIGHT);
+    const rendered = indices();
+    const target = rendered[Math.floor(rendered.length / 2)]!;
+    expect(target).toBeGreaterThan(100);
+
+    cell(target).dispatchEvent(pointer('pointerdown', 0, 100));
+    document.dispatchEvent(pointer('pointermove', 0, 120));
+    await settle();
+
+    expect(liveRegionText()).toContain(`Row ${target}, lifted. ${target + 1} of ${ROW_COUNT}.`);
+    expect(indices().length).toBeLessThan(100);
+    document.dispatchEvent(pointer('pointercancel', 0, 120));
+    await settle();
+  });
+});

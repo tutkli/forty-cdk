@@ -12,6 +12,7 @@ import { isPlatformBrowser } from '@angular/common';
 
 import {
   FOR_DRAG_DROP_DEFAULTS,
+  FOR_DROP_LIST_COORDINATOR,
   FOR_DROP_LIST_ROVING_DELEGATE,
   ForDropList,
   type ForDragDropEvent,
@@ -20,12 +21,12 @@ import {
 import {
   createKeyboardDragMediator,
   createPointerDragSession,
+  dragAnnouncementLabel,
   isDragLiftKey,
   LiveAnnouncer,
   type PointerDragSession,
   resolveLiftedDragControl,
-  resolveScrubReorder,
-  translateWindowReorder,
+  resolveWindowedReorder,
 } from 'forty-cdk/core';
 import { injectTableContext, injectTableRegistration } from './table-context';
 
@@ -50,22 +51,6 @@ export interface TableRowReorderDescriptor {
   from: number;
   /** New row index (0-based). Absolute (dataset) index under virtualization, else rendered order. */
   to: number;
-}
-
-/**
- * Translates a drop-list's window-relative `previousIndex` / `currentIndex` into
- * absolute dataset indices, so a virtualized table's consumer can apply
- * `moveItemInArray` over the **full** row array. `windowIndices` holds the
- * absolute `virtualIndex` of every rendered draggable row, in DOM (ascending)
- * order. Thin table-facing wrapper over the shared
- * {@link translateWindowReorder} helper, which owns the post-removal index math.
- */
-export function translateRowReorderIndices(
-  windowIndices: readonly number[],
-  previousIndex: number,
-  currentIndex: number,
-): TableRowReorderDescriptor {
-  return translateWindowReorder(windowIndices, previousIndex, currentIndex);
 }
 
 /**
@@ -98,6 +83,12 @@ export function translateRowReorderIndices(
  * bottom edge → the last row) so a single gesture can drop the lifted row at an arbitrary
  * far row.
  *
+ * Every lift, move and drop announcement counts the positions `rowReorder` reports — dataset
+ * positions under virtualization, pointer and keyboard alike — and each row's `[forDraggable]`
+ * emits `dragStart` / `dragEnd` for a keyboard gesture as it does for a pointer one. The rowgroup
+ * is a **closed** list: it joins no `[forDropListGroup]` and connects to no other `[forDropList]`,
+ * so no row is transferred into or out of it.
+ *
  * Focus leaving the rowgroup cancels a keyboard lift. A window recycle that briefly blurs
  * the retained lifted row does not: focus returns to it once the window settles.
  *
@@ -123,6 +114,7 @@ export function translateRowReorderIndices(
   selector: '[forTableRowReorder]',
   exportAs: 'forTableRowReorder',
   providers: [
+    { provide: FOR_DROP_LIST_COORDINATOR, useExisting: ForTableRowReorder },
     {
       provide: FOR_DROP_LIST_ROVING_DELEGATE,
       useFactory: (): ForDropListRovingDelegate => {
@@ -176,7 +168,7 @@ export class ForTableRowReorder {
   constructor() {
     const destroyRef = inject(DestroyRef);
     const sub = this.#list.dragDrop.subscribe((event: ForDragDropEvent) =>
-      this.rowReorder.emit(this.#resolveDescriptor(event)),
+      this.rowReorder.emit(this.resolveReorder(event.previousIndex, event.currentIndex)),
     );
     destroyRef.onDestroy(() => sub.unsubscribe());
 
@@ -318,7 +310,7 @@ export class ForTableRowReorder {
           this.#setTarget(0);
           break;
         case 'End':
-          this.#setTarget(this.#count() - 1);
+          this.#setTarget(this.count() - 1);
           break;
         case 'PageDown':
           this.#setTarget(this.#kbTarget + this.#page());
@@ -359,7 +351,7 @@ export class ForTableRowReorder {
       this.#kbCommit();
     } else if (this.#kbPath === 'list') {
       this.#list.drop();
-      this.#kbTeardown();
+      this.#kbTeardown(true);
     }
   }
 
@@ -368,7 +360,7 @@ export class ForTableRowReorder {
       this.#kbCancel();
     } else if (this.#kbPath === 'list') {
       this.#list.cancel();
-      this.#kbTeardown();
+      this.#kbTeardown(false);
     }
   }
 
@@ -394,8 +386,8 @@ export class ForTableRowReorder {
     this.#kbFrom = vi;
     this.#kbTarget = vi;
     this.#registration.setReorderingRow(vi);
-    this.#list.setCoordinatorLift(host);
-    const total = this.#count();
+    this.#list.beginCoordinatorLift(host, vi);
+    const total = this.count();
     this.#announcer.announce(
       this.#dragDefaults.announceLift(this.#label(), vi + 1, total),
       'assertive',
@@ -405,7 +397,7 @@ export class ForTableRowReorder {
   #kbApplyTarget(): void {
     this.#registration.virtualRowNavigation()?.scrollToRow(this.#kbTarget);
     this.#announcer.announce(
-      this.#dragDefaults.announceMove(this.#label(), this.#kbTarget + 1, this.#count()),
+      this.#dragDefaults.announceMove(this.#label(), this.#kbTarget + 1, this.count()),
       'polite',
     );
   }
@@ -413,15 +405,15 @@ export class ForTableRowReorder {
   #kbCommit(): void {
     this.rowReorder.emit({ from: this.#kbFrom, to: this.#kbTarget });
     this.#announcer.announce(
-      this.#dragDefaults.announceDrop(this.#label(), this.#kbTarget + 1, this.#count()),
+      this.#dragDefaults.announceDrop(this.#label(), this.#kbTarget + 1, this.count()),
       'assertive',
     );
-    this.#kbTeardown();
+    this.#kbTeardown(true);
   }
 
   #kbCancel(): void {
     this.#announcer.announce(this.#dragDefaults.announceCancel(this.#label()), 'assertive');
-    this.#kbTeardown();
+    this.#kbTeardown(false);
   }
 
   #resolveFocusTarget(host: HTMLElement): HTMLElement | SVGElement {
@@ -430,7 +422,7 @@ export class ForTableRowReorder {
     return focusable && host.contains(active) ? active : host;
   }
 
-  #kbTeardown(): void {
+  #kbTeardown(dropped: boolean): void {
     this.#mode = 'idle';
     this.#kbLiftedHost = null;
     this.#kbFocusEl = null;
@@ -438,11 +430,12 @@ export class ForTableRowReorder {
     this.#kbFrom = 0;
     this.#kbTarget = 0;
     this.#registration.setReorderingRow(null);
-    this.#list.setCoordinatorLift(null);
+    this.#list.endCoordinatorLift(dropped);
   }
 
-  #count(): number {
-    return this.ctx.rowCount() ?? this.#list.items().length;
+  private count(): number {
+    const rendered = this.#list.items().length;
+    return this.#virtualized() ? (this.ctx.rowCount() ?? rendered) : rendered;
   }
 
   #page(): number {
@@ -450,11 +443,11 @@ export class ForTableRowReorder {
   }
 
   #label(): string {
-    return (this.#kbLiftedHost?.textContent ?? '').trim();
+    return this.#kbLiftedHost === null ? '' : dragAnnouncementLabel(this.#kbLiftedHost);
   }
 
   #setTarget(value: number): void {
-    this.#kbTarget = Math.max(0, Math.min(this.#count() - 1, value));
+    this.#kbTarget = Math.max(0, Math.min(this.count() - 1, value));
   }
 
   #trackPointerPress(event: PointerEvent): boolean {
@@ -512,38 +505,35 @@ export class ForTableRowReorder {
     this.#scrubEngaged = event.shiftKey;
   }
 
-  #resolveDescriptor(event: ForDragDropEvent): TableRowReorderDescriptor {
-    const fallback: TableRowReorderDescriptor = {
-      from: event.previousIndex,
-      to: event.currentIndex,
-    };
-    if (event.container !== event.previousContainer) {
-      return fallback;
-    }
+  #windowIndices(): number[] | null {
     const rowByHost = new Map(this.#registration.rows().map((r) => [r.host, r] as const));
-    const windowIndices: number[] = [];
+    const indices: number[] = [];
     for (const item of this.#list.items()) {
       const index = rowByHost.get(item.host)?.virtualIndex() ?? null;
       if (index === null) {
-        return fallback;
+        return null;
       }
-      windowIndices.push(index);
+      indices.push(index);
     }
+    return indices;
+  }
+
+  private resolveReorder(previousIndex: number, currentIndex: number): TableRowReorderDescriptor {
     const rect = this.#registration.virtualRowNavigation()?.scrollViewportRect() ?? null;
-    if (rect !== null) {
-      const from = windowIndices[event.previousIndex] ?? event.previousIndex;
-      const scrub = resolveScrubReorder({
-        engaged: this.#scrubEngaged,
-        pointer: this.#pointerMain ?? rect.top,
-        viewportStart: rect.top,
-        viewportEnd: rect.bottom,
-        from,
-        count: this.#count(),
-      });
-      if (scrub !== null) {
-        return scrub;
-      }
-    }
-    return translateRowReorderIndices(windowIndices, event.previousIndex, event.currentIndex);
+    return resolveWindowedReorder({
+      windowIndices: this.#windowIndices(),
+      previousIndex,
+      currentIndex,
+      scrub:
+        rect === null
+          ? null
+          : {
+              engaged: this.#scrubEngaged,
+              pointer: this.#pointerMain ?? rect.top,
+              viewportStart: rect.top,
+              viewportEnd: rect.bottom,
+              count: this.count(),
+            },
+    });
   }
 }
