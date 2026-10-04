@@ -147,4 +147,17 @@ test.describe('Drawer (contained, modal)', () => {
     });
     expect(containerOverflowAfter).toBe('');
   });
+
+  test('Shift+Tab from the focused drawer container wraps to its last control', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'drawer-contained', { modal: 'true', initialFocus: 'container' });
+    await el(page, 'trigger').click();
+    await expect(el(page, 'drawer')).toBeFocused();
+
+    await page.keyboard.press('Shift+Tab');
+
+    await expect(el(page, 'close-btn')).toBeFocused();
+    await expect(el(page, 'drawer')).toBeVisible();
+  });
 });

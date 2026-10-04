@@ -675,7 +675,7 @@ describe('FocusTrap', () => {
       expect(document.activeElement?.id).toBe('t2');
     });
 
-    it('treats a tabindex="-1" item at a Tab edge as a middle element (no wrap)', () => {
+    it('wraps forward from a focused tabindex="-1" item after the last tabbable', () => {
       trap = new FocusTrap(container, stack);
       trap.activate();
 
@@ -684,9 +684,214 @@ describe('FocusTrap', () => {
       const event = tab();
       document.dispatchEvent(event);
 
-      expect(event.defaultPrevented).toBe(false);
+      expect(event.defaultPrevented).toBe(true);
+      expect(document.activeElement?.id).toBe('t1');
+    });
+
+    it('lets the browser move focus from a tabindex="-1" item between the two tabbables', () => {
+      trap = new FocusTrap(container, stack);
+      trap.activate();
+
+      container.querySelector<HTMLElement>('#rov1')!.focus();
+      const forward = tab();
+      document.dispatchEvent(forward);
+      const backward = tab(true);
+      document.dispatchEvent(backward);
+
+      expect(forward.defaultPrevented).toBe(false);
+      expect(backward.defaultPrevented).toBe(false);
     });
   });
+
+  describe('Tab from a focused element that is not a tabbable edge', () => {
+    it('wraps Shift+Tab from the focused container to the last tabbable', () => {
+      trap = new FocusTrap(container, stack);
+      trap.activate({ initialFocus: 'container' });
+
+      const event = tab(true);
+      document.dispatchEvent(event);
+
+      expect(event.defaultPrevented).toBe(true);
+      expect(document.activeElement?.id).toBe('b3');
+    });
+
+    it('lets the browser move Tab forward from the focused container into it', () => {
+      trap = new FocusTrap(container, stack);
+      trap.activate({ initialFocus: 'container' });
+
+      const event = tab();
+      document.dispatchEvent(event);
+
+      expect(event.defaultPrevented).toBe(false);
+    });
+
+    it('wraps Shift+Tab from a tabindex="-1" heading before the first tabbable', () => {
+      container.insertAdjacentHTML('afterbegin', '<h2 id="heading" tabindex="-1">Title</h2>');
+      const heading = container.querySelector<HTMLElement>('#heading')!;
+      trap = new FocusTrap(container, stack);
+      trap.activate({ initialFocus: heading });
+
+      const event = tab(true);
+      document.dispatchEvent(event);
+
+      expect(event.defaultPrevented).toBe(true);
+      expect(document.activeElement?.id).toBe('b3');
+    });
+
+    it('wraps Shift+Tab from a focused wrapper that contains the first tabbable', () => {
+      container.innerHTML = `
+        <div id="wrapper" tabindex="-1"><button id="w1">one</button></div>
+        <button id="w2">two</button>
+      `;
+      trap = new FocusTrap(container, stack);
+      trap.activate({ initialFocus: container.querySelector<HTMLElement>('#wrapper')! });
+
+      const event = tab(true);
+      document.dispatchEvent(event);
+
+      expect(event.defaultPrevented).toBe(true);
+      expect(document.activeElement?.id).toBe('w2');
+    });
+
+    it('orders the focused container against a first tabbable that lives in a shadow root', () => {
+      container.innerHTML = `
+        <shadow-widget id="host"></shadow-widget>
+        <button id="light-last">last</button>
+      `;
+      const host = container.querySelector<HTMLElement>('#host')!;
+      host.attachShadow({ mode: 'open' }).innerHTML = '<button id="shadow-first">first</button>';
+      trap = new FocusTrap(container, stack);
+      trap.activate({ initialFocus: 'container' });
+
+      const backward = tab(true);
+      document.dispatchEvent(backward);
+      expect(backward.defaultPrevented).toBe(true);
+      expect(document.activeElement?.id).toBe('light-last');
+
+      container.focus();
+      const forward = tab();
+      document.dispatchEvent(forward);
+      expect(forward.defaultPrevented).toBe(false);
+    });
+  });
+
+  describe.each(['data-for-modal-exempt', 'data-for-modal-peer'])(
+    'a surface outside the trap marked %s',
+    (marker) => {
+      let surface: HTMLElement;
+
+      beforeEach(() => {
+        surface = document.createElement('div');
+        surface.setAttribute(marker, '');
+        surface.tabIndex = -1;
+        surface.innerHTML = `
+          <button id="s1">surface one</button>
+          <button id="s2">surface two</button>
+        `;
+        document.body.appendChild(surface);
+      });
+
+      function surfaceButton(id: string): HTMLElement {
+        return surface.querySelector<HTMLElement>(`#${id}`)!;
+      }
+
+      it('lets Tab move natively from the focused surface host into it', () => {
+        trap = new FocusTrap(container, stack);
+        trap.activate();
+        surface.focus();
+
+        const event = tab();
+        document.dispatchEvent(event);
+
+        expect(event.defaultPrevented).toBe(false);
+        expect(document.activeElement).toBe(surface);
+      });
+
+      it('lets Tab and Shift+Tab move natively between the surface tabbables', () => {
+        trap = new FocusTrap(container, stack);
+        trap.activate();
+
+        surfaceButton('s1').focus();
+        const forward = tab();
+        document.dispatchEvent(forward);
+        expect(forward.defaultPrevented).toBe(false);
+        expect(document.activeElement?.id).toBe('s1');
+
+        surfaceButton('s2').focus();
+        const backward = tab(true);
+        document.dispatchEvent(backward);
+        expect(backward.defaultPrevented).toBe(false);
+        expect(document.activeElement?.id).toBe('s2');
+      });
+
+      it('returns Tab past the last surface tabbable to the first tabbable of the trap', () => {
+        trap = new FocusTrap(container, stack);
+        trap.activate();
+        surfaceButton('s2').focus();
+
+        const event = tab();
+        document.dispatchEvent(event);
+
+        expect(event.defaultPrevented).toBe(true);
+        expect(document.activeElement?.id).toBe('b1');
+      });
+
+      it('returns Shift+Tab before the first surface tabbable to the last tabbable of the trap', () => {
+        trap = new FocusTrap(container, stack);
+        trap.activate();
+        surfaceButton('s1').focus();
+
+        const event = tab(true);
+        document.dispatchEvent(event);
+
+        expect(event.defaultPrevented).toBe(true);
+        expect(document.activeElement?.id).toBe('b3');
+      });
+
+      it('returns Tab from a surface with no tabbables to the trap', () => {
+        surface.innerHTML = '<p>No actions</p>';
+        trap = new FocusTrap(container, stack);
+        trap.activate();
+        surface.focus();
+
+        const event = tab();
+        document.dispatchEvent(event);
+
+        expect(event.defaultPrevented).toBe(true);
+        expect(document.activeElement?.id).toBe('b1');
+      });
+
+      it('lets Tab move natively between surface tabbables rendered in a shadow root', () => {
+        surface.innerHTML = '<shadow-widget id="surface-host"></shadow-widget>';
+        const shadow = surface
+          .querySelector<HTMLElement>('#surface-host')!
+          .attachShadow({ mode: 'open' });
+        shadow.innerHTML = '<button id="sh1">one</button><button id="sh2">two</button>';
+        trap = new FocusTrap(container, stack);
+        trap.activate();
+        shadow.querySelector<HTMLElement>('#sh1')!.focus();
+
+        const event = tab();
+        document.dispatchEvent(event);
+
+        expect(event.defaultPrevented).toBe(false);
+      });
+
+      it('does not treat a marked ancestor of the trap container as an independent surface', () => {
+        surface.innerHTML = '<button id="sibling">sibling</button>';
+        surface.appendChild(container);
+        trap = new FocusTrap(container, stack);
+        trap.activate();
+        surfaceButton('sibling').focus();
+
+        const event = tab();
+        document.dispatchEvent(event);
+
+        expect(event.defaultPrevented).toBe(true);
+        expect(document.activeElement?.id).toBe('b1');
+      });
+    },
+  );
 
   describe('open shadow roots inside the trap', () => {
     let shadow: ShadowRoot;

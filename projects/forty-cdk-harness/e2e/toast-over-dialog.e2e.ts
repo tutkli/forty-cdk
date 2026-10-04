@@ -67,4 +67,28 @@ test.describe('Toast over a modal dialog (#1083)', () => {
     await expect(el(page, 'dialog')).toHaveCount(0);
     await expect(el(page, 'last-close-reason')).toHaveText('pointerDownOutside');
   });
+
+  test('Tab moves through the toast controls after F6, then returns to the dialog', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'toast-over-dialog');
+
+    await el(page, 'trigger').click();
+    await expect(el(page, 'dialog')).toBeVisible();
+
+    await el(page, 'show-toast').click();
+    await expect(el(page, 'toast-action')).toBeVisible();
+
+    await page.keyboard.press('F6');
+    await expect(el(page, 'viewport').locator('[forToast]')).toBeFocused();
+
+    await page.keyboard.press('Tab');
+    await expect(el(page, 'toast-action')).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(el(page, 'toast-secondary')).toBeFocused();
+
+    await page.keyboard.press('Tab');
+    await expect(el(page, 'show-toast')).toBeFocused();
+    await expect(el(page, 'last-close-reason')).toHaveText('none');
+  });
 });

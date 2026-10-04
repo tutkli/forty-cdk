@@ -21,4 +21,23 @@ test.describe('Nested overlays (popover inside dialog)', () => {
     await page.keyboard.press('Escape');
     await expect(el(page, 'dialog')).toHaveCount(0);
   });
+
+  test('Tab moves between the popover controls, then returns to the dialog', async ({ page }) => {
+    await gotoFixture(page, 'nested');
+
+    await el(page, 'dialog-trigger').click();
+    await expect(el(page, 'dialog')).toBeVisible();
+
+    await el(page, 'popover-trigger').click();
+    await expect(el(page, 'popover')).toBeVisible();
+    await el(page, 'popover-content-button').focus();
+
+    await page.keyboard.press('Tab');
+    await expect(el(page, 'popover-content-second')).toBeFocused();
+    await expect(el(page, 'popover')).toBeVisible();
+
+    await page.keyboard.press('Tab');
+    await expect(el(page, 'popover-trigger')).toBeFocused();
+    await expect(el(page, 'dialog')).toBeVisible();
+  });
 });

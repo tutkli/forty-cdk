@@ -39,6 +39,7 @@ import { ForPopover, ForPopoverContent, ForPopoverTrigger } from 'forty-cdk/popo
           @if (popoverOpen()) {
             <div forPopoverContent data-testid="popover">
               <button data-testid="popover-content-button">Inside popover</button>
+              <button data-testid="popover-content-second">Second inside popover</button>
             </div>
           }
         </div>
