@@ -5,6 +5,7 @@ import {
   effect,
   ElementRef,
   inject,
+  Injector,
   output,
   PLATFORM_ID,
 } from '@angular/core';
@@ -22,6 +23,8 @@ import {
   createKeyboardDragMediator,
   createPointerDragSession,
   dragAnnouncementLabel,
+  focusWhenMounted,
+  type FocusWhenMountedRef,
   isDragLiftKey,
   LiveAnnouncer,
   type PointerDragSession,
@@ -150,6 +153,7 @@ export class ForTableRowReorder {
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
   readonly #announcer = inject(LiveAnnouncer);
   readonly #dragDefaults = inject(FOR_DRAG_DROP_DEFAULTS);
+  readonly #injector = inject(Injector);
 
   #mode: ReorderMode = 'idle';
   #kbLiftedHost: HTMLElement | null = null;
@@ -161,8 +165,16 @@ export class ForTableRowReorder {
   #pointerMain: number | null = null;
   #scrubEngaged = false;
   #pointerSession: PointerDragSession | null = null;
+  #pendingFocus: FocusWhenMountedRef | null = null;
 
-  /** Fires once per committed reorder gesture with the previous / new row index. */
+  /**
+   * Fires once per committed reorder gesture with the previous / new row index.
+   *
+   * After a **keyboard** drop made while focus was in the lifted row, focus follows the row to
+   * its new place once the next render settles, back onto the cell it was lifted from (or the
+   * row itself in `mode="table"`). Focus something else inside this handler to keep it;
+   * pointer drops never move focus.
+   */
   readonly rowReorder = output<TableRowReorderDescriptor>();
 
   constructor() {
@@ -380,6 +392,8 @@ export class ForTableRowReorder {
   }
 
   #kbLift(host: HTMLElement, vi: number): void {
+    this.#pendingFocus?.cancel();
+    this.#pendingFocus = null;
     this.#mode = 'keyboard';
     this.#kbLiftedHost = host;
     this.#kbFocusEl = this.#resolveFocusTarget(host);
@@ -403,12 +417,48 @@ export class ForTableRowReorder {
   }
 
   #kbCommit(): void {
-    this.rowReorder.emit({ from: this.#kbFrom, to: this.#kbTarget });
+    const lifted = this.#kbLiftedHost;
+    const to = this.#kbTarget;
+    const column = lifted === null ? -1 : this.#columnOf(lifted, this.#kbFocusEl);
+    this.rowReorder.emit({ from: this.#kbFrom, to });
     this.#announcer.announce(
-      this.#dragDefaults.announceDrop(this.#label(), this.#kbTarget + 1, this.count()),
+      this.#dragDefaults.announceDrop(this.#label(), to + 1, this.count()),
       'assertive',
     );
     this.#kbTeardown(true);
+    if (lifted !== null) {
+      this.#pendingFocus = focusWhenMounted({
+        injector: this.#injector,
+        document: this.#document,
+        from: lifted,
+        reveal: () => this.#registration.setReorderingRow(to),
+        target: () => this.#focusTargetIn(to, column),
+        release: () => {
+          this.#pendingFocus = null;
+          this.#registration.setReorderingRow(null);
+        },
+      });
+    }
+  }
+
+  #columnOf(rowHost: HTMLElement, focused: Element | null): number {
+    if (focused === null || focused === rowHost) {
+      return -1;
+    }
+    const row = this.#registration.rows().find((r) => r.host === rowHost);
+    return row?.cells().findIndex((c) => c.host === focused || c.host.contains(focused)) ?? -1;
+  }
+
+  #focusTargetIn(index: number, column: number): HTMLElement | null {
+    const row = this.#registration.rows().find((r) => r.virtualIndex() === index);
+    if (row === undefined) {
+      return null;
+    }
+    if (column < 0) {
+      return row.host;
+    }
+    const cells = row.cells();
+    return (cells[column] ?? cells[cells.length - 1])?.host ?? row.host;
   }
 
   #kbCancel(): void {
@@ -482,6 +532,8 @@ export class ForTableRowReorder {
     if (rowHost === null || this.#mode !== 'idle') {
       return false;
     }
+    this.#pendingFocus?.cancel();
+    this.#pendingFocus = null;
     this.#mode = 'pointer';
     const handle = this.#registration.rows().find((r) => r.host === rowHost);
     this.#registration.setReorderingRow(handle?.virtualIndex() ?? null);

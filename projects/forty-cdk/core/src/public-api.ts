@@ -145,6 +145,12 @@ export {
 } from './drag-session/drag-geometry';
 export { dragAnnouncementLabel } from './drag-session/drag-announcement-label';
 export { createTemplatePreview, type DragPreview } from './drag-session/drag-preview';
+export {
+  focusWhenMounted,
+  type FocusWhenMountedOptions,
+  type FocusWhenMountedRef,
+  type FocusWhenMountedTarget,
+} from './drag-session/focus-when-mounted';
 export { isDragLiftKey, resolveLiftedDragControl } from './drag-session/keyboard-drag-keys';
 export { createKeyboardDragMediator } from './drag-session/keyboard-drag-mediator';
 export {

@@ -6,6 +6,7 @@ import {
   DOCUMENT,
   ElementRef,
   inject,
+  Injector,
   input,
   output,
   PLATFORM_ID,
@@ -19,6 +20,8 @@ import {
   resolveLiftedDragControl,
   createKeyboardDragMediator,
   createPointerDragSession,
+  focusWhenMounted,
+  type FocusWhenMountedRef,
   type PointerDragSession,
   PreviewController,
   LiveAnnouncer,
@@ -120,6 +123,8 @@ export class ForListboxReorder {
   readonly #announcer = inject(LiveAnnouncer);
   readonly #destroyRef = inject(DestroyRef);
   readonly #defaults = inject(FOR_LISTBOX_DEFAULTS);
+  readonly #injector = inject(Injector);
+  #pendingFocus: FocusWhenMountedRef | null = null;
 
   /**
    * Disables reorder interactions while leaving selection / typeahead intact. Named distinctly
@@ -129,7 +134,14 @@ export class ForListboxReorder {
    */
   readonly reorderDisabled = input(false, { transform: booleanAttribute });
 
-  /** Emitted once per committed reorder gesture with the previous / new option index. */
+  /**
+   * Emitted once per committed reorder gesture with the previous / new option index.
+   *
+   * After a **keyboard** drop made while focus was on the lifted option, focus stays on the
+   * option once the next render settles, or lands on the option at `to` when the re-render
+   * replaced it. Focus something else inside this handler to keep it; pointer drops never
+   * move focus.
+   */
   readonly optionReorder = output<ForListboxReorderEvent>();
 
   protected readonly _dragging = signal(false);
@@ -311,6 +323,8 @@ export class ForListboxReorder {
     mode: 'keyboard' | 'pointer',
     point?: { x: number; y: number },
   ): void {
+    this.#pendingFocus?.cancel();
+    this.#pendingFocus = null;
     this.#mode = mode;
     this.#liftedHost = host;
     this.#fromIndex = index;
@@ -357,9 +371,25 @@ export class ForListboxReorder {
     const to = Math.max(0, Math.min(total - 1, this.#targetIndex));
     const from = this.#fromIndex;
     const label = this.#label;
+    const lifted = this.#mode === 'keyboard' ? this.#liftedHost : null;
     this.#clearSession();
+    if (lifted !== null) {
+      this.#followDroppedOption(lifted, to);
+    }
     this.optionReorder.emit({ from, to });
     this.#announcer.announce(this.#defaults.reorderAnnounceDrop(label, to + 1, total), 'assertive');
+  }
+
+  #followDroppedOption(from: HTMLElement, to: number): void {
+    this.#pendingFocus = focusWhenMounted({
+      injector: this.#injector,
+      document: this.#document,
+      from,
+      target: (origin) => (origin.isConnected ? origin : (this.#ctx.options()[to]?.host ?? null)),
+      release: () => {
+        this.#pendingFocus = null;
+      },
+    });
   }
 
   #cancel(): void {

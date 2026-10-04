@@ -1,5 +1,4 @@
 import {
-  afterNextRender,
   booleanAttribute,
   computed,
   DestroyRef,
@@ -20,6 +19,8 @@ import {
   Collection,
   dragAnnouncementLabel,
   firstEnabledHost,
+  focusWhenMounted,
+  type FocusWhenMountedRef,
   registerHandle,
   resolveDropTarget,
   type DropContainerGeometry,
@@ -202,10 +203,11 @@ export class ForDropList implements ForDropListContext {
    * the item stays in this list (reorder) or moves to a connected list (transfer). Apply
    * `moveItemInArray` or `transferArrayItem` to your data signal inside the handler.
    *
-   * After a **keyboard** drop whose lifted item held document focus, the list restores focus
-   * to the item at `currentIndex` in the target container on the next render, so a re-render
-   * that detaches the lifted element does not strand the keyboard user on `<body>`. Focus
-   * something else inside this handler to keep it; pointer drops never move focus.
+   * After a **keyboard** drop made while focus was on the lifted item or inside it, focus
+   * follows the item once the next render settles: back onto the item's own element when the
+   * re-render kept it, or onto the item at `currentIndex` in the target container when it
+   * replaced it, so the keyboard user is never stranded on `<body>`. Focus something else
+   * inside this handler to keep it; pointer drops never move focus.
    */
   readonly dragDrop = output<ForDragDropEvent>();
 
@@ -245,6 +247,7 @@ export class ForDropList implements ForDropListContext {
   #lastPoint: { x: number; y: number } | null = null;
   #resolveRaf: number | null = null;
   #geomCache: Map<ForDropListContext, DropListGeomEntry> | null = null;
+  #dropFocus: FocusWhenMountedRef | null = null;
 
   /** Insertion index this list is the current drop target at, else `null`. */
   readonly dragOverIndex = this.#dragOver.asReadonly();
@@ -393,6 +396,8 @@ export class ForDropList implements ForDropListContext {
     }
     const items = this.#items.items();
     const handle = items.find((h) => h.host === el);
+    this.#dropFocus?.cancel();
+    this.#dropFocus = null;
     if (!handle || handle.disabled()) {
       return -1;
     }
@@ -709,8 +714,9 @@ export class ForDropList implements ForDropListContext {
     const animate =
       this.animateReorder() && this.#isBrowser && !this.#prefersReducedMotion() && moved;
     const preview = this.#previewController?.preview ?? null;
-    const restoreFocus =
-      this.#isBrowser && !this.#pointerDrag && this.#document.activeElement === liftedHost;
+    if (this.#isBrowser && !this.#pointerDrag) {
+      this.#followDropFocus(liftedHost, container, currentIndex);
+    }
     const animator = animate
       ? new ReorderAnimator({
           containers: [this, ...connected],
@@ -732,10 +738,6 @@ export class ForDropList implements ForDropListContext {
       'assertive',
     );
 
-    if (restoreFocus) {
-      this.#restoreFocusAfterRender(container, currentIndex);
-    }
-
     if (animator) {
       this.#handedOffPreview = preview;
       animator.schedule(liftedHost, preview, () => {
@@ -748,28 +750,25 @@ export class ForDropList implements ForDropListContext {
     handle?.emitDragEnd(true);
   }
 
-  #restoreFocusAfterRender(container: ForDropListContext, index: number): void {
-    afterNextRender(
-      () => {
-        if (this.#liftedHost() !== null) {
-          return;
-        }
-        const active = this.#document.activeElement;
-        if (
-          active !== null &&
-          active !== this.#document.body &&
-          active !== this.#document.documentElement
-        ) {
-          return;
+  #followDropFocus(liftedHost: HTMLElement, container: ForDropListContext, index: number): void {
+    this.#dropFocus = focusWhenMounted({
+      injector: this.#injector,
+      document: this.#document,
+      from: liftedHost,
+      target: (origin) => {
+        if (origin.isConnected) {
+          return origin;
         }
         const items = container.items();
         if (items.length === 0) {
-          return;
+          return null;
         }
-        items[Math.max(0, Math.min(index, items.length - 1))]?.host.focus();
+        return items[Math.max(0, Math.min(index, items.length - 1))]?.host ?? null;
       },
-      { injector: this.#injector },
-    );
+      release: () => {
+        this.#dropFocus = null;
+      },
+    });
   }
 
   cancel(): void {

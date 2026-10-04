@@ -1207,3 +1207,188 @@ describe('ForVirtualReorder — announcements, outputs and transfers (#2124)', (
     expect(instance.reorders).toEqual([]);
   });
 });
+
+describe('ForVirtualReorder — focus follows the dropped row (#2118)', () => {
+  afterEach(() => {
+    document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
+  });
+
+  async function settle(harness: Awaited<ReturnType<typeof mount>>): Promise<void> {
+    await harness.flush();
+    await harness.flush();
+  }
+
+  function focusedRow(): { index: string | null; text: string } {
+    const active = document.activeElement as HTMLElement | null;
+    return {
+      index: active?.getAttribute('data-index') ?? null,
+      text: active?.textContent?.trim() ?? '',
+    };
+  }
+
+  it('an in-window drop focuses the row that now renders the moved item', async () => {
+    const harness = await mount();
+    const row = harness.query('[data-testid="row-2"]')!;
+    row.focus();
+
+    dispatchKey(row, ' ');
+    await settle(harness);
+    dispatchKey(row, 'ArrowDown');
+    await settle(harness);
+    dispatchKey(row, ' ');
+    await settle(harness);
+
+    expect(harness.instance.last()).toEqual({ from: 2, to: 3 });
+    expect(focusedRow()).toEqual({ index: '3', text: 'Row 2' });
+  });
+
+  it('a drop after an End jump focuses the moved item at the dataset end, not <body>', async () => {
+    const harness = await mount();
+    const row = harness.query('[data-testid="row-2"]')!;
+    row.focus();
+
+    dispatchKey(row, ' ');
+    await settle(harness);
+    dispatchKey(row, 'End');
+    await settle(harness);
+    dispatchKey(row, ' ');
+    await settle(harness);
+
+    expect(harness.instance.last()).toEqual({ from: 2, to: 999 });
+    expect(focusedRow()).toEqual({ index: '999', text: 'Row 2' });
+  });
+
+  it('a drop after a Home jump from far down the dataset focuses the moved item at the start', async () => {
+    const harness = await mount();
+    harness.viewport.scrollTo({ top: 20000 });
+    await settle(harness);
+    const indices = harness.indices();
+    const from = indices[Math.floor(indices.length / 2)]!;
+    const row = harness.query(`[data-testid="row-${from}"]`)!;
+    row.focus();
+
+    dispatchKey(row, ' ');
+    await settle(harness);
+    dispatchKey(row, 'Home');
+    await settle(harness);
+    dispatchKey(row, ' ');
+    await settle(harness);
+
+    expect(harness.instance.last()).toEqual({ from, to: 0 });
+    expect(focusedRow()).toEqual({ index: '0', text: `Row ${from}` });
+  });
+
+  it('releases the pin once focus has landed, so no stale row stays retained', async () => {
+    const harness = await mount();
+    const row = harness.query('[data-testid="row-2"]')!;
+    row.focus();
+
+    dispatchKey(row, ' ');
+    await settle(harness);
+    dispatchKey(row, 'End');
+    await settle(harness);
+    dispatchKey(row, ' ');
+    await settle(harness);
+
+    const indices = harness.indices();
+    expect(Math.max(...indices) - Math.min(...indices)).toBe(indices.length - 1);
+  });
+
+  it('an Escape leaves focus on the lifted row', async () => {
+    const harness = await mount();
+    const row = harness.query('[data-testid="row-2"]')!;
+    row.focus();
+
+    dispatchKey(row, ' ');
+    await settle(harness);
+    dispatchKey(row, 'ArrowDown');
+    await settle(harness);
+    dispatchKey(row, 'Escape');
+    await settle(harness);
+
+    expect(document.activeElement).toBe(row);
+    expect(focusedRow()).toEqual({ index: '2', text: 'Row 2' });
+  });
+});
+
+describe('ForVirtualReorder — idle Home / End reach the dataset ends (#2118)', () => {
+  async function settle(harness: { flush: () => Promise<void> }): Promise<void> {
+    await harness.flush();
+    await harness.flush();
+  }
+
+  async function focusMiddleRow(harness: Awaited<ReturnType<typeof mount>>): Promise<HTMLElement> {
+    harness.viewport.scrollTo({ top: 20000 });
+    await settle(harness);
+    const indices = harness.indices();
+    const middle = indices[Math.floor(indices.length / 2)]!;
+    const row = harness.query(`[data-testid="row-${middle}"]`)!;
+    row.focus();
+    return row;
+  }
+
+  it('End focuses the last item of the dataset, beyond the rendered window', async () => {
+    const harness = await mount();
+    const row = await focusMiddleRow(harness);
+    expect(Math.max(...harness.indices())).toBeLessThan(999);
+
+    const event = dispatchKey(row, 'End');
+    await settle(harness);
+
+    expect(event.defaultPrevented).toBe(true);
+    expect((document.activeElement as HTMLElement).getAttribute('data-index')).toBe('999');
+    expect(harness.instance.events()).toBe(0);
+  });
+
+  it('Home focuses the first item of the dataset, beyond the rendered window', async () => {
+    const harness = await mount();
+    const row = await focusMiddleRow(harness);
+    expect(Math.min(...harness.indices())).toBeGreaterThan(0);
+
+    dispatchKey(row, 'Home');
+    await settle(harness);
+
+    expect((document.activeElement as HTMLElement).getAttribute('data-index')).toBe('0');
+  });
+
+  it('End skips a dragDisabled last item, as the in-window navigation does', async () => {
+    const harness = await render(GuardedReorderHost);
+    harness.instance.disabledRow.set(999);
+    await settle(harness);
+    harness.viewport.scrollTo({ top: 20000 });
+    await settle(harness);
+    const indices = harness.indices();
+    const row = harness.query(`[data-testid="row-${indices[Math.floor(indices.length / 2)]}"]`)!;
+    row.focus();
+
+    dispatchKey(row, 'End');
+    await settle(harness);
+
+    expect((document.activeElement as HTMLElement).getAttribute('data-index')).toBe('998');
+  });
+
+  it('leaves Home / End to the rows of a disabled list', async () => {
+    const harness = await render(DisabledHost);
+    const row = harness.query('[data-testid="row-2"]')!;
+    row.focus();
+
+    const event = dispatchKey(row, 'End');
+    await settle(harness);
+
+    expect(event.defaultPrevented).toBe(false);
+    expect(document.activeElement).toBe(row);
+  });
+
+  it('a lifted End still moves the target, not the focus', async () => {
+    const harness = await mount();
+    const row = harness.query('[data-testid="row-2"]')!;
+    row.focus();
+
+    dispatchKey(row, ' ');
+    await settle(harness);
+    dispatchKey(row, 'End');
+    await settle(harness);
+
+    expect(document.activeElement).toBe(row);
+  });
+});
