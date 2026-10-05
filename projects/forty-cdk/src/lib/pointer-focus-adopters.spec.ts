@@ -4,8 +4,10 @@ import {
   ForCombobox,
   ForComboboxContent,
   ForComboboxInput,
+  ForComboboxList,
   ForComboboxOption,
   ForComboboxToggle,
+  ForComboboxTrigger,
 } from 'forty-cdk/combobox';
 import { ForField, ForFieldControl, ForLabel } from 'forty-cdk/field';
 import { ForListbox, ForListboxOption } from 'forty-cdk/listbox';
@@ -153,6 +155,90 @@ class ComboboxToggleHost {
 }
 
 @Component({
+  imports: [ForCombobox, ForComboboxInput, ForComboboxContent, ForComboboxOption],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <div forCombobox [(open)]="open">
+      <input forComboboxInput aria-label="Fruit" data-arm data-focus />
+      @if (open()) {
+        <div forComboboxContent data-press>
+          <div forComboboxOption value="apple">Apple</div>
+        </div>
+      }
+    </div>
+  `,
+})
+class ComboboxContentHost {
+  readonly open = signal(true);
+}
+
+@Component({
+  imports: [
+    ForCombobox,
+    ForComboboxTrigger,
+    ForComboboxInput,
+    ForComboboxContent,
+    ForComboboxList,
+    ForComboboxOption,
+  ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <div forCombobox [(open)]="open">
+      <button forComboboxTrigger>Fruit</button>
+      @if (open()) {
+        <div forComboboxContent>
+          <input forComboboxInput aria-label="Search" data-arm data-focus />
+          <div forComboboxList data-press>
+            <div forComboboxOption value="apple">Apple</div>
+          </div>
+        </div>
+      }
+    </div>
+  `,
+})
+class ComboboxListHost {
+  readonly open = signal(true);
+}
+
+@Component({
+  imports: [ForSelect, ForSelectTrigger, ForSelectContent, ForSelectOption],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <div forSelect [(open)]="open">
+      <button forSelectTrigger>Fruit</button>
+      @if (open()) {
+        <div forSelectContent data-press>
+          <button forSelectOption value="apple" data-arm data-focus>Apple</button>
+        </div>
+      }
+    </div>
+  `,
+})
+class SelectContentHost {
+  readonly open = signal(true);
+}
+
+@Component({
+  imports: [ForTimePicker, ForTimePickerTrigger, ForTimePickerContent, ForTimePickerOption],
+  providers: [...provideNativeDateAdapter()],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <div forTimePicker [(open)]="open">
+      <button forTimePickerTrigger>Time</button>
+      @if (open()) {
+        <div forTimePickerContent data-press>
+          <div forTimePickerOption [value]="nine" data-arm data-focus>09:00</div>
+        </div>
+      }
+    </div>
+  `,
+})
+class TimePickerContentHost {
+  readonly open = signal(true);
+  readonly nine = new Date(2000, 0, 1, 9, 0, 0);
+}
+
+@Component({
   imports: [ForField, ForLabel, ForFieldControl],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -174,9 +260,13 @@ const SWEEP: readonly PressCase[] = [
   { file: 'tree/src/tree-item.ts', host: TreeDisabledItemHost },
   { file: 'listbox/src/listbox-option.ts', host: ListboxDisabledOptionHost },
   { file: 'select/src/select-option.ts', host: SelectDisabledOptionHost },
+  { file: 'select/src/select-content.ts', host: SelectContentHost },
   { file: 'time-picker/src/time-picker-option.ts', host: TimePickerDisabledOptionHost },
+  { file: 'time-picker/src/time-picker-content.ts', host: TimePickerContentHost },
   { file: 'combobox/src/combobox-option.ts', host: ComboboxOptionHost },
   { file: 'combobox/src/combobox-toggle.ts', host: ComboboxToggleHost },
+  { file: 'combobox/src/combobox-content.ts', host: ComboboxContentHost },
+  { file: 'combobox/src/combobox-list.ts', host: ComboboxListHost },
   { file: 'field/src/label.ts', host: FieldLabelHost },
 ];
 

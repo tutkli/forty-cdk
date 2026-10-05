@@ -105,6 +105,21 @@ test.describe('TimePicker', () => {
     await expect(page.locator('[role="option"][data-highlighted]')).toHaveCount(1);
   });
 
+  test('a press on the surface padding keeps focus on the slot', async ({ page }) => {
+    await gotoFixture(page, 'time-picker', { padded: '1' });
+    await el(page, 'trigger').click();
+    await expect(el(page, 'content')).toBeVisible();
+    const firstSlot = page.locator('[forTimePickerOption]').first();
+    await firstSlot.focus();
+
+    await el(page, 'content').click({ position: { x: 4, y: 4 } });
+
+    await expect(el(page, 'content')).toBeVisible();
+    await expectFocused(firstSlot);
+    await page.keyboard.press('ArrowDown');
+    await expectFocused(page.locator('[forTimePickerOption]').nth(1));
+  });
+
   test('Home moves focus to the first slot', async ({ page }) => {
     await gotoFixture(page, 'time-picker');
     await el(page, 'trigger').click();

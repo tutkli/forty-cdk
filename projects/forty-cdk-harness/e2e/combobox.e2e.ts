@@ -492,6 +492,19 @@ test.describe('Combobox', () => {
       await expect(el(page, 'combo-input')).toHaveValue('bl');
     });
 
+    test('a press on the surface padding keeps the input typing', async ({ page }) => {
+      await gotoFixture(page, 'combobox', { multi: '1', open: '1' });
+      await expect(el(page, 'content')).toBeVisible();
+      await el(page, 'combo-input').focus();
+
+      await el(page, 'content').click({ position: { x: 4, y: 4 } });
+
+      await expect(el(page, 'content')).toBeVisible();
+      await expectFocused(el(page, 'combo-input'));
+      await page.keyboard.type('ba');
+      await expect(el(page, 'combo-input')).toHaveValue('ba');
+    });
+
     test('a genuine outside pointer still dismisses in multi mode', async ({ page }) => {
       await gotoFixture(page, 'combobox', { multi: '1', open: '1' });
       await expect(el(page, 'content')).toBeVisible();

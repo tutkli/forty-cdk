@@ -31,6 +31,19 @@ test.describe('Select', () => {
     await expect(el(page, 'opt-apple')).toBeFocused();
   });
 
+  test('a press on the surface padding keeps focus on the option', async ({ page }) => {
+    await gotoFixture(page, 'select', { padded: '1' });
+    await el(page, 'trigger').click();
+    await expectFocused(el(page, 'opt-apple'));
+
+    await el(page, 'content').click({ position: { x: 4, y: 4 } });
+
+    await expect(el(page, 'content')).toBeVisible();
+    await expectFocused(el(page, 'opt-apple'));
+    await page.keyboard.press('ArrowDown');
+    await expectFocused(el(page, 'opt-cherry'));
+  });
+
   test('Enter on a focused option selects, closes, and returns focus to trigger', async ({
     page,
   }) => {

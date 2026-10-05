@@ -37,6 +37,9 @@ import { queryFlag } from './_query-flag';
         height: 32px;
         box-sizing: border-box;
       }
+      [forSelectContent].padded {
+        padding-block: 12px;
+      }
       [forSelectContent].scrollable {
         max-height: var(--for-floating-available-height);
         overflow-y: auto;
@@ -104,6 +107,7 @@ import { queryFlag } from './_query-flag';
           data-testid="content"
           [class.scrollable]="many"
           [class.pop-in]="popin"
+          [class.padded]="padded"
         >
           @if (many) {
             @for (i of manyOptions; track i) {
@@ -169,6 +173,8 @@ export class SelectFixture {
   // `?popin=1` gives [forSelectContent] a scale-in enter animation so e2e specs
   // can exercise the item-aligned positioner against a transformed surface.
   protected readonly popin = queryFlag('popin');
+
+  protected readonly padded = queryFlag('padded');
 
   protected readonly many = queryFlag('many');
   protected readonly manyOptions = Array.from({ length: 60 }, (_, i) => i);

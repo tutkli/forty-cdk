@@ -220,7 +220,7 @@ Input tables are not yet tabulated for this primitive. See the feature sections 
 | `[forComboboxChip]`      | `data-disabled`    | present / absent                                                    |
 | `[forComboboxSeparator]` | `data-orientation` | `horizontal` \| `vertical`                                          |
 
-Focus stays on the `<input>` the whole time the listbox is open, so options never get `:focus`. `data-highlighted` is the canonical hook for styling the keyboard-active option.
+Focus stays on the `<input>` the whole time the listbox is open, so options never get `:focus`. `data-highlighted` is the canonical hook for styling the keyboard-active option. A mouse press anywhere on the popup that lands on no focusable element (padding, a group label, an empty or status row) does not move focus either, so typing and the arrow keys keep working after it; the trade-off is that popup text cannot be selected with the mouse, as in a native combobox. A press on a focusable element inside the popup, such as a `[forComboboxAction]` or your own `<button>`, still focuses it.
 
 ## Mount/visibility convention
 
@@ -804,6 +804,7 @@ Implements the [WAI-ARIA Combobox pattern](https://www.w3.org/WAI/ARIA/apg/patte
 - `role="listbox"` lives on `[forComboboxContent]` in the editable anatomy and on `[forComboboxList]` in the picker anatomy; the input's `aria-controls` targets whichever carries it. In the picker anatomy the popup surface (`[forComboboxContent]`) is role-less so it can hold the input next to the list without an `aria-required-owned-elements` violation.
 - `aria-multiselectable="true"` (multi mode) and the labelled role (`aria-label` / `aria-labelledby`, pointing at the input) sit on whichever element carries `role="listbox"`: content in the editable anatomy, the list in the picker anatomy.
 - `[forComboboxTrigger]` (picker anatomy) is a real `<button>` reflecting `aria-haspopup="listbox"`, `aria-expanded`, `aria-controls` (the popup surface, while open), and native `disabled` from the combobox's effective disabled. It is exempt from the popup's outside-pointer dismissal layer, like the input.
+- `[forComboboxContent]` and `[forComboboxList]` cancel a `mousedown` that would otherwise move focus onto the surface or blur the input, so a press between options leaves focus in the input. A press on a focusable descendant is let through.
 - `[forComboboxToggle]` (editable anatomy) is a real `<button>` with `tabindex="-1"`, a localizable `aria-label`, `aria-expanded`, `aria-controls` (the listbox, while open) and native `disabled`. It cancels `mousedown` so focus stays in the input, and it is exempt from the outside-pointer dismissal layer.
 - In single mode, `aria-selected="true"` follows the activedescendant (the option Enter would activate). In multi mode it follows membership in `value()`, so every selected option carries `aria-selected="true"` simultaneously.
 - `data-state="checked" | "unchecked"` always reflects membership in `value()`, so consumers can paint a checkmark icon with pure CSS regardless of mode.

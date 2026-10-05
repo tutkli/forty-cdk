@@ -5,6 +5,8 @@ import {
   hostAriaLabel,
   hostLabelledBy,
   injectFieldLabelExemption,
+  pressFocusesDescendant,
+  preventPointerFocus,
   FOR_FIELD_ANCHOR_CONTEXT,
   FOR_FIELD_CONTEXT,
 } from 'forty-cdk/core';
@@ -31,6 +33,11 @@ import { injectSelectContext, type SelectContext } from './select-context';
  * enabled option (`'first'`), or the last enabled option (`'last'`)
  * according to the trigger's hint. On destroy, focus returns to the
  * trigger when `returnFocus` is true.
+ *
+ * A mouse press on the surface that lands on no focusable element of its own
+ * (padding, a group label, a separator) is cancelled, so focus stays on the
+ * option that held it and the arrow keys keep working; a press on an option or
+ * another focusable descendant still focuses it.
  *
  * The lifecycle is picked once on construction from `[forSelect].modal`:
  *
@@ -90,11 +97,13 @@ export class ForSelectContent {
 
   constructor() {
     const ctx = this.#select;
+    const host = this.#host.nativeElement;
     registerHandle(
-      this.#host.nativeElement,
+      host,
       (el) => ctx.overlay.registerContent(el),
       (el) => ctx.overlay.unregisterContent(el),
     );
+    preventPointerFocus((event) => !pressFocusesDescendant(event, host));
 
     warnIfMountedWhileClosed({
       primitive: 'select',
