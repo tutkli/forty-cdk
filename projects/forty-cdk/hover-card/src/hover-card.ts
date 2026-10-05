@@ -198,7 +198,9 @@ export class ForHoverCard extends AnchoredOverlayPositioningBase implements ForH
   unregisterContent(el: HTMLElement): void {
     if (this.#contentEl() === el) {
       this.#contentEl.set(null);
+      this.#contentHovered = false;
       this.#contentFocused = false;
+      this.#disarmContentGrace();
     }
   }
 

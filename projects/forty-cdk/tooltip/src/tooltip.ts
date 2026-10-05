@@ -249,6 +249,8 @@ export class ForTooltip extends AnchoredOverlayPositioningBase implements ForToo
   unregisterContent(el: HTMLElement): void {
     if (this.#contentEl() === el) {
       this.#contentEl.set(null);
+      this.#contentHovered = false;
+      this.#disarmContentGrace();
     }
   }
 

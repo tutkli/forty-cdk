@@ -823,6 +823,34 @@ describe('ForTooltip', () => {
       expect(r.instance.isOpen()).toBe(false);
     });
 
+    it('closes on pointer leave after reopening when the previous content unmounted under the pointer', async () => {
+      const r = renderHost(HoverableTooltipHost);
+      await flush(r.fixture);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+
+      trigger.dispatchEvent(new PointerEvent('pointerenter'));
+      await flush(r.fixture);
+      const content = document.querySelector<HTMLElement>('[role="tooltip"]')!;
+      content.dispatchEvent(new PointerEvent('pointerenter'));
+      await flush(r.fixture);
+      pressKey(content, 'Escape');
+      await flush(r.fixture);
+      expect(r.instance.isOpen()).toBe(false);
+      expect(document.querySelector('[role="tooltip"]')).toBeNull();
+
+      trigger.dispatchEvent(new PointerEvent('pointerenter'));
+      await flush(r.fixture);
+      expect(r.instance.isOpen()).toBe(true);
+
+      trigger.dispatchEvent(new PointerEvent('pointerleave', { clientX: 0, clientY: 0 }));
+      await flush(r.fixture);
+      document.dispatchEvent(
+        new PointerEvent('pointermove', { clientX: 9999, clientY: 9999, pointerType: 'mouse' }),
+      );
+      await flush(r.fixture);
+      expect(r.instance.isOpen()).toBe(false);
+    });
+
     it('keeps the tooltip open via content hover while the trigger is still focused', async () => {
       const r = renderHost(HoverableTooltipHost);
       await flush(r.fixture);
