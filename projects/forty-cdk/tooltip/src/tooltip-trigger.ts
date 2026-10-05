@@ -1,5 +1,5 @@
 import { Directive, effect, ElementRef, inject, input } from '@angular/core';
-import { hostDescribedBy, isNonTouchPointer } from 'forty-cdk/core';
+import { createPressFocus, hostDescribedBy, isNonTouchPointer } from 'forty-cdk/core';
 
 import { type ForTooltipContext, injectTooltipTriggerContext } from './tooltip-context';
 
@@ -16,9 +16,11 @@ import { type ForTooltipContext, injectTooltipTriggerContext } from './tooltip-c
  * immediate close. The user is acting on the control rather than asking for
  * its description, so the bubble must not cover the result of the click. The
  * focus the same press induces does NOT reopen it — only keyboard focus opens
- * the tooltip. The open-on-focus path fires solely when focus was not
- * preceded by a pointer interaction (mouse, pen, or touch): hover already
- * covers pointer users, so pointer-induced focus is ignored.
+ * the tooltip. The open-on-focus path fires solely when focus does not follow
+ * a pointer press on the trigger (mouse, pen, or touch): hover already covers
+ * pointer users, so pointer-induced focus is ignored. A press that does not
+ * focus the trigger (a `<button>` in macOS Safari, a toolbar preventing
+ * `mousedown`) leaves a later keyboard focus opening it as usual.
  *
  * This makes a touch tap a no-op on both the hover-open and the focus-open
  * paths, because a tap is not a hover and the APG flags hover-tooltips as
@@ -45,7 +47,8 @@ import { type ForTooltipContext, injectTooltipTriggerContext } from './tooltip-c
     '[attr.aria-describedby]': 'describedBy()',
     '[attr.data-state]': 'ctx().open() ? "open" : "closed"',
     '(pointerenter)': 'onPointerEnter($event)',
-    '(pointerdown)': 'onPointerDown($event)',
+    '(pointerdown)': 'onPointerDown()',
+    '(pointerup)': 'onPointerUp()',
     '(pointerleave)': 'onPointerLeave($event)',
     '(focus)': 'onFocus()',
     '(blur)': 'onBlur()',
@@ -71,7 +74,7 @@ export class ForTooltipTrigger {
     this.ctx().open() ? this.ctx().contentId() : null,
   );
 
-  #lastPointerType: string | null = null;
+  readonly #pressFocus = createPressFocus();
 
   constructor() {
     const el = this.#host.nativeElement;
@@ -92,9 +95,13 @@ export class ForTooltipTrigger {
     this.ctx().pointerEnterTrigger();
   }
 
-  protected onPointerDown(event: PointerEvent): void {
-    this.#lastPointerType = event.pointerType;
+  protected onPointerDown(): void {
+    this.#pressFocus.press();
     this.ctx().scheduleClose('press');
+  }
+
+  protected onPointerUp(): void {
+    this.#pressFocus.release();
   }
 
   protected onPointerLeave(event: PointerEvent): void {
@@ -102,16 +109,14 @@ export class ForTooltipTrigger {
   }
 
   protected onFocus(): void {
-    const pointerInduced = this.#lastPointerType !== null;
-    this.#lastPointerType = null;
-    if (pointerInduced) {
+    if (this.#pressFocus.consume()) {
       return;
     }
     this.ctx().focusTrigger();
   }
 
   protected onBlur(): void {
-    this.#lastPointerType = null;
+    this.#pressFocus.reset();
     this.ctx().blurTrigger();
   }
 }

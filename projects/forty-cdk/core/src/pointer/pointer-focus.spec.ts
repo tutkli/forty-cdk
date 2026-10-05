@@ -1,7 +1,12 @@
 import { ChangeDetectionStrategy, Component, Directive, input, signal } from '@angular/core';
 
 import { renderHost } from '../../../src/test-utils';
-import { pressFocusesDescendant, preventPointerFocus } from './pointer-focus';
+import {
+  createPressFocus,
+  DEFAULT_PRESS_FOCUS_WINDOW_MS,
+  pressFocusesDescendant,
+  preventPointerFocus,
+} from './pointer-focus';
 
 @Directive({ selector: '[guarded]' })
 class Guarded {
@@ -128,5 +133,68 @@ describe('pressFocusesDescendant', () => {
     const inner = document.createElement('button');
     shell.attachShadow({ mode: 'open' }).appendChild(inner);
     expect(pressOn(inner)).toBe(true);
+  });
+});
+
+describe('createPressFocus', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('reads no press as a keyboard focus', () => {
+    expect(createPressFocus().consume()).toBe(false);
+  });
+
+  it('attributes a focus right after a press to it, once', () => {
+    const tracker = createPressFocus();
+    tracker.press();
+
+    expect(tracker.consume()).toBe(true);
+    expect(tracker.consume()).toBe(false);
+  });
+
+  it('stops attributing a focus once the window after the press elapses', () => {
+    const tracker = createPressFocus();
+    tracker.press();
+    vi.advanceTimersByTime(DEFAULT_PRESS_FOCUS_WINDOW_MS);
+
+    expect(tracker.consume()).toBe(false);
+  });
+
+  it('restarts the window when the press is released', () => {
+    const tracker = createPressFocus();
+    tracker.press();
+    vi.advanceTimersByTime(DEFAULT_PRESS_FOCUS_WINDOW_MS + 300);
+    tracker.release();
+    vi.advanceTimersByTime(DEFAULT_PRESS_FOCUS_WINDOW_MS - 1);
+
+    expect(tracker.consume()).toBe(true);
+  });
+
+  it('ignores a release with no recorded press', () => {
+    const tracker = createPressFocus();
+    tracker.release();
+
+    expect(tracker.consume()).toBe(false);
+  });
+
+  it('forgets the press on reset', () => {
+    const tracker = createPressFocus();
+    tracker.press();
+    tracker.reset();
+
+    expect(tracker.consume()).toBe(false);
+  });
+
+  it('honours a custom window', () => {
+    const tracker = createPressFocus(50);
+    tracker.press();
+    vi.advanceTimersByTime(50);
+
+    expect(tracker.consume()).toBe(false);
   });
 });

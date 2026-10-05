@@ -41,9 +41,19 @@ import { ForHoverCard, ForHoverCardContent, ForHoverCardTrigger } from 'forty-cd
         </div>
       }
     </div>
+
+    <input data-testid="far-before" placeholder="before-far-trigger" />
+    <div style="height:150vh"></div>
+    <span forHoverCard [(open)]="farOpen" [openDelay]="300" [closeDelay]="0">
+      <a data-testid="far-trigger" forHoverCardTrigger href="#far">Far</a>
+      @if (farOpen()) {
+        <div forHoverCardContent data-testid="far-card">Far card</div>
+      }
+    </span>
   `,
 })
 export class HoverCardFixture {
   protected readonly open = signal(false);
+  protected readonly farOpen = signal(false);
   protected readonly rows = Array.from({ length: 20 }, (_, i) => i);
 }

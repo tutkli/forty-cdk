@@ -87,6 +87,49 @@ test.describe('HoverCard', () => {
     await expect(page.locator('[forHoverCardContent]')).toHaveCount(0);
   });
 
+  test('Tab to a trigger below the fold opens the card despite the scroll that reveals it', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'hover-card');
+    await el(page, 'far-before').focus();
+    const scrollBefore = await page.evaluate(() => window.scrollY);
+
+    await page.keyboard.press('Tab');
+    await expect(el(page, 'far-trigger')).toBeFocused();
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(scrollBefore);
+
+    await expect(el(page, 'far-card')).toBeVisible();
+    await page.waitForTimeout(200);
+    await expect(el(page, 'far-card')).toBeVisible();
+  });
+
+  test('stays open after the pointer leaves while a control inside the card holds focus', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'hover-card');
+    await el(page, 'trigger').hover();
+    await el(page, 'card-button').click();
+    await expect(el(page, 'card-button')).toBeFocused();
+
+    await page.mouse.move(2, 2);
+    await page.waitForTimeout(200);
+    await expect(el(page, 'card')).toBeVisible();
+  });
+
+  test('Escape from a control inside the card returns focus to the trigger', async ({ page }) => {
+    await gotoFixture(page, 'hover-card');
+    await el(page, 'trigger').hover();
+    await el(page, 'card-button').click();
+    await expect(el(page, 'card-button')).toBeFocused();
+
+    await page.keyboard.press('Escape');
+
+    await expect(el(page, 'card')).toHaveCount(0);
+    await expect(el(page, 'trigger')).toBeFocused();
+    await page.waitForTimeout(100);
+    await expect(el(page, 'card')).toHaveCount(0);
+  });
+
   // Hover semantics on touch: a tap is NOT a hover, so HoverCard must
   // remain closed after a bare `tap()` on the trigger. The keyboard-focus
   // path is the touch-accessible fallback — it still opens the card the

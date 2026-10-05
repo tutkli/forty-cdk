@@ -214,8 +214,9 @@ export class ForTooltip extends AnchoredOverlayPositioningBase implements ForToo
       coordinator: this.#coordinator,
     });
 
-    this.#unregisterScrollDismiss = this.#scrollDismissDispatcher.register(() =>
-      this.#dismissOnScroll(),
+    this.#unregisterScrollDismiss = this.#scrollDismissDispatcher.register(
+      () => this.#dismissOnScroll(),
+      { anchor: this.#triggerEl, surface: this.#contentEl },
     );
 
     inject(DestroyRef).onDestroy(() => {
@@ -394,13 +395,18 @@ export class ForTooltip extends AnchoredOverlayPositioningBase implements ForToo
   }
 
   /**
-   * Closes the tooltip immediately when an ancestor scrolls under a stationary
-   * cursor and cancels any pending open / close timer. Closes silently
-   * (bypassing `closeDelay` and without opening the skip-delay window) so a peer
-   * row sliding under the cursor can't reopen instantly while the scroll is in
-   * flight. A no-op when nothing is open or armed.
+   * Closes the tooltip immediately when an ancestor of the trigger scrolls under
+   * a stationary cursor and cancels any pending open / close timer. Closes
+   * silently (bypassing `closeDelay` and without opening the skip-delay window)
+   * so a peer row sliding under the cursor can't reopen instantly while the
+   * scroll is in flight. A no-op when nothing is open or armed, and while the
+   * trigger holds focus: a keyboard-held tooltip, and the open its focus armed,
+   * survive the scroll that brings the trigger into view.
    */
   #dismissOnScroll(): void {
+    if (this.#triggerFocused) {
+      return;
+    }
     this.cancelPending();
     if (this.open()) {
       this.open.set(false);

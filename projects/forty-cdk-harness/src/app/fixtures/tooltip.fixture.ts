@@ -101,6 +101,21 @@ import { ForTooltip, ForTooltipContent, ForTooltipTrigger } from 'forty-cdk/tool
         </div>
       }
     </div>
+
+    <input data-testid="far-before" placeholder="before-far-trigger" />
+    <div style="height:150vh"></div>
+    <span
+      forTooltip
+      [(open)]="farOpen"
+      [openDelay]="300"
+      [closeDelay]="0"
+      [hoverableContent]="false"
+    >
+      <button data-testid="far-trigger" forTooltipTrigger>Far</button>
+      @if (farOpen()) {
+        <div forTooltipContent data-testid="far-tooltip">Far tooltip</div>
+      }
+    </span>
   `,
 })
 export class TooltipFixture {
@@ -108,5 +123,6 @@ export class TooltipFixture {
   protected readonly overflowOpen = signal(false);
   protected readonly fitOpen = signal(false);
   protected readonly hoverOpen = signal(false);
+  protected readonly farOpen = signal(false);
   protected readonly rows = Array.from({ length: 20 }, (_, i) => i);
 }

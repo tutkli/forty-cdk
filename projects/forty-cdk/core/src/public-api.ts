@@ -225,7 +225,12 @@ export {
 } from './numeric-step/numeric-step';
 export { injectPauseController, type PauseController } from './pausable/pause-controller';
 export { isHoverCapablePointer, isNonTouchPointer } from './pointer/pointer-capability';
-export { pressFocusesDescendant, preventPointerFocus } from './pointer/pointer-focus';
+export {
+  createPressFocus,
+  type PressFocus,
+  pressFocusesDescendant,
+  preventPointerFocus,
+} from './pointer/pointer-focus';
 export { createPointerSuppression, type PointerSuppression } from './pointer/pointer-suppression';
 export { injectPortal } from './portal/portal';
 export { assertRootContext } from './root-context/root-context';

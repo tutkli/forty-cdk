@@ -1,6 +1,6 @@
 import { computed, inject, InjectionToken, type Signal } from '@angular/core';
 
-import { orphanContextError, unresolvedRootError } from 'forty-cdk/core';
+import { assertRootContext, orphanContextError, unresolvedRootError } from 'forty-cdk/core';
 import { type AnchoredPositioningContext, type Point } from 'forty-cdk/core-overlay';
 
 /** Why an open / close was scheduled. */
@@ -59,11 +59,54 @@ export interface ForHoverCardContext extends AnchoredPositioningContext {
   emitEscapeKeyDown(event: KeyboardEvent): void;
 }
 
+/**
+ * Calls `[forHoverCardContent]` makes into the root that no consumer makes:
+ * the focus channel that keeps the card open while focus is inside it.
+ */
+export interface HoverCardPieceContext {
+  /** Focus entered the content; holds the card open while it stays inside. */
+  focusEnterContent(): void;
+  /** Focus left the content; closes when nothing else keeps the card alive. */
+  focusLeaveContent(): void;
+  /**
+   * The content is unmounting with focus inside it: moves focus back to the
+   * trigger, without that focus reopening the card.
+   */
+  returnFocusToTrigger(): void;
+}
+
+/**
+ * The hover card's internal coordination surface: everything
+ * {@link ForHoverCardContext} publishes plus the {@link HoverCardPieceContext}
+ * calls.
+ *
+ * Never exported from `public-api.ts`. It is the type the pieces read
+ * {@link FOR_HOVER_CARD_CONTEXT} at, so a consumer who injects that token gets
+ * the read surface while `[forHoverCardContent]` gets the focus channel.
+ * `ForHoverCard` declares those members TS-`private`, which keeps them out of
+ * the emitted `.d.ts` while `useExisting` still satisfies this contract at
+ * runtime.
+ */
+export interface HoverCardContext extends ForHoverCardContext, HoverCardPieceContext {}
+
+/**
+ * DI token for the hover card's coordination surface, provided by
+ * `[forHoverCard]`.
+ *
+ * Publicly typed as the read surface {@link ForHoverCardContext}, which is the
+ * whole of what the token promises a consumer. The pieces read the same token at
+ * an internal type that adds the content's focus channel, so a wrapper
+ * re-providing it must alias it to the root:
+ * `{ provide: FOR_HOVER_CARD_CONTEXT, useExisting: MyHoverCard }`, where
+ * `MyHoverCard` extends `ForHoverCard`. A value that merely satisfies the
+ * declared type resolves too, and is rejected in dev mode by the first piece to
+ * reach the channel.
+ */
 export const FOR_HOVER_CARD_CONTEXT = new InjectionToken<ForHoverCardContext>(
   'FOR_HOVER_CARD_CONTEXT',
 );
 
-export function injectHoverCardContext(piece: string): ForHoverCardContext {
+export function injectHoverCardContext(piece: string): HoverCardContext {
   const ctx = inject(FOR_HOVER_CARD_CONTEXT, { optional: true });
   if (!ctx) {
     throw orphanContextError({
@@ -73,7 +116,15 @@ export function injectHoverCardContext(piece: string): ForHoverCardContext {
       token: 'FOR_HOVER_CARD_CONTEXT',
     });
   }
-  return ctx;
+  const widened = ctx as unknown as HoverCardContext;
+  assertRootContext({
+    entryPoint: 'hover-card',
+    token: 'FOR_HOVER_CARD_CONTEXT',
+    root: '[forHoverCard]',
+    piece,
+    probe: () => widened.focusEnterContent,
+  });
+  return widened;
 }
 
 /**

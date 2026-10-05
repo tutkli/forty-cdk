@@ -139,6 +139,8 @@ export class ForHoverCard extends AnchoredOverlayPositioningBase implements ForH
   #triggerHovered = false;
   #triggerFocused = false;
   #contentHovered = false;
+  #contentFocused = false;
+  #returningFocus = false;
   #detachGrace: (() => void) | null = null;
   #unregisterScrollDismiss: () => void = () => {};
 
@@ -158,8 +160,9 @@ export class ForHoverCard extends AnchoredOverlayPositioningBase implements ForH
       coordinator: this.#coordinator,
     });
 
-    this.#unregisterScrollDismiss = this.#scrollDismissDispatcher.register(() =>
-      this.#dismissOnScroll(),
+    this.#unregisterScrollDismiss = this.#scrollDismissDispatcher.register(
+      () => this.#dismissOnScroll(),
+      { anchor: this.#triggerEl, surface: this.#contentEl },
     );
 
     inject(DestroyRef).onDestroy(() => {
@@ -195,6 +198,7 @@ export class ForHoverCard extends AnchoredOverlayPositioningBase implements ForH
   unregisterContent(el: HTMLElement): void {
     if (this.#contentEl() === el) {
       this.#contentEl.set(null);
+      this.#contentFocused = false;
     }
   }
 
@@ -218,6 +222,9 @@ export class ForHoverCard extends AnchoredOverlayPositioningBase implements ForH
 
   focusTrigger(): void {
     this.#triggerFocused = true;
+    if (this.#returningFocus) {
+      return;
+    }
     this.scheduleOpen('focus');
   }
 
@@ -235,6 +242,29 @@ export class ForHoverCard extends AnchoredOverlayPositioningBase implements ForH
   pointerLeaveContent(): void {
     this.#contentHovered = false;
     this.#scheduleCloseIfInactive();
+  }
+
+  private focusEnterContent(): void {
+    this.#contentFocused = true;
+    this.cancelPending();
+  }
+
+  private focusLeaveContent(): void {
+    this.#contentFocused = false;
+    this.#scheduleCloseIfInactive();
+  }
+
+  private returnFocusToTrigger(): void {
+    const trigger = this.#triggerEl();
+    if (!trigger) {
+      return;
+    }
+    this.#returningFocus = true;
+    try {
+      trigger.focus();
+    } finally {
+      this.#returningFocus = false;
+    }
   }
 
   scheduleOpen(reason: HoverCardScheduleReason): void {
@@ -255,13 +285,18 @@ export class ForHoverCard extends AnchoredOverlayPositioningBase implements ForH
   }
 
   /**
-   * Closes the card immediately when an ancestor scrolls under a stationary
-   * cursor and cancels any pending open / close timer. Closes silently
-   * (bypassing `closeDelay` and without opening the skip-delay window) so a peer
-   * row sliding under the cursor can't reopen instantly while the scroll is in
-   * flight. A no-op when nothing is open or armed.
+   * Closes the card immediately when an ancestor of the trigger scrolls under a
+   * stationary cursor and cancels any pending open / close timer. Closes
+   * silently (bypassing `closeDelay` and without opening the skip-delay window)
+   * so a peer row sliding under the cursor can't reopen instantly while the
+   * scroll is in flight. A no-op when nothing is open or armed, and while focus
+   * is on the trigger or inside the content: a focus-held card, and the open
+   * the trigger's focus armed, survive the scroll.
    */
   #dismissOnScroll(): void {
+    if (this.#triggerFocused || this.#contentFocused) {
+      return;
+    }
     this.cancelPending();
     if (this.open()) {
       this.open.set(false);
@@ -317,7 +352,12 @@ export class ForHoverCard extends AnchoredOverlayPositioningBase implements ForH
   }
 
   #scheduleCloseIfInactive(): void {
-    if (this.#triggerHovered || this.#triggerFocused || this.#contentHovered) {
+    if (
+      this.#triggerHovered ||
+      this.#triggerFocused ||
+      this.#contentHovered ||
+      this.#contentFocused
+    ) {
       return;
     }
     this.#hoverIntent.scheduleClose(false);
