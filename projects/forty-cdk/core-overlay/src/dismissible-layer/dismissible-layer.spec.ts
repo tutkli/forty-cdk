@@ -113,6 +113,52 @@ describe('DismissibleLayer', () => {
 
       expect(calls).toEqual(['escape']);
     });
+
+    it('leaves an Escape that cancels an IME composition to the IME', () => {
+      const calls: string[] = [];
+      layer = makeLayer(host);
+      layer.activate({ channels: [], onEscapeKeyDown: () => calls.push('escape') });
+      const input = document.createElement('input');
+      host.appendChild(input);
+
+      pressKey(input, 'Escape', { isComposing: true });
+      pressKey(input, 'Escape', { keyCode: 229 });
+
+      expect(calls).toEqual([]);
+
+      pressKey(input, 'Escape');
+
+      expect(calls).toEqual(['escape']);
+    });
+  });
+
+  describe('topmost layer per channel', () => {
+    it('reports only the topmost active layer owning the channel', () => {
+      const inner = document.createElement('div');
+      document.body.appendChild(inner);
+      const outerLayer = makeLayer(host);
+      const innerLayer = makeLayer(inner);
+      expect(outerLayer.isTopmostFor('pointer')).toBe(false);
+
+      outerLayer.activate({ channels: ['pointer'] });
+      expect(outerLayer.isTopmostFor('pointer')).toBe(true);
+
+      innerLayer.activate({ channels: [] });
+      expect(outerLayer.isTopmostFor('pointer')).toBe(true);
+      expect(innerLayer.isTopmostFor('pointer')).toBe(false);
+      innerLayer.deactivate();
+
+      innerLayer.activate({ channels: ['pointer'] });
+      expect(outerLayer.isTopmostFor('pointer')).toBe(false);
+      expect(innerLayer.isTopmostFor('pointer')).toBe(true);
+      expect(outerLayer.isTopmostFor('focus')).toBe(false);
+
+      innerLayer.deactivate();
+      expect(outerLayer.isTopmostFor('pointer')).toBe(true);
+
+      outerLayer.deactivate();
+      inner.remove();
+    });
   });
 
   describe('pointer-down outside', () => {

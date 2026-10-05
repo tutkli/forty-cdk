@@ -399,7 +399,7 @@ export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements
     // routes through the backdrop's own click → `requestClose('backdrop')`
     // instead of firing `pointerDownOutside`) is owned by the shared
     // ModalSurfaceBase config.
-    injectModalShell(this.modalShellConfig());
+    this.attachModalShell(injectModalShell(this.modalShellConfig()));
     warnIfDialogUnnamed({
       primitive: 'drawer',
       piece: '[forDrawer]',

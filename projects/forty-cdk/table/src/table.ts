@@ -19,6 +19,7 @@ import {
   stepFocusableCycle,
   firstEnabledHost,
   type ForTableCellHandle,
+  isImeComposing,
   type ForTableRowHandle,
   type GridNavigationAction,
   moveGridIndex,
@@ -752,7 +753,12 @@ export class ForTable<T = unknown> implements ForTableContext {
       next.focus();
       return true;
     }
-    if (event.key === 'Escape' && this.#enteredCell() === host && event.target !== host) {
+    if (
+      event.key === 'Escape' &&
+      !isImeComposing(event) &&
+      this.#enteredCell() === host &&
+      event.target !== host
+    ) {
       event.preventDefault();
       this.#enteredCell.set(null);
       host.focus();

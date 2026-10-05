@@ -1,6 +1,6 @@
-import { DestroyRef, Directive, ElementRef, inject } from '@angular/core';
+import { Directive, inject } from '@angular/core';
 
-import { injectPortal } from 'forty-cdk/core';
+import { injectModalBackdrop } from 'forty-cdk/core-overlay';
 import { FOR_DRAWER_INSTANCE_ID, injectDrawerContext } from './drawer-context';
 
 /**
@@ -33,6 +33,10 @@ import { FOR_DRAWER_INSTANCE_ID, injectDrawerContext } from './drawer-context';
  * Mirrors its drawer's nesting position as `data-depth` and `--for-drawer-depth`, so a nested
  * drawer's backdrop can paint above its parent drawer.
  *
+ * A click on the backdrop closes the drawer with reason `'backdrop'` only when the drawer was the
+ * topmost layer as the press began: with a nested drawer or a popover open above it, the press is
+ * that layer's outside press and the drawer stays open.
+ *
  * The directive applies no visual styles itself.
  */
 @Directive({
@@ -51,12 +55,13 @@ import { FOR_DRAWER_INSTANCE_ID, injectDrawerContext } from './drawer-context';
     '[style.--for-drawer-swipe-progress]': 'ctx.swipeProgress()',
     '[attr.data-depth]': 'ctx.depth()',
     '[style.--for-drawer-depth]': 'ctx.depth()',
-    '(click)': 'onClick($event)',
+    '(pointerdown)': 'backdrop.pointerDown()',
+    '(click)': 'backdrop.click($event)',
   },
 })
 export class ForDrawerBackdrop {
   protected readonly ctx = injectDrawerContext('ForDrawerBackdrop');
-  readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
+  protected readonly backdrop = injectModalBackdrop(this.ctx);
 
   /**
    * Per-instance drawer id when opened through `ForDrawerManager` (reflected
@@ -65,19 +70,4 @@ export class ForDrawerBackdrop {
    * path, where the host binding emits no attribute.
    */
   protected readonly instanceId = inject(FOR_DRAWER_INSTANCE_ID, { optional: true });
-
-  constructor() {
-    injectPortal({ target: this.ctx.container });
-    // Register so the drawer's dismissible layer treats pointer-down on the
-    // backdrop as "inside" — see ForDrawerContext#registerBackdrop.
-    this.ctx.registerBackdrop(this.#host.nativeElement);
-    inject(DestroyRef).onDestroy(() => this.ctx.registerBackdrop(null));
-  }
-
-  protected onClick(event: MouseEvent): void {
-    // Only close on direct backdrop click, not events bubbled from a child.
-    if (event.target === event.currentTarget) {
-      this.ctx.requestClose('backdrop');
-    }
-  }
 }

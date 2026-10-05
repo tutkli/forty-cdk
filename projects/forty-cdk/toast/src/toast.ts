@@ -21,6 +21,7 @@ import {
   hostDescribedBy,
   hostLabelledBy,
   injectPauseController,
+  isImeComposing,
   type PauseController,
   attachSwipeDismiss,
   type SwipeDirection,
@@ -421,7 +422,7 @@ export class ForToast implements ForToastContext {
   }
 
   protected onKeyDown(event: KeyboardEvent): void {
-    if (event.key !== 'Escape' || !this.dismissible()) {
+    if (event.key !== 'Escape' || isImeComposing(event) || !this.dismissible()) {
       return;
     }
     event.preventDefault();

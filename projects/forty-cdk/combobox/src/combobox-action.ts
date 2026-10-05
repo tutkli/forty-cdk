@@ -9,7 +9,7 @@ import {
   signal,
 } from '@angular/core';
 
-import { fortyError, hostButtonType, hostId, registerHandle } from 'forty-cdk/core';
+import { fortyError, hostButtonType, hostId, isImeComposing, registerHandle } from 'forty-cdk/core';
 import { injectComboboxContext } from './combobox-context';
 
 /**
@@ -166,7 +166,7 @@ export class ForComboboxAction {
         break;
 
       case 'Escape':
-        if (this.disabled()) {
+        if (this.disabled() || isImeComposing(event)) {
           return;
         }
         event.preventDefault();

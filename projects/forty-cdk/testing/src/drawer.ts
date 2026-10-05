@@ -14,6 +14,7 @@ import { createIdRegistry } from './id-registry';
 type DrawerTestingContext = ForDrawerContext & {
   registerInitialFocus(el: HTMLElement): void;
   unregisterInitialFocus(el: HTMLElement): void;
+  isTopmostPointerLayer(): boolean;
 };
 
 /** Options accepted by {@link provideForDrawerTesting}. */
@@ -96,6 +97,7 @@ function createContext(ref: ForDrawerRef, document: Document): DrawerTestingCont
     registerBackdrop: () => {},
     registerInitialFocus: () => {},
     unregisterInitialFocus: () => {},
+    isTopmostPointerLayer: () => true,
     requestClose: (reason: ForDrawerCloseReason, value?: unknown) => ref.close(value, reason),
   };
 }

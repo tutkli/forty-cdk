@@ -127,7 +127,7 @@ export class ForDialog extends ModalSurfaceBase<ForDialogCloseReason> implements
     // Anything dialog-specific (role binding, ariaLabel, label / description
     // registration) lives on the shared ModalSurfaceBase.
     super();
-    injectModalShell(this.modalShellConfig());
+    this.attachModalShell(injectModalShell(this.modalShellConfig()));
     warnIfDialogUnnamed({
       primitive: 'dialog',
       piece: '[forDialog]',

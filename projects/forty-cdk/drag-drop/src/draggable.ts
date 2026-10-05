@@ -17,6 +17,7 @@ import {
 import { isPlatformBrowser } from '@angular/common';
 
 import {
+  isImeComposing,
   registerHandle,
   resolveListNavigation,
   createPointerDragSession,
@@ -313,7 +314,7 @@ export class ForDraggable implements ForDraggableContext {
         this.#list.drop();
         return;
       }
-      if (event.key === 'Escape') {
+      if (event.key === 'Escape' && !isImeComposing(event)) {
         event.preventDefault();
         event.stopPropagation();
         this.#list.cancel();

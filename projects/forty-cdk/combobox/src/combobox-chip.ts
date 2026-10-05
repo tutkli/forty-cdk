@@ -1,6 +1,6 @@
 import { computed, Directive, ElementRef, inject, input } from '@angular/core';
 
-import { registerHandle } from 'forty-cdk/core';
+import { isImeComposing, registerHandle } from 'forty-cdk/core';
 import { injectComboboxContext } from './combobox-context';
 
 /**
@@ -143,6 +143,9 @@ export class ForComboboxChip<T = string> {
         break;
       }
       case 'Escape': {
+        if (isImeComposing(event)) {
+          return;
+        }
         event.preventDefault();
         if (this.ctx.open()) {
           event.stopPropagation();

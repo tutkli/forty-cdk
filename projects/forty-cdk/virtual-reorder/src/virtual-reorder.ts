@@ -24,6 +24,7 @@ import {
   focusWhenMounted,
   type FocusWhenMountedRef,
   fortyError,
+  isImeComposing,
   LiveAnnouncer,
   type PointerDragSession,
   resolveWindowedReorder,
@@ -238,7 +239,7 @@ export class ForVirtualReorder {
       event.preventDefault();
       event.stopPropagation();
       this.#kbCommit();
-    } else if (key === 'Escape') {
+    } else if (key === 'Escape' && !isImeComposing(event)) {
       event.preventDefault();
       event.stopPropagation();
       this.#kbCancel();

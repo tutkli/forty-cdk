@@ -1,7 +1,7 @@
 import { DOCUMENT, DestroyRef, ElementRef, Injectable, PLATFORM_ID, inject } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 
-import { composedContains, resolveEventTarget } from 'forty-cdk/core';
+import { composedContains, isImeComposing, resolveEventTarget } from 'forty-cdk/core';
 
 /**
  * The outside-interaction channels a {@link DismissibleLayer} can own. A layer
@@ -140,6 +140,9 @@ const EMPTY_ACTIVATE_OPTIONS: DismissibleLayerActivateOptions = { channels: [] }
  * handlers call `stopPropagation()` after closing — which is what keeps one Escape from closing an
  * ancestor layer too. The accepted trade-off is that overlay content with its own bubble-phase
  * `keydown` handler calling `stopPropagation()` can swallow Escape before it arrives.
+ *
+ * An Escape that belongs to an IME composition (see `isImeComposing`) is never dispatched: it
+ * cancels the conversion, not the topmost layer.
  */
 @Injectable({ providedIn: 'root' })
 export class DismissibleLayerStack {
@@ -151,7 +154,7 @@ export class DismissibleLayerStack {
   #listening = false;
 
   readonly #onKeyDown = (event: KeyboardEvent): void => {
-    if (event.key !== 'Escape') {
+    if (event.key !== 'Escape' || isImeComposing(event)) {
       return;
     }
     if (event.defaultPrevented) {
@@ -231,6 +234,14 @@ export class DismissibleLayerStack {
       }
     }
     return false;
+  }
+
+  /**
+   * @internal Whether `layer` is the topmost layer declaring `channel`, i.e. the
+   * one an outside interaction on that channel is dispatched to.
+   */
+  isTopmostForChannel(layer: DismissibleLayer, channel: DismissibleLayerChannel): boolean {
+    return this.#topmostForChannel(channel) === layer;
   }
 
   /**
@@ -414,6 +425,14 @@ export class DismissibleLayer {
    */
   ownsChannel(channel: DismissibleLayerChannel): boolean {
     return this.#channels.has(channel);
+  }
+
+  /**
+   * Whether this layer is active and is the topmost layer declaring `channel`, so no other layer
+   * stacked above it would receive an outside interaction on that channel first.
+   */
+  isTopmostFor(channel: DismissibleLayerChannel): boolean {
+    return this.#active && this.#stack.isTopmostForChannel(this, channel);
   }
 
   /**

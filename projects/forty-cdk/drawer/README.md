@@ -725,7 +725,7 @@ Implements the [WAI-ARIA Modal Dialog pattern](https://www.w3.org/WAI/ARIA/apg/p
 
 A drawer that mounts with neither a `[forDrawerTitle]` nor an `ariaLabel` logs a dev-mode warning (`FORCDK-CORE-011`) after its first render. To land focus somewhere other than the first focusable element on open, such as the least destructive action or a static heading carrying `tabindex="-1"`, mark it with [`[forDrawerInitialFocus]`](#fordrawerinitialfocus).
 
-Keyboard: **Escape** closes the topmost drawer when `dismissible`; **Tab / Shift+Tab** cycles focus inside the drawer when `modal`; **Click** on `[forDrawerBackdrop]` closes when `dismissible`.
+Keyboard: **Escape** closes the topmost drawer when `dismissible`, unless it cancels an IME composition; **Tab / Shift+Tab** cycles focus inside the drawer when `modal`; **Click** on `[forDrawerBackdrop]` closes when `dismissible` and the drawer was the topmost layer as the press began, so a press on a parent's backdrop closes only the child drawer above it.
 
 ## Styling
 

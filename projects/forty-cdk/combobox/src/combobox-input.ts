@@ -2,6 +2,7 @@ import { computed, Directive, DOCUMENT, effect, ElementRef, inject } from '@angu
 
 import {
   foldTypeaheadText,
+  isImeComposing,
   registerHandle,
   reflectDisabled,
   resolveActiveElement,
@@ -37,9 +38,10 @@ import { injectComboboxContext } from './combobox-context';
  *   the end of the document.
  * - Printable keys: update `query` and (if `autocompleteMode` includes `'inline'`)
  *   complete the rest of the first match in the input as selected text.
- * - During IME composition (`event.isComposing`) every keydown is ignored, so
- *   the composition-confirm Enter and candidate-navigation arrows reach the IME
- *   instead of activating an option or moving the activedescendant.
+ * - During IME composition every keydown is ignored, so the composition-confirm
+ *   Enter, the candidate-navigation arrows and the cancelling Escape reach the
+ *   IME instead of activating an option, moving the activedescendant or closing
+ *   the popup.
  */
 @Directive({
   selector: '[forComboboxInput]',
@@ -220,7 +222,7 @@ export class ForComboboxInput {
   }
 
   protected onKeyDown(event: KeyboardEvent): void {
-    if (event.isComposing) {
+    if (isImeComposing(event)) {
       return;
     }
 
