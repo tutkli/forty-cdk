@@ -201,6 +201,44 @@ class ComboboxListHost {
 }
 
 @Component({
+  imports: [ForSelect, ForSelectTrigger, ForSelectContent, ForSelectOption],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <div forSelect [(open)]="open">
+      <button forSelectTrigger>Fruit</button>
+      @if (open()) {
+        <div forSelectContent data-press>
+          <button forSelectOption value="apple" data-arm data-focus>Apple</button>
+        </div>
+      }
+    </div>
+  `,
+})
+class SelectContentHost {
+  readonly open = signal(true);
+}
+
+@Component({
+  imports: [ForTimePicker, ForTimePickerTrigger, ForTimePickerContent, ForTimePickerOption],
+  providers: [...provideNativeDateAdapter()],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <div forTimePicker [(open)]="open">
+      <button forTimePickerTrigger>Time</button>
+      @if (open()) {
+        <div forTimePickerContent data-press>
+          <div forTimePickerOption [value]="nine" data-arm data-focus>09:00</div>
+        </div>
+      }
+    </div>
+  `,
+})
+class TimePickerContentHost {
+  readonly open = signal(true);
+  readonly nine = new Date(2000, 0, 1, 9, 0, 0);
+}
+
+@Component({
   imports: [ForField, ForLabel, ForFieldControl],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -222,7 +260,9 @@ const SWEEP: readonly PressCase[] = [
   { file: 'tree/src/tree-item.ts', host: TreeDisabledItemHost },
   { file: 'listbox/src/listbox-option.ts', host: ListboxDisabledOptionHost },
   { file: 'select/src/select-option.ts', host: SelectDisabledOptionHost },
+  { file: 'select/src/select-content.ts', host: SelectContentHost },
   { file: 'time-picker/src/time-picker-option.ts', host: TimePickerDisabledOptionHost },
+  { file: 'time-picker/src/time-picker-content.ts', host: TimePickerContentHost },
   { file: 'combobox/src/combobox-option.ts', host: ComboboxOptionHost },
   { file: 'combobox/src/combobox-toggle.ts', host: ComboboxToggleHost },
   { file: 'combobox/src/combobox-content.ts', host: ComboboxContentHost },

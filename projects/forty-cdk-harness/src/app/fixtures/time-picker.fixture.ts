@@ -30,6 +30,9 @@ import { queryFlag } from './_query-flag';
         max-height: 200px;
         overflow-y: auto;
       }
+      [forTimePickerContent].padded {
+        padding-block: 12px;
+      }
       [forTimePickerOption] {
         display: block;
         width: 100%;
@@ -61,7 +64,7 @@ import { queryFlag } from './_query-flag';
         <span forTimePickerValue placeholder="Pick a time"></span>
       </button>
       @if (open()) {
-        <div forTimePickerContent data-testid="content">
+        <div forTimePickerContent data-testid="content" [class.padded]="padded">
           @for (slot of picker.slots(); track slot.id) {
             <div
               forTimePickerOption
@@ -90,4 +93,6 @@ export class TimePickerFixture {
     'minute') as 'hour' | 'minute' | 'second';
 
   protected readonly modal = queryFlag('modal');
+
+  protected readonly padded = queryFlag('padded');
 }
