@@ -47,11 +47,14 @@ const INTERACTIVE_DESCENDANT_SELECTOR = [
  * of your own to skip the same events.
  */
 export function eventFromInteractiveDescendant(event: Event): boolean {
-  const target = event.target;
   const rowEl = event.currentTarget;
-  if (!(target instanceof Element) || !(rowEl instanceof HTMLElement)) {
+  return rowEl instanceof HTMLElement && isInteractiveDescendant(event.target, rowEl);
+}
+
+export function isInteractiveDescendant(target: EventTarget | null, container: Element): boolean {
+  if (!(target instanceof Element)) {
     return false;
   }
   const interactive = target.closest(INTERACTIVE_DESCENDANT_SELECTOR);
-  return interactive !== null && interactive !== rowEl && rowEl.contains(interactive);
+  return interactive !== null && interactive !== container && container.contains(interactive);
 }

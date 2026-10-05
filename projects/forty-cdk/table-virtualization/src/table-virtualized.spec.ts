@@ -152,6 +152,34 @@ describe('ForTableVirtualized — retained row offset under measureRows', () => 
     expect(retained?.start).toBe(39656);
   });
 
+  it('drops a retained focused row once the row count shrinks below it', async () => {
+    const fixture = await mount();
+    const virt = fixture.componentInstance.virt();
+
+    fakeCtx.focusedRowIndex.set(60);
+    await flush(fixture);
+    expect(virt.virtualRows().some((row) => row.index === 60)).toBe(true);
+
+    fakeCtx.rowCount.set(10);
+    await flush(fixture);
+
+    expect(virt.virtualRows().every((row) => row.index < 10)).toBe(true);
+  });
+
+  it('drops a retained reordering row once the row count shrinks below it', async () => {
+    const fixture = await mount();
+    const virt = fixture.componentInstance.virt();
+
+    fakeCtx.reorderingRowIndex.set(60);
+    await flush(fixture);
+    expect(virt.virtualRows().some((row) => row.index === 60)).toBe(true);
+
+    fakeCtx.rowCount.set(10);
+    await flush(fixture);
+
+    expect(virt.virtualRows().every((row) => row.index < 10)).toBe(true);
+  });
+
   it('falls back to the estimate offset for an unmeasured retained row', async () => {
     const fixture = await mount();
     const virt = fixture.componentInstance.virt();
@@ -539,6 +567,160 @@ describe('ForTableVirtualized — ArrowUp over a variant row above the dataset (
 
     expect(document.activeElement).toBe(start);
     expect(event.defaultPrevented).toBe(true);
+  });
+});
+
+@Component({
+  imports: [ForTable, ForTableVirtualized, ForTableRow, ForTableCell],
+  template: `
+    <div forTable forTableVirtualized mode="grid" [rowCount]="total" #v="forTableVirtualized">
+      <div role="rowgroup">
+        @for (vi of windowIndices(); track vi) {
+          <div forTableRow [virtualIndex]="vi">
+            <div forTableCell name="a" [attr.data-testid]="'cell-' + vi">
+              <input [attr.data-testid]="'field-' + vi" />
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  `,
+})
+class WidgetCellHost {
+  protected readonly total = SERVER_TOTAL;
+  readonly windowIndices = signal<readonly number[]>([100, 101, 102, 103]);
+  readonly virt = viewChild.required(ForTableVirtualized);
+}
+
+describe('ForTableVirtualized — focus inside a cell widget (#2115)', () => {
+  let restoreObservers: () => void;
+  beforeAll(() => {
+    restoreObservers = installObserverPolyfills();
+  });
+  afterAll(() => restoreObservers());
+
+  it('retains the row whose cell widget holds focus', async () => {
+    const { el, instance, flush } = renderHost(WidgetCellHost);
+    await flush();
+
+    el.querySelector<HTMLElement>('[data-testid="field-102"]')!.focus();
+    await flush();
+
+    expect(
+      instance
+        .virt()
+        .virtualRows()
+        .some((row) => row.index === 102),
+    ).toBe(true);
+    expect(
+      el.querySelector<HTMLElement>('[data-testid="cell-102"]')!.getAttribute('tabindex'),
+    ).toBe('0');
+  });
+});
+
+@Component({
+  imports: [
+    ForTable,
+    ForTableVirtualized,
+    ForTableHeaderRow,
+    ForTableHeaderCell,
+    ForTableRow,
+    ForTableCell,
+  ],
+  template: `
+    <div forTable forTableVirtualized mode="grid" ariaLabel="Feed" [rowCount]="total">
+      <div forTableHeaderRow>
+        @for (col of cols; track col) {
+          <div forTableHeaderCell [name]="col" [attr.data-testid]="'h-' + col">{{ col }}</div>
+        }
+      </div>
+      <div role="rowgroup">
+        @for (row of windowRows(); track row.index) {
+          <div forTableRow [virtualIndex]="row.index">
+            @for (col of cols; track col) {
+              <div forTableCell [name]="col" [attr.data-testid]="'cell-' + row.index + '-' + col">
+                {{ row.index }}{{ col }}
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  `,
+})
+class HeaderOriginHost {
+  protected readonly total = SERVER_TOTAL;
+  protected readonly cols: readonly string[] = ['a', 'b'];
+  readonly windowIndices = signal<readonly number[]>([0, 1, 2, 3]);
+  readonly windowRows = computed(() => this.windowIndices().map((index) => ({ index })));
+}
+
+describe('ForTableVirtualized — a row-crossing move from a header cell (#2115)', () => {
+  let restoreObservers: () => void;
+  beforeAll(() => {
+    restoreObservers = installObserverPolyfills();
+  });
+  afterAll(() => restoreObservers());
+
+  const byId = (el: HTMLElement, id: string): HTMLElement =>
+    el.querySelector<HTMLElement>(`[data-testid="${id}"]`)!;
+
+  async function focusHeader(
+    windowIndices: readonly number[],
+  ): Promise<RenderResult<HeaderOriginHost> & { header: HTMLElement }> {
+    const rendered = renderHost(HeaderOriginHost);
+    rendered.instance.windowIndices.set(windowIndices);
+    await rendered.flush();
+    const header = byId(rendered.el, 'h-b');
+    header.focus();
+    await rendered.flush();
+    return { ...rendered, header };
+  }
+
+  it('sends Ctrl+End to the last cell of the dataset, not of the rendered window', async () => {
+    const scrollToRow = vi.spyOn(ForTableVirtualized.prototype, 'scrollToRow');
+    const { el, instance, flush, header } = await focusHeader([0, 1, 2, 3]);
+    scrollToRow.mockClear();
+
+    pressKey(header, 'End', { ctrlKey: true });
+    await flush();
+
+    expect(scrollToRow).toHaveBeenCalledWith(SERVER_TOTAL - 1);
+    expect(document.activeElement).toBe(header);
+
+    instance.windowIndices.set([SERVER_TOTAL - 2, SERVER_TOTAL - 1]);
+    await flush();
+
+    expect(document.activeElement).toBe(byId(el, `cell-${SERVER_TOTAL - 1}-b`));
+  });
+
+  it('sends ArrowDown to data row 0 when the window has scrolled away from it', async () => {
+    const scrollToRow = vi.spyOn(ForTableVirtualized.prototype, 'scrollToRow');
+    const { el, instance, flush, header } = await focusHeader([500, 501, 502, 503]);
+    scrollToRow.mockClear();
+
+    pressKey(header, 'ArrowDown');
+    await flush();
+
+    expect(scrollToRow).toHaveBeenCalledWith(0);
+    expect(document.activeElement).toBe(header);
+
+    instance.windowIndices.set([0, 1, 2, 3]);
+    await flush();
+
+    expect(document.activeElement).toBe(byId(el, 'cell-0-b'));
+  });
+
+  it('sends PageDown one page into the dataset when the window has scrolled away from it', async () => {
+    const scrollToRow = vi.spyOn(ForTableVirtualized.prototype, 'scrollToRow');
+    const { flush, header } = await focusHeader([500, 501, 502, 503]);
+    scrollToRow.mockClear();
+
+    pressKey(header, 'PageDown');
+    await flush();
+
+    expect(scrollToRow).toHaveBeenCalledWith(3);
+    expect(document.activeElement).toBe(header);
   });
 });
 

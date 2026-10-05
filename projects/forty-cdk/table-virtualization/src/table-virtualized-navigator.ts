@@ -126,9 +126,14 @@ export class TableVirtualizedNavigator {
    * absolute index mounts, focus its cell and clear the pending target. Returns
    * `true` when a pending request was resolved, `false` otherwise. Called from
    * the companion's bridge effect whenever the rendered rows change.
+   *
+   * The pending slot is read untracked and the scroll and focus moves run
+   * untracked: this method writes the slot and moves DOM focus, and tracking
+   * either would re-invalidate the calling effect, whose trigger is the rows and
+   * their cells.
    */
   tryResolvePending(): boolean {
-    const pending = this.#pending();
+    const pending = untracked(this.#pending);
     if (pending === null) {
       return false;
     }
@@ -161,7 +166,7 @@ export class TableVirtualizedNavigator {
         return true;
       }
       if (result === 'unmounted') {
-        const current = this.#pending();
+        const current = untracked(this.#pending);
         const unchanged =
           current !== null &&
           current.row === target &&
@@ -169,7 +174,7 @@ export class TableVirtualizedNavigator {
           current.direction === dir;
         if (!unchanged) {
           this.#pending.set({ row: target, col, direction: dir });
-          this.#deps.scrollToRow(target);
+          untracked(() => this.#deps.scrollToRow(target));
         }
         return false;
       }
@@ -219,7 +224,7 @@ export class TableVirtualizedNavigator {
     if (cell.disabled()) {
       return 'disabled';
     }
-    cell.host.focus();
+    untracked(() => cell.host.focus());
     return 'focused';
   }
 }

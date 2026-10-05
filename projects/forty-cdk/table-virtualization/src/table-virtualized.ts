@@ -138,20 +138,20 @@ export class ForTableVirtualized {
   /**
    * The rows in the visible window plus overscan, augmented to always include the focused row and
    * the row being reordered even when they are scrolled out of view (so the roving-focused cell
-   * stays mounted, and a pointer reorder drag never unmounts the lifted row). Render these with
+   * stays mounted, and a pointer reorder drag never unmounts the lifted row). A retained index at
+   * or past the row count is dropped, so every index this yields addresses a row of the current
+   * dataset even right after it shrinks. Render these with
    * `@for (vrow of v.virtualRows(); track vrow.index)` and position each row absolutely with
    * `transform: translateY(vrow.start + 'px')`. Bind each row's `[virtualIndex]="vrow.index"`.
    */
   readonly virtualRows = computed<readonly VirtualItem[]>(() => {
     const items = this.#virtualizer.virtualItems();
+    const count = this.#rowCount();
     const retain = new Set<number>();
-    const focused = this.#ctx.focusedRowIndex();
-    if (focused !== null) {
-      retain.add(focused);
-    }
-    const reordering = this.#registration.reorderingRowIndex();
-    if (reordering !== null) {
-      retain.add(reordering);
+    for (const index of [this.#ctx.focusedRowIndex(), this.#registration.reorderingRowIndex()]) {
+      if (index !== null && index >= 0 && index < count) {
+        retain.add(index);
+      }
     }
     for (const it of items) {
       retain.delete(it.index);

@@ -31,6 +31,7 @@ import {
   resolveLiftedDragControl,
   resolveWindowedReorder,
 } from 'forty-cdk/core';
+import { isInteractiveDescendant } from './interactive-descendant';
 import { injectTableContext, injectTableRegistration } from './table-context';
 
 const POINTER_ARM_THRESHOLD_PX = 5;
@@ -75,7 +76,9 @@ export interface TableRowReorderDescriptor {
  * drop, and `Escape` / `Tab` cancel. Idle Arrow keys stay grid navigation, and `Space` still
  * selects the row when a selection mode is set. In the static `mode="table"` the rowgroup
  * keeps its own draggable-owned tab stop and the plain `Space` / `Enter` lift on a focused
- * row.
+ * row. A lift key pressed on an interactive control inside a row (a button, an input, a
+ * `[forTableRowSelector]`, the set `eventFromInteractiveDescendant` defines) stays that
+ * control's own key.
  *
  * Under `[forTableVirtualized]`, `rowReorder` emits **absolute** dataset indices so
  * `moveItemInArray` over the full array moves the right row; a non-virtualized table emits
@@ -276,7 +279,7 @@ export class ForTableRowReorder {
       return null;
     }
     const row = this.#registration.rows().find((r) => r.host === target || r.host.contains(target));
-    if (row === undefined) {
+    if (row === undefined || isInteractiveDescendant(target, row.host)) {
       return null;
     }
     const draggable = this.#list.items().find((h) => h.host === row.host);
