@@ -7,17 +7,142 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.31.0] - 2026-10-05
+
+A release about where focus and keys land in the list, overlay and drag-and-drop primitives. A row
+you render yourself in a grid table emits `(activate)` for both a click and `Enter`. Typeahead takes
+a Space or an AltGr letter mid-word, a mouse press no longer moves focus onto a piece that must not
+hold it, the modal focus trap wraps from any focused element and leaves a toast or a popover its own
+Tab order, a write to a focused input or textarea reaches the field, a virtualized listbox or select
+resumes from an option that scrolled away, a windowed reorder announces dataset positions, focus
+follows an item after a keyboard drop and survives the departure of the active roving item, an
+Escape that cancels an IME composition closes nothing, and a backdrop press closes only the topmost
+layer. Four changes arrive without binding anything: a portaled overlay carries the `dir` of the
+place it is declared, a mouse press never focuses a disabled option, a disabled tree node or a popup
+surface, a list composed by `[forVirtualReorder]` or `[forTableRowReorder]` joins no other list, and
+a drop that resolves no slot emits `dragEnd` with `dropped: false`.
+
 ### Added
 
 - **Table** — one activation channel for a row you render yourself
-  ([#2112](https://github.com/tutkli/forty-cdk/issues/2112)). `[forTableRow]` emits `(activate)`
-  in `grid` / `treegrid` mode for a click anywhere on the row except an interactive descendant, and
-  for the `Enter` the root emits as `cellActivate`, carrying the row's `[value]` and the event as
-  a `TableRawRowActivateEvent`. The row binds no `(click)`, so it passes
-  `@angular-eslint/template/click-events-have-key-events`, and `Enter` that enters a widget, an
-  `Enter` or a click from an inner control, and `mode="table"` never emit. **A hand-rendered row
-  that paired a guarded `(click)` with the root's `(cellActivate)` can bind `(activate)`
-  alone.**
+  ([#2112](https://github.com/tutkli/forty-cdk/issues/2112)). `[forTableRow]` emits `(activate)` in
+  `grid` / `treegrid` mode for a click anywhere on the row except an interactive descendant, and for
+  the `Enter` the root emits as `cellActivate`, carrying the row's `[value]` and the event as a
+  `TableRawRowActivateEvent`, published from `forty-cdk/table`. The row binds no `(click)`, so it
+  passes `@angular-eslint/template/click-events-have-key-events`, and `Enter` that enters a widget,
+  an `Enter` or a click from an inner control, and `mode="table"` never emit. **A hand-rendered row
+  that paired a guarded `(click)` with the root's `(cellActivate)` can bind `(activate)` alone.**
+  The table README's "Activating a cell" section has the recipe.
+
+### Changed
+
+- **Combobox** — `ForComboboxDefaults.align` is a plain `FloatingAlign` with the fallback `'start'`
+  ([#2141](https://github.com/tutkli/forty-cdk/issues/2141)). It used to accept `null`, its
+  fallback, which picked `'end'` under RTL to make up for a listbox laid out left to right. The
+  portaled content now carries `dir="rtl"` itself, so `'start'` resolves to the input's leading edge
+  in both directions, and an RTL combobox with no `[align]` reflects `data-align="start"` instead of
+  `"end"` at the same rendered position. **A scope that set `align: null` drops the key.**
+
+- **Drag & drop**, **Virtual reorder**, **Table** — a list composed by a coordinator is closed
+  ([#2124](https://github.com/tutkli/forty-cdk/issues/2124)). The `[forDropList]` that
+  `[forVirtualReorder]` or `[forTableRowReorder]` composes connects to no other list, and no other
+  list connects to it, through a `[forDropListGroup]` or `[connectedTo]`: `itemReorder` and
+  `rowReorder` report a move within one dataset, so a transfer could never be reported truthfully. A
+  coordinator of your own provides the new `FOR_DROP_LIST_COORDINATOR` (`ForDropListCoordinator`,
+  with `count()` and `resolveReorder(previousIndex, currentIndex)`) from `forty-cdk/drag-drop`, and
+  `ForDraggableHandle` gains `emitDragStart` / `emitDragEnd`. **A coordinator that called
+  `ForDropList.setCoordinatorLift(el | null)` calls `beginCoordinatorLift(el, index)` and
+  `endCoordinatorLift(dropped)` instead.**
+
+- **Drag & drop** — a drop that resolves no slot emits `dragEnd` with `dropped: false`
+  ([#2124](https://github.com/tutkli/forty-cdk/issues/2124)). It emitted `dropped: true`, so a
+  `(dragEnd)` handler that committed on `dropped` committed a drop that moved nothing.
+
+### Fixed
+
+- **Listbox**, **Select**, **Tree**, **Menu**, **Menubar** — typeahead takes every key it should
+  ([#2119](https://github.com/tutkli/forty-cdk/issues/2119)). A Space typed mid-typeahead extends
+  the buffer instead of activating, so a native `<button>` option or trigger no longer clicks on
+  `keyup` and commits a half-typed match. Letters composed with AltGr or Option (`ł` on a Polish
+  layout, `ø` on macOS) reach their options, while Windows `Alt+letter` accelerators and `accesskey`
+  still do not. A closed select's typeahead skips disabled options, like the open listbox and a
+  native `<select>`. `selectionFollowsFocus` follows every keyboard focus move, including ArrowRight
+  into a child, ArrowLeft to the parent and a typeahead match, not only arrow navigation.
+
+- **Tree**, **Combobox**, **Listbox**, **Select**, **Time picker** — a mouse press no longer moves
+  focus onto a piece that must not hold it
+  ([#2116](https://github.com/tutkli/forty-cdk/issues/2116),
+  [#2159](https://github.com/tutkli/forty-cdk/issues/2159)). `[forTreeItemToggle]` never takes
+  focus, which left it on an `aria-hidden` element; its click moves roving focus to its `treeitem`,
+  so the keyboard keeps working after a mouse expand. A press on a combobox option keeps focus on
+  the input, or on the picker's search input, in single and multi mode. A press on a disabled
+  listbox, select or time picker option or a disabled tree node leaves focus where it was. A press
+  on a popup surface's padding, a group label or an empty or status row no longer focuses the
+  combobox, select or time picker content, which in a non-virtualized select and in the time picker
+  left focus where no handler reads the arrow keys; a press on an option, a `[forComboboxAction]` or
+  a `<button>` of your own still focuses it. Mouse text selection inside the combobox popup is gone
+  as a result.
+
+- **Dialog**, **Drawer** — the modal focus trap handles two Tab edge cases
+  ([#2121](https://github.com/tutkli/forty-cdk/issues/2121)). Inside a surface marked
+  `data-for-modal-exempt` or `data-for-modal-peer` (the toast viewport, a popover opened from the
+  modal), Tab moves between that surface's own tabbables and returns to the modal only past its
+  ends. Shift+Tab from the focused container (`initialFocus="container"`), a `tabindex="-1"` heading
+  or any element before the first tabbable wraps to the last one instead of leaving the modal, and
+  Tab after the last wraps to the first, ordered across open shadow roots. The modal select, date
+  picker and time picker share the same trap.
+
+- **Input**, **Textarea**, **Number input**, **OTP input**, **Combobox** — a value written while the
+  control is focused reaches the field ([#2122](https://github.com/tutkli/forty-cdk/issues/2122)).
+  `[forInput]` and `[forTextarea]` mirrored the model only while unfocused, so a submit-and-clear
+  `draft.set('')`, a `[formField]` reset or a reformat was dropped and the next keystroke put the
+  old text back; the write now lands at once, except during an IME composition. The focus check of
+  the number and OTP inputs and of the combobox query resolves through open shadow roots, so a
+  formatted number input inside a `ViewEncapsulation.ShadowDom` component can be typed into again.
+
+- **Listbox**, **Select** — virtualized keys resume from an option that scrolled out of the window
+  ([#2123](https://github.com/tutkli/forty-cdk/issues/2123)). ArrowUp / ArrowDown continue from it
+  instead of restarting at the edge, Enter / Space activate it and scroll it back, and a select's
+  Tab commits it before closing, as the tree already did.
+
+- **Virtual reorder**, **Table**, **Drag & drop** — a windowed reorder announces and drops where the
+  item lands ([#2124](https://github.com/tutkli/forty-cdk/issues/2124)). Pointer lifts, moves and
+  drops announce dataset positions ("8 of 22" counted the rendered rows), and a Shift-scrub drop
+  announces its landing position. A drop after auto-scroll lands on the row under the pointer, where
+  a recycled window of the same size could shift it by one. `dragStart` / `dragEnd` fire for
+  keyboard and coordinated lifts, including the non-virtualized grid-mode lift of
+  `[forTableRowReorder]`, which emitted neither. No drag announcement reads an `aria-hidden` handle
+  glyph any more.
+
+- **Drag & drop**, **Virtual reorder**, **Table**, **Tree**, **Listbox** — focus follows the item
+  after a keyboard drop ([#2118](https://github.com/tutkli/forty-cdk/issues/2118)). It used to stay
+  on a displaced neighbour or fall to `<body>`, including when a grid row moved up under
+  `[forTableRowReorder]` and when an option moved up under `[forListboxReorder]`. A virtualized
+  table keeps focus on the same column cell, and a tree node dropped into a collapsed parent focuses
+  that parent. Idle `Home` / `End` in `[forVirtualReorder]` reach the dataset ends, skipping a
+  `dragDisabled` edge row.
+
+- **Overlays**, **Table**, **Toast** — an Escape that cancels an IME composition closes nothing, and
+  a backdrop press closes only the topmost layer
+  ([#2132](https://github.com/tutkli/forty-cdk/issues/2132)). Escape during a composition no longer
+  dismisses the topmost overlay, a toast or a table's entered cell. A press on the backdrop of a
+  dialog or drawer with another layer stacked above it, such as a popover opened inside it, closes
+  only that layer.
+
+- **Tree**, **Toolbar**, **Toggle**, **Carousel**, **Listbox**, **Radio group**, **Menubar**, **Drag
+  & drop** — roving focus survives the active item leaving
+  ([#2140](https://github.com/tutkli/forty-cdk/issues/2140)). An item disabled while it holds focus
+  keeps Arrow / Home / End; only a disabled group leaves them unconsumed. When a tree removes or
+  collapses the focused node, through the toggle, the keyboard, an `[(expanded)]` write or a data
+  change, the tab stop and DOM focus move to the nearest node before it (the collapsed ancestor, the
+  previous node, the parent of a first child) instead of falling to `<body>`, and a node disabled in
+  place hands the tab stop to the node before it instead of the first root.
+
+- **Overlays** — a surface portaled out of a `dir="rtl"` subtree stays RTL
+  ([#2141](https://github.com/tutkli/forty-cdk/issues/2141)). Every portaled host receives the `dir`
+  resolved where it was declared, and follows a runtime change there; a host with its own `dir`
+  attribute is left alone. Its text reads in the right base direction, and `align="start"` / `"end"`
+  resolve against the trigger's inline-start edge instead of `<body>`'s.
 
 ## [0.30.0] - 2026-10-02
 
@@ -3160,7 +3285,8 @@ primitives.
 - **Display** — avatar, progress, meter, tree.
 - `forty-cdk/internationalized-date` secondary entry point exposing the `@internationalized/date` adapters for the date and time primitives.
 
-[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.30.0...HEAD
+[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.31.0...HEAD
+[0.31.0]: https://github.com/tutkli/forty-cdk/compare/v0.30.0...v0.31.0
 [0.30.0]: https://github.com/tutkli/forty-cdk/compare/v0.29.0...v0.30.0
 [0.29.0]: https://github.com/tutkli/forty-cdk/compare/v0.28.0...v0.29.0
 [0.28.0]: https://github.com/tutkli/forty-cdk/compare/v0.27.0...v0.28.0
