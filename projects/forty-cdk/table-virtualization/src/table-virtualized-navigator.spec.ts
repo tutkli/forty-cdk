@@ -1,4 +1,5 @@
-import { signal } from '@angular/core';
+import { ApplicationRef, effect, provideZonelessChangeDetection, signal } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
 
 import {
   type ForTableCellHandle,
@@ -565,6 +566,46 @@ describe('TableVirtualizedNavigator', () => {
 
     expect(nav.tryResolvePending()).toBe(false);
     expect(focusSpy).not.toHaveBeenCalled();
+  });
+
+  it('runs a bridge effect once per rows change, tracking neither the pending slot nor the focus move', () => {
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+    const appRef = TestBed.inject(ApplicationRef);
+    const rows = signal<readonly ForTableRowHandle[]>([fakeRow(10, 2)]);
+    const nav = new TableVirtualizedNavigator({
+      rows,
+      scrollToRow: vi.fn(),
+      scrollViewportRect: () => null,
+      rowCount: () => 100,
+    });
+    const readOnFocus = signal(0);
+    let runs = 0;
+    TestBed.runInInjectionContext(() => {
+      effect(() => {
+        rows();
+        nav.tryResolvePending();
+        runs++;
+      });
+    });
+    appRef.tick();
+    expect(runs).toBe(1);
+
+    nav.navigateTo(50, 1, 1);
+    appRef.tick();
+    expect(runs).toBe(1);
+
+    const mounted = fakeRow(50, 2);
+    const focus = vi.spyOn(mounted.cells()[1]!.host, 'focus').mockImplementation(() => {
+      readOnFocus();
+    });
+    rows.set([mounted]);
+    appRef.tick();
+    expect(focus).toHaveBeenCalledTimes(1);
+    expect(runs).toBe(2);
+
+    readOnFocus.set(1);
+    appRef.tick();
+    expect(runs).toBe(2);
   });
 
   describe('virtualization-seam contract types (forty-cdk/table barrel)', () => {

@@ -13,8 +13,10 @@ import { ForTableVirtualized } from 'forty-cdk/table-virtualization';
 
 import { ForTable } from './table';
 import { ForTableCell } from './table-cell';
+import { type TableMode } from './table-context';
 import { ForTableRow } from './table-row';
 import { ForTableRowReorder, type TableRowReorderDescriptor } from './table-row-reorder';
+import { ForTableRowSelector } from './table-row-selector';
 
 const ROW_COUNT = 10_000;
 const ROW_HEIGHT = 44;
@@ -598,8 +600,8 @@ describe('ForTableRowReorder — the pointer pin follows the armed session (#169
               <svg
                 viewBox="0 0 8 8"
                 tabindex="0"
-                role="button"
-                [attr.aria-label]="'Options for row ' + vrow.index"
+                role="img"
+                [attr.aria-label]="'Drag handle for row ' + vrow.index"
                 [attr.data-testid]="'icon-' + vrow.index"
               >
                 <rect width="8" height="8"></rect>
@@ -1246,5 +1248,163 @@ describe('ForTableRowReorder — focus follows the dropped row (#2118)', () => {
       'row-4',
     ]);
     expect(document.activeElement).toBe(query('[data-testid="cell-b-1"]'));
+  });
+});
+
+const IN_ROW_CONTROLS_TEMPLATE = `
+  <div
+    forTable
+    forTableVirtualized
+    [mode]="mode"
+    selectionMode="multiple"
+    [(value)]="selection"
+    ariaLabel="Virtualized rows with in-row controls"
+    [rowCount]="rowCount"
+    [estimateRowSize]="rowHeight"
+    #v="forTableVirtualized"
+    style="height: 200px; overflow: auto"
+  >
+    <div
+      role="rowgroup"
+      forTableRowReorder
+      [style.height.px]="v.totalSize()"
+      (rowReorder)="last = $event"
+    >
+      @for (vrow of v.virtualRows(); track vrow.index) {
+        <div
+          forTableRow
+          [virtualIndex]="vrow.index"
+          [value]="vrow.index"
+          forDraggable
+          [dragData]="vrow.index"
+          [attr.data-testid]="'row-' + vrow.index"
+        >
+          <div forTableCell name="a" [attr.data-testid]="'cell-' + vrow.index">
+            <span forTableRowSelector [attr.data-testid]="'selector-' + vrow.index"></span>
+            <button type="button" [attr.data-testid]="'edit-' + vrow.index">Edit</button>
+            <input [attr.data-testid]="'field-' + vrow.index" />
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+`;
+
+@Component({
+  imports: [
+    ForTable,
+    ForTableVirtualized,
+    ForTableRow,
+    ForTableCell,
+    ForTableRowReorder,
+    ForTableRowSelector,
+    ForDraggable,
+  ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: IN_ROW_CONTROLS_TEMPLATE,
+})
+class TableModeInRowControlsHost {
+  protected readonly mode: TableMode = 'table';
+  protected readonly rowCount = ROW_COUNT;
+  protected readonly rowHeight = ROW_HEIGHT;
+  readonly selection = signal<readonly unknown[]>([]);
+  last: TableRowReorderDescriptor | null = null;
+}
+
+@Component({
+  imports: [
+    ForTable,
+    ForTableVirtualized,
+    ForTableRow,
+    ForTableCell,
+    ForTableRowReorder,
+    ForTableRowSelector,
+    ForDraggable,
+  ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { 'data-fixture': 'grid-mode-in-row-controls' },
+  template: IN_ROW_CONTROLS_TEMPLATE,
+})
+class GridModeInRowControlsHost {
+  protected readonly mode: TableMode = 'grid';
+  protected readonly rowCount = ROW_COUNT;
+  protected readonly rowHeight = ROW_HEIGHT;
+  readonly selection = signal<readonly unknown[]>([]);
+  last: TableRowReorderDescriptor | null = null;
+}
+
+describe('ForTableRowReorder — a lift key on an in-row control is left to that control (#2115)', () => {
+  afterEach(() => {
+    document.querySelectorAll('[aria-live]').forEach((node) => node.remove());
+  });
+
+  it('Space on a row selector toggles the selection instead of lifting the row', async () => {
+    const { instance, settle, indices, query } = await render(TableModeInRowControlsHost);
+    const index = Math.min(...indices());
+    const selector = query(`[data-testid="selector-${index}"]`);
+    selector.focus();
+
+    press(selector, ' ');
+    await settle();
+
+    expect(instance.selection()).toEqual([index]);
+    expect(query(`[data-testid="row-${index}"]`).hasAttribute('data-dragging')).toBe(false);
+  });
+
+  it('Enter on an in-row button leaves the key to the button', async () => {
+    const { settle, indices, query } = await render(TableModeInRowControlsHost);
+    const index = Math.min(...indices());
+    const button = query(`[data-testid="edit-${index}"]`);
+    button.focus();
+
+    const enter = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+    button.dispatchEvent(enter);
+    await settle();
+
+    expect(enter.defaultPrevented).toBe(false);
+    expect(query(`[data-testid="row-${index}"]`).hasAttribute('data-dragging')).toBe(false);
+  });
+
+  it('Space on the focused row itself still lifts it', async () => {
+    const { settle, indices, query } = await render(TableModeInRowControlsHost);
+    const index = Math.min(...indices());
+    const row = query(`[data-testid="row-${index}"]`);
+    row.focus();
+
+    press(row, ' ');
+    await settle();
+
+    expect(row.getAttribute('data-dragging')).toBe('');
+  });
+
+  it('Ctrl+Space typed in a cell input leaves the key to the input', async () => {
+    const { settle, indices, query } = await render(GridModeInRowControlsHost);
+    const index = Math.min(...indices());
+    const field = query(`[data-testid="field-${index}"]`);
+    field.focus();
+
+    const space = new KeyboardEvent('keydown', {
+      key: ' ',
+      ctrlKey: true,
+      bubbles: true,
+      cancelable: true,
+    });
+    field.dispatchEvent(space);
+    await settle();
+
+    expect(space.defaultPrevented).toBe(false);
+    expect(query(`[data-testid="row-${index}"]`).hasAttribute('data-dragging')).toBe(false);
+  });
+
+  it('Ctrl+Space on the cell itself still lifts the row', async () => {
+    const { settle, indices, query } = await render(GridModeInRowControlsHost);
+    const index = Math.min(...indices());
+    const cell = query(`[data-testid="cell-${index}"]`);
+    cell.focus();
+
+    press(cell, ' ', { ctrlKey: true });
+    await settle();
+
+    expect(query(`[data-testid="row-${index}"]`).getAttribute('data-dragging')).toBe('');
   });
 });

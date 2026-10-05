@@ -3655,6 +3655,49 @@ describe('ForTable', () => {
     });
   });
 
+  describe('focus reaching a widget inside a cell (#2115)', () => {
+    const byId = (el: HTMLElement, id: string): HTMLElement =>
+      el.querySelector<HTMLElement>(`[data-testid="${id}"]`)!;
+
+    it('moves the tab stop onto the cell holding the focused input', async () => {
+      const { el, flush } = renderHost(SelectionInteractiveHost);
+      await flush();
+      expect(byId(el, 'cell-sel-1').getAttribute('tabindex')).toBe('0');
+
+      byId(el, 'field-2').focus();
+      await flush();
+
+      expect(byId(el, 'cell-actions-2').getAttribute('tabindex')).toBe('0');
+      expect(byId(el, 'cell-actions-2').hasAttribute('data-highlighted')).toBe(true);
+      expect(byId(el, 'cell-sel-1').getAttribute('tabindex')).toBe('-1');
+    });
+
+    it('moves the tab stop onto the cell holding a focused row selector', async () => {
+      const { el, flush } = renderHost(SelectionInteractiveHost);
+      await flush();
+
+      byId(el, 'selector-3').focus();
+      await flush();
+
+      expect(byId(el, 'cell-sel-3').getAttribute('tabindex')).toBe('0');
+      expect(byId(el, 'cell-sel-1').getAttribute('tabindex')).toBe('-1');
+    });
+
+    it('does not enter interaction mode, so Escape stays the widget key', async () => {
+      const { el, flush } = renderHost(SelectionInteractiveHost);
+      await flush();
+      const field = byId(el, 'field-2');
+      field.focus();
+      await flush();
+
+      const escape = press(field, 'Escape');
+      await flush();
+
+      expect(escape.defaultPrevented).toBe(false);
+      expect(document.activeElement).toBe(field);
+    });
+  });
+
   describe('total-aware selection (selectableValues)', () => {
     const selectAllEl = (el: HTMLElement) =>
       el.querySelector<HTMLElement>('[data-testid="select-all"]')!;

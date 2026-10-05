@@ -624,16 +624,35 @@ export class ForTable<T = unknown> implements ForTableContext {
    * Focus landing anywhere else retires the parked cell, the cell host itself included: entry
    * resumes only where it left off, and Tab reaching a widget from outside the grid stays a plain
    * tab stop rather than silently becoming interaction mode.
+   *
+   * Focus reaching a widget inside a cell by any route also moves the roving tab stop onto that
+   * cell, without entering interaction mode, so the tab stop and the row a virtualized grid keeps
+   * mounted are always the ones holding focus.
    */
   protected onFocusIn(event: FocusEvent): void {
+    const target = event.target;
+    if (target instanceof Node) {
+      this.#followFocusIntoCell(target);
+    }
     const restore = this.#restoreCell;
     if (!restore) {
       return;
     }
     this.#restoreCell = null;
-    const target = event.target;
     if (target instanceof Node && target !== restore && composedContains(restore, target)) {
       this.#enteredCell.set(restore);
+    }
+  }
+
+  #followFocusIntoCell(target: Node): void {
+    if (this.mode() === 'table') {
+      return;
+    }
+    const cell = this.#flatCells().find(
+      (handle) => handle.host !== target && composedContains(handle.host, target),
+    );
+    if (cell !== undefined && !cell.disabled() && this.#roving.active() !== cell.host) {
+      this.#roving.setActive(cell.host);
     }
   }
 
@@ -848,11 +867,12 @@ export class ForTable<T = unknown> implements ForTableContext {
     );
 
     const navigation = this.#registry.virtualRowNavigation();
-    const fromRow = this.focusedRowIndex();
+    const dataRow = this.focusedRowIndex();
+    const fromRow = dataRow ?? (this.#isParticipatingHeaderCell(host) ? -1 : null);
     const total = navigation?.placeableRowCount() ?? 0;
     const pageSize = this.#pageSize();
     const headerIsRowTarget =
-      this.#headerParticipates() && targetsHeaderRow(action, fromRow, pageSize);
+      this.#headerParticipates() && targetsHeaderRow(action, dataRow, pageSize);
     if (headerIsRowTarget) {
       navigation?.scrollToRow(0);
     }
@@ -883,6 +903,10 @@ export class ForTable<T = unknown> implements ForTableContext {
     return true;
   }
 
+  #isParticipatingHeaderCell(host: HTMLElement): boolean {
+    return this.#headerParticipates() && this.#headerCellHosts().some((cell) => cell.host === host);
+  }
+
   /**
    * Rows a PageUp / PageDown moves. One page is the number of rendered data rows
    * — in a virtualized grid that is the visible window (plus overscan), so paging
@@ -897,7 +921,9 @@ export class ForTable<T = unknown> implements ForTableContext {
 /**
  * Resolves the absolute `(row, 0-based column)` target and travel `direction`
  * for a row-crossing grid action against the `total` count of rows the
- * virtualizer can place. Arrow row-moves preserve the current column;
+ * virtualizer can place. `fromRow` is `-1` for a move starting on the header
+ * row, so it lands on the dataset's rows rather than the rendered window's.
+ * Arrow row-moves preserve the current column;
  * `page-up` / `page-down` move by
  * `pageSize` rows (the caller's `#pageSize()` is already at least 1, and the
  * move is clamped to the dataset bounds) preserving the column;
