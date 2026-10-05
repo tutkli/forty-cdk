@@ -25,11 +25,10 @@ import type { HostRovingItemHandle } from './host-roving-context';
  * re-seeded. The `fallback` option chooses how: `'none'` (default) nulls it
  * so each item's first-enabled fallback re-engages (pull-based, for a
  * container whose item tabindex derives from {@link hasActive}), while
- * `'first-enabled'` promotes the first enabled handle directly and
  * `'nearest'` promotes the closest usable handle before the departed one in
  * the previous item order, else the closest after it, else the first enabled
- * (both push-based, for a container whose item tabindex reads {@link active}
- * and needs a concrete owner rather than a null pointer, e.g. Tree). Under
+ * (push-based, for a container whose item tabindex reads {@link active} and
+ * needs a concrete owner rather than a null pointer, e.g. Tree). Under
  * `'nearest'` the departed pointer is kept, so a host that is re-enabled
  * reclaims the tab stop. Omitting `items` yields a pass-through of the raw
  * pointer for consumers that own no roving collection (date-field /
@@ -66,7 +65,7 @@ export class RovingTabindex {
 
   constructor(
     items?: () => readonly HostRovingItemHandle[],
-    options: { fallback?: 'none' | 'first-enabled' | 'nearest' } = {},
+    options: { fallback?: 'none' | 'nearest' } = {},
   ) {
     const fallback = options.fallback ?? 'none';
     this.#keepsDeparted = fallback === 'nearest';
@@ -83,13 +82,11 @@ export class RovingTabindex {
         if (handle && !handle.disabled() && raw.isConnected) {
           return raw;
         }
-        if (fallback === 'nearest') {
-          const anchor = previous?.source.raw === raw ? (previous.value ?? raw) : raw;
-          return nearestUsable(list, previous?.source.items ?? null, anchor);
+        if (fallback === 'none') {
+          return null;
         }
-        return fallback === 'first-enabled'
-          ? (list.find((item) => !item.disabled())?.host ?? null)
-          : null;
+        const anchor = previous?.source.raw === raw ? (previous.value ?? raw) : raw;
+        return nearestUsable(list, previous?.source.items ?? null, anchor);
       },
     });
     this.active = this.#active;

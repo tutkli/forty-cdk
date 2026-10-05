@@ -237,64 +237,6 @@ describe('RovingTabindex', () => {
       }
     });
 
-    describe("fallback: 'first-enabled'", () => {
-      it('promotes the first enabled handle when the active unregisters', () => {
-        const a = document.createElement('button');
-        const b = document.createElement('button');
-        document.body.append(a, b);
-        try {
-          const items = signal<readonly HostRovingItemHandle[]>([makeHandle(a), makeHandle(b)]);
-          const r = new RovingTabindex(() => items(), { fallback: 'first-enabled' });
-          r.setActive(a);
-
-          items.set([makeHandle(b)]);
-          expect(r.active()).toBe(b);
-        } finally {
-          a.remove();
-          b.remove();
-        }
-      });
-
-      it('skips a disabled leading handle to the first enabled one', () => {
-        const a = document.createElement('button');
-        const b = document.createElement('button');
-        const c = document.createElement('button');
-        document.body.append(a, b, c);
-        try {
-          const items = signal<readonly HostRovingItemHandle[]>([
-            makeHandle(a),
-            makeHandle(b, true),
-            makeHandle(c),
-          ]);
-          const r = new RovingTabindex(() => items(), { fallback: 'first-enabled' });
-          r.setActive(a);
-
-          items.set([makeHandle(b, true), makeHandle(c)]);
-          expect(r.active()).toBe(c);
-        } finally {
-          a.remove();
-          b.remove();
-          c.remove();
-        }
-      });
-
-      it('nulls active when no enabled handle remains', () => {
-        const a = document.createElement('button');
-        document.body.append(a);
-        try {
-          const dis = signal(false);
-          const items = signal<readonly HostRovingItemHandle[]>([{ host: a, disabled: dis }]);
-          const r = new RovingTabindex(() => items(), { fallback: 'first-enabled' });
-          r.setActive(a);
-
-          dis.set(true);
-          expect(r.active()).toBe(null);
-        } finally {
-          a.remove();
-        }
-      });
-    });
-
     describe("fallback: 'nearest'", () => {
       const mountButtons = (n: number): HTMLElement[] => {
         const hosts = Array.from({ length: n }, () => document.createElement('button'));
@@ -393,6 +335,22 @@ describe('RovingTabindex', () => {
           expect(r.active()).toBe(a);
         } finally {
           [a, b, c, d].forEach((el) => el!.remove());
+        }
+      });
+
+      it('nulls active when no enabled handle remains', () => {
+        const [a] = mountButtons(1);
+        try {
+          const disabled = signal(false);
+          const items = signal<readonly HostRovingItemHandle[]>([{ host: a!, disabled }]);
+          const r = new RovingTabindex(() => items(), { fallback: 'nearest' });
+          r.setActive(a!);
+          expect(r.active()).toBe(a);
+
+          disabled.set(true);
+          expect(r.active()).toBe(null);
+        } finally {
+          a!.remove();
         }
       });
 
