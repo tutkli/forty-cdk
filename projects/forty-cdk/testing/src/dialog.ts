@@ -13,6 +13,7 @@ import { createIdRegistry } from './id-registry';
 type DialogTestingContext = ForDialogContext & {
   registerInitialFocus(el: HTMLElement): void;
   unregisterInitialFocus(el: HTMLElement): void;
+  isTopmostPointerLayer(): boolean;
 };
 
 /** Options accepted by {@link provideForDialogTesting}. */
@@ -83,6 +84,7 @@ function createContext(ref: ForDialogRef): DialogTestingContext {
     registerBackdrop: () => {},
     registerInitialFocus: () => {},
     unregisterInitialFocus: () => {},
+    isTopmostPointerLayer: () => true,
     requestClose: (reason: ForDialogCloseReason, value?: unknown) => ref.close(value, reason),
   };
 }

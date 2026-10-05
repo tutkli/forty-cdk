@@ -334,9 +334,9 @@ The four dismiss callbacks mirror the declarative `(escapeKeyDown)` / `(pointerD
 
 ## Keyboard
 
-- **Escape** requests close (reason `'escape'`) when `dismissible`.
+- **Escape** requests close (reason `'escape'`) when `dismissible`. An Escape that cancels an IME composition is left to the IME.
 - **Tab / Shift+Tab** cycles focus inside the dialog (focus trap, only when `modal`).
-- **Click** on `[forDialogBackdrop]` requests close (reason `'backdrop'`) when `dismissible`.
+- **Click** on `[forDialogBackdrop]` requests close (reason `'backdrop'`) when `dismissible` and the dialog was the topmost layer as the press began. A press that closes a stacked dialog or a popover open above it leaves this dialog open.
 
 ## Accessibility
 

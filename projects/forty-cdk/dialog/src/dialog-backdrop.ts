@@ -1,6 +1,6 @@
-import { DestroyRef, Directive, ElementRef, inject } from '@angular/core';
+import { Directive, inject } from '@angular/core';
 
-import { injectPortal } from 'forty-cdk/core';
+import { injectModalBackdrop } from 'forty-cdk/core-overlay';
 import { FOR_DIALOG_INSTANCE_ID, injectDialogContext } from './dialog-context';
 
 /**
@@ -15,6 +15,10 @@ import { FOR_DIALOG_INSTANCE_ID, injectDialogContext } from './dialog-context';
  *
  * Mirrors its dialog's stacking position as `data-depth` and `--for-dialog-depth`, so a backdrop
  * can sit one step below its own dialog and above every dialog underneath it.
+ *
+ * A click on the backdrop closes the dialog with reason `'backdrop'` only when the dialog was the
+ * topmost layer as the press began: with a nested dialog or a popover open above it, the press is
+ * that layer's outside press and the dialog stays open.
  */
 @Directive({
   selector: '[forDialogBackdrop]',
@@ -29,12 +33,13 @@ import { FOR_DIALOG_INSTANCE_ID, injectDialogContext } from './dialog-context';
     '[attr.data-for-dialog-id]': 'instanceId',
     '[attr.data-depth]': 'ctx.depth()',
     '[style.--for-dialog-depth]': 'ctx.depth()',
-    '(click)': 'onClick($event)',
+    '(pointerdown)': 'backdrop.pointerDown()',
+    '(click)': 'backdrop.click($event)',
   },
 })
 export class ForDialogBackdrop {
   protected readonly ctx = injectDialogContext('ForDialogBackdrop');
-  readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
+  protected readonly backdrop = injectModalBackdrop(this.ctx);
 
   /**
    * Per-instance dialog id when opened through `ForDialogManager` (reflected
@@ -43,17 +48,4 @@ export class ForDialogBackdrop {
    * path, where the host binding emits no attribute.
    */
   protected readonly instanceId = inject(FOR_DIALOG_INSTANCE_ID, { optional: true });
-
-  constructor() {
-    injectPortal({ target: this.ctx.container });
-    this.ctx.registerBackdrop(this.#host.nativeElement);
-    inject(DestroyRef).onDestroy(() => this.ctx.registerBackdrop(null));
-  }
-
-  protected onClick(event: MouseEvent): void {
-    // Only close on direct backdrop click, not events bubbled from a child.
-    if (event.target === event.currentTarget) {
-      this.ctx.requestClose('backdrop');
-    }
-  }
 }

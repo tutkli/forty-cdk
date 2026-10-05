@@ -1,7 +1,7 @@
 import { booleanAttribute, DestroyRef, Directive, ElementRef, inject, input } from '@angular/core';
 import type { FormValueControl } from '@angular/forms/signals';
 
-import { TextValueControlBase } from 'forty-cdk/core';
+import { isImeComposing, TextValueControlBase } from 'forty-cdk/core';
 import { FOR_SEARCH_GROUP, type ForSearchContext } from './search-context';
 
 /**
@@ -116,7 +116,7 @@ export class ForSearch
 
   /** Clears a non-empty value on `Escape`, consuming the key only when it does. */
   protected onKeyDown(event: KeyboardEvent): void {
-    if (event.key !== 'Escape' || event.isComposing || !this.clearOnEscape()) {
+    if (event.key !== 'Escape' || isImeComposing(event) || !this.clearOnEscape()) {
       return;
     }
     if (this.effectiveDisabled() || this.readonly() || this.value() === '') {

@@ -146,6 +146,11 @@ export interface ModalShellConfig {
 export interface ModalShellHandle {
   /** True while the shell activated focus-trap + scroll-lock + inert (modal mode). */
   readonly isModal: () => boolean;
+  /**
+   * Whether the surface's dismissible layer is active and no layer owning the pointer channel is
+   * stacked above it, so an outside press is the surface's to handle.
+   */
+  readonly isTopmostPointerLayer: () => boolean;
 }
 
 /**
@@ -382,5 +387,6 @@ export function injectModalShell(config: ModalShellConfig): ModalShellHandle {
 
   return {
     isModal: () => activatedAsModal,
+    isTopmostPointerLayer: () => dismissible.isTopmostFor('pointer'),
   };
 }

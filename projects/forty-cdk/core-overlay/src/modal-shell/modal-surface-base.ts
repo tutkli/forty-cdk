@@ -8,7 +8,7 @@ import {
   type VetoableEvent,
   type VetoableNativeEvent,
 } from 'forty-cdk/core';
-import { type ModalShellConfig } from './modal-shell';
+import { type ModalShellConfig, type ModalShellHandle } from './modal-shell';
 
 /**
  * Abstract base for free-floating modal-surface primitives — a directive that
@@ -199,6 +199,7 @@ export abstract class ModalSurfaceBase<Reason extends string> {
   readonly #describedByIds = signal<readonly string[]>([]);
   readonly #backdropEl = signal<HTMLElement | null>(null);
   readonly #lastCloseValue = signal<unknown>(undefined);
+  #shell: ModalShellHandle | null = null;
 
   /**
    * Resolved `aria-labelledby`: a consumer-set static value when present, else
@@ -286,6 +287,23 @@ export abstract class ModalSurfaceBase<Reason extends string> {
    * declarative consumers never need this.
    */
   readonly backdropElement = this.#backdropEl.asReadonly();
+
+  /**
+   * Keeps the handle the subclass's `injectModalShell(this.modalShellConfig())` call returned, which
+   * the backdrop piece reads through {@link isTopmostPointerLayer}. Called once from the subclass
+   * constructor.
+   */
+  protected attachModalShell(shell: ModalShellHandle): void {
+    this.#shell = shell;
+  }
+
+  /**
+   * Whether this surface is the topmost layer owning the pointer channel. Read by the backdrop
+   * piece through the internal context to decide whether a press on it is this surface's.
+   */
+  private isTopmostPointerLayer(): boolean {
+    return this.#shell?.isTopmostPointerLayer() ?? true;
+  }
 
   protected modalShellConfig(): ModalShellConfig {
     return {

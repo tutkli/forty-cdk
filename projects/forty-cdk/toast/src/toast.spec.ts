@@ -623,6 +623,29 @@ describe('ForToast (declarative)', () => {
       expect(r.instance.closes).toEqual(['escape']);
     });
 
+    it('leaves an Escape that cancels an IME composition to the IME', async () => {
+      const r = renderHost(DeclarativeHost);
+      const t = $(r.el, 'declarative')!;
+      const composing = new KeyboardEvent('keydown', {
+        key: 'Escape',
+        isComposing: true,
+        bubbles: true,
+        cancelable: true,
+      });
+      t.dispatchEvent(composing);
+      t.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'Escape',
+          keyCode: 229,
+          bubbles: true,
+          cancelable: true,
+        }),
+      );
+      await r.flush();
+      expect(r.instance.closes).toEqual([]);
+      expect(composing.defaultPrevented).toBe(false);
+    });
+
     it('Escape is a no-op when dismissible=false', async () => {
       const r = renderHost(DeclarativeHost);
       r.instance.dismissible.set(false);

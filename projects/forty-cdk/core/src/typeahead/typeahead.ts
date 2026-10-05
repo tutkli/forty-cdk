@@ -1,5 +1,7 @@
 import { DestroyRef, inject, signal } from '@angular/core';
 
+import { isImeComposing } from '../keyboard-navigation/ime-composition';
+
 export interface TypeaheadOptions {
   /** Milliseconds before the buffer is reset. Default 500. */
   debounceMs?: number;
@@ -45,7 +47,7 @@ export class Typeahead {
    * activate only when this returns `false`.
    */
   handle(event: KeyboardEvent): boolean {
-    if (event.isComposing || isShortcutChord(event)) {
+    if (isImeComposing(event) || isShortcutChord(event)) {
       return false;
     }
     const ch = event.key;

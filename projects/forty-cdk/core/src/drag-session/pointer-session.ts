@@ -1,3 +1,5 @@
+import { isImeComposing } from '../keyboard-navigation/ime-composition';
+
 /**
  * Framework-free pointer-drag session transport.
  *
@@ -303,7 +305,7 @@ export function createPointerDragSession(opts: PointerDragSessionOptions): Point
 
     if (opts.cancelOnEscape) {
       const escape = (event: KeyboardEvent): void => {
-        if (armed && event.key === 'Escape') {
+        if (armed && event.key === 'Escape' && !isImeComposing(event)) {
           event.preventDefault();
           event.stopPropagation();
           abort();

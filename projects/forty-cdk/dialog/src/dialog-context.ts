@@ -1,6 +1,7 @@
 import { inject, InjectionToken, type Signal } from '@angular/core';
 
 import { assertRootContext, orphanContextError } from 'forty-cdk/core';
+import { type ModalSurfacePointerContext } from 'forty-cdk/core-overlay';
 
 export type ForDialogCloseReason =
   | 'escape'
@@ -87,10 +88,11 @@ export interface DialogRegistrationContext {
 
 /**
  * The dialog's internal coordination surface: everything {@link ForDialogContext} publishes plus
- * the {@link DialogRegistrationContext} protocol. It is the type the pieces read
- * {@link FOR_DIALOG_CONTEXT} at.
+ * the {@link DialogRegistrationContext} protocol and the backdrop's topmost-layer check. It is the
+ * type the pieces read {@link FOR_DIALOG_CONTEXT} at.
  */
-export interface DialogContext extends ForDialogContext, DialogRegistrationContext {}
+export interface DialogContext
+  extends ForDialogContext, DialogRegistrationContext, ModalSurfacePointerContext {}
 
 /**
  * DI token for the dialog's coordination surface, provided by `[forDialog]`.

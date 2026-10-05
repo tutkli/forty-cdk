@@ -1,3 +1,5 @@
+import { isImeComposing } from '../keyboard-navigation/ime-composition';
+
 /**
  * Shared keyboard resolvers for container-level drag-reorder coordinators
  * (`ForTreeNodeDrag`, `ForListboxReorder`). Framework-free and unit-testable in
@@ -28,7 +30,7 @@ export function isDragLiftKey(event: KeyboardEvent): boolean {
  * @param event The keydown event fired while an item is lifted.
  */
 export function resolveLiftedDragControl(event: KeyboardEvent): 'cancel' | 'commit' | null {
-  if (event.key === 'Escape' || event.key === 'Tab') {
+  if ((event.key === 'Escape' && !isImeComposing(event)) || event.key === 'Tab') {
     return 'cancel';
   }
   if (event.key === ' ' || event.key === 'Enter') {

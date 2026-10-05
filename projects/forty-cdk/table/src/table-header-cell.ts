@@ -9,7 +9,7 @@ import {
   signal,
 } from '@angular/core';
 
-import { type ForTableCellHandle, registerHandle } from 'forty-cdk/core';
+import { type ForTableCellHandle, isImeComposing, registerHandle } from 'forty-cdk/core';
 import {
   coerceSticky,
   hostHasDraggable,
@@ -209,7 +209,7 @@ export class ForTableHeaderCell {
       this.ctx.handleCellKeydown(event, this.#host);
       return;
     }
-    const escape = event.key === 'Escape';
+    const escape = event.key === 'Escape' && !isImeComposing(event);
     if (!escape && !(event.key === 'Tab' && event.target !== this.#host)) {
       return;
     }

@@ -5,6 +5,7 @@ import {
   registerHandle,
   hostId,
   isHoverCapablePointer,
+  isImeComposing,
   resolveListNavigation,
 } from 'forty-cdk/core';
 import {
@@ -133,7 +134,7 @@ export class ForNavigationMenuTrigger {
       this.menu.toggle(this.value());
       return;
     }
-    if (event.key === 'Escape' && this.isOpen()) {
+    if (event.key === 'Escape' && !isImeComposing(event) && this.isOpen()) {
       event.preventDefault();
       event.stopPropagation();
       this.menu.close();

@@ -80,3 +80,42 @@ test.describe('Dialog', () => {
     await expect(el(page, 'trigger')).not.toBeFocused();
   });
 });
+
+test.describe('Dialog under IME composition', () => {
+  test.skip(({ browserName }) => browserName !== 'chromium', 'drives the IME through CDP');
+
+  test('an Escape that cancels a composition leaves the dialog open', async ({ page }) => {
+    await gotoFixture(page, 'dialog');
+    await el(page, 'trigger').click();
+    await el(page, 'text-input').focus();
+
+    const keys: { key: string; isComposing: boolean }[] = [];
+    await page.exposeFunction('recordKey', (key: string, isComposing: boolean) => {
+      keys.push({ key, isComposing });
+    });
+    await page.evaluate(() => {
+      document.addEventListener(
+        'keydown',
+        (event) =>
+          (window as unknown as { recordKey(key: string, isComposing: boolean): void }).recordKey(
+            event.key,
+            event.isComposing,
+          ),
+        true,
+      );
+    });
+
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send('Input.imeSetComposition', { text: 'に', selectionStart: 1, selectionEnd: 1 });
+    await page.keyboard.press('Escape');
+
+    await expect.poll(() => keys).toContainEqual({ key: 'Escape', isComposing: true });
+    await expect(el(page, 'dialog')).toBeVisible();
+    await expect(el(page, 'last-close-reason')).toHaveText('none');
+
+    await cdp.send('Input.insertText', { text: '' });
+    await page.keyboard.press('Escape');
+    await expect(el(page, 'dialog')).toHaveCount(0);
+    await expect(el(page, 'last-close-reason')).toHaveText('escape');
+  });
+});

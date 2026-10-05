@@ -1,7 +1,7 @@
 import { inject, InjectionToken, type Signal } from '@angular/core';
 
 import { assertRootContext, orphanContextError } from 'forty-cdk/core';
-import { type ForDrawerSide } from 'forty-cdk/core-overlay';
+import { type ForDrawerSide, type ModalSurfacePointerContext } from 'forty-cdk/core-overlay';
 
 export { type ForDrawerSide };
 
@@ -140,10 +140,11 @@ export interface DrawerRegistrationContext {
 
 /**
  * The drawer's internal coordination surface: everything {@link ForDrawerContext} publishes plus
- * the {@link DrawerRegistrationContext} protocol. It is the type the pieces read
- * {@link FOR_DRAWER_CONTEXT} at.
+ * the {@link DrawerRegistrationContext} protocol and the backdrop's topmost-layer check. It is the
+ * type the pieces read {@link FOR_DRAWER_CONTEXT} at.
  */
-export interface DrawerContext extends ForDrawerContext, DrawerRegistrationContext {}
+export interface DrawerContext
+  extends ForDrawerContext, DrawerRegistrationContext, ModalSurfacePointerContext {}
 
 /**
  * DI token for the drawer's coordination surface, provided by `[forDrawer]`.

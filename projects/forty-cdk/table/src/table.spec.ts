@@ -2389,6 +2389,20 @@ describe('ForTable', () => {
       expect(document.activeElement).toBe(cell);
     });
 
+    it('an Escape that cancels an IME composition leaves focus inside the cell widget', async () => {
+      const { el, flush } = renderHost(CellEntryGridHost);
+      const cell = el.querySelector<HTMLElement>('[data-testid="c-a-0"]')!;
+      const btn = el.querySelector<HTMLElement>('[data-testid="btn-0"]')!;
+      cell.focus();
+      press(cell, 'Enter');
+      await flush();
+
+      const esc = press(btn, 'Escape', { isComposing: true });
+      await flush();
+      expect(esc.defaultPrevented).toBe(false);
+      expect(document.activeElement).toBe(btn);
+    });
+
     it('an ArrowRight bubbling from inside a cell widget does not navigate the grid', async () => {
       const { el, flush } = renderHost(CellEntryGridHost);
       const cell = el.querySelector<HTMLElement>('[data-testid="c-a-0"]')!;
