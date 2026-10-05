@@ -93,6 +93,26 @@ class HoverCardWithArrowHost {
   readonly isOpen = signal(false);
 }
 
+@Component({
+  imports: [ForHoverCard, ForHoverCardTrigger, ForHoverCardContent],
+  template: `
+    <span forHoverCard #card="forHoverCard" [(open)]="isOpen" [openDelay]="0" [closeDelay]="0">
+      <a forHoverCardTrigger href="/x">Trigger</a>
+      @if (card.open()) {
+        <div forHoverCardContent>
+          <p>Bio</p>
+          <button type="button">Follow</button>
+          <button type="button">Message</button>
+        </div>
+      }
+    </span>
+    <button type="button" class="outside">Outside</button>
+  `,
+})
+class InteractiveHoverCardHost {
+  readonly isOpen = signal(false);
+}
+
 function pointerEvent(
   type: 'pointerenter' | 'pointerleave',
   relatedTarget: EventTarget | null = null,
@@ -509,6 +529,22 @@ describe('ForHoverCard', () => {
       expect(fixture.componentInstance.isOpen()).toBe(false);
     });
 
+    it('opens on a later keyboard focus after a press that did not focus the trigger', async () => {
+      const { fixture, query, flush } = renderHost(HoverCardHost);
+      await flush();
+      const trigger = query<HTMLAnchorElement>('a')!;
+
+      vi.useFakeTimers();
+      trigger.dispatchEvent(new PointerEvent('pointerdown', { pointerType: 'mouse' }));
+      trigger.dispatchEvent(new PointerEvent('pointerup', { pointerType: 'mouse' }));
+      vi.advanceTimersByTime(1000);
+      trigger.dispatchEvent(new FocusEvent('focus'));
+      fixture.detectChanges();
+      vi.useRealTimers();
+
+      expect(fixture.componentInstance.isOpen()).toBe(true);
+    });
+
     it('opens on a keyboard focus that follows a suppressed touch tap', async () => {
       const { fixture, query, flush } = renderHost(HoverCardHost);
       await flush();
@@ -641,6 +677,156 @@ describe('ForHoverCard', () => {
       await r.flush();
       expect(r.instance.eCount).toBe(2);
       expect(r.instance.isOpen()).toBe(true);
+    });
+  });
+
+  describe('focus inside the content', () => {
+    async function openWithFocusInside() {
+      const r = renderHost(InteractiveHoverCardHost);
+      await r.flush();
+      const trigger = r.query<HTMLAnchorElement>('a')!;
+      trigger.dispatchEvent(pointerEvent('pointerenter'));
+      await r.flush();
+      const content = document.body.querySelector<HTMLElement>('[forHoverCardContent]')!;
+      content.dispatchEvent(pointerEvent('pointerenter'));
+      trigger.dispatchEvent(pointerEvent('pointerleave'));
+      const follow = content.querySelector<HTMLButtonElement>('button')!;
+      follow.focus();
+      await r.flush();
+      expect(document.activeElement).toBe(follow);
+      return { ...r, trigger, content, follow };
+    }
+
+    it('stays open when the pointer leaves the card while a control inside it holds focus', async () => {
+      const { fixture, content, flush } = await openWithFocusInside();
+
+      content.dispatchEvent(pointerEvent('pointerleave'));
+      pointerMoveAway();
+      await flush();
+
+      expect(fixture.componentInstance.isOpen()).toBe(true);
+    });
+
+    it('stays open while focus moves between controls inside the card', async () => {
+      const { fixture, content, follow, flush } = await openWithFocusInside();
+      content.dispatchEvent(pointerEvent('pointerleave'));
+      pointerMoveAway();
+
+      const message = content.querySelectorAll<HTMLButtonElement>('button')[1]!;
+      message.focus();
+      await flush();
+
+      expect(document.activeElement).not.toBe(follow);
+      expect(fixture.componentInstance.isOpen()).toBe(true);
+    });
+
+    it('closes once focus leaves the card and nothing else keeps it open', async () => {
+      const { fixture, query, content, flush } = await openWithFocusInside();
+      content.dispatchEvent(pointerEvent('pointerleave'));
+      pointerMoveAway();
+      await flush();
+
+      query<HTMLButtonElement>('.outside')!.focus();
+      await flush();
+
+      expect(fixture.componentInstance.isOpen()).toBe(false);
+    });
+
+    it('closes once focus leaves the card for no other element', async () => {
+      const { fixture, content, follow, flush } = await openWithFocusInside();
+      content.dispatchEvent(pointerEvent('pointerleave'));
+      pointerMoveAway();
+      await flush();
+
+      follow.blur();
+      await flush();
+
+      expect(fixture.componentInstance.isOpen()).toBe(false);
+    });
+
+    it('returns focus to the trigger when the browser blurs the control as the card is removed', async () => {
+      const { fixture, trigger, content, follow, flush } = await openWithFocusInside();
+      const remove = content.remove.bind(content);
+      let removals = 0;
+      content.remove = () => {
+        removals += 1;
+        follow.blur();
+        remove();
+      };
+
+      pressKey(follow, 'Escape');
+      await flush();
+
+      expect(removals).toBeGreaterThan(0);
+      expect(fixture.componentInstance.isOpen()).toBe(false);
+      expect(document.activeElement).toBe(trigger);
+    });
+
+    it('stays open through a document scroll while focus is inside the card', async () => {
+      const { fixture, flush } = await openWithFocusInside();
+
+      document.dispatchEvent(new Event('scroll'));
+      await flush();
+
+      expect(fixture.componentInstance.isOpen()).toBe(true);
+    });
+
+    it('returns focus to the trigger when Escape closes the card from inside it', async () => {
+      const { fixture, trigger, follow, flush } = await openWithFocusInside();
+
+      pressKey(follow, 'Escape');
+      await flush();
+
+      expect(fixture.componentInstance.isOpen()).toBe(false);
+      expect(document.activeElement).toBe(trigger);
+    });
+
+    it('does not reopen the card from the focus it returns to the trigger', async () => {
+      const { fixture, trigger, follow, flush } = await openWithFocusInside();
+
+      pressKey(follow, 'Escape');
+      await flush();
+      await flush();
+
+      expect(document.activeElement).toBe(trigger);
+      expect(fixture.componentInstance.isOpen()).toBe(false);
+    });
+
+    it('opens again on a later keyboard focus of the trigger', async () => {
+      const { fixture, trigger, follow, flush } = await openWithFocusInside();
+      pressKey(follow, 'Escape');
+      await flush();
+
+      trigger.blur();
+      trigger.focus();
+      await flush();
+
+      expect(fixture.componentInstance.isOpen()).toBe(true);
+    });
+
+    it('returns focus to the trigger when a consumer [(open)] write closes the card from inside it', async () => {
+      const { fixture, trigger, flush } = await openWithFocusInside();
+
+      fixture.componentInstance.isOpen.set(false);
+      await flush();
+
+      expect(document.activeElement).toBe(trigger);
+    });
+
+    it('leaves focus where it is when the card closes with focus outside it', async () => {
+      const { fixture, query, flush } = renderHost(InteractiveHoverCardHost);
+      await flush();
+      const trigger = query<HTMLAnchorElement>('a')!;
+      const outside = query<HTMLButtonElement>('.outside')!;
+      trigger.dispatchEvent(pointerEvent('pointerenter'));
+      await flush();
+      outside.focus();
+
+      pressKey(outside, 'Escape');
+      await flush();
+
+      expect(fixture.componentInstance.isOpen()).toBe(false);
+      expect(document.activeElement).toBe(outside);
     });
   });
 
@@ -1072,6 +1258,49 @@ describe('ForHoverCard', () => {
       await flush();
 
       expect(fixture.componentInstance.isOpen()).toBe(true);
+    });
+
+    it('keeps the open a keyboard focus armed through the scroll that reveals the trigger', async () => {
+      const { fixture, query, flush } = renderHost(HoverCardHost);
+      fixture.componentInstance.openDelay.set(700);
+      await flush();
+      const trigger = query<HTMLAnchorElement>('a')!;
+
+      trigger.dispatchEvent(new FocusEvent('focus'));
+      document.dispatchEvent(new Event('scroll'));
+      vi.advanceTimersByTime(700);
+      await flush();
+
+      expect(fixture.componentInstance.isOpen()).toBe(true);
+    });
+
+    it('ignores a scroll inside the card content', async () => {
+      const { fixture, flush } = renderHost(HoverCardHost);
+      fixture.componentInstance.isOpen.set(true);
+      await flush();
+      const content = document.body.querySelector<HTMLElement>('[forHoverCardContent]')!;
+
+      content.dispatchEvent(new Event('scroll'));
+      await flush();
+
+      expect(fixture.componentInstance.isOpen()).toBe(true);
+    });
+
+    it('ignores a scroll of a container that does not hold the trigger', async () => {
+      const { fixture, flush } = renderHost(HoverCardHost);
+      fixture.componentInstance.isOpen.set(true);
+      await flush();
+      const log = document.createElement('div');
+      document.body.appendChild(log);
+
+      log.dispatchEvent(new Event('scroll'));
+      await flush();
+      expect(fixture.componentInstance.isOpen()).toBe(true);
+
+      fixture.nativeElement.dispatchEvent(new Event('scroll'));
+      await flush();
+      expect(fixture.componentInstance.isOpen()).toBe(false);
+      log.remove();
     });
 
     it('reflects the scroll close through data-state', async () => {

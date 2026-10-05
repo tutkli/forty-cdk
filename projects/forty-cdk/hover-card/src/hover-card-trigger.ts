@@ -1,5 +1,5 @@
 import { Directive, effect, ElementRef, inject, input } from '@angular/core';
-import { isNonTouchPointer } from 'forty-cdk/core';
+import { createPressFocus, isNonTouchPointer } from 'forty-cdk/core';
 
 import { type ForHoverCardContext, injectHoverCardTriggerContext } from './hover-card-context';
 
@@ -13,8 +13,10 @@ import { type ForHoverCardContext, injectHoverCardTriggerContext } from './hover
  *
  * A touch tap does not open the card: a `pointerenter` rejected by the shared
  * `isNonTouchPointer` predicate is ignored (a pen still hovers), and the focus
- * that a tap induces is ignored too — only keyboard focus (focus not preceded
- * by a pointer interaction) opens the card. Because the trigger must already convey full
+ * that a tap induces is ignored too — only keyboard focus (focus that does not
+ * follow a pointer press on the trigger) opens the card, and a press that does
+ * not focus the trigger leaves a later keyboard focus opening it as usual.
+ * Because the trigger must already convey full
  * meaning on its own, touch / keyboard-only users miss nothing when the
  * preview stays closed, and keyboard focus is the touch-accessible way to
  * reveal it. This mirrors `ForTooltipTrigger`.
@@ -45,7 +47,8 @@ import { type ForHoverCardContext, injectHoverCardTriggerContext } from './hover
   host: {
     '[attr.data-state]': 'ctx().open() ? "open" : "closed"',
     '(pointerenter)': 'onPointerEnter($event)',
-    '(pointerdown)': 'onPointerDown($event)',
+    '(pointerdown)': 'onPointerDown()',
+    '(pointerup)': 'onPointerUp()',
     '(pointerleave)': 'onPointerLeave($event)',
     '(focus)': 'onFocus()',
     '(blur)': 'onBlur()',
@@ -68,7 +71,7 @@ export class ForHoverCardTrigger {
 
   protected readonly ctx = injectHoverCardTriggerContext(this.forHoverCardTrigger);
 
-  #lastPointerType: string | null = null;
+  readonly #pressFocus = createPressFocus();
 
   constructor() {
     const el = this.#host.nativeElement;
@@ -89,8 +92,12 @@ export class ForHoverCardTrigger {
     this.ctx().pointerEnterTrigger();
   }
 
-  protected onPointerDown(event: PointerEvent): void {
-    this.#lastPointerType = event.pointerType;
+  protected onPointerDown(): void {
+    this.#pressFocus.press();
+  }
+
+  protected onPointerUp(): void {
+    this.#pressFocus.release();
   }
 
   protected onPointerLeave(event: PointerEvent): void {
@@ -98,16 +105,14 @@ export class ForHoverCardTrigger {
   }
 
   protected onFocus(): void {
-    const pointerInduced = this.#lastPointerType !== null;
-    this.#lastPointerType = null;
-    if (pointerInduced) {
+    if (this.#pressFocus.consume()) {
       return;
     }
     this.ctx().focusTrigger();
   }
 
   protected onBlur(): void {
-    this.#lastPointerType = null;
+    this.#pressFocus.reset();
     this.ctx().blurTrigger();
   }
 }

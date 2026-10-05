@@ -179,6 +179,100 @@ describe('ScrollDismissDispatcher', () => {
       }
     });
 
+    describe('scope', () => {
+      let container: HTMLElement;
+      let trigger: HTMLElement;
+      let surface: HTMLElement;
+      let unrelated: HTMLElement;
+
+      beforeEach(() => {
+        container = document.createElement('div');
+        trigger = document.createElement('button');
+        container.appendChild(trigger);
+        surface = document.createElement('div');
+        unrelated = document.createElement('div');
+        document.body.append(container, surface, unrelated);
+      });
+
+      afterEach(() => {
+        container.remove();
+        surface.remove();
+        unrelated.remove();
+      });
+
+      function registerScoped(anchor: () => Element | null = () => trigger) {
+        const dispatcher = TestBed.inject(ScrollDismissDispatcher);
+        const hits = { count: 0 };
+        const off = dispatcher.register(() => (hits.count += 1), {
+          anchor,
+          surface: () => surface,
+        });
+        return { dispatcher, hits, off };
+      }
+
+      it('dismisses on a document scroll and on a scroll of a container holding the anchor', () => {
+        const { hits, off } = registerScoped();
+        try {
+          document.dispatchEvent(new Event('scroll'));
+          container.dispatchEvent(new Event('scroll'));
+          expect(hits.count).toBe(2);
+        } finally {
+          off();
+        }
+      });
+
+      it('skips a scroll inside the surface, yet still opens the suppression window', () => {
+        const { dispatcher, hits, off } = registerScoped();
+        const region = document.createElement('div');
+        surface.appendChild(region);
+        try {
+          region.dispatchEvent(new Event('scroll'));
+          expect(hits.count).toBe(0);
+          expect(dispatcher.isSuppressed()).toBe(true);
+        } finally {
+          off();
+        }
+      });
+
+      it('skips a scroll of a container that does not hold the anchor', () => {
+        const { hits, off } = registerScoped();
+        try {
+          unrelated.dispatchEvent(new Event('scroll'));
+          expect(hits.count).toBe(0);
+        } finally {
+          off();
+        }
+      });
+
+      it('dismisses on any scroll while the anchor is unset or detached', () => {
+        let anchorEl: Element | null = null;
+        const { hits, off } = registerScoped(() => anchorEl);
+        try {
+          unrelated.dispatchEvent(new Event('scroll'));
+          anchorEl = document.createElement('button');
+          unrelated.dispatchEvent(new Event('scroll'));
+          expect(hits.count).toBe(2);
+        } finally {
+          off();
+        }
+      });
+
+      it('scopes each registration on its own', () => {
+        const dispatcher = TestBed.inject(ScrollDismissDispatcher);
+        let unscoped = 0;
+        const offUnscoped = dispatcher.register(() => (unscoped += 1));
+        const { hits, off } = registerScoped();
+        try {
+          unrelated.dispatchEvent(new Event('scroll'));
+          expect(unscoped).toBe(1);
+          expect(hits.count).toBe(0);
+        } finally {
+          off();
+          offUnscoped();
+        }
+      });
+    });
+
     it('reports not suppressed while no subscriber is registered', () => {
       const dispatcher = TestBed.inject(ScrollDismissDispatcher);
       expect(dispatcher.isSuppressed()).toBe(false);

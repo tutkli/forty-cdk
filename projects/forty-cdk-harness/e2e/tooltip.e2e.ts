@@ -140,6 +140,22 @@ test.describe('Tooltip', () => {
     await expect(page.locator('[role="tooltip"]')).toHaveCount(0);
   });
 
+  test('Tab to a trigger below the fold opens the tooltip despite the scroll that reveals it', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'tooltip');
+    await el(page, 'far-before').focus();
+    const scrollBefore = await page.evaluate(() => window.scrollY);
+
+    await page.keyboard.press('Tab');
+    await expect(el(page, 'far-trigger')).toBeFocused();
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(scrollBefore);
+
+    await expect(el(page, 'far-tooltip')).toBeVisible();
+    await page.waitForTimeout(200);
+    await expect(el(page, 'far-tooltip')).toBeVisible();
+  });
+
   // A tap is not a hover, and the APG tooltip pattern is purely
   // descriptive for mouse / keyboard users — the keyboard-focus path is
   // the touch-accessible fallback. `ForTooltipTrigger` filters touch

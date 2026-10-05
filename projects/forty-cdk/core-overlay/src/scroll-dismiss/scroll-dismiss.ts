@@ -54,8 +54,10 @@ export interface ScrollDismissOptions {
    * ancestor scroll; implement as a no-op when the overlay is neither open nor
    * armed. Close synchronously and bypass any close delay and the skip-delay
    * window so a peer can't reopen instantly while the scroll is in flight.
+   *
+   * @param event The `scroll` event, whose target is the element that moved.
    */
-  dismiss(): void;
+  dismiss(event: Event): void;
   /**
    * Suppression window (ms) opens stay blocked after the last scroll. Defaults
    * to {@link DEFAULT_SCROLL_DISMISS_SUPPRESSION_MS}.
@@ -76,9 +78,9 @@ export function attachScrollDismiss(doc: Document, options: ScrollDismissOptions
   const suppression: PointerSuppression = createPointerSuppression(
     options.windowMs ?? DEFAULT_SCROLL_DISMISS_SUPPRESSION_MS,
   );
-  const onScroll = (): void => {
+  const onScroll = (event: Event): void => {
     suppression.suppress();
-    options.dismiss();
+    options.dismiss(event);
   };
   const controller = new AbortController();
   doc.addEventListener('scroll', onScroll, {

@@ -17,6 +17,7 @@ import {
   type ForComboboxContext,
   ForComboboxTrigger,
 } from 'forty-cdk/combobox';
+import { FOR_HOVER_CARD_CONTEXT, ForHoverCardArrow } from 'forty-cdk/hover-card';
 import { FOR_LISTBOX_CONTEXT, ForListboxOption } from 'forty-cdk/listbox';
 import { FOR_NAVIGATION_MENU_CONTEXT, ForNavigationMenuList } from 'forty-cdk/navigation-menu';
 import { FOR_POPOVER_CONTEXT, ForPopoverClose } from 'forty-cdk/popover';
@@ -183,6 +184,14 @@ class ImpostorListboxHost {}
 class ImpostorNavigationMenuHost {}
 
 @Component({
+  imports: [ForHoverCardArrow],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [{ provide: FOR_HOVER_CARD_CONTEXT, useValue: {} }],
+  template: `<span forHoverCardArrow></span>`,
+})
+class ImpostorHoverCardHost {}
+
+@Component({
   imports: [ForPopoverClose],
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [{ provide: FOR_POPOVER_CONTEXT, useValue: {} }],
@@ -318,6 +327,15 @@ const GUARDED: readonly GuardedRoot[] = [
     root: '[forDrawer]',
     piece: 'ForDrawerTitle',
     host: ImpostorDrawerHost,
+  },
+  {
+    entryPoint: 'hover-card',
+    source: 'hover-card/src/hover-card-context.ts',
+    calls: 1,
+    token: 'FOR_HOVER_CARD_CONTEXT',
+    root: '[forHoverCard]',
+    piece: 'ForHoverCardArrow',
+    host: ImpostorHoverCardHost,
   },
   {
     entryPoint: 'listbox',

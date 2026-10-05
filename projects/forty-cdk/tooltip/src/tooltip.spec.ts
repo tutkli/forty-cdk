@@ -546,6 +546,41 @@ describe('ForTooltip', () => {
       expect(r.instance.isOpen()).toBe(false);
     });
 
+    it('opens on a later keyboard focus after a press that did not focus the trigger', async () => {
+      const r = renderHost(TooltipHost);
+      r.instance.openDelay.set(0);
+      r.instance.closeDelay.set(0);
+      await flush(r.fixture);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+
+      vi.useFakeTimers();
+      trigger.dispatchEvent(new PointerEvent('pointerdown', { pointerType: 'mouse' }));
+      trigger.dispatchEvent(new PointerEvent('pointerup', { pointerType: 'mouse' }));
+      vi.advanceTimersByTime(1000);
+      trigger.dispatchEvent(new FocusEvent('focus'));
+      r.fixture.detectChanges();
+
+      expect(r.instance.isOpen()).toBe(true);
+    });
+
+    it('ignores the focus a touch tap induces after a long press is released', async () => {
+      const r = renderHost(TooltipHost);
+      r.instance.openDelay.set(0);
+      r.instance.closeDelay.set(0);
+      await flush(r.fixture);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+
+      vi.useFakeTimers();
+      trigger.dispatchEvent(new PointerEvent('pointerdown', { pointerType: 'touch' }));
+      vi.advanceTimersByTime(800);
+      trigger.dispatchEvent(new PointerEvent('pointerup', { pointerType: 'touch' }));
+      vi.advanceTimersByTime(50);
+      trigger.dispatchEvent(new FocusEvent('focus'));
+      r.fixture.detectChanges();
+
+      expect(r.instance.isOpen()).toBe(false);
+    });
+
     it('opens on a keyboard focus not preceded by any pointer interaction', async () => {
       const r = renderHost(TooltipHost);
       r.instance.openDelay.set(0);
@@ -1884,6 +1919,67 @@ describe('ForTooltip', () => {
       tooltip.scheduleOpen('hover');
       r.fixture.detectChanges();
       expect(r.instance.isOpen()).toBe(false);
+    });
+
+    it('keeps the open a keyboard focus armed through the scroll that reveals the trigger', async () => {
+      const r = renderHost(TooltipHost);
+      await flush(r.fixture);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+
+      vi.useFakeTimers();
+      trigger.dispatchEvent(new FocusEvent('focus'));
+      document.dispatchEvent(new Event('scroll'));
+      vi.advanceTimersByTime(700);
+      r.fixture.detectChanges();
+
+      expect(r.instance.isOpen()).toBe(true);
+    });
+
+    it('keeps a tooltip open while its trigger holds focus through a document scroll', async () => {
+      const r = renderHost(TooltipHost);
+      r.instance.openDelay.set(0);
+      await flush(r.fixture);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+      trigger.dispatchEvent(new FocusEvent('focus'));
+      await flush(r.fixture);
+      expect(r.instance.isOpen()).toBe(true);
+
+      document.dispatchEvent(new Event('scroll'));
+      await flush(r.fixture);
+
+      expect(r.instance.isOpen()).toBe(true);
+      expect(trigger.getAttribute('aria-describedby')).toBe(
+        document.querySelector('[role="tooltip"]')!.id,
+      );
+    });
+
+    it('ignores a scroll inside the tooltip content', async () => {
+      const r = renderHost(TooltipHost);
+      r.instance.isOpen.set(true);
+      await flush(r.fixture);
+      const content = document.querySelector<HTMLElement>('[role="tooltip"]')!;
+
+      content.dispatchEvent(new Event('scroll'));
+      await flush(r.fixture);
+
+      expect(r.instance.isOpen()).toBe(true);
+    });
+
+    it('ignores a scroll of a container that does not hold the trigger', async () => {
+      const r = renderHost(TooltipHost);
+      r.instance.isOpen.set(true);
+      await flush(r.fixture);
+      const log = document.createElement('div');
+      document.body.appendChild(log);
+
+      log.dispatchEvent(new Event('scroll'));
+      await flush(r.fixture);
+      expect(r.instance.isOpen()).toBe(true);
+
+      r.fixture.nativeElement.dispatchEvent(new Event('scroll'));
+      await flush(r.fixture);
+      expect(r.instance.isOpen()).toBe(false);
+      log.remove();
     });
 
     it('reflects the scroll close through data-state', async () => {

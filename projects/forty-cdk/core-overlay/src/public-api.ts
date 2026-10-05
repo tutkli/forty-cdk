@@ -149,4 +149,7 @@ export {
   type Point,
   resolveGraceSide,
 } from './pointer-grace/pointer-grace';
-export { ScrollDismissDispatcher } from './scroll-dismiss/scroll-dismiss-dispatcher';
+export {
+  ScrollDismissDispatcher,
+  type ScrollDismissScope,
+} from './scroll-dismiss/scroll-dismiss-dispatcher';
