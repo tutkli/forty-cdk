@@ -18,6 +18,7 @@ import {
   composeWithTime,
   createSingleSlot,
   type FieldGranularity,
+  FOR_CALENDAR_HOST,
   FOR_DATE_FIELD_HOST,
   FOR_TIME_VALUE_SOURCE,
   fortyError,
@@ -48,8 +49,9 @@ import { FOR_DATE_PICKER_DEFAULTS } from 'forty-cdk/defaults';
  * variant. Mounting is the consumer's job — wrap `[forDatePickerContent]` with `@if (open())`.
  *
  * The projected `ForCalendar` is two-way bound by the consumer and forwarded `[min]` / `[max]` /
- * `[isDateUnavailable]` from the picker's accessors. On selection the picker mirrors the value,
- * flips `touched` and — with the default `closeOnSelect` — closes the surface.
+ * `[isDateUnavailable]` from the picker's accessors. It takes the picker's `readonly` and
+ * `disabled` without a binding. On selection the picker mirrors the value, flips `touched` and —
+ * with the default `closeOnSelect` — closes the surface.
  *
  * Setting `granularity` finer than `'day'` makes it a date-time picker: project a `[forTimeField]`
  * beside the calendar and bind both children **one-way** to `picker.value()`, and the picker grafts
@@ -129,6 +131,7 @@ import { FOR_DATE_PICKER_DEFAULTS } from 'forty-cdk/defaults';
   providers: [
     { provide: FOR_DATE_PICKER_CONTEXT, useExisting: ForDatePicker },
     { provide: FOR_DATE_FIELD_HOST, useExisting: ForDatePicker },
+    { provide: FOR_CALENDAR_HOST, useExisting: ForDatePicker },
   ],
 })
 export class ForDatePicker<D>
@@ -261,18 +264,6 @@ export class ForDatePicker<D>
         return [serializeISODate(this.adapter, value, this.granularity(), 'ForDatePicker')];
       }),
       disabled: this.effectiveDisabled,
-    });
-
-    // Eager validation: a date-time picker needs a time-capable adapter. Fail
-    // loudly as soon as the granularity input settles, rather than on first
-    // selection deep in a subscription. The throw is raised during change
-    // detection (inside this `effect`) and propagates through Angular's error
-    // handling, so a day-only adapter misconfiguration is surfaced — never
-    // silently swallowed.
-    effect(() => {
-      if (this.granularity() !== 'day') {
-        this.#time();
-      }
     });
 
     // Calendar selection bridge. This `effect` does no state derivation — it

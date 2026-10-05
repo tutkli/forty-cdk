@@ -13,6 +13,18 @@ test.describe('DatePicker', () => {
     await expectFocused(el(page, FOCUSED_CELL));
   });
 
+  for (const key of ['ArrowDown', 'Alt+ArrowDown', 'ArrowUp']) {
+    test(`${key} on the trigger opens and moves focus to the calendar focused cell`, async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'date-picker');
+      await el(page, 'trigger').focus();
+      await page.keyboard.press(key);
+      await expect(el(page, 'content')).toBeVisible();
+      await expectFocused(el(page, FOCUSED_CELL));
+    });
+  }
+
   test('Escape closes and returns focus to the trigger', async ({ page }) => {
     await gotoFixture(page, 'date-picker');
     await el(page, 'trigger').click();
@@ -119,16 +131,21 @@ test.describe('DateRangePicker (range selection)', () => {
     await expect(el(page, 'trigger')).toContainText('June 20, 2026');
   });
 
-  test('mid-selection anchor click keeps surface open and shows no range text yet', async ({
+  test('a mid-selection anchor keeps the committed range, and Escape leaves it in place', async ({
     page,
   }) => {
     await gotoFixture(page, 'date-picker', { range: '1' });
     await el(page, 'trigger').click();
     await expect(el(page, 'content')).toBeVisible();
 
-    await el(page, 'cell-2026-6-10').click();
+    await el(page, 'cell-2026-6-20').click();
     await expect(el(page, 'content')).toBeVisible();
+    await expect(el(page, 'trigger')).toContainText('June 10, 2026');
+    await expect(el(page, 'trigger')).toContainText('June 15, 2026');
 
-    await expect(el(page, 'trigger')).toHaveText('Pick a range');
+    await page.keyboard.press('Escape');
+    await expect(el(page, 'content')).toHaveCount(0);
+    await expect(el(page, 'trigger')).toContainText('June 10, 2026');
+    await expect(el(page, 'trigger')).toContainText('June 15, 2026');
   });
 });

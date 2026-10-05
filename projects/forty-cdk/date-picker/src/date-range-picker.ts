@@ -12,7 +12,9 @@ import {
 import type { FormValueControl } from '@angular/forms/signals';
 
 import {
+  clampToBounds,
   type DateRange,
+  FOR_CALENDAR_HOST,
   fortyError,
   injectDateAdapter,
   injectHiddenInput,
@@ -45,9 +47,12 @@ import { FOR_DATE_RANGE_PICKER_DEFAULTS } from 'forty-cdk/defaults';
  *
  * Project a `ForCalendar` in `selectionMode="range"` inside
  * `[forDatePickerContent]` and bind its `[(range)]` to `picker.value`; the root
- * mirrors each committed range, flips `touched`, and — when `closeOnSelect` is
- * on (default) — closes the surface once both endpoints are set. Range is
- * day-granular in v1 (no time composition).
+ * mirrors each committed range clamped into `[minDate, maxDate]`, flips
+ * `touched`, and — when `closeOnSelect` is on (default) — closes the surface
+ * once both endpoints are set. The first click of a new selection leaves the
+ * committed range in place, so abandoning it keeps the previous value. The
+ * calendar takes the picker's `readonly` and `disabled` without a binding.
+ * Range is day-granular in v1 (no time composition).
  *
  * @typeParam D The adapter's immutable date type.
  *
@@ -82,10 +87,12 @@ import { FOR_DATE_RANGE_PICKER_DEFAULTS } from 'forty-cdk/defaults';
     '[attr.dir]': 'dir()',
     '[attr.data-state]': 'open() ? "open" : "closed"',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
+    '[attr.data-readonly]': 'readonly() ? "" : null',
   },
   providers: [
     { provide: FOR_DATE_PICKER_CONTEXT, useExisting: ForDateRangePicker },
     { provide: FOR_DATE_RANGE_PICKER_CONTEXT, useExisting: ForDateRangePicker },
+    { provide: FOR_CALENDAR_HOST, useExisting: ForDateRangePicker },
   ],
 })
 export class ForDateRangePicker<D>
@@ -199,7 +206,15 @@ export class ForDateRangePicker<D>
         if (this.readonly() || this.effectiveDisabled()) {
           return;
         }
-        this.value.set(next as DateRange<D> | null);
+        const range = next as DateRange<D> | null;
+        this.value.set(
+          range === null
+            ? null
+            : {
+                start: clampToBounds(this.adapter, range.start, this.minDate(), this.maxDate()),
+                end: clampToBounds(this.adapter, range.end, this.minDate(), this.maxDate()),
+              },
+        );
         this.markTouched();
         if (next !== null && this.closeOnSelect()) {
           this.close();

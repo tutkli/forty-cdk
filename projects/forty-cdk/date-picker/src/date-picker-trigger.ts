@@ -36,6 +36,10 @@ import { type ForDatePickerContext, injectDatePickerTriggerContext } from './dat
  * reflected non-destructively — the directive only removes the attribute when
  * it set it itself — and `data-disabled=""` stays as the styling hook.
  *
+ * Keyboard: Enter / Space toggle through native button activation, and
+ * ArrowDown, Alt+ArrowDown and ArrowUp open the surface, which moves focus to
+ * the calendar.
+ *
  * The trigger is exempt from the surface's dismissible layer — its own click
  * toggles open/close, so an outside-pointer dismissal never races with it.
  *
@@ -64,6 +68,7 @@ import { type ForDatePickerContext, injectDatePickerTriggerContext } from './dat
     '[attr.data-disabled]': 'ctx().effectiveDisabled() ? "" : null',
     '[attr.data-readonly]': 'ctx().readonly() ? "" : null',
     '(click)': 'onClick()',
+    '(keydown)': 'onKeyDown($event)',
     '(focusout)': 'onFocusOut($event)',
   },
 })
@@ -103,6 +108,17 @@ export class ForDatePickerTrigger {
 
   protected onClick(): void {
     this.ctx().toggle();
+  }
+
+  protected onKeyDown(event: KeyboardEvent): void {
+    const ctx = this.ctx();
+    if (ctx.effectiveDisabled() || (event.key !== 'ArrowDown' && event.key !== 'ArrowUp')) {
+      return;
+    }
+    event.preventDefault();
+    if (!ctx.open()) {
+      ctx.toggle();
+    }
   }
 
   protected onFocusOut(event: FocusEvent): void {

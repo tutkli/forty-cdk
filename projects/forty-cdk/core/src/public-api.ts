@@ -92,6 +92,7 @@ export {
   resolveActiveElement,
   resolveEventTarget,
 } from './composed-tree/composed-tree';
+export { type CalendarHost, FOR_CALENDAR_HOST } from './datetime/calendar-host';
 export { assertTimeCapable, compareDateOf, injectDateAdapter } from './datetime/date-adapter';
 export { DateFieldEngine } from './datetime/date-field-engine';
 export { type DateRange } from './datetime/date-range';

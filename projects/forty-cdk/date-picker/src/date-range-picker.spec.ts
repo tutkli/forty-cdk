@@ -21,6 +21,7 @@ import {
 } from 'forty-cdk/calendar';
 import { type DateRange, NativeDateAdapter, provideNativeDateAdapter } from 'forty-cdk/shared';
 import { ForField, ForFieldDescription, ForFieldError, ForLabel } from 'forty-cdk/field';
+import { pressKey } from 'forty-cdk/testing';
 
 import { ForDatePickerContent } from './date-picker-content';
 import { ForDatePickerTrigger } from './date-picker-trigger';
@@ -261,6 +262,169 @@ describe('ForDateRangePicker', () => {
 
       expect(r.instance.value()).not.toBeNull();
       expect(r.instance.open()).toBe(true);
+    });
+
+    it('keeps the committed range while a new anchor is pending, and Escape leaves it intact', async () => {
+      const r = renderHost(Host);
+      r.instance.value.set({ start: new Date(2026, 5, 10), end: new Date(2026, 5, 15) });
+      await open(r);
+
+      cell('2026-6-20').click();
+      await flush(r.fixture);
+
+      const pending = r.instance.value()!;
+      expect(adapter.isSameDay(pending.start, new Date(2026, 5, 10))).toBe(true);
+      expect(adapter.isSameDay(pending.end, new Date(2026, 5, 15))).toBe(true);
+
+      content()!.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+      );
+      await flush(r.fixture);
+
+      const kept = r.instance.value()!;
+      expect(r.instance.open()).toBe(false);
+      expect(adapter.isSameDay(kept.start, new Date(2026, 5, 10))).toBe(true);
+      expect(adapter.isSameDay(kept.end, new Date(2026, 5, 15))).toBe(true);
+    });
+
+    it('replaces the committed range only when the second click completes the new one', async () => {
+      const r = renderHost(Host);
+      r.instance.value.set({ start: new Date(2026, 5, 10), end: new Date(2026, 5, 15) });
+      await open(r);
+
+      cell('2026-6-20').click();
+      await flush(r.fixture);
+      cell('2026-6-25').click();
+      await flush(r.fixture);
+
+      const range = r.instance.value()!;
+      expect(adapter.isSameDay(range.start, new Date(2026, 5, 20))).toBe(true);
+      expect(adapter.isSameDay(range.end, new Date(2026, 5, 25))).toBe(true);
+    });
+  });
+
+  describe('read-only and disabled reach the projected calendar', () => {
+    it('reflects data-readonly on the root while read-only, and clears it', async () => {
+      const r = renderHost(Host);
+      const root = r.query('[forDateRangePicker]')!;
+      expect(root.hasAttribute('data-readonly')).toBe(false);
+
+      r.instance.readonly.set(true);
+      await flush(r.fixture);
+      expect(root.getAttribute('data-readonly')).toBe('');
+
+      r.instance.readonly.set(false);
+      await flush(r.fixture);
+      expect(root.hasAttribute('data-readonly')).toBe(false);
+    });
+
+    it('makes a two-way bound calendar read-only: two picks commit nothing and paint no band', async () => {
+      const r = renderHost(Host);
+      r.instance.readonly.set(true);
+      await open(r);
+
+      expect(document.querySelector('[forCalendar]')!.getAttribute('data-readonly')).toBe('');
+
+      cell('2026-6-10').click();
+      await flush(r.fixture);
+      cell('2026-6-15').click();
+      await flush(r.fixture);
+
+      expect(r.instance.value()).toBeNull();
+      expect(cell('2026-6-10').hasAttribute('data-range-start')).toBe(false);
+      expect(cell('2026-6-12').getAttribute('aria-selected')).toBe('false');
+      expect(r.instance.open()).toBe(true);
+    });
+
+    it('makes a two-way bound calendar disabled while the picker is disabled', async () => {
+      const r = renderHost(Host);
+      r.instance.disabled.set(true);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      expect(document.querySelector('[forCalendar]')!.getAttribute('data-disabled')).toBe('');
+
+      cell('2026-6-10').click();
+      await flush(r.fixture);
+      cell('2026-6-15').click();
+      await flush(r.fixture);
+
+      expect(r.instance.value()).toBeNull();
+    });
+  });
+
+  describe('bounds clamp', () => {
+    @Component({
+      imports: [ForDateRangePicker, ForDatePickerTrigger, ForDatePickerContent, ...CALENDAR_PIECES],
+      providers: [...provideNativeDateAdapter()],
+      template: `
+        <div
+          forDateRangePicker
+          [(value)]="value"
+          [(open)]="open"
+          [minDate]="minDate()"
+          [maxDate]="maxDate()"
+          #picker="forDateRangePicker"
+        >
+          <button forDatePickerTrigger>Open</button>
+          @if (open()) {
+            <div forDatePickerContent>
+              <div forCalendar selectionMode="range" [range]="picker.value()">
+                <table forCalendarGrid #grid="forCalendarGrid">
+                  <tbody>
+                    @for (week of grid.weeks(); track week.key) {
+                      <tr>
+                        @for (c of week.days; track c.key) {
+                          <td forCalendarCell [date]="c.date" [attr.data-testid]="'cell-' + c.key">
+                            {{ c.label }}
+                          </td>
+                        }
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          }
+        </div>
+      `,
+    })
+    class UnforwardedBoundsHost {
+      readonly value = signal<DateRange<Date> | null>(null);
+      readonly open = signal(true);
+      readonly minDate = signal<Date | null>(null);
+      readonly maxDate = signal<Date | null>(null);
+    }
+
+    it('clamps both endpoints into [minDate, maxDate] when the calendar is not bounded', async () => {
+      const r = renderHost(UnforwardedBoundsHost);
+      r.instance.minDate.set(new Date(2026, 5, 12));
+      r.instance.maxDate.set(new Date(2026, 5, 18));
+      await flush(r.fixture);
+
+      cell('2026-6-8').click();
+      await flush(r.fixture);
+      cell('2026-6-22').click();
+      await flush(r.fixture);
+
+      const range = r.instance.value()!;
+      expect(adapter.isSameDay(range.start, new Date(2026, 5, 12))).toBe(true);
+      expect(adapter.isSameDay(range.end, new Date(2026, 5, 18))).toBe(true);
+    });
+  });
+
+  describe('trigger keyboard', () => {
+    it('ArrowDown opens the surface and focuses the calendar', async () => {
+      const r = renderHost(Host);
+      r.instance.value.set({ start: new Date(2026, 5, 10), end: new Date(2026, 5, 15) });
+      await flush(r.fixture);
+
+      const event = pressKey(trigger(r), 'ArrowDown');
+      await flush(r.fixture);
+
+      expect(event.defaultPrevented).toBe(true);
+      expect(r.instance.open()).toBe(true);
+      expect(document.activeElement).toBe(cell('2026-6-10'));
     });
   });
 

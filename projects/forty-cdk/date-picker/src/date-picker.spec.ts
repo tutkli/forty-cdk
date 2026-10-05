@@ -6,7 +6,7 @@ import {
   provideZonelessChangeDetection,
   signal,
 } from '@angular/core';
-import { TestBed } from '@angular/core/testing';
+import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import {
   disabled as disabledRule,
@@ -59,6 +59,7 @@ import {
   ForTimePickerTrigger,
 } from 'forty-cdk/time-picker';
 import { ForField, ForFieldDescription, ForFieldError, ForLabel } from 'forty-cdk/field';
+import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized-date';
 import { pressKey, pressWithMouse } from 'forty-cdk/testing';
 
 import { ForDatePicker } from './date-picker';
@@ -805,6 +806,21 @@ describe('ForDatePicker', () => {
       expect(touched(r)).toBe(false);
     });
 
+    it('a readonly picker keeps the committed cell selected in its one-way bound calendar', async () => {
+      const r = renderHost(GuardHost);
+      r.instance.readonly.set(true);
+      r.instance.value.set(new Date(2026, 5, 15));
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      cell('2026-6-20')!.click();
+      await flush(r.fixture);
+
+      expect(cell('2026-6-20')!.getAttribute('aria-selected')).toBe('false');
+      expect(cell('2026-6-20')!.hasAttribute('data-selected')).toBe(false);
+      expect(cell('2026-6-15')!.getAttribute('aria-selected')).toBe('true');
+    });
+
     it('a disabled picker ignores a grid selection (no value/touched change)', async () => {
       const r = renderHost(GuardHost);
       r.instance.disabled.set(true);
@@ -891,6 +907,26 @@ describe('ForDatePicker', () => {
       // A day on/after the minimum stays selectable.
       expect(cell('2026-6-20')!.hasAttribute('aria-disabled')).toBe(false);
     });
+
+    it('opens on the minDate month and focuses the minDate when today is before it', async () => {
+      const r = renderHost(Host);
+      r.instance.minDate.set(new Date(2026, 7, 10));
+      await openPicker(r);
+
+      expect(document.activeElement).toBe(cell('2026-8-10'));
+      expect(cell('2026-8-10')!.getAttribute('tabindex')).toBe('0');
+      expect(cell('2026-8-10')!.hasAttribute('aria-disabled')).toBe(false);
+    });
+
+    it('opens on the maxDate month and focuses the maxDate when today is after it', async () => {
+      const r = renderHost(Host);
+      r.instance.maxDate.set(new Date(2008, 2, 10));
+      await openPicker(r);
+
+      expect(document.activeElement).toBe(cell('2008-3-10'));
+      expect(cell('2008-3-10')!.getAttribute('tabindex')).toBe('0');
+      expect(cell('2008-3-10')!.hasAttribute('aria-disabled')).toBe(false);
+    });
   });
 
   describe('disabled', () => {
@@ -923,6 +959,92 @@ describe('ForDatePicker', () => {
       r.instance.readonly.set(false);
       await flush(r.fixture);
       expect(root.hasAttribute('data-readonly')).toBe(false);
+    });
+
+    it('makes a two-way bound calendar read-only: a pick commits nothing and selects no cell', async () => {
+      const r = renderHost(Host);
+      r.instance.readonly.set(true);
+      await openPicker(r);
+
+      expect(document.querySelector('[forCalendar]')!.getAttribute('data-readonly')).toBe('');
+
+      cell('2026-6-20')!.click();
+      await flush(r.fixture);
+      pressKey(cell('2026-6-15')!, 'Enter');
+      await flush(r.fixture);
+
+      expect(r.instance.value()).toBeNull();
+      expect(cell('2026-6-20')!.getAttribute('aria-selected')).toBe('false');
+      expect(cell('2026-6-15')!.getAttribute('aria-selected')).toBe('false');
+      expect(r.instance.open()).toBe(true);
+    });
+
+    it('makes a two-way bound calendar disabled while the picker is disabled', async () => {
+      const r = renderHost(Host);
+      r.instance.disabled.set(true);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      expect(document.querySelector('[forCalendar]')!.getAttribute('data-disabled')).toBe('');
+      expect(cell('2026-6-20')!.getAttribute('aria-disabled')).toBe('true');
+
+      cell('2026-6-20')!.click();
+      await flush(r.fixture);
+
+      expect(r.instance.value()).toBeNull();
+      expect(cell('2026-6-20')!.getAttribute('aria-selected')).toBe('false');
+    });
+  });
+
+  describe('trigger keyboard', () => {
+    for (const [label, key, options] of [
+      ['ArrowDown', 'ArrowDown', {}],
+      ['Alt+ArrowDown', 'ArrowDown', { altKey: true }],
+      ['ArrowUp', 'ArrowUp', {}],
+    ] as const) {
+      it(`${label} opens the surface and focuses the calendar's active cell`, async () => {
+        const r = renderHost(Host);
+        r.instance.value.set(new Date(2026, 5, 18));
+        await flush(r.fixture);
+
+        const event = pressKey(trigger(r), key, options);
+        await flush(r.fixture);
+
+        expect(event.defaultPrevented).toBe(true);
+        expect(r.instance.open()).toBe(true);
+        expect(document.activeElement).toBe(cell('2026-6-18'));
+      });
+    }
+
+    it('ArrowDown keeps an open surface open', async () => {
+      const r = renderHost(Host);
+      await openPicker(r);
+
+      pressKey(trigger(r), 'ArrowDown');
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(true);
+    });
+
+    it('ArrowDown does not open a disabled picker', async () => {
+      const r = renderHost(Host);
+      r.instance.disabled.set(true);
+      await flush(r.fixture);
+
+      const event = pressKey(trigger(r), 'ArrowDown');
+      await flush(r.fixture);
+
+      expect(event.defaultPrevented).toBe(false);
+      expect(r.instance.open()).toBe(false);
+    });
+
+    it('ignores other keys', async () => {
+      const r = renderHost(Host);
+
+      pressKey(trigger(r), 'ArrowLeft');
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
     });
   });
 
@@ -1187,6 +1309,91 @@ describe('ForDatePicker', () => {
         today: () => new Date(),
       } as unknown as DateAdapter<Date>;
       expect(() => assertTimeCapable(dayOnly, 'ForDatePicker')).toThrow(/time-capable/);
+    });
+  });
+
+  describe('date-time granularity on a day-only adapter', () => {
+    @Component({
+      imports: [ForDatePicker, ForDatePickerTrigger, ForDatePickerContent, ...CALENDAR_PIECES],
+      providers: [...provideInternationalizedDateAdapter()],
+      template: `
+        <div
+          forDatePicker
+          [(open)]="open"
+          [granularity]="granularity()"
+          ariaLabel="Choose date"
+          #picker="forDatePicker"
+        >
+          <button forDatePickerTrigger>Open</button>
+          @if (open()) {
+            <div forDatePickerContent>
+              <div forCalendar [value]="picker.value()">
+                <table forCalendarGrid #grid="forCalendarGrid">
+                  <tbody>
+                    @for (week of grid.weeks(); track week.key) {
+                      <tr>
+                        @for (c of week.days; track c.key) {
+                          <td forCalendarCell [date]="c.date" [attr.data-testid]="'cell-' + c.key">
+                            {{ c.label }}
+                          </td>
+                        }
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          }
+        </div>
+      `,
+    })
+    class DayOnlyHost {
+      readonly open = signal(false);
+      readonly granularity = signal<FieldGranularity>('minute');
+    }
+
+    function renderCapturing(): {
+      fixture: ComponentFixture<DayOnlyHost>;
+      messages: () => string;
+    } {
+      const captured: unknown[] = [];
+      class CapturingHandler implements ErrorHandler {
+        handleError(err: unknown): void {
+          captured.push(err);
+        }
+      }
+      TestBed.configureTestingModule({
+        rethrowApplicationErrors: false,
+        providers: [
+          provideZonelessChangeDetection(),
+          { provide: ErrorHandler, useClass: CapturingHandler },
+        ],
+      });
+      const fixture = TestBed.createComponent(DayOnlyHost);
+      return {
+        fixture,
+        messages: () => captured.map((err) => (err as Error).message).join('\n'),
+      };
+    }
+
+    it('reports nothing while no value needs the time', async () => {
+      const { fixture, messages } = renderCapturing();
+      await flush(fixture);
+      fixture.componentInstance.granularity.set('second');
+      await flush(fixture);
+
+      expect(messages()).not.toContain('FORCDK-CORE-003');
+    });
+
+    it('reports FORCDK-CORE-003 from the pick that composes the time', async () => {
+      const { fixture, messages } = renderCapturing();
+      fixture.componentInstance.open.set(true);
+      await flush(fixture);
+
+      cell('2026-6-20')!.click();
+      await flush(fixture);
+
+      expect(messages()).toContain('FORCDK-CORE-003');
     });
   });
 
