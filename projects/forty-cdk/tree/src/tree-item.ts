@@ -13,6 +13,7 @@ import {
   assertInputBound,
   registerHandle,
   hostId,
+  navigateFromRovingItem,
   preventPointerFocus,
   resolveListNavigation,
   resolveTreeExpandCollapse,
@@ -314,7 +315,11 @@ export class ForTreeItem<T = string> implements ForTreeItemContext<T> {
     const host = this.#host.nativeElement;
     // Tree items nest, so a keydown on a descendant bubbles through every
     // ancestor treeitem. Only the focused item (the event target) acts.
-    if (event.target !== host || this.effectiveDisabled()) {
+    if (event.target !== host) {
+      return;
+    }
+    if (this.effectiveDisabled()) {
+      this.#navigate(event);
       return;
     }
     const tree = this.#tree;
@@ -362,13 +367,7 @@ export class ForTreeItem<T = string> implements ForTreeItemContext<T> {
       return;
     }
 
-    const action = resolveListNavigation(event, {
-      orientation: tree.orientation(),
-      dir: tree.dir(),
-    });
-    if (action) {
-      event.preventDefault();
-      tree.navigate(host, action);
+    if (this.#navigate(event)) {
       return;
     }
 
@@ -388,5 +387,14 @@ export class ForTreeItem<T = string> implements ForTreeItemContext<T> {
     }
 
     tree.handleTypeahead(event);
+  }
+
+  #navigate(event: KeyboardEvent): boolean {
+    return navigateFromRovingItem(event, {
+      groupDisabled: this.#tree.disabled(),
+      orientation: this.#tree.orientation(),
+      dir: this.#tree.dir(),
+      navigate: (action) => this.#tree.navigate(this.#host.nativeElement, action),
+    });
   }
 }

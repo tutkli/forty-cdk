@@ -63,6 +63,15 @@ import { entryPointOf, LIBRARY_CODE, SPEC_SOURCES } from '../test-utils/source-s
  * glob returns an empty record, a renamed class reports zero constructions, and
  * a construction written in a shape the extractor cannot key would vanish from
  * the roster instead of failing it.
+ *
+ * **The same roster owns the two relocation rules of
+ * [#2140](https://github.com/tutkli/forty-cdk/issues/2140).** Every item piece
+ * of an adopter routes its list-navigation keys through
+ * `navigateFromRovingItem`, which gates on the group alone, and every claim
+ * mounts the contract's in-place disable so that gate is exercised per
+ * primitive. A tracker that pushes a concrete owner re-seeds to the nearest
+ * survivor and pairs with `injectRovingFocusRestore`, so DOM focus follows an
+ * item that leaves while it is focused.
  */
 /**
  * The keyboard model an excluded tracker owns instead of the contract's. Each
@@ -193,6 +202,15 @@ const EXCLUSIONS: readonly {
     reason: "the end endpoint's half of `RangeFieldComposer`'s pair",
   },
 ];
+
+/** The shared item-navigation gate every item piece of an adopter calls. */
+const ITEM_NAVIGATION = 'navigateFromRovingItem(';
+
+/** The contract mount every claim supplies for the in-place disable rung. */
+const IN_PLACE_DISABLE = 'mountWithInPlaceDisable:';
+
+/** The focus follower a push-based tracker pairs with. */
+const FOCUS_RESTORE = 'injectRovingFocusRestore(';
 
 /** The shared ladder a declared member must still resolve its tab stop through. */
 const SHARED_LADDER = 'selectionTabStop(';
@@ -338,6 +356,58 @@ describe('roving-tabindex contract adoption (meta-guard)', () => {
     );
 
     expect(sorted(stale)).toEqual([]);
+  });
+
+  it('mounts the in-place disable once per claim in the spec that makes it', () => {
+    const short = [...claimsPerSpec.entries()]
+      .map(([spec, claims]) => {
+        const mounts = (SPEC_SOURCES.get(spec) ?? '').split(IN_PLACE_DISABLE).length - 1;
+        return { spec, claims, mounts };
+      })
+      .filter(({ claims, mounts }) => mounts < claims)
+      .map(({ spec, claims, mounts }) => `${spec}: ${claims} claim(s), ${mounts} mount(s)`);
+
+    expect(sorted(short)).toEqual([]);
+  });
+
+  it('routes every item piece of an adopter through the shared navigation gate', () => {
+    const trackerFiles = new Set(trackerSites().map((site) => site.id.split('::')[0]!));
+    const entryPoints = new Set(
+      ADOPTERS.flatMap((adopter) => [
+        ...adopter.trackers.map(entryPointOf),
+        ...(adopter.handWrittenLadder ? [entryPointOf(adopter.handWrittenLadder)] : []),
+      ]),
+    );
+    const pieces = [...LIBRARY_CODE.entries()].filter(
+      ([path, source]) =>
+        entryPoints.has(entryPointOf(path)) &&
+        !trackerFiles.has(path) &&
+        (source.includes('resolveListNavigation(') || source.includes(ITEM_NAVIGATION)),
+    );
+
+    expect(pieces.length).toBeGreaterThanOrEqual(11);
+    expect(
+      sorted(pieces.filter(([, source]) => !source.includes(ITEM_NAVIGATION)).map(([p]) => p)),
+    ).toEqual([]);
+  });
+
+  it('re-seeds every push-based tracker to the nearest survivor and restores its focus', () => {
+    const pushed = [...LIBRARY_CODE.entries()].flatMap(([path, source]) =>
+      [...source.matchAll(/new RovingTabindex\([^;]*?fallback:\s*'([\w-]+)'/g)].map((match) => ({
+        path,
+        fallback: match[1]!,
+        restores: source.includes(FOCUS_RESTORE),
+      })),
+    );
+
+    expect(pushed.length).toBeGreaterThanOrEqual(1);
+    expect(
+      sorted(
+        pushed
+          .filter((site) => site.fallback !== 'nearest' || !site.restores)
+          .map((site) => `${site.path}: fallback '${site.fallback}', restores ${site.restores}`),
+      ),
+    ).toEqual([]);
   });
 
   it('excludes no tracker whose keyboard model stopped diverging', () => {

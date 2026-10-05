@@ -151,6 +151,19 @@ describe('ForListbox', () => {
         await r.flush();
         return { items: listboxItems(r.el), enabledIndices: [0, 2], flush: r.flush };
       },
+      mountWithInPlaceDisable: async () => {
+        const r = renderHost(ListboxHost);
+        await r.flush();
+        return {
+          items: listboxItems(r.el),
+          flush: r.flush,
+          disableFirst: () =>
+            r.instance.options.update(([first, ...rest]) => [
+              { ...first!, disabled: true },
+              ...rest,
+            ]),
+        };
+      },
       mountRtl: async () => {
         const r = renderHost(ListboxHost);
         r.instance.orientation.set('horizontal');

@@ -199,6 +199,20 @@ describe('ForRadioGroup', () => {
         await r.flush();
         return { items: radioItems(r.el), enabledIndices: [0, 2], flush: r.flush };
       },
+      mountWithInPlaceDisable: async () => {
+        const r = renderHost(RadioGroupHost);
+        r.instance.color.set(null);
+        await r.flush();
+        return {
+          items: radioItems(r.el),
+          flush: r.flush,
+          disableFirst: () =>
+            r.instance.options.update(([first, ...rest]) => [
+              { ...first!, disabled: true },
+              ...rest,
+            ]),
+        };
+      },
       mountRtl: async () => {
         const r = renderHost(RadioGroupHost);
         r.instance.color.set(null);

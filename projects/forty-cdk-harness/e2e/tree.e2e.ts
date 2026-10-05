@@ -205,11 +205,42 @@ test.describe('Tree', () => {
     await el(page, 'disable-notes').click();
 
     await expect(el(page, 'item-notes')).toHaveAttribute('aria-disabled', 'true');
-    // The tab stop is handed back to a visible enabled node; exactly one
-    // treeitem remains tabbable and Tab re-enters the tree.
-    await expectRovingTabStop(page, 'item-documents', '[role="treeitem"][tabindex="0"]');
+    // The tab stop is handed to the visible enabled node before it; exactly one
+    // treeitem remains tabbable and Tab re-enters the tree there.
+    await expectRovingTabStop(page, 'item-music', '[role="treeitem"][tabindex="0"]');
     await el(page, 'before').focus();
-    await rovingFirst(page, 'item-documents');
+    await rovingFirst(page, 'item-music');
+  });
+
+  test('removing the focused node moves focus to the node before it', async ({ page }) => {
+    await gotoFixture(page, 'tree', { expandAll: '1', editable: '1' });
+    await el(page, 'item-beta').focus();
+    await expectFocused(el(page, 'item-beta'));
+
+    await page.keyboard.press('Delete');
+    await expect(el(page, 'item-beta')).toHaveCount(0);
+    await expectFocused(el(page, 'item-alpha'));
+    await expectRovingTabStop(page, 'item-alpha', '[role="treeitem"][tabindex="0"]');
+
+    await page.keyboard.press('Delete');
+    await expectFocused(el(page, 'item-projects'));
+    await page.keyboard.press('ArrowUp');
+    await expectFocused(el(page, 'item-resume'));
+  });
+
+  test('collapsing through [(expanded)] moves focus to the collapsed ancestor', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'tree', { expandAll: '1', editable: '1' });
+    await el(page, 'item-alpha').focus();
+    await expectFocused(el(page, 'item-alpha'));
+
+    await page.keyboard.press('Escape');
+    await expect(el(page, 'item-documents')).toHaveAttribute('aria-expanded', 'false');
+    await expectFocused(el(page, 'item-documents'));
+    await expectRovingTabStop(page, 'item-documents', '[role="treeitem"][tabindex="0"]');
+    await page.keyboard.press('ArrowDown');
+    await expectFocused(el(page, 'item-music'));
   });
 
   test('selectionFollowsFocus selects the focused node during navigation', async ({ page }) => {

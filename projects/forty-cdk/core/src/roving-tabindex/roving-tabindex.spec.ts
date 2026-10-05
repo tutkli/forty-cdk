@@ -295,6 +295,124 @@ describe('RovingTabindex', () => {
       });
     });
 
+    describe("fallback: 'nearest'", () => {
+      const mountButtons = (n: number): HTMLElement[] => {
+        const hosts = Array.from({ length: n }, () => document.createElement('button'));
+        document.body.append(...hosts);
+        return hosts;
+      };
+
+      it('promotes the closest enabled handle before the one that left', () => {
+        const [a, b, c, d] = mountButtons(4);
+        try {
+          const items = signal([makeHandle(a!), makeHandle(b!), makeHandle(c!), makeHandle(d!)]);
+          const r = new RovingTabindex(() => items(), { fallback: 'nearest' });
+          r.setActive(c!);
+          expect(r.active()).toBe(c);
+
+          items.set([makeHandle(a!), makeHandle(b!), makeHandle(d!)]);
+          expect(r.active()).toBe(b);
+        } finally {
+          [a, b, c, d].forEach((el) => el!.remove());
+        }
+      });
+
+      it('lands on the surviving ancestor when a contiguous run leaves', () => {
+        const [parent, child, grandchild, sibling] = mountButtons(4);
+        try {
+          const items = signal([
+            makeHandle(parent!),
+            makeHandle(child!),
+            makeHandle(grandchild!),
+            makeHandle(sibling!),
+          ]);
+          const r = new RovingTabindex(() => items(), { fallback: 'nearest' });
+          r.setActive(grandchild!);
+          expect(r.active()).toBe(grandchild);
+
+          items.set([makeHandle(parent!), makeHandle(sibling!)]);
+          expect(r.active()).toBe(parent);
+        } finally {
+          [parent, child, grandchild, sibling].forEach((el) => el!.remove());
+        }
+      });
+
+      it('falls forward to the closest following handle when nothing precedes', () => {
+        const [a, b, c] = mountButtons(3);
+        try {
+          const items = signal([makeHandle(a!), makeHandle(b!, true), makeHandle(c!)]);
+          const r = new RovingTabindex(() => items(), { fallback: 'nearest' });
+          r.setActive(a!);
+          expect(r.active()).toBe(a);
+
+          items.set([makeHandle(b!, true), makeHandle(c!)]);
+          expect(r.active()).toBe(c);
+        } finally {
+          [a, b, c].forEach((el) => el!.remove());
+        }
+      });
+
+      it('keeps the departed pointer, so a re-enabled host reclaims the tab stop', () => {
+        const [a, b] = mountButtons(2);
+        try {
+          const disabled = signal(false);
+          const items = signal<readonly HostRovingItemHandle[]>([
+            makeHandle(a!),
+            { host: b!, disabled },
+          ]);
+          const r = new RovingTabindex(() => items(), { fallback: 'nearest' });
+          r.setActive(b!);
+          expect(r.active()).toBe(b);
+
+          disabled.set(true);
+          expect(r.active()).toBe(a);
+
+          disabled.set(false);
+          expect(r.active()).toBe(b);
+        } finally {
+          a!.remove();
+          b!.remove();
+        }
+      });
+
+      it('relocates again from the stand-in when the stand-in leaves too', () => {
+        const [a, b, c, d] = mountButtons(4);
+        try {
+          const items = signal([makeHandle(a!), makeHandle(b!), makeHandle(c!), makeHandle(d!)]);
+          const r = new RovingTabindex(() => items(), { fallback: 'nearest' });
+          r.setActive(d!);
+          expect(r.active()).toBe(d);
+
+          items.set([makeHandle(a!), makeHandle(b!), makeHandle(c!)]);
+          expect(r.active()).toBe(c);
+
+          items.set([makeHandle(a!), makeHandle(c!)]);
+          expect(r.active()).toBe(c);
+
+          items.set([makeHandle(a!)]);
+          expect(r.active()).toBe(a);
+        } finally {
+          [a, b, c, d].forEach((el) => el!.remove());
+        }
+      });
+
+      it('ignores unregister, which would otherwise lose the departed position', () => {
+        const [a, b, c] = mountButtons(3);
+        try {
+          const items = signal([makeHandle(a!), makeHandle(b!), makeHandle(c!)]);
+          const r = new RovingTabindex(() => items(), { fallback: 'nearest' });
+          r.setActive(c!);
+          expect(r.active()).toBe(c);
+
+          r.unregister(c!);
+          items.set([makeHandle(a!), makeHandle(b!)]);
+          expect(r.active()).toBe(b);
+        } finally {
+          [a, b, c].forEach((el) => el!.remove());
+        }
+      });
+    });
+
     it('never reads the item list while nothing is active', () => {
       const a = document.createElement('button');
       document.body.append(a);

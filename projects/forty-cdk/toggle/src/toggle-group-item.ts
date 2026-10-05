@@ -2,8 +2,8 @@ import { booleanAttribute, computed, Directive, ElementRef, inject, input } from
 
 import {
   hostButtonType,
+  navigateFromRovingItem,
   registerHandle,
-  resolveListNavigation,
   FOR_HOST_ROVING_CONTEXT,
 } from 'forty-cdk/core';
 import { injectToggleGroupContext } from './toggle-group-context';
@@ -122,18 +122,13 @@ export class ForToggleGroupItem {
   }
 
   protected onKeyDown(event: KeyboardEvent): void {
-    if (this.effectiveDisabled()) {
-      return;
-    }
-    const owner = this.#rovingHost ?? this.group;
-    const action = resolveListNavigation(event, {
+    const rovingHost = this.#rovingHost;
+    const owner = rovingHost ?? this.group;
+    navigateFromRovingItem(event, {
+      groupDisabled: rovingHost ? rovingHost.disabled() : this.group.effectiveDisabled(),
       orientation: owner.orientation(),
       dir: owner.dir(),
+      navigate: (action) => owner.navigate(this.#host.nativeElement, action),
     });
-    if (!action) {
-      return;
-    }
-    event.preventDefault();
-    owner.navigate(this.#host.nativeElement, action);
   }
 }

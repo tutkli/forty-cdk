@@ -12,7 +12,7 @@ import {
   hostButtonType,
   registerHandle,
   hostId,
-  resolveListNavigation,
+  navigateFromRovingItem,
   selectionTabStop,
 } from 'forty-cdk/core';
 import { type ForRadioGroupContext, injectRadioGroupContext } from './radio-group-context';
@@ -132,17 +132,11 @@ export class ForRadio {
   }
 
   protected onKeyDown(event: KeyboardEvent): void {
-    if (this.effectiveDisabled()) {
-      return;
-    }
-    const action = resolveListNavigation(event, {
+    navigateFromRovingItem(event, {
+      groupDisabled: this.group.effectiveDisabled(),
       orientation: 'both',
       dir: this.group.dir(),
+      navigate: (action) => this.group.navigate(this.#host.nativeElement, action),
     });
-    if (!action) {
-      return;
-    }
-    event.preventDefault();
-    this.group.navigate(this.#host.nativeElement, action);
   }
 }

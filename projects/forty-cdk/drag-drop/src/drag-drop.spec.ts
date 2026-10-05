@@ -412,6 +412,16 @@ describe('ForDropList + ForDraggable', () => {
         await r.flush();
         return { items: draggables(r.el), enabledIndices: [0, 2], flush: r.flush };
       },
+      mountWithInPlaceDisable: async () => {
+        const r = renderHost(SingleListHost);
+        await r.flush();
+        return {
+          items: draggables(r.el),
+          flush: r.flush,
+          disableFirst: () =>
+            r.instance.rows.update(([first, ...rest]) => [{ ...first!, disabled: true }, ...rest]),
+        };
+      },
       mountRtl: async () => {
         const r = renderHost(SingleListHost);
         r.instance.orientation.set('horizontal');

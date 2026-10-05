@@ -524,6 +524,16 @@ describe('ForStepper', () => {
       await r.flush();
       return { items: triggers(r.el), enabledIndices: [1, 2], flush: r.flush };
     },
+    mountWithInPlaceDisable: async () => {
+      const r = renderHost(StepperHost);
+      await r.flush();
+      return {
+        items: triggers(r.el),
+        flush: r.flush,
+        disableFirst: () =>
+          r.instance.steps.update(([first, ...rest]) => [{ ...first!, disabled: true }, ...rest]),
+      };
+    },
     mountRtl: async () => {
       const r = renderHost(StepperHost);
       r.instance.dir.set('rtl');

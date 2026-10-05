@@ -467,6 +467,19 @@ describe('ForTabs', () => {
       await r.flush();
       return { items: triggers(r.el), enabledIndices: [1, 2], flush: r.flush };
     },
+    mountWithInPlaceDisable: async () => {
+      const r = renderHost(TabsHost);
+      await r.flush();
+      return {
+        items: triggers(r.el),
+        flush: r.flush,
+        disableFirst: () =>
+          r.fixture.componentInstance.tabs.update(([first, ...rest]) => [
+            { ...first!, disabled: true },
+            ...rest,
+          ]),
+      };
+    },
     mountRtl: async () => {
       const r = renderHost(TabsHost);
       r.fixture.componentInstance.dir.set('rtl');

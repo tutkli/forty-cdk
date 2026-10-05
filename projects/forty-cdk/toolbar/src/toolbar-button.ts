@@ -1,6 +1,6 @@
 import { booleanAttribute, computed, Directive, ElementRef, inject, input } from '@angular/core';
 
-import { hostButtonType, registerHandle, resolveListNavigation } from 'forty-cdk/core';
+import { hostButtonType, registerHandle, navigateFromRovingItem } from 'forty-cdk/core';
 import { injectToolbarContext } from './toolbar-context';
 
 /**
@@ -84,17 +84,11 @@ export class ForToolbarButton {
   }
 
   protected onKeyDown(event: KeyboardEvent): void {
-    if (this.effectiveDisabled()) {
-      return;
-    }
-    const action = resolveListNavigation(event, {
+    navigateFromRovingItem(event, {
+      groupDisabled: this.toolbar.disabled(),
       orientation: this.toolbar.orientation(),
       dir: this.toolbar.dir(),
+      navigate: (action) => this.toolbar.navigate(this.#host.nativeElement, action),
     });
-    if (!action) {
-      return;
-    }
-    event.preventDefault();
-    this.toolbar.navigate(this.#host.nativeElement, action);
   }
 }

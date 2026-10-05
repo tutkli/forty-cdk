@@ -612,6 +612,19 @@ describe('ForMenubar', () => {
         await r.flush();
         return { items: menubarTriggers(r.el), enabledIndices: [0, 2], flush: r.flush };
       },
+      mountWithInPlaceDisable: async () => {
+        const r = renderHost(MenubarRovingHost);
+        await r.flush();
+        return {
+          items: menubarTriggers(r.el),
+          flush: r.flush,
+          disableFirst: () =>
+            r.instance.triggers.update(([first, ...rest]) => [
+              { ...first!, disabled: true },
+              ...rest,
+            ]),
+        };
+      },
       mountRtl: async () => {
         const r = renderHost(MenubarRovingHost);
         r.instance.dir.set('rtl');

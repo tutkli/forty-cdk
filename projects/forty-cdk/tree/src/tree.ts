@@ -27,6 +27,7 @@ import {
   throwUnsupportedVirtualizedSelectionFollowsFocus,
   type WritingDirection,
   RovingTabindex,
+  injectRovingFocusRestore,
   injectTextDirection,
   injectTypeahead,
   hostAriaLabel,
@@ -273,7 +274,7 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
 
   /** Root container hosts level-1 items. */
   readonly level = signal(1);
-  readonly roving = new RovingTabindex(() => this.#visibleHandles(), { fallback: 'first-enabled' });
+  readonly roving = new RovingTabindex(() => this.#visibleHandles(), { fallback: 'nearest' });
 
   readonly #typeahead = injectTypeahead();
   readonly #items = new Collection<ForTreeItemHandle<T>>();
@@ -444,6 +445,7 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
   }
 
   constructor() {
+    injectRovingFocusRestore(this.roving);
     // @sanctioned-pull(navigator-position-map): the rendered window is transient,
     // so a window nothing reads during is lost to the lazy fold.
     effect(() => {
@@ -502,7 +504,6 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
     if (open && !has) {
       this.expanded.set([...current, value]);
     } else if (!open && has) {
-      this.#relocateActiveOnCollapse(value);
       this.expanded.set(current.filter((v) => !equals(v, value)));
     }
   }
@@ -519,29 +520,12 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
     this.#selection.select(value);
   }
 
-  #relocateActiveOnCollapse(value: T): void {
-    const active = this.roving.active();
-    if (active === null) {
-      return;
-    }
-    const visible = this.#visibleEntries();
-    const equals = this.compareWith();
-    const collapsing = visible.find((e) => equals(e.handle.value(), value));
-    if (!collapsing) {
-      return;
-    }
-    const collapsingHost = collapsing.handle.host;
-    if (collapsingHost !== active && collapsingHost.contains(active)) {
-      this.roving.focusActive(collapsingHost);
-    }
-  }
-
-  navigate(_currentItem: HTMLElement, action: ListNavigationAction): void {
+  navigate(currentItem: HTMLElement, action: ListNavigationAction): void {
     if (this.disabled()) {
       return;
     }
     this.#assertSelectionFollowsFocusSupported();
-    this.#focusModel().navigate(action);
+    this.#focusModel().navigate(action, currentItem);
   }
 
   expandOrEnter(_currentItem: HTMLElement): void {
@@ -761,7 +745,6 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
 
   unregisterItem(handle: ForTreeItemHandle<T>): void {
     this.#items.unregister(handle);
-    this.roving.unregister(handle.host);
     if (this.#virtualized() && this.#activeId() === handle.id()) {
       this.#resume.retain(handle.itemIndex(), handle.value());
       this.#activeId.set(null);

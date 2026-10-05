@@ -13,6 +13,7 @@ import {
   assertInputBound,
   hostButtonType,
   isUnset,
+  navigateFromRovingItem,
   registerHandle,
   hostId,
   preventPointerFocus,
@@ -212,6 +213,7 @@ export class ForListboxOption<T = string> {
 
   protected onKeyDown(event: KeyboardEvent): void {
     if (this.effectiveDisabled()) {
+      this.#navigate(event);
       return;
     }
 
@@ -263,16 +265,19 @@ export class ForListboxOption<T = string> {
       }
     }
 
-    const action = resolveListNavigation(event, {
-      orientation: this.#group.orientation(),
-      dir: this.#group.dir(),
-      pageKeys: true,
-    });
-    if (action) {
-      event.preventDefault();
-      this.#group.navigate(this.#host.nativeElement, action);
+    if (this.#navigate(event)) {
       return;
     }
     this.#group.handleTypeahead(event);
+  }
+
+  #navigate(event: KeyboardEvent): boolean {
+    return navigateFromRovingItem(event, {
+      groupDisabled: this.#group.effectiveDisabled(),
+      orientation: this.#group.orientation(),
+      dir: this.#group.dir(),
+      pageKeys: true,
+      navigate: (action) => this.#group.navigate(this.#host.nativeElement, action),
+    });
   }
 }

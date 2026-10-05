@@ -301,6 +301,122 @@ describe('ForTree', () => {
     });
   });
 
+  describe('when the active node leaves or is disabled in place', () => {
+    @Component({
+      imports: [ForTree, ForTreeItem, ForTreeItemLabel, ForTreeGroup],
+      template: `
+        <ul forTree [(expanded)]="open">
+          @for (node of nodes(); track node.id) {
+            <li forTreeItem [value]="node.id" [attr.data-test-id]="node.id">
+              <div forTreeItemLabel>{{ node.id }}</div>
+              @if (node.children.length && open().includes(node.id)) {
+                <ul forTreeGroup>
+                  @for (child of node.children; track child) {
+                    <li forTreeItem [value]="child" [attr.data-test-id]="child">
+                      <div forTreeItemLabel>{{ child }}</div>
+                    </li>
+                  }
+                </ul>
+              }
+            </li>
+          }
+        </ul>
+      `,
+    })
+    class RemovalHost {
+      readonly nodes = signal([
+        { id: 'documents', children: ['projects', 'reports'] },
+        { id: 'pictures', children: [] as string[] },
+      ]);
+      readonly open = signal<readonly string[]>(['documents']);
+
+      remove(id: string): void {
+        this.nodes.update((nodes) =>
+          nodes
+            .filter((node) => node.id !== id)
+            .map((node) => ({ ...node, children: node.children.filter((c) => c !== id) })),
+        );
+      }
+    }
+
+    const tabStops = (host: HTMLElement): string[] =>
+      visibleItems(host)
+        .filter((item) => item.getAttribute('tabindex') === '0')
+        .map((item) => item.getAttribute('data-test-id')!);
+
+    async function focusIn(host: { el: HTMLElement; flush: () => Promise<void> }, id: string) {
+      itemOf(host.el, id).focus();
+      await host.flush();
+      expect(document.activeElement).toBe(itemOf(host.el, id));
+    }
+
+    it('moves focus to the parent when its focused first child is removed', async () => {
+      const r = renderHost(RemovalHost);
+      await r.flush();
+      await focusIn(r, 'projects');
+
+      r.instance.remove('projects');
+      await r.flush();
+
+      expect(document.activeElement).toBe(itemOf(r.el, 'documents'));
+      expect(tabStops(r.el)).toEqual(['documents']);
+    });
+
+    it('moves focus to the previous sibling when the focused node after it is removed', async () => {
+      const r = renderHost(RemovalHost);
+      await r.flush();
+      await focusIn(r, 'reports');
+
+      r.instance.remove('reports');
+      await r.flush();
+
+      expect(document.activeElement).toBe(itemOf(r.el, 'projects'));
+      expect(tabStops(r.el)).toEqual(['projects']);
+    });
+
+    it('moves focus to the collapsed ancestor when [(expanded)] collapses the focused branch', async () => {
+      const r = await setup((i) => i.open.set(['documents', 'photos']));
+      await focusIn(r, 'vacation');
+
+      r.instance.open.set([]);
+      await r.flush();
+
+      expect(document.activeElement).toBe(itemOf(r.el, 'documents'));
+      expect(tabStops(r.el)).toEqual(['documents']);
+    });
+
+    it('hands the tab stop to the collapsed ancestor and leaves focus on the control that collapsed it', async () => {
+      const r = await setup((i) => i.open.set(['documents', 'photos']));
+      await focusIn(r, 'work');
+      const collapseAll = document.createElement('button');
+      document.body.append(collapseAll);
+      try {
+        collapseAll.focus();
+
+        r.instance.open.set(['documents']);
+        await r.flush();
+
+        expect(document.activeElement).toBe(collapseAll);
+        expect(tabStops(r.el)).toEqual(['photos']);
+      } finally {
+        collapseAll.remove();
+      }
+    });
+
+    it('ArrowUp from a node disabled in place moves to the node before it', async () => {
+      const r = await setup((i) => i.open.set(['documents']));
+      await focusIn(r, 'photos');
+
+      r.instance.disabledIds.set(['photos']);
+      await r.flush();
+      expect(document.activeElement).toBe(itemOf(r.el, 'photos'));
+
+      pressKey(itemOf(r.el, 'photos'), 'ArrowUp');
+      await r.flush();
+      expect(document.activeElement).toBe(itemOf(r.el, 'report'));
+    });
+  });
+
   describe('aria-level / aria-setsize / aria-posinset', () => {
     it('computes level / posinset / setsize across two nesting levels', async () => {
       const { el } = await setup((i) => i.open.set(['documents', 'photos']));
@@ -355,6 +471,14 @@ describe('ForTree', () => {
           items: visibleItems(r.el),
           enabledIndices: [0, 2],
           flush: () => flush(r.fixture),
+        };
+      },
+      mountWithInPlaceDisable: async () => {
+        const r = await setup();
+        return {
+          items: visibleItems(r.el),
+          flush: () => flush(r.fixture),
+          disableFirst: () => r.instance.disabledIds.set(['documents']),
         };
       },
       mountWithSelection: async () => {
@@ -895,7 +1019,7 @@ describe('ForTree', () => {
       expect(tabbable[0]).toBe(itemOf(el, 'documents'));
     });
 
-    it('disabling the active node re-engages the first-enabled fallback', async () => {
+    it('disabling the active node hands the tab stop to the node before it', async () => {
       const { el, fixture } = await setup();
 
       itemOf(el, 'readme').focus();
@@ -910,7 +1034,7 @@ describe('ForTree', () => {
         (node) => node.getAttribute('tabindex') === '0',
       );
       expect(tabbable).toHaveLength(1);
-      expect(tabbable[0]).toBe(itemOf(el, 'documents'));
+      expect(tabbable[0]).toBe(itemOf(el, 'downloads'));
     });
 
     it('keeps a tab stop on the first visible item when the selection points to an unmounted node', async () => {

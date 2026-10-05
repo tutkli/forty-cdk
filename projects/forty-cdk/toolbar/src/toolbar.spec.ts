@@ -20,7 +20,7 @@ import { ForToolbarSeparator } from './toolbar-separator';
       [disabled]="disabled()"
       [ariaLabel]="ariaLabel()"
     >
-      <button forToolbarButton>One</button>
+      <button forToolbarButton [disabled]="firstDisabled()">One</button>
       <button forToolbarButton [disabled]="middleDisabled()">Two</button>
       <span forToolbarSeparator></span>
       <a forToolbarLink href="/x" [disabled]="linkDisabled()">Three</a>
@@ -31,6 +31,7 @@ class ToolbarHost {
   readonly orientation = signal<'horizontal' | 'vertical'>('horizontal');
   readonly dir = signal<'ltr' | 'rtl'>('ltr');
   readonly disabled = signal(false);
+  readonly firstDisabled = signal(false);
   readonly middleDisabled = signal(false);
   readonly linkDisabled = signal(false);
   readonly ariaLabel = signal<string | null>(null);
@@ -118,6 +119,15 @@ describe('ForToolbar', () => {
         items: collectFocusables(r.el),
         enabledIndices: [0, 2],
         flush: r.flush,
+      };
+    },
+    mountWithInPlaceDisable: async () => {
+      const r = renderHost(ToolbarHost);
+      await r.flush();
+      return {
+        items: collectFocusables(r.el),
+        flush: r.flush,
+        disableFirst: () => r.fixture.componentInstance.firstDisabled.set(true),
       };
     },
     mountWithDisabledFirst: async () => {
@@ -310,6 +320,53 @@ describe('ForToolbar', () => {
 
       expect(btn(el, 'one').getAttribute('tabindex')).toBe('-1');
       expect(zeros(el)).toEqual(['two']);
+    });
+
+    it('ArrowLeft moves focus off a link disabled while it holds focus', async () => {
+      const { el, fixture, flush } = renderHost(ToolbarHost);
+      await flush();
+      const link = el.querySelector<HTMLAnchorElement>('a')!;
+      link.focus();
+      await flush();
+
+      fixture.componentInstance.linkDisabled.set(true);
+      await flush();
+      expect(link.getAttribute('aria-disabled')).toBe('true');
+
+      const event = pressKey(link, 'ArrowLeft');
+      await flush();
+      expect(event.defaultPrevented).toBe(true);
+      expect(document.activeElement).toBe(collectFocusables(el)[1]);
+    });
+
+    it('ArrowRight moves focus off a nested toggle item disabled while it holds focus', async () => {
+      @Component({
+        imports: [ForToolbar, ForToolbarButton, ForToggleGroup, ForToggleGroupItem],
+        template: `
+          <div forToolbar>
+            <div forToggleGroup multiple>
+              <button forToggleGroupItem value="bold" [disabled]="boldDisabled()">B</button>
+            </div>
+            <button forToolbarButton>Redo</button>
+          </div>
+        `,
+      })
+      class Host {
+        readonly boldDisabled = signal(false);
+      }
+      const { el, fixture, flush } = renderHost(Host);
+      await flush();
+      const bold = el.querySelector<HTMLButtonElement>('[forToggleGroupItem]')!;
+      bold.focus();
+      await flush();
+
+      fixture.componentInstance.boldDisabled.set(true);
+      await flush();
+      expect(bold.getAttribute('aria-disabled')).toBe('true');
+
+      pressKey(bold, 'ArrowRight');
+      await flush();
+      expect(document.activeElement).toBe(el.querySelector('[forToolbarButton]'));
     });
   });
 

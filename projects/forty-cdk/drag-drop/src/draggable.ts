@@ -18,6 +18,7 @@ import { isPlatformBrowser } from '@angular/common';
 
 import {
   isImeComposing,
+  navigateFromRovingItem,
   registerHandle,
   resolveListNavigation,
   createPointerDragSession,
@@ -304,10 +305,16 @@ export class ForDraggable implements ForDraggableContext {
   }
 
   protected onKeyDown(event: KeyboardEvent): void {
-    if (this.effectiveDisabled() || this.#pointerDragging) {
+    if (this.#pointerDragging) {
       return;
     }
     const host = this.#host.nativeElement;
+    if (this.effectiveDisabled()) {
+      if (!this.lifted() && event.target === host) {
+        this.#navigate(event);
+      }
+      return;
+    }
     if (this.lifted()) {
       if (event.key === ' ' || event.key === 'Enter') {
         event.preventDefault();
@@ -341,13 +348,15 @@ export class ForDraggable implements ForDraggableContext {
       this.#list.lift(host);
       return;
     }
-    const action = resolveListNavigation(event, {
+    this.#navigate(event);
+  }
+
+  #navigate(event: KeyboardEvent): boolean {
+    return navigateFromRovingItem(event, {
+      groupDisabled: this.#list.disabled(),
       orientation: this.#list.orientation(),
       dir: this.#list.dir(),
+      navigate: (action) => this.#list.navigate(this.#host.nativeElement, action),
     });
-    if (action) {
-      event.preventDefault();
-      this.#list.navigate(host, action);
-    }
   }
 }
