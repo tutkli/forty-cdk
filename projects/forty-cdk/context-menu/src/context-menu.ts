@@ -115,7 +115,10 @@ export class ForContextMenu
   /** When true (default), Escape, pointer-down outside, and focus outside close the menu. */
   readonly dismissible = input(true, { transform: booleanAttribute });
 
-  /** When true (default), focus returns to the right-click target on close. */
+  /**
+   * When true (default), focus returns on close to the trigger region, or to the
+   * focused element inside it that a keyboard activation started from.
+   */
   readonly returnFocus = input(true, { transform: booleanAttribute });
 
   /**

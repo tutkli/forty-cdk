@@ -13,7 +13,7 @@ import { handleMenuTabOut } from './menu-tab-out';
 /**
  * The `menuitem` inside the parent menu that opens its `[forMenuSub]`.
  * Apply on a `<button>` so Space / Enter dispatch native click events that
- * toggle the submenu via `(click)`.
+ * open the submenu via `(click)`.
  *
  * Wires `aria-haspopup="menu"`, `aria-expanded`, and `aria-controls`
  * pointing to the submenu's content. Registers itself as a `menuitem` in
@@ -21,7 +21,9 @@ import { handleMenuTabOut } from './menu-tab-out';
  * while reading open state from the **submenu**.
  *
  * Keyboard:
- * - **Click / Enter / Space** — toggle the submenu (focus first item on open).
+ * - **Click / Enter / Space** — open the submenu and focus its first item. On a
+ *   submenu that is already open (hover-opened, or opened with its focus move
+ *   vetoed) they move focus into it and never close it.
  * - **ArrowRight (LTR) / ArrowLeft (RTL)** — open the submenu and focus its first item.
  * - **ArrowDown / ArrowUp / Home / End** — navigate parent's items.
  * - **ArrowLeft (LTR) / ArrowRight (RTL)** — when the parent menu is itself
@@ -118,7 +120,7 @@ export class ForMenuSubTrigger {
     if (this.effectiveDisabled()) {
       return;
     }
-    this.submenu.toggle('first', modality);
+    this.submenu.openMenu('first', modality);
   }
 
   protected onPointerEnter(event: PointerEvent): void {

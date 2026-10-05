@@ -91,6 +91,22 @@ test.describe('ContextMenu', () => {
     await expect(trigger).toBeFocused();
   });
 
+  test('closing a Shift+F10 menu returns focus to the focused descendant it opened from', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'context-menu');
+    const inner = el(page, 'inner-btn');
+    await inner.focus();
+
+    await page.keyboard.press('Shift+F10');
+    await expect(el(page, 'menu')).toBeVisible();
+
+    await page.keyboard.press('Escape');
+    await expect(el(page, 'menu')).toHaveCount(0);
+
+    await expect(inner).toBeFocused();
+  });
+
   // Geometry assertions previously stubbed in context-menu.spec.ts — moved
   // here per CLAUDE.md "Testing notes" / #195: the math is fed by real
   // `getBoundingClientRect()` reads on the focused trigger / descendant, so

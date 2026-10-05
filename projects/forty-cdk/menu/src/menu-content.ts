@@ -10,6 +10,7 @@ import {
   injectOverlayShell,
   injectMenuContext,
   menuLayerNesting,
+  menuReturnFocusTarget,
   warnIfMountedWhileClosed,
 } from 'forty-cdk/core-overlay';
 
@@ -145,7 +146,7 @@ export class ForMenuContent {
       },
       returnFocus: {
         enabled: this.ctx.returnFocus,
-        target: () => this.ctx.trigger(),
+        target: () => menuReturnFocusTarget(this.ctx),
         // `(autoFocusOnClose)` lets the consumer veto the return-focus.
         veto: () => this.ctx.emitAutoFocusOnClose(),
         // Skip when the close itself already moved focus away on purpose:

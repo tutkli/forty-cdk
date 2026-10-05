@@ -728,6 +728,93 @@ describe('ForContextMenu', () => {
       expect(ev.defaultPrevented).toBe(true);
     });
 
+    it('returns focus to the focused descendant a Shift+F10 opened from', async () => {
+      const r = renderHost(ContextMenuHost);
+      const inner = r.query<HTMLElement>('#inner-btn')!;
+      inner.focus();
+      pressKey(inner, 'F10', { shiftKey: true });
+      await flush(r.fixture);
+      expect(document.activeElement?.id).toBe('cut');
+
+      pressKey(document, 'Escape');
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+      expect(document.activeElement).toBe(inner);
+    });
+
+    it('Tab out of a menu opened from a focused descendant leaves focus on that descendant', async () => {
+      const r = renderHost(ContextMenuHost);
+      const inner = r.query<HTMLElement>('#inner-btn')!;
+      inner.focus();
+      pressKey(inner, 'F10', { shiftKey: true });
+      await flush(r.fixture);
+
+      pressKey(document.querySelector<HTMLElement>('#cut')!, 'Tab');
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+      expect(document.activeElement).toBe(inner);
+    });
+
+    it('returns focus to the region when a menu action removed the descendant', async () => {
+      @Component({
+        imports: IMPORTS,
+        template: `
+          <div forContextMenu [(open)]="open">
+            <div id="region" forContextMenuTrigger>
+              @if (showRow()) {
+                <button id="row" type="button">Row</button>
+              }
+            </div>
+            @if (open()) {
+              <div forMenuContent>
+                <button id="delete" forMenuItem (activate)="showRow.set(false)">Delete</button>
+              </div>
+            }
+          </div>
+        `,
+      })
+      class RemovableRowHost {
+        readonly open = signal(false);
+        readonly showRow = signal(true);
+      }
+
+      const r = renderHost(RemovableRowHost);
+      const row = r.query<HTMLElement>('#row')!;
+      row.focus();
+      pressKey(row, 'F10', { shiftKey: true });
+      await flush(r.fixture);
+
+      document.querySelector<HTMLButtonElement>('#delete')!.click();
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+      expect(r.query('#row')).toBeNull();
+      expect(document.activeElement).toBe(r.query<HTMLElement>('#region'));
+    });
+
+    it('a pointer open after a descendant keyboard open returns focus to the region', async () => {
+      const r = renderHost(ContextMenuHost);
+      const region = r.query<HTMLElement>('#region')!;
+      const inner = r.query<HTMLElement>('#inner-btn')!;
+      inner.focus();
+      pressKey(inner, 'F10', { shiftKey: true });
+      await flush(r.fixture);
+      pressKey(document, 'Escape');
+      await flush(r.fixture);
+      expect(document.activeElement).toBe(inner);
+
+      rightClick(region, 10, 10);
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe(true);
+
+      pressKey(document, 'Escape');
+      await flush(r.fixture);
+
+      expect(document.activeElement).toBe(region);
+    });
+
     it('falls back to the trigger when document.activeElement is outside the trigger', async () => {
       // The fallback branch — `activeElement` is not contained by the trigger,
       // so the directive uses the trigger's rect. Same split as above: this

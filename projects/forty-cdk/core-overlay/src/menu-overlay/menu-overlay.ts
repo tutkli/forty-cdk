@@ -220,8 +220,17 @@ export class MenuOverlay<H extends MenuItemHandle = MenuItemHandle> {
     this.#openers.unregister(element);
   }
 
-  activateOpener(element: HTMLElement): void {
-    this.#openers.activate(element);
+  activateOpener(element: HTMLElement, returnFocusTarget: HTMLElement | null = null): void {
+    this.#openers.activate(element, returnFocusTarget);
+  }
+
+  /**
+   * The element focus returns to on close: the target the active opener
+   * recorded for this open while it is still in the document, else
+   * {@link trigger}.
+   */
+  returnFocusTarget(): HTMLElement | null {
+    return this.#openers.returnFocusTarget();
   }
 
   setVirtualAnchor(x: number, y: number): void {

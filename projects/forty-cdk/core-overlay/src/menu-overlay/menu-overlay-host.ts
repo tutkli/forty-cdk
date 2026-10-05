@@ -89,8 +89,12 @@ export abstract class MenuOverlayHost<
     this._overlay.unregisterOpener(element);
   }
 
-  protected activateOpener(element: HTMLElement): void {
-    this._overlay.activateOpener(element);
+  protected activateOpener(element: HTMLElement, returnFocusTarget?: HTMLElement | null): void {
+    this._overlay.activateOpener(element, returnFocusTarget);
+  }
+
+  protected returnFocusTarget(): HTMLElement | null {
+    return this._overlay.returnFocusTarget();
   }
 
   protected setVirtualAnchor(x: number, y: number): void {

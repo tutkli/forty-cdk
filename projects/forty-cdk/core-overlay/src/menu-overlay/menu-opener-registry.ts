@@ -3,6 +3,7 @@ import type { ReferenceElement, VirtualElement } from '@floating-ui/dom';
 
 import type { FloatingAlign, FloatingSide } from '../floating/floating';
 import { adoptHostId } from 'forty-cdk/core';
+import type { ForMenuContext } from './menu-context';
 
 /**
  * Builds a floating-ui `VirtualElement` pinned to a by-value rect snapshot, so
@@ -108,8 +109,16 @@ export interface MenuOpenerRegistration {
   /**
    * Marks `element` as the opener driving the current open. Return-focus, the
    * surface's `aria-labelledby` fallback, and the anchor all resolve against it.
+   * `returnFocusTarget` records where focus returns for this open instead of
+   * `element` — the focused descendant a keyboard activation started from.
    */
-  activateOpener(element: HTMLElement): void;
+  activateOpener(element: HTMLElement, returnFocusTarget?: HTMLElement | null): void;
+  /**
+   * The element focus returns to when the menu closes: the target the active
+   * opener recorded for this open while it is still in the document, else the
+   * active opener itself.
+   */
+  returnFocusTarget(): HTMLElement | null;
   /** Anchors the active opener's next open at a 0×0 point in viewport coordinates. */
   setVirtualAnchor(x: number, y: number): void;
   /** Anchors the active opener's next open at a by-value snapshot of `rect`. */
@@ -129,6 +138,15 @@ export function asMenuOpenerRegistration(root: object): MenuOpenerRegistration |
   return typeof candidate.registerOpener === 'function'
     ? (candidate as MenuOpenerRegistration)
     : null;
+}
+
+/**
+ * The element a menu returns focus to on close: the opener registry's per-open
+ * target on a root that has one, the context's `trigger` otherwise.
+ */
+export function menuReturnFocusTarget(ctx: Pick<ForMenuContext, 'trigger'>): HTMLElement | null {
+  const openers = asMenuOpenerRegistration(ctx);
+  return openers ? openers.returnFocusTarget() : ctx.trigger();
 }
 
 interface MenuOpenerEntry {
@@ -161,6 +179,7 @@ export class MenuOpenerRegistry {
   readonly #seedId: WritableSignal<string>;
   readonly #entries = signal<readonly MenuOpenerEntry[]>([]);
   readonly #activeElement = signal<HTMLElement | null>(null);
+  #returnFocusTarget: HTMLElement | null = null;
 
   readonly #active = computed<MenuOpenerEntry | null>(() => {
     const entries = this.#entries();
@@ -182,7 +201,10 @@ export class MenuOpenerRegistry {
    */
   readonly id: Signal<string>;
 
-  /** The active opener's element — the return-focus target. */
+  /**
+   * The active opener's element — the return-focus target, unless the open
+   * recorded one of its own (see {@link returnFocusTarget}).
+   */
   readonly element = computed<HTMLElement | null>(() => this.#active()?.element ?? null);
 
   /**
@@ -276,11 +298,24 @@ export class MenuOpenerRegistry {
     this.#entries.update((entries) => entries.filter((entry) => entry.element !== element));
     if (this.#activeElement() === element) {
       this.#activeElement.set(null);
+      this.#returnFocusTarget = null;
     }
   }
 
-  activate(element: HTMLElement): void {
+  activate(element: HTMLElement, returnFocusTarget: HTMLElement | null = null): void {
     this.#activeElement.set(element);
+    this.#returnFocusTarget = returnFocusTarget;
+  }
+
+  /**
+   * The return-focus target of the current open: the one {@link activate}
+   * recorded while it is still in the document, else the active opener. Read at
+   * close time rather than derived, because a menu action may remove the
+   * recorded element from the document.
+   */
+  returnFocusTarget(): HTMLElement | null {
+    const target = this.#returnFocusTarget;
+    return target !== null && target.isConnected ? target : this.element();
   }
 
   setVirtualAnchor(x: number, y: number): void {

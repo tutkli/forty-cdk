@@ -7,6 +7,7 @@ import {
   flush,
   focusInOn,
   pointerDownOn,
+  type RenderResult,
   renderHost,
 } from '../../src/test-utils';
 import {
@@ -1440,6 +1441,99 @@ describe('ForMenubar', () => {
       // (pointerenter) switches the open menu (see issue #504).
       expect(r.instance.open()).toBe('file');
     });
+
+    it.each(['touch', 'pen'])(
+      'a %s tap on a sibling trigger switches menus instead of closing the bar',
+      async (pointerType) => {
+        const r = renderHost(MenubarHost);
+        r.instance.open.set('file');
+        await flush(r.fixture);
+        const edit = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]')[1]!;
+
+        edit.dispatchEvent(new PointerEvent('pointerenter', { bubbles: true, pointerType }));
+        await flush(r.fixture);
+        expect(r.instance.open()).toBe('file');
+
+        edit.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerType }));
+        edit.click();
+        await flush(r.fixture);
+
+        expect(r.instance.open()).toBe('edit');
+      },
+    );
+  });
+
+  describe('trigger-row navigation while a menu is open', () => {
+    async function hoverSwitchToEdit(): Promise<{
+      r: RenderResult<MenubarHost>;
+      triggers: HTMLButtonElement[];
+    }> {
+      const r = renderHost(MenubarHost);
+      r.instance.open.set('file');
+      await flush(r.fixture);
+      const triggers = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]');
+      triggers[1]!.dispatchEvent(new PointerEvent('pointerenter', { bubbles: true }));
+      await flush(r.fixture);
+      expect(document.activeElement).toBe(triggers[1]);
+      return { r, triggers };
+    }
+
+    it('ArrowRight switches the open menu to the trigger that takes focus', async () => {
+      const { r, triggers } = await hoverSwitchToEdit();
+
+      pressKey(triggers[1]!, 'ArrowRight');
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe('view');
+      expect(document.activeElement).toBe(triggers[2]);
+      expect(triggers[1]!.getAttribute('aria-expanded')).toBe('false');
+      expect(triggers[2]!.getAttribute('aria-expanded')).toBe('true');
+      expect(document.getElementById('view-zoom')).not.toBeNull();
+    });
+
+    it('Home switches the open menu to the first trigger', async () => {
+      const { r, triggers } = await hoverSwitchToEdit();
+
+      pressKey(triggers[1]!, 'Home');
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe('file');
+      expect(document.activeElement).toBe(triggers[0]);
+    });
+
+    it('typeahead switches the open menu to the matched trigger', async () => {
+      const { r, triggers } = await hoverSwitchToEdit();
+
+      pressKey(triggers[1]!, 'v');
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe('view');
+      expect(document.activeElement).toBe(triggers[2]);
+    });
+
+    it('Escape after the switch returns focus to the trigger the user moved to', async () => {
+      const { r, triggers } = await hoverSwitchToEdit();
+      pressKey(triggers[1]!, 'ArrowRight');
+      await flush(r.fixture);
+
+      pressKey(triggers[2]!, 'Escape');
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBeNull();
+      expect(document.activeElement).toBe(triggers[2]);
+    });
+
+    it('moves focus only while no menu is open', async () => {
+      const r = renderHost(MenubarHost);
+      const triggers = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]');
+      triggers[0]!.focus();
+
+      pressKey(triggers[0]!, 'ArrowRight');
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBeNull();
+      expect(document.activeElement).toBe(triggers[1]);
+    });
   });
 
   describe('typeahead at trigger row', () => {
@@ -2013,6 +2107,39 @@ describe('ForMenubar', () => {
       trigger.focus();
       // file is the first menubar trigger; loop=true makes 'prev' wrap to edit.
       pressKey(trigger, 'ArrowLeft');
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe('edit');
+    });
+
+    it('a click on the open trigger with a submenu open closes the menu without reopening it', async () => {
+      const r = renderHost(MenubarWithSubmenuHost);
+      r.instance.open.set('file');
+      await flush(r.fixture);
+      r.instance.recent.set(true);
+      await flush(r.fixture);
+
+      const file = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]')[0]!;
+      pointerDownOn(file);
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe('file');
+
+      file.click();
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBeNull();
+    });
+
+    it('a click on a sibling trigger with a submenu open switches to its menu', async () => {
+      const r = renderHost(MenubarWithSubmenuHost);
+      r.instance.open.set('file');
+      await flush(r.fixture);
+      r.instance.recent.set(true);
+      await flush(r.fixture);
+
+      const edit = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]')[1]!;
+      pointerDownOn(edit);
+      edit.click();
       await flush(r.fixture);
 
       expect(r.instance.open()).toBe('edit');

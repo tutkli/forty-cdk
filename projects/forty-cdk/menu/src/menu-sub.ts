@@ -52,10 +52,11 @@ import { FOR_MENU_DEFAULTS } from 'forty-cdk/defaults';
  * three concerns are wired through the `onOpen` / `onClose` lifecycle hooks and
  * `lastCloseReason` / the initial-focus state stay correct on every transition.
  *
- * The parent menu's content is added to this submenu's dismissible
- * exemptions so a click on a parent menu item doesn't fire the
- * submenu's outside-handler (the parent item's own click flow closes
- * everything via propagated `closeMenu`).
+ * The parent menu's content and the parent's own exemptions are added to
+ * this submenu's dismissible exemptions, so neither a click on a parent menu
+ * item nor a click on the root's trigger fires the submenu's outside-handler
+ * (the item's click flow closes everything via propagated `closeMenu`, and the
+ * trigger's own click closes the root).
  *
  * Closing this submenu propagates `closeMenu` upward for every reason
  * except `'escape'`, `'hover'` and `'programmatic'` — Escape inside a submenu
@@ -255,10 +256,16 @@ export class ForMenuSub extends MenuOverlayHost implements ForMenuContext {
    * activate via the item's own click handler (which propagates `closeMenu`
    * upward through the whole chain) instead of firing the submenu's
    * outside-close.
+   *
+   * They also inherit the parent's own exemptions, so the root's toggle
+   * trigger (or a menubar's triggers) counts as inside at every level. A click
+   * on it then reaches its own click handler with the chain still open, and
+   * closes it once instead of closing it on `pointerdown` and reopening it.
    */
   readonly dismissibleExemptions = computed<readonly HTMLElement[]>(() => {
+    const inherited = this.parentMenu.dismissibleExemptions();
     const parentContent = this.parentMenu.content();
-    return parentContent ? [parentContent] : [];
+    return parentContent ? [...inherited, parentContent] : inherited;
   });
 
   constructor() {

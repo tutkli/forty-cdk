@@ -189,7 +189,12 @@ export interface ForMenuContext {
   /** Anchor passed to floating-ui — `HTMLElement` (Dropdown) or `VirtualElement` (Context). */
   readonly anchor: Signal<ReferenceElement | null>;
 
-  /** The focusable element that receives focus on close (the trigger button or right-click target). */
+  /**
+   * The element the menu was opened from (the trigger button or right-click
+   * region). Focus returns here on close, except after a keyboard activation
+   * from a focused element inside a right-click region, which returns focus to
+   * that element while it is still in the document.
+   */
   readonly trigger: Signal<HTMLElement | null>;
   registerTrigger(el: HTMLElement): void;
   unregisterTrigger(el: HTMLElement): void;

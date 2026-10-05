@@ -40,6 +40,36 @@ test.describe('Submenu pointer hover — DropdownMenu', () => {
     await expectFocused(el(page, 'dd-item-1'));
   });
 
+  test('clicking the sub-trigger after the hover-open keeps the submenu open and enters it', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'menu-sub');
+    await openDropdown(page);
+
+    await el(page, 'dd-sub-trigger').hover();
+    await expect(el(page, 'dd-sub-menu')).toBeVisible();
+
+    await el(page, 'dd-sub-trigger').click();
+
+    await expect(el(page, 'dd-sub-menu')).toBeVisible();
+    await expect(el(page, 'dd-sub-trigger')).toHaveAttribute('aria-expanded', 'true');
+    await expectFocused(el(page, 'dd-sub-item-1'));
+  });
+
+  test('clicking the dropdown trigger with the submenu open closes the menu', async ({ page }) => {
+    await gotoFixture(page, 'menu-sub');
+    await openDropdown(page);
+
+    await el(page, 'dd-sub-trigger').hover();
+    await expect(el(page, 'dd-sub-menu')).toBeVisible();
+
+    await el(page, 'dd-trigger').click();
+
+    await expect(el(page, 'dd-menu')).toHaveCount(0);
+    await expect(el(page, 'dd-sub-menu')).toHaveCount(0);
+    await expect(el(page, 'dd-trigger')).toHaveAttribute('aria-expanded', 'false');
+  });
+
   test('travelling diagonally toward the submenu keeps it open (safe triangle)', async ({
     page,
   }) => {

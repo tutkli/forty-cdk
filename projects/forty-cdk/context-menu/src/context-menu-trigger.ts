@@ -35,7 +35,9 @@ const LONG_PRESS_MOVE_TOLERANCE_PX = 10;
  * `Shift+F10` and the dedicated `ContextMenu` key. Pointer activations are
  * anchored at the cursor; keyboard activations are anchored at the bounding
  * rect of the focused element, so screen-reader / keyboard-only users get
- * the menu next to whatever they're working on. The native context menu is
+ * the menu next to whatever they're working on. A keyboard activation from a
+ * focused descendant also returns focus to that descendant on close, falling
+ * back to the region when a menu action removed it. The native context menu is
  * suppressed via `event.preventDefault()`.
  *
  * A pointer activation skips `data-highlighted` on the initially focused item;
@@ -262,13 +264,13 @@ export class ForContextMenuTrigger {
     // Anchor at the focused element when it lives inside the trigger; fall
     // back to the trigger itself otherwise (e.g. focus is on the trigger).
     const anchorEl = focused && trigger.contains(focused) ? focused : trigger;
-    this.#activate();
+    this.#activate(anchorEl === trigger ? null : anchorEl);
     this.ctx().setVirtualAnchorFromRect(anchorEl.getBoundingClientRect());
     this.#openMenu('keyboard');
   }
 
-  #activate(): void {
-    this.#openerRegistration()?.activateOpener(this.#host.nativeElement);
+  #activate(returnFocusTarget: HTMLElement | null = null): void {
+    this.#openerRegistration()?.activateOpener(this.#host.nativeElement, returnFocusTarget);
   }
 
   #openMenu(modality: MenuActivationModality): void {
