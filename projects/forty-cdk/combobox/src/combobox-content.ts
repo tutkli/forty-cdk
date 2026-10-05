@@ -5,6 +5,8 @@ import {
   hostAriaLabel,
   hostLabelledBy,
   injectFieldLabelExemption,
+  pressFocusesDescendant,
+  preventPointerFocus,
   FOR_FIELD_ANCHOR_CONTEXT,
   FOR_FIELD_CONTEXT,
 } from 'forty-cdk/core';
@@ -39,19 +41,24 @@ import { injectComboboxContext } from './combobox-context';
  * anatomy) the trigger are exempt from outside checks.
  *
  * Focus:
- * - **Editable anatomy (no trigger)** — focus normally stays in the input
- *   across the whole open lifecycle and active-option highlighting is
- *   `aria-activedescendant`-driven, so the directive exposes no focus hooks. The
- *   surface itself is focusable (`tabindex="-1"`), so a click on non-option
- *   padding can move focus onto it; the input's inline Escape handler then never
- *   sees the key, so the shell wires a fallback Escape channel that closes the
- *   popup and returns focus to the input.
+ * - **Editable anatomy (no trigger)** — focus stays in the input across the
+ *   whole open lifecycle and active-option highlighting is
+ *   `aria-activedescendant`-driven, so the directive exposes no focus hooks. A
+ *   mouse press anywhere on the surface that lands on no focusable element of its
+ *   own (padding, a group label, an empty or status row) is cancelled, so it
+ *   neither focuses the surface nor blurs the input; text in the popup cannot be
+ *   selected with the mouse as a result. A press on a focusable descendant (an
+ *   action, a consumer control) still focuses it. If focus reaches the surface
+ *   programmatically, a fallback Escape channel still closes the popup and
+ *   returns focus to the input.
  * - **Picker anatomy (trigger present)** — on open, focus moves into the input
  *   (the search field inside the panel); on close it returns to the trigger.
  *   Both moves are vetoable via `(autoFocusOnOpen)` / `(autoFocusOnClose)` on
- *   `[forCombobox]`, and the return is gated by `[returnFocus]`. Escape from the
- *   input is owned by the input directive; the shell's fallback channel covers
- *   presses that land on the surface or list instead.
+ *   `[forCombobox]`, and the return is gated by `[returnFocus]`. The same press
+ *   rule applies to the surface and to `[forComboboxList]`, so focus stays on
+ *   the search input. Escape from the input is owned by the input directive; the
+ *   shell's fallback channel covers focus that reaches the surface or list
+ *   programmatically.
  *
  * The two splits are keyed independently — roles off the presence of a list,
  * focus off the presence of a trigger — and the trigger is re-checked at each
@@ -99,11 +106,13 @@ export class ForComboboxContent {
 
   constructor() {
     const ctx = this.ctx;
+    const host = this.#host.nativeElement;
     registerHandle(
-      this.#host.nativeElement,
+      host,
       (el) => ctx.registerContent(el),
       (el) => ctx.unregisterContent(el),
     );
+    preventPointerFocus((event) => !pressFocusesDescendant(event, host));
 
     warnIfMountedWhileClosed({
       primitive: 'combobox',

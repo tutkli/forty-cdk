@@ -120,7 +120,7 @@ const LONG_FRUITS = Array.from({ length: 60 }, (_, i) => `item-${i}`);
           <input data-testid="combo-input" forComboboxInput placeholder="Search fruits…" />
         </div>
         @if (open()) {
-          <div forComboboxContent data-testid="content">
+          <div forComboboxContent data-testid="content" style="padding-block: 12px">
             @for (opt of filtered(); track opt) {
               <div
                 forComboboxOption

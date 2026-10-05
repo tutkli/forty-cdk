@@ -1,6 +1,12 @@
 import { Directive, ElementRef, inject } from '@angular/core';
 
-import { registerHandle, hostAriaLabel, hostLabelledBy } from 'forty-cdk/core';
+import {
+  registerHandle,
+  hostAriaLabel,
+  hostLabelledBy,
+  pressFocusesDescendant,
+  preventPointerFocus,
+} from 'forty-cdk/core';
 import { injectComboboxContext } from './combobox-context';
 
 /**
@@ -22,8 +28,10 @@ import { injectComboboxContext } from './combobox-context';
  * ```
  *
  * Carries `role="listbox"`, `tabindex="-1"` (focus stays in the input,
- * activedescendant-driven), `aria-multiselectable` in multi mode, and the
- * labelled-role `aria-label` / `aria-labelledby`. Its id is what the input's
+ * activedescendant-driven; a mouse press on the list that lands on no focusable
+ * element of its own is cancelled so it never takes focus from the input),
+ * `aria-multiselectable` in multi mode, and the labelled-role `aria-label` /
+ * `aria-labelledby`. Its id is what the input's
  * `aria-controls` references in the picker anatomy.
  *
  * When no `[forComboboxList]` is present, `[forComboboxContent]` itself carries
@@ -53,10 +61,12 @@ export class ForComboboxList {
   );
 
   constructor() {
+    const host = this.#host.nativeElement;
     registerHandle(
-      this.#host.nativeElement,
+      host,
       (el) => this.ctx.registerList(el),
       (el) => this.ctx.unregisterList(el),
     );
+    preventPointerFocus((event) => !pressFocusesDescendant(event, host));
   }
 }
