@@ -1,5 +1,10 @@
 import type { CollectionHandle } from '../collection/collection';
-import { type ListNavigationAction, moveIndex } from '../keyboard-navigation/keyboard-navigation';
+import {
+  type ListNavigationAction,
+  type ListNavigationOptions,
+  moveIndex,
+  resolveListNavigation,
+} from '../keyboard-navigation/keyboard-navigation';
 import type { RovingTabindex } from './roving-tabindex';
 
 /** Options for {@link rovingListTarget}. */
@@ -117,4 +122,40 @@ export function rovingTabStop(options: RovingTabStopOptions): 0 | -1 {
     return roving.tabindexFor(host);
   }
   return selectionTabStop(selection);
+}
+
+/** Options for {@link navigateFromRovingItem}. */
+export interface RovingItemNavigationOptions extends ListNavigationOptions {
+  /**
+   * Whether the whole group is disabled, which leaves every navigation key
+   * unconsumed. The item's own disabled state is deliberately not an option.
+   */
+  groupDisabled: boolean;
+  /** Moves focus from the item for the resolved action. */
+  navigate: (action: ListNavigationAction) => void;
+}
+
+/**
+ * Handles the list-navigation keys (arrows, `Home` / `End`, and `PageUp` /
+ * `PageDown` when `pageKeys` is set) on a roving item: consumes the key and
+ * hands the action to `navigate`. Returns whether the key was handled.
+ *
+ * Gated on the group only. A disabled item keeps focus, so an item that becomes
+ * disabled while it holds focus must still let the keyboard user leave it;
+ * every caller guards its own activation keys separately.
+ */
+export function navigateFromRovingItem(
+  event: KeyboardEvent,
+  options: RovingItemNavigationOptions,
+): boolean {
+  if (options.groupDisabled) {
+    return false;
+  }
+  const action = resolveListNavigation(event, options);
+  if (action === null) {
+    return false;
+  }
+  event.preventDefault();
+  options.navigate(action);
+  return true;
 }

@@ -25,17 +25,22 @@ import type { HostRovingItemHandle } from './host-roving-context';
  * re-seeded. The `fallback` option chooses how: `'none'` (default) nulls it
  * so each item's first-enabled fallback re-engages (pull-based, for a
  * container whose item tabindex derives from {@link hasActive}), while
- * `'first-enabled'` promotes the first enabled handle directly (push-based,
- * for a container whose item tabindex reads {@link active} and needs a
- * concrete owner rather than a null pointer, e.g. Tree). Omitting `items`
- * yields a pass-through of the raw pointer for consumers that own no roving
- * collection (date-field / time-field).
+ * `'nearest'` promotes the closest usable handle before the departed one in
+ * the previous item order, else the closest after it, else the first enabled
+ * (push-based, for a container whose item tabindex reads {@link active} and
+ * needs a concrete owner rather than a null pointer, e.g. Tree). Under
+ * `'nearest'` the departed pointer is kept, so a host that is re-enabled
+ * reclaims the tab stop. Omitting `items` yields a pass-through of the raw
+ * pointer for consumers that own no roving collection (date-field /
+ * time-field).
  *
  * Construct directly with `new RovingTabindex()` — there is no internal
  * state requiring an injection context or `DestroyRef` cleanup.
  */
 export class RovingTabindex {
   readonly #rawActive = signal<HTMLElement | null>(null);
+
+  readonly #keepsDeparted: boolean;
 
   readonly #active: Signal<HTMLElement | null>;
 
@@ -60,15 +65,16 @@ export class RovingTabindex {
 
   constructor(
     items?: () => readonly HostRovingItemHandle[],
-    options: { fallback?: 'none' | 'first-enabled' } = {},
+    options: { fallback?: 'none' | 'nearest' } = {},
   ) {
     const fallback = options.fallback ?? 'none';
-    this.#active = linkedSignal({
+    this.#keepsDeparted = fallback === 'nearest';
+    this.#active = linkedSignal<ActiveSource, HTMLElement | null>({
       source: () => {
         const raw = this.#rawActive();
         return { items: items && raw !== null ? items() : null, raw };
       },
-      computation: ({ items: list, raw }) => {
+      computation: ({ items: list, raw }, previous) => {
         if (list === null || raw === null) {
           return raw;
         }
@@ -76,9 +82,11 @@ export class RovingTabindex {
         if (handle && !handle.disabled() && raw.isConnected) {
           return raw;
         }
-        return fallback === 'first-enabled'
-          ? (list.find((item) => !item.disabled())?.host ?? null)
-          : null;
+        if (fallback === 'none') {
+          return null;
+        }
+        const anchor = previous?.source.raw === raw ? (previous.value ?? raw) : raw;
+        return nearestUsable(list, previous?.source.items ?? null, anchor);
       },
     });
     this.active = this.#active;
@@ -113,10 +121,11 @@ export class RovingTabindex {
    * to "no active" so the first-enabled fallback reclaims the tab stop.
    * No-op when `el` is not the active element. Containers call this when an
    * item unregisters (`DestroyRef.onDestroy`) so a removed host never lingers
-   * as the entry point.
+   * as the entry point. No-op under `fallback: 'nearest'`, which re-seeds from
+   * the position the removed host held instead.
    */
   unregister(el: HTMLElement): void {
-    if (this.#active() === el) {
+    if (!this.#keepsDeparted && this.#active() === el) {
       this.#rawActive.set(null);
     }
   }
@@ -135,6 +144,38 @@ export class RovingTabindex {
     }
     target.focus();
   }
+}
+
+interface ActiveSource {
+  readonly items: readonly HostRovingItemHandle[] | null;
+  readonly raw: HTMLElement | null;
+}
+
+function nearestUsable(
+  list: readonly HostRovingItemHandle[],
+  order: readonly HostRovingItemHandle[] | null,
+  anchor: HTMLElement,
+): HTMLElement | null {
+  const usable = new Set(
+    list.filter((item) => !item.disabled() && item.host.isConnected).map((item) => item.host),
+  );
+  if (usable.has(anchor)) {
+    return anchor;
+  }
+  const at = order?.findIndex((item) => item.host === anchor) ?? -1;
+  if (order !== null && at >= 0) {
+    for (let i = at - 1; i >= 0; i--) {
+      if (usable.has(order[i]!.host)) {
+        return order[i]!.host;
+      }
+    }
+    for (let i = at + 1; i < order.length; i++) {
+      if (usable.has(order[i]!.host)) {
+        return order[i]!.host;
+      }
+    }
+  }
+  return list.find((item) => usable.has(item.host))?.host ?? null;
 }
 
 function isStale(el: HTMLElement): boolean {

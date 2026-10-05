@@ -1,7 +1,12 @@
 import { computed, signal } from '@angular/core';
 
 import { RovingTabindex } from './roving-tabindex';
-import { rovingListTarget, rovingTabStop, selectionTabStop } from './roving-list-navigation';
+import {
+  navigateFromRovingItem,
+  rovingListTarget,
+  rovingTabStop,
+  selectionTabStop,
+} from './roving-list-navigation';
 
 interface Handle {
   host: HTMLElement;
@@ -160,5 +165,70 @@ describe('rovingTabStop', () => {
     } finally {
       host.remove();
     }
+  });
+});
+
+describe('navigateFromRovingItem', () => {
+  const keydown = (key: string): KeyboardEvent =>
+    new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
+
+  it('consumes a navigation key and hands its action to navigate', () => {
+    const navigate = vi.fn();
+    const event = keydown('ArrowRight');
+
+    const handled = navigateFromRovingItem(event, {
+      groupDisabled: false,
+      orientation: 'horizontal',
+      navigate,
+    });
+
+    expect(handled).toBe(true);
+    expect(event.defaultPrevented).toBe(true);
+    expect(navigate).toHaveBeenCalledExactlyOnceWith('next');
+  });
+
+  it('leaves every key unconsumed while the group is disabled', () => {
+    const navigate = vi.fn();
+    const event = keydown('End');
+
+    const handled = navigateFromRovingItem(event, {
+      groupDisabled: true,
+      orientation: 'horizontal',
+      navigate,
+    });
+
+    expect(handled).toBe(false);
+    expect(event.defaultPrevented).toBe(false);
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it('leaves a key outside the orientation unconsumed', () => {
+    const navigate = vi.fn();
+    const event = keydown('ArrowDown');
+
+    expect(
+      navigateFromRovingItem(event, { groupDisabled: false, orientation: 'horizontal', navigate }),
+    ).toBe(false);
+    expect(event.defaultPrevented).toBe(false);
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it('honours the direction and the page keys it is configured with', () => {
+    const navigate = vi.fn();
+
+    navigateFromRovingItem(keydown('ArrowRight'), {
+      groupDisabled: false,
+      orientation: 'horizontal',
+      dir: 'rtl',
+      navigate,
+    });
+    navigateFromRovingItem(keydown('PageDown'), {
+      groupDisabled: false,
+      orientation: 'vertical',
+      pageKeys: true,
+      navigate,
+    });
+
+    expect(navigate.mock.calls).toEqual([['prev'], ['last']]);
   });
 });

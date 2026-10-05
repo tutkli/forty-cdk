@@ -34,6 +34,10 @@
  *     which regressed once per sibling while the ladder lived as
  *     copy-pasted `describe('initial tabindex')` blocks; centralising it
  *     here is what makes a fix propagate.
+ *   - **An item disabled while it holds focus keeps the keyboard** — the
+ *     forward arrow still moves focus off it
+ *     ([#2140](https://github.com/tutkli/forty-cdk/issues/2140)). Every
+ *     adopter supplies that mount; the meta-guard counts it.
  *
  * The consumer provides `mount` factories per variant they want to
  * exercise. Only the `mount` factory is required; everything else is
@@ -114,6 +118,17 @@ export interface RovingTabindexContractSetup {
    * disabled item in `selectedIndices` and exclude it from `enabledIndices`.
    */
   mountWithSelectedDisabled?: () => RovingTabindexMountResult | Promise<RovingTabindexMountResult>;
+  /**
+   * Mount with every item enabled and a way to disable the FIRST one in place.
+   * The contract focuses it, disables it, and verifies the forward arrow moves
+   * focus to the second item, which must stay enabled.
+   */
+  mountWithInPlaceDisable?: () => RovingInPlaceDisableMount | Promise<RovingInPlaceDisableMount>;
+}
+
+export interface RovingInPlaceDisableMount extends RovingTabindexMountResult {
+  /** Disable the first item without moving focus. The contract flushes afterwards. */
+  disableFirst: () => void;
 }
 
 export interface RovingTabindexContractOptions {
@@ -135,6 +150,9 @@ const enabled = (r: RovingTabindexMountResult): readonly number[] =>
   r.enabledIndices ?? r.items.map((_, i) => i);
 
 const selected = (r: RovingTabindexMountResult): readonly number[] => r.selectedIndices ?? [];
+
+const reflectsDisabled = (el: HTMLElement): boolean =>
+  el.getAttribute('aria-disabled') === 'true' || el.hasAttribute('data-disabled');
 
 const tabStops = (r: RovingTabindexMountResult): number[] =>
   r.items.reduce<number[]>((acc, item, i) => {
@@ -200,6 +218,25 @@ export function assertRovingTabindexContract(
       await r.flush();
       expect(document.activeElement).toBe(r.items[b]);
     });
+
+    if (setup.mountWithInPlaceDisable) {
+      it(`${forward} moves focus off an item disabled while it holds focus`, async () => {
+        const r = await setup.mountWithInPlaceDisable!();
+        expect(r.items.length).toBeGreaterThanOrEqual(2);
+        const [first, second] = [r.items[0]!, r.items[1]!];
+        first.focus();
+        await r.flush();
+        r.disableFirst();
+        await r.flush();
+        expect(reflectsDisabled(first)).toBe(true);
+        expect(reflectsDisabled(second)).toBe(false);
+        expect(document.activeElement).toBe(first);
+
+        dispatchKey(first, forward);
+        await r.flush();
+        expect(document.activeElement).toBe(second);
+      });
+    }
 
     if (setup.mountWithDisabledFirst) {
       it('skips disabled items at the head when picking the entry point', async () => {

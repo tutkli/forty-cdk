@@ -223,6 +223,15 @@ describe('ForCarousel', () => {
         await r.flush();
         return { items: indicators(r.el), enabledIndices: [0, 2], flush: r.flush };
       },
+      mountWithInPlaceDisable: async () => {
+        const r = renderHost(CarouselHost);
+        await r.flush();
+        return {
+          items: indicators(r.el),
+          flush: r.flush,
+          disableFirst: () => r.instance.disabledIndicators.set([0]),
+        };
+      },
       mountRtl: async () => {
         const r = renderHost(CarouselHost);
         r.instance.dir.set('rtl');

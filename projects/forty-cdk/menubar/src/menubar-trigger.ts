@@ -14,7 +14,7 @@ import {
   registerHandle,
   hostId,
   IdGenerator,
-  resolveListNavigation,
+  navigateFromRovingItem,
 } from 'forty-cdk/core';
 import {
   AnchoredOverlayPositioningBase,
@@ -216,6 +216,7 @@ export class ForMenubarTrigger extends AnchoredOverlayPositioningBase {
   protected onKeyDown(event: KeyboardEvent): void {
     this.#pointerActivation = false;
     if (this.effectiveDisabled()) {
+      this.#navigate(event);
       return;
     }
     const orientation = this.menubar.orientation();
@@ -247,15 +248,21 @@ export class ForMenubarTrigger extends AnchoredOverlayPositioningBase {
     }
 
     // Trigger-row navigation (cross-axis to the open key, per APG).
-    const action = resolveListNavigation(event, { orientation, dir });
-    if (action) {
-      event.preventDefault();
-      this.menubar.navigateTriggers(this.#host.nativeElement, action);
+    if (this.#navigate(event)) {
       return;
     }
 
     // Typeahead among sibling triggers.
     this.menubar.handleTriggerTypeahead(event);
+  }
+
+  #navigate(event: KeyboardEvent): boolean {
+    return navigateFromRovingItem(event, {
+      groupDisabled: this.menubar.disabled(),
+      orientation: this.menubar.orientation(),
+      dir: this.menubar.dir(),
+      navigate: (action) => this.menubar.navigateTriggers(this.#host.nativeElement, action),
+    });
   }
 
   protected onFocus(): void {

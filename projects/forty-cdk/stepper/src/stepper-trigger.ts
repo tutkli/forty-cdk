@@ -1,6 +1,6 @@
 import { computed, Directive, ElementRef, inject } from '@angular/core';
 
-import { registerHandle, hostId, resolveListNavigation, rovingTabStop } from 'forty-cdk/core';
+import { navigateFromRovingItem, registerHandle, hostId, rovingTabStop } from 'forty-cdk/core';
 import { injectStepperContext, injectStepperItemContext } from './stepper-context';
 
 /**
@@ -104,17 +104,11 @@ export class ForStepperTrigger {
   }
 
   protected onKeyDown(event: KeyboardEvent): void {
-    if (this.ctx.mode() !== 'interactive') {
-      return;
-    }
-    const action = resolveListNavigation(event, {
+    navigateFromRovingItem(event, {
+      groupDisabled: this.ctx.mode() !== 'interactive',
       orientation: this.ctx.orientation(),
       dir: this.ctx.dir(),
+      navigate: (action) => this.ctx.navigate(this.#host, action),
     });
-    if (!action) {
-      return;
-    }
-    event.preventDefault();
-    this.ctx.navigate(this.#host, action);
   }
 }

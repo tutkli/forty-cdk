@@ -233,7 +233,10 @@ export {
   type HostRovingContext,
   type HostRovingItemHandle,
 } from './roving-tabindex/host-roving-context';
+export { injectRovingFocusRestore } from './roving-tabindex/roving-focus-restore';
 export {
+  navigateFromRovingItem,
+  type RovingItemNavigationOptions,
   rovingListTarget,
   rovingTabStop,
   selectionTabStop,

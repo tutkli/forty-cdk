@@ -53,8 +53,11 @@ export interface FocusModel<T = unknown> {
    * back in view. A no-op when focus already rides a live node.
    */
   resumeActive(): void;
-  /** Move focus to the next / previous / first / last enabled node. */
-  navigate(action: ListNavigationAction): void;
+  /**
+   * Move focus to the next / previous / first / last enabled node, stepping from
+   * `from` when it is a node of the model and from the current node otherwise.
+   */
+  navigate(action: ListNavigationAction, from: HTMLElement): void;
   /** Move focus to the first child of the current node (an open parent). */
   enterChild(): void;
   /** Move focus to the current node's parent. */
@@ -125,13 +128,15 @@ export class RovingFocusModel<T = unknown> implements FocusModel<T> {
     };
   }
 
-  navigate(action: ListNavigationAction): void {
+  navigate(action: ListNavigationAction, from: HTMLElement): void {
     const active = this.#deps.roving.active();
     const items = this.#deps.visibleHandles();
     if (items.length === 0) {
       return;
     }
-    const currentIndex = items.findIndex((item) => item.host === active);
+    const fromIndex = items.findIndex((item) => item.host === from);
+    const currentIndex =
+      fromIndex >= 0 ? fromIndex : items.findIndex((item) => item.host === active);
     const next = moveIndex(currentIndex < 0 ? 0 : currentIndex, items.length, action, {
       loop: false,
       isDisabled: (i) => items[i]!.disabled(),

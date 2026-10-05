@@ -2,8 +2,8 @@ import { booleanAttribute, computed, Directive, ElementRef, inject, input } from
 
 import {
   hostButtonType,
+  navigateFromRovingItem,
   registerHandle,
-  resolveListNavigation,
   rovingTabStop,
 } from 'forty-cdk/core';
 import { injectCarouselContext } from './carousel-context';
@@ -106,17 +106,11 @@ export class ForCarouselIndicator {
   }
 
   protected onKeyDown(event: KeyboardEvent): void {
-    if (this.disabled()) {
-      return;
-    }
-    const action = resolveListNavigation(event, {
+    navigateFromRovingItem(event, {
+      groupDisabled: false,
       orientation: this.ctx.orientation(),
       dir: this.ctx.dir(),
+      navigate: (action) => this.ctx.navigate(this.#host.nativeElement, action),
     });
-    if (!action) {
-      return;
-    }
-    event.preventDefault();
-    this.ctx.navigate(this.#host.nativeElement, action);
   }
 }

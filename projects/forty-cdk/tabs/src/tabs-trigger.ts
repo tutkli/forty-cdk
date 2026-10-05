@@ -5,7 +5,7 @@ import {
   hostButtonType,
   registerHandle,
   hostId,
-  resolveListNavigation,
+  navigateFromRovingItem,
   rovingTabStop,
   unsetInput,
 } from 'forty-cdk/core';
@@ -113,14 +113,11 @@ export class ForTabsTrigger {
   }
 
   protected onKeyDown(event: KeyboardEvent): void {
-    const action = resolveListNavigation(event, {
+    navigateFromRovingItem(event, {
+      groupDisabled: this.group.disabled(),
       orientation: this.group.orientation(),
       dir: this.group.dir(),
+      navigate: (action) => this.group.navigate(this.#host.nativeElement, action),
     });
-    if (!action) {
-      return;
-    }
-    event.preventDefault();
-    this.group.navigate(this.#host.nativeElement, action);
   }
 }

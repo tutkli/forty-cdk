@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
 import {
   ForTree,
   ForTreeGroup,
@@ -41,6 +41,12 @@ const ROOTS: FileNode[] = [
   },
   { id: 'notes', name: 'Notes' },
 ];
+
+function withoutNodes(nodes: readonly FileNode[], removed: readonly string[]): FileNode[] {
+  return nodes
+    .filter((n) => !removed.includes(n.id))
+    .map((n) => (n.children ? { ...n, children: withoutNodes(n.children, removed) } : n));
+}
 
 function collectDescendants(node: FileNode): readonly string[] {
   if (!node.children?.length) {
@@ -137,6 +143,7 @@ export class TreeNode {
   selector: 'app-tree-fixture',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ForTree, TreeNode],
+  host: { '(keydown)': 'onTreeKeydown($event)' },
   template: `
     @if (showFilter) {
       <input
@@ -159,7 +166,7 @@ export class TreeNode {
       [descendantsOf]="descendantsFn"
       aria-label="File system"
     >
-      @for (n of roots; track n.id) {
+      @for (n of roots(); track n.id) {
         <app-tree-node
           [node]="n"
           [expanded]="open()"
@@ -172,7 +179,8 @@ export class TreeNode {
   `,
 })
 export class TreeFixture {
-  protected readonly roots = ROOTS;
+  protected readonly removed = signal<readonly string[]>([]);
+  protected readonly roots = computed(() => withoutNodes(ROOTS, this.removed()));
   protected readonly picked = signal<readonly string[]>([]);
   protected readonly open = signal<readonly string[]>(
     queryFlag('expandAll') ? ['documents', 'projects'] : [],
@@ -205,10 +213,26 @@ export class TreeFixture {
       }
       n.children?.forEach(walk);
     };
-    this.roots.forEach(walk);
+    this.roots().forEach(walk);
     this.open.update((open) => [
       ...new Set([...open, ...expandToReveal(matches, this.ancestorsFn)]),
     ]);
+  }
+
+  protected readonly editable = queryFlag('editable');
+
+  protected onTreeKeydown(event: KeyboardEvent): void {
+    if (!this.editable) {
+      return;
+    }
+    if (event.key === 'Delete') {
+      const testid = (event.target as HTMLElement).dataset['testid'] ?? '';
+      if (testid.startsWith('item-')) {
+        this.removed.update((ids) => [...ids, testid.slice('item-'.length)]);
+      }
+    } else if (event.key === 'Escape') {
+      this.open.set([]);
+    }
   }
 
   protected disableNotes(): void {
