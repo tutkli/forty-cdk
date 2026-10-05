@@ -2492,10 +2492,12 @@ describe('ForCombobox', () => {
       expect(content.dataset['align']).toBe('start');
     });
 
-    it('defaults align to end when dir="rtl" and consumer omits [align]', async () => {
+    it('keeps align at start under dir="rtl" and hands the direction to the portaled content', async () => {
       const r = renderHost(RtlHost);
       await flushPositioning(r.fixture);
-      expect(getContent().dataset['align']).toBe('end');
+      const content = getContent();
+      expect(content.dataset['align']).toBe('start');
+      expect(content.getAttribute('dir')).toBe('rtl');
     });
 
     it('honors a consumer-provided [align] in RTL (no auto-flip)', async () => {

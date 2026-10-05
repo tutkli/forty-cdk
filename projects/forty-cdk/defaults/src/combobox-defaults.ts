@@ -28,12 +28,11 @@ export interface ForComboboxDefaults {
   side: FloatingSide;
   /**
    * Alignment along the chosen `side` for comboboxes that don't override
-   * `align` locally. `null` (the library fallback) follows the writing
-   * direction — `'start'` in LTR, `'end'` in RTL, so the listbox stays anchored
-   * to the input's leading edge. Set a value here to pin one alignment for the
-   * whole scope regardless of direction.
+   * `align` locally. Library fallback `'start'`. `start` and `end` resolve
+   * against the writing direction, so `'start'` anchors the listbox to the
+   * input's leading edge in both LTR and RTL.
    */
-  align: FloatingAlign | null;
+  align: FloatingAlign;
   /**
    * Distance (px) between the combobox input/trigger and the floating
    * content along the resolved `side` axis, for comboboxes that don't
@@ -93,7 +92,7 @@ export interface ForComboboxDefaults {
  */
 export const FOR_COMBOBOX_FALLBACK_DEFAULTS: ForComboboxDefaults = {
   side: 'bottom',
-  align: null,
+  align: 'start',
   sideOffset: 4,
   collisionPadding: 8,
   openHighlight: 'first',

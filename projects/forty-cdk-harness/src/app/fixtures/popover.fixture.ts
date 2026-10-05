@@ -40,10 +40,27 @@ import { queryFlag } from './_query-flag';
       <div data-testid="spacer-after" style="height: 1000px"></div>
     }
     <input id="after" placeholder="after-trigger" />
+    @if (rtlRegion) {
+      <section dir="rtl" style="display: flex; justify-content: center; padding: 16px">
+        <div forPopover [(open)]="rtlOpen" ariaLabel="RTL popover" align="start">
+          <button data-testid="rtl-trigger" forPopoverTrigger style="width: 320px">
+            Open RTL popover
+          </button>
+          @if (rtlOpen()) {
+            <div forPopoverContent data-testid="rtl-popover" style="width: 120px">
+              <button data-testid="rtl-first">First</button>
+            </div>
+          }
+        </div>
+      </section>
+    }
   `,
 })
 export class PopoverFixture {
   protected readonly open = signal(false);
+  protected readonly rtlOpen = signal(false);
+
+  protected readonly rtlRegion = queryFlag('rtlRegion');
 
   protected readonly tall = queryFlag('tall');
   protected readonly initialFocus: 'first' | 'container' = queryFlag('initialFocusContainer')

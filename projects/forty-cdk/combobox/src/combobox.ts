@@ -108,21 +108,7 @@ export class ForCombobox<T = string>
   readonly #chips = new Collection<ForComboboxChipHandle<T>>();
   readonly #actions = new Collection<ForComboboxActionHandle>();
 
-  /**
-   * The scope's `align` is nullable — `null` means "follow the writing
-   * direction" — so the seed the base reads resolves it here, where `dir()` is
-   * available. Every other seed passes through unchanged.
-   */
-  readonly #positioningDefaults = computed<AnchoredPositioningSeedDefaults>(() => ({
-    side: this.#defaults.side,
-    align: this.#defaults.align ?? (this.dir() === 'rtl' ? 'end' : 'start'),
-    sideOffset: this.#defaults.sideOffset,
-    collisionPadding: this.#defaults.collisionPadding,
-  }));
-
-  protected get positioningDefaults(): AnchoredPositioningSeedDefaults {
-    return this.#positioningDefaults();
-  }
+  protected readonly positioningDefaults: AnchoredPositioningSeedDefaults = this.#defaults;
 
   /**
    * Two-way bindable. Visible input text. The `model()` change emitter

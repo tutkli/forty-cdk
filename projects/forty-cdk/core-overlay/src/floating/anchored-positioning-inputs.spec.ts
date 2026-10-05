@@ -84,15 +84,14 @@ describe('anchored positioning inputs', () => {
 class RtlHost {}
 
 /**
- * Two roots resolve a placement seed from the writing direction rather than from
- * a fixed literal, which is why their defaults key is nullable: `null` means
- * "derive it". Folding them onto the shared base had to preserve both exactly —
- * the combobox listbox anchors to the input's leading edge, and a submenu opens
- * away from its parent item.
+ * One root resolves a placement seed from the writing direction rather than from
+ * a fixed literal, which is why its defaults key is nullable: `null` means
+ * "derive it", and a submenu opens away from its parent item. The combobox
+ * listbox keeps the logical `start`: its portaled content carries the ambient
+ * `dir`, so floating-ui resolves `start` to the input's leading edge.
  *
  * The shared contract asserts the four seeds against each root's *settled*
- * placement, so the derivation itself — the one thing about these two that is
- * not the family's uniform behaviour — stays here.
+ * placement, so the direction-dependent behaviour stays here.
  */
 describe('writing-direction placement seeds', () => {
   function setup(providers: Provider[] = []): { combobox: ForCombobox; sub: ForMenuSub } {
@@ -107,10 +106,10 @@ describe('writing-direction placement seeds', () => {
     };
   }
 
-  it('aligns the combobox listbox to `end` and opens the submenu to `left` under dir="rtl"', () => {
+  it('keeps the combobox listbox at `start` and opens the submenu to `left` under dir="rtl"', () => {
     const { combobox, sub } = setup();
 
-    expect(combobox.align()).toBe('end');
+    expect(combobox.align()).toBe('start');
     expect(sub.side()).toBe('left');
   });
 
