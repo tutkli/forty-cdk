@@ -17,6 +17,7 @@ import {
   type DateRange,
   injectDateAdapter,
   adoptHostId,
+  FOR_CALENDAR_HOST,
   IdGenerator,
   LiveAnnouncer,
   type WritingDirection,
@@ -94,6 +95,7 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
   readonly #idGen = inject(IdGenerator);
   readonly #injector = inject(Injector);
   readonly #announcer = inject(LiveAnnouncer);
+  readonly #pickerHost = inject(FOR_CALENDAR_HOST, { optional: true });
 
   /** The active date adapter, resolved from `FOR_DATE_ADAPTER`. */
   readonly adapter: DateAdapter<D> = injectDateAdapter<D>('ForCalendar', { scope: 'calendar' });
@@ -137,11 +139,33 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
     },
   );
 
-  /** Disables the whole calendar: no focus movement, no selection. */
-  readonly disabled = input(false, { transform: booleanAttribute });
+  /**
+   * Disables the whole calendar: no focus movement, no selection. Bound as
+   * `[disabled]`; {@link disabled} is the effective state.
+   */
+  readonly disabledInput = input(false, { transform: booleanAttribute, alias: 'disabled' });
 
-  /** Makes the calendar read-only: dates stay focusable but selection is blocked. */
-  readonly readonly = input(false, { transform: booleanAttribute });
+  /**
+   * Makes the calendar read-only: dates stay focusable but selection is blocked.
+   * Bound as `[readonly]`; {@link readonly} is the effective state.
+   */
+  readonly readonlyInput = input(false, { transform: booleanAttribute, alias: 'readonly' });
+
+  /**
+   * Effective disabled: the calendar's own `[disabled]` OR'd with the disabled
+   * state of a `[forDatePicker]` / `[forDateRangePicker]` it is projected into.
+   */
+  readonly disabled = computed(
+    () => this.disabledInput() || (this.#pickerHost?.effectiveDisabled() ?? false),
+  );
+
+  /**
+   * Effective read-only: the calendar's own `[readonly]` OR'd with the read-only
+   * state of a `[forDatePicker]` / `[forDateRangePicker]` it is projected into.
+   */
+  readonly readonly = computed(
+    () => this.readonlyInput() || (this.#pickerHost?.readonly() ?? false),
+  );
 
   /**
    * Selection mode. `'single'` (default) keeps the single-date `[(value)]`
@@ -167,7 +191,7 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
   /**
    * Two-way bindable committed date range, or `null`. Only used when
    * `selectionMode="range"`. The `model()` change emitter (`(rangeChange)`)
-   * fires only when the calendar internally commits or clears a range, never
+   * fires only when the calendar internally commits a range, never
    * on consumer writes via `[(range)]`.
    */
   readonly range = model<DateRange<D> | null>(null);
@@ -214,10 +238,11 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
 
   readonly #initialToday = this.adapter.today();
 
-  /** Internal focused date (the roving entry point), seeded from `value ?? range.start ?? today`. */
-  readonly focusedDate = linkedSignal<D>(
-    () => this.value() ?? this.range()?.start ?? this.#initialToday,
-  );
+  /**
+   * Internal focused date (the roving entry point), seeded from
+   * `value ?? range.start ?? today`, with today clamped into `[min, max]`.
+   */
+  readonly focusedDate = linkedSignal<D>(() => this.#seedDate());
 
   readonly #bounds = new CalendarBounds<D>({
     adapter: this.adapter,
@@ -255,7 +280,7 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
       scheduleFocus: (fn) => this.#scheduleFocus(fn),
       focusDayCell: (target) => this.#focusDayCell(target),
     },
-    this.value() ?? this.range()?.start ?? this.#initialToday,
+    this.#seedDate(),
   );
 
   readonly #dayNav = new CalendarDayNavigator<D>({
@@ -286,6 +311,10 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
     month: this.#monthNav,
     year: this.#yearNav,
   };
+
+  #seedDate(): D {
+    return this.value() ?? this.range()?.start ?? this.#bounds.clamp(this.#initialToday);
+  }
 
   #strategyFor(view: CalendarView): CalendarViewStrategy {
     return this.#strategies[view];

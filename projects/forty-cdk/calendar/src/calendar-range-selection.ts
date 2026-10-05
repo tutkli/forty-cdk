@@ -17,7 +17,7 @@ export interface CalendarRangeHost<D> {
   readonly adapter: DateAdapter<D>;
   /** The roving focused date, used as the preview cursor on keyboard navigation. */
   readonly focusedDate: () => D;
-  /** The committed range model (read for idle state, written on commit / clear). */
+  /** The committed range model (read for idle state, written on commit). */
   readonly range: WritableSignal<DateRange<D> | null>;
   /** Whether range selection is active (`selectionMode === 'range'`). */
   readonly active: Signal<boolean>;
@@ -100,7 +100,8 @@ export class CalendarRangeSelection<D> {
 
   /**
    * Apply a click on `date` to the anchor → commit flow. The first click sets
-   * the anchor; the second commits the range in **either direction** — clicking
+   * the anchor and leaves the committed range untouched until the second click
+   * replaces it; the second commits the range in **either direction** — clicking
    * before the anchor commits the inverted band `[date, anchor]` (honouring the
    * hover preview) rather than starting over. Returns `true` when the click moved
    * the selection (so the root should move focus to `date`), `false` when it was
@@ -110,7 +111,6 @@ export class CalendarRangeSelection<D> {
     const adapter = this.#host.adapter;
     const anchor = this.#anchor();
     if (anchor === null) {
-      this.#host.range.set(null);
       this.#anchor.set(date);
       return true;
     }

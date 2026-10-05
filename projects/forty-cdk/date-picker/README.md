@@ -48,7 +48,7 @@ All date math and formatting go through a `DateAdapter<D>`, shared with `ForCale
 </div>
 ```
 
-Bind the projected `[forCalendar]` to the picker: `[(value)]` to the same date signal, and forward `[min]` / `[max]` / `[isDateUnavailable]` from the picker's accessors (`#picker="forDatePicker"`). The picker observes the calendar's selection through a `contentChild` query and never mutates the calendar, so picking a date sets the value, flips `touched`, and (when `closeOnSelect` is on) closes the surface.
+Bind the projected `[forCalendar]` to the picker: `[(value)]` to the same date signal, and forward `[min]` / `[max]` / `[isDateUnavailable]` from the picker's accessors (`#picker="forDatePicker"`). The picker observes the calendar's selection through a `contentChild` query and never mutates the calendar, so picking a date sets the value, flips `touched`, and (when `closeOnSelect` is on) closes the surface. The calendar takes the picker's `readonly` and `disabled` without a binding, so a read-only or disabled picker lets no pick through and paints no selection, whichever way the calendar is bound.
 
 Presence in the DOM is yours: wrap `[forDatePickerContent]` in `@if (picker.open())`, and `animate.enter` / `animate.leave` drive its transitions.
 
@@ -191,7 +191,7 @@ With `granularity="minute"` and a time-capable adapter the picker becomes a date
 
 ### Range selection
 
-Open the picker and click a first day: the trigger keeps its placeholder, because the value `[formField]` reads stays `null` until a second click commits the range. Close the panel with only one end picked and the required error appears. [`ForDateRangePicker`](#range-selection--fordaterangepicker) documents the root, its bounds and native submission.
+Open the picker and click a first day: the trigger keeps its placeholder, because the value `[formField]` reads does not change until a second click commits the range. Close the panel with only one end picked and the required error appears. [`ForDateRangePicker`](#range-selection--fordaterangepicker) documents the root, its bounds and native submission.
 
 ## API
 
@@ -231,6 +231,9 @@ Plus the shared `FormUiControl` inputs from the base (`disabled`, `readonly`, `r
 | `[forDatePicker]`        | `data-state`       | `open` \| `closed` |
 | `[forDatePicker]`        | `data-disabled`    | present \| absent  |
 | `[forDatePicker]`        | `data-readonly`    | present \| absent  |
+| `[forDateRangePicker]`   | `data-state`       | `open` \| `closed` |
+| `[forDateRangePicker]`   | `data-disabled`    | present \| absent  |
+| `[forDateRangePicker]`   | `data-readonly`    | present \| absent  |
 | `[forDatePickerTrigger]` | `data-state`       | `open` \| `closed` |
 | `[forDatePickerTrigger]` | `data-disabled`    | present \| absent  |
 | `[forDatePickerTrigger]` | `data-readonly`    | present \| absent  |
@@ -383,7 +386,7 @@ The anatomy is explicit, so a date field placed inside the surface of a trigger-
 
 For date-range selection use the dedicated `ForDateRangePicker` root (selector `[forDateRangePicker]`). It is the root **and** the form value, implementing `FormValueControl<DateRange<D> | null>`, so the committed range auto-wires with `[formField]` exactly like any other control.
 
-It reuses the same pieces (`[forDatePickerTrigger]`, `[forDatePickerContent]`, `[forDatePickerValue]`, `[forDatePickerAnchor]`) through a shared base, and provides `FOR_DATE_PICKER_CONTEXT` so they resolve under it. Project a `[forCalendar]` in `selectionMode="range"` and bind its range to the picker's `value`; the two-click anchor → commit flow keeps `value` `null` until both endpoints are chosen (the form never sees a half-entered range), and `start <= end` is an invariant. Range is day-granular (no time composition).
+It reuses the same pieces (`[forDatePickerTrigger]`, `[forDatePickerContent]`, `[forDatePickerValue]`, `[forDatePickerAnchor]`) through a shared base, and provides `FOR_DATE_PICKER_CONTEXT` so they resolve under it. Project a `[forCalendar]` in `selectionMode="range"` and bind its range to the picker's `value`; the two-click anchor → commit flow leaves `value` unchanged until both endpoints are chosen, so the form never sees a half-entered range, and abandoning a new selection with Escape or an outside click keeps the range committed before it. `start <= end` is an invariant. Range is day-granular (no time composition).
 
 <!-- snippet: fragment -->
 
@@ -428,7 +431,7 @@ readonly booking = form(this.model, (p) => required(p.stay));
 ```
 
 - **Form value.** The committed `DateRange<D> | null` is the `value` model. `null` is the empty state. Pair it with `required(p.stay)` so `invalid()` flips when the form demands a range and none is committed. `touched` fires on commit and on close, exactly like the single-date picker.
-- **Validity.** `start <= end` is guaranteed by construction and is never an error. Forward `minDate` / `maxDate` to the calendar's `[min]` / `[max]`, and `minRangeLength` / `maxRangeLength` to the calendar's `[minRangeLength]` / `[maxRangeLength]` (a too-short / too-long range is rejected as a no-op by the calendar's two-click flow).
+- **Validity.** `start <= end` is guaranteed by construction and is never an error. Forward `minDate` / `maxDate` to the calendar's `[min]` / `[max]` so out-of-range days are disabled in the grid; a range picked in a calendar without them is clamped into `[minDate, maxDate]` on commit. Forward `minRangeLength` / `maxRangeLength` to the calendar's `[minRangeLength]` / `[maxRangeLength]` (a too-short / too-long range is rejected as a no-op by the calendar's two-click flow).
 - **Native submission.** When `name` is set, two hidden inputs `<name>-start` / `<name>-end` mirror the committed endpoints as ISO `YYYY-MM-DD` for native `<form>` posts.
 - **Bounds naming.** `minDate` / `maxDate` (not `min` / `max`) for the same reason as `ForDatePicker`, and additionally because `FormUiControl.min` / `max` are typed `NonNullable<TValue>` (the range object itself), which is meaningless as a bound.
 
@@ -436,12 +439,13 @@ Defaults are configured with `provideForDateRangePickerDefaults` (`side` / `alig
 
 ## Keyboard
 
-| Key                          | Behavior                                                                  |
-| ---------------------------- | ------------------------------------------------------------------------- |
-| **Enter / Space** on trigger | Open the surface (native button activation).                              |
-| **Escape**                   | Dismiss the surface and return focus to the trigger (when `dismissible`). |
+| Key                                                | Behavior                                                                  |
+| -------------------------------------------------- | ------------------------------------------------------------------------- |
+| **Enter / Space** on trigger                       | Open the surface (native button activation).                              |
+| **ArrowDown / Alt+ArrowDown / ArrowUp** on trigger | Open the surface and move focus to the calendar.                          |
+| **Escape**                                         | Dismiss the surface and return focus to the trigger (when `dismissible`). |
 
-Inside the surface, the projected `ForCalendar` owns the full grid keyboard map (arrows / `Home` / `End` / `PageUp` / `PageDown` / `Enter` / `Space`). On open, focus lands on the calendar's focused cell (`value ?? today`) in non-modal mode, or the first focusable element in modal mode.
+Inside the surface, the projected `ForCalendar` owns the full grid keyboard map (arrows / `Home` / `End` / `PageUp` / `PageDown` / `Enter` / `Space`). On open, focus lands on the calendar's focused cell (`value ?? today`, with today clamped into the calendar's `[min, max]`) in non-modal mode, or the first focusable element in modal mode.
 
 ## Accessibility
 

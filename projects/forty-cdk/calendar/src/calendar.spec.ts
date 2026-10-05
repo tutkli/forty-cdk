@@ -801,6 +801,41 @@ describe('ForCalendar', () => {
       expect(blocked.getAttribute('aria-selected')).toBe('false');
     });
 
+    it('seeds the focused date at min when there is no value and today is before min', async () => {
+      const r = renderHost(CalendarHost);
+      r.instance.locale.set('en-US');
+      r.instance.value.set(null);
+      r.instance.min.set(new Date(2026, 7, 10));
+      await flush(r.fixture);
+
+      expect(r.query('[data-testid="heading"]')!.textContent).toContain('August 2026');
+      expect(tabbableCells(r)).toHaveLength(1);
+      expect(focusedCell(r)).toBe(cell(r, new Date(2026, 7, 10)));
+      expect(focusedCell(r).hasAttribute('aria-disabled')).toBe(false);
+    });
+
+    it('seeds the focused date at max when there is no value and today is after max', async () => {
+      const r = renderHost(CalendarHost);
+      r.instance.locale.set('en-US');
+      r.instance.value.set(null);
+      r.instance.max.set(new Date(2008, 2, 10));
+      await flush(r.fixture);
+
+      expect(r.query('[data-testid="heading"]')!.textContent).toContain('March 2008');
+      expect(focusedCell(r)).toBe(cell(r, new Date(2008, 2, 10)));
+      expect(focusedCell(r).hasAttribute('aria-disabled')).toBe(false);
+    });
+
+    it('keeps seeding on today when today is within [min, max]', async () => {
+      const r = renderHost(CalendarHost);
+      r.instance.value.set(null);
+      r.instance.min.set(new Date(2026, 5, 1));
+      r.instance.max.set(new Date(2026, 5, 30));
+      await flush(r.fixture);
+
+      expect(focusedCell(r)).toBe(cell(r, JUN_15));
+    });
+
     it('selects on click for available dates', async () => {
       const r = renderHost(CalendarHost);
       const target = cell(r, new Date(2026, 5, 20));
@@ -1032,6 +1067,28 @@ describe('ForCalendar', () => {
       expect(rangeCell(r, new Date(2026, 5, 12)).hasAttribute('data-in-range')).toBe(true);
       expect(rangeCell(r, JUN_10).hasAttribute('data-in-range')).toBe(true);
       expect(rangeCell(r, JUN_15).hasAttribute('data-in-range')).toBe(true);
+    });
+
+    it('keeps the committed range while a new anchor is pending and replaces it on commit', async () => {
+      const r = renderHost(CalendarRangeHost);
+      const committed = { start: JUN_10, end: JUN_15 };
+      r.instance.range.set(committed);
+      await flush(r.fixture);
+
+      click(rangeCell(r, JUN_20));
+      await flush(r.fixture);
+
+      expect(r.instance.range()).toBe(committed);
+      expect(rangeCell(r, JUN_20).hasAttribute('data-range-start')).toBe(true);
+      expect(rangeCell(r, new Date(2026, 5, 12)).hasAttribute('data-in-range')).toBe(false);
+      expect(rangeCell(r, new Date(2026, 5, 12)).getAttribute('aria-selected')).toBe('false');
+
+      click(rangeCell(r, new Date(2026, 5, 25)));
+      await flush(r.fixture);
+
+      const range = r.instance.range()!;
+      expect(adapter.isSameDay(range.start, JUN_20)).toBe(true);
+      expect(adapter.isSameDay(range.end, new Date(2026, 5, 25))).toBe(true);
     });
 
     it('committed range: aria-selected is true across the band', async () => {
