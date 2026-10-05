@@ -1,7 +1,16 @@
-import { DOCUMENT, PLATFORM_ID, DestroyRef, ElementRef, inject } from '@angular/core';
+import {
+  DOCUMENT,
+  PLATFORM_ID,
+  DestroyRef,
+  ElementRef,
+  effect,
+  inject,
+  signal,
+} from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 
 import { afterNextRenderCancellable } from '../after-next-render-cancellable/after-next-render-cancellable';
+import { injectAmbientDirection } from '../text-direction/text-direction';
 
 export interface PortalConfig {
   /**
@@ -26,6 +35,12 @@ export interface PortalConfig {
  * Must be called from an injection context. The directive's `ElementRef` is
  * the host that gets portaled. Angular destroy hooks still fire normally —
  * the view tree is unaffected, only the DOM position changes.
+ *
+ * The portaled host keeps the writing direction of the position it left: unless it already
+ * carries a `dir` attribute when it moves, it is given the `dir` resolved from its original parent
+ * (the nearest `[dir]` ancestor, then `<html dir>`), and follows runtime `dir` changes there. So
+ * content opened inside a `dir="rtl"` subtree stays RTL, and a floating `align` of `start` / `end`
+ * resolves against that direction rather than against `<body>`'s.
  *
  * Note: any styles scoped to the original parent (CSS modules, encapsulated
  * `:host` rules, descendant selectors) won't reach the portaled element.
@@ -63,10 +78,24 @@ export function injectPortal(config: PortalConfig = {}): void {
     return t ?? doc.body;
   };
 
+  const origin = signal<Element | null>(null);
+  const ambientDir = injectAmbientDirection(origin);
+
   afterNextRenderCancellable(() => {
     const target = resolveTarget();
     if (el.parentNode !== target) {
+      if (!el.hasAttribute('dir')) {
+        origin.set(el.parentElement);
+        el.setAttribute('dir', ambientDir());
+      }
       target.appendChild(el);
+    }
+  });
+
+  effect(() => {
+    const dir = ambientDir();
+    if (origin() !== null && el.getAttribute('dir') !== dir) {
+      el.setAttribute('dir', dir);
     }
   });
 

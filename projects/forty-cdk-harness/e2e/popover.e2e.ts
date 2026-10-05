@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { clickOutside, el, gotoFixture } from './_helpers';
+import { boxOf, clickOutside, el, gotoFixture } from './_helpers';
 
 test.describe('Popover', () => {
   test('moves focus into the popover on open', async ({ page }) => {
@@ -158,5 +158,24 @@ test.describe('Popover', () => {
 
     expect(availableWidth).toBeGreaterThan(0);
     expect(availableWidth).toBeLessThanOrEqual(viewport.w);
+  });
+
+  test('content opened in a dir="rtl" subtree stays RTL and aligns start to its inline-start edge', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'popover', { rtlRegion: '1' });
+    await el(page, 'rtl-trigger').click();
+
+    const content = el(page, 'rtl-popover');
+    await expect(content).toHaveAttribute('dir', 'rtl');
+    await expect(content).toHaveAttribute('data-align', 'start');
+
+    const trigger = await boxOf(el(page, 'rtl-trigger'));
+    await expect
+      .poll(async () => {
+        const box = await boxOf(content);
+        return Math.round(box.x + box.width - (trigger.x + trigger.width));
+      })
+      .toBe(0);
   });
 });

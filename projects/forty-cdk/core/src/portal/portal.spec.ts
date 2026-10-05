@@ -1,4 +1,4 @@
-import { Component, provideZonelessChangeDetection } from '@angular/core';
+import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import { flush, nextMacrotask } from '../../../src/test-utils';
@@ -66,6 +66,32 @@ class LazyTargetHost {}
   `,
 })
 class CustomTargetHost {}
+
+@Component({
+  host: { 'data-fixture': 'direction-host' },
+  imports: [PortaledBubble],
+  template: `
+    <section [attr.dir]="dir()">
+      <div id="parent">
+        <portaled-bubble>portaled</portaled-bubble>
+      </div>
+    </section>
+  `,
+})
+class DirectionHost {
+  readonly dir = signal<string | null>('rtl');
+}
+
+@Component({
+  host: { 'data-fixture': 'own-direction-host' },
+  imports: [PortaledBubble],
+  template: `
+    <section dir="rtl">
+      <portaled-bubble dir="ltr">portaled</portaled-bubble>
+    </section>
+  `,
+})
+class OwnDirectionHost {}
 
 describe('injectPortal', () => {
   afterEach(() => {
@@ -291,5 +317,53 @@ describe('injectPortal', () => {
     await nextMacrotask();
 
     expect(document.querySelectorAll('portaled-bubble')).toHaveLength(0);
+  });
+
+  describe('writing direction', () => {
+    function portaled(): HTMLElement {
+      return document.querySelector<HTMLElement>('portaled-bubble')!;
+    }
+
+    it('carries the ambient dir of the subtree it left onto the portaled host', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(DirectionHost);
+      await flush(fixture);
+
+      expect(portaled().parentElement).toBe(document.body);
+      expect(portaled().getAttribute('dir')).toBe('rtl');
+    });
+
+    it('resolves ltr when nothing above the original position sets a dir', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(DirectionHost);
+      fixture.componentInstance.dir.set(null);
+      await flush(fixture);
+
+      expect(portaled().getAttribute('dir')).toBe('ltr');
+    });
+
+    it('follows a runtime dir change in the subtree it left', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(DirectionHost);
+      await flush(fixture);
+
+      fixture.componentInstance.dir.set('ltr');
+      await flush(fixture);
+      await nextMacrotask();
+      await flush(fixture);
+
+      expect(portaled().getAttribute('dir')).toBe('ltr');
+    });
+
+    it('leaves a dir the host already carries untouched', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(OwnDirectionHost);
+      await flush(fixture);
+      await nextMacrotask();
+      await flush(fixture);
+
+      expect(portaled().parentElement).toBe(document.body);
+      expect(portaled().getAttribute('dir')).toBe('ltr');
+    });
   });
 });

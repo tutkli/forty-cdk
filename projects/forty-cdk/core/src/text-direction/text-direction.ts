@@ -94,14 +94,27 @@ export function injectTextDirection(
   explicitDir: Signal<WritingDirection | null>,
 ): Signal<WritingDirection> {
   const host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+  const ambient = injectAmbientDirection(() => host.parentElement);
+
+  return computed(() => explicitDir() ?? ambient());
+}
+
+/**
+ * Resolves the writing direction in effect at `origin`: the nearest element carrying a `dir`
+ * attribute, `origin` itself included, then `<html dir>`, defaulting to `'ltr'`. Recomputes on any
+ * runtime `dir` attribute change, and on `origin` when it reads a signal.
+ *
+ * Must be called from an injection context.
+ */
+export function injectAmbientDirection(
+  origin: () => Element | null | undefined,
+): Signal<WritingDirection> {
   const doc = inject(DOCUMENT);
   const direction = inject(AmbientDirection);
 
-  const ambient = computed<WritingDirection>(() => {
+  return computed<WritingDirection>(() => {
     direction.revision();
-    const ancestor = host.parentElement?.closest('[dir]');
+    const ancestor = origin()?.closest('[dir]');
     return normalizeDir(ancestor?.getAttribute('dir') ?? doc.documentElement?.dir);
   });
-
-  return computed(() => explicitDir() ?? ambient());
 }

@@ -14,10 +14,9 @@ import type { FloatingAlign, FloatingSide } from './floating';
  * through its `positioningDefaults` accessor.
  *
  * A root whose library fallback for one seed is *derived* rather than fixed —
- * Combobox's writing-direction `align`, MenuSub's writing-direction `side` —
- * declares that key nullable on its own defaults interface and resolves it
- * inside `positioningDefaults`, so what the base reads is always a settled
- * value.
+ * MenuSub's writing-direction `side` — declares that key nullable on its own
+ * defaults interface and resolves it inside `positioningDefaults`, so what the
+ * base reads is always a settled value.
  */
 export interface AnchoredPositioningSeedDefaults {
   /** Side the overlay is anchored to when the `side` input is unset. */
