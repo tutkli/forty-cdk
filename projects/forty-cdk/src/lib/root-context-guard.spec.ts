@@ -35,6 +35,7 @@ import { FOR_TABS_CONTEXT, ForTabsList } from 'forty-cdk/tabs';
 import { FOR_TIME_PICKER_CONTEXT, ForTimePickerValue } from 'forty-cdk/time-picker';
 import { FOR_TOAST_CONTEXT, ForToastTitle } from 'forty-cdk/toast';
 import { FOR_TREE_CONTEXT, ForTreeItemLabel } from 'forty-cdk/tree';
+import { FOR_VIRTUAL_VIEWPORT_CONTEXT, ForVirtualFor } from 'forty-cdk/virtualization';
 
 import { renderHost } from '../test-utils/render';
 import { LIBRARY_CODE, LIBRARY_SOURCES } from '../test-utils/source-scan';
@@ -264,6 +265,16 @@ class ImpostorToastHost {}
 })
 class ImpostorTreeHost {}
 
+@Component({
+  imports: [ForVirtualFor],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [{ provide: FOR_VIRTUAL_VIEWPORT_CONTEXT, useValue: {} }],
+  template: `<div *forVirtualFor="let row of rows">{{ row }}</div>`,
+})
+class ImpostorVirtualViewportHost {
+  readonly rows = ['a'];
+}
+
 const GUARDED: readonly GuardedRoot[] = [
   {
     entryPoint: 'accordion',
@@ -444,6 +455,15 @@ const GUARDED: readonly GuardedRoot[] = [
     root: '[forTree]',
     piece: 'ForTreeItemLabel',
     host: ImpostorTreeHost,
+  },
+  {
+    entryPoint: 'virtualization',
+    source: 'virtualization/src/virtual-viewport-context.ts',
+    calls: 1,
+    token: 'FOR_VIRTUAL_VIEWPORT_CONTEXT',
+    root: '[forVirtualViewport]',
+    piece: 'ForVirtualFor',
+    host: ImpostorVirtualViewportHost,
   },
 ];
 

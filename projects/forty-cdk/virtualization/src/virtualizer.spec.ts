@@ -6,9 +6,10 @@ import {
   input,
   provideZonelessChangeDetection,
   signal,
+  type Type,
   viewChild,
 } from '@angular/core';
-import { TestBed } from '@angular/core/testing';
+import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { ɵPLATFORM_SERVER_ID } from '@angular/common';
 
 import { flush } from '../../src/test-utils';
@@ -767,6 +768,148 @@ describe('injectVirtualizer', () => {
 
       expect(v.totalSize()).toBe(1000 * 40);
       expect(v.range()).toEqual([0, 10]);
+    });
+  });
+
+  describe('dataVersion re-keys a same-count reorder (#2188)', () => {
+    const initialRows = (): readonly string[] => Array.from({ length: 100 }, (_, i) => `row-${i}`);
+
+    function swapped(rows: readonly string[], a: number, b: number): readonly string[] {
+      const next = [...rows];
+      [next[a], next[b]] = [next[b]!, next[a]!];
+      return next;
+    }
+
+    @Component({
+      selector: 'versioned-reorder-host',
+      template: `
+        <div #scroll style="overflow:auto; height:200px">
+          <div [style.height.px]="v.totalSize()">
+            @for (item of v.virtualItems(); track item.key) {
+              <div [attr.data-index]="item.index">{{ rows()[item.index] }}</div>
+            }
+          </div>
+        </div>
+      `,
+    })
+    class VersionedReorderHost {
+      readonly rows = signal(initialRows());
+      readonly scrollRef = viewChild<ElementRef<HTMLElement>>('scroll');
+      readonly scrollElement = computed(() => this.scrollRef()?.nativeElement ?? null);
+      readonly v = injectVirtualizer({
+        count: computed(() => this.rows().length),
+        estimateSize: () => 40,
+        scrollElement: this.scrollElement,
+        getItemKey: (i) => this.rows()[i]!,
+        dataVersion: this.rows,
+      });
+    }
+
+    @Component({
+      selector: 'unversioned-reorder-host',
+      template: `
+        <div #scroll style="overflow:auto; height:200px">
+          <div [style.height.px]="v.totalSize()">
+            @for (item of v.virtualItems(); track item.key) {
+              <div [attr.data-index]="item.index">{{ rows()[item.index] }}</div>
+            }
+          </div>
+        </div>
+      `,
+    })
+    class UnversionedReorderHost {
+      readonly rows = signal(initialRows());
+      readonly scrollRef = viewChild<ElementRef<HTMLElement>>('scroll');
+      readonly scrollElement = computed(() => this.scrollRef()?.nativeElement ?? null);
+      readonly v = injectVirtualizer({
+        count: computed(() => this.rows().length),
+        estimateSize: () => 40,
+        scrollElement: this.scrollElement,
+        getItemKey: (i) => this.rows()[i]!,
+      });
+    }
+
+    async function mount<T extends VersionedReorderHost | UnversionedReorderHost>(
+      host: Type<T>,
+    ): Promise<ComponentFixture<T>> {
+      const fixture = TestBed.createComponent(host);
+      fakeLayoutProps(fixture.nativeElement.querySelector('div') as HTMLElement, 200);
+      fixture.detectChanges();
+      await flush(fixture);
+      return fixture;
+    }
+
+    function rowAt(fixture: ComponentFixture<unknown>, index: number): HTMLElement {
+      return (fixture.nativeElement as HTMLElement).querySelector(
+        `[data-index="${index}"]`,
+      ) as HTMLElement;
+    }
+
+    it('moves the row tracked by item.key with its item', async () => {
+      const fixture = await mount(VersionedReorderHost);
+      const captured = rowAt(fixture, 2);
+      expect(captured.textContent?.trim()).toBe('row-2');
+
+      fixture.componentInstance.rows.update((rows) => swapped(rows, 2, 3));
+      await flush(fixture);
+
+      expect(captured.isConnected).toBe(true);
+      expect(captured.getAttribute('data-index')).toBe('3');
+      expect(captured.textContent?.trim()).toBe('row-2');
+      const keys = fixture.componentInstance.v.virtualItems().map((item) => item.key);
+      expect(keys.slice(0, 4)).toEqual(['row-0', 'row-1', 'row-3', 'row-2']);
+    });
+
+    it('re-keys from dataVersion alone when getItemKey reads no signal', async () => {
+      @Component({
+        selector: 'plain-data-reorder-host',
+        template: `
+          <div #scroll style="overflow:auto; height:200px">
+            <div [style.height.px]="v.totalSize()">
+              @for (item of v.virtualItems(); track item.key) {
+                <div [attr.data-index]="item.index">{{ rows[item.index] }}</div>
+              }
+            </div>
+          </div>
+        `,
+      })
+      class PlainDataReorderHost {
+        rows = initialRows();
+        readonly version = signal(0);
+        readonly scrollRef = viewChild<ElementRef<HTMLElement>>('scroll');
+        readonly scrollElement = computed(() => this.scrollRef()?.nativeElement ?? null);
+        readonly v = injectVirtualizer({
+          count: signal(100),
+          estimateSize: () => 40,
+          scrollElement: this.scrollElement,
+          getItemKey: (i) => this.rows[i]!,
+          dataVersion: this.version,
+        });
+      }
+
+      const fixture = TestBed.createComponent(PlainDataReorderHost);
+      fakeLayoutProps(fixture.nativeElement.querySelector('div') as HTMLElement, 200);
+      fixture.detectChanges();
+      await flush(fixture);
+      const captured = rowAt(fixture, 2);
+
+      fixture.componentInstance.rows = swapped(fixture.componentInstance.rows, 2, 3);
+      fixture.componentInstance.version.update((version) => version + 1);
+      await flush(fixture);
+
+      expect(captured.getAttribute('data-index')).toBe('3');
+      expect(captured.textContent?.trim()).toBe('row-2');
+    });
+
+    it('leaves each key on its index when no dataVersion is given', async () => {
+      const fixture = await mount(UnversionedReorderHost);
+      const captured = rowAt(fixture, 2);
+
+      fixture.componentInstance.rows.update((rows) => swapped(rows, 2, 3));
+      await flush(fixture);
+
+      expect(captured.getAttribute('data-index')).toBe('2');
+      expect(captured.textContent?.trim()).toBe('row-3');
     });
   });
 
