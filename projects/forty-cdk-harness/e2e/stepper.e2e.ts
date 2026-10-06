@@ -40,7 +40,7 @@ test.describe('ForStepper — interactive mode', () => {
     await expect(el(page, 'content-0')).not.toHaveAttribute('inert');
   });
 
-  test('Home / End jump to first / last selectable trigger', async ({ page }) => {
+  test('Home / End jump to the first / last trigger', async ({ page }) => {
     await gotoFixture(page, 'stepper');
     await rovingFirst(page, 'trigger-0');
     await page.keyboard.press('End');

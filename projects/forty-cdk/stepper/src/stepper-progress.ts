@@ -36,7 +36,8 @@ export class ForStepperProgress {
   /**
    * Basis for the reported percent. `'index'` (default) derives progress from
    * the current step index; `'completed'`
-   * derives it from the count of steps whose resolved state is `completed`.
+   * derives it from the count of steps marked `completed`, including the
+   * current step and steps whose `data-state` shows an error or a custom state.
    * In both cases the percent is `value / count`, so `aria-valuenow` reaches
    * `100` only in the terminal completed state (`selectedIndex === count`) or,
    * on the `'completed'` basis, when every step is completed; standing on the
@@ -57,7 +58,7 @@ export class ForStepperProgress {
     const total = this.ctx.count();
     let n = 0;
     for (let i = 0; i < total; i++) {
-      if (this.ctx.resolvedStateFor(i) === 'completed') {
+      if (this.ctx.completedFor(i)) {
         n++;
       }
     }

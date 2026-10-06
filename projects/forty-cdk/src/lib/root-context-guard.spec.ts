@@ -29,6 +29,7 @@ import {
   ForSelectValue,
 } from 'forty-cdk/select';
 import type { WritingDirection } from 'forty-cdk/shared';
+import { FOR_STEPPER_CONTEXT, ForStepperProgress } from 'forty-cdk/stepper';
 import { FOR_TABLE_CONTEXT, ForTableSelectAll } from 'forty-cdk/table';
 import { FOR_TABS_CONTEXT, ForTabsList } from 'forty-cdk/tabs';
 import { FOR_TIME_PICKER_CONTEXT, ForTimePickerValue } from 'forty-cdk/time-picker';
@@ -224,6 +225,14 @@ class ImpostorSelectHost {}
 class ImpostorTableHost {}
 
 @Component({
+  imports: [ForStepperProgress],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [{ provide: FOR_STEPPER_CONTEXT, useValue: {} }],
+  template: `<div forStepperProgress></div>`,
+})
+class ImpostorStepperHost {}
+
+@Component({
   imports: [ForTabsList],
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [{ provide: FOR_TABS_CONTEXT, useValue: {} }],
@@ -381,6 +390,15 @@ const GUARDED: readonly GuardedRoot[] = [
     root: '[forSelect]',
     piece: 'ForSelectValue',
     host: ImpostorSelectHost,
+  },
+  {
+    entryPoint: 'stepper',
+    source: 'stepper/src/stepper-context.ts',
+    calls: 1,
+    token: 'FOR_STEPPER_CONTEXT',
+    root: '[forStepper]',
+    piece: 'ForStepperProgress',
+    host: ImpostorStepperHost,
   },
   {
     entryPoint: 'table',

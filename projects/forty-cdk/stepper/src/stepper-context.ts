@@ -1,6 +1,7 @@
 import { inject, InjectionToken, type Signal } from '@angular/core';
 
 import {
+  assertRootContext,
   type ListNavigationAction,
   orphanContextError,
   type RovingTabindex,
@@ -235,7 +236,41 @@ export interface ForStepperItemContext {
   select(): void;
 }
 
-/** Injection token for the root stepper context (`ForStepper`). */
+/**
+ * The stepper's piece-only reads: what `[forStepperProgress]` needs from the
+ * root that a consumer never asks for.
+ *
+ * **Not** part of {@link ForStepperContext} and never exported from
+ * `public-api.ts`.
+ */
+export interface StepperPieceContext {
+  /**
+   * Returns true when step `index` is marked completed, whatever its resolved
+   * `data-state` (current, error, or a custom `state`).
+   */
+  completedFor(index: number): boolean;
+}
+
+/**
+ * The stepper's internal coordination surface: everything
+ * {@link ForStepperContext} publishes plus the {@link StepperPieceContext}
+ * reads.
+ *
+ * Never exported from `public-api.ts`. `ForStepper` declares those members
+ * TS-`private`, which keeps them out of the emitted `.d.ts` while `useExisting`
+ * still satisfies this contract at runtime.
+ */
+export interface StepperContext extends ForStepperContext, StepperPieceContext {}
+
+/**
+ * DI token for the stepper's coordination surface, provided by `[forStepper]`.
+ *
+ * Publicly typed as the read surface {@link ForStepperContext}. The pieces read
+ * the same token at an internal type, so a wrapper re-providing it must alias it
+ * to the root: `{ provide: FOR_STEPPER_CONTEXT, useExisting: MyStepper }`, where
+ * `MyStepper` extends `ForStepper`. A value that merely satisfies the declared
+ * type resolves too, and is rejected in dev mode by the first piece to read it.
+ */
 export const FOR_STEPPER_CONTEXT = new InjectionToken<ForStepperContext>('FOR_STEPPER_CONTEXT');
 
 /** Injection token for the per-step item context (`ForStepperItem`). */
@@ -243,7 +278,7 @@ export const FOR_STEPPER_ITEM_CONTEXT = new InjectionToken<ForStepperItemContext
   'FOR_STEPPER_ITEM_CONTEXT',
 );
 
-export function injectStepperContext(piece: string): ForStepperContext {
+export function injectStepperContext(piece: string): StepperContext {
   const ctx = inject(FOR_STEPPER_CONTEXT, { optional: true });
   if (!ctx) {
     throw orphanContextError({
@@ -253,7 +288,15 @@ export function injectStepperContext(piece: string): ForStepperContext {
       token: 'FOR_STEPPER_CONTEXT',
     });
   }
-  return ctx;
+  const widened = ctx as StepperContext;
+  assertRootContext({
+    entryPoint: 'stepper',
+    token: 'FOR_STEPPER_CONTEXT',
+    root: '[forStepper]',
+    piece,
+    probe: () => widened.completedFor,
+  });
+  return widened;
 }
 
 export function injectStepperItemContext(piece: string): ForStepperItemContext {

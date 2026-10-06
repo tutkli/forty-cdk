@@ -184,6 +184,10 @@ export class ForStepper implements ForStepperContext {
     return this.#items.items()[index]?.resolvedState() ?? 'pending';
   }
 
+  private completedFor(index: number): boolean {
+    return this.#items.items()[index]?.completed() ?? false;
+  }
+
   select(index: number): void {
     if (this.disabled()) {
       return;

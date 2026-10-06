@@ -56,8 +56,8 @@ export class ForTabsTrigger {
    */
   readonly value = input(unsetInput<string>());
   /**
-   * Whether this trigger can be activated. A disabled trigger stays focusable and announced, and is
-   * skipped by arrow navigation.
+   * Whether this trigger can be activated. A disabled trigger leaves the `Tab` sequence but stays
+   * reachable by arrow navigation and announced; activating it does nothing.
    */
   readonly disabled = input(false, { transform: booleanAttribute });
 

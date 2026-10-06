@@ -448,8 +448,8 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
           role: 'tab',
           'aria-selected': 'false',
           'data-state': 'pending',
-          'aria-controls': null,
         },
+        pairs: { 'aria-controls': '[forStepperContent]' },
       },
       {
         select: '[forStepperContent]',
