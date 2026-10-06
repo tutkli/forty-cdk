@@ -7,6 +7,182 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.32.0] - 2026-10-06
+
+A release about state a primitive reported but did not hold, across the overlay, picker, selection
+and virtualized primitives. A listbox can now be driven from an external textbox to build a command
+palette, and a drawer trigger opened without `[controls]` warns in dev mode. A read-only date picker
+commits nothing and a range under selection keeps its committed value, a hover card stays open while
+a control inside it holds focus and returns focus when it closes, a sub-trigger opens its submenu
+instead of toggling it, a dismissed toast hands focus to its neighbour, select and time-picker
+triggers open on Home / End, an inline completion reaches the combobox query, a cascade tree toggles
+from the state it shows, and a virtualized table or list follows its dataset instead of its rendered
+window. `[forVirtualReorder]` no longer accepts `animateReorder` or `liveSort`. Five changes arrive
+without binding anything: select-all keeps the values it does not cover, a drawer with snap points
+drags between them whatever `swipeToDismiss` and `dismissible` say and no longer throws on an
+invalid snap config in production, a number input commits the value it displays, a masked OTP input
+is a password field, and `(rangeChange)` fires only on a committed range.
+
+### Added
+
+- **Listbox** — drive a listbox from an external textbox
+  ([#2168](https://github.com/tutkli/forty-cdk/issues/2168)). `[forListboxController]="list"`
+  (`ForListboxController`, exported as `forListboxController`, published from `forty-cdk/listbox`)
+  on an input, with `#list="forListbox"` on the listbox, makes the input an APG editable combobox:
+  `role="combobox"`, `aria-controls` pointing at the listbox host's `id` (a static `id` is adopted),
+  `aria-expanded` while the listbox has options, `aria-activedescendant`, and default
+  `aria-autocomplete="list"` / `autocomplete="off"`. DOM focus stays in the input: ArrowDown /
+  ArrowUp move the active option across groups, skipping disabled options and wrapping per `loop`,
+  Enter clicks the active option so its own `(click)` runs, and Home, End, Escape, printable keys
+  and modified arrows stay with the input. The listbox gives up its tab stop, a press on an option
+  keeps focus in the input, hover moves the active option, and `focus()` routes to the input. A
+  second controller on one listbox warns with `FORCDK-CORE-005`. The listbox README's "Command
+  palette" section has the recipe.
+
+- **Drawer** — `[forDrawerTrigger]` warns in dev mode when it is open without `[controls]`
+  ([#2127](https://github.com/tutkli/forty-cdk/issues/2127)), with `FORCDK-DRAWER-013`, once per
+  opening, as `[forDialogTrigger]` already does with `FORCDK-DIALOG-002`: without the id the trigger
+  omits `aria-controls`. **Set `[controls]` to the id on `[forDrawer]`.**
+
+### Changed
+
+- **Virtual reorder** — `[forVirtualReorder]` no longer re-exposes `animateReorder` or `liveSort`
+  ([#2131](https://github.com/tutkli/forty-cdk/issues/2131)). Its rows are positioned out of flow
+  and keep their nodes across a reorder, so `liveSort` had no sibling to part and a drop had no row
+  to animate. **Binding either input on `[forVirtualReorder]` is now a template error: remove the
+  binding.**
+
+- **Drawer** — dragging is gated apart from dismissal
+  ([#2127](https://github.com/tutkli/forty-cdk/issues/2127)). A drawer with `snapPoints` drags
+  between them when `swipeToDismiss` or `dismissible` is `false`, stops at the lowest snap and
+  reports `willClose: false` in `(swipeEnd)`. Before, `swipeToDismiss` set to `false` armed no drag
+  at all, and `dismissible` set to `false` let `(swipeEnd)` report a close the drawer then dropped.
+  A drawer without `snapPoints` and with `[dismissible]="false"` arms no drag. The snap-point and
+  `closeThreshold` checks (`FORCDK-DRAWER-003`, `-004` and `-007` to `-010`) run only in dev mode,
+  so in production a misordered or malformed config degrades instead of throwing from the pointer
+  handler. The README's `ForDrawer` table drops the `animateEnter` / `animateLeave` rows, which were
+  never inputs: put `animate.enter` / `animate.leave` on the host, or pass them to
+  `ForDrawerManager.open()`.
+
+- **Listbox**, **Select**, **Table**, **Tree** — select-all toggles only the values it covers
+  ([#2137](https://github.com/tutkli/forty-cdk/issues/2137)). Ctrl/Cmd+A in a multiple listbox,
+  select or tree, and `[forTableSelectAll]`, used to clear the whole bound value on the deselect
+  half, dropping a selected disabled option or node, a value a filter hides, a collapsed tree node,
+  or a table row outside `aggregateValues` (another page of a page-scoped `[selectableValues]`). The
+  select half adds the enabled rendered values to the selection and the deselect half removes only
+  those.
+
+### Fixed
+
+- **Table** — a virtualized grid tracks the dataset, not the rendered window
+  ([#2115](https://github.com/tutkli/forty-cdk/issues/2115)). The documented raw anatomy
+  (`rows()[vrow.index]`) no longer throws after a filter or a refetch shrinks the dataset under a
+  retained focused or reordering row. `Ctrl+End`, `ArrowDown` and `PageDown` from a header cell
+  reach the dataset's last row, row 0 and row `pageSize - 1`. Focusing a widget inside a cell, by
+  click or otherwise, moves the roving tab stop to that cell. In `[forTableRowReorder]`, `Space` /
+  `Enter` on a control inside the row and `Ctrl+Space` in an input stay that control's keys instead
+  of lifting the row.
+
+- **Date picker**, **Calendar** — read-only, range commit, trigger keys and bounds
+  ([#2117](https://github.com/tutkli/forty-cdk/issues/2117)). A read-only or disabled
+  `[forDatePicker]` / `[forDateRangePicker]` reaches its projected calendar, which commits nothing
+  and paints no `aria-selected` cell, however the calendar's value is bound. Starting a new range no
+  longer clears the committed one: it stays until the second click replaces it, Escape or an outside
+  click after the anchor keeps it, and `(rangeChange)` fires only on a commit. The range picker
+  reflects `data-readonly` and clamps both endpoints into `[minDate, maxDate]`, as the single picker
+  does. `[forDatePickerTrigger]` opens on ArrowDown, Alt+ArrowDown and ArrowUp and moves focus to
+  the active cell, as a click does. With no value and today outside `[min, max]`, the calendar opens
+  on the nearest bound. A date picker over a day-only adapter no longer throws `FORCDK-CORE-003`
+  from an effect on render; the code is still reported where a time is read.
+
+- **Tooltip**, **Hover card** — scroll, press and focus handling
+  ([#2120](https://github.com/tutkli/forty-cdk/issues/2120)). A scroll inside the overlay's own
+  content, or of a container that does not hold its trigger, no longer dismisses it, and no scroll
+  dismisses it while the trigger holds focus, so tabbing to an off-screen trigger keeps the overlay
+  it opened. A press that never focuses the trigger (a button in macOS Safari or Firefox, a toolbar
+  that prevents `mousedown`) no longer stops the next keyboard focus from opening it. A focused
+  control inside a hover card keeps it open through a pointer leave or a scroll, and closing the
+  card with focus inside returns focus to the trigger without reopening it. The tooltip README now
+  lists `escapeKeyDown` and `openChange`, and the hover card's `escapeKeyDown` row is typed
+  `OutputEmitterRef<VetoableNativeEvent<KeyboardEvent>>`.
+
+- **Tooltip**, **Hover card** — content that unmounts under the pointer no longer keeps the next
+  surface open ([#2174](https://github.com/tutkli/forty-cdk/issues/2174)). After Escape,
+  `[(open)] = false`, `disabled` or `hide()` closed a surface the pointer was resting on, the next
+  hover-opened surface ignored the pointer leaving and stayed open.
+
+- **Menu**, **Menubar**, **Context menu** — submenu, menubar switching and context-menu focus
+  ([#2125](https://github.com/tutkli/forty-cdk/issues/2125)). A click, Enter or Space on
+  `[forMenuSubTrigger]` opens its submenu and moves focus into it instead of toggling it closed.
+  Clicking the root trigger with a submenu open closes the chain once instead of closing and
+  reopening it. A touch or pen tap on a sibling `[forMenubarTrigger]` switches menus through its
+  click, and ArrowLeft / ArrowRight, Home / End and typeahead on the trigger row switch the open
+  menu, so `aria-expanded` and Escape's return focus follow the focused trigger. A context menu
+  opened with Shift+F10 or the ContextMenu key returns focus to the element that was focused inside
+  the region, or to the region when a menu action removed it.
+
+- **Toast** — variant flip, dismissal focus and swipe start
+  ([#2126](https://github.com/tutkli/forty-cdk/issues/2126)). A toast updated into
+  `variant: 'error'` after it mounts is announced assertively, with `role="alert"`, and a variant
+  flip re-announces unchanged text. Dismissing the focused toast moves focus to the next toast, else
+  the previous one, else the element focused before the viewport hotkey, else the viewport, instead
+  of dropping it to `<body>`, on every close path that goes through the manager.
+  `data-swipe="start"` now reaches the DOM and holds until the next move.
+
+- **Select**, **Time picker** — closed-trigger Home / End, slot typeahead and paging
+  ([#2128](https://github.com/tutkli/forty-cdk/issues/2128)). Home / End on a closed trigger open
+  the list on the first / last enabled option. A time picker's slot list takes typeahead and PageUp
+  / PageDown, and a Space typed mid-prefix extends the typeahead instead of selecting a slot.
+
+- **Stepper**, **Tabs** — `aria-controls` parity and completed progress
+  ([#2129](https://github.com/tutkli/forty-cdk/issues/2129)). A stepper trigger carries
+  `aria-controls` whenever its panel is mounted, as a tab does, not only on the current step.
+  `[forStepperProgress]` with `valueBy="completed"` counts every completed step, including the
+  current one, one showing `error` and one with a custom `state`, so completing every step reports
+  `100` from the last one. The Stepper and Tabs READMEs now state the arrow-key, Home / End,
+  `data-disabled` and `data-state` contracts as they ship.
+
+- **Combobox**, **Select** — inline completion, result count and open-time scroll
+  ([#2146](https://github.com/tutkli/forty-cdk/issues/2146)). An inline autocomplete completion is
+  accepted into `query()` on Tab, on Enter with no active option, on a caret move that keeps the
+  completed text, on a click in the input and on blur, without reopening the listbox.
+  `[forComboboxStatus]` and `[forComboboxEmpty]` count `totalCount` when it is set, so a virtualized
+  combobox announces its full result count and no longer flashes the empty message before its window
+  renders. The scroll that brings the active option into view, and a select's scroll to its value on
+  open, no longer let a stationary cursor take the highlight in WebKit.
+
+- **OTP input** — `mask` makes the input a password field
+  ([#2143](https://github.com/tutkli/forty-cdk/issues/2143)). The injected input is
+  `type="password"` while `mask` is on and returns to `type="text"` when it turns off, so a screen
+  reader no longer reads a masked code digit by digit. **Keep `oneTimeCode` on**: password managers
+  may offer to fill a password field, and several browsers ignore `autocomplete="off"` on one.
+
+- **Tree** — a cascade toggle follows the derived state
+  ([#2151](https://github.com/tutkli/forty-cdk/issues/2151)). Under `cascade`, a parent that reads
+  `aria-checked="true"` because all its descendants are checked unchecks its subtree on one press,
+  even when it is not in `[(value)]`, and every toggle adds or drops the mounted ancestors whose
+  descendants are now all checked or no longer are, so a `mixed` parent never stays in the value.
+
+- **Number input** — a commit rounds to the format's precision
+  ([#2144](https://github.com/tutkli/forty-cdk/issues/2144)). Enter or blur rounds the typed value
+  to the precision `formatOptions` displays before clamping, so `value()`, `aria-valuenow`, the
+  hidden input and the displayed text agree: `1.239` in a USD field commits `1.24`, where it used to
+  keep `1.239` behind `$1.24`. `min` / `max` win over the rounding, compact and scientific notation
+  commit unrounded, and stepping does not round.
+
+- **Virtual reorder**, **Drag & drop** — the drag placeholder stands in the lifted row's slot
+  ([#2131](https://github.com/tutkli/forty-cdk/issues/2131)). A `[forDragPlaceholder]` under
+  `[forVirtualReorder]` renders where the lifted row was instead of at the top of the sizer, and the
+  reorder animation keeps a transform-positioned row's own `transform` instead of erasing it,
+  `[forTableRowReorder]` over `[forTableVirtualized]` included. A coordinator of your own places the
+  placeholder through the new optional `ForDropListCoordinator.layoutPlaceholder(nodes, lifted)`.
+
+- **Virtualization** — keyed rows follow a same-length reorder
+  ([#2188](https://github.com/tutkli/forty-cdk/issues/2188)). With `[getItemKey]`, `*forVirtualFor`
+  recomputes every key when it receives a new array, so a sort that keeps the length moves each
+  row's node and its measured size with its item instead of reusing the slot. **A headless
+  `injectVirtualizer` with `getItemKey` passes the array signal as the new `dataVersion` option.**
+
 ## [0.31.0] - 2026-10-05
 
 A release about where focus and keys land in the list, overlay and drag-and-drop primitives. A row
@@ -3285,7 +3461,8 @@ primitives.
 - **Display** — avatar, progress, meter, tree.
 - `forty-cdk/internationalized-date` secondary entry point exposing the `@internationalized/date` adapters for the date and time primitives.
 
-[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.31.0...HEAD
+[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.32.0...HEAD
+[0.32.0]: https://github.com/tutkli/forty-cdk/compare/v0.31.0...v0.32.0
 [0.31.0]: https://github.com/tutkli/forty-cdk/compare/v0.30.0...v0.31.0
 [0.30.0]: https://github.com/tutkli/forty-cdk/compare/v0.29.0...v0.30.0
 [0.29.0]: https://github.com/tutkli/forty-cdk/compare/v0.28.0...v0.29.0
