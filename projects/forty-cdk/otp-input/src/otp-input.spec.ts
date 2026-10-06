@@ -72,6 +72,12 @@ class OtpHost {
   readonly invalidEvents = signal<{ value: string }[]>([]);
 }
 
+@Component({
+  imports: [ForOtpInput],
+  template: `<div forOtpInput [length]="4" mask ariaLabel="Card PIN"></div>`,
+})
+class MaskedOtpHost {}
+
 interface MountedOtp {
   fixture: ComponentFixture<OtpHost>;
   instance: OtpHost;
@@ -573,6 +579,32 @@ describe('ForOtpInput', () => {
       expect(instance.code()).toBe('12');
       expect(slotChar(group, 0)).toBe('•');
       expect(slotChar(group, 1)).toBe('•');
+    });
+
+    it('makes the injected input type="password" while mask is on and text when it is off', async () => {
+      const { input, instance, flush } = await mountOtp();
+      typeInto(input, '1234');
+      await flush();
+      expect(input.type).toBe('text');
+
+      instance.mask.set(true);
+      await flush();
+      expect(input.type).toBe('password');
+      expect(input.value).toBe('1234');
+      expect(input.maxLength).toBe(6);
+      expect(input.getAttribute('inputmode')).toBe('numeric');
+      expect(input.getAttribute('autocomplete')).toBe('one-time-code');
+
+      instance.mask.set(false);
+      await flush();
+      expect(input.type).toBe('text');
+      expect(input.value).toBe('1234');
+    });
+
+    it('creates the injected input as type="password" when mask is set from the start', async () => {
+      const r = renderHost(MaskedOtpHost);
+      await r.flush();
+      expect(r.el.querySelector('input')!.type).toBe('password');
     });
   });
 

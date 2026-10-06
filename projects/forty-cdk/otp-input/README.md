@@ -127,7 +127,7 @@ export class OtpDefaultExample {
 
 ### Masked PIN with paste transform
 
-`mask` obscures the slots while `value()` stays raw, and a `pasteTransformer` strips spaces and dashes before filtering, so pasting “12 34 56” fills cleanly. `type` still rejects anything outside the numeric character class as you type.
+`mask` obscures the slots and turns the injected input into a password field while `value()` stays raw, and a `pasteTransformer` strips spaces and dashes before filtering, so pasting “12 34 56” fills cleanly. `type` still rejects anything outside the numeric character class as you type.
 
 ## API
 
@@ -139,7 +139,7 @@ export class OtpDefaultExample {
 | `length`                                                               | `input.required<number>`                             | Number of characters / slots.<br>**Default:** —                                                                                                       |
 | `type`                                                                 | `input<'numeric' \| 'alphanumeric' \| 'alphabetic'>` | Allowed character class. Ignored when `allowedPattern` is set.<br>**Default:** `'numeric'`                                                            |
 | `allowedPattern`                                                       | `input<RegExp \| null>`                              | Custom allowed-character RegExp (tested per character); overrides `type`.<br>**Default:** —                                                           |
-| `mask`                                                                 | `input<boolean>`                                     | Obscure the rendered `char()` (PIN entry); `value()` stays raw.<br>**Default:** —                                                                     |
+| `mask`                                                                 | `input<boolean>`                                     | Obscure the rendered `char()` and make the real input `type="password"` (PIN entry); `value()` stays raw.<br>**Default:** —                           |
 | `oneTimeCode`                                                          | `input<boolean>`                                     | Toggle `autocomplete="one-time-code"` for SMS autofill.<br>**Default:** `true`                                                                        |
 | `pasteTransformer`                                                     | `input<((pasted: string) => string) \| null>`        | Rewrite pasted text before it fills the slots (e.g. strip separators).<br>**Default:** —                                                              |
 | `ariaLabel`                                                            | `input<string \| null>`                              | Accessible name for the group, also reflected onto the real input when no field label applies. Emits `aria-label` only when truthy.<br>**Default:** — |
@@ -181,6 +181,7 @@ The slot host also carries a static `aria-hidden="true"`.
 ## Accessibility
 
 - **One real text field, not N boxes.** The `role="group"` wrapper carries the `ariaLabel`; the single `<input>` inside it is the focusable control, and it reflects the same `ariaLabel` as its own `aria-label` whenever no field-provided `aria-labelledby` applies (a `[forField]` label always wins). Screen readers announce the group name on entry and treat the code as one ordinary, named text field. Every slot is `aria-hidden="true"`, so neither its character nor the `mask` bullet is read alongside the input; a slot you render without `[forOtpInputSlot]` needs the same attribute.
+- **`mask` makes the input a password field.** While `mask` is on, the injected input is `type="password"`, so screen readers announce a password field and do not speak the code as it is typed, and the browser applies its password-field protections. It returns to `type="text"` when `mask` turns off; `maxlength`, `inputmode` and `autocomplete` apply either way. Browsers and password managers may offer to fill or save a password in a password field. Leave `oneTimeCode` on: `autocomplete="one-time-code"` tells them the field holds a one-time code rather than a password, whereas several browsers ignore `autocomplete="off"` on a password field.
 - **Mobile autofill & keypad.** `autocomplete="one-time-code"` (toggle with `oneTimeCode`) drives SMS autofill; `inputmode` is `numeric` for `type="numeric"` (plus a legacy `pattern="[0-9]*"` for older iOS), `text` otherwise.
 - **Character filtering happens live.** Rejected characters (per `type` / `allowedPattern`) are dropped before they reach the value and fire `(reject)`. Paste runs through `pasteTransformer`, is filtered, and sliced to `length`. A rejected keystroke never moves the insertion point: the caret stays at the position it was being edited at, so typing a disallowed character mid-code leaves the next character landing in the slot the user was on. A paste replaces the whole code and leaves the caret at the end.
 - **Fake caret is yours to style.** The slot exposes `hasFakeCaret()`; render and animate the blink in CSS, gated on `prefers-reduced-motion`. There is no JS-driven blink.
