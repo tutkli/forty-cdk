@@ -126,13 +126,13 @@ export class TableRowSelection<T> {
     this.#anchor.set(value);
   }
 
-  /** Selects all selectable rows when not all are selected; clears when all are. No-op outside `'multiple'` mode. */
+  /** Selects all selectable rows when not all are selected; deselects them when all are. No-op outside `'multiple'` mode. */
   toggleSelectAll(): void {
     if (this.#selectionMode() !== 'multiple') {
       return;
     }
     if (this.selectAllState() === 'all') {
-      this.#model.clear();
+      this.#model.deselect(...this.#aggregateValues());
     } else {
       this.#model.select(...this.#aggregateValues());
     }

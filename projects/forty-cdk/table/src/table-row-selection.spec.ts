@@ -176,11 +176,20 @@ describe('TableRowSelection', () => {
       expect(selection()).toEqual(['a', 'b', 'c', 'd']);
     });
 
-    it('clears the selection when every aggregate value is already selected', () => {
+    it('deselects every aggregate value when all are already selected', () => {
       const { selection, model } = setup();
       selection.set(['a', 'b', 'c', 'd']);
       model.toggleSelectAll();
       expect(selection()).toEqual([]);
+    });
+
+    it('keeps a selected value outside the aggregate values on both halves of the toggle', () => {
+      const { selection, model } = setup();
+      selection.set(['off-screen', 'a']);
+      model.toggleSelectAll();
+      expect(selection()).toEqual(['off-screen', 'a', 'b', 'c', 'd']);
+      model.toggleSelectAll();
+      expect(selection()).toEqual(['off-screen']);
     });
 
     it('is a no-op outside multiple mode', () => {

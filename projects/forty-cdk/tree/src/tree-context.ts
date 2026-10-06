@@ -166,8 +166,9 @@ export interface ForTreeContext<T = unknown> {
    */
   selectRangeToFocused(currentItem: HTMLElement): void;
   /**
-   * Multi mode only. Ctrl/Cmd+A: select every enabled visible node, or clear
-   * the selection when all visible nodes are already selected.
+   * Multi mode only. Ctrl/Cmd+A: add every enabled visible node to the
+   * selection, or remove them when they are all already selected. Selected
+   * values that are not an enabled visible node are kept either way.
    */
   selectAll(): void;
   /**

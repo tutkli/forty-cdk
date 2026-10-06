@@ -64,7 +64,10 @@ export interface ForTableContext {
   ): void;
   /** Aggregate selection state across all selectable rows (`'none'` / `'some'` / `'all'`). */
   readonly selectAllState: Signal<TableSelectAllState>;
-  /** Selects all selectable rows when not all are selected; clears when all are. No-op outside `'multiple'` mode. */
+  /**
+   * Selects all selectable rows when not all are selected; deselects them when all are, keeping
+   * selected values outside the selectable rows. No-op outside `'multiple'` mode.
+   */
   toggleSelectAll(): void;
   /**
    * The resolved true total data-row count for `aria-rowcount`, and the virtualized
