@@ -88,16 +88,16 @@ export class TreeSelection<T> {
     }
     const equals = this.#deps.compareWith();
     if (this.#deps.selectionMode() === 'checkbox' && this.#deps.cascade()) {
-      const group = dedupeTreeValues([value, ...this.#resolveDescendants(value)], equals);
+      const descendants = this.#resolveDescendants(value);
+      const group = dedupeTreeValues([value, ...descendants], equals);
       const current = this.#deps.value();
       const isChecked = treeMembership(current, equals);
       const inGroup = treeMembership(group, equals);
-      const allChecked = group.every(isChecked);
-      this.#deps.setValue(
-        allChecked
-          ? current.filter((v) => !inGroup(v))
-          : dedupeTreeValues([...current, ...group], equals),
-      );
+      const checked = descendants.length === 0 ? isChecked(value) : descendants.every(isChecked);
+      const next = checked
+        ? current.filter((v) => !inGroup(v))
+        : dedupeTreeValues([...current, ...group], equals);
+      this.#deps.setValue(this.#reconcileAncestors(value, next));
     } else if (this.#deps.multiple() || this.#deps.selectionMode() === 'checkbox') {
       this.#deps.setValue(toggleInArray(this.#deps.value(), value, equals));
     } else {
@@ -216,6 +216,40 @@ export class TreeSelection<T> {
       return;
     }
     this.#deps.setValue(dedupeTreeValues([...current, ...values], equals));
+  }
+
+  #reconcileAncestors(value: T, next: readonly T[]): readonly T[] {
+    const equals = this.#deps.compareWith();
+    const entries = this.#deps.visibleNodes();
+    const index = entries.findIndex((entry) => equals(entry.handle.value(), value));
+    if (index < 0) {
+      return next;
+    }
+    let level = entries[index]!.handle.level();
+    let result = next;
+    for (let i = index - 1; i >= 0 && level > 1; i--) {
+      const handle = entries[i]!.handle;
+      if (handle.level() >= level) {
+        continue;
+      }
+      level = handle.level();
+      const ancestor = handle.value();
+      if (!handle.selectable()) {
+        continue;
+      }
+      const descendants = this.#resolveDescendants(ancestor);
+      if (descendants.length === 0) {
+        continue;
+      }
+      const isChecked = treeMembership(result, equals);
+      const full = descendants.every(isChecked);
+      if (full && !isChecked(ancestor)) {
+        result = [...result, ancestor];
+      } else if (!full && isChecked(ancestor)) {
+        result = result.filter((v) => !equals(v, ancestor));
+      }
+    }
+    return result;
   }
 
   #resolveDescendants(value: T): readonly T[] {

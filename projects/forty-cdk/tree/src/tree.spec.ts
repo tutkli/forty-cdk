@@ -1641,6 +1641,67 @@ describe('ForTree', () => {
       expect(cascadeItemOf(el, 'g').getAttribute('aria-checked')).toBe('true');
     });
 
+    it('checking every leaf adds each ancestor, and clicking the parent then unchecks the whole group', async () => {
+      const { el, fixture } = await setupCascade((i) => i.open.set(['g', 'g2']));
+
+      for (const leaf of ['g1', 'g2a', 'g2b']) {
+        cascadeCheckboxOf(el, leaf).click();
+        await flush(fixture);
+      }
+      expect(fixture.componentInstance.picked()).toEqual(['g1', 'g2a', 'g2b', 'g2', 'g']);
+      expect(cascadeItemOf(el, 'g').getAttribute('aria-checked')).toBe('true');
+
+      cascadeCheckboxOf(el, 'g').click();
+      await flush(fixture);
+
+      expect(fixture.componentInstance.picked()).toEqual([]);
+      expect(cascadeItemOf(el, 'g').getAttribute('aria-checked')).toBe('false');
+      expect(cascadeItemOf(el, 'g2a').getAttribute('aria-checked')).toBe('false');
+    });
+
+    it('Space on a parent that reads "true" without being in value unchecks its subtree', async () => {
+      const { el, fixture } = await setupCascade((i) => {
+        i.picked.set(['g1', 'g2', 'g2a', 'g2b']);
+        i.open.set(['g', 'g2']);
+      });
+      const g = cascadeItemOf(el, 'g');
+      expect(g.getAttribute('aria-checked')).toBe('true');
+
+      pressKey(g, ' ');
+      await flush(fixture);
+
+      expect(fixture.componentInstance.picked()).toEqual([]);
+      expect(g.getAttribute('aria-checked')).toBe('false');
+    });
+
+    it('unchecking one leaf drops every ancestor from value', async () => {
+      const { el, fixture } = await setupCascade((i) => {
+        i.picked.set(['g', 'g1', 'g2', 'g2a', 'g2b']);
+        i.open.set(['g', 'g2']);
+      });
+
+      cascadeCheckboxOf(el, 'g2a').click();
+      await flush(fixture);
+
+      expect(fixture.componentInstance.picked()).toEqual(['g1', 'g2b']);
+      expect(cascadeItemOf(el, 'g').getAttribute('aria-checked')).toBe('mixed');
+      expect(cascadeItemOf(el, 'g2').getAttribute('aria-checked')).toBe('mixed');
+    });
+
+    it('a mixed parent left in value checks its whole subtree on toggle', async () => {
+      const { el, fixture } = await setupCascade((i) => {
+        i.picked.set(['g', 'g1']);
+        i.open.set(['g']);
+      });
+      expect(cascadeItemOf(el, 'g').getAttribute('aria-checked')).toBe('mixed');
+
+      cascadeCheckboxOf(el, 'g').click();
+      await flush(fixture);
+
+      expect(fixture.componentInstance.picked()).toEqual(['g', 'g1', 'g2', 'g2a', 'g2b']);
+      expect(cascadeItemOf(el, 'g').getAttribute('aria-checked')).toBe('true');
+    });
+
     it('cascade without descendantsOf throws a prefixed error on detectChanges', () => {
       @Component({
         imports: [ForTree, ForTreeItem, ForTreeItemLabel, ForTreeItemCheckbox],
@@ -2504,6 +2565,28 @@ describe('ForTree', () => {
       expect(instance.picked()).toContain('root-0');
       expect(instance.picked()).toContain('child-0-0');
       expect(instance.picked()).toContain('child-0-1');
+    });
+
+    it('7c. a cascade toggle in a flat window keeps the in-window parent in step with its children', async () => {
+      const { el, fixture, instance } = await setupVirtual((i) => {
+        i.selectionMode.set('checkbox');
+        i.cascade.set(true);
+        i.open.set(['root-0']);
+        i.picked.set(['root-0', 'child-0-0', 'child-0-1']);
+      });
+      const tree = treeEl(el);
+      tree.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+      await flush(fixture);
+      await pressKey(tree, 'ArrowDown');
+      await flush(fixture);
+
+      await pressKey(tree, 'Enter');
+      await flush(fixture);
+      expect(instance.picked()).toEqual(['child-0-1']);
+
+      await pressKey(tree, 'Enter');
+      await flush(fixture);
+      expect(instance.picked()).toEqual(['child-0-1', 'child-0-0', 'root-0']);
     });
 
     it('8. unmounting the active item (shrink window past it) clears aria-activedescendant', async () => {
