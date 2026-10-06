@@ -1,13 +1,14 @@
-import { type ForMenuContext } from 'forty-cdk/core-overlay';
+import { type ForMenuContext, menuReturnFocusTarget } from 'forty-cdk/core-overlay';
 
 /**
  * Handle Tab from inside a menu (regular item, checkbox / radio item, or a
  * submenu trigger). Per WAI-ARIA APG, Tab moves focus out of the menu rather
  * than back to the trigger.
  *
- * Focus is moved synchronously to the outermost menu's trigger — the only
- * element guaranteed to survive in the DOM once the whole open chain unmounts
- * — so the browser's own Tab default advances from there to the next (or
+ * Focus is moved synchronously to the outermost menu's return-focus target —
+ * its trigger, or the descendant a context-menu keyboard activation started
+ * from — which survives in the DOM once the whole open chain unmounts, so the
+ * browser's own Tab default advances from there to the next (or
  * previous, with Shift) focusable. The event is NOT `preventDefault`-ed for
  * that reason. `closeMenu('tab')` then collapses the chain; every
  * `[forMenuContent]` skips its return-focus on `'tab'` (see
@@ -23,6 +24,6 @@ export function handleMenuTabOut(ctx: ForMenuContext): void {
   while (root.parentMenu) {
     root = root.parentMenu;
   }
-  root.trigger()?.focus();
+  menuReturnFocusTarget(root)?.focus();
   ctx.closeMenu('tab');
 }

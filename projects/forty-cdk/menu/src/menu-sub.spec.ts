@@ -265,6 +265,24 @@ describe('ForMenuSub', () => {
       expect(document.activeElement?.id).toBe('advanced');
     });
 
+    it('a keyboard click (Enter / Space) on an already-open SubTrigger keeps the submenu open and moves focus into it', async () => {
+      const r = renderHost(SubMenuHost);
+      r.instance.open.set(true);
+      r.instance.subOpen.set(true);
+      await flush(r.fixture);
+
+      const more = document.querySelector<HTMLButtonElement>('[forMenuSubTrigger]')!;
+      more.focus();
+      await flush(r.fixture);
+
+      more.click();
+      await flush(r.fixture);
+
+      expect(r.instance.subOpen()).toBe(true);
+      expect(document.activeElement?.id).toBe('advanced');
+      expect(document.querySelector('#advanced')!.getAttribute('data-highlighted')).toBe('');
+    });
+
     it('disabled SubTrigger is a no-op on click and ArrowRight', async () => {
       @Component({
         imports: IMPORTS,
@@ -486,6 +504,78 @@ describe('ForMenuSub', () => {
       outside.remove();
     });
 
+    it('clicking the root trigger with a submenu open closes the chain without reopening it', async () => {
+      const r = renderHost(SubMenuHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      r.instance.subOpen.set(true);
+      await flush(r.fixture);
+
+      const trigger = document.querySelector<HTMLButtonElement>('[forDropdownMenuTrigger]')!;
+      trigger.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
+      await flush(r.fixture);
+
+      expect(r.instance.subOpen()).toBe(true);
+      expect(r.instance.open()).toBe(true);
+
+      trigger.click();
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+      expect(document.querySelector('#parent-content')).toBeNull();
+    });
+
+    it('a nested submenu inherits the root trigger exemption through every level', async () => {
+      @Component({
+        imports: IMPORTS,
+        template: `
+          <div forDropdownMenu [(open)]="open">
+            <button forDropdownMenuTrigger>Options</button>
+            @if (open()) {
+              <div forMenuContent>
+                <div forMenuSub [(open)]="subOpen">
+                  <button forMenuSubTrigger>More</button>
+                  @if (subOpen()) {
+                    <div forMenuSubContent>
+                      <div forMenuSub [(open)]="deepOpen">
+                        <button forMenuSubTrigger>Deeper</button>
+                        @if (deepOpen()) {
+                          <div id="deep-content" forMenuSubContent>
+                            <button forMenuItem>Deep</button>
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        `,
+      })
+      class NestedHost {
+        readonly open = signal(true);
+        readonly subOpen = signal(true);
+        readonly deepOpen = signal(true);
+      }
+
+      const r = renderHost(NestedHost);
+      await flush(r.fixture);
+      expect(document.querySelector('#deep-content')).not.toBeNull();
+
+      const trigger = document.querySelector<HTMLButtonElement>('[forDropdownMenuTrigger]')!;
+      trigger.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
+      await flush(r.fixture);
+
+      expect(r.instance.deepOpen()).toBe(true);
+      expect(r.instance.open()).toBe(true);
+
+      trigger.click();
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+    });
+
     it('clicking a parent menu item does NOT fire the submenu outside-handler (item click closes everything)', async () => {
       const r = renderHost(SubMenuHost);
       r.instance.open.set(true);
@@ -597,6 +687,27 @@ describe('ForMenuSub', () => {
       await flush();
       expect(instance.subOpen()).toBe(true);
       expect(document.querySelector('[forMenuSubContent]')).not.toBeNull();
+    });
+
+    it('a click after the hover-open keeps the submenu open and moves focus into it', async () => {
+      const { instance, flush } = renderHost(SubMenuHost);
+      instance.open.set(true);
+      await flush();
+
+      const more = document.querySelector<HTMLButtonElement>('[forMenuSubTrigger]')!;
+      more.dispatchEvent(pointerEvent('pointerenter'));
+      vi.advanceTimersByTime(100);
+      await flush();
+      expect(instance.subOpen()).toBe(true);
+      expect(document.activeElement?.id).not.toBe('advanced');
+
+      more.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerType: 'mouse' }));
+      more.click();
+      await flush();
+
+      expect(instance.subOpen()).toBe(true);
+      expect(document.activeElement?.id).toBe('advanced');
+      expect(document.querySelector('[forMenuSubContent] [data-highlighted]')).toBeNull();
     });
 
     it('leaving the SubTrigger before the open delay cancels the hover-open', async () => {

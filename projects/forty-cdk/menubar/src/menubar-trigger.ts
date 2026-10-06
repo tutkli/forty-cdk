@@ -14,6 +14,7 @@ import {
   registerHandle,
   hostId,
   IdGenerator,
+  isHoverCapablePointer,
   navigateFromRovingItem,
 } from 'forty-cdk/core';
 import {
@@ -52,7 +53,13 @@ import { FOR_MENUBAR_DEFAULTS } from 'forty-cdk/defaults';
  *
  * While some other trigger's menu is open, hovering this trigger opens it
  * immediately (no delay) — "first open is intentional, subsequent
- * are hover". Keyboard focus alone never opens a menu.
+ * are hover". Keyboard focus alone never opens a menu. Touch and pen never
+ * hover, so a tap on a sibling trigger switches menus through its click
+ * instead; the hover listener is gated to `pointerType === 'mouse'`.
+ *
+ * While a menu is open, moving along the bar (arrows, Home / End, typeahead)
+ * switches the open menu to the trigger that receives focus, leaving focus on
+ * that trigger as a hover-switch does.
  *
  * A click open (detected by the `pointerdown` preceding it) moves focus to the
  * menu's first item without highlighting it; keyboard activation (Enter /
@@ -79,7 +86,7 @@ import { FOR_MENUBAR_DEFAULTS } from 'forty-cdk/defaults';
     '(click)': 'onClick()',
     '(keydown)': 'onKeyDown($event)',
     '(focus)': 'onFocus()',
-    '(pointerenter)': 'onPointerEnter()',
+    '(pointerenter)': 'onPointerEnter($event)',
   },
 })
 export class ForMenubarTrigger extends AnchoredOverlayPositioningBase {
@@ -270,15 +277,13 @@ export class ForMenubarTrigger extends AnchoredOverlayPositioningBase {
       return;
     }
     // Roving tab stop follows focus — but focus alone never opens a menu.
-    // Keyboard traversal across triggers (ArrowLeft / ArrowRight, typeahead)
-    // only moves focus; opening is reserved for hover (pointerenter),
-    // click, and the open keys. Cross-menu nav while a menu is open is driven
-    // by the items, not by trigger focus.
+    // Opening is reserved for hover (pointerenter), click, and the open keys;
+    // the bar's own trigger-row navigation switches a menu that is already open.
     this.menubar.setFocusedTrigger(this.#host.nativeElement);
   }
 
-  protected onPointerEnter(): void {
-    if (this.effectiveDisabled()) {
+  protected onPointerEnter(event: PointerEvent): void {
+    if (!isHoverCapablePointer(event) || this.effectiveDisabled()) {
       return;
     }
     this.menubar.pointerEnterTrigger(this.value());

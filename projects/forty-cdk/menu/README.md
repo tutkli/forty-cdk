@@ -274,7 +274,7 @@ Bind `[(open)]="mySignal"` on either level instead only when the component class
 
 Closing semantics propagate upward by default: activating an item inside a submenu (or pressing Tab, or clicking outside both menus) tears down the entire chain. Escape closes only the level that has focus. Inside a submenu, it closes the submenu and returns focus to the `[forMenuSubTrigger]`, leaving the parent open.
 
-The submenu's dismissible layer exempts the **parent menu's content**, so clicking on a parent menu item doesn't fire the submenu's outside-handler. Instead, the parent item's own click activates and tears down everything via the propagated `closeMenu`.
+The submenu's dismissible layer exempts the **parent menu's content**, so clicking on a parent menu item doesn't fire the submenu's outside-handler. Instead, the parent item's own click activates and tears down everything via the propagated `closeMenu`. It also inherits the parent's own exemptions, so the root's triggers (the `[forDropdownMenuTrigger]` button, every `[forMenubarTrigger]`) count as inside at every level. A click on one while a submenu is open reaches the trigger's own click handler with the chain intact: the dropdown button closes the whole chain once, and a menubar trigger closes or switches menus exactly as it does with no submenu open.
 
 ### Pointer (mouse hover)
 
@@ -450,6 +450,7 @@ Outputs match the other trigger-anchored overlays: `(escapeKeyDown)`, `(pointerD
 - **Tab / Shift+Tab**: close the menu and return focus to the trigger. Inside a submenu, propagates upward and tears down the entire chain.
 - **Escape**: close the menu and return focus to the trigger. Inside a submenu, closes only that level (parent stays open).
 - **ArrowRight** (on a `[forMenuSubTrigger]`): open the submenu and focus its first item. (LTR.)
+- **Enter / Space / click** (on a `[forMenuSubTrigger]`): open the submenu and focus its first item. On a submenu that is already open, for instance after a hover opened it, they move focus into it and never close it.
 - **ArrowLeft** (on an item inside a submenu): close the submenu and return focus to the `[forMenuSubTrigger]`.
 - **Typeahead**: single printable characters move focus to the first item whose text starts with the buffered string. Disabled items are skipped. By default the match is run against the item's **accessible text**, so an `aria-hidden` subtree (such as the `[forMenuItemIndicator]` glyph or a decorative icon) never bleeds into it, while visually-hidden but announced content still counts. Pass `textValue="…"` on `[forMenuItem]`, `[forMenuCheckboxItem]`, or `[forMenuRadioItem]` to override the matched string when announced text such as a kbd hint or a badge would otherwise bleed into it.
 

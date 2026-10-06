@@ -327,8 +327,7 @@ export class ForMenubar implements ForMenubarContext {
     if (target === null) {
       return;
     }
-    target.host.focus();
-    target.host.scrollIntoView?.({ block: 'nearest' });
+    this.#moveToTrigger(target);
   }
 
   openTrigger(
@@ -391,9 +390,7 @@ export class ForMenubar implements ForMenubarContext {
     if (!handle || handle.disabled()) {
       return;
     }
-    this.menuCtx.prepareOpen('first', 'pointer', { suppressOpenFocus: true });
-    handle.host.focus();
-    this.value.set(value);
+    this.#switchOpenTo(handle, 'pointer');
   }
 
   handleTriggerTypeahead(event: KeyboardEvent): boolean {
@@ -416,9 +413,24 @@ export class ForMenubar implements ForMenubarContext {
       (t) => t.disabled(),
     );
     if (match) {
-      match.host.focus();
-      match.host.scrollIntoView?.({ block: 'nearest' });
+      this.#moveToTrigger(match);
     }
     return true;
+  }
+
+  #moveToTrigger(handle: ForMenubarTriggerHandle): void {
+    const current = this.value();
+    if (current !== null && current !== handle.value()) {
+      this.#switchOpenTo(handle, 'keyboard');
+    } else {
+      handle.host.focus();
+    }
+    handle.host.scrollIntoView?.({ block: 'nearest' });
+  }
+
+  #switchOpenTo(handle: ForMenubarTriggerHandle, modality: MenuActivationModality): void {
+    this.menuCtx.prepareOpen('first', modality, { suppressOpenFocus: true });
+    handle.host.focus();
+    this.value.set(handle.value());
   }
 }
