@@ -4546,6 +4546,12 @@ exports[`document structure > projects/forty-cdk/listbox/README.md declares the 
     "title": "Pointer highlight",
   },
   {
+    "headings": [],
+    "slug": "command-palette",
+    "tables": [],
+    "title": "Command palette",
+  },
+  {
     "headings": [
       {
         "depth": 3,
@@ -4554,6 +4560,10 @@ exports[`document structure > projects/forty-cdk/listbox/README.md declares the 
       {
         "depth": 3,
         "slug": "forlistboxoption",
+      },
+      {
+        "depth": 3,
+        "slug": "forlistboxcontroller",
       },
       {
         "depth": 3,
@@ -4599,6 +4609,15 @@ exports[`document structure > projects/forty-cdk/listbox/README.md declares the 
       },
       {
         "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "role": "api",
+        "rows": 1,
+      },
+      {
+        "columns": [
           "Data attribute",
           "Values",
         ],
@@ -4618,6 +4637,10 @@ exports[`document structure > projects/forty-cdk/listbox/README.md declares the 
         "depth": 3,
         "slug": "multi-mode-apg-recommended-range-selection",
       },
+      {
+        "depth": 3,
+        "slug": "driven-by-a-text-input",
+      },
     ],
     "slug": "keyboard",
     "tables": [
@@ -4628,6 +4651,14 @@ exports[`document structure > projects/forty-cdk/listbox/README.md declares the 
         ],
         "role": "plain",
         "rows": 5,
+      },
+      {
+        "columns": [
+          "Key",
+          "Behavior",
+        ],
+        "role": "plain",
+        "rows": 4,
       },
     ],
     "title": "Keyboard",

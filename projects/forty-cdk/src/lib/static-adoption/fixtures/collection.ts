@@ -44,7 +44,7 @@ import type { StaticAdoptionAdopter } from './mount';
 @Component({
   imports: [ForListbox, ForListboxGroup, ForListboxGroupLabel, ForListboxOption],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `<ul forListbox [(value)]="value" aria-label="Probe toppings">
+  template: `<ul forListbox [(value)]="value" aria-label="Probe toppings" id="probe-listbox">
     <li forListboxGroup aria-labelledby="probe-group-labelledby">
       <div forListboxGroupLabel id="probe-group-label">Group</div>
       <button type="button" forListboxOption value="a" id="probe-option">A</button>
@@ -365,6 +365,14 @@ export const COLLECTION_FAMILY_ADOPTERS: readonly StaticAdoptionAdopter[] = [
         seam: 'hostLabelledBy',
         probe: 'probe-group-labelledby',
         fallback: { pairs: '[forListboxGroupLabel]' },
+      },
+      {
+        key: '[forListbox]',
+        channel: 'id',
+        source: 'listbox/src/listbox.ts',
+        seam: 'hostId',
+        probe: 'probe-listbox',
+        fallback: { generated: 'for-listbox' },
       },
       {
         key: '[forListbox]',
