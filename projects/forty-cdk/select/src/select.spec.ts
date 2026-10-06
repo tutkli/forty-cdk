@@ -3393,6 +3393,20 @@ describe('ForSelect', () => {
       expect(highlighted()).toEqual(['date']);
     });
 
+    it('ignores a hover synthesized by the open-time focus of the selected option (#2146)', async () => {
+      const r = renderHost(SelectHost);
+      r.instance.value.set(['date']);
+      r.instance.open.set(true);
+      r.fixture.detectChanges();
+      expect(activeTestId()).toBe('date');
+
+      hover(getOption('apple'));
+      r.fixture.detectChanges();
+
+      expect(highlighted()).toEqual(['date']);
+      await flushPositioning(r.fixture);
+    });
+
     it('takes the highlight once the suppression window has elapsed', async () => {
       const r = renderHost(SelectHost);
       r.instance.value.set(['date']);

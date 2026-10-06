@@ -29,7 +29,7 @@ const FRUITS: readonly FruitItem[] = [
       [(open)]="open"
       [autocompleteMode]="autocompleteMode()"
       [autoHighlight]="false"
-      [openOnQuery]="false"
+      [openOnQuery]="openOnQuery()"
     >
       <input forComboboxInput />
       @if (open()) {
@@ -49,6 +49,7 @@ class ComboboxInputHost {
   readonly value = signal<readonly string[]>([]);
   readonly open = signal(false);
   readonly autocompleteMode = signal<'none' | 'list' | 'inline' | 'both'>('list');
+  readonly openOnQuery = signal(false);
 
   readonly filtered = computed<readonly FruitItem[]>(() => {
     const q = this.query().toLowerCase();
@@ -289,6 +290,152 @@ describe('ForComboboxInput', () => {
         expect(r.instance.query()).toBe('ap');
       });
     }
+  });
+
+  describe('accepting an inline completion (#2146)', () => {
+    async function completeWhileClosed() {
+      const r = renderHost(ComboboxInputHost);
+      r.instance.autocompleteMode.set('inline');
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      r.instance.open.set(false);
+      await flush(r.fixture);
+
+      const input = getInput();
+      input.focus();
+      fireInput(input, 'ap', 2, 'insertText');
+      await flush(r.fixture);
+      expect(input.value).toBe('apple');
+      expect(r.instance.query()).toBe('ap');
+      return { r, input };
+    }
+
+    async function completeWhileOpen() {
+      const r = renderHost(ComboboxInputHost);
+      r.instance.autocompleteMode.set('both');
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const input = getInput();
+      input.focus();
+      fireInput(input, 'ap', 2, 'insertText');
+      await flush(r.fixture);
+      expect(input.value).toBe('apple');
+      expect(r.instance.query()).toBe('ap');
+      return { r, input };
+    }
+
+    for (const key of ['Tab', 'Enter', 'End', 'Home', 'ArrowRight', 'ArrowLeft']) {
+      it(`${key} accepts the completion into query`, async () => {
+        const { r, input } = await completeWhileClosed();
+
+        pressKey(input, key);
+        await flush(r.fixture);
+
+        expect(r.instance.query()).toBe('apple');
+        expect(input.value).toBe('apple');
+      });
+    }
+
+    it('blur accepts the completion into query', async () => {
+      const { r, input } = await completeWhileClosed();
+
+      input.blur();
+      await flush(r.fixture);
+
+      expect(r.instance.query()).toBe('apple');
+      expect(input.value).toBe('apple');
+    });
+
+    it('a click in the input accepts the completion into query', async () => {
+      const { r, input } = await completeWhileClosed();
+
+      input.click();
+      await flush(r.fixture);
+
+      expect(r.instance.query()).toBe('apple');
+    });
+
+    it('a deleted completion is not accepted', async () => {
+      const { r, input } = await completeWhileClosed();
+
+      fireInput(input, 'ap', 2, 'deleteContentBackward');
+      await flush(r.fixture);
+      pressKey(input, 'Tab');
+      await flush(r.fixture);
+
+      expect(r.instance.query()).toBe('ap');
+      expect(input.value).toBe('ap');
+    });
+
+    it('Tab on an open listbox accepts the completion instead of restoring the prefix', async () => {
+      const { r, input } = await completeWhileOpen();
+
+      pressKey(input, 'Tab');
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+      expect(r.instance.query()).toBe('apple');
+      expect(input.value).toBe('apple');
+    });
+
+    it('Enter on an open listbox with no active option accepts the completion', async () => {
+      const { r, input } = await completeWhileOpen();
+
+      pressKey(input, 'Enter');
+      await flush(r.fixture);
+
+      expect(r.instance.query()).toBe('apple');
+      expect(r.instance.value()).toEqual([]);
+    });
+
+    it('End on an open listbox navigates and keeps the completion pending', async () => {
+      const { r, input } = await completeWhileOpen();
+
+      pressKey(input, 'End');
+      await flush(r.fixture);
+
+      expect(input.getAttribute('aria-activedescendant')).toBe(
+        document.querySelector('[data-test-id="apricot"]')!.id,
+      );
+      expect(r.instance.query()).toBe('ap');
+      expect(input.value).toBe('apple');
+    });
+
+    it('Escape on an open listbox restores the typed prefix', async () => {
+      const { r, input } = await completeWhileOpen();
+
+      pressKey(input, 'Escape');
+      await flush(r.fixture);
+      input.blur();
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+      expect(r.instance.query()).toBe('ap');
+      expect(input.value).toBe('ap');
+    });
+
+    it('accepting on blur after the listbox closed does not reopen it', async () => {
+      const r = renderHost(ComboboxInputHost);
+      r.instance.autocompleteMode.set('both');
+      r.instance.openOnQuery.set(true);
+      await flush(r.fixture);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const input = getInput();
+      input.focus();
+      fireInput(input, 'ap', 2, 'insertText');
+      await flush(r.fixture);
+      expect(input.value).toBe('apple');
+
+      r.instance.open.set(false);
+      input.blur();
+      await flush(r.fixture);
+
+      expect(r.instance.query()).toBe('apple');
+      expect(r.instance.open()).toBe(false);
+    });
   });
 
   describe('inline completion resolves against the active option while open (#1145)', () => {

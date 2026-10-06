@@ -189,6 +189,8 @@ export interface AutoHighlightBridgeDeps<T> {
   readonly getLastPositionedId: () => string | null;
   /** Persist the last id the bridge scrolled into view. */
   readonly setLastPositionedId: (id: string | null) => void;
+  /** Scroll an option into view with the host's pointer-suppression window open. */
+  readonly scrollIntoView: (host: HTMLElement) => void;
 }
 
 /**
@@ -204,10 +206,11 @@ export interface AutoHighlightBridgeDeps<T> {
  * scroll position.
  *
  * When not virtualized, it scrolls the seeded option into view so a seed below the fold is visible,
- * matching `navigate()`. The activedescendant is read `untracked`, so scrolling never re-triggers
- * the effect and hover never scrolls. The initial-open scroll is re-applied by
- * `ForCombobox.scrollActiveOptionIntoView` after the content portals, since portaling resets
- * `scrollTop`.
+ * matching `navigate()`, through the host's pointer-suppression window so an option the scroll
+ * slides under a stationary cursor cannot take the seed over. The activedescendant is read
+ * `untracked`, so scrolling never re-triggers the effect and hover never scrolls. The initial-open
+ * scroll is re-applied by `ForCombobox.scrollActiveOptionIntoView` after the content portals, since
+ * portaling resets `scrollTop`.
  *
  * The label cache is not pulled here: it tracks the selection, so every commit of
  * `value` would re-run this effect's writes and scrolls. The position map is pulled, through
@@ -245,6 +248,8 @@ export function runAutoHighlightBridge<T>(deps: AutoHighlightBridgeDeps<T>): voi
     return;
   }
   const active = items.find((o) => o.id() === activeId);
-  active?.host.scrollIntoView?.({ block: 'nearest' });
+  if (active) {
+    deps.scrollIntoView(active.host);
+  }
   deps.setLastPositionedId(activeId);
 }

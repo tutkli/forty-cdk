@@ -3,7 +3,9 @@ import { computed, Directive } from '@angular/core';
 import { injectComboboxContext } from './combobox-context';
 
 /**
- * Empty-state slot, shown when the listbox has no registered options.
+ * Empty-state slot, shown when the listbox has no results: no registered
+ * options, or a root `[totalCount]` of `0` when virtualizing, so a virtualized
+ * listbox whose window has not rendered yet does not flash the message.
  * The directive hides the message when options exist so the consumer can
  * keep it inline in the template — no `@if` needed. Visibility is enforced
  * with an inline `display: none` (which beats any author `display` rule a
@@ -46,5 +48,7 @@ import { injectComboboxContext } from './combobox-context';
 })
 export class ForComboboxEmpty {
   readonly #ctx = injectComboboxContext('ForComboboxEmpty');
-  protected readonly shouldShow = computed(() => this.#ctx.options().length === 0);
+  protected readonly shouldShow = computed(
+    () => (this.#ctx.totalCount() ?? this.#ctx.options().length) === 0,
+  );
 }

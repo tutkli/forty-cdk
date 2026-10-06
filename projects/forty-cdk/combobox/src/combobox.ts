@@ -611,6 +611,7 @@ export class ForCombobox<T = string>
         getActiveId: () => this.#activeId(),
         getLastPositionedId: () => this.#lastPositionedId,
         setLastPositionedId: (id) => (this.#lastPositionedId = id),
+        scrollIntoView: (host) => this.#scrollActiveIntoView(host),
       });
     });
   }
@@ -856,18 +857,29 @@ export class ForCombobox<T = string>
   }
 
   private setQueryFromInput(query: string): void {
-    if (this.effectiveDisabled() || this.readonly()) {
+    if (!this.#writeQueryFromInput(query)) {
       return;
-    }
-    this.query.set(query);
-    if (this.clearOnQueryChange() && !this.multiple() && this.value().length > 0) {
-      this.value.set([]);
     }
     const mode = this.autocompleteMode();
     const hasListbox = mode === 'list' || mode === 'both';
     if (this.openOnQuery() && hasListbox && query.length > 0 && !this.open()) {
       this.openOverlay('first');
     }
+  }
+
+  private acceptQueryFromInput(query: string): void {
+    this.#writeQueryFromInput(query);
+  }
+
+  #writeQueryFromInput(query: string): boolean {
+    if (this.effectiveDisabled() || this.readonly()) {
+      return false;
+    }
+    this.query.set(query);
+    if (this.clearOnQueryChange() && !this.multiple() && this.value().length > 0) {
+      this.value.set([]);
+    }
+    return true;
   }
 
   private setActiveId(id: string | null): void {
@@ -909,7 +921,7 @@ export class ForCombobox<T = string>
     if (!active) {
       return;
     }
-    active.host.scrollIntoView?.({ block: 'nearest' });
+    this.#scrollActiveIntoView(active.host);
     this.#lastPositionedId = id;
   }
 

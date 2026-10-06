@@ -689,6 +689,7 @@ export class ForSelect<T = string>
     for (const v of values) {
       const opt = items.find((o) => equals(o.value(), v) && !o.disabled());
       if (opt) {
+        this.#pointerSuppression.suppress();
         opt.host.focus();
         return true;
       }
