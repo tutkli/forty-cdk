@@ -8,6 +8,7 @@ import {
   ElementRef,
   inject,
   input,
+  linkedSignal,
   numberAttribute,
   output,
   PLATFORM_ID,
@@ -49,11 +50,13 @@ type SwipeState = 'start' | 'move' | 'cancel' | 'end';
  * this is the one host in the library binding both. Every variant except a
  * bare `error` announces through `LiveAnnouncer` and silences its own host
  * with `aria-live="off"`, leaving a non-live `role="status"` region behind; a
- * bare `error` keeps `role="alert"` + `aria-live="assertive"`, because a live
- * role is what is read reliably when a node is inserted with its text already
- * present. Both channels are therefore *bound* rather than static, which is
- * also what exempts this host from `forty-cdk/no-doubled-live-region-channel`
- * by construction — everywhere else a static live role stands alone
+ * toast inserted as a bare `error` keeps `role="alert"` +
+ * `aria-live="assertive"`, because a live role is what is read reliably when a
+ * node is inserted with its text already present. A toast that becomes an
+ * `error` after it mounts keeps announcing through `LiveAnnouncer`. Both
+ * channels are therefore *bound* rather than static, which is also what
+ * exempts this host from `forty-cdk/no-doubled-live-region-channel` by
+ * construction — everywhere else a static live role stands alone
  * (`[forFieldError]`, `[forComboboxStatus]`, `[forComboboxEmpty]`), since it
  * already implies its own `aria-live` / `aria-atomic`.
  *
@@ -70,7 +73,8 @@ type SwipeState = 'start' | 'move' | 'cancel' | 'end';
  * - Escape (while focus is inside) closes the toast.
  * - When `[swipeDirection]` is set, the user can drag past
  *   `[swipeThreshold]` (default 50 px) to dismiss. While the gesture is
- *   live the host reflects `data-swipe="start" | "move" | "cancel" | "end"`,
+ *   live the host reflects `data-swipe="start" | "move" | "cancel" | "end"`
+ *   (`"start"` until the move after the arming one),
  *   `data-swipe-direction`, and the CSS variables
  *   `--for-toast-swipe-movement-x` / `--for-toast-swipe-movement-y`.
  * - The host carries `data-state="open"` while alive (no `closed` state —
@@ -178,6 +182,7 @@ export class ForToast implements ForToastContext {
   readonly #swipeActiveDirection = signal<SwipeDirection | null>(null);
   readonly #swipeMovementX = signal(0);
   readonly #swipeMovementY = signal(0);
+  #swipeArming = false;
 
   protected readonly swipeState = this.#swipeState.asReadonly();
   protected readonly swipeActiveDirection = this.#swipeActiveDirection.asReadonly();
@@ -225,9 +230,10 @@ export class ForToast implements ForToastContext {
     this.#actions().some((a) => a.altText().trim() !== ''),
   );
 
-  readonly #hostIsLiveRegion = computed(
-    () => this.variant() === 'error' && !this.#hasActionAltText(),
-  );
+  readonly #hostIsLiveRegion = linkedSignal<boolean, boolean>({
+    source: () => this.variant() === 'error' && !this.#hasActionAltText(),
+    computation: (bareError, previous) => bareError && (previous?.value ?? true),
+  });
 
   /**
    * The synthesized announcement, composed reactively from the registered
@@ -308,11 +314,13 @@ export class ForToast implements ForToastContext {
         return;
       }
       const message = this.#announcement();
-      if (!message || message === lastAnnounced) {
+      const politeness = this.variant() === 'error' ? 'assertive' : 'polite';
+      const key = `${politeness}:${message}`;
+      if (!message || key === lastAnnounced) {
         return;
       }
-      lastAnnounced = message;
-      this.#announcer.announce(message, this.variant() === 'error' ? 'assertive' : 'polite');
+      lastAnnounced = key;
+      this.#announcer.announce(message, politeness);
     });
 
     const detachSwipe = attachSwipeDismiss({
@@ -322,17 +330,23 @@ export class ForToast implements ForToastContext {
       onSwipeStart: (detail) => {
         this.#swipeActiveDirection.set(detail.direction);
         this.#swipeState.set('start');
+        this.#swipeArming = true;
         this.#swipeMovementX.set(detail.delta.x);
         this.#swipeMovementY.set(detail.delta.y);
         this.swipeStart.emit(detail);
       },
       onSwipeMove: (detail) => {
-        this.#swipeState.set('move');
+        if (this.#swipeArming) {
+          this.#swipeArming = false;
+        } else {
+          this.#swipeState.set('move');
+        }
         this.#swipeMovementX.set(detail.delta.x);
         this.#swipeMovementY.set(detail.delta.y);
         this.swipeMove.emit(detail);
       },
       onSwipeCancel: (detail) => {
+        this.#swipeArming = false;
         this.#swipeState.set('cancel');
         // Movement vars stay at the released delta so the consumer's CSS
         // transition can spring them back to zero on its own timeline. The
@@ -341,6 +355,7 @@ export class ForToast implements ForToastContext {
         this.swipeCancel.emit(detail);
       },
       onSwipeEnd: (detail) => {
+        this.#swipeArming = false;
         this.#swipeState.set('end');
         this.#swipeMovementX.set(detail.delta.x);
         this.#swipeMovementY.set(detail.delta.y);

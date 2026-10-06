@@ -134,10 +134,13 @@ class DeclarativeHost {
   readonly swipeMoves: SwipeEventDetail[] = [];
   readonly swipeEnds: SwipeEventDetail[] = [];
   readonly swipeCancels: SwipeEventDetail[] = [];
+  unmountOnClose = true;
 
   onClose(reason: string): void {
     this.closes.push(reason);
-    this.open.set(false);
+    if (this.unmountOnClose) {
+      this.open.set(false);
+    }
   }
 
   onAction(): void {
@@ -238,7 +241,10 @@ describe('ForToast (declarative)', () => {
 
     it('error variant (no action altText) keeps role=alert + a live host aria-live=assertive', async () => {
       const r = renderHost(DeclarativeHost);
+      r.instance.open.set(false);
+      await r.flush();
       r.instance.variant.set('error');
+      r.instance.open.set(true);
       await r.flush();
       const t = $(r.el, 'declarative')!;
       expect(t.getAttribute('role')).toBe('alert');
@@ -701,7 +707,7 @@ describe('ForToast (declarative)', () => {
       expect(r.instance.closes).toEqual([]);
     });
 
-    it('reflects data-swipe="start"|"move" and CSS movement vars during a swipe', async () => {
+    it('reflects data-swipe="start" on the arming move, then "move", with CSS movement vars', async () => {
       const r = renderHost(DeclarativeHost);
       r.instance.swipeDirection.set('right');
       await r.flush();
@@ -709,16 +715,24 @@ describe('ForToast (declarative)', () => {
       pointer(t, 'pointerdown', { clientX: 0, clientY: 0 });
       pointer(t, 'pointermove', { clientX: 20, clientY: 0 });
       await r.flush();
-      expect(t.getAttribute('data-swipe')).toBe('move');
+      expect(t.getAttribute('data-swipe')).toBe('start');
       expect(t.getAttribute('data-swipe-direction')).toBe('right');
       expect(t.style.getPropertyValue('--for-toast-swipe-movement-x')).toBe('20px');
+      expect(r.instance.swipeStarts).toHaveLength(1);
+      expect(r.instance.swipeMoves).toHaveLength(1);
+
+      pointer(t, 'pointermove', { clientX: 30, clientY: 0 });
+      await r.flush();
+      expect(t.getAttribute('data-swipe')).toBe('move');
+      expect(t.style.getPropertyValue('--for-toast-swipe-movement-x')).toBe('30px');
       expect(t.style.getPropertyValue('--for-toast-swipe-movement-y')).toBe('0px');
       expect(r.instance.swipeStarts).toHaveLength(1);
-      expect(r.instance.swipeMoves.length).toBeGreaterThanOrEqual(1);
+      expect(r.instance.swipeMoves).toHaveLength(2);
     });
 
     it('crosses the threshold → swipeEnd, data-swipe="end", and (dismiss) with reason "swipe"', async () => {
       const r = renderHost(DeclarativeHost);
+      r.instance.unmountOnClose = false;
       r.instance.swipeDirection.set('right');
       r.instance.swipeThreshold.set(50);
       await r.flush();
@@ -730,6 +744,8 @@ describe('ForToast (declarative)', () => {
       expect(r.instance.swipeEnds).toHaveLength(1);
       expect(r.instance.swipeCancels).toEqual([]);
       expect(r.instance.closes).toEqual(['swipe']);
+      expect(t.getAttribute('data-swipe')).toBe('end');
+      expect(t.style.getPropertyValue('--for-toast-swipe-movement-x')).toBe('60px');
     });
 
     it('releases under threshold → swipeCancel, data-swipe="cancel", no (dismiss)', async () => {
@@ -936,6 +952,22 @@ describe('ForToast (declarative)', () => {
       const region = getLiveAnnouncerRegion('assertive');
       expect(region!.textContent).toBe('Save failed. Network unreachable.. Retry (Cmd+R)');
     });
+
+    it('re-announces assertively when a mounted toast flips into error with the same text', async () => {
+      const r = renderHost(AltTextHost);
+      await r.flush();
+      expect(getLiveAnnouncerRegion('polite')!.textContent).toBe('Saved. Your changes are live.');
+
+      r.instance.variant.set('error');
+      await r.flush();
+
+      const t = $(r.el, 'alt-toast')!;
+      expect(t.getAttribute('role')).toBe('alert');
+      expect(t.getAttribute('aria-live')).toBe('off');
+      expect(getLiveAnnouncerRegion('assertive')!.textContent).toBe(
+        'Saved. Your changes are live.',
+      );
+    });
   });
 
   describe('prefers-reduced-motion: reduce', () => {
@@ -1077,6 +1109,21 @@ describe('ForToastManager (programmatic)', () => {
     ref.update({ data: { label: 'Saved', desc: 'Hang tight', altText: 'Undo (Cmd+Z)' } });
     await r.flush();
     expect(getLiveAnnouncerRegion('polite')!.textContent).toBe('Saved. Hang tight. Undo (Cmd+Z)');
+  });
+
+  it('ref.update() from info to error announces the failure assertively', async () => {
+    const r = renderHost(ProgrammaticHost);
+    const ref = r.instance.toasts.show({ title: 'Saving…', duration: 0 });
+    await r.flush();
+    expect(getLiveAnnouncerRegion('polite')!.textContent).toBe('Saving…');
+
+    ref.update({ title: 'Save failed', variant: 'error' });
+    await r.flush();
+
+    const t = r.el.querySelector('[forToast]')!;
+    expect(t.getAttribute('role')).toBe('alert');
+    expect(t.getAttribute('aria-live')).toBe('off');
+    expect(getLiveAnnouncerRegion('assertive')!.textContent).toBe('Save failed');
   });
 
   it('show() with same id updates the existing toast', async () => {
@@ -1524,6 +1571,134 @@ describe('ForToastViewport', () => {
     );
     await r.flush();
     expect(document.activeElement).toBe(r.el.querySelector('[forToast]'));
+  });
+
+  describe('focus after a focused toast is dismissed', () => {
+    const viewportOf = (el: HTMLElement) => el.querySelector<HTMLElement>('for-toast-viewport')!;
+    const pressF6 = () =>
+      document.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'F6', bubbles: true, cancelable: true }),
+      );
+    const pressEscape = (el: HTMLElement) =>
+      el.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+      );
+
+    it('Escape moves focus to the next toast', async () => {
+      const r = renderHost(ProgrammaticHost);
+      r.instance.toasts.show({ title: 'A' });
+      r.instance.toasts.show({ title: 'B' });
+      await r.flush();
+      $(r.el, 'opener')!.focus();
+      pressF6();
+      await r.flush();
+      const [first, second] = Array.from(r.el.querySelectorAll<HTMLElement>('[forToast]'));
+      expect(document.activeElement).toBe(first);
+
+      pressEscape(first!);
+      await r.flush();
+
+      expect(r.instance.toasts.count()).toBe(1);
+      expect(document.activeElement).toBe(second);
+    });
+
+    it('moves focus to the previous toast when the last one is dismissed', async () => {
+      const r = renderHost(ProgrammaticHost);
+      r.instance.toasts.show({ title: 'A' });
+      const last = r.instance.toasts.show({ title: 'B' });
+      await r.flush();
+      const [first, second] = Array.from(r.el.querySelectorAll<HTMLElement>('[forToast]'));
+      second!.focus();
+
+      last.dismiss();
+      await r.flush();
+
+      expect(r.instance.toasts.count()).toBe(1);
+      expect(document.activeElement).toBe(first);
+    });
+
+    it('the close button returns focus to where the hotkey was pressed', async () => {
+      const r = renderHost(ProgrammaticHost);
+      r.instance.toasts.show({ title: 'A' });
+      await r.flush();
+      const opener = $(r.el, 'opener')!;
+      opener.focus();
+      pressF6();
+      await r.flush();
+      const close = r.el.querySelector<HTMLElement>('[forToastClose]')!;
+      close.focus();
+
+      close.click();
+      await r.flush();
+
+      expect(r.instance.toasts.count()).toBe(0);
+      expect(document.activeElement).toBe(opener);
+    });
+
+    it('the action button falls back to the viewport when no origin was captured', async () => {
+      const r = renderHost(ProgrammaticHost);
+      r.instance.toasts.show({
+        title: 'Item deleted',
+        action: { label: 'Undo', activate: () => undefined },
+      });
+      await r.flush();
+      const action = r.el.querySelector<HTMLElement>('[forToastAction]')!;
+      action.focus();
+
+      action.click();
+      await r.flush();
+
+      expect(r.instance.toasts.count()).toBe(0);
+      expect(document.activeElement).toBe(viewportOf(r.el));
+    });
+
+    it('forgets the origin once focus leaves the viewport', async () => {
+      const r = renderHost(ProgrammaticHost);
+      r.instance.toasts.show({ title: 'A' });
+      await r.flush();
+      const opener = $(r.el, 'opener')!;
+      opener.focus();
+      pressF6();
+      await r.flush();
+      opener.focus();
+      const close = r.el.querySelector<HTMLElement>('[forToastClose]')!;
+      close.focus();
+
+      close.click();
+      await r.flush();
+
+      expect(document.activeElement).toBe(viewportOf(r.el));
+    });
+
+    it('keeps focus where the action handler moved it', async () => {
+      const r = renderHost(ProgrammaticHost);
+      const opener = $(r.el, 'opener')!;
+      r.instance.toasts.show({
+        title: 'Item deleted',
+        action: { label: 'Undo', activate: () => opener.focus() },
+      });
+      await r.flush();
+      const action = r.el.querySelector<HTMLElement>('[forToastAction]')!;
+      action.focus();
+
+      action.click();
+      await r.flush();
+
+      expect(document.activeElement).toBe(opener);
+    });
+
+    it('leaves focus alone when the dismissed toast did not hold it', async () => {
+      const r = renderHost(ProgrammaticHost);
+      const ref = r.instance.toasts.show({ title: 'A' });
+      await r.flush();
+      const opener = $(r.el, 'opener')!;
+      opener.focus();
+
+      ref.dismiss();
+      await r.flush();
+
+      expect(document.activeElement).toBe(opener);
+    });
   });
 });
 

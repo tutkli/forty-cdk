@@ -1,5 +1,5 @@
 import { expect, type Page, test } from '@playwright/test';
-import { dragFrom, el, gotoFixture } from './_helpers';
+import { dragFrom, el, expectFocused, gotoFixture } from './_helpers';
 
 /** How a {@link watchTop} run ended — one settled outcome, three failures. */
 type TopWatchOutcome = 'settled' | 'never-moved' | 'never-settled' | 'missing';
@@ -393,6 +393,43 @@ test.describe('Toast exit animation (#1024)', () => {
     await el(page, 'dismiss-all').click();
     await expect(el(page, 'toast-0')).toHaveCount(0);
     await expect(el(page, 'toast-count')).toHaveText('0');
+  });
+});
+
+test.describe('Toast focus after dismissing the focused toast (#2126)', () => {
+  test('Escape moves focus to the next toast, then back to where F6 was pressed', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'toast', { side: 'top-right' });
+    await el(page, 'enqueue').click();
+    await el(page, 'enqueue').click();
+    await expect(el(page, 'toast-1')).toBeVisible();
+    await expectFocused(el(page, 'enqueue'));
+
+    await page.keyboard.press('F6');
+    await expectFocused(el(page, 'toast-0'));
+
+    await page.keyboard.press('Escape');
+    await expect(el(page, 'toast-0')).toHaveCount(0);
+    await expectFocused(el(page, 'toast-1'));
+
+    await page.keyboard.press('Escape');
+    await expect(el(page, 'toast-count')).toHaveText('0');
+    await expectFocused(el(page, 'enqueue'));
+  });
+
+  test('focus leaves a toast held by its leave animation for the next one', async ({ page }) => {
+    await gotoFixture(page, 'toast', { side: 'top-right', animateLeave: 'leaving-own' });
+    await el(page, 'enqueue').click();
+    await el(page, 'enqueue').click();
+    await expect(el(page, 'toast-1')).toBeVisible();
+
+    await page.keyboard.press('F6');
+    await expectFocused(el(page, 'toast-0'));
+
+    await page.keyboard.press('Escape');
+    await expectFocused(el(page, 'toast-1'));
+    await expect(el(page, 'toast-0')).toHaveCount(0);
   });
 });
 
