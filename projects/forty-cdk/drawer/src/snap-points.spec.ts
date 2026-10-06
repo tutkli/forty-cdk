@@ -1,9 +1,12 @@
 import type { ForDrawerSnapPoint } from './drawer-context';
 import {
+  assertCloseThreshold,
+  assertSnapPointConfig,
+  assertSnapPointsShape,
+  assertSnapPositions,
   computeSnapPositions,
+  settleSnapPositions,
   snapPointToFraction,
-  validateSnapPointsShape,
-  validateSnapPositions,
 } from './snap-points';
 
 describe('snapPointToFraction', () => {
@@ -13,14 +16,9 @@ describe('snapPointToFraction', () => {
     expect(snapPointToFraction(1, 1000)).toBe(1);
   });
 
-  it('rejects NaN with the documented message', () => {
-    expect(() => snapPointToFraction(Number.NaN, 1000)).toThrow(
-      /\[forty-cdk\/drawer\] FORCDK-DRAWER-007: A numeric snap point must be finite, and one is NaN/,
-    );
-  });
-
-  it('rejects Infinity', () => {
-    expect(() => snapPointToFraction(Number.POSITIVE_INFINITY, 1000)).toThrow(/must be finite/);
+  it('resolves non-finite numbers to NaN instead of throwing', () => {
+    expect(snapPointToFraction(Number.NaN, 1000)).toBeNaN();
+    expect(snapPointToFraction(Number.POSITIVE_INFINITY, 1000)).toBeNaN();
   });
 
   it('parses percent strings', () => {
@@ -38,72 +36,130 @@ describe('snapPointToFraction', () => {
     expect(snapPointToFraction('200px', 0)).toBe(0);
   });
 
-  it('rejects malformed strings', () => {
-    expect(() => snapPointToFraction('foo' as unknown as ForDrawerSnapPoint, 1000)).toThrow(
-      /must be a number, an "NN%" string, or an "NNpx" string/,
-    );
-    expect(() => snapPointToFraction('200' as unknown as ForDrawerSnapPoint, 1000)).toThrow();
-    expect(() => snapPointToFraction('px' as unknown as ForDrawerSnapPoint, 1000)).toThrow();
+  it('resolves malformed strings to NaN instead of throwing', () => {
+    expect(snapPointToFraction('foo' as unknown as ForDrawerSnapPoint, 1000)).toBeNaN();
+    expect(snapPointToFraction('200' as unknown as ForDrawerSnapPoint, 1000)).toBeNaN();
+    expect(snapPointToFraction('px' as unknown as ForDrawerSnapPoint, 1000)).toBeNaN();
   });
 });
 
-describe('validateSnapPointsShape', () => {
+describe('assertSnapPointsShape', () => {
   it('accepts a pure-fraction strictly-increasing array', () => {
-    expect(() => validateSnapPointsShape([0.1, 0.5, 0.9])).not.toThrow();
+    expect(() => assertSnapPointsShape([0.1, 0.5, 0.9])).not.toThrow();
   });
 
   it('accepts a pure-percent strictly-increasing array', () => {
     expect(() =>
-      validateSnapPointsShape(['10%', '50%', '90%'] as ReadonlyArray<ForDrawerSnapPoint>),
+      assertSnapPointsShape(['10%', '50%', '90%'] as ReadonlyArray<ForDrawerSnapPoint>),
     ).not.toThrow();
   });
 
   it('accepts a mixed number + percent array (both classify as fraction)', () => {
     expect(() =>
-      validateSnapPointsShape([0.1, '50%', 0.9] as ReadonlyArray<ForDrawerSnapPoint>),
+      assertSnapPointsShape([0.1, '50%', 0.9] as ReadonlyArray<ForDrawerSnapPoint>),
     ).not.toThrow();
   });
 
   it('accepts a pure-px strictly-increasing array', () => {
     expect(() =>
-      validateSnapPointsShape(['100px', '200px', '300px'] as ReadonlyArray<ForDrawerSnapPoint>),
+      assertSnapPointsShape(['100px', '200px', '300px'] as ReadonlyArray<ForDrawerSnapPoint>),
     ).not.toThrow();
   });
 
   it('rejects a pure-fraction non-monotonic array', () => {
-    expect(() => validateSnapPointsShape([0.5, 0.3])).toThrow(/strictly increasing/);
+    expect(() => assertSnapPointsShape([0.5, 0.3])).toThrow(/strictly increasing/);
   });
 
   it('rejects a pure-px non-monotonic array', () => {
     expect(() =>
-      validateSnapPointsShape(['300px', '200px'] as ReadonlyArray<ForDrawerSnapPoint>),
+      assertSnapPointsShape(['300px', '200px'] as ReadonlyArray<ForDrawerSnapPoint>),
     ).toThrow(/strictly increasing/);
   });
 
   it('rejects equal neighbours (strict, not weak, ordering)', () => {
-    expect(() => validateSnapPointsShape([0.5, 0.5])).toThrow(/strictly increasing/);
+    expect(() => assertSnapPointsShape([0.5, 0.5])).toThrow(/strictly increasing/);
   });
 
   it('rejects NaN entries before the monotonic check runs', () => {
-    expect(() => validateSnapPointsShape([Number.NaN, 0.5])).toThrow(
-      /must be finite, and one is NaN/,
+    expect(() => assertSnapPointsShape([Number.NaN, 0.5])).toThrow(
+      /\[forty-cdk\/drawer\] FORCDK-DRAWER-007: A numeric snap point must be finite, and one is NaN/,
     );
+  });
+
+  it('rejects Infinity', () => {
+    expect(() => assertSnapPointsShape([0.2, Number.POSITIVE_INFINITY])).toThrow(/must be finite/);
   });
 
   it("defers monotonic check on mixed 'NNpx' + fraction arrays", () => {
     // The mixed array `['200px', 0.5]` is non-monotonic at dim=300 but
     // monotonic at dim=1000. The shape check cannot decide either way and
-    // must allow the input through; `validateSnapPositions` runs against
+    // must allow the input through; `assertSnapPositions` runs against
     // the live dimension instead.
     expect(() =>
-      validateSnapPointsShape(['200px', 0.5] as ReadonlyArray<ForDrawerSnapPoint>),
+      assertSnapPointsShape(['200px', 0.5] as ReadonlyArray<ForDrawerSnapPoint>),
     ).not.toThrow();
   });
 
   it('rejects single-entry arrays of malformed values', () => {
     expect(() =>
-      validateSnapPointsShape(['bogus'] as unknown as ReadonlyArray<ForDrawerSnapPoint>),
+      assertSnapPointsShape(['bogus'] as unknown as ReadonlyArray<ForDrawerSnapPoint>),
     ).toThrow(/must be a number, an "NN%" string, or an "NNpx" string/);
+  });
+
+  it('rejects a malformed value beside valid ones', () => {
+    expect(() =>
+      assertSnapPointsShape([0.2, '200', 0.8] as unknown as ReadonlyArray<ForDrawerSnapPoint>),
+    ).toThrow(/FORCDK-DRAWER-008/);
+  });
+});
+
+describe('assertSnapPointConfig', () => {
+  it('skips a missing or empty array whatever fadeFromIndex says', () => {
+    expect(() => assertSnapPointConfig(undefined, 5)).not.toThrow();
+    expect(() => assertSnapPointConfig([], 5)).not.toThrow();
+  });
+
+  it('runs the shape check', () => {
+    expect(() => assertSnapPointConfig([0.5, 0.3], undefined)).toThrow(/FORCDK-DRAWER-009/);
+  });
+
+  it('rejects a fadeFromIndex outside the array', () => {
+    expect(() => assertSnapPointConfig([0.25, 0.5], 2)).toThrow(
+      '[forty-cdk/drawer] FORCDK-DRAWER-003: fadeFromIndex is 2, which is out of range for 2 snapPoints.',
+    );
+    expect(() => assertSnapPointConfig([0.25, 0.5], -1)).toThrow(/FORCDK-DRAWER-003/);
+    expect(() => assertSnapPointConfig([0.25, 0.5], 1)).not.toThrow();
+  });
+});
+
+describe('assertCloseThreshold', () => {
+  it('accepts the closed range [0, 1]', () => {
+    expect(() => assertCloseThreshold(0)).not.toThrow();
+    expect(() => assertCloseThreshold(0.25)).not.toThrow();
+    expect(() => assertCloseThreshold(1)).not.toThrow();
+  });
+
+  it('rejects a value outside it, or not finite', () => {
+    expect(() => assertCloseThreshold(1.5)).toThrow(/FORCDK-DRAWER-004/);
+    expect(() => assertCloseThreshold(-0.1)).toThrow(/FORCDK-DRAWER-004/);
+    expect(() => assertCloseThreshold(Number.NaN)).toThrow(/FORCDK-DRAWER-004/);
+  });
+});
+
+describe('snap assertions in a production build', () => {
+  it('throw nothing once `ngDevMode` is cleared', () => {
+    vi.stubGlobal('ngDevMode', false);
+
+    expect(() => assertSnapPointsShape([Number.NaN, 0.5])).not.toThrow();
+    expect(() =>
+      assertSnapPointsShape(['bogus'] as unknown as ReadonlyArray<ForDrawerSnapPoint>),
+    ).not.toThrow();
+    expect(() => assertSnapPointsShape([0.5, 0.3])).not.toThrow();
+    expect(() => assertSnapPointConfig([0.25, 0.5], 5)).not.toThrow();
+    expect(() =>
+      assertSnapPositions(['200px', 0.5] as ReadonlyArray<ForDrawerSnapPoint>, [200, 150], 300),
+    ).not.toThrow();
+    expect(() => assertCloseThreshold(2)).not.toThrow();
   });
 });
 
@@ -124,7 +180,7 @@ describe('computeSnapPositions', () => {
     ).toEqual([100, 300]);
   });
 
-  it("does NOT throw on monotonicity violations — that's validateSnapPositions' job", () => {
+  it("does NOT throw on monotonicity violations — that's assertSnapPositions' job", () => {
     // 200px at dim=300 → 200; 0.5 * 300 → 150. Non-monotonic.
     // computeSnapPositions still returns the array; the caller decides
     // whether to validate.
@@ -136,10 +192,24 @@ describe('computeSnapPositions', () => {
   });
 });
 
-describe('validateSnapPositions', () => {
+describe('settleSnapPositions', () => {
+  it('returns strictly increasing positions unchanged', () => {
+    expect(settleSnapPositions([100, 200, 400])).toEqual([100, 200, 400]);
+  });
+
+  it('collapses a position behind its predecessor onto it', () => {
+    expect(settleSnapPositions([200, 150, 300])).toEqual([200, 200, 300]);
+  });
+
+  it('reads a non-finite position as 0 before ordering', () => {
+    expect(settleSnapPositions([Number.NaN, 150, Number.POSITIVE_INFINITY])).toEqual([0, 150, 150]);
+  });
+});
+
+describe('assertSnapPositions', () => {
   it('passes a strictly-increasing positions array', () => {
     expect(() =>
-      validateSnapPositions(
+      assertSnapPositions(
         ['100px', '200px'] as ReadonlyArray<ForDrawerSnapPoint>,
         [100, 200],
         1000,
@@ -150,7 +220,7 @@ describe('validateSnapPositions', () => {
   it('throws with the offending point names, resolved px values, and dimension', () => {
     // Cross-dimension case: ['200px', 0.5] at dim=300 → [200, 150].
     expect(() =>
-      validateSnapPositions(['200px', 0.5] as ReadonlyArray<ForDrawerSnapPoint>, [200, 150], 300),
+      assertSnapPositions(['200px', 0.5] as ReadonlyArray<ForDrawerSnapPoint>, [200, 150], 300),
     ).toThrow(
       '[forty-cdk/drawer] FORCDK-DRAWER-010: Snap point 0.5 at index 1 resolves to 150px, which is not past "200px" at 200px.',
     );
@@ -158,7 +228,7 @@ describe('validateSnapPositions', () => {
 
   it('rejects equal neighbours (strict ordering)', () => {
     expect(() =>
-      validateSnapPositions(
+      assertSnapPositions(
         ['100px', '100px'] as ReadonlyArray<ForDrawerSnapPoint>,
         [100, 100],
         1000,
@@ -168,7 +238,7 @@ describe('validateSnapPositions', () => {
 
   it('reports the first offending pair when multiple are out of order', () => {
     expect(() =>
-      validateSnapPositions(
+      assertSnapPositions(
         [0.1, 0.05, 0.5] as ReadonlyArray<ForDrawerSnapPoint>,
         [100, 50, 500],
         1000,
@@ -180,10 +250,10 @@ describe('validateSnapPositions', () => {
 
   it('passes empty / single-element arrays without throwing', () => {
     expect(() =>
-      validateSnapPositions([] as ReadonlyArray<ForDrawerSnapPoint>, [], 1000),
+      assertSnapPositions([] as ReadonlyArray<ForDrawerSnapPoint>, [], 1000),
     ).not.toThrow();
     expect(() =>
-      validateSnapPositions([0.5] as ReadonlyArray<ForDrawerSnapPoint>, [500], 1000),
+      assertSnapPositions([0.5] as ReadonlyArray<ForDrawerSnapPoint>, [500], 1000),
     ).not.toThrow();
   });
 });

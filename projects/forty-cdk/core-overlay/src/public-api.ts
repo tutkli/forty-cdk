@@ -135,6 +135,10 @@ export {
   type OverlayShellConfig,
   type OverlayShellPositionerConfig,
 } from './overlay-controller/overlay-shell';
+export {
+  type UncontrolledTriggerConfig,
+  warnIfOpenWithoutControls,
+} from './overlay-controller/uncontrolled-trigger';
 export { type UnnamedDialogConfig, warnIfDialogUnnamed } from './overlay-controller/unnamed-dialog';
 export {
   OverlayManagerCore,

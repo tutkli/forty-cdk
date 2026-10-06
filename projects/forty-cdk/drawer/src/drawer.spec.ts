@@ -627,6 +627,139 @@ describe('ForDrawer (declarative)', () => {
         expect(drawer.style.getPropertyValue('--for-drawer-swipe-movement-y')).toBe('0px');
       });
     });
+
+    describe('dragging is gated apart from dismissal', () => {
+      @Component({
+        imports: [ForDrawer],
+        template: `
+          @if (open()) {
+            <div
+              forDrawer
+              [snapPoints]="snaps()"
+              [swipeToDismiss]="swipeToDismiss()"
+              [dismissible]="dismissible()"
+              (swipeStart)="starts.push($event)"
+              (swipeEnd)="ends.push($event)"
+              (dismiss)="onDismiss($event)"
+              ariaLabel="t"
+            ></div>
+          }
+        `,
+      })
+      class GatedHost {
+        readonly open = signal(false);
+        readonly snaps = signal<ReadonlyArray<ForDrawerSnapPoint> | undefined>(undefined);
+        readonly swipeToDismiss = signal(true);
+        readonly dismissible = signal(true);
+        readonly starts: ForDrawerSwipeEvent[] = [];
+        readonly ends: ForDrawerSwipeEndEvent[] = [];
+        readonly reasons: ForDrawerCloseReason[] = [];
+        onDismiss(reason: ForDrawerCloseReason): void {
+          this.reasons.push(reason);
+          this.open.set(false);
+        }
+      }
+
+      async function mountGated(config: {
+        snaps?: ReadonlyArray<ForDrawerSnapPoint>;
+        swipeToDismiss?: boolean;
+        dismissible?: boolean;
+      }) {
+        const r = renderHost(GatedHost);
+        r.instance.snaps.set(config.snaps);
+        r.instance.swipeToDismiss.set(config.swipeToDismiss ?? true);
+        r.instance.dismissible.set(config.dismissible ?? true);
+        r.instance.open.set(true);
+        await flush(r.fixture);
+        return { r, drawer: document.querySelector<HTMLElement>('[forDrawer]')! };
+      }
+
+      async function dragTowardEdge(
+        r: Awaited<ReturnType<typeof mountGated>>['r'],
+        drawer: HTMLElement,
+      ): Promise<void> {
+        dispatchPointer(drawer, 'pointerdown', 0, 0);
+        dispatchPointer(drawer, 'pointermove', 0, 20);
+        dispatchPointer(drawer, 'pointermove', 0, 200);
+        await flush(r.fixture);
+        dispatchPointer(drawer, 'pointerup', 0, 200);
+        await flush(r.fixture);
+      }
+
+      it('with both on, a long drag toward the edge past the lowest snap dismisses', async () => {
+        const { r, drawer } = await mountGated({ snaps: [0.25, 0.5, 1] });
+
+        await dragTowardEdge(r, drawer);
+
+        expect(r.instance.ends.map((e) => e.willClose)).toEqual([true]);
+        expect(r.instance.reasons).toEqual(['swipe']);
+      });
+
+      it('swipeToDismiss=false still arms the drag between snap points', async () => {
+        const { r, drawer } = await mountGated({ snaps: [0.25, 0.5, 1], swipeToDismiss: false });
+
+        dispatchPointer(drawer, 'pointerdown', 0, 40);
+        dispatchPointer(drawer, 'pointermove', 0, 10);
+        await flush(r.fixture);
+
+        expect(drawer.getAttribute('data-dragging')).toBe('');
+        expect(r.instance.starts.length).toBe(1);
+
+        dispatchPointer(drawer, 'pointerup', 0, 10);
+        await flush(r.fixture);
+        expect(drawer.hasAttribute('data-dragging')).toBe(false);
+      });
+
+      it('swipeToDismiss=false with snap points settles on a snap instead of dismissing', async () => {
+        const { r, drawer } = await mountGated({ snaps: [0.25, 0.5, 1], swipeToDismiss: false });
+
+        await dragTowardEdge(r, drawer);
+
+        expect(r.instance.ends.length).toBe(1);
+        expect(r.instance.ends[0]!.willClose).toBe(false);
+        expect(r.instance.ends[0]!.nextSnapPoint).toBe(0.25);
+        expect(r.instance.reasons).toEqual([]);
+        expect(r.instance.open()).toBe(true);
+      });
+
+      it('dismissible=false without snap points arms no drag at all', async () => {
+        const { r, drawer } = await mountGated({ dismissible: false });
+
+        dispatchPointer(drawer, 'pointerdown', 0, 0);
+        dispatchPointer(drawer, 'pointermove', 0, 20);
+        await flush(r.fixture);
+        expect(drawer.hasAttribute('data-dragging')).toBe(false);
+
+        dispatchPointer(drawer, 'pointerup', 0, 20);
+        await flush(r.fixture);
+        expect(r.instance.starts).toEqual([]);
+        expect(r.instance.ends).toEqual([]);
+        expect(r.instance.open()).toBe(true);
+      });
+
+      it('dismissible=false with snap points reports willClose: false and stays open', async () => {
+        const { r, drawer } = await mountGated({ snaps: [0.25, 0.5, 1], dismissible: false });
+
+        await dragTowardEdge(r, drawer);
+
+        expect(r.instance.ends.length).toBe(1);
+        expect(r.instance.ends[0]!.willClose).toBe(false);
+        expect(r.instance.ends[0]!.nextSnapPoint).toBe(0.25);
+        expect(r.instance.reasons).toEqual([]);
+        expect(r.instance.open()).toBe(true);
+      });
+
+      it('a runtime dismissible flip re-arms the drag of a drawer without snap points', async () => {
+        const { r, drawer } = await mountGated({ dismissible: false });
+
+        r.instance.dismissible.set(true);
+        await flush(r.fixture);
+        await dragTowardEdge(r, drawer);
+
+        expect(r.instance.ends.map((e) => e.willClose)).toEqual([true]);
+        expect(r.instance.reasons).toEqual(['swipe']);
+      });
+    });
   });
 
   describe('mount/unmount', () => {
@@ -1109,6 +1242,73 @@ describe('ForDrawer (declarative)', () => {
       expect(captured.some((e) => e instanceof Error && /fadeFromIndex/.test(e.message))).toBe(
         true,
       );
+    });
+
+    it('reports nothing for an invalid snap config once `ngDevMode` is cleared, and still drags', async () => {
+      @Component({
+        imports: [ForDrawer],
+        template: `
+          @if (open()) {
+            <div
+              forDrawer
+              [snapPoints]="snaps"
+              [fadeFromIndex]="5"
+              [closeThreshold]="2"
+              (swipeEnd)="ends.push($event)"
+              (dismiss)="open.set(false)"
+              ariaLabel="t"
+            ></div>
+          }
+        `,
+      })
+      class BadHost {
+        readonly open = signal(false);
+        readonly snaps: ReadonlyArray<ForDrawerSnapPoint> = [0.5, Number.NaN, 0.25];
+        readonly ends: ForDrawerSwipeEndEvent[] = [];
+      }
+
+      vi.stubGlobal('ngDevMode', false);
+      const captured: unknown[] = [];
+      class CapturingHandler implements ErrorHandler {
+        handleError(err: unknown): void {
+          captured.push(err);
+        }
+      }
+      TestBed.configureTestingModule({
+        providers: [
+          provideZonelessChangeDetection(),
+          { provide: ErrorHandler, useClass: CapturingHandler },
+        ],
+      });
+      const fixture = TestBed.createComponent(BadHost);
+      fixture.detectChanges();
+      fixture.componentInstance.open.set(true);
+      await flush(fixture);
+
+      const drawer = document.querySelector<HTMLElement>('[forDrawer]')!;
+      for (const [type, y] of [
+        ['pointerdown', 0],
+        ['pointermove', 20],
+        ['pointermove', 40],
+        ['pointerup', 40],
+      ] as const) {
+        drawer.dispatchEvent(
+          new PointerEvent(type, {
+            bubbles: true,
+            cancelable: true,
+            clientX: 0,
+            clientY: y,
+            pointerId: 1,
+            pointerType: 'touch',
+            button: 0,
+          }),
+        );
+      }
+      await flush(fixture);
+
+      expect(captured).toEqual([]);
+      expect(fixture.componentInstance.ends.length).toBe(1);
+      expect(drawer.hasAttribute('data-dragging')).toBe(false);
     });
 
     describe('runtime snapPoints rebind', () => {
@@ -1842,6 +2042,71 @@ describe('ForDrawerTrigger', () => {
     await flush(r.fixture);
 
     expect(r.instance.open()).toBe(false);
+  });
+
+  describe('missing controls dev-mode warning', () => {
+    @Component({
+      imports: [ForDrawer, ForDrawerTrigger],
+      template: `
+        <button forDrawerTrigger [(open)]="open" [controls]="controls()">Open</button>
+        @if (open()) {
+          <div forDrawer id="drw" (dismiss)="open.set(false)" ariaLabel="t"></div>
+        }
+      `,
+    })
+    class NoControlsHost {
+      readonly open = signal(false);
+      readonly controls = signal<string | null>(null);
+    }
+
+    it('warns with FORCDK-DRAWER-013 when the trigger opens without [controls]', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const r = renderHost(NoControlsHost);
+      await flush(r.fixture);
+      expect(warn).not.toHaveBeenCalled();
+
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn.mock.calls[0]![0]).toContain(
+        '[forty-cdk/drawer] FORCDK-DRAWER-013: [forDrawerTrigger] is open but has no [controls]',
+      );
+    });
+
+    it('warns once while [controls] stays unset, and again only after it was set and cleared', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const r = renderHost(NoControlsHost);
+      const cycle = async () => {
+        r.instance.open.set(true);
+        await flush(r.fixture);
+        r.instance.open.set(false);
+        await flush(r.fixture);
+      };
+
+      await cycle();
+      await cycle();
+      expect(warn).toHaveBeenCalledTimes(1);
+
+      r.instance.controls.set('drw');
+      await cycle();
+      expect(warn).toHaveBeenCalledTimes(1);
+
+      r.instance.controls.set(null);
+      await cycle();
+      expect(warn).toHaveBeenCalledTimes(2);
+    });
+
+    it('does not warn when [controls] is provided', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const r = renderHost(TriggerHost);
+      await flush(r.fixture);
+
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      expect(warn).not.toHaveBeenCalled();
+    });
   });
 });
 

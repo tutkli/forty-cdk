@@ -15,7 +15,6 @@ import {
   FLICK_STALE_VELOCITY_MS,
   FLICK_VELOCITY_PX_PER_MS,
   flickVelocity,
-  fortyError,
   injectPrefersReducedMotion,
   isScrollableAtEdge,
   type SwipeDirection,
@@ -28,9 +27,10 @@ import {
   type ForDrawerSwipeEvent,
 } from './drawer-context';
 import {
+  assertSnapPointConfig,
+  assertSnapPositions,
   computeSnapPositions,
-  validateSnapPointsShape,
-  validateSnapPositions,
+  settleSnapPositions,
 } from './snap-points';
 import { resolveSnapTarget } from './snap-target';
 
@@ -88,6 +88,8 @@ export interface DrawerDragConfig {
   readonly handleOnly: Signal<boolean>;
   /** When `true`, swipe toward the anchored edge dismisses past `closeThreshold`. */
   readonly swipeToDismiss: Signal<boolean>;
+  /** When `false`, no swipe dismisses, whatever `swipeToDismiss` says. */
+  readonly dismissible: Signal<boolean>;
   /** First index of `snapPoints` for the backdrop fade; validated for range. */
   readonly fadeFromIndex: Signal<number | undefined>;
   /** Two-way active snap point. The engine seeds it on mount and writes it on release. */
@@ -124,7 +126,7 @@ export interface DrawerDragHandle {
   readonly swipeMovementY: Signal<number>;
   /**
    * Run the mount-time snap-point validation + first live-dimension
-   * measurement and seed the `activeSnapPoint` default. Throws (with a
+   * measurement and seed the `activeSnapPoint` default. In dev mode, throws (with a
    * `[forty-cdk/drawer]`-prefixed message) on a bad `snapPoints` /
    * `fadeFromIndex` config. The directive calls this from its pre-shell
    * `afterNextRender`, after the drawer-stack push and the `closeThreshold`
@@ -172,6 +174,9 @@ export function injectDrawerDrag(config: DrawerDragConfig): DrawerDragHandle {
   const fadeFromIndex = config.fadeFromIndex;
   const activeSnapPoint = config.activeSnapPoint;
 
+  const canDismiss = computed(() => config.swipeToDismiss() && config.dismissible());
+  const hasSnapPoints = computed(() => !!snapPoints()?.length);
+
   const dragOffset = signal(0); // px translated along the dismissal axis (positive = away from edge)
   const dragging = signal(false);
   const swipeProgress = signal(0); // [0, 1] progress toward the anchored edge (dismiss direction)
@@ -199,14 +204,15 @@ export function injectDrawerDrag(config: DrawerDragConfig): DrawerDragHandle {
   // toward the edge); with snap points the floor reaches the largest snap so
   // an upward drag can expand the surface.
   let dragMinOffset = 0;
+  let dragMaxOffset = Number.POSITIVE_INFINITY;
 
   // Snap positions cache, keyed by BOTH the dimension they were resolved
   // against AND the `snapPoints` array identity. First-measurement validation
   // populates this; `onSwipeStart` refreshes it when the surface has resized
   // between gestures, and a runtime `[snapPoints]` rebind (same dimension, new
   // array reference) is a cache miss so positions are recomputed and
-  // re-validated. Always pre-validated, so `onSwipeRelease` can read it
-  // without re-running monotonicity checks.
+  // re-validated. Always settled, so `onSwipeRelease` can read it without
+  // re-running monotonicity checks.
   let snapPositionsCache: {
     dimension: number;
     snapPoints: ReadonlyArray<ForDrawerSnapPoint>;
@@ -228,35 +234,11 @@ export function injectDrawerDrag(config: DrawerDragConfig): DrawerDragHandle {
   let swipeCleanup: (() => void) | null = null;
 
   /**
-   * Dimension-independent snap-point validation: the per-point shape /
-   * strict-increase check (`validateSnapPointsShape`) plus the
-   * `fadeFromIndex` range check. Throws with a `[forty-cdk/drawer]`-prefixed
-   * message on the first failure. A `null` / empty array is a valid "no snap
-   * points" config and skips both checks. Shared by the mount-time
-   * `afterNextRender` and the runtime-rebind effect so the two paths stay in
-   * lockstep.
-   */
-  function validateSnapPointConfig(points: ReadonlyArray<ForDrawerSnapPoint> | undefined): void {
-    if (!points || points.length === 0) {
-      return;
-    }
-    validateSnapPointsShape(points);
-    const idx = fadeFromIndex();
-    if (idx !== undefined && (idx < 0 || idx >= points.length)) {
-      throw fortyError({
-        code: 'FORCDK-DRAWER-003',
-        message: `fadeFromIndex is ${idx}, which is out of range for ${points.length} snapPoints.`,
-        fix: `Set fadeFromIndex between 0 and ${points.length - 1}, or leave it unset.`,
-      });
-    }
-  }
-
-  /**
-   * Resolve and validate snap positions against the host's current
+   * Resolve and cache snap positions against the host's current
    * dimension. No-op if the cached positions already match BOTH the live
-   * dimension and the current `snapPoints` array. Throws (with the
-   * offending-point error message) when the live dimension flips a mixed
-   * `'NNpx'` + fraction array out of monotonic order.
+   * dimension and the current `snapPoints` array. In dev mode, throws after
+   * caching when the live dimension flips a mixed `'NNpx'` + fraction array
+   * out of monotonic order, so it reports once per dimension.
    *
    * Called from `afterNextRender` (first measurement), from `onSwipeStart`
    * (resize between gestures, or a runtime `[snapPoints]` rebind), and from
@@ -277,8 +259,22 @@ export function injectDrawerDrag(config: DrawerDragConfig): DrawerDragHandle {
       return;
     }
     const positions = computeSnapPositions(points, dim);
-    validateSnapPositions(points, positions, dim);
-    snapPositionsCache = { dimension: dim, snapPoints: points, positions };
+    snapPositionsCache = {
+      dimension: dim,
+      snapPoints: points,
+      positions: settleSnapPositions(positions),
+    };
+    assertSnapPositions(points, positions, dim);
+  }
+
+  function snapPositionsAt(
+    points: ReadonlyArray<ForDrawerSnapPoint>,
+    dimension: number,
+  ): ReadonlyArray<number> {
+    const cached = snapPositionsCache;
+    return cached && cached.dimension === dimension && cached.snapPoints === points
+      ? cached.positions
+      : settleSnapPositions(computeSnapPositions(points, dimension));
   }
 
   /**
@@ -311,15 +307,8 @@ export function injectDrawerDrag(config: DrawerDragConfig): DrawerDragHandle {
   }
 
   function onSwipeStart(detail: SwipeEventDetail): void {
-    dragging.set(true);
-    swipeProgress.set(0);
-    pointerStartTime = detail.originalEvent.timeStamp || performance.now();
-    pointerLastTime = pointerStartTime;
-    pointerLastX = detail.originalEvent.clientX;
-    pointerLastY = detail.originalEvent.clientY;
-    pointerVelocity = 0;
     const rect = host.nativeElement.getBoundingClientRect();
-    dimensionAtStart = sideAxis(side()) === 'y' ? rect.height : rect.width;
+    const dimension = sideAxis(side()) === 'y' ? rect.height : rect.width;
 
     // Refresh & validate snap positions for this gesture's dimension. If
     // mount-time first-measurement saw a non-zero dimension equal to the
@@ -328,17 +317,23 @@ export function injectDrawerDrag(config: DrawerDragConfig): DrawerDragHandle {
     const points = snapPoints();
     if (points && points.length > 0) {
       refreshSnapPositions(points);
-      const cached = snapPositionsCache;
-      const positions =
-        cached && cached.dimension === dimensionAtStart && cached.snapPoints === points
-          ? cached.positions
-          : computeSnapPositions(points, dimensionAtStart);
+      const positions = snapPositionsAt(points, dimension);
       const activePos = activeSnapPositionPx(points, positions);
-      const highestPos = positions[positions.length - 1] ?? activePos;
-      dragMinOffset = activePos - highestPos;
+      dragMinOffset = activePos - positions[positions.length - 1]!;
+      dragMaxOffset = canDismiss() ? Number.POSITIVE_INFINITY : activePos - positions[0]!;
     } else {
       dragMinOffset = 0;
+      dragMaxOffset = Number.POSITIVE_INFINITY;
     }
+
+    dragging.set(true);
+    swipeProgress.set(0);
+    dimensionAtStart = dimension;
+    pointerStartTime = detail.originalEvent.timeStamp || performance.now();
+    pointerLastTime = pointerStartTime;
+    pointerLastX = detail.originalEvent.clientX;
+    pointerLastY = detail.originalEvent.clientY;
+    pointerVelocity = 0;
 
     config.emitSwipeStart({ progress: 0, originalEvent: detail.originalEvent });
   }
@@ -377,7 +372,10 @@ export function injectDrawerDrag(config: DrawerDragConfig): DrawerDragHandle {
     // points it goes negative so a drag away from the edge grows the surface
     // toward a larger snap. The swipe-displacement publisher below reflects
     // the offset reactively — no imperative DOM write here.
-    const nextOffset = Math.max(dragMinOffset, dragOffset() + moveTowardEdge);
+    const nextOffset = Math.min(
+      dragMaxOffset,
+      Math.max(dragMinOffset, dragOffset() + moveTowardEdge),
+    );
     dragOffset.set(nextOffset);
 
     const dim = dimensionAtStart || 1;
@@ -421,11 +419,7 @@ export function injectDrawerDrag(config: DrawerDragConfig): DrawerDragHandle {
       // path is throw-free by construction: any input that would fail
       // monotonicity at the live dimension has already failed before we get
       // here.
-      const cached = snapPositionsCache;
-      const snapPositions =
-        cached && cached.dimension === dim && cached.snapPoints === points
-          ? cached.positions
-          : computeSnapPositions(points, dim);
+      const snapPositions = snapPositionsAt(points, dim);
       const position = activeSnapPositionPx(points, snapPositions) - offset;
       const resolved = resolveSnapTarget<ForDrawerSnapPoint>({
         snapPoints: points,
@@ -435,12 +429,14 @@ export function injectDrawerDrag(config: DrawerDragConfig): DrawerDragHandle {
         velocity: -effectiveVelocity, // helper sema: positive = away from edge
         closeThreshold: threshold,
       });
-      willClose = resolved.willClose;
-      nextSnap = resolved.nextSnapPoint;
+      willClose = resolved.willClose && canDismiss();
+      nextSnap = willClose ? null : (resolved.nextSnapPoint ?? points[0]!);
     } else {
       // No snap points: dismiss when dragged past closeThreshold OR fast
       // flick toward edge.
-      willClose = offset >= dim * threshold || effectiveVelocity >= FLICK_VELOCITY_PX_PER_MS;
+      willClose =
+        canDismiss() &&
+        (offset >= dim * threshold || effectiveVelocity >= FLICK_VELOCITY_PX_PER_MS);
     }
 
     config.emitSwipeEnd({ willClose, nextSnapPoint: nextSnap, originalEvent: event });
@@ -518,7 +514,7 @@ export function injectDrawerDrag(config: DrawerDragConfig): DrawerDragHandle {
     if (points && points.length > 0 && activeSnapPoint() === null) {
       activeSnapPoint.set(points[0]!);
     }
-    validateSnapPointConfig(points);
+    assertSnapPointConfig(points, fadeFromIndex());
     // Try first measurement. In real browsers `getBoundingClientRect`
     // returns the laid-out dimension here (we're inside `afterNextRender`,
     // post-layout). In jsdom layout doesn't run, so dimension is 0 — defer
@@ -547,7 +543,7 @@ export function injectDrawerDrag(config: DrawerDragConfig): DrawerDragHandle {
   effect(() => {
     const points = snapPoints();
     // Track fadeFromIndex too so a runtime range violation is caught.
-    fadeFromIndex();
+    const fadeIndex = fadeFromIndex();
     if (!snapConfigMounted) {
       return;
     }
@@ -558,7 +554,7 @@ export function injectDrawerDrag(config: DrawerDragConfig): DrawerDragHandle {
       snapPositionsCache = null;
     }
     try {
-      validateSnapPointConfig(points);
+      assertSnapPointConfig(points, fadeIndex);
       if (points && points.length > 0) {
         refreshSnapPositions(points);
       }
@@ -567,17 +563,18 @@ export function injectDrawerDrag(config: DrawerDragConfig): DrawerDragHandle {
     }
   });
 
-  // ---- Swipe-to-dismiss gate. Arms the pointer listeners only when
-  // `swipeToDismiss` is on AND the user hasn't asked for reduced motion
-  // (drag animations are vestibular-hostile). Both inputs are read
-  // reactively so a runtime flip of either — a `[swipeToDismiss]` rebind or
+  // ---- Drag gate. Arms the pointer listeners only when the drag has
+  // somewhere to go — a swipe that can dismiss, or snap points to move
+  // between — AND the user hasn't asked for reduced motion (drag animations
+  // are vestibular-hostile). Every input is read reactively so a runtime
+  // flip — a `[swipeToDismiss]` / `[dismissible]` / `[snapPoints]` rebind or
   // a live `prefers-reduced-motion` change — arms or disarms the gesture,
   // mirroring how `ForDrawerScaleCoordinator` already reacts to the
   // preference. Attaching/detaching listeners is a DOM side effect, so an
   // `effect` is the right tool; `swipeReady` gates the pre-render run so the
   // gesture arms on a host already attached via the shell's portal.
   effect(() => {
-    const shouldArm = config.swipeToDismiss() && !prefersReducedMotion();
+    const shouldArm = (canDismiss() || hasSnapPoints()) && !prefersReducedMotion();
     if (!swipeReady()) {
       return;
     }

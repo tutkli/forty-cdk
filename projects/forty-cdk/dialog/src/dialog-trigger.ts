@@ -1,15 +1,7 @@
-import {
-  booleanAttribute,
-  Directive,
-  effect,
-  ElementRef,
-  inject,
-  input,
-  isDevMode,
-  model,
-} from '@angular/core';
+import { booleanAttribute, Directive, ElementRef, inject, input, model } from '@angular/core';
 
 import { fortyWarn, hostButtonType, reflectDisabled } from 'forty-cdk/core';
+import { warnIfOpenWithoutControls } from 'forty-cdk/core-overlay';
 
 /**
  * Button that toggles the dialog when clicked. Apply on a focusable element —
@@ -77,24 +69,18 @@ export class ForDialogTrigger {
 
   constructor() {
     reflectDisabled(this.disabled);
-    if (isDevMode()) {
-      let warned = false;
-      effect(() => {
-        if (this.controls() !== null) {
-          warned = false;
-        } else if (this.open() && !warned) {
-          warned = true;
-          fortyWarn({
-            code: 'FORCDK-DIALOG-002',
-            message:
-              '[forDialogTrigger] is open but has no [controls], so aria-controls is omitted.',
-            cause:
-              'The trigger and its dialog are separate elements, so only the consumer knows the id.',
-            fix: 'Set [controls] to the id on [forDialog] so assistive tech links the two.',
-          });
-        }
-      });
-    }
+    warnIfOpenWithoutControls({
+      open: this.open,
+      controls: this.controls,
+      warn: () =>
+        fortyWarn({
+          code: 'FORCDK-DIALOG-002',
+          message: '[forDialogTrigger] is open but has no [controls], so aria-controls is omitted.',
+          cause:
+            'The trigger and its dialog are separate elements, so only the consumer knows the id.',
+          fix: 'Set [controls] to the id on [forDialog] so assistive tech links the two.',
+        }),
+    });
   }
 
   protected onClick(): void {

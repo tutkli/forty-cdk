@@ -11,7 +11,7 @@ import {
 
 import { resolveConfigClass, type VetoableEvent, type VetoableNativeEvent } from 'forty-cdk/core';
 import { OverlayManagerCore } from 'forty-cdk/core-overlay';
-import { validateCloseThreshold } from './snap-points';
+import { assertCloseThreshold } from './snap-points';
 import {
   FOR_DRAWER_CONTEXT,
   type ForDrawerCloseReason,
@@ -128,7 +128,10 @@ export interface ForDrawerOpenConfig<D = unknown> {
    */
   backdropAnimateLeave?: string;
 
-  /** When true (default), pointer drag past `closeThreshold` dismisses. */
+  /**
+   * When true (default), pointer drag past `closeThreshold` dismisses. Snap
+   * dragging stays live when `false`.
+   */
   swipeToDismiss?: boolean;
 
   /** Fraction of dimension past which a release dismisses. Default `0.25`. */
@@ -325,7 +328,7 @@ export class ForDrawerManager extends OverlayManagerCore<ForDrawerEntry> {
     config: ForDrawerOpenConfig<D> = {},
   ): ForDrawerRef<R> {
     if (config.closeThreshold !== undefined) {
-      validateCloseThreshold(config.closeThreshold);
+      assertCloseThreshold(config.closeThreshold);
     }
 
     const { id, remove } = this.nextId();
