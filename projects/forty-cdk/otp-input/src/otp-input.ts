@@ -132,7 +132,11 @@ export class ForOtpInput
    */
   readonly allowedPattern = input<RegExp | null>(null);
 
-  /** Obscure entered characters in the slots (PIN entry); `value()` stays raw. */
+  /**
+   * Obscure entered characters for PIN entry: the slots render a bullet and the
+   * injected real `<input>` becomes `type="password"`, so assistive technology
+   * and the browser treat it as a password field. `value()` stays raw.
+   */
   readonly mask = input(false, { transform: booleanAttribute });
 
   /** Toggle `autocomplete="one-time-code"` for mobile SMS autofill. */
@@ -177,6 +181,8 @@ export class ForOtpInput
 
   readonly #inputMode = computed(() => inputModeForType(this.type()));
 
+  readonly #inputType = computed(() => (this.mask() ? 'password' : 'text'));
+
   /** Predicate deciding whether a single character is allowed. */
   readonly #allowed = computed<(ch: string) => boolean>(() => {
     const pattern = this.allowedPattern();
@@ -203,6 +209,7 @@ export class ForOtpInput
       if (!el) {
         return;
       }
+      setAttr(el, 'type', this.#inputType());
       el.maxLength = this.length();
       setAttr(el, 'inputmode', this.#inputMode());
       setAttr(el, 'autocomplete', this.oneTimeCode() ? 'one-time-code' : 'off');
@@ -231,7 +238,7 @@ export class ForOtpInput
     // mismatch from a node the server never emitted.
     afterNextRender(() => {
       const el = this.#document.createElement('input');
-      el.type = 'text';
+      el.type = this.#inputType();
       el.autocapitalize = 'none';
       el.setAttribute('autocorrect', 'off');
       el.spellcheck = false;
