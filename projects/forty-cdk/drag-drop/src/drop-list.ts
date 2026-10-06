@@ -788,6 +788,10 @@ export class ForDropList implements ForDropListContext {
   }
 
   setLivePlaceholder(nodes: readonly Node[] | null): void {
+    const lifted = this.#liftedHost();
+    if (nodes !== null && lifted !== null) {
+      this.#coordinator?.layoutPlaceholder?.(nodes, lifted);
+    }
     this.#sorter?.setNodes(nodes);
   }
 

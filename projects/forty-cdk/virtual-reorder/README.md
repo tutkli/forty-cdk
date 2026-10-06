@@ -47,7 +47,9 @@ onReorder({ from, to }: ForVirtualReorderEvent): void {
 | ------------- | -------------------------------- | --------------------------------------------------------------------------- |
 | `itemReorder` | `output<ForVirtualReorderEvent>` | Fires once per committed gesture with `{ from, to }` absolute item indices. |
 
-It re-exposes `[forDropList]`'s `dir`, `disabled`, `autoScroll`, `animateReorder`, `liveSort`, `boundary` and `lockAxis` inputs through `hostDirectives`.
+It re-exposes `[forDropList]`'s `dir`, `disabled`, `autoScroll`, `boundary` and `lockAxis` inputs through `hostDirectives`. It does not re-expose `animateReorder` or `liveSort`: the rows are positioned out of flow and keep their nodes across a reorder, so there is no sibling for a placeholder to part and no row for the drop to animate.
+
+A row's `[forDragPlaceholder]` renders in the lifted row's own slot for the whole pointer drag: the coordinator copies the row's `position`, `top`, `left`, `width`, `height` and `transform` onto the placeholder's root element.
 
 ### `ForVirtualReorderEvent`
 

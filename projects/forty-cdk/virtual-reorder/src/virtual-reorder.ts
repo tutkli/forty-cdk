@@ -33,6 +33,8 @@ import { ForVirtualViewport } from 'forty-cdk/virtualization';
 
 const POINTER_ARM_THRESHOLD_PX = 5;
 
+const ROW_LAYOUT_PROPERTIES = ['position', 'top', 'left', 'width', 'height', 'transform'] as const;
+
 type ReorderMode = 'idle' | 'keyboard' | 'pointer';
 
 /** Payload of `itemReorder`: the lifted item's previous and new absolute index. */
@@ -106,16 +108,24 @@ function injectViewport(): ForVirtualViewport {
  * item at an arbitrary far item without waiting for auto-scroll to reach it, and the drop
  * announcement names the position it lands at. Without Shift, pointer resolution is unchanged.
  *
+ * A row's `[forDragPlaceholder]` renders in the lifted row's own slot for the whole pointer drag.
+ * The rows are positioned out of flow and keep their nodes across a reorder, so the list neither
+ * live-sorts nor animates the drop: it re-exposes neither `liveSort` nor `animateReorder`.
+ *
  * It **never reorders the items itself** (BYO-data): apply the move to your own array inside
  * the `(itemReorder)` handler. Vertical lists only (the default scroll axis).
  *
  * @example
  * ```html
- * <div forVirtualViewport [virtualCount]="rows().length" forVirtualReorder
- *      (itemReorder)="onReorder($event)">
- *   <div *forVirtualFor="let row of rows(); track row.id" forDraggable [dragData]="row.id">
- *     {{ row.label }}
- *   </div>
+ * <div
+ *   forVirtualViewport
+ *   [virtualCount]="rows().length"
+ *   [estimateSize]="44"
+ *   forVirtualReorder
+ *   (itemReorder)="onReorder($event)"
+ *   style="height: 400px"
+ * >
+ *   <div *forVirtualFor="let row of rows()" forDraggable [dragData]="row.id">{{ row.label }}</div>
  * </div>
  * ```
  */
@@ -126,15 +136,7 @@ function injectViewport(): ForVirtualViewport {
   hostDirectives: [
     {
       directive: ForDropList,
-      inputs: [
-        'dir',
-        'disabled',
-        'autoScroll',
-        'animateReorder',
-        'liveSort',
-        'boundary',
-        'lockAxis',
-      ],
+      inputs: ['dir', 'disabled', 'autoScroll', 'boundary', 'lockAxis'],
     },
   ],
 })
@@ -494,6 +496,20 @@ export class ForVirtualReorder {
       indices.push(index);
     }
     return indices;
+  }
+
+  private layoutPlaceholder(nodes: readonly Node[], lifted: HTMLElement): void {
+    for (const node of nodes) {
+      if (!(node instanceof HTMLElement)) {
+        continue;
+      }
+      for (const property of ROW_LAYOUT_PROPERTIES) {
+        const value = lifted.style.getPropertyValue(property);
+        if (value !== '') {
+          node.style.setProperty(property, value);
+        }
+      }
+    }
   }
 
   private resolveReorder(previousIndex: number, currentIndex: number): ForVirtualReorderEvent {
