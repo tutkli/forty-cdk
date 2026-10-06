@@ -263,18 +263,60 @@ describe('ForStepper', () => {
       }
     });
 
-    it('aria-controls is emitted only on the current trigger', async () => {
+    it('emits aria-controls on every trigger whose panel is registered (keep-mounted)', async () => {
       const { el, instance, fixture, flush } = renderHost(StepperHost);
       await flush();
+      for (let i = 0; i < 3; i++) {
+        expect(triggerAt(el, i).getAttribute('aria-controls')).toBe(contentAt(el, i).id);
+      }
+
+      instance.selectedIndex.set(1);
+      fixture.detectChanges();
+
+      for (let i = 0; i < 3; i++) {
+        expect(triggerAt(el, i).getAttribute('aria-controls')).toBe(contentAt(el, i).id);
+      }
+    });
+
+    it('omits aria-controls when the matching panel is unmounted (@if current pattern)', async () => {
+      @Component({
+        imports: [ForStepper, ForStepperList, ForStepperItem, ForStepperTrigger, ForStepperContent],
+        template: `
+          <div forStepper [(selectedIndex)]="selectedIndex">
+            <ol forStepperList>
+              @for (i of indices; track i) {
+                <li forStepperItem>
+                  <button type="button" forStepperTrigger [attr.data-trigger]="i">{{ i }}</button>
+                </li>
+              }
+            </ol>
+            @for (i of indices; track i) {
+              @if (selectedIndex() === i) {
+                <section forStepperContent [step]="i" [attr.data-content]="i">{{ i }}</section>
+              }
+            }
+          </div>
+        `,
+      })
+      class IfHost {
+        readonly indices = [0, 1, 2];
+        readonly selectedIndex = signal(0);
+      }
+
+      const { el, instance, fixture, flush } = renderHost(IfHost);
+      await flush();
+
       expect(triggerAt(el, 0).getAttribute('aria-controls')).toBe(contentAt(el, 0).id);
       expect(triggerAt(el, 1).hasAttribute('aria-controls')).toBe(false);
       expect(triggerAt(el, 2).hasAttribute('aria-controls')).toBe(false);
 
       instance.selectedIndex.set(1);
       fixture.detectChanges();
+      await flush();
 
       expect(triggerAt(el, 0).hasAttribute('aria-controls')).toBe(false);
       expect(triggerAt(el, 1).getAttribute('aria-controls')).toBe(contentAt(el, 1).id);
+      expect(triggerAt(el, 2).hasAttribute('aria-controls')).toBe(false);
     });
 
     it('inactive panels carry aria-hidden and inert; active panel does not', () => {
@@ -1256,6 +1298,12 @@ describe('ForStepper', () => {
 });
 
 describe('ForStepperProgress', () => {
+  interface ProgressStep {
+    completed: boolean;
+    state?: string;
+    hasError?: boolean;
+  }
+
   @Component({
     imports: [ForStepper, ForStepperList, ForStepperItem, ForStepperTrigger, ForStepperProgress],
     template: `
@@ -1268,7 +1316,12 @@ describe('ForStepperProgress', () => {
         ></div>
         <ol forStepperList ariaLabel="Steps">
           @for (s of steps(); track $index) {
-            <li forStepperItem [completed]="s.completed">
+            <li
+              forStepperItem
+              [completed]="s.completed"
+              [state]="s.state ?? null"
+              [hasError]="s.hasError ?? false"
+            >
               <button type="button" forStepperTrigger>Step {{ $index }}</button>
             </li>
           }
@@ -1281,7 +1334,11 @@ describe('ForStepperProgress', () => {
     readonly orientation = signal<'horizontal' | 'vertical'>('horizontal');
     readonly valueBy = signal<'index' | 'completed'>('index');
     readonly ariaLabel = signal<string | null>(null);
-    readonly steps = signal([{ completed: false }, { completed: false }, { completed: false }]);
+    readonly steps = signal<ProgressStep[]>([
+      { completed: false },
+      { completed: false },
+      { completed: false },
+    ]);
   }
 
   const progressEl = (el: HTMLElement) =>
@@ -1359,6 +1416,55 @@ describe('ForStepperProgress', () => {
     instance.selectedIndex.set(3);
     fixture.detectChanges();
     expect(progressEl(el).getAttribute('aria-valuenow')).toBe('100');
+  });
+
+  it('completed basis: all completed while standing on the last step → aria-valuenow="100"', () => {
+    const { el, instance, fixture } = renderHost(ProgressHost);
+    instance.valueBy.set('completed');
+    instance.steps.set([{ completed: true }, { completed: true }, { completed: true }]);
+    instance.selectedIndex.set(2);
+    fixture.detectChanges();
+    expect(progressEl(el).getAttribute('aria-valuenow')).toBe('100');
+    expect(progressEl(el).getAttribute('aria-valuetext')).toBe('100% complete');
+  });
+
+  it('completed basis: navigating back to a completed step keeps it counted', () => {
+    const { el, instance, fixture } = renderHost(ProgressHost);
+    instance.valueBy.set('completed');
+    instance.steps.set([{ completed: true }, { completed: true }, { completed: false }]);
+    instance.selectedIndex.set(2);
+    fixture.detectChanges();
+    expect(progressEl(el).getAttribute('aria-valuenow')).toBe('67');
+
+    instance.selectedIndex.set(0);
+    fixture.detectChanges();
+    expect(progressEl(el).getAttribute('aria-valuenow')).toBe('67');
+  });
+
+  it('completed basis: a completed step showing a custom state still counts', () => {
+    const { el, instance, fixture } = renderHost(ProgressHost);
+    instance.valueBy.set('completed');
+    instance.steps.set([
+      { completed: true, state: 'warning' },
+      { completed: false },
+      { completed: false },
+    ]);
+    instance.selectedIndex.set(1);
+    fixture.detectChanges();
+    expect(progressEl(el).getAttribute('aria-valuenow')).toBe('33');
+  });
+
+  it('completed basis: a completed step showing the error state still counts', () => {
+    const { el, instance, fixture } = renderHost(ProgressHost);
+    instance.valueBy.set('completed');
+    instance.steps.set([
+      { completed: true, hasError: true },
+      { completed: false },
+      { completed: false },
+    ]);
+    instance.selectedIndex.set(1);
+    fixture.detectChanges();
+    expect(progressEl(el).getAttribute('aria-valuenow')).toBe('33');
   });
 
   it('index basis: terminal selectedIndex=count clamps aria-valuenow to 100', () => {

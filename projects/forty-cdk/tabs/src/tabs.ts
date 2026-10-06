@@ -80,8 +80,7 @@ export class ForTabs implements ForTabsContext {
   readonly disabled = input(false, { transform: booleanAttribute });
 
   /**
-   * Whether arrow navigation wraps around past the first / last enabled
-   * trigger. Default `true` — matches the WAI-ARIA Tabs APG. Set to `false`
+   * Whether arrow navigation wraps around past the first / last trigger. Default `true` — matches the WAI-ARIA Tabs APG. Set to `false`
    * for a non-wrapping tablist. The default is read from
    * `provideForTabsDefaults` for the surrounding scope.
    */

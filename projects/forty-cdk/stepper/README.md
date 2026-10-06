@@ -52,7 +52,7 @@ See [Styling forty-cdk](../../../docs/styling.md) for theming guidance.
 
 ## Examples
 
-Walk the steps with their triggers or the arrow keys. Each step carries `data-state` for `completed`, `active`, `upcoming` or `disabled`, and the root says which `data-mode` it is in.
+Walk the steps with their triggers or the arrow keys. Each step carries `data-state` for `pending`, `active`, `completed` or `error`, and the root says which `data-mode` it is in.
 
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
@@ -412,14 +412,14 @@ The library-wide shadow-DOM statement, covering the two limits that affect overl
 
 ## Keyboard
 
-| Key                        | Action                                    |
-| -------------------------- | ----------------------------------------- |
-| `ArrowRight` / `ArrowDown` | Move focus to next selectable trigger     |
-| `ArrowLeft` / `ArrowUp`    | Move focus to previous selectable trigger |
-| `Home`                     | Move focus to first selectable trigger    |
-| `End`                      | Move focus to last selectable trigger     |
-| `Space` / `Enter`          | Activate focused trigger (manual mode)    |
-| `Tab`                      | Move focus into / out of the step panel   |
+| Key                        | Action                                  |
+| -------------------------- | --------------------------------------- |
+| `ArrowRight` / `ArrowDown` | Move focus to the next trigger          |
+| `ArrowLeft` / `ArrowUp`    | Move focus to the previous trigger      |
+| `Home`                     | Move focus to the first trigger         |
+| `End`                      | Move focus to the last trigger          |
+| `Space` / `Enter`          | Activate focused trigger (manual mode)  |
+| `Tab`                      | Move focus into / out of the step panel |
 
 In `activationMode="automatic"` arrow keys move focus AND select. In `activationMode="manual"` (default) only Space / Enter activate.
 
@@ -429,10 +429,10 @@ In `orientation="vertical"` ArrowUp/Down navigate; ArrowLeft/Right are ignored. 
 
 Implements the [WAI-ARIA Tabs pattern](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/).
 
-- **Interactive mode** implements the WAI-ARIA Tabs pattern. Each trigger carries `role="tab"`, the list carries `role="tablist"`, and content panels carry `role="tabpanel"`. Each `<li forStepperItem>` carries `role="presentation"` so the `tablist` owns the `tab` triggers directly. An interposed implicit `listitem` would violate the tablist's required-owned-elements contract. `aria-selected` is always emitted; `aria-controls` is gated to the current step (prevents dangling references when panels are unmounted with `@if`). The trigger ↔ panel pairing resolves each side by its step index: a trigger through its `[forStepperItem]`, a panel through `[step]` (or its position when unbound). Hiding one trigger or panel with `@if` therefore never shifts the pairing of the others.
+- **Interactive mode** implements the WAI-ARIA Tabs pattern. Each trigger carries `role="tab"`, the list carries `role="tablist"`, and content panels carry `role="tabpanel"`. Each `<li forStepperItem>` carries `role="presentation"` so the `tablist` owns the `tab` triggers directly. An interposed implicit `listitem` would violate the tablist's required-owned-elements contract. `aria-selected` is always emitted, and `aria-controls` is emitted on every trigger whose panel is registered, so a panel kept mounted while inactive is referenced and one unmounted with `@if` is not. The trigger ↔ panel pairing resolves each side by its step index: a trigger through its `[forStepperItem]`, a panel through `[step]` (or its position when unbound). Hiding one trigger or panel with `@if` therefore never shifts the pairing of the others.
 - **Progress mode** uses a standard `<ol role="list">` with `aria-current="step"` on the active trigger; each `<li forStepperItem>` keeps its implicit `listitem` role. No tab-stop manipulation is performed; triggers carry no `role`.
-- **Disabled triggers** in interactive mode retain their tab stop using `aria-disabled="true"` rather than the native `disabled` attribute, so assistive technology can announce them.
-- **Linear mode** reflects unreachable ahead-steps as `aria-disabled="true"` + `data-disabled=""` on the trigger. Keyboard navigation skips them automatically.
+- **Disabled triggers** in interactive mode reflect `aria-disabled="true"` + `data-disabled=""` rather than the native `disabled` attribute. They leave the `Tab` sequence but stay reachable with the arrow keys and `Home` / `End`, so assistive technology can announce them; activating one does nothing.
+- **Linear mode** reflects unreachable ahead-steps as `aria-disabled="true"` on the trigger. `data-disabled` stays reserved for an explicit `disabled`, so style an unreachable step off `[aria-disabled]`. Like a disabled trigger, an unreachable one is reached by arrow navigation but not activated, and `activationMode="automatic"` does not select it.
 - **RTL** is supported: set `dir="rtl"` on the root or a DOM ancestor.
 - **Progress bar** (`[forStepperProgress]`) is an opt-in part. When present it exposes `role="progressbar"` with `aria-valuemin="0"`, `aria-valuemax="100"`, and `aria-valuenow` derived from the current step or the count of completed steps.
 - **Panel `tabindex`** follows the Tabs pattern in `mode="interactive"`: a `[forStepperContent]` with **no** focusable descendants is itself a tab stop (`tabindex="0"`) so screen-reader users can focus and read it, while a panel that already contains focusable content is not. The directive detects this and re-measures on subtree changes; two kinds of change are outside what it can observe (see [Known limitations](#known-limitations)). In `mode="progress"` no `tabindex` is emitted at all.

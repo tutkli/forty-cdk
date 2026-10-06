@@ -118,9 +118,9 @@ The library-wide shadow-DOM statement, covering the two limits that affect overl
 | `value`          | `model<string \| null>`             | Two-way bindable. The selected tab's value, or `null` when nothing is selected. `null` is the unset state and is distinct from a tab whose `value` is `''`.<br>**Default:** — |
 | `activationMode` | `input<'automatic' \| 'manual'>`    | Use `'manual'` when panel content is expensive. In manual mode the user must press Space / Enter.<br>**Default:** `'automatic'` (selection follows arrow focus)               |
 | `orientation`    | `input<'horizontal' \| 'vertical'>` | Drives keyboard navigation and `aria-orientation`.<br>**Default:** `'horizontal'`                                                                                             |
-| `dir`            | `input<'ltr' \| 'rtl'>`             | Swaps ArrowLeft / ArrowRight.<br>**Default:** `'ltr'`                                                                                                                         |
+| `dir`            | `input<'ltr' \| 'rtl' \| null>`     | Swaps ArrowLeft / ArrowRight. Inherits the ambient direction when unset.<br>**Default:** `null`                                                                               |
 | `disabled`       | `input<boolean>`                    | When true, blocks all selection and keyboard nav.<br>**Default:** —                                                                                                           |
-| `loop`           | `input<boolean>`                    | When true (default), arrow nav wraps around past the first / last enabled trigger. Set to `false` for a non-wrapping tablist.<br>**Default:** `true`                          |
+| `loop`           | `input<boolean>`                    | When true (default), arrow nav wraps around past the first / last trigger. Set to `false` for a non-wrapping tablist.<br>**Default:** `true`                                  |
 
 | Data attribute     | Values                     |
 | ------------------ | -------------------------- |
@@ -138,7 +138,7 @@ The library-wide shadow-DOM statement, covering the two limits that affect overl
 | Property   | Type                     | Description                                                                             |
 | ---------- | ------------------------ | --------------------------------------------------------------------------------------- |
 | `value`    | `input.required<string>` | The tab's identifier. Must match the `value` of its `ForTabsContent`.<br>**Default:** — |
-| `disabled` | `input<boolean>`         | Disables this trigger; arrow nav skips it.<br>**Default:** —                            |
+| `disabled` | `input<boolean>`         | Disables this trigger; arrow nav still reaches it.<br>**Default:** —                    |
 
 | Data attribute     | Values                     |
 | ------------------ | -------------------------- |
@@ -146,7 +146,7 @@ The library-wide shadow-DOM statement, covering the two limits that affect overl
 | `data-disabled`    | present \| absent          |
 | `data-orientation` | `horizontal` \| `vertical` |
 
-Reflects on its host: `id`, `aria-selected`, `aria-controls` (looked up from the matching content), `aria-disabled`, `tabindex`. A disabled trigger keeps `aria-disabled="true"` + `data-disabled=""` (no native `disabled`, per APG). It is announced but non-activatable, and arrow nav skips it.
+Reflects on its host: `id`, `aria-selected`, `aria-controls` (looked up from the matching content), `aria-disabled`, `tabindex`. A disabled trigger keeps `aria-disabled="true"` + `data-disabled=""` (no native `disabled`, per APG). It leaves the `Tab` sequence but arrow nav and `Home` / `End` still reach it, so it is announced; activating it does nothing.
 
 ### `ForTabsContent`
 
@@ -171,9 +171,9 @@ The directive does **not** apply `[hidden]`. Two patterns work:
 
 - **Tab** moves focus into / out of the tablist; lands on the user-focused trigger (or the selected one, if none focused yet).
 - **ArrowRight / ArrowLeft** in horizontal, **ArrowDown / ArrowUp** in vertical: move focus between triggers, wrap-around. RTL swaps Left/Right.
-- **Home / End** jump to first / last enabled trigger.
+- **Home / End** jump to the first / last trigger.
 - **Space / Enter** activate the focused trigger (no-op in automatic mode since arrow nav already activated it).
-- Disabled triggers are skipped.
+- Disabled triggers are reached but not activated: automatic mode does not select one that arrow nav lands on.
 
 ## Accessibility
 
@@ -182,7 +182,7 @@ Implements the [WAI-ARIA Tabs pattern](https://www.w3.org/WAI/ARIA/apg/patterns/
 - **Label the tablist** via `aria-label` on `ForTabsList`, or `aria-labelledby` pointing to a heading.
 - **Choose `activationMode='automatic'`** when panels render quickly; `'manual'` when activation has noticeable cost (network, heavy computation).
 - **Panel `tabindex`** follows APG: a panel with **no** focusable descendants is itself a tab stop (`tabindex="0"`) so screen-reader users can focus and read it, while a panel that already contains focusable content (a form, links, buttons) is **not** a tab stop. The directive detects this automatically and reacts to subtree changes. Use `[interactiveContent]` to override the detection in either direction. [Known limitations](#known-limitations) covers the two kinds of change the detection cannot observe.
-- **`aria-controls` and `aria-labelledby`** are wired automatically when triggers and contents share the same `value`. `aria-controls` is emitted only on the selected trigger (mirroring the overlay triggers' open-only gating), so the reference never dangles at an unmounted panel under the `@if (selected())` mount pattern.
+- **`aria-controls` and `aria-labelledby`** are wired automatically when triggers and contents share the same `value`. `aria-controls` is emitted on every trigger whose panel is registered, so a panel kept mounted while inactive is referenced from its trigger, and a panel unmounted with `@if` is not referenced at all.
 
 ## Styling
 
