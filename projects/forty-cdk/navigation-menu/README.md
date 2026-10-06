@@ -202,7 +202,7 @@ When present, each `[forNavigationMenuContent]` re-parents its host into the Vie
 | `data-motion="from-start" \| "from-end"` | Entering Content | Side the previous trigger sat on, relative to this one.   |
 | `data-motion="to-start" \| "to-end"`     | Leaving Content  | Side the new trigger sits on, relative to this one.       |
 
-`from-start` / `to-start` map to the logical inline-start (left in LTR, right in RTL); writing the keyframes with logical CSS properties (e.g. `inset-inline-start`) makes the animation work in both directions automatically. `data-motion` is absent on first open and last close, where there is no peer trigger to compare against.
+`from-start` / `to-start` map to the logical inline-start (left in LTR, right in RTL); writing the keyframes with logical CSS properties (e.g. `inset-inline-start`) makes the animation work in both directions automatically. `data-motion` is absent when a panel opens from a closed menu and when a panel closes, where there is no peer trigger to compare against.
 
 ```html
 <nav forNavigationMenu [(value)]="open" aria-label="Main">
@@ -309,7 +309,7 @@ Dismissal is symmetric in both placements. Escape, outside pointerdown **and** t
 | `[forNavigationMenuViewport]`  | `data-state`       | `open` \| `closed`                                   |
 | `[forNavigationMenuViewport]`  | `data-orientation` | `horizontal` \| `vertical`                           |
 
-`data-motion` is absent on first open and last close, where there is no peer trigger to compare against.
+`data-motion` is absent when a panel opens from a closed menu and when a panel closes, where there is no peer trigger to compare against.
 
 ## Keyboard
 
