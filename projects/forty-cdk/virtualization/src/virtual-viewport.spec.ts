@@ -503,3 +503,103 @@ describe('ForVirtualViewport — detached-row sweep (#1424)', () => {
     expect(() => fixture.componentInstance.viewport().measureElement(null)).not.toThrow();
   });
 });
+
+describe('ForVirtualViewport — keyed rows follow their item across a same-count reorder (#2188)', () => {
+  interface KeyedRow {
+    readonly id: string;
+  }
+
+  @Component({
+    host: { 'data-fixture': 'keyed-reorder-host' },
+    imports: [ForVirtualViewport, ForVirtualFor],
+    template: `
+      <div
+        forVirtualViewport
+        [virtualCount]="rows().length"
+        [estimateSize]="40"
+        [getItemKey]="keyOf"
+        style="height: 200px; width: 200px"
+      >
+        <div *forVirtualFor="let row of rows()">{{ row.id }}</div>
+      </div>
+    `,
+  })
+  class KeyedReorderHost {
+    readonly rows = signal<readonly KeyedRow[]>(
+      Array.from({ length: 100 }, (_, i) => ({ id: `row-${i}` })),
+    );
+    keyOf: ((index: number) => string) | undefined = (index) => this.rows()[index]!.id;
+    readonly viewport = viewChild.required(ForVirtualViewport);
+
+    swap(a: number, b: number): void {
+      this.rows.update((rows) => {
+        const next = [...rows];
+        [next[a], next[b]] = [next[b]!, next[a]!];
+        return next;
+      });
+    }
+  }
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+  });
+
+  async function mount(keyed = true): Promise<ComponentFixture<KeyedReorderHost>> {
+    const fixture = TestBed.createComponent(KeyedReorderHost);
+    if (!keyed) {
+      fixture.componentInstance.keyOf = undefined;
+    }
+    fakeLayout(viewportEl(fixture), 200);
+    fixture.detectChanges();
+    await flush(fixture);
+    return fixture;
+  }
+
+  function rowAt(fixture: ComponentFixture<KeyedReorderHost>, index: number): HTMLElement {
+    return rowEls(fixture).find((el) => el.getAttribute('data-index') === String(index))!;
+  }
+
+  it('moves the keyed DOM node with its item to the new index', async () => {
+    const fixture = await mount();
+    const captured = rowAt(fixture, 2);
+    expect(captured.textContent?.trim()).toBe('row-2');
+
+    fixture.componentInstance.swap(2, 3);
+    await flush(fixture);
+
+    expect(captured.isConnected).toBe(true);
+    expect(captured.getAttribute('data-index')).toBe('3');
+    expect(captured.getAttribute('aria-posinset')).toBe('4');
+    expect(captured.textContent?.trim()).toBe('row-2');
+    expect(rowAt(fixture, 2).textContent?.trim()).toBe('row-3');
+  });
+
+  it('keeps a measured size on its item rather than on its slot', async () => {
+    const fixture = await mount();
+    const captured = rowAt(fixture, 2);
+    Object.defineProperty(captured, 'offsetHeight', { configurable: true, value: 100 });
+    Object.defineProperty(captured, 'offsetWidth', { configurable: true, value: 100 });
+    fixture.componentInstance.viewport().measureElement(captured);
+    await flush(fixture);
+    expect(rowAt(fixture, 3).style.transform).toBe('translateY(180px)');
+
+    fixture.componentInstance.swap(2, 3);
+    await flush(fixture);
+
+    expect(rowAt(fixture, 2).style.transform).toBe('translateY(80px)');
+    expect(captured.style.transform).toBe('translateY(120px)');
+    expect(rowAt(fixture, 4).style.transform).toBe('translateY(220px)');
+  });
+
+  it('keeps index keys reusing the slot when no getItemKey is bound', async () => {
+    const fixture = await mount(false);
+    const captured = rowAt(fixture, 2);
+
+    fixture.componentInstance.swap(2, 3);
+    await flush(fixture);
+
+    expect(captured.getAttribute('data-index')).toBe('2');
+    expect(captured.textContent?.trim()).toBe('row-3');
+    expect(rowAt(fixture, 3).textContent?.trim()).toBe('row-2');
+  });
+});

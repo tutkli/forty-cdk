@@ -72,4 +72,5 @@ export const REGISTRATION_SURFACES = {
   'time-picker': ['TimePickerContext', 'TimePickerPieceContext'],
   toast: ['ToastContext', 'ForToastActionHandle', 'ForToastTextHandle'],
   tree: ['TreeContext', 'TreePieceContext'],
+  virtualization: ['VirtualViewportContext'],
 };

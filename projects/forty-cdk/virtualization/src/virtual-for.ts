@@ -1,4 +1,5 @@
 import {
+  DestroyRef,
   Directive,
   type EmbeddedViewRef,
   TemplateRef,
@@ -57,6 +58,8 @@ export class ForVirtualFor<T> {
   readonly forVirtualForOf = input.required<readonly T[]>({ alias: 'forVirtualForOf' });
 
   constructor() {
+    this.#viewport.registerData(this.forVirtualForOf);
+    inject(DestroyRef).onDestroy(() => this.#viewport.unregisterData(this.forVirtualForOf));
     effect(() => this.#render());
   }
 

@@ -12,6 +12,7 @@ import {
   output,
   runInInjectionContext,
   signal,
+  untracked,
 } from '@angular/core';
 
 import {
@@ -68,6 +69,8 @@ export class ForVirtualViewport implements ForVirtualViewportContext, OnInit {
   readonly #injector = inject(Injector);
   readonly #scrollElement = signal<HTMLElement | null>(this.#host.nativeElement);
   readonly #virtualizer = signal<ForVirtualizer | null>(null);
+  readonly #data = signal<Signal<readonly unknown[]> | null>(null);
+  readonly #dataVersion = computed(() => this.#data()?.());
 
   /** Total number of items in the full list. */
   readonly virtualCount = input.required<number>();
@@ -81,7 +84,11 @@ export class ForVirtualViewport implements ForVirtualViewportContext, OnInit {
   /** Items rendered beyond the visible window on each side. Resolved once on init. */
   readonly overscan = input<number>(DEFAULT_OVERSCAN);
 
-  /** Stable key for the item at `index`. Defaults to the index. */
+  /**
+   * Stable key for the item at `index`. Defaults to the index. Keys are
+   * recomputed whenever the nested `*forVirtualFor` receives a new array, so a
+   * same-length reorder moves each keyed row's DOM node with its item.
+   */
   readonly getItemKey = input<((index: number) => string | number) | undefined>(undefined);
 
   /**
@@ -156,6 +163,7 @@ export class ForVirtualViewport implements ForVirtualViewportContext, OnInit {
           orientation: this.orientation(),
           overscan: this.overscan(),
           getItemKey: this.getItemKey(),
+          dataVersion: this.#dataVersion,
         }),
       );
       injectInfiniteScroll({
@@ -196,6 +204,16 @@ export class ForVirtualViewport implements ForVirtualViewportContext, OnInit {
    */
   measureElement(element: HTMLElement | null): void {
     this.#virtualizer()?.measureElement(element);
+  }
+
+  private registerData(data: Signal<readonly unknown[]>): void {
+    this.#data.set(data);
+  }
+
+  private unregisterData(data: Signal<readonly unknown[]>): void {
+    if (untracked(this.#data) === data) {
+      this.#data.set(null);
+    }
   }
 
   #retainedItem(index: number): VirtualItem {

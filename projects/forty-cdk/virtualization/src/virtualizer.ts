@@ -7,6 +7,7 @@ import {
   inject,
   PLATFORM_ID,
   signal,
+  untracked,
 } from '@angular/core';
 import {
   Virtualizer,
@@ -23,6 +24,8 @@ import { afterNextRenderCancellable } from 'forty-cdk/core';
 
 /** Default number of items rendered beyond the visible window on each side. */
 const DEFAULT_OVERSCAN = 5;
+
+const UNKEYED = Symbol('unkeyed');
 
 /**
  * Configuration for {@link injectVirtualizer}. The consumer owns the data and
@@ -46,8 +49,22 @@ export interface VirtualizerOptions {
    * reduce blank flashes while scrolling. Defaults to `5`.
    */
   readonly overscan?: number;
-  /** Stable key for the item at `index`. Defaults to the index itself. */
+  /**
+   * Stable key for the item at `index`. Defaults to the index itself.
+   *
+   * Keys, and the measured sizes stored against them, are recomputed when
+   * `count` changes and when `dataVersion` changes. Without a `dataVersion`, a
+   * rewrite of the data that keeps the same length (a sort, a reorder) leaves
+   * every key on its index, so a row tracked by `item.key` stays on its slot.
+   */
   readonly getItemKey?: (index: number) => string | number;
+  /**
+   * Reactive marker of the data `getItemKey` reads, typically the data array
+   * signal itself. Each new value recomputes every key against the current data,
+   * so a same-length reorder moves each keyed row, and its measured size, with
+   * its item. Has no effect without `getItemKey`.
+   */
+  readonly dataVersion?: Signal<unknown>;
   /**
    * Offset, in CSS pixels, added before the first item along the scroll axis.
    * Every item's computed offset and every `scrollToIndex` / `scrollToOffset`
@@ -222,6 +239,9 @@ export function injectVirtualizer(options: VirtualizerOptions): ForVirtualizer {
   const scrollMargin = options.scrollMargin ?? 0;
   const notify = signal(0, { equal: () => false });
   const mounted = signal(false);
+  const { getItemKey, dataVersion } = options;
+  let itemKey = getItemKey;
+  let keyedVersion: unknown = UNKEYED;
 
   const buildCoreOptions = (
     count: number,
@@ -230,7 +250,7 @@ export function injectVirtualizer(options: VirtualizerOptions): ForVirtualizer {
     count,
     getScrollElement: () => scrollElement,
     estimateSize: options.estimateSize,
-    getItemKey: options.getItemKey,
+    getItemKey: itemKey,
     overscan,
     horizontal,
     scrollMargin,
@@ -241,6 +261,16 @@ export function injectVirtualizer(options: VirtualizerOptions): ForVirtualizer {
   });
 
   const virtualizer = new Virtualizer<HTMLElement, HTMLElement>(buildCoreOptions(0, null));
+
+  const syncItemKeys = (): void => {
+    if (getItemKey === undefined || dataVersion === undefined) return;
+    const version = dataVersion();
+    if (Object.is(version, keyedVersion)) return;
+    keyedVersion = version;
+    itemKey = (index) => getItemKey(index);
+    virtualizer.setOptions({ ...virtualizer.options, getItemKey: itemKey });
+    virtualizer.getTotalSize();
+  };
 
   // @sanctioned-effect(external-source): `notify` is a change-notification
   // bridge from the imperative `@tanstack/virtual-core` core into the signal
@@ -265,6 +295,7 @@ export function injectVirtualizer(options: VirtualizerOptions): ForVirtualizer {
     () => {
       notify();
       if (!mounted()) return [];
+      syncItemKeys();
       return virtualizer.getVirtualItems().map(toVirtualItem);
     },
     { equal: virtualItemsEqual },
@@ -273,6 +304,7 @@ export function injectVirtualizer(options: VirtualizerOptions): ForVirtualizer {
   const totalSize = computed<number>(() => {
     notify();
     if (!mounted()) return estimateTotal(options.count(), options.estimateSize);
+    syncItemKeys();
     return virtualizer.getTotalSize();
   });
 
@@ -286,13 +318,17 @@ export function injectVirtualizer(options: VirtualizerOptions): ForVirtualizer {
     virtualItems,
     totalSize,
     range,
-    scrollToIndex: (index, scrollOptions) => virtualizer.scrollToIndex(index, scrollOptions),
+    scrollToIndex: (index, scrollOptions) => {
+      untracked(syncItemKeys);
+      virtualizer.scrollToIndex(index, scrollOptions);
+    },
     scrollToOffset: (offset) => virtualizer.scrollToOffset(offset),
     measureElement: (element) => virtualizer.measureElement(element),
     measurementFor: (index) => {
       if (!mounted() || index < 0 || index >= options.count()) {
         return null;
       }
+      syncItemKeys();
       const measurement = virtualizer.measurementsCache[index];
       return measurement === undefined ? null : toVirtualItem(measurement);
     },
