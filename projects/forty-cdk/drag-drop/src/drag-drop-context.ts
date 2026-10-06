@@ -101,8 +101,9 @@ export interface ForDropListContext {
   pointerMove(point: { x: number; y: number }): void;
   /**
    * Register the rendered placeholder's root nodes with the source list so it can reposition
-   * them to the live drop index during a `liveSort` pointer drag. Pass `null` to clear. The
-   * list ignores the nodes when `liveSort` is off. Called by `ForDraggable`.
+   * them to the live drop index during a `liveSort` pointer drag, after a composing coordinator's
+   * `layoutPlaceholder` has placed them. Pass `null` to clear. Without `liveSort` the nodes stay
+   * where they were rendered. Called by `ForDraggable`.
    */
   setLivePlaceholder(nodes: readonly Node[] | null): void;
 }
@@ -174,6 +175,13 @@ export interface ForDropListCoordinator {
    * `resolveReorder(from, from)` and reports its `from`.
    */
   resolveReorder(previousIndex: number, currentIndex: number): { from: number; to: number };
+  /**
+   * Lays out the `[forDragPlaceholder]` root nodes rendered for the pointer-lifted `lifted` item,
+   * once, before they are first painted. A coordinator whose items are positioned out of flow
+   * places the placeholder in the lifted item's slot here; without it the placeholder renders as
+   * an in-flow sibling of the item.
+   */
+  layoutPlaceholder?(nodes: readonly Node[], lifted: HTMLElement): void;
 }
 
 export const FOR_DROP_LIST_COORDINATOR = new InjectionToken<ForDropListCoordinator>(

@@ -33,9 +33,11 @@ export interface PlayFlipConfig {
 /**
  * Runs the Invert + Play steps of a FLIP transition for every element in `first` that is still
  * connected and has moved. Measures Last via `getBoundingClientRect`, applies the inverted
- * transform with the transition suppressed, forces a reflow, then transitions back to identity
- * while `data-drag-animating` is present so a consumer CSS rule keyed on it governs duration /
- * easing. No-op when `win` is `null`. The library imposes no duration of its own.
+ * transform with the transition suppressed, forces a reflow, then transitions back to the element's
+ * resting inline transform while `data-drag-animating` is present so a consumer CSS rule keyed on
+ * it governs duration / easing. An inline `transform` the element already carries, such as a
+ * windowed row's positioning offset, is kept: the inverted translate is prepended to it and the
+ * transition ends on it. No-op when `win` is `null`. The library imposes no duration of its own.
  */
 export function playFlip(config: PlayFlipConfig): void {
   const { first, win, exclude, fallbackMs: fallbackMsInput } = config;
@@ -44,7 +46,7 @@ export function playFlip(config: PlayFlipConfig): void {
   }
   const fallbackMs = fallbackMsInput ?? 500;
 
-  const workList: { el: HTMLElement; d: FlipDelta }[] = [];
+  const workList: { el: HTMLElement; d: FlipDelta; rest: string }[] = [];
   for (const [el, firstRect] of first) {
     if (el === exclude) {
       continue;
@@ -57,24 +59,25 @@ export function playFlip(config: PlayFlipConfig): void {
     if (d.dx === 0 && d.dy === 0) {
       continue;
     }
-    workList.push({ el, d });
+    workList.push({ el, d, rest: el.style.transform });
   }
 
   if (workList.length === 0) {
     return;
   }
 
-  for (const { el, d } of workList) {
+  for (const { el, d, rest } of workList) {
+    const invert = `translate(${d.dx}px, ${d.dy}px)`;
     el.style.transition = 'none';
-    el.style.transform = `translate(${d.dx}px, ${d.dy}px)`;
+    el.style.transform = rest === '' ? invert : `${invert} ${rest}`;
   }
 
   void workList[0]!.el.offsetWidth;
 
-  for (const { el } of workList) {
+  for (const { el, rest } of workList) {
     el.setAttribute(FLIP_ANIMATING_ATTR, '');
     el.style.transition = '';
-    el.style.transform = '';
+    el.style.transform = rest;
 
     let done = false;
     const controller = new AbortController();
@@ -84,7 +87,6 @@ export function playFlip(config: PlayFlipConfig): void {
       }
       done = true;
       el.removeAttribute(FLIP_ANIMATING_ATTR);
-      el.style.transform = '';
       el.style.transition = '';
       controller.abort();
     };

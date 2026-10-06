@@ -12,6 +12,7 @@ import { TestBed } from '@angular/core/testing';
 import { flush } from '../../src/test-utils';
 import {
   ForDraggable,
+  ForDragPlaceholder,
   ForDropList,
   ForDropListGroup,
   moveItemInArray,
@@ -1390,5 +1391,70 @@ describe('ForVirtualReorder — idle Home / End reach the dataset ends (#2118)',
     await settle(harness);
 
     expect(document.activeElement).toBe(row);
+  });
+});
+
+@Component({
+  imports: [ForVirtualViewport, ForVirtualFor, ForVirtualReorder, ForDraggable, ForDragPlaceholder],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <div
+      forVirtualViewport
+      [virtualCount]="rows().length"
+      [estimateSize]="40"
+      forVirtualReorder
+      (itemReorder)="onReorder($event)"
+      style="height: 200px; width: 200px"
+    >
+      <div
+        *forVirtualFor="let row of rows()"
+        forDraggable
+        [dragData]="row.id"
+        [attr.data-testid]="'row-' + row.id"
+      >
+        {{ row.label }}
+        <ng-template forDragPlaceholder>
+          <div data-testid="placeholder" style="height: 40px">Drop here</div>
+        </ng-template>
+      </div>
+    </div>
+  `,
+})
+class PlaceholderHost {
+  readonly rows = signal<readonly Row[]>(makeRows(100));
+
+  onReorder(event: ForVirtualReorderEvent): void {
+    this.rows.update((rows) => moveItemInArray(rows, event.from, event.to));
+  }
+}
+
+describe('ForVirtualReorder — the drag placeholder stands in the lifted row’s slot (#2131)', () => {
+  afterEach(() => {
+    document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
+  });
+
+  it('lays the placeholder out at the lifted row’s position instead of the top of the list', async () => {
+    const { query, flush: f } = await render(PlaceholderHost);
+    const row = query('[data-testid="row-3"]')!;
+    const slot = row.style.transform;
+    expect(slot).toMatch(/^translateY\(.+\)$/);
+    expect(slot).not.toBe(query('[data-testid="row-0"]')!.style.transform);
+
+    row.dispatchEvent(pointer('pointerdown', 0, 130));
+    document.dispatchEvent(pointer('pointermove', 0, 150));
+    await f();
+
+    const placeholder = query('[data-testid="placeholder"]')!;
+    expect(placeholder.style.position).toBe('absolute');
+    expect(placeholder.style.top).toBe(row.style.top);
+    expect(placeholder.style.left).toBe(row.style.left);
+    expect(placeholder.style.width).toBe(row.style.width);
+    expect(placeholder.style.transform).toBe(slot);
+    expect(placeholder.style.height).toBe('40px');
+
+    document.dispatchEvent(pointer('pointerup', 0, 150));
+    await f();
+
+    expect(query('[data-testid="placeholder"]')).toBeNull();
   });
 });

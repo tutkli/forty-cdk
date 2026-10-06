@@ -40,6 +40,58 @@ describe('playFlip', () => {
     expect(el.hasAttribute(FLIP_ANIMATING_ATTR)).toBe(false);
   });
 
+  describe('a moved element', () => {
+    let el: HTMLElement;
+    let inverted: string | null;
+
+    beforeEach(() => {
+      vi.useFakeTimers();
+      el = document.createElement('div');
+      document.body.appendChild(el);
+      inverted = null;
+      vi.spyOn(el, 'getBoundingClientRect').mockReturnValue({ left: 0, top: 120 } as DOMRect);
+      Object.defineProperty(el, 'offsetWidth', {
+        configurable: true,
+        get: () => {
+          inverted = el.style.transform;
+          return 100;
+        },
+      });
+    });
+
+    afterEach(() => {
+      el.remove();
+      vi.useRealTimers();
+    });
+
+    it('inverts with a bare translate and transitions back to no transform', () => {
+      playFlip({ first: new Map([[el, { left: 0, top: 80 }]]), win: window });
+
+      expect(inverted).toMatch(/^translate\([^)]+\)$/);
+      expect(el.style.transform).toBe('');
+      expect(el.hasAttribute(FLIP_ANIMATING_ATTR)).toBe(true);
+
+      vi.advanceTimersByTime(500);
+
+      expect(el.hasAttribute(FLIP_ANIMATING_ATTR)).toBe(false);
+      expect(el.style.transform).toBe('');
+    });
+
+    it('keeps a positioning transform it already carries, before and after the transition', () => {
+      el.style.transform = 'translateY(120px)';
+
+      playFlip({ first: new Map([[el, { left: 0, top: 80 }]]), win: window });
+
+      expect(inverted).toMatch(/^translate\([^)]+\) translateY\(120px\)$/);
+      expect(el.style.transform).toBe('translateY(120px)');
+
+      vi.advanceTimersByTime(500);
+
+      expect(el.hasAttribute(FLIP_ANIMATING_ATTR)).toBe(false);
+      expect(el.style.transform).toBe('translateY(120px)');
+    });
+  });
+
   it('skips the exclude element — no data-drag-animating', () => {
     const el = document.createElement('div');
     document.body.appendChild(el);
