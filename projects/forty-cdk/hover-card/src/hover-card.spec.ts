@@ -363,6 +363,32 @@ describe('ForHoverCard', () => {
       expect(fixture.componentInstance.isOpen()).toBe(false);
     });
 
+    it('closes on pointer leave after reopening when the previous content unmounted under the pointer', async () => {
+      const { fixture, query, flush } = renderHost(HoverCardHost);
+      await flush();
+      const trigger = query<HTMLAnchorElement>('a')!;
+
+      trigger.dispatchEvent(pointerEvent('pointerenter'));
+      await flush();
+      const content = document.body.querySelector<HTMLElement>('[forHoverCardContent]')!;
+      content.dispatchEvent(pointerEvent('pointerenter'));
+      await flush();
+      pressKey(content, 'Escape');
+      await flush();
+      expect(fixture.componentInstance.isOpen()).toBe(false);
+      expect(document.body.querySelector('[forHoverCardContent]')).toBeNull();
+
+      trigger.dispatchEvent(pointerEvent('pointerenter'));
+      await flush();
+      expect(fixture.componentInstance.isOpen()).toBe(true);
+
+      trigger.dispatchEvent(pointerEvent('pointerleave'));
+      await flush();
+      pointerMoveAway();
+      await flush();
+      expect(fixture.componentInstance.isOpen()).toBe(false);
+    });
+
     it('closes after delay when the cursor leaves the content', async () => {
       const { fixture, query, flush } = renderHost(HoverCardHost);
       fixture.componentInstance.closeDelay.set(150);
