@@ -29,7 +29,10 @@ export interface ForDrawerDefaults {
   modal?: boolean;
   /** Default `true`. Whether dismiss interactions (Escape, backdrop, swipe) close. */
   dismissible?: boolean;
-  /** Default `true`. Pointer drag gesture toward the anchored edge dismisses. */
+  /**
+   * Default `true`. Pointer drag gesture toward the anchored edge dismisses;
+   * snap dragging stays live when `false`.
+   */
   swipeToDismiss?: boolean;
   /**
    * Default `0.25`. Fraction past which a release dismisses instead of

@@ -1,6 +1,7 @@
 import { booleanAttribute, Directive, ElementRef, inject, input, model } from '@angular/core';
 
-import { hostButtonType, reflectDisabled } from 'forty-cdk/core';
+import { fortyWarn, hostButtonType, reflectDisabled } from 'forty-cdk/core';
+import { warnIfOpenWithoutControls } from 'forty-cdk/core-overlay';
 
 /**
  * Button that toggles the drawer when clicked. Apply on a focusable element —
@@ -45,7 +46,9 @@ export class ForDrawerTrigger {
   /**
    * Id of the controlled drawer surface. Mirrored to `aria-controls` while
    * the drawer is open. The consumer is responsible for setting the same
-   * `id` on `[forDrawer]`.
+   * `id` on `[forDrawer]`. Leaving it unset when the drawer opens drops
+   * `aria-controls`, and a dev-mode warning fires on the first open while it
+   * stays unset.
    */
   readonly controls = input<string | null>(null);
 
@@ -62,6 +65,18 @@ export class ForDrawerTrigger {
 
   constructor() {
     reflectDisabled(this.disabled);
+    warnIfOpenWithoutControls({
+      open: this.open,
+      controls: this.controls,
+      warn: () =>
+        fortyWarn({
+          code: 'FORCDK-DRAWER-013',
+          message: '[forDrawerTrigger] is open but has no [controls], so aria-controls is omitted.',
+          cause:
+            'The trigger and its drawer are separate elements, so only the consumer knows the id.',
+          fix: 'Set [controls] to the id on [forDrawer] so assistive tech links the two.',
+        }),
+    });
   }
 
   protected onClick(): void {

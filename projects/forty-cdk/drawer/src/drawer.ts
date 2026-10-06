@@ -25,7 +25,7 @@ import {
   ModalSurfaceBase,
   warnIfDialogUnnamed,
 } from 'forty-cdk/core-overlay';
-import { validateCloseThreshold } from './snap-points';
+import { assertCloseThreshold } from './snap-points';
 import { ForDrawerScaleCoordinator } from './drawer-scale-coordinator';
 import {
   FOR_DRAWER_CONTEXT,
@@ -104,7 +104,8 @@ export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements
   /**
    * When true (default), Escape, backdrop click, pointer-down outside,
    * focus outside, and a swipe past the close threshold all emit `(dismiss)`.
-   * Disable for confirm flows that must be answered explicitly.
+   * Disable for confirm flows that must be answered explicitly; a swipe then
+   * never arms a dismissal, though `snapPoints` still drag between snaps.
    */
   readonly dismissible = input(this.#defaults.dismissible ?? true, {
     transform: booleanAttribute,
@@ -129,7 +130,12 @@ export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements
    */
   readonly initialFocus = input<'first' | 'container'>(this.#defaults.initialFocus ?? 'first');
 
-  /** When true (default), swipe toward the anchored edge dismisses past `closeThreshold`. */
+  /**
+   * When true (default), a swipe toward the anchored edge dismisses past
+   * `closeThreshold`. Only dismissal is gated: with `snapPoints` the surface
+   * still drags between snaps when it is `false`, stopping at the lowest one.
+   * A drawer whose `dismissible` is `false` never swipe-dismisses either way.
+   */
   readonly swipeToDismiss = input(this.#defaults.swipeToDismiss ?? true, {
     transform: booleanAttribute,
   });
@@ -194,7 +200,7 @@ export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements
   /**
    * First index of `snapPoints` from which the backdrop should reflect
    * `data-fade-from-active`. Consumers tie a CSS opacity transition to
-   * that attribute. Out-of-range values throw on mount.
+   * that attribute. Out-of-range values throw on mount in dev mode.
    */
   readonly fadeFromIndex = input<number | undefined>(undefined);
 
@@ -250,6 +256,7 @@ export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements
     closeThreshold: this.closeThreshold,
     handleOnly: this.handleOnly,
     swipeToDismiss: this.swipeToDismiss,
+    dismissible: this.dismissible,
     fadeFromIndex: this.fadeFromIndex,
     activeSnapPoint: this.activeSnapPoint,
     handleEl: this.#handleEl.asReadonly(),
@@ -378,7 +385,7 @@ export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements
 
       // 2. closeThreshold validation. Throws here so consumers get a clear
       //    mount-time error instead of a silently-broken dismissal.
-      validateCloseThreshold(this.closeThreshold());
+      assertCloseThreshold(this.closeThreshold());
 
       // 3. Snap-point validation (shape + fadeFromIndex range + first
       //    live-dimension measurement) and mount-time `activeSnapPoint`

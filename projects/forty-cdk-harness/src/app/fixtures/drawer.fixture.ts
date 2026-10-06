@@ -100,6 +100,7 @@ import { queryFlag } from './_query-flag';
         [(activeSnapPoint)]="activeSnapPoint"
         [handleOnly]="handleOnly"
         [swipeToDismiss]="swipeToDismiss"
+        [dismissible]="dismissible"
         [scaleBackground]="scaleBackground"
         [setBackgroundColorOnScale]="setBackgroundColorOnScale"
         [autoFocusOnOpen]="vetoOpen ? veto : undefined"
@@ -208,6 +209,7 @@ export class DrawerFixture {
   protected readonly vetoClose = queryFlag('vetoClose');
   protected readonly handleOnly = queryFlag('handleOnly');
   protected readonly swipeToDismiss = !queryFlag('noSwipeToDismiss');
+  protected readonly dismissible = !queryFlag('nonDismissible');
   protected readonly scrollable = queryFlag('scrollable');
   protected readonly backdrop = queryFlag('backdrop');
   protected readonly scaleBackground = queryFlag('scaleBackground');

@@ -362,6 +362,63 @@ test.describe('Drawer', () => {
       await expect(el(page, 'last-close-reason')).toHaveText('none');
     });
 
+    test('swipeToDismiss=false with snap points: a drag still moves between snaps', async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'drawer', {
+        drawerHeight: '400',
+        snap: '148px,0.5,1',
+        initialSnap: '0.5',
+        noSwipeToDismiss: '1',
+      });
+      await el(page, 'trigger').click();
+      await expect(el(page, 'active-snap')).toHaveText('0.5');
+
+      await dragFrom(page, el(page, 'handle'), { dx: 0, dy: 60 });
+
+      await expect(el(page, 'drawer')).toBeVisible();
+      await expect(el(page, 'swipe-start-count')).toHaveText('1');
+      await expect(el(page, 'last-swipe-will-close')).toHaveText('false');
+      await expect(el(page, 'active-snap')).toHaveText('148px');
+    });
+
+    for (const flag of ['noSwipeToDismiss', 'nonDismissible'] as const) {
+      test(`${flag} with snap points: a drag past the lowest snap stops there and reports willClose=false`, async ({
+        page,
+      }) => {
+        await gotoFixture(page, 'drawer', {
+          drawerHeight: '400',
+          snap: '148px,0.5,1',
+          [flag]: '1',
+        });
+        await el(page, 'trigger').click();
+        await expect(el(page, 'active-snap')).toHaveText('148px');
+
+        await dragFrom(page, el(page, 'handle'), { dx: 0, dy: 130 });
+
+        await expect(el(page, 'drawer')).toBeVisible();
+        await expect(el(page, 'swipe-end-count')).toHaveText('1');
+        await expect(el(page, 'last-swipe-will-close')).toHaveText('false');
+        await expect(el(page, 'last-close-reason')).toHaveText('none');
+        await expect(el(page, 'active-snap')).toHaveText('148px');
+      });
+    }
+
+    test('nonDismissible without snap points: a drag past closeThreshold does not arm', async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'drawer', { drawerHeight: '200', nonDismissible: '1' });
+      await el(page, 'trigger').click();
+      await expect(el(page, 'drawer')).toBeVisible();
+
+      await dragFrom(page, el(page, 'handle'), { dx: 0, dy: 120 });
+
+      await expect(el(page, 'drawer')).toBeVisible();
+      await expect(el(page, 'swipe-start-count')).toHaveText('0');
+      await expect(el(page, 'swipe-end-count')).toHaveText('0');
+      await expect(el(page, 'last-close-reason')).toHaveText('none');
+    });
+
     test('drag short of closeThreshold returns to rest without closing', async ({ page }) => {
       // 200px × 0.25 = 50px threshold; 30px does not cross it. (swipeEnd)
       // emits with willClose=false and the drawer stays mounted at offset 0.
