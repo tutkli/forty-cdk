@@ -729,6 +729,52 @@ describe('ForTimePicker', () => {
       expect(r.instance.open()).toBe(true);
     });
 
+    it('opens on Home and focuses the first enabled slot, ignoring the selection', async () => {
+      const r = renderHost(TimePickerHost);
+      r.instance.step.set(60);
+      r.instance.value.set(new Date(2000, 0, 1, 9, 0, 0));
+      await flush(r.fixture);
+
+      const event = pressKey(getTrigger(), 'Home');
+      await flush(r.fixture);
+
+      expect(event.defaultPrevented).toBe(true);
+      expect(r.instance.open()).toBe(true);
+      expect(document.activeElement).toBe(getSlots()[0]);
+    });
+
+    it('opens on End and focuses the last enabled slot, ignoring the selection', async () => {
+      const r = renderHost(TimePickerHost);
+      r.instance.step.set(60);
+      r.instance.value.set(new Date(2000, 0, 1, 9, 0, 0));
+      await flush(r.fixture);
+
+      const event = pressKey(getTrigger(), 'End');
+      await flush(r.fixture);
+
+      const slots = Array.from(getSlots());
+      expect(event.defaultPrevented).toBe(true);
+      expect(r.instance.open()).toBe(true);
+      expect(document.activeElement).toBe(slots[slots.length - 1]);
+    });
+
+    it('opens on a read-only trigger click, but picking a slot leaves the value unchanged', async () => {
+      const r = renderHost(TimePickerHost);
+      r.instance.step.set(60);
+      r.instance.readonly.set(true);
+      await flush(r.fixture);
+
+      getTrigger().click();
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe(true);
+
+      getSlot('slot-32400')!.click();
+      await flush(r.fixture);
+
+      expect(r.instance.value()).toBeNull();
+      expect(r.instance.open()).toBe(true);
+    });
+
     it('does nothing when disabled', async () => {
       const r = renderHost(TimePickerHost);
       r.instance.disabled.set(true);
@@ -852,6 +898,79 @@ describe('ForTimePicker', () => {
       await flush(r.fixture);
 
       expect(document.activeElement).toBe(slots[slots.length - 1]);
+    });
+
+    it('PageDown moves focus to the last enabled slot and PageUp back to the first', async () => {
+      const r = renderHost(TimePickerHost);
+      r.instance.step.set(60);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const slots = Array.from(getSlots());
+      slots[5]!.focus();
+      const down = pressKey(slots[5]!, 'PageDown');
+      await flush(r.fixture);
+
+      expect(down.defaultPrevented).toBe(true);
+      expect(document.activeElement).toBe(slots[slots.length - 1]);
+
+      pressKey(slots[slots.length - 1]!, 'PageUp');
+      await flush(r.fixture);
+
+      expect(document.activeElement).toBe(slots[0]);
+    });
+
+    it('typeahead focuses the next slot whose text starts with the typed prefix', async () => {
+      const r = renderHost(TimePickerHost);
+      r.instance.step.set(60);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const first = getSlots()[0]!;
+      first.focus();
+      pressKey(first, '1');
+      await flush(r.fixture);
+      expect(document.activeElement).toBe(getSlot('slot-36000'));
+
+      pressKey(document.activeElement!, '4');
+      await flush(r.fixture);
+      expect(document.activeElement).toBe(getSlot('slot-50400'));
+      expect(r.instance.value()).toBeNull();
+    });
+
+    it('typeahead skips disabled slots', async () => {
+      const r = renderHost(TimePickerHost);
+      r.instance.step.set(60);
+      r.instance.maxTime.set(new Date(2000, 0, 1, 12, 0, 0));
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const first = getSlots()[0]!;
+      first.focus();
+      pressKey(first, '1');
+      pressKey(document.activeElement!, '5');
+      await flush(r.fixture);
+
+      expect(getSlot('slot-54000')!.getAttribute('aria-disabled')).toBe('true');
+      expect(document.activeElement).toBe(getSlot('slot-36000'));
+    });
+
+    it('Space typed mid-typeahead extends the prefix instead of selecting the slot', async () => {
+      const r = renderHost(TimePickerHost);
+      r.instance.step.set(60);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const first = getSlots()[0]!;
+      first.focus();
+      pressKey(first, '1');
+      await flush(r.fixture);
+      const space = pressKey(document.activeElement!, ' ');
+      await flush(r.fixture);
+
+      expect(space.defaultPrevented).toBe(true);
+      expect(r.instance.value()).toBeNull();
+      expect(r.instance.open()).toBe(true);
     });
   });
 

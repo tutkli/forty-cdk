@@ -662,6 +662,7 @@ In the default (non-virtualized) path the full APG range keyboard works while th
 - **Click / Enter / Space**: open (focus selected, else first).
 - **ArrowDown**: open (focus selected, else first).
 - **ArrowUp**: open (focus selected, else last).
+- **Home / End**: open (focus first / last enabled option).
 - **Typeahead** _(single mode only)_: printable keys select the matching enabled option immediately without opening, mirroring native `<select>`, which skips disabled options too. The lookup goes through a cached snapshot of options (the live registry is empty while `[forSelectContent]` is unmounted); the cache is populated the first time the listbox opens, so closed-state typeahead is available after the user has interacted with the listbox at least once.
 
 ### Listbox (open)

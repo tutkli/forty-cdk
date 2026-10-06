@@ -36,6 +36,8 @@ import { type ForTimePickerContext, injectTimePickerTriggerContext } from './tim
  * - **Click / Enter / Space** — toggle (open focuses the selected slot, or first).
  * - **ArrowDown** — open + focus selected slot (or first).
  * - **ArrowUp** — open + focus selected slot (or last when none selected).
+ * - **Home** — open + focus the first enabled slot.
+ * - **End** — open + focus the last enabled slot.
  */
 @Directive({
   selector: '[forTimePickerTrigger]',
@@ -103,6 +105,11 @@ export class ForTimePickerTrigger<D = unknown> {
     if (event.key === 'ArrowUp') {
       event.preventDefault();
       this.ctx().overlay.openOverlay(this.ctx().value() !== null ? 'selected' : 'last');
+      return;
+    }
+    if (event.key === 'Home' || event.key === 'End') {
+      event.preventDefault();
+      this.ctx().overlay.openOverlay(event.key === 'Home' ? 'first' : 'last');
     }
   }
 

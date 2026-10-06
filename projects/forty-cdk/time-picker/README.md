@@ -116,7 +116,7 @@ export class TimePickerTimeExample {
 
 ### States
 
-One class and one directive, three states. `disabled` removes the trigger from the tab order; `readonly` keeps it focusable and announced. Both refuse to open the listbox, and both reflect a styling hook of their own: `data-disabled` and `data-readonly`.
+One class and one directive, three states. `disabled` removes the trigger from the tab order and keeps the listbox closed. `readonly` keeps the trigger focusable and announced, and still opens the listbox so the slots can be browsed, but picking a slot (click, `Enter`, `Space` or `Tab`) leaves the value unchanged. Each reflects a styling hook of its own: `data-disabled` and `data-readonly`.
 
 ### Bounded slots
 
@@ -329,14 +329,20 @@ With `anatomy="field"` and no projected `[forTimeField]`, opening the listbox or
 
 ## Keyboard
 
-| Key                     | Behavior                                  |
-| ----------------------- | ----------------------------------------- |
-| `Enter` / `Space`       | Select the focused slot                   |
-| `ArrowDown` / `ArrowUp` | Move focus between slots                  |
-| `Home`                  | Focus the first enabled slot              |
-| `End`                   | Focus the last enabled slot               |
-| `Tab`                   | Commit the focused slot and advance focus |
-| `Escape`                | Close without committing                  |
+| Key                          | Behavior                                                       |
+| ---------------------------- | -------------------------------------------------------------- |
+| `Enter` / `Space` on trigger | Toggle the listbox, focusing the selected slot, else the first |
+| `ArrowDown` on trigger       | Open, focusing the selected slot, else the first               |
+| `ArrowUp` on trigger         | Open, focusing the selected slot, else the last                |
+| `Home` / `End` on trigger    | Open, focusing the first / last enabled slot                   |
+| `Enter` / `Space`            | Select the focused slot                                        |
+| `ArrowDown` / `ArrowUp`      | Move focus between slots                                       |
+| `Home`                       | Focus the first enabled slot                                   |
+| `End`                        | Focus the last enabled slot                                    |
+| `PageUp` / `PageDown`        | Focus the first / last enabled slot                            |
+| Printable characters         | Focus the next slot whose text starts with the typed prefix    |
+| `Tab`                        | Commit the focused slot and advance focus                      |
+| `Escape`                     | Close without committing                                       |
 
 ## Accessibility
 

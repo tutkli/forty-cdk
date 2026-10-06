@@ -384,6 +384,34 @@ describe('ForSelect', () => {
       expect(activeTestId()).toBe('banana');
     });
 
+    it('opens on Home and focuses the first enabled option, ignoring the selection', async () => {
+      const r = renderHost(SelectHost);
+      r.instance.value.set(['banana']);
+      await flush(r.fixture);
+
+      const trigger = r.query<HTMLButtonElement>('[forSelectTrigger]')!;
+      const event = pressKey(trigger, 'Home');
+      await flush(r.fixture);
+
+      expect(event.defaultPrevented).toBe(true);
+      expect(r.instance.open()).toBe(true);
+      expect(activeTestId()).toBe('apple');
+    });
+
+    it('opens on End and focuses the last enabled option, ignoring the selection', async () => {
+      const r = renderHost(SelectHost);
+      r.instance.value.set(['banana']);
+      await flush(r.fixture);
+
+      const trigger = r.query<HTMLButtonElement>('[forSelectTrigger]')!;
+      const event = pressKey(trigger, 'End');
+      await flush(r.fixture);
+
+      expect(event.defaultPrevented).toBe(true);
+      expect(r.instance.open()).toBe(true);
+      expect(activeTestId()).toBe('date');
+    });
+
     it('does nothing when disabled', async () => {
       const r = renderHost(SelectHost);
       r.instance.disabled.set(true);

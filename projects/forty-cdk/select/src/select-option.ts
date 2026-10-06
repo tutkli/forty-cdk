@@ -283,7 +283,7 @@ export class ForSelectOption<T = string> {
       return;
     }
 
-    this.#ctx.handleTypeahead(event);
+    this.#ctx.overlay.handleTypeahead(event);
   }
 
   protected onPointerDown(event: PointerEvent): void {

@@ -32,10 +32,11 @@ type CloseReason =
 
 function makeHandle(
   parent: HTMLElement,
-  opts: { id?: string; disabled?: boolean } = {},
+  opts: { id?: string; disabled?: boolean; text?: string } = {},
 ): FakeHandle {
   const host = document.createElement('div');
   host.tabIndex = -1;
+  host.textContent = opts.text ?? '';
   parent.appendChild(host);
   const disabled = signal(opts.disabled ?? false);
   const id = signal(opts.id ?? 'opt');
@@ -247,6 +248,36 @@ describe('ListboxOverlayController', () => {
 
     controller.navigate(a.host, 'next' as ListNavigationAction);
     expect(navigated).toEqual([b]);
+  });
+
+  it('handleTypeahead focuses the next enabled match after the event target and runs the focus side effect', () => {
+    const { controller, parent, navigated } = createHarness({ withNavigateFocus: true });
+    const apple = makeHandle(parent, { text: 'Apple' });
+    const banana = makeHandle(parent, { text: 'Banana', disabled: true });
+    const blueberry = makeHandle(parent, { text: 'Blueberry' });
+    controller.registerOption(apple);
+    controller.registerOption(banana);
+    controller.registerOption(blueberry);
+
+    const event = new KeyboardEvent('keydown', { key: 'b', bubbles: true, cancelable: true });
+    apple.host.dispatchEvent(event);
+
+    expect(controller.handleTypeahead(event)).toBe(true);
+    expect(document.activeElement).toBe(blueberry.host);
+    expect(navigated).toEqual([blueberry]);
+  });
+
+  it('handleTypeahead leaves a non-printable key unconsumed and focus where it was', () => {
+    const { controller, parent } = createHarness();
+    const apple = makeHandle(parent, { text: 'Apple' });
+    controller.registerOption(apple);
+    apple.host.focus();
+
+    const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true });
+    apple.host.dispatchEvent(event);
+
+    expect(controller.handleTypeahead(event)).toBe(false);
+    expect(document.activeElement).toBe(apple.host);
   });
 
   it('focusFirstEnabledOption / focusLastEnabledOption skip disabled ends', () => {

@@ -5,7 +5,14 @@ import { ForListbox, ForListboxOption } from 'forty-cdk/listbox';
 import { ForMenuContent, ForMenuItem } from 'forty-cdk/menu';
 import { ForMenubar, ForMenubarTrigger } from 'forty-cdk/menubar';
 import { ForSelect, ForSelectContent, ForSelectOption, ForSelectTrigger } from 'forty-cdk/select';
+import { provideNativeDateAdapter } from 'forty-cdk/shared';
 import { pressKey } from 'forty-cdk/testing';
+import {
+  ForTimePicker,
+  ForTimePickerContent,
+  ForTimePickerOption,
+  ForTimePickerTrigger,
+} from 'forty-cdk/time-picker';
 import { ForTree, ForTreeItem, ForTreeItemLabel } from 'forty-cdk/tree';
 
 import { afterEachOverlayCleanup, renderHost, type RenderResult } from '../test-utils';
@@ -106,6 +113,40 @@ class VirtualSelectHost implements SpaceHost {
   readonly range: readonly [number, number] = [0, 2];
   activated(): boolean {
     return this.value().length > 0 || !this.open();
+  }
+}
+
+@Component({
+  imports: [ForTimePicker, ForTimePickerTrigger, ForTimePickerContent, ForTimePickerOption],
+  providers: [...provideNativeDateAdapter()],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <div
+      forTimePicker
+      [(open)]="open"
+      [(value)]="value"
+      [step]="60"
+      [hourCycle]="24"
+      #picker="forTimePicker"
+    >
+      <button forTimePickerTrigger>Time</button>
+      @if (open()) {
+        <div forTimePickerContent>
+          @for (slot of picker.slots(); track slot.id; let first = $first) {
+            <div forTimePickerOption [value]="slot.value" [attr.data-first]="first ? '' : null">
+              {{ slot.label }}
+            </div>
+          }
+        </div>
+      }
+    </div>
+  `,
+})
+class TimePickerHost implements SpaceHost {
+  readonly open = signal(false);
+  readonly value = signal<Date | null>(null);
+  activated(): boolean {
+    return this.value() !== null || !this.open();
   }
 }
 
@@ -227,7 +268,7 @@ const CASES: readonly SpaceCase[] = [
   },
   {
     name: 'select, open option',
-    owner: 'select/src/select.ts',
+    owner: 'core-overlay/src/listbox-overlay/listbox-overlay-controller.ts',
     host: SelectHost,
     letter: 'a',
     arm: async (r) => {
@@ -259,6 +300,17 @@ const CASES: readonly SpaceCase[] = [
     letter: 'a',
     arm: async (r) => r.flush(),
     target: () => document.querySelector<HTMLElement>('[data-content]')!,
+  },
+  {
+    name: 'time-picker, open slot',
+    owner: 'core-overlay/src/listbox-overlay/listbox-overlay-controller.ts',
+    host: TimePickerHost,
+    letter: '0',
+    arm: async (r) => {
+      (r.instance as TimePickerHost).open.set(true);
+      await focusFirst(r);
+    },
+    target: focused,
   },
   {
     name: 'tree, roving item',
