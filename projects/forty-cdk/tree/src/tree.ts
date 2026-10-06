@@ -160,8 +160,13 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
   /**
    * Enables cascade selection in `selectionMode="checkbox"`: checking or
    * unchecking a node propagates to all its descendants, and a parent derives
-   * `aria-checked="mixed"` when only some descendants are checked. Ignored in
-   * `'highlight'` mode. Requires {@link ForTree.descendantsOf}. Default `false`.
+   * `aria-checked="mixed"` when only some descendants are checked. A toggle
+   * follows that derived state: a parent reading `'true'` unchecks its subtree,
+   * any other state checks it. Toggling a node also keeps each mounted ancestor's
+   * own entry in `value` in step, so an ancestor is present exactly when all its
+   * descendants are; an ancestor outside a virtualized window is left as it is.
+   * Ignored in `'highlight'` mode. Requires {@link ForTree.descendantsOf}.
+   * Default `false`.
    */
   readonly cascade = input(false, { transform: booleanAttribute });
 

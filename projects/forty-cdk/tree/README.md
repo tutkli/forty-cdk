@@ -287,7 +287,7 @@ export class Categories {
 
 ### Cascade selection
 
-Add `cascade` and `[descendantsOf]` to enable tri-state propagation. Checking a parent selects it and all its descendants atomically (including collapsed / unmounted ones), and a parent derives `aria-checked="mixed"` / `data-checked="mixed"` when only some descendants are checked. The `descendantsOf` function must return every selectable descendant id of the given node (not just direct children).
+Add `cascade` and `[descendantsOf]` to enable tri-state propagation. Checking a parent selects it and all its descendants atomically (including collapsed / unmounted ones), and a parent derives `aria-checked="mixed"` / `data-checked="mixed"` when only some descendants are checked. Toggling a parent follows what it shows: one reading checked clears its subtree, and a mixed or unchecked one checks it. A parent's own id in `[(value)]` tracks its descendants: checking the last unchecked child adds it, and unchecking any child removes it, so a submitted value never carries a partly deselected category. The `descendantsOf` function must return every selectable descendant id of the given node (not just direct children).
 
 <!-- snippet: fragment -->
 
