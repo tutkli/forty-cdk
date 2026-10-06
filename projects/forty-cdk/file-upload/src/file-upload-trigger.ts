@@ -25,7 +25,7 @@ export class ForFileUploadTrigger {
   protected readonly ctx = injectFileUploadContext('[forFileUploadTrigger]');
 
   constructor() {
-    reflectDisabled(this.ctx.disabled);
+    reflectDisabled(this.ctx.effectiveDisabled);
   }
 
   protected onClick(): void {

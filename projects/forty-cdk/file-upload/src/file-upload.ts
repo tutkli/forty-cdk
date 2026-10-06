@@ -1,5 +1,14 @@
-import { booleanAttribute, Directive, input, numberAttribute, output, signal } from '@angular/core';
-import { createSingleSlot } from 'forty-cdk/core';
+import {
+  booleanAttribute,
+  computed,
+  Directive,
+  inject,
+  input,
+  numberAttribute,
+  output,
+  signal,
+} from '@angular/core';
+import { createSingleSlot, FOR_FIELDSET_CONTEXT } from 'forty-cdk/core';
 
 import { FOR_FILE_UPLOAD_CONTEXT, type ForFileUploadContext } from './file-upload-context';
 import type { ForFileUploadRejection } from './file-upload-rejection';
@@ -24,14 +33,15 @@ import type { ForFileUploadRejection } from './file-upload-rejection';
  * outputs.
  *
  * Reflects `data-dragging` while files are dragged over the zone and
- * `data-disabled` when the input is disabled.
+ * `data-disabled` when the zone is disabled, either through its own
+ * `disabled` or through a surrounding disabled `[forFieldset]`.
  */
 @Directive({
   selector: '[forFileUpload]',
   exportAs: 'forFileUpload',
   host: {
     '[attr.data-dragging]': "dragging() ? '' : null",
-    '[attr.data-disabled]': "disabled() ? '' : null",
+    '[attr.data-disabled]': "effectiveDisabled() ? '' : null",
     '(dragenter)': 'onDragEnter($event)',
     '(dragover)': 'onDragOver($event)',
     '(dragleave)': 'onDragLeave()',
@@ -57,8 +67,20 @@ export class ForFileUpload implements ForFileUploadContext {
   readonly maxSize = input<number | null>(null, {
     transform: (v: unknown): number | null => (v == null ? null : numberAttribute(v)),
   });
-  /** Whether the file upload zone and all its pieces are disabled. */
+  readonly #fieldset = inject(FOR_FIELDSET_CONTEXT, { optional: true });
+  /**
+   * Whether the file upload zone and all its pieces are disabled. Read
+   * {@link effectiveDisabled} for the value that actually gates the zone.
+   */
   readonly disabled = input(false, { transform: booleanAttribute });
+  /**
+   * The zone's own {@link disabled} OR'd with a surrounding disabled
+   * `[forFieldset]`. Gates the dialog, drag and drop, the trigger and the
+   * native input, and drives `data-disabled`.
+   */
+  readonly effectiveDisabled = computed(
+    () => this.disabled() || (this.#fieldset?.disabled() ?? false),
+  );
   /** Emitted when files are chosen via the dialog or dropped onto the zone. */
   readonly filesChange = output<FileList>();
   /**
@@ -96,7 +118,7 @@ export class ForFileUpload implements ForFileUploadContext {
 
   /** Opens the native file chooser dialog if not disabled. */
   openFileDialog(): void {
-    if (this.disabled()) return;
+    if (this.effectiveDisabled()) return;
     this.#input.value()?.click();
   }
 
@@ -140,14 +162,14 @@ export class ForFileUpload implements ForFileUploadContext {
   }
 
   protected onDragEnter(event: DragEvent): void {
-    if (this.disabled()) return;
+    if (this.effectiveDisabled()) return;
     event.preventDefault();
     this.#dragDepth++;
     this.#dragging.set(true);
   }
 
   protected onDragOver(event: DragEvent): void {
-    if (this.disabled()) return;
+    if (this.effectiveDisabled()) return;
     event.preventDefault();
     if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
   }
@@ -160,7 +182,7 @@ export class ForFileUpload implements ForFileUploadContext {
   protected onDrop(event: DragEvent): void {
     this.#dragDepth = 0;
     this.#dragging.set(false);
-    if (this.disabled()) return;
+    if (this.effectiveDisabled()) return;
     event.preventDefault();
     const dropped = event.dataTransfer?.files;
     if (!dropped || dropped.length === 0) return;

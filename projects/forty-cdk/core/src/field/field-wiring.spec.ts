@@ -8,7 +8,7 @@ import {
   type Signal,
   computed,
 } from '@angular/core';
-import { TestBed } from '@angular/core/testing';
+import { type ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { flush } from '../../../src/test-utils/flush';
 import {
@@ -182,5 +182,74 @@ describe('injectFieldWiring — consumer aria-describedby composition', () => {
     const el = fixture.nativeElement.querySelector('[probeHostControl]') as HTMLElement;
 
     expect(el.getAttribute('aria-describedby')).toBe('field-desc-id');
+  });
+});
+
+@Component({
+  imports: [ProbeHostControl],
+  template: `<div
+    probeHostControl
+    aria-labelledby="q1-heading"
+    aria-errormessage="q1-error"
+  ></div>`,
+})
+class StaticAssociationHostComp {}
+
+describe('injectFieldWiring — consumer aria-labelledby / aria-errormessage adoption', () => {
+  const labelledBy = signal<string | null>('field-label-id');
+  const errorMessageId = signal<string | null>(null);
+
+  beforeEach(() => {
+    labelledBy.set('field-label-id');
+    errorMessageId.set(null);
+    TestBed.configureTestingModule({
+      providers: [
+        provideZonelessChangeDetection(),
+        {
+          provide: FOR_FIELD_CONTEXT,
+          useValue: { ...makeFieldContext(), labelledBy, errorMessageId },
+        },
+      ],
+    });
+  });
+
+  async function render(): Promise<{
+    fixture: ComponentFixture<StaticAssociationHostComp>;
+    el: HTMLElement;
+  }> {
+    const fixture = TestBed.createComponent(StaticAssociationHostComp);
+    await flush(fixture);
+    const el = fixture.nativeElement.querySelector('[probeHostControl]') as HTMLElement;
+    return { fixture, el };
+  }
+
+  it("keeps a consumer's static aria-labelledby when the field has no [forLabel]", async () => {
+    labelledBy.set(null);
+    const { el } = await render();
+
+    expect(el.getAttribute('aria-labelledby')).toBe('q1-heading');
+  });
+
+  it("lets a consumer's static aria-labelledby win over the field label", async () => {
+    const { el } = await render();
+
+    expect(el.getAttribute('aria-labelledby')).toBe('q1-heading');
+  });
+
+  it("lets a consumer's static aria-errormessage win over the field error", async () => {
+    errorMessageId.set('field-error-id');
+    const { el } = await render();
+
+    expect(el.getAttribute('aria-errormessage')).toBe('q1-error');
+  });
+
+  it('restores both consumer values on destroy', async () => {
+    errorMessageId.set('field-error-id');
+    const { fixture, el } = await render();
+
+    fixture.destroy();
+
+    expect(el.getAttribute('aria-labelledby')).toBe('q1-heading');
+    expect(el.getAttribute('aria-errormessage')).toBe('q1-error');
   });
 });

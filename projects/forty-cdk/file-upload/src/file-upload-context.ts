@@ -11,7 +11,11 @@ export interface ForFileUploadContext {
   readonly accept: Signal<string | null>;
   readonly multiple: Signal<boolean>;
   readonly directory: Signal<boolean>;
-  readonly disabled: Signal<boolean>;
+  /**
+   * Whether the zone is disabled, its own `disabled` OR'd with a surrounding
+   * disabled `[forFieldset]`. Every piece gates on this value.
+   */
+  readonly effectiveDisabled: Signal<boolean>;
   /**
    * Registers the native `<input type="file">` so the root can open the dialog
    * and sync dropped files. Pair with {@link ForFileUploadContext.unregisterInput}

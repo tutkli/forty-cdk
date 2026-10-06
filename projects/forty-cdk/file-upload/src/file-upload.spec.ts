@@ -1,5 +1,7 @@
-import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
+import { Component, provideZonelessChangeDetection, signal, viewChild } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+
+import { ForFieldset } from 'forty-cdk/fieldset';
 
 import { flush } from '../../src/test-utils';
 import { renderHost } from '../../src/test-utils/render';
@@ -85,6 +87,42 @@ class ToggleInputHost {
 })
 class DuplicateInputHost {
   readonly showSecond = signal(true);
+}
+
+@Component({
+  imports: [ForFieldset, ForFileUpload, ForFileUploadInput, ForFileUploadTrigger],
+  template: `
+    <div forFieldset [disabled]="groupDisabled()">
+      <div forFileUpload (filesChange)="onFiles($event)">
+        <button forFileUploadTrigger data-testid="trigger">Browse</button>
+        <input forFileUploadInput data-testid="input" aria-label="Upload files" />
+      </div>
+    </div>
+  `,
+})
+class FieldsetFileUploadHost {
+  readonly zone = viewChild.required(ForFileUpload);
+  readonly groupDisabled = signal(true);
+  readonly capturedFiles = signal<FileList | null>(null);
+  onFiles(files: FileList): void {
+    this.capturedFiles.set(files);
+  }
+}
+
+@Component({
+  imports: [ForFieldset, ForFileUpload],
+  template: `
+    <div forFieldset [disabled]="groupDisabled()">
+      <div forFileUpload (filesChange)="onFiles($event)">drop zone</div>
+    </div>
+  `,
+})
+class FieldsetDropOnlyHost {
+  readonly groupDisabled = signal(true);
+  readonly capturedFiles = signal<FileList | null>(null);
+  onFiles(files: FileList): void {
+    this.capturedFiles.set(files);
+  }
 }
 
 describe('ForFileUpload', () => {
@@ -487,6 +525,72 @@ describe('ForFileUpload', () => {
       await f();
 
       expect(instance.capturedFiles()).toBeNull();
+    });
+  });
+
+  describe('surrounding disabled [forFieldset]', () => {
+    const dropEvent = (): Event => {
+      const event = new Event('drop', { bubbles: true, cancelable: true });
+      Object.defineProperty(event, 'dataTransfer', {
+        value: {
+          files: [new File(['x'], 'b.txt', { type: 'text/plain' })] as unknown as FileList,
+          dropEffect: 'none',
+        },
+      });
+      return event;
+    };
+
+    it('disables the zone, trigger and input while the group is disabled', async () => {
+      const { el, instance, flush: f } = renderHost(FieldsetFileUploadHost);
+      const zone = el.querySelector<HTMLElement>('[forFileUpload]')!;
+      const trigger = el.querySelector<HTMLButtonElement>('[forFileUploadTrigger]')!;
+      const input = el.querySelector<HTMLInputElement>('input[forFileUploadInput]')!;
+      await f();
+
+      expect(zone.getAttribute('data-disabled')).toBe('');
+      expect(trigger.hasAttribute('disabled')).toBe(true);
+      expect(input.disabled).toBe(true);
+
+      instance.groupDisabled.set(false);
+      await f();
+
+      expect(zone.hasAttribute('data-disabled')).toBe(false);
+      expect(trigger.hasAttribute('disabled')).toBe(false);
+      expect(input.disabled).toBe(false);
+    });
+
+    it('rejects drags and drops while the group is disabled', async () => {
+      const { el, instance, flush: f } = renderHost(FieldsetDropOnlyHost);
+      const zone = el.querySelector<HTMLElement>('[forFileUpload]')!;
+      await f();
+
+      const dragover = new Event('dragover', { bubbles: true, cancelable: true });
+      zone.dispatchEvent(dragover);
+      zone.dispatchEvent(new Event('dragenter', { bubbles: true, cancelable: true }));
+      zone.dispatchEvent(dropEvent());
+      await f();
+
+      expect(dragover.defaultPrevented).toBe(false);
+      expect(zone.hasAttribute('data-dragging')).toBe(false);
+      expect(instance.capturedFiles()).toBeNull();
+
+      instance.groupDisabled.set(false);
+      await f();
+      zone.dispatchEvent(dropEvent());
+      await f();
+
+      expect(instance.capturedFiles()?.length).toBe(1);
+    });
+
+    it('does not open the dialog while the group is disabled', async () => {
+      const { el, instance, flush: f } = renderHost(FieldsetFileUploadHost);
+      const input = el.querySelector<HTMLInputElement>('input[forFileUploadInput]')!;
+      const spy = vi.spyOn(input, 'click').mockImplementation(() => undefined);
+      await f();
+
+      instance.zone().openFileDialog();
+
+      expect(spy).not.toHaveBeenCalled();
     });
   });
 
