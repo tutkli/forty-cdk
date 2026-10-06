@@ -8038,7 +8038,7 @@ exports[`document structure > projects/forty-cdk/time-picker/README.md declares 
           "Behavior",
         ],
         "role": "plain",
-        "rows": 6,
+        "rows": 12,
       },
     ],
     "title": "Keyboard",

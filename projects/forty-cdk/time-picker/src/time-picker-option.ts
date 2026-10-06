@@ -25,8 +25,12 @@ import { injectTimePickerContext } from './time-picker-context';
  * focused slot.
  *
  * Keyboard while focused:
- * - **Enter / Space** — activate (select the slot).
+ * - **Enter / Space** — activate (select the slot). A Space typed mid-typeahead
+ *   extends the typed prefix instead.
  * - **ArrowDown / ArrowUp / Home / End** — move focus inside the listbox.
+ * - **PageUp / PageDown** — jump to the first / last enabled slot.
+ * - **Typeahead** — printable keys focus the next slot whose text starts with
+ *   the typed prefix.
  * - **Tab / Shift+Tab** — commit the focused slot and let the browser advance
  *   focus to the next / previous focusable.
  * - **Escape** — routed through the content's keydown to close the listbox.
@@ -129,6 +133,10 @@ export class ForTimePickerOption<D = unknown> {
       return;
     }
 
+    if (event.key === ' ' && this.#ctx.overlay.handleTypeahead(event)) {
+      return;
+    }
+
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
       this.#ctx.activate(this.value());
@@ -146,10 +154,14 @@ export class ForTimePickerOption<D = unknown> {
     const action = resolveListNavigation(event, {
       orientation: this.#ctx.orientation(),
       dir: this.#ctx.dir(),
+      pageKeys: true,
     });
     if (action) {
       event.preventDefault();
       this.#ctx.overlay.navigate(this.#host.nativeElement, action);
+      return;
     }
+
+    this.#ctx.overlay.handleTypeahead(event);
   }
 }

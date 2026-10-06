@@ -286,11 +286,6 @@ export interface SelectPieceContext<T = unknown> {
    */
   selectFromCurrentToEdge(currentOption: HTMLElement, edge: 'first' | 'last'): void;
   /**
-   * Open-state typeahead: focus the first enabled option whose text matches the buffered prefix.
-   * Returns `true` if the key was consumed by typeahead.
-   */
-  handleTypeahead(event: KeyboardEvent): boolean;
-  /**
    * Closed-state typeahead (single mode only). Selects the first enabled
    * matching option directly without opening the listbox — mirrors native
    * `<select>` behavior. Returns `true` if the key was consumed by typeahead.

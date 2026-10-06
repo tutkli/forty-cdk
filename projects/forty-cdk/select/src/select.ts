@@ -14,14 +14,12 @@ import {
 import type { FormValueControl } from '@angular/forms/signals';
 
 import {
-  accessibleTextContent,
   createPointerSuppression,
   injectHiddenInput,
   isRangeSelectShortcut,
   LabelCache,
   type LabelCacheEntry,
   resolveListNavigation,
-  resolveListTypeahead,
   runVirtualizedNavigatorBridge,
   throwUnsupportedVirtualizedRangeSelect,
   throwUnsupportedVirtualizedSelectionFollowsFocus,
@@ -346,7 +344,7 @@ export class ForSelect<T = string>
    * content registries + ids, DOM-focus navigation, the open / close machine,
    * the initial-focus / close-reason state, and the dismiss / auto-focus emit
    * forwarders. The value-specific behaviour (`isSelected`, `activate`,
-   * `focusSelectedOption`, typeahead, the virtualized activedescendant path,
+   * `focusSelectedOption`, closed-state typeahead, the virtualized activedescendant path,
    * `commitOnTab`'s value set) stays in this root; close-time virtualized
    * cleanup and the post-navigate scroll / `selectionFollowsFocus` move are
    * threaded through the controller's side-effect callbacks.
@@ -643,22 +641,6 @@ export class ForSelect<T = string>
 
   private selectFromCurrentToEdge(currentOption: HTMLElement, edge: 'first' | 'last'): void {
     this.#rangeEngine.selectFromCurrentToEdge(currentOption, edge);
-  }
-
-  private handleTypeahead(event: KeyboardEvent): boolean {
-    const options = this.#controller.options();
-    const { handled, match } = resolveListTypeahead(this.#typeahead, event, {
-      items: options,
-      anchorIndex: options.findIndex((o) => o.host === event.target),
-      getText: (o) => accessibleTextContent(o.host),
-      isDisabled: (o) => o.disabled(),
-    });
-    if (match) {
-      this.#pointerSuppression.suppress();
-      match.host.focus();
-      this.#afterKeyboardFocus(match);
-    }
-    return handled;
   }
 
   #afterKeyboardFocus(target: ForSelectOptionHandle<T>): void {

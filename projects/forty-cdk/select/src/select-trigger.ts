@@ -41,6 +41,8 @@ import {
  * - **Click / Enter / Space** — toggle (open focuses the selected option, or first).
  * - **ArrowDown** — open + focus selected option (or first).
  * - **ArrowUp** — open + focus selected option (or last when none selected).
+ * - **Home** — open + focus the first enabled option.
+ * - **End** — open + focus the last enabled option.
  * - **Typeahead** (single mode only) — printable keys select the matching
  *   option immediately without opening the listbox, mirroring native
  *   `<select>`. In multi mode the buffered key is ignored at the trigger;
@@ -117,6 +119,11 @@ export class ForSelectTrigger<T = unknown> {
       event.preventDefault();
       // ArrowUp lands on the selected option if any, else the last enabled.
       this.#root().overlay.openOverlay(this.ctx().value().length > 0 ? 'selected' : 'last');
+      return;
+    }
+    if (event.key === 'Home' || event.key === 'End') {
+      event.preventDefault();
+      this.#root().overlay.openOverlay(event.key === 'Home' ? 'first' : 'last');
       return;
     }
     // Closed-state typeahead — single-mode shortcut to match native <select>.

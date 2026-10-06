@@ -2,12 +2,15 @@ import { type Signal } from '@angular/core';
 import type { ReferenceElement } from '@floating-ui/dom';
 
 import {
+  accessibleTextContent,
   Collection,
   firstEnabledHost,
   injectFieldAnchor,
+  injectTypeahead,
   lastEnabledHost,
   type ListNavigationAction,
   nextEnabledHandle,
+  resolveListTypeahead,
   type SingleSlotConfig,
   type VetoableNativeEvent,
 } from 'forty-cdk/core';
@@ -78,7 +81,7 @@ export interface ListboxOverlayControllerDeps<
    */
   readonly onClose?: (reason: CloseReason) => void;
   /**
-   * Per-option focus side effect, run after `navigate` focuses the target
+   * Per-option focus side effect, run after `navigate` or a typeahead match focuses the target
    * (Select scrolls the option into view and applies `selectionFollowsFocus`).
    */
   readonly onNavigateFocus?: (target: H) => void;
@@ -132,6 +135,12 @@ export interface ListboxOverlayContext<H extends ListboxOverlayOptionHandle, Foc
 
   /** Move focus inside the open content in response to an arrow / Home / End key. */
   navigate(currentOption: HTMLElement, action: ListNavigationAction): void;
+  /**
+   * Open-state typeahead: focus the first enabled option after the event target whose
+   * accessible text matches the buffered prefix. Returns `true` when the key was consumed,
+   * so a Space the buffer took must not also activate.
+   */
+  handleTypeahead(event: KeyboardEvent): boolean;
   focusFirstEnabledOption(): boolean;
   focusLastEnabledOption(): boolean;
 
@@ -162,7 +171,7 @@ export interface ListboxOverlayContext<H extends ListboxOverlayOptionHandle, Foc
  * shared {@link OverlayController}'s, composed here rather than re-declared.
  *
  * Value-specific behaviour (selection equality, `activate`, `focusSelectedOption`,
- * typeahead, the virtualized activedescendant path, `commitOnTab`'s value set)
+ * closed-state typeahead, the virtualized activedescendant path, `commitOnTab`'s value set)
  * stays in the root and is threaded through {@link ListboxOverlayControllerDeps}
  * callbacks where it must run as a side effect of a shared transition.
  *
@@ -183,6 +192,7 @@ export class ListboxOverlayController<
 > implements ListboxOverlayContext<H, Focus, CloseReason> {
   readonly #deps: ListboxOverlayControllerDeps<H, Focus, CloseReason>;
   readonly #items = new Collection<H>();
+  readonly #typeahead = injectTypeahead();
 
   readonly #anchorSlot: AnchorSlot;
   readonly #controller: OverlayController<Focus, CloseReason>;
@@ -288,6 +298,21 @@ export class ListboxOverlayController<
     }
     target.host.focus();
     this.#deps.onNavigateFocus?.(target);
+  }
+
+  handleTypeahead(event: KeyboardEvent): boolean {
+    const items = this.#items.items();
+    const { handled, match } = resolveListTypeahead(this.#typeahead, event, {
+      items,
+      anchorIndex: items.findIndex((o) => o.host === event.target),
+      getText: (o) => accessibleTextContent(o.host),
+      isDisabled: (o) => o.disabled(),
+    });
+    if (match) {
+      match.host.focus();
+      this.#deps.onNavigateFocus?.(match);
+    }
+    return handled;
   }
 
   focusFirstEnabledOption(): boolean {
