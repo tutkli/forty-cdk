@@ -8,7 +8,12 @@ import {
   ForComboboxOption,
   ForComboboxToggle,
 } from 'forty-cdk/combobox';
-import { ForListbox, ForListboxOption, ForListboxReorder } from 'forty-cdk/listbox';
+import {
+  ForListbox,
+  ForListboxController,
+  ForListboxOption,
+  ForListboxReorder,
+} from 'forty-cdk/listbox';
 import {
   ForSelect,
   ForSelectContent,
@@ -96,6 +101,17 @@ export class ComboboxOpenFixture {}
   `,
 })
 export class ListboxFixture {}
+
+@Component({
+  imports: [ForListbox, ForListboxController, ForListboxOption],
+  template: `
+    <input [forListboxController]="commands" aria-label="Search commands" />
+    <div forListbox #commands="forListbox" ariaLabel="Commands">
+      <button type="button" forListboxOption value="open">Open</button>
+    </div>
+  `,
+})
+export class ListboxControllerFixture {}
 
 @Component({
   imports: [ForListbox, ForListboxOption],

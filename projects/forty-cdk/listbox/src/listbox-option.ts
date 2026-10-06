@@ -113,8 +113,9 @@ export class ForListboxOption<T = string> {
   /**
    * True when this option is the active candidate — the one the pointer is over,
    * else the keyboard's. In the roving-tabindex path the keyboard channel is the
-   * DOM-focused option; in the virtualized activedescendant path it is
-   * `aria-activedescendant`, which hover moves too, so the highlight and the
+   * DOM-focused option; in the activedescendant paths (virtualized, or driven by
+   * a `[forListboxController]`) it is `aria-activedescendant`, which hover moves
+   * too, so the highlight and the
    * option `Enter` activates never disagree there. Reflected as
    * `data-highlighted` so consumers can style it uniformly with the other
    * primitives.
@@ -179,7 +180,7 @@ export class ForListboxOption<T = string> {
       (h) => this.#group.registerOption(h),
       (h) => this.#group.unregisterOption(h),
     );
-    preventPointerFocus(() => this.effectiveDisabled());
+    preventPointerFocus(() => this.effectiveDisabled() || this.#group.pressKeepsFocus());
   }
 
   protected onClick(): void {
@@ -191,7 +192,7 @@ export class ForListboxOption<T = string> {
   }
 
   protected onPointerDown(event: PointerEvent): void {
-    if (this.#group.totalCount() === undefined) {
+    if (!this.#group.pressKeepsFocus()) {
       return;
     }
     event.preventDefault();

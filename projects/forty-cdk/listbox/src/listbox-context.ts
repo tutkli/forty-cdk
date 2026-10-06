@@ -150,8 +150,9 @@ export interface ForListboxContext<T = unknown> {
 }
 
 /**
- * The listbox's pointer channel: the one call `[forListboxOption]` makes so the
- * option under the cursor takes the highlight.
+ * The calls the listbox's own pieces make into the root: the pointer channel
+ * `[forListboxOption]` reports hovers through, and the active-option moves
+ * `[forListboxController]` drives from an external textbox.
  *
  * **Not** part of {@link ForListboxContext} and never exported from
  * `public-api.ts` — a consumer styles the pointed-at option off
@@ -170,26 +171,56 @@ export interface ListboxPieceContext {
    * @param id The hovered option's id — the activedescendant path's highlight target.
    */
   highlightFromPointer(host: HTMLElement, id: string): void;
+  /**
+   * `true` while a press on an option must leave DOM focus where it is: in the
+   * virtualized activedescendant path, and while a `[forListboxController]` is
+   * registered.
+   */
+  pressKeepsFocus(): boolean;
+  /** The listbox host's id, which the controller's `aria-controls` references. */
+  readonly id: Signal<string>;
+  /**
+   * Move the active option one step, skipping disabled options; with nothing
+   * active, `'next'` lands on the first enabled option and `'prev'` on the last.
+   */
+  moveActiveOption(direction: 'next' | 'prev'): void;
+  /**
+   * Click the active option's host, so the option activates and the consumer's
+   * own `(click)` handler runs. Returns `false` when no enabled option is active.
+   */
+  activateActiveOption(): boolean;
+}
+
+/**
+ * The registration protocol of `[forListboxController]`. While a controller is
+ * registered the listbox keeps no tab stop of its own and reflects its active
+ * option through `aria-activedescendant` on the controller instead of its host.
+ */
+export interface ListboxRegistrationContext {
+  registerController(el: HTMLElement): void;
+  unregisterController(el: HTMLElement): void;
 }
 
 /**
  * The listbox's internal coordination surface: everything
- * {@link ForListboxContext} publishes plus the {@link ListboxPieceContext} call.
+ * {@link ForListboxContext} publishes plus the {@link ListboxPieceContext} and
+ * {@link ListboxRegistrationContext} calls.
  *
  * Never exported from `public-api.ts`. It is the type the pieces read
  * {@link FOR_LISTBOX_CONTEXT} at, so a consumer who injects that token gets the
- * read surface while `[forListboxOption]` gets the pointer channel. `ForListbox`
- * declares `highlightFromPointer` TS-`private`, which keeps it out of the
- * emitted `.d.ts` while `useExisting` still satisfies this contract at runtime.
+ * read surface while the pieces get their channels. `ForListbox` declares those
+ * members TS-`private`, which keeps them out of the emitted `.d.ts` while
+ * `useExisting` still satisfies this contract at runtime.
  */
-export interface ListboxContext<T = unknown> extends ForListboxContext<T>, ListboxPieceContext {}
+export interface ListboxContext<T = unknown>
+  extends ForListboxContext<T>, ListboxPieceContext, ListboxRegistrationContext {}
 
 /**
  * DI token for the listbox's coordination surface, provided by `[forListbox]`.
  *
  * Publicly typed as the read surface {@link ForListboxContext}, which is the whole
  * of what the token promises a consumer. The options read the same token at an
- * internal type that adds the pointer-highlight channel, so a wrapper re-providing
+ * internal type that adds the pieces' channels, so a wrapper re-providing
  * it must alias it to the root: `{ provide: FOR_LISTBOX_CONTEXT, useExisting: MyListbox }`,
  * where `MyListbox` extends `ForListbox`. A value that merely satisfies the declared
  * type resolves too, and is rejected in dev mode by the first piece to reach the channel.
@@ -206,6 +237,10 @@ export function injectListboxContext<T = unknown>(piece: string): ListboxContext
       token: 'FOR_LISTBOX_CONTEXT',
     });
   }
+  return asListboxContext(ctx as ForListboxContext<T>, piece);
+}
+
+export function asListboxContext<T>(ctx: ForListboxContext<T>, piece: string): ListboxContext<T> {
   const widened = ctx as unknown as ListboxContext<T>;
   assertRootContext({
     entryPoint: 'listbox',

@@ -13,7 +13,7 @@ It also supports typeahead and `FormValueControl<readonly T[]>` integration. `[f
 
 ## When to choose
 
-- **Listbox**: an in-page list of options with roving tabindex and typeahead. No trigger, no overlay, no text field: the options are always visible.
+- **Listbox**: an in-page list of options with roving tabindex and typeahead. No trigger and no overlay: the options are always visible. Add a [`[forListboxController]`](#command-palette) input when a text field should drive the list, as in a command palette.
 - **[Select](../select/README.md)**: the same option semantics behind a trigger that opens a portaled popup. Choose it when the list should stay collapsed until asked for.
 - **[Combobox](../combobox/README.md)**: a popup driven by an editable input, so the user narrows the list by typing.
 - **[Dropdown Menu](../dropdown-menu/README.md)**: for commands rather than a value. Menu items run an action and the surface holds no selection.
@@ -425,6 +425,103 @@ Four properties of the pointer channel:
 
 A hover on a disabled option is ignored, and the highlight falls back to the keyboard's option if the hovered one is disabled or unmounted while the cursor rests on it.
 
+## Command palette
+
+`[forListboxController]` hands the keyboard to a text input, following the [WAI-ARIA editable combobox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/) with a list that is always shown. The query input sits on top, the grouped results render below it in your own layout and scroll box, and DOM focus never leaves the input: the user keeps editing the query while the arrow keys move through the results.
+
+```ts
+import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
+import {
+  ForListbox,
+  ForListboxController,
+  ForListboxGroup,
+  ForListboxGroupLabel,
+  ForListboxOption,
+} from 'forty-cdk/listbox';
+import { ForSearch } from 'forty-cdk/search';
+
+interface Command {
+  readonly id: string;
+  readonly label: string;
+  readonly group: string;
+}
+
+const COMMANDS: readonly Command[] = [
+  { id: 'new-file', label: 'New file', group: 'File' },
+  { id: 'open-file', label: 'Open file', group: 'File' },
+  { id: 'toggle-theme', label: 'Toggle theme', group: 'View' },
+  { id: 'zoom-in', label: 'Zoom in', group: 'View' },
+];
+
+@Component({
+  selector: 'app-command-palette',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [
+    ForListbox,
+    ForListboxController,
+    ForListboxGroup,
+    ForListboxGroupLabel,
+    ForListboxOption,
+    ForSearch,
+  ],
+  template: `
+    <input
+      type="search"
+      forSearch
+      [(value)]="query"
+      [clearOnEscape]="false"
+      [forListboxController]="results"
+      aria-label="Search commands"
+    />
+    <div forListbox #results="forListbox" ariaLabel="Commands" class="palette-results">
+      @for (group of groups(); track group.name) {
+        <div forListboxGroup>
+          <div forListboxGroupLabel>{{ group.name }}</div>
+          @for (command of group.commands; track command.id) {
+            <button
+              type="button"
+              forListboxOption
+              class="listbox-option"
+              [value]="command.id"
+              (click)="run(command)"
+            >
+              {{ command.label }}
+            </button>
+          }
+        </div>
+      }
+    </div>
+  `,
+})
+export class CommandPalette {
+  protected readonly query = signal('');
+  protected readonly lastRun = signal<string | null>(null);
+
+  protected readonly groups = computed(() => {
+    const query = this.query().toLowerCase();
+    const matches = COMMANDS.filter((command) => command.label.toLowerCase().includes(query));
+    return [...new Set(matches.map((command) => command.group))].map((name) => ({
+      name,
+      commands: matches.filter((command) => command.group === name),
+    }));
+  });
+
+  protected run(command: Command): void {
+    this.lastRun.set(command.id);
+  }
+}
+```
+
+What the controller changes:
+
+- **The input becomes the combobox.** It carries `role="combobox"` (over the `searchbox` role of `forSearch`), `aria-controls` naming the listbox, `aria-expanded="true"` while the listbox has options, and `aria-activedescendant` naming the active option. It also defaults to `aria-autocomplete="list"` and `autocomplete="off"`, and a static attribute of your own overrides either.
+- **The listbox leaves the tab order.** Neither the listbox nor its options keep a tab stop, a press on an option leaves focus in the input, and hovering an option makes it the active one. The listbox host's own `id` (generated unless you set a static one) is what `aria-controls` references.
+- **The active option resets when it unmounts.** Filtering an active option out of the list clears `aria-activedescendant`, and the next arrow starts from the first or last enabled option again. An option that survives the filter stays active.
+- **Selection still works.** `Enter` clicks the active option, so it selects in `[(value)]` exactly as a pointer click does and your own `(click)` handler runs. A palette that only runs commands can leave `[(value)]` unbound.
+- **One controller per listbox.** A second `[forListboxController]` on the same listbox warns in dev mode, and only the most recently registered one drives it.
+
+`Escape` is yours: the controller never handles it, so bind `[clearOnEscape]="false"` on `forSearch` when `Escape` should reach an enclosing dialog on the first press rather than clear the query. The keys the controller handles are listed under [Keyboard](#driven-by-a-text-input).
+
 ## API
 
 ### `ForListbox`
@@ -477,6 +574,14 @@ A hover on a disabled option is ignored, and the highlight falls back to the key
 | `data-highlighted` | present \| absent        | Works in both roving-tabindex and activedescendant paths, and follows the pointer as well as the keyboard (see [Pointer highlight](#pointer-highlight)). |
 | `data-disabled`    | present \| absent        |                                                                                                                                                          |
 
+### `ForListboxController`
+
+Applied on the `<input>` that drives the listbox (see [Command palette](#command-palette)).
+
+| Property               | Type                                   | Description                                                                                            |
+| ---------------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `forListboxController` | `input.required<ForListboxContext<T>>` | The listbox to drive, passed through its `forListbox` export (`#list="forListbox"`).<br>**Default:** — |
+
 ### `ForListboxOptionIndicator`
 
 Optional slot inside an option. Mirrors `data-state` and self-hides while the option is unselected (see [Self-hiding pieces](#self-hiding-pieces)).
@@ -515,9 +620,22 @@ The **anchor** for `Shift+Space` is set on every unmodified activation (click, p
 
 When `readonly` is set, the focus-moving shortcuts (Shift+Arrow, Ctrl+Shift+Home/End) still move focus but do not change the selection. That is the same contract as plain arrow nav under `readonly`. Pure-selection shortcuts (Shift+Space, Ctrl+A) are no-ops.
 
+### Driven by a text input
+
+With a [`[forListboxController]`](#command-palette) on an input, DOM focus stays in the input and the keys below act on it. Typeahead, `Space` and the multi-mode range shortcuts do not apply: printable keys edit the text.
+
+| Key                     | Behavior                                                                                                                 |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| **ArrowDown / ArrowUp** | Move the active option across groups, skipping disabled options. With none active, land on the first / last enabled one. |
+| **Enter**               | Click the active option. With none active, the key is left to the input.                                                 |
+| **Home / End**          | Move the caret, as in any text input.                                                                                    |
+| **Escape**              | Left to the input and your own handling.                                                                                 |
+
+Arrow navigation wraps as the listbox's `loop` says and scrolls the active option into view. A modified arrow (`Shift`, `Alt`, `Ctrl`, `Cmd`) is left to the input.
+
 ## Accessibility
 
-Implements the [WAI-ARIA Listbox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/listbox/).
+Implements the [WAI-ARIA Listbox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/listbox/). With a `[forListboxController]`, the input and the listbox together implement the [editable combobox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/) with an always-visible popup.
 
 - **Label the listbox** via the reactive `[ariaLabel]` input or a native `aria-labelledby` pointing at a visible label element.
 - **Use `<button>` for each option** so Space / Enter activate via native click. Other host elements break keyboard activation.

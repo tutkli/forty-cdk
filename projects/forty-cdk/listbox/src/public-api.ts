@@ -4,6 +4,7 @@ export { ForListboxOptionIndicator } from './listbox-option-indicator';
 export { ForListboxGroup } from './listbox-group';
 export { ForListboxGroupLabel } from './listbox-group-label';
 export { ForListboxReorder, type ForListboxReorderEvent } from './listbox-reorder';
+export { ForListboxController } from './listbox-controller';
 export {
   FOR_LISTBOX_CONTEXT,
   type ForListboxContext,

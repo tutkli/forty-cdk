@@ -13,6 +13,7 @@ import {
 } from './disclosure';
 import {
   ComboboxOpenFixture,
+  ListboxControllerFixture,
   ListboxFixture,
   ListboxReorderFixture,
   ListboxVirtualizedFixture,
@@ -1139,6 +1140,17 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
         attributes: { role: 'option', 'aria-selected': 'false' },
         present: ['id'],
       },
+    ],
+  },
+  {
+    component: ListboxControllerFixture,
+    markup: [
+      {
+        select: 'input',
+        attributes: { role: 'combobox', 'aria-expanded': 'true' },
+        pairs: { 'aria-controls': '[forListbox]' },
+      },
+      { select: '[forListbox]', attributes: { role: 'listbox' } },
     ],
   },
   {

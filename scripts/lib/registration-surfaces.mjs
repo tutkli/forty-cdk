@@ -49,7 +49,7 @@ export const REGISTRATION_SURFACES = {
   dialog: ['DialogContext', 'DialogRegistrationContext'],
   drawer: ['DrawerContext', 'DrawerRegistrationContext'],
   'hover-card': ['HoverCardContext', 'HoverCardPieceContext'],
-  listbox: ['ListboxContext', 'ListboxPieceContext'],
+  listbox: ['ListboxContext', 'ListboxPieceContext', 'ListboxRegistrationContext'],
   'navigation-menu': [
     'NavigationMenuContext',
     'ForNavigationMenuContentHandle',

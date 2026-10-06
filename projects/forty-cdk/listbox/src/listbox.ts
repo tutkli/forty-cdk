@@ -17,6 +17,7 @@ import {
   accessibleTextContent,
   Collection,
   createPointerSuppression,
+  createSingleSlot,
   firstEnabledHost,
   FormUiControlBase,
   injectHiddenInput,
@@ -39,6 +40,7 @@ import {
   injectTypeahead,
   isUnset,
   hostAriaLabel,
+  hostId,
   VirtualizedResume,
 } from 'forty-cdk/core';
 import {
@@ -77,12 +79,17 @@ import {
  * focus movement, Space/Enter (via native `<button>` activation) to select
  * or toggle, typeahead, plus multi-select range modifiers (Shift+Arrow,
  * Shift+Space, Ctrl/Cmd+A, Ctrl+Shift+Home/End).
+ *
+ * A `[forListboxController]` textbox can drive the listbox instead: the
+ * listbox then keeps no tab stop of its own, DOM focus stays in the textbox,
+ * and the active option is reflected as `aria-activedescendant` on it.
  */
 @Directive({
   selector: '[forListbox]',
   exportAs: 'forListbox',
   host: {
     role: 'listbox',
+    '[id]': 'id()',
     '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.aria-orientation]': 'orientation()',
     '[attr.aria-multiselectable]': 'multiple() ? "true" : null',
@@ -91,7 +98,7 @@ import {
     '[attr.aria-required]': 'required() ? "true" : null',
     '[attr.aria-invalid]': 'invalid() ? "true" : null',
     '[attr.aria-busy]': 'pending() ? "true" : null',
-    '[attr.aria-activedescendant]': 'activeDescendantId()',
+    '[attr.aria-activedescendant]': 'hostActiveDescendantId()',
     '[attr.tabindex]': 'hostTabindex()',
     '[attr.data-orientation]': 'orientation()',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
@@ -289,6 +296,20 @@ export class ForListbox<T = string>
 
   readonly #virtualized = computed(() => this.totalCount() !== undefined);
 
+  /**
+   * The host's id. A consumer-set static `id` is kept; otherwise one is
+   * generated. A `[forListboxController]` references it from `aria-controls`.
+   */
+  readonly id = hostId('for-listbox');
+
+  readonly #controller = createSingleSlot<HTMLElement>({
+    primitive: 'listbox',
+    owner: '[forListbox]',
+    claimant: '[forListboxController]',
+  });
+
+  readonly #controlled = computed(() => this.#controller.value() !== null);
+
   readonly #activeId = signal<string | null>(null);
 
   readonly #pointerSuppression = createPointerSuppression();
@@ -312,25 +333,31 @@ export class ForListbox<T = string>
   });
 
   /**
-   * The active option's `id` when using the activedescendant focus model,
+   * The active option's `id` when using an activedescendant focus model — the
+   * virtualized path, or a listbox driven by a `[forListboxController]` —
    * `null` in the roving-tabindex path. Moved by keyboard navigation and by
    * hover alike, so the highlight and the option `Enter` activates never
-   * disagree. The host reflects this as `aria-activedescendant`; options read it
-   * to compute `data-highlighted`.
+   * disagree. It is reflected as `aria-activedescendant` on the host, or on the
+   * controller while one drives the listbox; options read it to compute
+   * `data-highlighted`.
    */
   readonly activeDescendantId = computed<string | null>(() =>
-    this.#virtualized() ? this.#activeId() : null,
+    this.#virtualized() || this.#controlled() ? this.#activeId() : null,
+  );
+
+  protected readonly hostActiveDescendantId = computed<string | null>(() =>
+    this.#controlled() ? null : this.activeDescendantId(),
   );
 
   /**
    * Tabindex for the listbox host. In the virtualized path the host is always
    * the single tab stop. In the roving path the host carries `tabindex="0"`
    * only when no option qualifies — an empty listbox or one whose options are
-   * all disabled — so the control is still reachable. A disabled listbox is
-   * never tabbable.
+   * all disabled — so the control is still reachable. A disabled listbox, and
+   * one driven by a `[forListboxController]`, is never tabbable.
    */
   protected readonly hostTabindex = computed<'0' | null>(() => {
-    if (this.effectiveDisabled()) {
+    if (this.effectiveDisabled() || this.#controlled()) {
       return null;
     }
     if (this.#virtualized()) {
@@ -434,7 +461,8 @@ export class ForListbox<T = string>
 
   /**
    * Move focus into the listbox, implementing `FormValueControl.focus` from
-   * `@angular/forms/signals`. Targets the host when it is the tab stop (the
+   * `@angular/forms/signals`. Targets the `[forListboxController]` textbox
+   * while one drives the listbox, the host when it is the tab stop (the
    * virtualized activedescendant model, or an empty / all-disabled roving
    * listbox); otherwise the first selected option, else the first enabled one —
    * mirroring the roving entry point. Without this override Signal Forms'
@@ -443,6 +471,11 @@ export class ForListbox<T = string>
    */
   override focus(options?: FocusOptions): void {
     if (this.effectiveDisabled()) {
+      return;
+    }
+    const controller = this.#controller.value();
+    if (controller !== null) {
+      controller.focus(options);
       return;
     }
     if (this.hostTabindex() === '0') {
@@ -530,6 +563,9 @@ export class ForListbox<T = string>
   }
 
   isOptionHighlighted(el: HTMLElement): boolean {
+    if (this.#controlled()) {
+      return false;
+    }
     const pointed = this.#pointerHighlighted();
     if (pointed !== null) {
       return pointed === el;
@@ -541,15 +577,66 @@ export class ForListbox<T = string>
     if (this.#pointerSuppression.isSuppressed()) {
       return;
     }
-    if (this.#virtualized()) {
+    if (this.#virtualized() || this.#controlled()) {
       this.#setActiveId(id);
       return;
     }
     this.#pointerHost.set(host);
   }
 
-  optionTabindex(el: HTMLElement): -1 | 0 | null {
+  private pressKeepsFocus(): boolean {
+    return this.#virtualized() || this.#controlled();
+  }
+
+  private registerController(el: HTMLElement): void {
+    this.#controller.register(el);
+  }
+
+  private unregisterController(el: HTMLElement): void {
+    this.#controller.unregister(el);
+  }
+
+  private moveActiveOption(direction: 'next' | 'prev'): void {
+    if (this.effectiveDisabled()) {
+      return;
+    }
     if (this.#virtualized()) {
+      this.#assertSelectionFollowsFocusSupported();
+      this.#requireNavigator().navigate(direction);
+      return;
+    }
+    const items = this.#options.items();
+    const activeId = this.#activeId();
+    const index = activeId === null ? -1 : items.findIndex((o) => o.id() === activeId);
+    const target =
+      index < 0
+        ? nextEnabledHandle(items, 0, direction === 'next' ? 'first' : 'last')
+        : nextEnabledHandle(items, index, direction, { loop: this.loop() });
+    if (target === null) {
+      return;
+    }
+    this.#setActiveId(target.id());
+    this.#scrollActiveIntoView(target.host);
+    if (!this.multiple() && this.selectionFollowsFocus() && !this.readonly()) {
+      this.#rangeEngine.selectSingle(target.value());
+    }
+  }
+
+  private activateActiveOption(): boolean {
+    const id = this.#activeId();
+    if (id === null || this.effectiveDisabled()) {
+      return false;
+    }
+    const handle = this.#options.items().find((o) => o.id() === id);
+    if (!handle || handle.disabled()) {
+      return false;
+    }
+    handle.host.click();
+    return true;
+  }
+
+  optionTabindex(el: HTMLElement): -1 | 0 | null {
+    if (this.#virtualized() || this.#controlled()) {
       return -1;
     }
     return this.roving.hasActive() ? this.roving.tabindexFor(el) : null;
@@ -565,6 +652,10 @@ export class ForListbox<T = string>
   }
 
   notifyOptionClick(optionId: string): void {
+    if (this.#controlled()) {
+      this.#setActiveId(optionId);
+      return;
+    }
     if (!this.#virtualized()) {
       return;
     }
@@ -577,6 +668,8 @@ export class ForListbox<T = string>
     this.roving.unregister(handle.host);
     if (this.#virtualized() && this.#activeId() === handle.id()) {
       this.#resume.retain(handle.posInSet(), handle.value());
+      this.#activeId.set(null);
+    } else if (this.#controlled() && this.#activeId() === handle.id()) {
       this.#activeId.set(null);
     }
   }
