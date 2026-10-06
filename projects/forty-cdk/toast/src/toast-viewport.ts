@@ -13,14 +13,18 @@ import {
   PLATFORM_ID,
   type Signal,
   type TemplateRef,
+  untracked,
+  viewChildren,
 } from '@angular/core';
 import { isPlatformBrowser, NgTemplateOutlet } from '@angular/common';
 
 import {
+  composedContains,
   fortyWarn,
   hostAriaLabel,
   injectPortal,
   injectPrefersReducedMotion,
+  resolveActiveElement,
   resolveConfigClass,
   resolveTextInput,
 } from 'forty-cdk/core';
@@ -86,7 +90,9 @@ import { ForToastTitle } from './toast-title';
  * document focuses the first toast. Override per-viewport with `[hotkey]`
  * or globally with `provideForToastDefaults({ hotkey: '…' })`. The listener
  * is owned once by `ForToastManager`, so the hotkey never double-fires when
- * several viewports are mounted.
+ * several viewports are mounted. Dismissing the toast that holds focus moves
+ * focus to the next rendered toast, else the previous one, else back to the
+ * element focused when the hotkey was pressed, else the viewport host.
  *
  * Regions: a viewport renders only toasts whose `region` matches its `[region]` input (default
  * {@link DEFAULT_TOAST_REGION}), so several viewports can coexist — top-right system notifications
@@ -127,6 +133,7 @@ import { ForToastTitle } from './toast-title';
     '[attr.data-region]': 'region()',
     tabindex: '-1',
     '[attr.data-toast-count]': 'visible().length',
+    '(focusout)': 'onFocusOut($event)',
   },
   template: `
     @for (toast of visible(); track toast.id; let i = $index) {
@@ -176,6 +183,9 @@ export class ForToastViewport {
   readonly #manager = inject(ForToastManager);
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
   readonly #defaults = inject(FOR_TOAST_DEFAULTS);
+  readonly #doc = inject(DOCUMENT);
+  private readonly rows = viewChildren(ForToast, { read: ElementRef });
+  #origin: HTMLElement | null = null;
 
   /**
    * How this viewport behaves over an open modal `ForDialog` / `ForDrawer`,
@@ -357,11 +367,19 @@ export class ForToastViewport {
     if (isPlatformBrowser(inject(PLATFORM_ID))) {
       const shifter = createToastStackShifter({
         host: this.#host.nativeElement,
-        view: inject(DOCUMENT).defaultView,
+        view: this.#doc.defaultView,
         shift: () => this.#resolvedStackShift(),
         reducedMotion: () => this.#reducedMotion(),
       });
       destroyRef.onDestroy(() => shifter.destroy());
+
+      let renderedIds: readonly string[] = [];
+      effect(() => {
+        const ids = this.visible().map((toast) => toast.id);
+        const previous = renderedIds;
+        renderedIds = ids;
+        untracked(() => this.#moveFocusOffRemovedToast(previous, ids));
+      });
     }
 
     if (isDevMode()) {
@@ -387,12 +405,60 @@ export class ForToastViewport {
 
   /** Focus the first rendered toast host. Returns `true` when focus moved. */
   #focusFirst(): boolean {
-    const first = this.#host.nativeElement.querySelector<HTMLElement>('[forToast]');
-    if (first) {
-      first.focus();
-      return true;
+    const host = this.#host.nativeElement;
+    const first = host.querySelector<HTMLElement>('[forToast]');
+    if (!first) {
+      return false;
     }
-    return false;
+    const active = resolveActiveElement(this.#doc);
+    if (
+      active instanceof HTMLElement &&
+      active !== this.#doc.body &&
+      !composedContains(host, active)
+    ) {
+      this.#origin = active;
+    }
+    first.focus();
+    return true;
+  }
+
+  #moveFocusOffRemovedToast(previous: readonly string[], current: readonly string[]): void {
+    const rows = this.rows();
+    const active = resolveActiveElement(this.#doc);
+    if (!active || rows.length !== previous.length) {
+      return;
+    }
+    const entries = previous.map((id, index) => ({ id, element: rows[index]?.nativeElement }));
+    const focusedIndex = entries.findIndex(
+      ({ element }) => element !== undefined && composedContains(element, active),
+    );
+    const focused = entries[focusedIndex];
+    if (!focused || current.includes(focused.id)) {
+      return;
+    }
+    const survivors = entries.filter(({ id }) => current.includes(id));
+    const neighbour =
+      survivors.find((entry) => entries.indexOf(entry) > focusedIndex) ?? survivors.at(-1);
+    if (neighbour?.element) {
+      neighbour.element.focus();
+      return;
+    }
+    const origin = this.#origin;
+    this.#origin = null;
+    if (origin?.isConnected) {
+      origin.focus();
+      if (resolveActiveElement(this.#doc) === origin) {
+        return;
+      }
+    }
+    this.#host.nativeElement.focus();
+  }
+
+  protected onFocusOut(event: FocusEvent): void {
+    const next = event.relatedTarget;
+    if (next instanceof Node && !composedContains(this.#host.nativeElement, next)) {
+      this.#origin = null;
+    }
   }
 
   protected onClose(toast: ForToastInstance, reason: ForToastCloseReason): void {
