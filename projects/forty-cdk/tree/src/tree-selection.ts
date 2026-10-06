@@ -210,7 +210,12 @@ export class TreeSelection<T> {
     const equals = this.#deps.compareWith();
     const current = this.#deps.value();
     const allSelected = values.every(treeMembership(current, equals));
-    this.#deps.setValue(allSelected ? [] : dedupeTreeValues([...current, ...values], equals));
+    if (allSelected) {
+      const isVisible = treeMembership(values, equals);
+      this.#deps.setValue(current.filter((value) => !isVisible(value)));
+      return;
+    }
+    this.#deps.setValue(dedupeTreeValues([...current, ...values], equals));
   }
 
   #resolveDescendants(value: T): readonly T[] {

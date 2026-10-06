@@ -199,7 +199,7 @@ For huge trees, bind `[totalCount]` to switch `ForTree` to the activedescendant 
 </ul>
 ```
 
-In multi mode `Space` toggles the focused node; `Shift+ArrowUp/Down` extends; `Shift+Space` selects the contiguous range from the anchor; `Ctrl/Cmd+A` selects every visible enabled node (or clears when all are already selected).
+In multi mode `Space` toggles the focused node; `Shift+ArrowUp/Down` extends; `Shift+Space` selects the contiguous range from the anchor; `Ctrl/Cmd+A` selects every visible enabled node (or deselects them when all are already selected, leaving selected disabled or hidden nodes selected).
 
 ## Checkbox selection
 
@@ -897,7 +897,7 @@ Vertical, LTR (mirrored for `dir="rtl"`):
 | **type a character**    | Typeahead: focus the next visible node whose label starts with the buffer.                    |
 | **Shift+ArrowUp/Down**  | Multi: move focus and toggle the new node's selection.                                        |
 | **Shift+Space**         | Multi: select the contiguous range from the anchor to the focused node.                       |
-| **Ctrl/Cmd+A**          | Multi: select every visible enabled node (toggles off when all are already selected).         |
+| **Ctrl/Cmd+A**          | Multi: select every visible enabled node (deselects them when all are already selected).      |
 
 Under `dir="rtl"` the expand / collapse arrows swap: **ArrowLeft** expands and **ArrowRight** collapses.
 

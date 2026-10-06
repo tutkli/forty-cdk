@@ -10,8 +10,8 @@ import { injectTableContext, type TableSelectAllState } from './table-context';
  * Reflects `aria-checked="true" | "false" | "mixed"` and
  * `data-state="checked" | "unchecked" | "indeterminate"` derived from how many
  * selectable rows are selected. Clicking (or Space / Enter) selects all rows
- * when none/some are selected, and clears when all are. No-op outside multiple
- * mode.
+ * when none/some are selected, and deselects them when all are, keeping selected
+ * values outside the selectable rows. No-op outside multiple mode.
  *
  * Bind `[state]` to drive it from a selection the table cannot enumerate (a
  * server-side "every row matching the filter" predicate): the checkbox then

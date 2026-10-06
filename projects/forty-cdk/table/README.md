@@ -726,7 +726,7 @@ Accessible per-row selection checkbox (place inside any cell of each `[forTableR
 
 ### Select-all checkbox
 
-Interactive header checkbox with tri-state. Reflects `aria-checked` and `data-state` derived from the aggregate selection state across all selectable rows. Clicking (or pressing Space / Enter) selects all when none or some are selected, and clears when all are. No-op outside `'multiple'` mode. A selection the table cannot enumerate drives it from outside through [`[state]`](#selection-the-table-cannot-enumerate-state). Apply on a focusable element:
+Interactive header checkbox with tri-state. Reflects `aria-checked` and `data-state` derived from the aggregate selection state across all selectable rows. Clicking (or pressing Space / Enter) selects all when none or some are selected, and deselects those rows when all are, leaving any selected value outside them in `[(value)]`. No-op outside `'multiple'` mode. A selection the table cannot enumerate drives it from outside through [`[state]`](#selection-the-table-cannot-enumerate-state). Apply on a focusable element:
 
 ```html
 <div forTableHeaderRow>
@@ -744,7 +744,7 @@ By default the select-all tri-state, `toggleSelectAll`, and Shift-click range se
 Supply the full ordered set of selectable values via `[selectableValues]` so the aggregates compute against the true dataset instead of the window:
 
 - The select-all tri-state reflects the current selection vs. the full set, so it stays correct across scrolling.
-- `toggleSelectAll()` selects / clears every supplied value.
+- `toggleSelectAll()` selects / deselects every supplied value, and leaves a selected value outside the supplied set in place.
 - Shift-click range resolves against the supplied order, so a range can span rows that are not currently mounted.
 
 Per-row selection (`[forTableRowSelector]`, row click, Space) is unaffected, because it persists in the bound `[(value)]` array regardless of mount state. Leave `[selectableValues]` unset (`null`, the default) for non-virtualized tables to keep the registered-rows behaviour.

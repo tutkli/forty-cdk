@@ -184,8 +184,9 @@ export interface ForSelectContext<T = unknown> {
   activate(value: T): void;
 
   /**
-   * Multi-select only (APG range keyboard, Ctrl/Cmd+A). Select every enabled
-   * option, or clear the selection when they are all already selected (toggle).
+   * Multi-select only (APG range keyboard, Ctrl/Cmd+A). Add every enabled
+   * option to the selection, or remove them when they are all already selected
+   * (toggle). Selected values that are not an enabled rendered option are kept.
    * No-op in single mode, disabled, readonly, or the virtualized path.
    */
   selectAll(): void;

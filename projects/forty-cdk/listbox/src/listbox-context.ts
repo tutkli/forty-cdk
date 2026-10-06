@@ -88,8 +88,9 @@ export interface ForListboxContext<T = unknown> {
    */
   selectRangeToFocused(currentOption: HTMLElement): void;
   /**
-   * Multi-mode only. APG "Ctrl/Cmd+A": select every enabled option. If every
-   * enabled option is already selected, clears the selection (toggle).
+   * Multi-mode only. APG "Ctrl/Cmd+A": add every enabled option to the
+   * selection. If every enabled option is already selected, removes them
+   * (toggle). Selected values that are not an enabled rendered option are kept.
    */
   selectAll(): void;
   /**

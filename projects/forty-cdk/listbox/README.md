@@ -507,7 +507,7 @@ The full WAI-ARIA APG "Recommended Selection" model is implemented and active au
 | -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Shift+ArrowDown / ArrowUp**    | Move focus to the next / previous enabled option AND toggle its selected state.                                                                                             |
 | **Shift+Space**                  | Select every enabled option between the anchor (most recent unmodified click / Space) and the focused option, inclusive. Existing selection outside the range is preserved. |
-| **Ctrl+A** (or **Cmd+A** on mac) | Select every enabled option. If every enabled option is already selected, clears the selection.                                                                             |
+| **Ctrl+A** (or **Cmd+A** on mac) | Select every enabled option. If every enabled option is already selected, deselects them. A selected disabled or unrendered option stays selected either way.               |
 | **Ctrl+Shift+Home**              | Select from the focused option to the first enabled option, and move focus there.                                                                                           |
 | **Ctrl+Shift+End**               | Select from the focused option to the last enabled option, and move focus there.                                                                                            |
 

@@ -141,7 +141,7 @@ describe('RangeSelectionEngine', () => {
   });
 
   describe('selectAll', () => {
-    it('selects every enabled option, then clears when all are selected (toggle)', () => {
+    it('selects every enabled option, then deselects them when all are selected (toggle)', () => {
       h.handle('a');
       h.handle('b', { disabled: true });
       h.handle('c');
@@ -149,6 +149,27 @@ describe('RangeSelectionEngine', () => {
       expect(h.value()).toEqual(['a', 'c']);
       h.engine.selectAll();
       expect(h.value()).toEqual([]);
+    });
+
+    it('keeps a selected disabled option on both halves of the toggle', () => {
+      h.handle('a');
+      h.handle('b', { disabled: true });
+      h.handle('c');
+      h.value.set(['b']);
+      h.engine.selectAll();
+      expect(h.value()).toEqual(['b', 'a', 'c']);
+      h.engine.selectAll();
+      expect(h.value()).toEqual(['b']);
+    });
+
+    it('keeps a selected value that no rendered option carries on both halves of the toggle', () => {
+      h.handle('a');
+      h.handle('c');
+      h.value.set(['filtered-out', 'a']);
+      h.engine.selectAll();
+      expect(h.value()).toEqual(['filtered-out', 'a', 'c']);
+      h.engine.selectAll();
+      expect(h.value()).toEqual(['filtered-out']);
     });
   });
 

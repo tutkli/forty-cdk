@@ -873,7 +873,28 @@ describe('ForTree', () => {
   });
 
   describe('multi-select keyboard wiring', () => {
-    it('Ctrl+A selects every visible enabled node, then clears on repeat', async () => {
+    it('Ctrl+A keeps selected hidden and disabled nodes on both halves of the toggle', async () => {
+      const { el, fixture } = await setup((i) => {
+        i.isMulti.set(true);
+        i.disabledIds.set(['downloads']);
+        i.picked.set(['report', 'downloads']);
+      });
+
+      pressKey(itemOf(el, 'documents'), 'a', { ctrlKey: true });
+      await flush(fixture);
+      expect(fixture.componentInstance.picked()).toEqual([
+        'report',
+        'downloads',
+        'documents',
+        'readme',
+      ]);
+
+      pressKey(itemOf(el, 'documents'), 'a', { ctrlKey: true });
+      await flush(fixture);
+      expect(fixture.componentInstance.picked()).toEqual(['report', 'downloads']);
+    });
+
+    it('Ctrl+A selects every visible enabled node, then deselects them on repeat', async () => {
       const { el, fixture } = await setup((i) => i.isMulti.set(true));
 
       pressKey(itemOf(el, 'documents'), 'a', { ctrlKey: true });

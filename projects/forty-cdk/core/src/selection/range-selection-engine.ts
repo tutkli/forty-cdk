@@ -171,9 +171,11 @@ export class RangeSelectionEngine<T, H extends RangeSelectionOptionHandle<T>> {
   }
 
   /**
-   * APG "Ctrl/Cmd+A": select every enabled option, or clear the selection when
-   * they are all already selected (toggle). An option whose `[value]` binding
-   * has not landed yet is left out. No-op in single mode, disabled, or readonly.
+   * APG "Ctrl/Cmd+A": add every enabled option to the selection, or remove them
+   * when they are all already selected (toggle). Selected values that are not an
+   * enabled rendered option (a disabled option, one hidden by a filter) are kept
+   * either way. An option whose `[value]` binding has not landed yet is left
+   * out. No-op in single mode, disabled, or readonly.
    */
   selectAll(): void {
     if (this.#deps.effectiveDisabled() || this.#deps.readonly() || !this.#deps.multiple()) {
@@ -195,8 +197,18 @@ export class RangeSelectionEngine<T, H extends RangeSelectionOptionHandle<T>> {
     }
     const equals = this.#deps.compareWith();
     const current = this.#deps.value();
-    const allSelected = enabled.every((v) => current.some((x) => equals(x, v)));
-    this.#deps.setValue(allSelected ? [] : enabled);
+    const allSelected = enabled.every((v) => isInArray(current, v, equals));
+    if (allSelected) {
+      this.#deps.setValue(current.filter((x) => !isInArray(enabled, x, equals)));
+      return;
+    }
+    const next = [...current];
+    for (const v of enabled) {
+      if (!isInArray(next, v, equals)) {
+        next.push(v);
+      }
+    }
+    this.#deps.setValue(next);
   }
 
   /**
