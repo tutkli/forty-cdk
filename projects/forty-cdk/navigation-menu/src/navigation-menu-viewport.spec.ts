@@ -68,6 +68,7 @@ class FakeResizeObserver {
 })
 class MegaMenuHost {
   readonly open = signal<string | null>(null);
+  readonly menu = viewChild.required(ForNavigationMenu);
 }
 
 @Component({
@@ -723,7 +724,7 @@ describe('ForNavigationMenuViewport', () => {
       expect(products.getAttribute('data-motion')).toBe('from-start');
     });
 
-    it('clears data-motion when the menu closes back to no selection', async () => {
+    it('omits data-motion on a different panel opened after the menu closed', async () => {
       const { fixture, query, flush } = renderHost(MegaMenuHost);
       await flush();
 
@@ -731,19 +732,36 @@ describe('ForNavigationMenuViewport', () => {
       await flush();
       fixture.componentInstance.open.set('solutions');
       await flush();
-      const solutions = query<HTMLElement>('[data-id="solutions"]')!;
-      expect(solutions.getAttribute('data-motion')).toBe('from-end');
+      expect(query<HTMLElement>('[data-id="solutions"]')!.getAttribute('data-motion')).toBe(
+        'from-end',
+      );
 
       fixture.componentInstance.open.set(null);
       await flush();
-      // Solutions has been destroyed; nothing to assert on the leaving side
-      // because @if removes it. The currently-open value is null, so any
-      // remounted content would have no motion.
-      fixture.componentInstance.open.set('solutions');
+
+      fixture.componentInstance.open.set('company');
       await flush();
-      const reopened = query<HTMLElement>('[data-id="solutions"]')!;
-      // Previous active was null, so no comparison applies.
-      expect(reopened.hasAttribute('data-motion')).toBe(false);
+      expect(query<HTMLElement>('[data-id="company"]')!.hasAttribute('data-motion')).toBe(false);
+      expect(fixture.componentInstance.menu().previousValue()).toBeNull();
+    });
+
+    it('omits data-motion when a trigger reopens a different panel after an Escape close', async () => {
+      const { fixture, query, queryAll, flush } = renderHost(MegaMenuHost);
+      await flush();
+      const triggers = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]');
+
+      triggers[0]!.click();
+      await flush();
+      query<HTMLElement>('[data-id="products"]')!.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+      );
+      await flush();
+      expect(fixture.componentInstance.open()).toBeNull();
+
+      triggers[2]!.click();
+      await flush();
+      expect(query<HTMLElement>('[data-id="company"]')!.hasAttribute('data-motion')).toBe(false);
+      expect(fixture.componentInstance.menu().previousValue()).toBeNull();
     });
   });
 

@@ -141,7 +141,10 @@ export interface ForNavigationMenuContext {
   readonly activeTriggerHost: Signal<HTMLElement | null>;
   /** Host element of the currently-active content, if any. */
   readonly activeContentHost: Signal<HTMLElement | null>;
-  /** Most recent open value before the current one. `null` if none. */
+  /**
+   * The value immediately before the current one: `null` when the menu was closed before it,
+   * including the open that follows a close.
+   */
   readonly previousValue: Signal<string | null>;
   /**
    * Motion direction for `[forNavigationMenuContent]` whose item carries

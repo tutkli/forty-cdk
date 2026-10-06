@@ -1210,6 +1210,70 @@ describe('ForNavigationMenu', () => {
     });
   });
 
+  describe('[(value)] writes and the dismissible layer', () => {
+    it('closes a panel opened through [(value)] on an outside pointerdown', async () => {
+      const { fixture, flush } = renderHost(NavMenuHost);
+      await flush();
+      fixture.componentInstance.open.set('products');
+      await flush();
+
+      const stranger = document.createElement('div');
+      document.body.appendChild(stranger);
+      try {
+        stranger.dispatchEvent(pointer('pointerdown'));
+        await flush();
+        expect(fixture.componentInstance.open()).toBeNull();
+      } finally {
+        stranger.remove();
+      }
+    });
+
+    it('closes a panel opened through [(value)] when focus tabs out of it', async () => {
+      const { fixture, query, flush } = renderHost(NavMenuHost);
+      await flush();
+      fixture.componentInstance.open.set('products');
+      await flush();
+      const link = query<HTMLAnchorElement>('a[forNavigationMenuLink]')!;
+      link.focus();
+      await flush();
+
+      const outside = document.createElement('button');
+      document.body.appendChild(outside);
+      try {
+        link.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: outside }));
+        outside.focus();
+        await flush();
+        expect(fixture.componentInstance.open()).toBeNull();
+      } finally {
+        outside.remove();
+      }
+    });
+
+    it('releases the layer when [(value)] closes the panel, so a layer below gets the next leave', async () => {
+      const { fixture, query, flush } = renderHost(StackedLayerNavMenuHost);
+      await flush();
+      const stacked = fixture.componentInstance.stacked();
+      stacked.stack(['pointer', 'focus']);
+      const outside = document.createElement('button');
+      document.body.appendChild(outside);
+      try {
+        query<HTMLButtonElement>('[forNavigationMenuTrigger]')!.click();
+        await flush();
+        expect(fixture.componentInstance.open()).toBe('products');
+
+        fixture.componentInstance.open.set(null);
+        await flush();
+        outside.focus();
+        await flush();
+
+        expect(stacked.focusOutside()).toBe(1);
+      } finally {
+        outside.remove();
+        stacked.unstack();
+      }
+    });
+  });
+
   describe('root data-state', () => {
     it('reflects "closed" initially and flips to "open" when an item opens', async () => {
       const { fixture, query, flush } = renderHost(NavMenuHost);
@@ -1488,6 +1552,29 @@ describe('ForNavigationMenu', () => {
       // and matches neither current (B) nor previous (C) — its frozen
       // to-start must survive instead of dropping to null.
       triggers[1]!.click();
+      host.mountSolutions.set(true);
+      await flush();
+      expect(panel(q, 'solutions').getAttribute('data-motion')).toBe('from-start');
+      expect(panel(q, 'about').getAttribute('data-motion')).toBe('to-end');
+      expect(panel(q, 'products').getAttribute('data-motion')).toBe('to-start');
+    });
+
+    it('freezes the leaving direction of a panel replaced through [(value)]', async () => {
+      const { fixture, query, flush } = renderHost(OverlappingNavMenuHost);
+      const host = fixture.componentInstance;
+      await flush();
+      const q = query as (s: string) => HTMLElement | null;
+
+      host.open.set('products');
+      host.mountProducts.set(true);
+      await flush();
+      host.open.set('about');
+      host.mountAbout.set(true);
+      await flush();
+      expect(panel(q, 'about').getAttribute('data-motion')).toBe('from-end');
+      expect(panel(q, 'products').getAttribute('data-motion')).toBe('to-start');
+
+      host.open.set('solutions');
       host.mountSolutions.set(true);
       await flush();
       expect(panel(q, 'solutions').getAttribute('data-motion')).toBe('from-start');

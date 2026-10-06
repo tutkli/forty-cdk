@@ -4,6 +4,7 @@ import {
   DestroyRef,
   Directive,
   DOCUMENT,
+  effect,
   ElementRef,
   inject,
   input,
@@ -11,6 +12,7 @@ import {
   model,
   signal,
   type Signal,
+  untracked,
 } from '@angular/core';
 
 import {
@@ -34,6 +36,12 @@ import {
   type ForNavigationMenuViewportHandle,
   type NavigationMenuScheduleReason,
 } from './navigation-menu-context';
+
+interface NavigationMenuTransition {
+  readonly from: string | null;
+  readonly to: string | null;
+  readonly leaving: ReadonlyMap<string, ForNavigationMenuMotion>;
+}
 
 /**
  * Headless implementation of the
@@ -69,7 +77,7 @@ import {
   exportAs: 'forNavigationMenu',
   host: {
     '[attr.aria-label]': 'resolvedAriaLabel()',
-    '[attr.data-state]': 'value() === null ? "closed" : "open"',
+    '[attr.data-state]': 'renderedValue() === null ? "closed" : "open"',
     '[attr.data-orientation]': 'orientation()',
     '[attr.data-disabled]': 'disabled() ? "" : null',
     '[attr.dir]': 'dir()',
@@ -146,24 +154,29 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
   readonly #contents = new Collection<ForNavigationMenuContentHandle>();
   readonly #viewport = signal<ForNavigationMenuViewportHandle | null>(null);
 
-  /** The `value` that was open before the current one, or `null`. */
-  readonly previousValue = linkedSignal<string | null, string | null>({
-    source: () => this.value(),
-    computation: (_current, prev) => prev?.source ?? null,
+  /**
+   * Fold over every `value` transition, internal or written through `[(value)]`: the value it
+   * left (`from`), the value it reached (`to`), and the frozen `data-motion` of each panel still
+   * leaving. A leaving panel keeps the direction of the transition that started its exit for as
+   * long as `animate.leave` keeps it mounted, until it unmounts (`unregisterContent`) or re-enters.
+   *
+   * A `linkedSignal` only folds the values it is read with, so it is read on every render through
+   * the root's own `data-state` host binding ({@link renderedValue}); a closed menu in between two opens
+   * is therefore always observed.
+   */
+  readonly #transition = linkedSignal<string | null, NavigationMenuTransition>({
+    source: this.value,
+    computation: (to, previous) =>
+      untracked(() => this.#advance(previous?.value, previous?.source ?? null, to)),
   });
 
+  protected readonly renderedValue = computed(() => this.#transition().to);
+
   /**
-   * Frozen `data-motion` per mounted panel `value`. Recorded imperatively at
-   * each `open()` / `close()` transition — the entering panel and the panel
-   * that just started leaving — and left untouched for panels that began
-   * leaving in an earlier transition, so their direction stays stable for as
-   * long as `animate.leave` keeps them mounted. Cleared when a panel
-   * unmounts (`unregisterContent`) or re-enters as the current value.
-   *
-   * Backed by a `signal` holding an immutable `Map` so `motionFor` stays a
-   * pure, pull-based read — no state is propagated from an `effect()`.
+   * The `value` immediately before the current one: `null` when the menu was closed before it,
+   * including the open that follows a close.
    */
-  readonly #motion = signal<ReadonlyMap<string, ForNavigationMenuMotion>>(new Map());
+  readonly previousValue: Signal<string | null> = computed(() => this.#transition().from);
 
   /** The value a pending hover-open is queued for (so a same-trigger leave can cancel it). */
   #pendingOpenValue: string | null = null;
@@ -190,6 +203,7 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
   readonly #surfacePointerDown = createPointerSuppression();
 
   constructor() {
+    effect(() => this.#syncDismissLayer());
     inject(DestroyRef).onDestroy(() => {
       this.#cancelPending();
       this.#skipDelayWindow.cancel();
@@ -211,7 +225,36 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
   }
 
   /**
-   * Opens the item with the given `value` and arms the dismissible layer.
+   * Opens the item with the given `value`. The dismissible layer is armed while any item is open,
+   * whether it was opened here or written through `[(value)]`.
+   */
+  open(value: string): void {
+    if (this.disabled()) return;
+    // The single write funnel into `value`, so it is where the `unsetInput`
+    // sentinel is stopped: a trigger whose `[forNavigationMenuItem]` has no
+    // `[value]` binding yet would otherwise commit the sentinel into the value
+    // model instead of failing (dev mode reports it through `assertInputBound`).
+    if (isUnset(value)) return;
+    this.#cancelPending();
+    if (this.value() !== value) {
+      this.value.set(value);
+    }
+    this.#syncDismissLayer();
+  }
+
+  close(): void {
+    this.#cancelPending();
+    if (this.value() !== null) {
+      this.value.set(null);
+      this.#skipDelayWindow.start();
+    }
+    this.#syncDismissLayer();
+  }
+
+  /**
+   * Arms the dismissible layer while `value` is non-null and disarms it otherwise. Runs from
+   * `open()` / `close()` so an internal transition takes effect synchronously, and from an
+   * `effect()` so a `[(value)]` write reaches the layer too.
    *
    * The layer owns both outside-interaction channels: `'pointer'` for an
    * outside pointerdown and `'focus'` for a focus move landing outside the
@@ -228,17 +271,11 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
    * {@link handleSurfaceFocusOut} needs to tell a pointer-induced blur from
    * focus leaving the document.
    */
-  open(value: string): void {
-    if (this.disabled()) return;
-    // The single write funnel into `value`, so it is where the `unsetInput`
-    // sentinel is stopped: a trigger whose `[forNavigationMenuItem]` has no
-    // `[value]` binding yet would otherwise commit the sentinel into the value
-    // model instead of failing (dev mode reports it through `assertInputBound`).
-    if (isUnset(value)) return;
-    this.#cancelPending();
-    if (this.value() === value) return;
-    this.#recordMotion(this.value(), value);
-    this.value.set(value);
+  #syncDismissLayer(): void {
+    if (this.value() === null) {
+      this.#dismiss.deactivate();
+      return;
+    }
     this.#dismiss.activate({
       channels: ['pointer', 'focus'],
       exemptElements: () => this.#surfaceElements(),
@@ -255,15 +292,6 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
       onPointerDownInside: () => this.#surfacePointerDown.suppress(),
       onFocusOutside: () => this.close(),
     });
-  }
-
-  close(): void {
-    this.#cancelPending();
-    if (this.value() === null) return;
-    this.#recordMotion(this.value(), null);
-    this.value.set(null);
-    this.#dismiss.deactivate();
-    this.#skipDelayWindow.start();
   }
 
   scheduleOpen(value: string, reason: NavigationMenuScheduleReason): void {
@@ -477,45 +505,48 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
    * - A leaving content reflects `to-start` / `to-end`, frozen at the transition that started its
    *   exit and stable for as long as the panel stays mounted, so overlapping `animate.leave`
    *   transitions never lose a panel's direction.
-   * - Anything else returns `null` and the host emits no attribute, including the first open and
-   *   last close, where there is no peer to compare against.
+   * - Anything else returns `null` and the host emits no attribute, including a panel opening from
+   *   a closed menu and a panel leaving on close, where there is no peer to compare against.
    *
    * "Start" and "end" are logical — index 0 in DOM order is start, which is visually on the right
    * under `dir="rtl"` — so keyframes authored with logical CSS flip automatically.
    */
   motionFor(value: string): ForNavigationMenuMotion | null {
-    if (value === this.value()) {
-      return this.#enterMotion(this.previousValue(), value);
+    const { from, to, leaving } = this.#transition();
+    if (value === to) {
+      return this.#enterMotion(from, value);
     }
-    return this.#motion().get(value) ?? null;
+    return leaving.get(value) ?? null;
   }
 
   /**
-   * Record the frozen motion for a `from` → `to` transition: the entering
-   * `to` panel and the leaving `from` panel. Existing entries for other
-   * still-leaving panels are preserved so overlapping exits keep their
-   * direction. `to`'s own stale leaving entry is dropped (it is re-entering).
+   * The transition from `from` to `to`: `to` drops its own stale leaving entry (it is re-entering),
+   * `from` freezes its leaving direction, and every other still-leaving panel keeps its own.
    */
-  #recordMotion(from: string | null, to: string | null): void {
-    const next = new Map(this.#motion());
+  #advance(
+    previous: NavigationMenuTransition | undefined,
+    from: string | null,
+    to: string | null,
+  ): NavigationMenuTransition {
+    const leaving = new Map(previous?.leaving);
     if (to !== null) {
-      const enter = this.#enterMotion(from, to);
-      if (enter === null) next.delete(to);
-      else next.set(to, enter);
+      leaving.delete(to);
     }
     if (from !== null) {
       const leave = this.#leaveMotion(from, to);
-      if (leave === null) next.delete(from);
-      else next.set(from, leave);
+      if (leave === null) leaving.delete(from);
+      else leaving.set(from, leave);
     }
-    this.#motion.set(next);
+    return { from, to, leaving };
   }
 
   #clearMotion(value: string): void {
-    if (!this.#motion().has(value)) return;
-    const next = new Map(this.#motion());
-    next.delete(value);
-    this.#motion.set(next);
+    this.#transition.update((transition) => {
+      if (!transition.leaving.has(value)) return transition;
+      const leaving = new Map(transition.leaving);
+      leaving.delete(value);
+      return { ...transition, leaving };
+    });
   }
 
   /** Entering direction for `to` given the panel `from` it replaced. */
