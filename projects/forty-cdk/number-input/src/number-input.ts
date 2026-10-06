@@ -130,6 +130,12 @@ export class ForNumberInput
    * from (`0.5` displays as `"50%"`); parsing divides typed input back by 100 so
    * the round-trip is loss-free (editing `"50%"` to `"51%"` yields `0.51`, not
    * `51`). `min` / `max` are therefore also expressed in that fractional scale.
+   *
+   * Committing typed text (`Enter` or blur) rounds the value to the precision
+   * the format displays, so `1.239` under `{ style: 'currency', currency: 'USD' }`
+   * commits as `1.24` and the displayed text, `aria-valuetext`, `aria-valuenow`
+   * and the submitted value agree. `min` / `max` win over that rounding, and
+   * compact, scientific and engineering notations commit the value unrounded.
    */
   readonly formatOptions = input<Intl.NumberFormatOptions | null>(null);
 
@@ -139,6 +145,13 @@ export class ForNumberInput
   readonly #formatter = computed(() => {
     const options = this.formatOptions();
     return options ? new Intl.NumberFormat(this.locale() ?? undefined, options) : null;
+  });
+
+  readonly #precisionFormatter = computed(() => {
+    const options = this.formatOptions();
+    return options
+      ? new Intl.NumberFormat(this.locale() ?? undefined, { ...options, numberingSystem: 'latn' })
+      : null;
   });
 
   readonly #separators = computed(() => localeSeparators(this.locale() ?? undefined));
@@ -330,11 +343,14 @@ export class ForNumberInput
     }
   }
 
-  /** Clamp the live value to `[min, max]` and reformat the displayed text. */
+  /**
+   * Round the live value to the format's precision, clamp it to `[min, max]`
+   * and reformat the displayed text.
+   */
   protected commit(): void {
     const current = this.value();
     if (current !== null) {
-      const clamped = this.#clamp(current);
+      const clamped = this.#clamp(this.#toFormatPrecision(current));
       if (clamped !== current) {
         this.value.set(clamped);
       }
@@ -366,6 +382,34 @@ export class ForNumberInput
     if (el.value !== text) {
       el.value = text;
     }
+  }
+
+  #toFormatPrecision(n: number): number {
+    const formatter = this.#precisionFormatter();
+    const resolved = formatter?.resolvedOptions();
+    if (!formatter || resolved?.notation !== 'standard') {
+      return n;
+    }
+    const magnitude = formatter
+      .formatToParts(n)
+      .map((part) => {
+        switch (part.type) {
+          case 'integer':
+          case 'fraction':
+            return part.value;
+          case 'decimal':
+            return '.';
+          default:
+            return '';
+        }
+      })
+      .join('');
+    const exponent = resolved.style === 'percent' ? 'e-2' : '';
+    const rounded = Number(`${n < 0 ? '-' : ''}${magnitude}${exponent}`);
+    if (!Number.isFinite(rounded)) {
+      return n;
+    }
+    return rounded === 0 ? 0 : rounded;
   }
 
   #toModelValue(parsed: number): number {

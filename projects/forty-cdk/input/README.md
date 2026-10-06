@@ -72,7 +72,7 @@ export class DemoSignup {
 
 ## Examples
 
-Type in the field and watch the `[forInput]` host: `data-empty`, `data-dirty` and `data-touched` follow what the user has actually done to it.
+Type in the field and watch the `[forInput]` host: `data-empty` and `data-touched` follow what the user has actually done to it. `data-dirty` is a reflection of the `dirty` input, so it appears only when `[formField]` or a `[dirty]` binding supplies it, never from this standalone `[(value)]` binding.
 
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';

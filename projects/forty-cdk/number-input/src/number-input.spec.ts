@@ -867,6 +867,100 @@ describe('ForNumberInput', () => {
       expect(input.value).toBe('100%');
     });
 
+    describe('commit rounds to the format precision', () => {
+      const commitTyped = async (
+        options: Intl.NumberFormatOptions | null,
+        text: string,
+        commit: 'enter' | 'blur',
+        locale = 'en-US',
+      ) => {
+        const rendered = renderHost(NumberHost);
+        rendered.fixture.componentInstance.locale.set(locale);
+        rendered.fixture.componentInstance.formatOptions.set(options);
+        await rendered.flush();
+        const input = inputOf(rendered.el);
+        input.focus();
+        typeInto(input, text);
+        await rendered.flush();
+        if (commit === 'enter') {
+          pressKey(input, 'Enter');
+        } else {
+          input.dispatchEvent(new FocusEvent('blur'));
+        }
+        await rendered.flush();
+        return { ...rendered, input };
+      };
+
+      it('rounds a currency value on Enter so value, aria-valuenow and the display agree', async () => {
+        const { fixture, input } = await commitTyped(
+          { style: 'currency', currency: 'USD' },
+          '1.239',
+          'enter',
+        );
+        expect(fixture.componentInstance.qty()).toBe(1.24);
+        expect(input.getAttribute('aria-valuenow')).toBe('1.24');
+        expect(input.getAttribute('aria-valuetext')).toBe('$1.24');
+        expect(input.value).toBe('$1.24');
+      });
+
+      it('rounds to maximumFractionDigits on blur', async () => {
+        const { fixture, input } = await commitTyped({ maximumFractionDigits: 0 }, '1.5', 'blur');
+        expect(fixture.componentInstance.qty()).toBe(2);
+        expect(input.getAttribute('aria-valuenow')).toBe('2');
+        expect(input.value).toBe('2');
+      });
+
+      it('rounds a percent value in its fractional scale', async () => {
+        const { fixture, input } = await commitTyped({ style: 'percent' }, '12.5', 'blur');
+        expect(fixture.componentInstance.qty()).toBe(0.13);
+        expect(input.value).toBe('13%');
+      });
+
+      it('keeps the sign of a negative accounting currency value', async () => {
+        const { fixture } = await commitTyped(
+          { style: 'currency', currency: 'USD', currencySign: 'accounting' },
+          '-1.239',
+          'blur',
+        );
+        expect(fixture.componentInstance.qty()).toBe(-1.24);
+      });
+
+      it('rounds in a locale with non-Latin digits', async () => {
+        const { fixture } = await commitTyped(
+          { maximumFractionDigits: 1 },
+          '1.26',
+          'blur',
+          'ar-EG',
+        );
+        expect(fixture.componentInstance.qty()).toBe(1.3);
+      });
+
+      it('leaves the value unrounded under compact notation', async () => {
+        const { fixture } = await commitTyped({ notation: 'compact' }, '1234', 'blur');
+        expect(fixture.componentInstance.qty()).toBe(1234);
+      });
+
+      it('lets max win over the rounding', async () => {
+        const rendered = renderHost(NumberHost);
+        rendered.fixture.componentInstance.locale.set('en-US');
+        rendered.fixture.componentInstance.formatOptions.set({ maximumFractionDigits: 0 });
+        rendered.fixture.componentInstance.max.set(1.6);
+        await rendered.flush();
+        const input = inputOf(rendered.el);
+        input.focus();
+        typeInto(input, '1.55');
+        await rendered.flush();
+        input.dispatchEvent(new FocusEvent('blur'));
+        await rendered.flush();
+        expect(rendered.fixture.componentInstance.qty()).toBe(1.6);
+      });
+
+      it('keeps full precision without formatOptions', async () => {
+        const { fixture } = await commitTyped(null, '1.239', 'blur');
+        expect(fixture.componentInstance.qty()).toBe(1.239);
+      });
+    });
+
     it('round-trips a currency value unscaled on edit', async () => {
       const { el, fixture, flush } = renderHost(NumberHost);
       fixture.componentInstance.locale.set('en-US');

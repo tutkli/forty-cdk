@@ -28,7 +28,7 @@ Headless and implementing Angular's `FormValueControl<number | null>` from `@ang
 
 ## Examples
 
-Type a number, press the arrow keys or hold a stepper button. The host carries `data-empty` while the value is `null` and `data-dirty` once it has changed.
+Type a number, press the arrow keys or click a stepper button. The host carries `data-empty` while the value is `null`. `data-dirty` is a reflection of the `dirty` input, so it appears only when `[formField]` or a `[dirty]` binding supplies it, never from this standalone `[(value)]` binding.
 
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
@@ -62,11 +62,11 @@ One class and one directive, three states. `disabled` reflects `data-disabled` o
 
 ### Formatting & precision
 
-Type an amount: `value()` under the field follows it as a raw number, and the text reformats through `formatOptions` as US dollars when you press `Enter` or leave the field. `↑` / `↓` step it by 1. [Formatting](#formatting) covers `locale`, what a surrounding form submits, and the `step` a percent style needs.
+Type an amount: `value()` under the field follows it as a raw number, and when you press `Enter` or leave the field the text reformats through `formatOptions` as US dollars and `value()` rounds to the cents it shows. `↑` / `↓` step it by 1. [Formatting](#formatting) covers `locale`, what a surrounding form submits, and the `step` a percent style needs.
 
 ## Formatting
 
-`formatOptions` (+ optional `locale`) drives both the displayed text and `aria-valuetext`; `value()` stays the raw number, and that raw number is what a surrounding `<form>` submits (via a hidden input).
+`formatOptions` (+ optional `locale`) drives both the displayed text and `aria-valuetext`; `value()` stays a number, and that number is what a surrounding `<form>` submits (via a hidden input). Committing typed text (`Enter` or blur) rounds the value to the precision the format displays, so typing `1.239` into the field below commits `1.24`, and the text, `aria-valuetext`, `aria-valuenow` and the submitted value agree. `min` / `max` win over that rounding, and compact, scientific and engineering notations commit the typed value unrounded.
 
 ```html
 <input
@@ -168,7 +168,7 @@ The following shortcuts implement the Spinbutton APG keyboard map.
 | `ArrowUp` / `ArrowDown` | `value ± step`, clamped.                                        |
 | `PageUp` / `PageDown`   | `value ± step × stepMultiplier`, clamped.                       |
 | `Home` / `End`          | Set to `min` / `max` (when defined).                            |
-| `Enter`                 | Commit (clamp the typed text).                                  |
+| `Enter`                 | Commit (round to the format's precision, then clamp).           |
 | typing                  | Numeric characters parsed live; clamped on blur / Enter / step. |
 
 Stepping from an empty field lands on the clamped baseline (`min ?? 0`).
@@ -180,7 +180,7 @@ Values live on the `min ?? 0` ± k·`step` grid. A value already on the grid tra
 Implements the [WAI-ARIA Spinbutton pattern](https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton/).
 
 - **`role="spinbutton"` on a text input.** `aria-valuenow` / `aria-valuemin` / `aria-valuemax` reflect the value and bounds; `aria-valuetext` is emitted only when `formatOptions` is set (so the formatted text, such as "$1,234.50", is announced instead of the bare number). `inputmode` is `numeric`, or `decimal` when fractional values are possible.
-- **Clamp on commit, validate on input.** Keystrokes update the parsed value live so you can type transient out-of-range text without fighting the caret; clamping to `[min, max]` happens on blur / Enter / step actions.
+- **Clamp on commit, validate on input.** Keystrokes update the parsed value live so you can type transient out-of-range text without fighting the caret; clamping to `[min, max]` happens on blur / Enter / step actions, and blur / Enter also round to the precision `formatOptions` displays.
 - **Hidden input for submission.** Because the displayed text can be formatted, the visible input does **not** carry `name`; setting `name` mounts a hidden `<input>` with the raw number so native `<form>` serialization sees the value, not "$1,234.50". A disabled control is skipped automatically.
 - **Disabled reflects through one channel.** The native `disabled` attribute already exposes the unavailable state through HTML-AAM, so no `aria-disabled` is emitted alongside it. Style the disabled state with `:disabled` or `[data-disabled]`.
 - **Falsy state styling selects on absence.** `aria-readonly` / `aria-required` / `aria-invalid` / `aria-busy` are emitted only when truthy, so style the off state with `:not([aria-invalid])`, never `[aria-invalid="false"]`.
