@@ -549,6 +549,15 @@ The `autocompleteMode` input mirrors the WAI-ARIA `aria-autocomplete` property:
 
 Inline completion preserves the user's typed prefix as unselected and selects the appended remainder, so the next keystroke replaces the selection (matching native browser autofill behavior). Backspace deletes the selection without re-completing, so the user can always shorten the query.
 
+The completed text is a suggestion: `query()` keeps the typed prefix until the user accepts it, and accepting writes the full label into `query` (emitting `(queryChange)`). These gestures accept a pending completion:
+
+- **Tab**, before the listbox closes and focus moves on.
+- **Enter** when no option is activated (the listbox is closed, or open with nothing highlighted).
+- A caret move that keeps the completed text: **ArrowLeft** / **ArrowRight**, and **Home** / **End** while the listbox is closed. While it is open, Home and End move the highlight instead and the completion stays pending.
+- A **click** in the input, and **blur**.
+
+Typing replaces the suggestion, Backspace removes it, and Escape on an open listbox closes it and restores the typed prefix. Accepting never opens the listbox, so a completion accepted on blur does not reopen a popup the same click dismissed.
+
 > **Pure `'inline'` needs a warm cache.** `'inline'` never opens the popup (per APG, `aria-autocomplete="inline"` has no listbox), so in the default `@if (open())` anatomy no `[forComboboxOption]` ever renders and the label cache starts cold. A first keystroke into a combobox that has never been opened completes against nothing; inline completion only works once the options have rendered at least once (the user opened the popup via ArrowDown or `[openOnFocus]`, warming the cache). If completion must work from the very first keystroke, use `'both'`, which opens the popup, so the options render and the cache warms. Leaving `[forComboboxContent]` permanently mounted instead is not a supported shape and warns in dev mode: mount **is** the open state for this surface, so it never runs `animate.enter` / `animate.leave`, and its dismissible layer stays active while closed.
 
 ## Dismiss events
@@ -707,6 +716,8 @@ readonly v = injectVirtualizer({
 
 This uses the library's own [`injectVirtualizer`](../virtualization/README.md) core: `v.virtualItems()` is the windowed slice, `v.totalSize()` the spacer height, `v.range()` feeds `[visibleRange]`, and `v.scrollToIndex(idx)` brings an absolute index into view. The scroll container belongs to the consumer's virtualizer, not the directive (here `[forComboboxContent]` is the scroll element).
 
+`[totalCount]` is also the result count the message pieces read: `[forComboboxStatus]`'s `count()` reports it rather than the size of the rendered window, so `{{ status.count() }} results.` announces the full count once and stays put while the window scrolls, and `[forComboboxEmpty]` stays hidden while a window with results has not rendered yet.
+
 When `[totalCount]` is omitted, the directive falls back to `options().length` and behaves exactly as before: `aria-setsize` is left to the platform default and navigation never emits `(scrollToIndex)`.
 
 > **Disabled options off-screen.** The directive learns an option's `disabled` only when it's been rendered at least once. While the consumer can pre-mark disabled rows with their own filter (most apps do), arrow nav cannot skip an off-screen disabled option it has never seen: it will land on it, the option will mount, and the next arrow press skips. Mark disabled rows in the source array if this matters.
@@ -792,9 +803,12 @@ Focus stays in the input throughout: arrow keys move the listbox's _active desce
 | **Tab** _(open, no action)_                  | Close the listbox and let Tab flow to the next focusable.                                                                            |
 | **Tab / Shift+Tab** _(open, action present)_ | Move focus around the input↔actions ring without dismissing (see [Action items](#action-items)).                                     |
 | **Backspace** _(empty input, multi only)_    | Focus the last chip; a second Backspace there removes it.                                                                            |
+| **ArrowLeft / ArrowRight**                   | Move the caret, accepting a pending inline completion.                                                                               |
 | Printable keys                               | Update `query`. With `'inline'` / `'both'` autocomplete, complete the rest of the first match into the input as selected text.       |
 
-Hovering an option also makes it the activedescendant, so mouse and keyboard intent stay synchronized.
+With `'inline'` / `'both'` autocomplete, Tab, Enter with no option activated, and Home / End while closed also accept a pending completion (see [Autocomplete modes](#autocomplete-modes)).
+
+Hovering an option also makes it the activedescendant, so mouse and keyboard intent stay synchronized. For a short window after the directive scrolls an option into view (arrow navigation, the auto-highlight seed after the list changes, and the reveal on open), a hover is ignored, so an option the scroll slides under a resting cursor cannot take the highlight.
 
 ## Accessibility
 

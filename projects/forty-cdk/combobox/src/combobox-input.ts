@@ -22,9 +22,13 @@ import { injectComboboxContext } from './combobox-context';
  *
  * Keyboard:
  * - **ArrowDown / ArrowUp** — open + move activedescendant.
- * - **Home / End** (when open) — first / last enabled option.
+ * - **Home / End** (when open) — first / last enabled option. When closed they
+ *   move the caret, accepting a pending inline completion.
+ * - **ArrowLeft / ArrowRight** — move the caret, accepting a pending inline
+ *   completion.
  * - **PageUp / PageDown** (when open) — first / last enabled option.
- * - **Enter** (when open) — activate the activedescendant; no-op otherwise.
+ * - **Enter** (when open) — activate the activedescendant. When no option is
+ *   activated, accept a pending inline completion.
  * - **Escape** (when open) — close (focus stays in input). On the
  *   open→closed transition the input value is re-synced to `query()` even
  *   while focused, so a consumer restoring the committed label from an
@@ -37,7 +41,12 @@ import { injectComboboxContext } from './combobox-context';
  *   the trigger first, so Tab advances from the trigger's position rather than
  *   the end of the document.
  * - Printable keys: update `query` and (if `autocompleteMode` includes `'inline'`)
- *   complete the rest of the first match in the input as selected text.
+ *   complete the rest of the first match in the input as selected text. The
+ *   completion stays out of `query` until it is accepted: by Tab, by Enter
+ *   when no option is activated, by a caret move that keeps the completed text
+ *   (ArrowLeft / ArrowRight, and Home / End while closed), by a click in the
+ *   input, or by blur. Typing replaces it, Backspace removes it, and Escape on
+ *   an open listbox restores the typed prefix.
  * - During IME composition every keydown is ignored, so the composition-confirm
  *   Enter, the candidate-navigation arrows and the cancelling Escape reach the
  *   IME instead of activating an option, moving the activedescendant or closing
@@ -70,6 +79,7 @@ import { injectComboboxContext } from './combobox-context';
     '(compositionend)': 'onCompositionEnd()',
     '(keydown)': 'onKeyDown($event)',
     '(focus)': 'onFocus()',
+    '(blur)': 'onBlur()',
     '(click)': 'onClick()',
   },
 })
@@ -80,6 +90,7 @@ export class ForComboboxInput {
   readonly #host = inject<ElementRef<HTMLInputElement>>(ElementRef);
 
   #composing = false;
+  #completion: { readonly prefix: string; readonly label: string } | null = null;
 
   protected readonly ariaAutocomplete = computed(() => this.ctx.autocompleteMode());
 
@@ -150,6 +161,7 @@ export class ForComboboxInput {
 
   #syncQuery(allowInline: boolean, isDelete: boolean): void {
     const el = this.#host.nativeElement;
+    this.#completion = null;
 
     // The "user prefix" is everything before the caret. After inline
     // autocomplete sets a selection on chars [prefixLen..end], typing replaces
@@ -194,6 +206,20 @@ export class ForComboboxInput {
     // the appended suggestion. Matches native browser autocomplete behavior.
     el.value = label;
     el.setSelectionRange(prefix.length, label.length);
+    this.#completion = { prefix, label };
+  }
+
+  #acceptCompletion(): void {
+    const completion = this.#completion;
+    this.#completion = null;
+    if (
+      completion === null ||
+      this.#host.nativeElement.value !== completion.label ||
+      this.ctx.query() !== completion.prefix
+    ) {
+      return;
+    }
+    this.ctx.acceptQueryFromInput(completion.label);
   }
 
   #inlineCompletionLabel(folded: string): string | null {
@@ -277,6 +303,8 @@ export class ForComboboxInput {
         if (this.ctx.open()) {
           event.preventDefault();
           this.ctx.navigate('first');
+        } else {
+          this.#acceptCompletion();
         }
         break;
 
@@ -284,7 +312,14 @@ export class ForComboboxInput {
         if (this.ctx.open()) {
           event.preventDefault();
           this.ctx.navigate('last');
+        } else {
+          this.#acceptCompletion();
         }
+        break;
+
+      case 'ArrowLeft':
+      case 'ArrowRight':
+        this.#acceptCompletion();
         break;
 
       case 'PageUp':
@@ -304,6 +339,8 @@ export class ForComboboxInput {
       case 'Enter':
         if (this.ctx.open() && this.ctx.activateActive()) {
           event.preventDefault();
+        } else {
+          this.#acceptCompletion();
         }
         break;
 
@@ -321,6 +358,7 @@ export class ForComboboxInput {
         break;
 
       case 'Tab':
+        this.#acceptCompletion();
         if (this.ctx.open()) {
           if (this.ctx.hasEnabledActions()) {
             event.preventDefault();
@@ -340,7 +378,14 @@ export class ForComboboxInput {
     }
   }
 
+  protected onBlur(): void {
+    if (!this.#composing) {
+      this.#acceptCompletion();
+    }
+  }
+
   protected onClick(): void {
+    this.#acceptCompletion();
     // A click on the input while focused mirrors the focus-open intent —
     // useful when the user closed via Escape and wants to re-open without
     // typing or reaching for the keyboard.

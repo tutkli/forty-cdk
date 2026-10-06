@@ -2338,7 +2338,7 @@ exports[`document structure > projects/forty-cdk/combobox/README.md declares the
           "Action",
         ],
         "role": "plain",
-        "rows": 12,
+        "rows": 13,
       },
     ],
     "title": "Keyboard",

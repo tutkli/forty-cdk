@@ -58,9 +58,10 @@ export class ForComboboxStatus {
   readonly #ctx = injectComboboxContext('ForComboboxStatus');
 
   /**
-   * Number of currently registered options. Reflects the live size of the
-   * filtered listbox so the consumer can interpolate `{{ status.count() }}`
-   * inside the live region.
+   * Number of results the listbox holds, for interpolating `{{ status.count() }}`
+   * inside the live region: the root's `[totalCount]` when set, so a virtualized
+   * listbox announces its full result count rather than its rendered window, and
+   * the number of registered options otherwise.
    */
-  readonly count = computed(() => this.#ctx.options().length);
+  readonly count = computed(() => this.#ctx.totalCount() ?? this.#ctx.options().length);
 }

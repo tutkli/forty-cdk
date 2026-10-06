@@ -372,9 +372,10 @@ export interface ComboboxPieceContext<T = unknown> {
 
   /**
    * Whether a pointer-suppression window is currently open. Opened whenever the
-   * directive scrolls the active option into view during keyboard navigation,
-   * so a synthetic `pointermove` fired because the scroll slid a different
-   * option under a stationary cursor does not hijack the activedescendant.
+   * directive scrolls the active option into view (keyboard navigation, the
+   * auto-highlight seed, and the open-time reveal), so a synthetic `pointermove`
+   * fired because the scroll slid a different option under a stationary cursor
+   * does not hijack the activedescendant.
    * Options consult this from their hover handler and skip the move while it
    * returns `true`.
    */
@@ -393,6 +394,13 @@ export interface ComboboxPieceContext<T = unknown> {
 
   /** Set the typed query. Emits inline completion / openOnQuery side-effects via the input directive. */
   setQueryFromInput(query: string): void;
+  /**
+   * Set the query to an inline completion the user accepted. Applies the same
+   * guards and `clearOnQueryChange` as {@link setQueryFromInput}, and never opens
+   * the listbox, so a completion accepted on blur cannot reopen a popup the same
+   * interaction dismissed.
+   */
+  acceptQueryFromInput(query: string): void;
 
   /** Where focus should land after the listbox opens. The input directive sets this before flipping `open`. */
   readonly initialFocus: Signal<ForComboboxInitialFocus>;

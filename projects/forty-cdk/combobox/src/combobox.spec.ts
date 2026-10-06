@@ -193,6 +193,12 @@ class DismissibleContractHost {
   }
 }
 
+/** Moves the clock past the pointer-suppression window a programmatic scroll opened. */
+function elapsePointerSuppression(): void {
+  const later = Date.now() + 1000;
+  vi.spyOn(Date, 'now').mockImplementation(() => later);
+}
+
 /** Simulates the user typing into an input — sets value, caret, fires `input`. */
 function typeInto(input: HTMLInputElement, text: string): void {
   input.value = text;
@@ -968,6 +974,7 @@ describe('ForCombobox', () => {
       const r = renderHost(ComboboxHost);
       r.instance.open.set(true);
       await flush(r.fixture);
+      elapsePointerSuppression();
 
       const banana = getOption('banana');
       banana.dispatchEvent(new PointerEvent('pointermove', { bubbles: true }));
@@ -987,6 +994,54 @@ describe('ForCombobox', () => {
 
       expect(input.getAttribute('aria-activedescendant')).toBe(getOption('apricot').id);
       expect(getOption('banana').hasAttribute('data-highlighted')).toBe(false);
+    });
+
+    it('the auto-highlight seed scroll on open suppresses a hover synthesized under a stationary cursor (#2146)', async () => {
+      const r = renderHost(ComboboxHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      getOption('banana').dispatchEvent(new PointerEvent('pointermove', { bubbles: true }));
+      await flush(r.fixture);
+
+      expect(getInput().getAttribute('aria-activedescendant')).toBe(getOption('apple').id);
+      expect(getOption('banana').hasAttribute('data-highlighted')).toBe(false);
+    });
+
+    it('the seed scroll after a query re-seeds the highlight suppresses a synthesized hover (#2146)', async () => {
+      const r = renderHost(ComboboxHost);
+      r.instance.open.set(true);
+      await flushPositioning(r.fixture);
+      elapsePointerSuppression();
+
+      const input = getInput();
+      input.focus();
+      getOption('banana').dispatchEvent(new PointerEvent('pointermove', { bubbles: true }));
+      await flush(r.fixture);
+      expect(input.getAttribute('aria-activedescendant')).toBe(getOption('banana').id);
+
+      typeInto(input, 'ap');
+      await flush(r.fixture);
+      expect(input.getAttribute('aria-activedescendant')).toBe(getOption('apple').id);
+
+      getOption('apricot').dispatchEvent(new PointerEvent('pointermove', { bubbles: true }));
+      await flush(r.fixture);
+      expect(input.getAttribute('aria-activedescendant')).toBe(getOption('apple').id);
+    });
+
+    it('the open-time reveal re-opens the suppression window after the content positions (#2146)', async () => {
+      let now = Date.now();
+      vi.spyOn(Date, 'now').mockImplementation(() => now);
+      const r = renderHost(ComboboxHost);
+      r.instance.open.set(true);
+      r.fixture.detectChanges();
+
+      now += 1000;
+      await flushPositioning(r.fixture);
+
+      getOption('banana').dispatchEvent(new PointerEvent('pointermove', { bubbles: true }));
+      await flush(r.fixture);
+      expect(getInput().getAttribute('aria-activedescendant')).toBe(getOption('apple').id);
     });
   });
 
@@ -1313,6 +1368,7 @@ describe('ForCombobox', () => {
           const r = renderHost(AppendHost);
           r.instance.open.set(true);
           await flushPositioning(r.fixture);
+          elapsePointerSuppression();
 
           const apricot = getOption('apricot');
           apricot.dispatchEvent(new PointerEvent('pointermove', { bubbles: true }));
@@ -1484,6 +1540,42 @@ describe('ForCombobox', () => {
 
       r.instance.query.set('zzz');
       await flush(r.fixture);
+      expect(empty.style.display).toBe('');
+    });
+
+    it('stays hidden while a virtualized window with results has not rendered (#2146)', async () => {
+      @Component({
+        imports: [...BASE_IMPORTS, ForComboboxEmpty],
+        template: `
+          <div forCombobox [(open)]="open" [totalCount]="total()">
+            <input forComboboxInput />
+            @if (open()) {
+              <div forComboboxContent>
+                @for (index of window(); track index) {
+                  <div forComboboxOption [value]="'item-' + index">Item {{ index }}</div>
+                }
+                <div forComboboxEmpty data-test-id="empty">No matches.</div>
+              </div>
+            }
+          </div>
+        `,
+      })
+      class Host {
+        readonly open = signal(true);
+        readonly total = signal(1000);
+        readonly window = signal<readonly number[]>([]);
+      }
+
+      const r = renderHost(Host);
+      await flush(r.fixture);
+
+      const empty = document.querySelector<HTMLElement>('[data-test-id="empty"]')!;
+      expect(empty.hasAttribute('hidden')).toBe(true);
+      expect(empty.style.display).toBe('none');
+
+      r.instance.total.set(0);
+      await flush(r.fixture);
+      expect(empty.hasAttribute('hidden')).toBe(false);
       expect(empty.style.display).toBe('');
     });
   });
@@ -3950,6 +4042,60 @@ describe('ForComboboxStatus', () => {
     r.instance.loading.set(true);
     await flush(r.fixture);
     expect(statusEl().textContent?.trim()).toMatch(/^Searching…$/);
+  });
+
+  describe('virtualized listbox (#2146)', () => {
+    @Component({
+      imports: [
+        ForCombobox,
+        ForComboboxInput,
+        ForComboboxContent,
+        ForComboboxOption,
+        ForComboboxStatus,
+      ],
+      template: `
+        <div forCombobox [(open)]="open" [totalCount]="total()">
+          <input forComboboxInput />
+          @if (open()) {
+            <div forComboboxContent>
+              <div data-test-id="status" forComboboxStatus #status="forComboboxStatus">
+                {{ status.count() }} results.
+              </div>
+              @for (index of window(); track index) {
+                <div forComboboxOption [value]="'item-' + index" [label]="'Item ' + index">
+                  Item {{ index }}
+                </div>
+              }
+            </div>
+          }
+        </div>
+      `,
+    })
+    class VirtualizedStatusHost {
+      readonly open = signal(true);
+      readonly total = signal(1000);
+      readonly window = signal<readonly number[]>([0, 1, 2]);
+    }
+
+    it('counts the total results rather than the rendered window', async () => {
+      const r = renderHost(VirtualizedStatusHost);
+      await flush(r.fixture);
+
+      expect(statusEl().textContent?.trim()).toBe('1000 results.');
+    });
+
+    it('keeps the announced count when the rendered window resizes', async () => {
+      const r = renderHost(VirtualizedStatusHost);
+      await flush(r.fixture);
+
+      r.instance.window.set([0, 1, 2, 3]);
+      await flush(r.fixture);
+      expect(statusEl().textContent?.trim()).toBe('1000 results.');
+
+      r.instance.total.set(40);
+      await flush(r.fixture);
+      expect(statusEl().textContent?.trim()).toBe('40 results.');
+    });
   });
 
   it('throws when used outside [forCombobox]', () => {
