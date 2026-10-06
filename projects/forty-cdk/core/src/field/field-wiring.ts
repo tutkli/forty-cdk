@@ -192,7 +192,10 @@ function applyAttr(el: HTMLElement, name: string, value: string | null): void {
  *   gate its error region, and focus the control on label click;
  * - reflects `id` (only if the target has none — the field owns the id a
  *   label's `for` points at), `aria-labelledby`, and `aria-errormessage` on
- *   the target, kept in sync via a single `effect`;
+ *   the target, kept in sync via a single `effect`. A **static**
+ *   `aria-labelledby` / `aria-errormessage` the consumer wrote on the target
+ *   **replaces** the field's value (a name has one owner) and is restored
+ *   verbatim on teardown, so the field never erases or overrides it;
  * - **composes** `aria-describedby`: any value the consumer set statically on
  *   the target is captured on first wiring and preserved, with the field's own
  *   description / error ids appended after it — so a `aria-describedby="hint"`
@@ -229,7 +232,9 @@ export function injectFieldWiring(handle: Omit<FieldControlHandle, 'host'> = {})
   const adopted = handle.adopted;
   let previousTarget: HTMLElement | null = null;
   let ownsId = false;
+  let consumerLabelledBy: string | null = null;
   let consumerDescribedBy: string | null = null;
+  let consumerErrorMessage: string | null = null;
 
   effect(() => {
     // Resolve the wiring target: the nominated focusable element when a
@@ -240,10 +245,16 @@ export function injectFieldWiring(handle: Omit<FieldControlHandle, 'host'> = {})
 
     if (previousTarget !== target) {
       if (previousTarget) {
-        clearFieldAttrs(previousTarget, ownsId, field.controlId(), consumerDescribedBy);
+        clearFieldAttrs(previousTarget, ownsId, field.controlId(), {
+          labelledBy: consumerLabelledBy,
+          describedBy: consumerDescribedBy,
+          errorMessage: consumerErrorMessage,
+        });
         ownsId = false;
       }
+      consumerLabelledBy = target?.getAttribute('aria-labelledby') || null;
       consumerDescribedBy = target ? target.getAttribute('aria-describedby') : null;
+      consumerErrorMessage = target?.getAttribute('aria-errormessage') || null;
       previousTarget = target;
     }
 
@@ -255,35 +266,45 @@ export function injectFieldWiring(handle: Omit<FieldControlHandle, 'host'> = {})
       target.setAttribute('id', field.controlId());
       ownsId = true;
     }
-    applyAttr(target, 'aria-labelledby', field.labelledBy());
+    applyAttr(target, 'aria-labelledby', consumerLabelledBy ?? field.labelledBy());
     applyAttr(target, 'aria-describedby', composeIds(consumerDescribedBy, field.describedBy()));
-    applyAttr(target, 'aria-errormessage', field.errorMessageId());
+    applyAttr(target, 'aria-errormessage', consumerErrorMessage ?? field.errorMessageId());
   });
 
   inject(DestroyRef).onDestroy(() => {
     if (previousTarget) {
-      clearFieldAttrs(previousTarget, ownsId, field.controlId(), consumerDescribedBy);
+      clearFieldAttrs(previousTarget, ownsId, field.controlId(), {
+        labelledBy: consumerLabelledBy,
+        describedBy: consumerDescribedBy,
+        errorMessage: consumerErrorMessage,
+      });
     }
   });
 }
 
+interface ConsumerAssociation {
+  readonly labelledBy: string | null;
+  readonly describedBy: string | null;
+  readonly errorMessage: string | null;
+}
+
 /**
- * Removes the field's association attributes (`aria-labelledby` /
- * `aria-errormessage`) from a previously-targeted element, restores its
- * `aria-describedby` to the consumer's captured value (or removes it when there
- * was none), and drops the field-owned `id` when this helper set it. Symmetric
- * with the migration-cleanup branch so an arbitrary foreign `labelledElement`
- * is left clean once the control is destroyed or the target migrates.
+ * Restores a previously-targeted element's `aria-labelledby`,
+ * `aria-describedby` and `aria-errormessage` to the consumer's captured
+ * values (removing each one the consumer never set), and drops the field-owned
+ * `id` when this helper set it. Symmetric with the migration-cleanup branch so
+ * an arbitrary foreign `labelledElement` is left clean once the control is
+ * destroyed or the target migrates.
  */
 function clearFieldAttrs(
   target: HTMLElement,
   ownsId: boolean,
   controlId: string,
-  consumerDescribedBy: string | null,
+  consumer: ConsumerAssociation,
 ): void {
-  applyAttr(target, 'aria-labelledby', null);
-  applyAttr(target, 'aria-describedby', consumerDescribedBy);
-  applyAttr(target, 'aria-errormessage', null);
+  applyAttr(target, 'aria-labelledby', consumer.labelledBy);
+  applyAttr(target, 'aria-describedby', consumer.describedBy);
+  applyAttr(target, 'aria-errormessage', consumer.errorMessage);
   if (ownsId && target.getAttribute('id') === controlId) {
     target.removeAttribute('id');
   }

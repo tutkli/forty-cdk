@@ -206,7 +206,7 @@ Opt-in marker (`[forFieldControl]`) for a **native** `<input>` / `<textarea>` / 
 
 ## Accessibility
 
-- **`aria-labelledby`** is wired from `[forLabel]` to the control's id, so screen readers announce the label when the control receives focus.
+- **`aria-labelledby`** is wired from `[forLabel]` to the control's id, so screen readers announce the label when the control receives focus. A static `aria-labelledby` you write on the control replaces it and is never removed, and a static `aria-errormessage` wins the same way.
 - **`aria-describedby`** is wired from `[forFieldDescription]` (hint text) and folds in the error id while the control is invalid.
 - **`aria-errormessage`** points at `[forFieldError]`'s id while the control is invalid. The error region carries `role="alert"` so it is announced immediately.
 - **Label-click activation** matches native `<label for>` behavior on both native `<label>` and non-label hosts (demonstrated under [Examples](#examples)).

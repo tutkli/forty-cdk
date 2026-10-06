@@ -100,7 +100,7 @@ export class FileUploadDefaultExample {
 
 ### States
 
-One class and one directive, two states. `disabled` blocks the dialog and drops alike. It also reflects `data-disabled` on the zone, so the zone dims and ignores pointer events from the same stylesheet that styles `data-dragging`, without the input leaving the DOM.
+One class and one directive, two states. `disabled` blocks the dialog and drops alike, and a surrounding disabled `[forFieldset]` does the same. It also reflects `data-disabled` on the zone, so the zone dims and ignores pointer events from the same stylesheet that styles `data-dragging`, without the input leaving the DOM.
 
 ### Folder selection
 

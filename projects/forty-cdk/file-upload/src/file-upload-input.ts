@@ -29,7 +29,7 @@ import { injectFileUploadContext } from './file-upload-context';
     '[attr.accept]': 'ctx.accept()',
     '[attr.multiple]': "ctx.multiple() ? '' : null",
     '[attr.webkitdirectory]': "ctx.directory() ? '' : null",
-    '[disabled]': 'ctx.disabled()',
+    '[disabled]': 'ctx.effectiveDisabled()',
     '(change)': 'onChange()',
   },
 })
