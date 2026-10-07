@@ -23,8 +23,10 @@ export interface InfiniteScrollOptions {
   readonly disabled?: Signal<boolean>;
   /**
    * Called once per threshold crossing. If it returns a promise, the next fire
-   * is suppressed until that promise settles (`pending` reflects the in-flight
-   * state); the detector re-arms when `count` grows.
+   * is suppressed until that promise settles, whether it resolves or rejects
+   * (`pending` reflects the in-flight state). The detector re-arms when `count`
+   * changes or when the window leaves the threshold and crosses it again, and a
+   * re-armed detector still near the end fires as soon as the promise settles.
    */
   readonly onLoadMore: () => void | Promise<unknown>;
 }
@@ -39,9 +41,10 @@ export interface ForInfiniteScroll {
  * Headless infinite-scroll detector: composes on top of any windowed list's
  * `range` + `count` signals and fires `onLoadMore` once per threshold crossing,
  * suppressing re-fire while a returned promise is pending and re-arming when
- * `count` grows (a page was appended). It owns no DOM, adds no scroll listener —
- * the trigger rides the existing reactive recompute — and is SSR-safe by
- * construction: off-browser the window is `[0, 0]`, so it never fires.
+ * `count` changes (a page was appended) or the window crosses the threshold
+ * again, which also retries a load that failed. It owns no DOM, adds no scroll
+ * listener — the trigger rides the existing reactive recompute — and is SSR-safe
+ * by construction: off-browser the window is `[0, 0]`, so it never fires.
  *
  * Must be called from an injection context (a component/directive constructor
  * or field initializer).
@@ -53,6 +56,7 @@ export interface ForInfiniteScroll {
 export function injectInfiniteScroll(options: InfiniteScrollOptions): ForInfiniteScroll {
   const threshold = options.threshold ?? DEFAULT_THRESHOLD;
   const pending = signal(false);
+  const settled = signal(0);
 
   const nearEnd = computed(() => {
     if (options.disabled?.()) return false;
@@ -62,24 +66,29 @@ export function injectInfiniteScroll(options: InfiniteScrollOptions): ForInfinit
     return total > 0 && end >= total - threshold;
   });
 
-  const armed = linkedSignal<number, boolean>({
-    source: () => options.count(),
+  const armed = linkedSignal<{ count: number; nearEnd: boolean }, boolean>({
+    source: () => ({ count: options.count(), nearEnd: nearEnd() }),
     computation: () => true,
   });
 
   // @sanctioned-effect(untracked-read): both `armed` and `pending` are read
-  // through `untracked`, so the effect tracks only `count` / `nearEnd` and never
-  // cycles on the latches it writes; the `pending` writes bridge a caller-owned
-  // promise, which is outside the reactive graph entirely.
+  // through `untracked`, so the effect tracks only `count` / `nearEnd` / `settled`
+  // and never cycles on the latches it writes; `settled` is written only when a
+  // caller-owned promise settles, which is outside the reactive graph entirely.
   effect(() => {
     options.count();
+    settled();
     if (!nearEnd() || !untracked(armed)) return;
     if (untracked(pending)) return;
     armed.set(false);
     const result = options.onLoadMore();
     if (result instanceof Promise) {
       pending.set(true);
-      void result.finally(() => pending.set(false));
+      const settle = (): void => {
+        pending.set(false);
+        settled.update((n) => n + 1);
+      };
+      void result.then(settle, settle);
     }
   });
 
