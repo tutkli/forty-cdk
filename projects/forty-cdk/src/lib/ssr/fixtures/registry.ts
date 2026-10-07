@@ -175,6 +175,12 @@ export interface SsrFixture {
    * into the group before hydration — the claim a deferred registration breaks.
    */
   readonly tabStop?: string;
+  /**
+   * The `<head>` children the server render must append, each as
+   * `tag#id[sorted attribute names]`. Omitted means the render appends nothing:
+   * a document-level stylesheet ships only where a primitive declares it.
+   */
+  readonly head?: readonly string[];
 }
 
 /**
@@ -573,6 +579,7 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
   },
   {
     component: ScrollAreaFixture,
+    head: ['style#for-scroll-area-hide-native[id]'],
     markup: [
       { select: '[forScrollArea]', attributes: { 'data-type': 'hover' } },
       { select: '[forScrollAreaViewport]', attributes: { tabindex: '0' } },

@@ -1,4 +1,5 @@
 import {
+  CSP_NONCE,
   DOCUMENT,
   PLATFORM_ID,
   afterNextRender,
@@ -28,10 +29,11 @@ const HIDE_NATIVE_SCROLLBARS_CSS = `
   }
 `;
 
-function injectHidingStylesOnce(doc: Document): void {
+function injectHidingStylesOnce(doc: Document, nonce: string | null): void {
   if (doc.getElementById(HIDE_NATIVE_SCROLLBARS_STYLE_ID)) return;
   const style = doc.createElement('style');
   style.id = HIDE_NATIVE_SCROLLBARS_STYLE_ID;
+  if (nonce) style.setAttribute('nonce', nonce);
   style.textContent = HIDE_NATIVE_SCROLLBARS_CSS;
   doc.head.appendChild(style);
 }
@@ -39,7 +41,9 @@ function injectHidingStylesOnce(doc: Document): void {
 /**
  * The actually-scrolling element. Hides native scrollbars (the only place
  * in forty-cdk that ships CSS — see README), tracks scroll position, and
- * reports geometry to the root so the synthetic scrollbar can render.
+ * reports geometry to the root so the synthetic scrollbar can render. The
+ * hiding stylesheet is part of the server render too, and carries Angular's
+ * `CSP_NONCE` when one is provided.
  *
  * Focusable by default (`tabindex="0"`) so a scroll area whose content has no
  * focusable children is still reachable and keyboard-scrollable — the browser
@@ -71,11 +75,9 @@ export class ForScrollAreaViewport {
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
   constructor() {
-    if (this.#isBrowser) {
-      injectHidingStylesOnce(this.#document);
-    }
+    injectHidingStylesOnce(this.#document, inject(CSP_NONCE));
     this.#ctx.registerViewport(this.#host);
-    inject(DestroyRef).onDestroy(() => this.#ctx.registerViewport(null));
+    inject(DestroyRef).onDestroy(() => this.#ctx.unregisterViewport(this.#host));
 
     afterNextRender(() => {
       this.#syncScroll();

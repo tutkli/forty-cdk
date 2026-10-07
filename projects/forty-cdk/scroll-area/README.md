@@ -8,7 +8,7 @@ archetype: [composable-ui]
 
 A scrollable region with cross-browser, stylable synthetic scrollbars.
 
-Hides native scrollbars on the inner viewport and exposes synthetic `scrollbar` + `thumb` + `corner` directives that the consumer styles freely. This is the **only** primitive in forty-cdk that ships CSS: a single `<style>` tag (id `for-scroll-area-hide-native`) is injected into `document.head` the first time a viewport mounts. It hides webkit / Firefox / IE native scrollbars on `[forScrollAreaViewport]` only, leaving the rest of your CSS untouched.
+Hides native scrollbars on the inner viewport and exposes synthetic `scrollbar` + `thumb` + `corner` directives that the consumer styles freely. This is the **only** primitive in forty-cdk that ships CSS: a single `<style>` tag (id `for-scroll-area-hide-native`) is injected into `document.head` the first time a viewport mounts. The server render emits it too, so a server-rendered page paints without native scrollbars before hydration, and it carries Angular's `CSP_NONCE` (set through the token or the `ngCspNonce` attribute) so a nonce-based `style-src` policy admits it. It hides webkit / Firefox / IE native scrollbars on `[forScrollAreaViewport]` only, leaving the rest of your CSS untouched.
 
 ## Anatomy
 
@@ -238,12 +238,12 @@ forty-cdk ships no styles: put your own class on each piece and key your CSS off
     grid-column: 1;
     grid-row: 1;
   }
-  .sa-scrollbar[orientation='vertical'] {
+  .sa-scrollbar[data-orientation='vertical'] {
     grid-column: 2;
     grid-row: 1;
     width: 8px;
   }
-  .sa-scrollbar[orientation='horizontal'] {
+  .sa-scrollbar[data-orientation='horizontal'] {
     grid-column: 1;
     grid-row: 2;
     height: 8px;

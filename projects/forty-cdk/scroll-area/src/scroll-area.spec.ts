@@ -1,4 +1,10 @@
-import { Component, provideZonelessChangeDetection, signal, viewChild } from '@angular/core';
+import {
+  CSP_NONCE,
+  Component,
+  provideZonelessChangeDetection,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import { installObserverPolyfills } from 'forty-cdk/testing';
@@ -38,6 +44,24 @@ import type { ForScrollAreaTrackPress, ForScrollAreaType } from './scroll-area-c
 })
 class ScrollAreaHost {
   readonly type = signal<ForScrollAreaType>('always');
+}
+
+@Component({
+  imports: [ForScrollArea, ForScrollAreaViewport],
+  template: `
+    <div forScrollArea>
+      @if (mode() === 'a') {
+        <div forScrollAreaViewport data-testid="viewport-a"></div>
+      }
+      @if (mode() === 'b') {
+        <div forScrollAreaViewport data-testid="viewport-b"></div>
+      }
+    </div>
+  `,
+})
+class ScrollAreaViewportSwapHost {
+  readonly root = viewChild.required(ForScrollArea);
+  readonly mode = signal<'a' | 'b' | null>('b');
 }
 
 @Component({
@@ -123,6 +147,23 @@ describe('ForScrollArea', () => {
     expect(document.getElementById('for-scroll-area-hide-native')).toBeNull();
     renderHost(ScrollAreaHost);
     expect(document.getElementById('for-scroll-area-hide-native')).not.toBeNull();
+  });
+
+  it('stamps the CSP nonce on the native-scrollbar-hiding style', () => {
+    TestBed.configureTestingModule({
+      providers: [{ provide: CSP_NONCE, useValue: 'client-nonce' }],
+    });
+    renderHost(ScrollAreaHost);
+
+    const style = document.getElementById('for-scroll-area-hide-native');
+    expect(style?.getAttribute('nonce')).toBe('client-nonce');
+  });
+
+  it('emits the native-scrollbar-hiding style without a nonce when none is provided', () => {
+    renderHost(ScrollAreaHost);
+
+    const style = document.getElementById('for-scroll-area-hide-native');
+    expect(style?.hasAttribute('nonce')).toBe(false);
   });
 
   it('mounts the scrollbar / thumb / corner pieces with their roles wired', () => {
@@ -284,6 +325,31 @@ describe('ForScrollArea', () => {
       // Unregistering the element actually tracked still clears it.
       root.unregisterContent(elB);
       expect(root.content()).toBeNull();
+    });
+  });
+
+  describe('unregisterViewport identity guard', () => {
+    it('keeps a swapped-in viewport registered when the outgoing one tears down after it mounts', async () => {
+      const { instance, query, flush } = renderHost(ScrollAreaViewportSwapHost);
+      await flush();
+      expect(instance.root().viewport()).toBe(query('[data-testid="viewport-b"]'));
+
+      instance.mode.set('a');
+      await flush();
+
+      expect(query('[data-testid="viewport-b"]')).toBeNull();
+      expect(instance.root().viewport()).toBe(query('[data-testid="viewport-a"]'));
+    });
+
+    it('clears the viewport when the registered one unmounts', async () => {
+      const { instance, flush } = renderHost(ScrollAreaViewportSwapHost);
+      await flush();
+      expect(instance.root().viewport()).not.toBeNull();
+
+      instance.mode.set(null);
+      await flush();
+
+      expect(instance.root().viewport()).toBeNull();
     });
   });
 
