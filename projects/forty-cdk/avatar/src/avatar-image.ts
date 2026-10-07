@@ -1,13 +1,4 @@
-import { isPlatformBrowser } from '@angular/common';
-import {
-  afterNextRender,
-  DestroyRef,
-  Directive,
-  ElementRef,
-  inject,
-  output,
-  PLATFORM_ID,
-} from '@angular/core';
+import { afterNextRender, DestroyRef, Directive, ElementRef, inject, output } from '@angular/core';
 
 import { type ForAvatarStatus, injectAvatarImageContext } from './avatar-context';
 
@@ -45,19 +36,18 @@ export class ForAvatarImage {
     const host = this.#host;
 
     let destroyed = false;
-    inject(DestroyRef).onDestroy(() => (destroyed = true));
+    const destroyRef = inject(DestroyRef);
+    destroyRef.onDestroy(() => (destroyed = true));
 
     afterNextRender(() => {
       this.#syncFromAttr();
-    });
-
-    if (isPlatformBrowser(inject(PLATFORM_ID)) && typeof MutationObserver !== 'undefined') {
+      if (destroyed || typeof MutationObserver === 'undefined') return;
       const observer = new MutationObserver(() => {
         this.#syncFromAttr();
       });
       observer.observe(host, { attributes: true, attributeFilter: ['src'] });
-      inject(DestroyRef).onDestroy(() => observer.disconnect());
-    }
+      destroyRef.onDestroy(() => observer.disconnect());
+    });
 
     // Re-emit upstream whenever the parent's status changes due to our writes.
     // De-dupe on the (request, status) pair rather than status alone: a new

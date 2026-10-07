@@ -24,6 +24,19 @@ class AvatarHost {
   readonly emitted: ForAvatarStatus[] = [];
 }
 
+@Component({
+  imports: [ForAvatar, ForAvatarImage],
+  template: `
+    <span forAvatar>
+      <img forAvatarImage [src]="src()" alt="" (loadStatusChange)="emitted.push($event)" />
+    </span>
+  `,
+})
+class MountedSrcHost {
+  readonly src = signal('https://example.test/mounted.png');
+  readonly emitted: ForAvatarStatus[] = [];
+}
+
 // `ForAvatarImage` reports its lifecycle status from an `afterNextRender`
 // callback and a `src` MutationObserver, both of which re-enter on a microtask.
 // These specs run under `vi.useFakeTimers()`, where a single awaited `flush()`
@@ -63,8 +76,41 @@ describe('ForAvatar', () => {
       await flush();
 
       expect(root.getAttribute('data-status')).toBe('loaded');
-      expect(fixture.componentInstance.emitted).toContain('loading');
-      expect(fixture.componentInstance.emitted).toContain('loaded');
+      expect(fixture.componentInstance.emitted).toEqual(['idle', 'loading', 'loaded']);
+    });
+
+    it('emits each transition once when the src is bound at mount (#2153)', async () => {
+      const { fixture, query, flush } = renderHost(MountedSrcHost);
+      await flush();
+
+      expect(fixture.componentInstance.emitted).toEqual(['loading']);
+
+      const img = query<HTMLImageElement>('img')!;
+      Object.defineProperty(img, 'complete', { configurable: true, get: () => true });
+      img.dispatchEvent(new Event('load'));
+      await flush();
+
+      expect(fixture.componentInstance.emitted).toEqual(['loading', 'loaded']);
+    });
+
+    it('emits loaded once for a cached image whose src is bound at mount (#2153)', async () => {
+      vi.spyOn(HTMLImageElement.prototype, 'complete', 'get').mockReturnValue(true);
+      vi.spyOn(HTMLImageElement.prototype, 'naturalWidth', 'get').mockReturnValue(48);
+
+      const { fixture, flush } = renderHost(MountedSrcHost);
+      await flush();
+
+      expect(fixture.componentInstance.emitted).toEqual(['loaded']);
+    });
+
+    it('still reports a src change made after mount (#2153)', async () => {
+      const { fixture, flush } = renderHost(MountedSrcHost);
+      await flush();
+
+      fixture.componentInstance.src.set('https://example.test/next.png');
+      await flush();
+
+      expect(fixture.componentInstance.emitted).toEqual(['loading', 'loading']);
     });
 
     it('transitions to error on the error event', async () => {
