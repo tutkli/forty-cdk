@@ -61,7 +61,8 @@ const LATENCY = 600;
         mode="grid"
         ariaLabel="People feed"
         class="vtbl"
-        [rowCount]="rows().length"
+        [rowCount]="max"
+        [virtualRowCount]="rows().length"
         [estimateRowSize]="40"
       >
         <div forTableHeaderRow class="vtbl-row vtbl-head">
@@ -177,13 +178,9 @@ export class TableInfiniteScrollExample {
 
   private readonly tableV = viewChild<ForTableVirtualized>('v');
 
-  private readonly range = computed<readonly [number, number]>(() => {
-    const visible = this.tableV()?.virtualRows() ?? [];
-    if (visible.length === 0) {
-      return [0, 0];
-    }
-    return [visible[0]!.index, visible[visible.length - 1]!.index + 1];
-  });
+  private readonly range = computed<readonly [number, number]>(
+    () => this.tableV()?.range() ?? [0, 0],
+  );
 
   protected readonly loader = injectInfiniteScroll({
     range: this.range,
