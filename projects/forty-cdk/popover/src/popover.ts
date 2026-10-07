@@ -330,10 +330,10 @@ export class ForPopover extends AnchoredOverlayPositioningBase implements ForPop
 
   /**
    * Implicit close requested by the shell after an un-vetoed outside
-   * interaction. Records the channel's reason so the content skips its trigger
-   * return-focus, then closes.
+   * interaction or a Tab out of the content. Records the reason so the content
+   * skips its trigger return-focus, then closes.
    */
-  requestClose(reason: 'pointerDownOutside' | 'focusOutside'): void {
+  requestClose(reason: 'pointerDownOutside' | 'focusOutside' | 'tab'): void {
     this.#close(reason);
   }
 

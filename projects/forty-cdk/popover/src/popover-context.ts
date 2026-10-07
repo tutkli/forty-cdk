@@ -9,15 +9,15 @@ import {
 import { type AnchoredPositioningContext } from 'forty-cdk/core-overlay';
 
 /**
- * Why a popover requested close. The popover is non-modal, so there is no
- * `'tab'` reason (Tab is allowed to leave the surface and surfaces as
- * `'focusOutside'`) and no selection reason. `'programmatic'` covers
- * `[forPopoverClose]` and the trigger toggle-close.
+ * Why a popover requested close. `'tab'` is a Tab or Shift+Tab past either end of the content,
+ * which moves focus to the trigger's place in the page's tab order. The popover has no selection
+ * reason. `'programmatic'` covers `[forPopoverClose]` and the trigger toggle-close.
  */
 export type ForPopoverCloseReason =
   | 'escape'
   | 'pointerDownOutside'
   | 'focusOutside'
+  | 'tab'
   | 'programmatic';
 
 /**
@@ -46,9 +46,9 @@ export interface ForPopoverContext extends AnchoredPositioningContext {
    * Reason of the most recent close, or `null` while the popover is open / has
    * never closed. Reset to `null` on open. `[forPopoverContent]` reads it to
    * skip its trigger return-focus when the close came from an outside
-   * interaction (`'pointerDownOutside'` / `'focusOutside'`) — leaving focus
-   * where the user just clicked / focused instead of ripping it back to the
-   * trigger (matching `[forDropdownMenu]`).
+   * interaction (`'pointerDownOutside'` / `'focusOutside'`) or a Tab out
+   * (`'tab'`) — leaving focus where the user just clicked / focused / tabbed
+   * instead of ripping it back to the trigger (matching `[forDropdownMenu]`).
    */
   readonly lastCloseReason: Signal<ForPopoverCloseReason | null>;
 
@@ -110,10 +110,11 @@ export interface ForPopoverContext extends AnchoredPositioningContext {
   emitInteractOutside(veto: VetoableNativeEvent<PointerEvent | FocusEvent>): void;
   /**
    * Implicit close requested by the shell after an un-vetoed outside
-   * interaction. Records the channel's reason as `lastCloseReason` so the
-   * content can skip its trigger return-focus, then closes.
+   * interaction or a Tab out of the content. Records the reason as
+   * `lastCloseReason` so the content can skip its trigger return-focus, then
+   * closes.
    */
-  requestClose(reason: 'pointerDownOutside' | 'focusOutside'): void;
+  requestClose(reason: 'pointerDownOutside' | 'focusOutside' | 'tab'): void;
 
   /**
    * Hooks into the auto-focus pipeline. Content fires these just before

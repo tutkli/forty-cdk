@@ -222,7 +222,7 @@ class Toolbar {}
 
 ## Keyboard
 
-- **Tab / Shift+Tab** moves focus through the popover and beyond (no trap). When focus leaves, `focusOutside` fires and the popover closes unless prevented.
+- **Tab / Shift+Tab** moves focus through the popover and out of it (no trap), in the trigger's place in the page's tab order: Tab past the last control lands on the element after the trigger, and Shift+Tab before the first lands on the trigger. Either closes the popover with reason `'tab'` when `dismissible`, without returning focus.
 - **Escape** closes when `dismissible`. Use `(escapeKeyDown)="$event.preventDefault()"` to ask "are you sure?" first.
 - **Enter / Space** on the trigger toggles (native button behavior).
 

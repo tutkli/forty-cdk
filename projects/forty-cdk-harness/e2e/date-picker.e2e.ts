@@ -35,6 +35,30 @@ test.describe('DatePicker', () => {
     await expectFocused(el(page, 'trigger'));
   });
 
+  test('Tab off the calendar lands on the element after the trigger and closes', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'date-picker');
+    await el(page, 'trigger').click();
+    await expectFocused(el(page, FOCUSED_CELL));
+
+    await page.keyboard.press('Tab');
+    await expectFocused(el(page, 'after'));
+    await expect(el(page, 'content')).toHaveCount(0);
+  });
+
+  test('Shift+Tab off the first control lands on the trigger and closes', async ({ page }) => {
+    await gotoFixture(page, 'date-picker');
+    await el(page, 'trigger').click();
+    await expectFocused(el(page, FOCUSED_CELL));
+    await el(page, 'prev').focus();
+    await expectFocused(el(page, 'prev'));
+
+    await page.keyboard.press('Shift+Tab');
+    await expectFocused(el(page, 'trigger'));
+    await expect(el(page, 'content')).toHaveCount(0);
+  });
+
   test('pointerdown outside closes', async ({ page }) => {
     await gotoFixture(page, 'date-picker');
     await el(page, 'trigger').click();

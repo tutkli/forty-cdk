@@ -1,4 +1,8 @@
-import { composedContains, composedParentElement } from '../composed-tree/composed-tree';
+import {
+  composedContains,
+  composedParentElement,
+  composedPrecedes,
+} from '../composed-tree/composed-tree';
 
 /**
  * The ten local names {@link FOCUSABLE_SELECTOR} anchors a clause on, each
@@ -163,6 +167,24 @@ export function findTabbableEdges(container: HTMLElement): TabbableEdges {
     }
   }
   return { first, last: first };
+}
+
+/**
+ * Whether a Tab press from `active` leaves the Tab cycle whose ends are `edges`: going backward
+ * from the first tabbable or anything before it, going forward from the last tabbable or anything
+ * after it. A container with no tabbable descendant, or a `null` `active`, always leaves.
+ */
+export function leavesTabSequence(
+  { first, last }: TabbableEdges,
+  active: Element | null,
+  backward: boolean,
+): boolean {
+  if (first === null || last === null || active === null) {
+    return true;
+  }
+  return backward
+    ? active === first || composedPrecedes(active, first)
+    : active === last || composedPrecedes(last, active);
 }
 
 /**

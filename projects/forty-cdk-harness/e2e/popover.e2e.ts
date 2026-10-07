@@ -42,6 +42,29 @@ test.describe('Popover', () => {
     await expect(el(page, 'close-btn')).toBeFocused();
   });
 
+  test('Tab off the last control lands on the element after the trigger and closes', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'popover');
+    await el(page, 'trigger').click();
+    await el(page, 'close-btn').focus();
+    await expect(el(page, 'close-btn')).toBeFocused();
+
+    await page.keyboard.press('Tab');
+    await expect(page.locator('#after')).toBeFocused();
+    await expect(el(page, 'popover')).toHaveCount(0);
+  });
+
+  test('Shift+Tab off the first control lands on the trigger and closes', async ({ page }) => {
+    await gotoFixture(page, 'popover');
+    await el(page, 'trigger').click();
+    await expect(el(page, 'first')).toBeFocused();
+
+    await page.keyboard.press('Shift+Tab');
+    await expect(el(page, 'trigger')).toBeFocused();
+    await expect(el(page, 'popover')).toHaveCount(0);
+  });
+
   test('Escape closes and returns focus to the trigger', async ({ page }) => {
     await gotoFixture(page, 'popover');
     await el(page, 'trigger').click();
