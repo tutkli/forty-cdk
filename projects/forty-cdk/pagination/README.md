@@ -161,21 +161,20 @@ Implements the [WAI-ARIA navigation landmark pattern](https://www.w3.org/WAI/ARI
 
 - **Navigation landmark.** `[forPagination]` applies `role="navigation"`. Set `ariaLabel` (e.g. `"Pagination"`) so the landmark is distinguishable from other navigation regions on the page.
 - **Current page.** `[forPaginationItem]` reflects `aria-current="page"` on the active page button so screen-reader users know which page they are on.
-- **Disabled prev/next.** `[forPaginationPrevious]` and `[forPaginationNext]` use the native `disabled` attribute at the boundaries, which suppresses click and removes the element from the tab order.
+- **Disabled prev/next.** `[forPaginationPrevious]` and `[forPaginationNext]` reflect `aria-disabled="true"` + `data-disabled` at the boundaries (and when the root is disabled), never the native `disabled` attribute. Activation is a no-op while disabled, and the button stays focusable, so a keyboard user who presses Next on the second-to-last page keeps focus on it instead of being sent to `<body>`.
 
 ## Styling
 
-forty-cdk ships no styles. Style the current page via `[aria-current="page"]` and disabled prev/next via `:disabled`.
+forty-cdk ships no styles. Style the current page via `[aria-current="page"]` and disabled pieces via `[data-disabled]`, which previous / next and page items all reflect.
 
 ```css
 [forPaginationItem][aria-current='page'] {
   font-weight: bold;
 }
 
-[forPaginationPrevious]:disabled,
-[forPaginationNext]:disabled {
+[forPaginationPrevious][data-disabled],
+[forPaginationNext][data-disabled] {
   opacity: 0.4;
-  pointer-events: none;
 }
 ```
 

@@ -1,12 +1,17 @@
 import { computed, Directive, input } from '@angular/core';
 
-import { hostButtonType, reflectDisabled, hostAriaLabel } from 'forty-cdk/core';
+import { hostButtonType, hostAriaLabel } from 'forty-cdk/core';
 import { injectPaginationContext } from './pagination-context';
 
 /**
  * Previous-page button. Apply on a `<button>` so Enter/Space activation is
- * native. Disabled (via the native `disabled` attribute) when the current page
- * is the first page or the root is disabled. Clicking calls `ctx.previous()`.
+ * native. Disabled when the current page is the first page or the root is
+ * disabled. Clicking calls `ctx.previous()`.
+ *
+ * Reflects the disabled state through `aria-disabled` + `data-disabled` only —
+ * never the native `disabled` attribute — so a button that auto-disables at the
+ * first page while focused keeps DOM focus instead of being ejected from the
+ * focus order. Activation is a no-op while disabled.
  */
 @Directive({
   selector: '[forPaginationPrevious]',
@@ -14,8 +19,9 @@ import { injectPaginationContext } from './pagination-context';
   host: {
     '[attr.type]': 'buttonType()',
     '[attr.aria-label]': 'resolvedAriaLabel()',
+    '[attr.aria-disabled]': 'isDisabled() ? "true" : null',
     '[attr.data-disabled]': 'isDisabled() ? "" : null',
-    '(click)': 'ctx.previous()',
+    '(click)': 'activate()',
   },
 })
 export class ForPaginationPrevious {
@@ -34,7 +40,10 @@ export class ForPaginationPrevious {
 
   protected readonly isDisabled = computed(() => this.ctx.isFirst() || this.ctx.disabled());
 
-  constructor() {
-    reflectDisabled(this.isDisabled);
+  protected activate(): void {
+    if (this.isDisabled()) {
+      return;
+    }
+    this.ctx.previous();
   }
 }

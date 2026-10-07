@@ -171,12 +171,12 @@ const INVOICES: readonly Invoice[] = Array.from({ length: 23 }, (_, i) => ({
       height: 1em;
     }
 
-    .pgn-btn:hover:not(:disabled):not([aria-current='page']) {
+    .pgn-btn:hover:not([data-disabled]):not([aria-current='page']) {
       border-color: var(--ex-border-strong, #d0c9bc);
       background: var(--ex-surface-2, #f2eee6);
     }
 
-    .pgn-btn:disabled {
+    .pgn-btn[data-disabled] {
       opacity: 0.4;
       cursor: not-allowed;
     }
