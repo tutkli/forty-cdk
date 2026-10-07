@@ -501,6 +501,24 @@ describe('ForTimeRangeField', () => {
       expect(adapter.getHours(range.end)).toBe(17);
       expect(adapter.getMinutes(range.end)).toBe(0);
     });
+
+    it('keeps an endpoint minute while its hour is retyped past maxTime (#2136)', async () => {
+      const r = renderHost(Host);
+      r.instance.maxTime.set(new Date(2000, 0, 1, 17, 0));
+      r.instance.value.set({
+        start: new Date(2026, 5, 10, 8, 0),
+        end: new Date(2026, 5, 10, 9, 45),
+      });
+      await flush(r.fixture);
+
+      await type(r, 'end', 'hour', '18');
+      expect(adapter.getHours(r.instance.value()!.end)).toBe(17);
+      expect(seg(r, 'end', 'minute').textContent?.trim()).toBe('45');
+
+      await type(r, 'end', 'hour', '16');
+      expect(adapter.getHours(r.instance.value()!.end)).toBe(16);
+      expect(adapter.getMinutes(r.instance.value()!.end)).toBe(45);
+    });
   });
 
   describe('commit-on-settle (#16)', () => {

@@ -173,6 +173,74 @@ describe('DateFieldEngine transient vs settled (commit-on-settle contract)', () 
   });
 });
 
+describe('DateFieldEngine editing one segment of a bound value across a bound (#2136)', () => {
+  it('keeps the other segments as entered while the clamped value is committed', () => {
+    const { engine, value } = setup({
+      minDate: adapter.createDate(2026, 10, 3),
+      value: adapter.createDate(2026, 10, 20),
+    });
+    type(engine, 'month', '01');
+    expect(adapter.getMonth(value()!)).toBe(10);
+    expect(adapter.getDate(value()!)).toBe(3);
+    expect(engine.segmentValue('month')).toBe(1);
+    expect(engine.segmentValue('day')).toBe(20);
+    expect(engine.segmentValue('year')).toBe(2026);
+  });
+
+  it('composes the entered date once the later segments bring it back in range', () => {
+    const { engine, value } = setup({
+      minDate: adapter.createDate(2026, 10, 3),
+      value: adapter.createDate(2026, 10, 20),
+    });
+    type(engine, 'month', '01');
+    type(engine, 'day', '05');
+    type(engine, 'year', '2027');
+    expect(adapter.getYear(value()!)).toBe(2027);
+    expect(adapter.getMonth(value()!)).toBe(1);
+    expect(adapter.getDate(value()!)).toBe(5);
+  });
+
+  it('re-reads the clamped value into every segment once the field settles', () => {
+    const { engine } = setup({
+      minDate: adapter.createDate(2026, 10, 3),
+      value: adapter.createDate(2026, 10, 20),
+    });
+    type(engine, 'month', '01');
+    engine.endTyping(null);
+    expect(engine.segmentValue('month')).toBe(10);
+    expect(engine.segmentValue('day')).toBe(3);
+  });
+
+  it('rehydrates from an external write made while its own commit is held', () => {
+    const { engine, value } = setup({
+      minDate: adapter.createDate(2026, 10, 3),
+      value: adapter.createDate(2026, 10, 20),
+    });
+    type(engine, 'month', '01');
+    value.set(adapter.createDate(2027, 4, 9));
+    expect(engine.segmentValue('month')).toBe(4);
+    expect(engine.segmentValue('day')).toBe(9);
+    expect(engine.segmentValue('year')).toBe(2027);
+  });
+});
+
+describe('DateFieldEngine 12-hour completeness (#2136)', () => {
+  it('keeps the value null until the AM/PM segment is chosen', () => {
+    const { engine, value } = setup({ granularity: 'minute', hourCycle: 12 });
+    type(engine, 'month', '06');
+    type(engine, 'day', '15');
+    type(engine, 'year', '2026');
+    type(engine, 'hour', '08');
+    type(engine, 'minute', '30');
+    expect(value()).toBeNull();
+    expect(engine.isSegmentEmpty('dayPeriod')).toBe(true);
+
+    engine.setDayPeriod('pm');
+    expect(adapter.getHours(value()!)).toBe(20);
+    expect(adapter.getMinutes(value()!)).toBe(30);
+  });
+});
+
 describe('DateFieldEngine dayPeriod derivation (current)', () => {
   it('rehydrates the stored dayPeriod from a loaded value', () => {
     const { engine } = setup({

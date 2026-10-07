@@ -113,8 +113,12 @@ export interface SegmentEditorDelegate {
   backspace(type: SegmentType): void;
   /** Moves focus to the sibling segment in the given direction. */
   focusSibling(type: SegmentType, step: -1 | 1): void;
-  /** Flushes any mid-typing transient and clears the typing buffer (blur). */
-  endTyping(): void;
+  /**
+   * Flushes any mid-typing transient and clears the typing buffer (blur). When
+   * `next`, the element receiving focus, is not one of the field's segments, the
+   * field settles: its segments re-read the committed value, clamp included.
+   */
+  endTyping(next?: EventTarget | null): void;
 }
 
 /**
@@ -171,6 +175,13 @@ export interface SegmentEditorHost<P extends SegmentParts> {
    * bounds and emits the composed value.
    */
   commit(next: P, transient: boolean): void;
+  /** Re-reads the entered parts from the committed value once focus leaves the segments. */
+  settle(): void;
+  /**
+   * Whether `parts` name a wall-clock time the day skips (a DST gap), so a step
+   * of `type` passes over it.
+   */
+  nonexistent(type: SegmentType, parts: P): boolean;
 }
 
 /**
@@ -317,12 +328,29 @@ export class SegmentEditor<P extends SegmentParts, T extends SegmentType = Segme
    * A blur is a settle event: when a mid-typing transient is still pending, it
    * is flushed as a settled commit of the current parts before the buffer is
    * cleared, so leaving a partially typed segment settles (and clamps) its value.
+   * When focus moves anywhere but another of this field's segments, the host
+   * settles too.
    */
-  endTyping(): void {
+  endTyping(next?: EventTarget | null): void {
     if (this.#pendingSettle) {
       this.#commit(this.#host.parts(), false);
     }
     this.#typing.set(null);
+    if (!this.#ownsSegment(next)) {
+      this.#host.settle();
+    }
+  }
+
+  #ownsSegment(target: EventTarget | null | undefined): boolean {
+    if (!target) {
+      return false;
+    }
+    for (const handle of this.#segments.values()) {
+      if (handle.host === target) {
+        return true;
+      }
+    }
+    return false;
   }
 
   #commit(next: P, transient: boolean): void {
@@ -368,22 +396,30 @@ export class SegmentEditor<P extends SegmentParts, T extends SegmentType = Segme
       this.#commit(this.#withPart(type, this.#host.seed(type)), false);
       return;
     }
-    let next: number;
+    let next = this.#stepValue(type, current, delta);
+    let skips = this.#host.segmentMax(type) - this.#host.segmentMin(type);
+    while (skips-- > 0 && this.#host.nonexistent(type, this.#withPart(type, next))) {
+      next = this.#stepValue(type, next, delta);
+    }
+    this.#commit(this.#withPart(type, next), false);
+  }
+
+  #stepValue(type: SegmentType, current: number, delta: number): number {
     if (type === 'hour') {
-      next = this.#stepHour(current, delta);
-    } else if (type === 'minute' || type === 'second') {
-      next = (((current + delta) % 60) + 60) % 60;
-    } else if (type === 'year') {
-      next = Math.min(
+      return this.#stepHour(current, delta);
+    }
+    if (type === 'minute' || type === 'second') {
+      return (((current + delta) % 60) + 60) % 60;
+    }
+    if (type === 'year') {
+      return Math.min(
         this.#host.segmentMax(type),
         Math.max(this.#host.segmentMin(type), current + delta),
       );
-    } else {
-      const min = this.#host.segmentMin(type);
-      const range = this.#host.segmentMax(type) - min + 1;
-      next = min + ((((current - min + delta) % range) + range) % range);
     }
-    this.#commit(this.#withPart(type, next), false);
+    const min = this.#host.segmentMin(type);
+    const range = this.#host.segmentMax(type) - min + 1;
+    return min + ((((current - min + delta) % range) + range) % range);
   }
 
   goToBound(type: SegmentType, bound: 'min' | 'max'): void {

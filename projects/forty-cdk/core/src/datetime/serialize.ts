@@ -135,6 +135,27 @@ export function composeWithTime<D>(adapter: TimeCapableDateAdapter<D>, day: D, s
 }
 
 /**
+ * Whether `hours:minutes` on `day` is a wall-clock time the day skips, such as
+ * the hour a spring-forward DST transition removes: the adapter normalizes it to
+ * a different time.
+ *
+ * @typeParam D The adapter's immutable date-time representation.
+ * @param adapter The active time-capable date adapter.
+ * @param day The calendar day the time falls on.
+ * @param hours The wall-clock hour (0-23).
+ * @param minutes The wall-clock minute.
+ */
+export function shiftsWallClock<D>(
+  adapter: TimeCapableDateAdapter<D>,
+  day: D,
+  hours: number,
+  minutes: number,
+): boolean {
+  const probe = adapter.setTime(day, hours, minutes, 0);
+  return adapter.getHours(probe) !== hours || adapter.getMinutes(probe) !== minutes;
+}
+
+/**
  * The fixed, DST-stable sentinel date (`2000-01-01`) a time control anchors a
  * wall-clock time to when it has no committed date of its own, so a time always
  * round-trips through the adapter without an ambiguous-hour DST shift.

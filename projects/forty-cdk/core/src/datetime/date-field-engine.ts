@@ -5,7 +5,7 @@ import { assertTimeCapable } from './date-adapter';
 import { type BaseFieldEngineConfig, DateTimeFieldEngineBase } from './field-engine-base';
 import { buildDateTimeSegments, type FieldGranularity } from './date-segments';
 import { type FieldSpec, type SegmentType } from './segment-editor';
-import { clampToBounds, composeWithTime } from './serialize';
+import { clampToBounds, composeWithTime, shiftsWallClock } from './serialize';
 
 /** Internal per-part state: the entered value for each editable segment, hour as 0-23. */
 export interface DateTimeParts {
@@ -93,38 +93,28 @@ export class DateFieldEngine<D> extends DateTimeFieldEngineBase<D, DateTimeParts
 
   /**
    * The entered parts. A `linkedSignal` keyed on `source`: a non-null write
-   * (consumer, `[formField]`, or our own compose) rehydrates the segments from
-   * the date. A `null` transition is disambiguated by the prior parts: an
-   * *internal* edit clearing one segment always leaves the others, so
-   * `previous` still carries a filled part and is preserved (clearing the day
-   * never wipes the month / year); an *external* reset of a complete value
-   * leaves `previous` fully filled, so the field clears.
+   * (consumer, `[formField]`, or a settled field) rehydrates the segments from
+   * the date, while the value the field itself just committed keeps the parts
+   * as entered until focus leaves its segments, so a clamped intermediate never
+   * rewrites the segments still being edited. A `null` transition is
+   * disambiguated by the prior parts: an *internal* edit clearing one segment
+   * always leaves the others, so `previous` still carries a filled part and is
+   * preserved (clearing the day never wipes the month / year); an *external*
+   * reset of a complete value leaves `previous` fully filled, so the field
+   * clears.
    */
   protected readonly parts = linkedSignal<D | null, DateTimeParts>({
     source: () => this.#config.source(),
     computation: (current, previous) => {
+      const held = this.heldParts(current, previous);
+      if (held !== null) {
+        return held;
+      }
       if (current !== null) {
-        const adapter = this.#config.adapter;
-        const parts: DateTimeParts = {
-          day: adapter.getDate(current),
-          month: adapter.getMonth(current),
-          year: adapter.getYear(current),
-          hour: null,
-          minute: null,
-          second: null,
-          dayPeriod: null,
-        };
-        if (this.#config.granularity() !== 'day') {
-          const time = this.#time();
-          parts.hour = time.getHours(current);
-          parts.minute = time.getMinutes(current);
-          parts.second = time.getSeconds(current);
-          parts.dayPeriod = time.getHours(current) >= 12 ? 1 : 0;
-        }
-        return parts;
+        return this.partsFrom(current);
       }
       const prior = previous?.value;
-      if (prior && this.#someEditableEmpty(prior)) {
+      if (prior && this.someEditableEmpty(prior)) {
         return prior;
       }
       return {
@@ -276,8 +266,33 @@ export class DateFieldEngine<D> extends DateTimeFieldEngineBase<D, DateTimeParts
     }
   }
 
-  #someEditableEmpty(parts: DateTimeParts): boolean {
-    return this.editableOrder().some((type) => parts[type] === null);
+  protected partsFrom(value: D): DateTimeParts {
+    const adapter = this.#config.adapter;
+    const parts: DateTimeParts = {
+      day: adapter.getDate(value),
+      month: adapter.getMonth(value),
+      year: adapter.getYear(value),
+      hour: null,
+      minute: null,
+      second: null,
+      dayPeriod: null,
+    };
+    if (this.#config.granularity() !== 'day') {
+      const time = this.#time();
+      parts.hour = time.getHours(value);
+      parts.minute = time.getMinutes(value);
+      parts.second = time.getSeconds(value);
+      parts.dayPeriod = time.getHours(value) >= 12 ? 1 : 0;
+    }
+    return parts;
+  }
+
+  protected wallClockShifts(parts: DateTimeParts): boolean {
+    if (parts.hour === null || parts.day === null || parts.month === null || parts.year === null) {
+      return false;
+    }
+    const day = this.#config.adapter.createDate(parts.year, parts.month, parts.day);
+    return shiftsWallClock(this.#time(), day, parts.hour, parts.minute ?? 0);
   }
 
   /**
@@ -299,22 +314,18 @@ export class DateFieldEngine<D> extends DateTimeFieldEngineBase<D, DateTimeParts
     return { ...parts, day: maxDay };
   }
 
-  /** Composes a parts record into the value, clamped to the bounds, or `null` while incomplete. */
+  /**
+   * Composes a parts record into the value, clamped to the bounds, or `null`
+   * while any visible segment, the AM/PM one included, is empty.
+   */
   protected composeFrom(parts: DateTimeParts): D | null {
+    if (this.someEditableEmpty(parts)) {
+      return null;
+    }
     const granularity = this.#config.granularity();
     const needHour = granularity !== 'day';
     const needMinute = granularity === 'minute' || granularity === 'second';
     const needSecond = granularity === 'second';
-    const complete =
-      parts.day !== null &&
-      parts.month !== null &&
-      parts.year !== null &&
-      (!needHour || parts.hour !== null) &&
-      (!needMinute || parts.minute !== null) &&
-      (!needSecond || parts.second !== null);
-    if (!complete) {
-      return null;
-    }
     let created = this.#config.adapter.createDate(parts.year!, parts.month!, parts.day!);
     if (needHour) {
       created = this.#time().setTime(

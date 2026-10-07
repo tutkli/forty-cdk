@@ -117,7 +117,7 @@ test.describe('TimeField', () => {
     await page.keyboard.type('09'); // → minute
     await page.keyboard.type('30'); // → dayPeriod
     await expectFocused(el(page, 'dayPeriod'));
-    await expect(el(page, 'value')).toHaveText('09:30'); // AM by default
+    await expect(el(page, 'value')).toHaveText('empty');
 
     await page.keyboard.press('p');
     await expect(el(page, 'value')).toHaveText('21:30');

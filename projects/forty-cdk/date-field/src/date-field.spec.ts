@@ -594,6 +594,38 @@ describe('ForDateField', () => {
     });
   });
 
+  describe('editing one segment of a bound value across a bound (#2136)', () => {
+    async function retypeMonth(r: R): Promise<void> {
+      r.instance.minDate.set(new Date(2026, 9, 3));
+      r.instance.value.set(new Date(2026, 9, 20));
+      await flush(r.fixture);
+      (seg(r, 'month') as HTMLElement).focus();
+      await type(r, 'month', '01');
+    }
+
+    it('keeps the other segments as entered while the clamped value is committed', async () => {
+      const r = renderHost(Host);
+      await retypeMonth(r);
+      expect(r.instance.value()?.getTime()).toBe(new Date(2026, 9, 3).getTime());
+      expect(document.activeElement).toBe(seg(r, 'day'));
+      expect(seg(r, 'month').getAttribute('aria-valuenow')).toBe('1');
+      expect(seg(r, 'day').getAttribute('aria-valuenow')).toBe('20');
+
+      await type(r, 'day', '05');
+      await type(r, 'year', '2027');
+      expect(r.instance.value()?.getTime()).toBe(new Date(2027, 0, 5).getTime());
+    });
+
+    it('shows the clamped value once focus leaves the field', async () => {
+      const r = renderHost(Host);
+      await retypeMonth(r);
+      (document.activeElement as HTMLElement).blur();
+      await flush(r.fixture);
+      expect(seg(r, 'month').getAttribute('aria-valuenow')).toBe('10');
+      expect(seg(r, 'day').getAttribute('aria-valuenow')).toBe('3');
+    });
+  });
+
   describe('commit-on-settle (#16)', () => {
     it('emits no intermediate value while re-typing a segment of a complete value', async () => {
       const r = renderHost(Host);
@@ -893,6 +925,48 @@ describe('ForDateField', () => {
       expect(adapter.getHours(r.instance.value()!)).toBe(21);
     });
 
+    it('keeps a 12-hour value null until the AM/PM period is chosen (#2136)', async () => {
+      const r = renderHost(DateTimeHost);
+      r.instance.hourCycle.set(12);
+      await flush(r.fixture);
+      await typeInto(r, 'month', '06');
+      await typeInto(r, 'day', '15');
+      await typeInto(r, 'year', '2026');
+      await typeInto(r, 'hour', '8');
+      await typeInto(r, 'minute', '30');
+      expect(r.instance.value()).toBeNull();
+      expect(dseg(r, 'dayPeriod').textContent?.trim()).toBe('--');
+
+      pressKey(dseg(r, 'dayPeriod'), 'p');
+      await flush(r.fixture);
+      expect(adapter.getHours(r.instance.value()!)).toBe(20);
+      expect(adapter.getMinutes(r.instance.value()!)).toBe(30);
+    });
+
+    describe('across a spring-forward DST gap (#2136)', () => {
+      beforeEach(() => {
+        vi.stubEnv('TZ', 'Europe/Madrid');
+      });
+
+      it('steps the hour over the hour the gap removes', async () => {
+        expect(new Date(2026, 2, 29, 2, 30).getHours()).toBe(3);
+        const r = renderHost(DateTimeHost);
+        r.instance.value.set(new Date(2026, 2, 29, 3, 15));
+        await flush(r.fixture);
+
+        pressKey(dseg(r, 'hour'), 'ArrowDown');
+        await flush(r.fixture);
+        expect(r.instance.value()!.getHours()).toBe(1);
+        expect(r.instance.value()!.getMinutes()).toBe(15);
+        expect(dseg(r, 'hour').getAttribute('aria-valuenow')).toBe('1');
+
+        pressKey(dseg(r, 'hour'), 'ArrowUp');
+        await flush(r.fixture);
+        expect(r.instance.value()!.getHours()).toBe(3);
+        expect(dseg(r, 'hour').getAttribute('aria-valuenow')).toBe('3');
+      });
+    });
+
     it('stores the AM/PM period chosen while the hour is empty and composes against it', async () => {
       const r = renderHost(DateTimeHost);
       r.instance.hourCycle.set(12);
@@ -1188,6 +1262,7 @@ describe('ForDateField', () => {
       for (const [type, digits] of parts) {
         for (const d of digits) pressKey(nseg(r, type), d);
       }
+      pressKey(nseg(r, 'dayPeriod'), 'a');
       await flush(r.fixture);
     };
 

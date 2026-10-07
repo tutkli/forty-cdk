@@ -465,6 +465,60 @@ describe('ForTimeField', () => {
     });
   });
 
+  describe('editing a bound value across a bound (#2136)', () => {
+    it('keeps the entered minute while the hour is retyped past maxTime', async () => {
+      const r = renderHost(Host);
+      r.instance.maxTime.set(new Date(2000, 0, 1, 17, 0));
+      r.instance.value.set(new Date(2026, 5, 15, 9, 45));
+      await flush(r.fixture);
+      (seg(r, 'hour') as HTMLElement).focus();
+      await type(r, 'hour', '18');
+      expect(adapter.getHours(r.instance.value()!)).toBe(17);
+      expect(adapter.getMinutes(r.instance.value()!)).toBe(0);
+      expect(seg(r, 'minute').getAttribute('aria-valuenow')).toBe('45');
+
+      (seg(r, 'hour') as HTMLElement).focus();
+      await type(r, 'hour', '16');
+      expect(adapter.getHours(r.instance.value()!)).toBe(16);
+      expect(adapter.getMinutes(r.instance.value()!)).toBe(45);
+    });
+
+    it('shows the clamped value once focus leaves the field', async () => {
+      const r = renderHost(Host);
+      r.instance.maxTime.set(new Date(2000, 0, 1, 17, 0));
+      r.instance.value.set(new Date(2026, 5, 15, 9, 45));
+      await flush(r.fixture);
+      (seg(r, 'hour') as HTMLElement).focus();
+      await type(r, 'hour', '18');
+      (document.activeElement as HTMLElement).blur();
+      await flush(r.fixture);
+      expect(seg(r, 'hour').getAttribute('aria-valuenow')).toBe('17');
+      expect(seg(r, 'minute').getAttribute('aria-valuenow')).toBe('0');
+    });
+  });
+
+  describe('across a spring-forward DST gap (#2136)', () => {
+    beforeEach(() => {
+      vi.stubEnv('TZ', 'Europe/Madrid');
+    });
+
+    it('steps the hour of a bound date-time over the hour the gap removes', async () => {
+      expect(new Date(2026, 2, 29, 2, 30).getHours()).toBe(3);
+      const r = renderHost(Host);
+      r.instance.value.set(new Date(2026, 2, 29, 3, 15));
+      await flush(r.fixture);
+
+      await key(r, 'hour', 'ArrowDown');
+      expect(r.instance.value()!.getHours()).toBe(1);
+      expect(r.instance.value()!.getMinutes()).toBe(15);
+      expect(seg(r, 'hour').getAttribute('aria-valuenow')).toBe('1');
+
+      await key(r, 'hour', 'ArrowUp');
+      expect(r.instance.value()!.getHours()).toBe(3);
+      expect(seg(r, 'hour').getAttribute('aria-valuenow')).toBe('3');
+    });
+  });
+
   describe('commit-on-settle (#16)', () => {
     it('emits no intermediate value while re-typing the hour of a complete time', async () => {
       const r = renderHost(Host);
@@ -623,12 +677,16 @@ describe('ForTimeField', () => {
       expect(adapter.getHours(r.instance.value()!)).toBe(9);
     });
 
-    it('composes a 12-hour entry against the default AM period', async () => {
+    it('keeps a 12-hour entry null until the AM/PM period is chosen (#2136)', async () => {
       const r = renderHost(Host);
       r.instance.hourCycle.set(12);
       await flush(r.fixture);
       await type(r, 'hour', '08');
       await type(r, 'minute', '15');
+      expect(r.instance.value()).toBeNull();
+      expect(seg(r, 'dayPeriod').textContent?.trim()).toBe('--');
+
+      await key(r, 'dayPeriod', 'a');
       const value = r.instance.value()!;
       expect(adapter.getHours(value)).toBe(8);
       expect(adapter.getMinutes(value)).toBe(15);

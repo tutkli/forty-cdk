@@ -259,6 +259,48 @@ describe('TimeFieldEngine null transitions (current)', () => {
   });
 });
 
+describe('TimeFieldEngine editing a bound value across a bound (#2136)', () => {
+  it('keeps the entered minute while the hour is retyped past maxTime', () => {
+    const { engine, value } = setup({
+      granularity: 'minute',
+      hourCycle: 24,
+      maxTime: timeAt(17, 0),
+      value: timeAt(9, 45),
+    });
+    type(engine, 'hour', '18');
+    expect(adapter.getHours(value()!)).toBe(17);
+    expect(adapter.getMinutes(value()!)).toBe(0);
+    expect(engine.segmentValue('minute')).toBe(45);
+
+    type(engine, 'hour', '16');
+    expect(adapter.getHours(value()!)).toBe(16);
+    expect(adapter.getMinutes(value()!)).toBe(45);
+  });
+
+  it('clears a typed time on an external null reset', () => {
+    const { engine, value } = setup({ granularity: 'minute', hourCycle: 24 });
+    type(engine, 'hour', '09');
+    type(engine, 'minute', '30');
+    expect(value()).not.toBeNull();
+    value.set(null);
+    expect(engine.segmentValue('hour')).toBeNull();
+    expect(engine.segmentValue('minute')).toBeNull();
+  });
+});
+
+describe('TimeFieldEngine 12-hour completeness (#2136)', () => {
+  it('keeps the value null until the AM/PM segment is chosen', () => {
+    const { engine, value } = setup({ granularity: 'minute', hourCycle: 12 });
+    type(engine, 'hour', '8');
+    type(engine, 'minute', '30');
+    expect(value()).toBeNull();
+
+    engine.setDayPeriod('am');
+    expect(adapter.getHours(value()!)).toBe(8);
+    expect(adapter.getMinutes(value()!)).toBe(30);
+  });
+});
+
 describe('TimeFieldEngine signal reactivity', () => {
   it('recomputes the segment list on an hour-cycle change', () => {
     const { engine, hourCycle } = setup({ granularity: 'minute', hourCycle: 12 });
