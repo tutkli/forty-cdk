@@ -35,7 +35,9 @@ export interface TableResizeDescriptor {
 /**
  * Turns a focusable element inside a `[forTableHeaderCell]` into a column-resize
  * handle. Supports pointer drag (with a dead-zone so a plain click is a no-op) and
- * `ArrowLeft` / `ArrowRight` keyboard resize, both constrained to `[min, max]`.
+ * keyboard resize, both constrained to `[min, max]`: `ArrowLeft` / `ArrowRight` step by
+ * `step` (RTL-mirrored), `Page Up` / `Page Down` shrink / grow by `largeStep`, `Home`
+ * snaps to `min` and `End` to a finite `max`, the same keymap as `[forPaneResizer]`.
  * Pressing `Escape` (or a `pointercancel`) during a drag reverts the width to where
  * the gesture started and emits no `resizeCommit`. Being destroyed mid-drag reverts
  * too, reporting the pre-drag width through the `[widthRevert]` callback because the
@@ -52,7 +54,9 @@ export interface TableResizeDescriptor {
  * mirroring `[forPaneResizer]`. The consumer supplies `aria-label`. Before the first
  * gesture, `aria-valuenow` falls back to the header-cell width measured once on mount
  * (browser-only), so a separator with no `[width]` is never announced without a
- * current value; an explicit `[width]` always takes precedence.
+ * current value; an explicit `[width]` always takes precedence. The reflected value is
+ * clamped to `[min, max]` and a `max` below `min` reflects as `min`, while `[(width)]`
+ * keeps the raw value.
  *
  * In `mode="grid"` / `"treegrid"` it yields its tab stop to the composite roving grid
  * (`tabindex="-1"`) and is reached via cell-entry: Enter / F2 focuses the first focusable
@@ -82,14 +86,16 @@ export interface TableResizeDescriptor {
   host: {
     role: 'separator',
     'aria-orientation': 'vertical',
-    '[attr.tabindex]': 'tabindex()',
-    '[attr.aria-valuenow]': 'width() ?? measuredWidth() ?? null',
+    '[attr.tabindex]': 'disabled() ? "-1" : tabindex()',
+    '[attr.aria-valuenow]': 'ariaValueNow()',
     '[attr.aria-valuemin]': 'min()',
     '[attr.aria-valuemax]': 'ariaValueMax()',
+    '[attr.aria-disabled]': 'disabled() ? "true" : null',
+    '[attr.data-disabled]': 'disabled() ? "" : null',
     '[attr.data-resizing]': 'resizing() ? "" : null',
     '(keydown)': 'onKeyDown($event)',
     '(click)': 'onClick($event)',
-    '(dblclick)': 'autoFit() && fitToContent()',
+    '(dblclick)': 'autoFit() && !disabled() && fitToContent()',
   },
 })
 export class ForTableColumnResizer {
@@ -119,6 +125,19 @@ export class ForTableColumnResizer {
 
   /** Pixels applied per `ArrowLeft` / `ArrowRight` press. Default `10`. */
   readonly step = input<number>(10);
+
+  /**
+   * Pixels applied per `Page Up` (shrink) / `Page Down` (grow) press, matching
+   * `[forPaneResizer]`'s direction. Default `100`.
+   */
+  readonly largeStep = input<number>(100);
+
+  /**
+   * Disables the handle: it leaves the tab order (`tabindex="-1"`), keyboard, pointer drag
+   * and the `[autoFit]` double-click do nothing, and `aria-disabled` / `data-disabled` are
+   * reflected. An imperative `fitToContent()` call still applies.
+   */
+  readonly disabled = input(false, { transform: booleanAttribute });
 
   /**
    * Opt-in size-to-content. When set, double-clicking the handle fits the column to
@@ -158,10 +177,18 @@ export class ForTableColumnResizer {
     undefined,
   );
 
+  readonly #upperBound = computed(() => Math.max(this.max(), this.min()));
+
   /** `aria-valuemax`, omitted when `max` is non-finite (the default unbounded case). */
   protected readonly ariaValueMax = computed<number | null>(() =>
-    Number.isFinite(this.max()) ? this.max() : null,
+    Number.isFinite(this.#upperBound()) ? this.#upperBound() : null,
   );
+
+  /** `aria-valuenow`: the explicit or measured width, clamped to the reflected range. */
+  protected readonly ariaValueNow = computed<number | null>(() => {
+    const current = this.width() ?? this.measuredWidth();
+    return current == null ? null : clamp(current, this.min(), this.#upperBound());
+  });
 
   protected readonly tabindex = injectTableCellTabIndex();
 
@@ -253,6 +280,9 @@ export class ForTableColumnResizer {
   }
 
   #onDragStart(event: PointerEvent): boolean {
+    if (this.disabled()) {
+      return false;
+    }
     if (event.pointerType === 'mouse' && event.button !== 0) {
       return false;
     }
@@ -299,22 +329,41 @@ export class ForTableColumnResizer {
   }
 
   protected onKeyDown(event: KeyboardEvent): void {
-    const ltr = this.ctx.dir() !== 'rtl';
-    const base = this.width() ?? this.#measureBaseWidth();
-    let next: number;
-    if (event.key === 'ArrowRight') {
-      next = clamp(base + (ltr ? this.step() : -this.step()), this.min(), this.max());
-    } else if (event.key === 'ArrowLeft') {
-      next = clamp(base + (ltr ? -this.step() : this.step()), this.min(), this.max());
-    } else {
+    if (this.disabled()) {
       return;
     }
+    const delta = this.#keyDelta(event.key);
+    if (delta === null) {
+      return;
+    }
+    const base = this.width() ?? this.#measureBaseWidth();
+    const next = clamp(base + delta, this.min(), this.#upperBound());
     event.preventDefault();
     if (next === this.width()) {
       return;
     }
     this.width.set(next);
     this.resizeCommit.emit({ column: this.column(), width: next });
+  }
+
+  #keyDelta(key: string): number | null {
+    const ltr = this.ctx.dir() !== 'rtl';
+    switch (key) {
+      case 'ArrowRight':
+        return ltr ? this.step() : -this.step();
+      case 'ArrowLeft':
+        return ltr ? -this.step() : this.step();
+      case 'PageUp':
+        return -this.largeStep();
+      case 'PageDown':
+        return this.largeStep();
+      case 'Home':
+        return -Infinity;
+      case 'End':
+        return Number.isFinite(this.#upperBound()) ? Infinity : null;
+      default:
+        return null;
+    }
   }
 
   protected onClick(event: MouseEvent): void {

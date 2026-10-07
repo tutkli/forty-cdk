@@ -27,7 +27,8 @@ import {
  * Headless implementation of the
  * [WAI-ARIA Window Splitter pattern](https://www.w3.org/WAI/ARIA/apg/patterns/windowsplitter/):
  * the focusable divider between two resizable panes. Carries `role="separator"`
- * with live `aria-valuenow` / `aria-valuemin` / `aria-valuemax`, is tabbable,
+ * with live `aria-valuenow` / `aria-valuemin` / `aria-valuemax` (the value clamped to
+ * `[min, max]`, and a `max` below `min` reflected as `min`), is tabbable,
  * handles arrow keys / Page Up-Down / Home / End / (optional) Enter, and
  * supports pointer drag with `setPointerCapture`. Emits `(resizing)` on every
  * mutation and `(resizeCommit)` once per key release / drag end.
@@ -71,9 +72,9 @@ import {
     '[attr.aria-orientation]': 'orientation()',
     '[attr.data-orientation]': 'orientation()',
     '[attr.tabindex]': 'disabled() ? null : "0"',
-    '[attr.aria-valuenow]': 'value()',
+    '[attr.aria-valuenow]': 'clampedValue()',
     '[attr.aria-valuemin]': 'min()',
-    '[attr.aria-valuemax]': 'max()',
+    '[attr.aria-valuemax]': 'sanitizedMax()',
     '[attr.aria-valuetext]': 'valueText() || null',
     '[attr.aria-controls]': 'controls()',
     '[attr.aria-disabled]': 'disabled() ? "true" : null',
@@ -127,7 +128,10 @@ export class ForPaneResizer {
   /** Step applied by ArrowKeys along the resize axis. Default `1`. */
   readonly step = input<number>(1);
 
-  /** Step applied by `Page Up` / `Page Down`. Default `10`. */
+  /**
+   * Step applied by `Page Up` (toward `min`) / `Page Down` (toward `max`), the same
+   * direction as `ArrowUp` / `ArrowDown`. Default `10`.
+   */
   readonly largeStep = input<number>(10);
 
   /**
@@ -211,6 +215,20 @@ export class ForPaneResizer {
    * cannot deliver it.
    */
   readonly valueRevert = input<((value: number) => void) | undefined>(undefined);
+
+  /**
+   * Upper bound reflected to `aria-valuemax` and targeted by `End`: `max`, raised to `min`
+   * when bound below it.
+   */
+  protected readonly sanitizedMax = computed<number>(() => Math.max(this.max(), this.min()));
+
+  /**
+   * `value` clamped to `[min, sanitizedMax]`, reflected to `aria-valuenow`. The model keeps
+   * the raw value a consumer wrote.
+   */
+  protected readonly clampedValue = computed<number>(() =>
+    clamp(this.value(), this.min(), this.sanitizedMax()),
+  );
 
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   readonly #document = inject(DOCUMENT);
@@ -297,7 +315,7 @@ export class ForPaneResizer {
         next = this.min();
         break;
       case 'End':
-        next = this.max();
+        next = this.sanitizedMax();
         break;
       case 'Enter':
       case ' ':

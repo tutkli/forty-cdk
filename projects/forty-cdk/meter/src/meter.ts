@@ -18,7 +18,7 @@ import { FOR_METER_CONTEXT, type ForMeterContext, type ForMeterQuality } from '.
  *
  * @example
  * ```html
- * <div forMeter [value]="diskUsed()" min="0" max="100" [low]="20" [high]="80" [optimum]="40">
+ * <div forMeter [value]="diskUsed()" [min]="0" [max]="100" [low]="20" [high]="80" [optimum]="40">
  *   <div forMeterIndicator></div>
  * </div>
  * ```
@@ -117,11 +117,8 @@ export class ForMeter implements ForMeterContext {
 
   readonly quality = computed<ForMeterQuality>(() => {
     const { min, max } = this.#range();
-    let low = this.low() ?? min;
-    let high = this.high() ?? max;
-    if (low < min) low = min;
-    if (high > max) high = max;
-    if (low > high) low = high;
+    const low = clamp(this.low() ?? min, min, max);
+    const high = clamp(this.high() ?? max, low, max);
     let optimum = this.optimum() ?? (min + max) / 2;
     if (optimum < min) optimum = min;
     if (optimum > max) optimum = max;

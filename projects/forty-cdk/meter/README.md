@@ -102,7 +102,7 @@ Visual fill paired with `[forMeter]`. Mirrors the root's `data-*` reflections an
 
 ## Quality algorithm
 
-The `data-quality` reflection follows the HTML5 spec:
+The `data-quality` reflection follows the [HTML `<meter>` algorithm](https://html.spec.whatwg.org/multipage/form-elements.html#the-meter-element). Before the table below applies, the bounds are normalized in the same order: `low` (default `min`) is clamped into `[min, max]`, `high` (default `max`) is raised to `low` when below it and capped at `max`, and `optimum` (default the midpoint) is clamped into `[min, max]`. So `[low]="60" [high]="40"` resolves to a single boundary at `60`, not `40`.
 
 | Optimum sits in | `value` in            | Quality          |
 | --------------- | --------------------- | ---------------- |

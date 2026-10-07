@@ -7289,7 +7289,7 @@ exports[`document structure > projects/forty-cdk/table/README.md declares the se
           "Description",
         ],
         "role": "api",
-        "rows": 8,
+        "rows": 10,
       },
       {
         "columns": [
@@ -7298,7 +7298,7 @@ exports[`document structure > projects/forty-cdk/table/README.md declares the se
           "Values / description",
         ],
         "role": "plain",
-        "rows": 29,
+        "rows": 30,
       },
     ],
     "title": "API",
@@ -7366,7 +7366,7 @@ exports[`document structure > projects/forty-cdk/table/README.md declares the se
           "Action",
         ],
         "role": "plain",
-        "rows": 7,
+        "rows": 9,
       },
     ],
     "title": "Keyboard",
