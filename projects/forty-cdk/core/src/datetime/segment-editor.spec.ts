@@ -66,6 +66,8 @@ class MockHost implements SegmentEditorHost<Parts> {
   readonly #parts = signal<Parts>({});
   readonly committed: Parts[] = [];
   readonly transientFlags: boolean[] = [];
+  readonly skippedHours = new Set<number>();
+  settles = 0;
 
   parts(): Parts {
     return this.#parts();
@@ -99,6 +101,14 @@ class MockHost implements SegmentEditorHost<Parts> {
     this.committed.push(next);
     this.transientFlags.push(transient);
     this.#parts.set(next);
+  }
+
+  settle(): void {
+    this.settles++;
+  }
+
+  nonexistent(type: SegmentType, parts: Parts): boolean {
+    return type === 'hour' && parts.hour != null && this.skippedHours.has(parts.hour);
   }
 }
 
@@ -266,6 +276,18 @@ describe('SegmentEditor.step', () => {
     host.setParts({ hour: 23 });
     editor.step('hour', 1);
     expect(host.parts().hour).toBe(0);
+  });
+
+  it('skips an hour the host reports as nonexistent, in the step direction', () => {
+    const { host, editor } = setup();
+    host.cycle.set(24);
+    host.skippedHours.add(2);
+    host.setParts({ hour: 3 });
+    editor.step('hour', -1);
+    expect(host.parts().hour).toBe(1);
+    editor.step('hour', 1);
+    expect(host.parts().hour).toBe(3);
+    expect(host.committed.map((parts) => parts.hour)).toEqual([1, 3]);
   });
 
   it('routes a dayPeriod step to setDayPeriod', () => {
@@ -560,6 +582,18 @@ describe('SegmentEditor.endTyping', () => {
 
     editor.endTyping();
     expect(host.transientFlags).toEqual([false]);
+  });
+
+  it('settles the host only when focus leaves the field segments', () => {
+    const { host, editor, handles } = setup();
+    editor.endTyping(handles.get('day'));
+    expect(host.settles).toBe(0);
+
+    editor.endTyping(document.createElement('button'));
+    expect(host.settles).toBe(1);
+
+    editor.endTyping(null);
+    expect(host.settles).toBe(2);
   });
 });
 

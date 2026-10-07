@@ -65,7 +65,7 @@ export interface SegmentEditorContext {
     '[attr.data-readonly]': 'ctx.readonly() ? "" : null',
     '(keydown)': 'onKeyDown($event)',
     '(focus)': 'onFocus()',
-    '(blur)': 'onBlur()',
+    '(blur)': 'onBlur($event)',
   },
 })
 export abstract class ForDateTimeSegmentBase {
@@ -128,8 +128,8 @@ export abstract class ForDateTimeSegmentBase {
     this.ctx.delegate.focusSegment(this.segment());
   }
 
-  protected onBlur(): void {
-    this.ctx.delegate.endTyping();
+  protected onBlur(event: FocusEvent): void {
+    this.ctx.delegate.endTyping(event.relatedTarget);
   }
 
   protected onKeyDown(event: KeyboardEvent): void {

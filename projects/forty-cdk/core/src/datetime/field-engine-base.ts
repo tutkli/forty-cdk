@@ -1,4 +1,4 @@
-import { computed, type Signal, type WritableSignal } from '@angular/core';
+import { computed, type Signal, untracked, type WritableSignal } from '@angular/core';
 
 import type { RovingTabindex } from '../roving-tabindex/roving-tabindex';
 import type { DateAdapter } from 'forty-cdk/date-adapter';
@@ -98,6 +98,8 @@ export abstract class DateTimeFieldEngineBase<
 
   protected editor!: SegmentEditor<P, T>;
 
+  #ownCommit: { readonly source: D | null } | null = null;
+
   /**
    * The ordered, locale-derived segments (editable + literals) to render. Each
    * entry carries the text to display: the formatted value when filled, the
@@ -136,6 +138,9 @@ export abstract class DateTimeFieldEngineBase<
       placeholderFor: (type) => this.placeholderFor(type),
       valueText: (type) => this.valueText(type),
       commit: (next, transient) => this.commitParts(next, transient),
+      settle: () => this.settle(),
+      nonexistent: (type, parts) =>
+        (type === 'hour' || type === 'minute') && this.wallClockShifts(parts),
     });
   }
 
@@ -208,8 +213,8 @@ export abstract class DateTimeFieldEngineBase<
     this.editor.focusSibling(type, step);
   }
 
-  endTyping(): void {
-    this.editor.endTyping();
+  endTyping(next?: EventTarget | null): void {
+    this.editor.endTyping(next);
   }
 
   /** Lowest accepted display value for `type`. */
@@ -230,6 +235,33 @@ export abstract class DateTimeFieldEngineBase<
   /** Composes a parts record into the value, clamped to the bounds, or `null` while incomplete. */
   protected abstract composeFrom(parts: P): D | null;
 
+  protected abstract partsFrom(value: D): P;
+
+  protected abstract wallClockShifts(parts: P): boolean;
+
+  protected someEditableEmpty(parts: P): boolean {
+    return this.editableOrder().some((type) => parts[type] == null);
+  }
+
+  protected heldParts(current: D | null, previous: { readonly value: P } | undefined): P | null {
+    if (previous && this.#ownCommit !== null && current === this.#ownCommit.source) {
+      return previous.value;
+    }
+    this.#ownCommit = null;
+    return null;
+  }
+
+  protected settle(): void {
+    if (this.#ownCommit === null) {
+      return;
+    }
+    this.#ownCommit = null;
+    const source = untracked(this.config.source);
+    if (source !== null) {
+      this.parts.set(this.partsFrom(source));
+    }
+  }
+
   /**
    * Finalizes the parts recorded by a commit before they are stored. The default
    * is the identity; the date engine overrides it to re-clamp the day on a
@@ -246,5 +278,6 @@ export abstract class DateTimeFieldEngineBase<
       return;
     }
     this.config.onCommit(this.composeFrom(next));
+    this.#ownCommit = { source: untracked(this.config.source) };
   }
 }

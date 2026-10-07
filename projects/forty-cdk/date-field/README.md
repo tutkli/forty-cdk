@@ -313,7 +313,7 @@ Key behavior applies per segment. Horizontal arrows mirror under `dir="rtl"`.
 | **Backspace**              | Delete the last entered digit; the value becomes `null` when the last digit is removed. |
 | **Delete**                 | Clear the whole segment (the value becomes `null` until refilled).                      |
 
-The day clamps to the current month's length (e.g. 31 → 28 in February), and a composed value is clamped into `[minDate, maxDate]`.
+The day clamps to the current month's length (e.g. 31 → 28 in February), and a composed value is clamped into `[minDate, maxDate]`. While focus stays in the field its segments keep what was entered, so editing one part never rewrites the others; they show the clamped value once focus leaves. Stepping the hour skips a wall-clock hour the day does not have, such as a spring-forward DST gap.
 
 ## Accessibility
 

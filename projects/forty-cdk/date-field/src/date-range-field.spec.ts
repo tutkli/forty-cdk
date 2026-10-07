@@ -414,6 +414,21 @@ describe('ForDateRangeField', () => {
       expect(seg(r, 'start', 'day').textContent?.trim()).toBe('15');
       expect(seg(r, 'start', 'month').textContent?.trim()).toBe('06');
     });
+
+    it('keeps an endpoint day and year while its month is retyped below minDate (#2136)', async () => {
+      const r = renderHost(Host);
+      r.instance.minDate.set(new Date(2026, 9, 3));
+      r.instance.value.set({ start: new Date(2026, 9, 20), end: new Date(2027, 5, 1) });
+      await flush(r.fixture);
+
+      await type(r, 'start', 'month', '01');
+      expect(r.instance.value()!.start.getTime()).toBe(new Date(2026, 9, 3).getTime());
+      expect(seg(r, 'start', 'day').textContent?.trim()).toBe('20');
+
+      await type(r, 'start', 'day', '05');
+      await type(r, 'start', 'year', '2027');
+      expect(r.instance.value()!.start.getTime()).toBe(new Date(2027, 0, 5).getTime());
+    });
   });
 
   describe('commit-on-settle (#16)', () => {

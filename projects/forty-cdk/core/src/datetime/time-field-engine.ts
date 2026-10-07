@@ -4,7 +4,7 @@ import type { TimeCapableDateAdapter } from 'forty-cdk/date-adapter';
 import { type BaseFieldEngineConfig, DateTimeFieldEngineBase } from './field-engine-base';
 import { type FieldSpec, type SegmentType } from './segment-editor';
 import { type TimeSegmentType } from './segment-types';
-import { composeWithTime, secondsOfDay, timeSentinel } from './serialize';
+import { composeWithTime, secondsOfDay, shiftsWallClock, timeSentinel } from './serialize';
 import { buildTimeSegments, type TimeGranularity } from './time-segments';
 
 /** Internal per-part state: the entered value for each editable time segment, hour as 0-23. */
@@ -64,26 +64,27 @@ export class TimeFieldEngine<D> extends DateTimeFieldEngineBase<D, TimeParts, Ti
 
   /**
    * The entered parts. A `linkedSignal` keyed on `source`: a non-null write
-   * (consumer, `[formField]`, or our own compose) rehydrates the segments from
-   * the date-time. A `null` transition is disambiguated by the prior parts: an
-   * *internal* edit clearing one segment leaves the others, so `previous` still
-   * carries a filled part and is preserved; an *external* reset of a complete
-   * value leaves `previous` fully filled, so the field clears.
+   * (consumer, `[formField]`, or a settled field) rehydrates the segments from
+   * the date-time, while the value the field itself just committed keeps the
+   * parts as entered until focus leaves its segments, so a clamped intermediate
+   * never rewrites the segments still being edited. A `null` transition is
+   * disambiguated by the prior parts: an *internal* edit clearing one segment
+   * leaves the others, so `previous` still carries a filled part and is
+   * preserved; an *external* reset of a complete value leaves `previous` fully
+   * filled, so the field clears.
    */
   protected readonly parts = linkedSignal<D | null, TimeParts>({
     source: () => this.#config.source(),
     computation: (current, previous) => {
+      const held = this.heldParts(current, previous);
+      if (held !== null) {
+        return held;
+      }
       if (current !== null) {
-        const adapter = this.#config.adapter;
-        return {
-          hour: adapter.getHours(current),
-          minute: adapter.getMinutes(current),
-          second: adapter.getSeconds(current),
-          dayPeriod: adapter.getHours(current) >= 12 ? 1 : 0,
-        };
+        return this.partsFrom(current);
       }
       const prior = previous?.value;
-      if (prior && (prior.hour === null || prior.minute === null || prior.second === null)) {
+      if (prior && this.someEditableEmpty(prior)) {
         return prior;
       }
       return { hour: null, minute: null, second: null, dayPeriod: null };
@@ -153,19 +154,18 @@ export class TimeFieldEngine<D> extends DateTimeFieldEngineBase<D, TimeParts, Ti
     }
   }
 
-  /** Composes a parts record into the value, clamped to the bounds, or `null` while incomplete. */
+  /**
+   * Composes a parts record into the value, clamped to the bounds, or `null`
+   * while any visible segment, the AM/PM one included, is empty.
+   */
   protected composeFrom(parts: TimeParts): D | null {
+    if (this.someEditableEmpty(parts)) {
+      return null;
+    }
     const granularity = this.#config.granularity();
     const needMinute = granularity !== 'hour';
     const needSecond = granularity === 'second';
-    const complete =
-      parts.hour !== null &&
-      (!needMinute || parts.minute !== null) &&
-      (!needSecond || parts.second !== null);
-    if (!complete) {
-      return null;
-    }
-    const base = this.#config.source() ?? timeSentinel(this.#config.adapter);
+    const base = this.#base();
     const composed = this.#config.adapter.setTime(
       base,
       parts.hour!,
@@ -173,6 +173,27 @@ export class TimeFieldEngine<D> extends DateTimeFieldEngineBase<D, TimeParts, Ti
       needSecond ? parts.second! : 0,
     );
     return this.#clampToBounds(composed);
+  }
+
+  protected partsFrom(value: D): TimeParts {
+    const adapter = this.#config.adapter;
+    return {
+      hour: adapter.getHours(value),
+      minute: adapter.getMinutes(value),
+      second: adapter.getSeconds(value),
+      dayPeriod: adapter.getHours(value) >= 12 ? 1 : 0,
+    };
+  }
+
+  protected wallClockShifts(parts: TimeParts): boolean {
+    if (parts.hour === null) {
+      return false;
+    }
+    return shiftsWallClock(this.#config.adapter, this.#base(), parts.hour, parts.minute ?? 0);
+  }
+
+  #base(): D {
+    return this.#config.source() ?? timeSentinel(this.#config.adapter);
   }
 
   #clampToBounds(date: D): D {
