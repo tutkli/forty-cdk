@@ -67,6 +67,7 @@ export class ButtonFixture {}
   template: `
     <div forRadioGroup>
       <button forRadio value="a">A</button>
+      <button forRadio value="b">B</button>
     </div>
   `,
 })

@@ -169,6 +169,12 @@ export interface SsrFixture {
   readonly noWiring?: string;
   /** Per-element markup the server render must emit. */
   readonly markup?: readonly SsrMarkup[];
+  /**
+   * Selector matching every item of a roving-tabindex composite. Exactly one
+   * of them must carry `tabindex="0"` server-side, so a keyboard user can Tab
+   * into the group before hydration — the claim a deferred registration breaks.
+   */
+  readonly tabStop?: string;
 }
 
 /**
@@ -207,6 +213,7 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
   },
   {
     component: TabsFixture,
+    tabStop: '[forTabsTrigger]',
     markup: [
       {
         select: '[forTabsTrigger]',
@@ -477,6 +484,7 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
   },
   {
     component: CarouselFixture,
+    tabStop: '[forCarouselIndicator]',
     markup: [
       {
         select: '[forCarousel]',
@@ -530,9 +538,13 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
   },
   {
     component: RadioFixture,
+    tabStop: '[forRadio]',
     markup: [
       { select: '[forRadioGroup]', attributes: { role: 'radiogroup' } },
-      { select: '[forRadio]', attributes: { role: 'radio', 'aria-checked': 'false' } },
+      {
+        select: '[forRadio]',
+        attributes: { role: 'radio', 'aria-checked': 'false', tabindex: '0' },
+      },
     ],
   },
   {
@@ -727,6 +739,7 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
   },
   {
     component: MenubarOpenFixture,
+    tabStop: '[forMenubarTrigger]',
     open: true,
     markup: [
       {
@@ -750,6 +763,7 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
   },
   {
     component: TreeFixture,
+    tabStop: '[forTreeItem]',
     markup: [
       { select: '[forTree]', attributes: { role: 'tree' } },
       {
@@ -1133,6 +1147,7 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
   },
   {
     component: ListboxFixture,
+    tabStop: '[forListboxOption]',
     markup: [
       { select: '[forListbox]', attributes: { role: 'listbox', 'aria-label': 'Fruit' } },
       {
@@ -1212,6 +1227,7 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
   },
   {
     component: ToolbarFixture,
+    tabStop: '[forToolbarButton], [forToolbarLink]',
     markup: [{ select: '[forToolbar]', attributes: { role: 'toolbar' } }],
   },
   {
@@ -1266,6 +1282,7 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
   },
   {
     component: ToggleGroupFixture,
+    tabStop: '[forToggleGroupItem]',
     markup: [{ select: '[forToggleGroup]', attributes: { role: 'group' } }],
   },
   {

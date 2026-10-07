@@ -9,11 +9,15 @@ import {
 } from '@angular/core';
 
 import {
+  assertInputBound,
   hostButtonType,
   registerHandle,
   hostId,
+  injectSyntheticActivation,
+  isUnset,
   navigateFromRovingItem,
   selectionTabStop,
+  unsetInput,
 } from 'forty-cdk/core';
 import { type ForRadioGroupContext, injectRadioGroupContext } from './radio-group-context';
 
@@ -28,7 +32,10 @@ import { type ForRadioGroupContext, injectRadioGroupContext } from './radio-grou
 export const FOR_RADIO = new InjectionToken<ForRadio>('FOR_RADIO');
 
 /**
- * One radio inside a `ForRadioGroup`. Apply on a `<button type="button">`.
+ * One radio inside a `ForRadioGroup`. Apply on a `<button type="button">`,
+ * or on any other host element: a non-button host has `Space` / `Enter`
+ * selection synthesized, so the radio holding the tab stop is always
+ * operable from the keyboard.
  *
  * The directive reflects ARIA + roving tabindex for the WAI-ARIA Radio
  * pattern: only the selected radio (or the first enabled one when nothing
@@ -57,6 +64,8 @@ export const FOR_RADIO = new InjectionToken<ForRadio>('FOR_RADIO');
     '[attr.data-orientation]': 'group.orientation()',
     '(click)': 'onClick()',
     '(keydown)': 'onKeyDown($event)',
+    '(keyup)': 'onKeyUp($event)',
+    '(blur)': 'onBlur()',
   },
 })
 export class ForRadio {
@@ -72,8 +81,11 @@ export class ForRadio {
   readonly group: ForRadioGroupContext = this.#ctx;
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
-  /** Unique identifier for this radio's value. Required. */
-  readonly value = input.required<string>();
+  /**
+   * Unique identifier for this radio's value. Mandatory — an unbound radio throws in dev mode.
+   * `''` is a valid value, distinct from the group's `null` "nothing selected".
+   */
+  readonly value = input(unsetInput<string>());
 
   /** When true, this radio is disabled (independent of the group's disabled). */
   readonly disabled = input(false, { transform: booleanAttribute });
@@ -84,7 +96,10 @@ export class ForRadio {
 
   readonly effectiveDisabled = computed(() => this.disabled() || this.group.effectiveDisabled());
 
+  readonly #activation = injectSyntheticActivation({ disabled: this.effectiveDisabled });
+
   constructor() {
+    assertInputBound(this.value, 'radio-group', '[forRadio]', 'value');
     const handle = {
       host: this.#host.nativeElement,
       value: this.value,
@@ -94,7 +109,6 @@ export class ForRadio {
       handle,
       (h) => this.#ctx.registerRadio(h),
       (h) => this.#ctx.unregisterRadio(h),
-      'afterNextRender',
     );
   }
 
@@ -125,18 +139,28 @@ export class ForRadio {
   );
 
   protected onClick(): void {
-    if (this.effectiveDisabled() || this.group.readonly()) {
+    const value = this.value();
+    if (this.effectiveDisabled() || this.group.readonly() || isUnset(value)) {
       return;
     }
-    this.group.select(this.value());
+    this.group.select(value);
   }
 
   protected onKeyDown(event: KeyboardEvent): void {
+    this.#activation.keydown(event);
     navigateFromRovingItem(event, {
       groupDisabled: this.group.effectiveDisabled(),
       orientation: 'both',
       dir: this.group.dir(),
       navigate: (action) => this.group.navigate(this.#host.nativeElement, action),
     });
+  }
+
+  protected onKeyUp(event: KeyboardEvent): void {
+    this.#activation.keyup(event);
+  }
+
+  protected onBlur(): void {
+    this.#activation.reset();
   }
 }
