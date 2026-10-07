@@ -181,18 +181,22 @@ test.describe('Table combined composition', () => {
     await expect(selectAll).toHaveAttribute('aria-checked', 'mixed');
   });
 
-  test('infinite scroll appends a page near the end and aria-rowcount grows', async ({ page }) => {
+  test('infinite scroll appends a page near the end while aria-rowcount keeps the server total', async ({
+    page,
+  }) => {
     const root = el(page, 'root');
-    const initial = Number(await root.getAttribute('aria-rowcount'));
-    expect(initial).toBeGreaterThan(0);
+    const loaded = async () =>
+      Number(/loaded=(\d+)/.exec((await el(page, 'readout').textContent()) ?? '')?.[1]);
+    const initial = await loaded();
+    expect(initial).toBe(120);
+    await expect(root).toHaveAttribute('aria-rowcount', '601');
 
     await root.evaluate((node) => {
       (node as HTMLElement).scrollTop = (node as HTMLElement).scrollHeight;
     });
 
-    await expect
-      .poll(async () => Number(await root.getAttribute('aria-rowcount')), { timeout: 5000 })
-      .toBeGreaterThan(initial);
+    await expect.poll(loaded, { timeout: 5000 }).toBeGreaterThan(initial);
+    await expect(root).toHaveAttribute('aria-rowcount', '601');
 
     await root.evaluate((node) => {
       (node as HTMLElement).scrollTop = (node as HTMLElement).scrollHeight;
