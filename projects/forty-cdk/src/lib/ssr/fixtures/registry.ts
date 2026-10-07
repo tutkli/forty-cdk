@@ -1328,8 +1328,9 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
 /**
  * The subset of {@link SSR_FIXTURES} mounted in their open / active state. A
  * closed overlay proves nothing about the browser-only side effects, which is
- * why the listener / timer / position / `<body>` sweeps iterate this list rather
- * than every fixture.
+ * why the position / `<body>` sweeps iterate this list rather than every
+ * fixture. The listener / timer sweeps run over every fixture instead, since a
+ * construction-time listener or timer does not wait for an open state.
  */
 export const OPEN_STATE_FIXTURES: ReadonlyArray<Type<unknown>> = SSR_FIXTURES.filter(
   (fixture) => fixture.open,

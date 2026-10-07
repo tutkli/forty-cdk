@@ -530,15 +530,15 @@ describe('SSR smoke tests', () => {
   // render a real `document` and `window`, so a primitive that forgot its
   // `isPlatformBrowser` gate installs its global listener here and passes every
   // other assertion in this file — then leaks that listener into every
-  // subsequent Universal request. Sweeping both targets across every open-state
-  // fixture is what closes that gap.
+  // subsequent Universal request. Sweeping both targets across every fixture,
+  // open or not, is what closes that gap.
   describe('server render installs no global listener', () => {
-    for (const fixture of OPEN_STATE_FIXTURES) {
-      it(`${fixture.name} adds no document or window listener`, () => {
+    for (const { component } of SSR_FIXTURES) {
+      it(`${component.name} adds no document or window listener`, () => {
         const documentSpy = vi.spyOn(document, 'addEventListener');
         const windowSpy = vi.spyOn(window, 'addEventListener');
 
-        const f = TestBed.createComponent(fixture);
+        const f = TestBed.createComponent(component);
         f.detectChanges();
 
         expect(documentSpy.mock.calls.map(([type]) => type)).toEqual([]);
@@ -548,12 +548,12 @@ describe('SSR smoke tests', () => {
   });
 
   describe('server render schedules no timer', () => {
-    for (const fixture of OPEN_STATE_FIXTURES) {
-      it(`${fixture.name} schedules no timer`, () => {
+    for (const { component } of SSR_FIXTURES) {
+      it(`${component.name} schedules no timer`, () => {
         const timeoutSpy = vi.spyOn(globalThis, 'setTimeout');
         const intervalSpy = vi.spyOn(globalThis, 'setInterval');
 
-        const f = TestBed.createComponent(fixture);
+        const f = TestBed.createComponent(component);
         f.detectChanges();
 
         const delays = timeoutSpy.mock.calls

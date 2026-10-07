@@ -529,13 +529,16 @@ describe('ForToast (declarative)', () => {
     it('removes its document listener when the toast unmounts', async () => {
       const r = renderHost(DeclarativeHost);
       await r.flush();
+      const removeSpy = vi.spyOn(document, 'removeEventListener');
+      const visibilityRemovals = (): number =>
+        removeSpy.mock.calls.filter(([type]) => type === 'visibilitychange').length;
+      expect(visibilityRemovals()).toBe(0);
+
       r.instance.open.set(false);
       await r.flush();
 
-      // Smoke-check: dispatching a visibilitychange after destroy must not throw
-      // and the toast (now unmounted) must not be in the DOM.
-      expect(() => setVisibility('hidden')).not.toThrow();
       expect($(r.el, 'declarative')).toBeNull();
+      expect(visibilityRemovals()).toBe(1);
     });
   });
 

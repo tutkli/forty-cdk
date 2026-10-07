@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-import { el, gotoFixture } from './_helpers';
+import { afterFrames, el, gotoFixture, recordFlipStamps } from './_helpers';
 
 test.describe('drag-drop custom preview & placeholder', () => {
   test.beforeEach(async ({ page }) => {
@@ -192,39 +192,14 @@ test.describe('drag-drop live-sort placeholder', () => {
     }
     expect(crossed).toBe(true);
 
-    await page.evaluate(() => {
-      const win = window as unknown as { __flipStamps?: number };
-      win.__flipStamps = 0;
-      new MutationObserver((records) => {
-        for (const record of records) {
-          if ((record.target as HTMLElement).hasAttribute('data-drag-animating')) {
-            win.__flipStamps = (win.__flipStamps ?? 0) + 1;
-          }
-        }
-      }).observe(document.body, {
-        subtree: true,
-        attributes: true,
-        attributeFilter: ['data-drag-animating'],
-      });
-    });
+    const flipStamps = await recordFlipStamps(page);
 
     await page.mouse.up();
-    // Settle-wait replaced by a poll: the FLIP pass finishes when the
-    // MutationObserver has recorded its stamps, which arrives as soon as the
-    // animation ends rather than at a fixed 250ms.
-    await expect
-      .poll(() =>
-        page.evaluate(() => (window as unknown as { __flipStamps?: number }).__flipStamps ?? -1),
-      )
-      .toBeGreaterThanOrEqual(0);
-
-    const stamps = await page.evaluate(
-      () => (window as unknown as { __flipStamps?: number }).__flipStamps ?? -1,
-    );
-    expect(stamps).toBe(0);
-
     await expect(el(page, 'item-0')).toHaveText(/Beta/);
     await expect(el(page, 'item-1')).toHaveText(/Alpha/);
+    await afterFrames(page);
+
+    expect(await flipStamps()).toEqual([]);
   });
 
   test('liveSort OFF (default) — placeholder stays at source slot mid-drag', async ({ page }) => {

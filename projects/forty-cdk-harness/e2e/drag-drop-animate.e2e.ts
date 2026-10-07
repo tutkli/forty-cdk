@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-import { el, gotoFixture } from './_helpers';
+import { afterFrames, el, gotoFixture, recordFlipStamps } from './_helpers';
 
 test.describe('drag-drop animateReorder', () => {
   test('reorder commits with animation on — item-0 text becomes Beta', async ({ page }) => {
@@ -54,7 +54,9 @@ test.describe('drag-drop animateReorder', () => {
     await expect(page.locator('[data-for-drag-preview]')).toHaveCount(0);
   });
 
-  test('no item retains data-drag-animating after the transition clears', async ({ page }) => {
+  test('stamps data-drag-animating on the displaced sibling and clears it after the transition', async ({
+    page,
+  }) => {
     await gotoFixture(page, 'drag-drop-animate');
 
     const item0 = el(page, 'item-0');
@@ -72,8 +74,10 @@ test.describe('drag-drop animateReorder', () => {
     await page.mouse.down();
     await page.mouse.move(startX, startY + 5);
     await page.mouse.move(startX, targetY);
+    const flipStamps = await recordFlipStamps(page);
     await page.mouse.up();
 
+    await expect.poll(flipStamps).toEqual(['Beta']);
     await expect(page.locator('[data-drag-animating]')).toHaveCount(0);
   });
 
@@ -100,12 +104,15 @@ test.describe('drag-drop animateReorder', () => {
       await page.mouse.down();
       await page.mouse.move(startX, startY + 5);
       await page.mouse.move(startX, targetY);
+      const preview = page.locator('[data-for-drag-preview]');
+      await expect(preview).toHaveCount(1);
+      const flipStamps = await recordFlipStamps(page);
       await page.mouse.up();
 
-      await expect(page.locator('[data-drag-animating]')).toHaveCount(0);
-      await expect(page.locator('[data-for-drag-preview]')).toHaveCount(0);
-
+      await expect(preview).toHaveCount(0);
       await expect(el(page, 'item-0')).toHaveText(/Beta/);
+      await afterFrames(page);
+      expect(await flipStamps()).toEqual([]);
     } finally {
       await context.close();
     }

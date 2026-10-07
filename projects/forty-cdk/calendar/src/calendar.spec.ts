@@ -556,11 +556,13 @@ describe('ForCalendar', () => {
       expect(cell(r, new Date(2026, 5, 16)).hasAttribute('data-disabled')).toBe(false);
     });
 
-    it('marks today with aria-current="date" on exactly one cell', () => {
+    it('marks today with aria-current="date" and data-today on exactly one cell', () => {
       const r = renderHost(TodayHost);
       const todayCell = cell(r, adapter.today());
       expect(todayCell.getAttribute('aria-current')).toBe('date');
+      expect(todayCell.getAttribute('data-today')).toBe('');
       expect(r.queryAll('[aria-current="date"]').length).toBe(1);
+      expect(r.queryAll('[forCalendarCell][data-today]')).toEqual([todayCell]);
     });
 
     it('re-reads today() so aria-current follows the clock across a re-render (#1150)', async () => {
@@ -2020,7 +2022,7 @@ describe('ForCalendar', () => {
       expect(tabbable[0]).toBe(monthCell(r, 6));
     });
 
-    it('month cells emit aria-selected (always) and data-today for today month', async () => {
+    it('month cells emit aria-selected (always) and data-selected for the selected month', async () => {
       const r = renderHost(CalendarViewsHost);
       r.instance.view.set('month');
       await flush(r.fixture);
@@ -2032,6 +2034,29 @@ describe('ForCalendar', () => {
       const jul = monthCell(r, 7);
       expect(jul.getAttribute('aria-selected')).toBe('false');
       expect(jul.hasAttribute('data-selected')).toBe(false);
+    });
+
+    it('marks only the current month data-today, apart from the selected month', async () => {
+      const r = renderHost(CalendarViewsHost);
+      r.instance.value.set(new Date(2026, 2, 10));
+      r.instance.view.set('month');
+      await flush(r.fixture);
+
+      expect(monthCell(r, 6).getAttribute('data-today')).toBe('');
+      expect(monthCell(r, 3).hasAttribute('data-today')).toBe(false);
+      expect(r.queryAll('[forCalendarMonthCell][data-today]')).toEqual([monthCell(r, 6)]);
+    });
+
+    it('marks no month data-today while another year is visible', async () => {
+      const r = renderHost(CalendarViewsHost);
+      r.instance.view.set('month');
+      await flush(r.fixture);
+
+      click(prevBtn(r));
+      await flush(r.fixture);
+
+      expect(trigger(r).textContent!.trim()).toBe(String(2025));
+      expect(r.queryAll('[forCalendarMonthCell][data-today]')).toEqual([]);
     });
 
     it('ArrowRight moves the roving month cell', async () => {
@@ -2154,6 +2179,17 @@ describe('ForCalendar', () => {
       const highlighted = r.queryAll('[forCalendarYearCell][data-highlighted]');
       expect(highlighted.length).toBe(1);
       expect(highlighted[0]).toBe(yearCell(r, 2026));
+    });
+
+    it('marks only the current year data-today, apart from the selected year', async () => {
+      const r = renderHost(CalendarViewsHost);
+      r.instance.value.set(new Date(2020, 5, 15));
+      r.instance.view.set('year');
+      await flush(r.fixture);
+
+      expect(yearCell(r, 2020).getAttribute('aria-selected')).toBe('true');
+      expect(yearCell(r, 2020).hasAttribute('data-today')).toBe(false);
+      expect(r.queryAll('[forCalendarYearCell][data-today]')).toEqual([yearCell(r, 2026)]);
     });
 
     it('clicking a year cell drills to month view', async () => {
