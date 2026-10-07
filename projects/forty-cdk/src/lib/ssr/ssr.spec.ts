@@ -56,7 +56,8 @@ import {
  *   `noWiring` and why), plus each fixture's declared per-element markup:
  *   attribute values, required-present attributes, and the id pairings hydration
  *   re-resolves on the client (trigger↔surface `aria-controls`,
- *   label↔control `aria-labelledby`). This is the sweep that fails when a
+ *   label↔control `aria-labelledby`), plus exactly one `tabindex="0"` among a
+ *   roving composite's declared `tabStop` items. This is the sweep that fails when a
  *   primitive loses a server-side reference — the failure #1409 (tabs shipped
  *   no trigger↔panel pairing) and #1377 (stepper painted the completed state)
  *   both walked past.
@@ -253,6 +254,13 @@ function assertMarkup(host: HTMLElement, expectation: SsrMarkup): void {
   }
 }
 
+function assertSingleTabStop(host: HTMLElement, selector: string): void {
+  const items = Array.from(host.querySelectorAll(selector));
+  expect(items.length, `${selector} matched no item`).toBeGreaterThan(0);
+  const stops = items.filter((item) => item.getAttribute('tabindex') === '0');
+  expect(stops.length, `${selector} tab stops`).toBe(1);
+}
+
 /**
  * Everything a server render must leave alone on `<body>`: its own attributes,
  * plus the identity and attribute set of each child. That covers two of the
@@ -411,6 +419,10 @@ describe('SSR smoke tests', () => {
 
         for (const expectation of fixture.markup ?? []) {
           assertMarkup(host, expectation);
+        }
+
+        if (fixture.tabStop !== undefined) {
+          assertSingleTabStop(host, fixture.tabStop);
         }
       });
     }

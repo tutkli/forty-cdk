@@ -14,6 +14,7 @@ import {
   firstEnabledHost,
   FormUiControlBase,
   injectHiddenInput,
+  isUnset,
   type ListNavigationAction,
   moveIndex,
   type WritingDirection,
@@ -42,8 +43,8 @@ import { FOR_RADIO_GROUP_DEFAULTS } from 'forty-cdk/defaults';
  * `readonly`, arrows still move focus but never change the value.
  *
  * `null` is the canonical "nothing selected" value, matching every other
- * scalar `FormValueControl` in the library (`T | null`). Choose non-empty
- * `value`s on each `ForRadio`.
+ * scalar `FormValueControl` in the library (`T | null`). An empty-string
+ * radio `value` is a genuine selection, submitted to a native form as `name=`.
  */
 @Directive({
   selector: '[forRadioGroup]',
@@ -106,11 +107,19 @@ export class ForRadioGroup
 
   readonly #firstEnabledHost = computed(() => firstEnabledHost(this.#items.items()));
 
-  /** True when some registered, enabled radio's value matches the group's current value. */
-  readonly hasSelectedRadio = computed(() => {
+  readonly #selectedItem = computed(() => {
     const v = this.value();
-    return this.#items.items().some((item) => !item.disabled() && item.value() === v);
+    if (v === null) {
+      return undefined;
+    }
+    return this.#items.items().find((item) => {
+      const candidate = item.value();
+      return !item.disabled() && !isUnset(candidate) && candidate === v;
+    });
   });
+
+  /** True when some registered, enabled radio's value matches the group's current value. */
+  readonly hasSelectedRadio = computed(() => this.#selectedItem() !== undefined);
 
   constructor() {
     super();
@@ -118,7 +127,7 @@ export class ForRadioGroup
       name: this.name,
       values: computed(() => {
         const v = this.value();
-        return v ? [v] : [];
+        return v === null ? [] : [v];
       }),
       disabled: this.effectiveDisabled,
     });
@@ -136,9 +145,7 @@ export class ForRadioGroup
     if (this.effectiveDisabled()) {
       return;
     }
-    const v = this.value();
-    const selected = this.#items.items().find((item) => !item.disabled() && item.value() === v);
-    const target = selected?.host ?? this.#firstEnabledHost();
+    const target = this.#selectedItem()?.host ?? this.#firstEnabledHost();
     target?.focus(options);
   }
 
@@ -174,10 +181,11 @@ export class ForRadioGroup
       return;
     }
     target.host.focus();
-    if (this.readonly()) {
+    const value = target.value();
+    if (this.readonly() || isUnset(value)) {
       return;
     }
-    this.value.set(target.value());
+    this.value.set(value);
   }
 
   isFirstEnabledRadio(el: HTMLElement): boolean {

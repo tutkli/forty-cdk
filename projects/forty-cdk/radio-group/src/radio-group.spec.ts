@@ -4,7 +4,7 @@ import { TestBed } from '@angular/core/testing';
 
 import { pressKey } from 'forty-cdk/testing';
 
-import { renderHost } from '../../src/test-utils';
+import { flush, renderHost } from '../../src/test-utils';
 import {
   assertDataStateContract,
   assertFormControlContract,
@@ -764,6 +764,48 @@ describe('ForRadioGroup', () => {
     });
   });
 
+  describe('radio with no value binding', () => {
+    @Component({
+      imports: [...RADIO_IMPORTS],
+      template: `
+        <div forRadioGroup [(value)]="color">
+          <button type="button" forRadio value="red" data-test-id="red">Red</button>
+          <button type="button" forRadio data-test-id="unbound">Unbound</button>
+        </div>
+      `,
+    })
+    class UnboundRadioHost {
+      readonly color = signal<string | null>(null);
+    }
+
+    it('fails loudly in dev mode', () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(UnboundRadioHost);
+
+      expect(() => fixture.detectChanges()).toThrowError(
+        /\[forty-cdk\/radio-group\] FORCDK-CORE-010: \[forRadio\] has no \[value\] binding/,
+      );
+    });
+
+    it('never commits the sentinel on click or arrow navigation in a production build', async () => {
+      vi.stubGlobal('ngDevMode', false);
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(UnboundRadioHost);
+      fixture.detectChanges();
+      await flush(fixture);
+      const el = fixture.nativeElement as HTMLElement;
+
+      radioOf(el, 'unbound').click();
+      await flush(fixture);
+      expect(fixture.componentInstance.color()).toBeNull();
+
+      pressKey(radioOf(el, 'red'), 'ArrowDown');
+      await flush(fixture);
+      expect(fixture.componentInstance.color()).toBeNull();
+      expect(document.activeElement).toBe(radioOf(el, 'unbound'));
+    });
+  });
+
   describe('ForRadioIndicator', () => {
     @Component({
       imports: [...RADIO_IMPORTS, ForRadioIndicator],
@@ -898,6 +940,7 @@ describe('ForRadioGroup', () => {
       template: `
         <form>
           <div forRadioGroup [(value)]="color" [name]="fieldName()">
+            <button type="button" forRadio value="" data-test-id="empty">None</button>
             <button type="button" forRadio value="red">Red</button>
             <button type="button" forRadio value="green">Green</button>
           </div>
@@ -905,7 +948,7 @@ describe('ForRadioGroup', () => {
       `,
     })
     class FormHost {
-      readonly color = signal<string | null>('');
+      readonly color = signal<string | null>(null);
       readonly fieldName = signal<string>('');
     }
 
@@ -926,6 +969,100 @@ describe('ForRadioGroup', () => {
 
       const form = el.querySelector('form')!;
       expect(Array.from(new FormData(form).entries())).toEqual([]);
+    });
+
+    it('submits name= for a selected empty-string radio, distinct from no selection', async () => {
+      const { el, fixture, flush } = renderHost(FormHost);
+      fixture.componentInstance.fieldName.set('color');
+      await flush();
+
+      radioOf(el, 'empty').click();
+      await flush();
+
+      expect(fixture.componentInstance.color()).toBe('');
+      const form = el.querySelector('form')!;
+      expect(Array.from(new FormData(form).entries())).toEqual([['color', '']]);
+    });
+  });
+
+  describe('non-button host', () => {
+    @Component({
+      imports: [...RADIO_IMPORTS],
+      template: `
+        <div forRadioGroup [(value)]="color" [disabled]="groupDisabled()">
+          <div forRadio value="a" data-test-id="a">A</div>
+          <div forRadio value="b" data-test-id="b">B</div>
+        </div>
+      `,
+    })
+    class DivRadioHost {
+      readonly color = signal<string | null>(null);
+      readonly groupDisabled = signal(false);
+    }
+
+    const divRadioOf = (host: HTMLElement, id: string) =>
+      host.querySelector<HTMLElement>(`div[data-test-id="${id}"]`)!;
+
+    it('keeps the roving tab stop and emits no type attribute', async () => {
+      const { el, flush } = renderHost(DivRadioHost);
+      await flush();
+
+      expect(divRadioOf(el, 'a').getAttribute('tabindex')).toBe('0');
+      expect(divRadioOf(el, 'b').getAttribute('tabindex')).toBe('-1');
+      expect(divRadioOf(el, 'a').hasAttribute('type')).toBe(false);
+    });
+
+    it('selects the focused radio on Space keyup and blocks page scroll on the keydown', async () => {
+      const { el, fixture, flush } = renderHost(DivRadioHost);
+      await flush();
+      const radio = divRadioOf(el, 'a');
+
+      const down = pressKey(radio, ' ');
+      expect(down.defaultPrevented).toBe(true);
+      expect(fixture.componentInstance.color()).toBeNull();
+
+      pressKey(radio, ' ', { type: 'keyup' });
+      await flush();
+
+      expect(fixture.componentInstance.color()).toBe('a');
+      expect(radio.getAttribute('aria-checked')).toBe('true');
+    });
+
+    it('selects the focused radio on Enter', async () => {
+      const { el, fixture, flush } = renderHost(DivRadioHost);
+      await flush();
+
+      pressKey(divRadioOf(el, 'b'), 'Enter');
+      await flush();
+
+      expect(fixture.componentInstance.color()).toBe('b');
+    });
+
+    it('drops a half-finished Space press when focus leaves the radio', async () => {
+      const { el, fixture, flush } = renderHost(DivRadioHost);
+      await flush();
+      const radio = divRadioOf(el, 'a');
+
+      pressKey(radio, ' ');
+      radio.dispatchEvent(new FocusEvent('blur'));
+      pressKey(radio, ' ', { type: 'keyup' });
+      await flush();
+
+      expect(fixture.componentInstance.color()).toBeNull();
+    });
+
+    it('does not select on Space or Enter while the group is disabled', async () => {
+      const { el, fixture, flush } = renderHost(DivRadioHost);
+      fixture.componentInstance.groupDisabled.set(true);
+      await flush();
+      const radio = divRadioOf(el, 'a');
+
+      pressKey(radio, ' ');
+      pressKey(radio, ' ', { type: 'keyup' });
+      pressKey(radio, 'Enter');
+      await flush();
+
+      expect(fixture.componentInstance.color()).toBeNull();
     });
   });
 
