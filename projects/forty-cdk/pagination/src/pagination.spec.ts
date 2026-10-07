@@ -198,30 +198,30 @@ describe('ForPagination directive', () => {
   });
 
   describe('previous / next buttons', () => {
-    it('prev has native disabled at page 1', () => {
+    it('prev reflects aria-disabled at page 1', () => {
       const fixture = setup();
-      expect(prev(fixture).hasAttribute('disabled')).toBe(true);
+      expect(prev(fixture).getAttribute('aria-disabled')).toBe('true');
     });
 
     it('prev loses disabled after navigating to page 2', async () => {
       const fixture = setup();
       fixture.componentInstance.page.set(2);
       await flush(fixture);
-      expect(prev(fixture).hasAttribute('disabled')).toBe(false);
+      expect(prev(fixture).hasAttribute('aria-disabled')).toBe(false);
     });
 
-    it('next has native disabled at the last page', async () => {
+    it('next reflects aria-disabled at the last page', async () => {
       const fixture = setup();
       fixture.componentInstance.page.set(11);
       await flush(fixture);
-      expect(next(fixture).hasAttribute('disabled')).toBe(true);
+      expect(next(fixture).getAttribute('aria-disabled')).toBe('true');
     });
 
     it('next loses disabled when not on the last page', async () => {
       const fixture = setup();
       fixture.componentInstance.page.set(5);
       await flush(fixture);
-      expect(next(fixture).hasAttribute('disabled')).toBe(false);
+      expect(next(fixture).hasAttribute('aria-disabled')).toBe(false);
     });
 
     it('clicking prev decrements page', async () => {
@@ -259,6 +259,37 @@ describe('ForPagination directive', () => {
       await flush(fixture);
       expect(fixture.componentInstance.page()).toBe(11);
     });
+
+    it('never emits the native disabled attribute on prev / next at either bound', async () => {
+      const fixture = setup();
+      expect(prev(fixture).hasAttribute('disabled')).toBe(false);
+      fixture.componentInstance.page.set(11);
+      await flush(fixture);
+      expect(next(fixture).hasAttribute('disabled')).toBe(false);
+      fixture.componentInstance.isDisabled.set(true);
+      await flush(fixture);
+      expect(prev(fixture).hasAttribute('disabled')).toBe(false);
+      expect(next(fixture).hasAttribute('disabled')).toBe(false);
+    });
+
+    it('activating a disabled next does not reconcile an out-of-range page', async () => {
+      const fixture = setup();
+      fixture.componentInstance.count.set(10);
+      fixture.componentInstance.page.set(50);
+      await flush(fixture);
+      next(fixture).click();
+      await flush(fixture);
+      expect(fixture.componentInstance.page()).toBe(50);
+    });
+
+    it('activating a disabled prev does not reconcile a below-range page', async () => {
+      const fixture = setup();
+      fixture.componentInstance.page.set(-3);
+      await flush(fixture);
+      prev(fixture).click();
+      await flush(fixture);
+      expect(fixture.componentInstance.page()).toBe(-3);
+    });
   });
 
   describe('root disabled', () => {
@@ -267,8 +298,8 @@ describe('ForPagination directive', () => {
       fixture.componentInstance.page.set(5);
       fixture.componentInstance.isDisabled.set(true);
       await flush(fixture);
-      expect(prev(fixture).hasAttribute('disabled')).toBe(true);
-      expect(next(fixture).hasAttribute('disabled')).toBe(true);
+      expect(prev(fixture).getAttribute('aria-disabled')).toBe('true');
+      expect(next(fixture).getAttribute('aria-disabled')).toBe('true');
     });
 
     it('clicking a page button does not change page when root is disabled', async () => {
@@ -428,8 +459,8 @@ describe('ForPagination — effective page reconciliation', () => {
     fixture.componentInstance.count.set(10);
     fixture.componentInstance.page.set(50);
     await flush(fixture);
-    expect(prev(fixture).hasAttribute('disabled')).toBe(false);
-    expect(next(fixture).hasAttribute('disabled')).toBe(true);
+    expect(prev(fixture).hasAttribute('aria-disabled')).toBe(false);
+    expect(next(fixture).getAttribute('aria-disabled')).toBe('true');
   });
 
   it('a below-range page (0) clamps to effective page 1', async () => {
@@ -439,7 +470,7 @@ describe('ForPagination — effective page reconciliation', () => {
     await flush(fixture);
     const pg = directive(fixture);
     expect(pg.effectivePage()).toBe(1);
-    expect(prev(fixture).hasAttribute('disabled')).toBe(true);
+    expect(prev(fixture).getAttribute('aria-disabled')).toBe('true');
     const current = pageButtons(fixture).find((b) => b.getAttribute('aria-current') === 'page');
     expect(current?.getAttribute('data-testid')).toBe('page-1');
   });
@@ -516,7 +547,7 @@ describe('ForPagination — numeric input sanitization', () => {
       expect(v).not.toContain('.');
     });
     expect(values[values.length - 1]).toBe('10');
-    expect(next(fixture).hasAttribute('disabled')).toBe(true);
+    expect(next(fixture).getAttribute('aria-disabled')).toBe('true');
   });
 
   it('a NaN count renders an empty page list', async () => {
@@ -542,6 +573,6 @@ describe('ForPagination — numeric input sanitization', () => {
     await flush(fixture);
     const current = pageButtons(fixture).find((b) => b.getAttribute('aria-current') === 'page');
     expect(current?.getAttribute('data-testid')).toBe('page-1');
-    expect(prev(fixture).hasAttribute('disabled')).toBe(true);
+    expect(prev(fixture).getAttribute('aria-disabled')).toBe('true');
   });
 });
