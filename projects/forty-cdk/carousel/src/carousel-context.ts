@@ -84,6 +84,9 @@ export interface ForCarouselContext {
 export interface CarouselPieceContext {
   readonly roving: RovingTabindex;
 
+  /** `activeIndex` clamped to the registered slides. */
+  readonly effectiveIndex: Signal<number>;
+
   navigate(currentIndicator: HTMLElement, action: ListNavigationAction): void;
 
   viewportId(): string | null;

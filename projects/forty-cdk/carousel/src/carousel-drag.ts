@@ -174,7 +174,7 @@ export class ForCarouselDrag {
     const sign = this.#nextPerPx();
     const slidesDragged = (dragPx * sign) / this.#slideSizePx;
     const velocityTowardNext = flickVelocity(this.#velocity * sign, staleVelocity);
-    const target = resolveDragIndex(this.ctx.activeIndex(), slidesDragged, velocityTowardNext);
+    const target = resolveDragIndex(this.ctx.effectiveIndex(), slidesDragged, velocityTowardNext);
     this.ctx.scrollTo(target);
   }
 }

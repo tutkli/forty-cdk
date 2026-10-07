@@ -17,6 +17,7 @@ import {
 import { isPlatformBrowser } from '@angular/common';
 
 import {
+  clamp,
   Collection,
   createSingleSlot,
   firstEnabledHost,
@@ -66,7 +67,7 @@ import { FOR_CAROUSEL_DEFAULTS } from 'forty-cdk/defaults';
     '[attr.data-align]': 'align()',
     '[attr.dir]': 'dir()',
     '[style.--for-carousel-offset]': 'offset()',
-    '[style.--for-carousel-active-index]': 'activeIndex()',
+    '[style.--for-carousel-active-index]': 'effectiveIndex()',
     '[style.--for-carousel-slide-count]': 'slideCount()',
     '[style.--for-carousel-slides-per-view]': 'slidesPerView()',
     '[style.--for-carousel-viewport-width]': 'viewportWidth()',
@@ -87,7 +88,9 @@ export class ForCarousel implements ForCarouselContext {
    * Two-way bindable. The zero-based index of the current (leading) slide.
    * The `model()` change emitter (`(activeIndexChange)`) fires only on internal
    * navigation (prev/next button clicks, indicator arrow-key or click), never
-   * on consumer writes via `[(activeIndex)]`.
+   * on consumer writes via `[(activeIndex)]`. A value past the registered slides
+   * (e.g. after slides are removed) acts as the nearest valid slide, and the next
+   * navigation writes that slide's index back.
    */
   readonly activeIndex = model<number>(0);
 
@@ -207,24 +210,28 @@ export class ForCarousel implements ForCarouselContext {
 
   readonly #firstEnabledIndicatorHost = computed(() => firstEnabledHost(this.#indicators.items()));
 
+  protected readonly effectiveIndex = computed(() =>
+    clamp(this.activeIndex(), 0, Math.max(0, this.slideCount() - 1)),
+  );
+
+  readonly #perView = computed(() => Math.max(1, this.slidesPerView()));
+
+  readonly #viewStart = computed(() => {
+    const perView = this.#perView();
+    const align = this.align();
+    const lead = align === 'center' ? (perView - 1) / 2 : align === 'end' ? perView - 1 : 0;
+    const start = this.effectiveIndex() - lead;
+    if (this.containScroll() && !this.loop()) {
+      return clamp(start, 0, Math.max(0, this.slideCount() - perView));
+    }
+    return start;
+  });
+
   /**
    * The `--for-carousel-offset` value to apply via `transform` on the track.
    * Pure arithmetic — no layout measurement — so it is safe in Vitest.
    */
-  readonly offset = computed(() => {
-    const perView = Math.max(1, this.slidesPerView());
-    const slideSizePct = 100 / perView;
-    const base = -(this.activeIndex() * slideSizePct);
-    const align = this.align();
-    const adjust =
-      align === 'center' ? (100 - slideSizePct) / 2 : align === 'end' ? 100 - slideSizePct : 0;
-    const raw = base + adjust;
-    if (this.containScroll() && !this.loop()) {
-      const minOffset = -(Math.max(0, this.slideCount() - perView) * slideSizePct);
-      return `${Math.min(0, Math.max(minOffset, raw))}%`;
-    }
-    return `${raw}%`;
-  });
+  readonly offset = computed(() => `${-(this.#viewStart() * (100 / this.#perView()))}%`);
 
   /** The measured viewport width, or `null` before first measurement / on the server. */
   readonly viewportWidth = computed(() => {
@@ -270,12 +277,16 @@ export class ForCarousel implements ForCarouselContext {
 
   /** Returns `true` when scrolling backward is possible given the current loop/index state. */
   canScrollPrev(): boolean {
-    return moveIndex(this.activeIndex(), this.slideCount(), 'prev', { loop: this.loop() }) !== null;
+    return (
+      moveIndex(this.effectiveIndex(), this.slideCount(), 'prev', { loop: this.loop() }) !== null
+    );
   }
 
   /** Returns `true` when scrolling forward is possible given the current loop/index state. */
   canScrollNext(): boolean {
-    return moveIndex(this.activeIndex(), this.slideCount(), 'next', { loop: this.loop() }) !== null;
+    return (
+      moveIndex(this.effectiveIndex(), this.slideCount(), 'next', { loop: this.loop() }) !== null
+    );
   }
 
   /** Navigate to the previous slide. No-op at index 0 when not looping. */
@@ -394,16 +405,16 @@ export class ForCarousel implements ForCarouselContext {
 
   /** Returns `true` when `index` is the current active slide index. */
   isCurrent(index: number): boolean {
-    return index === this.activeIndex();
+    return index === this.effectiveIndex();
   }
 
   /**
-   * Returns `true` when `index` falls within the visible window
-   * `[activeIndex, activeIndex + slidesPerView - 1]`.
+   * Returns `true` when the slide at `index` intersects the viewport as laid
+   * out by `--for-carousel-offset`, after `align` and `containScroll` apply.
    */
   private isInView(index: number): boolean {
-    const start = this.activeIndex();
-    return index >= start && index < start + Math.max(1, this.slidesPerView());
+    const start = this.#viewStart();
+    return index >= 0 && index + 1 > start && index < start + this.#perView();
   }
 
   /**
@@ -424,7 +435,7 @@ export class ForCarousel implements ForCarouselContext {
    * count is dev-guarded at construction by the `FORCDK-CAROUSEL-002` warning.
    */
   hasCurrentIndicator(): boolean {
-    const active = this.activeIndex();
+    const active = this.effectiveIndex();
     return this.#indicators.items().some((i, idx) => idx === active && !i.disabled());
   }
 
@@ -469,7 +480,7 @@ export class ForCarousel implements ForCarouselContext {
   #advance(): void {
     const count = this.slideCount();
     if (count > 0) {
-      this.activeIndex.set((this.activeIndex() + 1) % count);
+      this.activeIndex.set((this.effectiveIndex() + 1) % count);
     }
   }
 
@@ -481,7 +492,9 @@ export class ForCarousel implements ForCarouselContext {
   }
 
   #move(action: ListNavigationAction): void {
-    const next = moveIndex(this.activeIndex(), this.slideCount(), action, { loop: this.loop() });
+    const next = moveIndex(this.effectiveIndex(), this.slideCount(), action, {
+      loop: this.loop(),
+    });
     if (next !== null) {
       this.activeIndex.set(next);
     }

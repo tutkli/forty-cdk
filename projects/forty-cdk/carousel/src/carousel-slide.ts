@@ -13,9 +13,9 @@ import { injectCarouselContext } from './carousel-context';
  * a positional label on each slide). Set `ariaLabel` to override with a
  * semantically richer label for the specific slide content.
  *
- * Off-view slides (outside `[activeIndex, activeIndex + slidesPerView - 1]`)
- * are hidden from the accessibility tree and focus order via
- * `aria-hidden="true"` + `inert`.
+ * Slides that do not intersect the viewport, as laid out by
+ * `--for-carousel-offset` after `align` and `containScroll` apply, are hidden
+ * from the accessibility tree and focus order via `aria-hidden="true"` + `inert`.
  */
 @Directive({
   selector: '[forCarouselSlide]',
