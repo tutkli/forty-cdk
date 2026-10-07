@@ -12,14 +12,13 @@ import {
 import {
   composedClosest,
   composedContains,
-  composedPrecedes,
   resolveActiveElement,
 } from '../composed-tree/composed-tree';
 import {
   findTabbableEdges,
   isFocusableCandidate,
+  leavesTabSequence,
   queryFocusableCandidates,
-  type TabbableEdges,
 } from './focusable-candidate';
 import { fortyWarn } from '../errors/errors';
 import { MODAL_EXEMPT_ATTRIBUTE, MODAL_PEER_ATTRIBUTE } from '../host-attributes/modal-attributes';
@@ -289,19 +288,6 @@ export class FocusTrap {
     const surface = composedClosest(active, INDEPENDENT_SURFACE_SELECTOR);
     return surface !== null && !composedContains(surface, this.#container) ? surface : null;
   }
-}
-
-function leavesTabSequence(
-  { first, last }: TabbableEdges,
-  active: Element | null,
-  backward: boolean,
-): boolean {
-  if (first === null || last === null || active === null) {
-    return true;
-  }
-  return backward
-    ? active === first || composedPrecedes(active, first)
-    : active === last || composedPrecedes(last, active);
 }
 
 /**

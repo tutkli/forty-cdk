@@ -25,7 +25,9 @@ import { injectPopoverContext } from './popover-context';
  * the natural mount / unmount cycle. While mounted the directive
  * dismisses on Escape, pointer-down outside or focus outside, and sends
  * focus to the configured `initialFocus` target; on unmount it returns
- * focus to the trigger if `returnFocus` is on.
+ * focus to the trigger if `returnFocus` is on. Tab past the last control
+ * moves on to the element after the trigger and Shift+Tab before the first
+ * lands on the trigger, closing the popover with reason `'tab'`.
  *
  * The trigger is exempt from the outside checks, so clicking
  * it again just toggles via the trigger directive — no double-close
@@ -107,8 +109,12 @@ export class ForPopoverContent {
         veto: () => this.ctx.emitAutoFocusOnClose(),
         skip: () => {
           const reason = this.ctx.lastCloseReason();
-          return reason === 'pointerDownOutside' || reason === 'focusOutside';
+          return reason === 'pointerDownOutside' || reason === 'focusOutside' || reason === 'tab';
         },
+      },
+      tabOut: {
+        target: () => this.ctx.trigger(),
+        close: () => this.ctx.requestClose('tab'),
       },
     });
   }

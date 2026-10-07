@@ -663,6 +663,37 @@ describe('ForDatePicker', () => {
       expect(r.instance.open()).toBe(false);
     });
 
+    it('moves focus to the trigger and closes on Tab out of the last control', async () => {
+      const r = renderHost(Host);
+      await openPicker(r);
+      const cell = document.activeElement as HTMLElement;
+      expect(content()!.contains(cell)).toBe(true);
+      const trigger = r.query<HTMLButtonElement>('[forDatePickerTrigger]')!;
+      const focusSpy = vi.spyOn(trigger, 'focus');
+
+      const event = pressKey(cell, 'Tab');
+
+      expect(document.activeElement).toBe(trigger);
+      expect(event.defaultPrevented).toBe(false);
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe(false);
+      expect(focusSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('lands on the trigger and closes on Shift+Tab out of the first control', async () => {
+      const r = renderHost(Host);
+      await openPicker(r);
+      const cell = document.activeElement as HTMLElement;
+      const trigger = r.query<HTMLButtonElement>('[forDatePickerTrigger]')!;
+
+      const event = pressKey(cell, 'Tab', { shiftKey: true });
+
+      expect(document.activeElement).toBe(trigger);
+      expect(event.defaultPrevented).toBe(true);
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe(false);
+    });
+
     it('closes exactly once on an outside pointer-down (shared veto, no double-close)', async () => {
       const r = renderHost(Host);
       await openPicker(r);

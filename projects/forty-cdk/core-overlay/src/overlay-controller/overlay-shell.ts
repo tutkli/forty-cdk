@@ -3,8 +3,12 @@ import { DestroyRef, ElementRef, inject, type Signal } from '@angular/core';
 import {
   afterNextRenderCancellable,
   findFirstFocusable,
+  findTabbableEdges,
   isInitialFocusTarget,
+  leavesTabSequence,
   MODAL_PEER_ATTRIBUTE,
+  resolveActiveElement,
+  resolveEventTarget,
   type VetoableNativeEvent,
 } from 'forty-cdk/core';
 import {
@@ -146,6 +150,21 @@ export interface OverlayShellReturnFocusConfig {
 }
 
 /**
+ * Optional Tab-out wiring for a non-modal surface portaled away from its trigger. A Tab past the
+ * surface's last tabbable lands on the element after `target` in the page's tab order, and a
+ * Shift+Tab before its first lands on `target` itself, as if the surface sat right after it.
+ *
+ * - `target` — the element the surface follows in the tab order (typically the trigger).
+ *   Returning `null` leaves Tab to the browser.
+ * - `close` — closes the surface after the focus move, unless `dismiss.dismissible()` is
+ *   `false`. Return focus is skipped for that close.
+ */
+export interface OverlayShellTabOutConfig {
+  readonly target: () => HTMLElement | null;
+  readonly close: () => void;
+}
+
+/**
  * Single config for the overlay-content lifecycle. Each sub-bundle is
  * individually optional so the nine concrete primitives (Popover, Menu,
  * MenuSub, ContextMenu, DropdownMenu, Combobox, Select, Tooltip, HoverCard)
@@ -160,6 +179,7 @@ export interface OverlayShellConfig {
   readonly dismiss?: OverlayShellDismissConfig;
   readonly initialFocus?: OverlayShellInitialFocusConfig;
   readonly returnFocus?: OverlayShellReturnFocusConfig;
+  readonly tabOut?: OverlayShellTabOutConfig;
 }
 
 /**
@@ -292,6 +312,19 @@ export function injectOverlayShell(config: OverlayShellConfig): void {
     }
   });
 
+  let tabbedOut = false;
+  const tabOutCfg = config.tabOut;
+  if (tabOutCfg) {
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if (handleTabOut(event, el, tabOutCfg, dismissCfg?.dismissible?.() ?? true)) {
+        tabbedOut = true;
+        layer?.deactivate();
+      }
+    };
+    el.addEventListener('keydown', onKeyDown);
+    inject(DestroyRef).onDestroy(() => el.removeEventListener('keydown', onKeyDown));
+  }
+
   // 4. Return focus on destroy. The hook is registered AFTER the layer's
   //    destroy hook (created above) and AFTER the positioner's portal hook
   //    (created inside injectFloating / injectItemAlignedPositioner) so it
@@ -299,7 +332,7 @@ export function injectOverlayShell(config: OverlayShellConfig): void {
   const rfCfg = config.returnFocus;
   if (rfCfg) {
     inject(DestroyRef).onDestroy(() => {
-      if (rfCfg.skip?.()) {
+      if (tabbedOut || rfCfg.skip?.()) {
         return;
       }
       if (rfCfg.veto?.()) {
@@ -311,6 +344,51 @@ export function injectOverlayShell(config: OverlayShellConfig): void {
       rfCfg.target()?.focus();
     });
   }
+}
+
+/**
+ * Moves focus to the tab-out target when a Tab press would leave the surface's Tab cycle, then
+ * closes the surface when `closes`. A forward Tab keeps its default action so the browser advances
+ * from the target; a backward one is prevented so focus stays on it. Returns whether it closed.
+ */
+function handleTabOut(
+  event: KeyboardEvent,
+  host: HTMLElement,
+  config: OverlayShellTabOutConfig,
+  closes: boolean,
+): boolean {
+  if (
+    event.key !== 'Tab' ||
+    event.defaultPrevented ||
+    event.altKey ||
+    event.ctrlKey ||
+    event.metaKey
+  ) {
+    return false;
+  }
+  const target = config.target();
+  if (target === null) {
+    return false;
+  }
+  const from = resolveEventTarget(event);
+  const backward = event.shiftKey;
+  if (
+    !leavesTabSequence(findTabbableEdges(host), from instanceof Element ? from : null, backward)
+  ) {
+    return false;
+  }
+  target.focus();
+  if (resolveActiveElement(target.ownerDocument) !== target) {
+    return false;
+  }
+  if (backward) {
+    event.preventDefault();
+  }
+  if (!closes) {
+    return false;
+  }
+  config.close();
+  return true;
 }
 
 /**

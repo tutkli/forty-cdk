@@ -4,7 +4,13 @@ import { TestBed } from '@angular/core/testing';
 
 import { type VetoableEvent, type VetoableNativeEvent } from 'forty-cdk/core';
 import { pressKey, withReducedMotion } from 'forty-cdk/testing';
-import { afterEachOverlayCleanup, flush, flushPositioning, renderHost } from '../../src/test-utils';
+import {
+  afterEachOverlayCleanup,
+  flush,
+  flushPositioning,
+  renderHost,
+  type RenderResult,
+} from '../../src/test-utils';
 import {
   assertDataStateContract,
   assertDismissibleLayerContract,
@@ -622,6 +628,104 @@ describe('ForPopover', () => {
 
       expect(r.instance.open()).toBe(false);
       expect(focusSpy).toHaveBeenCalled();
+    });
+  });
+
+  describe('Tab out of the portaled content', () => {
+    async function openPopover(): Promise<{
+      r: RenderResult<PopoverHost>;
+      trigger: HTMLButtonElement;
+      content: HTMLElement;
+    }> {
+      const r = renderHost(PopoverHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      return {
+        r,
+        trigger: r.query<HTMLButtonElement>('[forPopoverTrigger]')!,
+        content: document.querySelector<HTMLElement>('[forPopoverContent]')!,
+      };
+    }
+
+    it('moves focus to the trigger on Tab from the last control and keeps the default action', async () => {
+      const { r, trigger } = await openPopover();
+      const last = document.querySelector<HTMLButtonElement>('#close-btn')!;
+      last.focus();
+
+      const event = pressKey(last, 'Tab');
+
+      expect(document.activeElement).toBe(trigger);
+      expect(event.defaultPrevented).toBe(false);
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe(false);
+    });
+
+    it('does not return focus to the trigger after a Tab out', async () => {
+      const { r, trigger } = await openPopover();
+      const last = document.querySelector<HTMLButtonElement>('#close-btn')!;
+      last.focus();
+      const focusSpy = vi.spyOn(trigger, 'focus');
+
+      pressKey(last, 'Tab');
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+      expect(focusSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('lands on the trigger on Shift+Tab from the first control and prevents the default action', async () => {
+      const { r, trigger } = await openPopover();
+      const first = document.querySelector<HTMLButtonElement>('#ok')!;
+      first.focus();
+
+      const event = pressKey(first, 'Tab', { shiftKey: true });
+
+      expect(document.activeElement).toBe(trigger);
+      expect(event.defaultPrevented).toBe(true);
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe(false);
+    });
+
+    it('lands on the trigger on Shift+Tab from the content container itself', async () => {
+      const { r, trigger, content } = await openPopover();
+      content.focus();
+
+      const event = pressKey(content, 'Tab', { shiftKey: true });
+
+      expect(document.activeElement).toBe(trigger);
+      expect(event.defaultPrevented).toBe(true);
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe(false);
+    });
+
+    it('leaves Tab between the content controls to the browser', async () => {
+      const { r } = await openPopover();
+      const first = document.querySelector<HTMLButtonElement>('#ok')!;
+      first.focus();
+
+      const forward = pressKey(first, 'Tab');
+      const content = document.querySelector<HTMLElement>('[forPopoverContent]')!;
+      const backward = pressKey(content, 'Tab');
+
+      expect(document.activeElement).toBe(first);
+      expect(forward.defaultPrevented).toBe(false);
+      expect(backward.defaultPrevented).toBe(false);
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe(true);
+    });
+
+    it('moves focus to the trigger but stays open when not dismissible', async () => {
+      const { r, trigger } = await openPopover();
+      r.instance.dismissible.set(false);
+      await flush(r.fixture);
+      const first = document.querySelector<HTMLButtonElement>('#ok')!;
+      first.focus();
+
+      pressKey(first, 'Tab', { shiftKey: true });
+      await flush(r.fixture);
+
+      expect(document.activeElement).toBe(trigger);
+      expect(r.instance.open()).toBe(true);
     });
   });
 

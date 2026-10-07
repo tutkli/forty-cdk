@@ -439,11 +439,12 @@ Defaults are configured with `provideForDateRangePickerDefaults` (`side` / `alig
 
 ## Keyboard
 
-| Key                                                | Behavior                                                                  |
-| -------------------------------------------------- | ------------------------------------------------------------------------- |
-| **Enter / Space** on trigger                       | Open the surface (native button activation).                              |
-| **ArrowDown / Alt+ArrowDown / ArrowUp** on trigger | Open the surface and move focus to the calendar.                          |
-| **Escape**                                         | Dismiss the surface and return focus to the trigger (when `dismissible`). |
+| Key                                                | Behavior                                                                                                                                                         |
+| -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Enter / Space** on trigger                       | Open the surface (native button activation).                                                                                                                     |
+| **ArrowDown / Alt+ArrowDown / ArrowUp** on trigger | Open the surface and move focus to the calendar.                                                                                                                 |
+| **Escape**                                         | Dismiss the surface and return focus to the trigger (when `dismissible`).                                                                                        |
+| **Tab / Shift+Tab** past either end of the surface | Non-modal: Tab moves on to the element after the trigger and Shift+Tab lands on the trigger, closing the surface when `dismissible`. Modal: focus stays trapped. |
 
 Inside the surface, the projected `ForCalendar` owns the full grid keyboard map (arrows / `Home` / `End` / `PageUp` / `PageDown` / `Enter` / `Space`). On open, focus lands on the calendar's focused cell (`value ?? today`, with today clamped into the calendar's `[min, max]`) in non-modal mode, or the first focusable element in modal mode.
 
