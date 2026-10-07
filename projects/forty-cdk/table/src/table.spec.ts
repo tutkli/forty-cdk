@@ -40,7 +40,7 @@ import { ForTableColumnLabel } from './table-column-label';
 import { ForTableColumnReorder, type TableColumnReorderDescriptor } from './table-column-reorder';
 import { ForTableRowReorder, type TableRowReorderDescriptor } from './table-row-reorder';
 import { ForTableVirtualized } from 'forty-cdk/table-virtualization';
-import { installObserverPolyfills, pointerEvent } from 'forty-cdk/testing';
+import { installObserverPolyfills, pointerEvent, pressKey } from 'forty-cdk/testing';
 
 const TABLE_IMPORTS = [
   ForTable,
@@ -203,7 +203,8 @@ class MixedColumnReorderHost {
             [min]="min()"
             [max]="max()"
             [step]="step()"
-            (resizeCommit)="lastResize = $event"
+            [disabled]="disabled()"
+            (resizeCommit)="lastResize = $event; commits = commits + 1"
             data-testid="resizer"
           ></button>
         </div>
@@ -217,7 +218,9 @@ class ResizeTableHost {
   readonly min = signal<number>(0);
   readonly max = signal<number>(Infinity);
   readonly step = signal<number>(10);
+  readonly disabled = signal(false);
   lastResize: TableResizeDescriptor | null = null;
+  commits = 0;
 }
 
 @Component({
@@ -227,7 +230,13 @@ class ResizeTableHost {
       <div forTableHeaderRow>
         <div forTableHeaderCell name="name" data-testid="header">
           Name
-          <button forTableColumnResizer column="name" [width]="100" data-testid="resizer"></button>
+          <button
+            forTableColumnResizer
+            column="name"
+            [width]="100"
+            [disabled]="disabled()"
+            data-testid="resizer"
+          ></button>
         </div>
       </div>
     </div>
@@ -235,6 +244,7 @@ class ResizeTableHost {
 })
 class ResizerTabindexHost {
   readonly mode = signal<TableMode>('table');
+  readonly disabled = signal(false);
 }
 
 @Component({
@@ -4333,6 +4343,114 @@ describe('ForTable', () => {
       expect(instance.width()).toBe(100);
       expect(instance.lastResize).toBeNull();
       expect(r.hasAttribute('data-resizing')).toBe(false);
+    });
+
+    it('PageDown grows the width by the default largeStep and PageUp shrinks it, one resizeCommit per press', async () => {
+      const { el, instance, flush } = renderHost(ResizeTableHost);
+      const r = resizerEl(el);
+
+      const down = pressKey(r, 'PageDown');
+      await flush();
+      expect(down.defaultPrevented).toBe(true);
+      expect(instance.width()).toBe(200);
+      expect(instance.lastResize).toEqual({ column: 'name', width: 200 });
+
+      pressKey(r, 'PageUp');
+      await flush();
+      expect(instance.width()).toBe(100);
+      expect(instance.commits).toBe(2);
+
+      instance.min.set(30);
+      await flush();
+      pressKey(r, 'PageUp');
+      await flush();
+      expect(instance.width()).toBe(30);
+    });
+
+    it('Home snaps to min and End to a finite max, each emitting one resizeCommit', async () => {
+      const { el, instance, flush } = renderHost(ResizeTableHost);
+      instance.min.set(80);
+      instance.max.set(400);
+      await flush();
+      const r = resizerEl(el);
+
+      pressKey(r, 'Home');
+      await flush();
+      expect(instance.width()).toBe(80);
+      expect(instance.lastResize).toEqual({ column: 'name', width: 80 });
+
+      pressKey(r, 'End');
+      await flush();
+      expect(instance.width()).toBe(400);
+      expect(instance.commits).toBe(2);
+    });
+
+    it('End does nothing while max is unbounded', async () => {
+      const { el, instance, flush } = renderHost(ResizeTableHost);
+      const end = pressKey(resizerEl(el), 'End');
+      await flush();
+      expect(end.defaultPrevented).toBe(false);
+      expect(instance.width()).toBe(100);
+      expect(instance.lastResize).toBeNull();
+    });
+
+    it('disabled: reflects aria-disabled / data-disabled and ignores keyboard and pointer drag', async () => {
+      const { el, instance, flush } = renderHost(ResizeTableHost);
+      instance.disabled.set(true);
+      await flush();
+      const r = resizerEl(el);
+      expect(r.getAttribute('aria-disabled')).toBe('true');
+      expect(r.getAttribute('data-disabled')).toBe('');
+
+      for (const key of ['ArrowRight', 'ArrowLeft', 'PageDown', 'PageUp', 'Home']) {
+        pressKey(r, key);
+      }
+      r.dispatchEvent(pointerEvent('pointerdown', { clientX: 200 }));
+      document.dispatchEvent(pointerEvent('pointermove', { clientX: 260 }));
+      document.dispatchEvent(pointerEvent('pointerup', { clientX: 260 }));
+      await flush();
+      expect(instance.width()).toBe(100);
+      expect(instance.lastResize).toBeNull();
+      expect(r.hasAttribute('data-resizing')).toBe(false);
+
+      instance.disabled.set(false);
+      await flush();
+      expect(r.hasAttribute('aria-disabled')).toBe(false);
+      expect(r.hasAttribute('data-disabled')).toBe(false);
+    });
+
+    it('disabled: drops the standalone tab stop in table mode', async () => {
+      const { el, instance, flush } = renderHost(ResizerTabindexHost);
+      instance.disabled.set(true);
+      await flush();
+      expect(resizerEl(el).getAttribute('tabindex')).toBe('-1');
+    });
+
+    it('aria-valuenow is clamped to [min, max] while [(width)] keeps the raw value', async () => {
+      const { el, instance, flush } = renderHost(ResizeTableHost);
+      const r = resizerEl(el);
+      instance.max.set(520);
+      instance.width.set(700);
+      await flush();
+      expect(r.getAttribute('aria-valuenow')).toBe('520');
+      expect(instance.width()).toBe(700);
+
+      instance.min.set(150);
+      instance.width.set(100);
+      await flush();
+      expect(r.getAttribute('aria-valuenow')).toBe('150');
+      expect(instance.width()).toBe(100);
+    });
+
+    it('a max below min reflects as a collapsed range at min', async () => {
+      const { el, instance, flush } = renderHost(ResizeTableHost);
+      instance.min.set(300);
+      instance.max.set(200);
+      await flush();
+      const r = resizerEl(el);
+      expect(r.getAttribute('aria-valuemin')).toBe('300');
+      expect(r.getAttribute('aria-valuemax')).toBe('300');
+      expect(r.getAttribute('aria-valuenow')).toBe('300');
     });
 
     it('Escape mid-drag restores the pre-drag width and emits no resizeCommit', async () => {

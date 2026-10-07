@@ -197,6 +197,52 @@ describe('ForMeter', () => {
       await flush();
       expect(el.getAttribute('data-quality')).toBe('even-less-good');
     });
+
+    it('resolves low > high by raising high to low, as native <meter> does', async () => {
+      const { fixture, query, flush } = renderHost(MeterHost);
+      fixture.componentInstance.low.set(60);
+      fixture.componentInstance.high.set(40);
+      fixture.componentInstance.value.set(30);
+      await flush();
+
+      const el = query<HTMLElement>('[forMeter]')!;
+      expect(el.getAttribute('data-quality')).toBe('optimum');
+
+      fixture.componentInstance.value.set(60);
+      await flush();
+      expect(el.getAttribute('data-quality')).toBe('sub-optimum');
+
+      fixture.componentInstance.value.set(61);
+      await flush();
+      expect(el.getAttribute('data-quality')).toBe('even-less-good');
+    });
+
+    it('clamps a low above max into [min, max] before resolving high against it', async () => {
+      const { fixture, query, flush } = renderHost(MeterHost);
+      fixture.componentInstance.low.set(150);
+      fixture.componentInstance.high.set(40);
+      fixture.componentInstance.optimum.set(90);
+      fixture.componentInstance.value.set(30);
+      await flush();
+
+      const el = query<HTMLElement>('[forMeter]')!;
+      expect(el.getAttribute('data-quality')).toBe('optimum');
+    });
+
+    it('raises a high below min to low rather than lowering low under min', async () => {
+      const { fixture, query, flush } = renderHost(MeterHost);
+      fixture.componentInstance.high.set(-10);
+      fixture.componentInstance.optimum.set(10);
+      fixture.componentInstance.value.set(0);
+      await flush();
+
+      const el = query<HTMLElement>('[forMeter]')!;
+      expect(el.getAttribute('data-quality')).toBe('sub-optimum');
+
+      fixture.componentInstance.value.set(1);
+      await flush();
+      expect(el.getAttribute('data-quality')).toBe('optimum');
+    });
   });
 
   describe('indicator', () => {

@@ -210,7 +210,7 @@ describe('ForPaneResizer', () => {
       expect(fixture.componentInstance.value()).toBe(0.3);
     });
 
-    it('PageUp/PageDown apply largeStep', async () => {
+    it('PageDown applies largeStep toward max and PageUp toward min', async () => {
       const { fixture, query, flush } = renderHost(PaneResizerHost);
       const el = query<HTMLElement>('[forPaneResizer]')!;
 
@@ -733,6 +733,39 @@ describe('ForPaneResizer', () => {
       });
       document.dispatchEvent(click);
       expect(click.defaultPrevented).toBe(true);
+    });
+  });
+
+  describe('reflected range', () => {
+    it('clamps aria-valuenow to [min, max] while the model keeps a value written outside it', async () => {
+      const { fixture, query, flush } = renderHost(PaneResizerHost);
+      const el = query<HTMLElement>('[forPaneResizer]')!;
+
+      fixture.componentInstance.value.set(700);
+      await flush();
+      expect(el.getAttribute('aria-valuenow')).toBe('100');
+      expect(fixture.componentInstance.value()).toBe(700);
+
+      fixture.componentInstance.value.set(-20);
+      await flush();
+      expect(el.getAttribute('aria-valuenow')).toBe('0');
+      expect(fixture.componentInstance.value()).toBe(-20);
+    });
+
+    it('reflects a max below min as a collapsed range at min, and End snaps there', async () => {
+      const { fixture, query, flush } = renderHost(PaneResizerHost);
+      fixture.componentInstance.min.set(60);
+      fixture.componentInstance.max.set(40);
+      await flush();
+
+      const el = query<HTMLElement>('[forPaneResizer]')!;
+      expect(el.getAttribute('aria-valuemin')).toBe('60');
+      expect(el.getAttribute('aria-valuemax')).toBe('60');
+      expect(el.getAttribute('aria-valuenow')).toBe('60');
+
+      press(el, 'End');
+      await flush();
+      expect(fixture.componentInstance.value()).toBe(60);
     });
   });
 
