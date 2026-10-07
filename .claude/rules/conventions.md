@@ -933,12 +933,12 @@ Both halves are guarded. [`src/lib/auto-focus-on-close-teardown.spec.ts`](../../
   pattern — like `injectVirtualizer` it has no role, no keyboard interaction and no ARIA state of its
   own, so the project rule "declare which APG pattern you implement before writing code" has no
   answer here. It is pointer-only (matching CDK's `cdkDrag` free-drag), reflecting only the
-  `data-dragging` / `data-disabled` styling hooks and writing a `transform: translate(...)` on the
+  `data-dragging` / `data-disabled` styling hooks and writing the CSS `translate` property on the
   moved element (the host, or a resolved `rootElement` ancestor). Its a11y responsibility is
   inverted: instead of adding semantics it must **not destroy** the moved element's semantics — the
   consumer keeps the moved element fully operable at its default position (a repositionable dialog
   stays usable by keyboard); dragging is a pointer convenience, not the only way to use it. SSR-safe
-  by gating all DOM resolution, transform writes and pointer-session setup on `isPlatformBrowser`.
+  by gating all DOM resolution, offset writes and pointer-session setup on `isPlatformBrowser`.
   See [#1020](https://github.com/tutkli/forty-cdk/issues/1020).
 - **`<for-table-body>` (table) is an element-selector component that owns the column grid track.**
   The declarative column layer over `[forTableCell]` / `[forTableHeaderCell]` ([#1330](https://github.com/tutkli/forty-cdk/issues/1330)):

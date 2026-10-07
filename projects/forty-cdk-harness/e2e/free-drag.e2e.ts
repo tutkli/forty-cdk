@@ -19,8 +19,8 @@ async function freeDrag(page: Page, start: Locator, dx: number, dy: number): Pro
   await page.mouse.up();
 }
 
-function inlineTransform(locator: Locator): Promise<string> {
-  return locator.evaluate((node) => (node as HTMLElement).style.transform);
+function inlineTranslate(locator: Locator): Promise<string> {
+  return locator.evaluate((node) => (node as HTMLElement).style.translate);
 }
 
 test.describe('free-drag', () => {
@@ -30,7 +30,7 @@ test.describe('free-drag', () => {
 
     await freeDrag(page, box, 50, 40);
 
-    expect(await inlineTransform(box)).toBe('translate(50px, 40px)');
+    expect(await inlineTranslate(box)).toBe('50px 40px');
   });
 
   test('boundary clamps the moved element fully inside the boundary', async ({ page }) => {
@@ -61,12 +61,36 @@ test.describe('free-drag', () => {
 
     await freeDrag(page, handle, 40, 30);
 
-    expect(await inlineTransform(dialog)).toBe('translate(40px, 30px)');
-    expect(await inlineTransform(header)).toBe('');
+    expect(await inlineTranslate(dialog)).toBe('40px 30px');
+    expect(await inlineTranslate(header)).toBe('');
 
     const after = await dialog.boundingBox();
     if (!after) throw new Error('Dialog not found');
     expect(Math.round(after.x - before.x)).toBe(40);
     expect(Math.round(after.y - before.y)).toBe(30);
+  });
+
+  test('a transform-centred root keeps its centring and moves by the pointer delta', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'free-drag');
+    const header = el(page, 'centered-header');
+    const centered = el(page, 'centered');
+    const stage = el(page, 'stage');
+
+    const before = await centered.boundingBox();
+    const stageBox = await stage.boundingBox();
+    if (!before || !stageBox) throw new Error('Elements not found');
+    expect(Math.round(before.x + before.width / 2)).toBe(
+      Math.round(stageBox.x + stageBox.width / 2),
+    );
+
+    await freeDrag(page, header, 30, 20);
+
+    const after = await centered.boundingBox();
+    if (!after) throw new Error('Centred root not found');
+    expect(Math.round(after.x - before.x)).toBe(30);
+    expect(Math.round(after.y - before.y)).toBe(20);
+    expect(await centered.evaluate((node) => getComputedStyle(node).transform)).not.toBe('none');
   });
 });
