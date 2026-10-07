@@ -32,7 +32,7 @@ import {
 @Component({
   imports: [ForAvatar, ForAvatarImage, ForAvatarFallback],
   template: `
-    <span forAvatar #a="forAvatar">
+    <span forAvatar #a="forAvatar" fallbackDelayMs="500">
       <img forAvatarImage src="https://example.test/avatar.png" alt="user" />
       @if (a.shouldShowFallback()) {
         <span forAvatarFallback>AB</span>

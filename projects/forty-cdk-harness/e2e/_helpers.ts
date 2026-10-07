@@ -702,3 +702,41 @@ export function selectionRange(input: Locator): Promise<[number, number]> {
     return [i.selectionStart ?? -1, i.selectionEnd ?? -1];
   });
 }
+
+export async function recordFlipStamps(page: Page): Promise<() => Promise<string[]>> {
+  await page.evaluate(() => {
+    const store = window as unknown as { __flipStamps: string[] };
+    store.__flipStamps = [];
+    new MutationObserver((records) => {
+      for (const record of records) {
+        const target = record.target as HTMLElement;
+        if (target.hasAttribute('data-drag-animating')) {
+          store.__flipStamps.push(target.textContent?.trim() ?? '');
+        }
+      }
+    }).observe(document.body, {
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['data-drag-animating'],
+    });
+  });
+  return () =>
+    page.evaluate(() => [...(window as unknown as { __flipStamps: string[] }).__flipStamps]);
+}
+
+export function afterFrames(page: Page, frames = 2): Promise<void> {
+  return page.evaluate(
+    (count) =>
+      new Promise<void>((resolve) => {
+        const step = (left: number): void => {
+          if (left === 0) {
+            resolve();
+            return;
+          }
+          requestAnimationFrame(() => step(left - 1));
+        };
+        step(count);
+      }),
+    frames,
+  );
+}

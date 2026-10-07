@@ -1,4 +1,10 @@
-import { PLATFORM_ID, provideZonelessChangeDetection } from '@angular/core';
+import {
+  EnvironmentInjector,
+  PLATFORM_ID,
+  createEnvironmentInjector,
+  provideZonelessChangeDetection,
+  runInInjectionContext,
+} from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import { injectPauseController } from './pause-controller';
@@ -94,6 +100,22 @@ describe('injectPauseController', () => {
 
     setVisibility('hidden');
     expect(controller.paused()).toBe(true);
+  });
+
+  it('stops tracking page visibility once its injector is destroyed', () => {
+    const removeSpy = vi.spyOn(document, 'removeEventListener');
+    const seen: boolean[] = [];
+    const injector = createEnvironmentInjector([], TestBed.inject(EnvironmentInjector));
+    const controller = runInInjectionContext(injector, () =>
+      injectPauseController<Reason>({ onChange: (paused) => seen.push(paused) }),
+    );
+
+    injector.destroy();
+    setVisibility('hidden');
+
+    expect(controller.paused()).toBe(false);
+    expect(seen).toEqual([]);
+    expect(removeSpy.mock.calls.filter(([type]) => type === 'visibilitychange')).toHaveLength(1);
   });
 
   describe('server platform (SSR)', () => {

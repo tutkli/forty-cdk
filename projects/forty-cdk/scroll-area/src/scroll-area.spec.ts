@@ -6,6 +6,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 
 import { installObserverPolyfills } from 'forty-cdk/testing';
 
@@ -166,13 +167,19 @@ describe('ForScrollArea', () => {
     expect(style?.hasAttribute('nonce')).toBe(false);
   });
 
-  it('mounts the scrollbar / thumb / corner pieces with their roles wired', () => {
-    const { query } = renderHost(ScrollAreaHost);
+  it('wires each thumb to its own scrollbar axis and registers it with that scrollbar', () => {
+    const { fixture, query } = renderHost(ScrollAreaHost);
+    const scrollbar = (testid: string): ForScrollAreaScrollbar =>
+      fixture.debugElement
+        .query(By.css(`[data-testid="${testid}"]`))
+        .injector.get(ForScrollAreaScrollbar);
 
-    expect(query('[data-testid="vbar"]')).not.toBeNull();
-    expect(query('[data-testid="hbar"]')).not.toBeNull();
-    expect(query('[data-testid="vthumb"]')).not.toBeNull();
-    expect(query('[data-testid="corner"]')).not.toBeNull();
+    expect(query('[data-testid="vbar"]')!.getAttribute('data-orientation')).toBe('vertical');
+    expect(query('[data-testid="hbar"]')!.getAttribute('data-orientation')).toBe('horizontal');
+    expect(query('[data-testid="vthumb"]')!.getAttribute('data-orientation')).toBe('vertical');
+    expect(query('[data-testid="hthumb"]')!.getAttribute('data-orientation')).toBe('horizontal');
+    expect(scrollbar('vbar').thumb()).toBe(query('[data-testid="vthumb"]'));
+    expect(scrollbar('hbar').thumb()).toBe(query('[data-testid="hthumb"]'));
   });
 
   it('routes a native viewport scroll event into the scrolling window', async () => {
@@ -186,14 +193,6 @@ describe('ForScrollArea', () => {
     await flush();
 
     expect(root.scrolling()).toBe(true);
-  });
-
-  it('constructs with a registered [forScrollAreaContent] without throwing', () => {
-    expect(() => renderHost(ScrollAreaHost)).not.toThrow();
-  });
-
-  it('renders without [forScrollAreaContent] and skips content observation', () => {
-    expect(() => renderHost(ScrollAreaHostNoContent)).not.toThrow();
   });
 
   it('reflects every [type] value on the root as data-type', async () => {
@@ -282,6 +281,26 @@ describe('ForScrollArea', () => {
       } else {
         delete (globalThis as { ResizeObserver?: typeof ResizeObserver }).ResizeObserver;
       }
+    });
+
+    const observed = (): Element[] =>
+      calls.filter((call) => call.kind === 'observe').map((call) => call.target);
+
+    it('observes a registered [forScrollAreaContent] element alongside the viewport', async () => {
+      const { query, flush } = renderHost(ScrollAreaHost);
+      await flush();
+
+      expect(observed()).toContain(query('[forScrollAreaViewport]'));
+      expect(observed()).toContain(query('[forScrollAreaContent]'));
+    });
+
+    it('observes no content element when [forScrollAreaContent] is absent', async () => {
+      const { query, flush } = renderHost(ScrollAreaHostNoContent);
+      await flush();
+
+      const viewport = query<HTMLElement>('[forScrollAreaViewport]')!;
+      expect(observed()).toContain(viewport);
+      expect(observed()).not.toContain(viewport.firstElementChild);
     });
 
     it('unobserves the previous content and observes the new one when content swaps', async () => {
@@ -400,10 +419,9 @@ describe('ForScrollArea', () => {
       vi.useFakeTimers();
       root.noteUserScroll();
       fixture.destroy();
+      vi.advanceTimersByTime(1_000);
 
-      // The pending timeout was cleared on destroy; advancing past the delay
-      // must not fire a stray callback on the destroyed directive.
-      expect(() => vi.advanceTimersByTime(1_000)).not.toThrow();
+      expect(root.scrolling()).toBe(true);
     });
   });
 
@@ -625,12 +643,21 @@ describe('ForScrollArea', () => {
         await flush();
         const vbar = query<HTMLElement>('[data-testid="vbar"]')!;
         stubPointerCapture(vbar);
+        const addSpy = vi.spyOn(document, 'addEventListener');
 
         vi.useFakeTimers();
         vbar.dispatchEvent(pointer('pointerdown', { clientY: 100 }));
+        const gestureSignals = addSpy.mock.calls
+          .filter(
+            ([type]) => type === 'pointermove' || type === 'pointerup' || type === 'pointercancel',
+          )
+          .map(([, , options]) => (options as AddEventListenerOptions | undefined)?.signal);
+        expect(gestureSignals).toHaveLength(3);
         fixture.destroy();
+        vi.advanceTimersByTime(2_000);
 
-        expect(() => vi.advanceTimersByTime(2_000)).not.toThrow();
+        expect(vi.getTimerCount()).toBe(0);
+        expect(gestureSignals.every((s) => s?.aborted === true)).toBe(true);
       });
     });
 
