@@ -38,7 +38,8 @@ export interface ForScrollAreaContext {
   /** True for a short window after the most recent scroll (for `type="scroll"`). */
   readonly scrolling: Signal<boolean>;
 
-  registerViewport(el: HTMLElement | null): void;
+  registerViewport(el: HTMLElement): void;
+  unregisterViewport(el: HTMLElement): void;
   registerContent(el: HTMLElement): void;
   unregisterContent(el: HTMLElement): void;
   reportScroll(left: number, top: number): void;

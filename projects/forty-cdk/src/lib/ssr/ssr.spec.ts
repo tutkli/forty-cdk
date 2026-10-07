@@ -1,5 +1,5 @@
 import { ɵPLATFORM_SERVER_ID, isPlatformServer } from '@angular/common';
-import { PLATFORM_ID, type Type, provideZonelessChangeDetection } from '@angular/core';
+import { CSP_NONCE, PLATFORM_ID, type Type, provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import { IdGenerator } from 'forty-cdk/core';
@@ -20,7 +20,12 @@ import {
   TabsServerFixture,
   TabsServerRepeatFixture,
 } from './fixtures/disclosure';
-import { BreadcrumbsFixture, PaginationFixture, VisuallyHiddenFixture } from './fixtures/display';
+import {
+  BreadcrumbsFixture,
+  PaginationFixture,
+  ScrollAreaFixture,
+  VisuallyHiddenFixture,
+} from './fixtures/display';
 import { FieldFixture, ToggleGroupFixture } from './fixtures/form';
 import { MenuMultiOpenerOpenFixture, NavigationMenuViewportOpenFixture } from './fixtures/menu';
 import { CarouselFixture, VirtualViewportFixture, VirtualizerFixture } from './fixtures/motion';
@@ -66,9 +71,10 @@ import {
  *   fixture (asserted beside the snapshot, which structurally cannot see it —
  *   see {@link describeBody}). Blind to a side effect that only subscribes, and
  *   to a re-parent *within* the fixture tree.
- * - **appends nothing to `<head>`** — the second document-level escape, and the
- *   one an `open` state does not gate: `[forScrollAreaViewport]` injects its
- *   global stylesheet from its constructor.
+ * - **appends to `<head>` only what the entry declares** — the second
+ *   document-level escape, and the one an `open` state does not gate:
+ *   `[forScrollAreaViewport]` injects its global stylesheet from its
+ *   constructor, and must on the server too so the prerendered page ships it.
  * - **installs no global listener** / **schedules no timer** — the escapes a
  *   `<body>` snapshot cannot see, since jsdom hands the server render a real
  *   `document` and `window`.
@@ -449,18 +455,31 @@ describe('SSR smoke tests', () => {
   // The `<body>` sweep's sibling, over every fixture rather than the open ones:
   // `[forScrollAreaViewport]` injects its native-scrollbar-hiding `<style>` from
   // its constructor, so an open state is irrelevant and a `<body>` snapshot
-  // cannot see it. It is the library's only sanctioned global-CSS injection, and
-  // an ungated one would ship a `<style>` per Universal request.
-  describe('server render appends nothing to <head>', () => {
-    for (const { component } of SSR_FIXTURES) {
-      it(`${component.name} injects no document-level stylesheet`, () => {
+  // cannot see it. It is the library's only sanctioned global-CSS injection: it
+  // must reach the server HTML, and nothing else may.
+  describe('server render appends to <head> only what the entry declares', () => {
+    for (const { component, head = [] } of SSR_FIXTURES) {
+      const claim = head.length === 0 ? 'nothing' : head.join(', ');
+      it(`${component.name} appends ${claim} to <head>`, () => {
         const before = describeHead();
         const f = TestBed.createComponent(component);
         f.detectChanges();
 
-        expect(describeHead()).toEqual(before);
+        expect(describeHead()).toEqual([...before, ...head]);
       });
     }
+  });
+
+  it('ScrollArea stamps the CSP nonce on its server-rendered <style>', () => {
+    TestBed.configureTestingModule({ providers: [{ provide: CSP_NONCE, useValue: 'ssr-nonce' }] });
+    const before = describeHead();
+    const f = TestBed.createComponent(ScrollAreaFixture);
+    f.detectChanges();
+
+    expect(describeHead()).toEqual([...before, 'style#for-scroll-area-hide-native[id nonce]']);
+    expect(document.getElementById('for-scroll-area-hide-native')?.getAttribute('nonce')).toBe(
+      'ssr-nonce',
+    );
   });
 
   it('Field composes both the description and the error id into aria-describedby server-side', () => {
