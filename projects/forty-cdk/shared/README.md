@@ -96,9 +96,10 @@ bootstrapApplication(AppA, { providers: [provideForIdSalt('a')] });
 bootstrapApplication(AppB, { providers: [provideForIdSalt('b')] });
 ```
 
-Two constraints:
+Three constraints:
 
 - **The salt must be stable per app, not random.** A runtime random value would make every render unique and break SSR hydration, because the server and client renders would no longer agree on the ids.
+- **The salt must not contain whitespace.** `aria-labelledby`, `aria-controls` and `aria-describedby` hold space-separated id lists, so `'admin panel'` would make every reference name two ids that do not exist. In dev mode generating an id throws `FORCDK-CORE-012` instead; use `'admin-panel'`.
 - **Prefer this over overriding `APP_ID`.** Setting a distinct global `APP_ID` per app fixes the ids too, but it also drives Angular's hydration store and event replay; `provideForIdSalt` changes only what forty-cdk salts its ids with.
 
 A single app (the common case, including SSR) needs no provider at all.

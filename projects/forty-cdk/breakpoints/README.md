@@ -109,6 +109,8 @@ The default map gives you fully-typed names out of the box (`up('md')` autocompl
 
 ```ts
 // breakpoints.ts
+import { injectBreakpoints } from 'forty-cdk/breakpoints';
+
 export const appBreakpoints = {
   mobile: 0,
   tablet: 640,
@@ -116,12 +118,14 @@ export const appBreakpoints = {
   desktop: 1280,
 } as const;
 
-declare module 'forty-cdk' {
+declare module 'forty-cdk/breakpoints' {
   interface BreakpointRegistry extends Record<keyof typeof appBreakpoints, true> {}
 }
+
+export const injectIsDesktop = () => injectBreakpoints().up('desktop');
 ```
 
-Now `injectBreakpoints()` autocompletes `'mobile' | 'tablet' | 'laptop' | 'desktop'` across the whole app.
+Now `injectBreakpoints()` autocompletes `'mobile' | 'tablet' | 'laptop' | 'desktop'` across the whole app, and `up('desktop')` compiles without a cast. Augment `'forty-cdk/breakpoints'`, the entry point that declares the registry: the bare `'forty-cdk'` package exports nothing, so a block naming it declares an unrelated interface and the names stay the Tailwind scale.
 
 ## API
 

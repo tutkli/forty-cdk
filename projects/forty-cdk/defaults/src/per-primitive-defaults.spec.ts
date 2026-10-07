@@ -1,6 +1,8 @@
 import {
+  EnvironmentInjector,
   InjectionToken,
   type Provider,
+  createEnvironmentInjector,
   inject,
   provideZonelessChangeDetection,
 } from '@angular/core';
@@ -600,4 +602,104 @@ describe('per-primitive defaults providers', () => {
       });
     });
   }
+});
+
+const RECORD_KEY_CASES = [
+  {
+    name: 'provideForDateFieldDefaults',
+    token: FOR_DATE_FIELD_DEFAULTS,
+    provide: provideForDateFieldDefaults,
+    fallbackLabels: FOR_DATE_FIELD_FALLBACK_DEFAULTS.segmentLabels,
+  },
+  {
+    name: 'provideForDateRangeFieldDefaults',
+    token: FOR_DATE_RANGE_FIELD_DEFAULTS,
+    provide: provideForDateRangeFieldDefaults,
+    fallbackLabels: FOR_DATE_RANGE_FIELD_FALLBACK_DEFAULTS.segmentLabels,
+  },
+  {
+    name: 'provideForTimeFieldDefaults',
+    token: FOR_TIME_FIELD_DEFAULTS,
+    provide: provideForTimeFieldDefaults,
+    fallbackLabels: FOR_TIME_FIELD_FALLBACK_DEFAULTS.segmentLabels,
+  },
+  {
+    name: 'provideForTimeRangeFieldDefaults',
+    token: FOR_TIME_RANGE_FIELD_DEFAULTS,
+    provide: provideForTimeRangeFieldDefaults,
+    fallbackLabels: FOR_TIME_RANGE_FIELD_FALLBACK_DEFAULTS.segmentLabels,
+  },
+] as const;
+
+function resolveInChildScope<D>(
+  token: InjectionToken<D>,
+  parent: Provider[],
+  child: Provider[],
+): D {
+  TestBed.configureTestingModule({ providers: parent });
+  const scope = createEnvironmentInjector(child, TestBed.inject(EnvironmentInjector));
+  try {
+    return scope.get(token);
+  } finally {
+    scope.destroy();
+  }
+}
+
+describe('nested defaults scopes', () => {
+  for (const c of RECORD_KEY_CASES) {
+    it(`${c.name} merges segmentLabels and placeholder entry by entry with the parent scope`, () => {
+      const provide = c.provide as (overrides: object) => Provider[];
+      const resolved = resolveInChildScope(
+        c.token as InjectionToken<{
+          segmentLabels: Record<string, unknown>;
+          placeholder: Record<string, unknown>;
+        }>,
+        provide({
+          segmentLabels: { hour: 'hora', minute: 'minuto' },
+          placeholder: { hour: 'hh', minute: 'mm' },
+        }),
+        provide({ segmentLabels: { dayPeriod: 'a. m./p. m.' }, placeholder: { minute: 'mi' } }),
+      );
+
+      expect(resolved.segmentLabels).toEqual({
+        ...c.fallbackLabels,
+        hour: 'hora',
+        minute: 'minuto',
+        dayPeriod: 'a. m./p. m.',
+      });
+      expect(resolved.placeholder).toEqual({ hour: 'hh', minute: 'mi' });
+    });
+  }
+
+  it('keeps the parent entry when a child scope sets that entry to undefined', () => {
+    const resolved = resolveInChildScope(
+      FOR_DATE_FIELD_DEFAULTS,
+      provideForDateFieldDefaults({ segmentLabels: { day: 'día' } }),
+      provideForDateFieldDefaults({ segmentLabels: { day: undefined, month: 'mes' } }),
+    );
+
+    expect(resolved.segmentLabels.day).toBe('día');
+    expect(resolved.segmentLabels.month).toBe('mes');
+  });
+
+  it('still replaces a non-record key wholesale in a child scope', () => {
+    const resolved = resolveInChildScope(
+      FOR_DATE_FIELD_DEFAULTS,
+      provideForDateFieldDefaults({ emptySegmentText: 'Vacío', hourCycle: 24 }),
+      provideForDateFieldDefaults({ hourCycle: 12 }),
+    );
+
+    expect(resolved.emptySegmentText).toBe('Vacío');
+    expect(resolved.hourCycle).toBe(12);
+  });
+
+  it('replaces the breakpoint map wholesale in a child scope', () => {
+    const resolved = resolveInChildScope(
+      FOR_BREAKPOINTS_DEFAULTS,
+      provideForBreakpointsDefaults({ mobile: 0, desktop: 1280 }),
+      provideForBreakpointsDefaults({ compact: 0, wide: 900 }),
+    );
+
+    expect(resolved.breakpoints).toEqual({ compact: 0, wide: 900 });
+  });
 });
