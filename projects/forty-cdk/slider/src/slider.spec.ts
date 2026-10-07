@@ -526,6 +526,77 @@ describe('ForSlider', () => {
       await flush();
       expect(fixture.componentInstance.picked()).toEqual([49]);
     });
+
+    it('horizontal: ArrowUp / ArrowDown keep increase / decrease when inverted', async () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.inverted.set(true);
+      await flush();
+      keyDown(thumb(el, 0), 'ArrowUp');
+      await flush();
+      expect(fixture.componentInstance.picked()).toEqual([51]);
+      keyDown(thumb(el, 0), 'ArrowDown');
+      keyDown(thumb(el, 0), 'ArrowDown');
+      await flush();
+      expect(fixture.componentInstance.picked()).toEqual([49]);
+    });
+
+    it('horizontal: PageUp / PageDown keep increase / decrease when inverted', async () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.inverted.set(true);
+      await flush();
+      keyDown(thumb(el, 0), 'PageUp');
+      await flush();
+      expect(fixture.componentInstance.picked()).toEqual([60]);
+      keyDown(thumb(el, 0), 'PageDown');
+      keyDown(thumb(el, 0), 'PageDown');
+      await flush();
+      expect(fixture.componentInstance.picked()).toEqual([40]);
+    });
+
+    it('horizontal rtl: ArrowLeft decreases and ArrowRight increases when inverted', async () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.dir.set('rtl');
+      fixture.componentInstance.inverted.set(true);
+      await flush();
+      keyDown(thumb(el, 0), 'ArrowLeft');
+      await flush();
+      expect(fixture.componentInstance.picked()).toEqual([49]);
+      keyDown(thumb(el, 0), 'ArrowRight');
+      keyDown(thumb(el, 0), 'ArrowRight');
+      await flush();
+      expect(fixture.componentInstance.picked()).toEqual([51]);
+    });
+
+    it('vertical: ArrowUp decreases and ArrowDown increases when inverted', async () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.orientation.set('vertical');
+      fixture.componentInstance.inverted.set(true);
+      await flush();
+      keyDown(thumb(el, 0), 'ArrowUp');
+      await flush();
+      expect(fixture.componentInstance.picked()).toEqual([49]);
+      keyDown(thumb(el, 0), 'ArrowDown');
+      keyDown(thumb(el, 0), 'ArrowDown');
+      await flush();
+      expect(fixture.componentInstance.picked()).toEqual([51]);
+    });
+
+    it('vertical: ArrowRight / ArrowLeft and PageUp keep their meaning when inverted', async () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.orientation.set('vertical');
+      fixture.componentInstance.inverted.set(true);
+      await flush();
+      keyDown(thumb(el, 0), 'ArrowRight');
+      await flush();
+      expect(fixture.componentInstance.picked()).toEqual([51]);
+      keyDown(thumb(el, 0), 'ArrowLeft');
+      keyDown(thumb(el, 0), 'ArrowLeft');
+      await flush();
+      expect(fixture.componentInstance.picked()).toEqual([49]);
+      keyDown(thumb(el, 0), 'PageUp');
+      await flush();
+      expect(fixture.componentInstance.picked()).toEqual([59]);
+    });
   });
 
   describe('disabled / readonly', () => {

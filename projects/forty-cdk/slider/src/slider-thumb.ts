@@ -155,11 +155,11 @@ export class ForSliderThumb {
         return;
       case 'PageUp':
         event.preventDefault();
-        this.ctx.bumpAt(this.index(), 'ArrowUp', true);
+        this.ctx.bumpAt(this.index(), 'PageUp', true);
         return;
       case 'PageDown':
         event.preventDefault();
-        this.ctx.bumpAt(this.index(), 'ArrowDown', true);
+        this.ctx.bumpAt(this.index(), 'PageDown', true);
         return;
       case 'Home':
         event.preventDefault();

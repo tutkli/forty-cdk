@@ -74,9 +74,9 @@ export interface ForSliderContext {
   /**
    * Bump a thumb by `step` (or by `step × stepMultiplier` when `large` is
    * true) in the requested direction, resolved against `orientation`, `dir`,
-   * and `inverted`.
+   * and `inverted`. `PageUp` / `PageDown` always increase / decrease.
    */
-  bumpAt(index: number, key: SliderArrowKey, large: boolean): void;
+  bumpAt(index: number, key: SliderArrowKey | 'PageUp' | 'PageDown', large: boolean): void;
   /** Set thumb to absolute `min` or `max` extreme (Home / End). */
   setExtreme(index: number, which: 'min' | 'max'): void;
 

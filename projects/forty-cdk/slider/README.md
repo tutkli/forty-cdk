@@ -75,7 +75,7 @@ The `value` model is a `readonly number[]`; two `forSliderThumb` pieces, one per
 
 ### Inverted
 
-`inverted` flips the value-to-position mapping: in horizontal LTR, max sits on the left. The flip is baked into the exposed fractions, so the same CSS paints both ways. Keyboard semantics are unchanged: `ArrowRight` / `ArrowUp` still move toward max.
+`inverted` flips the value-to-position mapping: in horizontal LTR, max sits on the left. The flip is baked into the exposed fractions, so the same CSS paints both ways. Only the arrow pair on the visual axis follows the flip: `ArrowLeft` / `ArrowRight` when horizontal, `ArrowUp` / `ArrowDown` when vertical. The off-axis arrows, `PageUp` / `PageDown` and `Home` / `End` keep the meaning the [Keyboard](#keyboard) table gives them, so `PageUp` always increases the value.
 
 ## Signal Forms
 
@@ -100,7 +100,7 @@ For native `<form>` submit, set `[name]` and the directive mirrors `value()` int
 | `stepMultiplier`        | `input<number>`                     | Multiplier over `step` for `PageUp` / `PageDown` (configurable via `provideForSliderDefaults`).<br>**Default:** `10`                                                                                                       |
 | `orientation`           | `input<'horizontal' \| 'vertical'>` | `'horizontal'` or `'vertical'`.<br>**Default:** `'horizontal'`                                                                                                                                                             |
 | `dir`                   | `input<'ltr' \| 'rtl'>`             | `'ltr'` or `'rtl'`. RTL flips horizontal pointer mapping and `ArrowLeft`/`ArrowRight` semantics.<br>**Default:** `'ltr'`                                                                                                   |
-| `inverted`              | `input<boolean>`                    | Visually flips the value-to-position mapping (e.g. max on the left in horizontal LTR). Keyboard `Up`/`Right` (LTR) still moves toward `max` regardless.<br>**Default:** `false`                                            |
+| `inverted`              | `input<boolean>`                    | Visually flips the value-to-position mapping (e.g. max on the left in horizontal LTR) and the arrow pair on that axis; see [Inverted](#inverted).<br>**Default:** `false`                                                  |
 | `minStepsBetweenThumbs` | `input<number>`                     | Multi-thumb only: minimum gap between adjacent thumbs in step units.<br>**Default:** `0`                                                                                                                                   |
 | `disabled`              | `input<boolean>`                    | Disables all interaction.<br>**Default:** `false`                                                                                                                                                                          |
 | `readonly`              | `input<boolean>`                    | Allows focus + announcement, blocks updates.<br>**Default:** `false`                                                                                                                                                       |
@@ -169,7 +169,7 @@ Focus a thumb, then:
 | **Home**                                                       | Set to `min`.                        |
 | **End**                                                        | Set to `max`.                        |
 
-`inverted` swaps "increase" / "decrease" on every key. Disabled and readonly thumbs are no-ops.
+Under `inverted`, only the arrow pair on the visual axis swaps (see [Inverted](#inverted)). Disabled and readonly thumbs are no-ops.
 
 Values live on the `min` ± k·`step` grid. A thumb already on the grid travels the full amount (`step`, or `step × stepMultiplier` for the page keys); a thumb **off** the grid lands on the adjacent grid point in the direction of travel and the page multiplier is discarded, matching the platform's `HTMLInputElement.stepUp()` / `stepDown()`. So ArrowRight from `23` with `[step]="10"` gives `30` and ArrowLeft gives `20`. The first jump is never oversized. Pointer drags are unaffected: they snap to the _nearest_ grid point, since a drag has no direction of travel.
 

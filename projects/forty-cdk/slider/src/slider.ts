@@ -174,8 +174,9 @@ export class ForSlider
   /**
    * Visual inversion. Flips the mapping between value and screen position
    * (e.g. horizontal LTR with `inverted=true`: max sits on the left).
-   * Keyboard semantics still target "toward max" with ArrowUp / ArrowRight
-   * (LTR), independent of visual flip.
+   * The arrow pair on the visual axis follows the flip (ArrowLeft / ArrowRight
+   * when horizontal, ArrowUp / ArrowDown when vertical); the off-axis arrows,
+   * PageUp / PageDown and Home / End keep their increase / decrease meaning.
    */
   readonly inverted = input(false, { transform: booleanAttribute });
 
@@ -354,7 +355,7 @@ export class ForSlider
     this.#armedThumb = index;
   }
 
-  bumpAt(index: number, key: SliderArrowKey, large: boolean): void {
+  bumpAt(index: number, key: SliderArrowKey | 'PageUp' | 'PageDown', large: boolean): void {
     if (this.effectiveDisabled() || this.readonly()) {
       return;
     }
@@ -583,29 +584,39 @@ export class ForSlider
   }
 
   /**
-   * Returns +1 / -1 / 0 for the keyboard direction's effect on the value,
-   * resolving orientation × dir × inverted. Up / Right (LTR) increase by
-   * default; `inverted` flips both axes.
+   * Returns +1 / -1 / 0 for the key's effect on the value, resolving
+   * orientation × dir × inverted. Up / Right (LTR) / PageUp increase by
+   * default; `inverted` flips only the arrow pair on the visual axis.
    */
-  #directionFor(key: SliderArrowKey): 1 | -1 | 0 {
+  #directionFor(key: SliderArrowKey | 'PageUp' | 'PageDown'): 1 | -1 | 0 {
+    const horizontal = this.orientation() === 'horizontal';
     let positive: boolean;
+    let onAxis: boolean;
     switch (key) {
+      case 'PageUp':
+        return 1;
+      case 'PageDown':
+        return -1;
       case 'ArrowUp':
         positive = true;
+        onAxis = !horizontal;
         break;
       case 'ArrowDown':
         positive = false;
+        onAxis = !horizontal;
         break;
       case 'ArrowRight':
         positive = this.dir() !== 'rtl';
+        onAxis = horizontal;
         break;
       case 'ArrowLeft':
         positive = this.dir() === 'rtl';
+        onAxis = horizontal;
         break;
       default:
         return 0;
     }
-    if (this.inverted()) {
+    if (onAxis && this.inverted()) {
       positive = !positive;
     }
     return positive ? 1 : -1;
