@@ -483,8 +483,9 @@ Implements the [WAI-ARIA Carousel pattern](https://www.w3.org/WAI/ARIA/apg/patte
   or localize the default format and both role descriptions app-wide with
   `provideForCarouselDefaults` (see
   [Localizing the default labels](#localizing-the-default-labels)).
-- Off-view slides receive `aria-hidden="true"` and `inert` to remove them from the
-  accessibility tree and focus order.
+- Slides outside the viewport receive `aria-hidden="true"` and `inert` to remove them from
+  the accessibility tree and focus order. The visible set follows the laid-out offset, so
+  `align` and `containScroll` decide which slides stay reachable.
 - The indicator group should be labelled (e.g. `ariaLabel="Choose slide to display"`).
 - The current indicator is marked with `aria-current="true"`.
 - Prev/next buttons never use the native `disabled` attribute. At a boundary without `loop`
@@ -532,7 +533,7 @@ children, unless noted otherwise:
 | Property                          | Host                    | Value         | Notes                                                                                                                                                                                            |
 | --------------------------------- | ----------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `--for-carousel-offset`           | `[forCarousel]`         | e.g. `-100%`  | Pure arithmetic from `activeIndex`, `slidesPerView`, `align`.                                                                                                                                    |
-| `--for-carousel-active-index`     | `[forCarousel]`         | integer       | Current `activeIndex`.                                                                                                                                                                           |
+| `--for-carousel-active-index`     | `[forCarousel]`         | integer       | Current `activeIndex`, clamped to the registered slides.                                                                                                                                         |
 | `--for-carousel-slide-count`      | `[forCarousel]`         | integer       | Total registered slides.                                                                                                                                                                         |
 | `--for-carousel-slides-per-view`  | `[forCarousel]`         | integer       | From the `slidesPerView` input.                                                                                                                                                                  |
 | `--for-carousel-viewport-width`   | `[forCarousel]`         | e.g. `640px`  | Measured via `ResizeObserver`. Absent on the server and before first measurement.                                                                                                                |

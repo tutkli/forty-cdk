@@ -178,6 +178,11 @@ const root = (host: HTMLElement) => host.querySelector<HTMLElement>('[forCarouse
 const rotation = (host: HTMLElement) =>
   host.querySelector<HTMLButtonElement>('[forCarouselRotationControl]')!;
 
+const inViewSlides = (host: HTMLElement): number[] =>
+  Array.from(host.querySelectorAll<HTMLElement>('[forCarouselSlide]'))
+    .map((s, i) => (s.hasAttribute('data-in-view') ? i : -1))
+    .filter((i) => i >= 0);
+
 const indicators = (host: HTMLElement): HTMLElement[] =>
   Array.from(host.querySelectorAll<HTMLElement>('[forCarouselIndicator]'));
 
@@ -338,6 +343,93 @@ describe('ForCarousel', () => {
       expect(slide(el, 0).hasAttribute('data-in-view')).toBe(true);
       expect(slide(el, 1).hasAttribute('data-in-view')).toBe(true);
       expect(slide(el, 2).hasAttribute('data-in-view')).toBe(false);
+    });
+
+    it('containScroll at the tail keeps every slide the clamped offset shows in view', () => {
+      const { el, instance, fixture } = renderHost(CarouselHost);
+      instance.slides.set([0, 1, 2, 3, 4]);
+      instance.slidesPerView.set(3);
+      instance.containScroll.set(true);
+      instance.active.set(4);
+      fixture.detectChanges();
+      expect(inViewSlides(el)).toEqual([2, 3, 4]);
+      for (const i of [2, 3]) {
+        expect(slide(el, i).hasAttribute('aria-hidden')).toBe(false);
+        expect(slide(el, i).hasAttribute('inert')).toBe(false);
+      }
+      for (const i of [0, 1]) {
+        expect(slide(el, i).getAttribute('aria-hidden')).toBe('true');
+        expect(slide(el, i).hasAttribute('inert')).toBe(true);
+      }
+    });
+
+    it('align=center places the window around the active slide', () => {
+      const { el, instance, fixture } = renderHost(CarouselHost);
+      instance.slides.set([0, 1, 2, 3, 4]);
+      instance.slidesPerView.set(3);
+      instance.align.set('center');
+      instance.active.set(1);
+      fixture.detectChanges();
+      expect(inViewSlides(el)).toEqual([0, 1, 2]);
+      expect(slide(el, 3).getAttribute('aria-hidden')).toBe('true');
+      expect(slide(el, 3).hasAttribute('inert')).toBe(true);
+    });
+
+    it('align=end ends the window at the active slide', () => {
+      const { el, instance, fixture } = renderHost(CarouselHost);
+      instance.slides.set([0, 1, 2, 3, 4]);
+      instance.slidesPerView.set(3);
+      instance.align.set('end');
+      instance.active.set(3);
+      fixture.detectChanges();
+      expect(inViewSlides(el)).toEqual([1, 2, 3]);
+    });
+
+    it('a partially visible neighbour stays in view', () => {
+      const { el, instance, fixture } = renderHost(CarouselHost);
+      instance.slides.set([0, 1, 2, 3, 4]);
+      instance.slidesPerView.set(2);
+      instance.align.set('center');
+      instance.active.set(2);
+      fixture.detectChanges();
+      expect(root(el).style.getPropertyValue('--for-carousel-offset')).toBe('-75%');
+      expect(inViewSlides(el)).toEqual([1, 2, 3]);
+    });
+  });
+
+  describe('slide removal past the active index', () => {
+    it('treats the last remaining slide as current, in view and reachable', async () => {
+      const { el, instance, flush } = renderHost(CarouselHost);
+      instance.slides.set([0, 1, 2, 3, 4]);
+      instance.active.set(4);
+      await flush();
+      instance.slides.set([0, 1]);
+      await flush();
+
+      expect(slide(el, 1).getAttribute('data-state')).toBe('active');
+      expect(inViewSlides(el)).toEqual([1]);
+      expect(slide(el, 1).hasAttribute('inert')).toBe(false);
+      expect(root(el).style.getPropertyValue('--for-carousel-offset')).toBe('-100%');
+      expect(root(el).style.getPropertyValue('--for-carousel-active-index')).toBe('1');
+      expect(indicator(el, 1).getAttribute('aria-current')).toBe('true');
+      expect(indicator(el, 1).getAttribute('tabindex')).toBe('0');
+      expect(prev(el).hasAttribute('aria-disabled')).toBe(false);
+      expect(next(el).getAttribute('aria-disabled')).toBe('true');
+    });
+
+    it('prev moves from the reconciled slide and writes the index back', async () => {
+      const { el, instance, flush } = renderHost(CarouselHost);
+      instance.slides.set([0, 1, 2, 3, 4]);
+      instance.active.set(4);
+      await flush();
+      instance.slides.set([0, 1]);
+      await flush();
+
+      prev(el).click();
+      await flush();
+
+      expect(instance.active()).toBe(0);
+      expect(slide(el, 0).getAttribute('data-state')).toBe('active');
     });
   });
 
