@@ -446,10 +446,15 @@ scope. `[animateReorder]` (FLIP) reflows by DOM order and needs no change in mix
 ## Free drag
 
 `[forFreeDrag]` repositions its host element (or a resolved `rootElement`) by pointer drag, with
-**no `[forDropList]` required**. It never commits a reorder; it just moves the element around via a
-CSS `transform: translate(...)`. It is the standalone counterpart to a sortable list item: a
+**no `[forDropList]` required**. It never commits a reorder; it just moves the element around via
+the CSS `translate` property. It is the standalone counterpart to a sortable list item: a
 pointer-driven way to move an element freely, with optional root-element retargeting, a confinement
 boundary, axis locking, and a controllable position (see the inputs below).
+
+The offset composes with any `transform` the moved element already has, so a dialog centred with
+`transform: translate(-50%, -50%)` stays centred and moves from there. It replaces an inline
+`translate` property of the element's own, so position the element with `transform` or layout
+properties rather than `translate`.
 
 ```html
 <!-- move the whole dialog by its header -->
@@ -467,7 +472,7 @@ boundary, axis locking, and a controllable position (see the inputs below).
 
 | Input         | Type                            | Default       | Meaning                                                                                            |
 | ------------- | ------------------------------- | ------------- | -------------------------------------------------------------------------------------------------- |
-| `disabled`    | `boolean`                       | `false`       | When true, the element can't be dragged (it stays focusable; the transform doesn't change).        |
+| `disabled`    | `boolean`                       | `false`       | When true, the element can't be dragged (it stays focusable; its position doesn't change).         |
 | `rootElement` | `HTMLElement \| string \| null` | `null`        | The element actually moved. A `closest()` selector resolves an ancestor. `null` moves the host.    |
 | `boundary`    | `HTMLElement \| string \| null` | `null`        | Confine the moved element fully inside this element (or `closest()` selector). `null` = unbounded. |
 | `lockAxis`    | `'x' \| 'y' \| null`            | `null`        | Constrain movement to one axis. `'x'` pins lift-time `y`, `'y'` pins lift-time `x`.                |

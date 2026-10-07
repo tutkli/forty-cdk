@@ -78,6 +78,20 @@ class RebindRootHost {
   readonly root = signal<string>('.root-a');
 }
 
+@Component({
+  imports: [ForFreeDrag],
+  template: `
+    <div class="dialog" data-testid="dialog" style="transform: translate(-50%, -50%)">
+      <header forFreeDrag rootElement=".dialog" data-testid="header" [(position)]="pos">
+        Drag
+      </header>
+    </div>
+  `,
+})
+class CenteredDialogHost {
+  readonly pos = signal<Pos>({ x: 0, y: 0 });
+}
+
 function fire(
   target: EventTarget,
   type: 'pointerdown' | 'pointermove' | 'pointerup' | 'pointercancel',
@@ -265,28 +279,51 @@ describe('ForFreeDrag', () => {
     fire(header, 'pointerup', 40, 30);
     await flush(fixture);
 
-    expect(dialog.style.transform).toBe('translate(30px, 30px)');
-    expect(header.style.transform).toBe('');
+    expect(dialog.style.translate).toBe('30px 30px');
+    expect(header.style.translate).toBe('');
   });
 
-  it('clears the transform on the previous root when rootElement rebinds', async () => {
+  it('keeps the inline transform of a transform-centred root through mount, drag and destroy', async () => {
+    const { fixture, query } = renderHost(CenteredDialogHost);
+    await flush(fixture);
+    const header = query('[data-testid="header"]')!;
+    const dialog = query('[data-testid="dialog"]')!;
+
+    expect(dialog.style.transform).toBe('translate(-50%, -50%)');
+
+    fire(header, 'pointerdown', 0, 0);
+    fire(header, 'pointermove', 10, 0);
+    fire(header, 'pointermove', 40, 30);
+    fire(header, 'pointerup', 40, 30);
+    await flush(fixture);
+
+    expect(dialog.style.transform).toBe('translate(-50%, -50%)');
+    expect(dialog.style.translate).toBe('30px 30px');
+
+    fixture.destroy();
+
+    expect(dialog.style.transform).toBe('translate(-50%, -50%)');
+    expect(dialog.style.translate).toBe('');
+  });
+
+  it('clears the offset on the previous root when rootElement rebinds', async () => {
     const { fixture, instance, query } = renderHost(RebindRootHost);
     await flush(fixture);
     const rootA = query('[data-testid="root-a"]')!;
     const rootB = query('[data-testid="root-b"]')!;
 
-    expect(rootA.style.transform).toBe('translate(5px, 5px)');
-    expect(rootB.style.transform).toBe('');
+    expect(rootA.style.translate).toBe('5px 5px');
+    expect(rootB.style.translate).toBe('');
 
     instance.root.set('.root-b');
     fixture.detectChanges();
     await flush(fixture);
 
-    expect(rootA.style.transform).toBe('');
-    expect(rootB.style.transform).toBe('translate(5px, 5px)');
+    expect(rootA.style.translate).toBe('');
+    expect(rootB.style.translate).toBe('5px 5px');
   });
 
-  it('applies the position transform to the host', async () => {
+  it('applies the position offset to the host', async () => {
     TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
     const fixture = TestBed.createComponent(BoxHost);
     fixture.detectChanges();
@@ -301,7 +338,7 @@ describe('ForFreeDrag', () => {
     fire(box, 'pointerup', 40, 30);
     await flush(fixture);
 
-    expect(box.style.transform).toBe('translate(30px, 30px)');
+    expect(box.style.translate).toBe('30px 30px');
     expect(fixture.componentInstance.pos()).toEqual({ x: 30, y: 30 });
   });
 });

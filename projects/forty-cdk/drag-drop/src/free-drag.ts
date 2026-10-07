@@ -41,7 +41,9 @@ interface LiftSnapshot {
 
 /**
  * Standalone free-drag directive: repositions its host (or a resolved `rootElement`) by pointer
- * drag via a CSS `transform: translate(...)`, with **no** `[forDropList]` dependency. Unlike
+ * drag via the CSS `translate` property, with **no** `[forDropList]` dependency. The offset
+ * composes with any `transform` the element already has (a `translate(-50%, -50%)` centring
+ * survives) but replaces an inline `translate` of its own. Unlike
  * `[forDraggable]`, it never commits a reorder — it only moves an arbitrary element around,
  * optionally confined to a `boundary` and locked to one axis. Composes the shared
  * `createPointerDragSession` transport and accepts `[forDragHandle]` children.
@@ -75,7 +77,7 @@ export class ForFreeDrag implements ForDraggableContext {
   readonly #lift = signal<LiftSnapshot | null>(null);
   #pointerSession: PointerDragSession | null = null;
 
-  /** When true, the element can't be dragged (it stays focusable; the transform doesn't change). */
+  /** When true, the element can't be dragged (it stays focusable; its position doesn't change). */
   readonly disabled = input(false, { transform: booleanAttribute });
 
   readonly #handleGuard = createPointerHandleGuard(this.disabled);
@@ -122,9 +124,9 @@ export class ForFreeDrag implements ForDraggableContext {
       effect((onCleanup) => {
         const { x, y } = this.position();
         const el = this.#resolvedRoot();
-        el.style.transform = x === 0 && y === 0 ? '' : `translate(${x}px, ${y}px)`;
+        el.style.translate = x === 0 && y === 0 ? '' : `${x}px ${y}px`;
         onCleanup(() => {
-          el.style.transform = '';
+          el.style.translate = '';
         });
       });
       this.#pointerSession = createPointerDragSession({

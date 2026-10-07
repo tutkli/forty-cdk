@@ -40,7 +40,26 @@ import { ForDragHandle, ForFreeDrag } from 'forty-cdk/drag-drop';
         border: 1px solid #333;
         box-sizing: border-box;
       }
-      .dialog header {
+      .stage {
+        position: relative;
+        width: 400px;
+        height: 200px;
+        margin: 40px;
+        border: 1px solid #ccc;
+      }
+      .centered {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 140px;
+        height: 80px;
+        transform: translate(-50%, -50%);
+        background: #fff;
+        border: 1px solid #333;
+        box-sizing: border-box;
+      }
+      .dialog header,
+      .centered header {
         display: flex;
         align-items: center;
         gap: 4px;
@@ -60,6 +79,14 @@ import { ForDragHandle, ForFreeDrag } from 'forty-cdk/drag-drop';
           Title
         </header>
         Body
+      </div>
+    </div>
+
+    <div class="stage" data-testid="stage">
+      <div class="centered" data-testid="centered">
+        <header forFreeDrag rootElement=".centered" boundary=".stage" data-testid="centered-header">
+          Centred
+        </header>
       </div>
     </div>
   `,
