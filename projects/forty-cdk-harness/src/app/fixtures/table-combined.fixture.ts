@@ -195,7 +195,8 @@ function makeRows(start: number, length: number): Row[] {
       forTableVirtualized
       mode="grid"
       ariaLabel="People"
-      [rowCount]="displayRows().length"
+      [rowCount]="max"
+      [virtualRowCount]="displayRows().length"
       [estimateRowSize]="ROW_HEIGHT"
       [scrollElement]="scrollEl()"
       [selectionMode]="selectionMode()"
@@ -298,7 +299,7 @@ export class TableCombinedFixture {
   private readonly query = this.route.snapshot.queryParamMap;
 
   private readonly pageSize = this.numberParam('pageSize', 60);
-  private readonly max = this.numberParam('max', 600);
+  protected readonly max = this.numberParam('max', 600);
   private readonly latency = this.numberParam('latency', 150);
 
   protected readonly selectionMode = signal<TableSelectionMode>(
@@ -344,13 +345,9 @@ export class TableCombinedFixture {
   protected readonly scrollEl = computed(() => this.scrollRef()?.nativeElement ?? null);
 
   private readonly tableV = viewChild<ForTableVirtualized>('v');
-  private readonly range = computed<readonly [number, number]>(() => {
-    const visible = this.tableV()?.virtualRows() ?? [];
-    if (visible.length === 0) {
-      return [0, 0];
-    }
-    return [visible[0]!.index, visible[visible.length - 1]!.index + 1];
-  });
+  private readonly range = computed<readonly [number, number]>(
+    () => this.tableV()?.range() ?? [0, 0],
+  );
 
   protected readonly loader = injectInfiniteScroll({
     range: this.range,
