@@ -1,4 +1,13 @@
-import { APP_ID, InjectionToken, Injectable, type Provider, inject } from '@angular/core';
+import {
+  APP_ID,
+  InjectionToken,
+  Injectable,
+  type Provider,
+  inject,
+  isDevMode,
+} from '@angular/core';
+
+import { fortyError } from '../errors/errors';
 
 /**
  * Salt mixed into every id produced by {@link IdGenerator}.
@@ -38,9 +47,11 @@ export const FOR_ID_SALT = new InjectionToken<string>('forty-cdk id salt', {
  * — so they emit identical id sequences and the duplicate ids mis-resolve across app boundaries.
  *
  * The salt must be deterministic per app instance: a runtime random value would break SSR
- * hydration.
+ * hydration. It must not contain whitespace either: `aria-labelledby`, `aria-controls` and
+ * `aria-describedby` are space-separated id lists, so a salted id with a space in it names two ids
+ * that do not exist. In dev mode {@link IdGenerator} throws on such a salt.
  *
- * @param salt A stable, app-unique salt.
+ * @param salt A stable, app-unique salt without whitespace.
  */
 export function provideForIdSalt(salt: string): Provider {
   return { provide: FOR_ID_SALT, useValue: salt };
@@ -71,11 +82,27 @@ export class IdGenerator {
   #counter = 0;
 
   /**
-   * Returns a fresh, unique ID with the given prefix.
+   * Returns a fresh, unique ID with the given prefix. In dev mode, throws when the salt contains
+   * whitespace.
    *
    * @param prefix Optional prefix for the generated ID. Defaults to `for`.
    */
   next(prefix = 'for'): string {
+    assertIdSalt(this.#salt);
     return `${prefix}-${this.#salt}-${++this.#counter}`;
+  }
+}
+
+function assertIdSalt(salt: string): void {
+  if (isDevMode() && /\s/.test(salt)) {
+    throw fortyError({
+      code: 'FORCDK-CORE-012',
+      message: `The id salt "${salt}" contains whitespace.`,
+      cause:
+        'Generated ids are referenced from aria-labelledby, aria-controls and aria-describedby, ' +
+        'which are space-separated id lists, so an id with a space in it resolves to two ids ' +
+        'that do not exist.',
+      fix: 'Pass provideForIdSalt() (or FOR_ID_SALT) a salt without whitespace, e.g. "admin-panel".',
+    });
   }
 }

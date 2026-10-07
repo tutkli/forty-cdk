@@ -26,6 +26,10 @@ import { type InjectionToken, Optional, type Provider, SkipSelf } from '@angular
  * - `overrides` may instead be a function returning them. It is called inside
  *   the provider factory, so it can `inject()`, once per injector that
  *   resolves the token.
+ * - A key listed in `recordKeys` holds a per-part record (`segmentLabels`,
+ *   `placeholder`) and merges one level deeper: per entry, the same
+ *   overrides-over-parent-over-fallback order applies, so a scope overriding
+ *   one entry keeps every entry an ancestor scope set.
  * - Returns a `Provider[]` so callers can spread additional providers
  *   (e.g. a per-scope coordinator class) into the same array.
  *
@@ -33,11 +37,13 @@ import { type InjectionToken, Optional, type Provider, SkipSelf } from '@angular
  * @param fallback Library defaults, merged under every scope. Returned by
  *   reference at the root, so don't mutate it.
  * @param overrides The scope's partial overrides, or a factory building them.
+ * @param recordKeys Keys whose values are records merged entry by entry.
  */
 export function provideDefaults<D extends object>(
   token: InjectionToken<D>,
   fallback: D,
   overrides: Partial<D> | (() => Partial<D>) = {},
+  recordKeys: readonly (keyof D)[] = [],
 ): Provider[] {
   return [
     {
@@ -47,13 +53,19 @@ export function provideDefaults<D extends object>(
           typeof overrides === 'function' ? (overrides as () => Partial<D>)() : overrides,
           parent,
           fallback,
+          recordKeys,
         ),
       deps: [[new SkipSelf(), new Optional(), token]],
     },
   ];
 }
 
-function mergeDefaults<D extends object>(overrides: Partial<D>, parent: D | null, fallback: D): D {
+function mergeDefaults<D extends object>(
+  overrides: Partial<D>,
+  parent: D | null,
+  fallback: D,
+  recordKeys: readonly (keyof D)[],
+): D {
   const result = { ...fallback } as D;
   // Parent already merged its own overrides over the fallback, so it wins
   // over the library fallback for any key it owns.
@@ -61,16 +73,30 @@ function mergeDefaults<D extends object>(overrides: Partial<D>, parent: D | null
     for (const key of Object.keys(parent) as (keyof D)[]) {
       const value = parent[key];
       if (value !== undefined) {
-        result[key] = value;
+        result[key] = recordKeys.includes(key)
+          ? (mergeRecord(result[key], value) as D[keyof D])
+          : value;
       }
     }
   }
   // Overrides win over both parent and fallback for the keys they list.
   for (const key of Object.keys(overrides) as (keyof D)[]) {
-    const value = overrides[key];
+    const value = overrides[key] as D[keyof D] | undefined;
     if (value !== undefined) {
-      result[key] = value as D[keyof D];
+      result[key] = recordKeys.includes(key)
+        ? (mergeRecord(result[key], value) as D[keyof D])
+        : value;
     }
   }
   return result;
+}
+
+function mergeRecord(base: unknown, layer: unknown): Record<string, unknown> {
+  const merged: Record<string, unknown> = { ...(base as object) };
+  for (const [entry, value] of Object.entries(layer as object)) {
+    if (value !== undefined) {
+      merged[entry] = value;
+    }
+  }
+  return merged;
 }

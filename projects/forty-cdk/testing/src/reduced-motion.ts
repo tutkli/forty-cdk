@@ -60,7 +60,10 @@ export function withReducedMotion(): () => void {
 
 /** A reduced-motion preference a spec can change while a fixture is mounted. */
 export interface FlippableReducedMotion {
-  /** Sets the preference and notifies every listener the primitive registered on the query. */
+  /**
+   * Sets the preference and notifies every listener registered on the reduce query. Listeners on
+   * any other query are never called.
+   */
   set(matches: boolean): void;
   /** Restores the previous `matchMedia`. Call it from an `afterEach` or a `finally`. */
   restore(): void;
@@ -93,7 +96,13 @@ export function withFlippableReducedMotion(initial = true): FlippableReducedMoti
     (query: string): MediaQueryList =>
       (REDUCE_QUERY.test(query)
         ? reduced
-        : { ...reduced, matches: false }) as unknown as MediaQueryList,
+        : {
+            ...reduced,
+            matches: false,
+            media: query,
+            addEventListener: () => {},
+            removeEventListener: () => {},
+          }) as unknown as MediaQueryList,
   );
 
   return {

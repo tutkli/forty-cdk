@@ -21,6 +21,8 @@ const APP_TSCONFIG = join(repoRoot, 'projects', 'forty-cdk-docs', 'tsconfig.app.
  */
 const COMPILED_FLOOR = 40;
 
+const MODULE_AUGMENTATION = /^\s*declare\s+(?:module\s+['"]|global\b)/m;
+
 const posix = (file) => file.split(sep).join('/');
 const rel = (file) => posix(relative(repoRoot, file));
 const keyOf = (file) => posix(file).toLowerCase();
@@ -91,19 +93,33 @@ const config = ts.getParsedCommandLineOfConfigFile(tsconfig, undefined, {
     throw new Error(`[check-doc-snippets] ${messageOf(diagnostic)}`);
   },
 });
-const program = ts.createProgram({ rootNames: config.fileNames, options: config.options });
+const augments = (file) => MODULE_AUGMENTATION.test(byFile.get(keyOf(file))?.snippet.code ?? '');
+const programs = [
+  config.fileNames.filter((file) => !augments(file)),
+  ...config.fileNames.filter(augments).map((file) => [file]),
+]
+  .filter((rootNames) => rootNames.length > 0)
+  .map((rootNames) => ts.createProgram({ rootNames, options: config.options }));
 
 const failures = [];
-for (const diagnostic of ts.getPreEmitDiagnostics(program)) {
+const outsideFences = new Set();
+const reportOutsideFences = (failure) => {
+  const key = `${failure.path}:${failure.line}:${failure.message}`;
+  if (!outsideFences.has(key)) {
+    outsideFences.add(key);
+    failures.push(failure);
+  }
+};
+for (const diagnostic of programs.flatMap((program) => ts.getPreEmitDiagnostics(program))) {
   const message = messageOf(diagnostic);
   if (diagnostic.file === undefined) {
-    failures.push({ path: rel(tsconfig), line: 1, message });
+    reportOutsideFences({ path: rel(tsconfig), line: 1, message });
     continue;
   }
   const { line } = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start ?? 0);
   const entry = byFile.get(keyOf(diagnostic.file.fileName));
   if (entry === undefined) {
-    failures.push({ path: rel(diagnostic.file.fileName), line: line + 1, message });
+    reportOutsideFences({ path: rel(diagnostic.file.fileName), line: line + 1, message });
     continue;
   }
   entry.diagnostics.push({ line: entry.snippet.line + 1 + line, message });

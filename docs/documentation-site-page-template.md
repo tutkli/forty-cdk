@@ -437,6 +437,9 @@ lone class member, a `providers: […]` array, a call on `this.` — which is ne
 requires to fail. A marker above anything other than a TypeScript fence is an error, so a stale one
 cannot linger, and the run reports how many fences carry each marker so a sweep can be reviewed.
 Prefer a fence that compiles: a snippet complete enough to paste is worth the two import lines.
+A fence that augments a module (`declare module '…'` or `declare global`) is compiled in a program of
+its own, because the fences otherwise share one and its augmentation would retype every other fence;
+so it has to exercise the augmented type itself (the breakpoints fence calls `up('desktop')`).
 
 **No prose carries an em dash**, by `scripts/check-doc-prose.mjs` under `pnpm test:docs`
 ([#1952](https://github.com/tutkli/forty-cdk/issues/1952)). It reads every document the corpus

@@ -220,7 +220,7 @@ providers: [
 
 `segmentLabels` supplies each segment's default `aria-label`, keyed by part type. Unset keys keep the library default (the part name, and `'AM/PM'` for the `dayPeriod` segment), so overriding a single key never wipes the rest. A segment's own `[ariaLabel]` still wins over the scope default.
 
-`placeholder` is the text an empty segment shows, keyed the same way. A field's own `[placeholder]` wins for the parts it names and only those, and a part neither names keeps the letter-repeat default. `provideForDateRangeFieldDefaults` takes the same keys for `[forDateRangeField]`.
+`placeholder` is the text an empty segment shows, keyed the same way. A field's own `[placeholder]` wins for the parts it names and only those, and a part neither names keeps the letter-repeat default. A nested `provideForDateFieldDefaults` merges both records entry by entry with its parent scope, so a feature overriding only `dayPeriod` keeps the labels and placeholders the application root localized. `provideForDateRangeFieldDefaults` takes the same keys for `[forDateRangeField]`.
 
 `hourCycle` sets the 12- or 24-hour cycle of every field that doesn't bind `[hourCycle]`, so a product on a 24-hour clock sets it once instead of on each field. Its fallback `null` derives the cycle from the locale.
 

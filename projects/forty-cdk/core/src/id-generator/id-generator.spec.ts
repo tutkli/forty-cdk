@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { APP_ID, provideZonelessChangeDetection } from '@angular/core';
 
-import { IdGenerator, provideForIdSalt } from './id-generator';
+import { FOR_ID_SALT, IdGenerator, provideForIdSalt } from './id-generator';
 
 describe('IdGenerator', () => {
   beforeEach(() => {
@@ -138,5 +138,38 @@ describe('IdGenerator', () => {
     const b = TestBed.inject(IdGenerator).next();
 
     expect(a).toBe(b);
+  });
+
+  it.each(['admin panel', 'tab\there', 'line\nbreak'])(
+    'throws FORCDK-CORE-012 on every id when the salt %j contains whitespace',
+    (salt) => {
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({
+        providers: [provideZonelessChangeDetection(), provideForIdSalt(salt)],
+      });
+      const gen = TestBed.inject(IdGenerator);
+
+      expect(() => gen.next()).toThrow(/FORCDK-CORE-012/);
+      expect(() => gen.next('dialog-title')).toThrow(/FORCDK-CORE-012/);
+    },
+  );
+
+  it('throws FORCDK-CORE-012 for a whitespace salt provided through FOR_ID_SALT directly', () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [provideZonelessChangeDetection(), { provide: FOR_ID_SALT, useValue: 'a b' }],
+    });
+
+    expect(() => TestBed.inject(IdGenerator).next()).toThrow(/FORCDK-CORE-012/);
+  });
+
+  it('does not validate the salt in production mode', () => {
+    vi.stubGlobal('ngDevMode', false);
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [provideZonelessChangeDetection(), provideForIdSalt('admin panel')],
+    });
+
+    expect(TestBed.inject(IdGenerator).next()).toBe('for-admin panel-1');
   });
 });

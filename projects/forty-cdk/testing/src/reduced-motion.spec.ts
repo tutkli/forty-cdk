@@ -72,6 +72,26 @@ describe('withFlippableReducedMotion', () => {
 
     try {
       expect(matchMedia('(min-width: 640px)').matches).toBe(false);
+      expect(matchMedia('(min-width: 640px)').media).toBe('(min-width: 640px)');
+    } finally {
+      motion.restore();
+    }
+  });
+
+  it('never notifies a listener registered on a query other than the reduce one', () => {
+    const motion = withFlippableReducedMotion(false);
+    const widthListener = vi.fn();
+    const reduceListener = vi.fn();
+
+    try {
+      matchMedia('(min-width: 640px)').addEventListener('change', widthListener);
+      matchMedia(REDUCE).addEventListener('change', reduceListener);
+
+      motion.set(true);
+      motion.set(false);
+
+      expect(widthListener).not.toHaveBeenCalled();
+      expect(reduceListener).toHaveBeenCalledTimes(2);
     } finally {
       motion.restore();
     }

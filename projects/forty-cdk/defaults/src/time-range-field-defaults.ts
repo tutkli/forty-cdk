@@ -7,8 +7,8 @@ import { provideDefaults } from './defaults';
 /**
  * Accessible name announced for each editable segment, keyed by its part type.
  * Override individually (or wholesale) for localization; any key left unset
- * falls back to the library default for that part — so overriding just
- * `dayPeriod` keeps the English labels for the rest.
+ * keeps the parent scope's label, else the library default for that part — so
+ * overriding just `dayPeriod` keeps the labels for the rest.
  */
 export type ForTimeRangeFieldSegmentLabels = Partial<Record<TimeSegmentType, LocalizableText>>;
 
@@ -29,13 +29,15 @@ export interface ForTimeRangeFieldDefaults {
    * Accessible names announced for each editable segment (via `aria-label`),
    * keyed by part type, used when a segment has no explicit `ariaLabel`. The
    * AM/PM `dayPeriod` defaults to `'AM/PM'` instead of leaking the raw token.
-   * Override for localization; unset keys keep the library default.
+   * Override for localization; a nested scope merges this record entry by
+   * entry with its parent's, and keys no scope sets keep the library default.
    */
   segmentLabels: ForTimeRangeFieldSegmentLabels;
   /**
    * Placeholder each empty editable segment shows, keyed by part type, for
-   * fields whose `[placeholder]` doesn't name that part. Unset parts fall back
-   * to a letter-repeat default (`hh` / `mm` / `ss` / `--`).
+   * fields whose `[placeholder]` doesn't name that part. A nested scope merges
+   * this record entry by entry with its parent's, and parts no scope names fall
+   * back to a letter-repeat default (`hh` / `mm` / `ss` / `--`).
    */
   placeholder: Partial<Record<TimeSegmentType, LocalizableText>>;
   /**
@@ -107,5 +109,6 @@ export function provideForTimeRangeFieldDefaults(
     FOR_TIME_RANGE_FIELD_DEFAULTS,
     FOR_TIME_RANGE_FIELD_FALLBACK_DEFAULTS,
     defaults,
+    ['segmentLabels', 'placeholder'],
   );
 }

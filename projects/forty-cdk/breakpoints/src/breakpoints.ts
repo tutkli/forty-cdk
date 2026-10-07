@@ -11,7 +11,7 @@ import { FOR_BREAKPOINTS_DEFAULTS, type TailwindBreakpointName } from 'forty-cdk
  * ```ts
  * import type { appBreakpoints } from './breakpoints';
  *
- * declare module 'forty-cdk' {
+ * declare module 'forty-cdk/breakpoints' {
  *   interface BreakpointRegistry extends Record<keyof typeof appBreakpoints, true> {}
  * }
  * ```
