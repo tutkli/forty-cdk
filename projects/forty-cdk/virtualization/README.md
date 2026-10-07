@@ -135,7 +135,7 @@ When rows vary in height, drop to the headless `injectVirtualizer` core: it owns
 
 ### Infinite scroll (endReached)
 
-The Shape A turnkey path: bind `(endReached)` on `[forVirtualViewport]` and it builds the infinite-scroll detector internally, firing once when the rendered window comes within the overscan of the end. The consumer owns the fetch and appends the next page; the detector re-arms when the bound `count` grows.
+The Shape A turnkey path: bind `(endReached)` on `[forVirtualViewport]` and it builds the infinite-scroll detector internally, firing once when the rendered window comes within the overscan of the end. The consumer owns the fetch and appends the next page; the detector re-arms when the bound `count` changes or the window scrolls out of the threshold and back in.
 
 ## Vertical list
 
@@ -310,9 +310,13 @@ readonly loader = injectInfiniteScroll({
 ```
 
 The detector fires once per threshold crossing, is suppressed while the `onLoadMore` promise is
-pending (`loader.pending()` reflects the in-flight state), and re-arms when `count` grows (a page
-was appended). An empty `[0, 0]` window (including SSR off-browser) never fires. The consumer owns
-the fetch, deduplication, and retry. Angular `resource()` / `httpResource()` are a natural fit.
+pending (`loader.pending()` reflects the in-flight state), and re-arms when `count` changes (a page
+was appended) or the window scrolls out of the threshold and back in. A page appended while the
+promise is still pending fires the next load as soon as it settles, if the window is still near the
+end. A rejected promise clears `pending` without re-firing, so the user retries a failed load by
+scrolling back past the threshold. An empty `[0, 0]` window (including SSR off-browser) never fires.
+The consumer owns the fetch, deduplication, and error handling. Angular `resource()` /
+`httpResource()` are a natural fit.
 
 | Option       | Type                                | Default  | Description                                                             |
 | ------------ | ----------------------------------- | -------- | ----------------------------------------------------------------------- |

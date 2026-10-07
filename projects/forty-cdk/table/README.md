@@ -135,7 +135,7 @@ The companion directives `[forTableColumnReorder]` (on the header row) and `[for
 
 ### Infinite scroll
 
-The headless `injectInfiniteScroll` core composes on top of `[forTableVirtualized]`: pass it the directive's `range`, the true rendered window that `virtualRows()` widens with the retained focused and reordering rows, and feed it the loaded count. `[rowCount]` stays at the server total for `aria-rowcount` while `[virtualRowCount]` follows the loaded count. The detector fires once per threshold crossing, suppresses re-fire while the load promise is pending and re-arms when the loaded count grows after each appended page, up to a cap.
+The headless `injectInfiniteScroll` core composes on top of `[forTableVirtualized]`: pass it the directive's `range`, the true rendered window that `virtualRows()` widens with the retained focused and reordering rows, and feed it the loaded count. `[rowCount]` stays at the server total for `aria-rowcount` while `[virtualRowCount]` follows the loaded count. The detector fires once per threshold crossing, suppresses re-fire while the load promise is pending and re-arms when the loaded count changes after each appended page, up to a cap, or when the window scrolls out of the threshold and back in.
 
 ### Everything at once
 

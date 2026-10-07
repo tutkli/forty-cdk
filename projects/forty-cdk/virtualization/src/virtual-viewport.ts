@@ -95,7 +95,8 @@ export class ForVirtualViewport implements ForVirtualViewportContext, OnInit {
    * Emits when the rendered window comes within ~`overscan` items of the end of
    * the list, signalling the consumer to load the next page. Built on
    * {@link injectInfiniteScroll}; fires once per threshold crossing and re-arms
-   * when the bound count grows. The consumer owns the fetch (e.g. via `resource()`).
+   * when the bound count changes or the window crosses the threshold again. The
+   * consumer owns the fetch (e.g. via `resource()`).
    */
   readonly endReached = output<void>();
 

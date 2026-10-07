@@ -106,8 +106,64 @@ describe('injectInfiniteScroll', () => {
     resolve();
     await flush(fixture);
     expect(fixture.componentInstance.loader.pending()).toBe(false);
+    expect(spy).toHaveBeenCalledTimes(2);
+  });
 
-    fixture.componentInstance.count.set(103);
+  it('a settle with no new page does not re-fire while the window stays near the end', async () => {
+    const fixture = TestBed.createComponent(Host);
+    let resolve!: () => void;
+    const spy = vi.fn(() => new Promise<void>((r) => (resolve = r)));
+    fixture.componentInstance.onLoadMore = spy;
+    fixture.detectChanges();
+
+    fixture.componentInstance.range.set([90, 100]);
+    await flush(fixture);
+    expect(spy).toHaveBeenCalledTimes(1);
+
+    resolve();
+    await flush(fixture);
+    expect(fixture.componentInstance.loader.pending()).toBe(false);
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
+
+  it('re-arms on a fresh threshold crossing without a count change', async () => {
+    const fixture = TestBed.createComponent(Host);
+    const spy = vi.fn();
+    fixture.componentInstance.onLoadMore = spy;
+    fixture.detectChanges();
+
+    fixture.componentInstance.range.set([90, 100]);
+    await flush(fixture);
+    expect(spy).toHaveBeenCalledTimes(1);
+
+    fixture.componentInstance.range.set([40, 50]);
+    await flush(fixture);
+    expect(spy).toHaveBeenCalledTimes(1);
+
+    fixture.componentInstance.range.set([90, 100]);
+    await flush(fixture);
+    expect(spy).toHaveBeenCalledTimes(2);
+  });
+
+  it('retries a rejected load on the next crossing, not on the rejection itself', async () => {
+    const fixture = TestBed.createComponent(Host);
+    let reject!: (reason: unknown) => void;
+    const spy = vi.fn(() => new Promise<void>((_, r) => (reject = r)));
+    fixture.componentInstance.onLoadMore = spy;
+    fixture.detectChanges();
+
+    fixture.componentInstance.range.set([90, 100]);
+    await flush(fixture);
+    expect(spy).toHaveBeenCalledTimes(1);
+
+    reject(new Error('network'));
+    await flush(fixture);
+    expect(fixture.componentInstance.loader.pending()).toBe(false);
+    expect(spy).toHaveBeenCalledTimes(1);
+
+    fixture.componentInstance.range.set([40, 50]);
+    await flush(fixture);
+    fixture.componentInstance.range.set([90, 100]);
     await flush(fixture);
     expect(spy).toHaveBeenCalledTimes(2);
   });
