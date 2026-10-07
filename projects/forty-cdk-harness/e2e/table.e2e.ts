@@ -356,24 +356,28 @@ test.describe('Table (column resizing)', () => {
     const headerName = el(page, 'header-name');
     const resizer = el(page, 'resizer-name');
 
-    const beforeBox = await headerName.boundingBox();
-    expect(beforeBox).not.toBeNull();
+    const seededWidth = 200;
+    const step = 10;
+    const headerWidth = (): Promise<number> => headerName.boundingBox().then((b) => b?.width ?? 0);
+
+    await expect(resizer).toHaveAttribute('aria-valuenow', String(seededWidth));
+    await expect.poll(headerWidth).toBe(seededWidth);
 
     await resizer.focus();
+    await expectFocused(resizer);
     await page.keyboard.press('ArrowRight');
     await page.keyboard.press('ArrowRight');
     await page.keyboard.press('ArrowRight');
 
-    await expect
-      .poll(() => headerName.boundingBox().then((b) => b?.width ?? 0))
-      .toBeGreaterThan(beforeBox!.width);
-    const widenedWidth = (await headerName.boundingBox())!.width;
+    const widenedWidth = seededWidth + 3 * step;
+    await expect(resizer).toHaveAttribute('aria-valuenow', String(widenedWidth));
+    await expect.poll(headerWidth).toBe(widenedWidth);
 
+    await expectFocused(resizer);
     await page.keyboard.press('ArrowLeft');
 
-    await expect
-      .poll(() => headerName.boundingBox().then((b) => b?.width ?? 0))
-      .toBeLessThan(widenedWidth);
+    await expect(resizer).toHaveAttribute('aria-valuenow', String(widenedWidth - step));
+    await expect.poll(headerWidth).toBe(widenedWidth - step);
   });
 
   test('dragging the handle does not trigger a sort', async ({ page }) => {
