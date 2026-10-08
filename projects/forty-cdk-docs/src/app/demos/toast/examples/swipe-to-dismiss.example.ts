@@ -100,7 +100,6 @@ import { ForToastManager, ForToastViewport } from 'forty-cdk/toast';
       );
       transition: transform 0.18s ease-out;
       animation: swipe-toast-in 0.24s var(--ex-ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1)) both;
-      touch-action: none;
     }
 
     .swipe-toast-viewport [forToast][data-swipe='move'] {

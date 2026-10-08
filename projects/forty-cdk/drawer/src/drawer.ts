@@ -73,6 +73,7 @@ import { injectDrawerDrag } from './drawer-drag';
     '[attr.data-scale-background]': 'scaleBackgroundActive() ? "" : null',
     '[attr.data-depth]': 'depthAttr()',
     '[style.--for-drawer-depth]': 'depth()',
+    '[style.touch-action]': 'touchAction()',
     '[attr.data-state-nested]': 'hasChild() ? "" : null',
   },
   providers: [
@@ -154,6 +155,12 @@ export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements
    * When true, the swipe gesture only arms on a pointerdown that started on
    * the registered `[forDrawerHandle]` element. Useful when the surface
    * contains scrollable content that should keep its scroll gesture.
+   *
+   * While false and the swipe can arm, the surface carries the `touch-action`
+   * that leaves the browser only the axis the swipe does not use (`pan-x` for
+   * a `top` / `bottom` drawer, `pan-y` for `left` / `right`), so a finger's
+   * swipe is not claimed as a scroll. A scroller inside the surface keeps its
+   * own scrolling.
    */
   readonly handleOnly = input(this.#defaults.handleOnly ?? false, { transform: booleanAttribute });
 
@@ -305,6 +312,9 @@ export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements
    * {@link swipeMovementX}, non-zero only for `side` `'top'` / `'bottom'`.
    */
   readonly swipeMovementY = this.#drag.swipeMovementY;
+
+  /** `touch-action` for the surface while it arms the swipe; see `handleOnly`. */
+  protected readonly touchAction = this.#drag.touchAction;
 
   /** Host element of this drawer surface — exposed via `ForDrawerContext`. */
   get hostElement(): HTMLElement {

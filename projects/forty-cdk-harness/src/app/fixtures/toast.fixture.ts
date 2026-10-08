@@ -62,8 +62,7 @@ import {
   // rendered inside `<for-toast-viewport>`'s template, NOT inside this
   // fixture's template, so they carry the viewport component's `_ngcontent-*`
   // attribute rather than the fixture's. With default emulated encapsulation,
-  // the `[forToast] { width: 280px; pointer-events: auto; touch-action: none;
-  // ... }` rule below would be scoped to the fixture's attribute and silently
+  // the `[forToast] { width: 280px; pointer-events: auto; ... }` rule below would be scoped to the fixture's attribute and silently
   // skip the actual toast elements — leaving them at near-zero content width
   // and making Playwright's hit test at the toast's bbox centre return the
   // fixture host (`<app-toast-fixture> intercepts pointer events`) instead of
@@ -125,7 +124,8 @@ import {
         color: #fff;
         border-radius: 6px;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-        touch-action: none;
+        /* No touch-action: the swipe-enabled toast binds its own, and the
+           @mobile swipe spec guards that binding against a real touch. */
         pointer-events: auto;
         transform: translate(
           var(--for-toast-swipe-movement-x, 0px),

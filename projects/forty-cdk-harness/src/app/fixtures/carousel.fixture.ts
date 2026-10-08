@@ -109,7 +109,7 @@ import {
         forCarouselViewport
         forCarouselDrag
         data-testid="viewport"
-        (gotpointercapture)="onPointerCapture()"
+        (gotpointercapture)="onPointerCapture($event)"
       >
         <div forCarouselTrack data-testid="track">
           @for (slide of slides(); track slide) {
@@ -188,7 +188,14 @@ export class CarouselFixture {
     this.clickCount.update((n) => n + 1);
   }
 
-  protected onPointerCapture(): void {
-    this.captureCount.update((n) => n + 1);
+  /**
+   * Counts the captures the drag directive takes on the viewport itself. A
+   * real touch is also implicitly captured by the element it lands on, and that
+   * `gotpointercapture` bubbles up here too, so it is filtered out.
+   */
+  protected onPointerCapture(event: PointerEvent): void {
+    if (event.target === event.currentTarget) {
+      this.captureCount.update((n) => n + 1);
+    }
   }
 }

@@ -266,6 +266,7 @@ export {
   FLICK_STALE_VELOCITY_MS,
   FLICK_VELOCITY_PX_PER_MS,
   flickVelocity,
+  swipeTouchAction,
   type SwipeDirection,
   type SwipeEventDetail,
 } from './swipe-dismiss/swipe-dismiss';

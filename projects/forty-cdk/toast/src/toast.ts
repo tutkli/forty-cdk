@@ -25,6 +25,7 @@ import {
   isImeComposing,
   type PauseController,
   attachSwipeDismiss,
+  swipeTouchAction,
   type SwipeDirection,
   type SwipeEventDetail,
 } from 'forty-cdk/core';
@@ -76,7 +77,9 @@ type SwipeState = 'start' | 'move' | 'cancel' | 'end';
  *   live the host reflects `data-swipe="start" | "move" | "cancel" | "end"`
  *   (`"start"` until the move after the arming one),
  *   `data-swipe-direction`, and the CSS variables
- *   `--for-toast-swipe-movement-x` / `--for-toast-swipe-movement-y`.
+ *   `--for-toast-swipe-movement-x` / `--for-toast-swipe-movement-y`. The
+ *   host also carries the `touch-action` that keeps a finger's swipe from
+ *   being claimed as a page pan.
  * - The host carries `data-state="open"` while alive (no `closed` state —
  *   the consumer unmounts on close).
  */
@@ -97,6 +100,7 @@ type SwipeState = 'start' | 'move' | 'cancel' | 'end';
     '[attr.data-swipe-direction]': 'swipeActiveDirection()',
     '[style.--for-toast-swipe-movement-x.px]': 'swipeMovementX()',
     '[style.--for-toast-swipe-movement-y.px]': 'swipeMovementY()',
+    '[style.touch-action]': 'touchAction()',
     '(pointerdown)': 'onPointerDown()',
     '(pointerenter)': 'onPause("hover")',
     '(pointerleave)': 'onResume("hover")',
@@ -149,9 +153,12 @@ export class ForToast implements ForToastContext {
    * (`['right', 'down']`). `null` (default) disables swipe.
    *
    * The swipe gesture uses pointer events, so it works for both touch
-   * and mouse drags. While the user is swiping, the host reflects
-   * `data-swipe="start" | "move" | "cancel" | "end"` and
-   * `data-swipe-direction` plus the CSS custom properties
+   * and mouse drags. While swipe is enabled the host carries the
+   * `touch-action` that leaves the browser only the other axis to pan
+   * (`pan-y` for left / right, `pan-x` for up / down, `none` for both), so a
+   * finger's swipe is not claimed as a page scroll. While the user is
+   * swiping, the host reflects `data-swipe="start" | "move" | "cancel" | "end"`
+   * and `data-swipe-direction` plus the CSS custom properties
    * `--for-toast-swipe-movement-x` / `--for-toast-swipe-movement-y` so the
    * consumer can drive a transform-based animation entirely from CSS.
    */
@@ -204,6 +211,11 @@ export class ForToast implements ForToastContext {
     }
     return raw;
   });
+
+  /** `touch-action` for the host: free the axis no swipe direction uses. */
+  protected readonly touchAction = computed(() =>
+    swipeTouchAction(this.#normalizedSwipeDirections()),
+  );
 
   readonly #labels = signal<readonly ForToastTextHandle[]>([]);
   readonly #descriptions = signal<readonly ForToastTextHandle[]>([]);

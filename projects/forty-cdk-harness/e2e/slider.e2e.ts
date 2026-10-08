@@ -617,18 +617,16 @@ test.describe('Slider (step granularity)', () => {
 
 // Touch path coverage for the slider's root-hosted pointer-drag session
 // (`createPointerDragSession`, document-bound move / up with pointer
-// capture). The desktop blocks above use `page.mouse` directly; the
-// `@mobile` block routes through `dragFrom`'s touch branch (synthetic
-// `pointerType: 'touch'` events via `dispatchEvent`) on the mobile
-// projects, while falling back to the mouse branch on desktop projects as
-// a regression guard.
+// capture). The desktop blocks above use `page.mouse` directly; `dragFrom`
+// drives a finger on the mobile projects (a real CDP touch on Mobile Chrome)
+// and the mouse on the desktop ones, and asserts which.
 test.describe('Slider (@mobile touch drag)', () => {
-  test('@mobile touch drag of the thumb updates aria-valuenow', async ({ page }, testInfo) => {
+  test('@mobile touch drag of the thumb updates aria-valuenow', async ({ page }) => {
     await gotoFixture(page, 'slider');
     // Initial value [50]; touch drag 50 px right on a 200 px track maps
     // to roughly +25 value (allowing for the 5 px arming step and
     // browser sub-pixel rounding).
-    await dragFrom(page, el(page, 'thumb-0'), { dx: 50, dy: 0 }, { testInfo });
+    await dragFrom(page, el(page, 'thumb-0'), { dx: 50, dy: 0 });
     await expect(el(page, 'touched')).toHaveText('true');
 
     const v = Number(await el(page, 'last-value').textContent());
