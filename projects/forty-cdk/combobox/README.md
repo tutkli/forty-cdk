@@ -220,7 +220,7 @@ Input tables are not yet tabulated for this primitive. See the feature sections 
 | `[forComboboxChip]`      | `data-disabled`    | present / absent                                                    |
 | `[forComboboxSeparator]` | `data-orientation` | `horizontal` \| `vertical`                                          |
 
-Focus stays on the `<input>` the whole time the listbox is open, so options never get `:focus`. `data-highlighted` is the canonical hook for styling the keyboard-active option. A mouse press anywhere on the popup that lands on no focusable element (padding, a group label, an empty or status row) does not move focus either, so typing and the arrow keys keep working after it; the trade-off is that popup text cannot be selected with the mouse, as in a native combobox. A press on a focusable element inside the popup, such as a `[forComboboxAction]` or your own `<button>`, still focuses it.
+Focus stays on the `<input>` the whole time the listbox is open, so options never get `:focus`. `data-highlighted` is the canonical hook for styling the keyboard-active option. A mouse press anywhere on the popup that lands on no focusable element (padding, a group label, an empty or status row) does not move focus either, so typing and the arrow keys keep working after it; the trade-off is that popup text cannot be selected with the mouse, as in a native combobox. A press on a `[forComboboxAction]` still focuses it in every browser. A press on your own `<button>` inside the popup is left to the browser, and macOS Safari and Firefox do not focus a `<button>` on a press.
 
 ## Mount/visibility convention
 

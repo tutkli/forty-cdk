@@ -35,8 +35,8 @@ import { injectTimePickerContext } from './time-picker-context';
  *
  * A mouse press on the surface that lands on no focusable element of its own
  * (padding, a heading) is cancelled, so focus stays on the slot that held
- * it and the arrow keys keep working; a press on a slot or another focusable
- * descendant still focuses it.
+ * it and the arrow keys keep working; a press on a slot still focuses it, and a
+ * press on another focusable descendant takes focus wherever the browser puts it.
  *
  * In modal mode, modality is conveyed behaviorally — by the `inert` siblings
  * the shell applies — and reflected as `data-modal` for styling. `aria-modal`

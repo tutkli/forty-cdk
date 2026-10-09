@@ -1,6 +1,6 @@
 import { booleanAttribute, Directive, ElementRef, inject, input, model } from '@angular/core';
 
-import { fortyWarn, hostButtonType, reflectDisabled } from 'forty-cdk/core';
+import { focusAfterPress, fortyWarn, hostButtonType, reflectDisabled } from 'forty-cdk/core';
 import { warnIfOpenWithoutControls } from 'forty-cdk/core-overlay';
 
 /**
@@ -83,10 +83,7 @@ export class ForDrawerTrigger {
     if (this.disabled()) {
       return;
     }
-    // Same WebKit return-focus quirk as ForDialogTrigger (#136): force focus
-    // back onto the trigger before opening so the drawer captures it as the
-    // return target.
-    this.#host.nativeElement.focus();
+    focusAfterPress(this.#host.nativeElement);
     this.open.update((v) => !v);
   }
 }

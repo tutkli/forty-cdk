@@ -1,7 +1,14 @@
-import { ChangeDetectionStrategy, Component, signal, type Type } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  signal,
+  type Type,
+  type WritableSignal,
+} from '@angular/core';
 
 import {
   ForCombobox,
+  ForComboboxAction,
   ForComboboxContent,
   ForComboboxInput,
   ForComboboxList,
@@ -9,11 +16,13 @@ import {
   ForComboboxToggle,
   ForComboboxTrigger,
 } from 'forty-cdk/combobox';
+import { ForDialog, ForDialogTrigger } from 'forty-cdk/dialog';
+import { ForDrawer, ForDrawerTrigger } from 'forty-cdk/drawer';
 import { ForField, ForFieldControl, ForLabel } from 'forty-cdk/field';
 import { ForListbox, ForListboxOption } from 'forty-cdk/listbox';
 import { ForSelect, ForSelectContent, ForSelectOption, ForSelectTrigger } from 'forty-cdk/select';
 import { provideNativeDateAdapter } from 'forty-cdk/shared';
-import { pressWithMouse } from 'forty-cdk/testing';
+import { pointerEvent, pressWithMouse } from 'forty-cdk/testing';
 import {
   ForTimePicker,
   ForTimePickerContent,
@@ -26,6 +35,7 @@ import { afterEachOverlayCleanup, flush, renderHost } from '../test-utils';
 import { LIBRARY_CODE } from '../test-utils/source-scan';
 
 const HELPER = 'preventPointerFocus';
+const PRESS_FOCUS_HELPER = 'focusAfterPress';
 
 @Component({
   imports: [ForTree, ForTreeItem, ForTreeItemLabel, ForTreeItemToggle],
@@ -250,9 +260,143 @@ class TimePickerContentHost {
 })
 class FieldLabelHost {}
 
+@Component({
+  imports: [ForListbox, ForListboxOption],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <ul forListbox aria-label="Fruit">
+      <li><button type="button" forListboxOption value="apple" data-arm>Apple</button></li>
+      <li>
+        <button type="button" forListboxOption value="cherry" data-press data-focus>Cherry</button>
+      </li>
+    </ul>
+  `,
+})
+class ListboxSingleOptionHost {}
+
+@Component({
+  imports: [ForListbox, ForListboxOption],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <ul forListbox multiple aria-label="Fruit">
+      <li><button type="button" forListboxOption value="apple" data-arm>Apple</button></li>
+      <li>
+        <button type="button" forListboxOption value="cherry" data-press data-focus>Cherry</button>
+      </li>
+    </ul>
+  `,
+})
+class ListboxMultiOptionHost {}
+
+@Component({
+  imports: [ForSelect, ForSelectTrigger, ForSelectContent, ForSelectOption],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <div forSelect multiple [(open)]="open">
+      <button forSelectTrigger>Fruit</button>
+      @if (open()) {
+        <div forSelectContent>
+          <button forSelectOption value="apple" data-arm>Apple</button>
+          <button forSelectOption value="cherry" data-press data-focus>Cherry</button>
+        </div>
+      }
+    </div>
+  `,
+})
+class SelectMultiOptionHost {
+  readonly open = signal(true);
+}
+
+@Component({
+  imports: [ForCombobox, ForComboboxInput, ForComboboxContent, ForComboboxAction],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <div forCombobox [(open)]="open">
+      <input forComboboxInput aria-label="Fruit" data-arm />
+      @if (open()) {
+        <div forComboboxContent>
+          <button forComboboxAction data-press data-focus>Create</button>
+        </div>
+      }
+    </div>
+  `,
+})
+class ComboboxActionHost {
+  readonly open = signal(true);
+}
+
+@Component({
+  imports: [ForDialog, ForDialogTrigger],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <button forDialogTrigger [(open)]="open" controls="press-dialog" data-press data-focus>
+      Open
+    </button>
+    @if (open()) {
+      <div forDialog id="press-dialog" (dismiss)="open.set(false)" ariaLabel="Dialog"></div>
+    }
+  `,
+})
+class DialogTriggerHost {
+  readonly open = signal(false);
+}
+
+@Component({
+  imports: [ForDrawer, ForDrawerTrigger],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <button forDrawerTrigger [(open)]="open" controls="press-drawer" data-press data-focus>
+      Open
+    </button>
+    @if (open()) {
+      <div forDrawer id="press-drawer" (dismiss)="open.set(false)" ariaLabel="Drawer"></div>
+    }
+  `,
+})
+class DrawerTriggerHost {
+  readonly open = signal(false);
+}
+
 interface PressCase {
   readonly file: string;
   readonly host: Type<unknown>;
+}
+
+interface UnfocusedPressCase extends PressCase {
+  readonly label: string;
+  readonly closeAfterPress?: true;
+}
+
+const UNFOCUSED_PRESS_SWEEP: readonly UnfocusedPressCase[] = [
+  { file: 'listbox/src/listbox-option.ts', host: ListboxSingleOptionHost, label: 'single' },
+  { file: 'listbox/src/listbox-option.ts', host: ListboxMultiOptionHost, label: 'multiple' },
+  { file: 'select/src/select-option.ts', host: SelectMultiOptionHost, label: 'multiple' },
+  { file: 'combobox/src/combobox-action.ts', host: ComboboxActionHost, label: 'open popup' },
+  {
+    file: 'dialog/src/dialog-trigger.ts',
+    host: DialogTriggerHost,
+    label: 'return focus',
+    closeAfterPress: true,
+  },
+  {
+    file: 'drawer/src/drawer-trigger.ts',
+    host: DrawerTriggerHost,
+    label: 'return focus',
+    closeAfterPress: true,
+  },
+];
+
+function pressWithoutFocus(target: HTMLElement): void {
+  const press = { button: 0, buttons: 1, isPrimary: true, pointerType: 'mouse' };
+  target.dispatchEvent(pointerEvent('pointerdown', press));
+  const mousedown = new MouseEvent('mousedown', { bubbles: true, cancelable: true, buttons: 1 });
+  target.dispatchEvent(mousedown);
+  if (!mousedown.defaultPrevented) {
+    (target.ownerDocument.activeElement as HTMLElement | null)?.blur();
+  }
+  target.dispatchEvent(pointerEvent('pointerup', { ...press, buttons: 0 }));
+  target.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true }));
+  target.click();
 }
 
 const SWEEP: readonly PressCase[] = [
@@ -270,17 +414,17 @@ const SWEEP: readonly PressCase[] = [
   { file: 'field/src/label.ts', host: FieldLabelHost },
 ];
 
-function declaringFile(): string {
+function declaringFile(helper: string): string {
   const found = [...LIBRARY_CODE].find(([, source]) =>
-    source.includes(`export function ${HELPER}(`),
+    source.includes(`export function ${helper}(`),
   );
   expect(found).toBeDefined();
   return found![0];
 }
 
-function callers(): string[] {
-  const declaring = declaringFile();
-  const call = new RegExp(`[^A-Za-z]${HELPER}\\(`);
+function callers(helper = HELPER): string[] {
+  const declaring = declaringFile(helper);
+  const call = new RegExp(`[^A-Za-z]${helper}\\(`);
   return [...LIBRARY_CODE]
     .filter(([path, source]) => path !== declaring && call.test(source))
     .map(([path]) => path)
@@ -353,6 +497,47 @@ describe('pointer focus guard (meta-guard)', () => {
       await flush(fixture);
 
       expect(cancelled).toBe(true);
+      expect(document.activeElement).toBe(required('[data-focus]'));
+    });
+  }
+});
+
+describe('press focus on a button host (meta-guard)', () => {
+  afterEachOverlayCleanup();
+
+  it('has every option host built for a <button> calling the helper', () => {
+    const hosts = filesWhere(
+      (source) => source.includes(`role: 'option'`) && source.includes('hostButtonType()'),
+    );
+    expect(hosts.length).toBeGreaterThanOrEqual(2);
+    expect(hosts.filter((path) => !callers(PRESS_FOCUS_HELPER).includes(path))).toEqual([]);
+  });
+
+  it('sweeps every caller of the helper', () => {
+    expect([...new Set(UNFOCUSED_PRESS_SWEEP.map((entry) => entry.file))].sort()).toEqual(
+      callers(PRESS_FOCUS_HELPER),
+    );
+  });
+
+  for (const entry of UNFOCUSED_PRESS_SWEEP) {
+    it(`${entry.file} (${entry.label}): a press that leaves focus off the host still focuses it`, async () => {
+      const { fixture } = renderHost(entry.host);
+      await flush(fixture);
+      document.querySelector<HTMLElement>('[data-arm]')?.focus();
+      await flush(fixture);
+
+      const target = required('[data-press]');
+      pressWithoutFocus(target);
+      await flush(fixture);
+      if (target.getAttribute('role') === 'option') {
+        expect(target.getAttribute('aria-selected')).toBe('true');
+      }
+      if (entry.closeAfterPress) {
+        expect(document.activeElement).not.toBe(target);
+        (fixture.componentInstance as { open: WritableSignal<boolean> }).open.set(false);
+        await flush(fixture);
+      }
+
       expect(document.activeElement).toBe(required('[data-focus]'));
     });
   }

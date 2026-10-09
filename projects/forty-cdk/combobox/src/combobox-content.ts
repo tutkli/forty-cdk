@@ -47,10 +47,10 @@ import { injectComboboxContext } from './combobox-context';
  *   mouse press anywhere on the surface that lands on no focusable element of its
  *   own (padding, a group label, an empty or status row) is cancelled, so it
  *   neither focuses the surface nor blurs the input; text in the popup cannot be
- *   selected with the mouse as a result. A press on a focusable descendant (an
- *   action, a consumer control) still focuses it. If focus reaches the surface
- *   programmatically, a fallback Escape channel still closes the popup and
- *   returns focus to the input.
+ *   selected with the mouse as a result. A press on an action still focuses it,
+ *   and a press on a consumer control takes focus wherever the browser puts it.
+ *   If focus reaches the surface programmatically, a fallback Escape channel
+ *   still closes the popup and returns focus to the input.
  * - **Picker anatomy (trigger present)** — on open, focus moves into the input
  *   (the search field inside the panel); on close it returns to the trigger.
  *   Both moves are vetoable via `(autoFocusOnOpen)` / `(autoFocusOnClose)` on
