@@ -164,6 +164,16 @@ describe('virtualized resume position adopters (issue #2123)', () => {
 
         expect(r.instance.scrolled()).toBe(3);
       });
+
+      it('typeahead cycles from the option the user was on after it scrolled out of the window', async () => {
+        const r = renderHost(testCase.host);
+        const host = await strandSecondRow(r);
+
+        await pressKey(host, 'r');
+        await flush(r.fixture);
+
+        expect(r.instance.scrolled()).toBe(3);
+      });
     });
   }
 
