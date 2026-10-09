@@ -1,5 +1,5 @@
-import { expect, type Locator, test } from '@playwright/test';
-import { el, gotoFixture } from './_helpers';
+import type { Locator } from '@playwright/test';
+import { el, expect, gotoFixture, test } from './_helpers';
 
 /**
  * The mounted surface's viewport box. Real geometry, so the anchor assertions

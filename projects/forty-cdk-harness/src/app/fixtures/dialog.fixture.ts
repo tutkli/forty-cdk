@@ -14,12 +14,15 @@ import { queryFlag } from './_query-flag';
   imports: [ForDialog, ForDialogTrigger, ForDialogClose],
   template: `
     <input data-testid="before" placeholder="before-trigger" />
-    <button data-testid="trigger" forDialogTrigger [(open)]="open">Open dialog</button>
+    <button data-testid="trigger" forDialogTrigger [(open)]="open" controls="test-dialog">
+      Open dialog
+    </button>
     <input data-testid="after" placeholder="after-trigger" />
 
     @if (open()) {
       <div
         forDialog
+        id="test-dialog"
         data-testid="dialog"
         ariaLabel="Test dialog"
         [autoFocusOnOpen]="vetoOpen ? veto : undefined"

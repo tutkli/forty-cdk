@@ -1,6 +1,4 @@
-import { expect, test } from '@playwright/test';
-
-import { el, expectFocused, gotoFixture } from './_helpers';
+import { el, expect, expectFocused, gotoFixture, test } from './_helpers';
 
 test.describe('DateRangeField', () => {
   test('roving entry: each endpoint owns one tab stop, Tab steps start group → end group → next control', async ({

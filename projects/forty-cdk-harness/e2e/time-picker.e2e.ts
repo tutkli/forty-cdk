@@ -1,5 +1,4 @@
-import { expect, test } from '@playwright/test';
-import { clickOutside, el, expectFocused, gotoFixture } from './_helpers';
+import { clickOutside, el, expect, expectFocused, gotoFixture, test } from './_helpers';
 
 test.describe('TimePicker', () => {
   test('opens on trigger click and moves focus into the listbox', async ({ page }) => {

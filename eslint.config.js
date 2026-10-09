@@ -3860,6 +3860,25 @@ module.exports = tseslint.config(
     },
   },
 
+  {
+    files: ['projects/forty-cdk-harness/e2e/**/*.e2e.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@playwright/test',
+              importNames: ['test', 'expect'],
+              message:
+                "Import `test` and `expect` from './_helpers': its `test` gates every test on the harness errors it raises.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+
   // ---------- ESLint rule fixtures (typed-parsing override) ----------
   // The fixtures are listed in the top-level `ignores` block so `pnpm lint`
   // skips them by default (each one intentionally violates exactly one

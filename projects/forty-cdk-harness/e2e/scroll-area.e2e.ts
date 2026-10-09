@@ -1,5 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
-import { dragFrom, el, gesturePointer, gotoFixture } from './_helpers';
+import type { Page } from '@playwright/test';
+import { dragFrom, el, expect, gesturePointer, gotoFixture, test } from './_helpers';
 
 /**
  * Geometry coverage for `[forScrollArea]`. The synthetic thumb's size,

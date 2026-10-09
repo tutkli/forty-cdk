@@ -1,5 +1,4 @@
-import { expect, test } from '@playwright/test';
-import { el, gotoFixture } from './_helpers';
+import { el, expect, gotoFixture, test } from './_helpers';
 
 test.describe('Virtualization (geometry)', () => {
   test('renders only a small window of a 10k-row list', async ({ page }) => {

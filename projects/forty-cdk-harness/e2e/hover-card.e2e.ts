@@ -1,5 +1,4 @@
-import { expect, test } from '@playwright/test';
-import { el, gotoFixture, isMobileProject } from './_helpers';
+import { el, expect, gotoFixture, isMobileProject, test } from './_helpers';
 
 test.describe('HoverCard', () => {
   test('opens on hover (openDelay=0)', async ({ page }) => {

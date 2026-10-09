@@ -1,6 +1,6 @@
-import { expect, type Locator, type Page, test } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 
-import { boxOf, el, expectFocused, gotoFixture } from './_helpers';
+import { boxOf, el, expect, expectFocused, gotoFixture, test } from './_helpers';
 
 const ARM_PX = 6;
 

@@ -1,6 +1,4 @@
-import { expect, test } from '@playwright/test';
-
-import { el, gotoFixture } from './_helpers';
+import { el, expect, gotoFixture, test } from './_helpers';
 
 test.describe('drag-drop auto-scroll', () => {
   test('auto-scroll arms when pointer approaches the bottom edge', async ({ page }) => {

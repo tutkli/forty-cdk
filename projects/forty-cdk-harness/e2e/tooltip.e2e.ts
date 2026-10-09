@@ -1,5 +1,4 @@
-import { expect, test } from '@playwright/test';
-import { el, gotoFixture, isMobileProject } from './_helpers';
+import { el, expect, gotoFixture, isMobileProject, test } from './_helpers';
 
 test.describe('Tooltip', () => {
   test('opens on hover (openDelay=0) and closes on pointerleave', async ({ page }) => {

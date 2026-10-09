@@ -1,5 +1,4 @@
-import { expect, test } from '@playwright/test';
-import { el, expectFocused, gotoFixture } from './_helpers';
+import { el, expect, expectFocused, expectStays, gotoFixture, test } from './_helpers';
 
 test.describe('Button', () => {
   test('custom host: Enter and Space activate', async ({ page }) => {
@@ -47,18 +46,18 @@ test.describe('Button', () => {
     await el(page, 'native').focus();
     await expectFocused(el(page, 'native'));
     await el(page, 'native').click({ force: true });
-    await expect(el(page, 'native-count')).toHaveText('0');
+    await expectStays(page, () => expect(el(page, 'native-count')).toHaveText('0'));
     await page.keyboard.press('Enter');
-    await expect(el(page, 'native-count')).toHaveText('0');
+    await expectStays(page, () => expect(el(page, 'native-count')).toHaveText('0'));
 
     await expect(el(page, 'custom')).toHaveAttribute('aria-disabled', 'true');
     await expect(el(page, 'custom')).not.toHaveAttribute('disabled', /.*/);
     await el(page, 'custom').focus();
     await expectFocused(el(page, 'custom'));
     await el(page, 'custom').click({ force: true });
-    await expect(el(page, 'custom-count')).toHaveText('0');
+    await expectStays(page, () => expect(el(page, 'custom-count')).toHaveText('0'));
     await page.keyboard.press('Enter');
-    await expect(el(page, 'custom-count')).toHaveText('0');
+    await expectStays(page, () => expect(el(page, 'custom-count')).toHaveText('0'));
   });
 
   test(':focus-visible keyboard-vs-mouse on custom host', async ({ page }) => {

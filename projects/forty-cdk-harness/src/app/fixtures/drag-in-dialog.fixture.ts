@@ -82,10 +82,18 @@ interface Item {
     `,
   ],
   template: `
-    <button data-testid="trigger" forDialogTrigger [(open)]="open">Open dialog</button>
+    <button data-testid="trigger" forDialogTrigger [(open)]="open" controls="drag-dialog">
+      Open dialog
+    </button>
 
     @if (open()) {
-      <div forDialog data-testid="dialog" ariaLabel="Drag dialog" (dismiss)="open.set(false)">
+      <div
+        forDialog
+        id="drag-dialog"
+        data-testid="dialog"
+        ariaLabel="Drag dialog"
+        (dismiss)="open.set(false)"
+      >
         @if (freeDrag) {
           <div class="viewport" data-testid="viewport">
             <div class="box" forFreeDrag boundary=".viewport" data-testid="box"></div>

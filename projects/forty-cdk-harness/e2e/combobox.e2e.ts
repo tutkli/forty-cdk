@@ -1,7 +1,8 @@
-import { expect, type Page, test } from '@playwright/test';
+import type { Page } from '@playwright/test';
 import {
   clickOutside,
   el,
+  expect,
   expectFocused,
   gotoFixture,
   imeEnd,
@@ -9,6 +10,7 @@ import {
   imeUpdate,
   inputValue,
   selectionRange,
+  test,
 } from './_helpers';
 
 test.describe('Combobox', () => {

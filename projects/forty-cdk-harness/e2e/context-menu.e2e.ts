@@ -1,5 +1,5 @@
-import { expect, type Page, test } from '@playwright/test';
-import { el, gotoFixture, longPress } from './_helpers';
+import type { Page } from '@playwright/test';
+import { el, expect, gotoFixture, longPress, test } from './_helpers';
 
 /**
  * Read `--for-floating-anchor-width` / `--for-floating-anchor-height` off the menu host once

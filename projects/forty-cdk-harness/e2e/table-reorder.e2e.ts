@@ -1,6 +1,4 @@
-import { expect, test } from '@playwright/test';
-
-import { el, expectFocused, expectRovingFocus, gotoFixture } from './_helpers';
+import { el, expect, expectFocused, expectRovingFocus, gotoFixture, test } from './_helpers';
 import { headerCell, headerCellAt, headerOrder, rows } from './_table-helpers';
 
 test.describe('table column reorder', () => {

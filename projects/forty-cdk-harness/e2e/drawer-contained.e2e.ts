@@ -1,5 +1,4 @@
-import { expect, test } from '@playwright/test';
-import { el, expectFocused, gotoFixture, tabN } from './_helpers';
+import { el, expect, expectFocused, gotoFixture, tabN, test } from './_helpers';
 
 test.describe('Drawer (contained / scoped)', () => {
   test('surface renders inside the container, not document.body', async ({ page }) => {

@@ -1,5 +1,4 @@
-import { expect, test } from '@playwright/test';
-import { el, gotoFixture } from './_helpers';
+import { el, expect, gotoFixture, test } from './_helpers';
 
 const CASES = [
   { name: 'injectVirtualizer list', toggle: 'toggle-list', viewport: 'list-viewport' },

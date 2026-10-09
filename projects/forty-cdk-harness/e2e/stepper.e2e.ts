@@ -1,6 +1,4 @@
-import { expect, test } from '@playwright/test';
-
-import { el, expectFocused, gotoFixture, rovingFirst } from './_helpers';
+import { el, expect, expectFocused, gotoFixture, rovingFirst, test } from './_helpers';
 
 test.describe('ForStepper — interactive mode', () => {
   test('arrow keys move focus across triggers', async ({ page }) => {

@@ -52,10 +52,18 @@ import { ForToastManager, type ForToastTemplateContext, ForToastViewport } from 
     `,
   ],
   template: `
-    <button data-testid="trigger" forDialogTrigger [(open)]="open">Open dialog</button>
+    <button data-testid="trigger" forDialogTrigger [(open)]="open" controls="test-dialog">
+      Open dialog
+    </button>
 
     @if (open()) {
-      <div forDialog data-testid="dialog" ariaLabel="Test dialog" (dismiss)="onClose($event)">
+      <div
+        forDialog
+        id="test-dialog"
+        data-testid="dialog"
+        ariaLabel="Test dialog"
+        (dismiss)="onClose($event)"
+      >
         <button data-testid="show-toast" type="button" (click)="showToast()">Show toast</button>
         <button data-testid="close-btn" forDialogClose>Close</button>
       </div>

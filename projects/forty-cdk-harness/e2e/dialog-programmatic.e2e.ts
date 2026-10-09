@@ -1,5 +1,4 @@
-import { expect, test } from '@playwright/test';
-import { el, gotoFixture } from './_helpers';
+import { el, expect, gotoFixture, test } from './_helpers';
 
 test.describe('Dialog (programmatic — #677)', () => {
   test('programmatic dialog mounts and closes via forDialogClose', async ({ page }) => {

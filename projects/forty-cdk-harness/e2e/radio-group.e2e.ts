@@ -1,5 +1,4 @@
-import { expect, test } from '@playwright/test';
-import { el, expectFocused, focusRovingItem, gotoFixture } from './_helpers';
+import { el, expect, expectFocused, focusRovingItem, gotoFixture, test } from './_helpers';
 
 /**
  * Real-browser focus + selection contract for `[forRadioGroup]`. The Vitest

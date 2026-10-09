@@ -1,12 +1,12 @@
-import { expect, test } from '@playwright/test';
-
 import {
   el,
+  expect,
   expectFocused,
   expectRovingTabStop,
   focusRovingItem,
   gotoFixture,
   rovingFirst,
+  test,
 } from './_helpers';
 
 test.describe('Tree', () => {

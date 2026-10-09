@@ -1,5 +1,4 @@
-import { expect, test } from '@playwright/test';
-import { el, gotoFixture } from './_helpers';
+import { el, expect, gotoFixture, test } from './_helpers';
 
 test.describe('Nested overlays (popover inside dialog)', () => {
   test('Escape closes only the topmost layer', async ({ page }) => {

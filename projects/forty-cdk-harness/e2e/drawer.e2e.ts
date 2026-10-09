@@ -1,12 +1,14 @@
-import { expect, test } from '@playwright/test';
 import {
   boxOf,
   clickOutside,
   dragFrom,
   dragFromSteps,
   el,
+  expect,
+  expectStays,
   gesturePointer,
   gotoFixture,
+  test,
 } from './_helpers';
 
 test.describe('Drawer', () => {
@@ -85,7 +87,7 @@ test.describe('Drawer', () => {
   test('snap points: initialises to snap[0] and reflects data-active-snap-point', async ({
     page,
   }) => {
-    await gotoFixture(page, 'drawer', { snap: '148px,355px,1' });
+    await gotoFixture(page, 'drawer', { snap: '148px,355px,1', drawerHeight: '400' });
     await el(page, 'trigger').click();
 
     await expect(el(page, 'drawer')).toHaveAttribute('data-active-snap-point', '148px');
@@ -247,7 +249,10 @@ test.describe('Drawer', () => {
     expect(nestedTransform).toContain('scale(0.93)');
   });
 
-  test('cross-dimension snap validation throws at first measurement', async ({ page }) => {
+  test('cross-dimension snap validation throws at first measurement', async ({
+    page,
+    harnessErrors,
+  }) => {
     // ['200px', 0.5] on a 300px-tall surface is non-monotonic at the live
     // dimension: 200px = 200, 0.5 * 300 = 150. The directive throws inside
     // `afterNextRender` (post-layout, pre-gesture). The harness installs a
@@ -255,6 +260,7 @@ test.describe('Drawer', () => {
     // window-scoped array — this is the only signal Playwright can pick up
     // because Angular catches the throw and forwards it to ErrorHandler
     // rather than letting it escape as an uncaught `pageerror`.
+    harnessErrors.allow(/FORCDK-DRAWER-010/, 'the snap validation throw is what this test asserts');
     await gotoFixture(page, 'drawer', { snap: '200px,0.5', drawerHeight: '300' });
     await el(page, 'trigger').click();
 
@@ -283,28 +289,28 @@ test.describe('Drawer', () => {
     expect(offending).toBeDefined();
   });
 
-  test('prefers-reduced-motion: reduce suppresses scaleBackground', async ({ browser }) => {
-    const context = await browser.newContext({ reducedMotion: 'reduce' });
-    const page = await context.newPage();
-    try {
-      await gotoFixture(page, 'drawer', { scaleBackground: '1' });
-      const shell = el(page, 'shell');
-      const baseline = await shell.evaluate(
-        (el) => (el as HTMLElement).getBoundingClientRect().width,
-      );
+  test('prefers-reduced-motion: reduce suppresses scaleBackground', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await gotoFixture(page, 'drawer', { scaleBackground: '1' });
+    const shell = el(page, 'shell');
+    const baseline = await shell.evaluate(
+      (el) => (el as HTMLElement).getBoundingClientRect().width,
+    );
 
-      await el(page, 'trigger').click();
-      await expect(el(page, 'drawer')).toBeVisible();
+    await el(page, 'trigger').click();
+    await expect(el(page, 'drawer')).toBeVisible();
+
+    await expectStays(page, async () => {
       await expect(shell).toHaveAttribute('data-state', 'idle');
-
+      expect(await shell.evaluate((el) => (el as HTMLElement).style.transform)).not.toContain(
+        'scale(',
+      );
       const widthOpen = await shell.evaluate(
         (el) => (el as HTMLElement).getBoundingClientRect().width,
       );
       expect(Math.abs(widthOpen - baseline)).toBeLessThan(1);
       await expect(el(page, 'drawer')).not.toHaveAttribute('data-scale-background', '');
-    } finally {
-      await context.close();
-    }
+    });
   });
 
   // Swipe / snap-resolution coverage moved here from drawer.spec.ts per

@@ -1,6 +1,4 @@
-import { expect, test } from '@playwright/test';
-
-import { el, expectFocused, gotoFixture, tabN } from './_helpers';
+import { el, expect, expectFocused, gotoFixture, tabN, test } from './_helpers';
 
 test.describe('Pagination', () => {
   test.beforeEach(async ({ page }) => {

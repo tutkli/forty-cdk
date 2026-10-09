@@ -1,5 +1,4 @@
-import { expect, test } from '@playwright/test';
-import { clickOutside, el, expectFocused, gotoFixture } from './_helpers';
+import { clickOutside, el, expect, expectFocused, gotoFixture, test } from './_helpers';
 
 // The fixture presets the value to 2026-06-15, so the calendar opens on June
 // 2026 with the roving cell on the 15th.

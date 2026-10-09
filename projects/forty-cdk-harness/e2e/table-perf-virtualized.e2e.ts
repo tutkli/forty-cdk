@@ -1,5 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
-import { gotoFixture } from './_helpers';
+import type { Page } from '@playwright/test';
+import { expect, gotoFixture, test } from './_helpers';
 
 /**
  * Per-row `Collection` cost instrument for a virtualized `[forTable]`

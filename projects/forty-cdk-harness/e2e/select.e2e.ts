@@ -1,5 +1,5 @@
-import { expect, type Page, test } from '@playwright/test';
-import { clickOutside, el, expectFocused, gotoFixture } from './_helpers';
+import type { Page } from '@playwright/test';
+import { clickOutside, el, expect, expectFocused, gotoFixture, test } from './_helpers';
 
 test.describe('Select', () => {
   test('opens on trigger click and moves focus into the listbox', async ({ page }) => {
@@ -137,7 +137,7 @@ test.describe('Select', () => {
   });
 
   // Modal (TouchUI) presentation mode (#365): `?modal=1` routes
-  // [forSelectContent] through `_internal/modal-shell` (focus trap + inert
+  // [forSelectContent] through `core-overlay/modal-shell` (focus trap + inert
   // siblings + body-scroll-lock) instead of the anchored popover. Opens are
   // driven by keyboard because WebKit does not focus a <button> on mouse click
   // (and blurs it), which would hand the modal shell the wrong return target.
@@ -200,7 +200,7 @@ test.describe('Select', () => {
     });
   });
 
-  // Item-aligned positioner coverage (was `_internal/floating/item-aligned.spec.ts`
+  // Item-aligned positioner coverage (was `core-overlay/floating/item-aligned.spec.ts`
   // — moved here per CLAUDE.md / #219). The math (selected-option vertical
   // center aligned with trigger center, viewport clamping, anchor / available-
   // height CSS vars) reads `getBoundingClientRect()` and only makes sense

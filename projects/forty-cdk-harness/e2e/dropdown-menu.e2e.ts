@@ -1,5 +1,4 @@
-import { expect, test } from '@playwright/test';
-import { clickOutside, el, gotoFixture } from './_helpers';
+import { clickOutside, el, expect, gotoFixture, test } from './_helpers';
 
 test.describe('DropdownMenu', () => {
   test('opens on trigger click and focuses the first enabled item without highlighting it', async ({

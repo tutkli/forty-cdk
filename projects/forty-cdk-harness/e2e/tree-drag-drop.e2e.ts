@@ -1,5 +1,4 @@
-import { expect, test } from '@playwright/test';
-import { boxOf, el, gotoFixture } from './_helpers';
+import { boxOf, el, expect, gotoFixture, test } from './_helpers';
 
 test.describe('tree-drag-drop — keyboard reorder', () => {
   test('Ctrl+Space lifts a node, ArrowUp + Space drops it one position higher', async ({

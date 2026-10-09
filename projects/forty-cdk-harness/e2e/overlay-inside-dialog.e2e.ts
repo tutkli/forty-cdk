@@ -1,5 +1,4 @@
-import { expect, test } from '@playwright/test';
-import { el, gotoFixture } from './_helpers';
+import { el, expect, gotoFixture, test } from './_helpers';
 
 /**
  * #676 — an anchored overlay (Select / DropdownMenu) opened from inside a modal

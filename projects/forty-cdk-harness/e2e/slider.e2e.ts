@@ -1,5 +1,5 @@
-import { expect, type Locator, type Page, test } from '@playwright/test';
-import { dragFrom, el, expectFocused, gotoFixture } from './_helpers';
+import type { Locator, Page } from '@playwright/test';
+import { dragFrom, el, expect, expectFocused, expectStays, gotoFixture, test } from './_helpers';
 
 /**
  * Pointer / drag math coverage for `[forSlider]`. The Vitest layer used to
@@ -17,9 +17,9 @@ import { dragFrom, el, expectFocused, gotoFixture } from './_helpers';
 /**
  * Gap held between two consecutive `page.mouse.move` calls in a drag.
  *
- * This is pointer-gesture *pacing*, not a settle-wait, so it is exempt from
- * the one-shot-wait → `expect.poll` rule in `.claude/rules/testing.md`: there
- * is no state transition to poll for between two moves of the same drag. It
+ * This is pointer-gesture *pacing*, not a settle-wait: the first of the two
+ * uses the E2E wait rule in `.claude/rules/testing.md` allows, since there is
+ * no state transition to poll for between two moves of the same drag. It
  * exists because WebKit coalesces pointermoves dispatched back-to-back, and a
  * coalesced pair makes the slider read the intermediate position as the final
  * value. Every `waitForTimeout` in this file is one of these.
@@ -423,7 +423,7 @@ test.describe('Slider (valueCommit on drag)', () => {
     await page.mouse.down();
     await page.mouse.up();
 
-    await expect(el(page, 'value-commit-count')).toHaveText('0');
+    await expectStays(page, () => expect(el(page, 'value-commit-count')).toHaveText('0'));
   });
 
   test('drag end marks touched', async ({ page }) => {

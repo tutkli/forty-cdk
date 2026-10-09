@@ -1,6 +1,6 @@
-import { expect, type Page, test } from '@playwright/test';
+import type { Page } from '@playwright/test';
 
-import { el, expectFocused, gotoFixture } from './_helpers';
+import { el, expect, expectFocused, gotoFixture, test } from './_helpers';
 import { headerOrder, rows } from './_table-helpers';
 
 const ROW_HEIGHT = 44;

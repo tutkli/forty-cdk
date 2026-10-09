@@ -1,5 +1,4 @@
-import { expect, test } from '@playwright/test';
-import { el, gotoFixture } from './_helpers';
+import { el, expect, gotoFixture, test } from './_helpers';
 
 test.describe('Listbox virtualization (Shape C)', () => {
   test('windowed render — only a small window of the 10k options is mounted', async ({ page }) => {

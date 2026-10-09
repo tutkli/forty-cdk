@@ -1,5 +1,5 @@
-import { expect, type Page, test } from '@playwright/test';
-import { el, expectFocused, gotoFixture } from './_helpers';
+import type { Page } from '@playwright/test';
+import { el, expect, expectFocused, gotoFixture, test } from './_helpers';
 
 /**
  * Pointer-driven submenu open/close (#332). Hovering a `[forMenuSubTrigger]`

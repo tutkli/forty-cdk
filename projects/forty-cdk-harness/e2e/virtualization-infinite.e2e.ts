@@ -1,5 +1,4 @@
-import { expect, test } from '@playwright/test';
-import { el, gotoFixture } from './_helpers';
+import { el, expect, gotoFixture, test } from './_helpers';
 
 test.describe('Virtualization infinite scroll', () => {
   test('scrolling to the bottom appends one page and only one', async ({ page }) => {

@@ -1,5 +1,4 @@
-import { expect, test } from '@playwright/test';
-import { el, gotoFixture } from './_helpers';
+import { el, expect, expectStays, gotoFixture, test } from './_helpers';
 
 test.describe('FileUpload', () => {
   test('trigger opens the native file chooser and files are reflected', async ({ page }) => {
@@ -175,6 +174,6 @@ test.describe('FileUpload', () => {
 
     await el(page, 'zone').dispatchEvent('dragenter', { dataTransfer });
     await el(page, 'zone').dispatchEvent('drop', { dataTransfer });
-    await expect(el(page, 'count')).toHaveText('0');
+    await expectStays(page, () => expect(el(page, 'count')).toHaveText('0'));
   });
 });

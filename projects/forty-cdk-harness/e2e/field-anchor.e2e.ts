@@ -1,5 +1,5 @@
-import { expect, type Locator, type Page, test } from '@playwright/test';
-import { el, gotoFixture } from './_helpers';
+import type { Locator, Page } from '@playwright/test';
+import { el, expect, gotoFixture, test } from './_helpers';
 
 const anchorWidth = (content: Locator) =>
   content.evaluate((c) =>
