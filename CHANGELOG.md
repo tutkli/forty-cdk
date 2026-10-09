@@ -7,6 +7,186 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.33.0] - 2026-10-09
+
+A release about primitives that broke a contract their siblings or their own README keep, mostly on
+state written from outside and on keyboard and touch input. A table column resizer now takes Page Up
+/ Page Down, Home / End and a `[disabled]` input, and an id salt containing whitespace throws in dev
+mode. A navigation menu opened or closed through `[(value)]` arms and releases its dismiss layer, a
+field keeps the consumer's own `aria-labelledby`, a file upload honours a disabled fieldset, a radio
+group has a server-rendered tab stop and accepts `''` as a value, a date or time field keeps the
+segments being edited, a carousel hides only the slides outside the viewport, nested date and time
+field defaults merge their label records, the documented breakpoint augmentation compiles, the
+scroll area's stylesheet ships in the server render with the CSP nonce, a free-dragged element keeps
+its own transform, an avatar reports each load state once, and infinite scroll recovers after a slow
+or failed load. `ForScrollAreaContext.registerViewport` no longer accepts `null`, and
+`ForFileUploadContext.disabled` is now `effectiveDisabled`. Five changes arrive without binding
+anything: pagination previous / next are no longer natively disabled at the bounds, so a `:disabled`
+rule stops matching them; an inverted slider flips only the arrows on its visual axis; Tab out of a
+popover or a non-modal date picker lands at the trigger's place and closes it with reason `'tab'`; a
+swipeable toast and a draggable drawer surface carry an inline `touch-action`; and `[forFreeDrag]`
+moves its element through the `translate` property instead of `transform`.
+
+### Added
+
+- **Table** — the column resizer takes the pane resizer's keymap and a `disabled` input
+  ([#2149](https://github.com/tutkli/forty-cdk/issues/2149)). On a focused
+  `[forTableColumnResizer]`, Page Up / Page Down shrink / grow the column by the new `[largeStep]`
+  (default `100` pixels), and Home / End snap it to `[min]` / a finite `[max]` (End does nothing
+  while `max` is unbounded), each press emitting one `resizeCommit`, as on `[forPaneResizer]`.
+  `[disabled]` freezes one handle without removing it: it leaves the tab order and ignores keyboard,
+  pointer drag and the `[autoFit]` double-click, reflects `aria-disabled="true"` and
+  `data-disabled`, and still applies an imperative `fitToContent()`. `aria-valuenow` now reflects
+  the width clamped to `[min]` / `[max]`, while `[(width)]` keeps whatever you bound. The table
+  README's keyboard table lists the keys.
+
+- **Shared** — an id salt containing whitespace throws `FORCDK-CORE-012` in dev mode
+  ([#2150](https://github.com/tutkli/forty-cdk/issues/2150)). `aria-labelledby`, `aria-controls` and
+  `aria-describedby` hold space-separated id lists, so a `provideForIdSalt('admin panel')` salt made
+  every generated reference name two ids that do not exist. **Pass a salt without whitespace, such
+  as `'admin-panel'`.**
+
+### Changed
+
+- **Scroll area**, **File upload** — two context members change shape
+  ([#2148](https://github.com/tutkli/forty-cdk/issues/2148),
+  [#2134](https://github.com/tutkli/forty-cdk/issues/2134)). `ForScrollAreaContext.registerViewport`
+  no longer accepts `null`: a viewport leaving calls the new `unregisterViewport(el)`, which clears
+  only the registration it owns, so a viewport swapped in before the old one's teardown is no longer
+  erased and its thumb drag and track press keep working. `ForFileUploadContext.disabled` is now
+  `effectiveDisabled`, the zone's own `disabled` OR'd with a surrounding disabled `[forFieldset]`.
+  **Code that implements or reads either context through `FOR_SCROLL_AREA_CONTEXT` /
+  `FOR_FILE_UPLOAD_CONTEXT` must follow the new members.**
+
+- **Pagination** — previous / next reflect `aria-disabled` at the bounds instead of the native
+  `disabled` attribute ([#2147](https://github.com/tutkli/forty-cdk/issues/2147)). At the first or
+  last page, and while the root is disabled, `[forPaginationPrevious]` / `[forPaginationNext]` carry
+  `aria-disabled="true"` and `data-disabled` and ignore activation but stay focusable, so pressing
+  Next on the second-to-last page keeps focus on it instead of dropping it to `<body>`. A
+  `:disabled` rule no longer matches them. **Style `[data-disabled]` instead, which page items
+  reflect too.**
+
+### Fixed
+
+- **Navigation menu** — consumer value writes reach the dismiss layer
+  ([#2133](https://github.com/tutkli/forty-cdk/issues/2133)). A panel opened through `[(value)]` now
+  closes on an outside press and on Tab-out, and a panel closed through `[(value)]` releases its
+  layer instead of keeping it on the dismissible stack, where it swallowed the Escape and outside
+  press of a non-modal overlay beneath it. `previousValue` is `null` for an open that follows a
+  close instead of reporting the panel open before it, so `data-motion` is absent when a panel opens
+  from a closed menu. `previousValue` is now a read-only `Signal`.
+
+- **Field**, **File upload** — the consumer's labelling wins, and a disabled fieldset reaches the
+  upload zone ([#2134](https://github.com/tutkli/forty-cdk/issues/2134)). A static `aria-labelledby`
+  or `aria-errormessage` on a control inside `[forField]` was removed on first wiring, leaving a
+  control without `[forLabel]` unnamed, or replaced by the field's id. It now replaces the field's
+  value and is restored verbatim on teardown. Inside a disabled `[forFieldset]`, `[forFileUpload]`
+  accepted drops and opened the dialog; it now reflects `data-disabled`, ignores drops and disables
+  its trigger and input.
+
+- **Radio group** — server tab stop, non-button radios and the empty value
+  ([#2135](https://github.com/tutkli/forty-cdk/issues/2135)). With nothing selected, the server
+  render gave every radio `tabindex="-1"`, so the group was unreachable by Tab before hydration; the
+  first enabled radio now carries `tabindex="0"` there. A `[forRadio]` on a host other than
+  `<button>` gets Space / Enter selection synthesized and emits no `type` attribute. A radio whose
+  `value` is `''` is a genuine selection, submitted to a native form as `name=`, distinct from the
+  group's `null`. An unbound `[forRadio]` `value` now throws `FORCDK-CORE-010` in dev mode instead
+  of failing to compile.
+
+- **Date field**, **Time field** — editing keeps the entered parts, 12-hour entry waits for AM/PM,
+  and stepping skips a DST gap ([#2136](https://github.com/tutkli/forty-cdk/issues/2136)). Editing
+  one segment of a complete value clamped the intermediate value into `[minDate, maxDate]` /
+  `[minTime, maxTime]` and rewrote the other segments, so typing month `01` over `2026-10-20` with
+  `minDate` `2026-10-03` snapped back to `10` / `03`. The segments now keep what was entered while
+  focus stays in the field and show the clamped value once it leaves. In 12-hour mode the value
+  stays `null` until the AM/PM segment is filled. ArrowDown on the hour no longer gets stuck after a
+  spring-forward DST gap with `NativeDateAdapter`: stepping skips the hour the day does not have.
+  The range fields share the fix.
+
+- **Date field**, **Time field** — nested defaults merge their per-part records
+  ([#2150](https://github.com/tutkli/forty-cdk/issues/2150)). A nested `provideForDateFieldDefaults`
+  / `provideForTimeFieldDefaults` (and their range variants) replaced `segmentLabels` and
+  `placeholder` wholesale, so a feature scope overriding only `dayPeriod` dropped the labels the
+  application root localized. Both records now merge entry by entry with the parent scope.
+
+- **Carousel** — the in-view window follows the laid-out offset, and a removed slide no longer
+  strands the index ([#2138](https://github.com/tutkli/forty-cdk/issues/2138)). With `slidesPerView`
+  above 1 and `containScroll` or a `center` / `end` `align`, slides visible on screen got
+  `aria-hidden="true"` and `inert` while off-screen ones stayed reachable; the visible set now
+  follows `--for-carousel-offset`. An `activeIndex` past the registered slides, after slides are
+  removed, left an empty viewport with previous and next both disabled; it now acts as the nearest
+  valid slide, the next navigation writes that index back, and `--for-carousel-active-index`
+  reflects the clamped index.
+
+- **Slider** — `inverted` flips only the arrows on the visual axis
+  ([#2145](https://github.com/tutkli/forty-cdk/issues/2145)). It used to swap every key, so on a
+  horizontal inverted slider ArrowUp and Page Up decreased the value, against the APG and the
+  README. Now ArrowLeft / ArrowRight flip when horizontal and ArrowUp / ArrowDown when vertical,
+  while the off-axis arrows, Page Up / Page Down and Home / End keep their meaning: Page Up always
+  increases the value.
+
+- **Pane resizer**, **Meter** — valid ARIA and the HTML quality algorithm
+  ([#2149](https://github.com/tutkli/forty-cdk/issues/2149)). `[forPaneResizer]` reflects
+  `aria-valuenow` clamped to its range and an `aria-valuemax` no lower than `aria-valuemin`, so a
+  value outside `[min, max]` or an inverted range no longer emits invalid ARIA; its README's Page Up
+  / Page Down rows now state the shipped direction. `[forMeter]` normalizes `low`, `high` and
+  `optimum` in the HTML `<meter>` order before resolving `data-quality`, so `[low]="60" [high]="40"`
+  resolves to a single boundary at `60`.
+
+- **Popover**, **Date picker** — Tab out of the portaled content lands at the trigger's place
+  ([#2142](https://github.com/tutkli/forty-cdk/issues/2142)). Tab past the last control of a popover
+  left the document for the browser chrome with the popover still open, and Shift+Tab before the
+  first jumped to the page's last focusable. Tab now moves on to the element after the trigger and
+  Shift+Tab lands on the trigger, closing the popover with the new `ForPopoverCloseReason` `'tab'`
+  when `dismissible`, without returning focus. A non-modal date picker does the same; a modal one
+  keeps focus trapped. **An exhaustive `switch` over `ForPopoverCloseReason` needs a `'tab'` case.**
+
+- **Breakpoints** — the documented registry augmentation merges
+  ([#2150](https://github.com/tutkli/forty-cdk/issues/2150)). The README and JSDoc augmented
+  `'forty-cdk'`, which exports nothing, so the block declared an unrelated interface and
+  `injectBreakpoints().up('desktop')` failed with TS2345. **Write the block as
+  `declare module 'forty-cdk/breakpoints'`.**
+
+- **Testing** — `withFlippableReducedMotion().set()` notifies only the listeners on the
+  reduced-motion query ([#2150](https://github.com/tutkli/forty-cdk/issues/2150)). It called the
+  listeners on every media query, flipping breakpoints in consumer specs.
+
+- **Scroll area** — the native-scrollbar-hiding stylesheet ships in the server render and carries
+  the CSP nonce ([#2148](https://github.com/tutkli/forty-cdk/issues/2148)). It was injected only on
+  the client and without a nonce, so a server-rendered page showed native scrollbars until hydration
+  and a nonce-based `style-src` policy blocked it outright. It now carries Angular's `CSP_NONCE`,
+  set through the token or the `ngCspNonce` attribute. The README's gutter example keys off
+  `data-orientation`; the `orientation` selector it showed before never matched.
+
+- **Drag & drop** — `[forFreeDrag]`'s offset composes with the element's own transform
+  ([#2152](https://github.com/tutkli/forty-cdk/issues/2152)). It wrote the offset to
+  `style.transform`, so a dialog centred with `transform: translate(-50%, -50%)` jumped by half its
+  size on the first drag, or on mount when the centring was inline. The offset now goes through the
+  individual `translate` property. **Position the element with `transform` or layout properties, not
+  an inline `translate` of your own, which the offset replaces.**
+
+- **Avatar** — `(loadStatusChange)` emits each mount transition once
+  ([#2153](https://github.com/tutkli/forty-cdk/issues/2153)). A network image used to report
+  `loading, loading, loaded` and a cached one `loaded, loaded`.
+
+- **Virtualization** — infinite scroll recovers after a slow or failed load
+  ([#2154](https://github.com/tutkli/forty-cdk/issues/2154)). After a rejected `onLoadMore` promise,
+  or a page appended before the promise settled, `injectInfiniteScroll` and `(endReached)` on
+  `[forVirtualViewport]` never fired again until the loaded count changed. The detector now re-arms
+  when the window scrolls out of the threshold and back in, and a page appended while the load is
+  pending fires the next one as soon as it settles if the window is still near the end. A rejected
+  promise clears `pending` without re-firing, so the user retries by scrolling back past the
+  threshold.
+
+- **Toast**, **Drawer** — swipe surfaces set their own `touch-action`
+  ([#2271](https://github.com/tutkli/forty-cdk/issues/2271)). On touch the browser claimed a toast
+  swipe as a page pan unless the consumer added a `touch-action` the README never asked for. While
+  swipe is enabled, `[forToast]` now carries an inline `touch-action` that leaves the browser only
+  the axis no direction uses: `pan-y` for `left` / `right`, `pan-x` for `up` / `down`, `none` when
+  both are allowed. While the whole surface arms the drag (`handleOnly` off), `[forDrawer]` carries
+  `pan-x` for a `top` / `bottom` drawer and `pan-y` for `left` / `right`. The inline value takes
+  precedence over a stylesheet `touch-action` on the same host.
+
 ## [0.32.0] - 2026-10-06
 
 A release about state a primitive reported but did not hold, across the overlay, picker, selection
@@ -3461,7 +3641,8 @@ primitives.
 - **Display** — avatar, progress, meter, tree.
 - `forty-cdk/internationalized-date` secondary entry point exposing the `@internationalized/date` adapters for the date and time primitives.
 
-[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.32.0...HEAD
+[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.33.0...HEAD
+[0.33.0]: https://github.com/tutkli/forty-cdk/compare/v0.32.0...v0.33.0
 [0.32.0]: https://github.com/tutkli/forty-cdk/compare/v0.31.0...v0.32.0
 [0.31.0]: https://github.com/tutkli/forty-cdk/compare/v0.30.0...v0.31.0
 [0.30.0]: https://github.com/tutkli/forty-cdk/compare/v0.29.0...v0.30.0
