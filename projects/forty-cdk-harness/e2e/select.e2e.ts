@@ -581,6 +581,22 @@ test.describe('Select', () => {
     });
   });
 
+  test('a press on an option in multi mode leaves focus on it for the arrow keys', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'select', { multiple: '1' });
+    await el(page, 'trigger').click();
+    await expectFocused(el(page, 'opt-apple'));
+
+    await el(page, 'opt-cherry').click();
+
+    await expect(el(page, 'opt-cherry')).toHaveAttribute('aria-selected', 'true');
+    await expect(el(page, 'content')).toBeVisible();
+    await expectFocused(el(page, 'opt-cherry'));
+    await page.keyboard.press('ArrowDown');
+    await expectFocused(el(page, 'opt-date'));
+  });
+
   test.describe('multi-select range keyboard reveals the focused option (#1284)', () => {
     async function openScrollableMulti(page: Page): Promise<void> {
       await gotoFixture(page, 'select', { multiple: '1', many: '1' });

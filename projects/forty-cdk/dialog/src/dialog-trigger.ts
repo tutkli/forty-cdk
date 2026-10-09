@@ -1,6 +1,6 @@
 import { booleanAttribute, Directive, ElementRef, inject, input, model } from '@angular/core';
 
-import { fortyWarn, hostButtonType, reflectDisabled } from 'forty-cdk/core';
+import { focusAfterPress, fortyWarn, hostButtonType, reflectDisabled } from 'forty-cdk/core';
 import { warnIfOpenWithoutControls } from 'forty-cdk/core-overlay';
 
 /**
@@ -87,14 +87,7 @@ export class ForDialogTrigger {
     if (this.disabled()) {
       return;
     }
-    // Force focus back onto the trigger before opening. WebKit/Safari does
-    // not focus a `<button>` on `mousedown`, and an already-focused button
-    // is blurred by the same `mousedown`, so by the time this click handler
-    // runs the active element is `<body>`. The dialog's return-focus
-    // contract is "restore to whatever held focus when I opened" — without
-    // this, that target captures `body` on WebKit and return-focus is a
-    // no-op (#136). Idempotent on Chromium / jsdom (already focused).
-    this.#host.nativeElement.focus();
+    focusAfterPress(this.#host.nativeElement);
     this.open.update((v) => !v);
   }
 }

@@ -232,6 +232,7 @@ export { injectPauseController, type PauseController } from './pausable/pause-co
 export { isHoverCapablePointer, isNonTouchPointer } from './pointer/pointer-capability';
 export {
   createPressFocus,
+  focusAfterPress,
   type PressFocus,
   pressFocusesDescendant,
   preventPointerFocus,

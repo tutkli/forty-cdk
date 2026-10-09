@@ -30,6 +30,10 @@ export function pressFocusesDescendant(event: Event, host: Element): boolean {
   return false;
 }
 
+export function focusAfterPress(host: HTMLElement): void {
+  host.focus({ preventScroll: true });
+}
+
 /** How long (ms) after a press, or its release, a focus still counts as caused by it. */
 export const DEFAULT_PRESS_FOCUS_WINDOW_MS = 500;
 

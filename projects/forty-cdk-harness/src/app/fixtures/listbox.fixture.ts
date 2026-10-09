@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { ForListbox, ForListboxOption } from 'forty-cdk/listbox';
+import { queryFlag } from './_query-flag';
 
 interface Fruit {
   value: string;
@@ -30,7 +31,7 @@ const FRUITS: readonly Fruit[] = [
     <input data-testid="before" placeholder="before-listbox" />
     <button data-testid="remove-active" type="button" (click)="removeApple()">remove</button>
     <button data-testid="disable-active" type="button" (click)="disableApple()">disable</button>
-    <ul forListbox [(value)]="value" aria-label="Fruit listbox">
+    <ul forListbox [(value)]="value" [multiple]="multiple" aria-label="Fruit listbox">
       @for (fruit of fruits(); track fruit.value) {
         <li>
           <button
@@ -51,6 +52,7 @@ const FRUITS: readonly Fruit[] = [
 export class ListboxFixture {
   protected readonly value = signal<readonly string[]>([]);
   protected readonly fruits = signal<readonly Fruit[]>(FRUITS);
+  protected readonly multiple = queryFlag('multiple');
 
   protected removeApple(): void {
     this.fruits.update((list) => list.filter((f) => f.value !== 'apple'));

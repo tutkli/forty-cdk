@@ -13,6 +13,7 @@ import {
   assertInputBound,
   hostButtonType,
   accessibleTextContent,
+  focusAfterPress,
   isUnset,
   registerHandle,
   hostId,
@@ -188,7 +189,13 @@ export class ForSelectOption<T = string> {
   }
 
   protected onClick(): void {
-    if (this.effectiveDisabled() || this.#ctx.readonly()) {
+    if (this.effectiveDisabled()) {
+      return;
+    }
+    if (this.#ctx.totalCount() === undefined) {
+      focusAfterPress(this.#host.nativeElement);
+    }
+    if (this.#ctx.readonly()) {
       return;
     }
     this.#ctx.activate(this.value());

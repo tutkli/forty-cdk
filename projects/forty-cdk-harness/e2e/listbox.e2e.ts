@@ -1,6 +1,7 @@
 import {
   el,
   expect,
+  expectRovingFocus,
   expectRovingTabStop,
   focusRovingItem,
   gotoFixture,
@@ -35,6 +36,20 @@ test.describe('Listbox', () => {
     await expect(el(page, 'opt-apple')).toBeFocused();
     await page.keyboard.press('ArrowDown');
     await expect(el(page, 'opt-cherry')).toBeFocused();
+  });
+
+  test('a press on an option in multi mode leaves focus on it for the arrow keys', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'listbox', { multiple: '1' });
+    await focusRovingItem(page, 'opt-apple');
+
+    await el(page, 'opt-cherry').click();
+
+    await expect(el(page, 'opt-cherry')).toHaveAttribute('aria-selected', 'true');
+    await expectRovingFocus(page, 'opt-cherry');
+    await page.keyboard.press('ArrowDown');
+    await expectRovingFocus(page, 'opt-date');
   });
 
   test('PageDown / PageUp jump to last / first enabled option', async ({ page }) => {

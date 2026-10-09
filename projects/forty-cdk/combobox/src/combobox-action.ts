@@ -9,7 +9,14 @@ import {
   signal,
 } from '@angular/core';
 
-import { fortyError, hostButtonType, hostId, isImeComposing, registerHandle } from 'forty-cdk/core';
+import {
+  focusAfterPress,
+  fortyError,
+  hostButtonType,
+  hostId,
+  isImeComposing,
+  registerHandle,
+} from 'forty-cdk/core';
 import { injectComboboxContext } from './combobox-context';
 
 /**
@@ -141,6 +148,7 @@ export class ForComboboxAction {
     if (this.#isInert()) {
       return;
     }
+    focusAfterPress(this.#host.nativeElement);
     this.activate.emit();
   }
 

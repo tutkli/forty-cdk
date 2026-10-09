@@ -36,8 +36,9 @@ import { injectSelectContext, type SelectContext } from './select-context';
  *
  * A mouse press on the surface that lands on no focusable element of its own
  * (padding, a group label, a separator) is cancelled, so focus stays on the
- * option that held it and the arrow keys keep working; a press on an option or
- * another focusable descendant still focuses it.
+ * option that held it and the arrow keys keep working; a press on an option
+ * still focuses it, and a press on another focusable descendant takes focus
+ * wherever the browser puts it.
  *
  * The lifecycle is picked once on construction from `[forSelect].modal`:
  *

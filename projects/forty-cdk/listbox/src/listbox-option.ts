@@ -11,6 +11,7 @@ import {
 import {
   accessibleTextContent,
   assertInputBound,
+  focusAfterPress,
   hostButtonType,
   isUnset,
   navigateFromRovingItem,
@@ -184,7 +185,13 @@ export class ForListboxOption<T = string> {
   }
 
   protected onClick(): void {
-    if (this.effectiveDisabled() || this.#group.readonly()) {
+    if (this.effectiveDisabled()) {
+      return;
+    }
+    if (!this.#group.pressKeepsFocus()) {
+      focusAfterPress(this.#host.nativeElement);
+    }
+    if (this.#group.readonly()) {
       return;
     }
     this.#group.activate(this.value());
