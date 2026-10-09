@@ -164,6 +164,16 @@ describe('ForListbox', () => {
             ]),
         };
       },
+      mountWithRemoval: async () => {
+        const r = renderHost(ListboxHost);
+        await r.flush();
+        return {
+          items: listboxItems(r.el),
+          flush: r.flush,
+          removedIndex: 1,
+          remove: () => r.instance.options.update((list) => list.filter((_, i) => i !== 1)),
+        };
+      },
       mountRtl: async () => {
         const r = renderHost(ListboxHost);
         r.instance.orientation.set('horizontal');

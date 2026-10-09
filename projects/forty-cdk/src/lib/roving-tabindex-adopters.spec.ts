@@ -72,6 +72,14 @@ import { entryPointOf, LIBRARY_CODE, SPEC_SOURCES } from '../test-utils/source-s
  * primitive. A tracker that pushes a concrete owner re-seeds to the nearest
  * survivor and pairs with `injectRovingFocusRestore`, so DOM focus follows an
  * item that leaves while it is focused.
+ *
+ * **It also owns the removal rule of [#2239](https://github.com/tutkli/forty-cdk/issues/2239),
+ * and that one has no exclusion.** An item leaving while it holds the tab stop
+ * must leave exactly one tab stop among the survivors, whatever the group's
+ * keyboard model, so every tracker, excluded ones included, runs
+ * `assertRovingRemovalContract` from the spec that claims or excludes it. Every
+ * caller of `injectRovingFocusRestore` also runs its focus-restore rung: focus
+ * follows a removal only from an element that held it.
  */
 /**
  * The keyboard model an excluded tracker owns instead of the contract's. Each
@@ -170,34 +178,41 @@ const ADOPTERS: readonly RovingTabindexAdopter[] = [
  */
 const EXCLUSIONS: readonly {
   readonly tracker: string;
+  /** The spec running the removal rung against this tracker. */
+  readonly spec: string;
   readonly keyboardModel: ExcludedKeyboardModel;
   readonly reason: string;
 }[] = [
   {
     tracker: 'table/src/table.ts::#roving',
+    spec: 'table/src/table.spec.ts',
     keyboardModel: 'grid',
     reason:
       "[forTable]'s tracker roves a 2D grid over the composite header + body cells, so its cell keydown resolves through `resolveGridNavigation`: plain Home / End address the current *row* (`first-in-row` / `last-in-row`) and only Ctrl+Home / Ctrl+End reach the ends of the collection, which is what the contract's two jump cases assert",
   },
   {
     tracker: 'date-field/src/date-field.ts::roving',
+    spec: 'date-field/src/date-field.spec.ts',
     keyboardModel: 'segment-strip',
     reason:
       "[forDateField]'s tracker roves a strip of `role=\"spinbutton\"` segments, whose APG keyboard map spends Home / End on the segment's own value bounds rather than on a focus move, and which carries neither a per-item disabled state nor a selection for the contract's remaining rungs",
   },
   {
     tracker: 'time-field/src/time-field.ts::roving',
+    spec: 'time-field/src/time-field.spec.ts',
     keyboardModel: 'segment-strip',
     reason: "[forTimeField]'s tracker is the same spinbutton segment strip as [forDateField]'s",
   },
   {
     tracker: 'core/src/datetime/range-field-composer.ts::startRoving',
+    spec: 'time-field/src/time-range-field.spec.ts',
     keyboardModel: 'segment-strip',
     reason:
       "`RangeFieldComposer` builds one tracker per endpoint of the four range fields, each roving the same spinbutton segment strip as the single fields'",
   },
   {
     tracker: 'core/src/datetime/range-field-composer.ts::endRoving',
+    spec: 'time-field/src/time-range-field.spec.ts',
     keyboardModel: 'segment-strip',
     reason: "the end endpoint's half of `RangeFieldComposer`'s pair",
   },
@@ -211,6 +226,12 @@ const IN_PLACE_DISABLE = 'mountWithInPlaceDisable:';
 
 /** The focus follower a push-based tracker pairs with. */
 const FOCUS_RESTORE = 'injectRovingFocusRestore(';
+
+/** The contract mount every tracker supplies for the removal rung. */
+const REMOVAL = 'mountWithRemoval:';
+
+/** The contract mount every caller of the focus follower supplies. */
+const FOCUS_RESTORE_MOUNT = 'mountWithFocusRestore:';
 
 /** The shared ladder a declared member must still resolve its tab stop through. */
 const SHARED_LADDER = 'selectionTabStop(';
@@ -286,6 +307,8 @@ for (const adopter of ADOPTERS) {
   claimsPerSpec.set(adopter.spec, (claimsPerSpec.get(adopter.spec) ?? 0) + 1);
 }
 const sorted = (values: Iterable<string>): string[] => [...values].sort();
+const occurrences = (spec: string, token: string): number =>
+  (SPEC_SOURCES.get(spec) ?? '').split(token).length - 1;
 
 describe('roving-tabindex contract adoption (meta-guard)', () => {
   it('finds the library sources through the glob', () => {
@@ -368,6 +391,53 @@ describe('roving-tabindex contract adoption (meta-guard)', () => {
       .map(({ spec, claims, mounts }) => `${spec}: ${claims} claim(s), ${mounts} mount(s)`);
 
     expect(sorted(short)).toEqual([]);
+  });
+
+  it('mounts the removal rung once per tracker in the spec that claims or excludes it', () => {
+    const owed = new Map<string, number>();
+    for (const { spec, trackers } of ADOPTERS) {
+      owed.set(spec, (owed.get(spec) ?? 0) + trackers.length);
+    }
+    for (const { spec } of EXCLUSIONS) {
+      owed.set(spec, (owed.get(spec) ?? 0) + 1);
+    }
+    const covered = [...owed.values()].reduce((total, count) => total + count, 0);
+
+    expect(covered).toBe(trackerSites().length);
+    expect(
+      sorted(
+        [...owed.entries()]
+          .filter(([spec, trackers]) => occurrences(spec, REMOVAL) < trackers)
+          .map(
+            ([spec, trackers]) =>
+              `${spec}: ${trackers} tracker(s), ${occurrences(spec, REMOVAL)} mount(s)`,
+          ),
+      ),
+    ).toEqual([]);
+  });
+
+  it('mounts the focus-restore rung in the spec of every caller of the focus follower', () => {
+    const callers = [...LIBRARY_CODE.entries()]
+      .filter(
+        ([, source]) =>
+          source.includes(FOCUS_RESTORE) && !source.includes(`function ${FOCUS_RESTORE}`),
+      )
+      .map(([path]) => path);
+
+    expect(callers.length).toBeGreaterThanOrEqual(1);
+    expect(
+      sorted(
+        callers
+          .map((path) => ({
+            path,
+            claim: ADOPTERS.find((adopter) =>
+              adopter.trackers.some((tracker) => tracker.startsWith(`${path}::`)),
+            ),
+          }))
+          .filter(({ claim }) => !claim || occurrences(claim.spec, FOCUS_RESTORE_MOUNT) < 1)
+          .map(({ path, claim }) => `${path}: ${claim ? claim.spec : 'no claim'}`),
+      ),
+    ).toEqual([]);
   });
 
   it('routes every item piece of an adopter through the shared navigation gate', () => {

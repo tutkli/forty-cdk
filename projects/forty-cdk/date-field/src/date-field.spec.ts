@@ -13,6 +13,7 @@ import {
 } from '../../src/test-utils';
 import {
   assertFormControlContract,
+  assertRovingRemovalContract,
   type FormControlMountResult,
 } from '../../src/test-utils/contract';
 import {
@@ -858,7 +859,7 @@ describe('ForDateField', () => {
     })
     class DateTimeHost {
       readonly value = signal<Date | null>(null);
-      readonly granularity = signal<'minute' | 'second'>('minute');
+      readonly granularity = signal<'day' | 'minute' | 'second'>('minute');
       readonly hourCycle = signal<12 | 24>(24);
     }
 
@@ -902,6 +903,43 @@ describe('ForDateField', () => {
       const value = r.instance.value()!;
       expect(adapter.getHours(value)).toBe(10);
       expect(adapter.getDate(value)).toBe(15);
+    });
+
+    assertRovingRemovalContract({
+      mountWithRemoval: async () => {
+        const r = renderHost(DateTimeHost);
+        await flush(r.fixture);
+        return {
+          items: r.queryAll('[forDateFieldSegment]'),
+          flush: () => flush(r.fixture),
+          removedIndex: 4,
+          remove: () => r.instance.granularity.set('day'),
+        };
+      },
+    });
+
+    it('hands the tab stop back to the month when a day granularity drops the focused minute (#2239)', async () => {
+      const r = renderHost(DateTimeHost);
+      await flush(r.fixture);
+      dseg(r, 'minute').focus();
+      await flush(r.fixture);
+      dseg(r, 'minute').blur();
+
+      r.instance.granularity.set('day');
+      await flush(r.fixture);
+
+      const stops = r
+        .queryAll('[forDateFieldSegment]')
+        .filter((s) => s.getAttribute('tabindex') === '0')
+        .map((s) => s.getAttribute('data-testid'));
+      expect(stops).toEqual(['month']);
+    });
+
+    it('announces an empty AM/PM segment like every other empty segment (#2239)', async () => {
+      const r = renderHost(DateTimeHost);
+      r.instance.hourCycle.set(12);
+      await flush(r.fixture);
+      expect(dseg(r, 'dayPeriod').getAttribute('aria-valuetext')).toBe('Empty');
     });
 
     it('exposes a second segment at second granularity', async () => {

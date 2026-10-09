@@ -12,6 +12,7 @@ import {
 } from '../../src/test-utils';
 import {
   assertFormControlContract,
+  assertRovingRemovalContract,
   type FormControlMountResult,
 } from '../../src/test-utils/contract';
 import { NativeDateAdapter, provideNativeDateAdapter } from 'forty-cdk/shared';
@@ -112,6 +113,11 @@ type R = RenderResult<Host>;
 
 const root = (r: R) => r.query('[forTimeField]')!;
 const seg = (r: R, type: TimeSegmentType) => r.query(`[data-testid="${type}"]`)!;
+const tabStops = (r: R) =>
+  r
+    .queryAll('[forTimeFieldSegment]')
+    .filter((s) => s.getAttribute('tabindex') === '0')
+    .map((s) => s.getAttribute('data-testid'));
 const segmentsInOrder = (r: R) =>
   r.queryAll('[forTimeFieldSegment]').map((s) => s.getAttribute('data-testid'));
 
@@ -128,6 +134,50 @@ async function key(r: R, segment: TimeSegmentType, k: string): Promise<void> {
 }
 
 describe('ForTimeField', () => {
+  assertRovingRemovalContract({
+    mountWithRemoval: async () => {
+      const r = renderHost(Host);
+      r.instance.hourCycle.set(12);
+      await flush(r.fixture);
+      return {
+        items: r.queryAll('[forTimeFieldSegment]'),
+        flush: () => flush(r.fixture),
+        removedIndex: 2,
+        remove: () => r.instance.hourCycle.set(24),
+      };
+    },
+  });
+
+  describe('tab stop when the focused segment unmounts (#2239)', () => {
+    it('hands the tab stop back to the hour when a 24-hour switch drops the focused AM/PM', async () => {
+      const r = renderHost(Host);
+      r.instance.hourCycle.set(12);
+      await flush(r.fixture);
+      seg(r, 'dayPeriod').focus();
+      await flush(r.fixture);
+      seg(r, 'dayPeriod').blur();
+
+      r.instance.hourCycle.set(24);
+      await flush(r.fixture);
+
+      expect(tabStops(r)).toEqual(['hour']);
+    });
+
+    it('hands the tab stop back to the hour when a coarser granularity drops the focused second', async () => {
+      const r = renderHost(Host);
+      r.instance.granularity.set('second');
+      await flush(r.fixture);
+      seg(r, 'second').focus();
+      await flush(r.fixture);
+      expect(tabStops(r)).toEqual(['second']);
+
+      r.instance.granularity.set('minute');
+      await flush(r.fixture);
+
+      expect(tabStops(r)).toEqual(['hour']);
+    });
+  });
+
   assertFormControlContract(
     () => {
       const r = renderHost(TimeFieldFormControlHost);
@@ -666,15 +716,71 @@ describe('ForTimeField', () => {
       expect(seg(r, 'dayPeriod').textContent?.trim()).toBe('PM');
     });
 
-    it('ArrowUp / ArrowDown toggle the period', async () => {
+    it('ArrowUp toggles a set period both ways', async () => {
+      const r = renderHost(Host);
+      r.instance.hourCycle.set(12);
+      r.instance.value.set(new Date(2026, 5, 15, 21, 30));
+      await flush(r.fixture);
+      await key(r, 'dayPeriod', 'ArrowUp');
+      expect(adapter.getHours(r.instance.value()!)).toBe(9);
+      await key(r, 'dayPeriod', 'ArrowUp');
+      expect(adapter.getHours(r.instance.value()!)).toBe(21);
+    });
+
+    it('ArrowDown toggles a set period both ways', async () => {
       const r = renderHost(Host);
       r.instance.hourCycle.set(12);
       r.instance.value.set(new Date(2026, 5, 15, 9, 30));
       await flush(r.fixture);
-      await key(r, 'dayPeriod', 'ArrowUp'); // → PM
+      await key(r, 'dayPeriod', 'ArrowDown');
       expect(adapter.getHours(r.instance.value()!)).toBe(21);
-      await key(r, 'dayPeriod', 'ArrowDown'); // → AM
+      await key(r, 'dayPeriod', 'ArrowDown');
       expect(adapter.getHours(r.instance.value()!)).toBe(9);
+    });
+
+    it('sets PM on ArrowUp while the period is empty', async () => {
+      const r = renderHost(Host);
+      r.instance.hourCycle.set(12);
+      await flush(r.fixture);
+      await key(r, 'dayPeriod', 'ArrowUp');
+      expect(seg(r, 'dayPeriod').getAttribute('aria-valuenow')).toBe('1');
+    });
+
+    it('sets AM on ArrowDown while the period is empty', async () => {
+      const r = renderHost(Host);
+      r.instance.hourCycle.set(12);
+      await flush(r.fixture);
+      await key(r, 'dayPeriod', 'ArrowDown');
+      expect(seg(r, 'dayPeriod').getAttribute('aria-valuenow')).toBe('0');
+    });
+
+    it('announces an empty AM/PM segment like every other empty segment', async () => {
+      const r = renderHost(Host);
+      r.instance.hourCycle.set(12);
+      await flush(r.fixture);
+      expect(seg(r, 'dayPeriod').getAttribute('aria-valuenow')).toBeNull();
+      expect(seg(r, 'dayPeriod').getAttribute('aria-valuetext')).toBe('Empty');
+
+      await key(r, 'dayPeriod', 'p');
+      expect(seg(r, 'dayPeriod').getAttribute('aria-valuetext')).toBe('PM');
+    });
+
+    it('counts the hour 0-11 under a locale whose 12-hour clock does', async () => {
+      const r = renderHost(Host);
+      r.instance.hourCycle.set(12);
+      r.instance.locale.set('ja-JP');
+      r.instance.value.set(new Date(2026, 5, 15, 12, 30));
+      await flush(r.fixture);
+      expect(seg(r, 'hour').getAttribute('aria-valuemin')).toBe('0');
+      expect(seg(r, 'hour').getAttribute('aria-valuemax')).toBe('11');
+      expect(seg(r, 'hour').getAttribute('aria-valuenow')).toBe('0');
+      expect(seg(r, 'hour').textContent?.trim()).toBe('00');
+
+      await key(r, 'hour', 'ArrowDown');
+      expect(adapter.getHours(r.instance.value()!)).toBe(23);
+      expect(seg(r, 'hour').getAttribute('aria-valuenow')).toBe('11');
+      await key(r, 'hour', 'ArrowUp');
+      expect(adapter.getHours(r.instance.value()!)).toBe(12);
     });
 
     it('keeps a 12-hour entry null until the AM/PM period is chosen (#2136)', async () => {

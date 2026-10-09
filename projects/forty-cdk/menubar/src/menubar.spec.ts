@@ -626,6 +626,16 @@ describe('ForMenubar', () => {
             ]),
         };
       },
+      mountWithRemoval: async () => {
+        const r = renderHost(MenubarRovingHost);
+        await r.flush();
+        return {
+          items: menubarTriggers(r.el),
+          flush: r.flush,
+          removedIndex: 1,
+          remove: () => r.instance.triggers.update((list) => list.filter((_, i) => i !== 1)),
+        };
+      },
       mountRtl: async () => {
         const r = renderHost(MenubarRovingHost);
         r.instance.dir.set('rtl');

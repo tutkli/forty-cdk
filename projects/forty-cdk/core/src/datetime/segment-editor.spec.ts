@@ -301,6 +301,42 @@ describe('SegmentEditor.step', () => {
     expect(host.parts().dayPeriod).toBe(0);
   });
 
+  it('toggles a set dayPeriod on either arrow', () => {
+    const { host, editor } = setup();
+    host.setParts({ hour: 21, dayPeriod: 1 });
+    editor.step('dayPeriod', 1);
+    expect(host.parts()).toMatchObject({ hour: 9, dayPeriod: 0 });
+    editor.step('dayPeriod', 1);
+    expect(host.parts()).toMatchObject({ hour: 21, dayPeriod: 1 });
+    editor.step('dayPeriod', -1);
+    expect(host.parts()).toMatchObject({ hour: 9, dayPeriod: 0 });
+    editor.step('dayPeriod', -1);
+    expect(host.parts()).toMatchObject({ hour: 21, dayPeriod: 1 });
+  });
+
+  it('sets an empty dayPeriod by the arrow direction', () => {
+    const up = setup();
+    up.editor.step('dayPeriod', 1);
+    expect(up.host.parts().dayPeriod).toBe(1);
+
+    const down = setup();
+    down.editor.step('dayPeriod', -1);
+    expect(down.host.parts().dayPeriod).toBe(0);
+  });
+
+  it('wraps the hour through 0-11 when the 12-hour clock counts from 0', () => {
+    const { host, editor } = setup();
+    host.segmentMin = () => 0;
+    host.segmentMax = (type) => (type === 'hour' ? 11 : 59);
+    host.setParts({ hour: 23, dayPeriod: 1 });
+    expect(editor.segmentValue('hour')).toBe(11);
+    editor.step('hour', 1);
+    expect(host.parts().hour).toBe(12);
+    expect(editor.segmentValue('hour')).toBe(0);
+    editor.step('hour', -1);
+    expect(host.parts().hour).toBe(23);
+  });
+
   it('does nothing while disabled', () => {
     const { host, editor } = setup();
     host.disabled.set(true);
@@ -623,7 +659,38 @@ describe('SegmentEditor.focusSibling', () => {
   });
 });
 
+describe('SegmentEditor segment registry', () => {
+  it('releases the tab stop when the segment holding it unregisters', () => {
+    const { host, editor } = setup();
+    const handle = makeHandle('dayPeriod');
+    document.body.append(handle.host);
+    try {
+      editor.registerSegment(handle);
+      editor.focusSegment('dayPeriod');
+      expect(host.roving.active()).toBe(handle.host);
+      expect(host.roving.hasActive()).toBe(true);
+
+      handle.host.remove();
+      editor.unregisterSegment(handle);
+
+      expect(host.roving.active()).toBeNull();
+      expect(host.roving.hasActive()).toBe(false);
+    } finally {
+      handle.host.remove();
+    }
+  });
+});
+
 describe('SegmentEditor reactive accessors', () => {
+  it('reads an empty dayPeriod through the host value text', () => {
+    const { host, editor } = setup();
+    host.valueText = (type?: SegmentType) => (type === 'dayPeriod' ? 'Empty' : null);
+    expect(editor.segmentValueText('dayPeriod')).toBe('Empty');
+
+    host.setParts({ dayPeriod: 1 });
+    expect(editor.segmentValueText('dayPeriod')).toBe('PM');
+  });
+
   it('reports a segment empty until it is filled', () => {
     const { host, editor } = setup();
     expect(editor.isSegmentEmpty('day')).toBe(true);

@@ -480,6 +480,17 @@ describe('ForTabs', () => {
           ]),
       };
     },
+    mountWithRemoval: async () => {
+      const r = renderHost(TabsHost);
+      await r.flush();
+      return {
+        items: triggers(r.el),
+        flush: r.flush,
+        removedIndex: 1,
+        remove: () =>
+          r.fixture.componentInstance.tabs.update((list) => list.filter((_, i) => i !== 1)),
+      };
+    },
     mountRtl: async () => {
       const r = renderHost(TabsHost);
       r.fixture.componentInstance.dir.set('rtl');

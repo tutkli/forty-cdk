@@ -1,4 +1,4 @@
-import { computed, linkedSignal, type Signal, signal } from '@angular/core';
+import { linkedSignal, type Signal, signal } from '@angular/core';
 
 import type { HostRovingItemHandle } from './host-roving-context';
 
@@ -15,9 +15,12 @@ import type { HostRovingItemHandle } from './host-roving-context';
  * The active pointer is **self-healing** on read: a stale active element —
  * one that has detached from the document, or carries `disabled` /
  * `aria-disabled` (every primitive reflects its disabled state to one of
- * those attributes) — is discounted by `hasActive` / `tabindexFor`, so the
- * consumer's first-enabled fallback re-engages and the group keeps exactly
- * one tab stop even before reconciliation settles.
+ * those attributes) — is discounted by every call to `hasActive` /
+ * `tabindexFor`, so the consumer's first-enabled fallback re-engages and the
+ * group keeps exactly one tab stop even before reconciliation settles. A
+ * reactive read (a `computed`, a host binding) re-runs only when a signal it
+ * read changes, and detaching an element changes none, so a container calls
+ * {@link unregister} when an item leaves the group.
  *
  * When constructed with an `items` producer, the active pointer is also
  * **reconciled reactively**: whenever the active host leaves the group's
@@ -54,15 +57,6 @@ export class RovingTabindex {
    */
   readonly active: Signal<HTMLElement | null>;
 
-  /**
-   * Whether a usable active element currently owns the tab stop. `false`
-   * when nothing is active **or** the active element is stale (detached /
-   * disabled), signalling the consumer to fall back to its first-enabled
-   * entry point. Reactive — wire the per-item `tabindex` gate to this rather
-   * than `active() !== null`.
-   */
-  readonly hasActive: Signal<boolean>;
-
   constructor(
     items?: () => readonly HostRovingItemHandle[],
     options: { fallback?: 'none' | 'nearest' } = {},
@@ -90,10 +84,18 @@ export class RovingTabindex {
       },
     });
     this.active = this.#active;
-    this.hasActive = computed(() => {
-      const el = this.#active();
-      return el !== null && !isStale(el);
-    });
+  }
+
+  /**
+   * Whether a usable active element currently owns the tab stop. `false`
+   * when nothing is active **or** the active element is stale (detached /
+   * disabled) at the time of the call, signalling the consumer to fall back to
+   * its first-enabled entry point. Reactive — wire the per-item `tabindex` gate
+   * to this rather than `active() !== null`.
+   */
+  hasActive(): boolean {
+    const el = this.#active();
+    return el !== null && !isStale(el);
   }
 
   /**

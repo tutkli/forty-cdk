@@ -11,6 +11,7 @@ import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
 import { renderHost } from '../../src/test-utils';
+import { assertRovingRemovalContract } from '../../src/test-utils/contract';
 import { ForDraggable, moveItemInArray, provideForDragDropDefaults } from 'forty-cdk/drag-drop';
 import { TABLE_REGISTRATION_CONTEXT, type TableRegistrationContext } from 'forty-cdk/core';
 
@@ -1778,6 +1779,19 @@ describe('ForTable', () => {
   });
 
   describe('grid mode', () => {
+    assertRovingRemovalContract({
+      mountWithRemoval: async () => {
+        const r = renderHost(GridTableHost);
+        await r.flush();
+        return {
+          items: r.queryAll('[forTableCell]'),
+          flush: r.flush,
+          removedIndex: 4,
+          remove: () => r.instance.rows.update((rows) => rows.filter((row) => row.id !== 1)),
+        };
+      },
+    });
+
     it('single tab stop (initial): exactly one cell has tabindex=0 and it is the first; all others -1', () => {
       const { el } = renderHost(GridTableHost);
       const allCells = cells(el);

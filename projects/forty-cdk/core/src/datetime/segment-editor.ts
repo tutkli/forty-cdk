@@ -257,7 +257,7 @@ export class SegmentEditor<P extends SegmentParts, T extends SegmentType = Segme
       if (hour == null) {
         return null;
       }
-      return this.#host.cycle() === 12 ? to12(hour).h12 : hour;
+      return this.#host.cycle() === 12 ? to12(hour, this.#twelveHourMin()).h12 : hour;
     }
     return parts[type] ?? null;
   }
@@ -266,7 +266,7 @@ export class SegmentEditor<P extends SegmentParts, T extends SegmentType = Segme
     if (type === 'dayPeriod') {
       const dayPeriod = this.#host.parts().dayPeriod;
       if (dayPeriod == null) {
-        return null;
+        return this.#host.valueText(type);
       }
       const names = this.#host.periodNames();
       return dayPeriod === 1 ? names.pm : names.am;
@@ -310,6 +310,7 @@ export class SegmentEditor<P extends SegmentParts, T extends SegmentType = Segme
     if (this.#segments.get(handle.type()) === handle) {
       this.#segments.delete(handle.type());
     }
+    this.#host.roving.unregister(handle.host);
   }
 
   focusSegment(type: SegmentType): void {
@@ -387,7 +388,8 @@ export class SegmentEditor<P extends SegmentParts, T extends SegmentType = Segme
     }
     this.#typing.set(null);
     if (type === 'dayPeriod') {
-      this.setDayPeriod(delta > 0 ? 'pm' : 'am');
+      const period = this.#host.parts().dayPeriod;
+      this.setDayPeriod(period == null ? (delta > 0 ? 'pm' : 'am') : period === 1 ? 'am' : 'pm');
       return;
     }
     const parts = this.#host.parts();
@@ -553,9 +555,13 @@ export class SegmentEditor<P extends SegmentParts, T extends SegmentType = Segme
     if (this.#host.cycle() === 24) {
       return (((current + delta) % 24) + 24) % 24;
     }
-    const { h12, pm } = to12(current);
-    const nextH12 = ((((h12 - 1 + delta) % 12) + 12) % 12) + 1;
-    return from12(nextH12, pm);
+    const min = this.#twelveHourMin();
+    const { h12, pm } = to12(current, min);
+    return from12(min + ((((h12 - min + delta) % 12) + 12) % 12), pm);
+  }
+
+  #twelveHourMin(): 0 | 1 {
+    return this.#host.segmentMin('hour') === 0 ? 0 : 1;
   }
 
   #editableSpec(type: SegmentType): EditableSpec {

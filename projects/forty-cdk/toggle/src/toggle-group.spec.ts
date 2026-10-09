@@ -139,6 +139,16 @@ describe('ForToggleGroup', () => {
           r.instance.items.update(([first, ...rest]) => [{ ...first!, disabled: true }, ...rest]),
       };
     },
+    mountWithRemoval: async () => {
+      const r = renderHost(ToggleGroupHost);
+      await r.flush();
+      return {
+        items: toggleItems(r.el),
+        flush: r.flush,
+        removedIndex: 1,
+        remove: () => r.instance.items.update((list) => list.filter((_, i) => i !== 1)),
+      };
+    },
     mountRtl: async () => {
       const r = renderHost(ToggleGroupHost);
       r.instance.dir.set('rtl');

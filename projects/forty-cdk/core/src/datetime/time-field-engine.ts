@@ -99,14 +99,14 @@ export class TimeFieldEngine<D> extends DateTimeFieldEngineBase<D, TimeParts, Ti
 
   segmentMin(type: SegmentType): number {
     if (type === 'hour') {
-      return this.cycle() === 12 ? 1 : 0;
+      return this.hourMin();
     }
     return 0;
   }
 
   segmentMax(type: SegmentType): number {
     if (type === 'hour') {
-      return this.cycle() === 12 ? 12 : 23;
+      return this.cycle() === 12 ? this.hourMin() + 11 : 23;
     }
     if (type === 'dayPeriod') {
       return 1;
@@ -119,7 +119,7 @@ export class TimeFieldEngine<D> extends DateTimeFieldEngineBase<D, TimeParts, Ti
     return this.isSegmentEmpty(type) ? this.#config.emptySegmentText() : null;
   }
 
-  /** Base value for stepping an empty segment: the hour from its minimum (midnight in 24-hour, 1 AM in 12-hour), minute and second 0. */
+  /** Base value for stepping an empty segment: the hour from its minimum (midnight in 24-hour and `h11`, 1 AM in `h12`), minute and second 0. */
   protected seed(type: SegmentType): number {
     if (type !== 'hour') {
       return 0;

@@ -38,6 +38,14 @@
  *     forward arrow still moves focus off it
  *     ([#2140](https://github.com/tutkli/forty-cdk/issues/2140)). Every
  *     adopter supplies that mount; the meta-guard counts it.
+ *   - **An item that leaves while it holds the tab stop leaves exactly one
+ *     behind** among the survivors ([#2239](https://github.com/tutkli/forty-cdk/issues/2239)).
+ *     It is {@link assertRovingRemovalContract}, which the excluded trackers
+ *     call on their own; the meta-guard counts the mount for every tracker.
+ *   - **Focus follows an item that leaves only if the item held it** — for
+ *     the groups pairing with `injectRovingFocusRestore`: a removal moves the
+ *     focus it held, including after a disable in place, and moves nothing once
+ *     focus has left the group (#2239).
  *
  * The consumer provides `mount` factories per variant they want to
  * exercise. Only the `mount` factory is required; everything else is
@@ -124,11 +132,43 @@ export interface RovingTabindexContractSetup {
    * focus to the second item, which must stay enabled.
    */
   mountWithInPlaceDisable?: () => RovingInPlaceDisableMount | Promise<RovingInPlaceDisableMount>;
+  /**
+   * Mount with a way to remove one item from the group. The contract focuses
+   * it, removes it, and verifies exactly one survivor owns the tab stop.
+   */
+  mountWithRemoval?: () => RovingRemovalMount | Promise<RovingRemovalMount>;
+  /**
+   * Mount for a group pairing with `injectRovingFocusRestore`, with a way to
+   * disable and to remove one item. The contract verifies a removal moves the
+   * focus the item held, also after a disable in place, and moves nothing once
+   * focus has left the group.
+   */
+  mountWithFocusRestore?: () => RovingFocusRestoreMount | Promise<RovingFocusRestoreMount>;
 }
 
 export interface RovingInPlaceDisableMount extends RovingTabindexMountResult {
   /** Disable the first item without moving focus. The contract flushes afterwards. */
   disableFirst: () => void;
+}
+
+export interface RovingRemovalMount extends RovingTabindexMountResult {
+  /** Index into {@link items} of the item the contract focuses and then removes. */
+  removedIndex: number;
+  /**
+   * Remove `items[removedIndex]` from the group without moving focus; other
+   * items may leave with it. The contract flushes afterwards.
+   */
+  remove: () => void;
+}
+
+export interface RovingFocusRestoreMount extends RovingRemovalMount {
+  /** Disable `items[removedIndex]` without moving focus. The contract flushes afterwards. */
+  disable: () => void;
+}
+
+export interface RovingRemovalContractSetup {
+  /** See {@link RovingTabindexContractSetup.mountWithRemoval}. */
+  mountWithRemoval: () => RovingRemovalMount | Promise<RovingRemovalMount>;
 }
 
 export interface RovingTabindexContractOptions {
@@ -161,6 +201,41 @@ const tabStops = (r: RovingTabindexMountResult): number[] =>
     }
     return acc;
   }, []);
+
+const survivingTabStops = (r: RovingTabindexMountResult): HTMLElement[] =>
+  r.items.filter((item) => item.isConnected && item.getAttribute('tabindex') === '0');
+
+const focusRemovable = async (r: RovingRemovalMount): Promise<HTMLElement> => {
+  const target = r.items[r.removedIndex]!;
+  target.focus();
+  await r.flush();
+  expect(document.activeElement).toBe(target);
+  expect(target.getAttribute('tabindex')).toBe('0');
+  return target;
+};
+
+/**
+ * Run the removal rung of the roving-tabindex contract inside a
+ * `describe('roving-tabindex removal contract', …)` block: after the item
+ * holding the tab stop leaves, exactly one surviving item owns it.
+ * {@link assertRovingTabindexContract} runs it for `mountWithRemoval`; a
+ * tracker excluded from that contract calls it directly.
+ */
+export function assertRovingRemovalContract(setup: RovingRemovalContractSetup): void {
+  describe('roving-tabindex removal contract', () => {
+    it('leaves exactly one tab stop among the survivors when the item holding it leaves', async () => {
+      const r = await setup.mountWithRemoval();
+      const target = await focusRemovable(r);
+
+      r.remove();
+      await r.flush();
+
+      expect(target.isConnected).toBe(false);
+      expect(r.items.some((item) => item.isConnected)).toBe(true);
+      expect(survivingTabStops(r)).toHaveLength(1);
+    });
+  });
+}
 
 /**
  * Run the roving-tabindex contract assertions inside a
@@ -235,6 +310,53 @@ export function assertRovingTabindexContract(
         dispatchKey(first, forward);
         await r.flush();
         expect(document.activeElement).toBe(second);
+      });
+    }
+
+    if (setup.mountWithRemoval) {
+      assertRovingRemovalContract({ mountWithRemoval: setup.mountWithRemoval });
+    }
+
+    if (setup.mountWithFocusRestore) {
+      it('moves focus to the new tab stop when the focused item leaves', async () => {
+        const r = await setup.mountWithFocusRestore!();
+        await focusRemovable(r);
+
+        r.remove();
+        await r.flush();
+
+        const stops = survivingTabStops(r);
+        expect(stops).toHaveLength(1);
+        expect(document.activeElement).toBe(stops[0]);
+      });
+
+      it('moves focus to the new tab stop when an item disabled while focused leaves', async () => {
+        const r = await setup.mountWithFocusRestore!();
+        const target = await focusRemovable(r);
+        r.disable();
+        await r.flush();
+        expect(reflectsDisabled(target)).toBe(true);
+        expect(document.activeElement).toBe(target);
+
+        r.remove();
+        await r.flush();
+
+        const stops = survivingTabStops(r);
+        expect(stops).toHaveLength(1);
+        expect(document.activeElement).toBe(stops[0]);
+      });
+
+      it('moves no focus when the item leaves after focus left the group', async () => {
+        const r = await setup.mountWithFocusRestore!();
+        const target = await focusRemovable(r);
+        target.blur();
+        await r.flush();
+        expect(document.activeElement).toBe(document.body);
+
+        r.remove();
+        await r.flush();
+
+        expect(document.activeElement).toBe(document.body);
       });
     }
 

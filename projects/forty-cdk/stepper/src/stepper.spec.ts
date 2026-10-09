@@ -576,6 +576,16 @@ describe('ForStepper', () => {
           r.instance.steps.update(([first, ...rest]) => [{ ...first!, disabled: true }, ...rest]),
       };
     },
+    mountWithRemoval: async () => {
+      const r = renderHost(StepperHost);
+      await r.flush();
+      return {
+        items: triggers(r.el),
+        flush: r.flush,
+        removedIndex: 2,
+        remove: () => r.instance.steps.update((list) => list.slice(0, 2)),
+      };
+    },
     mountRtl: async () => {
       const r = renderHost(StepperHost);
       r.instance.dir.set('rtl');
