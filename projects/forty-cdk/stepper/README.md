@@ -401,7 +401,7 @@ Or purely via CSS:
 
 ## Known limitations
 
-**The panel's focusable-content detection does not re-measure across a shadow boundary, nor on a CSS-only visibility flip.** In `mode="interactive"` the measurement runs on the panel's first render and again on mutations of its own subtree, filtered to the attributes that change whether an element is focusable (`disabled`, `hidden`, `inert`, `tabindex`, `type`, `contenteditable`). Two changes are therefore invisible to it and leave the previous answer standing:
+**The panel's focusable-content detection does not re-measure across a shadow boundary, nor on a CSS-only visibility flip.** In `mode="interactive"` the measurement runs on the panel's first render and again on mutations of its own subtree, filtered to the attributes that change whether an element is focusable (`href`, `controls`, `disabled`, `hidden`, `inert`, `tabindex`, `type`, `contenteditable`). Two changes are therefore invisible to it and leave the previous answer standing:
 
 - **Focusable content appearing (or disappearing) inside a shadow root**: a web component in the panel that renders its controls on a later tick, or swaps them. The shadow root's own subtree is not observable, so a panel that gains its first focusable control that way keeps its redundant `tabindex="0"`, and one that loses its last keeps none, leaving the panel unreachable by keyboard for a screen-reader user reading it. Nothing in the DOM looks wrong.
 - **A visibility flip driven purely by a stylesheet**: the measurement excludes CSS-hidden elements, but `class` and `style` are not watched, so toggling a class that hides or reveals the panel's only control does not re-measure.

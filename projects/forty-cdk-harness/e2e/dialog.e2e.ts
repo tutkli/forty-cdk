@@ -27,6 +27,22 @@ test.describe('Dialog', () => {
     await expect(el(page, 'close-btn')).toBeFocused();
   });
 
+  test('Tab and Shift+Tab treat a trailing radio group as one stop at its checked member', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'dialog', { radios: '1' });
+    await el(page, 'trigger').click();
+    await expect(el(page, 'first')).toBeFocused();
+    await el(page, 'radio-pro').focus();
+    await expect(el(page, 'radio-pro')).toBeFocused();
+
+    await page.keyboard.press('Tab');
+    await expect(el(page, 'first')).toBeFocused();
+
+    await page.keyboard.press('Shift+Tab');
+    await expect(el(page, 'radio-pro')).toBeFocused();
+  });
+
   test('Escape closes and returns focus to the trigger', async ({ page }) => {
     await gotoFixture(page, 'dialog');
     await el(page, 'trigger').focus();

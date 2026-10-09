@@ -9,7 +9,11 @@ import {
   type Signal,
 } from '@angular/core';
 
-import { isFocusableCandidate, queryFocusableCandidates } from './focusable-candidate';
+import {
+  FOCUSABILITY_ATTRIBUTES,
+  isFocusableCandidate,
+  queryFocusableCandidates,
+} from './focusable-candidate';
 
 /**
  * Reports whether the host element currently has at least one focusable
@@ -50,7 +54,7 @@ export function injectHasFocusableContent(): Signal<boolean> {
       childList: true,
       subtree: true,
       attributes: true,
-      attributeFilter: ['disabled', 'hidden', 'inert', 'tabindex', 'type', 'contenteditable'],
+      attributeFilter: [...FOCUSABILITY_ATTRIBUTES],
     });
     destroyRef.onDestroy(() => observer.disconnect());
   }
