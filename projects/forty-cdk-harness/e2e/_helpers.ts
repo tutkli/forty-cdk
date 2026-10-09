@@ -3,20 +3,114 @@
  *
  * Every `page.waitForTimeout` in this module is pointer-gesture **pacing** —
  * the `stepDelayMs` gap between two moves of one drag, or the hold duration
- * of a long press — never a settle-wait on application state. Pacing is
- * exempt from the one-shot-wait → `expect.poll` rule in
- * `.claude/rules/testing.md`: the delay is the gesture's own timing, and the
- * directive's velocity maths reads it. Each one's duration comes from a
- * documented parameter, so callers control it explicitly.
+ * of a long press — never a settle-wait on application state. That is the
+ * first of the two uses the wait rule in `.claude/rules/testing.md` (_A wait
+ * is pacing, a named delay, or a settle_) allows: the delay is the gesture's
+ * own timing, and the directive's velocity maths reads it. Each one's duration
+ * comes from a documented parameter, so callers control it explicitly.
  */
 import {
   expect,
-  test,
+  test as base,
   type CDPSession,
   type Locator,
   type Page,
   type TestInfo,
 } from '@playwright/test';
+
+export { expect };
+
+/**
+ * The errors and diagnostics a test expects the page to raise. Every other one
+ * fails the test once its body has finished.
+ */
+export interface HarnessErrors {
+  /**
+   * Accept every recorded message matching `pattern` for the rest of the test.
+   * `reason` names why the test raises it, and is printed beside any message
+   * the gate still rejects.
+   */
+  allow(pattern: RegExp, reason: string): void;
+}
+
+const HARNESS_ERROR_BINDING = '__fortyCdkReportHarnessError';
+
+const DIAGNOSTIC_WARNING = /\bNG0\d+\b|\bFORCDK-[A-Z]+-\d{3}\b/;
+
+class HarnessErrorLog implements HarnessErrors {
+  readonly #recorded: string[] = [];
+  readonly #allowed: { pattern: RegExp; reason: string }[] = [];
+
+  allow(pattern: RegExp, reason: string): void {
+    this.#allowed.push({ pattern, reason });
+  }
+
+  record(channel: string, message: string): void {
+    this.#recorded.push(`[${channel}] ${message}`);
+  }
+
+  assertNone(): void {
+    const rejected = this.#recorded.filter(
+      (message) => !this.#allowed.some(({ pattern }) => pattern.test(message)),
+    );
+    const allowed = this.#allowed.map(({ pattern, reason }) => `  ${pattern} — ${reason}`);
+    expect(
+      rejected,
+      'the page raised errors or diagnostics the test did not allow' +
+        (allowed.length ? `\nallowed:\n${allowed.join('\n')}` : ''),
+    ).toEqual([]);
+  }
+}
+
+/**
+ * Playwright's `test`, with every test's `page` gated on the errors it raises.
+ *
+ * Three channels are recorded from the moment the page exists, across every
+ * navigation: each error the harness `ErrorHandler` handles (a throw inside a
+ * host listener, an `afterNextRender`, an effect, plus the window errors and
+ * unhandled rejections `provideBrowserGlobalErrorListeners` routes to it), any
+ * uncaught `pageerror`, and every `console.warn` carrying an Angular runtime
+ * code (`NG0953`) or a library code (`FORCDK-DRAWER-010`). After the body, the
+ * test fails on any of them that `harnessErrors.allow` did not accept.
+ *
+ * Only the fixture's `page` is gated: a page opened from `browser.newContext()`
+ * escapes it, so emulate on `page` instead (`page.emulateMedia`,
+ * `page.addInitScript`).
+ */
+export const test = base.extend<{ harnessErrors: HarnessErrors }>({
+  harnessErrors: [
+    async ({ page }, use) => {
+      const log = new HarnessErrorLog();
+      await page.exposeFunction(HARNESS_ERROR_BINDING, (message: string) =>
+        log.record('ErrorHandler', message),
+      );
+      page.on('pageerror', (error) => log.record('pageerror', error.message));
+      page.on('console', (message) => {
+        if (message.type() === 'warning' && DIAGNOSTIC_WARNING.test(message.text())) {
+          log.record('console.warn', message.text());
+        }
+      });
+      await use(log);
+      log.assertNone();
+    },
+    { auto: true },
+  ],
+});
+
+/**
+ * Run `assertion` once the render the last action queued has run.
+ *
+ * Use it for a negative or a "stays" claim whose expected value is the DOM
+ * before the action, when the action flips nothing a positive assertion could
+ * wait on: a click on a disabled control, a press the primitive must ignore, a
+ * release that commits nothing. Read straight after the action, such a claim
+ * passes on its first sample, before the zoneless render that would break it
+ * has run, so it only catches its regression when the render wins the race.
+ */
+export async function expectStays(page: Page, assertion: () => Promise<unknown>): Promise<void> {
+  await afterFrames(page);
+  await assertion();
+}
 
 /**
  * Locator for a `[data-testid="<id>"]` element. Fixtures use `data-testid`

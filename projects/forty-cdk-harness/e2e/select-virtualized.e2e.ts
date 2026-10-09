@@ -1,5 +1,4 @@
-import { expect, test } from '@playwright/test';
-import { el, gotoFixture } from './_helpers';
+import { el, expect, gotoFixture, test } from './_helpers';
 
 test.describe('Select virtualization (Shape C)', () => {
   test('windowed render — after open, only a small window of options is mounted', async ({

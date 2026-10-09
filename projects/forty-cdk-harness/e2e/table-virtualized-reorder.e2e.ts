@@ -1,6 +1,13 @@
-import { expect, type Page, test } from '@playwright/test';
+import type { Page } from '@playwright/test';
 
-import { el, expectFocused, gotoFixture, holdPointerAtAutoScrollEdge } from './_helpers';
+import {
+  el,
+  expect,
+  expectFocused,
+  gotoFixture,
+  holdPointerAtAutoScrollEdge,
+  test,
+} from './_helpers';
 import { ROW_SELECTOR } from './_table-helpers';
 
 interface WindowSample {

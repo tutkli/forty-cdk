@@ -1,5 +1,12 @@
-import { expect, test } from '@playwright/test';
-import { el, expectRovingTabStop, focusRovingItem, gotoFixture, rovingFirst } from './_helpers';
+import {
+  el,
+  expect,
+  expectRovingTabStop,
+  focusRovingItem,
+  gotoFixture,
+  rovingFirst,
+  test,
+} from './_helpers';
 
 test.describe('Listbox', () => {
   test('Tab into the listbox lands on the first enabled option', async ({ page }) => {

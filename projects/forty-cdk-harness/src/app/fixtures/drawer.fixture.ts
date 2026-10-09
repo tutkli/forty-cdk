@@ -86,13 +86,16 @@ import { queryFlag } from './_query-flag';
   template: `
     <div data-testid="shell" forDrawerWrapper>
       <input data-testid="before" placeholder="before-trigger" />
-      <button data-testid="trigger" forDrawerTrigger [(open)]="open">Open drawer</button>
+      <button data-testid="trigger" forDrawerTrigger [(open)]="open" controls="test-drawer">
+        Open drawer
+      </button>
       <input data-testid="after" placeholder="after-trigger" />
     </div>
 
     @if (open()) {
       <div
         forDrawer
+        id="test-drawer"
         data-testid="drawer"
         ariaLabel="Test drawer"
         [side]="side()"

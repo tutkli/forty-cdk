@@ -1,5 +1,4 @@
-import { expect, test } from '@playwright/test';
-import { boxOf, clickOutside, el, gotoFixture } from './_helpers';
+import { boxOf, clickOutside, el, expect, gotoFixture, test } from './_helpers';
 
 test.describe('Popover', () => {
   test('moves focus into the popover on open', async ({ page }) => {

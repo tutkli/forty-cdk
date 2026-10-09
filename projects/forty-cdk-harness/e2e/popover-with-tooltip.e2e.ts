@@ -1,5 +1,4 @@
-import { expect, test } from '@playwright/test';
-import { clickOutside, el, gotoFixture } from './_helpers';
+import { clickOutside, el, expect, gotoFixture, test } from './_helpers';
 
 test.describe('Popover with a tooltip on its trigger (#1310)', () => {
   test('outside-click close does not rip focus back to the trigger or re-open its tooltip', async ({

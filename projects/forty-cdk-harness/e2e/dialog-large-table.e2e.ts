@@ -1,5 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
-import { el, expectFocused, gotoFixture } from './_helpers';
+import type { Page } from '@playwright/test';
+import { el, expect, expectFocused, gotoFixture, test } from './_helpers';
 
 /**
  * The focus trap's `Tab` handling on the surface [#1620](https://github.com/tutkli/forty-cdk/issues/1620)

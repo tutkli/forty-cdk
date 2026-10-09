@@ -1,5 +1,4 @@
-import { expect, test } from '@playwright/test';
-import { clickOutside, el, gotoFixture } from './_helpers';
+import { clickOutside, el, expect, gotoFixture, test } from './_helpers';
 
 test.describe('Toast over a modal dialog (#1083)', () => {
   test('clicking a toast does not close the dialog and the toast stays interactive', async ({

@@ -41,7 +41,9 @@ if (!customElements.get(SHADOW_WIDGET_TAG)) {
   encapsulation: ViewEncapsulation.ShadowDom,
   imports: [ForDialogTrigger],
   template: `
-    <button data-testid="shadow-trigger" forDialogTrigger [(open)]="open">Open from shadow</button>
+    <button data-testid="shadow-trigger" forDialogTrigger [(open)]="open" controls="shadow-dialog">
+      Open from shadow
+    </button>
   `,
 })
 export class ShadowTriggerHost {
@@ -76,7 +78,9 @@ export class ShadowSurfaceHost {}
     @if (shadowTrigger) {
       <app-shadow-trigger [(open)]="open" />
     } @else {
-      <button data-testid="trigger" forDialogTrigger [(open)]="open">Open dialog</button>
+      <button data-testid="trigger" forDialogTrigger [(open)]="open" controls="shadow-dialog">
+        Open dialog
+      </button>
     }
     <button data-testid="after">After trigger</button>
 
@@ -88,7 +92,13 @@ export class ShadowSurfaceHost {}
           (dismiss)="onClose($event)"
         />
       } @else {
-        <div forDialog data-testid="dialog" ariaLabel="Shadow dialog" (dismiss)="onClose($event)">
+        <div
+          forDialog
+          id="shadow-dialog"
+          data-testid="dialog"
+          ariaLabel="Shadow dialog"
+          (dismiss)="onClose($event)"
+        >
           @if (shadowFirst) {
             <shadow-widget data-testid="widget"></shadow-widget>
             <button data-testid="outer">Outer</button>

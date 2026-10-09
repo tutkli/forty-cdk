@@ -1,13 +1,16 @@
-import { expect, type Page, test } from '@playwright/test';
+import type { Page } from '@playwright/test';
 import {
   dragFrom,
   dragFromSteps,
   el,
+  expect,
   expectFocused,
+  expectStays,
   gotoFixture,
   isMobileProject,
   rovingFirst,
   tabN,
+  test,
 } from './_helpers';
 
 function activeSlideTestid(page: Page): Promise<string | null> {
@@ -306,7 +309,7 @@ test.describe('Carousel (autoplay — pause on hover)', () => {
 
     // Negative assertion: the slide must NOT advance while paused, and only
     // the passage of time can show that. Two full intervals is a comfortable
-    // margin over the 400ms cadence. This is the sanctioned one-shot wait —
+    // margin over the 400ms cadence. This is the named-delay wait of the E2E wait rule —
     // there is no state transition to poll for when the expectation is that
     // nothing happens.
     await page.waitForTimeout(800);
@@ -338,7 +341,9 @@ test.describe('Carousel (autoplay — sticky stop)', () => {
     await expect(el(page, 'carousel-root')).not.toHaveAttribute('data-rotating');
     await el(page, 'carousel-root').hover();
     await page.mouse.move(0, 0);
-    await expect(el(page, 'carousel-root')).not.toHaveAttribute('data-rotating');
+    await expectStays(page, () =>
+      expect(el(page, 'carousel-root')).not.toHaveAttribute('data-rotating'),
+    );
   });
 
   test('clicking start after sticky stop resumes rotation', async ({ page }) => {
@@ -354,38 +359,25 @@ test.describe('Carousel (autoplay — sticky stop)', () => {
 });
 
 test.describe('Carousel (autoplay — reduced motion no auto-start)', () => {
-  test('autoplay=1 under reduced motion does not auto-start', async ({ browser }) => {
-    const context = await browser.newContext({ reducedMotion: 'reduce' });
-    const page = await context.newPage();
-    try {
-      await gotoFixture(page, 'carousel', { autoplay: '1', autoplayInterval: '400' });
-      await expect(el(page, 'rotation')).toHaveAttribute(
-        'aria-label',
-        'Start automatic slide show',
-      );
-      await expect(el(page, 'carousel-root')).not.toHaveAttribute('data-rotating');
-      // Negative assertion: under reduced motion autoplay must never start, so
-      // the test outwaits two full 400ms intervals and re-checks slide 0.
-      await page.waitForTimeout(800);
-      await expect(el(page, 'slide-0')).toHaveAttribute('data-state', 'active');
-    } finally {
-      await context.close();
-    }
+  test('autoplay=1 under reduced motion does not auto-start', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await gotoFixture(page, 'carousel', { autoplay: '1', autoplayInterval: '400' });
+    await expect(el(page, 'rotation')).toHaveAttribute('aria-label', 'Start automatic slide show');
+    await expect(el(page, 'carousel-root')).not.toHaveAttribute('data-rotating');
+    // Negative assertion: under reduced motion autoplay must never start, so
+    // the test outwaits two full 400ms intervals and re-checks slide 0.
+    await page.waitForTimeout(800);
+    await expect(el(page, 'slide-0')).toHaveAttribute('data-state', 'active');
   });
 
-  test('explicit click starts rotation even under reduced motion', async ({ browser }) => {
-    const context = await browser.newContext({ reducedMotion: 'reduce' });
-    const page = await context.newPage();
-    try {
-      await gotoFixture(page, 'carousel', { autoplay: '1', autoplayInterval: '400' });
-      await el(page, 'rotation').click();
-      await el(page, 'before').focus();
-      await page.mouse.move(0, 0);
-      await expect(el(page, 'carousel-root')).toHaveAttribute('data-rotating', '');
-      await expect(el(page, 'slide-0')).toHaveAttribute('data-state', 'inactive');
-    } finally {
-      await context.close();
-    }
+  test('explicit click starts rotation even under reduced motion', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await gotoFixture(page, 'carousel', { autoplay: '1', autoplayInterval: '400' });
+    await el(page, 'rotation').click();
+    await el(page, 'before').focus();
+    await page.mouse.move(0, 0);
+    await expect(el(page, 'carousel-root')).toHaveAttribute('data-rotating', '');
+    await expect(el(page, 'slide-0')).toHaveAttribute('data-state', 'inactive');
   });
 });
 
@@ -514,26 +506,21 @@ test.describe('Carousel (drag / swipe) @mobile', () => {
     await drag.up();
   });
 
-  test('reduced motion suppresses live offset but still snaps index (D3)', async ({ browser }) => {
-    const context = await browser.newContext({ reducedMotion: 'reduce' });
-    const page = await context.newPage();
-    try {
-      await gotoFixture(page, 'carousel');
-      const drag = await dragFromSteps(page, el(page, 'viewport'), { dx: -50, dy: 0 }, 3, {
-        stepDelayMs: 50,
-        release: false,
-        flickRelease: true,
-      });
-      const movementX = await page.evaluate(() => {
-        const vp = document.querySelector('[data-testid="viewport"]') as HTMLElement;
-        return getComputedStyle(vp).getPropertyValue('--for-carousel-swipe-movement-x').trim();
-      });
-      expect(movementX).toBe('');
-      await drag.up();
-      await expect(el(page, 'slide-1')).toHaveAttribute('data-state', 'active');
-    } finally {
-      await context.close();
-    }
+  test('reduced motion suppresses live offset but still snaps index (D3)', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await gotoFixture(page, 'carousel');
+    const drag = await dragFromSteps(page, el(page, 'viewport'), { dx: -50, dy: 0 }, 3, {
+      stepDelayMs: 50,
+      release: false,
+      flickRelease: true,
+    });
+    const movementX = await page.evaluate(() => {
+      const vp = document.querySelector('[data-testid="viewport"]') as HTMLElement;
+      return getComputedStyle(vp).getPropertyValue('--for-carousel-swipe-movement-x').trim();
+    });
+    expect(movementX).toBe('');
+    await drag.up();
+    await expect(el(page, 'slide-1')).toHaveAttribute('data-state', 'active');
   });
 
   test('a normal viewport drag captures the pointer (baseline for the bail below)', async ({

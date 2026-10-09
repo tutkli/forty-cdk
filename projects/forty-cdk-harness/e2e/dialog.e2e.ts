@@ -1,5 +1,4 @@
-import { expect, test } from '@playwright/test';
-import { clickOutside, el, gotoFixture } from './_helpers';
+import { clickOutside, el, expect, gotoFixture, test } from './_helpers';
 
 test.describe('Dialog', () => {
   test('moves focus to the first focusable on open (initialFocus="first")', async ({ page }) => {

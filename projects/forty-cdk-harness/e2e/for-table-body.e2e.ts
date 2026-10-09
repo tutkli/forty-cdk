@@ -1,5 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
-import { el, expectFocused, gotoFixture } from './_helpers';
+import type { Page } from '@playwright/test';
+import { el, expect, expectFocused, gotoFixture, test } from './_helpers';
 import { dataCellAt as dataCell, headerCell, headerOrder, rowAt, rows } from './_table-helpers';
 
 const columnWidth = (page: Page, column: string): Promise<number | null> =>

@@ -1,5 +1,4 @@
-import { expect, test } from '@playwright/test';
-import { el, gotoFixture } from './_helpers';
+import { el, expect, gotoFixture, test } from './_helpers';
 
 test.describe('Tooltip over menu (#1309)', () => {
   test('a pointer-down on a tooltipped trigger closes an open menu below the tooltip', async ({

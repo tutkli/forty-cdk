@@ -1,5 +1,4 @@
-import { expect, test } from '@playwright/test';
-import { activeDescendantIndex, el, gotoFixture } from './_helpers';
+import { activeDescendantIndex, el, expect, gotoFixture, test } from './_helpers';
 
 test.describe('Tree virtualization (Shape C)', () => {
   test('windowed render — only a small window of the 2550 nodes is mounted', async ({ page }) => {

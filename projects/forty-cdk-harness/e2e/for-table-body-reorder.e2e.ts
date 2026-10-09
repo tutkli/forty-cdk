@@ -1,6 +1,4 @@
-import { expect, test } from '@playwright/test';
-
-import { el, expectFocused, gotoFixture } from './_helpers';
+import { el, expect, expectFocused, gotoFixture, test } from './_helpers';
 import { headerCell, headerOrder } from './_table-helpers';
 
 test.describe('ForTableBody — declarative column reorder (#1350)', () => {

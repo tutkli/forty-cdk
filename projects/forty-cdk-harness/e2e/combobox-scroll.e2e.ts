@@ -1,5 +1,4 @@
-import { expect, test } from '@playwright/test';
-import { el, gotoFixture } from './_helpers';
+import { el, expect, expectStays, gotoFixture, test } from './_helpers';
 
 test.describe('Combobox — auto-highlight scroll into view (#1066)', () => {
   test('opening with a below-the-fold selection scrolls the active option into view', async ({
@@ -63,7 +62,9 @@ test.describe('Combobox — auto-highlight scroll into view (#1066)', () => {
         page.evaluate(() => (window as unknown as { synthesizedMoves: number }).synthesizedMoves),
       )
       .toBeGreaterThan(0);
-    await expect(el(page, 'opt-item-30')).toHaveAttribute('data-highlighted', '');
+    await expectStays(page, () =>
+      expect(el(page, 'opt-item-30')).toHaveAttribute('data-highlighted', ''),
+    );
   });
 
   test('hovering an option after open does not scroll the listbox', async ({ page }) => {

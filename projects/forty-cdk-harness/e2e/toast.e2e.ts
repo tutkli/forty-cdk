@@ -1,5 +1,5 @@
-import { expect, type Page, test } from '@playwright/test';
-import { dragFrom, el, expectFocused, gotoFixture } from './_helpers';
+import type { Page } from '@playwright/test';
+import { dragFrom, el, expect, expectFocused, gotoFixture, test } from './_helpers';
 
 /** How a {@link watchTop} run ended — one settled outcome, three failures. */
 type TopWatchOutcome = 'settled' | 'never-moved' | 'never-settled' | 'missing';
@@ -220,6 +220,7 @@ test.describe('Toast', () => {
 
     await dragFrom(page, el(page, 'toast-0'), { dx: 30, dy: 0 }, { stepDelayMs: 300 });
 
+    await expect(el(page, 'toast-0')).toHaveAttribute('data-swipe', 'cancel');
     await expect(el(page, 'toast-0')).toBeVisible();
     await expect(el(page, 'toast-0')).toHaveAttribute('data-state', 'open');
   });

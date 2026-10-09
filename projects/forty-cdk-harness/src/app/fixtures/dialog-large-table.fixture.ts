@@ -98,11 +98,13 @@ const DEFAULT_ROWS = 1000;
     `,
   ],
   template: `
-    <button data-testid="trigger" forDialogTrigger [(open)]="open">Open dialog</button>
+    <button data-testid="trigger" forDialogTrigger [(open)]="open" controls="large-table-dialog">
+      Open dialog
+    </button>
     <button data-testid="after">After trigger</button>
 
     @if (open()) {
-      <div forDialog data-testid="dialog" ariaLabel="Large table dialog">
+      <div forDialog id="large-table-dialog" data-testid="dialog" ariaLabel="Large table dialog">
         <button data-testid="first">First</button>
 
         <div class="scroll-container">

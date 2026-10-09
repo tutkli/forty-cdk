@@ -1,5 +1,4 @@
-import { expect, test } from '@playwright/test';
-import { el, expectFocused, gotoFixture, rovingFirst } from './_helpers';
+import { el, expect, expectFocused, gotoFixture, rovingFirst, test } from './_helpers';
 
 test.describe('Accordion', () => {
   test('Tab into the accordion lands on the first enabled trigger', async ({ page }) => {

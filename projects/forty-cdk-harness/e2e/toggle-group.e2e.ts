@@ -1,11 +1,13 @@
-import { expect, test } from '@playwright/test';
 import {
   el,
+  expect,
   expectFocused,
   expectRovingFocus,
+  expectStays,
   focusRovingItem,
   gotoFixture,
   rovingFirst,
+  test,
 } from './_helpers';
 
 /**
@@ -74,7 +76,9 @@ test.describe('ToggleGroup', () => {
       await expect(el(page, 'tg-center')).toHaveAttribute('aria-pressed', 'true');
 
       await page.keyboard.press(key);
-      await expect(el(page, 'tg-center')).toHaveAttribute('aria-pressed', 'true');
+      await expectStays(page, () =>
+        expect(el(page, 'tg-center')).toHaveAttribute('aria-pressed', 'true'),
+      );
 
       await page.keyboard.press('ArrowRight');
       await expectRovingFocus(page, 'tg-right');

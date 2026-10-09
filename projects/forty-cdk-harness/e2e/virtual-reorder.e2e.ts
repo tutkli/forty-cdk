@@ -1,6 +1,6 @@
-import { expect, type Page, test } from '@playwright/test';
+import type { Page } from '@playwright/test';
 
-import { el, gotoFixture, holdPointerAtAutoScrollEdge } from './_helpers';
+import { el, expect, gotoFixture, holdPointerAtAutoScrollEdge, test } from './_helpers';
 
 /**
  * Reads the absolute `data-index` values of the currently rendered rows, sorted

@@ -152,7 +152,7 @@ export class SelectFixture {
       ? 'item-aligned'
       : 'popper';
 
-  // `?modal=1` routes [forSelectContent] through `_internal/modal-shell` (focus
+  // `?modal=1` routes [forSelectContent] through `core-overlay/modal-shell` (focus
   // trap + inert siblings + body-scroll-lock) instead of the anchored popover.
   protected readonly modal = queryFlag('modal');
 

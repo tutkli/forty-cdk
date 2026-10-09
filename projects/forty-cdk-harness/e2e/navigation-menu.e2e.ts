@@ -1,6 +1,5 @@
 import type { Locator, Page } from '@playwright/test';
-import { expect, test } from '@playwright/test';
-import { el, expectFocused, gotoFixture, isMobileProject } from './_helpers';
+import { el, expect, expectFocused, gotoFixture, isMobileProject, test } from './_helpers';
 
 /** Move the mouse to the centre of `target` in `steps` intermediate hops. */
 async function hoverTo(page: Page, target: Locator, steps = 8): Promise<void> {
@@ -75,31 +74,25 @@ test.describe('NavigationMenu viewport', () => {
   });
 
   test('renders the active content size on first read even when ResizeObserver is unavailable', async ({
-    browser,
+    page,
   }) => {
-    const context = await browser.newContext();
-    await context.addInitScript(() => {
+    await page.addInitScript(() => {
       // Strip RO before app bootstrap so the directive's `typeof
       // ResizeObserver !== 'undefined'` guard takes the fallback branch.
       (window as unknown as { ResizeObserver: unknown }).ResizeObserver = undefined;
     });
-    const page = await context.newPage();
-    try {
-      await gotoFixture(page, 'navigation-menu');
-      await page.locator('[data-testid="trigger-products"]').click();
+    await gotoFixture(page, 'navigation-menu');
+    await page.locator('[data-testid="trigger-products"]').click();
 
-      // Without RO the directive can't observe layout mutations, but the
-      // first paint still computes from `getBoundingClientRect`, so the
-      // CSS variables populate from the initial measurement.
-      await expect
-        .poll(() => readVar(page, 'viewport', '--for-navigation-menu-viewport-width'))
-        .toBe('320px');
-      await expect
-        .poll(() => readVar(page, 'viewport', '--for-navigation-menu-viewport-height'))
-        .toBe('240px');
-    } finally {
-      await context.close();
-    }
+    // Without RO the directive can't observe layout mutations, but the
+    // first paint still computes from `getBoundingClientRect`, so the
+    // CSS variables populate from the initial measurement.
+    await expect
+      .poll(() => readVar(page, 'viewport', '--for-navigation-menu-viewport-width'))
+      .toBe('320px');
+    await expect
+      .poll(() => readVar(page, 'viewport', '--for-navigation-menu-viewport-height'))
+      .toBe('240px');
   });
 });
 

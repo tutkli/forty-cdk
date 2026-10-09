@@ -25,11 +25,19 @@ import { ForPopover, ForPopoverContent, ForPopoverTrigger } from 'forty-cdk/popo
     ForPopoverContent,
   ],
   template: `
-    <button data-testid="dialog-trigger" forDialogTrigger [(open)]="dialogOpen">Open dialog</button>
+    <button
+      data-testid="dialog-trigger"
+      forDialogTrigger
+      [(open)]="dialogOpen"
+      controls="outer-dialog"
+    >
+      Open dialog
+    </button>
 
     @if (dialogOpen()) {
       <div
         forDialog
+        id="outer-dialog"
         data-testid="dialog"
         ariaLabel="Outer dialog"
         (dismiss)="dialogOpen.set(false)"

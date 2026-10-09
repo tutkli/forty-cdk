@@ -1,5 +1,13 @@
-import { expect, test } from '@playwright/test';
-import { boxOf, dragFrom, el, expectFocused, gotoFixture } from './_helpers';
+import {
+  boxOf,
+  dragFrom,
+  el,
+  expect,
+  expectFocused,
+  expectStays,
+  gotoFixture,
+  test,
+} from './_helpers';
 
 /**
  * Pointer / drag / RTL math coverage for `[forPaneResizer]`. The Vitest layer
@@ -133,9 +141,11 @@ test.describe('PaneResizer (pointer drag)', () => {
     await page.mouse.down();
     await page.mouse.up();
 
-    await expect(el(page, 'value')).toHaveText('200');
-    await expect(el(page, 'resize-commit-count')).toHaveText('0');
-    await expect(el(page, 'last-resize-commit')).toHaveText('none');
+    await expectStays(page, async () => {
+      await expect(el(page, 'value')).toHaveText('200');
+      await expect(el(page, 'resize-commit-count')).toHaveText('0');
+      await expect(el(page, 'last-resize-commit')).toHaveText('none');
+    });
   });
 });
 

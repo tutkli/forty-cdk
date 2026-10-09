@@ -1,5 +1,4 @@
-import { expect, test } from '@playwright/test';
-import { el, expectDeepFocused, gotoFixture } from './_helpers';
+import { el, expect, expectDeepFocused, gotoFixture, test } from './_helpers';
 
 test.describe('Dialog containing a web component with an open shadow root', () => {
   test('Tab cycles through the shadow-nested controls and wraps back into the surface', async ({

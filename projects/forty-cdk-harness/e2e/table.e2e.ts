@@ -1,5 +1,13 @@
-import { expect, test } from '@playwright/test';
-import { boxOf, el, expectFocused, expectRovingFocus, gotoFixture } from './_helpers';
+import {
+  boxOf,
+  el,
+  expect,
+  expectFocused,
+  expectRovingFocus,
+  expectStays,
+  gotoFixture,
+  test,
+} from './_helpers';
 import { rowAt, rows } from './_table-helpers';
 
 test.describe('Table (roles + sticky header)', () => {
@@ -390,12 +398,11 @@ test.describe('Table (column resizing)', () => {
     const resizer = el(page, 'resizer-name');
 
     await expect(headerName).not.toHaveAttribute('aria-sort');
+    const widthBefore = (await boxOf(headerName)).width;
 
-    const resizerBox = await resizer.boundingBox();
-    expect(resizerBox).not.toBeNull();
-
-    const cx = resizerBox!.x + resizerBox!.width / 2;
-    const cy = resizerBox!.y + resizerBox!.height / 2;
+    const resizerBox = await boxOf(resizer);
+    const cx = resizerBox.x + resizerBox.width / 2;
+    const cy = resizerBox.y + resizerBox.height / 2;
 
     await page.mouse.move(cx, cy);
     await page.mouse.down();
@@ -403,7 +410,10 @@ test.describe('Table (column resizing)', () => {
     await page.mouse.move(cx + 80, cy);
     await page.mouse.up();
 
-    await expect(headerName).not.toHaveAttribute('aria-sort');
+    await expect
+      .poll(() => headerName.boundingBox().then((b) => b?.width ?? 0))
+      .toBeGreaterThan(widthBefore);
+    await expectStays(page, () => expect(headerName).not.toHaveAttribute('aria-sort'));
   });
 
   test('exposes a measured aria-valuenow when [width] is unbound', async ({ page }) => {
@@ -476,14 +486,13 @@ test.describe('Table (column resizing)', () => {
     const headerName = el(page, 'header-name');
     const resizer = el(page, 'resizer-name');
 
-    const beforeBox = await headerName.boundingBox();
-    expect(beforeBox).not.toBeNull();
+    const beforeBox = await boxOf(headerName);
 
     await resizer.dblclick();
 
-    const afterBox = await headerName.boundingBox();
-    expect(afterBox).not.toBeNull();
-    expect(afterBox!.width).toBeCloseTo(beforeBox!.width, 0);
+    await expectStays(page, async () => {
+      expect((await boxOf(headerName)).width).toBeCloseTo(beforeBox.width, 0);
+    });
   });
 
   test('fitIncludesHeader: header-inclusive auto-fit shows a long header label without truncation', async ({

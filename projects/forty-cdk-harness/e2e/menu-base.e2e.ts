@@ -1,5 +1,5 @@
-import { expect, type Page, test } from '@playwright/test';
-import { el, gotoFixture } from './_helpers';
+import type { Page } from '@playwright/test';
+import { el, expect, gotoFixture, test } from './_helpers';
 
 async function rawTextContent(page: Page, testid: string): Promise<string> {
   const text = await el(page, testid).evaluate((node) => node.textContent ?? '');
@@ -18,7 +18,7 @@ async function rawTextContent(page: Page, testid: string): Promise<string> {
  * menu open once per test and then asserts the base-menu-specific behaviour
  * (separator + disabled skip, Home / End, typeahead with debounce).
  *
- * Typeahead debounce default is 500 ms (`_internal/typeahead`). The
+ * Typeahead debounce default is 500 ms (`core/typeahead`). The
  * post-debounce reset test waits 700 ms; the buffer-grows test stays inside
  * the window with no manual wait.
  */

@@ -1,6 +1,4 @@
-import { expect, test } from '@playwright/test';
-
-import { el, expectFocused, gotoFixture } from './_helpers';
+import { el, expect, expectFocused, gotoFixture, test } from './_helpers';
 
 test.describe('DateField', () => {
   test('roving entry: one segment is tabbable and Tab enters then exits the field', async ({

@@ -1,5 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
-import { el, gotoFixture } from './_helpers';
+import type { Page } from '@playwright/test';
+import { el, expect, gotoFixture, test } from './_helpers';
 import { ROW_SELECTOR, rowByIndex } from './_table-helpers';
 
 const GROUP_EVERY = 10;

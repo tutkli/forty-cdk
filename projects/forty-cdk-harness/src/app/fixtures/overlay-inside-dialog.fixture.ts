@@ -73,10 +73,17 @@ import {
     ForMenuItem,
   ],
   template: `
-    <button data-testid="dialog-trigger" forDialogTrigger [(open)]="dialogOpen">Open dialog</button>
+    <button
+      data-testid="dialog-trigger"
+      forDialogTrigger
+      [(open)]="dialogOpen"
+      controls="form-dialog"
+    >
+      Open dialog
+    </button>
 
     @if (dialogOpen()) {
-      <div forDialog ariaLabel="Form dialog" (dismiss)="dialogOpen.set(false)">
+      <div forDialog id="form-dialog" ariaLabel="Form dialog" (dismiss)="dialogOpen.set(false)">
         <!-- A control behind the overlays. A click that falls through an
              inert overlay would land here and bump the counter. -->
         <button

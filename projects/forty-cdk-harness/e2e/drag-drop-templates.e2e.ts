@@ -1,6 +1,4 @@
-import { expect, test } from '@playwright/test';
-
-import { afterFrames, el, gotoFixture, recordFlipStamps } from './_helpers';
+import { afterFrames, el, expect, gotoFixture, recordFlipStamps, test } from './_helpers';
 
 test.describe('drag-drop custom preview & placeholder', () => {
   test.beforeEach(async ({ page }) => {

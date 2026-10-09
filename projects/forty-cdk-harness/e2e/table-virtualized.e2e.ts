@@ -1,5 +1,4 @@
-import { expect, test } from '@playwright/test';
-import { el, expectFocused, gotoFixture } from './_helpers';
+import { el, expect, expectFocused, gotoFixture, test } from './_helpers';
 import { rowAt, rows } from './_table-helpers';
 
 test.describe('Table virtualized', () => {

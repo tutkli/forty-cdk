@@ -1,5 +1,4 @@
-import { expect, test } from '@playwright/test';
-import { boxOf, el, gotoFixture } from './_helpers';
+import { boxOf, el, expect, gotoFixture, test } from './_helpers';
 
 const INITIAL = 'alpha,bravo,charlie,delta,echo,foxtrot';
 

@@ -1,6 +1,4 @@
-import { expect, test } from '@playwright/test';
-
-import { el, expectFocused, gotoFixture } from './_helpers';
+import { el, expect, expectFocused, gotoFixture, test } from './_helpers';
 
 test.describe('drag-drop boundary + lockAxis', () => {
   test('lockAxis="y" — preview y tracks pointer while x stays at lift-time x', async ({ page }) => {
