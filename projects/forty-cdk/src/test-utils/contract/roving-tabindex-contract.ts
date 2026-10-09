@@ -34,6 +34,11 @@
  *     which regressed once per sibling while the ladder lived as
  *     copy-pasted `describe('initial tabindex')` blocks; centralising it
  *     here is what makes a fix propagate.
+ *   - **An arrow held with Alt or Meta is left to the browser** — those are
+ *     its history shortcuts, so the event stays unprevented and neither
+ *     focus nor any item state moves
+ *     ([#2241](https://github.com/tutkli/forty-cdk/issues/2241)). It runs on
+ *     the required `mount`, so every adopter the meta-guard counts runs it.
  *   - **An item disabled while it holds focus keeps the keyboard** — the
  *     forward arrow still moves focus off it
  *     ([#2140](https://github.com/tutkli/forty-cdk/issues/2140)). Every
@@ -182,9 +187,27 @@ export interface RovingTabindexContractOptions {
   forwardArrow?: 'ArrowRight' | 'ArrowDown';
 }
 
-const dispatchKey = (target: EventTarget, key: string): void => {
-  target.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
+const dispatchKey = (
+  target: EventTarget,
+  key: string,
+  init: KeyboardEventInit = {},
+): KeyboardEvent => {
+  const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...init });
+  target.dispatchEvent(event);
+  return event;
 };
+
+const ITEM_STATE_ATTRIBUTES = [
+  'tabindex',
+  'aria-checked',
+  'aria-selected',
+  'aria-pressed',
+  'aria-current',
+  'data-state',
+] as const;
+
+const itemStates = (r: RovingTabindexMountResult): (string | null)[][] =>
+  r.items.map((item) => ITEM_STATE_ATTRIBUTES.map((name) => item.getAttribute(name)));
 
 const enabled = (r: RovingTabindexMountResult): readonly number[] =>
   r.enabledIndices ?? r.items.map((_, i) => i);
@@ -293,6 +316,32 @@ export function assertRovingTabindexContract(
       await r.flush();
       expect(document.activeElement).toBe(r.items[b]);
     });
+
+    for (const modifier of ['altKey', 'metaKey'] as const) {
+      it(`leaves arrows held with ${modifier} to the browser`, async () => {
+        const r = await setup.mount();
+        const enabledIdx = enabled(r);
+        expect(enabledIdx.length).toBeGreaterThanOrEqual(2);
+        const backward = forward === 'ArrowRight' ? 'ArrowLeft' : 'ArrowUp';
+
+        for (const [from, key] of [
+          [enabledIdx[0]!, forward],
+          [enabledIdx[1]!, backward],
+        ] as const) {
+          const item = r.items[from]!;
+          item.focus();
+          await r.flush();
+          const before = itemStates(r);
+
+          const event = dispatchKey(item, key, { [modifier]: true });
+          await r.flush();
+
+          expect(event.defaultPrevented).toBe(false);
+          expect(document.activeElement).toBe(item);
+          expect(itemStates(r)).toEqual(before);
+        }
+      });
+    }
 
     if (setup.mountWithInPlaceDisable) {
       it(`${forward} moves focus off an item disabled while it holds focus`, async () => {

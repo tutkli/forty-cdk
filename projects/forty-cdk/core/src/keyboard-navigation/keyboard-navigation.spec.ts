@@ -103,6 +103,31 @@ describe('resolveListNavigation', () => {
     expect(resolveListNavigation(key('Tab'), { orientation: 'both' })).toBe(null);
     expect(resolveListNavigation(key('a'), { orientation: 'both' })).toBe(null);
   });
+
+  it.each(['altKey', 'metaKey'] as const)(
+    'leaves every navigation key held with %s to the browser',
+    (modifier) => {
+      const options = { orientation: 'both' as const, pageKeys: true };
+      for (const k of [
+        'ArrowUp',
+        'ArrowDown',
+        'ArrowLeft',
+        'ArrowRight',
+        'Home',
+        'End',
+        'PageUp',
+        'PageDown',
+      ]) {
+        expect(resolveListNavigation(key(k, { [modifier]: true }), options)).toBe(null);
+      }
+    },
+  );
+
+  it('still maps Ctrl- and Shift-held arrows', () => {
+    const options = { orientation: 'vertical' as const };
+    expect(resolveListNavigation(key('ArrowDown', { ctrlKey: true }), options)).toBe('next');
+    expect(resolveListNavigation(key('ArrowUp', { shiftKey: true }), options)).toBe('prev');
+  });
 });
 
 describe('resolveGridNavigation', () => {
@@ -139,6 +164,22 @@ describe('resolveGridNavigation', () => {
   it('PageUp / PageDown are ignored when pageKeys is off', () => {
     expect(resolveGridNavigation(key('PageUp'), opts)).toBe(null);
     expect(resolveGridNavigation(key('PageDown'), opts)).toBe(null);
+  });
+
+  it.each(['altKey', 'metaKey'] as const)(
+    'leaves arrows held with %s to the browser',
+    (modifier) => {
+      for (const k of ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']) {
+        expect(resolveGridNavigation(key(k, { [modifier]: true }), opts)).toBe(null);
+      }
+    },
+  );
+
+  it('leaves every key held with Alt to the browser', () => {
+    const paged = { cols: 7, pageKeys: true };
+    for (const k of ['Home', 'End', 'PageUp', 'PageDown']) {
+      expect(resolveGridNavigation(key(k, { altKey: true }), paged)).toBe(null);
+    }
   });
 });
 
@@ -220,6 +261,14 @@ describe('resolveTreegridExpandCollapse', () => {
     expect(resolveTreegridExpandCollapse(key('ArrowUp'))).toBe(null);
   });
 
+  it.each(['altKey', 'metaKey'] as const)(
+    'leaves arrows held with %s to the browser',
+    (modifier) => {
+      expect(resolveTreegridExpandCollapse(key('ArrowRight', { [modifier]: true }))).toBe(null);
+      expect(resolveTreegridExpandCollapse(key('ArrowLeft', { [modifier]: true }))).toBe(null);
+    },
+  );
+
   it('unrelated keys → null', () => {
     expect(resolveTreegridExpandCollapse(key('Enter'))).toBe(null);
     expect(resolveTreegridExpandCollapse(key(' '))).toBe(null);
@@ -276,6 +325,19 @@ describe('resolveTreeExpandCollapse', () => {
       expect(resolveTreeExpandCollapse(key('ArrowRight'), opts)).toBe(null);
     });
   });
+
+  it.each(['altKey', 'metaKey'] as const)(
+    'leaves arrows held with %s to the browser in either orientation',
+    (modifier) => {
+      const held = { [modifier]: true };
+      expect(resolveTreeExpandCollapse(key('ArrowLeft', held), { orientation: 'vertical' })).toBe(
+        null,
+      );
+      expect(resolveTreeExpandCollapse(key('ArrowDown', held), { orientation: 'horizontal' })).toBe(
+        null,
+      );
+    },
+  );
 
   it('unrelated keys → null in either orientation', () => {
     expect(resolveTreeExpandCollapse(key('Enter'), { orientation: 'vertical' })).toBe(null);
