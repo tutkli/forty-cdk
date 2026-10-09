@@ -801,6 +801,30 @@ describe('ForTimePicker', () => {
   });
 
   describe('keyboard navigation', () => {
+    it('leaves focus where Tab advanced to after committing a slot', async () => {
+      const r = renderHost(TimePickerHost);
+      r.instance.step.set(60);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      const next = document.createElement('button');
+      document.body.appendChild(next);
+      try {
+        const nineAm = getSlot('slot-32400')!;
+        nineAm.focus();
+        const event = pressKey(nineAm, 'Tab');
+        expect(event.defaultPrevented).toBe(false);
+        expect(document.activeElement).toBe(r.query('[forTimePickerTrigger]'));
+        next.focus();
+        await flush(r.fixture);
+
+        expect(r.instance.open()).toBe(false);
+        expect(r.instance.value()!.getHours()).toBe(9);
+        expect(document.activeElement).toBe(next);
+      } finally {
+        next.remove();
+      }
+    });
+
     it('Escape closes the picker', async () => {
       const r = renderHost(TimePickerHost);
       r.instance.step.set(60);

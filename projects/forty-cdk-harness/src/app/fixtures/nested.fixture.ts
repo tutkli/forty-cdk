@@ -42,6 +42,7 @@ import { ForPopover, ForPopoverContent, ForPopoverTrigger } from 'forty-cdk/popo
         ariaLabel="Outer dialog"
         (dismiss)="dialogOpen.set(false)"
       >
+        <button data-testid="dialog-before">Before popover</button>
         <div forPopover [(open)]="popoverOpen" ariaLabel="Inner popover">
           <button data-testid="popover-trigger" forPopoverTrigger>Open popover</button>
           @if (popoverOpen()) {
