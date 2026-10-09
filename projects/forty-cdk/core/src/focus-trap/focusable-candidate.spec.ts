@@ -1,4 +1,5 @@
 import {
+  FOCUSABILITY_ATTRIBUTES,
   FOCUSABLE_SELECTOR,
   findTabbableEdges,
   isFocusableCandidate,
@@ -249,6 +250,21 @@ describe('focusable-candidate filter', () => {
     });
   });
 
+  describe('FOCUSABILITY_ATTRIBUTES', () => {
+    it('names every attribute the selector qualifies on, plus hidden and inert', () => {
+      expect([...FOCUSABILITY_ATTRIBUTES].sort()).toEqual([
+        'contenteditable',
+        'controls',
+        'disabled',
+        'hidden',
+        'href',
+        'inert',
+        'tabindex',
+        'type',
+      ]);
+    });
+  });
+
   describe('findTabbableEdges', () => {
     function middleButtons(count: number): string {
       return Array.from({ length: count }, (_, i) => `<button>middle ${i}</button>`).join('');
@@ -306,6 +322,88 @@ describe('focusable-candidate filter', () => {
 
       expect(first?.id).toBe('light');
       expect(last?.id).toBe('shadow-last');
+    });
+
+    it('resolves a trailing radio group to its checked member, not its last one', () => {
+      root.innerHTML = `
+        <button id="t1">one</button>
+        <input type="radio" name="plan" id="r1" />
+        <input type="radio" name="plan" id="r2" checked />
+        <input type="radio" name="plan" id="r3" />
+      `;
+
+      expect(findTabbableEdges(root).last?.id).toBe('r2');
+    });
+
+    it('resolves a leading radio group to its checked member, not its first one', () => {
+      root.innerHTML = `
+        <input type="radio" name="plan" id="r1" />
+        <input type="radio" name="plan" id="r2" checked />
+        <input type="radio" name="plan" id="r3" />
+        <button id="t1">one</button>
+      `;
+
+      expect(findTabbableEdges(root).first?.id).toBe('r2');
+    });
+
+    it('resolves a group with nothing checked to its first member going forward and its last going backward', () => {
+      root.innerHTML = `
+        <input type="radio" name="plan" id="r1" />
+        <input type="radio" name="plan" id="r2" />
+        <input type="radio" name="plan" id="r3" />
+      `;
+
+      const { first, last } = findTabbableEdges(root);
+
+      expect(first?.id).toBe('r1');
+      expect(last?.id).toBe('r3');
+    });
+
+    it('collapses no group when the radios carry no name', () => {
+      root.innerHTML = `
+        <input type="radio" id="r1" />
+        <input type="radio" id="r2" checked />
+        <input type="radio" id="r3" />
+      `;
+
+      const { first, last } = findTabbableEdges(root);
+
+      expect(first?.id).toBe('r1');
+      expect(last?.id).toBe('r3');
+    });
+
+    it('groups radios by form owner as well as by name', () => {
+      root.innerHTML = `
+        <form><input type="radio" name="plan" id="in-form" checked /></form>
+        <input type="radio" name="plan" id="r1" />
+        <input type="radio" name="plan" id="r2" />
+      `;
+
+      expect(findTabbableEdges(root).last?.id).toBe('r2');
+    });
+
+    it('skips a whole group whose checked member is disabled', () => {
+      root.innerHTML = `
+        <button id="t1">one</button>
+        <input type="radio" name="plan" id="r1" />
+        <input type="radio" name="plan" id="r2" checked disabled />
+      `;
+
+      expect(findTabbableEdges(root).last?.id).toBe('t1');
+    });
+
+    it('counts a checked member outside the container as the tab stop of its group', () => {
+      const outside = document.createElement('input');
+      outside.type = 'radio';
+      outside.name = 'plan';
+      outside.checked = true;
+      document.body.appendChild(outside);
+      root.innerHTML = `
+        <button id="t1">one</button>
+        <input type="radio" name="plan" id="r1" />
+      `;
+
+      expect(findTabbableEdges(root).last?.id).toBe('t1');
     });
 
     it('enumerates the subtree once, however many candidates it holds', () => {

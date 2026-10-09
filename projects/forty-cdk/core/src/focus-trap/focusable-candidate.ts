@@ -33,6 +33,9 @@ const FOCUSABLE_LOCAL_NAME_QUALIFIERS: Readonly<Record<string, string>> = {
  */
 const FOCUSABLE_ATTRIBUTE_CLAUSES = ['[tabindex]:not([tabindex="-1"])', '[contenteditable="true"]'];
 
+const HIDDEN_ATTRIBUTE = 'hidden';
+const INERT_ATTRIBUTE = 'inert';
+
 /**
  * Shared CSS selector for focusable elements. Single source of truth for the
  * library — primitives that need their own focus-finding logic (e.g. the
@@ -58,6 +61,14 @@ export const FOCUSABLE_SELECTOR = [
   ...Object.entries(FOCUSABLE_LOCAL_NAME_QUALIFIERS).map(([name, qualifier]) => name + qualifier),
   ...FOCUSABLE_ATTRIBUTE_CLAUSES,
 ].join(',');
+
+export const FOCUSABILITY_ATTRIBUTES: readonly string[] = [
+  ...new Set([
+    ...[...FOCUSABLE_SELECTOR.matchAll(/\[([\w-]+)/g)].map((match) => match[1]!),
+    HIDDEN_ATTRIBUTE,
+    INERT_ATTRIBUTE,
+  ]),
+];
 
 /**
  * Every element under `container` matching {@link FOCUSABLE_SELECTOR}, in
@@ -100,7 +111,9 @@ export function queryFocusableCandidates(container: HTMLElement): HTMLElement[] 
  * Reads `getComputedStyle`, so callers must gate it behind `isPlatformBrowser`.
  */
 export function isFocusableCandidate(el: HTMLElement, root: HTMLElement): boolean {
-  return !el.hasAttribute('hidden') && !hasInertAncestor(el, root) && !isCssHidden(el, root);
+  return (
+    !el.hasAttribute(HIDDEN_ATTRIBUTE) && !hasInertAncestor(el, root) && !isCssHidden(el, root)
+  );
 }
 
 /**
@@ -108,9 +121,13 @@ export function isFocusableCandidate(el: HTMLElement, root: HTMLElement): boolea
  * (`isFocusableCandidate`) that also participates in the sequential Tab cycle
  * (`tabIndex >= 0`). A natively-focusable element carrying `tabindex="-1"` is
  * a valid focus target but is excluded here.
+ *
+ * A native radio in a named group is a tab stop only when it is the group's checked member, or
+ * when no member is checked: the browser stops on one radio per group. The group is every radio
+ * sharing its name and form owner in the same document or shadow root, inside `root` or not.
  */
 export function isTabbableCandidate(el: HTMLElement, root: HTMLElement): boolean {
-  return el.tabIndex >= 0 && isFocusableCandidate(el, root);
+  return isTabStop(el, root, new Map());
 }
 
 /**
@@ -155,14 +172,15 @@ export interface TabbableEdges {
  */
 export function findTabbableEdges(container: HTMLElement): TabbableEdges {
   const candidates = queryFocusableCandidates(container);
-  const firstIndex = candidates.findIndex((el) => isTabbableCandidate(el, container));
+  const groups = new Map<HTMLInputElement, boolean>();
+  const firstIndex = candidates.findIndex((el) => isTabStop(el, container, groups));
   if (firstIndex === -1) {
     return { first: null, last: null };
   }
   const first = candidates[firstIndex]!;
   for (let i = candidates.length - 1; i > firstIndex; i--) {
     const candidate = candidates[i]!;
-    if (isTabbableCandidate(candidate, container)) {
+    if (isTabStop(candidate, container, groups)) {
       return { first, last: candidate };
     }
   }
@@ -172,7 +190,9 @@ export function findTabbableEdges(container: HTMLElement): TabbableEdges {
 /**
  * Whether a Tab press from `active` leaves the Tab cycle whose ends are `edges`: going backward
  * from the first tabbable or anything before it, going forward from the last tabbable or anything
- * after it. A container with no tabbable descendant, or a `null` `active`, always leaves.
+ * after it. An edge that is a native radio stands for its whole group, since Tab from any member
+ * moves past all of them. A container with no tabbable descendant, or a `null` `active`, always
+ * leaves.
  */
 export function leavesTabSequence(
   { first, last }: TabbableEdges,
@@ -183,8 +203,8 @@ export function leavesTabSequence(
     return true;
   }
   return backward
-    ? active === first || composedPrecedes(active, first)
-    : active === last || composedPrecedes(last, active);
+    ? active === first || inSameRadioGroup(active, first) || composedPrecedes(active, first)
+    : active === last || inSameRadioGroup(active, last) || composedPrecedes(last, active);
 }
 
 /**
@@ -269,6 +289,57 @@ function mayMatchFocusableSelector(el: Element): boolean {
   return (tabindex !== null && tabindex !== '-1') || el.hasAttribute('contenteditable');
 }
 
+function inSameRadioGroup(a: Element, b: Element): boolean {
+  return (
+    a !== b &&
+    isGroupedRadio(a) &&
+    isGroupedRadio(b) &&
+    a.name === b.name &&
+    a.form === b.form &&
+    a.getRootNode() === b.getRootNode()
+  );
+}
+
+function isTabStop(
+  el: HTMLElement,
+  root: HTMLElement,
+  groups: Map<HTMLInputElement, boolean>,
+): boolean {
+  return (
+    el.tabIndex >= 0 &&
+    (!isGroupedRadio(el) || el.checked || !radioGroupHasChecked(el, groups)) &&
+    isFocusableCandidate(el, root)
+  );
+}
+
+function isGroupedRadio(el: Element): el is HTMLInputElement {
+  return (
+    el.localName === 'input' &&
+    (el as HTMLInputElement).type === 'radio' &&
+    (el as HTMLInputElement).name !== ''
+  );
+}
+
+function radioGroupHasChecked(
+  radio: HTMLInputElement,
+  groups: Map<HTMLInputElement, boolean>,
+): boolean {
+  const known = groups.get(radio);
+  if (known !== undefined) {
+    return known;
+  }
+  const scope = radio.getRootNode() as ParentNode;
+  const members = [...scope.querySelectorAll<HTMLInputElement>('input[type="radio"]')].filter(
+    (other) => other.name === radio.name && other.form === radio.form,
+  );
+  const hasChecked = members.some((member) => member.checked);
+  for (const member of members) {
+    groups.set(member, hasChecked);
+  }
+  groups.set(radio, hasChecked);
+  return hasChecked;
+}
+
 function collectFocusableCandidates(root: ParentNode, found: HTMLElement[]): void {
   for (const el of root.querySelectorAll<HTMLElement>('*')) {
     if (mayMatchFocusableSelector(el) && el.matches(FOCUSABLE_SELECTOR)) {
@@ -284,7 +355,7 @@ function collectFocusableCandidates(root: ParentNode, found: HTMLElement[]): voi
 function hasInertAncestor(el: HTMLElement, root: HTMLElement): boolean {
   let cur: HTMLElement | null = el;
   while (cur && cur !== root) {
-    if (cur.hasAttribute('inert')) {
+    if (cur.hasAttribute(INERT_ATTRIBUTE)) {
       return true;
     }
     cur = composedParentElement(cur);

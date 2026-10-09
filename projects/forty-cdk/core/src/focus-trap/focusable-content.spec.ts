@@ -161,6 +161,39 @@ describe('injectHasFocusableContent', () => {
     expect(has()).toBe(false);
   });
 
+  it('re-measures when a link gains its href, and again when it loses it', async () => {
+    const { has, panel, flush } = setup();
+    const link = document.createElement('a');
+    link.textContent = 'Download';
+    panel.appendChild(link);
+    await flush();
+    expect(has()).toBe(false);
+
+    link.setAttribute('href', '#download');
+    await flush();
+    expect(has()).toBe(true);
+
+    link.removeAttribute('href');
+    await flush();
+    expect(has()).toBe(false);
+  });
+
+  it('re-measures when a video gains its controls, and again when it loses them', async () => {
+    const { has, panel, flush } = setup();
+    const video = document.createElement('video');
+    panel.appendChild(video);
+    await flush();
+    expect(has()).toBe(false);
+
+    video.setAttribute('controls', '');
+    await flush();
+    expect(has()).toBe(true);
+
+    video.removeAttribute('controls');
+    await flush();
+    expect(has()).toBe(false);
+  });
+
   it('stays false on a non-browser platform (SSR-safe)', async () => {
     const { has, instance, flush } = setup('server');
     instance.showButton.set(true);

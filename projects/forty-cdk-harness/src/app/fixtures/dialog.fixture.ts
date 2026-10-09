@@ -33,6 +33,11 @@ import { queryFlag } from './_query-flag';
         <button data-testid="second">Second</button>
         <input data-testid="text-input" />
         <button data-testid="close-btn" forDialogClose>Close</button>
+        @if (radios) {
+          <input type="radio" name="plan" value="basic" data-testid="radio-basic" />
+          <input type="radio" name="plan" value="pro" data-testid="radio-pro" checked />
+          <input type="radio" name="plan" value="team" data-testid="radio-team" />
+        }
       </div>
     }
 
@@ -45,6 +50,7 @@ export class DialogFixture {
 
   protected readonly vetoOpen = queryFlag('vetoOpen');
   protected readonly vetoClose = queryFlag('vetoClose');
+  protected readonly radios = queryFlag('radios');
 
   protected readonly veto = (event: VetoableEvent): void => event.preventDefault();
 

@@ -420,8 +420,8 @@ describe('FocusTrap', () => {
     });
   });
 
-  describe('focusables cache invalidation', () => {
-    it('includes a focusable appended after activation once the observer fires', async () => {
+  describe('edges recomputed on every Tab', () => {
+    it('includes a focusable appended after activation on the very next Tab', () => {
       trap = new FocusTrap(container, stack);
       trap.activate();
 
@@ -434,7 +434,6 @@ describe('FocusTrap', () => {
       appended.id = 'b4';
       appended.textContent = 'four';
       container.appendChild(appended);
-      await flushMutationObserver();
 
       appended.focus();
       document.dispatchEvent(tab());
@@ -446,7 +445,7 @@ describe('FocusTrap', () => {
       expect(document.activeElement?.id).toBe('b4');
     });
 
-    it('excludes a focusable disabled after activation once the observer fires', async () => {
+    it('excludes a focusable disabled after activation on the very next Tab', () => {
       trap = new FocusTrap(container, stack);
       trap.activate();
 
@@ -458,11 +457,103 @@ describe('FocusTrap', () => {
       expect(document.activeElement?.id).toBe('b1');
 
       b1.disabled = true;
-      await flushMutationObserver();
 
       b3.focus();
       document.dispatchEvent(tab());
       expect(document.activeElement?.id).toBe('b2');
+    });
+  });
+
+  describe('a native radio group at an edge', () => {
+    function radios(checked: number | null): string {
+      return [1, 2, 3]
+        .map(
+          (n) =>
+            `<input type="radio" name="plan" id="r${n}" value="${n}"${n === checked ? ' checked' : ''} />`,
+        )
+        .join('');
+    }
+
+    function activateWith(html: string): void {
+      container.innerHTML = html;
+      trap = new FocusTrap(container, stack);
+      trap.activate();
+    }
+
+    function focusById(id: string): void {
+      container.querySelector<HTMLElement>(`#${id}`)!.focus();
+    }
+
+    it('wraps Tab from the checked radio of a trailing group to the first control', () => {
+      activateWith(`<button id="b1">one</button>${radios(2)}`);
+      focusById('r2');
+
+      const event = tab();
+      document.dispatchEvent(event);
+
+      expect(event.defaultPrevented).toBe(true);
+      expect(document.activeElement?.id).toBe('b1');
+    });
+
+    it('wraps Tab from an unchecked member of a trailing group that has a checked one', () => {
+      activateWith(`<button id="b1">one</button>${radios(2)}`);
+      focusById('r1');
+
+      const event = tab();
+      document.dispatchEvent(event);
+
+      expect(event.defaultPrevented).toBe(true);
+      expect(document.activeElement?.id).toBe('b1');
+    });
+
+    it('wraps Tab from any member of a trailing group with nothing checked', () => {
+      activateWith(`<button id="b1">one</button>${radios(null)}`);
+      focusById('r1');
+
+      const event = tab();
+      document.dispatchEvent(event);
+
+      expect(event.defaultPrevented).toBe(true);
+      expect(document.activeElement?.id).toBe('b1');
+    });
+
+    it('wraps Shift+Tab from the checked radio of a leading group to the last control', () => {
+      activateWith(`${radios(2)}<button id="b1">one</button>`);
+      focusById('r2');
+
+      const event = tab(true);
+      document.dispatchEvent(event);
+
+      expect(event.defaultPrevented).toBe(true);
+      expect(document.activeElement?.id).toBe('b1');
+    });
+
+    it('wraps Shift+Tab onto the checked radio of a trailing group, not its last member', () => {
+      activateWith(`<button id="b1">one</button>${radios(2)}`);
+      focusById('b1');
+
+      document.dispatchEvent(tab(true));
+
+      expect(document.activeElement?.id).toBe('r2');
+    });
+
+    it('wraps Tab onto the checked radio of a leading group, not its first member', () => {
+      activateWith(`${radios(3)}<button id="b1">one</button>`);
+      focusById('b1');
+
+      document.dispatchEvent(tab());
+
+      expect(document.activeElement?.id).toBe('r3');
+    });
+
+    it('leaves Tab from the checked radio of a group in the middle to the browser', () => {
+      activateWith(`<button id="b1">one</button>${radios(2)}<button id="b2">two</button>`);
+      focusById('r2');
+
+      const event = tab();
+      document.dispatchEvent(event);
+
+      expect(event.defaultPrevented).toBe(false);
     });
   });
 
