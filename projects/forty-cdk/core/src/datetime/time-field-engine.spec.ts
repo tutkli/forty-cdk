@@ -301,6 +301,29 @@ describe('TimeFieldEngine 12-hour completeness (#2136)', () => {
   });
 });
 
+describe('TimeFieldEngine 12-hour clock of an h11 locale', () => {
+  it('shows the hour the time picker labels show', () => {
+    const { engine } = setup({ locale: 'ja-JP', hourCycle: 12, value: timeAt(12, 30) });
+    const label = new Intl.DateTimeFormat('ja-JP', { hour: 'numeric', hour12: true })
+      .formatToParts(timeAt(12, 30))
+      .find((part) => part.type === 'hour')!.value;
+
+    expect(engine.segmentMin('hour')).toBe(0);
+    expect(engine.segmentMax('hour')).toBe(11);
+    expect(engine.segmentValue('hour')).toBe(0);
+    expect(String(engine.segmentValue('hour'))).toBe(label);
+  });
+
+  it('composes a typed 0 PM as noon', () => {
+    const { engine, value } = setup({ locale: 'ja-JP', hourCycle: 12 });
+    engine.setDayPeriod('pm');
+    type(engine, 'hour', '00');
+    type(engine, 'minute', '30');
+    expect(adapter.getHours(value()!)).toBe(12);
+    expect(adapter.getMinutes(value()!)).toBe(30);
+  });
+});
+
 describe('TimeFieldEngine signal reactivity', () => {
   it('recomputes the segment list on an hour-cycle change', () => {
     const { engine, hourCycle } = setup({ granularity: 'minute', hourCycle: 12 });

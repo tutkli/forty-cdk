@@ -137,7 +137,7 @@ export class DateFieldEngine<D> extends DateTimeFieldEngineBase<D, DateTimeParts
 
   segmentMin(type: SegmentType): number {
     if (type === 'hour') {
-      return this.cycle() === 12 ? 1 : 0;
+      return this.hourMin();
     }
     if (type === 'minute' || type === 'second' || type === 'dayPeriod') {
       return 0;
@@ -152,7 +152,7 @@ export class DateFieldEngine<D> extends DateTimeFieldEngineBase<D, DateTimeParts
       case 'year':
         return 9999;
       case 'hour':
-        return this.cycle() === 12 ? 12 : 23;
+        return this.cycle() === 12 ? this.hourMin() + 11 : 23;
       case 'minute':
       case 'second':
         return 59;

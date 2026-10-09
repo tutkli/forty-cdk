@@ -1,4 +1,11 @@
-import { dayPeriodNames, from12, matchDayPeriod, resolveHourCycle, to12 } from './hour-cycle';
+import {
+  dayPeriodNames,
+  from12,
+  matchDayPeriod,
+  resolveHourCycle,
+  to12,
+  twelveHourMin,
+} from './hour-cycle';
 
 describe('to12', () => {
   it.each([
@@ -10,6 +17,34 @@ describe('to12', () => {
     [23, { h12: 11, pm: true }],
   ])('maps 24h hour %i to %o', (hour, expected) => {
     expect(to12(hour)).toEqual(expected);
+  });
+});
+
+describe('to12 on a clock counting from 0', () => {
+  it.each([
+    [0, { h12: 0, pm: false }],
+    [11, { h12: 11, pm: false }],
+    [12, { h12: 0, pm: true }],
+    [23, { h12: 11, pm: true }],
+  ])('maps 24h hour %i to %o', (hour, expected) => {
+    expect(to12(hour, 0)).toEqual(expected);
+  });
+
+  it('recovers every 24h hour through from12', () => {
+    for (let hour = 0; hour < 24; hour++) {
+      const { h12, pm } = to12(hour, 0);
+      expect(from12(h12, pm)).toBe(hour);
+    }
+  });
+});
+
+describe('twelveHourMin', () => {
+  it('starts the 12-hour clock at 0 where the locale counts 0-11', () => {
+    expect(twelveHourMin('ja-JP')).toBe(0);
+  });
+
+  it('starts the 12-hour clock at 1 where the locale counts 1-12', () => {
+    expect(twelveHourMin('en-US')).toBe(1);
   });
 });
 

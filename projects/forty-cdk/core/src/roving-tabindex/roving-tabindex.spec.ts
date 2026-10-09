@@ -152,6 +152,23 @@ describe('RovingTabindex', () => {
       }
     });
 
+    it('discounts an active element that detaches after hasActive read it', () => {
+      const r = new RovingTabindex();
+      const a = document.createElement('button');
+      document.body.append(a);
+      try {
+        r.setActive(a);
+        expect(r.hasActive()).toBe(true);
+
+        a.remove();
+
+        expect(r.hasActive()).toBe(false);
+        expect(r.tabindexFor(a)).toBe(-1);
+      } finally {
+        a.remove();
+      }
+    });
+
     it('reacts to setActive in the hasActive computed', () => {
       const r = new RovingTabindex();
       const a = document.createElement('button');

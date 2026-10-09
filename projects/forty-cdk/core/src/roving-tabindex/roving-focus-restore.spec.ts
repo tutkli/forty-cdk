@@ -137,6 +137,32 @@ describe('injectRovingFocusRestore', () => {
     expect(document.activeElement).toBe(byTest(el, 'c'));
   });
 
+  it('moves focus to the item before when a focused item is disabled and then removed', async () => {
+    const { el, instance, flush } = await mountFocused('b');
+    instance.disabledIds.set(['b']);
+    await flush();
+    expect(document.activeElement).toBe(byTest(el, 'b'));
+
+    instance.ids.set(['a', 'c']);
+    await flush();
+
+    expect(document.activeElement).toBe(byTest(el, 'a'));
+    expect(byTest(el, 'a').getAttribute('tabindex')).toBe('0');
+  });
+
+  it('leaves focus on <body> when the active item leaves after focus left the group', async () => {
+    const { el, instance, flush } = await mountFocused('b');
+    byTest(el, 'b').blur();
+    await flush();
+    expect(document.activeElement).toBe(document.body);
+
+    instance.ids.set(['a', 'c']);
+    await flush();
+
+    expect(document.activeElement).toBe(document.body);
+    expect(byTest(el, 'a').getAttribute('tabindex')).toBe('0');
+  });
+
   it('leaves focus on an item disabled in place', async () => {
     const { el, instance, flush } = await mountFocused('b');
 

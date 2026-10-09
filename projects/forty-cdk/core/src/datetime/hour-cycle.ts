@@ -18,12 +18,31 @@ export function resolveHourCycle(locale: string | undefined, override: 12 | 24 |
   return cycle === 'h11' || cycle === 'h12' ? 12 : 24;
 }
 
-/** Maps a 0-23 hour to its 12-hour display value and AM/PM period. */
-export function to12(hour: number): { h12: number; pm: boolean } {
-  return { h12: ((hour + 11) % 12) + 1, pm: hour >= 12 };
+/**
+ * Maps a 0-23 hour to its 12-hour display value and AM/PM period.
+ *
+ * @param hour The 0-23 hour.
+ * @param min The lowest display hour: `1` counts 1-12 (`h12`), `0` counts 0-11 (`h11`).
+ */
+export function to12(hour: number, min: 0 | 1 = 1): { h12: number; pm: boolean } {
+  const h12 = hour % 12;
+  return { h12: h12 < min ? h12 + 12 : h12, pm: hour >= 12 };
 }
 
-/** Combines a 1-12 display hour and an AM/PM period back into a 0-23 hour. */
+/**
+ * The lowest hour a 12-hour clock displays in `locale`: `0` where the locale
+ * counts 0-11 (`h11`, e.g. `ja-JP`, where 12:30 reads 午後0:30), `1` where it
+ * counts 1-12 (`h12`). Pure.
+ *
+ * @param locale BCP 47 locale, or `undefined` for the runtime default.
+ */
+export function twelveHourMin(locale: string | undefined): 0 | 1 {
+  const cycle = new Intl.DateTimeFormat(locale, { hour: 'numeric', hour12: true }).resolvedOptions()
+    .hourCycle;
+  return cycle === 'h11' ? 0 : 1;
+}
+
+/** Combines a 0-12 display hour and an AM/PM period back into a 0-23 hour. */
 export function from12(h12: number, pm: boolean): number {
   const base = h12 % 12;
   return pm ? base + 12 : base;

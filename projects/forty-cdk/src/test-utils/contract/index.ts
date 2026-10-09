@@ -21,7 +21,11 @@ export {
 } from './form-control-contract';
 
 export {
+  assertRovingRemovalContract,
   assertRovingTabindexContract,
+  type RovingFocusRestoreMount,
+  type RovingRemovalContractSetup,
+  type RovingRemovalMount,
   type RovingTabindexMountResult,
   type RovingTabindexContractSetup,
   type RovingTabindexContractOptions,

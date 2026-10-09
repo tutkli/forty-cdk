@@ -21,7 +21,9 @@ import { ForToolbarSeparator } from './toolbar-separator';
       [ariaLabel]="ariaLabel()"
     >
       <button forToolbarButton [disabled]="firstDisabled()">One</button>
-      <button forToolbarButton [disabled]="middleDisabled()">Two</button>
+      @if (middleShown()) {
+        <button forToolbarButton [disabled]="middleDisabled()">Two</button>
+      }
       <span forToolbarSeparator></span>
       <a forToolbarLink href="/x" [disabled]="linkDisabled()">Three</a>
     </div>
@@ -33,6 +35,7 @@ class ToolbarHost {
   readonly disabled = signal(false);
   readonly firstDisabled = signal(false);
   readonly middleDisabled = signal(false);
+  readonly middleShown = signal(true);
   readonly linkDisabled = signal(false);
   readonly ariaLabel = signal<string | null>(null);
 }
@@ -128,6 +131,16 @@ describe('ForToolbar', () => {
         items: collectFocusables(r.el),
         flush: r.flush,
         disableFirst: () => r.fixture.componentInstance.firstDisabled.set(true),
+      };
+    },
+    mountWithRemoval: async () => {
+      const r = renderHost(ToolbarHost);
+      await r.flush();
+      return {
+        items: collectFocusables(r.el),
+        flush: r.flush,
+        removedIndex: 1,
+        remove: () => r.fixture.componentInstance.middleShown.set(false),
       };
     },
     mountWithDisabledFirst: async () => {

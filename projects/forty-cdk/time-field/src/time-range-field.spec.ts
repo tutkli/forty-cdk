@@ -12,6 +12,7 @@ import {
 } from '../../src/test-utils';
 import {
   assertFormControlContract,
+  assertRovingRemovalContract,
   type FormControlMountResult,
 } from '../../src/test-utils/contract';
 import { type DateRange, NativeDateAdapter, provideNativeDateAdapter } from 'forty-cdk/shared';
@@ -177,6 +178,26 @@ async function fill(r: R, which: Endpoint, hour: string, minute: string): Promis
 }
 
 describe('ForTimeRangeField', () => {
+  const removalMount = (endpoint: Endpoint) => async () => {
+    const r = renderHost(Host);
+    r.instance.hourCycle.set(12);
+    await flush(r.fixture);
+    return {
+      items: r.queryAll(`[data-testid="${endpoint}-group"] [forTimeRangeFieldSegment]`),
+      flush: () => flush(r.fixture),
+      removedIndex: 2,
+      remove: () => r.instance.hourCycle.set(24),
+    };
+  };
+
+  describe('start endpoint', () => {
+    assertRovingRemovalContract({ mountWithRemoval: removalMount('start') });
+  });
+
+  describe('end endpoint', () => {
+    assertRovingRemovalContract({ mountWithRemoval: removalMount('end') });
+  });
+
   assertFormControlContract(
     () => {
       const r = renderHost(TimeRangeFieldFormControlHost);

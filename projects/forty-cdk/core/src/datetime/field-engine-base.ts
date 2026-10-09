@@ -2,7 +2,7 @@ import { computed, type Signal, untracked, type WritableSignal } from '@angular/
 
 import type { RovingTabindex } from '../roving-tabindex/roving-tabindex';
 import type { DateAdapter } from 'forty-cdk/date-adapter';
-import { dayPeriodNames, resolveHourCycle } from './hour-cycle';
+import { dayPeriodNames, resolveHourCycle, twelveHourMin } from './hour-cycle';
 import {
   type FieldSegment,
   type FieldSpec,
@@ -80,6 +80,11 @@ export abstract class DateTimeFieldEngineBase<
 
   protected readonly cycle = computed(() =>
     resolveHourCycle(this.locale(), this.config.hourCycle()),
+  );
+
+  /** The lowest display hour: `0` in 24-hour and in an `h11` 12-hour locale, `1` otherwise. */
+  protected readonly hourMin = computed<0 | 1>(() =>
+    this.cycle() === 12 ? twelveHourMin(this.locale()) : 0,
   );
 
   /** The ordered, locale-derived spec list (editable + literals). */

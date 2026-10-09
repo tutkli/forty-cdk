@@ -29,6 +29,17 @@ describe('unicodeDigitValue', () => {
     expect(unicodeDigitValue(nine)).toBe(9);
   });
 
+  it.each([
+    ['mathematical double-struck', '𝟘', 0],
+    ['mathematical double-struck', '𝟡', 9],
+    ['mathematical monospace', '𝟶', 0],
+    ['mathematical monospace', '𝟿', 9],
+    ['Eastern Pwo Karen', '𑛚', 0],
+    ['Eastern Pwo Karen', '𑛣', 9],
+  ])('maps a %s digit that follows another digit run (%s) to %i', (_system, char, expected) => {
+    expect(unicodeDigitValue(char)).toBe(expected);
+  });
+
   it.each([['a'], ['A'], ['/'], ['.'], [' '], ['-'], [''], ['Enter'], ['ArrowUp'], ['12']])(
     'returns null for non-digit key %o',
     (key) => {

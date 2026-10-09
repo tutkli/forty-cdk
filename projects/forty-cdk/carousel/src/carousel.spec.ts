@@ -237,6 +237,16 @@ describe('ForCarousel', () => {
           disableFirst: () => r.instance.disabledIndicators.set([0]),
         };
       },
+      mountWithRemoval: async () => {
+        const r = renderHost(CarouselHost);
+        await r.flush();
+        return {
+          items: indicators(r.el),
+          flush: r.flush,
+          removedIndex: 1,
+          remove: () => r.instance.slides.update((list) => list.filter((_, i) => i !== 1)),
+        };
+      },
       mountRtl: async () => {
         const r = renderHost(CarouselHost);
         r.instance.dir.set('rtl');

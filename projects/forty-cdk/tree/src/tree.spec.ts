@@ -147,6 +147,54 @@ async function setup(configure?: (instance: TreeHost) => void) {
   return result;
 }
 
+@Component({
+  imports: [ForTree, ForTreeItem, ForTreeItemLabel, ForTreeGroup],
+  template: `
+    <ul forTree [(expanded)]="open">
+      @for (node of nodes(); track node.id) {
+        <li
+          forTreeItem
+          [value]="node.id"
+          [disabled]="disabledIds().includes(node.id)"
+          [attr.data-test-id]="node.id"
+        >
+          <div forTreeItemLabel>{{ node.id }}</div>
+          @if (node.children.length && open().includes(node.id)) {
+            <ul forTreeGroup>
+              @for (child of node.children; track child) {
+                <li
+                  forTreeItem
+                  [value]="child"
+                  [disabled]="disabledIds().includes(child)"
+                  [attr.data-test-id]="child"
+                >
+                  <div forTreeItemLabel>{{ child }}</div>
+                </li>
+              }
+            </ul>
+          }
+        </li>
+      }
+    </ul>
+  `,
+})
+class RemovalHost {
+  readonly nodes = signal([
+    { id: 'documents', children: ['projects', 'reports'] },
+    { id: 'pictures', children: [] as string[] },
+  ]);
+  readonly open = signal<readonly string[]>(['documents']);
+  readonly disabledIds = signal<readonly string[]>([]);
+
+  remove(id: string): void {
+    this.nodes.update((nodes) =>
+      nodes
+        .filter((node) => node.id !== id)
+        .map((node) => ({ ...node, children: node.children.filter((c) => c !== id) })),
+    );
+  }
+}
+
 describe('ForTree', () => {
   describe('roles and structure', () => {
     it('sets role=tree on the root and role=treeitem on every node', async () => {
@@ -302,43 +350,6 @@ describe('ForTree', () => {
   });
 
   describe('when the active node leaves or is disabled in place', () => {
-    @Component({
-      imports: [ForTree, ForTreeItem, ForTreeItemLabel, ForTreeGroup],
-      template: `
-        <ul forTree [(expanded)]="open">
-          @for (node of nodes(); track node.id) {
-            <li forTreeItem [value]="node.id" [attr.data-test-id]="node.id">
-              <div forTreeItemLabel>{{ node.id }}</div>
-              @if (node.children.length && open().includes(node.id)) {
-                <ul forTreeGroup>
-                  @for (child of node.children; track child) {
-                    <li forTreeItem [value]="child" [attr.data-test-id]="child">
-                      <div forTreeItemLabel>{{ child }}</div>
-                    </li>
-                  }
-                </ul>
-              }
-            </li>
-          }
-        </ul>
-      `,
-    })
-    class RemovalHost {
-      readonly nodes = signal([
-        { id: 'documents', children: ['projects', 'reports'] },
-        { id: 'pictures', children: [] as string[] },
-      ]);
-      readonly open = signal<readonly string[]>(['documents']);
-
-      remove(id: string): void {
-        this.nodes.update((nodes) =>
-          nodes
-            .filter((node) => node.id !== id)
-            .map((node) => ({ ...node, children: node.children.filter((c) => c !== id) })),
-        );
-      }
-    }
-
     const tabStops = (host: HTMLElement): string[] =>
       visibleItems(host)
         .filter((item) => item.getAttribute('tabindex') === '0')
@@ -479,6 +490,27 @@ describe('ForTree', () => {
           items: visibleItems(r.el),
           flush: () => flush(r.fixture),
           disableFirst: () => r.instance.disabledIds.set(['documents']),
+        };
+      },
+      mountWithRemoval: async () => {
+        const r = renderHost(RemovalHost);
+        await r.flush();
+        return {
+          items: visibleItems(r.el),
+          flush: r.flush,
+          removedIndex: 2,
+          remove: () => r.instance.remove('reports'),
+        };
+      },
+      mountWithFocusRestore: async () => {
+        const r = renderHost(RemovalHost);
+        await r.flush();
+        return {
+          items: visibleItems(r.el),
+          flush: r.flush,
+          removedIndex: 2,
+          disable: () => r.instance.disabledIds.set(['reports']),
+          remove: () => r.instance.remove('reports'),
         };
       },
       mountWithSelection: async () => {

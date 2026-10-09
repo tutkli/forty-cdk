@@ -200,7 +200,7 @@ Set `granularity` to `'hour'`, `'minute'`, or `'second'` (`granularity > 'day'`)
 </div>
 ```
 
-On the AM/PM segment, `a` / `p` set the period and ArrowUp / ArrowDown toggle it; the period is derived from the entered hour, so clearing it is a no-op (clear or step the hour instead). The value stays `null` until every visible segment (date **and** time) is filled.
+On the AM/PM segment, `a` / `p` set the period and ArrowUp / ArrowDown toggle it (on an empty segment ArrowUp sets PM and ArrowDown sets AM). The period is never derived from the entered hour: it stays empty until you set it, and Delete / Backspace leave it as it is. In a locale whose 12-hour clock counts 0–11 (`ja-JP`), the hour segment does too. The value stays `null` until every visible segment (date **and** time) is filled.
 
 ## Scoped defaults
 

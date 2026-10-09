@@ -301,7 +301,7 @@ Key behavior applies per segment. Horizontal arrows mirror under `dir="rtl"`.
 | **Backspace**              | Delete the last entered digit of a numeric segment; the value becomes `null` when the last digit is removed. |
 | **Delete**                 | Clear the whole numeric segment (the value becomes `null` until refilled).                                   |
 
-The hour, minute, and second clamp to their valid ranges (hour to the cycle, minute / second to 0–59), and a composed value is clamped into `[minTime, maxTime]` by time-of-day. While focus stays in the field its segments keep what was entered, so editing one part never rewrites the others; they show the clamped value once focus leaves. Stepping the hour of a bound date-time skips a wall-clock hour its day does not have, such as a spring-forward DST gap. The AM/PM period is derived from the entered hour; clearing it is a no-op (clear or step the hour instead).
+The hour, minute, and second clamp to their valid ranges (hour to the cycle, minute / second to 0–59), and a composed value is clamped into `[minTime, maxTime]` by time-of-day. While focus stays in the field its segments keep what was entered, so editing one part never rewrites the others; they show the clamped value once focus leaves. Stepping the hour of a bound date-time skips a wall-clock hour its day does not have, such as a spring-forward DST gap. The AM/PM period is never derived from the entered hour: it stays empty, and the value `null`, until you set it, and Delete / Backspace leave it as it is. In a locale whose 12-hour clock counts 0–11 (`ja-JP`), the hour segment does too, matching the time picker's slot labels.
 
 ## Accessibility
 

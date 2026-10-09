@@ -15,9 +15,9 @@ export function unicodeDigitValue(char: string): number | null {
   if (code >= 0x30 && code <= 0x39) {
     return code - 0x30;
   }
-  let value = 0;
-  for (let c = code - 1; value < 9 && DECIMAL_DIGIT.test(String.fromCodePoint(c)); c--) {
-    value++;
+  let start = code;
+  while (DECIMAL_DIGIT.test(String.fromCodePoint(start - 1))) {
+    start--;
   }
-  return value;
+  return (code - start) % 10;
 }
