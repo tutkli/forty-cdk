@@ -78,4 +78,33 @@ test.describe('Overlay opened inside a modal dialog (#676)', () => {
     await el(page, 'behind-button').click();
     await expect(el(page, 'behind-button')).toContainText('Behind (1)');
   });
+
+  test('Tab from an open Select commits the option and moves on to the next dialog control', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'overlay-inside-dialog');
+
+    await el(page, 'dialog-trigger').click();
+    await el(page, 'select-trigger').click();
+    await expect(el(page, 'select-content')).toBeVisible();
+    await el(page, 'opt-banana').focus();
+
+    await page.keyboard.press('Tab');
+    await expect(el(page, 'menu-trigger')).toBeFocused();
+    await expect(el(page, 'select-content')).toHaveCount(0);
+    await expect(el(page, 'select-trigger')).toContainText('Banana');
+  });
+
+  test('Tab from an open DropdownMenu moves on to the next dialog control', async ({ page }) => {
+    await gotoFixture(page, 'overlay-inside-dialog');
+
+    await el(page, 'dialog-trigger').click();
+    await el(page, 'menu-trigger').click();
+    await expect(el(page, 'menu-content')).toBeVisible();
+    await el(page, 'item-2').focus();
+
+    await page.keyboard.press('Tab');
+    await expect(el(page, 'dialog-close')).toBeFocused();
+    await expect(el(page, 'menu-content')).toHaveCount(0);
+  });
 });

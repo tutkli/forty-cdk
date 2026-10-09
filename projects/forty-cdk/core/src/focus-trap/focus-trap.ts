@@ -114,9 +114,12 @@ export class FocusTrapStack {
  *
  * A surface outside the container carrying `data-for-modal-exempt` or `data-for-modal-peer` (a
  * toast viewport, a popover opened from inside the modal) keeps its own Tab sequence: Tab moves
- * natively between its tabbables, and only a move past either end of it returns focus to the
- * container — Tab to the first tabbable, Shift+Tab to the last. Focus anywhere else outside the
- * container is pulled back to the first tabbable.
+ * natively between its tabbables, and a move past either end of it is left to the surface's own
+ * keydown handlers first. When one of them moves focus back into the container (a tab-out to the
+ * trigger), the in-container rule applies from there and the browser advances natively; when
+ * focus is still on the surface, it returns to the container — Tab to the first tabbable,
+ * Shift+Tab to the last. Focus anywhere else outside the container is pulled back to the first
+ * tabbable.
  *
  * Marking the rest of the page `inert` is out of scope — pointer isolation is the consumer's job.
  */
@@ -129,8 +132,10 @@ export class FocusTrap {
   #active = false;
   #containerHadTabindex = false;
   #keyboardChannel: AbortController | null = null;
+  #deferredTab: KeyboardEvent | null = null;
 
   readonly #onKeyDown = (event: KeyboardEvent): void => this.#handleKeyDown(event);
+  readonly #onKeyDownSettled = (event: KeyboardEvent): void => this.#settleDeferredTab(event);
 
   constructor(container: HTMLElement, stack: FocusTrapStack, doc?: Document, isBrowser = true) {
     this.#container = container;
@@ -167,6 +172,9 @@ export class FocusTrap {
     this.#keyboardChannel = new AbortController();
     this.#document.addEventListener('keydown', this.#onKeyDown, {
       capture: true,
+      signal: this.#keyboardChannel.signal,
+    });
+    this.#document.addEventListener('keydown', this.#onKeyDownSettled, {
       signal: this.#keyboardChannel.signal,
     });
     this.#stack.push(this);
@@ -236,6 +244,7 @@ export class FocusTrap {
     }
     this.#keyboardChannel?.abort();
     this.#keyboardChannel = null;
+    this.#deferredTab = null;
     this.#stack.remove(this);
   }
 
@@ -256,24 +265,51 @@ export class FocusTrap {
     if (!this.#stack.isTopmost(this)) {
       return;
     }
-    const backward = event.shiftKey;
     const active = resolveActiveElement(this.#document);
     if (composedContains(this.#container, active)) {
-      const edges = findTabbableEdges(this.#container);
-      if (leavesTabSequence(edges, active, backward)) {
-        event.preventDefault();
-        (backward ? edges.last : edges.first)?.focus();
-      }
+      this.#cycleInside(event, active);
       return;
     }
 
     const surface = this.#independentSurfaceOf(active);
-    if (surface !== null && !leavesTabSequence(findTabbableEdges(surface), active, backward)) {
+    if (surface === null) {
+      this.#pullBack(event, false);
+    } else if (leavesTabSequence(findTabbableEdges(surface), active, event.shiftKey)) {
+      this.#deferredTab = event;
+    }
+  }
+
+  #settleDeferredTab(event: KeyboardEvent): void {
+    if (event !== this.#deferredTab) {
       return;
     }
+    this.#deferredTab = null;
+    const active = resolveActiveElement(this.#document);
+    if (composedContains(this.#container, active)) {
+      if (!event.defaultPrevented) {
+        this.#cycleInside(event, active);
+      }
+      return;
+    }
+    if (event.defaultPrevented && this.#independentSurfaceOf(active) !== null) {
+      return;
+    }
+    this.#pullBack(event, true);
+  }
+
+  #cycleInside(event: KeyboardEvent, active: Element | null): void {
+    const backward = event.shiftKey;
+    const edges = findTabbableEdges(this.#container);
+    if (leavesTabSequence(edges, active, backward)) {
+      event.preventDefault();
+      (backward ? edges.last : edges.first)?.focus();
+    }
+  }
+
+  #pullBack(event: KeyboardEvent, fromSurface: boolean): void {
     event.preventDefault();
     const { first, last } = findTabbableEdges(this.#container);
-    const target = surface !== null && backward ? last : first;
+    const target = fromSurface && event.shiftKey ? last : first;
     if (target) {
       target.focus();
     } else {

@@ -170,7 +170,10 @@ export class ForTimePickerContent {
         enabled: ctx.returnFocus,
         target: () => ctx.overlay.trigger(),
         veto: () => ctx.overlay.emitAutoFocusOnClose(),
-        skip: () => ctx.overlay.lastCloseReason() === 'tab',
+        skip: () => {
+          const reason = ctx.overlay.lastCloseReason();
+          return reason === 'tab' || reason === 'pointerDownOutside' || reason === 'focusOutside';
+        },
       },
     });
   }

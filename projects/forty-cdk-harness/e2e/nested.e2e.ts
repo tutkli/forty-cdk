@@ -21,7 +21,9 @@ test.describe('Nested overlays (popover inside dialog)', () => {
     await expect(el(page, 'dialog')).toHaveCount(0);
   });
 
-  test('Tab moves between the popover controls, then returns to the dialog', async ({ page }) => {
+  test('Tab moves between the popover controls, then leaves at the trigger position', async ({
+    page,
+  }) => {
     await gotoFixture(page, 'nested');
 
     await el(page, 'dialog-trigger').click();
@@ -36,7 +38,22 @@ test.describe('Nested overlays (popover inside dialog)', () => {
     await expect(el(page, 'popover')).toBeVisible();
 
     await page.keyboard.press('Tab');
+    await expect(el(page, 'dialog-close')).toBeFocused();
+    await expect(el(page, 'popover')).toHaveCount(0);
+    await expect(el(page, 'dialog')).toBeVisible();
+  });
+
+  test('Shift+Tab before the first popover control lands on the trigger', async ({ page }) => {
+    await gotoFixture(page, 'nested');
+
+    await el(page, 'dialog-trigger').click();
+    await el(page, 'popover-trigger').click();
+    await expect(el(page, 'popover')).toBeVisible();
+    await el(page, 'popover-content-button').focus();
+
+    await page.keyboard.press('Shift+Tab');
     await expect(el(page, 'popover-trigger')).toBeFocused();
+    await expect(el(page, 'popover')).toHaveCount(0);
     await expect(el(page, 'dialog')).toBeVisible();
   });
 });
