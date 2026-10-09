@@ -762,6 +762,82 @@ describe('ForDrawer (declarative)', () => {
     });
   });
 
+  describe('surface touch-action', () => {
+    @Component({
+      imports: [ForDrawer, ForDrawerHandle],
+      template: `
+        @if (open()) {
+          <div
+            forDrawer
+            [side]="side()"
+            [handleOnly]="handleOnly()"
+            [swipeToDismiss]="swipeToDismiss()"
+            [snapPoints]="snaps()"
+            ariaLabel="t"
+          >
+            <div forDrawerHandle></div>
+          </div>
+        }
+      `,
+    })
+    class TouchActionHost {
+      readonly open = signal(false);
+      readonly side = signal<ForDrawerSide>('bottom');
+      readonly handleOnly = signal(false);
+      readonly swipeToDismiss = signal(true);
+      readonly snaps = signal<ReadonlyArray<ForDrawerSnapPoint> | undefined>(undefined);
+    }
+
+    async function mountSurface(
+      setup: (host: TouchActionHost) => void = () => undefined,
+    ): Promise<HTMLElement> {
+      const r = renderHost(TouchActionHost);
+      setup(r.instance);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      return document.querySelector<HTMLElement>('[forDrawer]')!;
+    }
+
+    it('leaves the horizontal pan to the browser on a top / bottom drawer', async () => {
+      expect((await mountSurface()).style.touchAction).toBe('pan-x');
+    });
+
+    it('leaves the vertical pan to the browser on a left / right drawer', async () => {
+      const drawer = await mountSurface((host) => host.side.set('left'));
+      expect(drawer.style.touchAction).toBe('pan-y');
+    });
+
+    it('leaves the surface alone under [handleOnly], where only the handle arms', async () => {
+      const drawer = await mountSurface((host) => host.handleOnly.set(true));
+      expect(drawer.style.touchAction).toBe('');
+      expect(drawer.querySelector<HTMLElement>('[forDrawerHandle]')!.style.touchAction).toBe(
+        'none',
+      );
+    });
+
+    it('sets nothing while the swipe can neither dismiss nor move between snaps', async () => {
+      const drawer = await mountSurface((host) => host.swipeToDismiss.set(false));
+      expect(drawer.style.touchAction).toBe('');
+    });
+
+    it('keeps the axis while snap points still drag a non-dismissing surface', async () => {
+      const drawer = await mountSurface((host) => {
+        host.swipeToDismiss.set(false);
+        host.snaps.set([0.5, 1]);
+      });
+      expect(drawer.style.touchAction).toBe('pan-x');
+    });
+
+    it('sets nothing under prefers-reduced-motion, where the swipe never arms', async () => {
+      const restoreReducedMotion = withReducedMotion();
+      try {
+        expect((await mountSurface()).style.touchAction).toBe('');
+      } finally {
+        restoreReducedMotion();
+      }
+    });
+  });
+
   describe('mount/unmount', () => {
     it('portals the drawer to document.body once opened', async () => {
       const r = renderHost(DrawerHost);

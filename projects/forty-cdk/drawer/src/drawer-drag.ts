@@ -17,6 +17,7 @@ import {
   flickVelocity,
   injectPrefersReducedMotion,
   isScrollableAtEdge,
+  swipeTouchAction,
   type SwipeDirection,
   type SwipeEventDetail,
 } from 'forty-cdk/core';
@@ -125,6 +126,12 @@ export interface DrawerDragHandle {
   /** Live swipe displacement in CSS px along the y axis; published as `--for-drawer-swipe-movement-y`. */
   readonly swipeMovementY: Signal<number>;
   /**
+   * `touch-action` for the surface: frees the axis the swipe does not use
+   * while the whole surface arms the gesture, `null` under `handleOnly` (the
+   * handle carries its own) or while the gesture is disarmed.
+   */
+  readonly touchAction: Signal<'pan-x' | 'pan-y' | 'none' | null>;
+  /**
    * Run the mount-time snap-point validation + first live-dimension
    * measurement and seed the `activeSnapPoint` default. In dev mode, throws (with a
    * `[forty-cdk/drawer]`-prefixed message) on a bad `snapPoints` /
@@ -176,6 +183,17 @@ export function injectDrawerDrag(config: DrawerDragConfig): DrawerDragHandle {
 
   const canDismiss = computed(() => config.swipeToDismiss() && config.dismissible());
   const hasSnapPoints = computed(() => !!snapPoints()?.length);
+  // The drag has somewhere to go — a swipe that can dismiss, or snap points to
+  // move between — and the user hasn't asked for reduced motion (drag
+  // animations are vestibular-hostile).
+  const gestureEnabled = computed(
+    () => (canDismiss() || hasSnapPoints()) && !prefersReducedMotion(),
+  );
+  const touchAction = computed(() =>
+    gestureEnabled() && !config.handleOnly()
+      ? swipeTouchAction(dragDirections(side(), hasSnapPoints()))
+      : null,
+  );
 
   const dragOffset = signal(0); // px translated along the dismissal axis (positive = away from edge)
   const dragging = signal(false);
@@ -563,18 +581,16 @@ export function injectDrawerDrag(config: DrawerDragConfig): DrawerDragHandle {
     }
   });
 
-  // ---- Drag gate. Arms the pointer listeners only when the drag has
-  // somewhere to go — a swipe that can dismiss, or snap points to move
-  // between — AND the user hasn't asked for reduced motion (drag animations
-  // are vestibular-hostile). Every input is read reactively so a runtime
-  // flip — a `[swipeToDismiss]` / `[dismissible]` / `[snapPoints]` rebind or
-  // a live `prefers-reduced-motion` change — arms or disarms the gesture,
+  // ---- Drag gate. Arms the pointer listeners only while `gestureEnabled`
+  // holds. Every input is read reactively so a runtime flip — a
+  // `[swipeToDismiss]` / `[dismissible]` / `[snapPoints]` rebind or a live
+  // `prefers-reduced-motion` change — arms or disarms the gesture,
   // mirroring how `ForDrawerScaleCoordinator` already reacts to the
   // preference. Attaching/detaching listeners is a DOM side effect, so an
   // `effect` is the right tool; `swipeReady` gates the pre-render run so the
   // gesture arms on a host already attached via the shell's portal.
   effect(() => {
-    const shouldArm = (canDismiss() || hasSnapPoints()) && !prefersReducedMotion();
+    const shouldArm = gestureEnabled();
     if (!swipeReady()) {
       return;
     }
@@ -596,6 +612,7 @@ export function injectDrawerDrag(config: DrawerDragConfig): DrawerDragHandle {
     swipeProgress: swipeProgress.asReadonly(),
     swipeMovementX,
     swipeMovementY,
+    touchAction,
     validateOnMount,
     arm: () => swipeReady.set(true),
   };

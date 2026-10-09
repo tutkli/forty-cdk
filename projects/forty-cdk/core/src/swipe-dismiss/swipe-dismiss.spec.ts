@@ -3,6 +3,7 @@ import {
   FLICK_STALE_VELOCITY_MS,
   FLICK_VELOCITY_PX_PER_MS,
   flickVelocity,
+  swipeTouchAction,
   type SwipeDirection,
   type SwipeEventDetail,
 } from './swipe-dismiss';
@@ -500,5 +501,25 @@ describe('flickVelocity', () => {
 
   it('exposes a 0.4 px/ms intentional-flick threshold', () => {
     expect(FLICK_VELOCITY_PX_PER_MS).toBe(0.4);
+  });
+});
+
+describe('swipeTouchAction', () => {
+  it('leaves the vertical pan to the browser for a horizontal swipe', () => {
+    expect(swipeTouchAction(['right'])).toBe('pan-y');
+    expect(swipeTouchAction(['left', 'right'])).toBe('pan-y');
+  });
+
+  it('leaves the horizontal pan to the browser for a vertical swipe', () => {
+    expect(swipeTouchAction(['down'])).toBe('pan-x');
+    expect(swipeTouchAction(['up', 'down'])).toBe('pan-x');
+  });
+
+  it('keeps every pan once both axes swipe', () => {
+    expect(swipeTouchAction(['right', 'down'])).toBe('none');
+  });
+
+  it('sets nothing with no direction', () => {
+    expect(swipeTouchAction([])).toBeNull();
   });
 });

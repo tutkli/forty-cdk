@@ -849,6 +849,43 @@ describe('ForToast (declarative)', () => {
     });
   });
 
+  describe('touch-action follows the swipe axis', () => {
+    it('sets no touch-action while swipe is disabled (default)', () => {
+      const r = renderHost(DeclarativeHost);
+      expect($(r.el, 'declarative')!.style.touchAction).toBe('');
+    });
+
+    it('leaves the vertical pan to the browser for a horizontal swipe', async () => {
+      const r = renderHost(DeclarativeHost);
+      r.instance.swipeDirection.set('right');
+      await r.flush();
+      expect($(r.el, 'declarative')!.style.touchAction).toBe('pan-y');
+    });
+
+    it('leaves the horizontal pan to the browser for a vertical swipe', async () => {
+      const r = renderHost(DeclarativeHost);
+      r.instance.swipeDirection.set('down');
+      await r.flush();
+      expect($(r.el, 'declarative')!.style.touchAction).toBe('pan-x');
+    });
+
+    it('keeps every pan once both axes swipe', async () => {
+      const r = renderHost(DeclarativeHost);
+      r.instance.swipeDirection.set(['right', 'down']);
+      await r.flush();
+      expect($(r.el, 'declarative')!.style.touchAction).toBe('none');
+    });
+
+    it('drops the touch-action when the toast stops being dismissible', async () => {
+      const r = renderHost(DeclarativeHost);
+      r.instance.swipeDirection.set('right');
+      await r.flush();
+      r.instance.dismissible.set(false);
+      await r.flush();
+      expect($(r.el, 'declarative')!.style.touchAction).toBe('');
+    });
+  });
+
   describe('announcements (LiveAnnouncer)', () => {
     afterEach(() => {
       // LiveAnnouncer keeps two off-screen regions in document.body across

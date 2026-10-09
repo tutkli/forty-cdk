@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { dragFrom, el, gotoFixture } from './_helpers';
+import { dragFrom, el, gesturePointer, gotoFixture } from './_helpers';
 
 /**
  * Geometry coverage for `[forScrollArea]`. The synthetic thumb's size,
@@ -342,22 +342,15 @@ test.describe('ScrollArea (geometry + drag)', () => {
     }
   });
 
-  // Touch path coverage for the synthetic thumb's pointer drag. The
-  // viewport hides native scrollbars via the global stylesheet
-  // (`<style id="for-scroll-area-hide-native">` per CLAUDE.md), so the
-  // contract under @mobile is "touch drag of the SYNTHETIC thumb moves
-  // scrollTop, with no native-momentum continuation after pointerup".
-  // Native momentum would keep scrollTop climbing past the moment the
-  // pointer is released; we snapshot scrollTop on release and assert
-  // it doesn't change after a short settle window. On `Mobile Chrome` /
-  // `Mobile Safari` (`hasTouch: true` + `isMobile: true` from the
-  // device descriptor) `page.mouse` emits pointer events with
-  // `pointerType: 'touch'` via the browser's mobile emulation, so the
-  // raw `mouse.*` drag below drives the touch code path natively
-  // without `dragFrom`'s synthetic-touch branch (which bypasses
-  // `setPointerCapture` and is unreliable on Mobile Safari). Desktop
-  // projects re-run the test as a regression guard via the same
-  // `mouse.*` calls under `pointerType: 'mouse'`.
+  // Touch path of the synthetic thumb's pointer drag. `dragFrom` drives a
+  // finger on the mobile projects (a real CDP touch on Mobile Chrome) and the
+  // mouse on the desktop ones, and asserts which. The viewport hides native
+  // scrollbars via the global stylesheet, so the contract under @mobile is
+  // "touch drag of the SYNTHETIC thumb moves scrollTop by the drag distance,
+  // with no native-momentum continuation after pointerup". The fixture page
+  // does not scroll, so the browser has no pan to claim from the thumb; on a
+  // page that does, the `touch-action: none` the README asks consumers to put
+  // on the scrollbar is what keeps the drag.
   test.describe('@mobile touch drag', () => {
     test('@mobile touch drag of the synthetic thumb scrolls without native momentum', async ({
       page,
@@ -368,27 +361,23 @@ test.describe('ScrollArea (geometry + drag)', () => {
       const viewport = el(page, 'viewport');
       expect(await viewport.evaluate((node) => (node as HTMLElement).scrollTop)).toBe(0);
 
-      const thumbBox = (await el(page, 'thumb-vertical').boundingBox())!;
-      const sx = thumbBox.x + thumbBox.width / 2;
-      const sy = thumbBox.y + thumbBox.height / 2;
-      await page.mouse.move(sx, sy);
-      await page.mouse.down();
-      await page.mouse.move(sx, sy + 5); // arm
-      await page.mouse.move(sx, sy + 60);
-      await page.mouse.up();
+      // Same bounds as the desktop thumb drag: 60 px on the ~150 px usable
+      // track maps to ~240 px of scrollTop. A drag measured from the viewport
+      // origin instead of the press would run past the upper bound.
+      await dragFrom(page, el(page, 'thumb-vertical'), { dx: 0, dy: 60 });
 
-      const scrollTopAfter = await viewport.evaluate((node) => (node as HTMLElement).scrollTop);
-      // Same lower bound as the desktop drag case — the synthetic thumb
-      // drag math doesn't depend on pointer type, just `clientY`.
-      expect(scrollTopAfter).toBeGreaterThan(50);
+      const scrollTopOf = (): Promise<number> =>
+        viewport.evaluate((node) => (node as HTMLElement).scrollTop);
+      await expect.poll(scrollTopOf).toBeGreaterThan(220);
+      const scrollTopAfter = await scrollTopOf();
+      expect(scrollTopAfter).toBeLessThan(260);
 
       // No native momentum: synthetic scrollbars run on programmatic
       // scrollTop writes, not on the browser's native overscroll-driven
       // momentum. Wait a short settle window and assert scrollTop did
       // not continue to climb past the drag endpoint.
       await page.waitForTimeout(300);
-      const scrollTopSettled = await viewport.evaluate((node) => (node as HTMLElement).scrollTop);
-      expect(scrollTopSettled).toBe(scrollTopAfter);
+      expect(await scrollTopOf()).toBe(scrollTopAfter);
     });
   });
 
@@ -637,10 +626,11 @@ test.describe('ScrollArea (geometry + drag)', () => {
       await gotoFixture(page, 'scroll-area', { trackPressRepeatDelay: '3000' });
       await waitForOverflowMeasured(page);
 
+      // A finger on the mobile projects, the mouse on the desktop ones.
+      const pointer = gesturePointer(page);
       const at = await trackPoint(page, 'scrollbar-vertical', 150, 'y');
-      await page.mouse.move(at.x, at.y);
-      await page.mouse.down();
-      await page.mouse.up();
+      await pointer.down(at.x, at.y);
+      await pointer.up();
 
       await expect.poll(() => scrollTopOf(page)).toBeGreaterThan(155);
       expect(await scrollTopOf(page)).toBeLessThan(195);

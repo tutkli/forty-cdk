@@ -517,6 +517,7 @@ For a seamless release, transition **both** `translate` and your snap-position p
 - Dismissal and dragging are separate. With `swipeToDismiss` or `dismissible` set to `false`, a drawer with `snapPoints` still drags between them and stops at the lowest snap, and `(swipeEnd)` reports `willClose: false`; a drawer without `snapPoints` arms no drag at all.
 - `closeThreshold` (default `0.25`) is the fraction past which a release from the lowest snap dismisses. It is measured against that snap's own extent (not the full dimension), so a small "peek" snap stays dismissible without dragging it off-screen.
 - `handleOnly: true` confines the gesture to a registered `[forDrawerHandle]`, leaving the rest of the surface free for content scroll.
+- On touch the browser would otherwise claim the swipe as a scroll. The handle always carries `touch-action: none`, and while the whole surface arms the drag (`handleOnly` off, and a drag the drawer can arm) the surface carries an inline `touch-action` that leaves the browser only the other axis: `pan-x` for a `top` / `bottom` drawer, `pan-y` for `left` / `right`. A scroller inside the surface keeps its own native scrolling, so your CSS needs no `touch-action` rule of its own.
 - Gestures starting inside a scrollable element that hasn't reached its edge are NOT treated as swipes (the helper defers to inner scroll).
 - **`prefers-reduced-motion: reduce`** disables the drag entirely, snap dragging included. Escape, backdrop, outside-pointer, and close button continue to work.
 

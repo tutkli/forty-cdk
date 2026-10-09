@@ -1,11 +1,11 @@
 import { expect, test } from '@playwright/test';
 import {
-  armFlickCapture,
+  boxOf,
   clickOutside,
   dragFrom,
   dragFromSteps,
   el,
-  flickReleaseAt,
+  gesturePointer,
   gotoFixture,
 } from './_helpers';
 
@@ -474,7 +474,7 @@ test.describe('Drawer', () => {
       await el(page, 'trigger').click();
       await expect(el(page, 'drawer')).toBeVisible();
 
-      await dragFrom(page, el(page, 'handle'), { dx: 0, dy: 40 }, { release: false });
+      const drag = await dragFrom(page, el(page, 'handle'), { dx: 0, dy: 40 }, { release: false });
 
       await expect(el(page, 'drawer')).toHaveAttribute('data-dragging', '');
       const progressText = await el(page, 'last-swipe-progress').textContent();
@@ -482,7 +482,7 @@ test.describe('Drawer', () => {
       expect(progress).toBeGreaterThan(0);
       expect(progress).toBeLessThanOrEqual(1);
 
-      await page.mouse.up();
+      await drag.up();
       await expect(el(page, 'drawer')).not.toHaveAttribute('data-dragging', '');
       await expect(el(page, 'drawer')).toBeVisible();
       await expect(el(page, 'last-swipe-will-close')).toHaveText('false');
@@ -511,7 +511,7 @@ test.describe('Drawer', () => {
         ),
       ).toBe('0');
 
-      await dragFrom(page, el(page, 'handle'), { dx: 0, dy: 60 }, { release: false });
+      const drag = await dragFrom(page, el(page, 'handle'), { dx: 0, dy: 60 }, { release: false });
 
       await expect(backdrop).toHaveAttribute('data-dragging', '');
       const progress = await backdrop.evaluate((node) =>
@@ -520,7 +520,7 @@ test.describe('Drawer', () => {
       expect(progress).toBeGreaterThan(0);
       expect(progress).toBeLessThanOrEqual(1);
 
-      await page.mouse.up();
+      await drag.up();
       await expect(backdrop).not.toHaveAttribute('data-dragging', '');
       expect(
         await backdrop.evaluate((node) =>
@@ -827,18 +827,16 @@ test.describe('Drawer', () => {
     });
   });
 
-  // Touch-only branch of the swipe-dismiss helper (see
-  // `_internal/swipe-dismiss/swipe-dismiss.ts`, line 136: `pointerType
-  // === 'mouse'` gates the primary-button check, so the touch path
-  // takes the opposite branch). Desktop projects exercise the mouse
-  // branch via the existing swipe-to-dismiss block above; these
-  // `@mobile` specs drive the gesture so it engages the touch path on
-  // `Mobile Chrome` / `Mobile Safari` while remaining a regression
-  // guard under desktop.
+  // The touch branch of the swipe-dismiss helper (its `pointerType ===
+  // 'mouse'` button guards are skipped for a finger). Every gesture below
+  // goes through `gesturePointer` / `dragFrom`, which drive a finger on the
+  // mobile projects — a real CDP touch on Mobile Chrome, so the browser's
+  // own `touch-action` arbitration runs too — and the mouse on the desktop
+  // ones, and assert which.
   test.describe('@mobile touch swipe', () => {
     test('@mobile swipe-to-close: drag past closeThreshold * dim dismisses with reason "swipe"', async ({
       page,
-    }, testInfo) => {
+    }) => {
       // Same maths as the desktop "drag past closeThreshold * dim
       // dismisses" case: 200 px drawer × default 0.25 threshold ⇒ 50 px
       // dismissal threshold, a 120 px drag down clears it.
@@ -846,11 +844,26 @@ test.describe('Drawer', () => {
       await el(page, 'trigger').click();
       await expect(el(page, 'drawer')).toBeVisible();
 
-      await dragFrom(page, el(page, 'handle'), { dx: 0, dy: 120 }, { testInfo });
+      await dragFrom(page, el(page, 'handle'), { dx: 0, dy: 120 });
 
       await expect(el(page, 'drawer')).toHaveCount(0);
       await expect(el(page, 'last-close-reason')).toHaveText('swipe');
       await expect(el(page, 'last-swipe-will-close')).toHaveText('true');
+    });
+
+    test('@mobile swipe-to-close from the surface, off the handle, dismisses', async ({ page }) => {
+      // With `handleOnly` false the whole surface arms the swipe, so it binds
+      // the `touch-action` that keeps the dismissal axis away from the
+      // browser; without it Mobile Chrome claims the pan and sends
+      // `pointercancel`. The fixture sets no `touch-action` of its own.
+      await gotoFixture(page, 'drawer', { drawerHeight: '200' });
+      await el(page, 'trigger').click();
+      await expect(el(page, 'drawer')).toBeVisible();
+
+      await dragFrom(page, el(page, 'second'), { dx: 0, dy: 120 });
+
+      await expect(el(page, 'drawer')).toHaveCount(0);
+      await expect(el(page, 'last-close-reason')).toHaveText('swipe');
     });
 
     test('@mobile flick velocity dismisses below the position threshold', async ({ page }) => {
@@ -865,10 +878,10 @@ test.describe('Drawer', () => {
       // 0.4 px/ms even when `dt` inflates well past 100 ms — but the release
       // also has to reach the engine within `FLICK_STALE_VELOCITY_MS` (100 ms)
       // of that move or the sample is discarded outright, and that cutoff is
-      // purely temporal: no delta clears it. Since every `page.mouse.*` call is
-      // its own CDP round trip, the move→release gap was unbounded, which is
-      // why this dismissed only most of the time. `flickReleaseAt` emits the
-      // pair in one page task so both gaps are ~0.
+      // purely temporal: no delta clears it. Since every input call is its own
+      // protocol round trip, the move→release gap was unbounded, which is why
+      // this dismissed only most of the time. `flick` emits the pair in one
+      // page task so both gaps are ~0.
       //
       // The distance arithmetic still matters, for a different reason: raising
       // the position threshold to 100 px via `closeThreshold=0.5` (200 × 0.5)
@@ -879,23 +892,21 @@ test.describe('Drawer', () => {
       await el(page, 'trigger').click();
       await expect(el(page, 'drawer')).toBeVisible();
 
-      const handleBox = (await el(page, 'handle').boundingBox())!;
+      const handleBox = await boxOf(el(page, 'handle'));
       const sx = handleBox.x + handleBox.width / 2;
       const sy = handleBox.y + handleBox.height / 2;
-      await armFlickCapture(page);
-      await page.mouse.move(sx, sy);
-      await page.mouse.down();
-      await page.mouse.move(sx, sy + 5); // arm
+      const pointer = gesturePointer(page);
+      await pointer.down(sx, sy);
+      await pointer.move(sx, sy + 5); // arm
       // Settle so the next move's `dt` is non-trivial — anchors the
       // intermediate event with a known timestamp gap so the flick's
       // tight dt below stands out unambiguously.
       await page.waitForTimeout(120);
-      await page.mouse.move(sx, sy + 20); // intermediate (slow, velocity here is small)
+      await pointer.move(sx, sy + 20); // intermediate (slow, velocity here is small)
       // Final move + release in one page task: the directive recomputes
       // `#pointerVelocity` on this move against the previous one, and reads it
       // on a release that cannot have gone stale.
-      await flickReleaseAt(page, sx, sy + 90);
-      await page.mouse.up();
+      await pointer.flick(sx, sy + 90);
 
       await expect(el(page, 'drawer')).toHaveCount(0);
       await expect(el(page, 'last-close-reason')).toHaveText('swipe');
@@ -918,15 +929,15 @@ test.describe('Drawer', () => {
       await el(page, 'trigger').click();
       await expect(el(page, 'drawer')).toBeVisible();
 
-      const handleBox = (await el(page, 'handle').boundingBox())!;
+      const handleBox = await boxOf(el(page, 'handle'));
       const sx = handleBox.x + handleBox.width / 2;
       const sy = handleBox.y + handleBox.height / 2;
-      await page.mouse.move(sx, sy);
-      await page.mouse.down();
-      await page.mouse.move(sx, sy + 5); // arm
-      await page.mouse.move(sx, sy + 90); // fast final move: dt tiny ⇒ velocity ≫ 0.4
+      const pointer = gesturePointer(page);
+      await pointer.down(sx, sy);
+      await pointer.move(sx, sy + 5); // arm
+      await pointer.move(sx, sy + 90); // fast final move: dt tiny ⇒ velocity ≫ 0.4
       await page.waitForTimeout(200); // hold still, well past the 100 ms cutoff
-      await page.mouse.up();
+      await pointer.up();
 
       await expect(el(page, 'drawer')).toBeVisible();
       await expect(el(page, 'last-close-reason')).toHaveText('none');

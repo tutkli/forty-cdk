@@ -306,40 +306,43 @@ test.describe('Toast', () => {
     await expect(page.locator('body > [aria-live="polite"]')).toHaveText('toast-0');
   });
 
-  // Touch-only branch of the shared swipe-dismiss helper. The toast
-  // swipe path is identical to the drawer's (same `_internal/swipe-
-  // dismiss/swipe-dismiss.ts` and same `pointerType === 'mouse'` arming
-  // guard), so this block is the mobile-projects regression for the
-  // non-mouse branch on the toast surface. On `Mobile Chrome` /
-  // `Mobile Safari` (`hasTouch: true` + `isMobile: true` from the
-  // device descriptor) `page.mouse` emits pointer events with
-  // `pointerType: 'touch'` via the browser's mobile emulation, so
-  // the raw `mouse.*` drag below drives the touch code path natively
-  // without `dragFrom`'s synthetic-touch branch (which bypasses
-  // `setPointerCapture` and is unreliable on Mobile Safari). Mobile
-  // Chrome / Mobile Safari run only the `@mobile`-tagged tests (per
-  // `playwright.config.ts` `grep: /@mobile/`); the desktop projects
-  // re-run them as a regression guard via the same `mouse.*` calls
-  // under `pointerType: 'mouse'`.
+  // The touch branch of the shared swipe-dismiss helper (the
+  // `pointerType === 'mouse'` button guards are skipped for a finger).
+  // `dragFrom` drives a finger on the mobile projects — a real CDP touch
+  // on Mobile Chrome, which runs the browser's own `touch-action`
+  // arbitration — and the mouse on the desktop ones, and asserts which.
+  // The fixture sets no `touch-action` on the toast, so the dismissing
+  // case below is also what guards the one `[forToast]` binds while
+  // swipe is enabled: without it Mobile Chrome claims the pan, sends
+  // `pointercancel`, and the toast springs back.
   test.describe('@mobile touch swipe', () => {
-    test('@mobile swipe-dismiss in touch real: drag past 50 px threshold dismisses', async ({
+    test('@mobile swipe-dismiss by touch: a drag past the 50 px threshold dismisses', async ({
       page,
     }) => {
       await gotoFixture(page, 'toast', { swipe: 'right' });
       await el(page, 'enqueue').click();
       await expect(el(page, 'toast-0')).toBeVisible();
 
-      const toastBox = (await el(page, 'toast-0').boundingBox())!;
-      const sx = toastBox.x + toastBox.width / 2;
-      const sy = toastBox.y + toastBox.height / 2;
-      await page.mouse.move(sx, sy);
-      await page.mouse.down();
-      await page.mouse.move(sx + 5, sy); // arm
-      await page.mouse.move(sx + 200, sy);
-      await page.mouse.up();
+      await dragFrom(page, el(page, 'toast-0'), { dx: 120, dy: 0 });
 
       await expect(el(page, 'toast-0')).toHaveCount(0);
       await expect(el(page, 'toast-count')).toHaveText('0');
+    });
+
+    test('@mobile a 10 px swipe measures from the press, not the viewport origin, and springs back', async ({
+      page,
+    }) => {
+      // A top-right toast sits ~200 px from the viewport's left edge, so a
+      // gesture whose start were read as (0, 0) would project a 10 px drag
+      // to its absolute x and clear the 50 px threshold.
+      await gotoFixture(page, 'toast', { swipe: 'right', side: 'top-right' });
+      await el(page, 'enqueue').click();
+      await expect(el(page, 'toast-0')).toBeVisible();
+
+      await dragFrom(page, el(page, 'toast-0'), { dx: 10, dy: 0 });
+
+      await expect(el(page, 'toast-0')).toHaveAttribute('data-swipe', 'cancel');
+      await expect(el(page, 'toast-count')).toHaveText('1');
     });
   });
 });

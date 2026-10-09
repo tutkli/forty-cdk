@@ -167,6 +167,28 @@ export function flickVelocity(rawVelocity: number, stale: boolean): number {
 }
 
 /**
+ * The `touch-action` a surface swiping in `directions` needs: the browser keeps
+ * the axis no direction uses (`pan-y` for `left` / `right`, `pan-x` for `up` /
+ * `down`, `none` once both axes swipe), so a finger moving along a swipe axis
+ * reaches the pointer handlers instead of being claimed as a pan, which would
+ * end the gesture with `pointercancel`. `null` when there is no direction, so
+ * an idle surface leaves the browser's default in place.
+ */
+export function swipeTouchAction(
+  directions: readonly SwipeDirection[],
+): 'pan-x' | 'pan-y' | 'none' | null {
+  if (directions.length === 0) {
+    return null;
+  }
+  const horizontal = directions.some((d) => d === 'left' || d === 'right');
+  const vertical = directions.some((d) => d === 'up' || d === 'down');
+  if (horizontal && vertical) {
+    return 'none';
+  }
+  return horizontal ? 'pan-y' : 'pan-x';
+}
+
+/**
  * Attach swipe-dismiss listeners to `opts.element`. Returns a cleanup
  * function that tears down the underlying pointer-drag session (every
  * listener and any pending click trap).

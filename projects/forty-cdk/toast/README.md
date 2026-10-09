@@ -430,6 +430,8 @@ Optional, opt-in. Set `[swipeDirection]` on a declarative toast (or via `swipeDi
 
 `swipeDirection` accepts a single direction (`'left' | 'right' | 'up' | 'down'`) or an array of directions. The dominant axis of the user's drag picks which one wins; gestures perpendicular to every allowed direction are dropped. The dismiss commits when pointer-up happens past `swipeThreshold` pixels of pointer travel along the active direction (default `50`).
 
+On touch the browser would otherwise claim the swipe as a page pan, so while swipe is enabled the host carries an inline `touch-action` that leaves the browser only the axis no direction uses: `pan-y` for `left` / `right`, `pan-x` for `up` / `down`, and `none` when both axes are allowed. Your CSS needs no `touch-action` rule of its own.
+
 While the gesture is live the host carries:
 
 | Attribute / variable                | Values                                   | Purpose                                                                                                                                                                                                                                                                                                               |
