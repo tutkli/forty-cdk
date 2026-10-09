@@ -1,4 +1,10 @@
-import { ApplicationRef, effect, provideZonelessChangeDetection, signal } from '@angular/core';
+import {
+  ApplicationRef,
+  computed,
+  effect,
+  provideZonelessChangeDetection,
+  signal,
+} from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import { Typeahead } from '../typeahead/typeahead';
@@ -41,6 +47,7 @@ interface Harness {
   readonly setActive: (id: string | null) => void;
   readonly getActive: () => string | null;
   readonly bumpDataVersion: () => void;
+  readonly setResume: (pos: number | null) => void;
   readonly emitted: readonly number[];
   readonly resetEmitted: () => void;
 }
@@ -61,6 +68,7 @@ function createNavigator(
   const loop = signal(initial.loop ?? true);
   const active = signal<string | null>(null);
   const dataVersion = signal(0);
+  const resume = signal<number | null>(null);
   const emitted: number[] = [];
 
   const navigator = new VirtualizedNavigator<FakeHandle, FakeEntry>(
@@ -75,6 +83,7 @@ function createNavigator(
         emitted.push(idx);
       },
       dataVersion: initial.withDataVersion ? dataVersion : undefined,
+      getResumePos: () => resume(),
     },
     {
       posOf: (h) => h.pos(),
@@ -99,6 +108,7 @@ function createNavigator(
     setActive: (id) => active.set(id),
     getActive: () => active(),
     bumpDataVersion: () => dataVersion.update((v) => v + 1),
+    setResume: (pos) => resume.set(pos),
     emitted,
     resetEmitted: () => {
       emitted.length = 0;
@@ -205,6 +215,53 @@ describe('VirtualizedNavigator', () => {
       const snap = h.navigator.snapshotByPos();
       expect(snap.has(500)).toBe(false);
       expect(snap.get(0)?.id).toBe('b-0');
+    });
+
+    it('writes only the folded window per fold, not the accumulated snapshot', () => {
+      const h = createNavigator({ total: 10_000 });
+      const windowOf = (start: number) =>
+        Array.from({ length: 30 }, (_, k) => makeHandle({ id: `r-${start + k}`, pos: start + k }));
+      for (let w = 0; w < 200; w++) {
+        h.setItems(windowOf(w * 30));
+        h.navigator.prime();
+      }
+      expect(h.navigator.snapshotByPos().size).toBe(6000);
+
+      const windows = Array.from({ length: 50 }, (_, w) => windowOf((200 + w) * 30));
+      const set = vi.spyOn(Map.prototype, 'set');
+      for (const window of windows) {
+        h.setItems(window);
+        h.navigator.prime();
+      }
+      const writes = set.mock.calls.length;
+      set.mockRestore();
+
+      expect(writes).toBe(50 * 30);
+      expect(h.navigator.snapshotByPos().size).toBe(7500);
+    });
+
+    it('notifies a dependent on every fold, although the snapshot is updated in place', () => {
+      const h = createNavigator({ total: 100 });
+      const size = computed(() => h.navigator.snapshotByPos().size);
+      h.setItems([makeHandle({ id: 'r-0', pos: 0 })]);
+      expect(size()).toBe(1);
+
+      h.setItems([makeHandle({ id: 'r-1', pos: 1 }), makeHandle({ id: 'r-2', pos: 2 })]);
+      expect(size()).toBe(3);
+    });
+
+    it('starts a fresh snapshot on a reset, leaving a map read before it untouched', () => {
+      const h = createNavigator({ total: 100 });
+      h.setItems([makeHandle({ id: 'r-0', pos: 0 })]);
+      const before = h.navigator.snapshotByPos();
+
+      h.navigator.invalidateSnapshot();
+      h.setItems([makeHandle({ id: 'r-5', pos: 5 })]);
+      const after = h.navigator.snapshotByPos();
+
+      expect(after).not.toBe(before);
+      expect([...before.keys()]).toEqual([0]);
+      expect([...after.keys()]).toEqual([5]);
     });
 
     it('skips an option whose value binding is unwritten, folding it in on the re-run', () => {
@@ -511,9 +568,11 @@ describe('VirtualizedNavigator', () => {
   describe('resolveTypeahead', () => {
     const NAMES = ['Alpha', 'Bravo', 'Apple', 'Charlie', 'Avocado'];
 
-    function typeaheadHarness(options: { disabled?: readonly number[] } = {}) {
+    function typeaheadHarness(
+      options: { disabled?: readonly number[]; names?: readonly string[] } = {},
+    ) {
       const h = createNavigator({ total: 40, range: [0, 5] });
-      const items = NAMES.map((name, i) =>
+      const items = (options.names ?? NAMES).map((name, i) =>
         makeHandle({
           id: `r-${i}`,
           value: name,
@@ -582,6 +641,34 @@ describe('VirtualizedNavigator', () => {
       h.setActive('r-2');
       typeahead.handle(press('a'));
       const result = h.navigator.resolveTypeahead(typeahead, press('p'), (e) => String(e.value));
+      expect(result.pos).toBe(2);
+    });
+
+    it('cycles a repeated character from the resume position when no entry is active', () => {
+      const h = typeaheadHarness({ names: ['Cat', 'Cow', 'Dog'] });
+      h.setResume(0);
+      const result = h.navigator.resolveTypeahead(new Typeahead(), press('c'), (e) =>
+        String(e.value),
+      );
+      expect(result.pos).toBe(1);
+    });
+
+    it('anchors a multi-character prefix on the resume position when no entry is active', () => {
+      const h = typeaheadHarness({ names: ['Cow', 'Cat', 'Cod'] });
+      h.setResume(1);
+      const typeahead = new Typeahead();
+      typeahead.handle(press('c'));
+      const result = h.navigator.resolveTypeahead(typeahead, press('o'), (e) => String(e.value));
+      expect(result.pos).toBe(2);
+    });
+
+    it('anchors on the active entry over the resume position', () => {
+      const h = typeaheadHarness();
+      h.setResume(2);
+      h.setActive('r-0');
+      const result = h.navigator.resolveTypeahead(new Typeahead(), press('a'), (e) =>
+        String(e.value),
+      );
       expect(result.pos).toBe(2);
     });
 

@@ -141,10 +141,11 @@ interface SnapshotSource<H> {
  *   navigation past the rendered window so `moveIndex` knows about disabled
  *   boundaries it cannot see, and lets adapters resolve off-window entries
  *   (committed-index resolution, level-aware tree moves, label fallbacks). The
- *   prior map is carried over on every reactive trigger except a `totalCount`
- *   transition, which restarts from an empty map. A same-length dataset refresh
- *   (invisible to the `totalCount` diff) can force the same reset through
- *   {@link invalidateSnapshot} or the optional `deps.dataVersion` signal.
+ *   map is updated in place with each rendered window, so a fold costs
+ *   O(window), and restarts empty on a `totalCount` transition. A same-length
+ *   dataset refresh (invisible to the `totalCount` diff) can force the same
+ *   reset through {@link invalidateSnapshot} or the optional
+ *   `deps.dataVersion` signal.
  * - **Pending active position** — when navigation lands outside the visible
  *   window, the engine emits `(scrollToIndex)` and remembers the target. The
  *   root's bridge effect calls `tryResolvePending` once the freshly-mounted item
@@ -204,16 +205,15 @@ export class VirtualizedNavigator<H, E extends VirtualizedNavigatorEntry> {
     );
 
     const defer = options.deferFoldOnTotalTransition === true;
-    const fold = (prev: ReadonlyMap<number, E>, window: readonly H[]): Map<number, E> => {
-      const next = new Map(prev);
+    const fold = (snapshot: Map<number, E>, window: readonly H[]): Map<number, E> => {
       for (const item of window) {
         const pos = accessors.posOf(item);
         if (pos === null) continue;
         const entry = accessors.readEntry(item);
         if (entry === null) continue;
-        next.set(pos, entry);
+        snapshot.set(pos, entry);
       }
-      return next;
+      return snapshot;
     };
 
     this.#snapshotByPos = linkedSignal<SnapshotSource<H>, Map<number, E>>({
@@ -227,6 +227,7 @@ export class VirtualizedNavigator<H, E extends VirtualizedNavigatorEntry> {
         }
         return fold(prev?.value ?? new Map<number, E>(), window);
       },
+      equal: () => false,
     });
   }
 
@@ -242,7 +243,8 @@ export class VirtualizedNavigator<H, E extends VirtualizedNavigatorEntry> {
    * Read-only position snapshot, keyed by absolute position. Persists across
    * close → reopen while `totalCount` is unchanged. Adapters read it for
    * committed-index resolution, level-aware moves, and off-window label
-   * fallbacks.
+   * fallbacks. Later folds update the returned map in place, so read it again
+   * rather than holding it across a window change.
    */
   snapshotByPos(): ReadonlyMap<number, E> {
     return this.#snapshotByPos();
@@ -301,17 +303,9 @@ export class VirtualizedNavigator<H, E extends VirtualizedNavigatorEntry> {
    * position from the active id (live item, else the snapshot) or the resume
    * position, then delegates the `moveIndex` walk to {@link #moveFrom}.
    *
-   * Resolving the current position when the active item is unmounted (scrolled
-   * off the rendered window) is an **O(total)** linear scan of the position
-   * snapshot: the active id is matched against every snapshot entry. This is
-   * deliberate and acceptable -- the scan runs only on that off-window branch
-   * (an active item still in the rendered window resolves in O(window) via
-   * `items`) and only once per keypress. The escape hatch, should profiling
-   * ever flag it at very large datasets (10k+ entries), is a companion
-   * `id -> position` map maintained alongside `#snapshotByPos` to make the
-   * lookup O(1); it is intentionally not built today because inverting the
-   * snapshot on every fold would trade this rare per-keypress cost for an
-   * O(total) rebuild on every scroll tick.
+   * An active item still in the rendered window resolves in O(window) via
+   * `items`; one scrolled off it is matched against every snapshot entry, so
+   * that branch costs O(total) once per keypress.
    */
   navigate(direction: ListNavigationAction): void {
     const total = this.#deps.totalCount();
@@ -357,9 +351,10 @@ export class VirtualizedNavigator<H, E extends VirtualizedNavigatorEntry> {
    * Run a typeahead keystroke against the **position snapshot** rather than the
    * rendered window, so a match the consumer's virtualizer has unmounted is
    * still reachable. Entries are scanned in absolute-position order and the
-   * anchor is the current activedescendant's entry, so the repeated-character
-   * cycle and the anchored prefix scan of `findTypeaheadMatch` mean the same
-   * thing they mean in a fully-mounted collection.
+   * anchor is the current activedescendant's entry, or the resume position
+   * when there is no active id, so the repeated-character cycle and the
+   * anchored prefix scan of `findTypeaheadMatch` mean the same thing they mean
+   * in a fully-mounted collection.
    *
    * Returns the matched **absolute position** rather than moving to it: the
    * caller runs its own per-primitive guards first, then hands the position to
@@ -381,12 +376,9 @@ export class VirtualizedNavigator<H, E extends VirtualizedNavigatorEntry> {
     getText: (entry: E) => string,
   ): VirtualizedTypeaheadResult {
     const entries = [...this.#snapshotByPos().entries()].sort(([a], [b]) => a - b);
-    const activeId = this.#deps.getActiveId();
-    const anchorIndex =
-      activeId === null ? -1 : entries.findIndex(([, entry]) => entry.id === activeId);
     const { handled, match } = resolveListTypeahead(typeahead, event, {
       items: entries,
-      anchorIndex,
+      anchorIndex: this.#typeaheadAnchorIndex(entries),
       getText: ([, entry]) => getText(entry),
       isDisabled: ([, entry]) => entry.disabled,
     });
@@ -476,6 +468,15 @@ export class VirtualizedNavigator<H, E extends VirtualizedNavigatorEntry> {
     }
     this.#pendingActivePos.set({ pos: next, action, continueOnDisabled: true });
     this.#deps.emitScrollToIndex(next);
+  }
+
+  #typeaheadAnchorIndex(entries: readonly (readonly [number, E])[]): number {
+    const activeId = this.#deps.getActiveId();
+    if (activeId !== null) {
+      return entries.findIndex(([, entry]) => entry.id === activeId);
+    }
+    const resume = this.#deps.getResumePos?.() ?? null;
+    return resume === null ? -1 : entries.findIndex(([pos]) => pos === resume);
   }
 
   #continuationDirection(action: ListNavigationAction): ListNavigationAction {
