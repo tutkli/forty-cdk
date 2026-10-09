@@ -202,6 +202,29 @@ describe('navigateFromRovingItem', () => {
     expect(navigate).not.toHaveBeenCalled();
   });
 
+  it.each(['altKey', 'metaKey'] as const)(
+    'leaves an arrow held with %s to the browser',
+    (modifier) => {
+      const navigate = vi.fn();
+      const event = new KeyboardEvent('keydown', {
+        key: 'ArrowLeft',
+        [modifier]: true,
+        bubbles: true,
+        cancelable: true,
+      });
+
+      expect(
+        navigateFromRovingItem(event, {
+          groupDisabled: false,
+          orientation: 'horizontal',
+          navigate,
+        }),
+      ).toBe(false);
+      expect(event.defaultPrevented).toBe(false);
+      expect(navigate).not.toHaveBeenCalled();
+    },
+  );
+
   it('leaves a key outside the orientation unconsumed', () => {
     const navigate = vi.fn();
     const event = keydown('ArrowDown');

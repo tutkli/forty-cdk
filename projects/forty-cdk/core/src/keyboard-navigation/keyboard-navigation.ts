@@ -24,7 +24,8 @@ export interface ListNavigationOptions {
 
 /**
  * Maps a keyboard event to a 1D navigation action, or `null` if the key is
- * not handled by the configured orientation. `'both'` and `'mixed'` accept
+ * not handled by the configured orientation or is held with Alt or Meta, which
+ * leaves the browser its history shortcuts. `'both'` and `'mixed'` accept
  * every arrow direction and map each to a linear `next` / `previous` step —
  * `'mixed'` models a visually-wrapped grid as a 1D DOM sequence, so there is no
  * separate row/column keyboard step.
@@ -33,6 +34,9 @@ export function resolveListNavigation(
   event: KeyboardEvent,
   options: ListNavigationOptions,
 ): ListNavigationAction | null {
+  if (event.altKey || event.metaKey) {
+    return null;
+  }
   const { orientation, dir = 'ltr', pageKeys = false } = options;
   const acceptsBothAxes = orientation === 'both' || orientation === 'mixed';
   const acceptsVertical = orientation === 'vertical' || acceptsBothAxes;
@@ -93,11 +97,16 @@ export interface GridNavigationOptions {
  * go to the first / last cell of the current row.
  * `PageUp` / `PageDown` (when `pageKeys` is enabled) page up / down by whole
  * rows while preserving the current column — they do not jump to the grid ends.
+ * Any key held with Alt, and an arrow held with Meta, resolve to `null` so the
+ * browser keeps its history shortcuts.
  */
 export function resolveGridNavigation(
   event: KeyboardEvent,
   options: GridNavigationOptions,
 ): GridNavigationAction | null {
+  if (event.altKey || (event.metaKey && event.key.startsWith('Arrow'))) {
+    return null;
+  }
   const { dir = 'ltr', pageKeys = false } = options;
 
   switch (event.key) {
@@ -284,14 +293,18 @@ export type ExpandCollapseAction = 'expand' | 'collapse';
 /**
  * Maps a horizontal arrow keydown to an expand/collapse intent for a treegrid,
  * RTL-mirrored: ArrowRight expands (collapses in `rtl`), ArrowLeft collapses
- * (expands in `rtl`). Returns `null` for any other key. The caller decides
- * whether the intent actually applies (row is an expandable parent in the right
- * open/closed state) and otherwise falls through to grid navigation.
+ * (expands in `rtl`). Returns `null` for any other key, and for an arrow held
+ * with Alt or Meta. The caller decides whether the intent actually applies (row
+ * is an expandable parent in the right open/closed state) and otherwise falls
+ * through to grid navigation.
  */
 export function resolveTreegridExpandCollapse(
   event: KeyboardEvent,
   dir: WritingDirection = 'ltr',
 ): ExpandCollapseAction | null {
+  if (event.altKey || event.metaKey) {
+    return null;
+  }
   if (event.key === 'ArrowRight') {
     return dir === 'rtl' ? 'collapse' : 'expand';
   }
@@ -313,14 +326,18 @@ export interface TreeExpandCollapseOptions {
  * View), spanning both orientations. In a vertical tree the horizontal arrows
  * drive expansion (RTL-mirrored via {@link resolveTreegridExpandCollapse}); in
  * a horizontal tree ArrowDown expands and ArrowUp collapses. Returns `null` for
- * any other key. The caller decides whether the intent actually applies (the
- * focused node is an expandable parent in the right open/closed state) and
- * otherwise falls through to list navigation.
+ * any other key, and for an arrow held with Alt or Meta. The caller decides
+ * whether the intent actually applies (the focused node is an expandable parent
+ * in the right open/closed state) and otherwise falls through to list
+ * navigation.
  */
 export function resolveTreeExpandCollapse(
   event: KeyboardEvent,
   options: TreeExpandCollapseOptions,
 ): ExpandCollapseAction | null {
+  if (event.altKey || event.metaKey) {
+    return null;
+  }
   const { orientation, dir = 'ltr' } = options;
   if (orientation === 'vertical') {
     return resolveTreegridExpandCollapse(event, dir);
