@@ -191,16 +191,13 @@ export class ForComboboxContent {
         target: () => ctx.trigger(),
         veto: () => ctx.emitAutoFocusOnClose(),
         // The anatomy gate comes first: the editable anatomy never reaches
-        // `veto`, so it never emits. Then, on Tab and on outside dismissal
-        // (pointer-down-outside / focus-outside) focus already landed where the
-        // user tabbed or clicked; re-focusing the trigger would steal it back
-        // (native <select> parity, mirroring popover #1310).
+        // `veto`, so it never emits. Then, on Tab focus already landed where the
+        // user tabbed; re-focusing the trigger would steal it back.
         skip: () => {
           if (!hasTrigger()) {
             return true;
           }
-          const reason = ctx.lastCloseReason();
-          return reason === 'tab' || reason === 'pointerDownOutside' || reason === 'focusOutside';
+          return ctx.lastCloseReason() === 'tab';
         },
       },
     };

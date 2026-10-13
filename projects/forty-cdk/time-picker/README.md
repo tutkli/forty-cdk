@@ -324,6 +324,7 @@ With the field adopted:
 - **State is set once.** `minTime`, `maxTime`, `disabled`, `readonly`, `granularity`, `hourCycle` and `locale` on the picker apply to the field. A read-only picker blocks typing and picking alike.
 - **The field is the control.** A surrounding `[forField]` names and describes the field's `role="group"`, `aria-invalid` lands there, a label press focuses its first segment, and the picker's `focus()` goes there too.
 - **The trigger is a plain button.** It drops `role="combobox"` and the form-control `aria-*` state, and keeps `aria-haspopup="listbox"`, `aria-expanded` and `aria-controls`. Give it a name of its own.
+- **A press on a segment closes the listbox.** Only the trigger and the field's labels are exempt from outside dismissal, so pressing a segment to start typing closes the slot list and leaves focus on that segment.
 
 With `anatomy="field"` and no projected `[forTimeField]`, opening the listbox or calling `focus()` throws `FORCDK-TIME-PICKER-004` in dev mode.
 
@@ -350,6 +351,7 @@ Implements the [WAI-ARIA Listbox pattern](https://www.w3.org/WAI/ARIA/apg/patter
 
 - **`role="combobox"`** on the trigger (`[forTimePickerTrigger]`) with `aria-haspopup="listbox"` and `aria-expanded` reflecting `open`. In the [field anatomy](#field-anatomy) the trigger is a plain button with the same popup attributes, and the time field carries the form-control state.
 - **`role="listbox"`** on the portaled content (`[forTimePickerContent]`); each slot is `role="option"` with `aria-selected` and `aria-disabled`.
+- **Focus return**: closing the listbox returns focus to the trigger (unless `returnFocus="false"`), vetoable via `(autoFocusOnClose)`. The one exception is an **outside-interaction close**, meaning a pointer-down or focus-out that lands outside the listbox. After such a close, focus stays where the interaction moved it instead of snapping back to the trigger. Escape and a picked slot still return focus, and `Tab` leaves it where the browser advanced it.
 - A mouse press on the listbox surface that lands on no focusable element (padding, a heading) is cancelled, so focus stays on the slot that had it and the arrow keys keep working. A press on a slot still focuses it. A press on your own `<button>` inside the surface is left to the browser, and macOS Safari and Firefox do not focus a `<button>` on a press.
 - When used inside `[forDatePickerContent]` alongside a `[forCalendar]`, the time picker delegates its value to `[forDatePicker]` via `FOR_TIME_VALUE_SOURCE`, so the combined date-time value is surfaced on the date picker's form-control ARIA.
 - **`data-highlighted=""`** is reflected on the active slot (the hovered one, else the focused one), so it is the one hook to style rather than pairing it with `:hover` (see [Pointer highlight](#pointer-highlight)).

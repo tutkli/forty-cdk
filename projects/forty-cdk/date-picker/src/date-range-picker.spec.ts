@@ -5,6 +5,8 @@ import { form, FormField, required as requiredRule } from '@angular/forms/signal
 import {
   afterEachOverlayCleanup,
   flush,
+  focusInOn,
+  pointerDownOn,
   renderHost,
   type RenderResult,
 } from '../../src/test-utils';
@@ -425,6 +427,40 @@ describe('ForDateRangePicker', () => {
       expect(event.defaultPrevented).toBe(true);
       expect(r.instance.open()).toBe(true);
       expect(document.activeElement).toBe(cell('2026-6-10'));
+    });
+  });
+
+  describe('return focus', () => {
+    for (const [channel, dispatch] of [
+      ['pointer-down', pointerDownOn],
+      ['focus', focusInOn],
+    ] as const) {
+      it(`leaves focus where it moved after an outside ${channel} close`, async () => {
+        const r = renderHost(Host);
+        await open(r);
+        const focusSpy = vi.spyOn(trigger(r), 'focus');
+        const outside = document.createElement('button');
+        document.body.appendChild(outside);
+
+        dispatch(outside);
+        await flush(r.fixture);
+
+        expect(r.instance.open()).toBe(false);
+        expect(focusSpy).not.toHaveBeenCalled();
+        outside.remove();
+      });
+    }
+
+    it('returns focus to the trigger after an Escape close', async () => {
+      const r = renderHost(Host);
+      await open(r);
+      const focusSpy = vi.spyOn(trigger(r), 'focus');
+
+      pressKey(content()!, 'Escape');
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+      expect(focusSpy).toHaveBeenCalledTimes(1);
     });
   });
 

@@ -107,10 +107,6 @@ export class ForPopoverContent {
         target: () => this.ctx.trigger(),
         // `(autoFocusOnClose)` lets the consumer veto the return-focus.
         veto: () => this.ctx.emitAutoFocusOnClose(),
-        skip: () => {
-          const reason = this.ctx.lastCloseReason();
-          return reason === 'pointerDownOutside' || reason === 'focusOutside' || reason === 'tab';
-        },
       },
       tabOut: {
         target: () => this.ctx.trigger(),

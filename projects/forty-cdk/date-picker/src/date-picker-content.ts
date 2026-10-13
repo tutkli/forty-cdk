@@ -23,7 +23,8 @@ import { injectDatePickerContext } from './date-picker-context';
  * - **non-modal (default)** — the surface is anchored to the trigger via
  *   `@floating-ui/dom`, dismisses on Escape, pointer-down outside or focus
  *   outside, moves focus to the calendar's roving cell on open, and returns
- *   focus to the trigger on close. Tab past the last control moves on to the
+ *   focus to the trigger on close, except after an outside close, where focus
+ *   stays where the interaction moved it. Tab past the last control moves on to the
  *   element after the trigger and Shift+Tab before the first lands on the
  *   trigger, closing the surface.
  * - **modal** — focus is trapped, the background is inerted and body scroll is

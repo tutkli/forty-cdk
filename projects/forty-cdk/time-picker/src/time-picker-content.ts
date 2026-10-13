@@ -31,7 +31,8 @@ import { injectTimePickerContext } from './time-picker-context';
  * Initial focus is sent to the selected slot (`'selected'`), the first
  * enabled slot (`'first'`), or the last enabled slot (`'last'`) according to
  * the trigger's hint. On destroy, focus returns to the trigger when
- * `returnFocus` is true.
+ * `returnFocus` is true, except after an outside close, where focus stays
+ * where the interaction moved it.
  *
  * A mouse press on the surface that lands on no focusable element of its own
  * (padding, a heading) is cancelled, so focus stays on the slot that held
@@ -170,10 +171,7 @@ export class ForTimePickerContent {
         enabled: ctx.returnFocus,
         target: () => ctx.overlay.trigger(),
         veto: () => ctx.overlay.emitAutoFocusOnClose(),
-        skip: () => {
-          const reason = ctx.overlay.lastCloseReason();
-          return reason === 'tab' || reason === 'pointerDownOutside' || reason === 'focusOutside';
-        },
+        skip: () => ctx.overlay.lastCloseReason() === 'tab',
       },
     });
   }

@@ -12,6 +12,8 @@ import {
 import {
   afterEachOverlayCleanup,
   flush,
+  focusInOn,
+  pointerDownOn,
   renderHost,
   type RenderResult,
 } from '../../src/test-utils';
@@ -797,6 +799,40 @@ describe('ForTimePicker', () => {
       expect(getTrigger().getAttribute('data-disabled')).toBe('');
       expect(getTrigger().hasAttribute('disabled')).toBe(true);
       expect(getTrigger().hasAttribute('aria-disabled')).toBe(false);
+    });
+
+    for (const [channel, dispatch] of [
+      ['pointer-down', pointerDownOn],
+      ['focus', focusInOn],
+    ] as const) {
+      it(`leaves focus where it moved after an outside ${channel} close`, async () => {
+        const r = renderHost(TimePickerHost);
+        getTrigger().click();
+        await flush(r.fixture);
+        const focusSpy = vi.spyOn(getTrigger(), 'focus');
+        const outside = document.createElement('button');
+        document.body.appendChild(outside);
+
+        dispatch(outside);
+        await flush(r.fixture);
+
+        expect(r.instance.open()).toBe(false);
+        expect(focusSpy).not.toHaveBeenCalled();
+        outside.remove();
+      });
+    }
+
+    it('returns focus to the trigger after an Escape close', async () => {
+      const r = renderHost(TimePickerHost);
+      getTrigger().click();
+      await flush(r.fixture);
+      const focusSpy = vi.spyOn(getTrigger(), 'focus');
+
+      pressKey(getContent()!, 'Escape');
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+      expect(focusSpy).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -1841,6 +1877,20 @@ describe('ForTimePicker', () => {
         .injector.get(ForTimePicker);
       picker.focus();
       expect(document.activeElement).toBe(at(r, 'hour'));
+    });
+
+    it('closes on a press on a segment and leaves focus off the trigger', async () => {
+      const r = renderHost(TimeFieldAnatomyHost);
+      await r.flush();
+      at(r, 'trigger').click();
+      await r.flush();
+      const focusSpy = vi.spyOn(at(r, 'trigger'), 'focus');
+
+      pointerDownOn(at(r, 'minute'));
+      await r.flush();
+
+      expect(r.instance.open()).toBe(false);
+      expect(focusSpy).not.toHaveBeenCalled();
     });
 
     describe('without a projected [forTimeField]', () => {

@@ -1,4 +1,12 @@
-import { clickOutside, el, expect, expectFocused, gotoFixture, test } from './_helpers';
+import {
+  clickOutside,
+  el,
+  expect,
+  expectFocused,
+  expectStays,
+  gotoFixture,
+  test,
+} from './_helpers';
 
 test.describe('TimePicker', () => {
   test('opens on trigger click and moves focus into the listbox', async ({ page }) => {
@@ -184,6 +192,18 @@ test.describe('TimePicker', () => {
 
     await clickOutside(page);
     await expect(el(page, 'content')).toHaveCount(0);
+  });
+
+  test('clicking another input closes the listbox and keeps focus on that input', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'time-picker');
+    await el(page, 'trigger').click();
+    await expect(el(page, 'content')).toBeVisible();
+
+    await el(page, 'before').click();
+    await expect(el(page, 'content')).toHaveCount(0);
+    await expectStays(page, async () => expectFocused(el(page, 'before')));
   });
 
   test('Tab on a focused slot commits the value and closes', async ({ page }) => {

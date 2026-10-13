@@ -151,9 +151,10 @@ export class ForMenuContent {
         veto: () => this.ctx.emitAutoFocusOnClose(),
         // Skip when the close itself already moved focus away on purpose:
         // `'tab'` let the browser advance to the next element, and an outside
-        // pointer-down / focus moved focus onto whatever the user just clicked
-        // or focused. Re-focusing the trigger in any of these cases would rip
-        // focus back from where it belongs.
+        // pointer-down / focus on a submenu, whose close propagates up the
+        // chain, moved focus onto whatever the user just clicked or focused.
+        // Re-focusing the trigger in any of these cases would rip focus back
+        // from where it belongs.
         skip: () => {
           const reason = this.ctx.lastCloseReason();
           return reason === 'tab' || reason === 'pointerDownOutside' || reason === 'focusOutside';
