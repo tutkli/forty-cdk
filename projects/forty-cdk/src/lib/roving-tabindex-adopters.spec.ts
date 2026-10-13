@@ -1,4 +1,4 @@
-import { entryPointOf, LIBRARY_CODE, SPEC_SOURCES } from '../test-utils/source-scan';
+import { entryPointOf, LIBRARY_CODE, SPEC_CODE } from '../test-utils/source-scan';
 
 /**
  * Meta-guard: every group that owns a roving-tabindex keyboard model is covered
@@ -281,7 +281,7 @@ function totalConstructions(): number {
 /** Spec path → how many times it calls the contract. */
 function contractCalls(): Map<string, number> {
   const calls = new Map<string, number>();
-  for (const [path, source] of SPEC_SOURCES) {
+  for (const [path, source] of SPEC_CODE) {
     const count = (source.match(/assertRovingTabindexContract\(/g) ?? []).length;
     if (count > 0) {
       calls.set(path, count);
@@ -308,7 +308,7 @@ for (const adopter of ADOPTERS) {
 }
 const sorted = (values: Iterable<string>): string[] => [...values].sort();
 const occurrences = (spec: string, token: string): number =>
-  (SPEC_SOURCES.get(spec) ?? '').split(token).length - 1;
+  (SPEC_CODE.get(spec) ?? '').split(token).length - 1;
 
 describe('roving-tabindex contract adoption (meta-guard)', () => {
   it('finds the library sources through the glob', () => {
@@ -384,7 +384,7 @@ describe('roving-tabindex contract adoption (meta-guard)', () => {
   it('mounts the in-place disable once per claim in the spec that makes it', () => {
     const short = [...claimsPerSpec.entries()]
       .map(([spec, claims]) => {
-        const mounts = (SPEC_SOURCES.get(spec) ?? '').split(IN_PLACE_DISABLE).length - 1;
+        const mounts = (SPEC_CODE.get(spec) ?? '').split(IN_PLACE_DISABLE).length - 1;
         return { spec, claims, mounts };
       })
       .filter(({ claims, mounts }) => mounts < claims)

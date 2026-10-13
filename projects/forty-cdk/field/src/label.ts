@@ -1,12 +1,18 @@
-import { computed, DestroyRef, Directive, ElementRef, inject } from '@angular/core';
+import { DestroyRef, Directive, ElementRef, inject } from '@angular/core';
 
-import { crossesInteractiveContent, preventPointerFocus, resolveEventTarget } from 'forty-cdk/core';
+import {
+  crossesInteractiveContent,
+  hostStaticAttribute,
+  preventPointerFocus,
+  resolveEventTarget,
+} from 'forty-cdk/core';
 import { FOR_FIELD_CONTEXT } from './field-context';
 
 /**
  * Accessible label for a form control. Inside a `[forField]` it auto-wires:
  * it adopts the field's `labelId` and registers itself so the control gains
- * `aria-labelledby`.
+ * `aria-labelledby`. A consumer-set static `id` is kept and becomes the
+ * field's `labelId`.
  *
  * Click-to-activate is consistent across both host shapes: a native `<label>`
  * emits `for` and the browser forwards the click to the control (toggling a
@@ -33,8 +39,9 @@ import { FOR_FIELD_CONTEXT } from './field-context';
  * open or closed. A press on the label never moves focus anywhere but the
  * control and does not start a text selection.
  *
- * Usable standalone outside a field — there it is an inert
- * marker and the consumer wires native `for` themselves.
+ * Usable standalone outside a field — there it is an inert marker that keeps
+ * the consumer's own static `for` and `id`, and the consumer wires native
+ * `for` themselves.
  *
  * @example
  * ```html
@@ -57,11 +64,9 @@ export class ForLabel {
   protected readonly ctx = inject(FOR_FIELD_CONTEXT, { optional: true });
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
-  /** The label's id when inside a field, else null. */
-  protected readonly labelId = computed(() => this.ctx?.labelId() ?? null);
+  protected readonly labelId = hostStaticAttribute('id', () => this.ctx?.labelId() ?? null);
 
-  /** `for` is only meaningful on a native `<label>`; null otherwise. */
-  protected readonly forAttr = computed(() => {
+  protected readonly forAttr = hostStaticAttribute('for', () => {
     if (!this.ctx || this.#host.nativeElement.tagName !== 'LABEL') {
       return null;
     }

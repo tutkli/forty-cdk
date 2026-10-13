@@ -1,5 +1,5 @@
 import type { OverlayTriggerAriaContractOptions } from '../test-utils/contract';
-import { LIBRARY_CODE, SPEC_SOURCES } from '../test-utils/source-scan';
+import { LIBRARY_CODE, SPEC_CODE } from '../test-utils/source-scan';
 
 /**
  * Meta-guard: every trigger that stamps `aria-haspopup` is covered by an adopter
@@ -157,7 +157,7 @@ function popupTokenBySource(): Map<string, string> {
 /** Spec path → how many times it calls the contract. */
 function contractCalls(): Map<string, number> {
   const calls = new Map<string, number>();
-  for (const [path, source] of SPEC_SOURCES) {
+  for (const [path, source] of SPEC_CODE) {
     const count = (source.match(/assertOverlayTriggerAriaContract\(/g) ?? []).length;
     if (count > 0) {
       calls.set(path, count);

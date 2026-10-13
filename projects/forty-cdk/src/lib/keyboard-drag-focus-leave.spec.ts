@@ -1,4 +1,4 @@
-import { LIBRARY_CODE, SPEC_SOURCES } from '../test-utils/source-scan';
+import { LIBRARY_CODE, SPEC_CODE } from '../test-utils/source-scan';
 
 /**
  * Meta-guard: "focus left the host" is resolved in exactly one place for every
@@ -79,7 +79,7 @@ describe('keyboard drag focus-leave resolution (meta-guard)', () => {
 
   it('has every coordinator exercising the leave channel in its own spec', () => {
     const uncovered = callers().filter((path) => {
-      const spec = SPEC_SOURCES.get(path.replace(/\.ts$/, '.spec.ts'));
+      const spec = SPEC_CODE.get(path.replace(/\.ts$/, '.spec.ts'));
       return spec === undefined || !spec.includes('focusout');
     });
     expect(uncovered).toEqual([]);

@@ -15,6 +15,7 @@ import { By } from '@angular/platform-browser';
 
 import { renderHost } from '../../src/test-utils/render';
 import { FOR_FIELD_ANCHOR_CONTEXT, FOR_FIELD_CONTEXT, FormUiControlBase } from 'forty-cdk/core';
+import { ForFieldset } from 'forty-cdk/fieldset';
 import { ForSwitch } from 'forty-cdk/switch';
 import { ForField } from './field';
 import { ForFieldAnchor } from './field-anchor';
@@ -602,6 +603,78 @@ describe('ForField', () => {
       expect(control.getAttribute('aria-invalid')).toBe('true');
       expect(q(el, 'field').hasAttribute('data-invalid')).toBe(true);
     });
+
+    @Component({
+      imports: [ForFieldset, ForField, ForLabel, ForFieldControl],
+      template: `
+        <div forFieldset [disabled]="groupDisabled()">
+          <div forField data-test-id="field">
+            <label forLabel>Street</label>
+            <input forFieldControl [disabled]="ownDisabled()" data-test-id="control" />
+          </div>
+        </div>
+      `,
+    })
+    class FieldsetHost {
+      readonly groupDisabled = signal(false);
+      readonly ownDisabled = signal(false);
+    }
+
+    it('disables the native control while a surrounding [forFieldset] is disabled', async () => {
+      const { el, fixture, flush } = renderHost(FieldsetHost);
+      await flush();
+      const control = q(el, 'control') as HTMLInputElement;
+      expect(control.disabled).toBe(false);
+
+      fixture.componentInstance.groupDisabled.set(true);
+      await flush();
+      expect(control.disabled).toBe(true);
+      expect(q(el, 'field').hasAttribute('data-disabled')).toBe(true);
+
+      fixture.componentInstance.groupDisabled.set(false);
+      await flush();
+      expect(control.disabled).toBe(false);
+    });
+
+    it('disables the native control through its own [disabled] binding', async () => {
+      const { el, fixture, flush } = renderHost(FieldsetHost);
+      await flush();
+
+      fixture.componentInstance.ownDisabled.set(true);
+      await flush();
+
+      expect((q(el, 'control') as HTMLInputElement).disabled).toBe(true);
+    });
+  });
+
+  describe('consumer-set static ids', () => {
+    @Component({
+      imports: [ForField, ForLabel, ForFieldControl, ForFieldDescription, ForFieldError],
+      template: `
+        <div forField>
+          <label forLabel id="email-label" data-test-id="label">Email</label>
+          <input forFieldControl [invalid]="true" data-test-id="control" />
+          <p forFieldDescription id="email-hint" data-test-id="desc">We never share it.</p>
+          <p forFieldError id="email-error" data-test-id="error">Required</p>
+        </div>
+      `,
+    })
+    class Host {}
+
+    it('keeps the label, description and error ids and points the control at them', async () => {
+      const { el, flush } = renderHost(Host);
+      await flush();
+      const control = q(el, 'control');
+
+      expect([q(el, 'label').id, q(el, 'desc').id, q(el, 'error').id]).toEqual([
+        'email-label',
+        'email-hint',
+        'email-error',
+      ]);
+      expect(control.getAttribute('aria-labelledby')).toBe('email-label');
+      expect(control.getAttribute('aria-describedby')).toBe('email-hint email-error');
+      expect(control.getAttribute('aria-errormessage')).toBe('email-error');
+    });
   });
 
   describe('label-click activation', () => {
@@ -803,13 +876,29 @@ describe('ForField', () => {
   describe('standalone label (no field)', () => {
     @Component({
       imports: [ForLabel],
-      template: `<label forLabel data-test-id="label">Loose</label>`,
+      template: `
+        <label forLabel for="email" id="email-label" data-test-id="label">Email</label>
+        <input id="email" data-test-id="input" />
+        <label forLabel data-test-id="bare">Loose</label>
+      `,
     })
     class Host {}
 
-    it('is an inert marker without a surrounding field', () => {
-      const { el } = renderHost(Host);
+    it('keeps the static for and id it was written with', async () => {
+      const { el, flush } = renderHost(Host);
+      await flush();
       const label = q(el, 'label');
+
+      expect(label.getAttribute('for')).toBe('email');
+      expect(label.id).toBe('email-label');
+      expect((q(el, 'input') as HTMLInputElement).labels?.[0]).toBe(label);
+    });
+
+    it('emits no for or id of its own', async () => {
+      const { el, flush } = renderHost(Host);
+      await flush();
+      const label = q(el, 'bare');
+
       expect(label.hasAttribute('id')).toBe(false);
       expect(label.hasAttribute('for')).toBe(false);
     });

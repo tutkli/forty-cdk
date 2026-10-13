@@ -2,6 +2,7 @@ import { Component, Injectable, inject, signal, type Type } from '@angular/core'
 import { TestBed } from '@angular/core/testing';
 
 import { afterEachOverlayCleanup, renderHost } from '../test-utils';
+import { LIBRARY_CODE } from '../test-utils/source-scan';
 
 import { ForBreadcrumbs, provideForBreadcrumbsDefaults } from 'forty-cdk/breadcrumbs';
 import { provideNativeDateAdapter } from 'forty-cdk/shared';
@@ -28,6 +29,7 @@ import {
   ForComboboxChips,
   ForComboboxClear,
   ForComboboxInput,
+  ForComboboxToggle,
   provideForComboboxDefaults,
 } from 'forty-cdk/combobox';
 import {
@@ -104,6 +106,7 @@ class BreadcrumbsHost {}
     ForComboboxChip,
     ForComboboxChipRemove,
     ForComboboxClear,
+    ForComboboxToggle,
   ],
   providers: [
     provideForComboboxDefaults(() => {
@@ -111,6 +114,7 @@ class BreadcrumbsHost {}
       return {
         chipsAriaLabel: () => lang.pick('Chosen', 'Elegidos'),
         clearAriaLabel: () => lang.pick('Reset', 'Borrar'),
+        toggleAriaLabel: () => lang.pick('Show', 'Mostrar'),
         chipRemoveLabel: (label) => lang.pick(`Drop ${label}`, `Quitar ${label}`),
       };
     }),
@@ -126,6 +130,7 @@ class BreadcrumbsHost {}
         }
         <input forComboboxInput />
       </div>
+      <button forComboboxToggle>▾</button>
       <button forComboboxClear>×</button>
     </div>
   `,
@@ -211,6 +216,34 @@ class ToastHost {}
   `,
 })
 class CarouselHost {}
+
+@Component({
+  imports: [
+    ForCarousel,
+    ForCarouselRotationControl,
+    ForCarouselViewport,
+    ForCarouselTrack,
+    ForCarouselSlide,
+  ],
+  providers: [
+    provideForCarouselDefaults(() => {
+      const lang = inject(Lang);
+      return { rotationStopLabel: () => lang.pick('Pause', 'Detener') };
+    }),
+  ],
+  template: `
+    <div forCarousel autoplay>
+      <button forCarouselRotationControl></button>
+      <div forCarouselViewport>
+        <div forCarouselTrack>
+          <div forCarouselSlide>One</div>
+          <div forCarouselSlide>Two</div>
+        </div>
+      </div>
+    </div>
+  `,
+})
+class PlayingCarouselHost {}
 
 @Component({
   imports: [ForDateField, ForDateFieldSegment],
@@ -484,6 +517,13 @@ const TEXT_KEYS: readonly {
     es: 'Borrar',
   },
   {
+    key: 'ForComboboxDefaults.toggleAriaLabel',
+    host: ComboboxHost,
+    read: attribute('[forComboboxToggle]', 'aria-label'),
+    en: 'Show',
+    es: 'Mostrar',
+  },
+  {
     key: 'ForComboboxDefaults.chipRemoveLabel',
     host: ComboboxHost,
     read: attribute('[forComboboxChipRemove]', 'aria-label'),
@@ -517,6 +557,13 @@ const TEXT_KEYS: readonly {
     read: attribute('[forCarouselRotationControl]', 'aria-label'),
     en: 'Play',
     es: 'Reproducir',
+  },
+  {
+    key: 'ForCarouselDefaults.rotationStopLabel',
+    host: PlayingCarouselHost,
+    read: attribute('[forCarouselRotationControl]', 'aria-label'),
+    en: 'Pause',
+    es: 'Detener',
   },
   {
     key: 'ForCarouselDefaults.roleDescription',
@@ -695,6 +742,36 @@ const PLACEHOLDER_PRECEDENCE: readonly {
   { root: '[forTimeRangeField]', host: TimeRangeFieldHost, own: '[data-part="minute"]' },
 ];
 
+const COMPLETE_ANNOUNCEMENT = 'ForProgressDefaults.completeAnnouncement';
+
+function localizableTextKeys(): string[] {
+  const keys: string[] = [];
+  for (const [path, code] of LIBRARY_CODE) {
+    if (!path.startsWith('defaults/src/')) {
+      continue;
+    }
+    const aliases = [...code.matchAll(/export type (\w+)\s*=\s*([^;]+);/g)]
+      .filter(([, , type]) => /\bLocalizableText\b/.test(type!))
+      .map(([, name]) => name!);
+    const isLocalizable = (type: string): boolean =>
+      [/\bLocalizableText\b/, ...aliases.map((alias) => new RegExp(`\\b${alias}\\b`))].some(
+        (pattern) => pattern.test(type),
+      );
+    for (const [, name, body] of code.matchAll(
+      /export interface (For\w+Defaults)(?:\s+extends\s+[^{]+)?\s*\{([^}]*)\}/g,
+    )) {
+      for (const [, member, type] of body!.matchAll(
+        /^\s*(?:readonly\s+)?(\w+)\??\s*:\s*([^;]+);/gm,
+      )) {
+        if (isLocalizable(type!)) {
+          keys.push(`${name}.${member}`);
+        }
+      }
+    }
+  }
+  return keys.sort();
+}
+
 describe('localizable defaults follow a runtime language change', () => {
   let restoreObservers: () => void;
   beforeAll(() => {
@@ -729,7 +806,7 @@ describe('localizable defaults follow a runtime language change', () => {
     });
   }
 
-  it('ForProgressDefaults.completeAnnouncement: the announcement reads the language current when it fires', async () => {
+  it(`${COMPLETE_ANNOUNCEMENT}: the announcement reads the language current when it fires`, async () => {
     const r = renderHost(ProgressHost);
     await r.flush();
     const announce = vi.spyOn(TestBed.inject(LiveAnnouncer), 'announce');
@@ -750,6 +827,7 @@ describe('localizable defaults follow a runtime language change', () => {
     ForComboboxChips,
     ForComboboxClear,
     ForComboboxInput,
+    ForComboboxToggle,
     ForSearchGroup,
     ForSearch,
     ForSearchClear,
@@ -772,6 +850,7 @@ describe('localizable defaults follow a runtime language change', () => {
       return {
         chipsAriaLabel: () => lang.pick('Chosen', 'Elegidos'),
         clearAriaLabel: () => lang.pick('Reset', 'Borrar'),
+        toggleAriaLabel: () => lang.pick('Show', 'Mostrar'),
       };
     }),
     provideForSearchDefaults(() => {
@@ -794,6 +873,7 @@ describe('localizable defaults follow a runtime language change', () => {
     <nav forBreadcrumbs [ariaLabel]="label()"></nav>
     <div forCombobox multiple>
       <div forComboboxChips [ariaLabel]="label()"><input forComboboxInput /></div>
+      <button forComboboxToggle [ariaLabel]="label()">▾</button>
       <button forComboboxClear [ariaLabel]="label()">×</button>
     </div>
     <div forSearchGroup>
@@ -824,6 +904,7 @@ const INSTANCE_LABELS: readonly {
   { piece: '[forBreadcrumbs]', en: 'Trail', es: 'Ruta' },
   { piece: '[forComboboxChips]', en: 'Chosen', es: 'Elegidos' },
   { piece: '[forComboboxClear]', en: 'Reset', es: 'Borrar' },
+  { piece: '[forComboboxToggle]', en: 'Show', es: 'Mostrar' },
   { piece: '[forSearchClear]', en: 'Reset', es: 'Borrar' },
   { piece: '[forToastViewport]', en: 'Alerts', es: 'Avisos' },
   { piece: '[forToastClose]', en: 'Dismiss', es: 'Cerrar' },
@@ -862,4 +943,16 @@ describe('a per-instance label over a function-valued scope key', () => {
       expect(inDocument(piece).hasAttribute('aria-label')).toBe(false);
     });
   }
+});
+
+describe('the runtime-language sweep covers every LocalizableText key', () => {
+  it('finds the LocalizableText keys of the defaults interfaces', () => {
+    expect(localizableTextKeys().length).toBeGreaterThanOrEqual(25);
+  });
+
+  it('sweeps every LocalizableText key of a For*Defaults interface', () => {
+    const swept = new Set([...TEXT_KEYS.map(({ key }) => key), COMPLETE_ANNOUNCEMENT]);
+
+    expect(localizableTextKeys().filter((key) => !swept.has(key))).toEqual([]);
+  });
 });

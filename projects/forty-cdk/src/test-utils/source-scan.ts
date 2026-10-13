@@ -58,6 +58,9 @@ function sourcesFrom(
 
 const isSpec = (path: string): boolean => path.endsWith('.spec.ts');
 
+const REGEX_PRECEDING_KEYWORDS =
+  /^(?:await|case|delete|do|else|in|instanceof|new|of|return|throw|typeof|void|yield)$/;
+
 /**
  * Every source file the library ships, keyed `<entry-point>/src/<file>.ts`.
  *
@@ -89,6 +92,10 @@ export const LIBRARY_CODE: ReadonlyMap<string, string> = new Map(
  */
 export const SPEC_SOURCES: ReadonlyMap<string, string> = sourcesFrom(ENTRY_POINT_FILES, isSpec);
 
+export const SPEC_CODE: ReadonlyMap<string, string> = new Map(
+  [...SPEC_SOURCES].map(([path, source]) => [path, stripComments(source)] as const),
+);
+
 /**
  * Every file under `projects/forty-cdk/src/`, specs and helpers alike, keyed
  * `src/<file>.ts` — the cross-cutting suite plus these test utilities, this
@@ -109,13 +116,120 @@ export function entryPointOf(path: string): string {
  * use of it — the anchoring failure the marker rules hit in
  * [#1606](https://github.com/tutkli/forty-cdk/issues/1606).
  *
- * The semantics, of the four that used to coexist: block comments go entirely,
- * and a `//` runs to the end of its line **unless the character before it is a
- * colon**, which keeps a `https://` inside a string literal or a regex from
- * swallowing the rest of the line. The guarded character is captured and put
- * back, so `};// note` keeps its `}` — the one variant that neither strips too
- * much nor leaves a trailing comment in the text.
+ * Block comments go entirely and a `//` comment runs to the end of its line.
+ * String, template and regex literals are copied verbatim, so a `//` or a `/*`
+ * inside one is text rather than the start of a comment and nothing after it is
+ * lost. A `/` opens a regex where an expression can start — after punctuation
+ * other than `)` and `]`, or after a keyword such as `return` — and divides
+ * anywhere else.
  */
 export function stripComments(source: string): string {
-  return source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
+  const templateDepths: number[] = [];
+  let out = '';
+  let at = 0;
+  let depth = 0;
+  let regexAllowed = true;
+
+  const copyTo = (end: number): void => {
+    out += source.slice(at, end);
+    at = end;
+  };
+
+  const copyQuoted = (quote: string): void => {
+    let end = at + 1;
+    while (end < source.length && source[end] !== quote && source[end] !== '\n') {
+      end += source[end] === '\\' ? 2 : 1;
+    }
+    copyTo(Math.min(end + 1, source.length));
+    regexAllowed = false;
+  };
+
+  const copyTemplate = (): void => {
+    let end = at;
+    while (end < source.length) {
+      const char = source[end];
+      if (char === '\\') {
+        end += 2;
+      } else if (char === '`') {
+        copyTo(end + 1);
+        regexAllowed = false;
+        return;
+      } else if (char === '$' && source[end + 1] === '{') {
+        copyTo(end + 2);
+        templateDepths.push(depth);
+        regexAllowed = true;
+        return;
+      } else {
+        end += 1;
+      }
+    }
+    copyTo(source.length);
+  };
+
+  const copyRegex = (): void => {
+    let end = at + 1;
+    let inClass = false;
+    while (end < source.length && source[end] !== '\n') {
+      const char = source[end];
+      end += char === '\\' ? 2 : 1;
+      if (char === '[') {
+        inClass = true;
+      } else if (char === ']') {
+        inClass = false;
+      } else if (char === '/' && !inClass) {
+        break;
+      }
+    }
+    while (end < source.length && /[a-z]/i.test(source[end]!)) {
+      end += 1;
+    }
+    copyTo(end);
+    regexAllowed = false;
+  };
+
+  const copyWord = (): void => {
+    let end = at;
+    while (end < source.length && /[\w$#]/.test(source[end]!)) {
+      end += 1;
+    }
+    const word = source.slice(at, end);
+    copyTo(end);
+    regexAllowed = REGEX_PRECEDING_KEYWORDS.test(word);
+  };
+
+  while (at < source.length) {
+    const char = source[at]!;
+    const next = source[at + 1];
+    if (char === '/' && next === '/') {
+      const end = source.indexOf('\n', at);
+      at = end === -1 ? source.length : end;
+    } else if (char === '/' && next === '*') {
+      const end = source.indexOf('*/', at + 2);
+      at = end === -1 ? source.length : end + 2;
+    } else if (char === '/' && regexAllowed) {
+      copyRegex();
+    } else if (char === "'" || char === '"') {
+      copyQuoted(char);
+    } else if (char === '`') {
+      copyTo(at + 1);
+      copyTemplate();
+    } else if (char === '}' && templateDepths.at(-1) === depth) {
+      templateDepths.pop();
+      copyTo(at + 1);
+      copyTemplate();
+    } else if (/[\w$#]/.test(char)) {
+      copyWord();
+    } else {
+      if (char === '{') {
+        depth += 1;
+      } else if (char === '}') {
+        depth -= 1;
+      }
+      copyTo(at + 1);
+      if (!/\s/.test(char)) {
+        regexAllowed = char !== ')' && char !== ']';
+      }
+    }
+  }
+  return out;
 }

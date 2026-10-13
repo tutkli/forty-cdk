@@ -1,4 +1,4 @@
-import { computed, DestroyRef, Directive, inject } from '@angular/core';
+import { computed, DestroyRef, Directive, ElementRef, inject } from '@angular/core';
 import type { ValidationError } from '@angular/forms/signals';
 
 import { injectFieldContext } from './field-context';
@@ -15,7 +15,8 @@ function extractMessage(error: ValidationError.WithOptionalFieldTree): string {
  * itself so the control gains `aria-errormessage` (and the id is folded into
  * `aria-describedby`) while invalid, and **reads the control's Signal Forms
  * validation errors automatically** — the consumer renders `messages()` (or
- * the raw `errors()`) without any manual plumbing.
+ * the raw `errors()`) without any manual plumbing. A consumer-set static `id`
+ * is kept and becomes the field's `errorId`.
  *
  * Carries `role="alert"`. Gate its mount on the field's `invalid()` (exposed via
  * the `[forField]` export, or the bound Signal Forms field) — a template
@@ -59,7 +60,9 @@ export class ForFieldError {
   readonly shown = computed(() => this.ctx.invalid() && this.hasErrors());
 
   constructor() {
-    const unregister = this.ctx.registerError();
+    const unregister = this.ctx.registerError(
+      inject<ElementRef<HTMLElement>>(ElementRef).nativeElement,
+    );
     inject(DestroyRef).onDestroy(unregister);
   }
 }

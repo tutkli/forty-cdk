@@ -1,13 +1,18 @@
 /**
  * Shared contract suite for the consumer-set **static attribute** a directive
- * must never clobber with its own host binding. One contract over the four
- * channels the library adopts on, because all four are the same seam family in
+ * must never clobber with its own host binding. One contract over the five
+ * channels the library adopts on, because all five are the same seam family in
  * `forty-cdk/core` and every one of them shipped the identical bug:
  *
  *   - **`id`** ([#659](https://github.com/tutkli/forty-cdk/issues/659)) —
  *     `hostId` / `resolveHostId` / `adoptHostId`. A consumer's `id` is the
  *     anchor for external `aria-labelledby` / `aria-describedby` references,
  *     label `for`, and test hooks, so the generated fallback must not win.
+ *   - **`id` and `for` on a piece that owns no value of its own**
+ *     ([#2217](https://github.com/tutkli/forty-cdk/issues/2217)) —
+ *     `hostStaticAttribute`. A `[forLabel]` / `[forFieldsetLegend]` outside
+ *     its root resolves to `null`, and a `null` binding removes the consumer's
+ *     attribute, so the seam re-emits it.
  *   - **`aria-labelledby`** ([#1454](https://github.com/tutkli/forty-cdk/issues/1454))
  *     — `hostLabelledBy`. **Replace** semantics: a name has one owner.
  *   - **`aria-describedby`** (#1454) — `hostDescribedBy`. **Compose**
@@ -67,9 +72,14 @@
  * The attribute channels a piece adopts a consumer-set static value on.
  *
  * `aria-describedby` is the one that **composes** (consumer ids first, then any
- * library id not already present); the other three **replace**.
+ * library id not already present); the other four **replace**.
  */
-export type StaticAdoptionChannel = 'id' | 'aria-label' | 'aria-labelledby' | 'aria-describedby';
+export type StaticAdoptionChannel =
+  | 'id'
+  | 'for'
+  | 'aria-label'
+  | 'aria-labelledby'
+  | 'aria-describedby';
 
 /**
  * The core seams that implement adoption. A claim names the one its piece
@@ -80,6 +90,7 @@ export type StaticAdoptionSeam =
   | 'hostId'
   | 'resolveHostId'
   | 'adoptHostId'
+  | 'hostStaticAttribute'
   | 'hostAriaLabel'
   | 'hostLabelledBy'
   | 'hostDescribedBy';

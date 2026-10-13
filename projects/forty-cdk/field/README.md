@@ -168,15 +168,15 @@ Root container (`[forField]`). Owns the generated ids and reflects the registere
 
 ### `ForLabel`
 
-Accessible label (`[forLabel]`). Inside a field it adopts the field's `labelId` and wires `aria-labelledby` (and `for` on a native `<label>`); usable standalone.
+Accessible label (`[forLabel]`). Inside a field it adopts the field's `labelId` and wires `aria-labelledby` (and `for` on a native `<label>`). A static `id` you write on it is preserved and becomes the id `aria-labelledby` points at. It is usable standalone, where it keeps your own static `for` and `id`.
 
 ### `ForFieldDescription`
 
-Hint / description (`[forFieldDescription]`). Adopts the field's `descriptionId` and wires `aria-describedby`.
+Hint / description (`[forFieldDescription]`). Adopts the field's `descriptionId` and wires `aria-describedby`. A static `id` you write on it is preserved and becomes the id `aria-describedby` points at.
 
 ### `ForFieldError`
 
-Error region (`[forFieldError]`, `role="alert"`). Reads the control's Signal Forms errors automatically and exposes them as signals.
+Error region (`[forFieldError]`, `role="alert"`). Reads the control's Signal Forms errors automatically and exposes them as signals. A static `id` you write on it is preserved and becomes the id `aria-errormessage` points at.
 
 | Property    | Type                        | Description                                        |
 | ----------- | --------------------------- | -------------------------------------------------- |
@@ -195,14 +195,14 @@ Positioning anchor (`[forFieldAnchor]`). Its host becomes the element the overla
 
 ### `ForFieldControl`
 
-Opt-in marker (`[forFieldControl]`) for a **native** `<input>` / `<textarea>` / `<select>` (forty-cdk controls auto-wire and don't need it). Validation state is consumer-driven. Reflects `aria-invalid` on its own host while `invalid` is true (an ARIA hook, not a styling one).
+Opt-in marker (`[forFieldControl]`) for a **native** `<input>` / `<textarea>` / `<select>` (forty-cdk controls auto-wire and don't need it). Validation state is consumer-driven. Reflects `aria-invalid` on its own host while `invalid` is true (an ARIA hook, not a styling one), and the native `disabled` attribute while its own `disabled` or a surrounding `[forFieldset]`'s is set.
 
-| Property   | Type             | Description                                                                                          |
-| ---------- | ---------------- | ---------------------------------------------------------------------------------------------------- |
-| `invalid`  | `input<boolean>` | Marks the control invalid, which drives the error region and `aria-invalid`.<br>**Default:** `false` |
-| `required` | `input<boolean>` | Marks the control required, which the field reflects as `data-required`.<br>**Default:** `false`     |
-| `disabled` | `input<boolean>` | Marks the control disabled, which the field reflects as `data-disabled`.<br>**Default:** `false`     |
-| `touched`  | `input<boolean>` | Marks the control touched, which the field reflects as `data-touched`.<br>**Default:** `false`       |
+| Property   | Type             | Description                                                                                                                                      |
+| ---------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `invalid`  | `input<boolean>` | Marks the control invalid, which drives the error region and `aria-invalid`.<br>**Default:** `false`                                             |
+| `required` | `input<boolean>` | Marks the control required, which the field reflects as `data-required`.<br>**Default:** `false`                                                 |
+| `disabled` | `input<boolean>` | Marks the control disabled, which the host reflects as the native `disabled` attribute and the field as `data-disabled`.<br>**Default:** `false` |
+| `touched`  | `input<boolean>` | Marks the control touched, which the field reflects as `data-touched`.<br>**Default:** `false`                                                   |
 
 ## Accessibility
 

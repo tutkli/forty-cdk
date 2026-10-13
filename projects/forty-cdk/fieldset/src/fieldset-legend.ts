@@ -1,6 +1,6 @@
-import { computed, DestroyRef, Directive, ElementRef, inject } from '@angular/core';
+import { DestroyRef, Directive, ElementRef, inject } from '@angular/core';
 
-import { FOR_FIELDSET_CONTEXT } from 'forty-cdk/core';
+import { FOR_FIELDSET_CONTEXT, hostStaticAttribute } from 'forty-cdk/core';
 
 /**
  * Accessible group label for a `[forFieldset]`. Inside a fieldset it emits the
@@ -13,7 +13,8 @@ import { FOR_FIELDSET_CONTEXT } from 'forty-cdk/core';
  * resolving and the group's `aria-labelledby` follows it. A `[id]="expr"`
  * property binding is not adopted.
  *
- * Usable standalone outside a fieldset — there it is an inert marker.
+ * Usable standalone outside a fieldset — there it is an inert marker that keeps
+ * the consumer's own static `id`.
  *
  * @example
  * ```html
@@ -33,8 +34,7 @@ import { FOR_FIELDSET_CONTEXT } from 'forty-cdk/core';
 export class ForFieldsetLegend {
   protected readonly ctx = inject(FOR_FIELDSET_CONTEXT, { optional: true });
 
-  /** The legend's id when inside a fieldset, else null. */
-  protected readonly legendId = computed(() => this.ctx?.legendId() ?? null);
+  protected readonly legendId = hostStaticAttribute('id', () => this.ctx?.legendId() ?? null);
 
   constructor() {
     const ctx = this.ctx;
