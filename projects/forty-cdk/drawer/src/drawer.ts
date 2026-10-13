@@ -11,6 +11,7 @@ import {
   model,
   output,
   signal,
+  type Signal,
 } from '@angular/core';
 
 import {
@@ -20,6 +21,7 @@ import {
   FOR_FIELD_CONTEXT,
 } from 'forty-cdk/core';
 import {
+  type DrawerStackHandle,
   ForDrawerStack,
   injectModalShell,
   ModalSurfaceBase,
@@ -321,12 +323,11 @@ export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements
     return this.#host.nativeElement;
   }
 
-  /** Depth of this drawer in the nesting stack (0 root, 1 first child, …). */
-  readonly #depth = signal<number>(0);
-  readonly depthAttr = computed<string>(() => String(this.#depth()));
+  readonly #stackHandle = signal<DrawerStackHandle | null>(null);
+  readonly depthAttr = computed<string>(() => String(this.depth()));
 
   /** Nesting position in the drawer stack: `0` for a root drawer, one more per parent drawer. */
-  readonly depth = this.#depth.asReadonly();
+  readonly depth: Signal<number> = computed(() => this.#stackHandle()?.depth() ?? 0);
 
   /**
    * `true` while at least one descendant `[forDrawer]` is registered with
@@ -390,7 +391,7 @@ export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements
         nestedScaleAmount: this.#defaults.nestedScaleAmount ?? 0.93,
         nestedTranslateYpx: this.#defaults.nestedTranslateYpx ?? 8,
       });
-      this.#depth.set(handle.depth);
+      this.#stackHandle.set(handle);
       this.#stackCleanup = handle.cleanup;
 
       // 2. closeThreshold validation. Throws here so consumers get a clear

@@ -51,6 +51,30 @@ class NestedHost {
   }
 }
 
+@Component({
+  imports: [ForDrawer],
+  template: `
+    @if (open()) {
+      <div forDrawer id="level-0" ariaLabel="Level 0">
+        <button type="button">Level 0</button>
+        @if (open()) {
+          <div forDrawer id="level-1" ariaLabel="Level 1">
+            <button type="button">Level 1</button>
+            @if (open()) {
+              <div forDrawer id="level-2" ariaLabel="Level 2">
+                <button type="button">Level 2</button>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+  `,
+})
+class ThreeLevelHost {
+  readonly open = signal(false);
+}
+
 describe('ForDrawer nested', () => {
   afterEachOverlayCleanup();
 
@@ -177,6 +201,54 @@ describe('ForDrawer nested', () => {
       await flush(r.fixture);
 
       expect(document.activeElement?.id).toBe('open-child');
+    });
+  });
+
+  describe('parent and child mounted in the same pass', () => {
+    it('keeps the child live and inerts the parent', async () => {
+      const r = renderHost(NestedHost);
+      r.instance.parentOpen.set(true);
+      r.instance.childOpen.set(true);
+      await flush(r.fixture);
+
+      const child = document.querySelector<HTMLElement>('#child-drawer')!;
+      const parent = document.querySelector<HTMLElement>('#parent-drawer')!;
+      expect(child.hasAttribute('inert')).toBe(false);
+      expect(child.hasAttribute('aria-hidden')).toBe(false);
+      expect(parent.hasAttribute('inert')).toBe(true);
+    });
+
+    it('moves focus into the child surface', async () => {
+      const r = renderHost(NestedHost);
+      r.instance.parentOpen.set(true);
+      r.instance.childOpen.set(true);
+      await flush(r.fixture);
+
+      expect(document.activeElement?.id).toBe('child-first');
+    });
+
+    it('closes the child first on Escape and keeps the parent open', async () => {
+      const r = renderHost(NestedHost);
+      r.instance.parentOpen.set(true);
+      r.instance.childOpen.set(true);
+      await flush(r.fixture);
+
+      pressKey(document, 'Escape');
+      await flush(r.fixture);
+
+      expect(r.instance.childReasons).toEqual(['escape']);
+      expect(r.instance.parentReasons).toEqual([]);
+      expect(document.querySelector('#parent-drawer')).not.toBeNull();
+    });
+
+    it('gives each of three levels its nesting depth', async () => {
+      const r = renderHost(ThreeLevelHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      expect(document.querySelector('#level-0')!.getAttribute('data-depth')).toBe('0');
+      expect(document.querySelector('#level-1')!.getAttribute('data-depth')).toBe('1');
+      expect(document.querySelector('#level-2')!.getAttribute('data-depth')).toBe('2');
     });
   });
 

@@ -1,4 +1,4 @@
-import { Injectable, type Signal, signal } from '@angular/core';
+import { computed, Injectable, type Signal, signal } from '@angular/core';
 
 import { type ForDrawerSide } from './drawer-side';
 import { fortyError } from 'forty-cdk/core';
@@ -47,13 +47,13 @@ export interface DrawerStackNode {
 
 /**
  * Returned by {@link ForDrawerStack.push}. `depth` is the number of
- * ancestor drawers currently registered above this one (0 for a root
- * drawer, 1 for a single-nested child, …). `cleanup` pops the node;
- * calling it while descendants are still registered throws so consumers
- * surface their own destroy-order bugs instead of silently leaking.
+ * ancestor drawers in the node's `parent` chain (0 for a root drawer, 1 for a
+ * single-nested child, …), recomputed whenever the stack changes. `cleanup`
+ * pops the node; calling it while descendants are still registered throws so
+ * consumers surface their own destroy-order bugs instead of silently leaking.
  */
 export interface DrawerStackHandle {
-  readonly depth: number;
+  readonly depth: Signal<number>;
   cleanup(): void;
 }
 
@@ -72,8 +72,10 @@ export interface DrawerStackHandle {
  * The companion to {@link DismissibleLayerStack} and `InertSiblingsStack`:
  * those keep the focus / dismiss / inert behaviour LIFO-correct, this one
  * keeps the *visual* / *topology* layer LIFO-correct. Both are read-only
- * to consumers — there is no public API for explicit ordering, the LIFO
- * is determined by mount order.
+ * to consumers — there is no public API for explicit ordering. A drawer is
+ * pushed on top unless one of its descendants is already registered, as
+ * when parent and child mount in one render pass, in which case it is
+ * inserted below its first descendant.
  *
  * SSR: `providedIn: 'root'` so state is per Angular bootstrap. The
  * directives that call `push` only do so from `afterNextRender`, which
@@ -96,9 +98,9 @@ export class ForDrawerStack {
   /**
    * Push a drawer onto the stack. Returns a {@link DrawerStackHandle}
    * carrying the computed `depth` and a `cleanup` that pops the same
-   * node. `depth` is derived from the node's `parent` chain at push time:
-   * a root drawer (no `parent`) is depth 0; a child of a depth-N drawer
-   * is depth N+1.
+   * node. `depth` is derived from the node's `parent` chain through the
+   * registered drawers: a root drawer (no `parent`) is depth 0; a child of
+   * a depth-N drawer is depth N+1.
    *
    * `cleanup` is idempotent on a node that's already gone, but throws if
    * the node still has descendants in the stack — the canonical signal
@@ -109,10 +111,14 @@ export class ForDrawerStack {
    * inherit Angular's bottom-up destroy order automatically.
    */
   push(node: DrawerStackNode): DrawerStackHandle {
-    const depth = this.#computeDepth(node);
-    this.#stack.update((s) => [...s, node]);
+    this.#stack.update((s) => {
+      const descendant = s.findIndex((other) => this.#isDescendant(other, node, s));
+      const next = s.slice();
+      next.splice(descendant === -1 ? next.length : descendant, 0, node);
+      return next;
+    });
     return {
-      depth,
+      depth: computed(() => this.#computeDepth(node, this.#stack())),
       cleanup: () => this.#cleanup(node),
     };
   }
@@ -141,11 +147,10 @@ export class ForDrawerStack {
     this.#stack.set(next);
   }
 
-  #computeDepth(node: DrawerStackNode): number {
+  #computeDepth(node: DrawerStackNode, stack: readonly DrawerStackNode[]): number {
     if (node.parent === null) {
       return 0;
     }
-    const stack = this.#stack();
     let depth = 0;
     let cursor: HTMLElement | null = node.parent;
     while (cursor) {

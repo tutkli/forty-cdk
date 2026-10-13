@@ -1,11 +1,10 @@
 /**
  * Attribute that exempts a root-level child from the modal inert pass.
- * Carried by dialog / drawer backdrops (portaled alongside the modal)
- * and stamped by `injectOverlayShell` onto anchored-overlay hosts that were
- * opened from inside the protected root, so the initial sweep and the
- * late-sibling observer skip them instead of inerting them like background
- * siblings. The backdrops host-bind the literal; imperative callers use this
- * exported constant.
+ * Carried by dialog / drawer backdrops (portaled alongside the modal), which
+ * host-bind the literal, and written by `InertSiblingsStack` onto a registered
+ * overlay host while that overlay belongs to the topmost modal, so the initial
+ * sweep and the late-sibling observer skip it instead of inerting it like a
+ * background sibling.
  *
  * Lives in `forty-cdk/core` rather than beside `InertSiblingsStack` in
  * `forty-cdk/core-overlay` because `LiveAnnouncer` stamps the exempt attribute
