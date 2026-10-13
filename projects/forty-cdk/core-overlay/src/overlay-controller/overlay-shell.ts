@@ -6,7 +6,6 @@ import {
   findTabbableEdges,
   isInitialFocusTarget,
   leavesTabSequence,
-  MODAL_PEER_ATTRIBUTE,
   resolveActiveElement,
   resolveEventTarget,
   type VetoableNativeEvent,
@@ -18,6 +17,7 @@ import {
 } from '../dismissible-layer/dismissible-layer';
 import { injectFloating, type FloatingConfig } from '../floating/floating';
 import { InertSiblingsStack } from '../inert-siblings/inert-siblings';
+import { ModalActivationOrder } from '../modal-shell/modal-activation-order';
 import { injectItemAlignedPositioner, type ItemAlignedConfig } from '../floating/item-aligned';
 import { buildOutsideVetoOptions, outsideVetoChannels } from './outside-veto';
 
@@ -209,6 +209,7 @@ export function injectOverlayShell(config: OverlayShellConfig): void {
   const host = inject<ElementRef<HTMLElement>>(ElementRef);
   const el = host.nativeElement;
   const inertStack = inject(InertSiblingsStack);
+  const order = inject(ModalActivationOrder);
 
   // 1. Dismissible layer. Created BEFORE the positioner so its
   //    `DestroyRef.onDestroy` (dismissible.deactivate) registers first and
@@ -244,25 +245,34 @@ export function injectOverlayShell(config: OverlayShellConfig): void {
   //    which pops the just-pushed layer. Either way the stack is left without
   //    a dead topmost entry that would swallow every later Escape /
   //    pointer-down-outside.
+  let destroyed = false;
+  let releasePeer: (() => void) | null = null;
+  inject(DestroyRef).onDestroy(() => {
+    destroyed = true;
+    releasePeer?.();
+    releasePeer = null;
+  });
   afterNextRenderCancellable(() => {
-    // Modal-peer marking (#676). When this overlay is anchored to an element
-    // inside an active modal's protected root — i.e. it was opened from inside
-    // a Dialog / Drawer (a Select in a form, a context menu on dialog content)
-    // — stamp the freshly portaled host so the inert-siblings pass / observer
-    // skips it. Without this the body-level inert sweep swallows forty's own
-    // overlay, leaving it painted (z-index) but `inert` + `aria-hidden`: clicks
-    // fall through to the controls behind it and the surface reads as hidden to
-    // assistive tech (#676). `ownsAnchor` returns false when no modal is active,
-    // so an overlay with no surrounding modal is never pre-marked (a modal
-    // opened later inerts it like any background sibling), and false when the
-    // anchor sits in an inerted background subtree, so a toast / background
-    // overlay stays isolated (#388 semantics). The positioner's portal ran in
-    // an earlier hook of this same render batch, so the host is already in
-    // `body`; the attribute is set before the observer's microtask runs, so the
-    // host is flagged by the time the observer inspects it.
     const anchor = resolveModalAnchor(config);
-    if (anchor && inertStack.ownsAnchor(anchor)) {
-      el.setAttribute(MODAL_PEER_ATTRIBUTE, '');
+    order.after(order.enclosingHeld(anchor), () => {
+      if (!destroyed) {
+        activate(anchor);
+      }
+    });
+  });
+
+  const activate = (anchor: Element | null): void => {
+    // Modal-peer registration (#676). The positioner's portal ran in an
+    // earlier hook of this same render batch, so the host is already in
+    // `body`. Registering it with the anchor lets `InertSiblingsStack` leave it
+    // live while the anchor belongs to the topmost modal — opened from inside a
+    // Dialog / Drawer (a Select in a form, a context menu on dialog content) —
+    // and inert it under any other owner, so a toast / background overlay stays
+    // isolated (#388) and a background modal's overlay is inerted under a
+    // nested modal. The registration lands before the inert observer's
+    // microtask inspects the portaled host.
+    if (anchor !== null) {
+      releasePeer = inertStack.registerPeer(el, [anchor]);
     }
 
     if (layer && dismissCfg) {
@@ -326,7 +336,7 @@ export function injectOverlayShell(config: OverlayShellConfig): void {
         }
       }
     }
-  });
+  };
 
   let tabbedOut = false;
   let closedByOutside = false;

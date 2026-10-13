@@ -28,11 +28,12 @@ interface RootState {
   observer: MutationObserver | null;
 }
 
+type PeerAnchors = readonly Element[] | 'always';
+
 /**
  * Marks every direct child of a **root element** (default `document.body`,
  * or a positioned container when a region-scoped modal passes one)
- * other than the topmost active owner (and any element flagged as a
- * peer-of-owner via the `data-for-modal-peer` attribute) as `inert` and
+ * other than the topmost active owner (and any peer of that owner) as `inert` and
  * `aria-hidden="true"` while at least one owner is active on that root.
  * Restores each touched element to its exact prior state once the last
  * owner deactivates.
@@ -51,8 +52,12 @@ interface RootState {
  * enclosing app shell interactive. That walk climbs the composed tree, so an owner rendered inside
  * a shadow root still resolves to the root-level child hosting it.
  *
- * **Peers.** Elements carrying `data-for-modal-peer` are excluded from the snapshot, as are those
- * carrying {@link MODAL_EXEMPT_ATTRIBUTE}, which additionally opts out of the dismissible layer.
+ * **Peers.** An overlay registered through {@link InertSiblingsStack.registerPeer} is excluded from
+ * the snapshot only while it belongs to the topmost owner of the root it sits in, so the peer of a
+ * background modal is inerted again under a nested one. The stack reflects that state as
+ * `data-for-modal-peer` on the registered host. An element carrying the attribute without being
+ * registered (a backdrop) is excluded under every owner, as is one carrying
+ * {@link MODAL_EXEMPT_ATTRIBUTE}, which additionally opts out of the dismissible layer.
  *
  * **Late siblings.** While any owner is active, a `MutationObserver` inerts each newly added
  * sibling under the same rules, so an element portaled to the root after activation is isolated and
@@ -67,6 +72,7 @@ export class InertSiblingsStack {
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
   readonly #roots = new Map<HTMLElement, RootState>();
+  readonly #peers = new Map<HTMLElement, PeerAnchors>();
 
   /**
    * Push `owner` onto the inert-siblings stack for `root` (default
@@ -94,6 +100,7 @@ export class InertSiblingsStack {
     }
     state.stack.push(owner);
     this.#applyForCurrentTopmost(state);
+    this.#syncPeerAttributes();
 
     let active = true;
     return {
@@ -117,6 +124,7 @@ export class InertSiblingsStack {
           this.#stopObserving(state);
           this.#roots.delete(root);
         }
+        this.#syncPeerAttributes();
       },
     };
   }
@@ -125,29 +133,42 @@ export class InertSiblingsStack {
    * Whether an overlay anchored to `anchor` should be left interactive over
    * the active modal — i.e. treated as a peer of the topmost owner instead of
    * inerted. Returns `true` only while at least one owner is active AND
-   * `anchor` lives inside the current protected root for any active root,
-   * which means the overlay was opened from within a modal (e.g. a Select /
-   * DropdownMenu opened from a form inside a Dialog).
+   * `anchor` lives inside the current protected root for any active root, or
+   * inside a registered peer that does, which means the overlay was opened
+   * from within a modal (e.g. a Select / DropdownMenu opened from a form inside
+   * a Dialog, or a submenu opened from that DropdownMenu).
    *
    * Returns `false` when no owner is active — so an overlay opened with no
    * modal present is never pre-marked, and a modal opened later inerts it like
    * any other background sibling — and when `anchor` sits in an already-inerted
    * background subtree (a toast or a tooltip anchored to a backdrop element).
-   *
-   * `injectOverlayShell` calls this when an anchored-overlay host is portaled,
-   * to decide whether to stamp `MODAL_PEER_ATTRIBUTE` on it so the
-   * inert-siblings observer skips forty's own overlays instead of swallowing
-   * them. SSR-safe: on the server the roots map is always empty (no
-   * owner activates), so this returns `false`.
+   * SSR-safe: on the server the roots map is always empty (no owner
+   * activates), so this returns `false`.
    */
   ownsAnchor(anchor: Element): boolean {
     for (const state of this.#roots.values()) {
       const protectedRoot = this.#currentProtectedRoot(state);
-      if (protectedRoot !== null && composedContains(protectedRoot, anchor)) {
+      if (protectedRoot !== null && this.#owns(protectedRoot, [anchor], new Set())) {
         return true;
       }
     }
     return false;
+  }
+
+  registerPeer(host: HTMLElement, anchors: PeerAnchors): () => void {
+    if (!this.#isBrowser) {
+      return () => {};
+    }
+    this.#peers.set(host, anchors);
+    this.#reapplyAll();
+    return () => {
+      if (this.#peers.get(host) !== anchors) {
+        return;
+      }
+      this.#peers.delete(host);
+      host.removeAttribute(MODAL_PEER_ATTRIBUTE);
+      this.#reapplyAll();
+    };
   }
 
   #stateFor(root: HTMLElement): RootState {
@@ -174,10 +195,15 @@ export class InertSiblingsStack {
     if (!(child instanceof HTMLElement)) {
       return;
     }
-    if (child === protectedRoot) {
+    if (child === protectedRoot || child.hasAttribute(MODAL_EXEMPT_ATTRIBUTE)) {
       return;
     }
-    if (child.hasAttribute(MODAL_PEER_ATTRIBUTE) || child.hasAttribute(MODAL_EXEMPT_ATTRIBUTE)) {
+    const anchors = this.#peers.get(child);
+    const exempt =
+      anchors === undefined
+        ? child.hasAttribute(MODAL_PEER_ATTRIBUTE)
+        : anchors === 'always' || this.#owns(protectedRoot, anchors, new Set());
+    if (exempt) {
       return;
     }
     if (state.appliedSnapshot.some((entry) => entry.el === child)) {
@@ -192,6 +218,55 @@ export class InertSiblingsStack {
 
     child.setAttribute('inert', '');
     child.setAttribute('aria-hidden', 'true');
+  }
+
+  #owns(
+    protectedRoot: HTMLElement,
+    anchors: readonly Element[],
+    visited: Set<HTMLElement>,
+  ): boolean {
+    return anchors.some((anchor) => {
+      if (composedContains(protectedRoot, anchor)) {
+        return true;
+      }
+      for (const [peer, peerAnchors] of this.#peers) {
+        if (peerAnchors === 'always' || visited.has(peer) || !composedContains(peer, anchor)) {
+          continue;
+        }
+        visited.add(peer);
+        if (this.#owns(protectedRoot, peerAnchors, visited)) {
+          return true;
+        }
+      }
+      return false;
+    });
+  }
+
+  #reapplyAll(): void {
+    for (const state of this.#roots.values()) {
+      this.#revertAppliedSnapshot(state);
+      this.#applyForCurrentTopmost(state);
+    }
+    this.#syncPeerAttributes();
+  }
+
+  #syncPeerAttributes(): void {
+    for (const [peer, anchors] of this.#peers) {
+      peer.toggleAttribute(MODAL_PEER_ATTRIBUTE, this.#isLivePeer(peer, anchors));
+    }
+  }
+
+  #isLivePeer(peer: HTMLElement, anchors: PeerAnchors): boolean {
+    if (anchors === 'always') {
+      return true;
+    }
+    for (const state of this.#roots.values()) {
+      const protectedRoot = this.#currentProtectedRoot(state);
+      if (protectedRoot !== null && this.#owns(protectedRoot, anchors, new Set())) {
+        return true;
+      }
+    }
+    return false;
   }
 
   #currentProtectedRoot(state: RootState): HTMLElement | null {
@@ -212,12 +287,17 @@ export class InertSiblingsStack {
       if (!protectedRoot) {
         return;
       }
+      let addedPeer = false;
       for (const record of records) {
         for (const node of Array.from(record.addedNodes)) {
           if (node instanceof HTMLElement && node.parentElement === state.root) {
+            addedPeer ||= this.#peers.has(node);
             this.#inertChild(node, protectedRoot, state);
           }
         }
+      }
+      if (addedPeer) {
+        this.#syncPeerAttributes();
       }
     });
     state.observer.observe(state.root, { childList: true });

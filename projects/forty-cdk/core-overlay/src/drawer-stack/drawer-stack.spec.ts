@@ -70,7 +70,7 @@ describe('ForDrawerStack', () => {
     const handle = stack.push(nodeOf({ host: root, parent: null }));
     await flush(fixture);
 
-    expect(handle.depth).toBe(0);
+    expect(handle.depth()).toBe(0);
     expect(stack.stack()).toHaveLength(1);
     expect(stack.stack()[0]?.host).toBe(root);
   });
@@ -85,9 +85,9 @@ describe('ForDrawerStack', () => {
     const childHandle = stack.push(nodeOf({ host: child, parent: root }));
     const grandchildHandle = stack.push(nodeOf({ host: grandchild, parent: child }));
 
-    expect(rootHandle.depth).toBe(0);
-    expect(childHandle.depth).toBe(1);
-    expect(grandchildHandle.depth).toBe(2);
+    expect(rootHandle.depth()).toBe(0);
+    expect(childHandle.depth()).toBe(1);
+    expect(grandchildHandle.depth()).toBe(2);
   });
 
   it('cleanup pops in LIFO order and updates the signal', async () => {

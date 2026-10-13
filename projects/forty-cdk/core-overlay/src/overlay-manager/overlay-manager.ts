@@ -14,12 +14,8 @@ import {
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 
-import {
-  composedClosest,
-  IdGenerator,
-  MODAL_PEER_ATTRIBUTE,
-  resolveActiveElement,
-} from 'forty-cdk/core';
+import { composedClosest, IdGenerator, resolveActiveElement } from 'forty-cdk/core';
+import { InertSiblingsStack } from '../inert-siblings/inert-siblings';
 import type { OverlayRef } from './overlay-ref';
 
 /**
@@ -142,6 +138,7 @@ export class OverlayManagerCore<TEntry extends OverlayManagerEntry> {
   readonly #envInjector = inject(EnvironmentInjector);
   readonly #document = inject(DOCUMENT);
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
+  readonly #inertStack = inject(InertSiblingsStack);
   protected readonly idGen = inject(IdGenerator);
 
   readonly #entries = signal<readonly TEntry[]>([]);
@@ -386,9 +383,12 @@ export class OverlayManagerCore<TEntry extends OverlayManagerEntry> {
     if (this.#isBrowser) {
       const outletHost = outletRef.location.nativeElement as HTMLElement;
       outletHost.style.display = 'contents';
-      outletHost.setAttribute(MODAL_PEER_ATTRIBUTE, '');
+      const releasePeer = this.#inertStack.registerPeer(outletHost, 'always');
       this.#document.body.appendChild(outletHost);
-      outletRef.onDestroy(() => outletHost.remove());
+      outletRef.onDestroy(() => {
+        releasePeer();
+        outletHost.remove();
+      });
     }
     outletRef.instance.init({
       entries: this.#entries.asReadonly(),

@@ -2,6 +2,8 @@ import { DestroyRef, DOCUMENT, ElementRef, inject, type Signal } from '@angular/
 
 import {
   afterNextRenderCancellable,
+  composedContains,
+  composedParentElement,
   createVetoableEvent,
   createVetoableNativeEvent,
   findFirstFocusable,
@@ -17,6 +19,7 @@ import { BodyScrollLock } from '../body-scroll-lock/body-scroll-lock';
 import { injectDismissibleLayer } from '../dismissible-layer/dismissible-layer';
 import { type InertSiblingsHandle, InertSiblingsStack } from '../inert-siblings/inert-siblings';
 import { buildOutsideVetoOptions, outsideVetoChannels } from '../overlay-controller/outside-veto';
+import { ModalActivationOrder } from './modal-activation-order';
 
 /**
  * Dismissal wiring for a modal surface.
@@ -202,7 +205,16 @@ export function injectModalShell(config: ModalShellConfig): ModalShellHandle {
   //    passed to `trap.activate()`, the trap's own shadow-aware capture never
   //    runs for a modal surface; this is the one that has to resolve.
   const active = resolveActiveElement(document);
-  const returnFocusTarget: HTMLElement | null = active instanceof HTMLElement ? active : null;
+  let returnFocusTarget: HTMLElement | null = active instanceof HTMLElement ? active : null;
+
+  const order = inject(ModalActivationOrder);
+  order.hold(host.nativeElement);
+  let origin: Element | null = null;
+  let enclosing: HTMLElement | null = null;
+  afterNextRenderCancellable(() => {
+    origin = composedParentElement(host.nativeElement);
+    enclosing = order.enclosingHeld(origin);
+  });
 
   // 2. Portal — moves the host to `document.body` after first render and
   //    cleans up on destroy. `DestroyRef.onDestroy` callbacks fire in
@@ -237,7 +249,19 @@ export function injectModalShell(config: ModalShellConfig): ModalShellHandle {
   //    synchronous-teardown path the callback flushes just before the destroy
   //    hook, so it sets `activatedAsModal = true` and the destroy hook below
   //    tears the side-effect stack back down. Either way nothing leaks.
-  afterNextRenderCancellable(() => {
+  let destroyed = false;
+  let releasePeer: (() => void) | null = null;
+  const activate = (deferred: boolean): void => {
+    if (deferred) {
+      const current = resolveActiveElement(document);
+      if (
+        current instanceof HTMLElement &&
+        enclosing !== null &&
+        composedContains(enclosing, current)
+      ) {
+        returnFocusTarget = current;
+      }
+    }
     const isModal = config.modal();
     activatedAsModal = isModal;
 
@@ -323,24 +347,40 @@ export function injectModalShell(config: ModalShellConfig): ModalShellHandle {
         });
       }
       scrollLock.lock(containerEl ?? undefined);
-    } else if (!skipInitialFocus) {
+    } else {
       // 3e. Non-modal mode. No trap, no scroll lock, no inert. Still respect
       //     the configured initial focus: the primitive's `move()` algorithm
       //     (falling back to the first focusable on a miss), the first
       //     focusable descendant ('first'), or the host ('container').
-      const el = focusTrap.container;
-      if (moveCfg) {
-        if (!moveCfg.move()) {
+      releasePeer = inertStack.registerPeer(
+        host.nativeElement,
+        [origin, returnFocusTarget].filter((anchor): anchor is Element => anchor !== null),
+      );
+      if (!skipInitialFocus) {
+        const el = focusTrap.container;
+        if (moveCfg) {
+          if (!moveCfg.move()) {
+            (findFirstFocusable(el) ?? el).focus();
+          }
+        } else if (markedTarget) {
+          markedTarget.focus();
+        } else if (literalFocus === 'container') {
+          el.focus();
+        } else {
           (findFirstFocusable(el) ?? el).focus();
         }
-      } else if (markedTarget) {
-        markedTarget.focus();
-      } else if (literalFocus === 'container') {
-        el.focus();
-      } else {
-        (findFirstFocusable(el) ?? el).focus();
       }
     }
+  };
+  afterNextRenderCancellable(() => {
+    let synchronous = true;
+    order.after(enclosing, () => {
+      if (!destroyed) {
+        activate(!synchronous);
+      }
+      order.release(host.nativeElement);
+    });
+    synchronous = false;
   });
 
   // 4. Destroy. Hooks fire in registration order; the portal's destroy hook
@@ -348,6 +388,10 @@ export function injectModalShell(config: ModalShellConfig): ModalShellHandle {
   //    ours, removing the element from the DOM first. We tear down the
   //    side-effect stack here in the inverse order it was activated.
   inject(DestroyRef).onDestroy(() => {
+    destroyed = true;
+    order.release(host.nativeElement);
+    releasePeer?.();
+    releasePeer = null;
     dismissible.deactivate();
     // Invoke `(autoFocusOnClose)` synchronously, BEFORE either the modal or
     // non-modal teardown runs. Fires on every close path regardless of mode
