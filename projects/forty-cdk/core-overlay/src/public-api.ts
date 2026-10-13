@@ -152,9 +152,12 @@ export {
   attachPointerGrace,
   buildSubmenuGracePolygon,
   type Point,
+  type PointerGraceOptions,
   resolveGraceSide,
 } from './pointer-grace/pointer-grace';
 export {
   ScrollDismissDispatcher,
+  type ScrollDismissOptions,
+  type ScrollDismissRegistration,
   type ScrollDismissScope,
 } from './scroll-dismiss/scroll-dismiss-dispatcher';

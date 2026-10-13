@@ -1,3 +1,5 @@
+import { isNonTouchPointer } from 'forty-cdk/core';
+
 import {
   attachPointerGrace,
   buildSubmenuGracePolygon,
@@ -200,12 +202,40 @@ describe('attachPointerGrace', () => {
     }
   });
 
-  it('ignores non-mouse pointer moves', () => {
+  it('ignores touch and pen moves by default', () => {
     let exits = 0;
     const cleanup = attachPointerGrace(document, polygon, () => exits++);
     try {
       dispatchMove(300, 300, 'touch');
+      dispatchMove(300, 300, 'pen');
       expect(exits).toBe(0);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it('tracks the moves the tracksPointer option accepts', () => {
+    let exits = 0;
+    const cleanup = attachPointerGrace(document, polygon, () => exits++, {
+      tracksPointer: isNonTouchPointer,
+    });
+    try {
+      dispatchMove(300, 300, 'touch');
+      expect(exits).toBe(0);
+      dispatchMove(300, 300, 'pen');
+      expect(exits).toBe(1);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it('fires onExit on every outside move until disarmed', () => {
+    let exits = 0;
+    const cleanup = attachPointerGrace(document, polygon, () => exits++);
+    try {
+      dispatchMove(300, 300);
+      dispatchMove(310, 310);
+      expect(exits).toBe(2);
     } finally {
       cleanup();
     }

@@ -531,6 +531,27 @@ describe('ForHoverCard', () => {
       expect(fixture.componentInstance.isOpen()).toBe(true);
     });
 
+    it('closes once a pen leaves the trigger away from the card', async () => {
+      const { fixture, query, flush } = renderHost(HoverCardHost);
+      await flush();
+      const trigger = query<HTMLAnchorElement>('a')!;
+
+      trigger.dispatchEvent(new PointerEvent('pointerenter', { pointerType: 'pen' }));
+      await flush();
+      trigger.dispatchEvent(
+        new PointerEvent('pointerleave', { pointerType: 'pen', clientX: 0, clientY: 0 }),
+      );
+      await flush();
+      expect(fixture.componentInstance.isOpen()).toBe(true);
+
+      document.dispatchEvent(
+        new PointerEvent('pointermove', { pointerType: 'pen', clientX: 9999, clientY: 9999 }),
+      );
+      await flush();
+
+      expect(fixture.componentInstance.isOpen()).toBe(false);
+    });
+
     it('does not open on a touch-induced focus (a tap focuses the trigger)', async () => {
       const { fixture, query, flush } = renderHost(HoverCardHost);
       await flush();
@@ -1310,6 +1331,49 @@ describe('ForHoverCard', () => {
       await flush();
 
       expect(fixture.componentInstance.isOpen()).toBe(true);
+    });
+
+    it('keeps the card open when the pointer returns to the trigger after scrolling inside the card', async () => {
+      const { fixture, query, flush } = renderHost(HoverCardHost);
+      fixture.componentInstance.closeDelay.set(300);
+      await flush();
+      const trigger = query<HTMLAnchorElement>('a')!;
+
+      trigger.dispatchEvent(pointerEvent('pointerenter'));
+      await flush();
+      vi.advanceTimersByTime(0);
+      await flush();
+      const content = document.body.querySelector<HTMLElement>('[forHoverCardContent]')!;
+      const bio = document.createElement('div');
+      content.appendChild(bio);
+
+      trigger.dispatchEvent(pointerEvent('pointerleave'));
+      content.dispatchEvent(pointerEvent('pointerenter'));
+      bio.dispatchEvent(new Event('scroll'));
+      content.dispatchEvent(pointerEvent('pointerleave'));
+      trigger.dispatchEvent(pointerEvent('pointerenter'));
+      vi.advanceTimersByTime(301);
+      await flush();
+
+      expect(fixture.componentInstance.isOpen()).toBe(true);
+    });
+
+    it('opens on hover while a container that does not hold the trigger scrolls', async () => {
+      const { fixture, query, flush } = renderHost(HoverCardHost);
+      await flush();
+      const log = document.createElement('div');
+      document.body.appendChild(log);
+      try {
+        log.dispatchEvent(new Event('scroll'));
+        query<HTMLAnchorElement>('a')!.dispatchEvent(pointerEvent('pointerenter'));
+        await flush();
+        vi.advanceTimersByTime(0);
+        await flush();
+
+        expect(fixture.componentInstance.isOpen()).toBe(true);
+      } finally {
+        log.remove();
+      }
     });
 
     it('ignores a scroll of a container that does not hold the trigger', async () => {

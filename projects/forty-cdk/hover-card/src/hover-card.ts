@@ -13,6 +13,7 @@ import {
 import {
   emitVetoableNativeEvent,
   injectPrefersReducedMotion,
+  isNonTouchPointer,
   type VetoableNativeEvent,
 } from 'forty-cdk/core';
 import {
@@ -25,6 +26,7 @@ import {
   type Point,
   resolveGraceSide,
   ScrollDismissDispatcher,
+  type ScrollDismissRegistration,
 } from 'forty-cdk/core-overlay';
 import {
   FOR_HOVER_CARD_CONTEXT,
@@ -133,7 +135,6 @@ export class ForHoverCard extends AnchoredOverlayPositioningBase implements ForH
   readonly content = this.#contentEl.asReadonly();
 
   readonly #coordinator = inject(HoverCardCoordinator);
-  readonly #scrollDismissDispatcher = inject(ScrollDismissDispatcher);
   readonly #hoverIntent: HoverIntentScheduler;
 
   #triggerHovered = false;
@@ -142,7 +143,7 @@ export class ForHoverCard extends AnchoredOverlayPositioningBase implements ForH
   #contentFocused = false;
   #returningFocus = false;
   #detachGrace: (() => void) | null = null;
-  #unregisterScrollDismiss: () => void = () => {};
+  readonly #scrollDismiss: ScrollDismissRegistration;
 
   constructor() {
     super();
@@ -160,14 +161,15 @@ export class ForHoverCard extends AnchoredOverlayPositioningBase implements ForH
       coordinator: this.#coordinator,
     });
 
-    this.#unregisterScrollDismiss = this.#scrollDismissDispatcher.register(
-      () => this.#dismissOnScroll(),
-      { anchor: this.#triggerEl, surface: this.#contentEl },
-    );
+    this.#scrollDismiss = inject(ScrollDismissDispatcher).register({
+      dismiss: () => this.#dismissOnScroll(),
+      scope: { anchor: this.#triggerEl, surface: this.#contentEl },
+      active: () => this.open() || this.#hoverIntent.isPending(),
+    });
 
     inject(DestroyRef).onDestroy(() => {
       this.cancelPending();
-      this.#unregisterScrollDismiss();
+      this.#scrollDismiss.unregister();
     });
   }
 
@@ -305,9 +307,13 @@ export class ForHoverCard extends AnchoredOverlayPositioningBase implements ForH
     }
   }
 
-  /** True while an ancestor scroll has opened the suppression window (hover opens are no-ops). */
+  /**
+   * True while the card is closed and a scroll of a container holding its
+   * trigger is within the suppression window. An open card is never gated, so
+   * returning to its trigger still cancels a pending close.
+   */
   #scrollSuppressed(): boolean {
-    return this.#scrollDismissDispatcher.isSuppressed();
+    return !this.open() && this.#scrollDismiss.isSuppressed();
   }
 
   /**
@@ -333,8 +339,8 @@ export class ForHoverCard extends AnchoredOverlayPositioningBase implements ForH
    * focus (e.g. a design-system wrapper opening the card from an external
    * event). Schedules the show after the resolved `openDelay` (instant when the
    * delay is `0` or the scope's skip-delay window is active) and applies the
-   * same gates as a hover open: a no-op while `disabled`, and a no-op while an
-   * ancestor is scrolling (the scroll-dismiss suppression window). For an
+   * same gates as a hover open: a no-op while `disabled`, and a no-op for a
+   * short window after a scroll of a container holding the trigger. For an
    * instant, unconditional open that bypasses the delay and every gate, write
    * the `[(open)]` model directly (`open.set(true)`).
    */
@@ -376,10 +382,15 @@ export class ForHoverCard extends AnchoredOverlayPositioningBase implements ForH
     const side = trigger ? resolveGraceSide(trigger.getBoundingClientRect(), rect) : this.side();
     const polygon = buildSubmenuGracePolygon(cursor, rect, side);
     this.#disarmContentGrace();
-    this.#detachGrace = attachPointerGrace(content.ownerDocument, polygon, () => {
-      this.#disarmContentGrace();
-      this.#scheduleCloseIfInactive();
-    });
+    this.#detachGrace = attachPointerGrace(
+      content.ownerDocument,
+      polygon,
+      () => {
+        this.#disarmContentGrace();
+        this.#scheduleCloseIfInactive();
+      },
+      { tracksPointer: isNonTouchPointer },
+    );
   }
 
   #disarmContentGrace(): void {
