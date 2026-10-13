@@ -41,13 +41,11 @@ import {
  * that opened it and emits nothing when a right-click region did.
  *
  * Both `id` and `aria-labelledby` are emitted truthy-only: a surface the
- * context has not associated with a trigger yet — only reachable under
- * `[forMenubar]`, where one surface may be mounted unconditionally while no
- * menu is open — carries neither attribute rather than an invalid `id=""` and
- * an `aria-labelledby` pointing at nothing. That same menubar shape is why the
- * dev-mode mounted-while-closed warning is gated on
- * `ForMenuContext.allowsUnconditionalMount`: under every other root mount
- * equals open, so a surface still mounted while closed is a missing `@if`.
+ * context has not associated with a trigger yet carries neither attribute
+ * rather than an invalid `id=""` and an `aria-labelledby` pointing at nothing.
+ * Under every root mount equals open, so a surface still mounted while closed
+ * is a missing `@if` and reports through the dev-mode mounted-while-closed
+ * warning.
  *
  * Navigation is vertical-only (Up / Down between items, per the APG Menu
  * pattern), so the surface reflects `aria-orientation="vertical"` explicitly.
@@ -93,19 +91,26 @@ export class ForMenuContent {
       (el) => this.ctx.unregisterContent(el),
     );
 
-    if (!this.ctx.allowsUnconditionalMount) {
-      // Report the selector the consumer actually wrote: the two aliases sit on
-      // different roots (`[forMenuSub]` owns its own open state), so a submenu
-      // reported as `[forMenuContent]` with `@if (menu.open())` names a piece
-      // and a condition that are nowhere in their template.
-      const isSub = this.#host.nativeElement.hasAttribute('forMenuSubContent');
-      warnIfMountedWhileClosed({
-        primitive: 'menu',
-        piece: isSub ? '[forMenuSubContent]' : '[forMenuContent]',
-        condition: isSub ? 'sub.open()' : 'menu.open()',
-        open: this.ctx.open,
-      });
-    }
+    // Report the selector the consumer actually wrote and the root that owns
+    // its open state: a submenu reported as `[forMenuContent]` with
+    // `@if (menu.open())`, or a menubar surface told to test a `menu` it does
+    // not have, names a piece and a condition that are nowhere in their template.
+    const isSub = this.#host.nativeElement.hasAttribute('forMenuSubContent');
+    warnIfMountedWhileClosed(
+      this.ctx.menubar
+        ? {
+            primitive: 'menubar',
+            piece: '[forMenuContent]',
+            condition: "open() === '<trigger value>'",
+            open: this.ctx.open,
+          }
+        : {
+            primitive: 'menu',
+            piece: isSub ? '[forMenuSubContent]' : '[forMenuContent]',
+            condition: isSub ? 'sub.open()' : 'menu.open()',
+            open: this.ctx.open,
+          },
+    );
 
     injectOverlayShell({
       positioner: {

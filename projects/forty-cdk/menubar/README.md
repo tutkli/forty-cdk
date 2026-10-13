@@ -101,19 +101,22 @@ export class MenubarDefaultExample {
 
 The same menubar laid out as a vertical sidebar (`orientation='vertical'` makes `Up` / `Down` move between triggers) with `dir='rtl'`. RTL swaps the cross-menu arrow keys and floats each menu out of the opposite edge. The directive resolves the writing direction and positioning for you.
 
-## Mount shapes
+## Mounting the menus
 
-The bar provides **one** multiplexed `ForMenuContext`, so a `[forMenuContent]` does not have to be repeated per trigger. Three shapes are supported, and all three preserve a consumer-set static `id` on the surface:
+Wrap each trigger's `[forMenuContent]` in its own `@if` on the bar's value:
 
-| Shape                       | Markup                                                    | When to reach for it                                                                                                                                                                    |
-| --------------------------- | --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **One `@if` per trigger**   | `@if (open() === 'file') { <div forMenuContent>…</div> }` | The canonical shape. Each menu owns its items, and `animate.enter` / `animate.leave` fire per menu on every switch.                                                                     |
-| **One shared `@if`**        | `@if (open() !== null) { <div forMenuContent>…</div> }`   | One surface for the whole bar, with the consumer swapping the items. Cheaper to author; the surface is _not_ remounted on a switch, so per-menu enter / leave animations do not replay. |
-| **Unconditionally mounted** | `<div forMenuContent>…</div>`                             | The surface stays in the DOM for the bar's whole lifetime. Nothing mounts or unmounts, so no mount-cycle animation runs at all.                                                         |
+```html
+<div forMenubar [(value)]="open">
+  <button forMenubarTrigger value="file">File</button>
+  @if (open() === 'file') {
+  <div forMenuContent>…</div>
+  }
+</div>
+```
 
-For the two shared shapes the surface belongs to no single trigger, so a static `id` on it stays put across a menu switch and every trigger's `aria-controls` resolves to it. A surface with no static `id` gets a generated one that follows the active trigger. In every shape the accessible name (`aria-labelledby` / `aria-label`) tracks whichever trigger's menu is currently open.
+The surface's mount is its open state. Focus moves to the first item when the menu mounts and back to the trigger when it is destroyed, Escape and outside presses reach it only while it exists, and `animate.enter` / `animate.leave` fire per menu on every switch. A surface left mounted while no menu is open, or shared by every trigger through one `@if (open() !== null)`, outlives the open state and gets none of that right, so neither is supported. In dev mode a `[forMenuContent]` still mounted after its first render while the bar is closed logs `FORCDK-CORE-006`.
 
-Only a plain `id="…"` **attribute** is preserved. A `[id]="expr"` property binding evaluates after the directive is constructed, so it is invisible to the adoption and fights the surface's own `[id]` binding.
+A consumer-set static `id` on the surface is adopted by its trigger, so `aria-controls` resolves to it. Only a plain `id="…"` **attribute** is preserved. A `[id]="expr"` property binding evaluates after the directive is constructed, so it is invisible to the adoption and fights the surface's own `[id]` binding.
 
 ## API
 
@@ -214,7 +217,7 @@ forty-cdk ships no styles: put your own class on each piece and key your CSS off
 - **Hover-leave does _not_ dismiss.** Moving the pointer off the bar (or off the open menu) leaves the menu open. The [APG Menubar pattern](https://www.w3.org/WAI/ARIA/apg/patterns/menubar/) prescribes no hover-leave close, and a menubar menu always holds focus while open. Dismissing it because the mouse wandered would rip focus out from under a keyboard user and strand it on `<body>`. Dismiss with Escape, an outside pointer interaction, Tab, or by activating an item.
 - **Dismissal.** Escape and an outside pointer interaction close the open menu when `dismissible` is `true` (default). `[dismissible]="false"` suppresses both.
 - **Roving tabindex.** Only one trigger is in the tab sequence at a time: the open trigger, the most-recently-focused trigger, or the first enabled one when nothing's focused.
-- **Mount equals open.** In the canonical shape each menu's `[forMenuContent]` is wrapped in `@if (value() === '<id>')`, so `animate.enter` / `animate.leave` fire on mount / unmount. The directive never toggles `[hidden]`. A surface kept mounted (see [Mount shapes](#mount-shapes)) runs no mount-cycle animation.
+- **Mount equals open.** Each menu's `[forMenuContent]` is wrapped in `@if (open() === '<value>')`, so `animate.enter` / `animate.leave` fire on mount / unmount. The directive never toggles `[hidden]`. See [Mounting the menus](#mounting-the-menus).
 - **Disabled triggers stay focusable** (per APG). They still reflect `data-disabled=""` and `aria-disabled="true"` and are skipped by ArrowLeft / ArrowRight, typeahead, and cross-menu nav.
 
 ## Wrapping in a design system

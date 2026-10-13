@@ -32,8 +32,8 @@ import { LIBRARY_CODE } from '../test-utils/source-scan';
 /**
  * A trigger-anchored root declares `autoFocusOnClose` as an `output()`, and the
  * shell consults it from a `DestroyRef.onDestroy` hook. When the surface lives
- * in the **same view** as its root — an unconditionally mounted `[forMenuContent]`,
- * a surface the consumer left outside the `@if` — the root's `OutputEmitterRef`
+ * in the **same view** as its root — a surface the consumer left outside the
+ * `@if` — the root's `OutputEmitterRef`
  * is torn down first, so the emit is dropped: `defaultPrevented` stays `false`,
  * the shell reads the consumer's silence as consent, and focuses a trigger that
  * is being removed with it ([#1961](https://github.com/tutkli/forty-cdk/issues/1961)).

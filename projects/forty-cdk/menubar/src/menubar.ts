@@ -62,6 +62,10 @@ import { FOR_MENUBAR_DEFAULTS } from 'forty-cdk/defaults';
  * </div>
  * ```
  *
+ * Each trigger's `[forMenuContent]` sits in its own `@if`, because the surface's
+ * mount is its open state: focus enters the menu when it mounts and returns to
+ * the trigger when it is destroyed.
+ *
  * `[forMenuContent]` is the same directive used by `[forDropdownMenu]` /
  * `[forContextMenu]`. The bar provides a multiplexed `ForMenuContext`
  * whose anchor / placement / ids are pulled from whichever trigger is
@@ -210,10 +214,11 @@ export class ForMenubar implements ForMenubarContext {
    * only ever opened through `[(value)]`.
    *
    * `linkedSignal` computes lazily, so `previous` is only populated when the
-   * signal was read while the source was non-null. It always is: the open
-   * trigger's `aria-controls` host binding reads `contentId()`, which resolves
-   * through {@link lastTrigger}, on the same change-detection pass that opens
-   * the menu. Read it unconditionally in {@link lastTrigger} — a
+   * signal was read while the source was non-null. It always is: the opened
+   * menu's `[forMenuContent]` mounts on the same change-detection pass, and its
+   * `id` / `aria-labelledby` host bindings read the multiplexed context's
+   * `contentId()` / `triggerId()`, both of which resolve through
+   * {@link lastTrigger}. Read it unconditionally in {@link lastTrigger} — a
    * `value() ?? #lastValue()` short-circuit would skip exactly the reads that
    * populate `previous`.
    */
@@ -275,14 +280,6 @@ export class ForMenubar implements ForMenubarContext {
    * covers the parts the single-owner overlay can't.
    */
   readonly menuCtx: MenubarMenuContext = new MenubarMenuContext(this, this.#defaults);
-
-  /**
-   * Consumer-set static `id` of a `[forMenuContent]` shared across triggers —
-   * mounted unconditionally, or held by one `@if (value() !== null)` — surfaced
-   * from {@link MenubarMenuContext.sharedContentId} so each trigger's `contentId`
-   * can prefer it over its own generated seed.
-   */
-  readonly sharedContentId = this.menuCtx.sharedContentId;
 
   // -- ForMenubarContext ----------------------------------------------------
 

@@ -140,16 +140,8 @@ export class ForMenubarTrigger extends AnchoredOverlayPositioningBase {
    * target while open, and the surface's own `id`. Seeded with a generated id;
    * a consumer-set static `id` on the mounted content host is adopted instead
    * (see {@link adoptContentId}).
-   *
-   * A surface shared across triggers has no single owner to adopt into — either
-   * because it registered before any trigger was active (mounted
-   * unconditionally) or because it outlived the trigger it registered under (one
-   * `@if (value() !== null)` around the whole bar). The bar exposes its
-   * consumer-set static `id` as `sharedContentId` and every trigger prefers that
-   * over its own seed, keeping `aria-controls` resolvable to the consumer's id
-   * whichever menu opens.
    */
-  readonly contentId = computed(() => this.menubar.sharedContentId() ?? this.#ownContentId());
+  readonly contentId = this.#ownContentId.asReadonly();
 
   readonly effectiveDisabled = computed(() => this.disabled() || this.menubar.disabled());
 

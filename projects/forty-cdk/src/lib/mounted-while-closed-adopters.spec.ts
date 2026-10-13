@@ -170,14 +170,27 @@ class TimePickerHost {}
 })
 class NavigationMenuHost {}
 
+@Component({
+  imports: [ForMenubar, ForMenubarTrigger, ForMenuContent, ForMenuItem],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `<div forMenubar>
+    <button forMenubarTrigger value="file">File</button>
+    <div forMenuContent>
+      <button forMenuItem>New</button>
+    </div>
+  </div>`,
+})
+class MenubarHost {}
+
 interface Adopter {
   readonly primitive: string;
   readonly piece: string;
   /**
    * The `@if` expression the report quotes back. Asserted per adopter because
    * a report that names the piece but not a copy-pasteable fix is half a
-   * diagnostic — and the two adopters whose fix is not a plain `open()` (the
-   * navigation menu's per-value compare, the submenu alias below) are exactly
+   * diagnostic — and the adopters whose fix is not a plain `open()` (the
+   * navigation menu's and the menubar's per-value compares, the submenu alias
+   * below) are exactly
    * the ones a shared assertion on the prefix alone would miss.
    */
   readonly condition: string;
@@ -209,6 +222,12 @@ const ADOPTERS: readonly Adopter[] = [
     piece: '[forMenuContent]',
     condition: 'menu.open()',
     host: DropdownMenuHost,
+  },
+  {
+    primitive: 'menubar',
+    piece: '[forMenuContent]',
+    condition: "open() === '<trigger value>'",
+    host: MenubarHost,
   },
   {
     primitive: 'tooltip',
@@ -328,20 +347,6 @@ describe('mounted-while-closed warning adopters (#1591)', () => {
     }
 
     @Component({
-      imports: [ForMenubar, ForMenubarTrigger, ForMenuContent, ForMenuItem],
-      changeDetection: ChangeDetectionStrategy.OnPush,
-      template: `<div forMenubar [(value)]="value">
-        <button forMenubarTrigger value="file">File</button>
-        <div forMenuContent>
-          <button forMenuItem>New</button>
-        </div>
-      </div>`,
-    })
-    class UnconditionalMenubarHost {
-      readonly value = signal<string | null>(null);
-    }
-
-    @Component({
       imports: [ForTabs, ForTabsList, ForTabsTrigger, ForTabsContent],
       changeDetection: ChangeDetectionStrategy.OnPush,
       template: `<div forTabs [(value)]="value">
@@ -394,13 +399,6 @@ describe('mounted-while-closed warning adopters (#1591)', () => {
       await flush(fixture);
 
       expect(document.body.querySelector('[forPopoverContent]')).not.toBeNull();
-      expect(mountWarnings()).toEqual([]);
-    });
-
-    it('an unconditionally mounted [forMenuContent] under [forMenubar] never reports', async () => {
-      const fixture = mount(UnconditionalMenubarHost);
-      await flush(fixture);
-
       expect(mountWarnings()).toEqual([]);
     });
 

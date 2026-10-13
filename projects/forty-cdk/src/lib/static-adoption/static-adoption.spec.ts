@@ -13,7 +13,6 @@ import { ForDisclosure, ForDisclosureTrigger } from 'forty-cdk/disclosure';
 import { ForDropdownMenu, ForDropdownMenuTrigger } from 'forty-cdk/dropdown-menu';
 import { ForListbox } from 'forty-cdk/listbox';
 import { ForMenuContent, ForMenuItem } from 'forty-cdk/menu';
-import { ForMenubar, ForMenubarTrigger } from 'forty-cdk/menubar';
 import {
   ForNavigationMenu,
   ForNavigationMenuContent,
@@ -244,65 +243,6 @@ describe('consumer-set static attribute adoption', () => {
       await ctx.flush();
       expect(ctx.query('[forDatePickerContent]')!.getAttribute('aria-labelledby')).toBeNull();
       expect(ctx.query('[forTimePickerContent]')!.getAttribute('aria-labelledby')).toBeNull();
-    });
-  });
-
-  describe('a menu content keeps its static id across the openers it serves', () => {
-    it('keeps it while the bar is closed, and pairs on open', async () => {
-      @Component({
-        imports: [ForMenubar, ForMenubarTrigger, ForMenuContent, ForMenuItem],
-        changeDetection: ChangeDetectionStrategy.OnPush,
-        template: `<div forMenubar [(value)]="value">
-          <button forMenubarTrigger value="file">File</button>
-          <div forMenuContent id="probe-content">
-            <button forMenuItem>New</button>
-          </div>
-        </div>`,
-      })
-      class AlwaysMountedHost {
-        readonly value = signal<string | null>(null);
-      }
-
-      const ctx = mount(AlwaysMountedHost);
-      await ctx.flush();
-      expect(ctx.query('[forMenuContent]')!.id).toBe('probe-content');
-
-      ctx.instance.value.set('file');
-      await ctx.flush();
-
-      expect(ctx.query('[forMenuContent]')!.id).toBe('probe-content');
-      expect(ctx.query('[forMenubarTrigger]')!.getAttribute('aria-controls')).toBe('probe-content');
-    });
-
-    it('keeps it across a switch between two openers', async () => {
-      @Component({
-        imports: [ForMenubar, ForMenubarTrigger, ForMenuContent, ForMenuItem],
-        changeDetection: ChangeDetectionStrategy.OnPush,
-        template: `<div forMenubar [(value)]="value">
-          <button forMenubarTrigger value="file">File</button>
-          <button forMenubarTrigger value="edit">Edit</button>
-          @if (value() !== null) {
-            <div forMenuContent id="probe-content">
-              <button forMenuItem>New</button>
-            </div>
-          }
-        </div>`,
-      })
-      class SharedContentHost {
-        readonly value = signal<string | null>('file');
-      }
-
-      const ctx = mount(SharedContentHost);
-      await ctx.flush();
-      expect(ctx.query('[forMenuContent]')!.id).toBe('probe-content');
-
-      ctx.instance.value.set('edit');
-      await ctx.flush();
-
-      expect(ctx.query('[forMenuContent]')!.id).toBe('probe-content');
-      expect(ctx.query('[forMenubarTrigger][value="edit"]')!.getAttribute('aria-controls')).toBe(
-        'probe-content',
-      );
     });
   });
 
