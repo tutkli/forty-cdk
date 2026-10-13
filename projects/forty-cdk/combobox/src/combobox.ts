@@ -14,7 +14,7 @@ import type { FormValueControl } from '@angular/forms/signals';
 
 import {
   Collection,
-  createPointerSuppression,
+  createPointerHighlight,
   defaultItemToFormValue,
   injectFieldAnchor,
   injectHiddenInput,
@@ -24,7 +24,6 @@ import {
   LabelCache,
   type LabelCacheEntry,
   nextEnabledHandle,
-  type PointerSuppression,
   singleSelected,
   toggleInArray,
   type VetoableEvent,
@@ -449,7 +448,17 @@ export class ForCombobox<T = string>
 
   #lastPositionedId: string | null = null;
 
-  readonly #pointerSuppression: PointerSuppression = createPointerSuppression();
+  readonly #pointer = createPointerHighlight({
+    items: () => this.#items.items(),
+    activeDescendant: {
+      active: () => true,
+      claim: (id) => {
+        if (!this.isActive(id)) {
+          this.setActiveId(id);
+        }
+      },
+    },
+  });
 
   /**
    * Bounded option-label cache, shared with `[forSelect]` through
@@ -770,8 +779,8 @@ export class ForCombobox<T = string>
     return this.#activeId() === id;
   }
 
-  private isPointerSuppressed(): boolean {
-    return this.#pointerSuppression.isSuppressed();
+  private highlightFromPointer(host: HTMLElement, id: string): void {
+    this.#pointer.claim(host, id);
   }
 
   activate(handle: ForComboboxOptionHandle<T>): void {
@@ -922,7 +931,7 @@ export class ForCombobox<T = string>
   }
 
   #scrollActiveIntoView(host: HTMLElement): void {
-    this.#pointerSuppression.suppress();
+    this.#pointer.suppress();
     host.scrollIntoView?.({ block: 'nearest' });
   }
 

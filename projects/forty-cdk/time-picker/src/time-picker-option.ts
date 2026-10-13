@@ -8,7 +8,13 @@ import {
   signal,
 } from '@angular/core';
 
-import { hostId, preventPointerFocus, registerHandle, resolveListNavigation } from 'forty-cdk/core';
+import {
+  hostId,
+  injectPointerMove,
+  preventPointerFocus,
+  registerHandle,
+  resolveListNavigation,
+} from 'forty-cdk/core';
 import { injectTimePickerContext } from './time-picker-context';
 
 /**
@@ -51,7 +57,6 @@ import { injectTimePickerContext } from './time-picker-context';
     '(keydown)': 'onKeyDown($event)',
     '(focus)': 'onFocus()',
     '(blur)': 'onBlur()',
-    '(pointermove)': 'onPointerMove()',
   },
 })
 export class ForTimePickerOption<D = unknown> {
@@ -102,6 +107,7 @@ export class ForTimePickerOption<D = unknown> {
       (h) => this.#ctx.overlay.unregisterOption(h),
     );
     preventPointerFocus(() => this.effectiveDisabled());
+    injectPointerMove(() => this.onPointerMove());
   }
 
   protected onClick(): void {
@@ -125,7 +131,7 @@ export class ForTimePickerOption<D = unknown> {
     if (this.effectiveDisabled()) {
       return;
     }
-    this.#ctx.highlightFromPointer(this.#host.nativeElement);
+    this.#ctx.highlightFromPointer(this.#host.nativeElement, this.id());
   }
 
   protected onKeyDown(event: KeyboardEvent): void {

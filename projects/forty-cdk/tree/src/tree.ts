@@ -15,6 +15,7 @@ import {
 
 import {
   Collection,
+  createPointerHighlight,
   createVetoableNativeEvent,
   firstEnabledHost,
   isInArray,
@@ -96,6 +97,7 @@ type VisibleEntry<T> = ForTreeVisibleNode<T>;
     '[attr.tabindex]': 'hostTabindex()',
     '(keydown)': 'onHostKeyDown($event)',
     '(focusin)': 'onHostFocusIn()',
+    '(pointerleave)': 'onPointerLeave()',
   },
   providers: [
     { provide: FOR_TREE_CONTEXT, useExisting: ForTree },
@@ -348,6 +350,14 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
 
   readonly #activeId = signal<string | null>(null);
 
+  readonly #pointer = createPointerHighlight({
+    items: () => this.#visibleHandles(),
+    activeDescendant: {
+      active: () => this.#virtualized(),
+      claim: (id) => this.#setActiveId(id),
+    },
+  });
+
   readonly #resume = new VirtualizedResume<T, TreePositionEntry<T>>({
     totalCount: this.totalCount,
     snapshotByPos: () => this.#requireActiveDescendantModel().snapshotByPos(),
@@ -401,8 +411,14 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
       totalCount: this.totalCount,
       visibleRange: this.visibleRange,
       getActiveId: () => this.#activeId(),
-      setActiveId: (id) => this.#setActiveId(id),
-      emitScrollToIndex: (idx) => this.scrollToIndex.emit(idx),
+      setActiveId: (id) => {
+        this.#pointer.suppress();
+        this.#setActiveId(id);
+      },
+      emitScrollToIndex: (idx) => {
+        this.#pointer.suppress();
+        this.scrollToIndex.emit(idx);
+      },
       resume: this.#resume,
       dataVersion: this.dataVersion,
       typeahead: this.#typeahead,
@@ -446,6 +462,7 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
           this.#anchorValue.set(value);
         }
       },
+      beforeKeyboardMove: () => this.#pointer.suppress(),
     }));
   }
 
@@ -660,6 +677,27 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
     model.resumeActive();
     if (this.#activationVetoed(cur.value, event) || !cur.selectable) return;
     this.select(cur.value);
+  }
+
+  private highlightFromPointer(host: HTMLElement, id: string): void {
+    this.#pointer.claim(host, id);
+  }
+
+  private isItemHighlighted(host: HTMLElement): boolean {
+    const pointed = this.#pointer.pointed();
+    if (pointed !== null) {
+      return pointed === host;
+    }
+    return this.roving.active() === host;
+  }
+
+  private notifyItemFocus(host: HTMLElement): void {
+    this.#pointer.release();
+    this.roving.setActive(host);
+  }
+
+  protected onPointerLeave(): void {
+    this.#pointer.release();
   }
 
   private activateItem(item: ForTreeItemContext<T>, event: MouseEvent | KeyboardEvent): void {

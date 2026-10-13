@@ -9,7 +9,12 @@ import {
   signal,
 } from '@angular/core';
 
-import { type ForTableCellHandle, isImeComposing, registerHandle } from 'forty-cdk/core';
+import {
+  type ForTableCellHandle,
+  injectPointerMove,
+  isImeComposing,
+  registerHandle,
+} from 'forty-cdk/core';
 import {
   coerceSticky,
   hostHasDraggable,
@@ -177,6 +182,13 @@ export class ForTableHeaderCell {
       (h) => this.#registration.registerHeaderCell(h),
       (h) => this.#registration.unregisterHeaderCell(h),
     );
+    injectPointerMove(() => this.#onPointerMove());
+  }
+
+  #onPointerMove(): void {
+    if (this.#participates()) {
+      this.ctx.highlightFromPointer(this.#host);
+    }
   }
 
   protected onFocus(): void {

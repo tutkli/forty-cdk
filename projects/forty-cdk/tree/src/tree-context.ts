@@ -200,6 +200,9 @@ export interface TreePieceContext<T = unknown> {
    * node or one whose `[value]` binding is not written yet.
    */
   activateItem(item: ForTreeItemContext<T>, event: MouseEvent | KeyboardEvent): void;
+  highlightFromPointer(host: HTMLElement, id: string): void;
+  isItemHighlighted(host: HTMLElement): boolean;
+  notifyItemFocus(host: HTMLElement): void;
 }
 
 /** What the tree's pieces resolve `FOR_TREE_CONTEXT` as. */

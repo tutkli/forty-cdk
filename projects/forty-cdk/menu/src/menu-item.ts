@@ -31,7 +31,6 @@ import { createMenuItemInteraction } from './menu-item-interaction';
     '(keydown)': 'onKeyDown($event)',
     '(focus)': 'interaction.onFocus()',
     '(blur)': 'interaction.onBlur()',
-    '(pointermove)': 'interaction.onPointerMove($event)',
   },
 })
 export class ForMenuItem {

@@ -3,6 +3,7 @@ import { booleanAttribute, computed, Directive, ElementRef, inject, input } from
 import {
   fortyError,
   hostButtonType,
+  injectPointerMove,
   isHoverCapablePointer,
   registerHandle,
   resolveListNavigation,
@@ -68,7 +69,6 @@ import { handleMenuTabOut } from './menu-tab-out';
     '(keydown)': 'onKeyDown($event)',
     '(pointerenter)': 'onPointerEnter($event)',
     '(pointerleave)': 'onPointerLeave($event)',
-    '(pointermove)': 'onPointerMove($event)',
   },
 })
 export class ForMenuSubTrigger {
@@ -93,6 +93,7 @@ export class ForMenuSubTrigger {
         fix: 'Nest the [forMenuSub] inside a [forDropdownMenu], [forContextMenu], or another [forMenuSub].',
       });
     }
+    injectPointerMove((event) => this.onPointerMove(event));
     const parent = this.submenu.parentMenu;
     const handle = {
       host: this.#host.nativeElement,

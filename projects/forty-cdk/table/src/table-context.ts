@@ -148,6 +148,7 @@ export interface TablePieceContext {
   isCellHighlighted(host: HTMLElement): boolean;
   /** Promotes a data cell to the active roving cell (called on the cell's `(focus)`). */
   activateCell(host: HTMLElement): void;
+  highlightFromPointer(host: HTMLElement): void;
   /**
    * Resolves and applies a keydown originating on a grid cell: cell entry, the row keys,
    * and 2D move + focus. A data cell passes its `column`, which makes an `Enter` with no

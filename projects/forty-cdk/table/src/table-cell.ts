@@ -8,7 +8,7 @@ import {
   input,
 } from '@angular/core';
 
-import { type ForTableCellHandle, registerHandle } from 'forty-cdk/core';
+import { type ForTableCellHandle, injectPointerMove, registerHandle } from 'forty-cdk/core';
 import {
   coerceSticky,
   injectTableContext,
@@ -103,6 +103,13 @@ export class ForTableCell {
       (h) => this.#rowRegistration.registerCell(h),
       (h) => this.#rowRegistration.unregisterCell(h),
     );
+    injectPointerMove(() => this.#onPointerMove());
+  }
+
+  #onPointerMove(): void {
+    if (!this.disabled()) {
+      this.ctx.highlightFromPointer(this.#host);
+    }
   }
 
   protected onFocus(): void {

@@ -2034,6 +2034,97 @@ describe('ForTable', () => {
     });
   });
 
+  describe('grid pointer highlight (#2264)', () => {
+    const hover = (target: HTMLElement) =>
+      target.dispatchEvent(new PointerEvent('pointermove', { bubbles: true }));
+    const highlighted = (el: HTMLElement): HTMLElement[] =>
+      Array.from(el.querySelectorAll<HTMLElement>('[data-highlighted]'));
+
+    it('hands data-highlighted to the hovered cell without moving focus or the tab stop', async () => {
+      const { el, flush } = renderHost(GridTableHost);
+      const allCells = cells(el);
+      allCells[0]!.focus();
+      await flush();
+
+      hover(allCells[4]!);
+      await flush();
+      expect(highlighted(el)).toEqual([allCells[4]]);
+      expect(document.activeElement).toBe(allCells[0]);
+      expect(allCells[0]!.getAttribute('tabindex')).toBe('0');
+      expect(allCells[4]!.getAttribute('tabindex')).toBe('-1');
+    });
+
+    it('hands it to a participating header cell too', async () => {
+      const { el, flush } = renderHost(GridWithHeaderHost);
+      const header = el.querySelector<HTMLElement>('[forTableHeaderCell]')!;
+      cells(el)[0]!.focus();
+      await flush();
+
+      hover(header);
+      await flush();
+      expect(highlighted(el)).toEqual([header]);
+    });
+
+    it('ignores a hover over a disabled cell', async () => {
+      const { el, instance, flush } = renderHost(GridTableHost);
+      instance.disabledRow.set(1);
+      instance.disabledCol.set('b');
+      await flush();
+      const allCells = cells(el);
+      allCells[0]!.focus();
+      await flush();
+
+      hover(allCells[4]!);
+      await flush();
+      expect(highlighted(el)).toEqual([allCells[0]]);
+    });
+
+    it('hands the highlight back to the keyboard on the next arrow move', async () => {
+      const { el, flush } = renderHost(GridTableHost);
+      const allCells = cells(el);
+      allCells[0]!.focus();
+      hover(allCells[8]!);
+      await flush();
+      expect(highlighted(el)).toEqual([allCells[8]]);
+
+      pressKey(allCells[0]!, 'ArrowRight');
+      await flush();
+      expect(document.activeElement).toBe(allCells[1]);
+      expect(highlighted(el)).toEqual([allCells[1]]);
+    });
+
+    it('ignores a hover arriving inside the window a keyboard move opens', async () => {
+      const { el, flush } = renderHost(GridTableHost);
+      const allCells = cells(el);
+      allCells[0]!.focus();
+      await flush();
+
+      pressKey(allCells[0]!, 'ArrowDown');
+      hover(allCells[8]!);
+      await flush();
+      expect(highlighted(el)).toEqual([allCells[3]]);
+    });
+
+    it('releases the claim when the pointer leaves the grid', async () => {
+      const { el, flush } = renderHost(GridTableHost);
+      const allCells = cells(el);
+      allCells[0]!.focus();
+      hover(allCells[8]!);
+      await flush();
+
+      rootEl(el).dispatchEvent(new PointerEvent('pointerleave'));
+      await flush();
+      expect(highlighted(el)).toEqual([allCells[0]]);
+    });
+
+    it('stays off in table mode', async () => {
+      const { el, flush } = renderHost(TableHost);
+      hover(cellEl(el));
+      await flush();
+      expect(highlighted(el)).toEqual([]);
+    });
+  });
+
   describe('grid header-row participation (aria numbering + composite tab stop)', () => {
     const headerCells = (el: HTMLElement) =>
       Array.from(el.querySelectorAll<HTMLElement>('[forTableHeaderCell]'));

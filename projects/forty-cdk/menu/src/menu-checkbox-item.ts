@@ -58,7 +58,6 @@ export const FOR_MENU_CHECKBOX_ITEM = new InjectionToken<ForMenuCheckboxItem>(
     '(keydown)': 'onKeyDown($event)',
     '(focus)': 'interaction.onFocus()',
     '(blur)': 'interaction.onBlur()',
-    '(pointermove)': 'interaction.onPointerMove($event)',
   },
 })
 export class ForMenuCheckboxItem {

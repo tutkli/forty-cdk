@@ -17,6 +17,7 @@ import {
   isUnset,
   registerHandle,
   hostId,
+  injectPointerMove,
   preventPointerFocus,
   resolveListNavigation,
   unsetInput,
@@ -88,7 +89,6 @@ export const FOR_SELECT_OPTION = new InjectionToken<ForSelectOption>('FOR_SELECT
     '(focus)': 'onFocus()',
     '(blur)': 'onBlur()',
     '(pointerdown)': 'onPointerDown($event)',
-    '(pointermove)': 'onPointerMove()',
   },
 })
 export class ForSelectOption<T = string> {
@@ -186,6 +186,7 @@ export class ForSelectOption<T = string> {
       (h) => this.#ctx.overlay.unregisterOption(h),
     );
     preventPointerFocus(() => this.effectiveDisabled());
+    injectPointerMove(() => this.onPointerMove());
   }
 
   protected onClick(): void {

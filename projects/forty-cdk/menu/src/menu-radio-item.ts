@@ -56,7 +56,6 @@ export const FOR_MENU_RADIO_ITEM = new InjectionToken<ForMenuRadioItem>('FOR_MEN
     '(keydown)': 'onKeyDown($event)',
     '(focus)': 'interaction.onFocus()',
     '(blur)': 'interaction.onBlur()',
-    '(pointermove)': 'interaction.onPointerMove($event)',
   },
 })
 export class ForMenuRadioItem {

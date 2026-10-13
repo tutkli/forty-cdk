@@ -8,14 +8,13 @@ import {
   model,
   numberAttribute,
   output,
-  signal,
 } from '@angular/core';
 import type { FormValueControl } from '@angular/forms/signals';
 
 import {
   type AdoptedField,
   assertTimeCapable,
-  createPointerSuppression,
+  createPointerHighlight,
   createSingleSlot,
   FOR_TIME_FIELD_HOST,
   fortyError,
@@ -269,9 +268,7 @@ export class ForTimePicker<D>
    */
   readonly autoFocusOnClose = output<VetoableEvent>();
 
-  readonly #pointerSuppression = createPointerSuppression();
-
-  readonly #pointerHost = signal<HTMLElement | null>(null);
+  readonly #pointer = createPointerHighlight({ items: () => this.#controller.options() });
 
   /**
    * Shared overlay-listbox state machine: option collection, trigger / anchor /
@@ -313,7 +310,7 @@ export class ForTimePicker<D>
     escapeReason: 'escape',
     programmaticReason: 'programmatic',
     markTouched: () => this.markTouched(),
-    onNavigateFocus: () => this.#pointerSuppression.suppress(),
+    onNavigateFocus: () => this.#pointer.suppress(),
   });
 
   /**
@@ -327,14 +324,7 @@ export class ForTimePicker<D>
    */
   readonly overlay: ForTimePickerOverlayContext = this.#controller;
 
-  private readonly pointerHighlightedOption = computed<HTMLElement | null>(() => {
-    const host = this.#pointerHost();
-    if (host === null) {
-      return null;
-    }
-    const handle = this.#controller.options().find((option) => option.host === host);
-    return handle && !handle.disabled() ? host : null;
-  });
+  private readonly pointerHighlightedOption = this.#pointer.pointed;
 
   readonly #sentinel = computed(() => timeSentinel(this.adapter));
 
@@ -497,26 +487,23 @@ export class ForTimePicker<D>
       return this.#sameTimeOfDay(v, current);
     });
     if (opt) {
-      this.#pointerSuppression.suppress();
+      this.#pointer.suppress();
       opt.host.focus();
       return true;
     }
     return false;
   }
 
-  private highlightFromPointer(host: HTMLElement): void {
-    if (this.#pointerSuppression.isSuppressed()) {
-      return;
-    }
-    this.#pointerHost.set(host);
+  private highlightFromPointer(host: HTMLElement, id: string): void {
+    this.#pointer.claim(host, id);
   }
 
   private notifyOptionFocus(): void {
-    this.#pointerHost.set(null);
+    this.#pointer.release();
   }
 
   private releasePointerHighlight(): void {
-    this.#pointerHost.set(null);
+    this.#pointer.release();
   }
 
   commitOnTab(value: D): void {
