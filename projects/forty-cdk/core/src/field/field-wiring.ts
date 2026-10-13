@@ -137,7 +137,8 @@ export interface ForFieldContext {
   /** Remove a previously registered control. */
   unregisterControl(handle: FieldControlHandle): void;
   /**
-   * Register a label's host element; returns an unregister callback. The field
+   * Register a label's host element; returns an unregister callback. A static
+   * `id` on the host is adopted as the `labelId`. The field
    * exposes a single `labelId` (not an id list), so one `[forLabel]` per field
    * is the supported shape. Registrations are **counted** (not a boolean) so
    * unmounting one of several accidental duplicates never drops the association
@@ -145,10 +146,10 @@ export interface ForFieldContext {
    * warning.
    */
   registerLabel(element: HTMLElement): () => void;
-  /** Register a description slot; returns an unregister callback. Counted, single `[forFieldDescription]` per field — see {@link registerLabel}. */
-  registerDescription(): () => void;
-  /** Register an error slot; returns an unregister callback. Counted, single `[forFieldError]` per field — see {@link registerLabel}. */
-  registerError(): () => void;
+  /** Register a description's host element; returns an unregister callback. A static `id` on the host is adopted as the `descriptionId`. Counted, single `[forFieldDescription]` per field — see {@link registerLabel}. */
+  registerDescription(element: HTMLElement): () => void;
+  /** Register an error region's host element; returns an unregister callback. A static `id` on the host is adopted as the `errorId`. Counted, single `[forFieldError]` per field — see {@link registerLabel}. */
+  registerError(element: HTMLElement): () => void;
   /**
    * Forward a click to the registered control, then move focus into it — the
    * same outcome a native `<label for>` produces through the browser's

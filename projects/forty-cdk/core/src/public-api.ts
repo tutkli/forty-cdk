@@ -199,6 +199,7 @@ export { resolveConfigClass } from './host-attributes/config-class';
 export { reflectDisabled } from './host-attributes/disabled-reflection';
 export { hostAriaLabel, hostDescribedBy, hostLabelledBy } from './host-attributes/host-aria';
 export { adoptHostId, hostId, resolveHostId } from './host-attributes/host-id';
+export { hostStaticAttribute } from './host-attributes/host-static-attribute';
 export { hostButtonType } from './host-attributes/host-type';
 export { MODAL_EXEMPT_ATTRIBUTE, MODAL_PEER_ATTRIBUTE } from './host-attributes/modal-attributes';
 export { FOR_ID_SALT, IdGenerator, provideForIdSalt } from './id-generator/id-generator';

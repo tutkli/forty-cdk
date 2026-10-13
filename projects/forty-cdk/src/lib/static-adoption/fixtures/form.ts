@@ -1,6 +1,12 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 
-import { ForField, ForFieldControl } from 'forty-cdk/field';
+import {
+  ForField,
+  ForFieldControl,
+  ForFieldDescription,
+  ForFieldError,
+  ForLabel,
+} from 'forty-cdk/field';
 import { ForFieldset, ForFieldsetLegend } from 'forty-cdk/fieldset';
 import {
   ForNumberInput,
@@ -33,22 +39,56 @@ class FieldsetAdopted {}
 class FieldsetBare {}
 
 @Component({
-  imports: [ForField, ForFieldControl],
+  imports: [ForFieldsetLegend],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `<span forFieldsetLegend id="probe-standalone-legend">Shipping</span>`,
+})
+class StandaloneLegendAdopted {}
+
+@Component({
+  imports: [ForFieldsetLegend],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `<span forFieldsetLegend>Shipping</span>`,
+})
+class StandaloneLegendBare {}
+
+@Component({
+  imports: [ForField, ForFieldControl, ForLabel, ForFieldDescription, ForFieldError],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `<div forField>
-    <input forFieldControl id="probe-control" />
+    <label forLabel id="probe-label">Email</label>
+    <input forFieldControl id="probe-control" invalid />
+    <p forFieldDescription id="probe-description">We never share it.</p>
+    <p forFieldError id="probe-error">Required</p>
   </div>`,
 })
 class FieldAdopted {}
 
 @Component({
-  imports: [ForField, ForFieldControl],
+  imports: [ForField, ForFieldControl, ForLabel, ForFieldDescription, ForFieldError],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `<div forField>
-    <input forFieldControl />
+    <label forLabel>Email</label>
+    <input forFieldControl invalid />
+    <p forFieldDescription>We never share it.</p>
+    <p forFieldError>Required</p>
   </div>`,
 })
 class FieldBare {}
+
+@Component({
+  imports: [ForLabel],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `<label forLabel for="probe-for" id="probe-standalone-label">Email</label>`,
+})
+class StandaloneLabelAdopted {}
+
+@Component({
+  imports: [ForLabel],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `<label forLabel>Email</label>`,
+})
+class StandaloneLabelBare {}
 
 @Component({
   imports: [ForSlider, ForSliderThumb],
@@ -185,6 +225,21 @@ export const FORM_FAMILY_ADOPTERS: readonly StaticAdoptionAdopter[] = [
     ],
   },
   {
+    label: 'FieldsetLegend (standalone)',
+    adopted: StandaloneLegendAdopted,
+    bare: StandaloneLegendBare,
+    claims: [
+      {
+        key: '[forFieldsetLegend]',
+        channel: 'id',
+        source: 'fieldset/src/fieldset-legend.ts',
+        seam: 'hostStaticAttribute',
+        probe: 'probe-standalone-legend',
+        fallback: null,
+      },
+    ],
+  },
+  {
     label: 'Field',
     adopted: FieldAdopted,
     bare: FieldBare,
@@ -196,6 +251,53 @@ export const FORM_FAMILY_ADOPTERS: readonly StaticAdoptionAdopter[] = [
         seam: 'adoptHostId',
         probe: 'probe-control',
         fallback: { generated: 'for-field-control' },
+      },
+      {
+        key: '[forLabel]',
+        channel: 'id',
+        source: 'field/src/field.ts',
+        seam: 'adoptHostId',
+        probe: 'probe-label',
+        fallback: { generated: 'for-field-label' },
+      },
+      {
+        key: '[forFieldDescription]',
+        channel: 'id',
+        source: 'field/src/field.ts',
+        seam: 'adoptHostId',
+        probe: 'probe-description',
+        fallback: { generated: 'for-field-description' },
+      },
+      {
+        key: '[forFieldError]',
+        channel: 'id',
+        source: 'field/src/field.ts',
+        seam: 'adoptHostId',
+        probe: 'probe-error',
+        fallback: { generated: 'for-field-error' },
+      },
+    ],
+  },
+  {
+    label: 'Label (standalone)',
+    adopted: StandaloneLabelAdopted,
+    bare: StandaloneLabelBare,
+    claims: [
+      {
+        key: '[forLabel]',
+        channel: 'id',
+        source: 'field/src/label.ts',
+        seam: 'hostStaticAttribute',
+        probe: 'probe-standalone-label',
+        fallback: null,
+      },
+      {
+        key: '[forLabel]',
+        channel: 'for',
+        source: 'field/src/label.ts',
+        seam: 'hostStaticAttribute',
+        probe: 'probe-for',
+        fallback: null,
       },
     ],
   },

@@ -396,13 +396,23 @@ describe('ForFieldset', () => {
   describe('standalone legend (no fieldset)', () => {
     @Component({
       imports: [ForFieldsetLegend],
-      template: `<span forFieldsetLegend data-test-id="legend">Loose</span>`,
+      template: `
+        <span forFieldsetLegend data-test-id="legend">Loose</span>
+        <span forFieldsetLegend id="grp" data-test-id="named">Shipping</span>
+      `,
     })
     class Host {}
 
-    it('is an inert marker without a surrounding fieldset', () => {
-      const { el } = renderHost(Host);
+    it('emits no id of its own without a surrounding fieldset', async () => {
+      const { el, flush } = renderHost(Host);
+      await flush();
       expect(q(el, 'legend').hasAttribute('id')).toBe(false);
+    });
+
+    it('keeps the static id it was written with', async () => {
+      const { el, flush } = renderHost(Host);
+      await flush();
+      expect(q(el, 'named').id).toBe('grp');
     });
   });
 

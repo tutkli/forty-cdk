@@ -1,4 +1,4 @@
-import { entryPointOf, LIBRARY_CODE, SPEC_SOURCES } from '../test-utils/source-scan';
+import { entryPointOf, LIBRARY_CODE, SPEC_CODE } from '../test-utils/source-scan';
 
 /**
  * Meta-guard: every piece that pushes a `DismissibleLayer` is covered by an
@@ -235,7 +235,7 @@ function dismissibleInputDeclarations(): Map<string, string[]> {
 /** Spec path → how many times it calls the contract. */
 function contractCalls(): Map<string, number> {
   const calls = new Map<string, number>();
-  for (const [path, source] of SPEC_SOURCES) {
+  for (const [path, source] of SPEC_CODE) {
     const count = (source.match(/assertDismissibleLayerContract\(/g) ?? []).length;
     if (count > 0) {
       calls.set(path, count);

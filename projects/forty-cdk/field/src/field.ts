@@ -199,8 +199,9 @@ export class ForField implements ForFieldContext, ForFieldAnchorContext {
   }
 
   /**
-   * Register a label's host element; returns an unregister callback. The field
-   * targets a single label per slot — its `labelId` / `descriptionId` /
+   * Register a label's host element; returns an unregister callback. A static
+   * `id` on the host is adopted as the `labelId`, so external references to it
+   * keep resolving. The field targets a single label per slot — its `labelId` / `descriptionId` /
    * `errorId` are single ids, not id lists — so one `[forLabel]`,
    * `[forFieldDescription]`, and `[forFieldError]` per field is the supported
    * shape. Registrations are counted (mirroring `ForFieldset`'s legend
@@ -209,6 +210,7 @@ export class ForField implements ForFieldContext, ForFieldAnchorContext {
    * dev-mode warning.
    */
   registerLabel(element: HTMLElement): () => void {
+    adoptHostId(element, this.labelId);
     this.#labels.update((labels) => [...labels, element]);
     return () => this.#labels.update((labels) => labels.filter((l) => l !== element));
   }
@@ -230,14 +232,16 @@ export class ForField implements ForFieldContext, ForFieldAnchorContext {
     this.#anchorSlot.unregister(el);
   }
 
-  /** Register the description slot; returns an unregister callback. See {@link registerLabel} for the counted single-instance-per-slot contract. */
-  registerDescription(): () => void {
+  /** Register the description's host element; returns an unregister callback. See {@link registerLabel} for the id adoption and the counted single-instance-per-slot contract. */
+  registerDescription(element: HTMLElement): () => void {
+    adoptHostId(element, this.descriptionId);
     this.#descriptionCount.update((n) => n + 1);
     return () => this.#descriptionCount.update((n) => n - 1);
   }
 
-  /** Register the error slot; returns an unregister callback. See {@link registerLabel} for the counted single-instance-per-slot contract. */
-  registerError(): () => void {
+  /** Register the error region's host element; returns an unregister callback. See {@link registerLabel} for the id adoption and the counted single-instance-per-slot contract. */
+  registerError(element: HTMLElement): () => void {
+    adoptHostId(element, this.errorId);
     this.#errorCount.update((n) => n + 1);
     return () => this.#errorCount.update((n) => n - 1);
   }

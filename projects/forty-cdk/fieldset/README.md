@@ -36,7 +36,7 @@ The `disabled` input:
 
 - reflects `data-disabled` on the group host,
 - emits the native `disabled` attribute on a `<fieldset>` (or `aria-disabled="true"` on any other element),
-- and propagates to every descendant form control (`forSwitch`, `forCheckbox`, `forSelect`, `forSlider`, …) via context: each control ORs the group's disabled into its own effective disabled, so it becomes genuinely **inert** (interaction ignored, excluded from native form submission) and exposes `aria-disabled="true"` / `data-disabled`. This reaches custom-role controls that a native `<fieldset disabled>` cannot. It also reaches `[forButton]`, which is not a form value but composes the same group disabled state (activation suppressed, `aria-disabled` / `data-disabled` reflected), and `[forFileUpload]`, whose zone stops accepting drops and whose trigger and input are disabled. A control outside any fieldset is unaffected.
+- and propagates to every descendant form control (`forSwitch`, `forCheckbox`, `forSelect`, `forSlider`, …) via context: each control ORs the group's disabled into its own effective disabled, so it becomes genuinely **inert** (interaction ignored, excluded from native form submission) and exposes `aria-disabled="true"` / `data-disabled`. This reaches custom-role controls that a native `<fieldset disabled>` cannot. It also reaches `[forButton]`, which is not a form value but composes the same group disabled state (activation suppressed, `aria-disabled` / `data-disabled` reflected), `[forFileUpload]`, whose zone stops accepting drops and whose trigger and input are disabled, and a native control marked with `[forFieldControl]`, which gets the `disabled` attribute. A control outside any fieldset is unaffected.
 
 Nesting composes like native fieldsets: a disabled outer `[forFieldset]` keeps every control inside disabled even under an inner, enabled `[forFieldset]`. The inner group cannot re-enable what the outer disabled.
 
@@ -98,7 +98,7 @@ On non-fieldset markup `forFieldset` synthesizes the grouping: it emits `role="g
 
 ### `ForFieldsetLegend`
 
-Group label. Emits the fieldset's `legendId` so `aria-labelledby` resolves; usable standalone outside a fieldset as an inert marker. Reflects no `data-*` attributes: it carries only the `id` that the group's `aria-labelledby` resolves to.
+Group label. Emits the fieldset's `legendId` so `aria-labelledby` resolves; usable standalone outside a fieldset as an inert marker that keeps your own static `id`. Reflects no `data-*` attributes: it carries only the `id` that the group's `aria-labelledby` resolves to.
 
 A static `id` you write on the legend is **preserved**, not clobbered, and the group's `aria-labelledby` follows it. An external `aria-labelledby` / `aria-describedby` reference or a `<label for>` pointing at your own id therefore keeps resolving:
 

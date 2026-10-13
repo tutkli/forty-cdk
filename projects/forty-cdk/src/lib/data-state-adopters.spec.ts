@@ -1,5 +1,5 @@
 import { DOCUMENTED_DATA_STATE_VOCABULARIES } from '../test-utils/contract';
-import { entryPointOf, LIBRARY_SOURCES, SPEC_SOURCES } from '../test-utils/source-scan';
+import { entryPointOf, LIBRARY_SOURCES, SPEC_CODE } from '../test-utils/source-scan';
 
 /**
  * Meta-guard: every entry point whose pieces bind `'[attr.data-state]'` to a
@@ -122,7 +122,7 @@ function literalVocabulariesByEntryPoint(): Map<string, Set<string>> {
 
 function entryPointsAdoptingTheContract(): Set<string> {
   const adopting = new Set<string>();
-  for (const [key, source] of SPEC_SOURCES) {
+  for (const [key, source] of SPEC_CODE) {
     if (source.includes('assertDataStateContract(')) {
       adopting.add(entryPointOf(key));
     }

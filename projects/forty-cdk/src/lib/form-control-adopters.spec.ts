@@ -1,9 +1,4 @@
-import {
-  entryPointOf,
-  LIBRARY_SOURCES,
-  SPEC_SOURCES,
-  stripComments,
-} from '../test-utils/source-scan';
+import { entryPointOf, LIBRARY_SOURCES, SPEC_CODE } from '../test-utils/source-scan';
 
 /**
  * Meta-guard: every concrete `FormValueControl` / `FormCheckboxControl`
@@ -59,8 +54,8 @@ function concreteImplementors(): Map<string, string[]> {
 
 function contractCallsPerEntryPoint(): Map<string, number> {
   const calls = new Map<string, number>();
-  for (const [key, source] of SPEC_SOURCES) {
-    const found = stripComments(source).match(/\bassertFormControlContract\(/g)?.length ?? 0;
+  for (const [key, source] of SPEC_CODE) {
+    const found = source.match(/\bassertFormControlContract\(/g)?.length ?? 0;
     if (found > 0) {
       const entryPoint = entryPointOf(key);
       calls.set(entryPoint, (calls.get(entryPoint) ?? 0) + found);
