@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import {
+  afterNextRender,
+  ChangeDetectionStrategy,
+  Component,
+  inject,
+  Injector,
+  signal,
+} from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { ForOtpInput, ForOtpInputSlot, type OtpInputType } from 'forty-cdk/otp-input';
 
@@ -91,12 +98,13 @@ export class OtpInputFixture {
   protected readonly value = signal('');
   protected readonly completeCount = signal(0);
   protected readonly type = this.#typeParam();
+  readonly #injector = inject(Injector);
   readonly #clearOnComplete = this.#route.snapshot.queryParamMap.get('clearOnComplete') === '1';
 
   protected onComplete(): void {
     this.completeCount.set(this.completeCount() + 1);
     if (this.#clearOnComplete) {
-      this.value.set('');
+      afterNextRender(() => this.value.set(''), { injector: this.#injector });
     }
   }
 

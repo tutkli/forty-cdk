@@ -117,7 +117,7 @@ test.describe('OTP input — clearing a rejected code while focused', () => {
     await gotoFixture(page, 'otp-input', { clearOnComplete: '1' });
     const input = await focusOtp(page);
 
-    await page.keyboard.type('123456');
+    await page.keyboard.insertText('123456');
     await expect(el(page, 'complete-count')).toHaveText('1');
     await expect(el(page, 'value')).toHaveText('');
     await expect.poll(() => inputValue(input)).toBe('');
