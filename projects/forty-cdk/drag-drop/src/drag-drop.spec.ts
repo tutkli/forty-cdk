@@ -1644,6 +1644,67 @@ describe('ForDropList + ForDraggable', () => {
     });
   });
 
+  describe('drag preview writing direction', () => {
+    @Component({
+      host: { 'data-fixture': 'rtl-preview-host' },
+      imports: [ForDropList, ForDraggable, ForDragPreview],
+      template: `
+        <section dir="rtl">
+          <ul forDropList>
+            <li forDraggable [dragData]="'a'" data-test-id="1">
+              ألف
+              <ng-template forDragPreview><span>ألف</span></ng-template>
+            </li>
+            <li forDraggable [dragData]="'b'" data-test-id="2">باء</li>
+          </ul>
+        </section>
+      `,
+    })
+    class RtlPreviewHost {}
+
+    function firePointer(
+      target: HTMLElement,
+      type: 'pointerdown' | 'pointermove' | 'pointerup',
+      clientX: number,
+    ): void {
+      target.dispatchEvent(
+        new PointerEvent(type, {
+          bubbles: true,
+          cancelable: true,
+          clientX,
+          clientY: 0,
+          pointerId: 1,
+          button: 0,
+          pointerType: 'mouse',
+        }),
+      );
+    }
+
+    afterEach(() => {
+      document.querySelectorAll('[data-for-drag-preview]').forEach((node) => node.remove());
+    });
+
+    for (const [label, index] of [
+      ['a [forDragPreview] template', 1],
+      ['the default clone', 2],
+    ] as const) {
+      it(`${label} keeps the dir of the list it was lifted from`, () => {
+        const { el, fixture } = renderHost(RtlPreviewHost);
+        const item = itemEl(el, index);
+
+        firePointer(item, 'pointerdown', 0);
+        firePointer(item, 'pointermove', 20);
+        fixture.detectChanges();
+
+        const preview = document.querySelector<HTMLElement>('[data-for-drag-preview]')!;
+        expect(preview.parentElement).toBe(document.body);
+        expect(preview.getAttribute('dir')).toBe('rtl');
+
+        firePointer(item, 'pointerup', 20);
+      });
+    }
+  });
+
   describe('animateReorder', () => {
     it('default off: keyboard reorder emits dragDrop and no item gains data-drag-animating', () => {
       const { el, fixture } = renderHost(SingleListHost);

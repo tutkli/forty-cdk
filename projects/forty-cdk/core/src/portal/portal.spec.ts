@@ -1,4 +1,9 @@
-import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
+import {
+  Component,
+  provideZonelessChangeDetection,
+  signal,
+  ViewEncapsulation,
+} from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import { flush, nextMacrotask } from '../../../src/test-utils';
@@ -92,6 +97,25 @@ class DirectionHost {
   `,
 })
 class OwnDirectionHost {}
+
+@Component({
+  selector: 'shadow-wrapper',
+  encapsulation: ViewEncapsulation.ShadowDom,
+  imports: [PortaledBubble],
+  template: `<portaled-bubble>portaled</portaled-bubble>`,
+})
+class ShadowWrapper {}
+
+@Component({
+  host: { 'data-fixture': 'shadow-direction-host' },
+  imports: [ShadowWrapper],
+  template: `
+    <section dir="rtl">
+      <shadow-wrapper />
+    </section>
+  `,
+})
+class ShadowDirectionHost {}
 
 describe('injectPortal', () => {
   afterEach(() => {
@@ -333,13 +357,66 @@ describe('injectPortal', () => {
       expect(portaled().getAttribute('dir')).toBe('rtl');
     });
 
-    it('resolves ltr when nothing above the original position sets a dir', async () => {
+    it('leaves the host unstamped when nothing above the original position sets a dir', async () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(DirectionHost);
       fixture.componentInstance.dir.set(null);
       await flush(fixture);
 
-      expect(portaled().getAttribute('dir')).toBe('ltr');
+      expect(portaled().parentElement).toBe(document.body);
+      expect(portaled().hasAttribute('dir')).toBe(false);
+    });
+
+    it('leaves the host unstamped when the direction is set through CSS only', async () => {
+      document.documentElement.style.direction = 'rtl';
+      try {
+        TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+        const fixture = TestBed.createComponent(DirectionHost);
+        fixture.componentInstance.dir.set(null);
+        await flush(fixture);
+
+        expect(portaled().hasAttribute('dir')).toBe(false);
+      } finally {
+        document.documentElement.style.removeProperty('direction');
+      }
+    });
+
+    it('carries a dir set above the shadow host it was declared inside', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(ShadowDirectionHost);
+      await flush(fixture);
+
+      expect(portaled().parentElement).toBe(document.body);
+      expect(portaled().getAttribute('dir')).toBe('rtl');
+    });
+
+    it('takes a dir the subtree it left gains after the move', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(DirectionHost);
+      fixture.componentInstance.dir.set(null);
+      await flush(fixture);
+      expect(portaled().hasAttribute('dir')).toBe(false);
+
+      fixture.componentInstance.dir.set('rtl');
+      await flush(fixture);
+      await nextMacrotask();
+      await flush(fixture);
+
+      expect(portaled().getAttribute('dir')).toBe('rtl');
+    });
+
+    it('drops the stamp when the subtree it left loses its dir', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(DirectionHost);
+      await flush(fixture);
+      expect(portaled().getAttribute('dir')).toBe('rtl');
+
+      fixture.componentInstance.dir.set(null);
+      await flush(fixture);
+      await nextMacrotask();
+      await flush(fixture);
+
+      expect(portaled().hasAttribute('dir')).toBe(false);
     });
 
     it('follows a runtime dir change in the subtree it left', async () => {

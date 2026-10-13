@@ -167,7 +167,7 @@ Focus, and the question "did that interaction land inside my surface?", are reso
 
 What that buys, library-wide: a modal focus trap cycles `Tab` across a shadow boundary instead of leaking at it, a press on a control inside a web component does not read as a press _outside_ the overlay rendering it, and the surface's own shadow root counts as inside the surface. The helpers are [`core/composed-tree`](../core/src/composed-tree/composed-tree.ts).
 
-**Three limits are known**, and each is invisible in devtools: every role and `aria-*` stays correct, so the symptom is a keyboard or screen-reader one. They are listed with the markup that triggers them because nothing in the DOM will tell you.
+**Four limits are known**, and each is invisible in devtools: every role and `aria-*` stays correct, so the symptom is a keyboard or screen-reader one. They are listed with the markup that triggers them because nothing in the DOM will tell you.
 
 ### Focusable order is composed only for a host that renders no `<slot>`
 
@@ -199,9 +199,19 @@ The traversal is [`queryFocusableCandidates`](../core/src/focus-trap/focusable-c
 
 The same staleness applies to a purely CSS-driven visibility flip: the observer behind [`injectHasFocusableContent`](../core/src/focus-trap/focusable-content.ts) filters attributes and does not watch `class` or `style`.
 
+### A `dir` changed inside a shadow root is not observed
+
+**Symptom.** A direction-aware primitive (Tabs, Toolbar, RadioGroup, Slider, Tree, …) keeps the arrow-key meaning of the previous direction: `ArrowLeft` / `ArrowRight` act reversed, and so do tree expand / collapse and slider steps, while the layout already follows the new one.
+
+**Markup.** A `dir` attribute set or changed **inside** a shadow root, above the primitive, after it rendered. A `dir` anywhere in the document, on a shadow host or above it, is followed: the resolver walks up through open shadow roots and observes every `dir` change in the document. A change inside a shadow tree is picked up only on the next `dir` change outside it.
+
+**Workaround.** Set `dir` on the shadow host or above it rather than inside its shadow root, or bind the primitive's own `[dir]` input, which always wins.
+
+The resolver is [`injectTextDirection`](../core/src/text-direction/text-direction.ts).
+
 ### Escape is observed on the bubble phase
 
-**Symptom.** `Escape` stops dismissing the overlay. Nothing else changes (the pointer and focus channels register on the capture phase and keep working), so it reads as a broken overlay rather than as a handler in your own content. This is the one of the three most likely to be reported as a library bug.
+**Symptom.** `Escape` stops dismissing the overlay. Nothing else changes (the pointer and focus channels register on the capture phase and keep working), so it reads as a broken overlay rather than as a handler in your own content. This is the one of the four most likely to be reported as a library bug.
 
 **Markup.** Any `keydown` handler on content **inside** the overlay that calls `stopPropagation()`. The layer stack listens on `document` in the bubble phase, so an event stopped inside the surface never arrives. The phase is a deliberate trade-off, recorded on [`DismissibleLayerStack`](../core-overlay/src/dismissible-layer/dismissible-layer.ts) together with why the pointer and focus channels do not share it.
 

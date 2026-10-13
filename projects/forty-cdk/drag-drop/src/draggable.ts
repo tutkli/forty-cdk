@@ -265,7 +265,9 @@ export class ForDraggable implements ForDraggableContext {
     }
     const viewRef = this.#vcr.createEmbeddedView(preview.templateRef);
     viewRef.detectChanges();
-    return createTemplatePreview(viewRef.rootNodes, this.#document, () => viewRef.destroy());
+    return createTemplatePreview(viewRef.rootNodes, this.#host.nativeElement, this.#document, () =>
+      viewRef.destroy(),
+    );
   }
 
   #renderPlaceholder(): void {

@@ -7,14 +7,14 @@ describe('createTemplatePreview', () => {
 
   it('appends a single wrapper to document.body with data-for-drag-preview and aria-hidden="true"', () => {
     const nodes = [document.createElement('span')];
-    createTemplatePreview(nodes, document, () => undefined);
+    createTemplatePreview(nodes, document.body, document, () => undefined);
     const wrapper = document.body.querySelector('[data-for-drag-preview]') as HTMLElement | null;
     expect(wrapper!.getAttribute('aria-hidden')).toBe('true');
   });
 
   it('wrapper has position: fixed and pointer-events: none', () => {
     const nodes = [document.createElement('span')];
-    createTemplatePreview(nodes, document, () => undefined);
+    createTemplatePreview(nodes, document.body, document, () => undefined);
     const wrapper = document.body.querySelector('[data-for-drag-preview]') as HTMLElement;
     expect(wrapper.style.position).toBe('fixed');
     expect(wrapper.style.pointerEvents).toBe('none');
@@ -25,7 +25,7 @@ describe('createTemplatePreview', () => {
     a.textContent = 'hello';
     const b = document.createElement('span');
     b.textContent = 'world';
-    createTemplatePreview([a, b], document, () => undefined);
+    createTemplatePreview([a, b], document.body, document, () => undefined);
     const wrapper = document.body.querySelector('[data-for-drag-preview]') as HTMLElement;
     expect(wrapper.contains(a)).toBe(true);
     expect(wrapper.contains(b)).toBe(true);
@@ -33,7 +33,7 @@ describe('createTemplatePreview', () => {
 
   it('moveTo sets transform: translate(x px, y px) on the wrapper', () => {
     const nodes = [document.createElement('span')];
-    const preview = createTemplatePreview(nodes, document, () => undefined);
+    const preview = createTemplatePreview(nodes, document.body, document, () => undefined);
     preview.moveTo(10, 20);
     const wrapper = document.body.querySelector('[data-for-drag-preview]') as HTMLElement;
     expect(wrapper.style.transform).toBe('translate(10px, 20px)');
@@ -42,7 +42,7 @@ describe('createTemplatePreview', () => {
   it('destroy removes the wrapper from document.body and invokes onDestroy', () => {
     const onDestroy = vi.fn();
     const nodes = [document.createElement('span')];
-    const preview = createTemplatePreview(nodes, document, onDestroy);
+    const preview = createTemplatePreview(nodes, document.body, document, onDestroy);
     preview.destroy();
     expect(document.body.querySelector('[data-for-drag-preview]')).toBeNull();
     expect(onDestroy).toHaveBeenCalledTimes(1);
@@ -51,7 +51,7 @@ describe('createTemplatePreview', () => {
   it('settle with no configured transition destroys the wrapper immediately and calls onDestroy once', () => {
     const onDestroy = vi.fn();
     const nodes = [document.createElement('span')];
-    const preview = createTemplatePreview(nodes, document, onDestroy);
+    const preview = createTemplatePreview(nodes, document.body, document, onDestroy);
     preview.settle(10, 20, window);
     expect(document.body.querySelector('[data-for-drag-preview]')).toBeNull();
     expect(onDestroy).toHaveBeenCalledTimes(1);
@@ -168,7 +168,7 @@ describe('settle fallback timeout scales from the computed transition duration',
 
   it('derives the fallback timeout from a long ms transition (kept alive past 500ms)', () => {
     const nodes = [document.createElement('span')];
-    const preview = createTemplatePreview(nodes, document, () => undefined);
+    const preview = createTemplatePreview(nodes, document.body, document, () => undefined);
     const win = fakeWin('1200ms');
 
     preview.settle(10, 20, win);
@@ -182,7 +182,7 @@ describe('settle fallback timeout scales from the computed transition duration',
 
   it('parses a seconds transition into milliseconds for the fallback', () => {
     const nodes = [document.createElement('span')];
-    const preview = createTemplatePreview(nodes, document, () => undefined);
+    const preview = createTemplatePreview(nodes, document.body, document, () => undefined);
     const win = fakeWin('0.8s');
 
     preview.settle(10, 20, win);
@@ -193,7 +193,7 @@ describe('settle fallback timeout scales from the computed transition duration',
 
   it('uses only the first comma-separated segment for the fallback', () => {
     const nodes = [document.createElement('span')];
-    const preview = createTemplatePreview(nodes, document, () => undefined);
+    const preview = createTemplatePreview(nodes, document.body, document, () => undefined);
     const win = fakeWin('600ms, 2s');
 
     preview.settle(10, 20, win);
@@ -205,7 +205,7 @@ describe('settle fallback timeout scales from the computed transition duration',
   it('the scaled fallback still destroys the preview when it fires', () => {
     const onDestroy = vi.fn();
     const nodes = [document.createElement('span')];
-    const preview = createTemplatePreview(nodes, document, onDestroy);
+    const preview = createTemplatePreview(nodes, document.body, document, onDestroy);
     const timeouts: { fn: () => void; delay: number }[] = [];
     const win = {
       getComputedStyle: () => ({ transitionDuration: '1000ms' }) as CSSStyleDeclaration,
@@ -226,7 +226,7 @@ describe('settle fallback timeout scales from the computed transition duration',
   it('a zero transition duration still destroys immediately', () => {
     const onDestroy = vi.fn();
     const nodes = [document.createElement('span')];
-    const preview = createTemplatePreview(nodes, document, onDestroy);
+    const preview = createTemplatePreview(nodes, document.body, document, onDestroy);
     const win = fakeWin('0s');
 
     preview.settle(10, 20, win);
@@ -235,5 +235,87 @@ describe('settle fallback timeout scales from the computed transition duration',
     expect(timeouts).toHaveLength(0);
     expect(document.body.querySelector('[data-for-drag-preview]')).toBeNull();
     expect(onDestroy).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('drag preview writing direction', () => {
+  let region: HTMLElement;
+
+  beforeEach(() => {
+    region = document.createElement('section');
+    document.body.append(region);
+  });
+
+  afterEach(() => {
+    region.remove();
+    document.querySelectorAll('[data-for-drag-preview]').forEach((n) => n.remove());
+  });
+
+  function item(): HTMLElement {
+    const el = document.createElement('div');
+    el.textContent = 'عنصر';
+    region.append(el);
+    return el;
+  }
+
+  function preview(): HTMLElement {
+    return document.body.querySelector<HTMLElement>('[data-for-drag-preview]')!;
+  }
+
+  it('stamps the dir of the subtree the cloned source sits in', () => {
+    region.dir = 'rtl';
+    createDragPreview(item(), document);
+
+    expect(preview().getAttribute('dir')).toBe('rtl');
+  });
+
+  it('leaves the clone unstamped when nothing above the source sets a dir', () => {
+    createDragPreview(item(), document);
+
+    expect(preview().hasAttribute('dir')).toBe(false);
+  });
+
+  it('keeps a dir the source carries itself', () => {
+    region.dir = 'rtl';
+    const source = item();
+    source.dir = 'ltr';
+    createDragPreview(source, document);
+
+    expect(preview().getAttribute('dir')).toBe('ltr');
+  });
+});
+
+describe('template preview writing direction', () => {
+  let region: HTMLElement;
+
+  beforeEach(() => {
+    region = document.createElement('section');
+    document.body.append(region);
+  });
+
+  afterEach(() => {
+    region.remove();
+    document.querySelectorAll('[data-for-drag-preview]').forEach((n) => n.remove());
+  });
+
+  function wrapper(): HTMLElement {
+    return document.body.querySelector<HTMLElement>('[data-for-drag-preview]')!;
+  }
+
+  it('stamps the dir of the subtree the dragged item sits in', () => {
+    region.dir = 'rtl';
+    const source = document.createElement('div');
+    region.append(source);
+    createTemplatePreview([document.createElement('span')], source, document, () => undefined);
+
+    expect(wrapper().getAttribute('dir')).toBe('rtl');
+  });
+
+  it('leaves the wrapper unstamped when nothing above the item sets a dir', () => {
+    const source = document.createElement('div');
+    region.append(source);
+    createTemplatePreview([document.createElement('span')], source, document, () => undefined);
+
+    expect(wrapper().hasAttribute('dir')).toBe(false);
   });
 });

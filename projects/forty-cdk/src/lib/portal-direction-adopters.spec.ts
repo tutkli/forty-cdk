@@ -30,6 +30,38 @@ const PORTALING_HELPER =
 
 const INTERNAL_TIER = ['core/', 'core-overlay/'];
 
+const BODY_APPEND = /\.body\.(?:appendChild|append|prepend|insertBefore)\(/g;
+
+const SHARED_STAMP = /\bstampAmbientDirection\(/g;
+
+interface BodyAppendExclusion {
+  readonly reason: string;
+  readonly holds: (code: string) => boolean;
+}
+
+const BODY_APPEND_EXCLUSIONS: Readonly<Record<string, BodyAppendExclusion>> = {
+  'core/src/live-announcer/live-announcer.ts': {
+    reason: 'a visually hidden live region lays out no text a reader sees',
+    holds: (code) => /style\.cssText = VISUALLY_HIDDEN_STYLE/.test(code),
+  },
+  'core-overlay/src/overlay-manager/overlay-manager.ts': {
+    reason:
+      'the outlet host generates no box, and every surface it renders moves itself through injectPortal',
+    holds: (code) => /outletHost\.style\.display = 'contents'/.test(code),
+  },
+};
+
+function count(code: string, pattern: RegExp): number {
+  return code.match(pattern)?.length ?? 0;
+}
+
+function bodyAppendingSources(): string[] {
+  return [...LIBRARY_CODE]
+    .filter(([, code]) => count(code, BODY_APPEND) > 0)
+    .map(([path]) => path)
+    .sort();
+}
+
 function portalingSources(): string[] {
   return [...LIBRARY_CODE]
     .filter(
@@ -225,6 +257,37 @@ describe('portaled surfaces keep the ambient writing direction (#2141)', () => {
 
   it('sweeps every library source that portals its host', () => {
     expect(ADOPTERS.map(({ source }) => source).sort()).toEqual(portalingSources());
+  });
+
+  it('derives a live family of sources appending to <body>', () => {
+    expect(bodyAppendingSources()).toContain('core/src/drag-session/drag-preview.ts');
+  });
+
+  it('stamps the ambient dir on every element a library source appends to <body>', () => {
+    const unstamped = bodyAppendingSources()
+      .filter((path) => !(path in BODY_APPEND_EXCLUSIONS))
+      .filter((path) => {
+        const code = LIBRARY_CODE.get(path)!;
+        return count(code, SHARED_STAMP) < count(code, BODY_APPEND);
+      });
+
+    expect(
+      unstamped,
+      'an element appended to <body> leaves the subtree that gave it its direction: stamp it with stampAmbientDirection, or exclude it here with a condition the guard checks',
+    ).toEqual([]);
+  });
+
+  it('keeps every <body>-append exclusion true', () => {
+    for (const [path, { reason, holds }] of Object.entries(BODY_APPEND_EXCLUSIONS)) {
+      const code = LIBRARY_CODE.get(path);
+      expect(code, `${path} no longer exists`).toBeDefined();
+      expect(count(code!, BODY_APPEND), `${path} no longer appends to <body>`).toBeGreaterThan(0);
+      expect(holds(code!), `${path}: ${reason}`).toBe(true);
+    }
+  });
+
+  it('routes the portal through the shared stamp', () => {
+    expect(count(LIBRARY_CODE.get('core/src/portal/portal.ts')!, SHARED_STAMP)).toBeGreaterThan(0);
   });
 
   for (const { source, surface, host, providers = [] } of ADOPTERS) {
