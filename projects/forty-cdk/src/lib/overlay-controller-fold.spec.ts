@@ -81,6 +81,36 @@ describe('overlay controller fold', () => {
     }
   });
 
+  describe('close-reason owners', () => {
+    const construction = /(#?\w+)\s*=\s*new CloseReasonState\b(?:<[^>]*>)?\(([^)]*)\)/g;
+    const owners = librarySources().flatMap(([id, code]) =>
+      [...code.matchAll(construction)].map((match) => ({
+        id,
+        code,
+        field: match[1]!,
+        argument: match[2]!.trim(),
+      })),
+    );
+
+    it('finds every module constructing a CloseReasonState', () => {
+      expect(owners.map(({ id }) => id).sort()).toEqual([SHARED_MACHINE, 'popover/src/popover']);
+    });
+
+    it('constructs each one over its open source', () => {
+      for (const { id, argument } of owners) {
+        expect(argument, id).not.toBe('');
+      }
+    });
+
+    it('records each close through the state instead of writing the reason by hand', () => {
+      for (const { id, code, field } of owners) {
+        expect(code, id).toContain(`${field}.close(`);
+        expect(code, id).not.toContain(`${field}.reset(`);
+        expect(code, id).not.toContain(`${field}.set(`);
+      }
+    });
+  });
+
   it('declares the reverse enabled-handle scan once', () => {
     const descendingScan = /for\s*\(\s*let\s+\w+\s*=[^;]*\.length\s*-\s*1\s*;[^)]*\)/g;
     const offenders = librarySources().flatMap(([id, code]) => {
