@@ -448,8 +448,9 @@ a drop that resolves no slot emits `dragEnd` with `dropped: false`.
   Tab after the last wraps to the first, ordered across open shadow roots. The modal select, date
   picker and time picker share the same trap.
 
-- **Input**, **Textarea**, **Number input**, **OTP input**, **Combobox** — a value written while the
-  control is focused reaches the field ([#2122](https://github.com/tutkli/forty-cdk/issues/2122)).
+- **Input**, **Textarea** — a value written while the control is focused reaches the field;
+  **Number input**, **OTP input**, **Combobox** — the focus check resolves through open shadow roots
+  ([#2122](https://github.com/tutkli/forty-cdk/issues/2122)).
   `[forInput]` and `[forTextarea]` mirrored the model only while unfocused, so a submit-and-clear
   `draft.set('')`, a `[formField]` reset or a reformat was dropped and the next keystroke put the
   old text back; the write now lands at once, except during an IME composition. The focus check of

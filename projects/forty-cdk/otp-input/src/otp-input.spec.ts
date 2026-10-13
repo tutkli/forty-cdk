@@ -11,7 +11,7 @@ import { renderHost } from '../../src/test-utils/render';
 import { ForField, ForFieldDescription, ForLabel } from 'forty-cdk/field';
 import { ForOtpInput } from './otp-input';
 import { ForOtpInputSlot } from './otp-input-slot';
-import { OTP_REGEXP_ONLY_DIGITS } from './otp-patterns';
+import { OTP_REGEXP_ONLY_DIGITS, OTP_REGEXP_ONLY_DIGITS_AND_CHARS } from './otp-patterns';
 
 @Component({
   imports: [ForOtpInput, ForOtpInputSlot],
@@ -713,7 +713,7 @@ describe('ForOtpInput', () => {
   });
 
   describe('external write while focused', () => {
-    it('reconciles the input on blur after an external reset while focused, so Backspace cannot resurrect the old code', async () => {
+    it('clears the input on an external reset while focused, so Backspace cannot resurrect the old code', async () => {
       const { el, input, instance, flush } = await mountOtp();
       document.body.appendChild(el);
       try {
@@ -725,19 +725,143 @@ describe('ForOtpInput', () => {
 
         instance.code.set('');
         await flush();
-        expect(input.value).toBe('123456');
-
-        input.blur();
-        await flush();
         expect(input.value).toBe('');
-        expect(instance.code()).toBe('');
+        expect(document.activeElement).toBe(input);
 
-        input.focus();
-        typeInto(input, '');
+        typeInto(input, input.value.slice(0, -1));
         await flush();
         expect(instance.code()).toBe('');
+
+        typeInto(input, '7');
+        await flush();
+        expect(instance.code()).toBe('7');
       } finally {
         el.remove();
+      }
+    });
+
+    it('moves the active slot to the end of the externally written code', async () => {
+      const { el, group, input, instance, flush } = await mountOtp();
+      document.body.appendChild(el);
+      try {
+        input.focus();
+        typeInto(input, '1234');
+        await flush();
+        expect(slot(group, 3).hasAttribute('data-active')).toBe(false);
+        expect(slot(group, 4).hasAttribute('data-active')).toBe(true);
+
+        instance.code.set('');
+        await flush();
+        expect(slot(group, 0).hasAttribute('data-active')).toBe(true);
+        expect(slot(group, 4).hasAttribute('data-active')).toBe(false);
+      } finally {
+        el.remove();
+      }
+    });
+  });
+
+  describe('allowedPattern drives the input attributes', () => {
+    it('offers the text keyboard and no native pattern for a letters-and-digits allowedPattern under the default type', async () => {
+      const { input, instance, flush } = await mountOtp();
+      instance.allowedPattern.set(OTP_REGEXP_ONLY_DIGITS_AND_CHARS);
+      await flush();
+      expect(input.getAttribute('inputmode')).toBe('text');
+      expect(input.hasAttribute('pattern')).toBe(false);
+
+      typeInto(input, 'AB12CD');
+      await flush();
+      expect(instance.code()).toBe('AB12CD');
+      expect(input.validity.patternMismatch).toBe(false);
+    });
+
+    it('keeps the numeric keypad for a digits-only allowedPattern, without the native pattern', async () => {
+      const { input, instance, flush } = await mountOtp();
+      instance.type.set('alphanumeric');
+      instance.allowedPattern.set(OTP_REGEXP_ONLY_DIGITS);
+      await flush();
+      expect(input.getAttribute('inputmode')).toBe('numeric');
+      expect(input.hasAttribute('pattern')).toBe(false);
+    });
+
+    it('offers the text keyboard for an allowedPattern that accepts letters but no digit', async () => {
+      const { input, instance, flush } = await mountOtp();
+      instance.allowedPattern.set(/[a-f]/);
+      await flush();
+      expect(input.getAttribute('inputmode')).toBe('text');
+    });
+
+    it('keeps the legacy numeric pattern for the default type with no allowedPattern', async () => {
+      const { input } = await mountOtp();
+      expect(input.getAttribute('inputmode')).toBe('numeric');
+      expect(input.getAttribute('pattern')).toBe('[0-9]*');
+    });
+  });
+
+  describe('static aria-label', () => {
+    @Component({
+      imports: [ForOtpInput],
+      template: `<div forOtpInput [length]="4" aria-label="Probe code"></div>`,
+    })
+    class StaticLabelHost {}
+
+    it('names the injected input with the static aria-label the group adopted', async () => {
+      const r = renderHost(StaticLabelHost);
+      await flush(r.fixture);
+      const group = r.el.querySelector<HTMLElement>('[role="group"]')!;
+      expect(group.getAttribute('aria-label')).toBe('Probe code');
+      expect(group.querySelector('input')!.getAttribute('aria-label')).toBe('Probe code');
+    });
+  });
+
+  describe('native form reset', () => {
+    @Component({
+      imports: [ForOtpInput],
+      template: `
+        <form>
+          <div forOtpInput [(value)]="code" [length]="6"></div>
+        </form>
+      `,
+    })
+    class ResetHost {
+      readonly code = signal('');
+    }
+
+    it('empties the code when the owning form resets, so a blur cannot bring it back', async () => {
+      const r = renderHost(ResetHost);
+      await flush(r.fixture);
+      const formEl = r.el.querySelector('form')!;
+      const input = formEl.querySelector('input')!;
+
+      typeInto(input, '123456');
+      await flush(r.fixture);
+      expect(r.fixture.componentInstance.code()).toBe('123456');
+
+      formEl.reset();
+      await flush(r.fixture);
+      expect(r.fixture.componentInstance.code()).toBe('');
+
+      input.dispatchEvent(new FocusEvent('blur'));
+      await flush(r.fixture);
+      expect(input.value).toBe('');
+    });
+
+    it('keeps the code when the reset is cancelled', async () => {
+      const r = renderHost(ResetHost);
+      await flush(r.fixture);
+      const formEl = r.el.querySelector('form')!;
+      const input = formEl.querySelector('input')!;
+      const cancel = (event: Event): void => event.preventDefault();
+      formEl.addEventListener('reset', cancel);
+      try {
+        typeInto(input, '123456');
+        await flush(r.fixture);
+
+        formEl.reset();
+        await flush(r.fixture);
+        expect(r.fixture.componentInstance.code()).toBe('123456');
+        expect(input.value).toBe('123456');
+      } finally {
+        formEl.removeEventListener('reset', cancel);
       }
     });
   });
@@ -874,6 +998,31 @@ describe('ForOtpInput', () => {
 
       expect(input.getAttribute('aria-labelledby')).toBe(label.id);
       expect(input.hasAttribute('aria-label')).toBe(false);
+    });
+
+    @Component({
+      imports: [ForField, ForLabel, ForOtpInput],
+      template: `
+        <div forField>
+          <label forLabel data-test-id="label">Code</label>
+          <div forOtpInput id="otp" [length]="4"></div>
+        </div>
+      `,
+    })
+    class StaticIdFieldHost {}
+
+    it('gives the real input an id of its own when the wrapper carries a static id', async () => {
+      const r = renderHost(StaticIdFieldHost);
+      await flush(r.fixture);
+      const group = r.el.querySelector<HTMLElement>('[role="group"]')!;
+      const input = group.querySelector('input')!;
+      const label = r.el.querySelector<HTMLElement>('[data-test-id="label"]')!;
+
+      expect(r.el.querySelectorAll('#otp').length).toBe(1);
+      expect(group.id).toBe('otp');
+      expect(input.id).toBeTruthy();
+      expect(input.id).not.toBe('otp');
+      expect(label.getAttribute('for')).toBe(input.id);
     });
 
     it('falls back to aria-label on the input inside a field without a label', async () => {

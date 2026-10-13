@@ -368,6 +368,94 @@ describe('ForInput', () => {
     });
   });
 
+  describe('native form reset', () => {
+    @Component({
+      imports: [ForInput],
+      template: `
+        <form>
+          <input forInput [(value)]="text" />
+          <input forInput [(value)]="seeded" value="initial" data-test-id="seeded" />
+        </form>
+      `,
+    })
+    class ResetHost {
+      readonly text = signal('');
+      readonly seeded = signal('');
+    }
+
+    it('writes the reset text into value, so the next blur keeps the reset', async () => {
+      const { el, fixture, flush } = renderHost(ResetHost);
+      const form = el.querySelector('form')!;
+      const input = inputOf(el);
+
+      input.focus();
+      typeInto(input, 'abc');
+      await flush();
+      expect(fixture.componentInstance.text()).toBe('abc');
+
+      form.reset();
+      await flush();
+      expect(fixture.componentInstance.text()).toBe('');
+      expect(input.value).toBe('');
+      expect(input.hasAttribute('data-empty')).toBe(true);
+
+      input.dispatchEvent(new FocusEvent('blur'));
+      await flush();
+      expect(input.value).toBe('');
+    });
+
+    it('takes the reset value from the element default, not from an empty string', async () => {
+      const { el, fixture, flush } = renderHost(ResetHost);
+      const form = el.querySelector('form')!;
+      const seeded = el.querySelector<HTMLInputElement>('[data-test-id="seeded"]')!;
+
+      typeInto(seeded, 'edited');
+      await flush();
+      expect(fixture.componentInstance.seeded()).toBe('edited');
+
+      form.reset();
+      await flush();
+      expect(fixture.componentInstance.seeded()).toBe('initial');
+      expect(seeded.value).toBe('initial');
+    });
+
+    it('leaves value alone when a listener cancels the reset', async () => {
+      const { el, fixture, flush } = renderHost(ResetHost);
+      const form = el.querySelector('form')!;
+      const input = inputOf(el);
+      const cancel = (event: Event): void => event.preventDefault();
+      form.addEventListener('reset', cancel);
+      try {
+        typeInto(input, 'abc');
+        await flush();
+
+        form.reset();
+        await flush();
+        expect(fixture.componentInstance.text()).toBe('abc');
+        expect(input.value).toBe('abc');
+      } finally {
+        form.removeEventListener('reset', cancel);
+      }
+    });
+
+    it('ignores the reset of a form it does not belong to', async () => {
+      const { el, fixture, flush } = renderHost(ResetHost);
+      const input = inputOf(el);
+      const other = document.createElement('form');
+      document.body.appendChild(other);
+      try {
+        typeInto(input, 'abc');
+        await flush();
+
+        other.reset();
+        await flush();
+        expect(fixture.componentInstance.text()).toBe('abc');
+      } finally {
+        other.remove();
+      }
+    });
+  });
+
   describe('field auto-association', () => {
     @Component({
       imports: [ForField, ForLabel, ForFieldDescription, ForInput],
@@ -559,6 +647,33 @@ describe('ForTextarea', () => {
       await flush();
 
       expect(textarea.value).toBe('note');
+    });
+  });
+
+  describe('native form reset parity', () => {
+    @Component({
+      imports: [ForTextarea],
+      template: `
+        <form>
+          <textarea forTextarea [(value)]="text"></textarea>
+        </form>
+      `,
+    })
+    class ResetHost {
+      readonly text = signal('');
+    }
+
+    it('writes the reset text into value', async () => {
+      const { el, fixture, flush } = renderHost(ResetHost);
+      const textarea = textareaOf(el);
+
+      typeInto(textarea, 'note');
+      await flush();
+
+      el.querySelector('form')!.reset();
+      await flush();
+      expect(fixture.componentInstance.text()).toBe('');
+      expect(textarea.value).toBe('');
     });
   });
 

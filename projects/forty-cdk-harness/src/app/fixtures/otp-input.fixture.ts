@@ -72,7 +72,7 @@ import { ForOtpInput, ForOtpInputSlot, type OtpInputType } from 'forty-cdk/otp-i
       [length]="6"
       [type]="type"
       ariaLabel="Verification code"
-      (complete)="completeCount.set(completeCount() + 1)"
+      (complete)="onComplete()"
       #otp="forOtpInput"
     >
       @for (i of otp.slots(); track i) {
@@ -91,6 +91,14 @@ export class OtpInputFixture {
   protected readonly value = signal('');
   protected readonly completeCount = signal(0);
   protected readonly type = this.#typeParam();
+  readonly #clearOnComplete = this.#route.snapshot.queryParamMap.get('clearOnComplete') === '1';
+
+  protected onComplete(): void {
+    this.completeCount.set(this.completeCount() + 1);
+    if (this.#clearOnComplete) {
+      this.value.set('');
+    }
+  }
 
   #typeParam(): OtpInputType {
     const raw = this.#route.snapshot.queryParamMap.get('type');
