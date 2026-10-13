@@ -669,6 +669,34 @@ describe('ForSearch', () => {
     });
   });
 
+  describe('native form reset', () => {
+    @Component({
+      imports: [ForSearch],
+      template: `
+        <form>
+          <input forSearch [(value)]="query" />
+        </form>
+      `,
+    })
+    class ResetHost {
+      readonly query = signal('');
+    }
+
+    it('writes the reset text into value', async () => {
+      const { el, fixture, flush } = renderHost(ResetHost);
+      const input = el.querySelector('input')!;
+
+      typeInto(input, 'shoes');
+      await flush();
+      expect(fixture.componentInstance.query()).toBe('shoes');
+
+      el.querySelector('form')!.reset();
+      await flush();
+      expect(fixture.componentInstance.query()).toBe('');
+      expect(input.value).toBe('');
+    });
+  });
+
   describe('Signal Forms via [formField]', () => {
     interface SearchModel {
       query: string;

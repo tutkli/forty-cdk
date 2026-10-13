@@ -1031,6 +1031,105 @@ describe('ForNumberInput', () => {
     });
   });
 
+  describe('a write made while focused reaches the DOM', () => {
+    it('writes an external reset into the focused spinbutton, so the next keystroke starts from it', async () => {
+      const { el, fixture, flush } = renderHost(NumberHost);
+      const input = inputOf(el);
+      input.focus();
+
+      typeInto(input, '5');
+      await flush();
+      expect(fixture.componentInstance.qty()).toBe(5);
+
+      fixture.componentInstance.qty.set(null);
+      await flush();
+      expect(document.activeElement).toBe(input);
+      expect(input.value).toBe('');
+
+      typeInto(input, input.value + '3');
+      await flush();
+      expect(fixture.componentInstance.qty()).toBe(3);
+    });
+
+    it('writes an external value in the formatted display while focused', async () => {
+      const { el, fixture, flush } = renderHost(NumberHost);
+      fixture.componentInstance.locale.set('en-US');
+      fixture.componentInstance.formatOptions.set({ style: 'currency', currency: 'USD' });
+      await flush();
+      const input = inputOf(el);
+      input.focus();
+
+      typeInto(input, '5');
+      await flush();
+      expect(input.value).toBe('5');
+
+      fixture.componentInstance.qty.set(1234.5);
+      await flush();
+      expect(input.value).toBe('$1,234.50');
+    });
+
+    it('leaves text it parsed itself alone while focused, even when the display differs', async () => {
+      const { el, fixture, flush } = renderHost(NumberHost);
+      fixture.componentInstance.locale.set('en-US');
+      fixture.componentInstance.formatOptions.set({ style: 'currency', currency: 'USD' });
+      await flush();
+      const input = inputOf(el);
+      input.focus();
+
+      typeInto(input, '1234');
+      await flush();
+      expect(fixture.componentInstance.qty()).toBe(1234);
+      expect(input.value).toBe('1234');
+    });
+
+    it('applies an external write that lands on the value typed before it', async () => {
+      const { el, fixture, flush } = renderHost(NumberHost);
+      const input = inputOf(el);
+      input.focus();
+
+      typeInto(input, '5');
+      await flush();
+      fixture.componentInstance.qty.set(null);
+      await flush();
+      fixture.componentInstance.qty.set(5);
+      await flush();
+      expect(input.value).toBe('5');
+    });
+  });
+
+  describe('native form reset', () => {
+    @Component({
+      imports: [ForNumberInput],
+      template: `
+        <form>
+          <input forNumberInput [(value)]="qty" />
+        </form>
+      `,
+    })
+    class ResetHost {
+      readonly qty = signal<number | null>(null);
+    }
+
+    it('clears value when the owning form resets, so the next blur keeps the reset', async () => {
+      const { el, fixture, flush } = renderHost(ResetHost);
+      const input = inputOf(el);
+      input.focus();
+
+      typeInto(input, '5');
+      await flush();
+      expect(fixture.componentInstance.qty()).toBe(5);
+
+      el.querySelector('form')!.reset();
+      await flush();
+      expect(fixture.componentInstance.qty()).toBeNull();
+      expect(input.value).toBe('');
+
+      input.dispatchEvent(new FocusEvent('blur'));
+      await flush();
+      expect(input.value).toBe('');
+    });
+  });
+
   describe('inside a shadow root', () => {
     @Component({
       imports: [ForNumberInput],

@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import {
+  afterNextRender,
+  ChangeDetectionStrategy,
+  Component,
+  inject,
+  Injector,
+  signal,
+} from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { ForOtpInput, ForOtpInputSlot, type OtpInputType } from 'forty-cdk/otp-input';
 
@@ -72,7 +79,7 @@ import { ForOtpInput, ForOtpInputSlot, type OtpInputType } from 'forty-cdk/otp-i
       [length]="6"
       [type]="type"
       ariaLabel="Verification code"
-      (complete)="completeCount.set(completeCount() + 1)"
+      (complete)="onComplete()"
       #otp="forOtpInput"
     >
       @for (i of otp.slots(); track i) {
@@ -91,6 +98,15 @@ export class OtpInputFixture {
   protected readonly value = signal('');
   protected readonly completeCount = signal(0);
   protected readonly type = this.#typeParam();
+  readonly #injector = inject(Injector);
+  readonly #clearOnComplete = this.#route.snapshot.queryParamMap.get('clearOnComplete') === '1';
+
+  protected onComplete(): void {
+    this.completeCount.set(this.completeCount() + 1);
+    if (this.#clearOnComplete) {
+      afterNextRender(() => this.value.set(''), { injector: this.#injector });
+    }
+  }
 
   #typeParam(): OtpInputType {
     const raw = this.#route.snapshot.queryParamMap.get('type');

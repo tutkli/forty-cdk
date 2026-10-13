@@ -3,6 +3,7 @@ import type { FormValueControl } from '@angular/forms/signals';
 
 import { reflectDisabled } from '../host-attributes/disabled-reflection';
 import { FormUiControlBase } from './form-ui-control-base';
+import { injectNativeFormReset } from './native-form-reset';
 import { mirrorValue } from './value-mirror';
 
 /**
@@ -49,6 +50,11 @@ export abstract class TextValueControlBase
       () => this.#host.nativeElement,
       this.value,
       () => this.#composing,
+    );
+
+    injectNativeFormReset(
+      () => this.#host.nativeElement,
+      (text) => this.value.set(text),
     );
   }
 

@@ -10,6 +10,7 @@ import {
   ElementRef,
   inject,
   input,
+  linkedSignal,
   model,
   output,
   PLATFORM_ID,
@@ -20,11 +21,18 @@ import type { FormValueControl } from '@angular/forms/signals';
 import {
   FOR_FIELD_CONTEXT,
   FormUiControlBase,
-  mirrorUnfocusedValue,
+  IdGenerator,
   hostAriaLabel,
+  injectNativeFormReset,
+  mirrorValue,
 } from 'forty-cdk/core';
 import { FOR_OTP_INPUT_CONTEXT, type ForOtpInputContext } from './otp-input-context';
-import { allowedCharForType, inputModeForType, type OtpInputType } from './otp-patterns';
+import {
+  allowedCharForType,
+  inputModeForPattern,
+  inputModeForType,
+  type OtpInputType,
+} from './otp-patterns';
 
 const MASK_CHAR = '•';
 
@@ -104,12 +112,11 @@ export class ForOtpInput
   readonly #destroyRef = inject(DestroyRef);
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
   readonly #field = inject(FOR_FIELD_CONTEXT, { optional: true });
+  readonly #inputId = inject(IdGenerator).next('for-otp-input');
 
   /** The injected real `<input>`, once created in the browser. */
   readonly #inputEl = signal<HTMLInputElement | null>(null);
   readonly #focused = signal(false);
-  readonly #selectionStart = signal(0);
-  readonly #selectionEnd = signal(0);
 
   #composing = false;
 
@@ -122,13 +129,18 @@ export class ForOtpInput
   /** Number of characters / slots. */
   readonly length = input.required<number>();
 
-  /** Allowed character class. Ignored when `allowedPattern` is set. Defaults to `'numeric'`. */
+  /**
+   * Allowed character class, which also picks the injected input's keyboard.
+   * Ignored when `allowedPattern` is set. Defaults to `'numeric'`.
+   */
   readonly type = input<OtpInputType>('numeric');
 
   /**
    * Custom allowed-character RegExp, tested per typed/pasted character;
-   * overrides `type`. Named `allowedPattern` (not `pattern`) to avoid the
-   * reserved `FormUiControl.pattern` member — see the class JSDoc.
+   * overrides `type`. The injected input offers the numeric keyboard only when
+   * the RegExp accepts digits and no other printable ASCII character, and
+   * carries no native `pattern`. Named `allowedPattern` (not `pattern`) to
+   * avoid the reserved `FormUiControl.pattern` member — see the class JSDoc.
    */
   readonly allowedPattern = input<RegExp | null>(null);
 
@@ -171,6 +183,11 @@ export class ForOtpInput
   /** The value clamped to `length()` — the source of truth for the slots. */
   readonly #clampedValue = computed(() => this.value().slice(0, this.length()));
 
+  readonly #selection = linkedSignal({
+    source: this.#clampedValue,
+    computation: (value) => ({ start: value.length, end: value.length }),
+  });
+
   /** `true` when every slot is filled — reflected as `data-complete` on the host. */
   readonly filled = computed(() => this.#clampedValue().length === this.length());
 
@@ -179,7 +196,10 @@ export class ForOtpInput
     Array.from({ length: this.length() }, (_, i) => i),
   );
 
-  readonly #inputMode = computed(() => inputModeForType(this.type()));
+  readonly #inputMode = computed(() => {
+    const pattern = this.allowedPattern();
+    return pattern ? inputModeForPattern(pattern) : inputModeForType(this.type());
+  });
 
   readonly #inputType = computed(() => (this.mask() ? 'password' : 'text'));
 
@@ -214,12 +234,16 @@ export class ForOtpInput
       setAttr(el, 'inputmode', this.#inputMode());
       setAttr(el, 'autocomplete', this.oneTimeCode() ? 'one-time-code' : 'off');
       // Legacy iOS numeric-keypad hint; modern browsers honour inputmode.
-      setAttr(el, 'pattern', this.#inputMode() === 'numeric' ? '[0-9]*' : null);
+      setAttr(
+        el,
+        'pattern',
+        this.allowedPattern() === null && this.#inputMode() === 'numeric' ? '[0-9]*' : null,
+      );
       setAttr(el, 'name', this.name() || null);
       setAttr(el, 'class', this.inputClass() || null);
       el.toggleAttribute('disabled', this.effectiveDisabled());
       el.toggleAttribute('readonly', this.readonly());
-      setAttr(el, 'aria-label', this.#field?.labelledBy() ? null : this.ariaLabel() || null);
+      setAttr(el, 'aria-label', this.#field?.labelledBy() ? null : this.resolvedAriaLabel());
       setAttr(el, 'aria-readonly', this.readonly() ? 'true' : null);
       setAttr(el, 'aria-required', this.required() ? 'true' : null);
       setAttr(el, 'aria-invalid', this.invalid() ? 'true' : null);
@@ -228,16 +252,16 @@ export class ForOtpInput
       el.toggleAttribute('data-readonly', this.readonly());
     });
 
-    // Mirror external value writes (consumer `[(value)]` / `[formField]`) back
-    // to the input while it isn't focused. Live typing flows in through the
-    // `input` listener.
-    mirrorUnfocusedValue(this.#inputEl, this.#clampedValue);
+    mirrorValue(this.#inputEl, this.#clampedValue, () => this.#composing);
+
+    injectNativeFormReset(this.#inputEl, (text) => this.value.set(text));
 
     // Create the single real input after hydration (browser only), so the
     // server-rendered markup stays the group + slots and there is no hydration
     // mismatch from a node the server never emitted.
     afterNextRender(() => {
       const el = this.#document.createElement('input');
+      el.id = this.#inputId;
       el.type = this.#inputType();
       el.autocapitalize = 'none';
       el.setAttribute('autocorrect', 'off');
@@ -294,6 +318,10 @@ export class ForOtpInput
     return this.#inputEl();
   }
 
+  protected override fieldLabelledElementId(): string {
+    return this.#inputId;
+  }
+
   /**
    * The four form-state `data-*` booleans reflect onto the injected real
    * `<input>`, alongside the OTP-specific `data-disabled` / `data-readonly`,
@@ -326,8 +354,7 @@ export class ForOtpInput
     if (index < 0 || index >= len) {
       return false;
     }
-    const start = this.#selectionStart();
-    const end = this.#selectionEnd();
+    const { start, end } = this.#selection();
     if (start === end) {
       return index === Math.min(start, len - 1);
     }
@@ -336,12 +363,8 @@ export class ForOtpInput
 
   /** Whether slot `index` should render a fake caret. */
   hasFakeCaret(index: number): boolean {
-    return (
-      this.#focused() &&
-      this.#selectionStart() === this.#selectionEnd() &&
-      this.isActive(index) &&
-      this.charAt(index) === null
-    );
+    const { start, end } = this.#selection();
+    return this.#focused() && start === end && this.isActive(index) && this.charAt(index) === null;
   }
 
   #onCompositionStart(): void {
@@ -453,7 +476,6 @@ export class ForOtpInput
     const len = this.#clampedValue().length;
     const start = Math.min(el.selectionStart ?? 0, len);
     const end = Math.min(el.selectionEnd ?? start, len);
-    this.#selectionStart.set(start);
-    this.#selectionEnd.set(end);
+    this.#selection.set({ start, end });
   }
 }

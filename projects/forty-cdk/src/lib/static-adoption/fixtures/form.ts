@@ -367,6 +367,14 @@ export const FORM_FAMILY_ADOPTERS: readonly StaticAdoptionAdopter[] = [
         probe: 'Probe verification code',
         fallback: null,
       },
+      {
+        key: '[forOtpInput] > input',
+        channel: 'aria-label',
+        source: 'otp-input/src/otp-input.ts',
+        seam: 'hostAriaLabel',
+        probe: 'Probe verification code',
+        fallback: null,
+      },
     ],
   },
 ];

@@ -30,8 +30,7 @@ function otpInput(page: Page): Locator {
 
 async function focusOtp(page: Page): Promise<Locator> {
   const input = otpInput(page);
-  // Created in afterNextRender; wait for it before driving events. Focus so the
-  // directive's unfocused value-sync effect doesn't clobber the composing text.
+  // Created in afterNextRender; wait for it before driving events.
   await expect(input).toBeAttached();
   await input.evaluate((node) => (node as HTMLInputElement).focus());
   return input;
@@ -108,5 +107,28 @@ test.describe('OTP input — rejected character caret', () => {
     expect(await inputValue(input)).toBe('1236');
     expect(await selectionRange(input)).toEqual([1, 1]);
     await expect(el(page, 'slot-1')).toHaveAttribute('data-active', '');
+  });
+});
+
+test.describe('OTP input — clearing a rejected code while focused', () => {
+  test('empties the field, takes the next digit and keeps Backspace from restoring the old code', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'otp-input', { clearOnComplete: '1' });
+    const input = await focusOtp(page);
+
+    await page.keyboard.insertText('123456');
+    await expect(el(page, 'complete-count')).toHaveText('1');
+    await expect(el(page, 'value')).toHaveText('');
+    await expect.poll(() => inputValue(input)).toBe('');
+    await expect(input).toBeFocused();
+
+    await page.keyboard.press('7');
+    await expect(el(page, 'value')).toHaveText('7');
+    await expect(el(page, 'slot-0')).toHaveText('7');
+
+    await page.keyboard.press('Backspace');
+    await expect(el(page, 'value')).toHaveText('');
+    await expect.poll(() => inputValue(input)).toBe('');
   });
 });

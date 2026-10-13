@@ -4,8 +4,9 @@ import type { FormValueControl } from '@angular/forms/signals';
 import {
   reflectDisabled,
   FormUiControlBase,
-  mirrorUnfocusedValue,
+  mirrorExternalValue,
   injectHiddenInput,
+  injectNativeFormReset,
   clamp,
   decimalPlaces,
   roundToDecimals,
@@ -211,6 +212,8 @@ export class ForNumberInput
     return max !== undefined && current !== null && current >= max;
   });
 
+  readonly #claim: (own: number | null) => void;
+
   constructor() {
     super();
     reflectDisabled(this.effectiveDisabled);
@@ -232,11 +235,16 @@ export class ForNumberInput
       inject(DestroyRef).onDestroy(() => group.unregister(this));
     }
 
-    // Mirror external writes (consumer `[(value)]` / `[formField]`, or the
-    // post-commit reformat) into the native element while it isn't focused. Live
-    // typing flows in through the `(input)` listener, and step / commit write the
-    // display imperatively (the element is focused then, so this guard skips it).
-    mirrorUnfocusedValue(() => this.#host.nativeElement, this.#displayText);
+    this.#claim = mirrorExternalValue(
+      () => this.#host.nativeElement,
+      this.value,
+      this.#displayText,
+    );
+
+    injectNativeFormReset(
+      () => this.#host.nativeElement,
+      (text) => this.#setValue(this.#parse(text)),
+    );
   }
 
   /**
@@ -287,14 +295,14 @@ export class ForNumberInput
     }
     const raw = (event.target as HTMLInputElement).value;
     if (raw.trim() === '') {
-      this.value.set(null);
+      this.#setValue(null);
       return;
     }
     const parsed = parseLocaleNumber(raw, this.#separators(), { lenientGrouping: true });
     // Ignore unparseable input: keep the last valid value, leave the user's
     // in-progress text untouched; commit() reformats from the value on blur.
     if (parsed !== null) {
-      this.value.set(this.#toModelValue(parsed));
+      this.#setValue(this.#toModelValue(parsed));
     }
   }
 
@@ -352,7 +360,7 @@ export class ForNumberInput
     if (current !== null) {
       const clamped = this.#clamp(this.#toFormatPrecision(current));
       if (clamped !== current) {
-        this.value.set(clamped);
+        this.#setValue(clamped);
       }
     }
     this.#writeDisplay();
@@ -372,8 +380,21 @@ export class ForNumberInput
   }
 
   #applyValue(raw: number): void {
-    this.value.set(this.#clamp(raw));
+    this.#setValue(this.#clamp(raw));
     this.#writeDisplay();
+  }
+
+  #setValue(next: number | null): void {
+    this.#claim(next);
+    this.value.set(next);
+  }
+
+  #parse(text: string): number | null {
+    if (text.trim() === '') {
+      return null;
+    }
+    const parsed = parseLocaleNumber(text, this.#separators(), { lenientGrouping: true });
+    return parsed === null ? null : this.#toModelValue(parsed);
   }
 
   #writeDisplay(): void {
