@@ -94,6 +94,7 @@ export interface RovingFocusModelDeps<T = unknown> {
    * a no-op when the tree is multi-select or the option is off.
    */
   readonly selectOnFocus: (value: T) => void;
+  readonly beforeKeyboardMove: () => void;
 }
 
 /**
@@ -197,6 +198,7 @@ export class RovingFocusModel<T = unknown> implements FocusModel<T> {
   }
 
   #focusFromKeyboard(target: ForTreeItemHandle<T>): void {
+    this.#deps.beforeKeyboardMove();
     this.#deps.roving.focusActive(target.host);
     if (target.selectable()) {
       this.#deps.selectOnFocus(target.value());

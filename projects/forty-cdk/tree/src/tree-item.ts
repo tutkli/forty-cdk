@@ -13,6 +13,7 @@ import {
   assertInputBound,
   registerHandle,
   hostId,
+  injectPointerMove,
   navigateFromRovingItem,
   preventPointerFocus,
   resolveListNavigation,
@@ -173,7 +174,7 @@ export class ForTreeItem<T = string> implements ForTreeItemContext<T> {
   readonly highlighted = computed(() => {
     const activeId = this.#tree.activeDescendantId();
     if (activeId !== null) return activeId === this.id();
-    return this.#tree.roving.active() === this.#host.nativeElement;
+    return this.#tree.isItemHighlighted(this.#host.nativeElement);
   });
   readonly effectiveDisabled = computed(() => this.disabled() || this.#tree.disabled());
 
@@ -252,6 +253,7 @@ export class ForTreeItem<T = string> implements ForTreeItemContext<T> {
       (h) => this.#container.unregisterItem(h),
     );
     preventPointerFocus((event) => this.effectiveDisabled() && this.#ownsPress(event));
+    injectPointerMove((event) => this.#onPointerMove(event));
   }
 
   registerToggle(): () => void {
@@ -296,7 +298,14 @@ export class ForTreeItem<T = string> implements ForTreeItemContext<T> {
     if (this.effectiveDisabled() || this.#virtualized()) {
       return;
     }
-    this.#tree.roving.setActive(this.#host.nativeElement);
+    this.#tree.notifyItemFocus(this.#host.nativeElement);
+  }
+
+  #onPointerMove(event: PointerEvent): void {
+    if (this.effectiveDisabled() || !this.#ownsPress(event)) {
+      return;
+    }
+    this.#tree.highlightFromPointer(this.#host.nativeElement, this.id());
   }
 
   protected onPointerDown(event: PointerEvent): void {

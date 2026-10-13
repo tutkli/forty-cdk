@@ -16,7 +16,7 @@ import type { FormValueControl } from '@angular/forms/signals';
 import {
   accessibleTextContent,
   Collection,
-  createPointerSuppression,
+  createPointerHighlight,
   createSingleSlot,
   firstEnabledHost,
   FormUiControlBase,
@@ -312,24 +312,12 @@ export class ForListbox<T = string>
 
   readonly #activeId = signal<string | null>(null);
 
-  readonly #pointerSuppression = createPointerSuppression();
-
-  readonly #pointerHost = signal<HTMLElement | null>(null);
-
-  /**
-   * The pointed-at option's host in the roving path, self-healed on read: a host
-   * that has left the registered set or become disabled is discounted, so the
-   * roving active option reclaims the highlight. The registered set is read only
-   * while a host is stored, keeping the mount's highlight channel independent of
-   * the option list.
-   */
-  readonly #pointerHighlighted = computed<HTMLElement | null>(() => {
-    const host = this.#pointerHost();
-    if (host === null) {
-      return null;
-    }
-    const handle = this.#options.items().find((option) => option.host === host);
-    return handle && !handle.disabled() ? host : null;
+  readonly #pointer = createPointerHighlight({
+    items: () => this.#options.items(),
+    activeDescendant: {
+      active: () => this.#virtualized() || this.#controlled(),
+      claim: (id) => this.#setActiveId(id),
+    },
   });
 
   /**
@@ -422,7 +410,7 @@ export class ForListbox<T = string>
    * a stationary cursor cannot hand the highlight to it.
    */
   #scrollActiveIntoView(host: HTMLElement): void {
-    this.#pointerSuppression.suppress();
+    this.#pointer.suppress();
     host.scrollIntoView?.({ block: 'nearest' });
   }
 
@@ -546,7 +534,7 @@ export class ForListbox<T = string>
   }
 
   #focusFromKeyboard(target: ForListboxOptionHandle<T>): void {
-    this.#pointerSuppression.suppress();
+    this.#pointer.suppress();
     target.host.focus();
     target.host.scrollIntoView?.({ block: 'nearest' });
     if (!this.multiple() && this.selectionFollowsFocus() && !this.readonly()) {
@@ -566,7 +554,7 @@ export class ForListbox<T = string>
     if (this.#controlled()) {
       return false;
     }
-    const pointed = this.#pointerHighlighted();
+    const pointed = this.#pointer.pointed();
     if (pointed !== null) {
       return pointed === el;
     }
@@ -574,14 +562,7 @@ export class ForListbox<T = string>
   }
 
   private highlightFromPointer(host: HTMLElement, id: string): void {
-    if (this.#pointerSuppression.isSuppressed()) {
-      return;
-    }
-    if (this.#virtualized() || this.#controlled()) {
-      this.#setActiveId(id);
-      return;
-    }
-    this.#pointerHost.set(host);
+    this.#pointer.claim(host, id);
   }
 
   private pressKeepsFocus(): boolean {
@@ -643,7 +624,7 @@ export class ForListbox<T = string>
   }
 
   setActiveOption(el: HTMLElement): void {
-    this.#pointerHost.set(null);
+    this.#pointer.release();
     this.roving.setActive(el);
   }
 
@@ -805,6 +786,6 @@ export class ForListbox<T = string>
   }
 
   protected onPointerLeave(): void {
-    this.#pointerHost.set(null);
+    this.#pointer.release();
   }
 }

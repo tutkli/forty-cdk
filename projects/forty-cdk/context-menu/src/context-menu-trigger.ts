@@ -12,7 +12,7 @@ import {
   input,
 } from '@angular/core';
 
-import { fortyWarn, hostId } from 'forty-cdk/core';
+import { fortyWarn, hostId, injectPointerMove } from 'forty-cdk/core';
 import {
   asMenuOpenerRegistration,
   createDebouncedAction,
@@ -87,7 +87,6 @@ const LONG_PRESS_MOVE_TOLERANCE_PX = 10;
     '[attr.data-state]': 'ctx().open() ? "open" : "closed"',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '(pointerdown)': 'onPointerDown($event)',
-    '(pointermove)': 'onPointerMove($event)',
     '(pointerup)': 'onPointerRelease()',
     '(pointercancel)': 'onPointerRelease()',
     '(contextmenu)': 'onContextMenu($event)',
@@ -178,6 +177,7 @@ export class ForContextMenuTrigger {
       onCleanup(() => openers.unregisterOpener(el));
     });
     inject(DestroyRef).onDestroy(() => this.#longPress.cancel());
+    injectPointerMove((event) => this.onPointerMove(event));
   }
 
   protected onPointerDown(event: PointerEvent): void {

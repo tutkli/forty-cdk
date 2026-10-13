@@ -2245,6 +2245,80 @@ describe('ForTree', () => {
     });
   });
 
+  describe('pointer highlight (issue #2264)', () => {
+    const hover = (target: HTMLElement) =>
+      target.dispatchEvent(new PointerEvent('pointermove', { bubbles: true }));
+    const highlighted = (host: HTMLElement): HTMLElement[] =>
+      visibleItems(host).filter((item) => item.hasAttribute('data-highlighted'));
+
+    it('hands data-highlighted to the hovered node, and to no other', async () => {
+      const { el, fixture } = await setup();
+      itemOf(el, 'documents').focus();
+      await flush(fixture);
+
+      hover(labelOf(el, 'readme'));
+      await flush(fixture);
+      expect(highlighted(el)).toEqual([itemOf(el, 'readme')]);
+      expect(document.activeElement).toBe(itemOf(el, 'documents'));
+      expect(itemOf(el, 'documents').getAttribute('tabindex')).toBe('0');
+    });
+
+    it('claims the innermost node a hover lands in, not its ancestors', async () => {
+      const { el, fixture } = await setup((i) => i.open.set(['documents']));
+      itemOf(el, 'documents').focus();
+      await flush(fixture);
+
+      hover(labelOf(el, 'report'));
+      await flush(fixture);
+      expect(highlighted(el)).toEqual([itemOf(el, 'report')]);
+    });
+
+    it('ignores a hover over a disabled node', async () => {
+      const { el, fixture } = await setup((i) => i.disabledIds.set(['readme']));
+      itemOf(el, 'documents').focus();
+      await flush(fixture);
+
+      hover(labelOf(el, 'readme'));
+      await flush(fixture);
+      expect(highlighted(el)).toEqual([itemOf(el, 'documents')]);
+    });
+
+    it('hands the highlight back to the keyboard on the next arrow move', async () => {
+      const { el, fixture } = await setup();
+      itemOf(el, 'documents').focus();
+      hover(labelOf(el, 'readme'));
+      await flush(fixture);
+      expect(highlighted(el)).toEqual([itemOf(el, 'readme')]);
+
+      pressKey(itemOf(el, 'documents'), 'ArrowDown');
+      await flush(fixture);
+      expect(document.activeElement).toBe(itemOf(el, 'downloads'));
+      expect(highlighted(el)).toEqual([itemOf(el, 'downloads')]);
+    });
+
+    it('ignores a hover arriving inside the window a keyboard move opens', async () => {
+      const { el, fixture } = await setup();
+      itemOf(el, 'documents').focus();
+      await flush(fixture);
+
+      pressKey(itemOf(el, 'documents'), 'ArrowDown');
+      hover(labelOf(el, 'readme'));
+      await flush(fixture);
+      expect(highlighted(el)).toEqual([itemOf(el, 'downloads')]);
+    });
+
+    it('releases the claim when the pointer leaves the tree', async () => {
+      const { el, fixture } = await setup();
+      itemOf(el, 'documents').focus();
+      hover(labelOf(el, 'readme'));
+      await flush(fixture);
+
+      treeOf(el).dispatchEvent(new PointerEvent('pointerleave'));
+      await flush(fixture);
+      expect(highlighted(el)).toEqual([itemOf(el, 'documents')]);
+    });
+  });
+
   describe('orphan usage', () => {
     it('throws a prefixed error when ForTreeItem is used outside a tree', () => {
       @Component({
@@ -2462,6 +2536,23 @@ describe('ForTree', () => {
       const secondRoot = el.querySelector<HTMLElement>('[data-test-id="root-1"]')!;
       expect(activeId).toBe(secondRoot.id);
       expect(secondRoot.hasAttribute('data-highlighted')).toBe(true);
+    });
+
+    it('4b. hovering a rendered node moves aria-activedescendant and the highlight to it', async () => {
+      const { el, fixture } = await setupVirtual();
+      const tree = treeEl(el);
+      tree.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+      await flush(fixture);
+      const thirdRoot = el.querySelector<HTMLElement>('[data-test-id="root-2"]')!;
+
+      thirdRoot.dispatchEvent(new PointerEvent('pointermove', { bubbles: true }));
+      await flush(fixture);
+      expect(tree.getAttribute('aria-activedescendant')).toBe(thirdRoot.id);
+      expect(thirdRoot.hasAttribute('data-highlighted')).toBe(true);
+
+      tree.dispatchEvent(new PointerEvent('pointerleave'));
+      await flush(fixture);
+      expect(tree.getAttribute('aria-activedescendant')).toBe(thirdRoot.id);
     });
 
     it('5. End to off-window index emits scrollToIndex; item resolves after window update', async () => {

@@ -1,6 +1,11 @@
 import { ElementRef, inject, signal, type Signal } from '@angular/core';
 
-import { registerHandle, resolveListNavigation, isHoverCapablePointer } from 'forty-cdk/core';
+import {
+  injectPointerMove,
+  isHoverCapablePointer,
+  registerHandle,
+  resolveListNavigation,
+} from 'forty-cdk/core';
 import { type ForMenuContext } from 'forty-cdk/core-overlay';
 import { handleMenuHorizontalArrow } from './menu-horizontal-arrow';
 import { handleMenuTabOut } from './menu-tab-out';
@@ -28,8 +33,6 @@ export interface MenuItemInteraction {
   onFocus(): void;
   /** `(blur)` handler — drops the highlight and clears any pending suppression. */
   onBlur(): void;
-  /** `(pointermove)` handler — mouse hover moves focus onto the item and highlights it. */
-  onPointerMove(event: PointerEvent): void;
   /**
    * Handle the navigation prefix shared by every item — horizontal-arrow
    * routing (submenu close / menubar sibling switch), ArrowUp/Down/Home/End
@@ -76,6 +79,16 @@ export function createMenuItemInteraction(config: {
     (h) => ctx.unregisterItem(h),
   );
 
+  injectPointerMove((event) => {
+    if (!isHoverCapablePointer(event) || effectiveDisabled()) {
+      return;
+    }
+    if (host.ownerDocument.activeElement !== host) {
+      host.focus({ preventScroll: true });
+    }
+    highlighted.set(true);
+  });
+
   return {
     highlighted: highlighted.asReadonly(),
     onFocus(): void {
@@ -88,18 +101,6 @@ export function createMenuItemInteraction(config: {
     onBlur(): void {
       suppressNextFocusHighlight = false;
       highlighted.set(false);
-    },
-    onPointerMove(event: PointerEvent): void {
-      if (!isHoverCapablePointer(event)) {
-        return;
-      }
-      if (effectiveDisabled()) {
-        return;
-      }
-      if (host.ownerDocument.activeElement !== host) {
-        host.focus({ preventScroll: true });
-      }
-      highlighted.set(true);
     },
     handleNavigation(event: KeyboardEvent): boolean {
       if (handleMenuHorizontalArrow(event, ctx)) {

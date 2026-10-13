@@ -14,7 +14,7 @@ import {
 import type { FormValueControl } from '@angular/forms/signals';
 
 import {
-  createPointerSuppression,
+  createPointerHighlight,
   injectHiddenInput,
   isRangeSelectShortcut,
   LabelCache,
@@ -422,18 +422,15 @@ export class ForSelect<T = string>
     this.#virtualized() ? this.#activeId() : null,
   );
 
-  readonly #pointerSuppression = createPointerSuppression();
-
-  readonly #pointerHost = signal<HTMLElement | null>(null);
-
-  private readonly pointerHighlightedOption = computed<HTMLElement | null>(() => {
-    const host = this.#pointerHost();
-    if (host === null) {
-      return null;
-    }
-    const handle = this.#controller.options().find((option) => option.host === host);
-    return handle && !handle.disabled() ? host : null;
+  readonly #pointer = createPointerHighlight({
+    items: () => this.#controller.options(),
+    activeDescendant: {
+      active: () => this.#virtualized(),
+      claim: (id) => this.#setActiveId(id),
+    },
   });
+
+  private readonly pointerHighlightedOption = this.#pointer.pointed;
 
   #navigator: SelectVirtualizedNavigator<T> | null = null;
 
@@ -689,7 +686,7 @@ export class ForSelect<T = string>
     for (const v of values) {
       const opt = items.find((o) => equals(o.value(), v) && !o.disabled());
       if (opt) {
-        this.#pointerSuppression.suppress();
+        this.#pointer.suppress();
         opt.host.focus();
         return true;
       }
@@ -708,22 +705,15 @@ export class ForSelect<T = string>
   }
 
   private highlightFromPointer(host: HTMLElement, id: string): void {
-    if (this.#pointerSuppression.isSuppressed()) {
-      return;
-    }
-    if (this.#virtualized()) {
-      this.#setActiveId(id);
-      return;
-    }
-    this.#pointerHost.set(host);
+    this.#pointer.claim(host, id);
   }
 
   private notifyOptionFocus(): void {
-    this.#pointerHost.set(null);
+    this.#pointer.release();
   }
 
   private releasePointerHighlight(): void {
-    this.#pointerHost.set(null);
+    this.#pointer.release();
   }
 
   /**
@@ -732,8 +722,8 @@ export class ForSelect<T = string>
    * a stationary cursor cannot hand the highlight to it.
    */
   #scrollActiveIntoView(host: HTMLElement): void {
-    this.#pointerSuppression.suppress();
-    this.#pointerHost.set(null);
+    this.#pointer.suppress();
+    this.#pointer.release();
     host.scrollIntoView?.({ block: 'nearest' });
   }
 

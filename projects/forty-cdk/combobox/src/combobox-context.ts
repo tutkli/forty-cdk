@@ -371,15 +371,11 @@ export interface ComboboxPieceContext<T = unknown> {
   isActive(id: string): boolean;
 
   /**
-   * Whether a pointer-suppression window is currently open. Opened whenever the
-   * directive scrolls the active option into view (keyboard navigation, the
-   * auto-highlight seed, and the open-time reveal), so a synthetic `pointermove`
-   * fired because the scroll slid a different option under a stationary cursor
-   * does not hijack the activedescendant.
-   * Options consult this from their hover handler and skip the move while it
-   * returns `true`.
+   * Reported by `[forComboboxOption]` on `pointermove`: moves the activedescendant
+   * to the hovered option, unless a scroll-into-view opened the pointer-suppression
+   * window just before.
    */
-  isPointerSuppressed(): boolean;
+  highlightFromPointer(host: HTMLElement, id: string): void;
 
   /** Move the activedescendant to the first / last / next / prev enabled option. */
   navigate(direction: 'next' | 'prev' | 'first' | 'last'): void;
@@ -512,8 +508,6 @@ export interface ComboboxRegistrationContext<T = unknown> {
   registerAction(handle: ForComboboxActionHandle): void;
   /** Unregisters an action. Reference-based. */
   unregisterAction(handle: ForComboboxActionHandle): void;
-  /** Set the activedescendant directly. Used by options on pointer-move and by the input on inline-completion seed. */
-  setActiveId(id: string | null): void;
   /** Set where focus lands after the next open. The input directive calls it before flipping `open`. */
   setInitialFocus(target: ForComboboxInitialFocus): void;
 }

@@ -14,6 +14,7 @@ import {
   isUnset,
   registerHandle,
   hostId,
+  injectPointerMove,
   preventPointerFocus,
   unsetInput,
 } from 'forty-cdk/core';
@@ -73,7 +74,6 @@ export const FOR_COMBOBOX_OPTION = new InjectionToken<ForComboboxOption>('FOR_CO
     '[attr.data-highlighted]': 'highlighted() ? "" : null',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '(click)': 'onClick()',
-    '(pointermove)': 'onPointerMove()',
   },
 })
 export class ForComboboxOption<T = string> {
@@ -184,6 +184,7 @@ export class ForComboboxOption<T = string> {
       (h) => this.#ctx.unregisterOption(h),
     );
     preventPointerFocus();
+    injectPointerMove(() => this.onPointerMove());
   }
 
   protected onClick(): void {
@@ -194,11 +195,9 @@ export class ForComboboxOption<T = string> {
   }
 
   protected onPointerMove(): void {
-    if (this.effectiveDisabled() || this.#ctx.isPointerSuppressed()) {
+    if (this.effectiveDisabled()) {
       return;
     }
-    if (!this.#ctx.isActive(this.id())) {
-      this.#ctx.setActiveId(this.id());
-    }
+    this.#ctx.highlightFromPointer(this.#host.nativeElement, this.id());
   }
 }

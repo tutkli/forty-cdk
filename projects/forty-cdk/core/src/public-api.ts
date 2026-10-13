@@ -237,6 +237,11 @@ export {
   pressFocusesDescendant,
   preventPointerFocus,
 } from './pointer/pointer-focus';
+export {
+  createPointerHighlight,
+  injectPointerMove,
+  type PointerHighlight,
+} from './pointer/pointer-highlight';
 export { createPointerSuppression, type PointerSuppression } from './pointer/pointer-suppression';
 export { injectPortal } from './portal/portal';
 export { assertRootContext } from './root-context/root-context';

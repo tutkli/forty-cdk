@@ -152,8 +152,9 @@ export interface TimePickerPieceContext {
    * would hand the highlight to whatever the user merely scrolled past.
    *
    * @param host The hovered slot's host element.
+   * @param id The hovered slot's id.
    */
-  highlightFromPointer(host: HTMLElement): void;
+  highlightFromPointer(host: HTMLElement, id: string): void;
   /**
    * Called by a slot when it takes DOM focus: drops any pointer highlight, so
    * the keyboard channel owns the highlight again from the move that focused the

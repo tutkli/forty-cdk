@@ -15,6 +15,7 @@ import {
 import {
   injectElementSize,
   composedContains,
+  createPointerHighlight,
   findFirstFocusable,
   stepFocusableCycle,
   firstEnabledHost,
@@ -112,6 +113,7 @@ const ROW_CROSSING_ACTIONS: ReadonlySet<GridNavigationAction> = new Set([
       'mode() !== "table" && selectionMode() === "multiple" ? "true" : null',
     '(focusout)': 'onFocusOut($event)',
     '(focusin)': 'onFocusIn($event)',
+    '(pointerleave)': 'onPointerLeave()',
   },
   providers: provideForTable(ForTable),
 })
@@ -258,6 +260,7 @@ export class ForTable<T = unknown> implements ForTableContext {
   protected readonly headerSize = injectElementSize(this.#registry.headerRowEl);
 
   readonly #roving = new RovingTabindex(() => this.#flatCells());
+  readonly #pointer = createPointerHighlight({ items: () => this.#flatCells() });
   readonly #enteredCell = signal<HTMLElement | null>(null);
   readonly #activations = new WeakSet<Event>();
 
@@ -503,13 +506,28 @@ export class ForTable<T = unknown> implements ForTableContext {
   }
 
   private isCellHighlighted(host: HTMLElement): boolean {
+    const pointed = this.#pointer.pointed();
+    if (pointed !== null) {
+      return pointed === host;
+    }
     return this.#roving.active() === host;
   }
 
   private activateCell(host: HTMLElement): void {
     if (this.mode() !== 'table') {
+      this.#pointer.release();
       this.#roving.setActive(host);
     }
+  }
+
+  private highlightFromPointer(host: HTMLElement): void {
+    if (this.mode() !== 'table') {
+      this.#pointer.claim(host);
+    }
+  }
+
+  protected onPointerLeave(): void {
+    this.#pointer.release();
   }
 
   /**
@@ -652,6 +670,7 @@ export class ForTable<T = unknown> implements ForTableContext {
       (handle) => handle.host !== target && composedContains(handle.host, target),
     );
     if (cell !== undefined && !cell.disabled() && this.#roving.active() !== cell.host) {
+      this.#pointer.release();
       this.#roving.setActive(cell.host);
     }
   }
@@ -861,6 +880,7 @@ export class ForTable<T = unknown> implements ForTableContext {
       return false;
     }
     event.preventDefault();
+    this.#pointer.suppress();
     const currentIndex = Math.max(
       0,
       cells.findIndex((cell) => cell.host === host),

@@ -17,6 +17,7 @@ import {
   navigateFromRovingItem,
   registerHandle,
   hostId,
+  injectPointerMove,
   preventPointerFocus,
   resolveListNavigation,
   unsetInput,
@@ -71,7 +72,6 @@ export const FOR_LISTBOX_OPTION = new InjectionToken<ForListboxOption>('FOR_LIST
     '(focus)': 'onFocus()',
     '(keydown)': 'onKeyDown($event)',
     '(pointerdown)': 'onPointerDown($event)',
-    '(pointermove)': 'onPointerMove()',
   },
 })
 export class ForListboxOption<T = string> {
@@ -182,6 +182,7 @@ export class ForListboxOption<T = string> {
       (h) => this.#group.unregisterOption(h),
     );
     preventPointerFocus(() => this.effectiveDisabled() || this.#group.pressKeepsFocus());
+    injectPointerMove(() => this.onPointerMove());
   }
 
   protected onClick(): void {
