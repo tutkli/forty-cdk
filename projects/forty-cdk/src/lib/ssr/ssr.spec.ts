@@ -153,6 +153,24 @@ function makeLayoutApisAbsent(): void {
   }
 }
 
+const rootNodeDescriptor = Object.getOwnPropertyDescriptor(Node.prototype, 'getRootNode');
+
+function makeRootNodeAbsent(): void {
+  expect(
+    rootNodeDescriptor,
+    'Node.prototype owns no getRootNode — this run proves nothing about ungated shadow-root walks',
+  ).toBeDefined();
+  Object.defineProperty(Node.prototype, 'getRootNode', {
+    configurable: true,
+    writable: true,
+    value: undefined,
+  });
+}
+
+function restoreRootNode(): void {
+  Object.defineProperty(Node.prototype, 'getRootNode', rootNodeDescriptor!);
+}
+
 function configureServer(): void {
   TestBed.configureTestingModule({
     providers: [
@@ -347,10 +365,12 @@ describe('SSR smoke tests', () => {
     }
     headBaseline = Array.from(document.head.children);
     makeLayoutApisAbsent();
+    makeRootNodeAbsent();
     configureServer();
   });
 
   afterEach(() => {
+    restoreRootNode();
     TestBed.resetTestingModule();
     for (const child of Array.from(document.head.children)) {
       if (!headBaseline.includes(child)) child.remove();
@@ -368,6 +388,7 @@ describe('SSR smoke tests', () => {
     for (const name of ABSENT_ON_A_REAL_SERVER) {
       expect(globals[name]).toBeUndefined();
     }
+    expect(document.body.getRootNode).toBeUndefined();
   });
 
   it('registers every fixture component the fixture modules export', () => {

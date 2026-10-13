@@ -6,6 +6,7 @@ import {
   provideZonelessChangeDetection,
   signal,
   type Signal,
+  ViewEncapsulation,
 } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
@@ -49,6 +50,36 @@ class Host {
 class MultiHost {
   readonly probes = [0, 1, 2, 3, 4];
   readonly ancestorDir = signal<string | null>(null);
+}
+
+@Component({
+  selector: 'shadow-shell',
+  encapsulation: ViewEncapsulation.ShadowDom,
+  imports: [DirProbe],
+  template: `<span probeDir></span>`,
+})
+class ShadowShell {}
+
+@Component({
+  host: { 'data-fixture': 'shadow-host' },
+  imports: [ShadowShell],
+  template: `
+    <div [attr.dir]="ancestorDir()">
+      <shadow-shell />
+    </div>
+  `,
+})
+class ShadowHost {
+  readonly ancestorDir = signal<string | null>('rtl');
+}
+
+function renderShadow() {
+  const fixture = TestBed.createComponent(ShadowHost);
+  const probeHost = (): HTMLElement =>
+    (fixture.nativeElement as HTMLElement)
+      .querySelector('shadow-shell')!
+      .shadowRoot!.querySelector('[probeDir]') as HTMLElement;
+  return { fixture, probeHost };
 }
 
 function render() {
@@ -190,6 +221,37 @@ describe('injectTextDirection', () => {
       expect(host.getAttribute('dir')).toBe('rtl');
 
       rtlBox.remove();
+    });
+  });
+
+  describe('across a shadow boundary', () => {
+    beforeEach(() => {
+      TestBed.configureTestingModule({
+        providers: [provideZonelessChangeDetection()],
+      });
+    });
+
+    it('resolves rtl from a [dir] above the shadow host it renders inside', async () => {
+      const { fixture, probeHost } = renderShadow();
+      await flush(fixture);
+      expect(probeHost().getAttribute('dir')).toBe('rtl');
+    });
+
+    it('reacts to a runtime flip of a [dir] above the shadow host', async () => {
+      const { fixture, probeHost } = renderShadow();
+      await flush(fixture);
+      expect(probeHost().getAttribute('dir')).toBe('rtl');
+
+      fixture.componentInstance.ancestorDir.set('ltr');
+      await flush(fixture);
+      expect(probeHost().getAttribute('dir')).toBe('ltr');
+    });
+
+    it('defaults to ltr when nothing above the shadow host sets a dir', async () => {
+      const { fixture, probeHost } = renderShadow();
+      fixture.componentInstance.ancestorDir.set(null);
+      await flush(fixture);
+      expect(probeHost().getAttribute('dir')).toBe('ltr');
     });
   });
 

@@ -1,3 +1,5 @@
+import { stampAmbientDirection } from '../text-direction/text-direction';
+
 /** A floating clone of the dragged element that follows the pointer. */
 export interface DragPreview {
   /** Position the preview's top-left at `(x, y)` in viewport coordinates. */
@@ -80,8 +82,9 @@ export function wrapPreview(preview: {
 
 /**
  * Creates a default drag preview: a fixed-position clone of `source` appended to `doc.body`, sized to the
- * source's current bounding box, non-interactive, and hidden from assistive tech. Caller must gate on a
- * browser platform.
+ * source's current bounding box, non-interactive, and hidden from assistive tech. The clone carries the
+ * writing direction declared at `source`, so it keeps the alignment and bidi ordering of the item it
+ * floats away from. Caller must gate on a browser platform.
  *
  * `id` and `data-testid` are stripped from the clone root and from every descendant carrying one, so the
  * preview is never reachable through a hook that identifies a single element: duplicating an `id` while the
@@ -115,6 +118,7 @@ export function createDragPreview(source: HTMLElement, doc: Document): DragPrevi
     el.removeAttribute('id');
   });
 
+  stampAmbientDirection(clone, source);
   doc.body.appendChild(clone);
 
   const destroy = (): void => {
@@ -134,10 +138,12 @@ export function createDragPreview(source: HTMLElement, doc: Document): DragPrevi
  * Creates a drag preview from caller-supplied root nodes (e.g. an Angular embedded view's
  * `rootNodes`): wraps them in a fixed-position, non-interactive, assistive-tech-hidden container
  * appended to `doc.body`. `onDestroy` runs on teardown (before the wrapper is removed) so the
- * caller can dispose the backing view. Caller must gate on a browser platform.
+ * caller can dispose the backing view. The wrapper carries the writing direction declared at
+ * `source`, the dragged item's host. Caller must gate on a browser platform.
  */
 export function createTemplatePreview(
   nodes: readonly Node[],
+  source: Element,
   doc: Document,
   onDestroy: () => void,
 ): DragPreview {
@@ -154,6 +160,7 @@ export function createTemplatePreview(
   for (const node of nodes) {
     wrapper.appendChild(node);
   }
+  stampAmbientDirection(wrapper, source);
   doc.body.appendChild(wrapper);
 
   const destroy = (): void => {

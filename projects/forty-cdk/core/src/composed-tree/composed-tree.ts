@@ -132,6 +132,9 @@ function hostChainOf(node: Node): Node[] {
 }
 
 function shadowHostOf(node: Node): Element | null {
+  if (typeof node.getRootNode !== 'function') {
+    return null;
+  }
   const root = node.getRootNode();
   return root !== node && isShadowRoot(root) ? root.host : null;
 }

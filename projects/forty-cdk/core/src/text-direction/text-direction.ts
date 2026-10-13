@@ -11,6 +11,7 @@ import {
   type Signal,
 } from '@angular/core';
 
+import { composedClosest, composedParentElement } from '../composed-tree/composed-tree';
 import type { WritingDirection } from '../keyboard-navigation/keyboard-navigation';
 
 /**
@@ -34,7 +35,8 @@ function normalizeDir(value: string | null | undefined): WritingDirection {
  * on every other's reflection.
  *
  * Granularity is coarse: any `dir` mutation invalidates every dir-aware primitive,
- * each re-walking its own ancestor chain with a synchronous `closest('[dir]')`.
+ * each re-walking its own ancestor chain through open shadow roots. The observer does not reach
+ * into shadow roots, so a `dir` changed inside one is picked up on the next document-level change.
  *
  * SSR-safe: off-browser no observer is created and `revision` stays `0`.
  */
@@ -76,17 +78,21 @@ class AmbientDirection {
  *
  * An explicit `[dir]` always wins. When it is `null` the value falls back to the nearest ancestor
  * carrying a `dir` attribute — the host itself is skipped, since it reflects its own resolved
- * value — then to `<html dir>`, defaulting to `'ltr'`.
+ * value — then to `<html dir>`, defaulting to `'ltr'`. The ancestor walk crosses open shadow roots,
+ * so a primitive rendered inside a `ViewEncapsulation.ShadowDom` component follows a `dir` set
+ * above its host.
  *
  * Direction is read from the semantic `dir` attribute, never from CSS `direction`, so consumers set
  * `dir` on an ancestor rather than styling it.
  *
- * A runtime flip of any `dir` attribute recomputes the signal. SSR-safe: the ancestor walk runs
- * server-side too, so a server-rendered RTL app resolves `'rtl'` and hydration matches.
+ * A runtime flip of any `dir` attribute in the document recomputes the signal. SSR-safe: the
+ * ancestor walk runs server-side too, so a server-rendered RTL app resolves `'rtl'` and hydration
+ * matches.
  *
- * Limitation: only `dir` attribute mutations are observed, not `childList`. Moving the host into a
- * different-`dir` subtree without changing any `dir` attribute does not recompute the ambient;
- * set an explicit `[dir]` on the moved element if that happens.
+ * Limitation: only `dir` attribute mutations in the document are observed, not `childList`, and not
+ * mutations inside a shadow root. Moving the host into a different-`dir` subtree, or changing a
+ * `dir` inside a shadow root, does not recompute the ambient until another `dir` attribute in the
+ * document changes; set an explicit `[dir]` on the element if that happens.
  *
  * Must be called from an injection context.
  */
@@ -94,27 +100,54 @@ export function injectTextDirection(
   explicitDir: Signal<WritingDirection | null>,
 ): Signal<WritingDirection> {
   const host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
-  const ambient = injectAmbientDirection(() => host.parentElement);
+  const ambient = injectAmbientDirection(() => composedParentElement(host));
 
   return computed(() => explicitDir() ?? ambient());
 }
 
 /**
  * Resolves the writing direction in effect at `origin`: the nearest element carrying a `dir`
- * attribute, `origin` itself included, then `<html dir>`, defaulting to `'ltr'`. Recomputes on any
- * runtime `dir` attribute change, and on `origin` when it reads a signal.
+ * attribute, `origin` itself included and open shadow roots crossed, then `<html dir>`, defaulting
+ * to `'ltr'`. Recomputes on any runtime `dir` attribute change in the document, and on `origin`
+ * when it reads a signal.
  *
  * Must be called from an injection context.
  */
 export function injectAmbientDirection(
   origin: () => Element | null | undefined,
 ): Signal<WritingDirection> {
+  const declared = injectDeclaredDirection(origin);
+  return computed(() => declared() ?? 'ltr');
+}
+
+export function injectDeclaredDirection(
+  origin: () => Element | null | undefined,
+): Signal<WritingDirection | null> {
   const doc = inject(DOCUMENT);
   const direction = inject(AmbientDirection);
 
-  return computed<WritingDirection>(() => {
+  return computed(() => {
     direction.revision();
-    const ancestor = origin()?.closest('[dir]');
-    return normalizeDir(ancestor?.getAttribute('dir') ?? doc.documentElement?.dir);
+    return resolveAttributeDirection(origin() ?? null, doc);
   });
+}
+
+function resolveAttributeDirection(origin: Element | null, doc: Document): WritingDirection | null {
+  const declared = (origin ? composedClosest(origin, '[dir]') : null) ?? htmlWithDir(doc);
+  return declared ? normalizeDir(declared.getAttribute('dir')) : null;
+}
+
+export function stampAmbientDirection(el: Element, origin: Element | null): void {
+  if (el.hasAttribute('dir')) {
+    return;
+  }
+  const dir = resolveAttributeDirection(origin, el.ownerDocument);
+  if (dir !== null) {
+    el.setAttribute('dir', dir);
+  }
+}
+
+function htmlWithDir(doc: Document): Element | null {
+  const html = doc.documentElement as Element | null;
+  return html?.hasAttribute('dir') ? html : null;
 }

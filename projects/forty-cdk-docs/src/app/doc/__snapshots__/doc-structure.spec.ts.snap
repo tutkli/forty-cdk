@@ -6691,6 +6691,10 @@ exports[`document structure > projects/forty-cdk/shared/README.md declares the s
       },
       {
         "depth": 3,
+        "slug": "a-dir-changed-inside-a-shadow-root-is-not-observed",
+      },
+      {
+        "depth": 3,
         "slug": "escape-is-observed-on-the-bubble-phase",
       },
       {
