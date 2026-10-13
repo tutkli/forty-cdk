@@ -19,6 +19,8 @@ import {
 import {
   afterEachOverlayCleanup,
   flush,
+  focusInOn,
+  pointerDownOn,
   renderHost,
   type RenderResult,
 } from '../../src/test-utils';
@@ -733,6 +735,38 @@ describe('ForDatePicker', () => {
       expect(r.instance.open()).toBe(true);
       expect(content()).not.toBeNull();
       expect(r.instance.openChanges).toEqual([true]);
+    });
+
+    for (const [channel, dispatch] of [
+      ['pointer-down', pointerDownOn],
+      ['focus', focusInOn],
+    ] as const) {
+      it(`leaves focus where it moved after an outside ${channel} close`, async () => {
+        const r = renderHost(Host);
+        await openPicker(r);
+        const focusSpy = vi.spyOn(trigger(r), 'focus');
+        const outside = document.createElement('button');
+        document.body.appendChild(outside);
+
+        dispatch(outside);
+        await flush(r.fixture);
+
+        expect(r.instance.open()).toBe(false);
+        expect(focusSpy).not.toHaveBeenCalled();
+        outside.remove();
+      });
+    }
+
+    it('returns focus to the trigger after an Escape close', async () => {
+      const r = renderHost(Host);
+      await openPicker(r);
+      const focusSpy = vi.spyOn(trigger(r), 'focus');
+
+      pressKey(content()!, 'Escape');
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+      expect(focusSpy).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -2631,6 +2665,20 @@ describe('ForDatePicker', () => {
       expect(adapter.getHours(value)).toBe(14);
       expect(adapter.getMinutes(value)).toBe(30);
       expect(r.instance.open()).toBe(false);
+    });
+
+    it('closes on a press on a segment and leaves focus off the trigger', async () => {
+      const r = renderHost(FieldAnatomyHost);
+      await r.flush();
+      at(r, 'trigger').click();
+      await r.flush();
+      const focusSpy = vi.spyOn(at(r, 'trigger'), 'focus');
+
+      pointerDownOn(at(r, 'day'));
+      await r.flush();
+
+      expect(r.instance.open()).toBe(false);
+      expect(focusSpy).not.toHaveBeenCalled();
     });
 
     describe('without a projected [forDateField]', () => {

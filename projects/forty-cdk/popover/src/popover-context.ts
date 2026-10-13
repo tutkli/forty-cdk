@@ -44,11 +44,7 @@ export interface ForPopoverContext extends AnchoredPositioningContext {
 
   /**
    * Reason of the most recent close, or `null` while the popover is open / has
-   * never closed. Reset to `null` on open. `[forPopoverContent]` reads it to
-   * skip its trigger return-focus when the close came from an outside
-   * interaction (`'pointerDownOutside'` / `'focusOutside'`) or a Tab out
-   * (`'tab'`) — leaving focus where the user just clicked / focused / tabbed
-   * instead of ripping it back to the trigger (matching `[forDropdownMenu]`).
+   * never closed. Reset to `null` on open.
    */
   readonly lastCloseReason: Signal<ForPopoverCloseReason | null>;
 

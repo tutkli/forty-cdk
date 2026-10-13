@@ -1,4 +1,12 @@
-import { clickOutside, el, expect, expectFocused, gotoFixture, test } from './_helpers';
+import {
+  clickOutside,
+  el,
+  expect,
+  expectFocused,
+  expectStays,
+  gotoFixture,
+  test,
+} from './_helpers';
 
 // The fixture presets the value to 2026-06-15, so the calendar opens on June
 // 2026 with the roving cell on the 15th.
@@ -65,6 +73,18 @@ test.describe('DatePicker', () => {
 
     await clickOutside(page);
     await expect(el(page, 'content')).toHaveCount(0);
+  });
+
+  test('clicking another input closes the surface and keeps focus on that input', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'date-picker');
+    await el(page, 'trigger').click();
+    await expect(el(page, 'content')).toBeVisible();
+
+    await el(page, 'before').click();
+    await expect(el(page, 'content')).toHaveCount(0);
+    await expectStays(page, async () => expectFocused(el(page, 'before')));
   });
 
   test('selecting a date closes the surface and returns focus to the trigger', async ({ page }) => {

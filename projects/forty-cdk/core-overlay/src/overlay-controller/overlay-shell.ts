@@ -63,7 +63,8 @@ export interface OverlayShellDismissConfig {
    * marking the control touched); the shell never touches the directive's
    * close output directly. Required alongside `dismissible`. Each wired outside
    * channel fires its own close, so a specific channel (`emitPointerDownOutside`
-   * / `emitFocusOutside`) closes even without `emitInteractOutside` wired.
+   * / `emitFocusOutside`) closes even without `emitInteractOutside` wired. A
+   * close requested here never returns focus on destroy.
    */
   readonly requestClose?: (reason: 'pointerDownOutside' | 'focusOutside') => void;
   /** Forwards the raw Escape `KeyboardEvent` to the consumer; close is consumer-owned. */
@@ -138,9 +139,11 @@ export interface OverlayShellInitialFocusConfig {
  *   Returning `null` is a safe no-op (the trigger may have unmounted).
  * - `veto` — `(autoFocusOnClose)` veto. Returning `true` skips the focus
  *   call.
- * - `skip` — additional opt-out. Used by Select to skip return-focus when
- *   `lastCloseReason() === 'tab'` (Tab already moved focus to the trigger
- *   and let the browser advance from there).
+ * - `skip` — additional opt-out, read before `veto`. The shell already skips
+ *   the return after a close it requested itself, through an outside channel
+ *   or a Tab out, since focus is then where the user moved it. `skip` covers
+ *   the closes that reach the root another way, such as a Tab the root handles
+ *   or a close propagated from a nested surface.
  */
 export interface OverlayShellReturnFocusConfig {
   readonly enabled: Signal<boolean>;
@@ -192,7 +195,9 @@ export interface OverlayShellConfig {
  * When configured, the shell activates a dismissible layer after the first render, performs the
  * initial focus move — falling back to the host when the move finds no candidate — and restores
  * focus to the return target on destroy. Both focus moves are skipped when their `veto()` returns
- * truthy, which is how `autoFocusOnOpen` / `autoFocusOnClose` are honoured.
+ * truthy, which is how `autoFocusOnOpen` / `autoFocusOnClose` are honoured. The return is also
+ * skipped when the surface closed through one of its own outside channels or a Tab out, without
+ * consulting `veto`: focus already moved where the user put it.
  *
  * Return focus runs after the portaled node has been detached, so the trigger receives the focus
  * event in a settled layout.
@@ -261,9 +266,20 @@ export function injectOverlayShell(config: OverlayShellConfig): void {
     }
 
     if (layer && dismissCfg) {
+      const requestClose = dismissCfg.requestClose;
       const options: DismissibleLayerActivateOptions = {
         channels: outsideVetoChannels(dismissCfg),
-        ...buildOutsideVetoOptions(dismissCfg),
+        ...buildOutsideVetoOptions(
+          requestClose
+            ? {
+                ...dismissCfg,
+                requestClose: (reason) => {
+                  closedByOutside = true;
+                  requestClose(reason);
+                },
+              }
+            : dismissCfg,
+        ),
       };
 
       if (dismissCfg.exemptElements) {
@@ -313,6 +329,7 @@ export function injectOverlayShell(config: OverlayShellConfig): void {
   });
 
   let tabbedOut = false;
+  let closedByOutside = false;
   const tabOutCfg = config.tabOut;
   if (tabOutCfg) {
     const onKeyDown = (event: KeyboardEvent): void => {
@@ -332,7 +349,7 @@ export function injectOverlayShell(config: OverlayShellConfig): void {
   const rfCfg = config.returnFocus;
   if (rfCfg) {
     inject(DestroyRef).onDestroy(() => {
-      if (tabbedOut || rfCfg.skip?.()) {
+      if (tabbedOut || closedByOutside || rfCfg.skip?.()) {
         return;
       }
       if (rfCfg.veto?.()) {
