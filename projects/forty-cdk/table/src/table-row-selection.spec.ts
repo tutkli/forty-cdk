@@ -1,5 +1,7 @@
 import { signal, type WritableSignal } from '@angular/core';
 
+import { defaultCompareWith } from 'forty-cdk/core';
+
 import { TableRowSelection, type TableRowSelectionDeps } from './table-row-selection';
 import type { TableSelectionBehavior, TableSelectionMode } from './table-context';
 
@@ -20,7 +22,7 @@ function setup(overrides?: Partial<TableRowSelectionDeps<string>>): Setup {
     selection,
     selectionMode,
     selectionBehavior,
-    compareWith: signal((a, b) => a === b),
+    compareWith: signal(defaultCompareWith),
     aggregateValues,
     ...overrides,
   });
@@ -211,6 +213,31 @@ describe('TableRowSelection', () => {
       model.toggle('a');
       expect(model.isSelected('a')).toBe(true);
       expect(model.isSelected('b')).toBe(false);
+    });
+  });
+
+  describe('a selectable set too large to spread into arguments', () => {
+    const LARGE = Array.from({ length: 130_000 }, (_, i) => `r${i}`);
+
+    it('selects and deselects every value through select-all', () => {
+      const { selection, model } = setup({ aggregateValues: signal(LARGE) });
+      model.toggleSelectAll();
+      expect(selection()).toHaveLength(LARGE.length);
+      expect(model.selectAllState()).toBe('all');
+      model.toggleSelectAll();
+      expect(selection()).toEqual([]);
+      expect(model.selectAllState()).toBe('none');
+    });
+
+    it('extends a Shift range across the whole set', () => {
+      const { selection, model } = setup({
+        aggregateValues: signal(LARGE),
+        selectionBehavior: signal('replace'),
+      });
+      model.select(LARGE[0]!);
+      model.select(LARGE[LARGE.length - 1]!, { shiftKey: true });
+      expect(selection()).toHaveLength(LARGE.length);
+      expect(model.selectAllState()).toBe('all');
     });
   });
 });

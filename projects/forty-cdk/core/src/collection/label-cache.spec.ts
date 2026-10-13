@@ -1,6 +1,7 @@
 import { computed, provideZonelessChangeDetection, signal, type Signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
+import { defaultCompareWith } from '../selection/selection';
 import { unsetInput } from '../unset-input/unset-input';
 import { LabelCache, type LabelCacheHandle } from './label-cache';
 
@@ -35,6 +36,7 @@ function createCache(initialValue: readonly string[] = []): Harness {
     items,
     value,
     itemToFormValue: signal((item: string) => item),
+    compareWith: signal(defaultCompareWith),
   });
   return {
     cache,

@@ -32,8 +32,9 @@ import {
   nextEnabledHandle,
   RangeSelectionEngine,
   RovingTabindex,
+  defaultCompareWith,
   defaultItemToFormValue,
-  isInArray,
+  selectionMembership,
   singleSelected,
   toggleInArray,
   injectTextDirection,
@@ -134,7 +135,7 @@ export class ForListbox<T = string>
    * by id (or any other stable key) instead of by reference:
    * `[compareWith]="(a, b) => a.id === b.id"`.
    */
-  readonly compareWith = input<(a: T, b: T) => boolean>((a, b) => a === b);
+  readonly compareWith = input<(a: T, b: T) => boolean>(defaultCompareWith);
 
   /**
    * Serialize an item for the hidden input that participates in native
@@ -273,12 +274,13 @@ export class ForListbox<T = string>
 
   readonly #firstEnabledHost = computed(() => firstEnabledHost(this.#options.items()));
 
+  readonly #isSelected = selectionMembership(this.value, this.compareWith);
+
   readonly #firstSelectedHost = computed<HTMLElement | null>(() => {
-    const selected = this.value();
-    if (selected.length === 0) {
+    if (this.value().length === 0) {
       return null;
     }
-    const equals = this.compareWith();
+    const isSelected = this.#isSelected();
     for (const option of this.#options.items()) {
       if (option.disabled()) {
         continue;
@@ -287,7 +289,7 @@ export class ForListbox<T = string>
       if (isUnset(value)) {
         continue;
       }
-      if (selected.some((v) => equals(v, value))) {
+      if (isSelected(value)) {
         return option.host;
       }
     }
@@ -370,6 +372,7 @@ export class ForListbox<T = string>
     multiple: this.multiple,
     effectiveDisabled: this.effectiveDisabled,
     readonly: this.readonly,
+    reveal: (host) => this.#revealFromKeyboard(host),
   });
 
   #navigator: ListboxVirtualizedNavigator<T> | null = null;
@@ -475,7 +478,7 @@ export class ForListbox<T = string>
   }
 
   isSelected(v: T): boolean {
-    return isInArray(this.value(), v, this.compareWith());
+    return this.#isSelected()(v);
   }
 
   activate(v: T): void {
@@ -534,12 +537,16 @@ export class ForListbox<T = string>
   }
 
   #focusFromKeyboard(target: ForListboxOptionHandle<T>): void {
-    this.#pointer.suppress();
-    target.host.focus();
-    target.host.scrollIntoView?.({ block: 'nearest' });
+    this.#revealFromKeyboard(target.host);
     if (!this.multiple() && this.selectionFollowsFocus() && !this.readonly()) {
       this.#rangeEngine.selectSingle(target.value());
     }
+  }
+
+  #revealFromKeyboard(host: HTMLElement): void {
+    this.#pointer.suppress();
+    host.focus();
+    host.scrollIntoView?.({ block: 'nearest' });
   }
 
   isFirstFocusableOption(el: HTMLElement): boolean {
@@ -766,11 +773,8 @@ export class ForListbox<T = string>
       return;
     }
     const ordered = [...items].sort((a, b) => (a.posInSet() ?? 0) - (b.posInSet() ?? 0));
-    const equals = this.compareWith();
-    const value = this.value();
-    const selectedFirst = ordered.find(
-      (o) => !o.disabled() && value.some((v) => equals(v, o.value())),
-    );
+    const isSelected = this.#isSelected();
+    const selectedFirst = ordered.find((o) => !o.disabled() && isSelected(o.value()));
     const target = selectedFirst ?? ordered.find((o) => !o.disabled());
     if (target) {
       this.#setActiveId(target.id());

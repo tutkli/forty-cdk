@@ -15,15 +15,17 @@ import type { FormValueControl } from '@angular/forms/signals';
 import {
   Collection,
   createPointerHighlight,
+  defaultCompareWith,
   defaultItemToFormValue,
   injectFieldAnchor,
   injectHiddenInput,
   injectTextDirection,
-  isInArray,
   isUnset,
   LabelCache,
   type LabelCacheEntry,
+  lookupByValue,
   nextEnabledHandle,
+  selectionMembership,
   singleSelected,
   toggleInArray,
   type VetoableEvent,
@@ -133,7 +135,7 @@ export class ForCombobox<T = string>
    * removed entries by id (or any other stable key) instead of by
    * reference: `[compareWith]="(a, b) => a.id === b.id"`.
    */
-  readonly compareWith = input<(a: T, b: T) => boolean>((a, b) => a === b);
+  readonly compareWith = input<(a: T, b: T) => boolean>(defaultCompareWith);
 
   /**
    * Render an item as a string label. Defaults to `String(item)`, which is
@@ -474,6 +476,7 @@ export class ForCombobox<T = string>
     items: this.#items.items,
     value: this.value,
     itemToFormValue: this.itemToFormValue,
+    compareWith: this.compareWith,
   });
 
   /**
@@ -533,11 +536,10 @@ export class ForCombobox<T = string>
     if (values.length === 0) {
       return [];
     }
-    const cached = this.selectedEntries();
-    const equals = this.compareWith();
+    const cached = lookupByValue(this.selectedEntries(), (o) => o.value, this.compareWith());
     const toLabel = this.itemToStringLabel();
     return values.map((v) => {
-      const opt = cached.find((o) => equals(o.value, v));
+      const opt = cached(v);
       if (opt) {
         return { value: v, label: opt.label };
       }
@@ -764,8 +766,10 @@ export class ForCombobox<T = string>
     return null;
   }
 
+  readonly #isSelected = selectionMembership(this.value, this.compareWith);
+
   isSelected(v: T): boolean {
-    return isInArray(this.value(), v, this.compareWith());
+    return this.#isSelected()(v);
   }
 
   #setSingle(v: T): void {

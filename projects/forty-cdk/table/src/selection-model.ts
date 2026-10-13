@@ -1,5 +1,13 @@
 import { isSignal, type Signal, signal, type WritableSignal } from '@angular/core';
 
+import {
+  appendMissing,
+  dedupeValues,
+  defaultCompareWith,
+  membership,
+  selectionMembership,
+} from 'forty-cdk/core';
+
 /** Options for {@link SelectionModel}. */
 export interface SelectionModelOptions<T> {
   /**
@@ -14,7 +22,7 @@ export interface SelectionModelOptions<T> {
    * `===` (correct for primitive values); supply an id-based comparator for
    * object values: `(a, b) => a.id === b.id`.
    */
-  readonly compareWith?: (a: T, b: T) => boolean;
+  readonly compareWith?: ((a: T, b: T) => boolean) | Signal<(a: T, b: T) => boolean>;
 }
 
 /**
@@ -30,73 +38,65 @@ export interface SelectionModelOptions<T> {
 export class SelectionModel<T> {
   readonly #source: WritableSignal<readonly T[]>;
   readonly #multiple: Signal<boolean>;
-  readonly #compareWith: (a: T, b: T) => boolean;
+  readonly #compareWith: Signal<(a: T, b: T) => boolean>;
 
   /** The current selection, in insertion order. Readonly view of the backing source. */
   readonly selected: Signal<readonly T[]>;
+
+  readonly membership: Signal<(value: T) => boolean>;
 
   constructor(source: WritableSignal<readonly T[]>, options?: SelectionModelOptions<T>) {
     this.#source = source;
     this.selected = source.asReadonly();
     const multiple = options?.multiple ?? false;
     this.#multiple = isSignal(multiple) ? multiple : signal(multiple);
-    this.#compareWith = options?.compareWith ?? ((a, b) => a === b);
+    const compareWith = options?.compareWith ?? defaultCompareWith;
+    this.#compareWith = isSignal(compareWith) ? compareWith : signal(compareWith);
+    this.membership = selectionMembership(this.#source, this.#compareWith);
   }
 
   /** Whether `value` is currently selected (under the comparator). */
   isSelected(value: T): boolean {
-    return this.#has(this.#source(), value);
+    return this.membership()(value);
   }
 
   /**
    * Select `values`. In single mode keeps only the last given value; in multi
    * mode appends those not already present. Returns whether anything changed.
    */
-  select(...values: T[]): boolean {
+  select(values: readonly T[]): boolean {
     if (values.length === 0) {
       return false;
     }
     if (!this.#multiple()) {
       return this.#commit([values[values.length - 1]!]);
     }
-    const next = [...this.#source()];
-    for (const v of values) {
-      if (!this.#has(next, v)) {
-        next.push(v);
-      }
-    }
-    return this.#commit(next);
+    return this.#commit(appendMissing(this.#source(), values, this.#compareWith()));
   }
 
   /** Deselect `values`. Returns whether anything changed. */
-  deselect(...values: T[]): boolean {
+  deselect(values: readonly T[]): boolean {
     if (values.length === 0) {
       return false;
     }
-    const next = this.#source().filter((v) => !values.some((d) => this.#compareWith(v, d)));
-    return this.#commit(next);
+    const removed = membership(values, this.#compareWith());
+    return this.#commit(this.#source().filter((v) => !removed(v)));
   }
 
   /** Toggle a single value. Returns whether anything changed (always `true`). */
   toggle(value: T): boolean {
-    return this.isSelected(value) ? this.deselect(value) : this.select(value);
+    return this.isSelected(value) ? this.deselect([value]) : this.select([value]);
   }
 
   /**
    * Replace the entire selection with `values` (de-duplicated). In single mode
    * keeps only the last. Returns whether anything changed.
    */
-  setSelection(...values: T[]): boolean {
+  setSelection(values: readonly T[]): boolean {
     if (!this.#multiple() && values.length > 1) {
       return this.#commit([values[values.length - 1]!]);
     }
-    const next: T[] = [];
-    for (const v of values) {
-      if (!this.#has(next, v)) {
-        next.push(v);
-      }
-    }
-    return this.#commit(next);
+    return this.#commit(dedupeValues(values, this.#compareWith()));
   }
 
   /** Clear the selection. Returns whether anything changed. */
@@ -104,18 +104,13 @@ export class SelectionModel<T> {
     return this.#commit([]);
   }
 
-  #has(arr: readonly T[], value: T): boolean {
-    return arr.some((x) => this.#compareWith(x, value));
-  }
-
   #commit(next: readonly T[]): boolean {
     const current = this.#source();
-    const changed =
-      current.length !== next.length ||
-      next.some((v) => !this.#has(current, v)) ||
-      current.some((v) => !this.#has(next, v));
-    if (!changed) {
-      return false;
+    if (current.length === next.length) {
+      const inNext = membership(next, this.#compareWith());
+      if (next.every(this.membership()) && current.every(inNext)) {
+        return false;
+      }
     }
     this.#source.set(next);
     return true;

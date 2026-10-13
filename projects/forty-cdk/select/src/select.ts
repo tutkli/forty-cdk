@@ -18,16 +18,17 @@ import {
   injectHiddenInput,
   isRangeSelectShortcut,
   LabelCache,
-  type LabelCacheEntry,
+  lookupByValue,
   resolveListNavigation,
   runVirtualizedNavigatorBridge,
   throwUnsupportedVirtualizedRangeSelect,
   throwUnsupportedVirtualizedSelectionFollowsFocus,
   type WritingDirection,
   RangeSelectionEngine,
+  defaultCompareWith,
   defaultItemToFormValue,
-  isInArray,
   isUnset,
+  selectionMembership,
   singleSelected,
   toggleInArray,
   injectTextDirection,
@@ -115,7 +116,7 @@ export class ForSelect<T = string>
    * by id (or any other stable key) instead of by reference:
    * `[compareWith]="(a, b) => a.id === b.id"`.
    */
-  readonly compareWith = input<(a: T, b: T) => boolean>((a, b) => a === b);
+  readonly compareWith = input<(a: T, b: T) => boolean>(defaultCompareWith);
 
   /**
    * Serialize an item for the hidden input that participates in native
@@ -415,6 +416,10 @@ export class ForSelect<T = string>
     multiple: this.multiple,
     effectiveDisabled: this.effectiveDisabled,
     readonly: this.readonly,
+    reveal: (host) => {
+      host.focus();
+      this.#scrollActiveIntoView(host);
+    },
   });
 
   /** The active option's `id` in the virtualized path, `null` in the default path. */
@@ -493,6 +498,7 @@ export class ForSelect<T = string>
     items: this.#controller.options,
     value: this.value,
     itemToFormValue: this.itemToFormValue,
+    compareWith: this.compareWith,
   });
 
   /**
@@ -520,19 +526,15 @@ export class ForSelect<T = string>
     if (itemToLabel) {
       return values.map(itemToLabel);
     }
-    const cached = this.#labelCache.selectedEntries();
+    const cached = lookupByValue(
+      this.#labelCache.selectedEntries(),
+      (entry) => entry.value,
+      this.compareWith(),
+    );
     const toFormValue = this.itemToFormValue();
-    const cachedByKey = new Map<string, LabelCacheEntry<T>>();
-    for (const o of cached) {
-      cachedByKey.set(toFormValue(o.value), o);
-    }
-    const labels: string[] = [];
-    for (const v of values) {
-      const key = toFormValue(v);
-      const opt = cachedByKey.get(key);
-      labels.push(opt ? opt.label : typeof v === 'string' ? (v as string) : key);
-    }
-    return labels;
+    return values.map(
+      (v) => cached(v)?.label ?? (typeof v === 'string' ? (v as string) : toFormValue(v)),
+    );
   });
 
   private readonly selectedOptionEl = computed<HTMLElement | null>(() => {
@@ -540,20 +542,21 @@ export class ForSelect<T = string>
     if (values.length === 0) {
       return null;
     }
-    const items = this.#controller.options();
-    const toFormValue = this.itemToFormValue();
-    const byKey = new Map<string, ForSelectOptionHandle<T>>();
-    for (const o of items) {
-      byKey.set(toFormValue(o.value()), o);
-    }
+    const byValue = lookupByValue(
+      this.#controller.options().filter((o) => !isUnset(o.value())),
+      (o) => o.value(),
+      this.compareWith(),
+    );
     for (const v of values) {
-      const opt = byKey.get(toFormValue(v));
+      const opt = byValue(v);
       if (opt) {
         return opt.host;
       }
     }
     return null;
   });
+
+  readonly #isSelected = selectionMembership(this.value, this.compareWith);
 
   protected override fieldLabelledElement(): HTMLElement | null {
     return this.#controller.trigger();
@@ -607,7 +610,7 @@ export class ForSelect<T = string>
   }
 
   isSelected(v: T): boolean {
-    return isInArray(this.value(), v, this.compareWith());
+    return this.#isSelected()(v);
   }
 
   activate(v: T): void {
@@ -681,10 +684,13 @@ export class ForSelect<T = string>
     if (values.length === 0) {
       return false;
     }
-    const equals = this.compareWith();
-    const items = this.#controller.options();
+    const byValue = lookupByValue(
+      this.#controller.options().filter((o) => !o.disabled() && !isUnset(o.value())),
+      (o) => o.value(),
+      this.compareWith(),
+    );
     for (const v of values) {
-      const opt = items.find((o) => equals(o.value(), v) && !o.disabled());
+      const opt = byValue(v);
       if (opt) {
         this.#pointer.suppress();
         opt.host.focus();
@@ -842,13 +848,15 @@ export class ForSelect<T = string>
     if (values.length === 0) {
       return null;
     }
-    const equals = this.compareWith();
-    const snapshot = navigator.snapshotByPos();
+    const byValue = lookupByValue(
+      [...navigator.snapshotByPos()].filter(([, entry]) => !entry.disabled),
+      ([, entry]) => entry.value,
+      this.compareWith(),
+    );
     for (const v of values) {
-      for (const [pos, entry] of snapshot) {
-        if (!entry.disabled && equals(entry.value, v)) {
-          return pos;
-        }
+      const hit = byValue(v);
+      if (hit) {
+        return hit[0];
       }
     }
     return null;

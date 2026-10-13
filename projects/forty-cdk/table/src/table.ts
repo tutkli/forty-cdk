@@ -16,6 +16,7 @@ import {
   injectElementSize,
   composedContains,
   createPointerHighlight,
+  defaultCompareWith,
   findFirstFocusable,
   stepFocusableCycle,
   firstEnabledHost,
@@ -228,7 +229,7 @@ export class ForTable<T = unknown> implements ForTableContext {
   readonly value = model<readonly T[]>([]);
 
   /** Equality comparator for row values. Defaults to `===`; supply id-based for objects. */
-  readonly compareWith = input<(a: T, b: T) => boolean>((a, b) => a === b);
+  readonly compareWith = input<(a: T, b: T) => boolean>(defaultCompareWith);
 
   /**
    * Full ordered set of selectable row values (each row's `[value]`), for a

@@ -1,14 +1,15 @@
 import { type Signal } from '@angular/core';
 
 import {
+  appendMissing,
+  dedupeValues,
   fortyError,
-  isInArray,
+  membership,
   moveIndex,
   type RovingTabindex,
   toggleInArray,
 } from 'forty-cdk/core';
 import type { ForTreeItemHandle, ForTreeVisibleNode } from './tree-context';
-import { dedupeTreeValues, treeMembership } from './tree-identity';
 
 /**
  * Wiring for {@link TreeSelection}. Bridges the engine to `ForTree`'s signal
@@ -25,6 +26,7 @@ export interface TreeSelectionDeps<T> {
   readonly descendantsOf: Signal<((value: T) => readonly T[]) | undefined>;
   /** Equality comparator for node values, resolving every membership question. */
   readonly compareWith: Signal<(a: T, b: T) => boolean>;
+  readonly selectedMembership: Signal<(value: T) => boolean>;
   /** Flattened visible nodes (each with its resolved parent host). */
   readonly visibleNodes: Signal<readonly ForTreeVisibleNode<T>[]>;
   /** Visible node handles in flattened order. */
@@ -60,16 +62,14 @@ export class TreeSelection<T> {
   }
 
   checkState(value: T): 'true' | 'false' | 'mixed' {
-    const current = this.#deps.value();
-    const equals = this.#deps.compareWith();
+    const selected = this.#deps.selectedMembership();
     if (this.#deps.selectionMode() !== 'checkbox' || !this.#deps.cascade()) {
-      return isInArray(current, value, equals) ? 'true' : 'false';
+      return selected(value) ? 'true' : 'false';
     }
     const descendants = this.#resolveDescendants(value);
     if (descendants.length === 0) {
-      return isInArray(current, value, equals) ? 'true' : 'false';
+      return selected(value) ? 'true' : 'false';
     }
-    const selected = treeMembership(current, equals);
     let checked = 0;
     for (const d of descendants) {
       if (selected(d)) {
@@ -89,14 +89,14 @@ export class TreeSelection<T> {
     const equals = this.#deps.compareWith();
     if (this.#deps.selectionMode() === 'checkbox' && this.#deps.cascade()) {
       const descendants = this.#resolveDescendants(value);
-      const group = dedupeTreeValues([value, ...descendants], equals);
+      const group = dedupeValues([value, ...descendants], equals);
       const current = this.#deps.value();
-      const isChecked = treeMembership(current, equals);
-      const inGroup = treeMembership(group, equals);
+      const isChecked = membership(current, equals);
+      const inGroup = membership(group, equals);
       const checked = descendants.length === 0 ? isChecked(value) : descendants.every(isChecked);
       const next = checked
         ? current.filter((v) => !inGroup(v))
-        : dedupeTreeValues([...current, ...group], equals);
+        : dedupeValues([...current, ...group], equals);
       this.#deps.setValue(this.#reconcileAncestors(value, next));
     } else if (this.#deps.multiple() || this.#deps.selectionMode() === 'checkbox') {
       this.#deps.setValue(toggleInArray(this.#deps.value(), value, equals));
@@ -115,18 +115,12 @@ export class TreeSelection<T> {
     if (!current) {
       return;
     }
-    const equals = this.#deps.compareWith();
-    const next = [...this.#deps.expanded()];
-    for (const entry of entries) {
-      if (
-        entry.parentHost === current.parentHost &&
-        entry.handle.expandable() &&
-        !isInArray(next, entry.handle.value(), equals)
-      ) {
-        next.push(entry.handle.value());
-      }
-    }
-    this.#deps.setExpanded(next);
+    const siblings = entries
+      .filter((entry) => entry.parentHost === current.parentHost && entry.handle.expandable())
+      .map((entry) => entry.handle.value());
+    this.#deps.setExpanded(
+      appendMissing(this.#deps.expanded(), siblings, this.#deps.compareWith()),
+    );
   }
 
   extendByArrow(currentItem: HTMLElement, action: 'next' | 'prev'): void {
@@ -181,18 +175,15 @@ export class TreeSelection<T> {
     const start = anchorIndex < 0 ? currentIndex : anchorIndex;
     const [lo, hi] = start <= currentIndex ? [start, currentIndex] : [currentIndex, start];
 
-    const next = [...this.#deps.value()];
+    const span: T[] = [];
     for (let i = lo; i <= hi; i++) {
       const item = items[i];
       if (!item || item.disabled() || !item.selectable()) {
         continue;
       }
-      const value = item.value();
-      if (!isInArray(next, value, equals)) {
-        next.push(value);
-      }
+      span.push(item.value());
     }
-    this.#deps.setValue(next);
+    this.#deps.setValue(appendMissing(this.#deps.value(), span, equals));
   }
 
   selectAll(): void {
@@ -209,13 +200,13 @@ export class TreeSelection<T> {
     }
     const equals = this.#deps.compareWith();
     const current = this.#deps.value();
-    const allSelected = values.every(treeMembership(current, equals));
+    const allSelected = values.every(membership(current, equals));
     if (allSelected) {
-      const isVisible = treeMembership(values, equals);
+      const isVisible = membership(values, equals);
       this.#deps.setValue(current.filter((value) => !isVisible(value)));
       return;
     }
-    this.#deps.setValue(dedupeTreeValues([...current, ...values], equals));
+    this.#deps.setValue(dedupeValues([...current, ...values], equals));
   }
 
   #reconcileAncestors(value: T, next: readonly T[]): readonly T[] {
@@ -241,7 +232,7 @@ export class TreeSelection<T> {
       if (descendants.length === 0) {
         continue;
       }
-      const isChecked = treeMembership(result, equals);
+      const isChecked = membership(result, equals);
       const full = descendants.every(isChecked);
       if (full && !isChecked(ancestor)) {
         result = [...result, ancestor];

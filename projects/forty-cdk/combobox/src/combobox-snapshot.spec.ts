@@ -1,7 +1,7 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { LabelCache, type LabelCacheEntry } from 'forty-cdk/core';
+import { defaultCompareWith, LabelCache, type LabelCacheEntry } from 'forty-cdk/core';
 
 import { afterEachOverlayCleanup } from '../../src/test-utils';
 import type { ForComboboxOptionHandle } from './combobox-context';
@@ -63,6 +63,7 @@ function createLabelCache(): LabelCacheHarness {
     items,
     value,
     itemToFormValue: signal(toFormValue),
+    compareWith: signal(defaultCompareWith),
   });
   return {
     cache,
@@ -475,6 +476,7 @@ describe('LabelCache reactivity', () => {
       items,
       value,
       itemToFormValue: signal(toFormValue),
+      compareWith: signal(defaultCompareWith),
     });
 
     const a = makeHandle({ id: 'a', value: 'apple', label: 'Apple' });

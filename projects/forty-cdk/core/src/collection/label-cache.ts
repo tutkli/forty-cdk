@@ -1,5 +1,6 @@
 import { computed, linkedSignal, type Signal } from '@angular/core';
 
+import { lookupByValue } from '../selection/selection';
 import { isUnset } from '../unset-input/unset-input';
 
 /**
@@ -37,11 +38,11 @@ interface WindowSource<T> {
   readonly toFormValue: (item: T) => string;
 }
 
-/** Tracked source of the selection store: the window store, the selection, and the key fn. */
+/** Tracked source of the selection store: the window store, the selection, and the comparator. */
 interface SelectionSource<T> {
-  readonly window: ReadonlyMap<string, LabelCacheEntry<T>>;
+  readonly window: readonly LabelCacheEntry<T>[];
   readonly value: readonly T[];
-  readonly toFormValue: (item: T) => string;
+  readonly compareWith: (a: T, b: T) => boolean;
 }
 
 /**
@@ -54,8 +55,10 @@ export interface LabelCacheDeps<T> {
   readonly items: Signal<readonly LabelCacheHandle<T>[]>;
   /** The root's selection model, so selected labels survive an unmount. */
   readonly value: Signal<readonly T[]>;
-  /** Serializes an item to the key the cache is keyed by. */
+  /** Serializes an item to the key the window store is de-duplicated by. */
   readonly itemToFormValue: Signal<(item: T) => string>;
+  /** The root's equality comparator, which matches a selected value to its cached entry. */
+  readonly compareWith: Signal<(a: T, b: T) => boolean>;
 }
 
 const EMPTY_WINDOW = new Map<string, LabelCacheEntry<never>>();
@@ -87,8 +90,6 @@ const EMPTY_WINDOW = new Map<string, LabelCacheEntry<never>>();
 export class LabelCache<T> {
   readonly #windowByKey: Signal<ReadonlyMap<string, LabelCacheEntry<T>>>;
 
-  readonly #selectedByKey: Signal<ReadonlyMap<string, LabelCacheEntry<T>>>;
-
   readonly #selectedEntries: Signal<readonly LabelCacheEntry<T>[]>;
 
   readonly #windowEntries: Signal<readonly LabelCacheEntry<T>[]>;
@@ -99,28 +100,26 @@ export class LabelCache<T> {
       computation: ({ items, toFormValue }, prev) =>
         items.length === 0 ? (prev?.value ?? EMPTY_WINDOW) : readWindow(items, toFormValue),
     });
-    this.#selectedByKey = linkedSignal<SelectionSource<T>, ReadonlyMap<string, LabelCacheEntry<T>>>(
-      {
-        source: () => ({
-          window: this.#windowByKey(),
-          value: deps.value(),
-          toFormValue: deps.itemToFormValue(),
-        }),
-        computation: ({ window, value, toFormValue }, prev) => {
-          const selected = new Map<string, LabelCacheEntry<T>>();
-          for (const item of value) {
-            const key = toFormValue(item);
-            const entry = window.get(key) ?? prev?.value.get(key);
-            if (entry !== undefined) {
-              selected.set(key, entry);
-            }
-          }
-          return selected;
-        },
-      },
-    );
-    this.#selectedEntries = computed(() => [...this.#selectedByKey().values()]);
     this.#windowEntries = computed(() => [...this.#windowByKey().values()]);
+    this.#selectedEntries = linkedSignal<SelectionSource<T>, readonly LabelCacheEntry<T>[]>({
+      source: () => ({
+        window: this.#windowEntries(),
+        value: deps.value(),
+        compareWith: deps.compareWith(),
+      }),
+      computation: ({ window, value, compareWith }, prev) => {
+        const inWindow = lookupByValue(window, (entry) => entry.value, compareWith);
+        const carried = lookupByValue(prev?.value ?? [], (entry) => entry.value, compareWith);
+        const selected: LabelCacheEntry<T>[] = [];
+        for (const item of value) {
+          const entry = inWindow(item) ?? carried(item);
+          if (entry !== undefined) {
+            selected.push(entry);
+          }
+        }
+        return selected;
+      },
+    });
   }
 
   /**
@@ -142,7 +141,7 @@ export class LabelCache<T> {
    */
   prime(): void {
     this.#windowByKey();
-    this.#selectedByKey();
+    this.#selectedEntries();
   }
 
   /**

@@ -262,8 +262,14 @@ export {
 export { RovingTabindex } from './roving-tabindex/roving-tabindex';
 export { RangeSelectionEngine } from './selection/range-selection-engine';
 export {
+  appendMissing,
+  dedupeValues,
+  defaultCompareWith,
   defaultItemToFormValue,
   isInArray,
+  lookupByValue,
+  membership,
+  selectionMembership,
   singleSelected,
   toggleInArray,
 } from './selection/selection';
