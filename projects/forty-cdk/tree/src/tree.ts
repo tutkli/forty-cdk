@@ -17,9 +17,11 @@ import {
   Collection,
   createPointerHighlight,
   createVetoableNativeEvent,
+  defaultCompareWith,
   firstEnabledHost,
   isInArray,
   isUnset,
+  selectionMembership,
   type ListNavigationAction,
   resolveListNavigation,
   resolveTreeExpandCollapse,
@@ -51,7 +53,6 @@ import {
 } from './tree-context';
 import type { ForTreeItemActivateEvent } from './tree-item-activate-event';
 import { FOR_TREE_DEFAULTS } from 'forty-cdk/defaults';
-import { defaultTreeCompareWith, treeMembership } from './tree-identity';
 import { TreeSelection } from './tree-selection';
 
 type VisibleEntry<T> = ForTreeVisibleNode<T>;
@@ -132,7 +133,7 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
    * correct for the default `string` node values; supply an id-based comparator
    * for object values: `[compareWith]="(a, b) => a.id === b.id"`.
    */
-  readonly compareWith = input<(a: T, b: T) => boolean>(defaultTreeCompareWith);
+  readonly compareWith = input<(a: T, b: T) => boolean>(defaultCompareWith);
 
   /**
    * When true, multiple nodes can be selected. Single mode (default) replaces.
@@ -286,11 +287,13 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
   readonly #typeahead = injectTypeahead();
   readonly #items = new Collection<ForTreeItemHandle<T>>();
   readonly #anchorValue = signal<T | null>(null);
+  readonly #isSelected = selectionMembership(this.value, this.compareWith);
+  readonly #isExpanded = selectionMembership(this.expanded, this.compareWith);
 
   readonly items = this.#items.items;
 
   readonly #visibleEntries = computed<readonly VisibleEntry<T>[]>(() => {
-    const isOpen = treeMembership(this.expanded(), this.compareWith());
+    const isOpen = this.#isExpanded();
     const result: VisibleEntry<T>[] = [];
     const walk = (container: ForTreeContainerContext<T>, parentHost: HTMLElement | null): void => {
       for (const handle of container.items()) {
@@ -327,14 +330,15 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
       .map((handle) => handle.value()),
   );
 
+  readonly #isNonSelectable = selectionMembership(this.#nonSelectableValues, this.compareWith);
+
   readonly #firstEnabledRoot = computed(() => firstEnabledHost(this.#items.items()));
 
   readonly #firstSelectedHost = computed<HTMLElement | null>(() => {
-    const selected = this.value();
-    if (selected.length === 0) {
+    if (this.value().length === 0) {
       return null;
     }
-    const isSelected = treeMembership(selected, this.compareWith());
+    const isSelected = this.#isSelected();
     for (const handle of this.#visibleHandles()) {
       if (handle.disabled()) {
         continue;
@@ -387,6 +391,7 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
     value: this.value,
     expanded: this.expanded,
     compareWith: this.compareWith,
+    selectedMembership: this.#isSelected,
     multiple: this.multiple,
     disabled: this.disabled,
     selectionMode: this.selectionMode,
@@ -480,11 +485,11 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
   }
 
   isExpanded(value: T): boolean {
-    return isInArray(this.expanded(), value, this.compareWith());
+    return this.#isExpanded()(value);
   }
 
   isSelected(value: T): boolean {
-    return isInArray(this.value(), value, this.compareWith());
+    return this.#isSelected()(value);
   }
 
   /**
@@ -493,7 +498,7 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
    * {@link ForTree.descendantsOf} is documented to return selectable values only.
    */
   #isSelectable(value: T): boolean {
-    return !isInArray(this.#nonSelectableValues(), value, this.compareWith());
+    return !this.#isNonSelectable()(value);
   }
 
   /**
@@ -664,7 +669,7 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
     const items = this.#items.items();
     if (items.length === 0) return;
     const ordered = [...items].sort((a, b) => (a.itemIndex() ?? 0) - (b.itemIndex() ?? 0));
-    const isSelected = treeMembership(this.value(), this.compareWith());
+    const isSelected = this.#isSelected();
     const selectedFirst = ordered.find((h) => !h.disabled() && isSelected(h.value()));
     const target = selectedFirst ?? ordered.find((h) => !h.disabled());
     if (target) this.#setActiveId(target.id());

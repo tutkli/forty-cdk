@@ -1,5 +1,7 @@
 import { type Signal, type WritableSignal } from '@angular/core';
 
+import { selectionMembership } from 'forty-cdk/core';
+
 /**
  * Dependencies for {@link TableExpansion}. Wires the helper to `ForTable`'s
  * `[(expanded)]` model and the row-value comparator.
@@ -20,15 +22,17 @@ export interface TableExpansionDeps<T> {
 export class TableExpansion<T> {
   readonly #expanded: WritableSignal<readonly T[]>;
   readonly #compareWith: Signal<(a: T, b: T) => boolean>;
+  readonly #isExpanded: Signal<(value: T) => boolean>;
 
   constructor(deps: TableExpansionDeps<T>) {
     this.#expanded = deps.expanded;
     this.#compareWith = deps.compareWith;
+    this.#isExpanded = selectionMembership(deps.expanded, deps.compareWith);
   }
 
   /** Whether `value` is currently in the open-rows set. */
   isExpanded(value: T): boolean {
-    return this.#expanded().some((v) => this.#compareWith()(v, value));
+    return this.#isExpanded()(value);
   }
 
   /**

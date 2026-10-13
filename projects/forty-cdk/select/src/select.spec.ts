@@ -3162,6 +3162,45 @@ describe('ForSelect', () => {
 
         expect(stub).not.toHaveBeenCalled();
       }));
+
+    @Component({
+      imports: BASE_IMPORTS,
+      template: `
+        <div forSelect [(open)]="open" [(value)]="value" [compareWith]="byId">
+          <button forSelectTrigger>City</button>
+          @if (open()) {
+            <div forSelectContent>
+              @for (city of cities; track city.id) {
+                <button forSelectOption [value]="city" [attr.data-test-id]="city.name">
+                  {{ city.name }}
+                </button>
+              }
+            </div>
+          }
+        </div>
+      `,
+    })
+    class CompareWithOnlyHost {
+      readonly cities = [
+        { id: 1, name: 'Paris' },
+        { id: 2, name: 'Berlin' },
+        { id: 3, name: 'Tokyo' },
+      ];
+      readonly open = signal(false);
+      readonly value = signal<readonly { id: number; name: string; country?: string }[]>([]);
+      readonly byId = (a: { id: number }, b: { id: number }): boolean => a.id === b.id;
+    }
+
+    it('reveals the option compareWith matches when the value serializes differently', () =>
+      withScrollStub(async (stub) => {
+        const r = renderHost(CompareWithOnlyHost);
+        r.instance.value.set([{ id: 2, name: 'Berlin', country: 'DE' }]);
+        r.instance.open.set(true);
+        await flushPositioning(r.fixture);
+
+        expect(getOption('Berlin').getAttribute('aria-selected')).toBe('true');
+        expect(stub.mock.contexts).toContain(getOption('Berlin'));
+      }));
   });
 
   describe('pointer highlight (issue #1784)', () => {

@@ -12,9 +12,9 @@ describe('SelectionModel', () => {
     it('select replaces the prior selection with the new value', () => {
       const src = signal<readonly string[]>([]);
       const model = new SelectionModel(src);
-      model.select('a');
+      model.select(['a']);
       expect(model.selected()).toEqual(['a']);
-      model.select('b');
+      model.select(['b']);
       expect(model.selected()).toEqual(['b']);
       expect(model.isSelected('a')).toBe(false);
     });
@@ -22,14 +22,14 @@ describe('SelectionModel', () => {
     it('select with multiple values keeps only the last one', () => {
       const src = signal<readonly string[]>([]);
       const model = new SelectionModel(src);
-      model.select('a', 'b', 'c');
+      model.select(['a', 'b', 'c']);
       expect(model.selected()).toEqual(['c']);
     });
 
     it('select returns false when the same value is already selected', () => {
       const src = signal<readonly string[]>(['a']);
       const model = new SelectionModel(src);
-      const changed = model.select('a');
+      const changed = model.select(['a']);
       expect(changed).toBe(false);
       expect(model.selected()).toEqual(['a']);
     });
@@ -39,15 +39,15 @@ describe('SelectionModel', () => {
     it('select appends values not already present', () => {
       const src = signal<readonly string[]>([]);
       const model = new SelectionModel(src, { multiple: true });
-      model.select('a');
-      model.select('b');
+      model.select(['a']);
+      model.select(['b']);
       expect(model.selected()).toEqual(['a', 'b']);
     });
 
     it('select returns false and does not duplicate an already-present value', () => {
       const src = signal<readonly string[]>(['a']);
       const model = new SelectionModel(src, { multiple: true });
-      const changed = model.select('a');
+      const changed = model.select(['a']);
       expect(changed).toBe(false);
       expect(model.selected()).toEqual(['a']);
     });
@@ -55,7 +55,7 @@ describe('SelectionModel', () => {
     it('select returns true when a new value is added', () => {
       const src = signal<readonly string[]>([]);
       const model = new SelectionModel(src, { multiple: true });
-      const changed = model.select('a');
+      const changed = model.select(['a']);
       expect(changed).toBe(true);
     });
   });
@@ -80,7 +80,7 @@ describe('SelectionModel', () => {
         multiple: true,
         compareWith: (a, b) => a.id === b.id,
       });
-      model.deselect({ id: 2, name: 'whatever' });
+      model.deselect([{ id: 2, name: 'whatever' }]);
       expect(model.selected()).toEqual([{ id: 1, name: 'one' }]);
     });
   });
@@ -102,14 +102,14 @@ describe('SelectionModel', () => {
     it('replaces the entire selection', () => {
       const src = signal<readonly string[]>(['a', 'b']);
       const model = new SelectionModel(src, { multiple: true });
-      model.setSelection('c', 'd');
+      model.setSelection(['c', 'd']);
       expect(model.selected()).toEqual(['c', 'd']);
     });
 
     it('de-duplicates values', () => {
       const src = signal<readonly string[]>([]);
       const model = new SelectionModel(src, { multiple: true });
-      model.setSelection('a', 'a', 'b');
+      model.setSelection(['a', 'a', 'b']);
       expect(model.selected()).toEqual(['a', 'b']);
     });
   });
@@ -135,20 +135,20 @@ describe('SelectionModel', () => {
     it('select returns true on change and false on no-op', () => {
       const src = signal<readonly string[]>([]);
       const model = new SelectionModel(src);
-      expect(model.select('a')).toBe(true);
-      expect(model.select('a')).toBe(false);
+      expect(model.select(['a'])).toBe(true);
+      expect(model.select(['a'])).toBe(false);
     });
 
     it('deselect returns true when an item was removed', () => {
       const src = signal<readonly string[]>(['a']);
       const model = new SelectionModel(src);
-      expect(model.deselect('a')).toBe(true);
+      expect(model.deselect(['a'])).toBe(true);
     });
 
     it('deselect returns false when no matching item exists', () => {
       const src = signal<readonly string[]>([]);
       const model = new SelectionModel(src);
-      expect(model.deselect('z')).toBe(false);
+      expect(model.deselect(['z'])).toBe(false);
     });
   });
 
@@ -158,12 +158,12 @@ describe('SelectionModel', () => {
       const multSig = signal(false);
       const model = new SelectionModel(src, { multiple: multSig });
 
-      model.select('a');
-      model.select('b');
+      model.select(['a']);
+      model.select(['b']);
       expect(model.selected()).toEqual(['b']);
 
       multSig.set(true);
-      model.select('c');
+      model.select(['c']);
       expect(model.selected()).toEqual(['b', 'c']);
     });
   });

@@ -57,9 +57,10 @@ export class TableRowSelection<T> {
     if (values.length === 0) {
       return 'none';
     }
+    const isSelected = this.#model.membership();
     let count = 0;
     for (const v of values) {
-      if (this.#model.isSelected(v)) {
+      if (isSelected(v)) {
         count += 1;
       }
     }
@@ -76,7 +77,7 @@ export class TableRowSelection<T> {
     this.#aggregateValues = deps.aggregateValues;
     this.#model = new SelectionModel<T>(deps.selection, {
       multiple: computed(() => deps.selectionMode() === 'multiple'),
-      compareWith: (a, b) => deps.compareWith()(a, b),
+      compareWith: deps.compareWith,
     });
   }
 
@@ -122,7 +123,7 @@ export class TableRowSelection<T> {
       this.#anchor.set(value);
       return;
     }
-    this.#model.setSelection(value);
+    this.#model.setSelection([value]);
     this.#anchor.set(value);
   }
 
@@ -132,9 +133,9 @@ export class TableRowSelection<T> {
       return;
     }
     if (this.selectAllState() === 'all') {
-      this.#model.deselect(...this.#aggregateValues());
+      this.#model.deselect(this.#aggregateValues());
     } else {
-      this.#model.select(...this.#aggregateValues());
+      this.#model.select(this.#aggregateValues());
     }
   }
 
@@ -149,6 +150,6 @@ export class TableRowSelection<T> {
     const anchorIdx = anchor === undefined ? -1 : values.findIndex((v) => equals(v, anchor));
     const start = anchorIdx < 0 ? toIdx : anchorIdx;
     const [lo, hi] = start <= toIdx ? [start, toIdx] : [toIdx, start];
-    this.#model.setSelection(...values.slice(lo, hi + 1));
+    this.#model.setSelection(values.slice(lo, hi + 1));
   }
 }

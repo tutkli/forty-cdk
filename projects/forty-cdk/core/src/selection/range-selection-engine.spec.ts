@@ -17,6 +17,7 @@ interface Harness {
   readonly readonly: WritableSignal<boolean>;
   readonly setValue: ReturnType<typeof vi.fn>;
   readonly compareWith: ReturnType<typeof vi.fn>;
+  readonly reveal: ReturnType<typeof vi.fn>;
   readonly parent: HTMLElement;
   handle(value: string, opts?: { disabled?: boolean }): FakeHandle;
 }
@@ -33,6 +34,7 @@ function createHarness(): Harness {
   const readonly = signal(false);
   const setValue = vi.fn((v: readonly string[]) => value.set(v));
   const compareWith = vi.fn((a: string, b: string) => a === b);
+  const reveal = vi.fn((host: HTMLElement) => host.focus());
 
   const engine = new RangeSelectionEngine<string, FakeHandle>({
     options,
@@ -42,6 +44,7 @@ function createHarness(): Harness {
     multiple,
     effectiveDisabled: disabled,
     readonly,
+    reveal,
   });
 
   const handle: Harness['handle'] = (v, opts = {}) => {
@@ -53,7 +56,18 @@ function createHarness(): Harness {
     return item;
   };
 
-  return { engine, value, multiple, disabled, readonly, setValue, compareWith, parent, handle };
+  return {
+    engine,
+    value,
+    multiple,
+    disabled,
+    readonly,
+    setValue,
+    compareWith,
+    reveal,
+    parent,
+    handle,
+  };
 }
 
 describe('RangeSelectionEngine', () => {
@@ -138,6 +152,13 @@ describe('RangeSelectionEngine', () => {
       h.engine.extendByArrow(a.host, 'next');
       expect(h.value()).toEqual([]);
     });
+
+    it('moves to the target through the reveal hook', () => {
+      const a = h.handle('a');
+      const b = h.handle('b');
+      h.engine.extendByArrow(a.host, 'next');
+      expect(h.reveal.mock.calls).toEqual([[b.host]]);
+    });
   });
 
   describe('selectAll', () => {
@@ -188,6 +209,14 @@ describe('RangeSelectionEngine', () => {
       h.handle('c');
       h.engine.selectFromCurrentToEdge(a.host, 'last');
       expect(h.value()).toEqual(['a', 'b', 'c']);
+    });
+
+    it('moves to the edge option through the reveal hook', () => {
+      const a = h.handle('a');
+      h.handle('b');
+      const c = h.handle('c');
+      h.engine.selectFromCurrentToEdge(a.host, 'last');
+      expect(h.reveal.mock.calls).toEqual([[c.host]]);
     });
   });
 

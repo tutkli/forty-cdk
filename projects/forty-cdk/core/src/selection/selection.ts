@@ -17,6 +17,72 @@ import { computed, type Signal } from '@angular/core';
  * no single-mode `T | null` view) differ.
  */
 
+export const defaultCompareWith = <T>(a: T, b: T): boolean => a === b;
+
+export function membership<T>(
+  values: readonly T[],
+  equals: (a: T, b: T) => boolean,
+): (value: T) => boolean {
+  if (equals === defaultCompareWith) {
+    const hashed = new Set(values);
+    return (value) => hashed.has(value);
+  }
+  return (value) => values.some((candidate) => equals(candidate, value));
+}
+
+export function selectionMembership<T>(
+  value: Signal<readonly T[]>,
+  compareWith: Signal<(a: T, b: T) => boolean>,
+): Signal<(value: T) => boolean> {
+  return computed(() => membership(value(), compareWith()));
+}
+
+export function lookupByValue<E, T>(
+  entries: readonly E[],
+  valueOf: (entry: E) => T,
+  equals: (a: T, b: T) => boolean,
+): (value: T) => E | undefined {
+  if (equals === defaultCompareWith) {
+    const byValue = new Map<T, E>();
+    for (const entry of entries) {
+      const value = valueOf(entry);
+      if (!byValue.has(value)) {
+        byValue.set(value, entry);
+      }
+    }
+    return (value) => byValue.get(value);
+  }
+  return (value) => entries.find((entry) => equals(valueOf(entry), value));
+}
+
+export function appendMissing<T>(
+  current: readonly T[],
+  added: readonly T[],
+  equals: (a: T, b: T) => boolean,
+): T[] {
+  const next = [...current];
+  if (equals === defaultCompareWith) {
+    const seen = new Set(current);
+    for (const value of added) {
+      if (!seen.has(value)) {
+        seen.add(value);
+        next.push(value);
+      }
+    }
+    return next;
+  }
+  for (const value of added) {
+    if (!next.some((candidate) => equals(candidate, value))) {
+      next.push(value);
+    }
+  }
+  return next;
+}
+
+export function dedupeValues<T>(values: readonly T[], equals: (a: T, b: T) => boolean): T[] {
+  return appendMissing([], values, equals);
+}
+
 /**
  * Returns `true` when `current` contains an element equal to `v` under the
  * supplied `equals` comparator. Backs each primitive's `isSelected(v)`.

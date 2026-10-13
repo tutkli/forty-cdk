@@ -1,7 +1,7 @@
 import { signal, type Signal } from '@angular/core';
 
 import { nextEnabledHandle } from '../collection/enabled-handle-navigation';
-import { isInArray, toggleInArray } from './selection';
+import { appendMissing, isInArray, membership, toggleInArray } from './selection';
 import { isUnset } from '../unset-input/unset-input';
 
 /**
@@ -42,6 +42,7 @@ export interface RangeSelectionEngineDeps<T, H extends RangeSelectionOptionHandl
   readonly effectiveDisabled: Signal<boolean>;
   /** Whether the control is read-only — focus still moves, selection mutation is blocked. */
   readonly readonly: Signal<boolean>;
+  readonly reveal: (host: HTMLElement) => void;
 }
 
 /**
@@ -116,8 +117,7 @@ export class RangeSelectionEngine<T, H extends RangeSelectionOptionHandle<T>> {
     if (target === null) {
       return;
     }
-    target.host.focus();
-    target.host.scrollIntoView?.({ block: 'nearest' });
+    this.#deps.reveal(target.host);
     if (this.#deps.readonly()) {
       return;
     }
@@ -156,18 +156,18 @@ export class RangeSelectionEngine<T, H extends RangeSelectionOptionHandle<T>> {
     const start = anchorIndex < 0 ? currentIndex : anchorIndex;
     const [lo, hi] = start <= currentIndex ? [start, currentIndex] : [currentIndex, start];
 
-    const next = [...this.#deps.value()];
+    const span: T[] = [];
     for (let i = lo; i <= hi; i++) {
       const opt = options[i];
       if (!opt || opt.disabled()) {
         continue;
       }
       const v = opt.value();
-      if (!isUnset(v) && !next.some((x) => equals(x, v))) {
-        next.push(v);
+      if (!isUnset(v)) {
+        span.push(v);
       }
     }
-    this.#deps.setValue(next);
+    this.#deps.setValue(appendMissing(this.#deps.value(), span, equals));
   }
 
   /**
@@ -197,18 +197,12 @@ export class RangeSelectionEngine<T, H extends RangeSelectionOptionHandle<T>> {
     }
     const equals = this.#deps.compareWith();
     const current = this.#deps.value();
-    const allSelected = enabled.every((v) => isInArray(current, v, equals));
-    if (allSelected) {
-      this.#deps.setValue(current.filter((x) => !isInArray(enabled, x, equals)));
+    if (enabled.every(membership(current, equals))) {
+      const isEnabled = membership(enabled, equals);
+      this.#deps.setValue(current.filter((x) => !isEnabled(x)));
       return;
     }
-    const next = [...current];
-    for (const v of enabled) {
-      if (!isInArray(next, v, equals)) {
-        next.push(v);
-      }
-    }
-    this.#deps.setValue(next);
+    this.#deps.setValue(appendMissing(current, enabled, equals));
   }
 
   /**
@@ -229,8 +223,7 @@ export class RangeSelectionEngine<T, H extends RangeSelectionOptionHandle<T>> {
     }
     const [lo, hi] = edge === 'first' ? [0, currentIndex] : [currentIndex, options.length - 1];
 
-    const equals = this.#deps.compareWith();
-    const next = [...this.#deps.value()];
+    const span: T[] = [];
     let firstEnabled: HTMLElement | null = null;
     let lastEnabled: HTMLElement | null = null;
     for (let i = lo; i <= hi; i++) {
@@ -239,8 +232,8 @@ export class RangeSelectionEngine<T, H extends RangeSelectionOptionHandle<T>> {
         continue;
       }
       const v = opt.value();
-      if (!isUnset(v) && !next.some((x) => equals(x, v))) {
-        next.push(v);
+      if (!isUnset(v)) {
+        span.push(v);
       }
       if (firstEnabled === null) {
         firstEnabled = opt.host;
@@ -248,11 +241,12 @@ export class RangeSelectionEngine<T, H extends RangeSelectionOptionHandle<T>> {
       lastEnabled = opt.host;
     }
     const edgeFocusTarget = edge === 'first' ? firstEnabled : lastEnabled;
-    edgeFocusTarget?.focus();
-    edgeFocusTarget?.scrollIntoView?.({ block: 'nearest' });
+    if (edgeFocusTarget !== null) {
+      this.#deps.reveal(edgeFocusTarget);
+    }
     if (this.#deps.readonly()) {
       return;
     }
-    this.#deps.setValue(next);
+    this.#deps.setValue(appendMissing(this.#deps.value(), span, this.#deps.compareWith()));
   }
 }
