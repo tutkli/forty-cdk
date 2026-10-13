@@ -218,7 +218,7 @@ export class ForPopover extends AnchoredOverlayPositioningBase implements ForPop
     return ids.length === 0 ? null : ids.join(' ');
   });
 
-  readonly #closeReasonState = new CloseReasonState<ForPopoverCloseReason>();
+  readonly #closeReasonState = new CloseReasonState<ForPopoverCloseReason>(this.open);
 
   /**
    * Reason of the most recent close, or `null` while open / before any close.
@@ -292,7 +292,6 @@ export class ForPopover extends AnchoredOverlayPositioningBase implements ForPop
     if (this.open()) {
       this.#close('programmatic');
     } else {
-      this.#closeReasonState.reset();
       this.open.set(true);
     }
   }
@@ -346,8 +345,7 @@ export class ForPopover extends AnchoredOverlayPositioningBase implements ForPop
     if (!this.open()) {
       return;
     }
-    this.#closeReasonState.set(reason);
-    this.open.set(false);
+    this.#closeReasonState.close(reason, () => this.open.set(false));
   }
 
   emitAutoFocusOnOpen(): boolean {

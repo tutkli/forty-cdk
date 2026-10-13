@@ -631,6 +631,49 @@ describe('ForPopover', () => {
     });
   });
 
+  describe('close reason across an [(open)]-driven open', () => {
+    @Component({
+      imports: [ForPopover, ForPopoverTrigger, ForPopoverContent],
+      template: `
+        <div forPopover #popover="forPopover" [(open)]="open" ariaLabel="Reason">
+          <button forPopoverTrigger>Open</button>
+          @if (open()) {
+            <div forPopoverContent>
+              <button id="inner" type="button">Inner</button>
+            </div>
+          }
+        </div>
+        <span id="reason">{{ popover.lastCloseReason() ?? 'none' }}</span>
+      `,
+    })
+    class ReasonHost {
+      readonly open = signal(false);
+    }
+
+    it('reports no close reason while a model write holds it open', async () => {
+      const r = renderHost(ReasonHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      const outside = document.createElement('button');
+      document.body.appendChild(outside);
+      const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
+      Object.defineProperty(event, 'target', { value: outside, configurable: true });
+      Object.defineProperty(event, 'composedPath', { value: () => [outside], configurable: true });
+      try {
+        document.dispatchEvent(event);
+        await flush(r.fixture);
+      } finally {
+        outside.remove();
+      }
+      expect(r.query('#reason')!.textContent).toBe('pointerDownOutside');
+
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      expect(r.query('#reason')!.textContent).toBe('none');
+    });
+  });
+
   describe('Tab out of the portaled content', () => {
     async function openPopover(): Promise<{
       r: RenderResult<PopoverHost>;

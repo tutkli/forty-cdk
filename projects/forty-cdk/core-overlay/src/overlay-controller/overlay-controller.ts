@@ -193,7 +193,7 @@ export class OverlayController<Focus, CloseReason> {
   readonly #contentSlot: OverlaySlot;
 
   readonly #initialFocusState: InitialFocusState<Focus>;
-  readonly #closeReasonState = new CloseReasonState<CloseReason>();
+  readonly #closeReasonState: CloseReasonState<CloseReason>;
 
   readonly #autoFocusOnOpen: () => boolean;
   readonly #autoFocusOnClose: () => boolean;
@@ -228,6 +228,7 @@ export class OverlayController<Focus, CloseReason> {
       ? deps.createContent(mintContentId)
       : new IdentifiedElementSlot(mintContentId());
     this.#initialFocusState = new InitialFocusState<Focus>(deps.defaultInitialFocus);
+    this.#closeReasonState = new CloseReasonState<CloseReason>(deps.isOpen);
     this.#autoFocusOnOpen = injectVetoableEmitter(deps.emit.autoFocusOnOpen);
     this.#autoFocusOnClose = injectVetoableEmitter(deps.emit.autoFocusOnClose);
     this.triggerId = this.#triggerSlot.id;
@@ -289,8 +290,8 @@ export class OverlayController<Focus, CloseReason> {
   }
 
   /**
-   * Records where the initial focus should land, resets the close reason, and
-   * flips the open state. Returns the {@link OverlayOpenOutcome} so a composing
+   * Records where the initial focus should land and flips the open state,
+   * which clears the close reason. Returns the {@link OverlayOpenOutcome} so a composing
    * controller can branch on an already-open surface — no state transition
    * happened there, so nothing emitted `openChange`, and a re-focus is the only
    * way an APG open key stays live on a mounted surface.
@@ -305,7 +306,6 @@ export class OverlayController<Focus, CloseReason> {
     } else {
       this.#initialFocusState.prepareOpen(initialFocus, options.highlight);
     }
-    this.#closeReasonState.reset();
     if (!alreadyOpen) {
       this.#deps.setOpen(true);
     }
@@ -319,8 +319,7 @@ export class OverlayController<Focus, CloseReason> {
    * surface is open must still be closable.
    */
   close(reason: CloseReason, transition: OverlayTransitionOptions = {}): void {
-    this.#closeReasonState.set(reason);
-    this.#deps.setOpen(false);
+    this.#closeReasonState.close(reason, () => this.#deps.setOpen(false));
     this.#deps.onClose?.(reason, transition);
   }
 

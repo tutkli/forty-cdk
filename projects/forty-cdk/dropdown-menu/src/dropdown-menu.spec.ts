@@ -644,6 +644,29 @@ describe('ForDropdownMenu', () => {
     });
   });
 
+  describe('close reason across an [(open)]-driven open', () => {
+    it('returns focus on a model close after an earlier Tab close', async () => {
+      const r = renderHost(DropdownHost);
+      const trigger = r.query<HTMLButtonElement>('[forDropdownMenuTrigger]')!;
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      const item = document.querySelector<HTMLButtonElement>('#a')!;
+      item.focus();
+      pressKey(item, 'Tab');
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe(false);
+
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      document.querySelector<HTMLButtonElement>('#b')!.focus();
+      const focusSpy = vi.spyOn(trigger, 'focus');
+      r.instance.open.set(false);
+      await flush(r.fixture);
+
+      expect(focusSpy).toHaveBeenCalled();
+    });
+  });
+
   describe('outside dismissal', () => {
     it('does NOT close when pointer-down lands on the trigger (exempt)', async () => {
       const r = renderHost(DropdownHost);
