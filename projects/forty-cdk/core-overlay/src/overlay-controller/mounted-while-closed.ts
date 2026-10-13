@@ -39,8 +39,7 @@ export interface MountedWhileClosedConfig {
  *
  * Mount equals open is structural for these surfaces, so the `@if` is the whole contract and no
  * input suppresses the warning. Only pieces whose closed state has no supported mounted shape adopt
- * it: the always-mounted panel families do not, and neither does a `[forMenuContent]` under
- * `[forMenubar]`, which documents an unconditionally mounted surface as a supported shape.
+ * it, so the always-mounted panel families do not.
  *
  * **The check is mount-time**, reading the open state inside `afterNextRender` and never again,
  * which buys three things:

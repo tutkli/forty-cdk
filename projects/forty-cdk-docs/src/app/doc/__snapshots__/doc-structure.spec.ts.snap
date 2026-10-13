@@ -4840,19 +4840,9 @@ exports[`document structure > projects/forty-cdk/menubar/README.md declares the 
   },
   {
     "headings": [],
-    "slug": "mount-shapes",
-    "tables": [
-      {
-        "columns": [
-          "Shape",
-          "Markup",
-          "When to reach for it",
-        ],
-        "role": "plain",
-        "rows": 3,
-      },
-    ],
-    "title": "Mount shapes",
+    "slug": "mounting-the-menus",
+    "tables": [],
+    "title": "Mounting the menus",
   },
   {
     "headings": [
