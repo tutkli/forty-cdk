@@ -383,7 +383,11 @@ export interface ComboboxPieceContext<T = unknown> {
 
   /** Move the activedescendant to the first / last / next / prev enabled option. */
   navigate(direction: 'next' | 'prev' | 'first' | 'last'): void;
-  /** Activate the option currently marked as activedescendant (Enter from the input). */
+  /**
+   * Activate the option currently marked as activedescendant, or, while virtualized, the option it
+   * marked before scrolling out of the rendered window (Enter from the input). Returns `false` when
+   * neither resolves to an enabled option.
+   */
   activateActive(): boolean;
   /**
    * Open from ArrowDown (`'first'`) / ArrowUp (`'last'`) on the editable input:

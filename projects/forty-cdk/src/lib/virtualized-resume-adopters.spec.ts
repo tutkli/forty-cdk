@@ -1,5 +1,11 @@
 import { ChangeDetectionStrategy, Component, signal, type Type } from '@angular/core';
 
+import {
+  ForCombobox,
+  ForComboboxContent,
+  ForComboboxInput,
+  ForComboboxOption,
+} from 'forty-cdk/combobox';
 import { ForListbox, ForListboxOption } from 'forty-cdk/listbox';
 import { ForSelect, ForSelectContent, ForSelectOption, ForSelectTrigger } from 'forty-cdk/select';
 import { pressKey } from 'forty-cdk/testing';
@@ -33,7 +39,7 @@ abstract class WindowedHost {
   template: `
     <div
       forListbox
-      data-container
+      data-keys
       aria-label="Rows"
       [(value)]="picked"
       [totalCount]="20"
@@ -64,7 +70,7 @@ class ListboxHost extends WindowedHost {}
     >
       <button forSelectTrigger>Rows</button>
       @if (open()) {
-        <div forSelectContent data-container>
+        <div forSelectContent data-keys>
           @for (row of windowRows(); track row.index) {
             <button forSelectOption [value]="'row-' + row.index" [posInSet]="row.index">
               Row {{ row.index }}
@@ -85,7 +91,7 @@ class SelectHost extends WindowedHost {
   template: `
     <ul
       forTree
-      data-container
+      data-keys
       aria-label="Rows"
       [(value)]="picked"
       [totalCount]="20"
@@ -109,30 +115,91 @@ class SelectHost extends WindowedHost {
 })
 class TreeHost extends WindowedHost {}
 
+@Component({
+  imports: [ForCombobox, ForComboboxInput, ForComboboxContent, ForComboboxOption],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <div
+      forCombobox
+      [(open)]="open"
+      [(value)]="picked"
+      [autoHighlight]="false"
+      [totalCount]="20"
+      [visibleRange]="range()"
+      (scrollToIndex)="onScrollToIndex($event)"
+    >
+      <input forComboboxInput aria-label="Rows" data-keys />
+      @if (open()) {
+        <div forComboboxContent>
+          @for (row of windowRows(); track row.index) {
+            <div forComboboxOption [value]="'row-' + row.index" [posInSet]="row.index">
+              Row {{ row.index }}
+            </div>
+          }
+        </div>
+      }
+    </div>
+  `,
+})
+class ComboboxHost extends WindowedHost {
+  readonly open = signal(true);
+}
+
 interface ResumeCase {
   readonly name: string;
   readonly owner: string;
   readonly host: Type<WindowedHost>;
+  readonly pressesToSecondRow: number;
+  readonly typeahead: boolean;
 }
 
 const CASES: readonly ResumeCase[] = [
-  { name: 'listbox', owner: 'listbox/src/listbox.ts', host: ListboxHost },
-  { name: 'select', owner: 'select/src/select.ts', host: SelectHost },
-  { name: 'tree', owner: 'tree/src/tree.ts', host: TreeHost },
+  {
+    name: 'listbox',
+    owner: 'listbox/src/listbox.ts',
+    host: ListboxHost,
+    pressesToSecondRow: 2,
+    typeahead: true,
+  },
+  {
+    name: 'select',
+    owner: 'select/src/select.ts',
+    host: SelectHost,
+    pressesToSecondRow: 2,
+    typeahead: true,
+  },
+  {
+    name: 'tree',
+    owner: 'tree/src/tree.ts',
+    host: TreeHost,
+    pressesToSecondRow: 2,
+    typeahead: true,
+  },
+  {
+    name: 'combobox',
+    owner: 'combobox/src/combobox.ts',
+    host: ComboboxHost,
+    pressesToSecondRow: 3,
+    typeahead: false,
+  },
 ];
 
-const container = (): HTMLElement => document.querySelector<HTMLElement>('[data-container]')!;
+const keyTarget = (): HTMLElement => document.querySelector<HTMLElement>('[data-keys]')!;
 
-async function strandSecondRow(r: RenderResult<WindowedHost>): Promise<HTMLElement> {
+async function strandSecondRow(
+  r: RenderResult<WindowedHost>,
+  testCase: ResumeCase,
+): Promise<HTMLElement> {
   await r.flush();
-  const host = container();
+  const host = keyTarget();
   host.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
   await r.flush();
-  await pressKey(host, 'ArrowDown');
-  await r.flush();
-  await pressKey(host, 'ArrowDown');
-  await r.flush();
-  expect(host.getAttribute('aria-activedescendant')).toBeTruthy();
+  for (let press = 0; press < testCase.pressesToSecondRow; press++) {
+    await pressKey(host, 'ArrowDown');
+    await r.flush();
+  }
+  const activeId = host.getAttribute('aria-activedescendant')!;
+  expect(document.getElementById(activeId)?.textContent).toContain('Row 2');
 
   r.instance.range.set([10, 15]);
   await flush(r.fixture);
@@ -147,7 +214,7 @@ describe('virtualized resume position adopters (issue #2123)', () => {
     describe(testCase.name, () => {
       it('Enter activates the option the user was on after it scrolled out of the window', async () => {
         const r = renderHost(testCase.host);
-        const host = await strandSecondRow(r);
+        const host = await strandSecondRow(r, testCase);
 
         await pressKey(host, 'Enter');
         await flush(r.fixture);
@@ -157,7 +224,7 @@ describe('virtualized resume position adopters (issue #2123)', () => {
 
       it('ArrowDown continues from the option the user was on after it scrolled out of the window', async () => {
         const r = renderHost(testCase.host);
-        const host = await strandSecondRow(r);
+        const host = await strandSecondRow(r, testCase);
 
         await pressKey(host, 'ArrowDown');
         await flush(r.fixture);
@@ -165,26 +232,28 @@ describe('virtualized resume position adopters (issue #2123)', () => {
         expect(r.instance.scrolled()).toBe(3);
       });
 
-      it('typeahead cycles from the option the user was on after it scrolled out of the window', async () => {
-        const r = renderHost(testCase.host);
-        const host = await strandSecondRow(r);
+      if (testCase.typeahead) {
+        it('typeahead cycles from the option the user was on after it scrolled out of the window', async () => {
+          const r = renderHost(testCase.host);
+          const host = await strandSecondRow(r, testCase);
 
-        await pressKey(host, 'r');
-        await flush(r.fixture);
+          await pressKey(host, 'r');
+          await flush(r.fixture);
 
-        expect(r.instance.scrolled()).toBe(3);
-      });
+          expect(r.instance.scrolled()).toBe(3);
+        });
+      }
     });
   }
 
-  it('covers every root that clears its active descendant when the active item unmounts', () => {
-    const clearsOnUnmount = [...LIBRARY_CODE]
-      .filter(([, code]) => /#activeId\(\) === handle\.id\(\)/.test(code))
+  it('covers every root that hands its active descendant to a virtualized navigator', () => {
+    const navigatesVirtually = [...LIBRARY_CODE]
+      .filter(([, code]) => /\bsetActiveId: \(\w+\) =>/.test(code))
       .map(([path]) => path)
       .sort();
 
-    expect(clearsOnUnmount.length).toBeGreaterThan(2);
-    expect(CASES.map((c) => c.owner).sort()).toEqual(clearsOnUnmount);
+    expect(navigatesVirtually.length).toBeGreaterThan(3);
+    expect(CASES.map((c) => c.owner).sort()).toEqual(navigatesVirtually);
   });
 
   it('retains the position through the shared VirtualizedResume in every covered root', () => {

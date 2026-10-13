@@ -29,6 +29,7 @@ import {
   toggleInArray,
   type VetoableEvent,
   type VetoableNativeEvent,
+  VirtualizedResume,
   type WritingDirection,
 } from 'forty-cdk/core';
 import {
@@ -474,6 +475,12 @@ export class ForCombobox<T = string>
    */
   #navigator: ComboboxVirtualizedNavigator<T> | null = null;
 
+  readonly #resume = new VirtualizedResume<T, LabelCacheEntry<T>>({
+    totalCount: this.totalCount,
+    snapshotByPos: () => this.#requireNavigator().snapshotByPos(),
+    compareWith: this.compareWith,
+  });
+
   #requireNavigator(): ComboboxVirtualizedNavigator<T> {
     return (this.#navigator ??= createComboboxVirtualizedNavigator<T>(
       {
@@ -482,12 +489,20 @@ export class ForCombobox<T = string>
         visibleRange: this.visibleRange,
         loop: this.loop,
         getActiveId: () => this.#activeId(),
-        setActiveId: (id) => this.#activeId.set(id),
+        setActiveId: (id) => this.#setActiveId(id),
         emitScrollToIndex: (idx) => this.scrollToIndex.emit(idx),
+        getResumePos: () => this.#resume.pos(),
         dataVersion: this.dataVersion,
       },
       (host) => this.#scrollActiveIntoView(host),
     ));
+  }
+
+  #setActiveId(id: string | null): void {
+    if (id !== null) {
+      this.#resume.clear();
+    }
+    this.#activeId.set(id);
   }
 
   /**
@@ -664,6 +679,9 @@ export class ForCombobox<T = string>
     this.#items.register(handle);
   }
   private unregisterOption(handle: ForComboboxOptionHandle<T>): void {
+    if (this.totalCount() !== undefined && this.open() && this.#activeId() === handle.id()) {
+      this.#resume.retain(handle.posInSet?.() ?? null, handle.value());
+    }
     this.#items.unregister(handle);
   }
 
@@ -757,11 +775,14 @@ export class ForCombobox<T = string>
   }
 
   activate(handle: ForComboboxOptionHandle<T>): void {
-    if (this.effectiveDisabled() || this.readonly() || handle.disabled()) {
+    if (handle.disabled()) {
       return;
     }
-    const v = handle.value();
-    if (isUnset(v)) {
+    this.#activateValue(handle.value(), handle.label(), handle.id());
+  }
+
+  #activateValue(v: T, label: string, id: string | null): void {
+    if (this.effectiveDisabled() || this.readonly() || isUnset(v)) {
       return;
     }
     if (this.multiple()) {
@@ -772,14 +793,16 @@ export class ForCombobox<T = string>
         this.query.set('');
         this.#syncInputValue('');
       }
-      this.#activeId.set(handle.id());
+      if (id !== null) {
+        this.#setActiveId(id);
+      }
       return;
     }
     // Single mode: replace + close + commit label.
     this.#setSingle(v);
     if (this.commitOnSelect() && this.trigger() === null) {
-      this.query.set(handle.label());
-      this.#syncInputValue(handle.label());
+      this.query.set(label);
+      this.#syncInputValue(label);
     }
     this.closeOverlay('select');
   }
@@ -813,13 +836,23 @@ export class ForCombobox<T = string>
   private activateActive(): boolean {
     const id = this.#activeId();
     if (!id) {
-      return false;
+      return this.#activateResumed();
     }
     const handle = this.#items.items().find((o) => o.id() === id);
     if (!handle || handle.disabled()) {
       return false;
     }
     this.activate(handle);
+    return true;
+  }
+
+  #activateResumed(): boolean {
+    const resumed = this.#resume.resolve();
+    if (resumed === null || resumed.entry.disabled) {
+      return false;
+    }
+    this.#requireNavigator().seedActive(resumed.pos);
+    this.#activateValue(resumed.entry.value, resumed.entry.label, null);
     return true;
   }
 
@@ -851,7 +884,7 @@ export class ForCombobox<T = string>
     if (target === null) {
       return;
     }
-    this.#activeId.set(target.id());
+    this.#setActiveId(target.id());
     this.#scrollActiveIntoView(target.host);
     this.#lastPositionedId = target.id();
   }
@@ -876,6 +909,7 @@ export class ForCombobox<T = string>
       return false;
     }
     this.query.set(query);
+    this.#resume.clear();
     if (this.clearOnQueryChange() && !this.multiple() && this.value().length > 0) {
       this.value.set([]);
     }
@@ -883,7 +917,7 @@ export class ForCombobox<T = string>
   }
 
   private setActiveId(id: string | null): void {
-    this.#activeId.set(id);
+    this.#setActiveId(id);
     this.#lastPositionedId = id;
   }
 
@@ -960,6 +994,7 @@ export class ForCombobox<T = string>
       this.#syncInputValue('');
     }
     this.#activeId.set(null);
+    this.#resume.clear();
   }
 
   private setInitialFocus(target: ForComboboxInitialFocus): void {
@@ -1017,6 +1052,7 @@ export class ForCombobox<T = string>
    */
   #resetAfterClose(reason: ForComboboxCloseReason): void {
     this.#activeId.set(null);
+    this.#resume.clear();
     this.#navigator?.resetPending();
     if (this.trigger() !== null) {
       this.query.set('');
