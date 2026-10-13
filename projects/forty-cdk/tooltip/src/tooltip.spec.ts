@@ -429,6 +429,27 @@ describe('ForTooltip', () => {
       expect(r.instance.isOpen()).toBe(true);
     });
 
+    it('closes a hoverable tooltip once a pen leaves the trigger away from the content', async () => {
+      const r = renderHost(HoverableTooltipHost);
+      await flush(r.fixture);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+
+      trigger.dispatchEvent(new PointerEvent('pointerenter', { pointerType: 'pen' }));
+      await flush(r.fixture);
+      trigger.dispatchEvent(
+        new PointerEvent('pointerleave', { pointerType: 'pen', clientX: 0, clientY: 0 }),
+      );
+      await flush(r.fixture);
+      expect(r.instance.isOpen()).toBe(true);
+
+      document.dispatchEvent(
+        new PointerEvent('pointermove', { pointerType: 'pen', clientX: 9999, clientY: 9999 }),
+      );
+      await flush(r.fixture);
+
+      expect(r.instance.isOpen()).toBe(false);
+    });
+
     it('reopens on a later keyboard focus after a suppressed touch tap', async () => {
       const r = renderHost(TooltipHost);
       r.instance.openDelay.set(0);
@@ -1991,6 +2012,40 @@ describe('ForTooltip', () => {
       await flush(r.fixture);
 
       expect(r.instance.isOpen()).toBe(true);
+    });
+
+    it('keeps the tooltip open when the pointer returns to the trigger after a scroll inside the content', async () => {
+      const r = renderHost(TooltipHost);
+      r.instance.isOpen.set(true);
+      await flush(r.fixture);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+      const content = document.querySelector<HTMLElement>('[role="tooltip"]')!;
+
+      vi.useFakeTimers();
+      trigger.dispatchEvent(new PointerEvent('pointerleave'));
+      content.dispatchEvent(new Event('scroll'));
+      trigger.dispatchEvent(new PointerEvent('pointerenter'));
+      vi.advanceTimersByTime(301);
+      r.fixture.detectChanges();
+
+      expect(r.instance.isOpen()).toBe(true);
+    });
+
+    it('opens on hover while a container that does not hold the trigger scrolls', async () => {
+      const r = renderHost(TooltipHost);
+      r.instance.openDelay.set(0);
+      await flush(r.fixture);
+      const log = document.createElement('div');
+      document.body.appendChild(log);
+      try {
+        log.dispatchEvent(new Event('scroll'));
+        r.query<HTMLButtonElement>('button')!.dispatchEvent(new PointerEvent('pointerenter'));
+        await flush(r.fixture);
+
+        expect(r.instance.isOpen()).toBe(true);
+      } finally {
+        log.remove();
+      }
     });
 
     it('ignores a scroll of a container that does not hold the trigger', async () => {

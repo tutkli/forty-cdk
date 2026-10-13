@@ -2,50 +2,94 @@ import { DestroyRef, DOCUMENT, inject, Injectable, PLATFORM_ID } from '@angular/
 import { isPlatformBrowser } from '@angular/common';
 
 import { composedContains } from 'forty-cdk/core';
-import { attachScrollDismiss, type ScrollDismiss } from './scroll-dismiss';
+
+/** Window (ms) hover opens stay suppressed after the last scroll that concerns an overlay. */
+export const DEFAULT_SCROLL_DISMISS_SUPPRESSION_MS = 200;
 
 /**
- * Which scrolls concern one registered overlay. Both accessors are read on
- * every scroll, so a trigger or surface registered after the overlay is picked
- * up.
+ * Which scrolls concern one registered overlay. Both accessors are read when a
+ * scroll is dispatched or a suppression is queried, so a trigger or surface
+ * registered after the overlay is picked up.
  */
 export interface ScrollDismissScope {
   /**
    * The element the overlay is anchored to. A scroll of an element that does
-   * not contain it moves nothing the overlay is positioned against, so it does
-   * not dismiss. `null`, or an anchor no longer in the document, leaves every
-   * scroll in scope.
+   * not contain it moves nothing the overlay is positioned against, so it
+   * neither dismisses nor suppresses. `null`, or an anchor no longer in the
+   * document, leaves every scroll in scope.
    */
   readonly anchor: () => Element | null;
   /**
    * The overlay's own surface. A scroll inside it (an `overflow: auto` region
-   * in the content) does not dismiss.
+   * in the content) neither dismisses nor suppresses.
    */
   readonly surface: () => Element | null;
 }
 
-interface ScrollDismissRegistration {
+/** Inputs for {@link ScrollDismissDispatcher.register}. */
+export interface ScrollDismissOptions {
+  /**
+   * Closes the overlay and cancels its pending timers. Called synchronously on
+   * every scroll in scope while {@link active} holds.
+   */
   readonly dismiss: () => void;
-  readonly scope: ScrollDismissScope | undefined;
+  /** Narrows which scrolls dismiss and suppress. Omitted, every scroll does. */
+  readonly scope?: ScrollDismissScope;
+  /**
+   * Whether a scroll has anything to dismiss: the overlay is open, or an open /
+   * close timer is pending. Read before the scope, so an idle overlay costs one
+   * call per scroll. Omitted, the registration is always active.
+   */
+  readonly active?: () => boolean;
 }
 
+/** Handle returned by {@link ScrollDismissDispatcher.register}. */
+export interface ScrollDismissRegistration {
+  /**
+   * Whether a scroll in this registration's scope happened within the
+   * suppression window. Hover opens bail while this returns `true`, so content
+   * sliding under a stationary pointer cannot flicker the overlay open.
+   * Always `false` on the server and after {@link unregister}.
+   */
+  isSuppressed(): boolean;
+  /** Removes this registration. Idempotent; call it from a `DestroyRef` hook. */
+  unregister(): void;
+}
+
+interface Registration {
+  readonly dismiss: () => void;
+  readonly scope: ScrollDismissScope | undefined;
+  readonly active: () => boolean;
+}
+
+const ALWAYS_ACTIVE = (): boolean => true;
+
+const SERVER_REGISTRATION: ScrollDismissRegistration = {
+  isSuppressed: () => false,
+  unregister: () => {},
+};
+
 /**
- * Application-scoped owner of the single document `scroll` listener shared by
- * every hover-driven anchored overlay (Tooltip, HoverCard).
+ * Application-scoped owner of the single capture-phase document `scroll`
+ * listener shared by every hover-driven anchored overlay (Tooltip, HoverCard).
  *
- * Each overlay used to call {@link attachScrollDismiss} in its own constructor,
- * so a table with one tooltip per row installed N capture-phase `scroll`
- * listeners on `document` that all fired on every scroll anywhere — even with
- * every tooltip closed. This dispatcher installs exactly one listener on the
- * first registration and removes it with the last, fanning each scroll out to
- * every registered `dismiss` callback whose scope it concerns and sharing a
- * single suppression window.
+ * When an ancestor scroll container moves its content under a stationary
+ * cursor, the browser does not reliably dispatch `pointerleave` /
+ * `pointerenter` on the triggers sliding past the pointer. On each scroll the
+ * dispatcher therefore dismisses every active registration whose scope the
+ * scroll concerns, and records the scrolled element with a timestamp. A
+ * registration is suppressed while a recorded scroll within
+ * {@link DEFAULT_SCROLL_DISMISS_SUPPRESSION_MS} concerns its own scope, so a
+ * scroll elsewhere on the page, or inside the overlay's own surface, never
+ * blocks its hover opens.
  *
- * The refcounted install / teardown mirrors `ForToastManager`'s shared hotkey
- * listener. `providedIn: 'root'` so it is one instance per application injector
- * (garbage-collected with it, no listener leak between SSR requests); a
- * component-scoped `provideForTooltipDefaults` never re-provides it, so the
- * listener stays truly app-wide. Internal core tier — exported for the tooltip /
+ * One listener is installed with the first registration and removed with the
+ * last. Per scroll the work is one map write plus one `active()` call per
+ * registration; the containment walk runs only for active registrations, and
+ * for idle ones only when their own hover asks whether it is suppressed.
+ *
+ * `providedIn: 'root'`, so it is one instance per application injector and is
+ * garbage-collected with it. Internal core tier, exported for the tooltip /
  * hover-card entry points, never for consumers.
  */
 @Injectable({ providedIn: 'root' })
@@ -53,75 +97,101 @@ export class ScrollDismissDispatcher {
   readonly #doc = inject(DOCUMENT);
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
-  readonly #registrations = new Set<ScrollDismissRegistration>();
-  #scrollDismiss: ScrollDismiss | null = null;
+  readonly #registrations = new Set<Registration>();
+  readonly #recentScrolls = new Map<EventTarget | null, number>();
+  #listener: AbortController | null = null;
 
   constructor() {
     inject(DestroyRef).onDestroy(() => {
-      this.#scrollDismiss?.destroy();
-      this.#scrollDismiss = null;
+      this.#listener?.abort();
+      this.#listener = null;
       this.#registrations.clear();
+      this.#recentScrolls.clear();
     });
   }
 
   /**
-   * Whether an ancestor scroll has opened the shared suppression window. Overlay
-   * open handlers bail while this returns `true` so content sliding under a
-   * stationary pointer can't flicker overlays open. Always `false` on the
-   * server and while no scroll listener is installed. Every scroll opens the
-   * window, whatever scope it falls in.
+   * Registers an overlay for scroll dismissal and per-overlay suppression. Each
+   * call is an independent registration, so registering the same callback
+   * twice yields two handles that must both be unregistered. A no-op handle on
+   * the server.
    */
-  isSuppressed(): boolean {
-    return this.#scrollDismiss?.isSuppressed() ?? false;
+  register(options: ScrollDismissOptions): ScrollDismissRegistration {
+    if (!this.#isBrowser) {
+      return SERVER_REGISTRATION;
+    }
+    const registration: Registration = {
+      dismiss: options.dismiss,
+      scope: options.scope,
+      active: options.active ?? ALWAYS_ACTIVE,
+    };
+    this.#registrations.add(registration);
+    this.#listen();
+    return {
+      isSuppressed: () =>
+        this.#registrations.has(registration) && this.#suppresses(registration.scope),
+      unregister: () => this.#unregister(registration),
+    };
   }
 
-  /**
-   * Registers `dismiss` to run on every ancestor scroll in `scope`. Each call is
-   * an independent registration tracked by its own token, so registering the
-   * same callback twice yields two independent teardowns that fire it twice and
-   * must both run to remove it. Installs the shared listener on the first
-   * registration and returns a teardown that removes exactly this registration,
-   * tearing the listener down with the last one. The teardown is idempotent —
-   * calling it more than once has no effect on any sibling registration. A
-   * no-op returning an empty teardown on the server.
-   *
-   * @param dismiss Called on every ancestor scroll in scope; implement it as a
-   *   no-op when the overlay is neither open nor armed.
-   * @param scope Narrows which scrolls reach `dismiss`. Omitted, every scroll
-   *   does.
-   * @returns A teardown to run from the caller's `DestroyRef` hook.
-   */
-  register(dismiss: () => void, scope?: ScrollDismissScope): () => void {
-    if (!this.#isBrowser) {
-      return () => {};
+  #listen(): void {
+    if (this.#listener) {
+      return;
     }
-    const registration: ScrollDismissRegistration = { dismiss, scope };
-    this.#registrations.add(registration);
-    if (!this.#scrollDismiss) {
-      this.#scrollDismiss = attachScrollDismiss(this.#doc, {
-        dismiss: (event) => {
-          for (const reg of [...this.#registrations]) {
-            if (!reg.scope || scrollConcerns(event, reg.scope)) {
-              reg.dismiss();
-            }
-          }
-        },
-      });
+    this.#listener = new AbortController();
+    this.#doc.addEventListener('scroll', (event) => this.#onScroll(event), {
+      capture: true,
+      passive: true,
+      signal: this.#listener.signal,
+    });
+  }
+
+  #unregister(registration: Registration): void {
+    if (!this.#registrations.delete(registration) || this.#registrations.size > 0) {
+      return;
     }
-    return () => {
-      if (!this.#registrations.delete(registration)) {
+    this.#listener?.abort();
+    this.#listener = null;
+    this.#recentScrolls.clear();
+  }
+
+  #onScroll(event: Event): void {
+    const now = Date.now();
+    this.#recentScrolls.delete(event.target);
+    this.#recentScrolls.set(event.target, now + DEFAULT_SCROLL_DISMISS_SUPPRESSION_MS);
+    this.#pruneExpired(now);
+    for (const registration of this.#registrations) {
+      if (
+        registration.active() &&
+        (!registration.scope || scrollConcerns(event.target, registration.scope))
+      ) {
+        registration.dismiss();
+      }
+    }
+  }
+
+  #pruneExpired(now: number): void {
+    for (const [target, until] of this.#recentScrolls) {
+      if (until > now) {
         return;
       }
-      if (this.#registrations.size === 0) {
-        this.#scrollDismiss?.destroy();
-        this.#scrollDismiss = null;
+      this.#recentScrolls.delete(target);
+    }
+  }
+
+  #suppresses(scope: ScrollDismissScope | undefined): boolean {
+    const now = Date.now();
+    this.#pruneExpired(now);
+    for (const target of this.#recentScrolls.keys()) {
+      if (!scope || scrollConcerns(target, scope)) {
+        return true;
       }
-    };
+    }
+    return false;
   }
 }
 
-function scrollConcerns(event: Event, scope: ScrollDismissScope): boolean {
-  const target = event.target;
+function scrollConcerns(target: EventTarget | null, scope: ScrollDismissScope): boolean {
   if (!(target instanceof Node)) {
     return true;
   }

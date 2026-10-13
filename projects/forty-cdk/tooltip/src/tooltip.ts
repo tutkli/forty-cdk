@@ -16,6 +16,7 @@ import {
   emitVetoableNativeEvent,
   IdGenerator,
   injectPrefersReducedMotion,
+  isNonTouchPointer,
   type VetoableNativeEvent,
 } from 'forty-cdk/core';
 import {
@@ -28,6 +29,7 @@ import {
   type Point,
   resolveGraceSide,
   ScrollDismissDispatcher,
+  type ScrollDismissRegistration,
 } from 'forty-cdk/core-overlay';
 import {
   FOR_TOOLTIP_CONTEXT,
@@ -189,14 +191,13 @@ export class ForTooltip extends AnchoredOverlayPositioningBase implements ForToo
   readonly arrow = this.#arrowEl.asReadonly();
 
   readonly #coordinator = inject(TooltipCoordinator);
-  readonly #scrollDismissDispatcher = inject(ScrollDismissDispatcher);
   readonly #hoverIntent: HoverIntentScheduler;
 
   #triggerHovered = false;
   #triggerFocused = false;
   #contentHovered = false;
   #detachGrace: (() => void) | null = null;
-  #unregisterScrollDismiss: () => void = () => {};
+  readonly #scrollDismiss: ScrollDismissRegistration;
 
   constructor() {
     super();
@@ -214,14 +215,15 @@ export class ForTooltip extends AnchoredOverlayPositioningBase implements ForToo
       coordinator: this.#coordinator,
     });
 
-    this.#unregisterScrollDismiss = this.#scrollDismissDispatcher.register(
-      () => this.#dismissOnScroll(),
-      { anchor: this.#triggerEl, surface: this.#contentEl },
-    );
+    this.#scrollDismiss = inject(ScrollDismissDispatcher).register({
+      dismiss: () => this.#dismissOnScroll(),
+      scope: { anchor: this.#triggerEl, surface: this.#contentEl },
+      active: () => this.open() || this.#hoverIntent.isPending(),
+    });
 
     inject(DestroyRef).onDestroy(() => {
       this.cancelPending();
-      this.#unregisterScrollDismiss();
+      this.#scrollDismiss.unregister();
     });
   }
 
@@ -365,8 +367,8 @@ export class ForTooltip extends AnchoredOverlayPositioningBase implements ForToo
    * `openDelay` (instant when the delay is `0` or the scope's skip-delay window
    * is active) and applies the same gates as a hover / focus open: a no-op
    * while `disabled`, a no-op under `showOnOverflow` when the trigger's own
-   * text is not truncated, and a no-op while an ancestor is scrolling (the
-   * scroll-dismiss suppression window). For an instant, unconditional open that
+   * text is not truncated, and a no-op for a short window after a scroll of a
+   * container holding the trigger. For an instant, unconditional open that
    * bypasses the delay and every gate, write the `[(open)]` model directly
    * (`open.set(true)`).
    */
@@ -415,9 +417,13 @@ export class ForTooltip extends AnchoredOverlayPositioningBase implements ForToo
     }
   }
 
-  /** True while an ancestor scroll has opened the suppression window (opens are no-ops). */
+  /**
+   * True while the tooltip is closed and a scroll of a container holding its
+   * trigger is within the suppression window. An open tooltip is never gated,
+   * so returning to its trigger still cancels a pending close.
+   */
   #scrollSuppressed(): boolean {
-    return this.#scrollDismissDispatcher.isSuppressed();
+    return !this.open() && this.#scrollDismiss.isSuppressed();
   }
 
   /** True when `showOnOverflow` is on and the trigger's text is NOT truncated. */
@@ -446,10 +452,15 @@ export class ForTooltip extends AnchoredOverlayPositioningBase implements ForToo
     const side = trigger ? resolveGraceSide(trigger.getBoundingClientRect(), rect) : this.side();
     const polygon = buildSubmenuGracePolygon(cursor, rect, side);
     this.#disarmContentGrace();
-    this.#detachGrace = attachPointerGrace(content.ownerDocument, polygon, () => {
-      this.#disarmContentGrace();
-      this.#scheduleCloseIfInactive();
-    });
+    this.#detachGrace = attachPointerGrace(
+      content.ownerDocument,
+      polygon,
+      () => {
+        this.#disarmContentGrace();
+        this.#scheduleCloseIfInactive();
+      },
+      { tracksPointer: isNonTouchPointer },
+    );
   }
 
   #disarmContentGrace(): void {

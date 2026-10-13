@@ -1,11 +1,19 @@
 import { PLATFORM_ID, provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { DEFAULT_SCROLL_DISMISS_SUPPRESSION_MS } from './scroll-dismiss';
-import { ScrollDismissDispatcher } from './scroll-dismiss-dispatcher';
+import {
+  DEFAULT_SCROLL_DISMISS_SUPPRESSION_MS,
+  ScrollDismissDispatcher,
+  type ScrollDismissOptions,
+  type ScrollDismissRegistration,
+} from './scroll-dismiss-dispatcher';
 
 function scrollListenerCount(calls: readonly (readonly unknown[])[]): number {
   return calls.filter((call) => call[0] === 'scroll').length;
+}
+
+function register(options: ScrollDismissOptions): ScrollDismissRegistration {
+  return TestBed.inject(ScrollDismissDispatcher).register(options);
 }
 
 describe('ScrollDismissDispatcher', () => {
@@ -16,12 +24,11 @@ describe('ScrollDismissDispatcher', () => {
 
     it('installs a single shared scroll listener for multiple subscribers', () => {
       const addSpy = vi.spyOn(document, 'addEventListener');
-      const dispatcher = TestBed.inject(ScrollDismissDispatcher);
 
       let a = 0;
       let b = 0;
-      const offA = dispatcher.register(() => (a += 1));
-      const offB = dispatcher.register(() => (b += 1));
+      const regA = register({ dismiss: () => (a += 1) });
+      const regB = register({ dismiss: () => (b += 1) });
       try {
         expect(scrollListenerCount(addSpy.mock.calls)).toBe(1);
 
@@ -29,128 +36,138 @@ describe('ScrollDismissDispatcher', () => {
         expect(a).toBe(1);
         expect(b).toBe(1);
       } finally {
-        offA();
-        offB();
+        regA.unregister();
+        regB.unregister();
       }
     });
 
     it('tears the listener down only with the last unregister (refcounted)', () => {
       const addSpy = vi.spyOn(document, 'addEventListener');
-      const dispatcher = TestBed.inject(ScrollDismissDispatcher);
 
-      const offA = dispatcher.register(() => undefined);
-      const offB = dispatcher.register(() => undefined);
+      const regA = register({ dismiss: () => undefined });
+      const regB = register({ dismiss: () => undefined });
       expect(scrollListenerCount(addSpy.mock.calls)).toBe(1);
 
-      offA();
-      dispatcher.register(() => undefined)();
+      regA.unregister();
+      register({ dismiss: () => undefined }).unregister();
       expect(scrollListenerCount(addSpy.mock.calls)).toBe(1);
 
-      offB();
-      const offAfterTeardown = dispatcher.register(() => undefined);
+      regB.unregister();
+      const afterTeardown = register({ dismiss: () => undefined });
       try {
         expect(scrollListenerCount(addSpy.mock.calls)).toBe(2);
       } finally {
-        offAfterTeardown();
+        afterTeardown.unregister();
       }
     });
 
     it('re-installs the listener after a full teardown when a new subscriber registers', () => {
-      const dispatcher = TestBed.inject(ScrollDismissDispatcher);
-
       let hits = 0;
-      const off1 = dispatcher.register(() => (hits += 1));
-      off1();
+      register({ dismiss: () => (hits += 1) }).unregister();
 
       document.dispatchEvent(new Event('scroll'));
       expect(hits).toBe(0);
 
-      const off2 = dispatcher.register(() => (hits += 1));
+      const reg = register({ dismiss: () => (hits += 1) });
       try {
         document.dispatchEvent(new Event('scroll'));
         expect(hits).toBe(1);
       } finally {
-        off2();
+        reg.unregister();
       }
     });
 
     it('stops dismissing a subscriber after it unregisters', () => {
-      const dispatcher = TestBed.inject(ScrollDismissDispatcher);
-
       let a = 0;
       let b = 0;
-      const offA = dispatcher.register(() => (a += 1));
-      const offB = dispatcher.register(() => (b += 1));
+      const regA = register({ dismiss: () => (a += 1) });
+      const regB = register({ dismiss: () => (b += 1) });
 
-      offA();
+      regA.unregister();
       try {
         document.dispatchEvent(new Event('scroll'));
         expect(a).toBe(0);
         expect(b).toBe(1);
       } finally {
-        offB();
+        regB.unregister();
       }
     });
 
     it('tracks duplicate callbacks independently', () => {
-      const dispatcher = TestBed.inject(ScrollDismissDispatcher);
-
       let hits = 0;
-      const fn = () => (hits += 1);
-      const offA = dispatcher.register(fn);
-      const offB = dispatcher.register(fn);
+      const dismiss = (): number => (hits += 1);
+      const regA = register({ dismiss });
+      const regB = register({ dismiss });
       try {
         document.dispatchEvent(new Event('scroll'));
         expect(hits).toBe(2);
 
-        offA();
+        regA.unregister();
         hits = 0;
         document.dispatchEvent(new Event('scroll'));
         expect(hits).toBe(1);
       } finally {
-        offB();
+        regB.unregister();
       }
     });
 
-    it('does not tear down the shared listener while a duplicate registration survives', () => {
-      const dispatcher = TestBed.inject(ScrollDismissDispatcher);
-
-      let hits = 0;
-      const fn = (): number => (hits += 1);
-      const offA = dispatcher.register(fn);
-      const offB = dispatcher.register(fn);
-
-      offA();
-      document.dispatchEvent(new Event('scroll'));
-      expect(hits).toBe(1);
-
-      offB();
-      hits = 0;
-      document.dispatchEvent(new Event('scroll'));
-      expect(hits).toBe(0);
-    });
-
-    it('teardown is idempotent and does not affect a sibling registration', () => {
-      const dispatcher = TestBed.inject(ScrollDismissDispatcher);
-
+    it('unregister is idempotent and does not affect a sibling registration', () => {
       let a = 0;
       let b = 0;
-      const offA = dispatcher.register(() => (a += 1));
-      const offB = dispatcher.register(() => (b += 1));
+      const regA = register({ dismiss: () => (a += 1) });
+      const regB = register({ dismiss: () => (b += 1) });
 
-      offA();
-      offA();
+      regA.unregister();
+      regA.unregister();
       document.dispatchEvent(new Event('scroll'));
       expect(a).toBe(0);
       expect(b).toBe(1);
 
-      offB();
+      regB.unregister();
       document.dispatchEvent(new Event('scroll'));
       expect(b).toBe(1);
     });
+
+    it('catches a scroll on a descendant element through the capture phase', () => {
+      const inner = document.createElement('div');
+      document.body.appendChild(inner);
+      let hits = 0;
+      const reg = register({ dismiss: () => (hits += 1) });
+      try {
+        inner.dispatchEvent(new Event('scroll'));
+        expect(hits).toBe(1);
+      } finally {
+        reg.unregister();
+        inner.remove();
+      }
+    });
+
+    it('skips an inactive registration without reading its scope', () => {
+      let active = false;
+      let hits = 0;
+      const anchor = vi.fn(() => null);
+      const surface = vi.fn(() => null);
+      const reg = register({
+        dismiss: () => (hits += 1),
+        scope: { anchor, surface },
+        active: () => active,
+      });
+      try {
+        document.dispatchEvent(new Event('scroll'));
+        expect(hits).toBe(0);
+        expect(anchor).not.toHaveBeenCalled();
+        expect(surface).not.toHaveBeenCalled();
+
+        active = true;
+        document.dispatchEvent(new Event('scroll'));
+        expect(hits).toBe(1);
+      } finally {
+        reg.unregister();
+      }
+    });
   });
 
-  describe('shared suppression window', () => {
+  describe('suppression window', () => {
     beforeEach(() => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       vi.useFakeTimers();
@@ -161,21 +178,59 @@ describe('ScrollDismissDispatcher', () => {
     });
 
     it('opens on scroll and closes after the default window elapses', () => {
-      const dispatcher = TestBed.inject(ScrollDismissDispatcher);
-      const off = dispatcher.register(() => undefined);
+      const reg = register({ dismiss: () => undefined });
       try {
-        expect(dispatcher.isSuppressed()).toBe(false);
+        expect(reg.isSuppressed()).toBe(false);
 
         document.dispatchEvent(new Event('scroll'));
-        expect(dispatcher.isSuppressed()).toBe(true);
+        expect(reg.isSuppressed()).toBe(true);
 
         vi.advanceTimersByTime(DEFAULT_SCROLL_DISMISS_SUPPRESSION_MS - 1);
-        expect(dispatcher.isSuppressed()).toBe(true);
+        expect(reg.isSuppressed()).toBe(true);
 
         vi.advanceTimersByTime(1);
-        expect(dispatcher.isSuppressed()).toBe(false);
+        expect(reg.isSuppressed()).toBe(false);
       } finally {
-        off();
+        reg.unregister();
+      }
+    });
+
+    it('re-arms on each scroll so a continuous gesture stays suppressed', () => {
+      const reg = register({ dismiss: () => undefined });
+      try {
+        document.dispatchEvent(new Event('scroll'));
+        vi.advanceTimersByTime(DEFAULT_SCROLL_DISMISS_SUPPRESSION_MS - 50);
+        document.dispatchEvent(new Event('scroll'));
+        vi.advanceTimersByTime(DEFAULT_SCROLL_DISMISS_SUPPRESSION_MS - 50);
+        expect(reg.isSuppressed()).toBe(true);
+
+        vi.advanceTimersByTime(50);
+        expect(reg.isSuppressed()).toBe(false);
+      } finally {
+        reg.unregister();
+      }
+    });
+
+    it('suppresses an inactive registration whose scope the scroll concerns', () => {
+      const reg = register({ dismiss: () => undefined, active: () => false });
+      try {
+        document.dispatchEvent(new Event('scroll'));
+        expect(reg.isSuppressed()).toBe(true);
+      } finally {
+        reg.unregister();
+      }
+    });
+
+    it('reports not suppressed after unregister', () => {
+      const keep = register({ dismiss: () => undefined });
+      const reg = register({ dismiss: () => undefined });
+      try {
+        document.dispatchEvent(new Event('scroll'));
+        reg.unregister();
+        expect(reg.isSuppressed()).toBe(false);
+        expect(keep.isSuppressed()).toBe(true);
+      } finally {
+        keep.unregister();
       }
     });
 
@@ -201,81 +256,98 @@ describe('ScrollDismissDispatcher', () => {
       });
 
       function registerScoped(anchor: () => Element | null = () => trigger) {
-        const dispatcher = TestBed.inject(ScrollDismissDispatcher);
         const hits = { count: 0 };
-        const off = dispatcher.register(() => (hits.count += 1), {
-          anchor,
-          surface: () => surface,
+        const reg = register({
+          dismiss: () => (hits.count += 1),
+          scope: { anchor, surface: () => surface },
         });
-        return { dispatcher, hits, off };
+        return { hits, reg };
       }
 
-      it('dismisses on a document scroll and on a scroll of a container holding the anchor', () => {
-        const { hits, off } = registerScoped();
+      it('dismisses and suppresses on a document scroll and on a container holding the anchor', () => {
+        const { hits, reg } = registerScoped();
         try {
           document.dispatchEvent(new Event('scroll'));
+          expect(reg.isSuppressed()).toBe(true);
+          vi.advanceTimersByTime(DEFAULT_SCROLL_DISMISS_SUPPRESSION_MS);
+
           container.dispatchEvent(new Event('scroll'));
+          expect(reg.isSuppressed()).toBe(true);
           expect(hits.count).toBe(2);
         } finally {
-          off();
+          reg.unregister();
         }
       });
 
-      it('skips a scroll inside the surface, yet still opens the suppression window', () => {
-        const { dispatcher, hits, off } = registerScoped();
+      it('neither dismisses nor suppresses on a scroll inside the surface', () => {
+        const { hits, reg } = registerScoped();
         const region = document.createElement('div');
         surface.appendChild(region);
         try {
           region.dispatchEvent(new Event('scroll'));
           expect(hits.count).toBe(0);
-          expect(dispatcher.isSuppressed()).toBe(true);
+          expect(reg.isSuppressed()).toBe(false);
         } finally {
-          off();
+          reg.unregister();
         }
       });
 
-      it('skips a scroll of a container that does not hold the anchor', () => {
-        const { hits, off } = registerScoped();
+      it('neither dismisses nor suppresses on a container that does not hold the anchor', () => {
+        const { hits, reg } = registerScoped();
         try {
           unrelated.dispatchEvent(new Event('scroll'));
           expect(hits.count).toBe(0);
+          expect(reg.isSuppressed()).toBe(false);
         } finally {
-          off();
+          reg.unregister();
         }
       });
 
-      it('dismisses on any scroll while the anchor is unset or detached', () => {
+      it('keeps a concerning scroll suppressing while an unrelated container scrolls after it', () => {
+        const { reg } = registerScoped();
+        try {
+          container.dispatchEvent(new Event('scroll'));
+          vi.advanceTimersByTime(50);
+          unrelated.dispatchEvent(new Event('scroll'));
+          expect(reg.isSuppressed()).toBe(true);
+
+          vi.advanceTimersByTime(DEFAULT_SCROLL_DISMISS_SUPPRESSION_MS - 50);
+          unrelated.dispatchEvent(new Event('scroll'));
+          expect(reg.isSuppressed()).toBe(false);
+        } finally {
+          reg.unregister();
+        }
+      });
+
+      it('treats every scroll as in scope while the anchor is unset or detached', () => {
         let anchorEl: Element | null = null;
-        const { hits, off } = registerScoped(() => anchorEl);
+        const { hits, reg } = registerScoped(() => anchorEl);
         try {
           unrelated.dispatchEvent(new Event('scroll'));
+          expect(reg.isSuppressed()).toBe(true);
           anchorEl = document.createElement('button');
           unrelated.dispatchEvent(new Event('scroll'));
           expect(hits.count).toBe(2);
         } finally {
-          off();
+          reg.unregister();
         }
       });
 
       it('scopes each registration on its own', () => {
-        const dispatcher = TestBed.inject(ScrollDismissDispatcher);
-        let unscoped = 0;
-        const offUnscoped = dispatcher.register(() => (unscoped += 1));
-        const { hits, off } = registerScoped();
+        let unscopedHits = 0;
+        const unscoped = register({ dismiss: () => (unscopedHits += 1) });
+        const { hits, reg } = registerScoped();
         try {
           unrelated.dispatchEvent(new Event('scroll'));
-          expect(unscoped).toBe(1);
+          expect(unscopedHits).toBe(1);
+          expect(unscoped.isSuppressed()).toBe(true);
           expect(hits.count).toBe(0);
+          expect(reg.isSuppressed()).toBe(false);
         } finally {
-          off();
-          offUnscoped();
+          reg.unregister();
+          unscoped.unregister();
         }
       });
-    });
-
-    it('reports not suppressed while no subscriber is registered', () => {
-      const dispatcher = TestBed.inject(ScrollDismissDispatcher);
-      expect(dispatcher.isSuppressed()).toBe(false);
     });
   });
 
@@ -288,17 +360,16 @@ describe('ScrollDismissDispatcher', () => {
 
     it('registers no listener and stays a no-op', () => {
       const addSpy = vi.spyOn(document, 'addEventListener');
-      const dispatcher = TestBed.inject(ScrollDismissDispatcher);
 
       let hits = 0;
-      const off = dispatcher.register(() => (hits += 1));
+      const reg = register({ dismiss: () => (hits += 1) });
       try {
         document.dispatchEvent(new Event('scroll'));
         expect(hits).toBe(0);
         expect(scrollListenerCount(addSpy.mock.calls)).toBe(0);
-        expect(dispatcher.isSuppressed()).toBe(false);
+        expect(reg.isSuppressed()).toBe(false);
       } finally {
-        off();
+        reg.unregister();
       }
     });
   });

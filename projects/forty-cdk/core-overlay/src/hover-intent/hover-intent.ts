@@ -41,6 +41,8 @@ export interface HoverIntentScheduler {
   scheduleClose(immediate: boolean): void;
   /** Cancel any pending open / close timer without changing state. */
   cancelPending(): void;
+  /** Whether an open or close timer is pending. */
+  isPending(): boolean;
 }
 
 /**
@@ -114,7 +116,7 @@ export function createHoverIntent(options: HoverIntentOptions): HoverIntentSched
     }, delay);
   }
 
-  return { scheduleOpen, scheduleClose, cancelPending };
+  return { scheduleOpen, scheduleClose, cancelPending, isPending: () => pendingTimer !== null };
 }
 
 /**

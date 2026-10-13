@@ -155,15 +155,26 @@ export function buildSubmenuGracePolygon(
   }
 }
 
+/** Options for {@link attachPointerGrace}. */
+export interface PointerGraceOptions {
+  /**
+   * Which pointer moves the polygon tracks; a move it rejects is ignored.
+   * Defaults to `isHoverCapablePointer` (mouse only), the menu family's hover
+   * vocabulary. A caller whose trigger also opens on pen hover passes
+   * `isNonTouchPointer`, so the pen that opened the surface can close it.
+   */
+  readonly tracksPointer?: (event: Pick<PointerEvent, 'pointerType'>) => boolean;
+}
+
 /**
  * Attaches a document-level `pointermove` listener that calls {@link onExit}
- * the first time the mouse leaves {@link polygon}. The caller arms this on a
- * trigger pointer-leave and disarms it (via the returned cleanup) once the
- * pointer reaches the content, the grace window elapses, or the submenu is
- * otherwise resolved.
+ * on every tracked move outside {@link polygon}, until the returned cleanup
+ * disarms it. The caller arms this on a trigger pointer-leave and disarms it
+ * once the pointer reaches the content, the grace window elapses, or the
+ * surface is otherwise resolved.
  *
- * Touch / pen moves are ignored — the safe triangle models a hovering mouse;
- * touch interaction opens submenus by tap, never by hover.
+ * Moves {@link PointerGraceOptions.tracksPointer} rejects are ignored: touch
+ * opens by tap, never by hover, so a touch move has no safe triangle to leave.
  *
  * Static-polygon assumption: {@link polygon} is captured once at arm time and
  * never re-measured for the lifetime of this listener. If the submenu content
@@ -182,9 +193,11 @@ export function attachPointerGrace(
   doc: Document,
   polygon: Polygon,
   onExit: () => void,
+  options: PointerGraceOptions = {},
 ): () => void {
+  const tracksPointer = options.tracksPointer ?? isHoverCapablePointer;
   const onMove = (event: PointerEvent): void => {
-    if (!isHoverCapablePointer(event)) {
+    if (!tracksPointer(event)) {
       return;
     }
     if (!isPointInPolygon({ x: event.clientX, y: event.clientY }, polygon)) {
