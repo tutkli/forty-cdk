@@ -29,7 +29,9 @@ import { injectHoverCardContext } from './hover-card-context';
  * card was hover-opened. The surface never takes focus on open. When it
  * unmounts with focus inside it (Escape on a link in the card, a `[(open)]`
  * write), focus returns to the trigger, and that focus does not reopen the
- * card.
+ * card. Tab past the card's last control continues from the trigger's place in
+ * the page's tab order, and Shift+Tab before its first lands on the trigger;
+ * both close the card.
  *
  * **Intentional ARIA exception.** The content carries no role (only
  * `data-state` for styling) and the trigger exposes no ARIA linkage — the
@@ -77,6 +79,10 @@ export class ForHoverCardContent {
       positioner: toFloatingPositioner(this.ctx, this.ctx.trigger),
       dismiss: {
         emitEscapeKeyDown: (event) => this.ctx.emitEscapeKeyDown(event),
+      },
+      tabOut: {
+        target: () => this.ctx.trigger(),
+        close: () => this.ctx.closeOnTabOut(),
       },
     });
   }

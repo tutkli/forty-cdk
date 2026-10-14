@@ -16,18 +16,16 @@ import {
   emitVetoableNativeEvent,
   IdGenerator,
   injectPrefersReducedMotion,
-  isNonTouchPointer,
   type VetoableNativeEvent,
 } from 'forty-cdk/core';
 import {
   AnchoredOverlayPositioningBase,
   forceCloseWhenDisabled,
   createHoverIntent,
+  createHoverSurfaceState,
   type HoverIntentScheduler,
-  attachPointerGrace,
-  buildSubmenuGracePolygon,
+  type HoverSurfaceState,
   type Point,
-  resolveGraceSide,
   ScrollDismissDispatcher,
   type ScrollDismissRegistration,
 } from 'forty-cdk/core-overlay';
@@ -193,10 +191,7 @@ export class ForTooltip extends AnchoredOverlayPositioningBase implements ForToo
   readonly #coordinator = inject(TooltipCoordinator);
   readonly #hoverIntent: HoverIntentScheduler;
 
-  #triggerHovered = false;
-  #triggerFocused = false;
-  #contentHovered = false;
-  #detachGrace: (() => void) | null = null;
+  readonly #surface: HoverSurfaceState;
   readonly #scrollDismiss: ScrollDismissRegistration;
 
   constructor() {
@@ -213,6 +208,13 @@ export class ForTooltip extends AnchoredOverlayPositioningBase implements ForToo
       openDelay: () => this.openDelay() ?? this.positioningDefaults.openDelay,
       closeDelay: () => this.closeDelay() ?? this.positioningDefaults.closeDelay,
       coordinator: this.#coordinator,
+    });
+
+    this.#surface = createHoverSurfaceState({
+      trigger: this.#triggerEl,
+      content: this.#contentEl,
+      side: () => this.side(),
+      close: () => this.#hoverIntent.scheduleClose(false),
     });
 
     this.#scrollDismiss = inject(ScrollDismissDispatcher).register({
@@ -240,6 +242,7 @@ export class ForTooltip extends AnchoredOverlayPositioningBase implements ForToo
   unregisterTrigger(el: HTMLElement): void {
     if (this.#triggerEl() === el) {
       this.#triggerEl.set(null);
+      this.#surface.resetTrigger();
     }
   }
 
@@ -251,8 +254,7 @@ export class ForTooltip extends AnchoredOverlayPositioningBase implements ForToo
   unregisterContent(el: HTMLElement): void {
     if (this.#contentEl() === el) {
       this.#contentEl.set(null);
-      this.#contentHovered = false;
-      this.#disarmContentGrace();
+      this.#surface.resetContent();
     }
   }
 
@@ -272,8 +274,7 @@ export class ForTooltip extends AnchoredOverlayPositioningBase implements ForToo
   }
 
   pointerEnterTrigger(): void {
-    this.#triggerHovered = true;
-    this.#disarmContentGrace();
+    this.#surface.enterTrigger();
     if (this.#scrollSuppressed() || this.#suppressedByOverflow()) {
       return;
     }
@@ -281,19 +282,19 @@ export class ForTooltip extends AnchoredOverlayPositioningBase implements ForToo
   }
 
   pointerLeaveTrigger(cursor: Point): void {
-    this.#triggerHovered = false;
-    if (this.#triggerFocused) {
+    this.#surface.leaveTrigger();
+    if (this.#surface.triggerFocused()) {
       return;
     }
     if (this.hoverableContent() && this.open() && this.#contentEl()) {
-      this.#armContentGrace(cursor);
+      this.#surface.armGrace(cursor);
       return;
     }
-    this.#scheduleCloseIfInactive();
+    this.#surface.closeIfInactive();
   }
 
   focusTrigger(): void {
-    this.#triggerFocused = true;
+    this.#surface.focusTrigger();
     if (this.#suppressedByOverflow()) {
       return;
     }
@@ -301,16 +302,14 @@ export class ForTooltip extends AnchoredOverlayPositioningBase implements ForToo
   }
 
   blurTrigger(): void {
-    this.#triggerFocused = false;
-    this.#scheduleCloseIfInactive();
+    this.#surface.blurTrigger();
   }
 
   pointerEnterContent(): void {
     if (!this.hoverableContent()) {
       return;
     }
-    this.#contentHovered = true;
-    this.#disarmContentGrace();
+    this.#surface.enterContent();
     this.#hoverIntent.cancelPending();
   }
 
@@ -318,8 +317,7 @@ export class ForTooltip extends AnchoredOverlayPositioningBase implements ForToo
     if (!this.hoverableContent()) {
       return;
     }
-    this.#contentHovered = false;
-    this.#scheduleCloseIfInactive();
+    this.#surface.leaveContent();
   }
 
   scheduleOpen(reason: TooltipScheduleReason): void {
@@ -330,12 +328,12 @@ export class ForTooltip extends AnchoredOverlayPositioningBase implements ForToo
   }
 
   scheduleClose(reason: TooltipScheduleReason): void {
-    this.#disarmContentGrace();
+    this.#surface.disarmGrace();
     this.#hoverIntent.scheduleClose(reason === 'escape' || reason === 'press');
   }
 
   cancelPending(): void {
-    this.#disarmContentGrace();
+    this.#surface.disarmGrace();
     this.#hoverIntent.cancelPending();
   }
 
@@ -390,14 +388,6 @@ export class ForTooltip extends AnchoredOverlayPositioningBase implements ForToo
     this.scheduleClose('hover');
   }
 
-  /** Close only when no keep-alive source (trigger hover/focus, content hover) is active. */
-  #scheduleCloseIfInactive(): void {
-    if (this.#triggerHovered || this.#triggerFocused || this.#contentHovered) {
-      return;
-    }
-    this.#hoverIntent.scheduleClose(false);
-  }
-
   /**
    * Closes the tooltip immediately when an ancestor of the trigger scrolls under
    * a stationary cursor and cancels any pending open / close timer. Closes
@@ -408,7 +398,7 @@ export class ForTooltip extends AnchoredOverlayPositioningBase implements ForToo
    * survive the scroll that brings the trigger into view.
    */
   #dismissOnScroll(): void {
-    if (this.#triggerFocused) {
+    if (this.#surface.triggerFocused()) {
       return;
     }
     this.cancelPending();
@@ -433,40 +423,5 @@ export class ForTooltip extends AnchoredOverlayPositioningBase implements ForToo
     }
     const el = this.#triggerEl();
     return el !== null && el.scrollWidth <= el.clientWidth;
-  }
-
-  /**
-   * Arms a pointer-grace "safe triangle" from `cursor` toward the content so
-   * the pointer can travel across the trigger / content gap without closing.
-   * On exit (or when content hover takes over) the grace disarms and a close
-   * is scheduled if nothing else keeps the tooltip alive.
-   */
-  #armContentGrace(cursor: Point): void {
-    const content = this.#contentEl();
-    if (!content) {
-      this.#scheduleCloseIfInactive();
-      return;
-    }
-    const rect = content.getBoundingClientRect();
-    const trigger = this.#triggerEl();
-    const side = trigger ? resolveGraceSide(trigger.getBoundingClientRect(), rect) : this.side();
-    const polygon = buildSubmenuGracePolygon(cursor, rect, side);
-    this.#disarmContentGrace();
-    this.#detachGrace = attachPointerGrace(
-      content.ownerDocument,
-      polygon,
-      () => {
-        this.#disarmContentGrace();
-        this.#scheduleCloseIfInactive();
-      },
-      { tracksPointer: isNonTouchPointer },
-    );
-  }
-
-  #disarmContentGrace(): void {
-    if (this.#detachGrace) {
-      this.#detachGrace();
-      this.#detachGrace = null;
-    }
   }
 }
