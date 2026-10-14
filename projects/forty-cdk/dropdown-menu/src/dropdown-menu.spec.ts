@@ -9,6 +9,7 @@ import {
   assertOverlayTriggerAriaContract,
 } from '../../src/test-utils/contract';
 import { type VetoableNativeEvent } from 'forty-cdk/core';
+import { provideForDropdownMenuDefaults } from 'forty-cdk/defaults';
 import { ForMenuContent, ForMenuItem } from 'forty-cdk/menu';
 import { pressKey } from 'forty-cdk/testing';
 
@@ -821,6 +822,38 @@ describe('ForDropdownMenu', () => {
       r.instance.open.set(false);
       await flush(r.fixture);
       expect(trigger.getAttribute('aria-expanded')).toBe('false');
+    });
+  });
+
+  describe('scoped defaults', () => {
+    it('reads the loop default from provideForDropdownMenuDefaults when no [loop] is bound', async () => {
+      @Component({
+        imports: IMPORTS,
+        providers: [provideForDropdownMenuDefaults({ loop: false })],
+        template: `
+          <div forDropdownMenu [(open)]="open">
+            <button forDropdownMenuTrigger>Options</button>
+            @if (open()) {
+              <div forMenuContent>
+                <button id="a" forMenuItem>A</button>
+                <button id="b" forMenuItem>B</button>
+              </div>
+            }
+          </div>
+        `,
+      })
+      class ScopedLoopHost {
+        readonly open = signal(false);
+      }
+
+      const r = renderHost(ScopedLoopHost);
+      pressKey(r.query<HTMLButtonElement>('[forDropdownMenuTrigger]')!, 'ArrowDown');
+      await flush(r.fixture);
+      expect(document.activeElement?.id).toBe('a');
+
+      pressKey(document.activeElement as HTMLElement, 'ArrowUp');
+      await flush(r.fixture);
+      expect(document.activeElement?.id).toBe('a');
     });
   });
 

@@ -78,6 +78,10 @@ export interface ForMenuDefaults {
    * drop to a vertical side. Only consulted when `avoidCollisions` is on.
    */
   fallbackAxisSideDirection: FloatingFallbackAxisSideDirection;
+  /**
+   * Whether arrow navigation wraps past the first / last enabled item.
+   */
+  loop: boolean;
 }
 
 /**
@@ -94,6 +98,7 @@ export const FOR_MENU_FALLBACK_DEFAULTS: ForMenuDefaults = {
   sideOffset: 0,
   collisionPadding: 8,
   fallbackAxisSideDirection: 'none',
+  loop: true,
 };
 
 /** Token holding the resolved menu defaults for the current scope. */

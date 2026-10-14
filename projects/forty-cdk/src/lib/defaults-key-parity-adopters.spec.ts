@@ -1,5 +1,5 @@
 import { assertDefaultsKeyParity, type DefaultsKeyFamily } from '../test-utils/contract';
-import { entryPointOf, LIBRARY_SOURCES } from '../test-utils/source-scan';
+import { entryPointOf, LIBRARY_CODE, LIBRARY_SOURCES } from '../test-utils/source-scan';
 
 /**
  * Meta-guard for defaults-key parity: the families whose members expose one
@@ -15,8 +15,8 @@ import { entryPointOf, LIBRARY_SOURCES } from '../test-utils/source-scan';
  * declared because no scan can infer it, and **everything about the members is
  * checked against source**, in both directions.
  *
- * Two rungs live here rather than in the contract, because both are about the
- * model as a whole:
+ * Three rungs live here rather than in the contract, because all three are about
+ * the model as a whole:
  *
  *   - **The anchored family's membership is derived.** Every entry point with a
  *     root inheriting the shared positioning block must have a defaults file in
@@ -26,6 +26,14 @@ import { entryPointOf, LIBRARY_SOURCES } from '../test-utils/source-scan';
  *     [#1726](https://github.com/tutkli/forty-cdk/issues/1726) found ten roots
  *     in, with `provideForSelectDefaults({ align: 'end' })` type-checking,
  *     resolving, and doing nothing.
+ *   - **The input-keyed families' membership is derived too.** An entry point
+ *     that ships a defaults provider and declares a `loop` or
+ *     `selectionFollowsFocus` input must have its defaults file in that key's
+ *     family, and the input must be seeded from it. So a collection that
+ *     hardcodes the key fails here instead of being skipped by a scope-wide
+ *     keyboard policy, which is how nine of the fifteen wrap-capable entry points and
+ *     Select's `selectionFollowsFocus` shipped until
+ *     [#2262](https://github.com/tutkli/forty-cdk/issues/2262).
  *   - **The families partition nothing and may overlap.** Tooltip and HoverCard
  *     are in two families each (their placement seeds and their hover delays),
  *     which is why the closure case takes the union of every declared key rather
@@ -161,13 +169,22 @@ const FAMILIES: readonly DefaultsKeyFamily[] = [
     ],
   },
   {
-    name: 'roving collections with a wrap policy',
+    name: 'arrow-key collections with a wrap policy',
     keys: ['loop'],
     members: [
       'defaults/src/carousel-defaults.ts',
+      'defaults/src/combobox-defaults.ts',
+      'defaults/src/context-menu-defaults.ts',
+      'defaults/src/dropdown-menu-defaults.ts',
+      'defaults/src/listbox-defaults.ts',
+      'defaults/src/menu-defaults.ts',
+      'defaults/src/menubar-defaults.ts',
+      'defaults/src/navigation-menu-defaults.ts',
       'defaults/src/radio-group-defaults.ts',
+      'defaults/src/select-defaults.ts',
       'defaults/src/stepper-defaults.ts',
       'defaults/src/tabs-defaults.ts',
+      'defaults/src/time-picker-defaults.ts',
       'defaults/src/toggle-defaults.ts',
       'defaults/src/toolbar-defaults.ts',
     ],
@@ -185,7 +202,11 @@ const FAMILIES: readonly DefaultsKeyFamily[] = [
   {
     name: 'selection-follows-focus collections',
     keys: ['selectionFollowsFocus'],
-    members: ['defaults/src/listbox-defaults.ts', 'defaults/src/tree-defaults.ts'],
+    members: [
+      'defaults/src/listbox-defaults.ts',
+      'defaults/src/select-defaults.ts',
+      'defaults/src/tree-defaults.ts',
+    ],
   },
 ];
 
@@ -238,6 +259,29 @@ const owningEntryPointOf = (path: string): string => OWNING_ENTRY_POINTS.get(pat
 const anchoredFamily = FAMILIES.find((family) => family.name === 'anchored positioning seeds')!;
 const sorted = (values: Iterable<string>): string[] => [...values].sort();
 
+const ENTRY_POINTS_WITH_DEFAULTS = new Set(OWNING_ENTRY_POINTS.values());
+
+/**
+ * Family keys a root exposes as an input of the same name. An entry point that
+ * ships a defaults provider and declares one of these inputs is a member of the
+ * key's family, so a scope-wide policy reaches every collection that can honour
+ * it.
+ */
+const INPUT_KEYS = ['loop', 'selectionFollowsFocus'] as const;
+
+/** Source file → the initializer of its `readonly <key> = input(…)`, in entry points with defaults. */
+function inputSeeds(key: string): Map<string, string> {
+  const declaration = new RegExp(`readonly ${key} = input(?:<[^>]*>)?\\(\\s*([^,)]*)`);
+  const seeds = new Map<string, string>();
+  for (const [path, code] of LIBRARY_CODE) {
+    const seed = code.match(declaration)?.[1];
+    if (seed !== undefined && ENTRY_POINTS_WITH_DEFAULTS.has(entryPointOf(path))) {
+      seeds.set(path, seed.trim());
+    }
+  }
+  return seeds;
+}
+
 describe('defaults-key parity families (meta-guard)', () => {
   it('finds a defaults interface in every defaults file the library ships', () => {
     const shipped = [...LIBRARY_SOURCES.keys()].filter((path) => path.endsWith('-defaults.ts'));
@@ -274,6 +318,37 @@ describe('defaults-key parity families (meta-guard)', () => {
 
     expect(sorted(new Set(stale))).toEqual([]);
   });
+
+  for (const key of INPUT_KEYS) {
+    const family = FAMILIES.find((f) => f.keys.length === 1 && f.keys[0] === key)!;
+    const seeds = inputSeeds(key);
+
+    it(`finds a \`${key}\` input in at least two entry points with defaults`, () => {
+      expect(new Set([...seeds.keys()].map(entryPointOf)).size).toBeGreaterThanOrEqual(2);
+    });
+
+    it(`puts the defaults file of every entry point declaring a \`${key}\` input in its family`, () => {
+      const covered = new Set(family.members.map(owningEntryPointOf));
+      const missing = [...seeds.keys()].map(entryPointOf).filter((entry) => !covered.has(entry));
+
+      expect(sorted(new Set(missing))).toEqual([]);
+    });
+
+    it(`claims no \`${key}\` member from an entry point declaring no \`${key}\` input`, () => {
+      const declaring = new Set([...seeds.keys()].map(entryPointOf));
+      const stale = family.members.map(owningEntryPointOf).filter((entry) => !declaring.has(entry));
+
+      expect(sorted(stale)).toEqual([]);
+    });
+
+    it(`seeds every \`${key}\` input from its scope defaults`, () => {
+      const hardcoded = [...seeds]
+        .filter(([, seed]) => seed !== `this.#defaults.${key}`)
+        .map(([path, seed]) => `${path}: seeded from \`${seed}\``);
+
+      expect(sorted(hardcoded)).toEqual([]);
+    });
+  }
 });
 
 for (const family of FAMILIES) {

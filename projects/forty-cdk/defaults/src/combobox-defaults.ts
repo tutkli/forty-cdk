@@ -83,6 +83,10 @@ export interface ForComboboxDefaults {
    * per-instance `[ariaLabel]` input.
    */
   chipRemoveLabel: (label: string) => string;
+  /**
+   * Whether arrow navigation wraps past the first / last enabled option.
+   */
+  loop: boolean;
 }
 
 /**
@@ -101,6 +105,7 @@ export const FOR_COMBOBOX_FALLBACK_DEFAULTS: ForComboboxDefaults = {
   chipsAriaLabel: 'Selected items',
   clearAriaLabel: 'Clear',
   chipRemoveLabel: (label) => `Remove ${label}`,
+  loop: true,
 };
 
 /** Token holding the resolved combobox defaults for the current scope. */

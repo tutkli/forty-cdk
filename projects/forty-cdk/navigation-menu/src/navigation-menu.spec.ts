@@ -1053,6 +1053,40 @@ describe('ForNavigationMenu', () => {
       expect(document.activeElement).toBe(triggers[0]);
     });
 
+    it('reads the loop default from provideForNavigationMenuDefaults when no [loop] is bound', async () => {
+      @Component({
+        imports: [
+          ForNavigationMenu,
+          ForNavigationMenuList,
+          ForNavigationMenuItem,
+          ForNavigationMenuTrigger,
+        ],
+        providers: [provideForNavigationMenuDefaults({ loop: false })],
+        template: `
+          <nav forNavigationMenu>
+            <ul forNavigationMenuList>
+              <li forNavigationMenuItem value="products">
+                <button forNavigationMenuTrigger>Products</button>
+              </li>
+              <li forNavigationMenuItem value="solutions">
+                <button forNavigationMenuTrigger>Solutions</button>
+              </li>
+            </ul>
+          </nav>
+        `,
+      })
+      class ScopedLoopHost {}
+
+      const { queryAll, flush } = renderHost(ScopedLoopHost);
+      await flush();
+      const triggers = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]');
+
+      triggers[1]!.focus();
+      pressKey(triggers[1]!, 'ArrowRight');
+      await flush();
+      expect(document.activeElement).toBe(triggers[1]);
+    });
+
     it('scrolls the newly focused trigger into view with block: "nearest"', async () => {
       const { queryAll, flush } = renderHost(NavMenuHost);
       await flush();

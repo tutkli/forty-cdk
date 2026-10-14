@@ -36,6 +36,10 @@ export interface ForListboxDefaults {
    * localize.
    */
   reorderAnnounceCancel: (label: string) => string;
+  /**
+   * Whether arrow navigation wraps past the first / last enabled option.
+   */
+  loop: boolean;
 }
 
 /**
@@ -56,6 +60,7 @@ export const FOR_LISTBOX_FALLBACK_DEFAULTS: ForListboxDefaults = {
   reorderAnnounceDrop: (label, index, total) =>
     `${label}, dropped at position ${index} of ${total}.`,
   reorderAnnounceCancel: (label) => `${label}, movement cancelled.`,
+  loop: true,
 };
 
 /** Token holding the resolved listbox defaults for the current scope. */

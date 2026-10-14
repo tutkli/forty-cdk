@@ -18,6 +18,10 @@ export interface ForNavigationMenuDefaults {
    * Keeps fluid hover-across-triggers feeling responsive.
    */
   skipDelayDuration: number;
+  /**
+   * Whether arrow navigation wraps past the first / last enabled trigger.
+   */
+  loop: boolean;
 }
 
 /**
@@ -29,6 +33,7 @@ export const FOR_NAVIGATION_MENU_FALLBACK_DEFAULTS: ForNavigationMenuDefaults = 
   openDelay: 200,
   closeDelay: 150,
   skipDelayDuration: 300,
+  loop: true,
 };
 
 /** Token holding the resolved navigation-menu defaults for the current scope. */

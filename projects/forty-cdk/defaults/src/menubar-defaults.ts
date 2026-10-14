@@ -45,6 +45,10 @@ export interface ForMenubarDefaults extends AnchoredPositioningSeedDefaults {
    * `avoidCollisions` is on.
    */
   fallbackAxisSideDirection: FloatingFallbackAxisSideDirection;
+  /**
+   * Whether arrow navigation wraps past the first / last enabled trigger.
+   */
+  loop: boolean;
 }
 
 /**
@@ -58,6 +62,7 @@ export const FOR_MENUBAR_FALLBACK_DEFAULTS: ForMenubarDefaults = {
   sideOffset: 4,
   collisionPadding: 8,
   fallbackAxisSideDirection: 'none',
+  loop: true,
 };
 
 /** Token holding the resolved menubar defaults for the current scope. */

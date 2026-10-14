@@ -932,6 +932,41 @@ describe('ForTimePicker', () => {
       expect(document.activeElement).toBe(slots[1]);
     });
 
+    it('reads the loop default from provideForTimePickerDefaults when no [loop] is bound', async () => {
+      @Component({
+        imports: BASE_IMPORTS,
+        providers: [
+          ...provideNativeDateAdapter(),
+          ...provideForTimePickerDefaults({ loop: false }),
+        ],
+        template: `
+          <div forTimePicker [(open)]="open" [step]="60" #picker="forTimePicker">
+            <button forTimePickerTrigger>Time</button>
+            @if (open()) {
+              <div forTimePickerContent>
+                @for (slot of picker.slots(); track slot.id) {
+                  <div forTimePickerOption [value]="slot.value">{{ slot.label }}</div>
+                }
+              </div>
+            }
+          </div>
+        `,
+      })
+      class ScopedLoopHost {
+        readonly open = signal(true);
+      }
+
+      const r = renderHost(ScopedLoopHost);
+      await flush(r.fixture);
+
+      const slots = Array.from(getSlots());
+      slots[0]!.focus();
+      pressKey(slots[0]!, 'ArrowUp');
+      await flush(r.fixture);
+
+      expect(document.activeElement).toBe(slots[0]);
+    });
+
     it('Home moves focus to the first enabled slot', async () => {
       const r = renderHost(TimePickerHost);
       r.instance.step.set(60);

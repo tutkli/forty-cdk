@@ -58,7 +58,8 @@ import { FOR_DROPDOWN_MENU_DEFAULTS } from 'forty-cdk/defaults';
   providers: [{ provide: FOR_MENU_CONTEXT, useExisting: ForDropdownMenu }],
 })
 export class ForDropdownMenu extends MenuOverlayHost implements ForMenuContext {
-  protected readonly positioningDefaults = inject(FOR_DROPDOWN_MENU_DEFAULTS);
+  readonly #defaults = inject(FOR_DROPDOWN_MENU_DEFAULTS);
+  protected readonly positioningDefaults = this.#defaults;
 
   /**
    * Two-way bindable. Whether the menu is currently shown. The `model()`
@@ -79,15 +80,17 @@ export class ForDropdownMenu extends MenuOverlayHost implements ForMenuContext {
    * rather than a per-menu one.
    */
   readonly fallbackAxisSideDirection = input<FloatingFallbackAxisSideDirection>(
-    this.positioningDefaults.fallbackAxisSideDirection,
+    this.#defaults.fallbackAxisSideDirection,
   );
 
   /**
    * When `true` (default), arrow-key navigation wraps from the last enabled
    * item back to the first (and vice versa). When `false`, navigation stops
    * at the ends.
+   * The default is read from `provideForDropdownMenuDefaults` for the surrounding
+   * scope.
    */
-  readonly loop = input(true, { transform: booleanAttribute });
+  readonly loop = input(this.#defaults.loop, { transform: booleanAttribute });
 
   /**
    * Writing direction. Drives ArrowLeft / ArrowRight semantics on submenu

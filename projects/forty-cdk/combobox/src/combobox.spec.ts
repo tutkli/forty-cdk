@@ -425,6 +425,40 @@ describe('ForCombobox', () => {
       expect(input.getAttribute('aria-activedescendant')).toBe(getOption('date').id);
     });
 
+    it('reads the loop default from provideForComboboxDefaults when no [loop] is bound', async () => {
+      @Component({
+        imports: BASE_IMPORTS,
+        providers: [provideForComboboxDefaults({ loop: false })],
+        template: `
+          <div forCombobox [(open)]="open">
+            <input forComboboxInput />
+            @if (open()) {
+              <div forComboboxContent>
+                <div data-test-id="apple" forComboboxOption value="apple">Apple</div>
+                <div data-test-id="banana" forComboboxOption value="banana">Banana</div>
+              </div>
+            }
+          </div>
+        `,
+      })
+      class ScopedLoopHost {
+        readonly open = signal(true);
+      }
+
+      const r = renderHost(ScopedLoopHost);
+      await flush(r.fixture);
+      const input = getInput();
+      input.focus();
+
+      pressKey(input, 'ArrowDown');
+      await flush(r.fixture);
+      expect(input.getAttribute('aria-activedescendant')).toBe(getOption('banana').id);
+
+      pressKey(input, 'ArrowDown');
+      await flush(r.fixture);
+      expect(input.getAttribute('aria-activedescendant')).toBe(getOption('banana').id);
+    });
+
     it('reflects data-highlighted on the option that is the activedescendant', async () => {
       const r = renderHost(ComboboxHost);
       r.instance.open.set(true);

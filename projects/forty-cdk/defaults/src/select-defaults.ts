@@ -38,6 +38,16 @@ export interface ForSelectDefaults extends AnchoredPositioningSeedDefaults {
    * the edge when `flip` / `shift` runs.
    */
   collisionPadding: number;
+  /**
+   * Whether arrow navigation wraps past the first / last enabled option.
+   */
+  loop: boolean;
+  /**
+   * Single-mode only: when `true`, a keyboard focus move (arrow navigation or a
+   * typeahead match) also selects the focused option while the listbox is open.
+   * APG calls this optional and recommends caution.
+   */
+  selectionFollowsFocus: boolean;
 }
 
 /**
@@ -50,6 +60,8 @@ export const FOR_SELECT_FALLBACK_DEFAULTS: ForSelectDefaults = {
   align: 'start',
   sideOffset: 4,
   collisionPadding: 8,
+  loop: true,
+  selectionFollowsFocus: false,
 };
 
 /** Token holding the resolved select defaults for the current scope. */

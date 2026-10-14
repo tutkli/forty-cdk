@@ -100,7 +100,8 @@ export class ForTimePicker<D>
   extends AnchoredFormValueControlBase
   implements FormValueControl<D | null>, ForTimePickerContext<D>
 {
-  protected readonly positioningDefaults = inject(FOR_TIME_PICKER_DEFAULTS);
+  readonly #defaults = inject(FOR_TIME_PICKER_DEFAULTS);
+  protected readonly positioningDefaults = this.#defaults;
   readonly #pickerSource = inject(FOR_PICKER_SOURCE_HOST, { optional: true });
 
   /**
@@ -186,9 +187,7 @@ export class ForTimePicker<D>
    * The effective hour cycle: `hourCycle`, then the scope's
    * (`provideForTimePickerDefaults`), or `null` to follow the locale.
    */
-  readonly resolvedHourCycle = computed(
-    () => this.hourCycle() ?? this.positioningDefaults.hourCycle,
-  );
+  readonly resolvedHourCycle = computed(() => this.hourCycle() ?? this.#defaults.hourCycle);
 
   readonly #fieldSlot = createSingleSlot<AdoptedField>({
     primitive: 'time-picker',
@@ -235,8 +234,12 @@ export class ForTimePicker<D>
   /** Manual `aria-label` on `[forTimePickerContent]` when the trigger isn't a meaningful name. */
   readonly ariaLabel = input<string | null>(null);
 
-  /** When `true` (default), keyboard navigation wraps at the ends of the option list. */
-  readonly loop = input(true, { transform: booleanAttribute });
+  /**
+   * When `true` (default), keyboard navigation wraps at the ends of the option list.
+   * The default is read from `provideForTimePickerDefaults` for the surrounding
+   * scope.
+   */
+  readonly loop = input(this.#defaults.loop, { transform: booleanAttribute });
 
   /** Orientation of the listbox for keyboard navigation. Default `'vertical'`. */
   readonly orientation = input<'vertical' | 'horizontal'>('vertical');

@@ -63,7 +63,8 @@ export class ForContextMenu
   extends MenuOverlayHost
   implements ForMenuContext, ForContextMenuContext
 {
-  protected readonly positioningDefaults = inject(FOR_CONTEXT_MENU_DEFAULTS);
+  readonly #defaults = inject(FOR_CONTEXT_MENU_DEFAULTS);
+  protected readonly positioningDefaults = this.#defaults;
 
   /**
    * Two-way bindable. Whether the menu is currently shown. The `model()` change emitter fires only
@@ -83,15 +84,17 @@ export class ForContextMenu
    * rather than a per-menu one.
    */
   readonly fallbackAxisSideDirection = input<FloatingFallbackAxisSideDirection>(
-    this.positioningDefaults.fallbackAxisSideDirection,
+    this.#defaults.fallbackAxisSideDirection,
   );
 
   /**
    * When `true` (default), arrow-key navigation wraps from the last enabled
    * item back to the first (and vice versa). When `false`, navigation stops
    * at the ends.
+   * The default is read from `provideForContextMenuDefaults` for the surrounding
+   * scope.
    */
-  readonly loop = input(true, { transform: booleanAttribute });
+  readonly loop = input(this.#defaults.loop, { transform: booleanAttribute });
 
   /**
    * Writing direction. Drives ArrowLeft / ArrowRight semantics on submenu

@@ -259,9 +259,11 @@ export class ForCombobox<T = string>
   readonly dir = injectTextDirection(this._dirInput);
 
   /**
-   * Whether arrow navigation wraps past the first / last enabled option.
+   * Whether arrow navigation wraps past the first / last enabled option. Default `true`.
+   * The default is read from `provideForComboboxDefaults` for the surrounding
+   * scope.
    */
-  readonly loop = input(true, { transform: booleanAttribute });
+  readonly loop = input(this.#defaults.loop, { transform: booleanAttribute });
 
   /** When true (default), Escape, pointer-down outside, and focus outside close the listbox. */
   readonly dismissible = input(true, { transform: booleanAttribute });

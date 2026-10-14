@@ -9,6 +9,7 @@ import {
 } from '../../src/test-utils/contract';
 import { type VetoableEvent, type VetoableNativeEvent } from 'forty-cdk/core';
 import { FOR_MENU_CONTEXT } from 'forty-cdk/core-overlay';
+import { provideForContextMenuDefaults } from 'forty-cdk/defaults';
 import {
   ForMenu,
   ForMenuContent,
@@ -1006,6 +1007,39 @@ describe('ForContextMenu', () => {
 
       expect(r.instance.lastSelected()).toBe('copy');
       expect(r.instance.open()).toBe(false);
+    });
+  });
+
+  describe('scoped defaults', () => {
+    it('reads the loop default from provideForContextMenuDefaults when no [loop] is bound', async () => {
+      @Component({
+        imports: IMPORTS,
+        providers: [provideForContextMenuDefaults({ loop: false })],
+        template: `
+          <div forContextMenu [(open)]="open">
+            <div id="region" forContextMenuTrigger>Right-click here</div>
+            @if (open()) {
+              <div forMenuContent>
+                <button id="cut" forMenuItem>Cut</button>
+                <button id="copy" forMenuItem>Copy</button>
+              </div>
+            }
+          </div>
+        `,
+      })
+      class ScopedLoopHost {
+        readonly open = signal(false);
+      }
+
+      const r = renderHost(ScopedLoopHost);
+      rightClick(r.query<HTMLElement>('#region')!, 0, 0);
+      await flush(r.fixture);
+
+      const cut = document.querySelector<HTMLButtonElement>('#cut')!;
+      cut.focus();
+      pressKey(cut, 'ArrowUp');
+      await flush(r.fixture);
+      expect(document.activeElement).toBe(cut);
     });
   });
 
