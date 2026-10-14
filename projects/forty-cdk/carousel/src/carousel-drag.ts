@@ -131,8 +131,7 @@ export class ForCarouselDrag {
   }
 
   #canBegin(detail: SwipeEventDetail): boolean {
-    const target = detail.originalEvent.target as Element | null;
-    return !(target && isScrollableAtEdge(target, detail.direction, this.#host.nativeElement));
+    return !isScrollableAtEdge(detail.target, detail.direction, this.#host.nativeElement);
   }
 
   #onStart(detail: SwipeEventDetail): void {
@@ -141,7 +140,8 @@ export class ForCarouselDrag {
     this.#slideSizePx = axisSize / Math.max(1, this.ctx.slidesPerView());
 
     const p = this.#primary(detail.originalEvent);
-    this.#startPrimary = p;
+    this.#startPrimary =
+      p - (this.ctx.orientation() === 'vertical' ? detail.delta.y : detail.delta.x);
     this.#lastPrimary = p;
     this.#lastTime = detail.originalEvent.timeStamp || 0;
     this.#velocity = 0;

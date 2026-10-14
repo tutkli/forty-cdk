@@ -476,6 +476,74 @@ describe('attachSwipeDismiss', () => {
     dispose();
     el.remove();
   });
+
+  it('every detail carries the press target, not the target of the move that armed it', () => {
+    const { el, rec, cleanup } = setup({ directions: ['down'], threshold: 10 });
+    const handle = document.createElement('span');
+    el.appendChild(handle);
+    const seen: Array<Element | null> = [];
+    const dispose = attachSwipeDismiss({
+      element: el,
+      getDirections: () => ['down'],
+      getThreshold: () => 10,
+      canBegin: (detail) => {
+        seen.push(detail.target);
+        return true;
+      },
+    });
+
+    pointer(handle, 'pointerdown', { clientX: 0, clientY: 0 });
+    pointer(el, 'pointermove', { clientX: 0, clientY: 20 });
+    pointer(el, 'pointerup', { clientX: 0, clientY: 20 });
+
+    expect(seen).toEqual([handle]);
+    expect(rec.starts[0]!.target).toBe(handle);
+    expect(rec.moves[0]!.target).toBe(handle);
+    expect(rec.ends[0]!.target).toBe(handle);
+
+    dispose();
+    cleanup();
+  });
+
+  it('resolves the press target inside a shadow root rather than its retargeted host', () => {
+    const outer = document.createElement('div');
+    document.body.appendChild(outer);
+    const root = outer.attachShadow({ mode: 'open' });
+    const el = document.createElement('div');
+    const inner = document.createElement('span');
+    el.appendChild(inner);
+    root.appendChild(el);
+    let seen: Element | null = null;
+    const dispose = attachSwipeDismiss({
+      element: el,
+      getDirections: () => ['right'],
+      getThreshold: () => 10,
+      canBegin: (detail) => {
+        seen = detail.target;
+        return true;
+      },
+    });
+
+    for (const [type, clientX] of [
+      ['pointerdown', 0],
+      ['pointermove', 20],
+    ] as const) {
+      inner.dispatchEvent(
+        new PointerEvent(type, {
+          bubbles: true,
+          composed: true,
+          clientX,
+          pointerId: 1,
+          pointerType: 'touch',
+        }),
+      );
+    }
+
+    expect(seen).toBe(inner);
+
+    dispose();
+    outer.remove();
+  });
 });
 
 describe('flickVelocity', () => {

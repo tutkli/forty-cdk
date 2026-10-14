@@ -81,6 +81,13 @@ import { queryFlag } from './_query-flag';
       [data-testid='scroll-content'] .tall {
         height: 600px;
       }
+      [data-testid='hscroll-content'] {
+        overflow-x: auto;
+      }
+      [data-testid='hscroll-content'] .wide {
+        width: 3000px;
+        height: 24px;
+      }
     `,
   ],
   template: `
@@ -125,6 +132,11 @@ import { queryFlag } from './_query-flag';
           <div data-testid="scroll-content">
             <button data-testid="scroll-click" (click)="onSurfaceClick()">Scroll click</button>
             <div class="tall">Scrollable content</div>
+          </div>
+        }
+        @if (hscrollable) {
+          <div data-testid="hscroll-content">
+            <div class="wide">Horizontally scrollable content</div>
           </div>
         }
         <button data-testid="first" (click)="onSurfaceClick()">First</button>
@@ -215,6 +227,7 @@ export class DrawerFixture {
   protected readonly swipeToDismiss = !queryFlag('noSwipeToDismiss');
   protected readonly dismissible = !queryFlag('nonDismissible');
   protected readonly scrollable = queryFlag('scrollable');
+  protected readonly hscrollable = queryFlag('hscrollable');
   protected readonly backdrop = queryFlag('backdrop');
   protected readonly scaleBackground = queryFlag('scaleBackground');
   protected readonly setBackgroundColorOnScale = !queryFlag('noBgColorOnScale');

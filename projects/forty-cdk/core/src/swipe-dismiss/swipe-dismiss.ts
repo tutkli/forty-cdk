@@ -41,6 +41,7 @@
  * simple.
  */
 
+import { resolveEventTarget } from '../composed-tree/composed-tree';
 import { createPointerDragSession, type PointerDragSession } from '../drag-session/pointer-session';
 
 /** A single swipe direction, named after the pointer-travel direction. */
@@ -56,6 +57,13 @@ export interface SwipeEventDetail {
    * `direction` (e.g. `right` → `x >= 0`, `up` → `y <= 0`).
    */
   readonly delta: { readonly x: number; readonly y: number };
+  /**
+   * The element the press landed on, resolved through open shadow roots.
+   * Answer "where did this gesture start?" with it rather than with
+   * `originalEvent.target`, which belongs to the current move and may have
+   * been retargeted to a shadow host.
+   */
+  readonly target: Element | null;
   /** The originating pointer event. */
   readonly originalEvent: PointerEvent;
 }
@@ -131,6 +139,10 @@ function constrainedDelta(dx: number, dy: number, dir: SwipeDirection): { x: num
   }
 }
 
+function elementOf(node: Node | null): Element | null {
+  return node === null || node instanceof Element ? node : node.parentElement;
+}
+
 /**
  * Cutoff (ms) past which a flick's last velocity sample is considered stale.
  * A release whose last `pointermove` sample is older than this — a fast final
@@ -197,11 +209,13 @@ export function attachSwipeDismiss(opts: SwipeDismissOptions): () => void {
   const el = opts.element;
   let startX = 0;
   let startY = 0;
+  let pressTarget: Element | null = null;
   let direction: SwipeDirection | null = null;
 
   const detailFor = (event: PointerEvent, dir: SwipeDirection): SwipeEventDetail => ({
     direction: dir,
     delta: constrainedDelta(event.clientX - startX, event.clientY - startY, dir),
+    target: pressTarget,
     originalEvent: event,
   });
 
@@ -219,6 +233,7 @@ export function attachSwipeDismiss(opts: SwipeDismissOptions): () => void {
       }
       startX = event.clientX;
       startY = event.clientY;
+      pressTarget = elementOf(resolveEventTarget(event));
       direction = null;
       return true;
     },
