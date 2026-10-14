@@ -3023,11 +3023,11 @@ describe('ForCombobox trigger + list (picker anatomy, issue #675)', () => {
         };
       },
     },
-    { haspopup: 'listbox' },
+    { haspopup: 'dialog' },
   );
 
   describe('role split', () => {
-    it('the list carries role=listbox; content becomes a neutral popup surface', async () => {
+    it('the list carries role=listbox; content becomes a dialog named by the trigger', async () => {
       const r = renderHost(PickerHost);
       r.instance.open.set(true);
       await flush(r.fixture);
@@ -3036,8 +3036,8 @@ describe('ForCombobox trigger + list (picker anatomy, issue #675)', () => {
       const list = getList();
       expect(list.getAttribute('role')).toBe('listbox');
       expect(list.getAttribute('tabindex')).toBe('-1');
-      // Content drops the listbox semantics it owns in the editable anatomy.
-      expect(content.hasAttribute('role')).toBe(false);
+      expect(content.getAttribute('role')).toBe('dialog');
+      expect(content.getAttribute('aria-labelledby')).toBe(getTrigger().id);
       expect(content.hasAttribute('tabindex')).toBe(false);
       // The popup surface owns no options; the list does.
       expect(content.querySelector('[forComboboxList] [forComboboxOption]')).not.toBeNull();
@@ -3072,9 +3072,8 @@ describe('ForCombobox trigger + list (picker anatomy, issue #675)', () => {
       const content = getContent();
       expect(list.getAttribute('aria-multiselectable')).toBe('true');
       expect(list.getAttribute('aria-labelledby')).toBe(getPickerInput().id);
-      // None of the labelled-role attributes leak onto the popup surface.
       expect(content.hasAttribute('aria-multiselectable')).toBe(false);
-      expect(content.hasAttribute('aria-labelledby')).toBe(false);
+      expect(content.getAttribute('aria-labelledby')).toBe(getTrigger().id);
     });
   });
 
@@ -3218,21 +3217,38 @@ describe('ForCombobox trigger + list (picker anatomy, issue #675)', () => {
       expect(r.instance.open()).toBe(false);
     });
 
-    it('ArrowDown / ArrowUp open the popup', async () => {
+    it('ArrowDown opens on the first enabled option when nothing is selected', async () => {
       const r = renderHost(PickerHost);
-      const trigger = getTrigger();
 
-      pressKey(trigger, 'ArrowDown');
+      pressKey(getTrigger(), 'ArrowDown');
       await flush(r.fixture);
+
       expect(r.instance.open()).toBe(true);
-
-      r.instance.open.set(false);
-      await flush(r.fixture);
-
-      pressKey(trigger, 'ArrowUp');
-      await flush(r.fixture);
-      expect(r.instance.open()).toBe(true);
+      expect(getPickerInput().getAttribute('aria-activedescendant')).toBe(getOption('apple').id);
     });
+
+    it('ArrowUp opens on the last enabled option when nothing is selected', async () => {
+      const r = renderHost(PickerHost);
+
+      pressKey(getTrigger(), 'ArrowUp');
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(true);
+      expect(getPickerInput().getAttribute('aria-activedescendant')).toBe(getOption('date').id);
+    });
+
+    for (const key of ['ArrowDown', 'ArrowUp']) {
+      it(`${key} opens on the committed selection`, async () => {
+        const r = renderHost(PickerHost);
+        r.instance.value.set(['banana']);
+        await flush(r.fixture);
+
+        pressKey(getTrigger(), key);
+        await flush(r.fixture);
+
+        expect(getPickerInput().getAttribute('aria-activedescendant')).toBe(getOption('banana').id);
+      });
+    }
 
     it('reflects native disabled and is inert when disabled', async () => {
       const r = renderHost(PickerHost);
@@ -3373,19 +3389,6 @@ describe('ForCombobox trigger + list (picker anatomy, issue #675)', () => {
       const appleEl = getOption('apple');
       expect(input.getAttribute('aria-activedescendant')).toBe(appleEl.id);
       expect(document.querySelector('[data-test-id="banana"]')).toBeNull();
-    });
-
-    it('seeds the committed selection', async () => {
-      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
-      const r = renderHost(PickerHost);
-      r.instance.value.set(['banana']);
-
-      getTrigger().click();
-      await flush(r.fixture);
-
-      const input = getPickerInput();
-      const bananaEl = getOption('banana');
-      expect(input.getAttribute('aria-activedescendant')).toBe(bananaEl.id);
     });
 
     @Component({

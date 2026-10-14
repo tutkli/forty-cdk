@@ -83,34 +83,6 @@ describe('elementSlot', () => {
     slot.unregister(el);
     expect(slot.element()).toBeNull();
   });
-
-  it('captures a consumer-set static id on register', () => {
-    const slot = elementSlot();
-    const el = document.createElement('button');
-    el.id = 'my-trigger';
-    slot.register(el);
-
-    expect(slot.adoptedId()).toBe('my-trigger');
-  });
-
-  it('reports no adopted id for an element that carries none', () => {
-    const slot = elementSlot();
-    expect(slot.adoptedId()).toBeNull();
-
-    slot.register(document.createElement('button'));
-    expect(slot.adoptedId()).toBeNull();
-  });
-
-  it('keeps the adopted id after the element deregisters', () => {
-    const slot = elementSlot();
-    const el = document.createElement('button');
-    el.id = 'my-trigger';
-    slot.register(el);
-    slot.unregister(el);
-
-    expect(slot.element()).toBeNull();
-    expect(slot.adoptedId()).toBe('my-trigger');
-  });
 });
 
 const ANCHOR_CONFIG = {

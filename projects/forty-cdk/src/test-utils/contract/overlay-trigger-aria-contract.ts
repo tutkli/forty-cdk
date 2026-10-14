@@ -22,7 +22,12 @@
  * (the `aria-controls` open-gate in particular) had to be hand-propagated to
  * every one of them.
  *
- * The contract owns exactly the trio and nothing else. `data-state`, focus
+ * Once open, the surface `aria-controls` names must carry the role its popup
+ * token announces (`menu` → `menu`, `listbox` → `listbox`, `dialog` →
+ * `dialog` or `alertdialog`, …): a token pointing at a surface with another
+ * role, or none, tells assistive tech a popup opened that never did.
+ *
+ * Beyond that pairing the contract owns the trio and nothing else. `data-state`, focus
  * moves, and the dismissal channels stay with their own suites; keeping the
  * scope this narrow is what lets every anchored overlay adopt it verbatim,
  * whatever its role and popup token happen to be.
@@ -54,6 +59,16 @@ export interface OverlayTriggerAriaContractOptions {
   haspopup: 'menu' | 'listbox' | 'dialog' | 'tree' | 'grid';
 }
 
+const SURFACE_ROLES: Readonly<
+  Record<OverlayTriggerAriaContractOptions['haspopup'], readonly string[]>
+> = {
+  menu: ['menu'],
+  listbox: ['listbox'],
+  dialog: ['dialog', 'alertdialog'],
+  tree: ['tree'],
+  grid: ['grid'],
+};
+
 /**
  * Run the trigger ARIA trio assertions inside a
  * `describe('overlay trigger ARIA contract', …)` block.
@@ -84,6 +99,16 @@ export function assertOverlayTriggerAriaContract(
       expect(surface.id).not.toBe('');
       expect(ctx.trigger.getAttribute('aria-controls')).toBe(surface.id);
       expect(ctx.trigger.getAttribute('aria-haspopup')).toBe(options.haspopup);
+    });
+
+    it(`the surface aria-controls names carries the role aria-haspopup="${options.haspopup}" announces`, async () => {
+      const ctx = await setup.mount();
+      ctx.open();
+      await ctx.flush();
+
+      const controlled = document.getElementById(ctx.trigger.getAttribute('aria-controls') ?? '');
+      expect(controlled).toBe(ctx.surface());
+      expect(SURFACE_ROLES[options.haspopup]).toContain(controlled!.getAttribute('role'));
     });
   });
 }

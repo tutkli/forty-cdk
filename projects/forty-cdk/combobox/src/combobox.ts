@@ -203,8 +203,10 @@ export class ForCombobox<T = string>
    * highlights the committed selection, falling back to the first enabled option
    * (ArrowUp: the last) when nothing is selected. Opening from a typed query always
    * highlights the first match, while the picker anatomy and a `[forComboboxToggle]`
-   * press always open on the selection. Defaults to the scope's `openHighlight`
-   * (`'first'` unless overridden via `provideForComboboxDefaults`).
+   * press always open on the selection. With `totalCount` set, an open that would
+   * land on the selection lands on the first rendered enabled option instead.
+   * Defaults to the scope's `openHighlight` (`'first'` unless overridden via
+   * `provideForComboboxDefaults`).
    */
   readonly openHighlight = input<ForComboboxOpenHighlight>(this.#defaults.openHighlight);
 
@@ -352,13 +354,12 @@ export class ForCombobox<T = string>
 
   /**
    * The open / close / dismiss machine, shared with the menu and listbox
-   * overlays. The combobox supplies both element sides: its trigger owns no
-   * aria-wiring id — the `role="combobox"` id lives on the input — so that slot
-   * borrows the input's and mints nothing (it only captures a consumer-set
-   * static id, which `fieldLabelledElementId` reports while the input is
-   * unmounted), while the content side is the ordinary identified slot, minted
-   * here so `for-combobox-content` keeps following the input's id and preceding
-   * the list's.
+   * overlays. The combobox supplies both element sides: the controller reports
+   * the input's id as the trigger side — the `role="combobox"` id lives there,
+   * and `[forComboboxTrigger]` host-binds an id of its own that it hands over on
+   * registration — so that slot mints nothing, while the content side is the
+   * ordinary identified slot, minted here so `for-combobox-content` keeps
+   * following the input's id and preceding the list's.
    */
   readonly #overlay = new OverlayController<ForComboboxInitialFocus, ForComboboxCloseReason>({
     idPrefix: 'for-combobox',
@@ -419,6 +420,11 @@ export class ForCombobox<T = string>
    * anatomy). The input targets this with `aria-controls`.
    */
   readonly listboxId = computed(() => (this.hasList() ? this.listId() : this.contentId()));
+
+  readonly #registeredTriggerId = signal<string | null>(null);
+  private readonly triggerId = computed(() =>
+    this.trigger() === null ? null : this.#registeredTriggerId(),
+  );
 
   readonly options = this.#items.items;
   readonly chips = this.#chips.items;
@@ -580,16 +586,16 @@ export class ForCombobox<T = string>
 
   /**
    * Id a surrounding `[forField]` points its label `for` at. Tracks
-   * {@link #entryPoint}: the input's id, except while the input is unmounted
-   * and the trigger carries a consumer-set static id — the field only stamps
-   * its own id on a target that has none, so nominating `inputId()` there
-   * would leave the `for` resolving to no element at all.
+   * {@link #entryPoint}: the input's id, or the trigger's own while the input
+   * is unmounted — the field only stamps its own id on a target that has none,
+   * so nominating `inputId()` there would leave the `for` resolving to no
+   * element at all.
    */
   protected override fieldLabelledElementId(): string {
     if (this.input()) {
       return this.inputId();
     }
-    return this.#triggerSlot.adoptedId() ?? this.inputId();
+    return this.triggerId() ?? this.inputId();
   }
 
   /**
@@ -661,10 +667,14 @@ export class ForCombobox<T = string>
     this.#anchorSlot.unregister(el);
   }
 
-  private registerTrigger(el: HTMLElement): void {
+  private registerTrigger(el: HTMLElement, id: string): void {
     this.#overlay.registerTrigger(el);
+    this.#registeredTriggerId.set(id);
   }
   private unregisterTrigger(el: HTMLElement): void {
+    if (this.trigger() === el) {
+      this.#registeredTriggerId.set(null);
+    }
     this.#overlay.unregisterTrigger(el);
   }
 

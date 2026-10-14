@@ -280,7 +280,7 @@ The default (editable) anatomy is a text field that filters in place. A **picker
 Add two parts:
 
 - **`[forComboboxTrigger]`**: a real `<button>` outside the `@if (open())`. It opens the panel, becomes the default positioning anchor, and is where focus returns on close.
-- **`[forComboboxList]`**: the `role="listbox"` element nested inside `[forComboboxContent]`, next to the input. It owns the options and the labelled role; `[forComboboxContent]` becomes a neutral popup surface.
+- **`[forComboboxList]`**: the `role="listbox"` element nested inside `[forComboboxContent]`, next to the input. It owns the options and the labelled role; `[forComboboxContent]` becomes the `role="dialog"` the trigger opens, named by the trigger.
 
 ```html
 <div forCombobox #combobox="forCombobox" [(value)]="value" [(query)]="query" [(open)]="open">
@@ -292,20 +292,20 @@ Add two parts:
       @for (item of filtered(); track item.id) {
       <div forComboboxOption [value]="item.id" [label]="item.label">{{ item.label }}</div>
       }
-      <div forComboboxEmpty>No matches.</div>
     </div>
+    <div forComboboxEmpty>No matches.</div>
   </div>
   }
 </div>
 ```
 
-Why the list part is required, not optional: a `role="listbox"` may only own `option` / `group` children (`aria-required-owned-elements`). Nesting the input inside a listbox would be invalid, so the listbox role moves to `[forComboboxList]` and the input sits beside it under the neutral popup surface. Put non-option chrome (`[forComboboxInput]`, `[forComboboxEmpty]`, `[forComboboxStatus]`) inside `[forComboboxContent]` but **outside** `[forComboboxList]`.
+Why the list part is required, not optional: a `role="listbox"` may only own `option` / `group` children (`aria-required-owned-elements`). Nesting the input inside a listbox would be invalid, so the listbox role moves to `[forComboboxList]` and the input sits beside it inside the dialog surface. Put non-option chrome (`[forComboboxInput]`, `[forComboboxEmpty]`, `[forComboboxStatus]`) inside `[forComboboxContent]` but **outside** `[forComboboxList]`.
 
 **Focus hand-off.** Registering a trigger opts the combobox into the standard trigger-anchored focus model: on open, focus moves into the input (the search field inside the panel); on close, focus returns to the trigger. Both moves are vetoable via `(autoFocusOnOpen)` / `(autoFocusOnClose)` on `[forCombobox]`, and the return is gated by `[returnFocus]` (default `true`). Escape stays owned by the input. See [Focus & the `(autoFocusOnOpen)` / `(autoFocusOnClose)` hooks](#focus--the-autofocusonopen--autofocusonclose-hooks).
 
 **A trigger that registers late still owns the hand-off.** The trigger does not have to be declared before `[forComboboxContent]`, and does not have to exist when the panel first mounts. You can project it through `<ng-content>` from a wrapper, put it under a `@defer`, or gate it on an `@if` over loaded data. One caveat: focus moving _into_ the panel is a mount-time event, so a trigger that arrives while the panel is **already open** does not retroactively pull focus out of wherever you left it. From that moment on it does own the return focus, `(autoFocusOnClose)` and the Escape fallback, and the next open moves focus into the input as usual.
 
-**Trigger keyboard.** Click / Enter / Space toggle (open moves focus into the input). ArrowDown opens with the first enabled option highlighted; ArrowUp opens with the last.
+**Trigger keyboard.** Click / Enter / Space toggle (open moves focus into the input). ArrowDown and ArrowUp open with the committed selection highlighted; with nothing selected, ArrowDown lands on the first enabled option and ArrowUp on the last.
 
 **Anchor preference.** With a trigger present the panel anchors to it by default. An explicit `[forComboboxAnchor]` still wins (explicit anchor → trigger → input), so you can wrap a decorated trigger box and anchor against it.
 
@@ -536,7 +536,7 @@ When the input is empty (no query) and the user presses Backspace, focus jumps t
 | Highlight the selection on open         | `first` | `openHighlight="selected"`                                       |
 | Restore label on close (single only)    | `false` | `[restoreQueryOnClose]="true"`                                   |
 
-`openHighlight` decides where the editable anatomy's highlight lands when the listbox opens from focus, click, ArrowDown / ArrowUp or `openOverlay()` without an argument. With `'selected'`, a single-select combobox showing "Spain" reopens on "Spain" rather than on the first option; with nothing selected, ArrowDown still lands on the first option and ArrowUp on the last. Opening from a typed query always highlights the first match, because the list is a filter result there, and the picker anatomy always opens on the selection. Both inputs take their default from the scope: `provideForComboboxDefaults({ openHighlight: 'selected', restoreQueryOnClose: true })`.
+`openHighlight` decides where the editable anatomy's highlight lands when the listbox opens from focus, click, ArrowDown / ArrowUp or `openOverlay()` without an argument. With `'selected'`, a single-select combobox showing "Spain" reopens on "Spain" rather than on the first option; with nothing selected, ArrowDown still lands on the first option and ArrowUp on the last. Opening from a typed query always highlights the first match, because the list is a filter result there, and the picker anatomy always opens on the selection. With [virtualization](#virtualization) the selection is not honoured: an open that would land on it highlights the first rendered enabled option instead. Both inputs take their default from the scope: `provideForComboboxDefaults({ openHighlight: 'selected', restoreQueryOnClose: true })`.
 
 ## Autocomplete modes
 
@@ -662,6 +662,8 @@ How navigation flows when virtualizing:
 2. The directive computes the next index (999) against `totalCount`. It's outside `visibleRange`, so the directive emits `(scrollToIndex)=999` and remembers 999 as the pending pos.
 3. Your virtualizer scrolls; the directive's `@for` mounts the option for index 999.
 4. As soon as that option registers (at the matching `posInSet`), the directive seeds `aria-activedescendant` to its id.
+
+Opening seeds the highlight from the rendered window only: the first rendered enabled option, or the last for an ArrowUp with nothing selected. An open that would land on the committed selection (`openHighlight="selected"`, the picker anatomy, `[forComboboxToggle]`) lands on the first rendered enabled option too, because the selection may sit outside the window and the directive cannot know its index.
 
 Inline autocomplete matches against the most recently rendered window overlaid with the position snapshot, so completion against off-screen labels still works. `selected().label` reads a separate, selection-keyed cache instead. That cache is bounded by the selection, so the label of a selected option survives close / re-open and any number of query rebuilds, but it is **not** resolved from the position snapshot: a value that enters the selection while its option is outside the rendered window (a `[(value)]` write restoring a saved selection, say) falls back to `[itemToStringLabel]` until that option renders once. Supply `[itemToStringLabel]` whenever the selection can be seeded from outside the list.
 
@@ -815,9 +817,9 @@ Hovering an option also makes it the activedescendant, so mouse and keyboard int
 Implements the [WAI-ARIA Combobox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/).
 
 - Apply the input directive to an actual `<input>`: the browser's caret and selection semantics are what make inline autocomplete work, and screen readers expect a real text field for `role="combobox"`.
-- `role="listbox"` lives on `[forComboboxContent]` in the editable anatomy and on `[forComboboxList]` in the picker anatomy; the input's `aria-controls` targets whichever carries it. In the picker anatomy the popup surface (`[forComboboxContent]`) is role-less so it can hold the input next to the list without an `aria-required-owned-elements` violation.
+- `role="listbox"` lives on `[forComboboxContent]` in the editable anatomy and on `[forComboboxList]` in the picker anatomy; the input's `aria-controls` targets whichever carries it. In the picker anatomy the popup surface (`[forComboboxContent]`) is a `role="dialog"` named by the trigger (`aria-labelledby`; a static `aria-label` or `aria-labelledby` on it wins), so it can hold the input next to the list without an `aria-required-owned-elements` violation. The "editable + list" shape, with no trigger, leaves it role-less.
 - `aria-multiselectable="true"` (multi mode) and the labelled role (`aria-label` / `aria-labelledby`, pointing at the input) sit on whichever element carries `role="listbox"`: content in the editable anatomy, the list in the picker anatomy.
-- `[forComboboxTrigger]` (picker anatomy) is a real `<button>` reflecting `aria-haspopup="listbox"`, `aria-expanded`, `aria-controls` (the popup surface, while open), and native `disabled` from the combobox's effective disabled. It is exempt from the popup's outside-pointer dismissal layer, like the input.
+- `[forComboboxTrigger]` (picker anatomy) is a real `<button>` reflecting `aria-haspopup="dialog"`, `aria-expanded`, `aria-controls` (the dialog surface, while open), an `id` (a static one is kept), and native `disabled` from the combobox's effective disabled. The popup is a dialog rather than a listbox because focus moves into the search input inside it. It is exempt from the popup's outside-pointer dismissal layer, like the input.
 - `[forComboboxContent]` and `[forComboboxList]` cancel a `mousedown` that would otherwise move focus onto the surface or blur the input, so a press between options leaves focus in the input. A press on a focusable descendant is let through.
 - `[forComboboxToggle]` (editable anatomy) is a real `<button>` with `tabindex="-1"`, a localizable `aria-label`, `aria-expanded`, `aria-controls` (the listbox, while open) and native `disabled`. It cancels `mousedown` so focus stays in the input, and it is exempt from the outside-pointer dismissal layer.
 - In single mode, `aria-selected="true"` follows the activedescendant (the option Enter would activate). In multi mode it follows membership in `value()`, so every selected option carries `aria-selected="true"` simultaneously.
