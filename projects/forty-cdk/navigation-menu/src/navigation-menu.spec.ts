@@ -1102,6 +1102,40 @@ describe('ForNavigationMenu', () => {
       expect(document.activeElement).toBe(trigger);
     });
 
+    it('leaves an Escape that cancels an IME composition inside the panel to the IME', async () => {
+      const { fixture, queryAll, query, flush } = renderHost(NavMenuHost);
+      await flush();
+      queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]')[0]!.click();
+      await flush();
+      const input = document.createElement('input');
+      query<HTMLElement>('[forNavigationMenuContent]')!.appendChild(input);
+      input.focus();
+
+      pressKey(input, 'Escape', { isComposing: true });
+      pressKey(input, 'Escape', { keyCode: 229 });
+      await flush();
+
+      expect(fixture.componentInstance.open()).toBe('products');
+      expect(document.activeElement).toBe(input);
+    });
+
+    it('leaves an Escape an inner widget already claimed to that widget', async () => {
+      const { fixture, queryAll, query, flush } = renderHost(NavMenuHost);
+      await flush();
+      queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]')[0]!.click();
+      await flush();
+      const input = document.createElement('input');
+      input.addEventListener('keydown', (event) => event.preventDefault());
+      query<HTMLElement>('[forNavigationMenuContent]')!.appendChild(input);
+      input.focus();
+
+      pressKey(input, 'Escape');
+      await flush();
+
+      expect(fixture.componentInstance.open()).toBe('products');
+      expect(document.activeElement).toBe(input);
+    });
+
     it('ignores Escape pressed while focus is outside the nav (no close, no focus steal)', async () => {
       const { fixture, queryAll, flush } = renderHost(NavMenuHost);
       await flush();
@@ -1422,6 +1456,66 @@ describe('ForNavigationMenu', () => {
       query<HTMLAnchorElement>('a[forNavigationMenuLink]')!.focus();
       await flush();
       expect(fixture.componentInstance.open()).toBe('products');
+    });
+  });
+
+  describe('a dismissible layer below a hover-opened panel', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('hands an Escape pressed inside the lower layer down to it', async () => {
+      const { fixture, query, flush } = renderHost(StackedLayerNavMenuHost);
+      await flush();
+      const stacked = fixture.componentInstance.stacked();
+      stacked.stack(['pointer', 'focus']);
+      try {
+        const inside = query<HTMLButtonElement>('[data-id="stacked"]')!;
+        inside.focus();
+        query<HTMLButtonElement>('[forNavigationMenuTrigger]')!.dispatchEvent(
+          pointer('pointerenter'),
+        );
+        await flush();
+        vi.advanceTimersByTime(200);
+        await flush();
+        expect(fixture.componentInstance.open()).toBe('products');
+
+        pressKey(inside, 'Escape');
+        await flush();
+
+        expect(stacked.escapes()).toBe(1);
+        expect(fixture.componentInstance.open()).toBe('products');
+        expect(document.activeElement).toBe(inside);
+      } finally {
+        stacked.unstack();
+      }
+    });
+
+    it('keeps an Escape pressed inside the panel for the panel', async () => {
+      const { fixture, query, flush } = renderHost(StackedLayerNavMenuHost);
+      await flush();
+      const stacked = fixture.componentInstance.stacked();
+      stacked.stack(['pointer', 'focus']);
+      try {
+        const trigger = query<HTMLButtonElement>('[forNavigationMenuTrigger]')!;
+        trigger.focus();
+        trigger.dispatchEvent(pointer('pointerenter'));
+        await flush();
+        vi.advanceTimersByTime(200);
+        await flush();
+        expect(fixture.componentInstance.open()).toBe('products');
+
+        pressKey(trigger, 'Escape');
+        await flush();
+
+        expect(stacked.escapes()).toBe(0);
+        expect(fixture.componentInstance.open()).toBeNull();
+      } finally {
+        stacked.unstack();
+      }
     });
   });
 

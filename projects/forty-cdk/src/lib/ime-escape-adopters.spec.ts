@@ -13,9 +13,14 @@ import { LIBRARY_CODE } from '../test-utils/source-scan';
  */
 const HELPER = 'core/src/keyboard-navigation/ime-composition.ts';
 
-function escapeHandlers(): string[] {
-  return [...LIBRARY_CODE]
-    .filter(([path, code]) => path !== HELPER && code.includes("'Escape'"))
+const ESCAPE_KEY_EVENT = /\bkey(?:down|up)(?:\.\w+)*\.esc(?:ape)?\b/i;
+
+function escapeHandlers(sources: ReadonlyMap<string, string> = LIBRARY_CODE): string[] {
+  return [...sources]
+    .filter(
+      ([path, code]) =>
+        path !== HELPER && (code.includes("'Escape'") || ESCAPE_KEY_EVENT.test(code)),
+    )
     .map(([path]) => path)
     .sort();
 }
@@ -24,7 +29,20 @@ describe('IME composition guard on Escape handlers', () => {
   it('derives a live family', () => {
     expect(escapeHandlers()).toContain('core-overlay/src/dismissible-layer/dismissible-layer.ts');
     expect(escapeHandlers()).toContain('toast/src/toast.ts');
+    expect(escapeHandlers()).toContain('navigation-menu/src/navigation-menu-content.ts');
     expect(escapeHandlers().length).toBeGreaterThan(10);
+  });
+
+  it('counts an Angular Escape key pseudo-event as an Escape handler', () => {
+    const sources = new Map([
+      ['a/src/a.ts', "host: { '(keydown.escape)': 'onEscape($event)' }"],
+      ['b/src/b.ts', "host: { '(keyup.Escape)': 'onEscape($event)' }"],
+      ['c/src/c.ts', "host: { '(keydown.shift.esc)': 'onEscape($event)' }"],
+      ['d/src/d.ts', "host: { '(keydown.enter)': 'onEnter($event)' }"],
+      ['e/src/e.ts', "host: { '(keydown.escapeHatch)': 'onKey($event)' }"],
+    ]);
+
+    expect(escapeHandlers(sources)).toEqual(['a/src/a.ts', 'b/src/b.ts', 'c/src/c.ts']);
   });
 
   it('guards every Escape handler with isImeComposing', () => {

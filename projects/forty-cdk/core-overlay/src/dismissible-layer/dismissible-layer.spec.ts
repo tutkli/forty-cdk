@@ -428,6 +428,87 @@ describe('DismissibleLayer', () => {
       inner.remove();
     });
 
+    it('offers an Escape the topmost layer declines to the layer below', () => {
+      const inner = document.createElement('div');
+      document.body.appendChild(inner);
+
+      const calls: string[] = [];
+      const outerLayer = makeLayer(host);
+      outerLayer.activate({ channels: [], onEscapeKeyDown: () => calls.push('outer') });
+      const innerLayer = makeLayer(inner);
+      innerLayer.activate({
+        channels: ['pointer', 'focus'],
+        onEscapeKeyDown: () => {
+          calls.push('inner-declined');
+          return false;
+        },
+      });
+
+      pressKey(document, 'Escape');
+
+      expect(calls).toEqual(['inner-declined', 'outer']);
+
+      innerLayer.deactivate();
+      outerLayer.deactivate();
+      inner.remove();
+    });
+
+    it('walks down every declining layer until one keeps the Escape', () => {
+      const middle = document.createElement('div');
+      const top = document.createElement('div');
+      document.body.append(middle, top);
+
+      const calls: string[] = [];
+      const bottomLayer = makeLayer(host);
+      bottomLayer.activate({ channels: [], onEscapeKeyDown: () => calls.push('bottom') });
+      const middleLayer = makeLayer(middle);
+      middleLayer.activate({ channels: [], onEscapeKeyDown: () => calls.push('middle') });
+      const topLayer = makeLayer(top);
+      topLayer.activate({
+        channels: [],
+        onEscapeKeyDown: () => {
+          calls.push('top-declined');
+          return false;
+        },
+      });
+
+      pressKey(document, 'Escape');
+
+      expect(calls).toEqual(['top-declined', 'middle']);
+
+      topLayer.deactivate();
+      middleLayer.deactivate();
+      bottomLayer.deactivate();
+      middle.remove();
+      top.remove();
+    });
+
+    it('never offers a declined Escape past a modal layer', () => {
+      const inner = document.createElement('div');
+      document.body.appendChild(inner);
+
+      const calls: string[] = [];
+      const outerLayer = makeLayer(host);
+      outerLayer.activate({ channels: [], onEscapeKeyDown: () => calls.push('outer') });
+      const modalLayer = makeLayer(inner);
+      modalLayer.activate({
+        channels: ['pointer', 'focus'],
+        modal: true,
+        onEscapeKeyDown: () => {
+          calls.push('modal-declined');
+          return false;
+        },
+      });
+
+      pressKey(document, 'Escape');
+
+      expect(calls).toEqual(['modal-declined']);
+
+      modalLayer.deactivate();
+      outerLayer.deactivate();
+      inner.remove();
+    });
+
     it('falls back to the next layer once the topmost deactivates', () => {
       const inner = document.createElement('div');
       document.body.appendChild(inner);
