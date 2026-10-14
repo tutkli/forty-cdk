@@ -122,8 +122,10 @@ export class ForMenu extends MenuOverlayHost implements ForMenuContext {
    * When `true` (default), arrow-key navigation wraps from the last enabled
    * item back to the first (and vice versa). When `false`, navigation stops
    * at the ends.
+   * The default is read from `provideForMenuDefaults` for the surrounding
+   * scope.
    */
-  readonly loop = input(true, { transform: booleanAttribute });
+  readonly loop = input(this.#defaults.loop, { transform: booleanAttribute });
 
   /**
    * Writing direction. Drives ArrowLeft / ArrowRight semantics on submenu

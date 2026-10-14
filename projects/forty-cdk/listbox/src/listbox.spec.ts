@@ -10,6 +10,7 @@ import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
 import { isUnset, unsetInput } from 'forty-cdk/core';
+import { provideForListboxDefaults } from 'forty-cdk/defaults';
 import { pressKey, pressWithMouse } from 'forty-cdk/testing';
 
 import {
@@ -573,6 +574,33 @@ describe('ForListbox', () => {
       optOf(el, 'cherry').focus();
       pressKey(optOf(el, 'cherry'), 'ArrowDown');
       expect(document.activeElement).toBe(optOf(el, 'cherry'));
+    });
+
+    it('reads the loop default from provideForListboxDefaults when no [loop] is bound', () => {
+      @Component({
+        imports: [ForListbox, ForListboxOption],
+        providers: [provideForListboxDefaults({ loop: false })],
+        template: `
+          <ul forListbox>
+            <li>
+              <button type="button" forListboxOption value="apple" data-test-id="apple">
+                Apple
+              </button>
+            </li>
+            <li>
+              <button type="button" forListboxOption value="cherry" data-test-id="cherry">
+                Cherry
+              </button>
+            </li>
+          </ul>
+        `,
+      })
+      class ScopedLoopHost {}
+
+      const { el } = renderHost(ScopedLoopHost);
+      optOf(el, 'apple').focus();
+      pressKey(optOf(el, 'apple'), 'ArrowUp');
+      expect(document.activeElement).toBe(optOf(el, 'apple'));
     });
 
     it('Home / End jump', () => {

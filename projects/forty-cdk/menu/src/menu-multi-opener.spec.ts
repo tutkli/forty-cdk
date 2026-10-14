@@ -5,6 +5,7 @@ import { By } from '@angular/platform-browser';
 import { ForContextMenuTrigger } from 'forty-cdk/context-menu';
 import type { VetoableNativeEvent } from 'forty-cdk/core';
 import type { MenuOpenerPositioning } from 'forty-cdk/core-overlay';
+import { provideForMenuDefaults } from 'forty-cdk/defaults';
 import { ForDropdownMenu, ForDropdownMenuTrigger } from 'forty-cdk/dropdown-menu';
 import { pressKey } from 'forty-cdk/testing';
 
@@ -773,6 +774,38 @@ describe('ForMenu (multiple openers, one content block)', () => {
       await r.flush();
       expect(kebab.getAttribute('aria-expanded')).toBe('false');
       expect(region.getAttribute('data-state')).toBe('closed');
+    });
+  });
+
+  describe('scoped defaults', () => {
+    it('reads the loop default from provideForMenuDefaults when no [loop] is bound', async () => {
+      @Component({
+        imports: [ForMenu, ForDropdownMenuTrigger, ForMenuContent, ForMenuItem],
+        providers: [provideForMenuDefaults({ loop: false })],
+        template: `
+          <div forMenu [(open)]="open" ariaLabel="Actions">
+            <button data-testid="kebab" forDropdownMenuTrigger>⋮</button>
+            @if (open()) {
+              <div forMenuContent>
+                <button id="edit" forMenuItem>Edit</button>
+                <button id="remove" forMenuItem>Delete</button>
+              </div>
+            }
+          </div>
+        `,
+      })
+      class ScopedLoopHost {
+        readonly open = signal(true);
+      }
+
+      const r = renderHost(ScopedLoopHost);
+      await r.flush();
+
+      const edit = document.querySelector<HTMLElement>('#edit')!;
+      edit.focus();
+      pressKey(edit, 'ArrowUp');
+      await r.flush();
+      expect(document.activeElement).toBe(edit);
     });
   });
 

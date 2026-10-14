@@ -10,6 +10,7 @@ import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
 import { isUnset, unsetInput, type VetoableNativeEvent } from 'forty-cdk/core';
+import { provideForSelectDefaults } from 'forty-cdk/defaults';
 import {
   afterEachOverlayCleanup,
   flush,
@@ -92,6 +93,26 @@ class SelectHost {
   readonly selectionFollowsFocus = signal(false);
   readonly placeholder = signal('');
   readonly cherryDisabled = signal(false);
+}
+
+@Component({
+  imports: BASE_IMPORTS,
+  providers: [provideForSelectDefaults({ loop: false, selectionFollowsFocus: true })],
+  template: `
+    <div forSelect [(open)]="open" [(value)]="value">
+      <button forSelectTrigger>Fruit</button>
+      @if (open()) {
+        <div forSelectContent>
+          <button data-test-id="apple" forSelectOption value="apple">Apple</button>
+          <button data-test-id="banana" forSelectOption value="banana">Banana</button>
+        </div>
+      }
+    </div>
+  `,
+})
+class ScopedKeyboardDefaultsHost {
+  readonly open = signal(false);
+  readonly value = signal<readonly string[]>([]);
 }
 
 @Component({
@@ -532,6 +553,20 @@ describe('ForSelect', () => {
       expect(r.instance.open()).toBe(true);
     });
 
+    it('reads selectionFollowsFocus from provideForSelectDefaults when no input is bound', async () => {
+      const r = renderHost(ScopedKeyboardDefaultsHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const apple = getOption('apple');
+      apple.focus();
+      pressKey(apple, 'ArrowDown');
+      await flush(r.fixture);
+
+      expect(activeTestId()).toBe('banana');
+      expect(r.instance.value()).toEqual(['banana']);
+    });
+
     it('selectionFollowsFocus is ignored in readonly', async () => {
       const r = renderHost(SelectHost);
       r.instance.selectionFollowsFocus.set(true);
@@ -947,6 +982,18 @@ describe('ForSelect', () => {
       document.activeElement!.dispatchEvent(
         new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }),
       );
+      await flush(r.fixture);
+      expect(activeTestId()).toBe('apple');
+    });
+
+    it('reads the loop default from provideForSelectDefaults when no [loop] is bound', async () => {
+      const r = renderHost(ScopedKeyboardDefaultsHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const apple = getOption('apple');
+      apple.focus();
+      pressKey(apple, 'ArrowUp');
       await flush(r.fixture);
       expect(activeTestId()).toBe('apple');
     });

@@ -18,6 +18,7 @@ import {
   assertSingleValueModelContract,
 } from '../../src/test-utils/contract';
 import type { VetoableEvent, VetoableNativeEvent } from 'forty-cdk/core';
+import { provideForMenubarDefaults } from 'forty-cdk/defaults';
 import {
   ForMenuCheckboxItem,
   ForMenuContent,
@@ -1083,6 +1084,28 @@ describe('ForMenubar', () => {
       pressKey(triggers[0]!, 'ArrowLeft');
       await flush(r.fixture);
       expect(triggers[2]!.getAttribute('tabindex')).toBe('0');
+    });
+
+    it('reads the loop default from provideForMenubarDefaults when no [loop] is bound', async () => {
+      @Component({
+        imports: IMPORTS,
+        providers: [provideForMenubarDefaults({ loop: false })],
+        template: `
+          <div forMenubar aria-label="Main">
+            <button forMenubarTrigger value="file">File</button>
+            <button forMenubarTrigger value="view">View</button>
+          </div>
+        `,
+      })
+      class ScopedLoopHost {}
+
+      const r = renderHost(ScopedLoopHost);
+      const triggers = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]');
+      triggers[0]!.focus();
+      pressKey(triggers[0]!, 'ArrowLeft');
+      await flush(r.fixture);
+      expect(triggers[0]!.getAttribute('tabindex')).toBe('0');
+      expect(triggers[1]!.getAttribute('tabindex')).toBe('-1');
     });
 
     it('inverts ArrowLeft / ArrowRight in RTL', async () => {

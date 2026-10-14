@@ -193,8 +193,10 @@ export class ForListbox<T = string>
    * boundaries. Mirrors the `loop` input on `ForSelect`, `ForToggleGroup` and
    * `ForCombobox`. Range extension (Shift+Arrow) never wraps regardless of
    * this input, per the APG.
+   * The default is read from `provideForListboxDefaults` for the surrounding
+   * scope.
    */
-  readonly loop = input(true, { transform: booleanAttribute });
+  readonly loop = input(this.#defaults.loop, { transform: booleanAttribute });
 
   /**
    * Total number of items in the source data. When set, enables the

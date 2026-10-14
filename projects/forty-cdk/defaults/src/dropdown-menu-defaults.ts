@@ -45,6 +45,10 @@ export interface ForDropdownMenuDefaults extends AnchoredPositioningSeedDefaults
    * `avoidCollisions` is on.
    */
   fallbackAxisSideDirection: FloatingFallbackAxisSideDirection;
+  /**
+   * Whether arrow navigation wraps past the first / last enabled item.
+   */
+  loop: boolean;
 }
 
 /**
@@ -58,6 +62,7 @@ export const FOR_DROPDOWN_MENU_FALLBACK_DEFAULTS: ForDropdownMenuDefaults = {
   sideOffset: 4,
   collisionPadding: 8,
   fallbackAxisSideDirection: 'none',
+  loop: true,
 };
 
 /** Token holding the resolved dropdown-menu defaults for the current scope. */

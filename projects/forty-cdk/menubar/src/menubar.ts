@@ -120,9 +120,11 @@ export class ForMenubar implements ForMenubarContext {
   readonly _dirInput = input<WritingDirection | null>(null, { alias: 'dir' });
   readonly dir = injectTextDirection(this._dirInput);
   /**
-   * Whether arrow navigation wraps past the first / last enabled trigger.
+   * Whether arrow navigation wraps past the first / last enabled trigger. Default `true`.
+   * The default is read from `provideForMenubarDefaults` for the surrounding
+   * scope.
    */
-  readonly loop = input(true, { transform: booleanAttribute });
+  readonly loop = input(this.#defaults.loop, { transform: booleanAttribute });
   /**
    * Whether every trigger in the bar is disabled, so no menu can be opened.
    */

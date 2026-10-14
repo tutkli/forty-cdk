@@ -98,7 +98,8 @@ export class ForSelect<T = string>
 {
   readonly #typeahead = injectTypeahead();
   readonly #closedTypeahead = injectTypeahead();
-  protected readonly positioningDefaults = inject(FOR_SELECT_DEFAULTS);
+  readonly #defaults = inject(FOR_SELECT_DEFAULTS);
+  protected readonly positioningDefaults = this.#defaults;
 
   /** The `[forSelect]` root element (see `SelectPieceContext.host`). */
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
@@ -214,8 +215,12 @@ export class ForSelect<T = string>
    */
   readonly position = input<'popper' | 'item-aligned'>('popper');
 
-  /** Whether arrow navigation wraps past the first / last enabled option. */
-  readonly loop = input(true, { transform: booleanAttribute });
+  /**
+   * Whether arrow navigation wraps past the first / last enabled option. Default `true`.
+   * The default is read from `provideForSelectDefaults` for the surrounding
+   * scope.
+   */
+  readonly loop = input(this.#defaults.loop, { transform: booleanAttribute });
 
   /** Axis the arrow keys navigate. Reflected as `data-orientation` on the content. */
   readonly orientation = input<'vertical' | 'horizontal'>('vertical');
@@ -288,6 +293,8 @@ export class ForSelect<T = string>
    * typeahead match) also selects the focused option while the listbox is
    * open. APG calls this optional and recommends caution — leave off unless
    * your UX truly benefits. Default `false`.
+   * The default is read from `provideForSelectDefaults` for the surrounding
+   * scope.
    *
    * Not supported together with virtualization (`totalCount` set): the
    * virtualized `aria-activedescendant` path resolves off-window navigation
@@ -296,7 +303,9 @@ export class ForSelect<T = string>
    * a virtualized listbox with it set throws in dev mode, from the move the
    * combination degrades.
    */
-  readonly selectionFollowsFocus = input(false, { transform: booleanAttribute });
+  readonly selectionFollowsFocus = input(this.#defaults.selectionFollowsFocus, {
+    transform: booleanAttribute,
+  });
 
   /** Placeholder shown by `[forSelectValue]` when no option is selected. */
   readonly placeholder = input<string>('');

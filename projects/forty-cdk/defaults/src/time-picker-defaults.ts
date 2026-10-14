@@ -41,6 +41,10 @@ export interface ForTimePickerDefaults extends AnchoredPositioningSeedDefaults {
    * fallback `null`, which derives the cycle from the locale.
    */
   hourCycle: 12 | 24 | null;
+  /**
+   * Whether arrow navigation wraps past the first / last enabled option.
+   */
+  loop: boolean;
 }
 
 /**
@@ -54,6 +58,7 @@ export const FOR_TIME_PICKER_FALLBACK_DEFAULTS: ForTimePickerDefaults = {
   sideOffset: 4,
   collisionPadding: 8,
   hourCycle: null,
+  loop: true,
 };
 
 /** Token holding the resolved time picker defaults for the current scope. */

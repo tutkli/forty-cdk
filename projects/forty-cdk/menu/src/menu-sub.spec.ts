@@ -265,6 +265,44 @@ describe('ForMenuSub', () => {
       expect(document.activeElement?.id).toBe('advanced');
     });
 
+    it('reads the loop default from provideForMenuDefaults when no [loop] is bound', async () => {
+      @Component({
+        imports: IMPORTS,
+        providers: [provideForMenuDefaults({ loop: false })],
+        template: `
+          <div forDropdownMenu [(open)]="open">
+            <button forDropdownMenuTrigger>Options</button>
+            @if (open()) {
+              <div forMenuContent>
+                <div forMenuSub [(open)]="subOpen">
+                  <button forMenuSubTrigger>More</button>
+                  @if (subOpen()) {
+                    <div forMenuSubContent>
+                      <button id="advanced" forMenuItem>Advanced</button>
+                      <button id="reset" forMenuItem>Reset</button>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        `,
+      })
+      class ScopedLoopHost {
+        readonly open = signal(true);
+        readonly subOpen = signal(true);
+      }
+
+      const r = renderHost(ScopedLoopHost);
+      await flush(r.fixture);
+
+      const advanced = document.querySelector<HTMLElement>('#advanced')!;
+      advanced.focus();
+      pressKey(advanced, 'ArrowUp');
+      await flush(r.fixture);
+      expect(document.activeElement).toBe(advanced);
+    });
+
     it('a keyboard click (Enter / Space) on an already-open SubTrigger keeps the submenu open and moves focus into it', async () => {
       const r = renderHost(SubMenuHost);
       r.instance.open.set(true);

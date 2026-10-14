@@ -47,6 +47,10 @@ export interface ForContextMenuDefaults extends AnchoredPositioningSeedDefaults 
    * `avoidCollisions` is on.
    */
   fallbackAxisSideDirection: FloatingFallbackAxisSideDirection;
+  /**
+   * Whether arrow navigation wraps past the first / last enabled item.
+   */
+  loop: boolean;
 }
 
 /**
@@ -60,6 +64,7 @@ export const FOR_CONTEXT_MENU_FALLBACK_DEFAULTS: ForContextMenuDefaults = {
   sideOffset: 0,
   collisionPadding: 8,
   fallbackAxisSideDirection: 'none',
+  loop: true,
 };
 
 /** Token holding the resolved context-menu defaults for the current scope. */

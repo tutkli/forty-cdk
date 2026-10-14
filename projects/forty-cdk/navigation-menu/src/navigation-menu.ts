@@ -112,9 +112,11 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
   readonly _dirInput = input<WritingDirection | null>(null, { alias: 'dir' });
   readonly dir = injectTextDirection(this._dirInput);
   /**
-   * Whether arrow navigation wraps past the first / last enabled trigger.
+   * Whether arrow navigation wraps past the first / last enabled trigger. Default `true`.
+   * The default is read from `provideForNavigationMenuDefaults` for the surrounding
+   * scope.
    */
-  readonly loop = input(true, { transform: booleanAttribute });
+  readonly loop = input(this.#defaults.loop, { transform: booleanAttribute });
   /**
    * Whether every item in the navigation is disabled, so no panel can be opened.
    */
