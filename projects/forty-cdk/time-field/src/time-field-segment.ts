@@ -2,6 +2,7 @@ import { computed, Directive, inject, input } from '@angular/core';
 
 import {
   adoptedSegmentContext,
+  FOR_PICKER_SOURCE_HOST,
   FOR_TIME_FIELD_HOST,
   ForDateTimeSegmentBase,
   resolveText,
@@ -37,6 +38,7 @@ export class ForTimeFieldSegment extends ForDateTimeSegmentBase {
   protected readonly ctx = adoptedSegmentContext(
     injectTimeFieldContext('ForTimeFieldSegment'),
     inject(FOR_TIME_FIELD_HOST, { optional: true }),
+    inject(FOR_PICKER_SOURCE_HOST, { optional: true }),
   );
   readonly #defaults = inject(FOR_TIME_FIELD_DEFAULTS);
 

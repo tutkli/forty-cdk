@@ -16,6 +16,7 @@ import {
   assertTimeCapable,
   createPointerHighlight,
   createSingleSlot,
+  FOR_PICKER_SOURCE_HOST,
   FOR_TIME_FIELD_HOST,
   fortyError,
   injectDateAdapter,
@@ -88,7 +89,7 @@ import { FOR_TIME_PICKER_DEFAULTS } from 'forty-cdk/defaults';
   host: {
     '[attr.data-state]': 'open() ? "open" : "closed"',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
-    '[attr.data-readonly]': 'readonly() ? "" : null',
+    '[attr.data-readonly]': 'effectiveReadonly() ? "" : null',
     '[attr.dir]': 'dir()',
   },
   providers: [
@@ -102,6 +103,16 @@ export class ForTimePicker<D>
   implements FormValueControl<D | null>, ForTimePickerContext<D>
 {
   protected readonly positioningDefaults = inject(FOR_TIME_PICKER_DEFAULTS);
+  readonly #pickerSource = inject(FOR_PICKER_SOURCE_HOST, { optional: true });
+
+  /**
+   * The picker's own `readonly` OR'd with the read-only state of a
+   * `[forDatePicker]` it is projected into as a time source. This is the value
+   * that blocks selection and drives `aria-readonly` / `data-readonly`.
+   */
+  readonly effectiveReadonly = computed(
+    () => this.readonly() || (this.#pickerSource?.readonly() ?? false),
+  );
 
   /**
    * The active, time-capable date adapter. Throws when the provided adapter is
@@ -440,10 +451,18 @@ export class ForTimePicker<D>
 
   /** Writes a value typed in the adopted `[forTimeField]`. Ignored while read-only or disabled. */
   protected commitFieldValue(value: D | null): void {
-    if (this.readonly() || this.effectiveDisabled()) {
+    if (this.effectiveReadonly() || this.effectiveDisabled()) {
       return;
     }
     this.value.set(value);
+  }
+
+  private adoptCommit(value: D): void {
+    this.#fieldSlot.value()?.adoptCommit(value);
+  }
+
+  protected override inheritedDisabled(): boolean {
+    return this.#pickerSource?.effectiveDisabled() ?? false;
   }
 
   #adoptedField(): AdoptedField | null {
@@ -480,7 +499,7 @@ export class ForTimePicker<D>
   }
 
   activate(v: D): void {
-    if (this.effectiveDisabled() || this.readonly()) {
+    if (this.effectiveDisabled() || this.effectiveReadonly()) {
       return;
     }
     this.value.set(composeWithTime(this.adapter, this.value() ?? this.#sentinel(), v));
@@ -534,7 +553,7 @@ export class ForTimePicker<D>
     if (this.effectiveDisabled()) {
       return;
     }
-    if (!this.readonly()) {
+    if (!this.effectiveReadonly()) {
       this.value.set(composeWithTime(this.adapter, this.value() ?? this.#sentinel(), value));
     }
     this.#controller.focusTrigger();

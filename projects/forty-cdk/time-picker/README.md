@@ -242,6 +242,8 @@ By default the listbox is positioned against `[forTimePickerTrigger]`. When the 
 Place `[forTimePicker]` inside `[forDatePickerContent]` alongside a `[forCalendar]`. The
 `FOR_TIME_VALUE_SOURCE` token is provided by `[forTimePicker]`, and `[forDatePicker]`
 resolves it automatically via `contentChild` to graft time changes onto the committed date.
+The time picker takes the date picker's `readonly` and `disabled` without a binding, on top of
+its own, so a read-only date picker's time picker picks no slot and a disabled one cannot open.
 
 ```html
 <div forDatePicker granularity="minute" [(value)]="value" [(open)]="open" #dp="forDatePicker">

@@ -1292,6 +1292,78 @@ describe('ForDatePicker', () => {
       expect(adapter.getHours(r.instance.value()!)).toBe(15);
     });
 
+    it('a readonly picker makes its projected time field read-only, so typing shows nothing it did not commit', async () => {
+      const r = renderHost(DateTimeHost);
+      r.instance.readonly.set(true);
+      r.instance.value.set(new Date(2026, 5, 15, 9, 0));
+      await open(r);
+
+      expect(document.querySelector('[forTimeField]')!.hasAttribute('data-readonly')).toBe(true);
+      expect(timeSeg('hour').getAttribute('aria-readonly')).toBe('true');
+
+      pressKey(timeSeg('hour'), '1');
+      pressKey(timeSeg('hour'), '5');
+      await flush(r.fixture);
+
+      expect(timeSeg('hour').textContent!.trim()).toBe('09');
+      expect(r.instance.value()!.getTime()).toBe(new Date(2026, 5, 15, 9, 0).getTime());
+    });
+
+    it('a disabled picker disables its projected time field, so typing shows nothing it did not commit', async () => {
+      const r = renderHost(DateTimeHost);
+      r.instance.value.set(new Date(2026, 5, 15, 9, 0));
+      await open(r);
+      r.instance.disabled.set(true);
+      await flush(r.fixture);
+
+      expect(document.querySelector('[forTimeField]')!.getAttribute('aria-disabled')).toBe('true');
+      expect(timeSeg('hour').getAttribute('aria-disabled')).toBe('true');
+
+      pressKey(timeSeg('hour'), '1');
+      pressKey(timeSeg('hour'), '5');
+      await flush(r.fixture);
+
+      expect(timeSeg('hour').textContent!.trim()).toBe('09');
+      expect(r.instance.value()!.getTime()).toBe(new Date(2026, 5, 15, 9, 0).getTime());
+    });
+
+    it('keeps the typed minutes while the bounds clamp the hour mid-edit', async () => {
+      const r = renderHost(DateTimeHost);
+      r.instance.maxDate.set(new Date(2026, 5, 15, 17, 0));
+      r.instance.value.set(new Date(2026, 5, 15, 9, 45));
+      await open(r);
+
+      pressKey(timeSeg('hour'), '1');
+      pressKey(timeSeg('hour'), '8');
+      await flush(r.fixture);
+
+      expect(r.instance.value()!.getTime()).toBe(new Date(2026, 5, 15, 17, 0).getTime());
+      expect(timeSeg('hour').getAttribute('aria-valuenow')).toBe('18');
+      expect(timeSeg('minute').getAttribute('aria-valuenow')).toBe('45');
+
+      pressKey(timeSeg('hour'), '1');
+      pressKey(timeSeg('hour'), '6');
+      await flush(r.fixture);
+
+      expect(r.instance.value()!.getTime()).toBe(new Date(2026, 5, 15, 16, 45).getTime());
+    });
+
+    it('rehydrates the time field from the clamped value once focus leaves it', async () => {
+      const r = renderHost(DateTimeHost);
+      r.instance.maxDate.set(new Date(2026, 5, 15, 17, 0));
+      r.instance.value.set(new Date(2026, 5, 15, 9, 45));
+      await open(r);
+
+      pressKey(timeSeg('hour'), '1');
+      pressKey(timeSeg('hour'), '8');
+      await flush(r.fixture);
+      timeSeg('minute').dispatchEvent(new FocusEvent('blur'));
+      await flush(r.fixture);
+
+      expect(timeSeg('hour').getAttribute('aria-valuenow')).toBe('17');
+      expect(timeSeg('minute').getAttribute('aria-valuenow')).toBe('0');
+    });
+
     it('clamps a time-field commit to the picker date bounds', async () => {
       const r = renderHost(DateTimeHost);
       const max = new Date(2026, 5, 15, 14, 30);
@@ -1485,6 +1557,8 @@ describe('ForDatePicker', () => {
           [(open)]="open"
           granularity="minute"
           [hourCycle]="24"
+          [disabled]="disabled()"
+          [readonly]="readonly()"
           #picker="forDatePicker"
         >
           <button data-testid="trigger" forDatePickerTrigger>
@@ -1509,6 +1583,7 @@ describe('ForDatePicker', () => {
               </div>
               <div
                 forTimePicker
+                data-testid="tp"
                 [value]="picker.value()"
                 [step]="60"
                 [hourCycle]="24"
@@ -1538,7 +1613,50 @@ describe('ForDatePicker', () => {
     class DateTimePickerHost {
       readonly value = signal<Date | null>(null);
       readonly open = signal(false);
+      readonly disabled = signal(false);
+      readonly readonly = signal(false);
     }
+
+    const tpEl = (testid: string) =>
+      document.querySelector<HTMLElement>(`[data-testid="${testid}"]`)!;
+
+    it('a readonly picker makes its projected time picker read-only, so a slot click selects nothing', async () => {
+      const r = renderHost(DateTimePickerHost);
+      r.instance.readonly.set(true);
+      r.instance.value.set(new Date(2026, 5, 15, 0, 0));
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      expect(tpEl('tp').hasAttribute('data-readonly')).toBe(true);
+      expect(tpEl('tp-trigger').getAttribute('aria-readonly')).toBe('true');
+
+      tpEl('tp-trigger').click();
+      await flush(r.fixture);
+      tpEl('tp-slot-slot-32400').click();
+      await flush(r.fixture);
+
+      expect(tpEl('tp-slot-slot-32400').getAttribute('aria-selected')).toBe('false');
+      expect(tpEl('tp-slot-slot-0').getAttribute('aria-selected')).toBe('true');
+      expect(r.instance.value()!.getTime()).toBe(new Date(2026, 5, 15, 0, 0).getTime());
+    });
+
+    it('a disabled picker disables its projected time picker trigger', async () => {
+      const r = renderHost(DateTimePickerHost);
+      r.instance.value.set(new Date(2026, 5, 15, 0, 0));
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      r.instance.disabled.set(true);
+      await flush(r.fixture);
+
+      expect(tpEl('tp').hasAttribute('data-disabled')).toBe(true);
+      expect(tpEl('tp-trigger').hasAttribute('disabled')).toBe(true);
+
+      tpEl('tp-trigger').click();
+      await flush(r.fixture);
+
+      expect(tpEl('tp').getAttribute('data-state')).toBe('closed');
+      expect(r.instance.value()!.getTime()).toBe(new Date(2026, 5, 15, 0, 0).getTime());
+    });
 
     it('selecting a time slot grafts the time onto the committed date', async () => {
       const r = renderHost(DateTimePickerHost);
@@ -1559,6 +1677,99 @@ describe('ForDatePicker', () => {
       const value = r.instance.value();
       expect(adapter.getHours(value!)).toBe(9);
       expect(adapter.getDate(value!)).toBe(15);
+    });
+  });
+
+  describe('date-time with a projected field-anatomy ForTimePicker', () => {
+    @Component({
+      imports: [
+        ForDatePicker,
+        ForDatePickerTrigger,
+        ForDatePickerContent,
+        ForTimePicker,
+        ForTimePickerTrigger,
+        ForTimeField,
+        ForTimeFieldSegment,
+        ForTimeFieldLiteral,
+      ],
+      providers: [...provideNativeDateAdapter()],
+      template: `
+        <div
+          forDatePicker
+          [(value)]="value"
+          [(open)]="open"
+          granularity="minute"
+          [hourCycle]="24"
+          [maxDate]="maxDate()"
+          [readonly]="readonly()"
+          #picker="forDatePicker"
+        >
+          <button forDatePickerTrigger></button>
+          @if (open()) {
+            <div forDatePickerContent>
+              <div forTimePicker anatomy="field" [value]="picker.value()" [hourCycle]="24">
+                <div forTimeField [locale]="'en-US'" #tf="forTimeField">
+                  @for (seg of tf.segments(); track seg.id) {
+                    @if (seg.isLiteral) {
+                      <span forTimeFieldLiteral>{{ seg.text }}</span>
+                    } @else {
+                      <span
+                        forTimeFieldSegment
+                        [segment]="seg.type!"
+                        [attr.data-testid]="'nested-' + seg.type"
+                        >{{ seg.text }}</span
+                      >
+                    }
+                  }
+                </div>
+                <button forTimePickerTrigger></button>
+              </div>
+            </div>
+          }
+        </div>
+      `,
+    })
+    class NestedTimePickerHost {
+      readonly value = signal<Date | null>(null);
+      readonly open = signal(false);
+      readonly maxDate = signal<Date | null>(null);
+      readonly readonly = signal(false);
+    }
+
+    const nestedSeg = (type: string) =>
+      document.querySelector<HTMLElement>(`[data-testid="nested-${type}"]`)!;
+
+    it('a readonly picker reaches the segments of a time field adopted by its time picker', async () => {
+      const r = renderHost(NestedTimePickerHost);
+      r.instance.readonly.set(true);
+      r.instance.value.set(new Date(2026, 5, 15, 9, 0));
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      expect(nestedSeg('hour').getAttribute('aria-readonly')).toBe('true');
+
+      pressKey(nestedSeg('hour'), '1');
+      pressKey(nestedSeg('hour'), '5');
+      await flush(r.fixture);
+
+      expect(nestedSeg('hour').textContent!.trim()).toBe('09');
+      expect(r.instance.value()!.getTime()).toBe(new Date(2026, 5, 15, 9, 0).getTime());
+    });
+
+    it('keeps the typed minutes when the picker clamps a commit relayed through the time picker', async () => {
+      const r = renderHost(NestedTimePickerHost);
+      r.instance.maxDate.set(new Date(2026, 5, 15, 17, 0));
+      r.instance.value.set(new Date(2026, 5, 15, 9, 45));
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      pressKey(nestedSeg('hour'), '1');
+      pressKey(nestedSeg('hour'), '8');
+      await flush(r.fixture);
+
+      expect(r.instance.value()!.getTime()).toBe(new Date(2026, 5, 15, 17, 0).getTime());
+      expect(nestedSeg('hour').getAttribute('aria-valuenow')).toBe('18');
+      expect(nestedSeg('minute').getAttribute('aria-valuenow')).toBe('45');
     });
   });
 

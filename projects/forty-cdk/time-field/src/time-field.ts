@@ -4,6 +4,7 @@ import type { FormValueControl } from '@angular/forms/signals';
 import {
   type AdoptedField,
   assertTimeCapable,
+  FOR_PICKER_SOURCE_HOST,
   FOR_TIME_FIELD_HOST,
   registerHandle,
   type TimeFieldHost,
@@ -66,6 +67,9 @@ import { FOR_TIME_FIELD_DEFAULTS } from 'forty-cdk/defaults';
  * `[formField]` binding and a surrounding `[forField]` to the picker. Its own `value` model is not
  * written while adopted.
  *
+ * Projected beside the calendar of a date-time `[forDatePicker]`, the field is read-only or
+ * disabled whenever the date picker is.
+ *
  * @typeParam D The adapter's immutable, time-capable date-time type.
  *
  * @example
@@ -108,13 +112,17 @@ export class ForTimeField<D>
 {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
   readonly #defaults = inject(FOR_TIME_FIELD_DEFAULTS);
+  readonly #pickerSource = inject(FOR_PICKER_SOURCE_HOST, { optional: true });
   readonly #fieldHost = inject(FOR_TIME_FIELD_HOST, { optional: true }) as TimeFieldHost<D> | null;
   readonly #adopter = computed(() => (this.#fieldHost?.adoptsField() ? this.#fieldHost : null));
   protected readonly resolvedDisabled = computed(
     () => this.effectiveDisabled() || (this.#adopter()?.effectiveDisabled() ?? false),
   );
   protected readonly resolvedReadonly = computed(
-    () => this.readonly() || (this.#adopter()?.readonly() ?? false),
+    () =>
+      this.readonly() ||
+      (this.#pickerSource?.readonly() ?? false) ||
+      (this.#adopter()?.readonly() ?? false),
   );
   protected readonly resolvedRequired = computed(
     () => this.required() || (this.#adopter()?.required() ?? false),
@@ -272,6 +280,7 @@ export class ForTimeField<D>
           element: this.#host.nativeElement,
           focus: (options) => this.focus(options),
           reset: () => this.reset(),
+          adoptCommit: (value) => this.#engine.adoptCommit(value as D),
         },
         (field) => fieldHost.registerField(field),
         (field) => fieldHost.unregisterField(field),
@@ -315,6 +324,10 @@ export class ForTimeField<D>
     this.#engine.reset();
   }
 
+  private adoptCommit(value: D): void {
+    this.#engine.adoptCommit(value);
+  }
+
   /**
    * Sets the value to `null` and empties every segment, including a partly
    * typed entry. Writing `null` through `[(value)]` cannot clear an entry the
@@ -330,6 +343,10 @@ export class ForTimeField<D>
       this.value.set(null);
     }
     this.#engine.reset();
+  }
+
+  protected override inheritedDisabled(): boolean {
+    return this.#pickerSource?.effectiveDisabled() ?? false;
   }
 
   protected override fieldAdopted(): boolean {

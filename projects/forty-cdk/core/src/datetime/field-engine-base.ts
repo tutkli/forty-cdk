@@ -105,6 +105,10 @@ export abstract class DateTimeFieldEngineBase<
 
   #ownCommit: { readonly source: D | null } | null = null;
 
+  #committing = false;
+
+  #adopted: { readonly source: D } | null = null;
+
   /**
    * The ordered, locale-derived segments (editable + literals) to render. Each
    * entry carries the text to display: the formatted value when filled, the
@@ -298,7 +302,27 @@ export abstract class DateTimeFieldEngineBase<
     if (transient) {
       return;
     }
-    this.config.onCommit(this.composeFrom(next));
-    this.#ownCommit = { source: untracked(this.config.source) };
+    this.#adopted = null;
+    this.#committing = true;
+    try {
+      this.config.onCommit(this.composeFrom(next));
+    } finally {
+      this.#committing = false;
+    }
+    this.#ownCommit = this.#adopted ?? { source: untracked(this.config.source) };
+    this.#adopted = null;
+  }
+
+  /**
+   * Records `value` as what the commit in progress resolved to, for a host that
+   * normalises the commit (grafts it onto its own day, clamps it to its own
+   * bounds) and hands the result back through `source`. The segments then keep
+   * what was typed until the field settles, as they do when the engine clamps a
+   * commit itself. Ignored outside `onCommit`.
+   */
+  adoptCommit(value: D): void {
+    if (this.#committing) {
+      this.#adopted = { source: value };
+    }
   }
 }

@@ -17,7 +17,7 @@ import {
   type DateRange,
   injectDateAdapter,
   adoptHostId,
-  FOR_CALENDAR_HOST,
+  FOR_PICKER_SOURCE_HOST,
   IdGenerator,
   LiveAnnouncer,
   type WritingDirection,
@@ -95,7 +95,7 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
   readonly #idGen = inject(IdGenerator);
   readonly #injector = inject(Injector);
   readonly #announcer = inject(LiveAnnouncer);
-  readonly #pickerHost = inject(FOR_CALENDAR_HOST, { optional: true });
+  readonly #pickerHost = inject(FOR_PICKER_SOURCE_HOST, { optional: true });
 
   /** The active date adapter, resolved from `FOR_DATE_ADAPTER`. */
   readonly adapter: DateAdapter<D> = injectDateAdapter<D>('ForCalendar', { scope: 'calendar' });

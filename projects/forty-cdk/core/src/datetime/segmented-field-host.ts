@@ -2,6 +2,7 @@ import { computed, InjectionToken, type Signal } from '@angular/core';
 
 import type { DateAdapter } from 'forty-cdk/date-adapter';
 import type { FieldGranularity } from './date-segments';
+import type { PickerSourceHost } from './picker-source-host';
 import type { SegmentEditorContext } from './segment-directive';
 import type { TimeGranularity } from './time-segments';
 
@@ -17,6 +18,11 @@ export interface AdoptedField {
   focus(options?: FocusOptions): void;
   /** Discards a partly typed entry and redisplays the picker's value. */
   reset(): void;
+  /**
+   * Records `value` as what the field's commit in progress resolved to once a
+   * picker downstream normalised it, so the typed segments survive it.
+   */
+  adoptCommit(value: unknown): void;
 }
 
 /**
@@ -99,26 +105,37 @@ export const FOR_TIME_FIELD_HOST = new InjectionToken<TimeFieldHost<unknown>>(
 );
 
 /**
- * The segment-facing view of a field's context with an adopting picker's
- * disabled and read-only states folded in, so a segment's `aria-disabled` /
- * `aria-readonly` match what the adopted field's engine enforces. Returns
- * `ctx` itself when no host is reachable.
+ * The segment-facing view of a field's context with the disabled and read-only
+ * states folded in of an adopting picker and of a picker the field is projected
+ * into as a time source, so a segment's `aria-disabled` / `aria-readonly` match
+ * what the field's engine enforces. Returns `ctx` itself when neither is
+ * reachable.
  *
  * @param ctx The field's own coordination context.
  * @param host The picker that may adopt the field, or `null`.
+ * @param source The picker the field is projected into as a source, or `null`.
  */
 export function adoptedSegmentContext(
   ctx: SegmentEditorContext,
   host: SegmentedFieldHost<unknown> | null,
+  source: PickerSourceHost | null = null,
 ): SegmentEditorContext {
-  if (host === null) {
+  if (host === null && source === null) {
     return ctx;
   }
   return {
     effectiveDisabled: computed(
-      () => ctx.effectiveDisabled() || (host.adoptsField() && host.effectiveDisabled()),
+      () =>
+        ctx.effectiveDisabled() ||
+        (host?.adoptsField() === true && host.effectiveDisabled()) ||
+        (source?.effectiveDisabled() ?? false),
     ),
-    readonly: computed(() => ctx.readonly() || (host.adoptsField() && host.readonly())),
+    readonly: computed(
+      () =>
+        ctx.readonly() ||
+        (host?.adoptsField() === true && host.readonly()) ||
+        (source?.readonly() ?? false),
+    ),
     dir: ctx.dir,
     roving: ctx.roving,
     delegate: ctx.delegate,
