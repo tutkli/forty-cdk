@@ -1,6 +1,12 @@
 import { computed, Directive, ElementRef, inject } from '@angular/core';
 
-import { navigateFromRovingItem, registerHandle, hostId, rovingTabStop } from 'forty-cdk/core';
+import {
+  hostButtonType,
+  hostId,
+  navigateFromRovingItem,
+  registerHandle,
+  rovingTabStop,
+} from 'forty-cdk/core';
 import { injectStepperContext, injectStepperItemContext } from './stepper-context';
 
 /**
@@ -9,9 +15,10 @@ import { injectStepperContext, injectStepperItemContext } from './stepper-contex
  * `aria-disabled`. In `mode="progress"` carries `aria-current="step"` on the
  * active step only and is a static element (no tab-stop manipulation).
  *
- * Apply on a `<button type="button">` for interactive mode so Enter / Space
- * activation is native. A static element (`<span>`) is acceptable for progress
- * mode.
+ * Apply on a `<button>` for interactive mode so Enter / Space activation is
+ * native. A `<button>` host is forced to `type="button"`, a consumer
+ * `type="submit"` included, so selecting a step never submits a surrounding
+ * `<form>`. A static element (`<span>`) is acceptable for progress mode.
  *
  * Disabled triggers in interactive mode reflect `aria-disabled` + `data-disabled`
  * (never the native `disabled` attribute) and drop out of the Tab sequence
@@ -25,6 +32,7 @@ import { injectStepperContext, injectStepperItemContext } from './stepper-contex
   host: {
     '[attr.role]': "ctx.mode() === 'interactive' ? 'tab' : null",
     '[id]': 'id()',
+    '[attr.type]': 'buttonType()',
     '[attr.aria-selected]':
       "ctx.mode() === 'interactive' ? (item.current() ? 'true' : 'false') : null",
     '[attr.aria-controls]': "ctx.mode() === 'interactive' ? controlsId() : null",
@@ -43,6 +51,8 @@ export class ForStepperTrigger {
   protected readonly ctx = injectStepperContext('ForStepperTrigger');
   protected readonly item = injectStepperItemContext('ForStepperTrigger');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+
+  protected readonly buttonType = hostButtonType();
 
   /** Generated (or consumer-set static) id for this trigger. Used by content panels for `aria-labelledby`. */
   readonly id = hostId('for-stepper-trigger');
@@ -105,7 +115,7 @@ export class ForStepperTrigger {
 
   protected onKeyDown(event: KeyboardEvent): void {
     navigateFromRovingItem(event, {
-      groupDisabled: this.ctx.mode() !== 'interactive',
+      groupDisabled: this.ctx.mode() !== 'interactive' || this.ctx.disabled(),
       orientation: this.ctx.orientation(),
       dir: this.ctx.dir(),
       navigate: (action) => this.ctx.navigate(this.#host, action),

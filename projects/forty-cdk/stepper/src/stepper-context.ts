@@ -104,8 +104,8 @@ export interface ForStepperContext {
   /** Total number of registered step items. */
   readonly count: Signal<number>;
   /**
-   * True when the stepper has reached the terminal completed state
-   * (`selectedIndex()` >= `count()`).
+   * True when the stepper has reached the terminal completed state: it has at
+   * least one step and `selectedIndex()` >= `count()`.
    */
   readonly isCompleted: Signal<boolean>;
   /** Roving tabindex tracker for interactive-mode triggers. */

@@ -173,8 +173,8 @@ A display-only status tracker: the list renders as a plain ordered list with `ar
 
 `ForStepper` exposes two members for the terminal completed state:
 
-- **`isCompleted`** (`Signal<boolean>`): true when `selectedIndex()` has reached `count()` (one past the last step). Read it via a `#stepper="forStepper"` template reference.
-- **`(complete)`**: output that fires once each time the stepper enters the completed state. Retreating via `[forStepperPrevious]` and re-entering emits again.
+- **`isCompleted`** (`Signal<boolean>`): true when the stepper has at least one step and `selectedIndex()` has reached `count()` (one past the last step). Read it via a `#stepper="forStepper"` template reference.
+- **`(complete)`**: output that fires once each time `selectedIndex` moves into the completed state. Retreating via `[forStepperPrevious]` and re-entering emits again. A change to the step list alone never fires it: an emptied list is not completed, and a list that shrinks under `selectedIndex` reads as completed without emitting, so move `selectedIndex` when you remove the steps before it.
 
 ### `ForStepperItem`
 

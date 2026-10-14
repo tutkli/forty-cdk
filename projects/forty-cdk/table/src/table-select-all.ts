@@ -1,6 +1,6 @@
 import { computed, Directive, input, output } from '@angular/core';
 
-import { hostAriaLabel } from 'forty-cdk/core';
+import { hostAriaLabel, hostButtonType } from 'forty-cdk/core';
 
 import { injectTableCellTabIndex } from './cell-tab-index';
 import { injectTableContext, type TableSelectAllState } from './table-context';
@@ -19,11 +19,12 @@ import { injectTableContext, type TableSelectAllState } from './table-context';
  * `[(value)]`.
  *
  * In `mode="table"` it is a standalone tab stop (`tabindex="0"`) and can sit on any
- * focusable element (a `<span>` you make tabbable, or a `<button type="button">`).
+ * focusable element (a `<span>` you make tabbable, or a `<button>`, which it forces to
+ * `type="button"` so toggling never submits a surrounding `<form>`).
  * In `mode="grid"` / `"treegrid"` it yields its tab stop to the composite roving grid
  * (`tabindex="-1"`) and is reached via cell-entry (Enter / F2, then `Tab` when it is not
  * the cell's first widget), so it must sit on a natively-focusable element (a
- * `<button type="button">`) — a `tabindex`-only `<span>` is cell-entry-reachable only in
+ * `<button>`) — a `tabindex`-only `<span>` is cell-entry-reachable only in
  * `mode="table"`.
  */
 @Directive({
@@ -31,6 +32,7 @@ import { injectTableContext, type TableSelectAllState } from './table-context';
   exportAs: 'forTableSelectAll',
   host: {
     role: 'checkbox',
+    '[attr.type]': 'buttonType()',
     '[attr.tabindex]': 'tabindex()',
     '[attr.aria-checked]': 'ariaChecked()',
     '[attr.aria-label]': 'resolvedAriaLabel()',
@@ -62,6 +64,8 @@ export class ForTableSelectAll {
   protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 
   protected readonly tabindex = injectTableCellTabIndex();
+
+  protected readonly buttonType = hostButtonType();
 
   readonly #resolvedState = computed(() => this.state() ?? this.ctx.selectAllState());
 

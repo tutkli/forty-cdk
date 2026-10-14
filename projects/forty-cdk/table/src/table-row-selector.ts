@@ -1,6 +1,6 @@
 import { computed, Directive, input } from '@angular/core';
 
-import { hostAriaLabel } from 'forty-cdk/core';
+import { hostAriaLabel, hostButtonType } from 'forty-cdk/core';
 
 import { injectTableCellTabIndex } from './cell-tab-index';
 import { injectTableContext, injectTableRowContext } from './table-context';
@@ -25,6 +25,7 @@ import { injectTableContext, injectTableRowContext } from './table-context';
   exportAs: 'forTableRowSelector',
   host: {
     role: 'checkbox',
+    '[attr.type]': 'buttonType()',
     '[attr.tabindex]': 'tabindex()',
     '[attr.aria-checked]': 'ariaChecked()',
     '[attr.aria-label]': 'resolvedAriaLabel()',
@@ -43,6 +44,8 @@ export class ForTableRowSelector {
   protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 
   protected readonly tabindex = injectTableCellTabIndex();
+
+  protected readonly buttonType = hostButtonType();
 
   protected readonly ariaChecked = computed<'true' | 'false'>(() =>
     this.row.selected() ? 'true' : 'false',

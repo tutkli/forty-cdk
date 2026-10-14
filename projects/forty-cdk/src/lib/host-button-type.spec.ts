@@ -14,6 +14,8 @@ import { ForSearch, ForSearchClear, ForSearchGroup } from 'forty-cdk/search';
 import { ForSwitch } from 'forty-cdk/switch';
 import { ForToolbar, ForToolbarButton } from 'forty-cdk/toolbar';
 
+import { LIBRARY_CODE, README_SOURCES } from '../test-utils/source-scan';
+
 /**
  * Library-wide contract for the forced `type="button"` (#1512).
  *
@@ -25,11 +27,13 @@ import { ForToolbar, ForToolbarButton } from 'forty-cdk/toolbar';
  * did not exist, and a checkbox click inside a `<form>` navigated away instead
  * of toggling.
  *
- * One piece per family is audited here (form control, overlay trigger,
- * collection option, icon / push button); the seam's own unit coverage lives in
- * `core/host-attributes/host-type.spec.ts`, and `[forButton]`'s deliberately opposite
- * contract — it *preserves* a consumer `type`, because a `[forButton]` on a real
- * submit button is legitimate usage — is asserted in `button/src/button.spec.ts`.
+ * One piece per family is mounted here (form control, overlay trigger,
+ * collection option, icon / push button) to pin the behaviour; which pieces owe
+ * it is the derived roster at the end of this file. The seam's own unit coverage
+ * lives in `core/host-attributes/host-type.spec.ts`, and `[forButton]`'s
+ * deliberately opposite contract — it *preserves* a consumer `type`, because a
+ * `[forButton]` on a real submit button is legitimate usage — is asserted in
+ * `button/src/button.spec.ts`.
  */
 
 function mount<T>(host: Type<T>): ComponentFixture<T> {
@@ -174,5 +178,124 @@ describe('forced type="button" (#1512)', () => {
       expect(host.submits()).toBe(1);
       expect(host.agreed()).toBe(true);
     });
+  });
+});
+
+const BUTTON_START_TAG = /<button\b([^>]*)>/g;
+
+const PIECE_ATTRIBUTE = /(?:^|[\s[(])\[?(for[A-Z][A-Za-z]*)\]?(?=[\s=>\]]|$)/g;
+
+const SELECTOR = /selector:\s*'([^']*)'/g;
+
+const ownsNoClickActivation = (code: string): boolean => !code.includes(`'(click)'`);
+
+/**
+ * Pieces a README places on a `<button>` that deliberately leave its `type`
+ * alone, each with the condition that makes it right. A condition rather than a
+ * bare name, so an excluded piece that grows its own activation fails the
+ * roster instead of staying parked here.
+ */
+const EXCLUSIONS: Readonly<Record<string, { reason: string; holds: (code: string) => boolean }>> = {
+  forButton: {
+    reason:
+      'preserves a consumer `type` through its own `resolvedType`: a real submit button is legitimate usage',
+    holds: (code) => code.includes('resolvedType') && !code.includes('hostButtonType('),
+  },
+  forTooltipTrigger: {
+    reason:
+      'describes the control it sits on and owns no activation, so a submit button with a tooltip stays one',
+    holds: ownsNoClickActivation,
+  },
+  forContextMenuTrigger: {
+    reason:
+      'opens on a context-menu gesture rather than a click, so it owns no activation of its host',
+    holds: ownsNoClickActivation,
+  },
+  forDialogInitialFocus: {
+    reason:
+      'marks where focus lands on open and owns no activation, so a dialog form submit button may carry it',
+    holds: ownsNoClickActivation,
+  },
+};
+
+/** Every `for…` attribute a README writes on a `<button>` start tag, with the READMEs that do. */
+function readmeButtonPieces(): ReadonlyMap<string, readonly string[]> {
+  const found = new Map<string, string[]>();
+  for (const [path, markdown] of README_SOURCES) {
+    for (const tag of markdown.matchAll(BUTTON_START_TAG)) {
+      for (const attribute of tag[1]!.matchAll(PIECE_ATTRIBUTE)) {
+        const readmes = found.get(attribute[1]!) ?? [];
+        if (!readmes.includes(path)) {
+          readmes.push(path);
+        }
+        found.set(attribute[1]!, readmes);
+      }
+    }
+  }
+  return found;
+}
+
+/** The library sources whose decorator selector names `[<attribute>]`. */
+function declaringSources(attribute: string): readonly string[] {
+  return [...LIBRARY_CODE]
+    .filter(([, code]) =>
+      [...code.matchAll(SELECTOR)].some((match) => match[1]!.includes(`[${attribute}]`)),
+    )
+    .map(([path]) => path);
+}
+
+/**
+ * The roster is derived from the markup the READMEs tell a consumer to write: a
+ * piece documented on a bare `<button>` is one a consumer will put inside a
+ * `<form>`, so it owes the forced `type="button"` whether or not anyone
+ * remembered to add it. The stepper trigger, the table column resizer and the
+ * table select-all checkbox shipped without it while a one-per-family sample
+ * stayed green ([#2259](https://github.com/tutkli/forty-cdk/issues/2259)).
+ */
+describe('forced type="button" roster', () => {
+  const pieces = readmeButtonPieces();
+
+  it('reads every README and finds the pieces documented on a <button>', () => {
+    expect(README_SOURCES.size).toBeGreaterThan(50);
+    expect(pieces.size).toBeGreaterThan(40);
+    expect([...pieces.keys()]).toEqual(
+      expect.arrayContaining(['forStepperTrigger', 'forTableColumnResizer', 'forCheckbox']),
+    );
+  });
+
+  it('resolves every documented piece to exactly one declaring source', () => {
+    const unresolved = [...pieces.keys()]
+      .map((attribute) => [attribute, declaringSources(attribute)] as const)
+      .filter(([, sources]) => sources.length !== 1)
+      .map(([attribute, sources]) => `${attribute}: ${sources.join(', ') || 'no source'}`);
+
+    expect(unresolved).toEqual([]);
+  });
+
+  it('forces type="button" through hostButtonType on every piece documented on a <button>', () => {
+    const missing = [...pieces]
+      .filter(([attribute]) => !(attribute in EXCLUSIONS))
+      .flatMap(([attribute, readmes]) =>
+        declaringSources(attribute)
+          .filter((path) => !LIBRARY_CODE.get(path)!.includes('hostButtonType('))
+          .map(
+            (path) => `${attribute} (${path}), documented on a <button> in ${readmes.join(', ')}`,
+          ),
+      );
+
+    expect(missing).toEqual([]);
+  });
+
+  it('keeps every exclusion documented on a <button> and its condition holding', () => {
+    const stale = Object.entries(EXCLUSIONS)
+      .filter(([attribute, { holds }]) => {
+        const sources = declaringSources(attribute);
+        return (
+          !pieces.has(attribute) || sources.length !== 1 || !holds(LIBRARY_CODE.get(sources[0]!)!)
+        );
+      })
+      .map(([attribute, { reason }]) => `${attribute}: ${reason}`);
+
+    expect(stale).toEqual([]);
   });
 });

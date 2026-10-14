@@ -159,6 +159,54 @@ const triggers = (el: HTMLElement): HTMLElement[] =>
   Array.from(el.querySelectorAll<HTMLElement>('[forStepperTrigger]'));
 
 @Component({
+  imports: [ForStepper, ForStepperList, ForStepperItem, ForStepperTrigger],
+  template: `
+    <form (submit)="onSubmit($event)">
+      <div forStepper [(selectedIndex)]="selectedIndex">
+        <ol forStepperList>
+          <li forStepperItem><button forStepperTrigger data-trigger="0">A</button></li>
+          <li forStepperItem>
+            <button forStepperTrigger type="submit" data-trigger="1">B</button>
+          </li>
+        </ol>
+      </div>
+      <button type="submit" data-native-submit>Send</button>
+    </form>
+  `,
+})
+class FormWrappedStepperHost {
+  readonly selectedIndex = signal(0);
+  readonly submits = signal(0);
+
+  onSubmit(event: Event): void {
+    event.preventDefault();
+    this.submits.update((count) => count + 1);
+  }
+}
+
+@Component({
+  imports: [ForStepper, ForStepperList, ForStepperItem, ForStepperTrigger, ForStepperContent],
+  template: `
+    <div forStepper (complete)="completeCount.set(completeCount() + 1)">
+      <ol forStepperList>
+        @for (s of steps(); track s) {
+          <li forStepperItem>
+            <button forStepperTrigger>{{ s }}</button>
+          </li>
+        }
+      </ol>
+      @for (s of steps(); track s) {
+        <section forStepperContent>{{ s }}</section>
+      }
+    </div>
+  `,
+})
+class DataDrivenStepperHost {
+  readonly steps = signal<readonly string[]>(['A', 'B', 'C']);
+  readonly completeCount = signal(0);
+}
+
+@Component({
   imports: [ForStepper, ForStepperList, ForStepperItem, ForStepperTrigger, ForStepperContent],
   template: `
     <div forStepper [(selectedIndex)]="selectedIndex" [activationMode]="activationMode()">
@@ -645,6 +693,19 @@ describe('ForStepper', () => {
       expect(instance.selectedIndex()).toBe(0);
     });
 
+    it('a disabled interactive stepper leaves Arrow / Home / End unconsumed', async () => {
+      const { el, instance, flush } = renderHost(StepperHost);
+      triggerAt(el, 0).focus();
+      await flush();
+      instance.rootDisabled.set(true);
+      await flush();
+
+      for (const key of ['ArrowRight', 'ArrowLeft', 'Home', 'End']) {
+        expect(pressKey(triggerAt(el, 0), key).defaultPrevented).toBe(false);
+      }
+      expect(document.activeElement).toBe(triggerAt(el, 0));
+    });
+
     it('loop=false stops at the last trigger', async () => {
       const { el, instance, fixture, flush } = renderHost(StepperHost);
       instance.loop.set(false);
@@ -654,6 +715,26 @@ describe('ForStepper', () => {
       pressKey(triggerAt(el, 2), 'ArrowRight');
       await flush();
       expect(document.activeElement).toBe(triggerAt(el, 2));
+    });
+  });
+
+  describe('submit protection inside a <form>', () => {
+    it('forces type="button" on a trigger, a consumer type="submit" included', () => {
+      const { el } = renderHost(FormWrappedStepperHost);
+      expect(triggerAt(el, 0).getAttribute('type')).toBe('button');
+      expect(triggerAt(el, 1).getAttribute('type')).toBe('button');
+    });
+
+    it('clicking a step header selects the step without submitting the form', async () => {
+      const { el, instance, flush } = renderHost(FormWrappedStepperHost);
+      el.querySelector<HTMLElement>('[data-native-submit]')!.click();
+      expect(instance.submits()).toBe(1);
+
+      triggerAt(el, 1).click();
+      await flush();
+
+      expect(instance.submits()).toBe(1);
+      expect(instance.selectedIndex()).toBe(1);
     });
   });
 
@@ -1040,6 +1121,31 @@ describe('ForStepper', () => {
       fixture.detectChanges();
       expect(completedEl(el).getAttribute('data-state')).toBe('active');
       expect(instance.completeCount()).toBe(1);
+    });
+
+    it('an emptied step list is not completed and emits no complete', async () => {
+      const { el, instance, flush } = renderHost(DataDrivenStepperHost);
+      await flush();
+
+      instance.steps.set([]);
+      await flush();
+      instance.steps.set(['D', 'E']);
+      await flush();
+
+      expect(instance.completeCount()).toBe(0);
+      expect(el.querySelector('[forStepperContent]')!.getAttribute('data-state')).toBe('active');
+    });
+
+    it('a step list shrinking under selectedIndex emits no complete', async () => {
+      const { instance, fixture, flush } = renderHost(StepperHost);
+      instance.selectedIndex.set(2);
+      await flush();
+
+      instance.steps.update((ss) => ss.slice(1));
+      fixture.detectChanges();
+      await flush();
+
+      expect(instance.completeCount()).toBe(0);
     });
 
     it('select(count) advances into the terminal completed state', async () => {
