@@ -1,4 +1,14 @@
-import { computed, Directive, ElementRef, inject, input, model, type Signal } from '@angular/core';
+import {
+  computed,
+  Directive,
+  ElementRef,
+  inject,
+  input,
+  model,
+  type Provider,
+  type Signal,
+  type Type,
+} from '@angular/core';
 import type { FormValueControl } from '@angular/forms/signals';
 
 import {
@@ -101,10 +111,7 @@ import { FOR_TIME_FIELD_DEFAULTS } from 'forty-cdk/defaults';
     '[attr.data-empty]': 'empty() ? "" : null',
     '(focusout)': 'onFocusOut($event)',
   },
-  providers: [
-    { provide: FOR_TIME_FIELD_CONTEXT, useExisting: ForTimeField },
-    { provide: FOR_TIME_VALUE_SOURCE, useExisting: ForTimeField },
-  ],
+  providers: provideForTimeField(ForTimeField),
 })
 export class ForTimeField<D>
   extends FormUiControlBase
@@ -369,4 +376,27 @@ export class ForTimeField<D>
       this.markTouched();
     }
   }
+}
+
+/**
+ * The providers a `[forTimeField]` root installs, each aliased to `root`:
+ * {@link FOR_TIME_FIELD_CONTEXT} and the time source a date-time `[forDatePicker]` finds it
+ * through.
+ *
+ * A wrapper that **subclasses** the root spreads this helper as its own `providers`. A subclass
+ * replaces the inherited array wholesale, and the time source cannot be named from outside the
+ * library:
+ *
+ * ```ts
+ * providers: provideForTimeField(MyTimeField),
+ * ```
+ *
+ * Wrapping through `hostDirectives: [ForTimeField]` needs none of this, because a host directive
+ * brings its own providers to the element.
+ */
+export function provideForTimeField<D = unknown>(root: Type<ForTimeField<D>>): Provider[] {
+  return [
+    { provide: FOR_TIME_FIELD_CONTEXT, useExisting: root },
+    { provide: FOR_TIME_VALUE_SOURCE, useExisting: root },
+  ];
 }

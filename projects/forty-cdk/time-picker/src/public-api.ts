@@ -1,4 +1,4 @@
-export { ForTimePicker } from './time-picker';
+export { ForTimePicker, provideForTimePicker } from './time-picker';
 export { ForTimePickerAnchor } from './time-picker-anchor';
 export { ForTimePickerTrigger } from './time-picker-trigger';
 export { ForTimePickerValue } from './time-picker-value';

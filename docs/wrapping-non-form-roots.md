@@ -72,8 +72,9 @@ import { FOR_POPOVER_CONTEXT, ForPopover } from 'forty-cdk/popover';
 export class MyPopover extends ForPopover {}
 ```
 
-Every non-form root that needs a plain re-provide, and the token to name. `ForTable` is the one root
-not in this table, because it needs `provideForTable()` instead (see the section below).
+Every non-form root that needs a plain re-provide, and the token to name. `ForTable` and
+`ForToolbar` are not in this table, because each needs its provider helper instead (see the sections
+below).
 
 | Root                                                | Token to re-provide            |
 | --------------------------------------------------- | ------------------------------ |
@@ -101,7 +102,6 @@ not in this table, because it needs `provideForTable()` instead (see the section
 | `ForStepper`                                        | `FOR_STEPPER_CONTEXT`          |
 | `ForTabs`                                           | `FOR_TABS_CONTEXT`             |
 | `ForToast`                                          | `FOR_TOAST_CONTEXT`            |
-| `ForToolbar`                                        | `FOR_TOOLBAR_CONTEXT`          |
 | `ForTooltip`                                        | `FOR_TOOLTIP_CONTEXT`          |
 | `ForTree`                                           | `FOR_TREE_CONTEXT`             |
 | `ForVirtualViewport`                                | `FOR_VIRTUAL_VIEWPORT_CONTEXT` |
@@ -138,10 +138,10 @@ first piece to resolve rejects it with a `[forty-cdk/<primitive>]`-prefixed erro
 
 **Intermediate pieces provide tokens too**, and subclassing one has the same requirement:
 `ForAccordionItem` (`FOR_ACCORDION_ITEM_CONTEXT`), `ForStepperItem`
-(`FOR_STEPPER_ITEM_CONTEXT`), `ForTableRow` (`FOR_TABLE_ROW_CONTEXT`), `ForTreeItem`
-(`FOR_TREE_ITEM_CONTEXT`), `ForTreeGroup` (`FOR_TREE_CONTAINER_CONTEXT`), `ForMenuGroup`
-(`FOR_MENU_GROUP_CONTEXT`), `ForMenuRadioGroup` (`FOR_MENU_RADIO_GROUP_CONTEXT`),
-`ForTreeNodeDrag` (`FOR_TREE_NODE_DRAG_CONTEXT`).
+(`FOR_STEPPER_ITEM_CONTEXT`), `ForTreeItem` (`FOR_TREE_ITEM_CONTEXT`), `ForTreeGroup`
+(`FOR_TREE_CONTAINER_CONTEXT`), `ForMenuGroup` (`FOR_MENU_GROUP_CONTEXT`), `ForMenuRadioGroup`
+(`FOR_MENU_RADIO_GROUP_CONTEXT`), `ForTreeNodeDrag` (`FOR_TREE_NODE_DRAG_CONTEXT`).
+`ForTableRow` is the one piece whose tokens cannot be imported, so it spreads a helper (see below).
 
 ### `ForTable` needs its provider helper, not a hand-written provider
 
@@ -169,6 +169,43 @@ export class MyTable<T> extends ForTable<T> {}
 it is not a subclassing helper. See [Table](../projects/forty-cdk/table/README.md) for the scaffold
 wrapper shape it supports.
 
+### `ForToolbar` and `ForTableRow` spread their helpers too
+
+Two more classes provide a token a wrapper cannot import, and each exports a helper that installs
+its whole set:
+
+- **`ForToolbar`** also provides the internal roving channel a nested `[forToggleGroup]`'s items
+  join the toolbar's single Tab stop through. A subclass re-providing only `FOR_TOOLBAR_CONTEXT`
+  renders without an error, but its toggle items fall back to their own group: the toolbar has two
+  Tab stops and its arrow keys never reach them.
+- **`ForTableRow`** provides the row context and the cell-registration wiring, and neither token is
+  public. A subclass without them makes every `[forTableCell]` inside it throw
+  `FORCDK-TABLE-012`.
+
+```ts
+import { Directive } from '@angular/core';
+import { ForTableRow, provideForTableRow } from 'forty-cdk/table';
+import { ForToolbar, provideForToolbar } from 'forty-cdk/toolbar';
+
+@Directive({
+  selector: '[myToolbar]',
+  exportAs: 'myToolbar',
+  providers: provideForToolbar(MyToolbar),
+})
+export class MyToolbar extends ForToolbar {}
+
+@Directive({
+  selector: '[myTableRow]',
+  exportAs: 'myTableRow',
+  providers: provideForTableRow(MyTableRow),
+})
+export class MyTableRow extends ForTableRow {}
+```
+
+The library's own `[forToolbar]` and `[forTableRow]` declare their providers through the same
+helpers, so a subclass cannot drift from the set the root really installs. Wrapping through
+`hostDirectives` needs none of this.
+
 ## What a wrapper must not swallow
 
 Wrapping the root is safe. Wrapping the _pieces_ into a single opaque component is where design
@@ -192,9 +229,9 @@ systems lose behaviour the primitives were built to give them:
 
 ## Choosing a pattern
 
-| Situation                                                        | Pattern                                                 |
-| ---------------------------------------------------------------- | ------------------------------------------------------- |
-| Styled wrapper around one root                                   | subclass + re-provide the context token                 |
-| `ForTable`                                                       | subclass + spread `provideForTable(MyRoot)`             |
-| Wrapper that must extend a different base class                  | `hostDirectives`, re-exposing the surface by hand       |
-| Form-value control (`Switch`, `Select`, `Slider`, `Combobox`, …) | [Wrapping form primitives](wrapping-form-primitives.md) |
+| Situation                                                        | Pattern                                                                                                 |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Styled wrapper around one root                                   | subclass + re-provide the context token                                                                 |
+| `ForTable`, `ForToolbar`, `ForTableRow`                          | subclass + spread `provideForTable(MyRoot)` / `provideForToolbar(MyRoot)` / `provideForTableRow(MyRow)` |
+| Wrapper that must extend a different base class                  | `hostDirectives`, re-exposing the surface by hand                                                       |
+| Form-value control (`Switch`, `Select`, `Slider`, `Combobox`, …) | [Wrapping form primitives](wrapping-form-primitives.md)                                                 |

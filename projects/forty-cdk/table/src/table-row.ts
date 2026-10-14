@@ -8,7 +8,9 @@ import {
   input,
   numberAttribute,
   output,
+  type Provider,
   type Signal,
+  type Type,
 } from '@angular/core';
 
 import {
@@ -64,10 +66,7 @@ export interface TableRawRowActivateEvent {
     '(click)': 'onClick($event)',
     '(keydown)': 'onKeydown($event)',
   },
-  providers: [
-    { provide: FOR_TABLE_ROW_CONTEXT, useExisting: ForTableRow },
-    { provide: TABLE_ROW_REGISTRATION_CONTEXT, useExisting: ForTableRow },
-  ],
+  providers: provideForTableRow(ForTableRow),
 })
 export class ForTableRow implements ForTableRowContext {
   protected readonly ctx = injectTableContext('ForTableRow');
@@ -245,4 +244,23 @@ export class ForTableRow implements ForTableRowContext {
       shiftKey: event.shiftKey,
     });
   }
+}
+
+/**
+ * The providers a `[forTableRow]` installs: the row context and the cell-registration wiring every
+ * `[forTableCell]` inside it resolves, both aliased to `row`. Neither token is public, so a wrapper
+ * that **subclasses** the row spreads this helper as its own `providers`:
+ *
+ * ```ts
+ * providers: provideForTableRow(MyRow),
+ * ```
+ *
+ * Wrapping through `hostDirectives: [ForTableRow]` needs none of this, because a host directive
+ * brings its own providers to the element.
+ */
+export function provideForTableRow(row: Type<ForTableRow>): Provider[] {
+  return [
+    { provide: FOR_TABLE_ROW_CONTEXT, useExisting: row },
+    { provide: TABLE_ROW_REGISTRATION_CONTEXT, useExisting: row },
+  ];
 }

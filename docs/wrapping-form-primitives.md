@@ -158,9 +158,11 @@ export class MyListbox extends ForListbox {}
 ```
 
 Primitives whose **root** provides a context token (and therefore needs the re-provide):
-`ForCombobox`, `ForDateField`, `ForDatePicker`, `ForDateRangeField`, `ForDateRangePicker`,
-`ForListbox`, `ForOtpInput`, `ForRadioGroup`, `ForSelect`, `ForSlider`, `ForTimeField`,
-`ForTimeRangeField`, `ForToggleGroup`.
+`ForCombobox`, `ForDateField`, `ForDateRangeField`, `ForListbox`, `ForOtpInput`,
+`ForRadioGroup`, `ForSelect`, `ForSlider`, `ForTimeRangeField`, `ForToggleGroup`.
+`ForDatePicker`, `ForDateRangePicker`, `ForTimePicker` and `ForTimeField` also provide tokens
+a wrapper cannot import, so they spread a provider helper instead (see
+[Date and time roots spread their provider helper](#date-and-time-roots-spread-their-provider-helper)).
 The pure leaf
 controls (`ForInput`, `ForTextarea`, `ForSwitch`, `ForToggle`, `ForNumberInput`) declare no
 providers, so a bare subclass is enough.
@@ -203,10 +205,12 @@ error naming this shape ([#1669](https://github.com/tutkli/forty-cdk/issues/1669
 covers Select's and Combobox's explicit trigger reference (`[forSelectTrigger]="root"` /
 `[forComboboxTrigger]="root"`), which resolves the root without DI.
 
-`ForTable` is the one exception. It is not a form primitive, but it splits its context the same way
+`ForTable` is an exception. It is not a form primitive, but it splits its context the same way
 _and_ provides an internal registry its own constructor injects, so a subclass without
 `provideForTable(MyTable)` fails to construct at all (`NG0201`). See
 [Wrapping non-form roots](wrapping-non-form-roots.md#fortable-needs-its-provider-helper-not-a-hand-written-provider).
+`ForTimePicker` is the other: its context is split the same way, but the root also provides the
+date-time tokens covered below, so a subclass spreads `provideForTimePicker(MyTimePicker)`.
 
 ### Indicator parent parts also self-provide a token
 
@@ -241,67 +245,42 @@ export class MySelectOption extends ForSelectOption {}
 the wrapper projects `[forCheckboxIndicator]` into it. The other parts always carry their
 indicator inside the same wrapper, so re-provide the token whenever you subclass them.
 
-### Projected time sources self-provide a bridge token
+### Date and time roots spread their provider helper
 
-`ForDatePicker` builds a date-time picker by querying its projected time control through
-`contentChild(FOR_TIME_VALUE_SOURCE)`. Both `ForTimeField` and `ForTimePicker` satisfy that
-bridge by providing the token from their own decorator (`{ provide: FOR_TIME_VALUE_SOURCE,
-useExisting: ForTimeField | ForTimePicker }`). A subclass wrapper projected into a date-time
-`ForDatePicker` must re-provide the token, pointing `useExisting` at itself, or the bridge
-finds no time source and the time component is silently dropped:
-
-```ts
-import { Directive } from '@angular/core';
-import { FOR_TIME_VALUE_SOURCE } from 'forty-cdk/core';
-import { ForTimeField } from 'forty-cdk/time-field';
-
-@Directive({
-  selector: '[myTimeField]',
-  exportAs: 'myTimeField',
-  providers: [{ provide: FOR_TIME_VALUE_SOURCE, useExisting: MyTimeField }],
-})
-export class MyTimeField<D> extends ForTimeField<D> {}
-```
-
-| Subclassed primitive | Bridge that resolves it                      | Token to re-provide     |
-| -------------------- | -------------------------------------------- | ----------------------- |
-| `ForTimeField`       | `ForDatePicker`'s `contentChild` time bridge | `FOR_TIME_VALUE_SOURCE` |
-| `ForTimePicker`      | `ForDatePicker`'s `contentChild` time bridge | `FOR_TIME_VALUE_SOURCE` |
-
-For `ForTimeField` this is **in addition to** the `FOR_TIME_FIELD_CONTEXT` re-provide from the
-table above. Its decorator provides both tokens, and a subclass that projects the time field's
-own segment pieces _and_ feeds a date-time picker re-provides each. A subclass that only feeds
-the date-picker bridge (no projected child pieces) re-provides `FOR_TIME_VALUE_SOURCE` alone.
-
-A picker composed with `anatomy="field"` is found the other way round: the projected
-`ForDateField` / `ForTimeField` injects `FOR_DATE_FIELD_HOST` / `FOR_TIME_FIELD_HOST`, which
-`ForDatePicker` / `ForTimePicker` provide from their own decorator. A subclassed picker used in
-that anatomy re-provides its token the same way, or no field is adopted and opening the picker
-throws `FORCDK-DATE-PICKER-007` / `FORCDK-TIME-PICKER-004` in dev mode:
+The date and time primitives find each other through tokens their roots provide. A date-time
+`ForDatePicker` finds its projected `ForTimeField` or `ForTimePicker` through one, a field
+projected under `anatomy="field"` is adopted by its picker through another, and the projected
+calendar, time field and time picker take the picker's `readonly` and `disabled` through a third.
+None of them can be imported, so a subclass of one of these roots spreads the root's provider
+helper as its `providers` instead of listing tokens. The helper installs the root's whole set,
+public context included, and keeps the wrapper in step when the library adds a token:
 
 ```ts
 import { Directive } from '@angular/core';
-import { FOR_DATE_FIELD_HOST, FOR_PICKER_SOURCE_HOST } from 'forty-cdk/core';
-import { FOR_DATE_PICKER_CONTEXT, ForDatePicker } from 'forty-cdk/date-picker';
+import { ForDatePicker, provideForDatePicker } from 'forty-cdk/date-picker';
 
 @Directive({
   selector: '[myDatePicker]',
   exportAs: 'myDatePicker',
-  providers: [
-    { provide: FOR_DATE_PICKER_CONTEXT, useExisting: MyDatePicker },
-    { provide: FOR_DATE_FIELD_HOST, useExisting: MyDatePicker },
-    { provide: FOR_PICKER_SOURCE_HOST, useExisting: MyDatePicker },
-  ],
+  providers: provideForDatePicker(MyDatePicker),
 })
 export class MyDatePicker<D> extends ForDatePicker<D> {}
 ```
 
+| Subclassed root      | Helper                              | What a subclass without it loses                                                                                                                                                        |
+| -------------------- | ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ForDatePicker`      | `provideForDatePicker(MyRoot)`      | A projected field is not adopted, and opening throws `FORCDK-DATE-PICKER-007` in dev mode. A read-only or disabled picker's calendar and time control accept input again.               |
+| `ForDateRangePicker` | `provideForDateRangePicker(MyRoot)` | The shared `[forDatePickerTrigger]`, `[forDatePickerContent]` and `[forDatePickerValue]` resolve `FOR_DATE_PICKER_CONTEXT` under a range picker too, so they throw their orphan errors. |
+| `ForTimePicker`      | `provideForTimePicker(MyRoot)`      | A date-time `ForDatePicker` silently drops the time component, and a projected field is not adopted (`FORCDK-TIME-PICKER-004` on open in dev mode).                                     |
+| `ForTimeField`       | `provideForTimeField(MyRoot)`       | Its segment pieces lose their context, and a date-time `ForDatePicker` silently drops the time component.                                                                               |
+
+The argument is the subclass, so the public context token aliases it and an advanced consumer
+injecting `FOR_DATE_PICKER_CONTEXT` or `FOR_TIME_FIELD_CONTEXT` reaches your instance. A wrapper
+composing one of these roots through `hostDirectives` needs none of this, because a host directive
+brings its own providers to the element.
+
 The picker finds its calendar through `contentChild(FOR_CALENDAR_CONTEXT)`, the token a
 `ForCalendar` subclass re-provides anyway (see [Wrapping non-form roots](wrapping-non-form-roots.md)).
-The other direction is `FOR_PICKER_SOURCE_HOST`, which `ForDatePicker` and `ForDateRangePicker`
-provide so the projected calendar, time field and time picker take the picker's `readonly` and
-`disabled`. A subclassed picker re-provides it as above, in either anatomy, or a read-only
-picker's calendar accepts picks again and its time source edits a time the picker never commits.
 
 ## Choosing a pattern
 

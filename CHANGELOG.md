@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Toolbar**, **Table**, **Date picker**, **Time picker**, **Time field** — provider helpers for
+  subclassed roots ([#2260](https://github.com/tutkli/forty-cdk/issues/2260)). `provideForToolbar`,
+  `provideForTableRow`, `provideForDatePicker`, `provideForDateRangePicker`,
+  `provideForTimePicker` and `provideForTimeField` return the whole provider set of their root,
+  including the tokens a wrapper cannot import, and each root declares its own providers through
+  its helper. A subclass that re-provided only `FOR_TOOLBAR_CONTEXT` gave the toolbar a second Tab
+  stop on a nested toggle group, and a `ForTableRow` subclass could not be written at all. The
+  wrapping guides no longer import from `forty-cdk/core`. **A date-picker wrapper written before
+  0.32.0** re-provides only `FOR_DATE_PICKER_CONTEXT` and `FOR_DATE_FIELD_HOST`, so its read-only or
+  disabled picker's calendar accepts picks again: replace its `providers` with
+  `provideForDatePicker(MyDatePicker)`, and do the same with the matching helper on a subclassed
+  range picker, time picker or time field.
+
+### Fixed
+
+- **Date picker** — `FORCDK-CORE-003` under the date picker's scope
+  ([#2260](https://github.com/tutkli/forty-cdk/issues/2260)). A named `[forDatePicker]` at a time
+  granularity over a day-only adapter, with a value and no projected field, reported the error as
+  `[forty-cdk/core]` from its hidden input. It now reports as `[forty-cdk/date-picker]`, and the
+  date fields report under `[forty-cdk/date-field]` on the same path.
+
 ## [0.33.0] - 2026-10-09
 
 A release about primitives that broke a contract their siblings or their own README keep, mostly on

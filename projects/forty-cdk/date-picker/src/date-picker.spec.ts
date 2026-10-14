@@ -32,12 +32,7 @@ import {
   type DismissibleLayerMountOptions,
   type FormControlMountResult,
 } from '../../src/test-utils/contract';
-import {
-  assertTimeCapable,
-  type FieldGranularity,
-  FOR_TIME_VALUE_SOURCE,
-  type VetoableNativeEvent,
-} from 'forty-cdk/core';
+import { assertTimeCapable, type FieldGranularity, type VetoableNativeEvent } from 'forty-cdk/core';
 import { type DateAdapter } from 'forty-cdk/date-adapter';
 import { ForDateField, ForDateFieldLiteral, ForDateFieldSegment } from 'forty-cdk/date-field';
 import { NativeDateAdapter, provideNativeDateAdapter } from 'forty-cdk/shared';
@@ -49,10 +44,10 @@ import {
   ForCalendarGridHeader,
 } from 'forty-cdk/calendar';
 import {
-  FOR_TIME_FIELD_CONTEXT,
   ForTimeField,
   ForTimeFieldLiteral,
   ForTimeFieldSegment,
+  provideForTimeField,
 } from 'forty-cdk/time-field';
 import {
   ForTimePicker,
@@ -61,6 +56,7 @@ import {
   ForTimePickerTrigger,
 } from 'forty-cdk/time-picker';
 import { ForField, ForFieldDescription, ForFieldError, ForLabel } from 'forty-cdk/field';
+import { CalendarDate } from '@internationalized/date';
 import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized-date';
 import { pressKey, pressWithMouse } from 'forty-cdk/testing';
 
@@ -1522,6 +1518,38 @@ describe('ForDatePicker', () => {
       expect(messages()).not.toContain('FORCDK-CORE-003');
     });
 
+    @Component({
+      imports: [ForDatePicker, ForDatePickerTrigger],
+      providers: [...provideInternationalizedDateAdapter()],
+      template: `
+        <div forDatePicker name="when" granularity="minute" [value]="value" ariaLabel="Choose date">
+          <button forDatePickerTrigger>Open</button>
+        </div>
+      `,
+    })
+    class DayOnlyNamedHost {
+      readonly value = new CalendarDate(2026, 6, 20);
+    }
+
+    it('reports FORCDK-CORE-003 under the date-picker scope when the hidden input serializes a preset value', async () => {
+      const captured: unknown[] = [];
+      class CapturingHandler implements ErrorHandler {
+        handleError(err: unknown): void {
+          captured.push(err);
+        }
+      }
+      TestBed.configureTestingModule({
+        rethrowApplicationErrors: false,
+        providers: [
+          provideZonelessChangeDetection(),
+          { provide: ErrorHandler, useClass: CapturingHandler },
+        ],
+      });
+      const fixture = TestBed.createComponent(DayOnlyNamedHost);
+
+      await expect(flush(fixture)).rejects.toThrow(/^\[forty-cdk\/date-picker\] FORCDK-CORE-003\b/);
+    });
+
     it('reports FORCDK-CORE-003 from the pick that composes the time', async () => {
       const { fixture, messages } = renderCapturing();
       fixture.componentInstance.open.set(true);
@@ -1777,10 +1805,7 @@ describe('ForDatePicker', () => {
     @Directive({
       selector: '[myTimeField]',
       exportAs: 'myTimeField',
-      providers: [
-        { provide: FOR_TIME_FIELD_CONTEXT, useExisting: MyTimeField },
-        { provide: FOR_TIME_VALUE_SOURCE, useExisting: MyTimeField },
-      ],
+      providers: provideForTimeField(MyTimeField),
     })
     class MyTimeField extends ForTimeField<Date> {}
 
@@ -1832,7 +1857,7 @@ describe('ForDatePicker', () => {
       readonly open = signal(false);
     }
 
-    it('mirrors a subclassed time-field edit into the picker via the re-provided FOR_TIME_VALUE_SOURCE token', async () => {
+    it('mirrors a subclassed time-field edit into the picker through provideForTimeField', async () => {
       const r = renderHost(SubclassHost);
       r.instance.value.set(new Date(2026, 5, 15, 14, 30));
       r.instance.open.set(true);
@@ -1851,11 +1876,7 @@ describe('ForDatePicker', () => {
     @Directive({
       selector: '[myForeignTimeField]',
       exportAs: 'myForeignTimeField',
-      providers: [
-        { provide: FOR_TIME_FIELD_CONTEXT, useExisting: MyForeignTimeField },
-        { provide: FOR_TIME_VALUE_SOURCE, useExisting: MyForeignTimeField },
-        ...provideNativeDateAdapter(),
-      ],
+      providers: [...provideForTimeField(MyForeignTimeField), ...provideNativeDateAdapter()],
     })
     class MyForeignTimeField extends ForTimeField<Date> {}
 

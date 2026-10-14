@@ -1,4 +1,12 @@
-import { booleanAttribute, computed, Directive, inject, input } from '@angular/core';
+import {
+  booleanAttribute,
+  computed,
+  Directive,
+  inject,
+  input,
+  type Provider,
+  type Type,
+} from '@angular/core';
 
 import {
   Collection,
@@ -59,10 +67,7 @@ import { FOR_TOOLBAR_DEFAULTS } from 'forty-cdk/defaults';
     '[attr.data-disabled]': 'disabled() ? "" : null',
     '[attr.dir]': 'dir()',
   },
-  providers: [
-    { provide: FOR_TOOLBAR_CONTEXT, useExisting: ForToolbar },
-    { provide: FOR_HOST_ROVING_CONTEXT, useExisting: FOR_TOOLBAR_CONTEXT },
-  ],
+  providers: provideForToolbar(ForToolbar),
 })
 export class ForToolbar implements ForToolbarContext {
   readonly #defaults = inject(FOR_TOOLBAR_DEFAULTS);
@@ -142,4 +147,27 @@ export class ForToolbar implements ForToolbarContext {
     this.#items.unregister(handle);
     this.roving.unregister(handle.host);
   }
+}
+
+/**
+ * The providers a `[forToolbar]` root installs: {@link FOR_TOOLBAR_CONTEXT}, aliased to `root`,
+ * plus the internal roving channel a nested `[forToggleGroup]`'s items join the toolbar's single
+ * Tab stop through.
+ *
+ * A wrapper that **subclasses** the root spreads this helper as its own `providers`, because a
+ * subclass replaces the inherited array wholesale and the roving channel cannot be named from
+ * outside the library:
+ *
+ * ```ts
+ * providers: provideForToolbar(MyToolbar),
+ * ```
+ *
+ * Wrapping through `hostDirectives: [ForToolbar]` needs none of this, because a host directive
+ * brings its own providers to the element.
+ */
+export function provideForToolbar(root: Type<ForToolbar>): Provider[] {
+  return [
+    { provide: FOR_TOOLBAR_CONTEXT, useExisting: root },
+    { provide: FOR_HOST_ROVING_CONTEXT, useExisting: FOR_TOOLBAR_CONTEXT },
+  ];
 }

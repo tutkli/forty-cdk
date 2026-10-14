@@ -363,7 +363,7 @@ Implements the [WAI-ARIA Listbox pattern](https://www.w3.org/WAI/ARIA/apg/patter
 
 ## Wrapping in a design system
 
-[Wrapping form primitives](../../../docs/wrapping-form-primitives.md) documents both supported wrapper patterns: `hostDirectives` with the exported `FOR_TIME_PICKER_HOST_DIRECTIVE_INPUTS` / `FOR_TIME_PICKER_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing.
+[Wrapping form primitives](../../../docs/wrapping-form-primitives.md) documents both supported wrapper patterns: `hostDirectives` with the exported `FOR_TIME_PICKER_HOST_DIRECTIVE_INPUTS` / `FOR_TIME_PICKER_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing. A subclass spreads [`provideForTimePicker(MyTimePicker)`](../../../docs/wrapping-form-primitives.md#date-and-time-roots-spread-their-provider-helper) as its `providers`, so a date-time `[forDatePicker]` and a projected `[forTimeField]` still find it.
 
 ```typescript
 import { Component } from '@angular/core';

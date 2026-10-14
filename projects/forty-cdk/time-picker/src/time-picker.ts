@@ -8,6 +8,8 @@ import {
   model,
   numberAttribute,
   output,
+  type Provider,
+  type Type,
 } from '@angular/core';
 import type { FormValueControl } from '@angular/forms/signals';
 
@@ -92,11 +94,7 @@ import { FOR_TIME_PICKER_DEFAULTS } from 'forty-cdk/defaults';
     '[attr.data-readonly]': 'effectiveReadonly() ? "" : null',
     '[attr.dir]': 'dir()',
   },
-  providers: [
-    { provide: FOR_TIME_PICKER_CONTEXT, useExisting: ForTimePicker },
-    { provide: FOR_TIME_VALUE_SOURCE, useExisting: ForTimePicker },
-    { provide: FOR_TIME_FIELD_HOST, useExisting: ForTimePicker },
-  ],
+  providers: provideForTimePicker(ForTimePicker),
 })
 export class ForTimePicker<D>
   extends AnchoredFormValueControlBase
@@ -582,4 +580,28 @@ function assertFieldProjected(field: AdoptedField | null): AdoptedField | null {
     });
   }
   return field;
+}
+
+/**
+ * The providers a `[forTimePicker]` root installs, each aliased to `root`:
+ * {@link FOR_TIME_PICKER_CONTEXT}, the time source a date-time `[forDatePicker]` finds it through,
+ * and the host a projected `[forTimeField]` is adopted through under `anatomy="field"`.
+ *
+ * A wrapper that **subclasses** the root spreads this helper as its own `providers`. A subclass
+ * replaces the inherited array wholesale, and the last two tokens cannot be named from outside the
+ * library:
+ *
+ * ```ts
+ * providers: provideForTimePicker(MyTimePicker),
+ * ```
+ *
+ * Wrapping through `hostDirectives: [ForTimePicker]` needs none of this, because a host directive
+ * brings its own providers to the element.
+ */
+export function provideForTimePicker<D = unknown>(root: Type<ForTimePicker<D>>): Provider[] {
+  return [
+    { provide: FOR_TIME_PICKER_CONTEXT, useExisting: root },
+    { provide: FOR_TIME_VALUE_SOURCE, useExisting: root },
+    { provide: FOR_TIME_FIELD_HOST, useExisting: root },
+  ];
 }

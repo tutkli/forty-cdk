@@ -1,4 +1,4 @@
-export { ForTimeField } from './time-field';
+export { ForTimeField, provideForTimeField } from './time-field';
 export { ForTimeFieldSegment } from './time-field-segment';
 export { ForTimeFieldLiteral } from './time-field-literal';
 export {

@@ -50,24 +50,25 @@ export function clampToBounds<D>(
  * native hidden input: `YYYY-MM-DD` at day granularity, `YYYY-MM-DDTHH:mm` at
  * hour / minute granularity, and `YYYY-MM-DDTHH:mm:ss` at second granularity.
  * At any non-day granularity the adapter must be time-capable; a day-only
- * adapter throws via {@link assertTimeCapable} with `piece` in the message.
+ * adapter throws via {@link assertTimeCapable} with `piece` in the message,
+ * reported under `scope`.
  *
  * @typeParam D The adapter's immutable date representation.
  * @param adapter The active date adapter.
  * @param date The value to serialize.
  * @param granularity The serialization granularity.
  * @param piece Name of the calling directive, used in the time-capability error.
- *   That error keeps the `[forty-cdk/core]` prefix rather than taking a `scope`
- *   of its own: a day-only adapter under a time granularity already threw from
- *   `DateFieldEngine.specs` — the derivation that asked for a time segment —
- *   before any value reaches serialization, so this branch is a second line of
- *   defence rather than a report a consumer reads first.
+ * @param options `scope` is the caller's entry point, which the time-capability
+ *   error reports under. It is required because this branch can be the first
+ *   report a consumer reads: a picker in the trigger anatomy has no projected
+ *   field to reject the adapter earlier.
  */
 export function serializeISODate<D>(
   adapter: DateAdapter<D>,
   date: D,
   granularity: DateSerializeGranularity,
   piece: string,
+  options: { readonly scope: string },
 ): string {
   const year = String(adapter.getYear(date)).padStart(4, '0');
   const month = String(adapter.getMonth(date)).padStart(2, '0');
@@ -76,7 +77,7 @@ export function serializeISODate<D>(
   if (granularity === 'day') {
     return isoDate;
   }
-  const time = assertTimeCapable(adapter, piece);
+  const time = assertTimeCapable(adapter, piece, options);
   const hour = String(time.getHours(date)).padStart(2, '0');
   const minute = String(time.getMinutes(date)).padStart(2, '0');
   if (granularity === 'second') {
