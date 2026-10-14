@@ -87,7 +87,7 @@ export class TimeFieldEngine<D> extends DateTimeFieldEngineBase<D, TimeParts, Ti
       if (prior && this.someEditableEmpty(prior)) {
         return prior;
       }
-      return { hour: null, minute: null, second: null, dayPeriod: null };
+      return this.emptyParts();
     },
   });
 
@@ -183,6 +183,10 @@ export class TimeFieldEngine<D> extends DateTimeFieldEngineBase<D, TimeParts, Ti
       second: adapter.getSeconds(value),
       dayPeriod: adapter.getHours(value) >= 12 ? 1 : 0,
     };
+  }
+
+  protected emptyParts(): TimeParts {
+    return { hour: null, minute: null, second: null, dayPeriod: null };
   }
 
   protected wallClockShifts(parts: TimeParts): boolean {

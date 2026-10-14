@@ -1762,6 +1762,21 @@ describe('ForTimePicker', () => {
       expect(start.touched()).toBe(true);
     });
 
+    it('drops a time whose AM/PM is still empty on a form reset (#2232)', async () => {
+      const r = renderHost(TimeFieldAnatomyHost);
+      r.instance.hourCycle.set(12);
+      await r.flush();
+      await typeInto(r, 'hour', '08');
+      await typeInto(r, 'minute', '30');
+      expect(r.instance.model().start).toBeNull();
+
+      r.instance.meeting().reset();
+      await r.flush();
+      expect(at(r, 'hour').textContent?.trim()).toBe('hh');
+      expect(at(r, 'minute').textContent?.trim()).toBe('mm');
+      expect(at(r, 'group').getAttribute('data-empty')).toBe('');
+    });
+
     it('writes a slot pick into the form, dirty, shown in the field, touched once focus leaves', async () => {
       const r = renderHost(TimeFieldAnatomyHost);
       at(r, 'trigger').click();

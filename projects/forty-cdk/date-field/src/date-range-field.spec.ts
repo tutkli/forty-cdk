@@ -831,6 +831,43 @@ describe('ForDateRangeField', () => {
     });
   });
 
+  describe('clear() (#2232)', () => {
+    const field = (r: R) =>
+      r.fixture.debugElement.query(By.directive(ForDateRangeField)).injector.get(ForDateRangeField);
+
+    it('drops a complete start so finishing the end commits nothing', async () => {
+      const r = renderHost(Host);
+      await fill(r, 'start', '06', '10', '2026');
+      await type(r, 'end', 'month', '06');
+      expect(r.instance.value()).toBeNull();
+
+      field(r).clear();
+      await flush(r.fixture);
+      for (const which of ['start', 'end'] as const) {
+        expect(seg(r, which, 'month').textContent?.trim()).toBe('mm');
+        expect(seg(r, which, 'day').textContent?.trim()).toBe('dd');
+        expect(seg(r, which, 'year').textContent?.trim()).toBe('yyyy');
+      }
+
+      await fill(r, 'end', '06', '20', '2026');
+      expect(r.instance.value()).toBeNull();
+      expect(seg(r, 'start', 'day').textContent?.trim()).toBe('dd');
+    });
+
+    it('drops a disordered range and its range error', async () => {
+      const r = renderHost(Host);
+      await fill(r, 'start', '06', '20', '2026');
+      await fill(r, 'end', '06', '10', '2026');
+      expect(root(r).getAttribute('data-range-error')).toBe('');
+
+      field(r).clear();
+      await flush(r.fixture);
+      expect(root(r).getAttribute('data-range-error')).toBeNull();
+      expect(root(r).getAttribute('aria-invalid')).toBeNull();
+      expect(root(r).getAttribute('data-empty')).toBe('');
+    });
+  });
+
   describe('Signal Forms via [formField]', () => {
     interface Booking {
       stay: DateRange<Date> | null;
@@ -854,7 +891,8 @@ describe('ForDateRangeField', () => {
                   forDateRangeFieldSegment
                   [segment]="seg.type!"
                   [attr.data-testid]="'start-' + seg.type"
-                ></span>
+                  >{{ seg.text }}</span
+                >
               }
             }
           </div>
@@ -865,7 +903,8 @@ describe('ForDateRangeField', () => {
                   forDateRangeFieldSegment
                   [segment]="seg.type!"
                   [attr.data-testid]="'end-' + seg.type"
-                ></span>
+                  >{{ seg.text }}</span
+                >
               }
             }
           </div>
@@ -903,6 +942,40 @@ describe('ForDateRangeField', () => {
       const stay = r.instance.model().stay!;
       expect(stay.start.getTime()).toBe(new Date(2026, 5, 10).getTime());
       expect(stay.end.getTime()).toBe(new Date(2026, 5, 20).getTime());
+    });
+
+    it('drops a half-entered range on a form reset (#2232)', async () => {
+      const r = renderHost(FormHost);
+      await fillEndpoint(r, 'start', '06', '10', '2026');
+      for (const digit of '06') pressKey(fseg(r, 'end-month'), digit);
+      await flush(r.fixture);
+      expect(r.instance.model().stay).toBeNull();
+
+      r.instance.booking().reset();
+      await flush(r.fixture);
+      for (const which of ['start', 'end'] as const) {
+        expect(fseg(r, `${which}-month`).textContent?.trim()).toBe('mm');
+        expect(fseg(r, `${which}-day`).textContent?.trim()).toBe('dd');
+        expect(fseg(r, `${which}-year`).textContent?.trim()).toBe('yyyy');
+      }
+      expect(r.query('[forDateRangeField]')!.getAttribute('data-empty')).toBe('');
+
+      await fillEndpoint(r, 'end', '06', '20', '2026');
+      expect(r.instance.model().stay).toBeNull();
+    });
+
+    it('drops a disordered range and its error on a form reset (#2232)', async () => {
+      const r = renderHost(FormHost);
+      await fillEndpoint(r, 'start', '06', '20', '2026');
+      await fillEndpoint(r, 'end', '06', '10', '2026');
+      const field = r.query('[forDateRangeField]')!;
+      expect(field.getAttribute('data-range-error')).toBe('');
+
+      r.instance.booking().reset();
+      await flush(r.fixture);
+      expect(field.getAttribute('data-range-error')).toBeNull();
+      expect(fseg(r, 'start-day').textContent?.trim()).toBe('dd');
+      expect(fseg(r, 'end-day').textContent?.trim()).toBe('dd');
     });
   });
 

@@ -7,14 +7,16 @@ import type { TimeGranularity } from './time-segments';
 
 /**
  * What a segmented field registers with the picker that adopts it: the element
- * the picker names through a surrounding `[forField]`, and the focus entry
- * point the picker's own `focus()` delegates to.
+ * the picker names through a surrounding `[forField]`, and the focus and reset
+ * entry points the picker's own `focus()` / `reset()` delegate to.
  */
 export interface AdoptedField {
   /** The field's `role="group"` host. */
   readonly element: HTMLElement;
   /** Moves focus to the field's first editable segment. */
   focus(options?: FocusOptions): void;
+  /** Discards a partly typed entry and redisplays the picker's value. */
+  reset(): void;
 }
 
 /**

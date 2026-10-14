@@ -107,6 +107,14 @@ export abstract class FormUiControlBase {
   focus?(options?: FocusOptions): void;
 
   /**
+   * Returns the control to its pristine state, mirroring the optional
+   * `FormUiControl.reset` that Signal Forms calls on a form reset. Declared
+   * without an implementation: only a control that can hold a draft its value
+   * cannot represent, such as a partly typed date, has anything to discard.
+   */
+  reset?(): void;
+
+  /**
    * Whether a composite around this control currently stands in for it with a
    * surrounding `[forField]` — a field-anatomy picker adopting its segmented
    * field. While it returns `true` the field neither resolves nor wires this

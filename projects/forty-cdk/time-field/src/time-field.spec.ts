@@ -959,6 +959,37 @@ describe('ForTimeField', () => {
     });
   });
 
+  describe('clear() (#2232)', () => {
+    const field = (r: R) =>
+      r.fixture.debugElement.query(By.directive(ForTimeField)).injector.get(ForTimeField);
+
+    it('empties a time whose AM/PM segment is still empty', async () => {
+      const r = renderHost(Host);
+      r.instance.hourCycle.set(12);
+      await flush(r.fixture);
+      await type(r, 'hour', '08');
+      await type(r, 'minute', '30');
+      expect(r.instance.value()).toBeNull();
+
+      field(r).clear();
+      await flush(r.fixture);
+      expect(seg(r, 'hour').textContent?.trim()).toBe('hh');
+      expect(seg(r, 'minute').textContent?.trim()).toBe('mm');
+      expect(root(r).getAttribute('data-empty')).toBe('');
+    });
+
+    it('sets a complete value to null and empties its segments', async () => {
+      const r = renderHost(Host);
+      r.instance.value.set(new Date(2000, 0, 1, 13, 45));
+      await flush(r.fixture);
+
+      field(r).clear();
+      await flush(r.fixture);
+      expect(r.instance.value()).toBeNull();
+      expect(seg(r, 'hour').textContent?.trim()).toBe('hh');
+    });
+  });
+
   describe('Signal Forms via [formField]', () => {
     interface Booking {
       time: Date | null;
@@ -1011,6 +1042,21 @@ describe('ForTimeField', () => {
       const field = r.query('[forTimeField]')!;
       expect(field.getAttribute('data-required')).toBe('');
       expect(field.hasAttribute('aria-required')).toBe(false);
+    });
+
+    it('drops a partly typed draft on a form reset (#2232)', async () => {
+      const r = renderHost(FormHost);
+      const segOf = (t: string) => r.query(`[data-testid="${t}"]`)!;
+      for (const d of '13') pressKey(segOf('hour'), d);
+      await flush(r.fixture);
+      expect(r.instance.model().time).toBeNull();
+      expect(segOf('hour').textContent?.trim()).toBe('13');
+
+      r.instance.booking().reset();
+      await flush(r.fixture);
+      expect(segOf('hour').textContent?.trim()).toBe('hh');
+      expect(segOf('minute').textContent?.trim()).toBe('mm');
+      expect(r.query('[forTimeField]')!.getAttribute('data-empty')).toBe('');
     });
   });
 

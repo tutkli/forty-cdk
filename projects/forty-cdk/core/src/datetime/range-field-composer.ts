@@ -1,4 +1,11 @@
-import { computed, linkedSignal, type Signal, signal, type WritableSignal } from '@angular/core';
+import {
+  computed,
+  linkedSignal,
+  type Signal,
+  signal,
+  untracked,
+  type WritableSignal,
+} from '@angular/core';
 
 import { type DateRange } from './date-range';
 import type { WritingDirection } from '../keyboard-navigation/keyboard-navigation';
@@ -119,10 +126,11 @@ export class RangeFieldComposer<D> {
    * (the generation advanced since the last computation, because *either*
    * endpoint is mid-edit or the two are out of order) **preserves** the prior
    * endpoint value so a complete endpoint isn't wiped while its sibling is
-   * incomplete; an **external** null (a Signal Forms reset or a consumer
-   * `[(value)]="null"`, where the generation is unchanged) **clears** the
-   * endpoint. Each endpoint reads its own `previous`, so there is no
-   * cross-endpoint race.
+   * incomplete; an **external** null over a non-null range (a Signal Forms
+   * reset or a consumer `[(value)]="null"`, where the generation is unchanged)
+   * **clears** the endpoint. An external null over an internal one changes no
+   * signal, so it reaches the endpoint only through {@link reset}. Each
+   * endpoint reads its own `previous`, so there is no cross-endpoint race.
    */
   readonly startSource = linkedSignal<CommittedRange<D>, D | null>({
     source: this.#committedValue,
@@ -173,6 +181,17 @@ export class RangeFieldComposer<D> {
   }
 
   /**
+   * Re-seeds both endpoint sources from the current `value`, dropping an
+   * endpoint preserved across an internal `null`. The root resets each
+   * endpoint's engine right after, so their segments follow.
+   */
+  reset(): void {
+    const range = untracked(this.#config.value);
+    this.startSource.set(range === null ? null : this.#endpointOf(range, 'start'));
+    this.endSource.set(range === null ? null : this.#endpointOf(range, 'end'));
+  }
+
+  /**
    * Builds the {@link SegmentEditorContext} an endpoint group provides to its
    * segment / literal children: the field-level `effectiveDisabled` / `readonly`
    * / `dir` plus that endpoint's roving tracker, with `engine` as the
@@ -200,14 +219,18 @@ export class RangeFieldComposer<D> {
     which: RangeFieldEndpoint,
   ): D | null {
     if (committed.range !== null) {
-      const endpoint = committed.range[which];
-      return this.#config.normalizeEndpointSource
-        ? this.#config.normalizeEndpointSource(endpoint)
-        : endpoint;
+      return this.#endpointOf(committed.range, which);
     }
     if (previous && committed.generation !== previous.source.generation) {
       return previous.value;
     }
     return null;
+  }
+
+  #endpointOf(range: DateRange<D>, which: RangeFieldEndpoint): D {
+    const endpoint = range[which];
+    return this.#config.normalizeEndpointSource
+      ? this.#config.normalizeEndpointSource(endpoint)
+      : endpoint;
   }
 }

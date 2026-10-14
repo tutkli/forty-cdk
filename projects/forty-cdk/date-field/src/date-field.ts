@@ -257,7 +257,11 @@ export class ForDateField<D>
     const fieldHost = this.#fieldHost;
     if (fieldHost) {
       registerHandle<AdoptedField>(
-        { element: this.#host.nativeElement, focus: (options) => this.focus(options) },
+        {
+          element: this.#host.nativeElement,
+          focus: (options) => this.focus(options),
+          reset: () => this.reset(),
+        },
         (field) => fieldHost.registerField(field),
         (field) => fieldHost.unregisterField(field),
       );
@@ -287,6 +291,33 @@ export class ForDateField<D>
       return;
     }
     this.#engine.focusFirstSegment(options);
+  }
+
+  /**
+   * Discards a partly typed entry and redisplays the current value, every
+   * segment empty when it is `null`. Implements `FormUiControl.reset`, so a
+   * Signal Forms reset clears the segments even when the value was already
+   * `null`.
+   */
+  override reset(): void {
+    this.#engine.reset();
+  }
+
+  /**
+   * Sets the value to `null` and empties every segment, including a partly
+   * typed entry. Writing `null` through `[(value)]` cannot clear an entry the
+   * value already reports as `null`; call this instead. While adopted by a
+   * picker, clears the picker's value, which is ignored while it is read-only
+   * or disabled.
+   */
+  clear(): void {
+    const adopter = this.#adopter();
+    if (adopter) {
+      adopter.commitFieldValue(null);
+    } else {
+      this.value.set(null);
+    }
+    this.#engine.reset();
   }
 
   protected override fieldAdopted(): boolean {
