@@ -54,7 +54,6 @@ import { type ModalShellConfig, type ModalShellHandle } from './modal-shell';
     '[attr.aria-modal]': 'modal() ? "true" : null',
     '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.aria-labelledby]': 'labelledBy()',
-    '[attr.aria-describedby]': 'describedBy()',
     'data-state': 'open',
     tabindex: '-1',
   },

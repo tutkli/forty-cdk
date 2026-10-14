@@ -2,7 +2,10 @@ import { DestroyRef, effect, ElementRef, inject, InjectionToken, type Signal } f
 import type { ValidationError } from '@angular/forms/signals';
 
 import { composedParentElement } from '../composed-tree/composed-tree';
-import { composeIds } from '../host-attributes/host-aria';
+import {
+  contributeDescribedBy,
+  type DescribedByContribution,
+} from '../host-attributes/described-by-owner';
 
 /**
  * A form control's contribution to its surrounding `[forField]`. The control
@@ -201,7 +204,8 @@ function applyAttr(el: HTMLElement, name: string, value: string | null): void {
  *   the target is captured on first wiring and preserved, with the field's own
  *   description / error ids appended after it — so a `aria-describedby="hint"`
  *   is never clobbered, and it is restored verbatim when the control (or the
- *   target) is torn down.
+ *   target) is torn down. Ids another library piece contributes to the same
+ *   element (a tooltip trigger on the control) are kept beside the field's.
  *
  * The wiring target is the host by default, or the handle's
  * {@link FieldControlHandle.labelledElement} when it nominates a distinct
@@ -234,7 +238,7 @@ export function injectFieldWiring(handle: Omit<FieldControlHandle, 'host'> = {})
   let previousTarget: HTMLElement | null = null;
   let ownsId = false;
   let consumerLabelledBy: string | null = null;
-  let consumerDescribedBy: string | null = null;
+  let describedBy: DescribedByContribution | null = null;
   let consumerErrorMessage: string | null = null;
 
   effect(() => {
@@ -248,13 +252,13 @@ export function injectFieldWiring(handle: Omit<FieldControlHandle, 'host'> = {})
       if (previousTarget) {
         clearFieldAttrs(previousTarget, ownsId, field.controlId(), {
           labelledBy: consumerLabelledBy,
-          describedBy: consumerDescribedBy,
           errorMessage: consumerErrorMessage,
         });
+        describedBy?.release();
         ownsId = false;
       }
       consumerLabelledBy = target?.getAttribute('aria-labelledby') || null;
-      consumerDescribedBy = target ? target.getAttribute('aria-describedby') : null;
+      describedBy = target ? contributeDescribedBy(target, () => field.describedBy()) : null;
       consumerErrorMessage = target?.getAttribute('aria-errormessage') || null;
       previousTarget = target;
     }
@@ -268,7 +272,7 @@ export function injectFieldWiring(handle: Omit<FieldControlHandle, 'host'> = {})
       ownsId = true;
     }
     applyAttr(target, 'aria-labelledby', consumerLabelledBy ?? field.labelledBy());
-    applyAttr(target, 'aria-describedby', composeIds(consumerDescribedBy, field.describedBy()));
+    describedBy?.write();
     applyAttr(target, 'aria-errormessage', consumerErrorMessage ?? field.errorMessageId());
   });
 
@@ -276,24 +280,23 @@ export function injectFieldWiring(handle: Omit<FieldControlHandle, 'host'> = {})
     if (previousTarget) {
       clearFieldAttrs(previousTarget, ownsId, field.controlId(), {
         labelledBy: consumerLabelledBy,
-        describedBy: consumerDescribedBy,
         errorMessage: consumerErrorMessage,
       });
     }
+    describedBy?.release();
   });
 }
 
 interface ConsumerAssociation {
   readonly labelledBy: string | null;
-  readonly describedBy: string | null;
   readonly errorMessage: string | null;
 }
 
 /**
- * Restores a previously-targeted element's `aria-labelledby`,
- * `aria-describedby` and `aria-errormessage` to the consumer's captured
- * values (removing each one the consumer never set), and drops the field-owned
- * `id` when this helper set it. Symmetric with the migration-cleanup branch so
+ * Restores a previously-targeted element's `aria-labelledby` and
+ * `aria-errormessage` to the consumer's captured values (removing each one
+ * the consumer never set), and drops the field-owned `id` when this helper set
+ * it. Symmetric with the migration-cleanup branch so
  * an arbitrary foreign `labelledElement` is left clean once the control is
  * destroyed or the target migrates.
  */
@@ -304,7 +307,6 @@ function clearFieldAttrs(
   consumer: ConsumerAssociation,
 ): void {
   applyAttr(target, 'aria-labelledby', consumer.labelledBy);
-  applyAttr(target, 'aria-describedby', consumer.describedBy);
   applyAttr(target, 'aria-errormessage', consumer.errorMessage);
   if (ownsId && target.getAttribute('id') === controlId) {
     target.removeAttribute('id');

@@ -203,7 +203,7 @@ const present = (
   Object.entries(pieces).filter((entry): entry is [string, HTMLElement] => entry[1] !== null);
 
 /**
- * Compose an id-reference list the way `composeIds` in `core/host-attributes/host-aria` does:
+ * Compose an id-reference list the way `composeIds` in `core/host-attributes/described-by-owner` does:
  * consumer ids first, then any library id not already among them.
  */
 function compose(consumer: string, libraryIds: string | null): string {

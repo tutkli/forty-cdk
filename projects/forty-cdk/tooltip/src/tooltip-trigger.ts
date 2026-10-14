@@ -8,9 +8,10 @@ import { type ForTooltipContext, injectTooltipTriggerContext } from './tooltip-c
  * on a focusable element — preferably a `<button>` so keyboard users can reach
  * it. Receives `aria-describedby` only while the tooltip is open, per APG —
  * composed after a consumer-set **static** `aria-describedby`, which is
- * preserved rather than replaced. The hover path is gated by the shared
- * `isNonTouchPointer` predicate, so a pen hovers the tooltip while a touch tap
- * does not.
+ * preserved rather than replaced, and beside the description and error ids of
+ * a surrounding `[forField]` when the trigger is also its control. The hover
+ * path is gated by the shared `isNonTouchPointer` predicate, so a pen hovers
+ * the tooltip while a touch tap does not.
  *
  * Activating the trigger dismisses the tooltip: `pointerdown` schedules an
  * immediate close. The user is acting on the control rather than asking for
@@ -44,7 +45,6 @@ import { type ForTooltipContext, injectTooltipTriggerContext } from './tooltip-c
   exportAs: 'forTooltipTrigger',
   host: {
     '[id]': 'ctx().triggerId()',
-    '[attr.aria-describedby]': 'describedBy()',
     '[attr.data-state]': 'ctx().open() ? "open" : "closed"',
     '(pointerenter)': 'onPointerEnter($event)',
     '(pointerdown)': 'onPointerDown()',
