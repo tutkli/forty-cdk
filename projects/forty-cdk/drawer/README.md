@@ -525,7 +525,7 @@ For a seamless release, transition **both** `translate` and your snap-position p
 
 Opt in to the "viewport recedes behind the drawer" effect: when the drawer opens, the rest of the app shrinks slightly and rounds its corners to read as a layered surface. Two pieces required:
 
-1. Apply `[forDrawerWrapper]` on the element that wraps the rest of the app (typically the root shell). Only one wrapper may be registered at a time.
+1. Apply `[forDrawerWrapper]` on the element that wraps the rest of the app (typically the root shell). Keep one wrapper per page: the most recently mounted one is scaled, and a second one still mounted once the render settles warns in dev mode.
 2. Set `[scaleBackground]="true"` on the drawer that should drive the effect.
 
 ```html

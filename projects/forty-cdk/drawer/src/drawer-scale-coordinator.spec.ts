@@ -186,15 +186,46 @@ describe('ForDrawerScaleCoordinator', () => {
     expect(document.body.style.backgroundColor).toBe('rgb(255, 255, 255)');
   });
 
-  it('throws if a second wrapper is registered while another is alive', async () => {
-    const { coordinator } = await createHost();
+  it('warns in dev mode while a second wrapper stays registered, and scales the newest', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { coordinator, fixture } = await createHost();
     coordinator.registerWrapper(wrapper);
 
     const second = makeWrapper();
     try {
-      expect(() => coordinator.registerWrapper(second)).toThrow(
-        /FORCDK-DRAWER-005: A second \[forDrawerWrapper\] registered/,
+      coordinator.registerWrapper(second);
+      coordinator.registerDrawer(DEFAULT_CONFIG);
+      await flush(fixture);
+
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(String(warn.mock.calls[0]![0])).toMatch(
+        /^\[forty-cdk\/drawer\] FORCDK-CORE-005: A page coordinates a single \[forDrawerWrapper\], but 2 are registered\./,
       );
+      expect(second.style.transform).toContain('scale(0.95)');
+      expect(wrapper.style.transform).toBe('');
+    } finally {
+      second.remove();
+    }
+  });
+
+  it('moves an active scale to the incoming wrapper and restores the outgoing one', async () => {
+    wrapper.style.transform = 'translateZ(0)';
+    const { coordinator, fixture } = await createHost();
+    const cleanupFirst = coordinator.registerWrapper(wrapper);
+    coordinator.registerDrawer(DEFAULT_CONFIG);
+    await flush(fixture);
+    expect(wrapper.style.transform).toContain('scale(0.95)');
+
+    const second = makeWrapper();
+    try {
+      coordinator.registerWrapper(second);
+      cleanupFirst();
+      await flush(fixture);
+
+      expect(wrapper.style.transform).toBe('translateZ(0)');
+      expect(wrapper.style.borderRadius).toBe('');
+      expect(second.style.transform).toContain('scale(0.95)');
+      expect(second.style.borderRadius).toBe('8px');
     } finally {
       second.remove();
     }

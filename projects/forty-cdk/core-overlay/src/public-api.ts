@@ -109,7 +109,7 @@ export {
   injectModalBackdrop,
   type ModalBackdropHandle,
   type ModalBackdropSurface,
-  type ModalSurfacePointerContext,
+  type ModalSurfaceBackdropContext,
 } from './modal-shell/modal-backdrop';
 export { injectModalShell } from './modal-shell/modal-shell';
 export { ModalSurfaceBase } from './modal-shell/modal-surface-base';

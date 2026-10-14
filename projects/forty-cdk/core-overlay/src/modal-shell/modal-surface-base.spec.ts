@@ -2,6 +2,7 @@ import {
   booleanAttribute,
   Component,
   Directive,
+  inject,
   input,
   provideZonelessChangeDetection,
   signal,
@@ -9,7 +10,9 @@ import {
 } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
+import { createSingleSlot } from 'forty-cdk/core';
 import { afterEachOverlayCleanup, flush, renderHost } from '../../../src/test-utils';
+import { injectModalBackdrop, type ModalBackdropSurface } from './modal-backdrop';
 import { injectModalShell } from './modal-shell';
 import { ModalSurfaceBase } from './modal-surface-base';
 
@@ -24,11 +27,39 @@ class TestSurface extends ModalSurfaceBase<TestReason> {
 
   protected readonly entryPoint = 'test-surface';
   protected readonly initialFocusTarget = signal<HTMLElement | null>(null);
+  protected readonly backdropSlot = createSingleSlot<HTMLElement>({
+    primitive: 'test-surface',
+    owner: '[testModalSurface]',
+    claimant: '[testModalBackdrop]',
+  });
 
   constructor() {
     super();
     injectModalShell(this.modalShellConfig());
   }
+}
+
+@Directive({ selector: '[testModalBackdrop]' })
+class TestBackdrop {
+  constructor() {
+    injectModalBackdrop(inject(TestSurface) as unknown as ModalBackdropSurface);
+  }
+}
+
+@Component({
+  imports: [TestSurface, TestBackdrop],
+  template: `
+    <div testModalSurface>
+      <div testModalBackdrop data-testid="first"></div>
+      @if (second()) {
+        <div testModalBackdrop data-testid="second"></div>
+      }
+    </div>
+  `,
+})
+class TwoBackdropsHost {
+  readonly surface = viewChild.required(TestSurface);
+  readonly second = signal(true);
 }
 
 @Component({
@@ -165,16 +196,30 @@ describe('ModalSurfaceBase', () => {
   });
 
   describe('backdrop registry', () => {
-    it("throws under the subclass's own entry point when a second backdrop is registered", async () => {
-      const r = renderHost(SurfaceHost);
+    const backdrop = (id: string): HTMLElement =>
+      document.querySelector<HTMLElement>(`[data-testid="${id}"]`)!;
+
+    it("warns under the subclass's own entry point while two backdrops stay mounted", async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const r = renderHost(TwoBackdropsHost);
       await flush(r.fixture);
 
-      const a = document.createElement('div');
-      const b = document.createElement('div');
-      r.instance.surface()!.registerBackdrop(a);
-      expect(() => r.instance.surface()!.registerBackdrop(b)).toThrow(
-        /\[forty-cdk\/test-surface\] FORCDK-CORE-001: /,
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(String(warn.mock.calls[0]![0])).toMatch(
+        /^\[forty-cdk\/test-surface\] FORCDK-CORE-005: A \[testModalSurface\] coordinates a single \[testModalBackdrop\], but 2 are registered\./,
       );
+      expect(r.instance.surface().backdropElement()).toBe(backdrop('second'));
+    });
+
+    it('falls back to the remaining backdrop when the newest one unmounts', async () => {
+      vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const r = renderHost(TwoBackdropsHost);
+      await flush(r.fixture);
+
+      r.instance.second.set(false);
+      await flush(r.fixture);
+
+      expect(r.instance.surface().backdropElement()).toBe(backdrop('first'));
     });
   });
 

@@ -1,4 +1,11 @@
-import { Component, Directive, signal } from '@angular/core';
+import {
+  Component,
+  Directive,
+  ErrorHandler,
+  provideZonelessChangeDetection,
+  signal,
+} from '@angular/core';
+import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { form, FormField, required as requiredRule } from '@angular/forms/signals';
 
@@ -625,6 +632,75 @@ describe('ForDateRangePicker', () => {
       expect(range.end.getTime()).toBe(new Date(2026, 5, 15).getTime());
       expect(r.query('[forDateRangePicker]')!.hasAttribute('data-touched')).toBe(true);
       expect(r.instance.open()).toBe(false);
+    });
+  });
+
+  describe('a projected calendar in single selection mode', () => {
+    @Component({
+      imports: [ForDateRangePicker, ForDatePickerTrigger, ForDatePickerContent, ...CALENDAR_PIECES],
+      providers: [...provideNativeDateAdapter()],
+      template: `
+        <div forDateRangePicker [(value)]="value" [(open)]="open">
+          <button data-testid="trigger" forDatePickerTrigger>Open</button>
+          @if (open()) {
+            <div forDatePickerContent>
+              <div forCalendar>
+                <table forCalendarGrid #grid="forCalendarGrid">
+                  <tbody>
+                    @for (week of grid.weeks(); track week.key) {
+                      <tr>
+                        @for (c of week.days; track c.key) {
+                          <td forCalendarCell [date]="c.date">{{ c.label }}</td>
+                        }
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          }
+        </div>
+      `,
+    })
+    class SingleCalendarHost {
+      readonly value = signal<DateRange<Date> | null>(null);
+      readonly open = signal(false);
+    }
+
+    it('reports FORCDK-DATE-PICKER-006 once per pick, and nothing on open or close', async () => {
+      const captured: unknown[] = [];
+      class CapturingHandler implements ErrorHandler {
+        handleError(err: unknown): void {
+          captured.push(err);
+        }
+      }
+      TestBed.configureTestingModule({
+        rethrowApplicationErrors: false,
+        providers: [
+          provideZonelessChangeDetection(),
+          { provide: ErrorHandler, useClass: CapturingHandler },
+        ],
+      });
+      const fixture = TestBed.createComponent(SingleCalendarHost);
+      const reported = (): number =>
+        captured.filter((err) => String((err as Error).message).includes('FORCDK-DATE-PICKER-006'))
+          .length;
+
+      for (let round = 0; round < 2; round++) {
+        fixture.componentInstance.open.set(true);
+        await flush(fixture);
+        fixture.componentInstance.open.set(false);
+        await flush(fixture);
+      }
+      expect(reported()).toBe(0);
+
+      fixture.componentInstance.open.set(true);
+      await flush(fixture);
+      document.querySelector<HTMLElement>('[forCalendarCell]:not([data-outside-month])')!.click();
+      await flush(fixture);
+
+      expect(reported()).toBe(1);
+      expect(fixture.componentInstance.value()).toBeNull();
     });
   });
 

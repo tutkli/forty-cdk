@@ -28,7 +28,7 @@ import {
   serializeISODate,
 } from 'forty-cdk/core';
 import { type DateAdapter } from 'forty-cdk/date-adapter';
-import { DatePickerBase } from './date-picker-base';
+import { assertCalendarAdapter, DatePickerBase } from './date-picker-base';
 import {
   FOR_DATE_PICKER_CONTEXT,
   type ForDatePickerAnatomy,
@@ -278,12 +278,12 @@ export class ForDatePicker<D>
       if (!calendar) {
         return;
       }
-      this.assertSameAdapter(calendar);
 
       const sub = calendar.value.subscribe((date) => {
         if (this.readonly() || this.effectiveDisabled()) {
           return;
         }
+        assertCalendarAdapter(calendar, this.adapter as DateAdapter<unknown>);
         const selected = date as D | null;
         // The projected calendar already preserves the time-of-day when it is
         // one-way bound (`[value]`) to a timed value — `selectDate` re-grafts
@@ -330,18 +330,6 @@ export class ForDatePicker<D>
       if (!timeSource) {
         return;
       }
-      if (isDevMode() && timeSource.adapter !== this.adapter) {
-        throw fortyError({
-          code: 'FORCDK-DATE-PICKER-005',
-          message:
-            'The projected time source (ForTimeField / ForTimePicker) uses a different DateAdapter ' +
-            'than the ForDatePicker.',
-          cause:
-            'The picker composes the time source’s value into its own date, so the two must agree ' +
-            'on the date representation.',
-          fix: 'Provide one DateAdapter for both the picker and its time source.',
-        });
-      }
       const sub = timeSource.value.subscribe((value) => {
         if (this.readonly() || this.effectiveDisabled()) {
           return;
@@ -350,6 +338,7 @@ export class ForDatePicker<D>
         if (next === null) {
           return;
         }
+        assertTimeSourceAdapter(timeSource.adapter, this.adapter as DateAdapter<unknown>);
         const day = this.value() ?? this.adapter.today();
         this.value.set(
           clampToBounds(
@@ -439,6 +428,29 @@ export class ForDatePicker<D>
   /** The active adapter, narrowed to a time-capable one; throws when it is day-only. */
   #time() {
     return assertTimeCapable(this.adapter, 'ForDatePicker', { scope: 'date-picker' });
+  }
+}
+
+/**
+ * Dev-mode guard for the time-source bridge, called each time the projected time
+ * source commits a time: throws when it resolved a different `DateAdapter` than
+ * the picker, whose value it is about to be composed into.
+ */
+function assertTimeSourceAdapter(
+  sourceAdapter: DateAdapter<unknown>,
+  adapter: DateAdapter<unknown>,
+): void {
+  if (isDevMode() && sourceAdapter !== adapter) {
+    throw fortyError({
+      code: 'FORCDK-DATE-PICKER-005',
+      message:
+        'The projected time source (ForTimeField / ForTimePicker) uses a different DateAdapter ' +
+        'than the ForDatePicker.',
+      cause:
+        'The picker composes the time source’s value into its own date, so the two must agree ' +
+        'on the date representation.',
+      fix: 'Provide one DateAdapter for both the picker and its time source.',
+    });
   }
 }
 

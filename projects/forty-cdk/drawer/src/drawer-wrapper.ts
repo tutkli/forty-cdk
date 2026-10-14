@@ -12,11 +12,11 @@ import { ForDrawerScaleCoordinator } from './drawer-scale-coordinator';
  * `data-state="scaled"` while the effect is active and `"idle"` at rest
  * — useful for layering CSS styling without re-querying the coordinator.
  *
- * Only one wrapper may be registered at a time; mounting a second
- * `[forDrawerWrapper]` while another is alive throws. Drawers that opt
- * into `scaleBackground` without a registered wrapper are a no-op (no
- * effect applied) so test composition and partial consumer adoption
- * remain safe.
+ * One wrapper per page: the most recently mounted one is scaled, so swapping
+ * two wrappers with sibling `@if` blocks is supported, and a second one still
+ * mounted once the render settles warns in dev mode. Drawers that opt into
+ * `scaleBackground` without a registered wrapper are a no-op (no effect
+ * applied) so test composition and partial consumer adoption remain safe.
  */
 @Directive({
   selector: '[forDrawerWrapper]',

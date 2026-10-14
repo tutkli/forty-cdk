@@ -119,6 +119,12 @@ export class ForDialog extends ModalSurfaceBase<ForDialogCloseReason> implements
 
   protected readonly initialFocusTarget = this.#initialFocusSlot.value;
 
+  protected readonly backdropSlot = createSingleSlot<HTMLElement>({
+    primitive: 'dialog',
+    owner: '[forDialog]',
+    claimant: '[forDialogBackdrop]',
+  });
+
   constructor() {
     // The shared modal-shell handles portal + dismissible layer (with the
     // triple-veto pattern this directive used to implement inline) + modal

@@ -488,7 +488,7 @@ describe('ForDialog (declarative)', () => {
       expect(r.instance.open()).toBe(true);
     });
 
-    it('throws when a second [forDialogBackdrop] is added to the same dialog', () => {
+    it('warns in dev mode while two [forDialogBackdrop] stay mounted in the same dialog', async () => {
       @Component({
         imports: [ForDialog, ForDialogBackdrop],
         template: `
@@ -500,9 +500,13 @@ describe('ForDialog (declarative)', () => {
       })
       class DoubleBackdropHost {}
 
-      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
-      expect(() => TestBed.createComponent(DoubleBackdropHost)).toThrow(
-        /\[forty-cdk\/dialog\] FORCDK-CORE-001: A modal surface registered a second backdrop/,
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const r = renderHost(DoubleBackdropHost);
+      await flush(r.fixture);
+
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(String(warn.mock.calls[0]![0])).toMatch(
+        /^\[forty-cdk\/dialog\] FORCDK-CORE-005: A \[forDialog\] coordinates a single \[forDialogBackdrop\], but 2 are registered\./,
       );
     });
   });

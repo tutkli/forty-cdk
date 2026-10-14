@@ -13,6 +13,8 @@ import { createIdRegistry } from './id-registry';
 type DialogTestingContext = ForDialogContext & {
   registerInitialFocus(el: HTMLElement): void;
   unregisterInitialFocus(el: HTMLElement): void;
+  registerBackdrop(el: HTMLElement): void;
+  unregisterBackdrop(el: HTMLElement): void;
   isTopmostPointerLayer(): boolean;
 };
 
@@ -82,6 +84,7 @@ function createContext(ref: ForDialogRef): DialogTestingContext {
     registerDescription: descriptions.register,
     unregisterDescription: descriptions.unregister,
     registerBackdrop: () => {},
+    unregisterBackdrop: () => {},
     registerInitialFocus: () => {},
     unregisterInitialFocus: () => {},
     isTopmostPointerLayer: () => true,
