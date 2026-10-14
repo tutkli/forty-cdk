@@ -4,8 +4,9 @@ import { injectModalBackdrop } from 'forty-cdk/core-overlay';
 import { FOR_DRAWER_INSTANCE_ID, injectDrawerContext } from './drawer-context';
 
 /**
- * Optional backdrop overlay. Portaled to `document.body` so it sits
- * underneath the drawer regardless of where it's declared. While mounted
+ * Optional backdrop overlay. Portaled to the drawer's `container` —
+ * `document.body` by default — immediately before the drawer, so it paints
+ * beneath it with no `z-index` regardless of where it's declared. While mounted
  * the backdrop is visible; mount/unmount it alongside the drawer with the
  * same `@if` so `animate.enter` / `animate.leave` works on both.
  *

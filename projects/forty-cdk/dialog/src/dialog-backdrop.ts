@@ -5,7 +5,8 @@ import { FOR_DIALOG_INSTANCE_ID, injectDialogContext } from './dialog-context';
 
 /**
  * Optional backdrop overlay. Portaled to the dialog's `container` (the same
- * target the surface uses) — `document.body` by default. While mounted the
+ * target the surface uses) — `document.body` by default — immediately before
+ * the dialog, so it paints beneath it with no `z-index`. While mounted the
  * backdrop is visible; mount/unmount it alongside the dialog with the same
  * `@if` so `animate.enter` / `animate.leave` works on both.
  *

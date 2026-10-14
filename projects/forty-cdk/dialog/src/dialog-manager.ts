@@ -46,16 +46,22 @@ export interface ForDialogOpenConfig<D = unknown> {
   /** Payload available inside the dialog component via `injectDialogData<T>()`. */
   data?: D;
 
-  /** When true (default), Escape closes the dialog. */
+  /** When true (default), Escape, a backdrop click and outside interaction close the dialog. */
   dismissible?: boolean;
 
-  /** When true (default), set `aria-modal`, lock body scroll, trap focus. */
+  /**
+   * When true (default), set `aria-modal`, lock body scroll, trap focus, inert siblings and return
+   * focus on close.
+   */
   modal?: boolean;
 
   /** When true, role becomes `alertdialog` instead of `dialog`. Default `false`. */
   alert?: boolean;
 
-  /** When true (default), focus returns to the previously focused element on close. */
+  /**
+   * When true (default), focus returns to the previously focused element on close. Modal mode
+   * only: a non-modal dialog never moves focus on close.
+   */
   returnFocus?: boolean;
 
   /**
@@ -213,9 +219,9 @@ interface InternalDialogEntry extends ForDialogEntry {
 /**
  * Programmatic dialog opener — open a component as a modal dialog from
  * TypeScript. Inject anywhere, call `open(MyComponent, { data, ... })` and get a
- * `ForDialogRef<R>` back. `animate.leave` on the opened component runs before
- * the node leaves the DOM, identical to the declarative
- * `@if (open()) { <div forDialog animate.leave="…"> }` path.
+ * `ForDialogRef<R>` back. Its exit animation is configured with `animateLeave` for the host and
+ * `backdropAnimateLeave` for a `[forDialogBackdrop]`: a template `animate.leave` inside the opened
+ * component does not run.
  *
  * Inside the opened component the usual dialog pieces work without any extra
  * wiring: `[forDialogTitle]`, `[forDialogDescription]`, `[forDialogBackdrop]`,

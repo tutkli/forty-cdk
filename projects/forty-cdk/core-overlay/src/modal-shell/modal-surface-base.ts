@@ -258,6 +258,10 @@ export abstract class ModalSurfaceBase<Reason extends string> {
     this.#describedByIds.update((arr) => arr.filter((x) => x !== id));
   }
 
+  private surfaceElement(): HTMLElement {
+    return this.#host.nativeElement;
+  }
+
   private registerBackdrop(el: HTMLElement): void {
     this.backdropSlot.register(el);
   }

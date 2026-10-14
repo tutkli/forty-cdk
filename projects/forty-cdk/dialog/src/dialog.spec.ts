@@ -689,6 +689,44 @@ describe('ForDialog (declarative)', () => {
       expect(document.activeElement).not.toBe(trigger);
     });
 
+    it('leaves focus off the trigger on close when modal=false, even with returnFocus=true', async () => {
+      @Component({
+        imports: [ForDialog],
+        template: `
+          <button type="button" data-testid="trigger" (click)="open.set(true)">Open</button>
+          @if (open()) {
+            <div
+              forDialog
+              (dismiss)="open.set(false)"
+              [modal]="false"
+              [returnFocus]="true"
+              ariaLabel="t"
+            >
+              <input data-testid="inside" />
+            </div>
+          }
+        `,
+      })
+      class Host {
+        readonly open = signal(false);
+      }
+
+      const r = renderHost(Host);
+      await flush(r.fixture);
+      const trigger = r.query<HTMLButtonElement>('[data-testid="trigger"]')!;
+      trigger.focus();
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      const inside = document.querySelector<HTMLInputElement>('[data-testid="inside"]')!;
+      inside.focus();
+      expect(document.activeElement).toBe(inside);
+
+      r.instance.open.set(false);
+      await flush(r.fixture);
+
+      expect(document.activeElement).not.toBe(trigger);
+    });
+
     it('focuses the dialog container itself when initialFocus="container"', async () => {
       @Component({
         imports: [ForDialog],

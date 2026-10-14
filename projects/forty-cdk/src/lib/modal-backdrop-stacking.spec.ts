@@ -162,3 +162,76 @@ describe.each(SURFACES)('%s under a layer stacked above its surface (#2132)', (_
     expect(r.instance.parentOpen()).toBe(false);
   });
 });
+
+abstract class OrderHostBase {
+  readonly childOpen = signal(false);
+}
+
+@Component({
+  imports: [ForDialog, ForDialogBackdrop],
+  template: `
+    <div forDialog ariaLabel="Parent" data-testid="parent-surface">
+      <div forDialogBackdrop data-testid="parent-backdrop"></div>
+      @if (childOpen()) {
+        <div forDialog ariaLabel="Child" data-testid="child-surface">
+          <div forDialogBackdrop data-testid="child-backdrop"></div>
+        </div>
+      }
+    </div>
+  `,
+})
+class DialogOrderHost extends OrderHostBase {}
+
+@Component({
+  imports: [ForDrawer, ForDrawerBackdrop],
+  template: `
+    <div forDrawer ariaLabel="Parent" data-testid="parent-surface">
+      <div forDrawerBackdrop data-testid="parent-backdrop"></div>
+      @if (childOpen()) {
+        <div forDrawer ariaLabel="Child" data-testid="child-surface">
+          <div forDrawerBackdrop data-testid="child-backdrop"></div>
+        </div>
+      }
+    </div>
+  `,
+})
+class DrawerOrderHost extends OrderHostBase {}
+
+const ORDER_HOSTS: ReadonlyArray<readonly [string, Type<OrderHostBase>]> = [
+  ['[forDialogBackdrop]', DialogOrderHost],
+  ['[forDrawerBackdrop]', DrawerOrderHost],
+];
+
+describe.each(ORDER_HOSTS)('%s placement in the portal target (#2246)', (_, host) => {
+  afterEachOverlayCleanup();
+
+  const byTestId = (id: string): HTMLElement =>
+    document.querySelector<HTMLElement>(`[data-testid="${id}"]`)!;
+
+  const portaledOrder = (): string[] =>
+    Array.from(document.body.children)
+      .map((el) => el.getAttribute('data-testid'))
+      .filter((id): id is string => id !== null);
+
+  it('lands immediately before its surface, so tree order matches the paint order', async () => {
+    const r = renderHost(host);
+    await flush(r.fixture);
+
+    expect(byTestId('parent-backdrop').nextElementSibling).toBe(byTestId('parent-surface'));
+    expect(portaledOrder()).toEqual(['parent-backdrop', 'parent-surface']);
+  });
+
+  it('keeps each backdrop of a stacked pair directly below its own surface', async () => {
+    const r = renderHost(host);
+    await flush(r.fixture);
+    r.instance.childOpen.set(true);
+    await flush(r.fixture);
+
+    expect(portaledOrder()).toEqual([
+      'parent-backdrop',
+      'parent-surface',
+      'child-backdrop',
+      'child-surface',
+    ]);
+  });
+});

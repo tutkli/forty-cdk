@@ -21,11 +21,17 @@ import { provideDefaults } from './defaults';
  * always wins. This asymmetry is shared with `ForDrawerDefaults`.
  */
 export interface ForDialogDefaults {
-  /** Default `true`. Sets `aria-modal`, locks body scroll, traps focus. */
+  /**
+   * Default `true`. Sets `aria-modal`, locks body scroll, traps focus, inerts siblings and returns
+   * focus on close.
+   */
   modal?: boolean;
   /** Default `true`. Whether Escape / backdrop / outside close the dialog. */
   dismissible?: boolean;
-  /** Default `true`. Restore focus to the previously focused element on close. */
+  /**
+   * Default `true`. Restore focus to the previously focused element on close. Modal mode only: a
+   * non-modal surface never moves focus on close.
+   */
   returnFocus?: boolean;
   /** Default `'first'`. Where to send focus on mount. */
   initialFocus?: 'first' | 'container';

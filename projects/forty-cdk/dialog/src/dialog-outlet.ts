@@ -112,8 +112,9 @@ export class ForDialogSurface {
 /**
  * @internal Outlet component created once by `ForDialogManager` on the first
  * `open()` call. Renders every live entry from the manager's entries signal
- * with `@for`, so Angular's control-flow unmount triggers `animate.leave` on
- * close — identical to the declarative `@if (open()) { <div forDialog …> }` path.
+ * with `@for`. Angular does not run leave animations across the
+ * `ngComponentOutlet`, so a template `animate.leave` inside the opened component
+ * never fires; the manager's `beginLeave` drives the exit animation instead.
  *
  * Constructed exclusively by `ForDialogManager`. Not exported from
  * `public-api.ts`.

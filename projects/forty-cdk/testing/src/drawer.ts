@@ -19,6 +19,7 @@ type DrawerTestingContext = ForDrawerContext & {
   registerBackdrop(el: HTMLElement): void;
   unregisterBackdrop(el: HTMLElement): void;
   isTopmostPointerLayer(): boolean;
+  surfaceElement(): HTMLElement | null;
 };
 
 /** Options accepted by {@link provideForDrawerTesting}. */
@@ -104,6 +105,7 @@ function createContext(ref: ForDrawerRef, document: Document): DrawerTestingCont
     registerInitialFocus: () => {},
     unregisterInitialFocus: () => {},
     isTopmostPointerLayer: () => true,
+    surfaceElement: () => null,
     requestClose: (reason: ForDrawerCloseReason, value?: unknown) => ref.close(value, reason),
   };
 }
