@@ -19,11 +19,13 @@ export interface TreeLiftContext<T = unknown> {
 }
 
 /**
- * Builds the flat, DOM-ordered rows the drop resolver works on, EXCLUDING the lifted node
- * (whose subtree is collapsed during the drag). Reads each row's live viewport rect.
+ * Builds the flat, DOM-ordered rows the drop resolver works on, EXCLUDING the lifted node and
+ * every visible descendant of it, however its subtree came to be expanded during the drag.
+ * Reads each row's live viewport rect.
  *
  * @param visible The tree's currently visible nodes, in DOM order.
- * @param liftedValue The value of the node being dragged, filtered out of the result.
+ * @param liftedValue The value of the node being dragged, filtered out of the result with its
+ * descendants.
  * @param equals The tree's node-value comparator.
  */
 export function buildTreeDropRows<T>(
@@ -31,8 +33,17 @@ export function buildTreeDropRows<T>(
   liftedValue: T | null,
   equals: (a: T, b: T) => boolean,
 ): TreeDropRow<T>[] {
+  const excluded = new Set<HTMLElement>();
   return visible
-    .filter((e) => liftedValue === null || !equals(e.handle.value(), liftedValue))
+    .filter((e) => {
+      const lifted =
+        (liftedValue !== null && equals(e.handle.value(), liftedValue)) ||
+        (e.parentHost !== null && excluded.has(e.parentHost));
+      if (lifted) {
+        excluded.add(e.handle.host);
+      }
+      return !lifted;
+    })
     .map((e) => {
       const rect = e.handle.host.getBoundingClientRect();
       return {

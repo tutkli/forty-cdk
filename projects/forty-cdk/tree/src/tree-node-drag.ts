@@ -26,7 +26,7 @@ import {
   createPointerDragSession,
   type PointerDragSession,
 } from 'forty-cdk/core';
-import { resolveTreeDragLiftedAction } from './tree-drag-keys';
+import { isLiftedPassthroughKey, resolveTreeDragLiftedAction } from './tree-drag-keys';
 import {
   gapFromPointerY,
   levelFromPointerX,
@@ -82,10 +82,12 @@ type DragMode = 'idle' | 'keyboard' | 'pointer';
  * enable reordering and re-parenting of tree nodes by pointer and keyboard.
  *
  * Keyboard: focus a node, then press Ctrl+Space (or Cmd+Space) to lift. While lifted, ArrowUp/Down
- * move the sibling position, ArrowRight/Left change depth, Space/Enter drops, Escape cancels.
+ * move the sibling position, Home/End jump to the first / last position, ArrowRight/Left change
+ * depth, Space/Enter drops, Escape cancels. Every other key is consumed until the drag ends,
+ * except Ctrl / Cmd / Alt chords and function keys.
  *
  * Pointer: drag any enabled item to a new position; an optional `[forTreeNodeDragHandle]` on an
- * item constrains the grab area.
+ * item constrains the grab area. Escape cancels the drag.
  *
  * The `(nodeDrop)` output fires once per committed move. Apply `moveTreeNode` in the handler to
  * update the consumer's data. Provide a `[canDrop]` function to veto specific moves.
@@ -133,10 +135,10 @@ export class ForTreeNodeDrag<T = string> implements ForTreeNodeDragContext {
   /**
    * Emitted once per committed move. Apply `moveTreeNode` in the handler to update your data.
    *
-   * After a **keyboard** drop made while focus was on the lifted node, focus follows the node
-   * once the next render settles: onto the node in its new place, or onto its new parent when
-   * that parent is collapsed. Focus something else inside this handler to keep it; pointer
-   * drops never move focus.
+   * After a drop made while focus was on the lifted node, by keyboard or by pointer, focus
+   * follows the node once the next render settles: onto the node in its new place, or onto its
+   * new parent when that parent is collapsed. Focus something else inside this handler to keep
+   * it. A drop made while focus was elsewhere never moves focus.
    */
   readonly nodeDrop = output<ForTreeDragDropEvent<T>>();
 
@@ -185,6 +187,8 @@ export class ForTreeNodeDrag<T = string> implements ForTreeNodeDragContext {
       host: this.#hostEl,
       document: this.#document,
       armThreshold: POINTER_ARM_THRESHOLD_PX,
+      cancelOnEscape: true,
+      capturePointer: true,
       canStart: (event) => this.#canStartPointer(event),
       onLift: (event) => this.#onPointerLift(event),
       onMove: (event) => this.#onPointerMove(event),
@@ -228,11 +232,14 @@ export class ForTreeNodeDrag<T = string> implements ForTreeNodeDragContext {
 
   #handleLiftedKeydown(event: KeyboardEvent): void {
     const action = resolveTreeDragLiftedAction(event, this.#ctx.dir());
-    if (action === null) {
+    if (action === null && isLiftedPassthroughKey(event)) {
       return;
     }
     event.preventDefault();
     event.stopPropagation();
+    if (action === null) {
+      return;
+    }
 
     if (action === 'cancel') {
       this.#cancelSession(true);
@@ -244,13 +251,17 @@ export class ForTreeNodeDrag<T = string> implements ForTreeNodeDragContext {
     }
 
     const visible = this.#ctx.visibleNodes();
-    if (action === 'down') {
-      this.#gapIndex = Math.min(
-        this.#gapIndex + 1,
-        buildTreeDropRows(visible, this.#liftedValue, this.#ctx.compareWith()).length,
-      );
+    if (action === 'down' || action === 'last') {
+      const rowCount = buildTreeDropRows(
+        visible,
+        this.#liftedValue,
+        this.#ctx.compareWith(),
+      ).length;
+      this.#gapIndex = action === 'last' ? rowCount : Math.min(this.#gapIndex + 1, rowCount);
     } else if (action === 'up') {
       this.#gapIndex = Math.max(this.#gapIndex - 1, 0);
+    } else if (action === 'first') {
+      this.#gapIndex = 0;
     } else if (action === 'deepen') {
       this.#desiredLevel++;
     } else {
@@ -434,7 +445,7 @@ export class ForTreeNodeDrag<T = string> implements ForTreeNodeDragContext {
     }
 
     this.#restoreExpansion();
-    if (this.#mode === 'keyboard' && this.#liftedHost !== null) {
+    if (this.#liftedHost !== null) {
       this.#followDroppedNode(this.#liftedHost, event.node, event.newParent);
     }
     this.nodeDrop.emit(event);
