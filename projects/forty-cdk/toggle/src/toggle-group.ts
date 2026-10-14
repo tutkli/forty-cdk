@@ -20,6 +20,7 @@ import {
   type WritingDirection,
   RovingTabindex,
   injectTextDirection,
+  isUnset,
 } from 'forty-cdk/core';
 import { FOR_TOGGLE_DEFAULTS } from 'forty-cdk/defaults';
 import {
@@ -154,7 +155,8 @@ export class ForToggleGroup
       return null;
     }
     for (const item of this.#items.items()) {
-      if (!item.disabled() && selected.includes(item.value())) {
+      const value = item.value();
+      if (!isUnset(value) && !item.disabled() && selected.includes(value)) {
         return item.host;
       }
     }
@@ -194,7 +196,7 @@ export class ForToggleGroup
   }
 
   toggle(v: string): void {
-    if (this.effectiveDisabled() || this.readonly()) {
+    if (this.effectiveDisabled() || this.readonly() || isUnset(v)) {
       return;
     }
     const current = this.value();

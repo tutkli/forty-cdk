@@ -1,9 +1,12 @@
 import { booleanAttribute, computed, Directive, ElementRef, inject, input } from '@angular/core';
 
 import {
+  assertInputBound,
   hostButtonType,
+  isUnset,
   navigateFromRovingItem,
   registerHandle,
+  unsetInput,
   FOR_HOST_ROVING_CONTEXT,
 } from 'forty-cdk/core';
 import { injectToggleGroupContext } from './toggle-group-context';
@@ -49,13 +52,19 @@ export class ForToggleGroupItem {
   readonly #rovingHost = inject(FOR_HOST_ROVING_CONTEXT, { optional: true, skipSelf: true });
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
-  /** Identifier added to / removed from the group's `value`. Required. */
-  readonly value = input.required<string>();
+  /**
+   * Identifier added to / removed from the group's `value`. Mandatory — an unbound item throws in
+   * dev mode.
+   */
+  readonly value = input(unsetInput<string>());
 
   /** Per-item disabled (in addition to the group's `disabled`). */
   readonly disabled = input(false, { transform: booleanAttribute });
 
-  readonly pressed = computed(() => this.group.isSelected(this.value()));
+  readonly pressed = computed(() => {
+    const value = this.value();
+    return isUnset(value) ? false : this.group.isSelected(value);
+  });
 
   readonly effectiveDisabled = computed(
     () =>
@@ -81,6 +90,7 @@ export class ForToggleGroupItem {
   });
 
   constructor() {
+    assertInputBound(this.value, 'toggle', '[forToggleGroupItem]', 'value');
     const groupHandle = {
       host: this.#host.nativeElement,
       value: this.value,
@@ -107,10 +117,11 @@ export class ForToggleGroupItem {
   }
 
   protected onClick(): void {
-    if (this.effectiveDisabled()) {
+    const value = this.value();
+    if (this.effectiveDisabled() || isUnset(value)) {
       return;
     }
-    this.group.toggle(this.value());
+    this.group.toggle(value);
   }
 
   protected onFocus(): void {
