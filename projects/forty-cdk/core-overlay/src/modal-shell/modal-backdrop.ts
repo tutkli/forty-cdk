@@ -3,23 +3,29 @@ import { DestroyRef, ElementRef, inject, type Signal } from '@angular/core';
 import { injectPortal } from 'forty-cdk/core';
 
 /**
- * The member a modal surface's internal context adds for its backdrop piece. `ForDialog` and
- * `ForDrawer` implement it through `ModalSurfaceBase`.
+ * The members a modal surface's internal context adds for its backdrop piece. `ForDialog` and
+ * `ForDrawer` implement them through `ModalSurfaceBase`.
  */
-export interface ModalSurfacePointerContext {
+export interface ModalSurfaceBackdropContext {
   /**
    * Whether the surface is the topmost layer owning the pointer channel, so a press on its
    * backdrop is not an outside press of a layer stacked above it.
    */
   isTopmostPointerLayer(): boolean;
+  /**
+   * Registers the backdrop as part of the surface, so the dismissible layer treats a press on it
+   * as inside. The newest registration is the surface's backdrop, and a second one still mounted
+   * once the render settles warns in dev mode.
+   */
+  registerBackdrop(el: HTMLElement): void;
+  /** Removes a registered backdrop, leaving any newer registration in place. */
+  unregisterBackdrop(el: HTMLElement): void;
 }
 
 /** What a backdrop piece reads off the modal surface that owns it. */
-export interface ModalBackdropSurface extends ModalSurfacePointerContext {
+export interface ModalBackdropSurface extends ModalSurfaceBackdropContext {
   /** Portal target shared with the surface. `null` ⇒ `document.body`. */
   readonly container: Signal<HTMLElement | null>;
-  /** Registers the backdrop as part of the surface, or unregisters it with `null`. */
-  registerBackdrop(el: HTMLElement | null): void;
   /** Asks the surface to close with reason `'backdrop'`, gated on its `dismissible()`. */
   requestClose(reason: 'backdrop'): void;
 }
@@ -49,7 +55,7 @@ export function injectModalBackdrop(surface: ModalBackdropSurface): ModalBackdro
   const host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   injectPortal({ target: surface.container });
   surface.registerBackdrop(host);
-  inject(DestroyRef).onDestroy(() => surface.registerBackdrop(null));
+  inject(DestroyRef).onDestroy(() => surface.unregisterBackdrop(host));
 
   let pressOwned: boolean | null = null;
   return {

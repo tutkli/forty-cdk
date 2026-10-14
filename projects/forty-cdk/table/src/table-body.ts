@@ -29,7 +29,7 @@ import {
   type TableDefRegistry,
 } from './def-registry';
 import { eventFromInteractiveDescendant } from './interactive-descendant';
-import { type ForTableRowDef } from './row-def';
+import { assertRowDefConfig, type ForTableRowDef } from './row-def';
 import { ForTableCell } from './table-cell';
 import { ForTableColumnReorder, type TableColumnReorderDescriptor } from './table-column-reorder';
 import { ForTableColumnResizer, type TableResizeDescriptor } from './table-column-resizer';
@@ -669,7 +669,7 @@ export class ForTableBody<T = unknown> {
     const key = this.rowKey();
     const variants = this.rowDefs();
     for (const def of variants) {
-      this.#assertRowDefConfig(def);
+      assertRowDefConfig(def);
     }
     const matchVariant = (datum: T, index: number): ForTableRowDef<unknown> | null =>
       variants.find((def) => def.when()(datum, index)) ?? null;
@@ -708,22 +708,6 @@ export class ForTableBody<T = unknown> {
       };
     });
   });
-
-  /**
-   * Enforces that each `[forTableRowDef]` declares exactly one of
-   * `[forTableRowCellDef]` / `placeholderCells`.
-   */
-  #assertRowDefConfig(def: ForTableRowDef<unknown>): void {
-    const hasCell = def.cell() != null;
-    const hasPlaceholder = def.placeholderCells();
-    if (hasCell === hasPlaceholder) {
-      throw fortyError({
-        code: 'FORCDK-TABLE-005',
-        message: `A [forTableRowDef] declares ${hasCell ? 'both' : 'neither'} of a [forTableRowCellDef] template and the placeholderCells flag.`,
-        fix: 'Declare exactly one of the two on every [forTableRowDef].',
-      });
-    }
-  }
 
   /** Full scroll height (px) applied to the rowgroup when virtualized, else `null` (natural height). */
   protected readonly sizerHeight = computed<number | null>(() => {

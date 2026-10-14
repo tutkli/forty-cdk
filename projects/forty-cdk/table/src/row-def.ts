@@ -4,10 +4,11 @@ import {
   Directive,
   inject,
   input,
+  isDevMode,
   TemplateRef,
 } from '@angular/core';
 
-import { assertInputBound, unsetInput } from 'forty-cdk/core';
+import { assertInputBound, fortyError, unsetInput } from 'forty-cdk/core';
 
 import { type ForTableCellDefContext } from './column-def';
 import { registerTableRowDef } from './def-registry';
@@ -144,12 +145,39 @@ export class ForTableRowDef<T> {
    *
    * A def must declare **exactly one** of a `[forTableRowCellDef]` template or
    * `placeholderCells`; declaring both or neither throws a `[forty-cdk/table]`
-   * error.
+   * error in dev mode.
    */
   readonly placeholderCells = input(false, { transform: booleanAttribute });
 
   constructor() {
     assertInputBound(this.when, 'table', '[forTableRowDef]', 'when');
     registerTableRowDef(this);
+  }
+}
+
+/**
+ * Dev-mode guard for one row variant's config: a `[forTableRowDef]` declares
+ * exactly one of a `[forTableRowCellDef]` template or `placeholderCells`.
+ *
+ * Called from `ForTableBody`'s row derivation, the point at which a variant is
+ * matched against the data, so no reactive node is created per def in a
+ * production build. A production build skips it: the variant row then renders
+ * its placeholder cells when the flag is set, and an empty spanning cell when
+ * neither is declared.
+ *
+ * @param def The row definition to check.
+ */
+export function assertRowDefConfig(def: ForTableRowDef<unknown>): void {
+  if (!isDevMode()) {
+    return;
+  }
+  const hasCell = def.cell() != null;
+  const hasPlaceholder = def.placeholderCells();
+  if (hasCell === hasPlaceholder) {
+    throw fortyError({
+      code: 'FORCDK-TABLE-005',
+      message: `A [forTableRowDef] declares ${hasCell ? 'both' : 'neither'} of a [forTableRowCellDef] template and the placeholderCells flag.`,
+      fix: 'Declare exactly one of the two on every [forTableRowDef].',
+    });
   }
 }

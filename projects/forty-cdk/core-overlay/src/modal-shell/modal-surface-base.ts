@@ -1,10 +1,18 @@
-import { booleanAttribute, Directive, input, output, signal, type Signal } from '@angular/core';
+import {
+  booleanAttribute,
+  computed,
+  Directive,
+  input,
+  output,
+  signal,
+  type Signal,
+} from '@angular/core';
 
 import {
-  fortyError,
   hostAriaLabel,
   hostDescribedBy,
   hostLabelledBy,
+  type SingleSlot,
   type VetoableEvent,
   type VetoableNativeEvent,
 } from 'forty-cdk/core';
@@ -18,10 +26,9 @@ import { type ModalShellConfig, type ModalShellHandle } from './modal-shell';
  * sheet / command palette can too.
  *
  * The base owns everything the two surfaces used to duplicate verbatim: the
- * `aria-labelledby` / `aria-describedby` registry, the single-backdrop registry
- * (with the duplicate-registration throw), the `requestClose` dismissible
- * gating, the `lastCloseValue` bridge read by the programmatic managers, the
- * seven shared ARIA / state host bindings (`role`, `aria-modal`, `aria-label`,
+ * `aria-labelledby` / `aria-describedby` registry, the backdrop registration,
+ * the `requestClose` dismissible gating, the `lastCloseValue` bridge read by
+ * the programmatic managers, the seven shared ARIA / state host bindings (`role`, `aria-modal`, `aria-label`,
  * `aria-labelledby`, `aria-describedby`, `data-state="open"`, `tabindex="-1"`),
  * the non-defaults inputs and dismiss outputs, and the {@link modalShellConfig}
  * factory. Anything primitive-specific (Drawer's drag / snap / scale / stack,
@@ -161,6 +168,12 @@ export abstract class ModalSurfaceBase<Reason extends string> {
   protected abstract readonly initialFocusTarget: Signal<HTMLElement | null>;
 
   /**
+   * The slot the primitive's backdrop piece registers into. Implemented by the subclass, so the
+   * dev-mode duplicate warning names the primitive's own surface and backdrop selectors.
+   */
+  protected abstract readonly backdropSlot: SingleSlot<HTMLElement>;
+
+  /**
    * Emitted when the surface wants to close. Consumers wire this to flip the
    * signal that gates the surrounding `@if`. The reason union is
    * primitive-specific.
@@ -197,7 +210,6 @@ export abstract class ModalSurfaceBase<Reason extends string> {
 
   readonly #labelIds = signal<readonly string[]>([]);
   readonly #describedByIds = signal<readonly string[]>([]);
-  readonly #backdropEl = signal<HTMLElement | null>(null);
   readonly #lastCloseValue = signal<unknown>(undefined);
   #shell: ModalShellHandle | null = null;
 
@@ -240,22 +252,12 @@ export abstract class ModalSurfaceBase<Reason extends string> {
     this.#describedByIds.update((arr) => arr.filter((x) => x !== id));
   }
 
-  /**
-   * Register the backdrop element so the dismissible layer treats it as part
-   * of the surface (`exemptElements`). Throws when a second backdrop is
-   * registered on the same surface. Pass `null` to unregister.
-   */
-  registerBackdrop(el: HTMLElement | null): void {
-    const current = this.#backdropEl();
-    if (el !== null && current !== null && current !== el) {
-      throw fortyError({
-        code: 'FORCDK-CORE-001',
-        scope: this.entryPoint,
-        message: 'A modal surface registered a second backdrop; only one is allowed.',
-        fix: 'Keep a single backdrop element inside the surface.',
-      });
-    }
-    this.#backdropEl.set(el);
+  private registerBackdrop(el: HTMLElement): void {
+    this.backdropSlot.register(el);
+  }
+
+  private unregisterBackdrop(el: HTMLElement): void {
+    this.backdropSlot.unregister(el);
   }
 
   /**
@@ -286,7 +288,7 @@ export abstract class ModalSurfaceBase<Reason extends string> {
    * Part of the internal composition surface with no semver guarantee;
    * declarative consumers never need this.
    */
-  readonly backdropElement = this.#backdropEl.asReadonly();
+  readonly backdropElement = computed(() => this.backdropSlot.value());
 
   /**
    * Keeps the handle the subclass's `injectModalShell(this.modalShellConfig())` call returned, which
@@ -323,7 +325,7 @@ export abstract class ModalSurfaceBase<Reason extends string> {
         emitFocusOutside: (veto) => this.focusOutside.emit(veto),
         emitInteractOutside: (veto) => this.interactOutside.emit(veto),
         exemptElements: () => {
-          const backdrop = this.#backdropEl();
+          const backdrop = this.backdropSlot.value();
           return backdrop ? [backdrop] : [];
         },
       },

@@ -1636,6 +1636,97 @@ describe('ForDatePicker', () => {
       expect(adapter.getDate(value)).toBe(15);
       expect(adapter.getMinutes(value)).toBe(30);
     });
+
+    @Directive({
+      selector: '[myForeignTimeField]',
+      exportAs: 'myForeignTimeField',
+      providers: [
+        { provide: FOR_TIME_FIELD_CONTEXT, useExisting: MyForeignTimeField },
+        { provide: FOR_TIME_VALUE_SOURCE, useExisting: MyForeignTimeField },
+        ...provideNativeDateAdapter(),
+      ],
+    })
+    class MyForeignTimeField extends ForTimeField<Date> {}
+
+    @Component({
+      imports: [
+        ForDatePicker,
+        ForDatePickerContent,
+        MyForeignTimeField,
+        ForTimeFieldSegment,
+        ForTimeFieldLiteral,
+      ],
+      providers: [...provideNativeDateAdapter()],
+      template: `
+        <div forDatePicker [(value)]="value" [(open)]="open" granularity="minute" [hourCycle]="24">
+          @if (open()) {
+            <div forDatePickerContent>
+              <div
+                myForeignTimeField
+                [value]="value()"
+                [hourCycle]="24"
+                [locale]="'en-US'"
+                #tf="myForeignTimeField"
+              >
+                @for (seg of tf.segments(); track seg.id) {
+                  @if (seg.isLiteral) {
+                    <span forTimeFieldLiteral>{{ seg.text }}</span>
+                  } @else {
+                    <span
+                      forTimeFieldSegment
+                      [segment]="seg.type!"
+                      [attr.data-testid]="'time-' + seg.type"
+                      >{{ seg.text }}</span
+                    >
+                  }
+                }
+              </div>
+            </div>
+          }
+        </div>
+      `,
+    })
+    class ForeignAdapterHost {
+      readonly value = signal<Date | null>(null);
+      readonly open = signal(false);
+    }
+
+    it('reports FORCDK-DATE-PICKER-005 on a time commit from a source on a different adapter', async () => {
+      const captured: unknown[] = [];
+      class CapturingHandler implements ErrorHandler {
+        handleError(err: unknown): void {
+          captured.push(err);
+        }
+      }
+      TestBed.configureTestingModule({
+        rethrowApplicationErrors: false,
+        providers: [
+          provideZonelessChangeDetection(),
+          { provide: ErrorHandler, useClass: CapturingHandler },
+        ],
+      });
+      const fixture = TestBed.createComponent(ForeignAdapterHost);
+      const reported = (): number =>
+        captured.filter((err) => String((err as Error).message).includes('FORCDK-DATE-PICKER-005'))
+          .length;
+      fixture.componentInstance.value.set(new Date(2026, 5, 15, 14, 30));
+
+      for (let round = 0; round < 2; round++) {
+        fixture.componentInstance.open.set(true);
+        await flush(fixture);
+        fixture.componentInstance.open.set(false);
+        await flush(fixture);
+      }
+      expect(reported()).toBe(0);
+
+      fixture.componentInstance.open.set(true);
+      await flush(fixture);
+      pressKey(document.querySelector<HTMLElement>('[data-testid="time-hour"]')!, 'ArrowUp');
+      await flush(fixture);
+
+      expect(reported()).toBe(1);
+      expect(adapter.getHours(fixture.componentInstance.value()!)).toBe(14);
+    });
   });
 
   describe('calendar bridge resolves a wrapped calendar', () => {
@@ -1787,7 +1878,7 @@ describe('ForDatePicker', () => {
       });
     }
 
-    it('reports FORCDK-DATE-PICKER-001 for a subclassed calendar on a different adapter', async () => {
+    it('reports FORCDK-DATE-PICKER-001 on a pick from a subclassed calendar on a different adapter', async () => {
       const captured: unknown[] = [];
       class CapturingHandler implements ErrorHandler {
         handleError(err: unknown): void {
@@ -1802,17 +1893,18 @@ describe('ForDatePicker', () => {
         ],
       });
       const fixture = TestBed.createComponent(WrappedCalendarHost);
+      const reported = (): number =>
+        captured.filter((err) => (err as Error).message.includes('FORCDK-DATE-PICKER-001')).length;
       fixture.componentInstance.wrapper.set('foreignAdapter');
       fixture.componentInstance.open.set(true);
-      try {
-        await flush(fixture);
-      } catch (err) {
-        captured.push(err);
-      }
+      await flush(fixture);
+      expect(reported()).toBe(0);
 
-      expect(captured.map((err) => (err as Error).message).join('\n')).toContain(
-        'FORCDK-DATE-PICKER-001',
-      );
+      document.querySelector<HTMLElement>('[forCalendarCell]:not([data-outside-month])')!.click();
+      await flush(fixture);
+
+      expect(reported()).toBe(1);
+      expect(fixture.componentInstance.value()).toBeNull();
     });
   });
 

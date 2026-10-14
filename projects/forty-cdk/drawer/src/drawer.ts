@@ -14,12 +14,7 @@ import {
   type Signal,
 } from '@angular/core';
 
-import {
-  createSingleSlot,
-  fortyError,
-  FOR_FIELD_ANCHOR_CONTEXT,
-  FOR_FIELD_CONTEXT,
-} from 'forty-cdk/core';
+import { createSingleSlot, FOR_FIELD_ANCHOR_CONTEXT, FOR_FIELD_CONTEXT } from 'forty-cdk/core';
 import {
   type DrawerStackHandle,
   ForDrawerStack,
@@ -96,6 +91,12 @@ export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements
   });
 
   protected readonly initialFocusTarget = this.#initialFocusSlot.value;
+
+  protected readonly backdropSlot = createSingleSlot<HTMLElement>({
+    primitive: 'drawer',
+    owner: '[forDrawer]',
+    claimant: '[forDrawerBackdrop]',
+  });
 
   /**
    * Edge the drawer is anchored to. Default `'bottom'` — the most common
@@ -229,7 +230,11 @@ export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements
   readonly swipeCancel = output<ForDrawerSwipeEvent>();
 
   // ---- Internal reactive state ----
-  readonly #handleEl = signal<HTMLElement | null>(null);
+  readonly #handleSlot = createSingleSlot<HTMLElement>({
+    primitive: 'drawer',
+    owner: '[forDrawer]',
+    claimant: '[forDrawerHandle]',
+  });
 
   readonly activeSnapPointAttr = computed<string | null>(() => {
     const v = this.activeSnapPoint();
@@ -268,7 +273,7 @@ export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements
     dismissible: this.dismissible,
     fadeFromIndex: this.fadeFromIndex,
     activeSnapPoint: this.activeSnapPoint,
-    handleEl: this.#handleEl.asReadonly(),
+    handleEl: this.#handleSlot.value,
     emitSwipeStart: (event) => this.swipeStart.emit(event),
     emitSwipeMove: (event) => this.swipeMove.emit(event),
     emitSwipeEnd: (event) => this.swipeEnd.emit(event),
@@ -478,16 +483,12 @@ export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements
 
   // ---- Context implementation ----
 
-  registerHandle(el: HTMLElement | null): void {
-    const current = this.#handleEl();
-    if (el !== null && current !== null && current !== el) {
-      throw fortyError({
-        code: 'FORCDK-DRAWER-006',
-        message: 'A [forDrawer] registered a second [forDrawerHandle]; only one is allowed.',
-        fix: 'Keep a single [forDrawerHandle] per [forDrawer].',
-      });
-    }
-    this.#handleEl.set(el);
+  private registerHandle(el: HTMLElement): void {
+    this.#handleSlot.register(el);
+  }
+
+  private unregisterHandle(el: HTMLElement): void {
+    this.#handleSlot.unregister(el);
   }
 
   private registerInitialFocus(el: HTMLElement): void {

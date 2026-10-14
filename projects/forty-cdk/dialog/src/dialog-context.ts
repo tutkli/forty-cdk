@@ -1,7 +1,7 @@
 import { inject, InjectionToken, type Signal } from '@angular/core';
 
 import { assertRootContext, orphanContextError } from 'forty-cdk/core';
-import { type ModalSurfacePointerContext } from 'forty-cdk/core-overlay';
+import { type ModalSurfaceBackdropContext } from 'forty-cdk/core-overlay';
 
 export type ForDialogCloseReason =
   | 'escape'
@@ -48,20 +48,6 @@ export interface ForDialogContext {
   unregisterDescription(id: string): void;
 
   /**
-   * Register the backdrop element so the dismissible layer treats it as
-   * part of the dialog surface (`exemptElements`) — without this, a
-   * `pointerdown` on the portaled backdrop (a body sibling of the dialog
-   * host, outside `host.contains()`) fires `pointerDownOutside` and closes
-   * with reason `'pointerDownOutside'`, then the backdrop's own `click`
-   * emits a second `(dismiss)` with reason `'backdrop'` — a double dismiss
-   * with the wrong first reason, and a veto on either channel fails to stop
-   * the other. Exempting the backdrop routes the interaction solely through
-   * the backdrop's `click` → `requestClose('backdrop')`. Pass `null` to
-   * unregister.
-   */
-  registerBackdrop(el: HTMLElement | null): void;
-
-  /**
    * Request that the dialog close. Reasons:
    * - `'escape'` / `'backdrop'` / `'pointerDownOutside'` / `'focusOutside'`:
    *   honored only when `dismissible()` is true.
@@ -88,11 +74,11 @@ export interface DialogRegistrationContext {
 
 /**
  * The dialog's internal coordination surface: everything {@link ForDialogContext} publishes plus
- * the {@link DialogRegistrationContext} protocol and the backdrop's topmost-layer check. It is the
- * type the pieces read {@link FOR_DIALOG_CONTEXT} at.
+ * the {@link DialogRegistrationContext} protocol and the backdrop's registration and topmost-layer
+ * check. It is the type the pieces read {@link FOR_DIALOG_CONTEXT} at.
  */
 export interface DialogContext
-  extends ForDialogContext, DialogRegistrationContext, ModalSurfacePointerContext {}
+  extends ForDialogContext, DialogRegistrationContext, ModalSurfaceBackdropContext {}
 
 /**
  * DI token for the dialog's coordination surface, provided by `[forDialog]`.

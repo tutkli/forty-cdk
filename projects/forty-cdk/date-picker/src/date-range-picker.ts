@@ -22,7 +22,7 @@ import {
   serializeISODate,
 } from 'forty-cdk/core';
 import { type DateAdapter } from 'forty-cdk/date-adapter';
-import { DatePickerBase } from './date-picker-base';
+import { assertCalendarAdapter, DatePickerBase, type ProjectedCalendar } from './date-picker-base';
 import { FOR_DATE_PICKER_CONTEXT, type ForDatePickerAnatomy } from './date-picker-context';
 import {
   FOR_DATE_RANGE_PICKER_CONTEXT,
@@ -185,7 +185,8 @@ export class ForDateRangePicker<D>
     injectNativeFormResetToInitial(this.value);
 
     // Calendar selection bridge. This `effect` does no state derivation — it
-    // only (re)subscribes to the projected calendar's `rangeChange` as the
+    // only (re)subscribes to the projected calendar's `rangeChange` (and to its
+    // single-date `valueChange`, which only a misconfigured calendar emits) as the
     // surface mounts / unmounts. The writes happen asynchronously in the
     // subscription callback (a discrete selection event), exactly like a click
     // handler, never during the effect's reactive computation.
@@ -194,20 +195,17 @@ export class ForDateRangePicker<D>
       if (!calendar) {
         return;
       }
-      this.assertSameAdapter(calendar);
-      if (isDevMode() && calendar.selectionMode() !== 'range') {
-        throw fortyError({
-          code: 'FORCDK-DATE-PICKER-006',
-          message: 'ForDateRangePicker projects a ForCalendar that is not in range selection mode.',
-          cause:
-            'The range picker reads the calendar’s `range` output, which only a range calendar emits.',
-          fix: 'Set selectionMode="range" on the projected [forCalendar].',
-        });
-      }
+      const single = calendar.value.subscribe(() => {
+        if (this.readonly() || this.effectiveDisabled()) {
+          return;
+        }
+        assertRangeCalendar(calendar);
+      });
       const sub = calendar.range.subscribe((next) => {
         if (this.readonly() || this.effectiveDisabled()) {
           return;
         }
+        assertCalendarAdapter(calendar, this.adapter as DateAdapter<unknown>);
         const range = next as DateRange<D> | null;
         this.value.set(
           range === null
@@ -222,7 +220,27 @@ export class ForDateRangePicker<D>
           this.close();
         }
       });
-      onCleanup(() => sub.unsubscribe());
+      onCleanup(() => {
+        single.unsubscribe();
+        sub.unsubscribe();
+      });
+    });
+  }
+}
+
+/**
+ * Dev-mode guard for the range picker's calendar bridge, called each time the
+ * projected calendar commits a single date: throws when that calendar is not in
+ * range selection mode, since the pick it just made never reaches the picker.
+ */
+function assertRangeCalendar(calendar: ProjectedCalendar<unknown>): void {
+  if (isDevMode() && calendar.selectionMode() !== 'range') {
+    throw fortyError({
+      code: 'FORCDK-DATE-PICKER-006',
+      message: 'ForDateRangePicker projects a ForCalendar that is not in range selection mode.',
+      cause:
+        'The range picker reads the calendar’s `range` output, which only a range calendar emits.',
+      fix: 'Set selectionMode="range" on the projected [forCalendar].',
     });
   }
 }

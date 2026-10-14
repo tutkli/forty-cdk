@@ -1,7 +1,7 @@
 import { isPlatformBrowser } from '@angular/common';
 import { computed, DOCUMENT, effect, inject, Injectable, PLATFORM_ID, signal } from '@angular/core';
 
-import { fortyError, injectPrefersReducedMotion } from 'forty-cdk/core';
+import { createSingleSlot, injectPrefersReducedMotion } from 'forty-cdk/core';
 import { type ForDrawerSide, ForDrawerStack } from 'forty-cdk/core-overlay';
 
 /**
@@ -28,6 +28,7 @@ export interface ForDrawerScaleConfig {
 }
 
 interface WrapperSnapshot {
+  readonly element: HTMLElement;
   readonly transform: string;
   readonly transformOrigin: string;
   readonly borderRadius: string;
@@ -51,8 +52,9 @@ const TRANSITION_TIMING = 'cubic-bezier(0.32, 0.72, 0, 1)';
  * element wraps the rest of the app via explicit DI, instead of relying on a
  * global selector / data attribute.
  *
- * Stacking model: at most one wrapper is registered at any time; multiple
- * drawers may be registered concurrently. The topmost (most recently
+ * Stacking model: one wrapper is coordinated at a time, the most recently
+ * registered one, and a second still registered once the render settles warns
+ * in dev mode; multiple drawers may be registered concurrently. The topmost (most recently
  * registered) drawer's config commands the effective scale — when it
  * unregisters, the previous topmost takes over. Reverts to inline-style
  * snapshots only when the last drawer unregisters or the wrapper itself
@@ -78,7 +80,11 @@ export class ForDrawerScaleCoordinator {
   readonly #prefersReducedMotion = injectPrefersReducedMotion();
   readonly #drawerStack = inject(ForDrawerStack);
 
-  readonly #wrapperEl = signal<HTMLElement | null>(null);
+  readonly #wrapperSlot = createSingleSlot<HTMLElement>({
+    primitive: 'drawer',
+    owner: 'page',
+    claimant: '[forDrawerWrapper]',
+  });
   readonly #stack = signal<readonly ForDrawerScaleConfig[]>([]);
 
   #wrapperSnapshot: WrapperSnapshot | null = null;
@@ -99,7 +105,11 @@ export class ForDrawerScaleCoordinator {
    * `"idle"`.
    */
   readonly active = computed<boolean>(() => {
-    return this.#wrapperEl() !== null && this.#stack().length > 0 && !this.#prefersReducedMotion();
+    return (
+      this.#wrapperSlot.value() !== null &&
+      this.#stack().length > 0 &&
+      !this.#prefersReducedMotion()
+    );
   });
 
   readonly #activeConfig = computed<ForDrawerScaleConfig | null>(() => {
@@ -109,7 +119,7 @@ export class ForDrawerScaleCoordinator {
 
   constructor() {
     effect(() => {
-      const wrapper = this.#wrapperEl();
+      const wrapper = this.#wrapperSlot.value();
       const config = this.#activeConfig();
       const reducedMotion = this.#prefersReducedMotion();
 
@@ -212,29 +222,17 @@ export class ForDrawerScaleCoordinator {
   }
 
   /**
-   * Register the consumer's app-shell wrapper. Only one wrapper may be
-   * registered at a time; a second registration throws — the multi-wrapper
-   * case has no defined visual outcome. Returns a cleanup that the caller wires to its
-   * `DestroyRef.onDestroy`.
+   * Register the consumer's app-shell wrapper. The most recently registered
+   * wrapper is the one scaled, so a structural swap hands the effect to the
+   * incoming wrapper. Returns a cleanup that the caller wires to its
+   * `DestroyRef.onDestroy`, which removes only this wrapper.
    */
   registerWrapper(host: HTMLElement): () => void {
     if (!this.#isBrowser) {
       return () => {};
     }
-    if (this.#wrapperEl() !== null && this.#wrapperEl() !== host) {
-      throw fortyError({
-        code: 'FORCDK-DRAWER-005',
-        message: 'A second [forDrawerWrapper] registered; only one is allowed per viewport.',
-        cause: 'The wrapper owns the viewport-wide scale transform, which has a single owner.',
-        fix: 'Keep one [forDrawerWrapper] around the scaled content.',
-      });
-    }
-    this.#wrapperEl.set(host);
-    return () => {
-      if (this.#wrapperEl() === host) {
-        this.#wrapperEl.set(null);
-      }
-    };
+    this.#wrapperSlot.register(host);
+    return () => this.#wrapperSlot.unregister(host);
   }
 
   /**
@@ -263,8 +261,13 @@ export class ForDrawerScaleCoordinator {
   }
 
   #apply(wrapper: HTMLElement, config: ForDrawerScaleConfig): void {
+    if (this.#wrapperSnapshot && this.#wrapperSnapshot.element !== wrapper) {
+      this.#restoreWrapper(this.#wrapperSnapshot);
+      this.#wrapperSnapshot = null;
+    }
     if (!this.#wrapperSnapshot) {
       this.#wrapperSnapshot = {
+        element: wrapper,
         transform: wrapper.style.transform,
         transformOrigin: wrapper.style.transformOrigin,
         borderRadius: wrapper.style.borderRadius,
@@ -298,18 +301,20 @@ export class ForDrawerScaleCoordinator {
     }
   }
 
+  #restoreWrapper(snapshot: WrapperSnapshot): void {
+    const wrapper = snapshot.element;
+    wrapper.style.transform = snapshot.transform;
+    wrapper.style.transformOrigin = snapshot.transformOrigin;
+    wrapper.style.borderRadius = snapshot.borderRadius;
+    wrapper.style.overflow = snapshot.overflow;
+    wrapper.style.transitionProperty = snapshot.transitionProperty;
+    wrapper.style.transitionDuration = snapshot.transitionDuration;
+    wrapper.style.transitionTimingFunction = snapshot.transitionTimingFunction;
+  }
+
   #revert(): void {
     if (this.#wrapperSnapshot) {
-      const wrapper = this.#wrapperEl();
-      if (wrapper) {
-        wrapper.style.transform = this.#wrapperSnapshot.transform;
-        wrapper.style.transformOrigin = this.#wrapperSnapshot.transformOrigin;
-        wrapper.style.borderRadius = this.#wrapperSnapshot.borderRadius;
-        wrapper.style.overflow = this.#wrapperSnapshot.overflow;
-        wrapper.style.transitionProperty = this.#wrapperSnapshot.transitionProperty;
-        wrapper.style.transitionDuration = this.#wrapperSnapshot.transitionDuration;
-        wrapper.style.transitionTimingFunction = this.#wrapperSnapshot.transitionTimingFunction;
-      }
+      this.#restoreWrapper(this.#wrapperSnapshot);
       this.#wrapperSnapshot = null;
     }
     if (this.#bodySnapshot) {

@@ -1554,7 +1554,7 @@ describe('ForDrawer (declarative)', () => {
   });
 
   describe('duplicate slot registration', () => {
-    it('throws when two [forDrawerHandle] are mounted inside the same [forDrawer]', () => {
+    it('warns in dev mode while two [forDrawerHandle] stay mounted inside the same [forDrawer]', async () => {
       @Component({
         imports: [ForDrawer, ForDrawerHandle],
         template: `
@@ -1570,14 +1570,17 @@ describe('ForDrawer (declarative)', () => {
         readonly open = signal(true);
       }
 
-      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
-      const fixture = TestBed.createComponent(TwoHandlesHost);
-      expect(() => fixture.detectChanges()).toThrow(
-        /\[forty-cdk\/drawer\] FORCDK-DRAWER-006: A \[forDrawer\] registered a second \[forDrawerHandle\]/,
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const r = renderHost(TwoHandlesHost);
+      await flush(r.fixture);
+
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(String(warn.mock.calls[0]![0])).toMatch(
+        /^\[forty-cdk\/drawer\] FORCDK-CORE-005: A \[forDrawer\] coordinates a single \[forDrawerHandle\], but 2 are registered\./,
       );
     });
 
-    it('throws when two [forDrawerBackdrop] are mounted inside the same [forDrawer]', () => {
+    it('warns in dev mode while two [forDrawerBackdrop] stay mounted inside the same [forDrawer]', async () => {
       @Component({
         imports: [ForDrawer, ForDrawerBackdrop],
         template: `
@@ -1593,10 +1596,13 @@ describe('ForDrawer (declarative)', () => {
         readonly open = signal(true);
       }
 
-      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
-      const fixture = TestBed.createComponent(TwoBackdropsHost);
-      expect(() => fixture.detectChanges()).toThrow(
-        /\[forty-cdk\/drawer\] FORCDK-CORE-001: A modal surface registered a second backdrop/,
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const r = renderHost(TwoBackdropsHost);
+      await flush(r.fixture);
+
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(String(warn.mock.calls[0]![0])).toMatch(
+        /^\[forty-cdk\/drawer\] FORCDK-CORE-005: A \[forDrawer\] coordinates a single \[forDrawerBackdrop\], but 2 are registered\./,
       );
     });
 

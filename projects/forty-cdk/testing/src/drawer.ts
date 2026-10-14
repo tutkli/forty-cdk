@@ -14,6 +14,10 @@ import { createIdRegistry } from './id-registry';
 type DrawerTestingContext = ForDrawerContext & {
   registerInitialFocus(el: HTMLElement): void;
   unregisterInitialFocus(el: HTMLElement): void;
+  registerHandle(el: HTMLElement): void;
+  unregisterHandle(el: HTMLElement): void;
+  registerBackdrop(el: HTMLElement): void;
+  unregisterBackdrop(el: HTMLElement): void;
   isTopmostPointerLayer(): boolean;
 };
 
@@ -94,7 +98,9 @@ function createContext(ref: ForDrawerRef, document: Document): DrawerTestingCont
     registerDescription: descriptions.register,
     unregisterDescription: descriptions.unregister,
     registerHandle: () => {},
+    unregisterHandle: () => {},
     registerBackdrop: () => {},
+    unregisterBackdrop: () => {},
     registerInitialFocus: () => {},
     unregisterInitialFocus: () => {},
     isTopmostPointerLayer: () => true,

@@ -1,7 +1,7 @@
 import { inject, InjectionToken, type Signal } from '@angular/core';
 
 import { assertRootContext, orphanContextError } from 'forty-cdk/core';
-import { type ForDrawerSide, type ModalSurfacePointerContext } from 'forty-cdk/core-overlay';
+import { type ForDrawerSide, type ModalSurfaceBackdropContext } from 'forty-cdk/core-overlay';
 
 export { type ForDrawerSide };
 
@@ -96,24 +96,6 @@ export interface ForDrawerContext {
   unregisterDescription(id: string): void;
 
   /**
-   * Register the visual handle element so that `handleOnly === true`
-   * gates the swipe gesture to gestures starting on this element. Pass
-   * `null` to unregister.
-   */
-  registerHandle(el: HTMLElement | null): void;
-
-  /**
-   * Register the backdrop element so the dismissible layer treats it as
-   * part of the drawer surface (`exemptElements`) — without this, a
-   * `pointerdown` on the portaled backdrop would fire `pointerDownOutside`
-   * before the backdrop's `click` handler runs, so the consumer would see
-   * close-reason `'pointerDownOutside'` instead of `'backdrop'` (WebKit
-   * was the first to surface this; Chromium happened to dispatch the
-   * events in an order that masked it). Pass `null` to unregister.
-   */
-  registerBackdrop(el: HTMLElement | null): void;
-
-  /**
    * Request that the drawer close. Reasons:
    * - `'escape'` / `'backdrop'` / `'pointerDownOutside'` / `'focusOutside'` /
    *   `'swipe'`: honored only when `dismissible()` is true.
@@ -128,23 +110,31 @@ export interface ForDrawerContext {
 }
 
 /**
- * The registration protocol `[forDrawerInitialFocus]` drives. Never exported from
- * `public-api.ts`; `ForDrawer` declares both members TS-`private`.
+ * The registration protocol `[forDrawerInitialFocus]` and `[forDrawerHandle]` drive. Never
+ * exported from `public-api.ts`; `ForDrawer` declares every member TS-`private`.
  */
 export interface DrawerRegistrationContext {
   /** Registers the element the drawer focuses on mount. */
   registerInitialFocus(el: HTMLElement): void;
   /** Removes a previously registered initial-focus element. */
   unregisterInitialFocus(el: HTMLElement): void;
+  /**
+   * Registers the visual handle, so `handleOnly` scopes the swipe to gestures starting on it. The
+   * newest registration is the drawer's handle, and a second one still mounted once the render
+   * settles warns in dev mode.
+   */
+  registerHandle(el: HTMLElement): void;
+  /** Removes a registered handle, leaving any newer registration in place. */
+  unregisterHandle(el: HTMLElement): void;
 }
 
 /**
  * The drawer's internal coordination surface: everything {@link ForDrawerContext} publishes plus
- * the {@link DrawerRegistrationContext} protocol and the backdrop's topmost-layer check. It is the
- * type the pieces read {@link FOR_DRAWER_CONTEXT} at.
+ * the {@link DrawerRegistrationContext} protocol and the backdrop's registration and topmost-layer
+ * check. It is the type the pieces read {@link FOR_DRAWER_CONTEXT} at.
  */
 export interface DrawerContext
-  extends ForDrawerContext, DrawerRegistrationContext, ModalSurfacePointerContext {}
+  extends ForDrawerContext, DrawerRegistrationContext, ModalSurfaceBackdropContext {}
 
 /**
  * DI token for the drawer's coordination surface, provided by `[forDrawer]`.

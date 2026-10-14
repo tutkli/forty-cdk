@@ -51,6 +51,31 @@ export interface ProjectedCalendar<D> extends ForCalendarContext<D> {
 }
 
 /**
+ * Dev-mode guard for a picker's calendar-selection bridge, called each time the
+ * projected calendar commits a pick: throws when the calendar resolved a
+ * different `DateAdapter` than the picker, which would leak a wrong-shaped date
+ * through the generic-erased `contentChild` seam.
+ *
+ * @param calendar The projected calendar that committed the pick.
+ * @param adapter The picker's own adapter.
+ */
+export function assertCalendarAdapter(
+  calendar: ProjectedCalendar<unknown>,
+  adapter: DateAdapter<unknown>,
+): void {
+  if (isDevMode() && calendar.adapter !== adapter) {
+    throw fortyError({
+      code: 'FORCDK-DATE-PICKER-001',
+      message: 'The projected ForCalendar uses a different DateAdapter than the date picker.',
+      cause:
+        'The calendar is read through a generic-erased contentChild, so a second adapter would ' +
+        'leak a wrong-shaped date value into the picker.',
+      fix: 'Provide one DateAdapter for both, or move the calendar under the picker’s providers.',
+    });
+  }
+}
+
+/**
  * Shared overlay / trigger / anchor / content / dismiss / focus machinery for
  * the date-picker roots. Both the single-date `ForDatePicker` and the
  * range-form `ForDateRangePicker` extend it, so the floating surface, the
@@ -233,30 +258,11 @@ export abstract class DatePickerBase<D>
    * this root (the same `FOR_DATE_ADAPTER` scope). Angular's `contentChild`
    * erases the generic, so a bridge reads `calendar.value` / `calendar.range`
    * via a cast; a mismatched adapter would leak a wrong-shaped date through that
-   * seam. {@link assertSameAdapter} catches it early in dev mode.
+   * seam. {@link assertCalendarAdapter} catches it in dev mode on each pick.
    */
   protected readonly calendar = contentChild(FOR_CALENDAR_CONTEXT, {
     descendants: true,
   }) as Signal<ProjectedCalendar<unknown> | undefined>;
-
-  /**
-   * Dev-mode guard for a concrete root's calendar-selection bridge: throws when
-   * the projected `ForCalendar` resolved a different `DateAdapter` than this
-   * root, which would leak a wrong-shaped date through the generic-erased
-   * `contentChild` seam.
-   */
-  protected assertSameAdapter(calendar: ProjectedCalendar<unknown>): void {
-    if (isDevMode() && calendar.adapter !== (this.adapter as DateAdapter<unknown>)) {
-      throw fortyError({
-        code: 'FORCDK-DATE-PICKER-001',
-        message: 'The projected ForCalendar uses a different DateAdapter than the date picker.',
-        cause:
-          'The calendar is read through a generic-erased contentChild, so a second adapter would ' +
-          'leak a wrong-shaped date value into the picker.',
-        fix: 'Provide one DateAdapter for both, or move the calendar under the picker’s providers.',
-      });
-    }
-  }
 
   registerTrigger(el: HTMLElement): void {
     adoptHostId(el, this.triggerId);

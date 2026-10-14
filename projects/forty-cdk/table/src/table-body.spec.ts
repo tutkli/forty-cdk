@@ -1836,6 +1836,15 @@ describe('ForTableBody', () => {
       );
     });
 
+    it('skips the row-def check in production, rendering an empty spanning cell', () => {
+      vi.stubGlobal('ngDevMode', false);
+      const { queryAll } = renderHost(NeitherConfigHost);
+
+      const variant = queryAll('[data-row-variant]');
+      expect(variant.length).toBeGreaterThan(0);
+      expect(variant[0]!.textContent?.trim()).toBe('');
+    });
+
     it('reacts to placeholder rows resolving into real data', () => {
       const { instance, queryAll, fixture } = renderHost(PlaceholderVariantHost);
       expect(queryAll('[forTableRow]')[1]!.querySelector('.skeleton')).not.toBeNull();

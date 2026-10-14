@@ -1,5 +1,6 @@
-import { DestroyRef, Directive, ElementRef, inject } from '@angular/core';
+import { Directive, ElementRef, inject } from '@angular/core';
 
+import { registerHandle } from 'forty-cdk/core';
 import { injectDrawerContext } from './drawer-context';
 
 /**
@@ -18,7 +19,9 @@ import { injectDrawerContext } from './drawer-context';
  * until reload. These are behavioral, not visual: the consumer remains
  * responsible for sizing, positioning, and color.
  *
- * Apply on the visual handle element.
+ * Apply on the visual handle element. One handle per drawer; a second one still
+ * mounted once the render settles warns in dev mode, and swapping two handles
+ * with sibling `@if` blocks is supported.
  */
 @Directive({
   selector: '[forDrawerHandle]',
@@ -32,11 +35,12 @@ import { injectDrawerContext } from './drawer-context';
   },
 })
 export class ForDrawerHandle {
-  readonly #ctx = injectDrawerContext('ForDrawerHandle');
-  readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
-
   constructor() {
-    this.#ctx.registerHandle(this.#host.nativeElement);
-    inject(DestroyRef).onDestroy(() => this.#ctx.registerHandle(null));
+    const ctx = injectDrawerContext('ForDrawerHandle');
+    registerHandle(
+      inject<ElementRef<HTMLElement>>(ElementRef).nativeElement,
+      (el) => ctx.registerHandle(el),
+      (el) => ctx.unregisterHandle(el),
+    );
   }
 }
