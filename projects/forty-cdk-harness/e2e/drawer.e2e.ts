@@ -11,6 +11,8 @@ import {
   test,
 } from './_helpers';
 
+const HUMAN_PRESS_HOLD_MS = 100;
+
 test.describe('Drawer', () => {
   test('moves focus to the first focusable on open (initialFocus="first")', async ({ page }) => {
     await gotoFixture(page, 'drawer');
@@ -34,6 +36,25 @@ test.describe('Drawer', () => {
 
     await page.keyboard.press('Shift+Tab');
     await expect(el(page, 'close-btn')).toBeFocused();
+  });
+
+  test('a held press on the trigger of an open non-modal drawer closes it', async ({ page }) => {
+    await gotoFixture(page, 'drawer', { nonModal: '1' });
+    await el(page, 'trigger').click();
+    await expect(el(page, 'drawer')).toBeVisible();
+    await expect(el(page, 'first')).toBeFocused();
+
+    const box = (await el(page, 'trigger').boundingBox())!;
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    await page.waitForTimeout(HUMAN_PRESS_HOLD_MS);
+    await page.mouse.up();
+
+    await expect(el(page, 'trigger')).toHaveAttribute('aria-expanded', 'false');
+    await expectStays(page, async () => {
+      await expect(el(page, 'drawer')).toHaveCount(0);
+      await expect(el(page, 'last-close-reason')).toHaveText('none');
+    });
   });
 
   test('Escape closes and returns focus to the trigger', async ({ page }) => {

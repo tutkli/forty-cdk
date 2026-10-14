@@ -98,6 +98,7 @@ import { queryFlag } from './_query-flag';
         id="test-drawer"
         data-testid="drawer"
         ariaLabel="Test drawer"
+        [modal]="!nonModal"
         [side]="side()"
         [snapPoints]="snapPoints()"
         [(activeSnapPoint)]="activeSnapPoint"
@@ -218,6 +219,7 @@ export class DrawerFixture {
   protected readonly scaleBackground = queryFlag('scaleBackground');
   protected readonly setBackgroundColorOnScale = !queryFlag('noBgColorOnScale');
   protected readonly nested = queryFlag('nested');
+  protected readonly nonModal = queryFlag('nonModal');
 
   protected readonly veto = (event: VetoableEvent): void => event.preventDefault();
 

@@ -2,6 +2,8 @@ import {
   booleanAttribute,
   computed,
   Directive,
+  ElementRef,
+  inject,
   input,
   output,
   signal,
@@ -17,6 +19,7 @@ import {
   type VetoableNativeEvent,
 } from 'forty-cdk/core';
 import { type ModalShellConfig, type ModalShellHandle } from './modal-shell';
+import { ModalTriggerRegistry } from './modal-trigger';
 
 /**
  * Abstract base for free-floating modal-surface primitives — a directive that
@@ -27,6 +30,8 @@ import { type ModalShellConfig, type ModalShellHandle } from './modal-shell';
  *
  * The base owns everything the two surfaces used to duplicate verbatim: the
  * `aria-labelledby` / `aria-describedby` registry, the backdrop registration,
+ * the exemption of the backdrop and of the controlling triggers
+ * (`injectModalTrigger`) from outside dismissal,
  * the `requestClose` dismissible gating, the `lastCloseValue` bridge read by
  * the programmatic managers, the seven shared ARIA / state host bindings (`role`, `aria-modal`, `aria-label`,
  * `aria-labelledby`, `aria-describedby`, `data-state="open"`, `tabindex="-1"`),
@@ -210,6 +215,8 @@ export abstract class ModalSurfaceBase<Reason extends string> {
   readonly #labelIds = signal<readonly string[]>([]);
   readonly #describedByIds = signal<readonly string[]>([]);
   readonly #lastCloseValue = signal<unknown>(undefined);
+  readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
+  readonly #triggers = inject(ModalTriggerRegistry);
   #shell: ModalShellHandle | null = null;
 
   /**
@@ -325,7 +332,8 @@ export abstract class ModalSurfaceBase<Reason extends string> {
         emitInteractOutside: (veto) => this.interactOutside.emit(veto),
         exemptElements: () => {
           const backdrop = this.backdropSlot.value();
-          return backdrop ? [backdrop] : [];
+          const triggers = this.#triggers.controlling(this.#host.nativeElement);
+          return backdrop ? [backdrop, ...triggers] : triggers;
         },
       },
     };
