@@ -5,6 +5,8 @@ import {
   hostAriaLabel,
   hostLabelledBy,
   isHoverCapablePointer,
+  pressFocusesDescendant,
+  preventPointerFocus,
 } from 'forty-cdk/core';
 import {
   injectOverlayShell,
@@ -47,6 +49,9 @@ import {
  * is a missing `@if` and reports through the dev-mode mounted-while-closed
  * warning.
  *
+ * A mouse press on the surface itself, a group label or a separator leaves
+ * focus on the focused item.
+ *
  * Navigation is vertical-only (Up / Down between items, per the APG Menu
  * pattern), so the surface reflects `aria-orientation="vertical"` explicitly.
  * Horizontal menus are out of scope; a horizontal *bar* of menus is modelled
@@ -85,11 +90,13 @@ export class ForMenuContent {
   });
 
   constructor() {
+    const host = this.#host.nativeElement;
     registerHandle(
-      this.#host.nativeElement,
+      host,
       (el) => this.ctx.registerContent(el),
       (el) => this.ctx.unregisterContent(el),
     );
+    preventPointerFocus((event) => !pressFocusesDescendant(event, host));
 
     // Report the selector the consumer actually wrote and the root that owns
     // its open state: a submenu reported as `[forMenuContent]` with

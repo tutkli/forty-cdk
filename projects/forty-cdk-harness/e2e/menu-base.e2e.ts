@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test';
-import { el, expect, gotoFixture, test } from './_helpers';
+import { el, expect, expectStays, gotoFixture, test } from './_helpers';
 
 async function rawTextContent(page: Page, testid: string): Promise<string> {
   const text = await el(page, testid).evaluate((node) => node.textContent ?? '');
@@ -86,6 +86,25 @@ test.describe('Menu (base)', () => {
     await el(page, 'item-banana').hover();
     await expect(el(page, 'item-banana')).not.toHaveAttribute('data-highlighted');
     await expect(el(page, 'item-banana')).not.toBeFocused();
+  });
+
+  test('a mouse press on a disabled item or a separator leaves focus on the item, and ArrowDown still moves', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'menu-base', { disabled: '2,5' });
+    await el(page, 'trigger').click();
+    await el(page, 'item-apricot').hover();
+    await expect(el(page, 'item-apricot')).toBeFocused();
+
+    await el(page, 'item-banana').click({ force: true });
+    await expectStays(page, () => expect(el(page, 'item-apricot')).toBeFocused());
+
+    await el(page, 'sep-2').click({ force: true });
+    await expectStays(page, () => expect(el(page, 'item-apricot')).toBeFocused());
+    await expect(el(page, 'menu')).toBeVisible();
+
+    await page.keyboard.press('ArrowDown');
+    await expect(el(page, 'item-blueberry')).toBeFocused();
   });
 
   test('keyboard open highlights the first enabled item', async ({ page }) => {

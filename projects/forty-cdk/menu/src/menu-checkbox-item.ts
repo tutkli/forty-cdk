@@ -12,6 +12,7 @@ import {
   hostButtonType,
   createVetoableEvent,
   emitVetoableEvent,
+  preventPointerFocus,
   type VetoableEvent,
 } from 'forty-cdk/core';
 import { injectMenuContext } from 'forty-cdk/core-overlay';
@@ -37,9 +38,11 @@ export const FOR_MENU_CHECKBOX_ITEM = new InjectionToken<ForMenuCheckboxItem>(
  * options in one open without consumer glue.
  *
  * Disabled items are skipped by arrow-key navigation, typeahead, and
- * Home/End, and ignore pointer hover, but stay in the DOM carrying
- * `aria-disabled="true"` (never the native `disabled` attribute) so assistive
- * tech can still perceive and announce them.
+ * Home/End, ignore pointer hover, and never take focus from a mouse press, but
+ * stay in the DOM carrying `aria-disabled="true"` (never the native `disabled`
+ * attribute) so assistive tech can still perceive and announce them. An item
+ * that becomes disabled while focused still answers the navigation keys and
+ * Tab.
  */
 @Directive({
   selector: '[forMenuCheckboxItem]',
@@ -99,6 +102,10 @@ export class ForMenuCheckboxItem {
    */
   readonly activate = output<VetoableEvent>();
 
+  constructor() {
+    preventPointerFocus(() => this.effectiveDisabled());
+  }
+
   protected onClick(): void {
     if (this.effectiveDisabled()) {
       return;
@@ -110,16 +117,13 @@ export class ForMenuCheckboxItem {
   }
 
   protected onKeyDown(event: KeyboardEvent): void {
-    if (this.effectiveDisabled()) {
-      return;
-    }
     if (this.interaction.handleNavigation(event)) {
       return;
     }
     // APG menubar guidance: Space toggles checked without closing the menu
     // (Enter and click still close via native button activation). preventDefault
     // here suppresses the browser-synthesized click so the menu stays open.
-    if (event.key === ' ') {
+    if (event.key === ' ' && !this.effectiveDisabled()) {
       event.preventDefault();
       if (this.ctx.handleTypeahead(event)) {
         return;

@@ -8,7 +8,7 @@ import {
 } from '../../src/test-utils/contract';
 import type { VetoableEvent } from 'forty-cdk/core';
 import { ForDropdownMenu, ForDropdownMenuTrigger } from 'forty-cdk/dropdown-menu';
-import { pressKey } from 'forty-cdk/testing';
+import { pressKey, pressWithMouse } from 'forty-cdk/testing';
 
 import { FOR_MENU_CHECKBOX_ITEM, ForMenuCheckboxItem } from './menu-checkbox-item';
 import { ForMenuContent } from './menu-content';
@@ -309,6 +309,54 @@ class MenuSeparatorHost {
   readonly open = signal(true);
   readonly orientation = signal<'horizontal' | 'vertical'>('horizontal');
   readonly decorative = signal(false);
+}
+
+@Component({
+  imports: [
+    ForDropdownMenu,
+    ForDropdownMenuTrigger,
+    ForMenuContent,
+    ForMenuItem,
+    ForMenuCheckboxItem,
+    ForMenuRadioGroup,
+    ForMenuRadioItem,
+    ForMenuGroup,
+    ForMenuGroupLabel,
+    ForMenuSeparator,
+  ],
+  template: `
+    <div forDropdownMenu [(open)]="open" [disabled]="rootDisabled()">
+      <button id="edit-trigger" forDropdownMenuTrigger>Edit</button>
+      @if (open()) {
+        <div forMenuContent>
+          <div forMenuGroup>
+            <div id="history-label" forMenuGroupLabel>History</div>
+            <button id="undo" forMenuItem [disabled]="undoDisabled()">Undo</button>
+            <button id="redo" forMenuItem disabled>Redo</button>
+          </div>
+          <hr id="edit-separator" forMenuSeparator />
+          <button id="wrap" forMenuCheckboxItem [disabled]="wrapDisabled()" [(checked)]="wrap">
+            Wrap
+          </button>
+          <div forMenuRadioGroup [(value)]="mode">
+            <button id="insert" forMenuRadioItem value="insert" [disabled]="insertDisabled()">
+              Insert
+            </button>
+            <button id="overwrite" forMenuRadioItem value="overwrite">Overwrite</button>
+          </div>
+        </div>
+      }
+    </div>
+  `,
+})
+class DisabledFocusHost {
+  readonly open = signal(true);
+  readonly rootDisabled = signal(false);
+  readonly undoDisabled = signal(false);
+  readonly wrapDisabled = signal(false);
+  readonly insertDisabled = signal(false);
+  readonly wrap = signal(false);
+  readonly mode = signal<string | null>('overwrite');
 }
 
 describe('Menu items / content', () => {
@@ -1324,6 +1372,132 @@ describe('Menu items / content', () => {
       pressKey(cut, 'Tab');
       await flush(r.fixture);
 
+      expect(r.instance.open()).toBe(false);
+    });
+  });
+
+  describe('focus on a disabled item or the surface', () => {
+    const el = (id: string) => document.querySelector<HTMLElement>(`#${id}`)!;
+
+    async function focusUndo() {
+      const r = renderHost(DisabledFocusHost);
+      await flush(r.fixture);
+      el('undo').focus();
+      await flush(r.fixture);
+      return r;
+    }
+
+    it('a mouse press on a disabled item leaves focus where it was, and ArrowDown still moves', async () => {
+      const r = await focusUndo();
+
+      pressWithMouse(el('redo'));
+      await flush(r.fixture);
+      expect(document.activeElement).toBe(el('undo'));
+
+      pressKey(document.activeElement!, 'ArrowDown');
+      await flush(r.fixture);
+      expect(document.activeElement).toBe(el('wrap'));
+    });
+
+    for (const target of ['history-label', 'edit-separator', 'surface']) {
+      it(`a mouse press on the ${target} leaves focus on the item, and ArrowDown still moves`, async () => {
+        const r = await focusUndo();
+        const pressed =
+          target === 'surface'
+            ? document.querySelector<HTMLElement>('[forMenuContent]')!
+            : el(target);
+
+        pressWithMouse(pressed);
+        await flush(r.fixture);
+        expect(document.activeElement).toBe(el('undo'));
+        expect(r.instance.open()).toBe(true);
+
+        pressKey(document.activeElement!, 'ArrowDown');
+        await flush(r.fixture);
+        expect(document.activeElement).toBe(el('wrap'));
+      });
+    }
+
+    it('an item disabled while focused still answers ArrowDown, Home and typeahead', async () => {
+      const r = await focusUndo();
+      r.instance.undoDisabled.set(true);
+      await flush(r.fixture);
+      expect(el('undo').getAttribute('aria-disabled')).toBe('true');
+
+      pressKey(el('undo'), 'ArrowDown');
+      await flush(r.fixture);
+      expect(document.activeElement).toBe(el('wrap'));
+      expect(el('wrap').getAttribute('data-highlighted')).toBe('');
+
+      el('undo').focus();
+      pressKey(el('undo'), 'End');
+      await flush(r.fixture);
+      expect(document.activeElement).toBe(el('overwrite'));
+
+      el('undo').focus();
+      pressKey(el('undo'), 'o');
+      await flush(r.fixture);
+      expect(document.activeElement).toBe(el('overwrite'));
+    });
+
+    it('an item disabled while focused still runs Tab-out: the menu closes and the trigger takes focus', async () => {
+      const r = await focusUndo();
+      r.instance.undoDisabled.set(true);
+      await flush(r.fixture);
+
+      pressKey(el('undo'), 'Tab');
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+      expect(document.activeElement).toBe(el('edit-trigger'));
+    });
+
+    it('a checkbox item disabled while focused navigates, but Space does not toggle it', async () => {
+      const r = await focusUndo();
+      el('wrap').focus();
+      r.instance.wrapDisabled.set(true);
+      await flush(r.fixture);
+
+      pressKey(el('wrap'), ' ');
+      await flush(r.fixture);
+      expect(r.instance.wrap()).toBe(false);
+
+      pressKey(el('wrap'), 'ArrowDown');
+      await flush(r.fixture);
+      expect(document.activeElement).toBe(el('insert'));
+    });
+
+    it('a radio item disabled while focused navigates, but Space does not select it', async () => {
+      const r = await focusUndo();
+      el('insert').focus();
+      r.instance.insertDisabled.set(true);
+      await flush(r.fixture);
+
+      pressKey(el('insert'), ' ');
+      await flush(r.fixture);
+      expect(r.instance.mode()).toBe('overwrite');
+
+      pressKey(el('insert'), 'ArrowUp');
+      await flush(r.fixture);
+      expect(document.activeElement).toBe(el('wrap'));
+    });
+
+    it('the root disabled while open keeps the menu open, and Tab still closes it', async () => {
+      const r = await focusUndo();
+      r.instance.rootDisabled.set(true);
+      await flush(r.fixture);
+
+      for (const id of ['undo', 'wrap', 'insert', 'overwrite']) {
+        expect(el(id).getAttribute('aria-disabled'), id).toBe('true');
+      }
+      expect(r.instance.open()).toBe(true);
+
+      pressKey(el('undo'), 'ArrowDown');
+      await flush(r.fixture);
+      expect(document.activeElement).toBe(el('undo'));
+
+      pressKey(el('undo'), 'Tab');
+      await flush(r.fixture);
       expect(r.instance.open()).toBe(false);
     });
   });

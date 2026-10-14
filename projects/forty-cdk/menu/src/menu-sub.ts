@@ -158,11 +158,17 @@ export class ForMenuSub extends MenuOverlayHost implements ForMenuContext {
   readonly loop = input(true, { transform: booleanAttribute });
 
   /**
-   * When true, the sub-trigger interaction is ignored and any open submenu
-   * stays open until the consumer flips `open`. Layered on top of the parent
-   * menu's own `disabled`.
+   * When true, the sub-trigger interaction is ignored, the sub-trigger and every
+   * item of the submenu are disabled, and an open submenu stays open until it is
+   * closed. Bind via `[disabled]`; read the composed {@link disabled} for state.
    */
-  readonly disabled = input(false, { transform: booleanAttribute });
+  readonly disabledInput = input(false, { transform: booleanAttribute, alias: 'disabled' });
+
+  /**
+   * Effective disabled: this submenu's own `[disabled]` OR'd with the parent
+   * menu's `disabled`, so disabling any menu up the chain disables this one.
+   */
+  readonly disabled = computed(() => this.disabledInput() || this.parentMenu.disabled());
 
   /** When true (default), Escape, pointer-down outside, and focus outside close the submenu. */
   readonly dismissible = input(true, { transform: booleanAttribute });
