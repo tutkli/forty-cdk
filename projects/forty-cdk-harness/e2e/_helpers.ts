@@ -570,9 +570,9 @@ async function centreOf(locator: Locator): Promise<{ x: number; y: number }> {
  * swipe-dismiss helper with a tiny ARM step (5 px past the helper's 4-px arming
  * distance), then applies the remaining displacement in a single move.
  *
- * The drawer integrates pointer movement cumulatively, so the resulting
- * drag offset is `|delta| − armPx` regardless of how many micro-moves
- * happen along the way. The single-shot move shape is kept here so the
+ * The drawer measures the drag from the press, so the resulting drag
+ * offset is `|delta|` regardless of how many micro-moves happen along the
+ * way. The single-shot move shape is kept here so the
  * release-time velocity sample stays deterministic: it's the big move's
  * delta divided by `stepDelayMs`. Tests that want to exercise the
  * cumulative integrator (many small moves) use {@link dragFromSteps}.
@@ -629,9 +629,9 @@ export async function dragFrom(
  * {@link gesturePointer}: a small arming step past the swipe-dismiss helper's
  * 4-px arm distance followed by `steps` equal `step` moves with `stepDelayMs`
  * between them. Used to exercise the directive's cumulative-offset integration
- * (post-#205): the arming pointermove emits with `moveTowardEdge = 0`
- * and the N subsequent moves each contribute `|step|` to the running
- * offset, so the final drag offset equals `steps * |step|`.
+ * (post-#205): the offset is measured from the press, so the arming
+ * pointermove contributes the arm step and the N subsequent moves each
+ * contribute `|step|`, making the final drag offset `armPx + steps * |step|`.
  *
  * Velocity at release is the last move's `|step|` divided by
  * `stepDelayMs` (the default 50 ms with a 30-px step gives 0.6 px/ms —

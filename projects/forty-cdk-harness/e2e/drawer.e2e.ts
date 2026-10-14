@@ -582,17 +582,62 @@ test.describe('Drawer', () => {
       await expect(el(page, 'last-close-reason')).toHaveText('swipe');
     });
 
+    test('handleOnly: a mouse press at the handle edge arms once the arming move has left the handle', async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'drawer', { drawerHeight: '200', handleOnly: '1' });
+      await el(page, 'trigger').click();
+      await expect(el(page, 'drawer')).toBeVisible();
+
+      const box = await boxOf(el(page, 'handle'));
+      const x = box.x + box.width / 2;
+      const y = box.y + box.height - 1;
+      await page.mouse.move(x, y);
+      await page.mouse.down();
+      await page.mouse.move(x, y + 5);
+      await expect(el(page, 'swipe-start-count')).toHaveText('1');
+      await page.mouse.move(x, y + 125);
+      await page.mouse.up();
+
+      await expect(el(page, 'drawer')).toHaveCount(0);
+      await expect(el(page, 'last-close-reason')).toHaveText('swipe');
+    });
+
+    test('RTL: a rightward drag on a horizontal scroller at its initial position scrolls instead of swiping', async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'drawer', { side: 'right', drawerHeight: '300', hscrollable: '1' });
+      await page.evaluate(() => {
+        document.documentElement.dir = 'rtl';
+      });
+      await el(page, 'trigger').click();
+      await expect(el(page, 'drawer')).toBeVisible();
+      const scroller = el(page, 'hscroll-content');
+      await expect
+        .poll(() => scroller.evaluate((node) => node.scrollWidth > node.clientWidth))
+        .toBe(true);
+      expect(await scroller.evaluate((node) => node.scrollLeft)).toBe(0);
+
+      await dragFrom(page, scroller, { dx: 120, dy: 0 });
+      await expect(el(page, 'swipe-start-count')).toHaveText('0');
+      await expect(el(page, 'drawer')).toBeVisible();
+
+      await scroller.evaluate((node) => {
+        node.scrollLeft = -(node.scrollWidth - node.clientWidth);
+      });
+      await dragFrom(page, scroller, { dx: 120, dy: 0 });
+      await expect(el(page, 'swipe-start-count')).toHaveText('1');
+    });
+
     test('snap point: drag from a higher snap settles on the closest entry by position', async ({
       page,
     }) => {
       // Snap positions on a 400px drawer (`?drawerHeight=400`):
       //   '148px' → 148, '50%' → 200, 1 → 400.
-      // Start from `'50%'` (200px from edge). dragFrom does one arm step
-      // plus one big move; the cumulative drag offset ends at 60 − 5 = 55
-      // (arm step is absorbed by the arming pointermove which fires
-      // onSwipeStart and onSwipeMove with the same event, producing a
-      // moveTowardEdge of 0). Position = 200 − 55 = 145 — closest to 148
-      // by 3 px, vs 55 px from 200 — and (swipeEnd) snaps to '148px'.
+      // Start from `'50%'` (200px from edge). The drag offset is measured
+      // from the press, so the arm step counts and the offset ends at the
+      // full 60. Position = 200 − 60 = 140 — closest to 148 by 8 px, vs
+      // 60 px from 200 — and (swipeEnd) snaps to '148px'.
       await gotoFixture(page, 'drawer', {
         drawerHeight: '400',
         snap: '148px,0.5,1',
@@ -681,11 +726,11 @@ test.describe('Drawer', () => {
     test('multi-step drag: swipe progress rises monotonically toward (steps × stepPx) / dim', async ({
       page,
     }) => {
-      // 10 × 30 px = 300 px cumulative travel on a 400 px drawer; with
-      // closeThreshold raised to 1 the gesture cannot dismiss, so the
+      // 5 px arm + 10 × 30 px = 305 px cumulative travel on a 400 px drawer;
+      // with closeThreshold raised to 1 the gesture cannot dismiss, so the
       // release path just snaps back and we can read the final
-      // `(swipeMove)` progress off the fixture. Final offset is 10 * 30 = 300,
-      // percent = 300 / 400 = 0.75. Polled per-step so a "latest delta"
+      // `(swipeMove)` progress off the fixture. Final offset is 305,
+      // percent = 305 / 400 = 0.7625. Polled per-step so a "latest delta"
       // regression (offset stuck at 30) would surface as a non-monotonic
       // sequence, not just a wrong terminal value.
       await gotoFixture(page, 'drawer', { drawerHeight: '400', closeThreshold: '1' });
@@ -707,12 +752,12 @@ test.describe('Drawer', () => {
       // Arm: the swipe-dismiss helper fires onSwipeStart AND onSwipeMove with
       // the same event, so the arming pointermove lands on two DIFFERENT
       // channels — (swipeStart) once with progress 0, then (swipeMove) once
-      // (moveTowardEdge = 0 ⇒ still 0). Both counts are therefore 1 here, and
-      // only swipe-move-count climbs with the steps below.
+      // with the arm step's own travel (5 / 400). Both counts are therefore 1
+      // here, and only swipe-move-count climbs with the steps below.
       await page.mouse.move(startX, startY + armPx);
       await expect(el(page, 'swipe-start-count')).toHaveText('1');
       await expect(el(page, 'swipe-move-count')).toHaveText('1');
-      await expect(el(page, 'last-swipe-progress')).toHaveText('0.0000');
+      await expect(el(page, 'last-swipe-progress')).toHaveText('0.0125');
 
       let lastProgress = 0;
       for (let i = 1; i <= steps; i++) {
@@ -722,10 +767,10 @@ test.describe('Drawer', () => {
         expect(progress).toBeGreaterThan(lastProgress);
         lastProgress = progress;
       }
-      // Final cumulative offset = 10 * 30 = 300; progress = 300 / 400 = 0.75.
-      // Allow 1% tolerance for floating-point / sub-pixel rounding.
-      expect(lastProgress).toBeGreaterThan(0.74);
-      expect(lastProgress).toBeLessThan(0.76);
+      // Final cumulative offset = 5 + 10 * 30 = 305; progress = 305 / 400 =
+      // 0.7625. Allow 1% tolerance for floating-point / sub-pixel rounding.
+      expect(lastProgress).toBeGreaterThan(0.7525);
+      expect(lastProgress).toBeLessThan(0.7725);
       await expect(el(page, 'swipe-start-count')).toHaveText('1');
 
       await page.mouse.up();
@@ -755,9 +800,9 @@ test.describe('Drawer', () => {
       page,
     }) => {
       // drawerHeight=400 with snaps {148px, 0.5 → 200, 1 → 400}, starting
-      // active at '0.5' (200 px from edge). 6 × 10 px = 60 px cumulative
-      // travel → position = 200 − 60 = 140. Closest snap by position is
-      // 148 (8 px away) vs 200 (60 px) vs 400 (260 px) → settles on
+      // active at '0.5' (200 px from edge). 5 px arm + 6 × 10 px = 65 px
+      // cumulative travel → position = 200 − 65 = 135. Closest snap by
+      // position is 148 (13 px away) vs 200 (65 px) vs 400 (265 px) → settles on
       // '148px'. With 100 ms gaps the per-event velocity is 10/100 =
       // 0.1 px/ms, well below the 0.4 px/ms `FLICK_VELOCITY_PX_PER_MS`
       // flick threshold, so no velocity bias kicks in and the position-only
@@ -791,7 +836,7 @@ test.describe('Drawer', () => {
       // one-way toward the edge, but with them a drag *away* from the edge
       // must arm and grow the surface. Starting at '0.5' (200px on a 400px
       // drawer), an upward drag of 120px lands the position at
-      // 200 − (−115) = 315 — closest to the full snap (400) — and the
+      // 200 − (−120) = 320 — closest to the full snap (400) — and the
       // away-from-edge flick velocity biases the same way, so the release
       // resolves to '1'.
       await gotoFixture(page, 'drawer', {
@@ -946,7 +991,7 @@ test.describe('Drawer', () => {
       // the last `pointermove` sample is older than FLICK_STALE_VELOCITY_MS
       // (100 ms). Same setup as the fresh-flick control above — 200 px drawer
       // with closeThreshold 0.5 lifts the position threshold to 100 px, and a
-      // 90 px total drag (cumulative offset 85 px) stays below it, so the ONLY
+      // 90 px total drag (cumulative offset 90 px) stays below it, so the ONLY
       // dismiss path is the velocity branch. A fast final move (+90 in one
       // step) drives velocity well above 0.4, but a 200 ms pause before
       // lifting makes the sample stale: `effectiveVelocity` collapses to 0, no

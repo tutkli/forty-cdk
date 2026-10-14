@@ -1,4 +1,10 @@
-import { Component, ErrorHandler, provideZonelessChangeDetection, signal } from '@angular/core';
+import {
+  Component,
+  ErrorHandler,
+  provideZonelessChangeDetection,
+  signal,
+  ViewEncapsulation,
+} from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import { type VetoableEvent, type VetoableNativeEvent } from 'forty-cdk/core';
@@ -307,8 +313,10 @@ describe('ForDrawer (declarative)', () => {
       await flush(r.fixture);
       expect(drawer.getAttribute('data-dragging')).toBe('');
 
-      dispatchPointer(drawer, 'pointerup', 0, 20);
+      dispatchPointer(drawer, 'pointermove', 0, 0);
+      dispatchPointer(drawer, 'pointerup', 0, 0);
       await flush(r.fixture);
+      expect(drawer.isConnected).toBe(true);
       expect(drawer.hasAttribute('data-dragging')).toBe(false);
     });
 
@@ -331,8 +339,10 @@ describe('ForDrawer (declarative)', () => {
       await flush(r.fixture);
       expect(backdrop.getAttribute('data-dragging')).toBe('');
 
-      dispatchPointer(drawer, 'pointerup', 0, 20);
+      dispatchPointer(drawer, 'pointermove', 0, 0);
+      dispatchPointer(drawer, 'pointerup', 0, 0);
       await flush(r.fixture);
+      expect(backdrop.isConnected).toBe(true);
       expect(backdrop.hasAttribute('data-dragging')).toBe(false);
       expect(backdrop.style.getPropertyValue('--for-drawer-swipe-progress')).toBe('0');
     });
@@ -758,6 +768,193 @@ describe('ForDrawer (declarative)', () => {
 
         expect(r.instance.ends.map((e) => e.willClose)).toEqual([true]);
         expect(r.instance.reasons).toEqual(['swipe']);
+      });
+    });
+
+    describe('the gesture is measured from the press', () => {
+      function dispatchMouse(
+        el: HTMLElement,
+        type: 'pointerdown' | 'pointermove',
+        clientX: number,
+        clientY: number,
+      ): void {
+        el.dispatchEvent(
+          new PointerEvent(type, {
+            bubbles: true,
+            cancelable: true,
+            composed: true,
+            clientX,
+            clientY,
+            pointerId: 1,
+            pointerType: 'mouse',
+            button: 0,
+            buttons: 1,
+          }),
+        );
+      }
+
+      @Component({
+        imports: [ForDrawer, ForDrawerHandle],
+        template: `
+          @if (open()) {
+            <div forDrawer [handleOnly]="true" (dismiss)="open.set(false)" ariaLabel="t">
+              <div forDrawerHandle data-testid="handle"></div>
+              <p data-testid="body">Body</p>
+            </div>
+          }
+        `,
+      })
+      class HandleOnlyHost {
+        readonly open = signal(false);
+      }
+
+      @Component({
+        selector: 'drawer-shadow-handle-host',
+        encapsulation: ViewEncapsulation.ShadowDom,
+        imports: [ForDrawer, ForDrawerHandle],
+        template: `
+          <div #box></div>
+          @if (open()) {
+            <div
+              forDrawer
+              [modal]="false"
+              [container]="box"
+              [handleOnly]="true"
+              (dismiss)="open.set(false)"
+              ariaLabel="t"
+            >
+              <div forDrawerHandle data-testid="handle"></div>
+            </div>
+          }
+        `,
+      })
+      class ShadowHandleHost {
+        readonly open = signal(false);
+      }
+
+      @Component({
+        imports: [ForDrawer],
+        template: `
+          @if (open()) {
+            <div
+              forDrawer
+              [snapPoints]="snaps"
+              [(activeSnapPoint)]="active"
+              (swipeEnd)="ends.push($event)"
+              (swipeCancel)="cancels.push($event)"
+              (dismiss)="open.set(false)"
+              ariaLabel="t"
+            ></div>
+          }
+        `,
+      })
+      class SnapReleaseHost {
+        readonly open = signal(false);
+        readonly snaps: ReadonlyArray<ForDrawerSnapPoint> = ['148px', '50%', 1];
+        readonly active = signal<ForDrawerSnapPoint | null>('50%');
+        readonly ends: ForDrawerSwipeEndEvent[] = [];
+        readonly cancels: ForDrawerSwipeEvent[] = [];
+      }
+
+      it('a handleOnly drag arms when the press is on the handle and the arming move has left it', async () => {
+        const r = renderHost(HandleOnlyHost);
+        r.instance.open.set(true);
+        await flush(r.fixture);
+        const drawer = document.querySelector<HTMLElement>('[forDrawer]')!;
+        const handle = drawer.querySelector<HTMLElement>('[data-testid="handle"]')!;
+
+        dispatchMouse(handle, 'pointerdown', 0, 0);
+        dispatchMouse(drawer, 'pointermove', 0, 5);
+        await flush(r.fixture);
+
+        expect(drawer.getAttribute('data-dragging')).toBe('');
+      });
+
+      it('a handleOnly drag stays disarmed when the press is off the handle and the arming move is on it', async () => {
+        const r = renderHost(HandleOnlyHost);
+        r.instance.open.set(true);
+        await flush(r.fixture);
+        const drawer = document.querySelector<HTMLElement>('[forDrawer]')!;
+        const handle = drawer.querySelector<HTMLElement>('[data-testid="handle"]')!;
+        const body = drawer.querySelector<HTMLElement>('[data-testid="body"]')!;
+
+        dispatchMouse(body, 'pointerdown', 0, 0);
+        dispatchMouse(handle, 'pointermove', 0, 5);
+        await flush(r.fixture);
+
+        expect(drawer.hasAttribute('data-dragging')).toBe(false);
+      });
+
+      it('a handleOnly drag arms from a handle inside a shadow root', async () => {
+        const r = renderHost(ShadowHandleHost);
+        r.instance.open.set(true);
+        await flush(r.fixture);
+        const root = (r.fixture.nativeElement as HTMLElement).shadowRoot!;
+        const drawer = root.querySelector<HTMLElement>('[forDrawer]')!;
+        const handle = root.querySelector<HTMLElement>('[data-testid="handle"]')!;
+
+        dispatchMouse(handle, 'pointerdown', 0, 0);
+        dispatchMouse(handle, 'pointermove', 0, 5);
+        await flush(r.fixture);
+
+        expect(drawer.getAttribute('data-dragging')).toBe('');
+      });
+
+      it('the arming move counts toward the published displacement', async () => {
+        const r = renderHost(DrawerHost);
+        r.instance.open.set(true);
+        await flush(r.fixture);
+        const drawer = document.querySelector<HTMLElement>('[forDrawer]')!;
+
+        dispatchPointer(drawer, 'pointerdown', 0, 0);
+        dispatchPointer(drawer, 'pointermove', 0, 20);
+        await flush(r.fixture);
+
+        expect(drawer.style.getPropertyValue('--for-drawer-swipe-movement-y')).toBe('20px');
+      });
+
+      it('a snap-point release that reverses past the press resolves through swipeEnd', async () => {
+        const r = renderHost(SnapReleaseHost);
+        r.instance.open.set(true);
+        await flush(r.fixture);
+        const drawer = document.querySelector<HTMLElement>('[forDrawer]')!;
+
+        dispatchPointer(drawer, 'pointerdown', 0, 100);
+        dispatchPointer(drawer, 'pointermove', 0, 90);
+        dispatchPointer(drawer, 'pointermove', 0, 300);
+        dispatchPointer(drawer, 'pointerup', 0, 300);
+        await flush(r.fixture);
+
+        expect(r.instance.ends.length).toBe(1);
+        expect(r.instance.cancels.length).toBe(0);
+        expect(drawer.hasAttribute('data-dragging')).toBe(false);
+      });
+
+      it('disarming the drag mid-gesture clears data-dragging and the displacement', async () => {
+        const r = renderHost(DrawerHost);
+        r.instance.open.set(true);
+        await flush(r.fixture);
+        const drawer = document.querySelector<HTMLElement>('[forDrawer]')!;
+        const backdrop = document.querySelector<HTMLElement>('[forDrawerBackdrop]')!;
+
+        dispatchPointer(drawer, 'pointerdown', 0, 0);
+        dispatchPointer(drawer, 'pointermove', 0, 20);
+        dispatchPointer(drawer, 'pointermove', 0, 60);
+        await flush(r.fixture);
+        expect(drawer.getAttribute('data-dragging')).toBe('');
+
+        r.instance.dismissible.set(false);
+        await flush(r.fixture);
+
+        expect(drawer.hasAttribute('data-dragging')).toBe(false);
+        expect(backdrop.hasAttribute('data-dragging')).toBe(false);
+        expect(drawer.style.getPropertyValue('--for-drawer-swipe-movement-y')).toBe('0px');
+
+        r.instance.dismissible.set(true);
+        await flush(r.fixture);
+
+        expect(drawer.hasAttribute('data-dragging')).toBe(false);
+        expect(drawer.style.getPropertyValue('--for-drawer-swipe-movement-y')).toBe('0px');
       });
     });
   });
@@ -2579,8 +2776,10 @@ describe('ForDrawer runtime prefers-reduced-motion flip', () => {
     dispatchPointer(drawer, 'pointermove', 0, 20);
     await flush(r.fixture);
     expect(drawer.getAttribute('data-dragging')).toBe('');
-    dispatchPointer(drawer, 'pointerup', 0, 20);
+    dispatchPointer(drawer, 'pointermove', 0, 0);
+    dispatchPointer(drawer, 'pointerup', 0, 0);
     await flush(r.fixture);
+    expect(drawer.isConnected).toBe(true);
 
     // Flip reduced-motion on at runtime — the gesture must disarm.
     mql.dispatch(true);
@@ -2590,6 +2789,25 @@ describe('ForDrawer runtime prefers-reduced-motion flip', () => {
     dispatchPointer(drawer, 'pointermove', 0, 20);
     await flush(r.fixture);
     expect(drawer.hasAttribute('data-dragging')).toBe(false);
+  });
+
+  it('a reduced-motion flip mid-drag clears data-dragging and the displacement', async () => {
+    const r = renderHost(DrawerHost);
+    r.instance.open.set(true);
+    await flush(r.fixture);
+
+    const drawer = document.querySelector<HTMLElement>('[forDrawer]')!;
+    dispatchPointer(drawer, 'pointerdown', 0, 0);
+    dispatchPointer(drawer, 'pointermove', 0, 20);
+    dispatchPointer(drawer, 'pointermove', 0, 60);
+    await flush(r.fixture);
+    expect(drawer.getAttribute('data-dragging')).toBe('');
+
+    mql.dispatch(true);
+    await flush(r.fixture);
+
+    expect(drawer.hasAttribute('data-dragging')).toBe(false);
+    expect(drawer.style.getPropertyValue('--for-drawer-swipe-movement-y')).toBe('0px');
   });
 
   it('arms the swipe gesture when reduced-motion flips off at runtime', async () => {

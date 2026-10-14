@@ -4,7 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { flickVelocity, FLICK_VELOCITY_PX_PER_MS } from 'forty-cdk/core';
 import { installObserverPolyfills } from 'forty-cdk/testing';
 
-import { renderHost } from '../../src/test-utils';
+import { flush, renderHost } from '../../src/test-utils';
 import { ForCarousel } from './carousel';
 import { ForCarouselDrag, resolveDragIndex } from './carousel-drag';
 import { ForCarouselSlide } from './carousel-slide';
@@ -118,6 +118,77 @@ describe('ForCarouselDrag', () => {
       await Promise.resolve();
 
       expect(vp.style.touchAction).toBe('pan-x');
+    });
+  });
+  describe('the gesture is measured from the press', () => {
+    function dispatchTouch(
+      target: HTMLElement,
+      type: 'pointerdown' | 'pointermove',
+      clientX: number,
+    ): void {
+      target.dispatchEvent(
+        new PointerEvent(type, {
+          bubbles: true,
+          cancelable: true,
+          composed: true,
+          clientX,
+          clientY: 0,
+          pointerId: 1,
+          pointerType: 'touch',
+          button: 0,
+        }),
+      );
+    }
+
+    @Component({
+      imports: [
+        ForCarousel,
+        ForCarouselViewport,
+        ForCarouselTrack,
+        ForCarouselSlide,
+        ForCarouselDrag,
+      ],
+      template: `
+        <div forCarousel ariaLabel="Test carousel">
+          <div forCarouselViewport forCarouselDrag>
+            <div forCarouselTrack>
+              <div forCarouselSlide>
+                <div data-testid="scroller" style="overflow-x: auto">
+                  <div style="width: 300px">Wide</div>
+                </div>
+              </div>
+              <div forCarouselSlide>B</div>
+            </div>
+          </div>
+        </div>
+      `,
+    })
+    class ScrollerHost {}
+
+    it('the arming move counts toward the published displacement', async () => {
+      const { el, fixture } = renderHost(DragHost);
+      const viewport = viewportEl(el);
+
+      dispatchTouch(viewport, 'pointerdown', 100);
+      dispatchTouch(viewport, 'pointermove', 80);
+      await flush(fixture);
+
+      expect(viewport.style.getPropertyValue('--for-carousel-swipe-movement-x')).toBe('-20px');
+    });
+
+    it('defers to an inner scroller the press landed in after the arming move has left it', async () => {
+      const { el, fixture } = renderHost(ScrollerHost);
+      const viewport = viewportEl(el);
+      const scroller = el.querySelector<HTMLElement>('[data-testid="scroller"]')!;
+      Object.defineProperty(scroller, 'scrollWidth', { configurable: true, value: 300 });
+      Object.defineProperty(scroller, 'clientWidth', { configurable: true, value: 100 });
+      Object.defineProperty(scroller, 'scrollLeft', { configurable: true, value: 50 });
+
+      dispatchTouch(scroller, 'pointerdown', 100);
+      dispatchTouch(viewport, 'pointermove', 80);
+      await flush(fixture);
+
+      expect(viewport.hasAttribute('data-dragging')).toBe(false);
     });
   });
 });

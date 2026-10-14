@@ -5,6 +5,7 @@ import {
   ElementRef,
   ErrorHandler,
   inject,
+  linkedSignal,
   type ModelSignal,
   type Signal,
   signal,
@@ -12,6 +13,7 @@ import {
 
 import {
   attachSwipeDismiss,
+  composedContains,
   FLICK_STALE_VELOCITY_MS,
   FLICK_VELOCITY_PX_PER_MS,
   flickVelocity,
@@ -56,6 +58,19 @@ function sideAxis(side: ForDrawerSide): 'x' | 'y' {
 /** Sign of a positive (toward-edge) drag offset along the host's axis. */
 function sideSign(side: ForDrawerSide): 1 | -1 {
   return side === 'bottom' || side === 'right' ? 1 : -1;
+}
+
+function towardEdge(side: ForDrawerSide, dx: number, dy: number): number {
+  switch (side) {
+    case 'bottom':
+      return dy;
+    case 'top':
+      return -dy;
+    case 'right':
+      return dx;
+    case 'left':
+      return -dx;
+  }
 }
 
 /**
@@ -195,9 +210,9 @@ export function injectDrawerDrag(config: DrawerDragConfig): DrawerDragHandle {
       : null,
   );
 
-  const dragOffset = signal(0); // px translated along the dismissal axis (positive = away from edge)
-  const dragging = signal(false);
-  const swipeProgress = signal(0); // [0, 1] progress toward the anchored edge (dismiss direction)
+  const dragOffset = linkedSignal({ source: gestureEnabled, computation: () => 0 }); // px translated along the dismissal axis (positive = toward the edge)
+  const dragging = linkedSignal({ source: gestureEnabled, computation: () => false });
+  const swipeProgress = linkedSignal({ source: gestureEnabled, computation: () => 0 }); // [0, 1] progress toward the anchored edge (dismiss direction)
 
   const swipeMovementX = computed<number>(() =>
     sideAxis(side()) === 'x' ? sideSign(side()) * dragOffset() : 0,
@@ -313,15 +328,11 @@ export function injectDrawerDrag(config: DrawerDragConfig): DrawerDragHandle {
   }
 
   function canBeginSwipe(detail: SwipeEventDetail): boolean {
-    const target = detail.originalEvent.target as Element | null;
     const handle = config.handleEl();
-    if (config.handleOnly() && (!handle || !target || !handle.contains(target))) {
+    if (config.handleOnly() && (!handle || !composedContains(handle, detail.target))) {
       return false;
     }
-    if (target && isScrollableAtEdge(target, detail.direction, host.nativeElement)) {
-      return false;
-    }
-    return true;
+    return !isScrollableAtEdge(detail.target, detail.direction, host.nativeElement);
   }
 
   function onSwipeStart(detail: SwipeEventDetail): void {
@@ -346,6 +357,12 @@ export function injectDrawerDrag(config: DrawerDragConfig): DrawerDragHandle {
 
     dragging.set(true);
     swipeProgress.set(0);
+    dragOffset.set(
+      Math.min(
+        dragMaxOffset,
+        Math.max(dragMinOffset, towardEdge(side(), detail.delta.x, detail.delta.y)),
+      ),
+    );
     dimensionAtStart = dimension;
     pointerStartTime = detail.originalEvent.timeStamp || performance.now();
     pointerLastTime = pointerStartTime;
@@ -366,19 +383,7 @@ export function injectDrawerDrag(config: DrawerDragConfig): DrawerDragHandle {
     const dy = event.clientY - pointerLastY;
     const dt = Math.max(1, now - pointerLastTime);
 
-    // Magnitude moved toward the anchored edge (positive = move toward edge).
-    const moveTowardEdge = (() => {
-      switch (side()) {
-        case 'bottom':
-          return dy; // pointer moves down → toward bottom edge → positive
-        case 'top':
-          return -dy;
-        case 'right':
-          return dx;
-        case 'left':
-          return -dx;
-      }
-    })();
+    const moveTowardEdge = towardEdge(side(), dx, dy);
     pointerVelocity = moveTowardEdge / dt; // px per ms toward edge
     pointerLastX = event.clientX;
     pointerLastY = event.clientY;
@@ -500,7 +505,8 @@ export function injectDrawerDrag(config: DrawerDragConfig): DrawerDragHandle {
       onSwipeStart: (detail) => onSwipeStart(detail),
       onSwipeMove: (detail) => onSwipeMove(detail),
       onSwipeEnd: (detail) => onSwipeRelease(detail),
-      onSwipeCancel: (detail) => onSwipeCancel(detail),
+      onSwipeCancel: (detail) =>
+        detail.originalEvent.type === 'pointerup' ? onSwipeRelease(detail) : onSwipeCancel(detail),
     });
   }
 

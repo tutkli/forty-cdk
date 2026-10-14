@@ -464,7 +464,7 @@ Spring the toast back by resetting **`transform`** on `[data-swipe='cancel']`, n
 
 Outputs:
 
-- `(swipeStart)`: armed; emitted once with `{ direction, delta, originalEvent }`.
+- `(swipeStart)`: armed; emitted once with `{ direction, delta, target, originalEvent }`. `delta` and `target` are measured from the press; `originalEvent` is the current move.
 - `(swipeMove)`: every pointer move while active.
 - `(swipeEnd)`: released past threshold (immediately followed by `(dismiss)` with reason `'swipe'`).
 - `(swipeCancel)`: released before threshold, or `pointercancel`.
