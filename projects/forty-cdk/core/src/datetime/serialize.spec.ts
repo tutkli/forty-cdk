@@ -13,6 +13,7 @@ const adapter: TimeCapableDateAdapter<Date> =
   new NativeDateAdapter() as TimeCapableDateAdapter<Date>;
 const at = (y: number, mo: number, d: number, h = 0, mi = 0, s = 0): Date =>
   new Date(y, mo - 1, d, h, mi, s);
+const TEST_SCOPE = { scope: 'core' };
 
 describe('clampToBounds', () => {
   it('returns the date unchanged when within bounds', () => {
@@ -50,36 +51,36 @@ describe('clampToBounds', () => {
 
 describe('serializeISODate', () => {
   it('serializes a day-granularity value as YYYY-MM-DD', () => {
-    expect(serializeISODate(adapter, at(2026, 6, 5), 'day', 'Test')).toBe('2026-06-05');
+    expect(serializeISODate(adapter, at(2026, 6, 5), 'day', 'Test', TEST_SCOPE)).toBe('2026-06-05');
   });
 
   it('zero-pads the year to four digits', () => {
     const early = new Date(2000, 0, 2);
     early.setFullYear(7);
-    expect(serializeISODate(adapter, early, 'day', 'Test')).toBe('0007-01-02');
+    expect(serializeISODate(adapter, early, 'day', 'Test', TEST_SCOPE)).toBe('0007-01-02');
   });
 
   it('serializes hour / minute granularity as YYYY-MM-DDTHH:mm', () => {
-    expect(serializeISODate(adapter, at(2026, 6, 5, 9, 7), 'minute', 'Test')).toBe(
+    expect(serializeISODate(adapter, at(2026, 6, 5, 9, 7), 'minute', 'Test', TEST_SCOPE)).toBe(
       '2026-06-05T09:07',
     );
   });
 
   it('serializes second granularity as YYYY-MM-DDTHH:mm:ss', () => {
-    expect(serializeISODate(adapter, at(2026, 6, 5, 9, 7, 3), 'second', 'Test')).toBe(
+    expect(serializeISODate(adapter, at(2026, 6, 5, 9, 7, 3), 'second', 'Test', TEST_SCOPE)).toBe(
       '2026-06-05T09:07:03',
     );
   });
 
-  it('throws a piece-prefixed error when serializing a timed value on a day-only adapter', () => {
+  it('throws under the caller scope, naming the piece, when serializing a timed value on a day-only adapter', () => {
     const dayOnly = {
       getYear: () => 2026,
       getMonth: () => 6,
       getDate: () => 5,
     } as unknown as DateAdapter<Date>;
-    expect(() => serializeISODate(dayOnly, at(2026, 6, 5), 'minute', 'ForDateField')).toThrowError(
-      /ForDateField/,
-    );
+    expect(() =>
+      serializeISODate(dayOnly, at(2026, 6, 5), 'minute', 'ForDateField', { scope: 'date-field' }),
+    ).toThrowError(/^\[forty-cdk\/date-field\] FORCDK-CORE-003\b[\s\S]*ForDateField/);
   });
 });
 
@@ -132,9 +133,9 @@ describe('secondsOfDay', () => {
 describe('serialize round-trip', () => {
   it('serializeISODate at second granularity round-trips back through the adapter', () => {
     const original = at(2026, 6, 5, 9, 7, 3);
-    const iso = serializeISODate(adapter, original, 'second', 'Test');
+    const iso = serializeISODate(adapter, original, 'second', 'Test', TEST_SCOPE);
     const parsed = new Date(iso);
-    expect(serializeISODate(adapter, parsed, 'second', 'Test')).toBe(iso);
+    expect(serializeISODate(adapter, parsed, 'second', 'Test', TEST_SCOPE)).toBe(iso);
   });
 
   it('serializeISOTime at second granularity round-trips back through composeWithTime', () => {

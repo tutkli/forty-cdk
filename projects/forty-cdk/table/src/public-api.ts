@@ -22,7 +22,7 @@ export {
   type TableRowContextMenuEvent,
 } from './table-body';
 export { ForTableHeaderRow } from './table-header-row';
-export { ForTableRow, type TableRawRowActivateEvent } from './table-row';
+export { ForTableRow, provideForTableRow, type TableRawRowActivateEvent } from './table-row';
 export { ForTableHeaderCell } from './table-header-cell';
 export { ForTableCell } from './table-cell';
 export { ForTableVariantCell } from './table-variant-cell';

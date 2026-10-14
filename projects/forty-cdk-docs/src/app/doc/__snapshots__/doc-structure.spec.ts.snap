@@ -722,7 +722,7 @@ exports[`document structure > docs/wrapping-form-primitives.md declares the sect
       },
       {
         "depth": 3,
-        "slug": "projected-time-sources-self-provide-a-bridge-token",
+        "slug": "date-and-time-roots-spread-their-provider-helper",
       },
     ],
     "slug": "pattern-2--subclassing",
@@ -738,12 +738,12 @@ exports[`document structure > docs/wrapping-form-primitives.md declares the sect
       },
       {
         "columns": [
-          "Subclassed primitive",
-          "Bridge that resolves it",
-          "Token to re-provide",
+          "Subclassed root",
+          "Helper",
+          "What a subclass without it loses",
         ],
         "role": "plain",
-        "rows": 2,
+        "rows": 4,
       },
     ],
     "title": "Pattern 2 — subclassing",
@@ -793,6 +793,10 @@ exports[`document structure > docs/wrapping-non-form-roots.md declares the secti
         "depth": 3,
         "slug": "fortable-needs-its-provider-helper-not-a-hand-written-provider",
       },
+      {
+        "depth": 3,
+        "slug": "fortoolbar-and-fortablerow-spread-their-helpers-too",
+      },
     ],
     "slug": "re-provide-the-context-token--this-is-the-one-that-breaks",
     "tables": [
@@ -802,7 +806,7 @@ exports[`document structure > docs/wrapping-non-form-roots.md declares the secti
           "Token to re-provide",
         ],
         "role": "plain",
-        "rows": 28,
+        "rows": 27,
       },
     ],
     "title": "Re-provide the context token — this is the one that breaks",

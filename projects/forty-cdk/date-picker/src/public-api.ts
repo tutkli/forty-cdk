@@ -1,4 +1,4 @@
-export { ForDatePicker } from './date-picker';
+export { ForDatePicker, provideForDatePicker } from './date-picker';
 export { ForDatePickerAnchor } from './date-picker-anchor';
 export { ForDatePickerTrigger } from './date-picker-trigger';
 export { ForDatePickerContent } from './date-picker-content';
@@ -21,7 +21,7 @@ export {
   FOR_DATE_PICKER_HOST_DIRECTIVE_OUTPUTS,
 } from './date-picker-host-directive';
 
-export { ForDateRangePicker } from './date-range-picker';
+export { ForDateRangePicker, provideForDateRangePicker } from './date-range-picker';
 export {
   FOR_DATE_RANGE_PICKER_CONTEXT,
   type ForDateRangePickerContext,

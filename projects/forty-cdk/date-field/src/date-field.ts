@@ -276,7 +276,11 @@ export class ForDateField<D>
         if (current === null) {
           return [];
         }
-        return [serializeISODate(this.adapter, current, this.granularity(), 'ForDateField')];
+        return [
+          serializeISODate(this.adapter, current, this.granularity(), 'ForDateField', {
+            scope: 'date-field',
+          }),
+        ];
       }),
       disabled: this.effectiveDisabled,
     });

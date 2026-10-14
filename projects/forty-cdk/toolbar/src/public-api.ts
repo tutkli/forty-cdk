@@ -1,4 +1,4 @@
-export { ForToolbar } from './toolbar';
+export { ForToolbar, provideForToolbar } from './toolbar';
 export { ForToolbarButton } from './toolbar-button';
 export { ForToolbarLink } from './toolbar-link';
 export { ForToolbarSeparator } from './toolbar-separator';

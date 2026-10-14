@@ -6,8 +6,10 @@ import {
   input,
   isDevMode,
   model,
+  type Provider,
   signal,
   type Signal,
+  type Type,
 } from '@angular/core';
 import type { FormValueControl } from '@angular/forms/signals';
 
@@ -90,11 +92,7 @@ import { FOR_DATE_RANGE_PICKER_DEFAULTS } from 'forty-cdk/defaults';
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.data-readonly]': 'readonly() ? "" : null',
   },
-  providers: [
-    { provide: FOR_DATE_PICKER_CONTEXT, useExisting: ForDateRangePicker },
-    { provide: FOR_DATE_RANGE_PICKER_CONTEXT, useExisting: ForDateRangePicker },
-    { provide: FOR_PICKER_SOURCE_HOST, useExisting: ForDateRangePicker },
-  ],
+  providers: provideForDateRangePicker(ForDateRangePicker),
 })
 export class ForDateRangePicker<D>
   extends DatePickerBase<D>
@@ -168,7 +166,11 @@ export class ForDateRangePicker<D>
         const range = this.value();
         return range === null
           ? []
-          : [serializeISODate(this.adapter, range.start, 'day', 'ForDateRangePicker')];
+          : [
+              serializeISODate(this.adapter, range.start, 'day', 'ForDateRangePicker', {
+                scope: 'date-picker',
+              }),
+            ];
       }),
       disabled: this.effectiveDisabled,
     });
@@ -178,7 +180,11 @@ export class ForDateRangePicker<D>
         const range = this.value();
         return range === null
           ? []
-          : [serializeISODate(this.adapter, range.end, 'day', 'ForDateRangePicker')];
+          : [
+              serializeISODate(this.adapter, range.end, 'day', 'ForDateRangePicker', {
+                scope: 'date-picker',
+              }),
+            ];
       }),
       disabled: this.effectiveDisabled,
     });
@@ -243,4 +249,31 @@ function assertRangeCalendar(calendar: ProjectedCalendar<unknown>): void {
       fix: 'Set selectionMode="range" on the projected [forCalendar].',
     });
   }
+}
+
+/**
+ * The providers a `[forDateRangePicker]` root installs, each aliased to `root`:
+ * {@link FOR_DATE_RANGE_PICKER_CONTEXT}, the {@link FOR_DATE_PICKER_CONTEXT} the shared trigger,
+ * content and value pieces resolve, and the host the projected calendar takes `readonly` and
+ * `disabled` from.
+ *
+ * A wrapper that **subclasses** the root spreads this helper as its own `providers`. A subclass
+ * replaces the inherited array wholesale, and the last token cannot be named from outside the
+ * library:
+ *
+ * ```ts
+ * providers: provideForDateRangePicker(MyDateRangePicker),
+ * ```
+ *
+ * Wrapping through `hostDirectives: [ForDateRangePicker]` needs none of this, because a host
+ * directive brings its own providers to the element.
+ */
+export function provideForDateRangePicker<D = unknown>(
+  root: Type<ForDateRangePicker<D>>,
+): Provider[] {
+  return [
+    { provide: FOR_DATE_PICKER_CONTEXT, useExisting: root },
+    { provide: FOR_DATE_RANGE_PICKER_CONTEXT, useExisting: root },
+    { provide: FOR_PICKER_SOURCE_HOST, useExisting: root },
+  ];
 }

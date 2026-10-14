@@ -1038,7 +1038,7 @@ export class MyTable extends ForTable {
 }
 ```
 
-The argument is the subclass, so the public `FOR_TABLE_CONTEXT` aliases it and an advanced consumer injecting the context reaches your instance. Add `{ provide: ForTable, useExisting: MyTable }` alongside if you also want `inject(ForTable)` to resolve.
+The argument is the subclass, so the public `FOR_TABLE_CONTEXT` aliases it and an advanced consumer injecting the context reaches your instance. Add `{ provide: ForTable, useExisting: MyTable }` alongside if you also want `inject(ForTable)` to resolve. A subclassed `[forTableRow]` spreads `provideForTableRow(MyRow)` for the same reason: the row context and the cell-registration wiring it provides are not exported, and without them every `[forTableCell]` in the row throws `FORCDK-TABLE-012`.
 
 The rest of the wrapper story (what a wrapper must not swallow, and the plain re-provide every other composed root needs) is in [Wrapping non-form roots](../../../docs/wrapping-non-form-roots.md).
 

@@ -230,4 +230,4 @@ forty-cdk ships no styles: put your own class on each piece and key your CSS off
 
 ## Wrapping in a design system
 
-Subclass the root and re-provide `FOR_TOOLBAR_CONTEXT` with `useExisting` pointing at the subclass, since Angular does not inherit a directive's `providers`; [Wrapping non-form roots](../../../docs/wrapping-non-form-roots.md) walks the pattern.
+Subclass the root and spread `provideForToolbar(MyToolbar)` as its `providers`. Angular does not inherit a directive's `providers`, and besides `FOR_TOOLBAR_CONTEXT` the root provides an internal roving channel that keeps a nested `[forToggleGroup]` inside the toolbar's single Tab stop; the helper installs both. Composing through `hostDirectives: [ForToolbar]` needs neither. [Wrapping non-form roots](../../../docs/wrapping-non-form-roots.md) walks the pattern.

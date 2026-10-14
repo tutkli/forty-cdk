@@ -6,8 +6,10 @@ import {
   input,
   isDevMode,
   model,
+  type Provider,
   signal,
   contentChild,
+  type Type,
 } from '@angular/core';
 import type { FormValueControl } from '@angular/forms/signals';
 
@@ -130,11 +132,7 @@ import { FOR_DATE_PICKER_DEFAULTS } from 'forty-cdk/defaults';
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.data-readonly]': 'readonly() ? "" : null',
   },
-  providers: [
-    { provide: FOR_DATE_PICKER_CONTEXT, useExisting: ForDatePicker },
-    { provide: FOR_DATE_FIELD_HOST, useExisting: ForDatePicker },
-    { provide: FOR_PICKER_SOURCE_HOST, useExisting: ForDatePicker },
-  ],
+  providers: provideForDatePicker(ForDatePicker),
 })
 export class ForDatePicker<D>
   extends DatePickerBase<D>
@@ -263,7 +261,11 @@ export class ForDatePicker<D>
         if (value === null) {
           return [];
         }
-        return [serializeISODate(this.adapter, value, this.granularity(), 'ForDatePicker')];
+        return [
+          serializeISODate(this.adapter, value, this.granularity(), 'ForDatePicker', {
+            scope: 'date-picker',
+          }),
+        ];
       }),
       disabled: this.effectiveDisabled,
     });
@@ -472,4 +474,29 @@ function assertFieldProjected(field: AdoptedField | null): AdoptedField | null {
     });
   }
   return field;
+}
+
+/**
+ * The providers a `[forDatePicker]` root installs, each aliased to `root`:
+ * {@link FOR_DATE_PICKER_CONTEXT}, the host a projected `[forDateField]` is adopted through under
+ * `anatomy="field"`, and the host the projected calendar and time control take `readonly` and
+ * `disabled` from.
+ *
+ * A wrapper that **subclasses** the root spreads this helper as its own `providers`. A subclass
+ * replaces the inherited array wholesale, and the last two tokens cannot be named from outside the
+ * library:
+ *
+ * ```ts
+ * providers: provideForDatePicker(MyDatePicker),
+ * ```
+ *
+ * Wrapping through `hostDirectives: [ForDatePicker]` needs none of this, because a host directive
+ * brings its own providers to the element.
+ */
+export function provideForDatePicker<D = unknown>(root: Type<ForDatePicker<D>>): Provider[] {
+  return [
+    { provide: FOR_DATE_PICKER_CONTEXT, useExisting: root },
+    { provide: FOR_DATE_FIELD_HOST, useExisting: root },
+    { provide: FOR_PICKER_SOURCE_HOST, useExisting: root },
+  ];
 }

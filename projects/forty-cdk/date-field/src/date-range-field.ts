@@ -269,7 +269,11 @@ export class ForDateRangeField<D>
         const range = this.value();
         return range === null
           ? []
-          : [serializeISODate(this.adapter, range.start, this.granularity(), 'ForDateRangeField')];
+          : [
+              serializeISODate(this.adapter, range.start, this.granularity(), 'ForDateRangeField', {
+                scope: 'date-field',
+              }),
+            ];
       }),
       disabled: this.effectiveDisabled,
     });
@@ -279,7 +283,11 @@ export class ForDateRangeField<D>
         const range = this.value();
         return range === null
           ? []
-          : [serializeISODate(this.adapter, range.end, this.granularity(), 'ForDateRangeField')];
+          : [
+              serializeISODate(this.adapter, range.end, this.granularity(), 'ForDateRangeField', {
+                scope: 'date-field',
+              }),
+            ];
       }),
       disabled: this.effectiveDisabled,
     });
