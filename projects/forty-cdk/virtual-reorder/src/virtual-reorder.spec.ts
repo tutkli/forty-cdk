@@ -1310,6 +1310,39 @@ describe('ForVirtualReorder — focus follows the dropped row (#2118)', () => {
     expect(document.activeElement).toBe(row);
     expect(focusedRow()).toEqual({ index: '2', text: 'Row 2' });
   });
+
+  it('an Escape after an End jump keeps focus on the lifted row, not <body>', async () => {
+    const harness = await mount();
+    const row = harness.query('[data-testid="row-2"]')!;
+    row.focus();
+
+    dispatchKey(row, ' ');
+    await settle(harness);
+    dispatchKey(row, 'End');
+    await settle(harness);
+    dispatchKey(row, 'Escape');
+    await settle(harness);
+
+    expect(harness.instance.last()).toBeNull();
+    expect(focusedRow()).toEqual({ index: '2', text: 'Row 2' });
+  });
+
+  it('an Escape after a jump scrolls the origin back into the window and releases the pin', async () => {
+    const harness = await mount();
+    const row = harness.query('[data-testid="row-2"]')!;
+    row.focus();
+
+    dispatchKey(row, ' ');
+    await settle(harness);
+    dispatchKey(row, 'End');
+    await settle(harness);
+    dispatchKey(row, 'Escape');
+    await settle(harness);
+
+    const indices = harness.indices();
+    expect(indices).toContain(2);
+    expect(Math.max(...indices) - Math.min(...indices)).toBe(indices.length - 1);
+  });
 });
 
 describe('ForVirtualReorder — idle Home / End reach the dataset ends (#2118)', () => {

@@ -200,6 +200,30 @@ class AppliedMoveHost {
 
 @Component({
   imports: [...DND_IMPORTS],
+  host: { 'data-fixture': 'index-tracked' },
+  template: `
+    <ul forDropList (dragDrop)="onDrop($event)">
+      @for (row of rows(); track $index) {
+        <li forDraggable [dragData]="row" [attr.data-test-id]="'slot-' + $index">
+          {{ row.label }}
+        </li>
+      }
+    </ul>
+  `,
+})
+class IndexTrackedHost {
+  readonly rows: WritableSignal<Row[]> = signal([
+    { id: 1, label: 'Alpha' },
+    { id: 2, label: 'Beta' },
+    { id: 3, label: 'Gamma' },
+  ]);
+  onDrop(event: ForDragDropEvent): void {
+    this.rows.set(moveItemInArray(this.rows(), event.previousIndex, event.currentIndex));
+  }
+}
+
+@Component({
+  imports: [...DND_IMPORTS],
   template: `
     <ul forDropList (dragDrop)="onDrop()">
       @for (row of rows(); track row.id) {
@@ -2189,6 +2213,20 @@ describe('ForDropList + ForDraggable', () => {
       const moved = itemEl(el, 'a-1');
       expect(listEl(el, 0).querySelectorAll('[forDraggable]')[1]).toBe(moved);
       expect(document.activeElement).toBe(moved);
+    });
+
+    it('an index-tracked keyboard drop focuses the slot now rendering the moved item', async () => {
+      const { el, fixture } = renderHost(IndexTrackedHost);
+      const first = itemEl(el, 'slot-0');
+      first.focus();
+      pressKey(first, ' ');
+      pressKey(first, 'ArrowDown');
+      pressKey(first, ' ');
+      await flush(fixture);
+
+      expect(itemEl(el, 'slot-0').textContent?.trim()).toBe('Beta');
+      expect(document.activeElement).toBe(itemEl(el, 'slot-1'));
+      expect(document.activeElement?.textContent?.trim()).toBe('Alpha');
     });
 
     it('leaves focus where the consumer put it inside the drop handler', async () => {

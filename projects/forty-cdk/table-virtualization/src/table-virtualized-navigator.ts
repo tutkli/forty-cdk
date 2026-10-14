@@ -26,6 +26,11 @@ export interface TableVirtualizedNavigatorDeps {
   readonly scrollToRow: (index: number) => void;
   /** The scroll container's bounding rect, or `null` before it is available. */
   readonly scrollViewportRect: () => DOMRect | null;
+  /**
+   * The virtualizer's own `[first, last + 1)` window, without the retained focused / reordering
+   * rows. When absent, every row counts as inside the window.
+   */
+  readonly range?: () => readonly [number, number];
   /** The count of rows the virtualizer can place (`[virtualRowCount]`, else the table's `[rowCount]`), used to clamp when stepping over variant rows. */
   readonly rowCount: () => number;
   /** The count of currently loaded data rows (the body dataset length), or `undefined` when unknown (raw-primitive rendering). Cross-window targets are clamped to this so an out-of-prefix row never stashes a pending focus move that can only resolve when a far page later loads. */
@@ -109,6 +114,12 @@ export class TableVirtualizedNavigator {
   /** Scroll the virtualizer so the row at the absolute `index` is in the window. */
   scrollToRow(index: number): void {
     this.#deps.scrollToRow(index);
+  }
+
+  /** Whether the virtualizer's own window covers the row at the absolute `index`. */
+  isRowInWindow(index: number): boolean {
+    const range = this.#deps.range?.();
+    return range === undefined || (index >= range[0] && index < range[1]);
   }
 
   /** The scroll container's bounding rect, or `null` before it is available. */

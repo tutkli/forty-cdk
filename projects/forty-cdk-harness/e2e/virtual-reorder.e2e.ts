@@ -309,6 +309,29 @@ test.describe('Virtualized list reorder: focus follows the keyboard (#2118)', ()
     await expect(landed).toHaveText(`Row ${from}`);
   });
 
+  test('an Escape after an End jump scrolls the origin back and keeps it focused', async ({
+    page,
+  }) => {
+    const indices = await scrollAndSettle(page);
+    const from = indices[Math.floor(indices.length / 2)]!;
+
+    await el(page, `row-${from}`).focus();
+    await page.keyboard.press('Space');
+    await page.keyboard.press('End');
+    await expect.poll(async () => (await renderedIndices(page)).at(-1) ?? -1).toBe(9999);
+    await page.keyboard.press('Escape');
+
+    await expect
+      .poll(async () => {
+        const rendered = await renderedIndices(page);
+        return rendered.includes(from) && rendered.at(-1)! - rendered[0]! === rendered.length - 1;
+      })
+      .toBe(true);
+    await expect(el(page, `row-${from}`)).toBeFocused();
+    await expect(el(page, `row-${from}`)).toHaveText(`Row ${from}`);
+    await expect(el(page, 'last-reorder')).toHaveText('none');
+  });
+
   test('idle End and Home focus the dataset ends, beyond the rendered window', async ({ page }) => {
     const indices = await scrollAndSettle(page);
     const from = indices[Math.floor(indices.length / 2)]!;

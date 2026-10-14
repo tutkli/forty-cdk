@@ -203,7 +203,7 @@ export class ForVirtualReorder {
       destroyRef.onDestroy(() => {
         this.#pointerSession?.destroy();
         if (this.#kbLiftedHost !== null) {
-          this.#kbCancel();
+          this.#kbCancel(false);
         }
         this.#viewport.setReorderingIndex(null);
       });
@@ -385,9 +385,26 @@ export class ForVirtualReorder {
     }
   }
 
-  #kbCancel(): void {
+  #kbCancel(restoreFocus = true): void {
+    const lifted = this.#kbLiftedHost;
+    const from = this.#kbFrom;
     this.#announcer.announce(this.#dragDefaults.announceCancel(this.#label()), 'assertive');
     this.#kbTeardown(false);
+    if (restoreFocus && lifted !== null) {
+      this.#followFocus(lifted, {
+        reveal: () => {
+          this.#viewport.setReorderingIndex(from);
+          this.#viewport.scrollToIndex(from);
+        },
+        target: () => (this.#inWindow(from) ? this.#rowAt(from) : null),
+        release: () => this.#viewport.setReorderingIndex(null),
+      });
+    }
+  }
+
+  #inWindow(index: number): boolean {
+    const [start, end] = this.#viewport.range();
+    return index >= start && index < end;
   }
 
   #kbTeardown(dropped: boolean): void {
