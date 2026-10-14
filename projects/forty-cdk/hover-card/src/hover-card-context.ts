@@ -73,6 +73,11 @@ export interface HoverCardPieceContext {
    * trigger, without that focus reopening the card.
    */
   returnFocusToTrigger(): void;
+  /**
+   * A Tab moved focus out of the content onto the trigger: closes the card
+   * at once, ignoring `closeDelay`.
+   */
+  closeOnTabOut(): void;
 }
 
 /**

@@ -113,6 +113,26 @@ class InteractiveHoverCardHost {
   readonly isOpen = signal(false);
 }
 
+@Component({
+  imports: [ForHoverCard, ForHoverCardTrigger, ForHoverCardContent],
+  template: `
+    <span forHoverCard #card="forHoverCard" [(open)]="isOpen" [openDelay]="0" [closeDelay]="0">
+      @if (swap()) {
+        <a forHoverCardTrigger href="/b" data-testid="b">Save</a>
+      } @else {
+        <a forHoverCardTrigger href="/a" data-testid="a">Edit</a>
+      }
+      @if (card.open()) {
+        <div forHoverCardContent>Card</div>
+      }
+    </span>
+  `,
+})
+class SwappedTriggerHoverCardHost {
+  readonly isOpen = signal(false);
+  readonly swap = signal(false);
+}
+
 function pointerEvent(
   type: 'pointerenter' | 'pointerleave',
   relatedTarget: EventTarget | null = null,
@@ -874,6 +894,91 @@ describe('ForHoverCard', () => {
 
       expect(fixture.componentInstance.isOpen()).toBe(false);
       expect(document.activeElement).toBe(outside);
+    });
+  });
+
+  describe('Tab out of the portaled content', () => {
+    async function openWithFocusOn(index: number) {
+      const r = renderHost(InteractiveHoverCardHost);
+      await r.flush();
+      const trigger = r.query<HTMLAnchorElement>('a')!;
+      trigger.dispatchEvent(pointerEvent('pointerenter'));
+      await r.flush();
+      const content = document.body.querySelector<HTMLElement>('[forHoverCardContent]')!;
+      const control = content.querySelectorAll<HTMLButtonElement>('button')[index]!;
+      control.focus();
+      await r.flush();
+      expect(document.activeElement).toBe(control);
+      return { ...r, trigger, control };
+    }
+
+    it('lands on the trigger on Shift+Tab from the first control and closes the card', async () => {
+      const { fixture, trigger, control, flush } = await openWithFocusOn(0);
+
+      const event = pressKey(control, 'Tab', { shiftKey: true });
+
+      expect(document.activeElement).toBe(trigger);
+      expect(event.defaultPrevented).toBe(true);
+      await flush();
+      await flush();
+      expect(fixture.componentInstance.isOpen()).toBe(false);
+      expect(document.activeElement).toBe(trigger);
+    });
+
+    it('moves focus to the trigger on Tab from the last control and keeps the default action', async () => {
+      const { fixture, trigger, control, flush } = await openWithFocusOn(1);
+
+      const event = pressKey(control, 'Tab');
+
+      expect(document.activeElement).toBe(trigger);
+      expect(event.defaultPrevented).toBe(false);
+      await flush();
+      expect(fixture.componentInstance.isOpen()).toBe(false);
+    });
+
+    it('does not return focus to the trigger after a Tab out', async () => {
+      const { fixture, trigger, control, flush } = await openWithFocusOn(1);
+      const focusSpy = vi.spyOn(trigger, 'focus');
+
+      pressKey(control, 'Tab');
+      await flush();
+
+      expect(fixture.componentInstance.isOpen()).toBe(false);
+      expect(focusSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('leaves Tab between controls inside the card to the browser', async () => {
+      const { fixture, control, flush } = await openWithFocusOn(0);
+
+      const event = pressKey(control, 'Tab');
+      await flush();
+
+      expect(event.defaultPrevented).toBe(false);
+      expect(document.activeElement).toBe(control);
+      expect(fixture.componentInstance.isOpen()).toBe(true);
+    });
+  });
+
+  describe('trigger swapped under the pointer', () => {
+    it('closes on blur of the swapped-in trigger after the hovered one unmounted', async () => {
+      const r = renderHost(SwappedTriggerHoverCardHost);
+      await r.flush();
+
+      r.query<HTMLAnchorElement>('[data-testid="a"]')!.dispatchEvent(pointerEvent('pointerenter'));
+      await r.flush();
+      expect(r.instance.isOpen()).toBe(true);
+
+      r.instance.swap.set(true);
+      await r.flush();
+      const b = r.query<HTMLAnchorElement>('[data-testid="b"]')!;
+      b.focus();
+      await r.flush();
+      expect(r.instance.isOpen()).toBe(true);
+
+      b.blur();
+      await r.flush();
+
+      expect(r.instance.isOpen()).toBe(false);
     });
   });
 

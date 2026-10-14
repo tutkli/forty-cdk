@@ -146,6 +146,26 @@ class HoverableTooltipHost {
   readonly hoverable = signal(true);
 }
 
+@Component({
+  imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
+  template: `
+    <div forTooltip [(open)]="isOpen" [openDelay]="0" [closeDelay]="0">
+      @if (swap()) {
+        <button type="button" forTooltipTrigger data-testid="b">Save</button>
+      } @else {
+        <button type="button" forTooltipTrigger data-testid="a">Edit</button>
+      }
+      @if (isOpen()) {
+        <div forTooltipContent>Hint</div>
+      }
+    </div>
+  `,
+})
+class SwappedTriggerTooltipHost {
+  readonly isOpen = signal(false);
+  readonly swap = signal(false);
+}
+
 describe('ForTooltip', () => {
   // floating-ui's autoUpdate uses ResizeObserver / IntersectionObserver — jsdom 28
   // still doesn't ship them. Install no-op polyfills for this spec only; the
@@ -380,6 +400,29 @@ describe('ForTooltip', () => {
       trigger.dispatchEvent(new FocusEvent('blur'));
       vi.advanceTimersByTime(300);
       r.fixture.detectChanges();
+      expect(r.instance.isOpen()).toBe(false);
+    });
+
+    it('closes on blur of a swapped-in trigger after the hovered one unmounted under the pointer', async () => {
+      const r = renderHost(SwappedTriggerTooltipHost);
+      await flush(r.fixture);
+
+      r.query<HTMLButtonElement>('[data-testid="a"]')!.dispatchEvent(
+        new PointerEvent('pointerenter'),
+      );
+      await flush(r.fixture);
+      expect(r.instance.isOpen()).toBe(true);
+
+      r.instance.swap.set(true);
+      await flush(r.fixture);
+      const b = r.query<HTMLButtonElement>('[data-testid="b"]')!;
+      b.focus();
+      await flush(r.fixture);
+      expect(r.instance.isOpen()).toBe(true);
+
+      b.blur();
+      await flush(r.fixture);
+
       expect(r.instance.isOpen()).toBe(false);
     });
   });

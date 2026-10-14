@@ -13,18 +13,16 @@ import {
 import {
   emitVetoableNativeEvent,
   injectPrefersReducedMotion,
-  isNonTouchPointer,
   type VetoableNativeEvent,
 } from 'forty-cdk/core';
 import {
   AnchoredOverlayPositioningBase,
   forceCloseWhenDisabled,
   createHoverIntent,
+  createHoverSurfaceState,
   type HoverIntentScheduler,
-  attachPointerGrace,
-  buildSubmenuGracePolygon,
+  type HoverSurfaceState,
   type Point,
-  resolveGraceSide,
   ScrollDismissDispatcher,
   type ScrollDismissRegistration,
 } from 'forty-cdk/core-overlay';
@@ -137,12 +135,8 @@ export class ForHoverCard extends AnchoredOverlayPositioningBase implements ForH
   readonly #coordinator = inject(HoverCardCoordinator);
   readonly #hoverIntent: HoverIntentScheduler;
 
-  #triggerHovered = false;
-  #triggerFocused = false;
-  #contentHovered = false;
-  #contentFocused = false;
+  readonly #surface: HoverSurfaceState;
   #returningFocus = false;
-  #detachGrace: (() => void) | null = null;
   readonly #scrollDismiss: ScrollDismissRegistration;
 
   constructor() {
@@ -159,6 +153,13 @@ export class ForHoverCard extends AnchoredOverlayPositioningBase implements ForH
       openDelay: () => this.openDelay() ?? this.positioningDefaults.openDelay,
       closeDelay: () => this.closeDelay() ?? this.positioningDefaults.closeDelay,
       coordinator: this.#coordinator,
+    });
+
+    this.#surface = createHoverSurfaceState({
+      trigger: this.#triggerEl,
+      content: this.#contentEl,
+      side: () => this.side(),
+      close: () => this.#hoverIntent.scheduleClose(false),
     });
 
     this.#scrollDismiss = inject(ScrollDismissDispatcher).register({
@@ -180,6 +181,7 @@ export class ForHoverCard extends AnchoredOverlayPositioningBase implements ForH
   unregisterTrigger(el: HTMLElement): void {
     if (this.#triggerEl() === el) {
       this.#triggerEl.set(null);
+      this.#surface.resetTrigger();
     }
   }
 
@@ -200,32 +202,29 @@ export class ForHoverCard extends AnchoredOverlayPositioningBase implements ForH
   unregisterContent(el: HTMLElement): void {
     if (this.#contentEl() === el) {
       this.#contentEl.set(null);
-      this.#contentHovered = false;
-      this.#contentFocused = false;
-      this.#disarmContentGrace();
+      this.#surface.resetContent();
     }
   }
 
   pointerEnterTrigger(): void {
-    this.#triggerHovered = true;
-    this.#disarmContentGrace();
+    this.#surface.enterTrigger();
     this.scheduleOpen('hover-trigger');
   }
 
   pointerLeaveTrigger(cursor: Point): void {
-    this.#triggerHovered = false;
-    if (this.#triggerFocused) {
+    this.#surface.leaveTrigger();
+    if (this.#surface.triggerFocused()) {
       return;
     }
     if (this.open() && this.#contentEl()) {
-      this.#armContentGrace(cursor);
+      this.#surface.armGrace(cursor);
       return;
     }
-    this.#scheduleCloseIfInactive();
+    this.#surface.closeIfInactive();
   }
 
   focusTrigger(): void {
-    this.#triggerFocused = true;
+    this.#surface.focusTrigger();
     if (this.#returningFocus) {
       return;
     }
@@ -233,29 +232,30 @@ export class ForHoverCard extends AnchoredOverlayPositioningBase implements ForH
   }
 
   blurTrigger(): void {
-    this.#triggerFocused = false;
-    this.#scheduleCloseIfInactive();
+    this.#surface.blurTrigger();
   }
 
   pointerEnterContent(): void {
-    this.#contentHovered = true;
-    this.#disarmContentGrace();
+    this.#surface.enterContent();
     this.cancelPending();
   }
 
   pointerLeaveContent(): void {
-    this.#contentHovered = false;
-    this.#scheduleCloseIfInactive();
+    this.#surface.leaveContent();
   }
 
   private focusEnterContent(): void {
-    this.#contentFocused = true;
+    this.#surface.focusContent();
     this.cancelPending();
   }
 
   private focusLeaveContent(): void {
-    this.#contentFocused = false;
-    this.#scheduleCloseIfInactive();
+    this.#surface.blurContent();
+  }
+
+  private closeOnTabOut(): void {
+    this.cancelPending();
+    this.#hoverIntent.scheduleClose(true);
   }
 
   private returnFocusToTrigger(): void {
@@ -279,12 +279,12 @@ export class ForHoverCard extends AnchoredOverlayPositioningBase implements ForH
   }
 
   scheduleClose(reason: HoverCardScheduleReason): void {
-    this.#disarmContentGrace();
+    this.#surface.disarmGrace();
     this.#hoverIntent.scheduleClose(reason === 'escape');
   }
 
   cancelPending(): void {
-    this.#disarmContentGrace();
+    this.#surface.disarmGrace();
     this.#hoverIntent.cancelPending();
   }
 
@@ -298,7 +298,7 @@ export class ForHoverCard extends AnchoredOverlayPositioningBase implements ForH
    * the trigger's focus armed, survive the scroll.
    */
   #dismissOnScroll(): void {
-    if (this.#triggerFocused || this.#contentFocused) {
+    if (this.#surface.focused()) {
       return;
     }
     this.cancelPending();
@@ -357,46 +357,5 @@ export class ForHoverCard extends AnchoredOverlayPositioningBase implements ForH
    */
   hide(): void {
     this.scheduleClose('hover-trigger');
-  }
-
-  #scheduleCloseIfInactive(): void {
-    if (
-      this.#triggerHovered ||
-      this.#triggerFocused ||
-      this.#contentHovered ||
-      this.#contentFocused
-    ) {
-      return;
-    }
-    this.#hoverIntent.scheduleClose(false);
-  }
-
-  #armContentGrace(cursor: Point): void {
-    const content = this.#contentEl();
-    if (!content) {
-      this.#scheduleCloseIfInactive();
-      return;
-    }
-    const rect = content.getBoundingClientRect();
-    const trigger = this.#triggerEl();
-    const side = trigger ? resolveGraceSide(trigger.getBoundingClientRect(), rect) : this.side();
-    const polygon = buildSubmenuGracePolygon(cursor, rect, side);
-    this.#disarmContentGrace();
-    this.#detachGrace = attachPointerGrace(
-      content.ownerDocument,
-      polygon,
-      () => {
-        this.#disarmContentGrace();
-        this.#scheduleCloseIfInactive();
-      },
-      { tracksPointer: isNonTouchPointer },
-    );
-  }
-
-  #disarmContentGrace(): void {
-    if (this.#detachGrace) {
-      this.#detachGrace();
-      this.#detachGrace = null;
-    }
   }
 }

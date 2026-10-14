@@ -76,6 +76,10 @@ export {
   forceCloseWhenDisabled,
   type HoverIntentScheduler,
 } from './hover-intent/hover-intent';
+export {
+  createHoverSurfaceState,
+  type HoverSurfaceState,
+} from './hover-intent/hover-surface-state';
 export { InertSiblingsStack } from './inert-siblings/inert-siblings';
 export {
   type ListboxOverlayContext,

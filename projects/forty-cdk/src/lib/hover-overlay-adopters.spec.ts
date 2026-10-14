@@ -5,6 +5,7 @@ import { installObserverPolyfills } from 'forty-cdk/testing';
 import { ForTooltip, ForTooltipContent, ForTooltipTrigger } from 'forty-cdk/tooltip';
 
 import { afterEachOverlayCleanup, renderHost } from '../test-utils';
+import { LIBRARY_CODE } from '../test-utils/source-scan';
 
 interface OpenHost {
   readonly open: WritableSignal<boolean>;
@@ -153,6 +154,34 @@ describe('hover overlay adopters of the shared scroll and grace helpers', () => 
       log.dispatchEvent(new Event('scroll'));
 
       expect(contains).not.toHaveBeenCalled();
+    });
+  }
+});
+
+function hoverIntentRoots(): Array<readonly [string, string]> {
+  return [...LIBRARY_CODE].filter(
+    ([, code]) =>
+      !code.includes('export function createHoverIntent(') &&
+      /[^A-Za-z]createHoverIntent\(/.test(code),
+  );
+}
+
+const OWN_KEEP_ALIVE_STATE = /#(?:trigger|content)(?:Hovered|Focused)\b|#detachGrace\b/;
+
+describe('hover-intent roots keep their keep-alive state in createHoverSurfaceState', () => {
+  const roots = hoverIntentRoots();
+
+  it('finds the hover-intent roots in library source', () => {
+    expect(roots.length).toBeGreaterThanOrEqual(2);
+  });
+
+  for (const [path, code] of roots) {
+    it(`${path} builds its keep-alive state with createHoverSurfaceState`, () => {
+      expect(code).toMatch(/[^A-Za-z]createHoverSurfaceState\(/);
+    });
+
+    it(`${path} declares no hover, focus or grace state of its own`, () => {
+      expect(code.match(OWN_KEEP_ALIVE_STATE)).toBeNull();
     });
   }
 });

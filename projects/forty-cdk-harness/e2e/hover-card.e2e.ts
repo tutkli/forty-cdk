@@ -1,4 +1,4 @@
-import { el, expect, gotoFixture, isMobileProject, test } from './_helpers';
+import { el, expect, expectStays, gotoFixture, isMobileProject, test } from './_helpers';
 
 test.describe('HoverCard', () => {
   test('opens on hover (openDelay=0)', async ({ page }) => {
@@ -126,6 +126,40 @@ test.describe('HoverCard', () => {
     await expect(el(page, 'card')).toHaveCount(0);
     await expect(el(page, 'trigger')).toBeFocused();
     await page.waitForTimeout(100);
+    await expect(el(page, 'card')).toHaveCount(0);
+  });
+
+  test('Shift+Tab from a control inside the card lands on the trigger and closes the card', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'hover-card');
+    await el(page, 'trigger').hover();
+    await el(page, 'card-button').click();
+    await expect(el(page, 'card-button')).toBeFocused();
+    await page.mouse.move(2, 2);
+
+    await page.keyboard.press('Shift+Tab');
+
+    await expect(el(page, 'trigger')).toBeFocused();
+    await expect(el(page, 'card')).toHaveCount(0);
+    await expectStays(page, async () => {
+      await expect(el(page, 'card')).toHaveCount(0);
+      await expect(el(page, 'trigger')).toBeFocused();
+    });
+  });
+
+  test("Tab from a control inside the card continues from the trigger's place in the tab order", async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'hover-card');
+    await el(page, 'trigger').hover();
+    await el(page, 'card-button').click();
+    await expect(el(page, 'card-button')).toBeFocused();
+    await page.mouse.move(2, 2);
+
+    await page.keyboard.press('Tab');
+
+    await expect(page.locator('#after')).toBeFocused();
     await expect(el(page, 'card')).toHaveCount(0);
   });
 
