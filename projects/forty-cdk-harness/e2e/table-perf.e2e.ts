@@ -34,6 +34,7 @@ function median(values: readonly number[]): number {
 
 async function gotoSized(page: Page, rows: number): Promise<void> {
   await gotoFixture(page, 'table-perf', { rows: String(rows), cols: String(COLS) });
+  await expect.poll(() => page.evaluate(() => window.__fortyCdkTablePerf !== undefined)).toBe(true);
 }
 
 test.describe('table mount cost', () => {
