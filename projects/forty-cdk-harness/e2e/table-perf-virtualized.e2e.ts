@@ -151,6 +151,14 @@ async function gotoVirtualized(page: Page, mode: ObserverMode): Promise<void> {
     cols: String(COLS),
     __observers: mode,
   });
+  await expect
+    .poll(() => page.evaluate(() => window.__fortyCdkTableVirtPerf !== undefined))
+    .toBe(true);
+}
+
+async function gotoUnvirtualized(page: Page, query: Record<string, string> = {}): Promise<void> {
+  await gotoFixture(page, 'table-perf', { rows: String(ROWS), cols: String(COLS), ...query });
+  await expect.poll(() => page.evaluate(() => window.__fortyCdkTablePerf !== undefined)).toBe(true);
 }
 
 async function readStats(page: Page): Promise<ObserverStats> {
@@ -204,7 +212,7 @@ test.describe('virtualized table per-row collection cost', () => {
       { rowHeight: ROW_HEIGHT, viewport: VIEWPORT_HEIGHT, steps: REWINDOW_STEPS },
     );
 
-    await gotoFixture(page, 'table-perf', { rows: String(ROWS), cols: String(COLS) });
+    await gotoUnvirtualized(page);
     const nonVirtualized = await page.evaluate(() => {
       const harness = window.__fortyCdkTablePerf;
       if (!harness) {
@@ -312,11 +320,7 @@ test.describe('virtualized table per-row collection cost', () => {
     const rows: string[] = [];
     for (let round = 1; round <= ROUNDS; round++) {
       for (const mode of modeOrder(round)) {
-        await gotoFixture(page, 'table-perf', {
-          rows: String(ROWS),
-          cols: String(COLS),
-          __observers: mode,
-        });
+        await gotoUnvirtualized(page, { __observers: mode });
         const mounts = await page.evaluate(async (samples) => {
           const harness = window.__fortyCdkTablePerf;
           if (!harness) {
