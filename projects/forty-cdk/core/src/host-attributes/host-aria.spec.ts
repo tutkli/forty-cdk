@@ -7,13 +7,12 @@ import {
 } from '@angular/core';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 
-import { composeIds, hostAriaLabel, hostDescribedBy, hostLabelledBy } from './host-aria';
+import { hostAriaLabel, hostDescribedBy, hostLabelledBy } from './host-aria';
 
 @Directive({
   selector: '[probe]',
   host: {
     '[attr.aria-labelledby]': 'labelledBy()',
-    '[attr.aria-describedby]': 'describedBy()',
     '[attr.aria-label]': 'ariaLabel()',
   },
 })
@@ -154,27 +153,5 @@ describe('host-aria', () => {
     it('does NOT adopt a consumer [attr.aria-label] binding (static-only boundary)', () => {
       expect(probe(fixture, 'bound-name').getAttribute('aria-label')).toBe('Library');
     });
-  });
-});
-
-describe('composeIds', () => {
-  it('returns the library ids when the consumer has none', () => {
-    expect(composeIds(null, 'a b')).toBe('a b');
-  });
-
-  it('returns the consumer ids when the library has none', () => {
-    expect(composeIds('hint', null)).toBe('hint');
-  });
-
-  it('returns null when neither side has ids', () => {
-    expect(composeIds(null, null)).toBeNull();
-  });
-
-  it('puts the consumer ids first and appends the library ids', () => {
-    expect(composeIds('hint', 'desc error')).toBe('hint desc error');
-  });
-
-  it('does not duplicate an id the consumer already references', () => {
-    expect(composeIds('hint desc', 'desc error')).toBe('hint desc error');
   });
 });

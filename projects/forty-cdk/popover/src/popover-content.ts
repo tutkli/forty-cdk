@@ -44,7 +44,6 @@ import { injectPopoverContext } from './popover-context';
     '[id]': 'ctx.contentId()',
     '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.aria-labelledby]': 'labelledBy()',
-    '[attr.aria-describedby]': 'describedBy()',
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
     '[attr.data-reduced-motion]': 'ctx.reducedMotion() ? "" : null',
     tabindex: '-1',

@@ -1,4 +1,6 @@
-import { computed, ElementRef, inject, type Signal } from '@angular/core';
+import { computed, DestroyRef, effect, ElementRef, inject, type Signal } from '@angular/core';
+
+import { composeIds, contributeDescribedBy } from './described-by-owner';
 
 /**
  * Resolves the `aria-labelledby` a piece should expose: the host element's
@@ -49,13 +51,16 @@ export function hostAriaLabel(fallback: () => string | null): Signal<string | nu
 }
 
 /**
- * Resolves the `aria-describedby` a piece should expose: the host element's
- * pre-existing **static** `aria-describedby` **composed** with the library's
- * own description ids, consumer ids first.
+ * Writes the library's own description ids into the host's `aria-describedby`,
+ * **composed** after the host's pre-existing **static** value, consumer ids
+ * first, and returns that composition. The host must not also bind the
+ * attribute.
  *
  * Descriptions are additive — assistive tech reads every referenced element — so unlike
  * {@link hostLabelledBy} this composes instead of replacing, and a consumer's
  * `aria-describedby="hint"` keeps announcing alongside a registered description piece.
+ * Ids another library piece contributes to the same element (the surrounding
+ * `[forField]` of a control that is also a tooltip trigger) are kept beside these.
  *
  * Only **static** values are adopted; see {@link hostLabelledBy} for the boundary.
  *
@@ -65,30 +70,11 @@ export function hostAriaLabel(fallback: () => string | null): Signal<string | nu
  *   consumer's own.
  */
 export function hostDescribedBy(fallback: () => string | null): Signal<string | null> {
-  const consumer = staticHostAttribute('aria-describedby');
-  return computed(() => composeIds(consumer, fallback()));
-}
-
-/**
- * Composes a consumer's own id-reference list with the library's own ids: the
- * consumer's ids first, then any library id not already present. Returns `null`
- * when both sides are empty so the caller removes the attribute rather than
- * setting it to `""`.
- *
- * @param consumer The consumer-authored value, captured before the library
- *   touched the element.
- * @param libraryIds The library-owned ids to append.
- */
-export function composeIds(consumer: string | null, libraryIds: string | null): string | null {
-  if (!consumer) {
-    return libraryIds;
-  }
-  if (!libraryIds) {
-    return consumer;
-  }
-  const seen = new Set(consumer.split(/\s+/).filter(Boolean));
-  const extra = libraryIds.split(/\s+/).filter((id) => id && !seen.has(id));
-  return extra.length > 0 ? `${consumer} ${extra.join(' ')}` : consumer;
+  const host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+  const contribution = contributeDescribedBy(host, fallback);
+  effect(() => contribution.write());
+  inject(DestroyRef).onDestroy(() => contribution.release());
+  return computed(() => composeIds(contribution.consumer, fallback()));
 }
 
 function staticHostAttribute(name: string): string | null {
