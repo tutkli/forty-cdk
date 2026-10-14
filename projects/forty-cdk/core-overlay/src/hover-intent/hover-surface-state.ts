@@ -112,7 +112,7 @@ export function createHoverSurfaceState(options: HoverSurfaceOptions): HoverSurf
         disarmGrace();
         closeIfInactive();
       },
-      { tracksPointer: isNonTouchPointer },
+      { tracksPointer: isNonTouchPointer, exitsOutOfRange: true },
     );
   }
 

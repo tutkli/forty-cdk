@@ -211,12 +211,12 @@ export class ForHoverCard extends AnchoredOverlayPositioningBase implements ForH
     this.scheduleOpen('hover-trigger');
   }
 
-  pointerLeaveTrigger(cursor: Point): void {
+  pointerLeaveTrigger(cursor: Point | null): void {
     this.#surface.leaveTrigger();
     if (this.#surface.triggerFocused()) {
       return;
     }
-    if (this.open() && this.#contentEl()) {
+    if (cursor && this.open() && this.#contentEl()) {
       this.#surface.armGrace(cursor);
       return;
     }

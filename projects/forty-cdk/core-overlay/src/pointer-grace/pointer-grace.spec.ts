@@ -229,6 +229,51 @@ describe('attachPointerGrace', () => {
     }
   });
 
+  function dispatchOut(pointerType: string, relatedTarget: EventTarget | null): void {
+    document.body.dispatchEvent(
+      new PointerEvent('pointerout', { bubbles: true, pointerType, relatedTarget }),
+    );
+  }
+
+  it('ignores a pointerout leaving the document by default', () => {
+    let exits = 0;
+    const cleanup = attachPointerGrace(document, polygon, () => exits++);
+    try {
+      dispatchOut('mouse', null);
+      expect(exits).toBe(0);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it('exits on a tracked pointerout leaving the document or hover range with exitsOutOfRange', () => {
+    let exits = 0;
+    const cleanup = attachPointerGrace(document, polygon, () => exits++, {
+      tracksPointer: isNonTouchPointer,
+      exitsOutOfRange: true,
+    });
+    try {
+      dispatchOut('touch', null);
+      expect(exits).toBe(0);
+      dispatchOut('pen', document.documentElement);
+      expect(exits).toBe(0);
+      dispatchOut('pen', null);
+      expect(exits).toBe(1);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it('removes the out-of-range listener on cleanup', () => {
+    let exits = 0;
+    const cleanup = attachPointerGrace(document, polygon, () => exits++, {
+      exitsOutOfRange: true,
+    });
+    cleanup();
+    dispatchOut('mouse', null);
+    expect(exits).toBe(0);
+  });
+
   it('fires onExit on every outside move until disarmed', () => {
     let exits = 0;
     const cleanup = attachPointerGrace(document, polygon, () => exits++);

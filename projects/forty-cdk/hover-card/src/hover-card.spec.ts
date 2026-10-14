@@ -335,7 +335,12 @@ describe('ForHoverCard', () => {
       expect(fixture.componentInstance.isOpen()).toBe(true);
 
       trigger.dispatchEvent(
-        new PointerEvent('pointerleave', { bubbles: true, clientX: 40, clientY: 40 }),
+        new PointerEvent('pointerleave', {
+          bubbles: true,
+          clientX: 40,
+          clientY: 40,
+          relatedTarget: document.body,
+        }),
       );
       await flush();
       expect(fixture.componentInstance.isOpen()).toBe(true);
@@ -350,7 +355,12 @@ describe('ForHoverCard', () => {
       await flush();
 
       trigger.dispatchEvent(
-        new PointerEvent('pointerleave', { bubbles: true, clientX: 40, clientY: 40 }),
+        new PointerEvent('pointerleave', {
+          bubbles: true,
+          clientX: 40,
+          clientY: 40,
+          relatedTarget: document.body,
+        }),
       );
       await flush();
 
@@ -371,7 +381,12 @@ describe('ForHoverCard', () => {
       await flush();
 
       trigger.dispatchEvent(
-        new PointerEvent('pointerleave', { bubbles: true, clientX: 40, clientY: 40 }),
+        new PointerEvent('pointerleave', {
+          bubbles: true,
+          clientX: 40,
+          clientY: 40,
+          relatedTarget: document.body,
+        }),
       );
       await flush();
 
@@ -559,7 +574,12 @@ describe('ForHoverCard', () => {
       trigger.dispatchEvent(new PointerEvent('pointerenter', { pointerType: 'pen' }));
       await flush();
       trigger.dispatchEvent(
-        new PointerEvent('pointerleave', { pointerType: 'pen', clientX: 0, clientY: 0 }),
+        new PointerEvent('pointerleave', {
+          pointerType: 'pen',
+          clientX: 0,
+          clientY: 0,
+          relatedTarget: document.body,
+        }),
       );
       await flush();
       expect(fixture.componentInstance.isOpen()).toBe(true);
@@ -570,6 +590,91 @@ describe('ForHoverCard', () => {
       await flush();
 
       expect(fixture.componentInstance.isOpen()).toBe(false);
+    });
+
+    it('closes once a pen lifts out of hover range after leaving the trigger', async () => {
+      const { fixture, query, flush } = renderHost(HoverCardHost);
+      await flush();
+      const trigger = query<HTMLAnchorElement>('a')!;
+
+      trigger.dispatchEvent(new PointerEvent('pointerenter', { pointerType: 'pen' }));
+      await flush();
+      trigger.dispatchEvent(
+        new PointerEvent('pointerleave', {
+          pointerType: 'pen',
+          clientX: 0,
+          clientY: 0,
+          relatedTarget: document.body,
+        }),
+      );
+      await flush();
+      expect(fixture.componentInstance.isOpen()).toBe(true);
+
+      const lift = new PointerEvent('pointerout', {
+        pointerType: 'pen',
+        bubbles: true,
+        relatedTarget: null,
+      });
+      expect(lift.pointerType).toBe('pen');
+      document.body.dispatchEvent(lift);
+      await flush();
+
+      expect(fixture.componentInstance.isOpen()).toBe(false);
+    });
+
+    it('closes once a pen lifts out of hover range over the trigger', async () => {
+      const { fixture, query, flush } = renderHost(HoverCardHost);
+      await flush();
+      const trigger = query<HTMLAnchorElement>('a')!;
+
+      trigger.dispatchEvent(new PointerEvent('pointerenter', { pointerType: 'pen' }));
+      await flush();
+      expect(fixture.componentInstance.isOpen()).toBe(true);
+
+      trigger.dispatchEvent(
+        new PointerEvent('pointerout', { pointerType: 'pen', bubbles: true, relatedTarget: null }),
+      );
+      trigger.dispatchEvent(
+        new PointerEvent('pointerleave', {
+          pointerType: 'pen',
+          clientX: 10,
+          clientY: 10,
+          relatedTarget: null,
+        }),
+      );
+      await flush();
+
+      expect(fixture.componentInstance.isOpen()).toBe(false);
+    });
+
+    it('stays open while a pen crosses from the trigger onto the card', async () => {
+      const { fixture, query, flush } = renderHost(HoverCardHost);
+      await flush();
+      const trigger = query<HTMLAnchorElement>('a')!;
+
+      trigger.dispatchEvent(new PointerEvent('pointerenter', { pointerType: 'pen' }));
+      await flush();
+      const content = document.body.querySelector<HTMLElement>('[forHoverCardContent]')!;
+
+      trigger.dispatchEvent(
+        new PointerEvent('pointerout', {
+          pointerType: 'pen',
+          bubbles: true,
+          relatedTarget: content,
+        }),
+      );
+      trigger.dispatchEvent(
+        new PointerEvent('pointerleave', {
+          pointerType: 'pen',
+          clientX: 0,
+          clientY: 0,
+          relatedTarget: content,
+        }),
+      );
+      content.dispatchEvent(new PointerEvent('pointerenter', { pointerType: 'pen' }));
+      await flush();
+
+      expect(fixture.componentInstance.isOpen()).toBe(true);
     });
 
     it('does not open on a touch-induced focus (a tap focuses the trigger)', async () => {

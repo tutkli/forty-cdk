@@ -27,8 +27,11 @@ export interface ForHoverCardContext extends AnchoredPositioningContext {
 
   /** The pointer entered the trigger; opens after the resolved open delay. */
   pointerEnterTrigger(): void;
-  /** The pointer left the trigger; closes, or arms the pointer-grace bridge from `cursor`. */
-  pointerLeaveTrigger(cursor: Point): void;
+  /**
+   * The pointer left the trigger; closes, or arms the pointer-grace bridge from `cursor`.
+   * `null` means the pointer left the document or a pen left hover range, so it closes.
+   */
+  pointerLeaveTrigger(cursor: Point | null): void;
   /** The trigger received keyboard focus; opens after the resolved open delay. */
   focusTrigger(): void;
   /** The trigger lost focus; closes when nothing else keeps the card alive. */
