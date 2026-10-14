@@ -168,6 +168,13 @@ export class ApptTimeFormField {
 
 Plus the shared `FormUiControl` members from `@angular/forms/signals`: `disabled`, `readonly`, `required`, `invalid`, `name`, `errors`, `touched` (bound automatically by `[formField]`).
 
+| Method    | Description                                                                                                                                                    |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `clear()` | Sets `value` to `null` and empties every segment, a partly typed entry included. Call it from a Clear button.                                                  |
+| `reset()` | Drops a partly typed entry and shows the current `value`. Signal Forms calls it on `form().reset()`, so a form reset clears the segments with no extra wiring. |
+
+A partly typed time, including one whose AM/PM segment is still empty, already reports `value()` as `null`, so writing `null` through `[(value)]` changes nothing and leaves the typed digits on screen. Clear the field with `clear()` instead, which you can reach through the `#field="forTimeField"` template reference.
+
 > **Why `minTime` / `maxTime`, not `min` / `max`?** `FormUiControl.min` / `max` are reserved members typed `number | undefined` for numeric validators bound by `[formField]`. A date-time-typed `min` / `max` would break the `FormValueControl` contract, so the time bounds use distinct names. Only the time-of-day component of the bounds is considered.
 
 ### Data attributes
@@ -266,6 +273,8 @@ readonly schedule = form(this.model);
 | `dir`            | `input<'ltr' \| 'rtl' \| null>`                   | Writing direction. `null` resolves the ambient direction; mirrors ArrowLeft / ArrowRight segment navigation.<br>**Default:** `null`                                                                                                                                               |
 
 The endpoint groups each accept an `ariaLabel` input for their own group label, falling back to the scope defaults (`'Start time'` / `'End time'`). Plus the shared `FormUiControl` members bound automatically by `[formField]`.
+
+`ForTimeRangeField` exposes the same `clear()` and `reset()` as `ForTimeField`. They drop a half-entered range and an out-of-order one, its `data-range-error` included, which writing `null` through `[(value)]` cannot do: such a range already reports `value()` as `null`. Without them, finishing the end endpoint later would commit a range built from a start the user thought was gone.
 
 > **Why `minTime` / `maxTime`, not `min` / `max`?** Beyond the reason above, `FormUiControl.min` / `max` are additionally typed `NonNullable<TValue>` (the range object itself), which is meaningless as a bound. Only the time-of-day component of the bounds is considered.
 

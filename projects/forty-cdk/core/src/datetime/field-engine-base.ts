@@ -222,6 +222,19 @@ export abstract class DateTimeFieldEngineBase<
     this.editor.endTyping(next);
   }
 
+  /**
+   * Discards whatever the segments hold that the value cannot represent — a
+   * partly typed entry, an in-progress typing buffer, or parts held back from
+   * a commit — and rehydrates them from the current `source`: its parts when
+   * it holds a value, every segment empty when it is `null`.
+   */
+  reset(): void {
+    this.#ownCommit = null;
+    this.editor.resetTyping();
+    const source = untracked(this.config.source);
+    this.parts.set(source === null ? this.emptyParts() : this.partsFrom(source));
+  }
+
   /** Lowest accepted display value for `type`. */
   abstract segmentMin(type: SegmentType): number;
 
@@ -241,6 +254,9 @@ export abstract class DateTimeFieldEngineBase<
   protected abstract composeFrom(parts: P): D | null;
 
   protected abstract partsFrom(value: D): P;
+
+  /** A parts record with every segment empty. */
+  protected abstract emptyParts(): P;
 
   protected abstract wallClockShifts(parts: P): boolean;
 

@@ -418,6 +418,29 @@ describe('DateFieldEngine null transitions (current)', () => {
     expect(engine.segmentValue('day')).toBeNull();
     expect(engine.segmentValue('year')).toBeNull();
   });
+
+  it('drops a partial entry and its typing buffer on reset (#2232)', () => {
+    const { engine, value } = setup();
+    type(engine, 'month', '06');
+    engine.typeDigit('day', 1);
+    expect(value()).toBeNull();
+    expect(engine.segmentDisplayText('day')).toBe('1');
+
+    engine.reset();
+    expect(engine.segmentValue('month')).toBeNull();
+    expect(engine.segmentDisplayText('day')).toBe('dd');
+    expect(engine.empty()).toBe(true);
+  });
+
+  it('rehydrates from a non-null source on reset (#2232)', () => {
+    const { engine, value } = setup({ value: adapter.createDate(2026, 6, 15) });
+    engine.typeDigit('day', 2);
+    expect(engine.segmentDisplayText('day')).toBe('2');
+
+    engine.reset();
+    expect(value()?.getTime()).toBe(adapter.createDate(2026, 6, 15).getTime());
+    expect(engine.segmentDisplayText('day')).toBe('15');
+  });
 });
 
 describe('DateFieldEngine signal reactivity', () => {

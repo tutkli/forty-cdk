@@ -840,6 +840,38 @@ describe('ForTimeRangeField', () => {
     });
   });
 
+  describe('clear() (#2232)', () => {
+    const field = (r: R) =>
+      r.fixture.debugElement.query(By.directive(ForTimeRangeField)).injector.get(ForTimeRangeField);
+
+    it('drops a complete start so finishing the end commits nothing', async () => {
+      const r = renderHost(Host);
+      await fill(r, 'start', '09', '00');
+      await type(r, 'end', 'hour', '17');
+      expect(r.instance.value()).toBeNull();
+
+      field(r).clear();
+      await flush(r.fixture);
+      expect(seg(r, 'start', 'hour').textContent?.trim()).toBe('hh');
+      expect(seg(r, 'end', 'hour').textContent?.trim()).toBe('hh');
+
+      await fill(r, 'end', '17', '30');
+      expect(r.instance.value()).toBeNull();
+    });
+
+    it('drops a disordered range and its range error', async () => {
+      const r = renderHost(Host);
+      await fill(r, 'start', '17', '00');
+      await fill(r, 'end', '09', '00');
+      expect(root(r).getAttribute('data-range-error')).toBe('');
+
+      field(r).clear();
+      await flush(r.fixture);
+      expect(root(r).getAttribute('data-range-error')).toBeNull();
+      expect(root(r).getAttribute('aria-invalid')).toBeNull();
+    });
+  });
+
   describe('Signal Forms via [formField]', () => {
     interface Schedule {
       hours: DateRange<Date> | null;
@@ -863,7 +895,8 @@ describe('ForTimeRangeField', () => {
                   forTimeRangeFieldSegment
                   [segment]="seg.type!"
                   [attr.data-testid]="'start-' + seg.type"
-                ></span>
+                  >{{ seg.text }}</span
+                >
               }
             }
           </div>
@@ -874,7 +907,8 @@ describe('ForTimeRangeField', () => {
                   forTimeRangeFieldSegment
                   [segment]="seg.type!"
                   [attr.data-testid]="'end-' + seg.type"
-                ></span>
+                  >{{ seg.text }}</span
+                >
               }
             }
           </div>
@@ -912,6 +946,39 @@ describe('ForTimeRangeField', () => {
       expect(adapter.getHours(hours.start)).toBe(9);
       expect(adapter.getHours(hours.end)).toBe(17);
       expect(adapter.getMinutes(hours.end)).toBe(30);
+    });
+
+    it('drops a half-entered range on a form reset (#2232)', async () => {
+      const r = renderHost(FormHost);
+      await fillEndpoint(r, 'start', '09', '00');
+      for (const digit of '17') pressKey(fseg(r, 'end-hour'), digit);
+      await flush(r.fixture);
+      expect(r.instance.model().hours).toBeNull();
+
+      r.instance.schedule().reset();
+      await flush(r.fixture);
+      for (const which of ['start', 'end'] as const) {
+        expect(fseg(r, `${which}-hour`).textContent?.trim()).toBe('hh');
+        expect(fseg(r, `${which}-minute`).textContent?.trim()).toBe('mm');
+      }
+
+      for (const digit of '30') pressKey(fseg(r, 'end-minute'), digit);
+      await flush(r.fixture);
+      expect(r.instance.model().hours).toBeNull();
+    });
+
+    it('drops a disordered range and its error on a form reset (#2232)', async () => {
+      const r = renderHost(FormHost);
+      await fillEndpoint(r, 'start', '17', '00');
+      await fillEndpoint(r, 'end', '09', '00');
+      const field = r.query('[forTimeRangeField]')!;
+      expect(field.getAttribute('data-range-error')).toBe('');
+
+      r.instance.schedule().reset();
+      await flush(r.fixture);
+      expect(field.getAttribute('data-range-error')).toBeNull();
+      expect(fseg(r, 'start-hour').textContent?.trim()).toBe('hh');
+      expect(fseg(r, 'end-hour').textContent?.trim()).toBe('hh');
     });
   });
 

@@ -2600,6 +2600,14 @@ exports[`document structure > projects/forty-cdk/date-field/README.md declares t
       },
       {
         "columns": [
+          "Method",
+          "Description",
+        ],
+        "role": "plain",
+        "rows": 2,
+      },
+      {
+        "columns": [
           "Piece",
           "Attribute",
           "Values",
@@ -7858,6 +7866,14 @@ exports[`document structure > projects/forty-cdk/time-field/README.md declares t
         ],
         "role": "api",
         "rows": 9,
+      },
+      {
+        "columns": [
+          "Method",
+          "Description",
+        ],
+        "role": "plain",
+        "rows": 2,
       },
       {
         "columns": [

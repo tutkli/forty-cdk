@@ -2510,6 +2510,19 @@ describe('ForDatePicker', () => {
       expect(when.touched()).toBe(true);
     });
 
+    it('drops a partly typed date in the field on a form reset (#2232)', async () => {
+      const r = renderHost(FieldAnatomyHost);
+      await typeInto(r, 'month', '06');
+      await typeInto(r, 'day', '15');
+      expect(r.instance.model().when).toBeNull();
+
+      r.instance.booking().reset();
+      await r.flush();
+      expect(at(r, 'month').textContent?.trim()).toBe('mm');
+      expect(at(r, 'day').textContent?.trim()).toBe('dd');
+      expect(at(r, 'group').getAttribute('data-empty')).toBe('');
+    });
+
     it('writes a calendar pick into the form, marks it dirty and touched, and shows it in the field', async () => {
       const r = renderHost(FieldAnatomyHost);
       at(r, 'trigger').click();

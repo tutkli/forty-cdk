@@ -413,6 +413,18 @@ export class ForTimePicker<D>
     this.#controller.trigger()?.focus(options);
   }
 
+  /**
+   * In the field anatomy, discards a partly typed entry in the projected
+   * `[forTimeField]` and redisplays the value. Implements
+   * `FormUiControl.reset`, so a Signal Forms reset clears the field even when
+   * the value was already `null`. No-op in the trigger anatomy.
+   */
+  override reset(): void {
+    if (this.adoptsField()) {
+      this.#fieldSlot.value()?.reset();
+    }
+  }
+
   /** Registers a projected `[forTimeField]`; the field calls it on creation. */
   protected registerField(field: AdoptedField): void {
     this.#fieldSlot.register(field);

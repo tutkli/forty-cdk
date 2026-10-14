@@ -117,15 +117,7 @@ export class DateFieldEngine<D> extends DateTimeFieldEngineBase<D, DateTimeParts
       if (prior && this.someEditableEmpty(prior)) {
         return prior;
       }
-      return {
-        day: null,
-        month: null,
-        year: null,
-        hour: null,
-        minute: null,
-        second: null,
-        dayPeriod: null,
-      };
+      return this.emptyParts();
     },
   });
 
@@ -285,6 +277,18 @@ export class DateFieldEngine<D> extends DateTimeFieldEngineBase<D, DateTimeParts
       parts.dayPeriod = time.getHours(value) >= 12 ? 1 : 0;
     }
     return parts;
+  }
+
+  protected emptyParts(): DateTimeParts {
+    return {
+      day: null,
+      month: null,
+      year: null,
+      hour: null,
+      minute: null,
+      second: null,
+      dayPeriod: null,
+    };
   }
 
   protected wallClockShifts(parts: DateTimeParts): boolean {

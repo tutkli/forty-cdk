@@ -408,6 +408,18 @@ export class ForDatePicker<D>
     }
   }
 
+  /**
+   * In the field anatomy, discards a partly typed entry in the projected
+   * `[forDateField]` and redisplays the value. Implements
+   * `FormUiControl.reset`, so a Signal Forms reset clears the field even when
+   * the value was already `null`. No-op in the trigger anatomy.
+   */
+  override reset(): void {
+    if (this.adoptsField()) {
+      this.#fieldSlot.value()?.reset();
+    }
+  }
+
   protected override fieldLabelledElement(): HTMLElement | null {
     return this.adoptsField()
       ? (this.#fieldSlot.value()?.element ?? null)

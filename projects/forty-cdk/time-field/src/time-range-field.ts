@@ -344,6 +344,29 @@ export class ForTimeRangeField<D>
     engine.focusFirstSegment(options);
   }
 
+  /**
+   * Discards a half-entered or out-of-order range, its range error included,
+   * and redisplays the current value, both endpoints empty when it is `null`.
+   * Implements `FormUiControl.reset`, so a Signal Forms reset clears both
+   * endpoints even when the value was already `null`.
+   */
+  override reset(): void {
+    this.#composer.reset();
+    this.#startEngine.reset();
+    this.#endEngine.reset();
+  }
+
+  /**
+   * Sets the value to `null` and empties both endpoints, including a
+   * half-entered or out-of-order range. Writing `null` through `[(value)]`
+   * cannot clear an entry the value already reports as `null`; call this
+   * instead.
+   */
+  clear(): void {
+    this.value.set(null);
+    this.reset();
+  }
+
   endpointSegments(
     which: TimeRangeFieldEndpoint,
   ): Signal<readonly FieldSegment<TimeSegmentType>[]> {

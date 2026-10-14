@@ -784,6 +784,39 @@ describe('ForDateField', () => {
     });
   });
 
+  describe('clear() (#2232)', () => {
+    const field = (r: R) =>
+      r.fixture.debugElement.query(By.directive(ForDateField)).injector.get(ForDateField);
+
+    it('empties a partly typed entry the value already reports as null', async () => {
+      const r = renderHost(Host);
+      await type(r, 'month', '06');
+      await type(r, 'day', '15');
+      expect(r.instance.value()).toBeNull();
+
+      field(r).clear();
+      await flush(r.fixture);
+      expect(seg(r, 'month').textContent?.trim()).toBe('mm');
+      expect(seg(r, 'day').textContent?.trim()).toBe('dd');
+      expect(root(r).getAttribute('data-empty')).toBe('');
+
+      await type(r, 'year', '2026');
+      expect(r.instance.value()).toBeNull();
+    });
+
+    it('sets a complete value to null and empties its segments', async () => {
+      const r = renderHost(Host);
+      r.instance.value.set(new Date(2026, 0, 5));
+      await flush(r.fixture);
+
+      field(r).clear();
+      await flush(r.fixture);
+      expect(r.instance.value()).toBeNull();
+      expect(seg(r, 'month').textContent?.trim()).toBe('mm');
+      expect(seg(r, 'year').textContent?.trim()).toBe('yyyy');
+    });
+  });
+
   describe('Signal Forms via [formField]', () => {
     interface Profile {
       dob: Date | null;
@@ -829,6 +862,36 @@ describe('ForDateField', () => {
       const field = r.query('[forDateField]')!;
       expect(field.getAttribute('data-required')).toBe('');
       expect(field.hasAttribute('aria-required')).toBe(false);
+    });
+
+    it('drops a partly typed draft on a form reset (#2232)', async () => {
+      const r = renderHost(FormHost);
+      const segOf = (t: string) => r.query(`[data-testid="${t}"]`)!;
+      for (const d of '06') pressKey(segOf('month'), d);
+      for (const d of '15') pressKey(segOf('day'), d);
+      await flush(r.fixture);
+      expect(r.instance.model().dob).toBeNull();
+      expect(segOf('month').textContent?.trim()).toBe('06');
+
+      r.instance.profile().reset();
+      await flush(r.fixture);
+      expect(segOf('month').textContent?.trim()).toBe('mm');
+      expect(segOf('day').textContent?.trim()).toBe('dd');
+      expect(segOf('year').textContent?.trim()).toBe('yyyy');
+      expect(r.query('[forDateField]')!.getAttribute('data-empty')).toBe('');
+    });
+
+    it('shows the value a form reset writes over a draft (#2232)', async () => {
+      const r = renderHost(FormHost);
+      const segOf = (t: string) => r.query(`[data-testid="${t}"]`)!;
+      for (const d of '06') pressKey(segOf('month'), d);
+      await flush(r.fixture);
+
+      r.instance.profile().reset({ dob: new Date(2026, 0, 5) });
+      await flush(r.fixture);
+      expect(segOf('month').textContent?.trim()).toBe('01');
+      expect(segOf('day').textContent?.trim()).toBe('05');
+      expect(segOf('year').textContent?.trim()).toBe('2026');
     });
   });
 

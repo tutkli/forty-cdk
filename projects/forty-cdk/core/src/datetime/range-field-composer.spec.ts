@@ -142,6 +142,32 @@ describe('RangeFieldComposer rehydration sources', () => {
     expect(composer.endSource()).toBeNull();
   });
 
+  it('drops an endpoint preserved across an internal null on reset (#2232)', () => {
+    const { composer, value, composedStart, composedEnd } = setup();
+    value.set({ start: 10, end: 20 });
+    expect(composer.startSource()).toBe(10);
+    expect(composer.endSource()).toBe(20);
+    composedStart.set(10);
+    composedEnd.set(null);
+    composer.recompose();
+    expect(composer.startSource()).toBe(10);
+
+    composer.reset();
+    expect(composer.startSource()).toBeNull();
+    expect(composer.endSource()).toBeNull();
+
+    composer.recompose();
+    expect(composer.startSource()).toBeNull();
+  });
+
+  it('re-seeds both endpoints from a non-null value on reset (#2232)', () => {
+    const { composer, value } = setup({ normalizeEndpointSource: (v) => v + 1000 });
+    value.set({ start: 10, end: 20 });
+    composer.reset();
+    expect(composer.startSource()).toBe(1010);
+    expect(composer.endSource()).toBe(1020);
+  });
+
   it('normalizes each endpoint through the configured hook', () => {
     const { composer, value } = setup({ normalizeEndpointSource: (v) => v + 1000 });
     value.set({ start: 10, end: 20 });

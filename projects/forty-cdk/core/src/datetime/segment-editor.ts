@@ -342,6 +342,12 @@ export class SegmentEditor<P extends SegmentParts, T extends SegmentType = Segme
     }
   }
 
+  /** Drops the typing buffer and any pending transient without committing it. */
+  resetTyping(): void {
+    this.#pendingSettle = false;
+    this.#typing.set(null);
+  }
+
   #ownsSegment(target: EventTarget | null | undefined): boolean {
     if (!target) {
       return false;
