@@ -10,7 +10,7 @@ import { TestBed } from '@angular/core/testing';
 
 import { flush, renderHost } from '../../src/test-utils';
 import { ForTree } from './tree';
-import { provideForTreeDefaults } from 'forty-cdk/defaults';
+import { provideForDragDropDefaults, provideForTreeDefaults } from 'forty-cdk/defaults';
 import { ForTreeGroup } from './tree-group';
 import { ForTreeItem } from './tree-item';
 import { ForTreeItemLabel } from './tree-item-label';
@@ -310,6 +310,63 @@ describe('ForTreeNodeDrag — keyboard', () => {
     await f();
 
     expect(tree.hasAttribute('data-dragging')).toBe(false);
+  });
+});
+
+describe('ForTreeNodeDrag — lift key', () => {
+  it('lifts and drops a node with Shift+Enter, ArrowDown, Space', async () => {
+    const { instance, query, flush: f } = renderHost(TreeDragHost);
+    await f();
+
+    const tree = query<HTMLElement>('[forTree]')!;
+    const docsEl = query<HTMLElement>('[data-testid="docs"]')!;
+    docsEl.focus();
+
+    dispatchKey(docsEl, 'Enter', { shiftKey: true });
+    await f();
+    expect(tree.hasAttribute('data-dragging')).toBe(true);
+
+    dispatchKey(tree, 'ArrowDown', {});
+    await f();
+    dispatchKey(tree, ' ', {});
+    await f();
+
+    expect(instance.dropped()!.node).toBe('docs');
+  });
+
+  it('does not lift on a Shift+Enter that commits an IME composition', async () => {
+    const { query, flush: f } = renderHost(TreeDragHost);
+    await f();
+
+    const tree = query<HTMLElement>('[forTree]')!;
+    const docsEl = query<HTMLElement>('[data-testid="docs"]')!;
+    docsEl.focus();
+
+    dispatchKey(docsEl, 'Enter', { shiftKey: true, isComposing: true });
+    await f();
+
+    expect(tree.hasAttribute('data-dragging')).toBe(false);
+  });
+
+  it('lifts with the scope liftKey and no longer with the default chords', async () => {
+    TestBed.configureTestingModule({
+      providers: [provideForDragDropDefaults({ liftKey: (event) => event.key === 'F2' })],
+    });
+    const { query, flush: f } = renderHost(TreeDragHost);
+    await f();
+
+    const tree = query<HTMLElement>('[forTree]')!;
+    const docsEl = query<HTMLElement>('[data-testid="docs"]')!;
+    docsEl.focus();
+
+    dispatchKey(docsEl, ' ', { ctrlKey: true });
+    dispatchKey(docsEl, 'Enter', { shiftKey: true });
+    await f();
+    expect(tree.hasAttribute('data-dragging')).toBe(false);
+
+    dispatchKey(docsEl, 'F2');
+    await f();
+    expect(tree.hasAttribute('data-dragging')).toBe(true);
   });
 });
 

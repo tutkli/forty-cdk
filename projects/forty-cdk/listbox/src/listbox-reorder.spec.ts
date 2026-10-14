@@ -1,9 +1,10 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
 
 import { renderHost } from '../../src/test-utils';
 import { moveItemInArray } from 'forty-cdk/drag-drop';
 import { ForListbox } from './listbox';
-import { provideForListboxDefaults } from 'forty-cdk/defaults';
+import { provideForDragDropDefaults, provideForListboxDefaults } from 'forty-cdk/defaults';
 import { ForListboxOption } from './listbox-option';
 import { ForListboxReorder, type ForListboxReorderEvent } from './listbox-reorder';
 
@@ -191,6 +192,57 @@ describe('ForListboxReorder — keyboard', () => {
     await f();
 
     expect(instance.events()).toEqual([{ from: 1, to: 2 }]);
+  });
+});
+
+describe('ForListboxReorder — lift key', () => {
+  it('lifts with Shift+Enter without selecting the option', async () => {
+    const { instance, query, flush: f } = renderHost(ReorderHost);
+    await f();
+
+    const optB = query('[data-testid="opt-b"]')!;
+    optB.focus();
+
+    const event = dispatchKey(optB, 'Enter', { shiftKey: true });
+    await f();
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(optB.getAttribute('data-dragging')).toBe('');
+    expect(instance.value()).toEqual([]);
+  });
+
+  it('does not lift on a Shift+Enter that commits an IME composition', async () => {
+    const { query, flush: f } = renderHost(ReorderHost);
+    await f();
+
+    const optB = query('[data-testid="opt-b"]')!;
+    optB.focus();
+
+    dispatchKey(optB, 'Enter', { shiftKey: true, isComposing: true });
+    await f();
+
+    expect(optB.hasAttribute('data-dragging')).toBe(false);
+  });
+
+  it('lifts with the scope liftKey and no longer with the default chords', async () => {
+    TestBed.configureTestingModule({
+      providers: [provideForDragDropDefaults({ liftKey: (event) => event.key === 'F2' })],
+    });
+    const { query, flush: f } = renderHost(ReorderHost);
+    await f();
+
+    const list = query('[forListbox]')!;
+    const optB = query('[data-testid="opt-b"]')!;
+    optB.focus();
+
+    dispatchKey(optB, ' ', { ctrlKey: true });
+    dispatchKey(optB, 'Enter', { shiftKey: true });
+    await f();
+    expect(list.hasAttribute('data-dragging')).toBe(false);
+
+    dispatchKey(optB, 'F2');
+    await f();
+    expect(optB.getAttribute('data-dragging')).toBe('');
   });
 });
 

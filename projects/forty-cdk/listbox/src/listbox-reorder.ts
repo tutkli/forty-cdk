@@ -28,7 +28,7 @@ import {
   type WritingDirection,
 } from 'forty-cdk/core';
 import { injectListboxContext, type ForListboxContext } from './listbox-context';
-import { FOR_LISTBOX_DEFAULTS } from 'forty-cdk/defaults';
+import { FOR_DRAG_DROP_DEFAULTS, FOR_LISTBOX_DEFAULTS } from 'forty-cdk/defaults';
 
 const POINTER_ARM_THRESHOLD_PX = 5;
 
@@ -85,9 +85,10 @@ function resolveReorderAction(event: KeyboardEvent, dir: WritingDirection): Reor
  * option's roving tabindex**, intercepts keys in the capture phase, and owns its own 2D drop
  * geometry — so the listbox keeps full selection + typeahead behavior while becoming sortable.
  *
- * Keyboard: focus an option, press `Ctrl+Space` (or `Cmd+Space`) to lift. While lifted, the
- * arrow keys step the target position (linearly in DOM order, so a wrapping chip grid works with
- * either axis), `Home` / `End` jump to the ends, `Space` / `Enter` drop, `Escape` / `Tab` cancel.
+ * Keyboard: focus an option and press the lift key (`ForDragDropDefaults.liftKey`, `Shift+Enter`
+ * by default). While lifted, the arrow keys step the target position (linearly in DOM order, so a
+ * wrapping chip grid works with either axis), `Home` / `End` jump to the ends, `Space` / `Enter`
+ * drop, `Escape` / `Tab` cancel.
  *
  * Pointer: drag an option past a small threshold to reorder; a short press without movement still
  * selects (the post-drag click is suppressed). A floating preview follows the pointer; drop
@@ -123,6 +124,7 @@ export class ForListboxReorder {
   readonly #announcer = inject(LiveAnnouncer);
   readonly #destroyRef = inject(DestroyRef);
   readonly #defaults = inject(FOR_LISTBOX_DEFAULTS);
+  readonly #dragDefaults = inject(FOR_DRAG_DROP_DEFAULTS);
   readonly #injector = inject(Injector);
   #pendingFocus: FocusWhenMountedRef | null = null;
 
@@ -276,7 +278,11 @@ export class ForListboxReorder {
   }
 
   #onIdleKeydown(event: KeyboardEvent): void {
-    if (this.#mode !== 'idle' || !isDragLiftKey(event) || !this.#reorderable()) {
+    if (
+      this.#mode !== 'idle' ||
+      !isDragLiftKey(event, this.#dragDefaults.liftKey) ||
+      !this.#reorderable()
+    ) {
       return;
     }
     const resolved = this.#resolveOption(event.target);

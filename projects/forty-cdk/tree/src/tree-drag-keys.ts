@@ -2,7 +2,7 @@ import { resolveLiftedDragControl } from 'forty-cdk/core';
 
 /**
  * Tree-specific keyboard resolver for `ForTreeNodeDrag`. Framework-free and unit-testable in
- * isolation. Not part of the public API. The lift chord (`isDragLiftKey`) and the commit / cancel
+ * isolation. Not part of the public API. The lift key (`isDragLiftKey`) and the commit / cancel
  * vocabulary are shared across reorder coordinators in `_internal/drag-session/keyboard-drag-keys`.
  */
 

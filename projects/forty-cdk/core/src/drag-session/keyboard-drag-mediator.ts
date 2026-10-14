@@ -1,5 +1,7 @@
 import type { DestroyRef } from '@angular/core';
 
+import { composedContains, resolveActiveElement } from '../composed-tree/composed-tree';
+
 /**
  * Configuration for {@link createKeyboardDragMediator}.
  *
@@ -12,7 +14,10 @@ import type { DestroyRef } from '@angular/core';
 export interface KeyboardDragMediatorConfig {
   /** Element the capture-phase `keydown` / `focusout` listeners attach to (the coordinator host). */
   readonly host: HTMLElement;
-  /** The host's document. Read for `activeElement` when a `focusout` reports no destination. */
+  /**
+   * The host's document. Its active element, resolved through open shadow roots, decides a
+   * `focusout` that reports no destination.
+   */
   readonly document: Document;
   /** Whether code runs in a browser. The mediator no-ops entirely on the server. */
   readonly isBrowser: boolean;
@@ -64,7 +69,7 @@ export interface KeyboardDragMediatorConfig {
  * `focusout` reporting `relatedTarget: null` says nothing about *where* focus went — focus may
  * have left the document, landed on a non-focusable area, or simply been dropped by a re-render
  * detaching the focused element — so the decision is deferred one microtask and taken against
- * `document.activeElement` once the focus update has settled, the same resolution
+ * the active element, resolved through open shadow roots, once the focus update has settled, the same resolution
  * `[forNavigationMenu]` applies to its own leave channel. Only then does `onFocusLeave` fire.
  * Before this was folded in, the four callers answered it three different ways and a consumer
  * re-render mid-gesture announced a cancel the user never asked for.
@@ -90,8 +95,8 @@ export function createKeyboardDragMediator(config: KeyboardDragMediatorConfig): 
     if (destroyed || !config.isLifted()) {
       return;
     }
-    const active = config.document.activeElement;
-    if (active !== null && host.contains(active)) {
+    const active = resolveActiveElement(config.document);
+    if (active !== null && composedContains(host, active)) {
       return;
     }
     config.onFocusLeave();
