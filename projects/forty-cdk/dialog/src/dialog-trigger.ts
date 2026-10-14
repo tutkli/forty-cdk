@@ -1,7 +1,7 @@
 import { booleanAttribute, Directive, ElementRef, inject, input, model } from '@angular/core';
 
 import { focusAfterPress, fortyWarn, hostButtonType, reflectDisabled } from 'forty-cdk/core';
-import { warnIfOpenWithoutControls } from 'forty-cdk/core-overlay';
+import { injectModalTrigger, warnIfOpenWithoutControls } from 'forty-cdk/core-overlay';
 
 /**
  * Button that toggles the dialog when clicked. Apply on a focusable element —
@@ -69,6 +69,7 @@ export class ForDialogTrigger {
 
   constructor() {
     reflectDisabled(this.disabled);
+    injectModalTrigger({ open: this.open, controls: this.controls });
     warnIfOpenWithoutControls({
       open: this.open,
       controls: this.controls,

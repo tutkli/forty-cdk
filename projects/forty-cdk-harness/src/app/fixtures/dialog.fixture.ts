@@ -25,6 +25,7 @@ import { queryFlag } from './_query-flag';
         id="test-dialog"
         data-testid="dialog"
         ariaLabel="Test dialog"
+        [modal]="!nonModal"
         [autoFocusOnOpen]="vetoOpen ? veto : undefined"
         [autoFocusOnClose]="vetoClose ? veto : undefined"
         (dismiss)="onClose($event)"
@@ -51,6 +52,7 @@ export class DialogFixture {
   protected readonly vetoOpen = queryFlag('vetoOpen');
   protected readonly vetoClose = queryFlag('vetoClose');
   protected readonly radios = queryFlag('radios');
+  protected readonly nonModal = queryFlag('nonModal');
 
   protected readonly veto = (event: VetoableEvent): void => event.preventDefault();
 

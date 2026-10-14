@@ -113,6 +113,7 @@ export {
 } from './modal-shell/modal-backdrop';
 export { injectModalShell } from './modal-shell/modal-shell';
 export { ModalSurfaceBase } from './modal-shell/modal-surface-base';
+export { injectModalTrigger } from './modal-shell/modal-trigger';
 export { CloseReasonState } from './overlay-controller/close-reason-state';
 export {
   anchorSlot,
