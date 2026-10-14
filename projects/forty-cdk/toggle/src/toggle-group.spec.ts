@@ -1,11 +1,11 @@
-import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
+import { Component, input, provideZonelessChangeDetection, signal } from '@angular/core';
 import { form, FormField, required, requiredError, validate } from '@angular/forms/signals';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
 import { pressKey } from 'forty-cdk/testing';
 
-import { renderHost } from '../../src/test-utils';
+import { flush, renderHost } from '../../src/test-utils';
 import {
   assertDataStateContract,
   assertFormControlContract,
@@ -879,6 +879,112 @@ describe('ForToggleGroup', () => {
       expect(r.instance.value()).toEqual([]);
       expect(groupOf(r.el).hasAttribute('aria-readonly')).toBe(false);
       expect(groupOf(r.el).getAttribute('data-readonly')).toBe('');
+    });
+  });
+
+  describe('a preselected value with items rendered in separate views', () => {
+    @Component({
+      imports: [ForToggleGroup, ForToggleGroupItem],
+      template: `
+        <div forToggleGroup [(value)]="value">
+          @for (option of options; track option) {
+            <button forToggleGroupItem [value]="option" [attr.data-test-id]="option">
+              {{ option }}
+            </button>
+          }
+        </div>
+      `,
+    })
+    class PreselectedForHost {
+      readonly value = signal<readonly string[]>(['center']);
+      readonly options = ['left', 'center', 'right'];
+    }
+
+    @Component({
+      selector: 'toggle-option',
+      imports: [ForToggleGroupItem],
+      template: `
+        <button forToggleGroupItem [value]="option()" [attr.data-test-id]="option()">
+          {{ option() }}
+        </button>
+      `,
+    })
+    class ToggleOption {
+      readonly option = input.required<string>();
+    }
+
+    @Component({
+      imports: [ForToggleGroup, ToggleOption],
+      template: `
+        <div forToggleGroup [(value)]="value">
+          <toggle-option option="left" />
+          <toggle-option option="center" />
+          <toggle-option option="right" />
+        </div>
+      `,
+    })
+    class PreselectedWrapperHost {
+      readonly value = signal<readonly string[]>(['center']);
+    }
+
+    const expectCenterIsTheTabStop = (el: HTMLElement): void => {
+      expect(itemOf(el, 'center').getAttribute('aria-pressed')).toBe('true');
+      expect(toggleItems(el).map((item) => item.getAttribute('tabindex'))).toEqual([
+        '-1',
+        '0',
+        '-1',
+      ]);
+    };
+
+    it('renders the pressed item as the single tab stop on the first pass of an @for', () => {
+      const { el } = renderHost(PreselectedForHost);
+
+      expectCenterIsTheTabStop(el);
+    });
+
+    it('renders the pressed item as the single tab stop when each item has its own wrapper', () => {
+      const { el } = renderHost(PreselectedWrapperHost);
+
+      expectCenterIsTheTabStop(el);
+    });
+  });
+
+  describe('item with no value binding', () => {
+    @Component({
+      imports: [ForToggleGroup, ForToggleGroupItem],
+      template: `
+        <div forToggleGroup [(value)]="value">
+          <button forToggleGroupItem value="left" data-test-id="left">Left</button>
+          <button forToggleGroupItem data-test-id="unbound">Unbound</button>
+        </div>
+      `,
+    })
+    class UnboundItemHost {
+      readonly value = signal<readonly string[]>([]);
+    }
+
+    it('fails loudly in dev mode', () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(UnboundItemHost);
+
+      expect(() => fixture.detectChanges()).toThrowError(
+        /\[forty-cdk\/toggle\] FORCDK-CORE-010: \[forToggleGroupItem\] has no \[value\] binding/,
+      );
+    });
+
+    it('never commits the sentinel on click in a production build', async () => {
+      vi.stubGlobal('ngDevMode', false);
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(UnboundItemHost);
+      fixture.detectChanges();
+      await flush(fixture);
+      const el = fixture.nativeElement as HTMLElement;
+
+      itemOf(el, 'unbound').click();
+      await flush(fixture);
+
+      expect(fixture.componentInstance.value()).toEqual([]);
+      expect(itemOf(el, 'unbound').getAttribute('aria-pressed')).toBe('false');
     });
   });
 

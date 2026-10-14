@@ -91,6 +91,23 @@ export class ToggleFixture {}
 export class ToggleGroupFixture {}
 
 @Component({
+  imports: [ForToggleGroup, ForToggleGroupItem],
+  template: `
+    <div forToggleGroup [(value)]="value">
+      @for (option of options; track option) {
+        <button forToggleGroupItem [value]="option" [attr.data-option]="option">
+          {{ option }}
+        </button>
+      }
+    </div>
+  `,
+})
+export class PreselectedToggleGroupFixture {
+  readonly value = signal<readonly string[]>(['center']);
+  readonly options = ['left', 'center', 'right'];
+}
+
+@Component({
   imports: [ForSlider, ForSliderTrack, ForSliderRange, ForSliderThumb],
   template: `
     <div forSlider [(value)]="value">

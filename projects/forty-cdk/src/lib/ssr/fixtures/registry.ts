@@ -61,6 +61,7 @@ import {
   FileUploadFixture,
   NumberInputFixture,
   OtpInputFixture,
+  PreselectedToggleGroupFixture,
   RadioFixture,
   SearchFixture,
   SliderFixture,
@@ -1291,6 +1292,16 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
     component: ToggleGroupFixture,
     tabStop: '[forToggleGroupItem]',
     markup: [{ select: '[forToggleGroup]', attributes: { role: 'group' } }],
+  },
+  {
+    component: PreselectedToggleGroupFixture,
+    tabStop: '[forToggleGroupItem]',
+    markup: [
+      {
+        select: '[forToggleGroupItem][data-option="center"]',
+        attributes: { 'aria-pressed': 'true', tabindex: '0' },
+      },
+    ],
   },
   {
     component: SeparatorFixture,
