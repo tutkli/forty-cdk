@@ -16,7 +16,7 @@ Apply `[forOtpInput]` on a **wrapper** element. It becomes a `role="group"` and 
 
 The focusable, submittable control is the injected `<input>`, not the `role="group"` host. Form-control state, the field association, and native `name` submission therefore all live on that input. The input carries an id of its own, so a static `id` you put on the wrapper stays on the wrapper and a field label points at the input.
 
-A value written while the input is focused reaches it at once, so clearing a rejected code with `code.set('')` empties the field for the next attempt. A native reset of the owning `<form>` empties the code too.
+A value written while the input is focused reaches it at once, so clearing a rejected code with `code.set('')` empties the field for the next attempt. A native reset of the owning `<form>` returns the code to the one the field showed when it first rendered, which is empty unless you bound one.
 
 ## Anatomy
 

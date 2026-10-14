@@ -8,7 +8,7 @@ archetype: [form-control]
 
 A role='searchbox' text input that mirrors its value to a signal and reflects validation state, paired with a clear button that self-hides while the field is empty. Reuses forInput's form-value wiring, so it auto-wires with Signal Forms and Field.
 
-`[forSearch]` applies on a native `<input>`, wires its value to a signal, reflects validation state, and exposes a `clear()` / `focusInput()` API for the companion `[forSearchClear]` clear button. A native reset of the owning `<form>` writes the restored text back into `value()`, as `[forInput]` does.
+`[forSearch]` applies on a native `<input>`, wires its value to a signal, reflects validation state, and exposes a `clear()` / `focusInput()` API for the companion `[forSearchClear]` clear button. A native reset of the owning `<form>` returns `value()` to the text the field showed when it first rendered, as `[forInput]` does.
 
 ## Anatomy
 

@@ -101,7 +101,7 @@ export class DemoSettings {
 | `required` | `input<boolean>`                                          | Reflects `aria-required="true"`.<br>**Default:** —                                                                              |
 | `invalid`  | `input<boolean>`                                          | Reflects `aria-invalid="true"`.<br>**Default:** —                                                                               |
 | `pending`  | `input<boolean>`                                          | Reflects `aria-busy="true"` while async validation is in flight.<br>**Default:** —                                              |
-| `name`     | `input<string \| undefined>`                              | Reflects on `name`.<br>**Default:** —                                                                                           |
+| `name`     | `input<string \| undefined>`                              | Reflects on `name`. A native reset of the owning `<form>` restores `checked` to its first-render value.<br>**Default:** —       |
 | `errors`   | `input<readonly ValidationError.WithOptionalFieldTree[]>` | Validation errors fed by `[formField]`. The directive does not render them, since that is consumer territory.<br>**Default:** — |
 | `touched`  | `model<boolean>`                                          | Set to `true` on blur. Two-way so the field can read it back.<br>**Default:** —                                                 |
 

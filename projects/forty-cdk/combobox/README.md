@@ -782,7 +782,7 @@ Static and `@for`-rendered options share the same registry, navigation order (DO
 </div>
 ```
 
-For a legacy `<form action="…">` flow, set `[name]`, and the directive mirrors `[(value)]` into N `<input type="hidden">` siblings (one per array entry; zero when empty). String values land verbatim in the hidden input; object values default to `JSON.stringify` (override via `[itemToFormValue]`, see below).
+For a legacy `<form action="…">` flow, set `[name]`, and the directive mirrors `[(value)]` into N `<input type="hidden">` siblings (one per array entry; zero when empty). String values land verbatim in the hidden input; object values default to `JSON.stringify` (override via `[itemToFormValue]`, see below). A native reset of the owning `<form>` returns `value` and `query` to what they held when the combobox first rendered, and the input shows that query again.
 
 A single-select field is modeled as the same `readonly T[]`, kept at length ≤ 1, and bound with `[formField]` directly, so single mode needs no adapter. A `FieldTree<T | null>` cannot bind here; map to that shape at the edge that needs it. See [the selection value-type contract](../../../docs/selection-value-type-contract.md).
 

@@ -21,6 +21,7 @@ import {
   firstEnabledHost,
   FormUiControlBase,
   injectHiddenInput,
+  injectNativeFormResetToInitial,
   isRangeSelectShortcut,
   type ListNavigationAction,
   resolveListNavigation,
@@ -439,6 +440,7 @@ export class ForListbox<T = string>
       serialize: (item) => this.itemToFormValue()(item),
       disabled: this.effectiveDisabled,
     });
+    injectNativeFormResetToInitial(this.value);
     // @sanctioned-pull(navigator-position-map): the rendered window is transient,
     // so a window nothing reads during is lost to the lazy fold.
     effect(() => {

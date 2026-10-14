@@ -18,6 +18,7 @@ import {
   fortyError,
   injectDateAdapter,
   injectHiddenInput,
+  injectNativeFormResetToInitial,
   serializeISODate,
 } from 'forty-cdk/core';
 import { type DateAdapter } from 'forty-cdk/date-adapter';
@@ -181,6 +182,7 @@ export class ForDateRangePicker<D>
       }),
       disabled: this.effectiveDisabled,
     });
+    injectNativeFormResetToInitial(this.value);
 
     // Calendar selection bridge. This `effect` does no state derivation — it
     // only (re)subscribes to the projected calendar's `rangeChange` as the

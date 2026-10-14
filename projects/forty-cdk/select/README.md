@@ -458,7 +458,7 @@ Three inputs configure the object behaviour. Defaults make string mode work unch
 | `[itemToFormValue]` | `(item) => typeof item === 'string' ? item : JSON.stringify(item)` | Serialize an item for the hidden input. Override to emit a per-item id (or any wire format your backend wants).                                                       |
 | `[itemToLabel]`     | `undefined`                                                        | Resolve a selected item's display label without the listbox mounted. Supply it when a pre-set object value must render before the listbox is ever opened (see below). |
 
-`[itemToFormValue]` feeds the hidden inputs of a legacy `<form action="…">` flow: set `[name]`, and `[forSelect]` mirrors `[(value)]` into one `<input type="hidden">` per selected value (0 or 1 in single mode, one per value in multi mode). String values land verbatim, and object values default to `JSON.stringify` until `[itemToFormValue]` says otherwise.
+`[itemToFormValue]` feeds the hidden inputs of a legacy `<form action="…">` flow: set `[name]`, and `[forSelect]` mirrors `[(value)]` into one `<input type="hidden">` per selected value (0 or 1 in single mode, one per value in multi mode). String values land verbatim, and object values default to `JSON.stringify` until `[itemToFormValue]` says otherwise. A native reset of the owning `<form>` returns `value` to what it held when the select first rendered, and the hidden inputs follow.
 
 The visible option label normally comes from the rendered `textContent`, so there's no separate label function: `[forSelectValue]` renders the matching option's text.
 

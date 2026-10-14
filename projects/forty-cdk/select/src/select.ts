@@ -16,6 +16,7 @@ import type { FormValueControl } from '@angular/forms/signals';
 import {
   createPointerHighlight,
   injectHiddenInput,
+  injectNativeFormResetToInitial,
   isRangeSelectShortcut,
   LabelCache,
   lookupByValue,
@@ -588,6 +589,7 @@ export class ForSelect<T = string>
       serialize: (item) => this.itemToFormValue()(item),
       disabled: this.effectiveDisabled,
     });
+    injectNativeFormResetToInitial(this.value);
 
     // @sanctioned-pull(label-cache-window): the option window exists only while
     // the listbox is open, and the closed-state typeahead reading it has no

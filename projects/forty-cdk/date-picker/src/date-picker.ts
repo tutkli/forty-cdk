@@ -24,6 +24,7 @@ import {
   fortyError,
   injectDateAdapter,
   injectHiddenInput,
+  injectNativeFormResetToInitial,
   serializeISODate,
 } from 'forty-cdk/core';
 import { type DateAdapter } from 'forty-cdk/date-adapter';
@@ -265,6 +266,7 @@ export class ForDatePicker<D>
       }),
       disabled: this.effectiveDisabled,
     });
+    injectNativeFormResetToInitial(this.value, () => this.reset());
 
     // Calendar selection bridge. This `effect` does no state derivation — it
     // only (re)subscribes to the projected calendar's `valueChange` as the

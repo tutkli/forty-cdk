@@ -14,6 +14,7 @@ import {
   firstEnabledHost,
   FormUiControlBase,
   injectHiddenInput,
+  injectNativeFormResetToInitial,
   type ListNavigationAction,
   moveIndex,
   type WritingDirection,
@@ -169,6 +170,7 @@ export class ForToggleGroup
       values: this.value,
       disabled: this.effectiveDisabled,
     });
+    injectNativeFormResetToInitial(this.value);
   }
 
   /**

@@ -14,6 +14,7 @@ import {
   firstEnabledHost,
   FormUiControlBase,
   injectHiddenInput,
+  injectNativeFormResetToInitial,
   isUnset,
   type ListNavigationAction,
   moveIndex,
@@ -131,6 +132,7 @@ export class ForRadioGroup
       }),
       disabled: this.effectiveDisabled,
     });
+    injectNativeFormResetToInitial(this.value);
   }
 
   /**

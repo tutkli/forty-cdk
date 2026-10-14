@@ -1,7 +1,12 @@
 import { computed, Directive, model } from '@angular/core';
 import type { FormCheckboxControl } from '@angular/forms/signals';
 
-import { hostButtonType, FormUiControlBase, injectHiddenInput } from 'forty-cdk/core';
+import {
+  hostButtonType,
+  FormUiControlBase,
+  injectHiddenInput,
+  injectNativeFormResetToInitial,
+} from 'forty-cdk/core';
 
 /**
  * Headless implementation of the [WAI-ARIA Toggle Button pattern](https://www.w3.org/WAI/ARIA/apg/patterns/button/) —
@@ -69,6 +74,7 @@ export class ForToggle extends FormUiControlBase implements FormCheckboxControl 
       values: computed(() => (this.checked() ? ['on'] : [])),
       disabled: this.effectiveDisabled,
     });
+    injectNativeFormResetToInitial(this.checked);
   }
 
   protected onClick(): void {

@@ -21,6 +21,7 @@ import {
   injectDateAdapter,
   type WritingDirection,
   injectHiddenInput,
+  injectNativeFormResetToInitial,
   type VetoableEvent,
   type VetoableNativeEvent,
   injectTextDirection,
@@ -460,6 +461,7 @@ export class ForTimePicker<D>
       }),
       disabled: this.effectiveDisabled,
     });
+    injectNativeFormResetToInitial(this.value, () => this.reset());
   }
 
   #sameTimeOfDay(a: D, b: D): boolean {

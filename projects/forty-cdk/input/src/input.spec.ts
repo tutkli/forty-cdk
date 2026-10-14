@@ -374,13 +374,13 @@ describe('ForInput', () => {
       template: `
         <form>
           <input forInput [(value)]="text" />
-          <input forInput [(value)]="seeded" value="initial" data-test-id="seeded" />
+          <input forInput [(value)]="seeded" value="markup" data-test-id="seeded" />
         </form>
       `,
     })
     class ResetHost {
       readonly text = signal('');
-      readonly seeded = signal('');
+      readonly seeded = signal('initial');
     }
 
     it('writes the reset text into value, so the next blur keeps the reset', async () => {
@@ -404,7 +404,7 @@ describe('ForInput', () => {
       expect(input.value).toBe('');
     });
 
-    it('takes the reset value from the element default, not from an empty string', async () => {
+    it('returns to the text the field showed at its first render, not to the markup value attribute', async () => {
       const { el, fixture, flush } = renderHost(ResetHost);
       const form = el.querySelector('form')!;
       const seeded = el.querySelector<HTMLInputElement>('[data-test-id="seeded"]')!;
