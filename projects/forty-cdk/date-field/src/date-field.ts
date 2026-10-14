@@ -17,6 +17,7 @@ import {
   serializeISODate,
   FormUiControlBase,
   injectHiddenInput,
+  injectNativeFormResetToInitial,
   type WritingDirection,
   RovingTabindex,
   injectTextDirection,
@@ -278,6 +279,7 @@ export class ForDateField<D>
       }),
       disabled: this.effectiveDisabled,
     });
+    injectNativeFormResetToInitial(this.value, () => this.reset());
   }
 
   /**

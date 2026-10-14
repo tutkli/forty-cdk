@@ -24,6 +24,7 @@ import {
   FormUiControlBase,
   fortyWarn,
   injectHiddenInput,
+  injectNativeFormResetToInitial,
   injectTextDirection,
   type PointerDragSession,
   roundToDecimals,
@@ -285,6 +286,7 @@ export class ForSlider
       values: stringValues,
       disabled: this.effectiveDisabled,
     });
+    injectNativeFormResetToInitial(this.value);
     if (this.#isBrowser) {
       this.#pointerSession = createPointerDragSession({
         host: this.#host.nativeElement,

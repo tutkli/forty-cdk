@@ -5,6 +5,7 @@ import {
   hostButtonType,
   FormUiControlBase,
   injectHiddenInput,
+  injectNativeFormResetToInitial,
   injectSyntheticActivation,
 } from 'forty-cdk/core';
 
@@ -78,6 +79,7 @@ export class ForSwitch extends FormUiControlBase implements FormCheckboxControl 
       values: computed(() => (this.checked() ? ['on'] : [])),
       disabled: this.effectiveDisabled,
     });
+    injectNativeFormResetToInitial(this.checked);
   }
 
   protected onClick(): void {

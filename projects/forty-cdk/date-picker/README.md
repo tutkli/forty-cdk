@@ -220,6 +220,8 @@ Open the picker and click a first day: the trigger keeps its placeholder, becaus
 
 Plus the shared `FormUiControl` inputs from the base (`disabled`, `readonly`, `required`, `invalid`, `pending`, `dirty`, `name`, `errors`, and the `touched` model) and the floating tunables (`sideOffset`, `alignOffset`, `avoidCollisions`, `collisionPadding`, `sticky`, `hideWhenDetached`).
 
+A native reset of the owning `<form>` returns `value` to what it held when the picker first rendered. In the [field anatomy](#field-anatomy) it also drops a partly typed entry in the projected field.
+
 > **`locale` only styles the trigger display.** It drives the text rendered by `[forDatePickerValue]` (both here and on `ForDateRangePicker`); it is **not** forwarded to the projected `ForCalendar`. Bind the calendar's own `[locale]` to localize its heading / weekday / cell labels, exactly as you forward `[min]` / `[max]`.
 
 > **Why `minDate` / `maxDate`, not `min` / `max`?** `ForDatePicker` is a `FormValueControl`, and `FormUiControl` reserves `min` / `max` for numeric validators (`InputSignal<number | undefined>`). A date-typed `min` / `max` would break that contract, so the date bounds use the `*Date` suffix. (`ForCalendar` is not a form control, so it keeps `min` / `max`.)
@@ -433,7 +435,7 @@ readonly booking = form(this.model, (p) => required(p.stay));
 
 - **Form value.** The committed `DateRange<D> | null` is the `value` model. `null` is the empty state. Pair it with `required(p.stay)` so `invalid()` flips when the form demands a range and none is committed. `touched` fires on commit and on close, exactly like the single-date picker.
 - **Validity.** `start <= end` is guaranteed by construction and is never an error. Forward `minDate` / `maxDate` to the calendar's `[min]` / `[max]` so out-of-range days are disabled in the grid; a range picked in a calendar without them is clamped into `[minDate, maxDate]` on commit. Forward `minRangeLength` / `maxRangeLength` to the calendar's `[minRangeLength]` / `[maxRangeLength]` (a too-short / too-long range is rejected as a no-op by the calendar's two-click flow).
-- **Native submission.** When `name` is set, two hidden inputs `<name>-start` / `<name>-end` mirror the committed endpoints as ISO `YYYY-MM-DD` for native `<form>` posts.
+- **Native submission.** When `name` is set, two hidden inputs `<name>-start` / `<name>-end` mirror the committed endpoints as ISO `YYYY-MM-DD` for native `<form>` posts. A native reset of the owning `<form>` returns `value` to what it held when the picker first rendered.
 - **Bounds naming.** `minDate` / `maxDate` (not `min` / `max`) for the same reason as `ForDatePicker`, and additionally because `FormUiControl.min` / `max` are typed `NonNullable<TValue>` (the range object itself), which is meaningless as a bound.
 
 Defaults are configured with `provideForDateRangePickerDefaults` (`side` / `align` / `sideOffset` / `collisionPadding`), and both wrapper patterns work via the exported `FOR_DATE_RANGE_PICKER_HOST_DIRECTIVE_INPUTS` / `FOR_DATE_RANGE_PICKER_HOST_DIRECTIVE_OUTPUTS` tuples. See [Wrapping form primitives](../../../docs/wrapping-form-primitives.md).

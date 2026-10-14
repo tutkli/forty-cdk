@@ -147,6 +147,8 @@ One class and one directive, three states. `disabled` removes the trigger from t
 Inherits all `FormUiControl` inputs (`disabled`, `readonly`, `required`, `invalid`,
 `errors`, `touched`, `name`, `pending`) for `[formField]` auto-wiring.
 
+A native reset of the owning `<form>` returns `value` to what it held when the picker first rendered. In the [field anatomy](#field-anatomy) it also drops a partly typed entry in the projected field.
+
 ### Data attributes
 
 | Piece                    | Attribute          | Values                     |

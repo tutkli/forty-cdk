@@ -170,6 +170,8 @@ Plus the shared `FormUiControl` members from `@angular/forms/signals`: `disabled
 
 A partly typed date already reports `value()` as `null`, so writing `null` through `[(value)]` changes nothing and leaves the typed digits on screen. Clear the field with `clear()` instead, which you can reach through the `#field="forDateField"` template reference.
 
+A native reset of the owning `<form>` returns `value` to what it held when the field first rendered and runs `reset()`, so a partly typed entry goes too and the hidden input submits that value again.
+
 > **Why `minDate` / `maxDate`, not `min` / `max`?** `FormUiControl.min` / `max` are reserved members typed `number | undefined` for numeric validators bound by `[formField]`. A date-typed `min` / `max` would break the `FormValueControl` contract, so the date bounds use distinct names.
 
 ### Data attributes
@@ -291,7 +293,7 @@ readonly booking = form(this.model);
 
 The endpoint groups each accept an `ariaLabel` input for their own group label, falling back to the scope defaults (`'Start date'` / `'End date'`). Plus the shared `FormUiControl` members bound automatically by `[formField]`.
 
-`ForDateRangeField` exposes the same `clear()` and `reset()` as `ForDateField`. They drop a half-entered range and an out-of-order one, its `data-range-error` included, which writing `null` through `[(value)]` cannot do: such a range already reports `value()` as `null`. Without them, finishing the end endpoint later would commit a range built from a start the user thought was gone.
+`ForDateRangeField` exposes the same `clear()` and `reset()` as `ForDateField`. They drop a half-entered range and an out-of-order one, its `data-range-error` included, which writing `null` through `[(value)]` cannot do: such a range already reports `value()` as `null`. Without them, finishing the end endpoint later would commit a range built from a start the user thought was gone. A native reset of the owning `<form>` returns the range to what it held when the field first rendered and runs `reset()`.
 
 > **Why `minDate` / `maxDate`, not `min` / `max`?** Beyond the reason above, `FormUiControl.min` / `max` are additionally typed `NonNullable<TValue>` (the range object itself), which is meaningless as a bound.
 

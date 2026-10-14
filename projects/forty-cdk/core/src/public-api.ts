@@ -193,7 +193,11 @@ export {
 export { injectHasFocusableContent } from './focus-trap/focusable-content';
 export { FormUiControlBase } from './form-ui-control/form-ui-control-base';
 export { injectHiddenInput } from './form-ui-control/hidden-input';
-export { injectNativeFormReset } from './form-ui-control/native-form-reset';
+export {
+  injectNativeFormReset,
+  injectNativeFormResetToInitial,
+  injectRenderedDefaultValue,
+} from './form-ui-control/native-form-reset';
 export { TextValueControlBase } from './form-ui-control/text-value-control-base';
 export { mirrorExternalValue, mirrorValue } from './form-ui-control/value-mirror';
 export { resolveConfigClass } from './host-attributes/config-class';

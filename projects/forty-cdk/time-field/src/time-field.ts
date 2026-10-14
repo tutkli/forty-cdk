@@ -12,6 +12,7 @@ import {
   FormUiControlBase,
   injectDateAdapter,
   injectHiddenInput,
+  injectNativeFormResetToInitial,
   injectTextDirection,
   resolveText,
   resolveTextRecord,
@@ -288,6 +289,7 @@ export class ForTimeField<D>
       }),
       disabled: this.effectiveDisabled,
     });
+    injectNativeFormResetToInitial(this.value, () => this.reset());
   }
 
   /**

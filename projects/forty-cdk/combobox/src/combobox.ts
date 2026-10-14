@@ -19,6 +19,7 @@ import {
   defaultItemToFormValue,
   injectFieldAnchor,
   injectHiddenInput,
+  injectNativeFormResetToInitial,
   injectTextDirection,
   isUnset,
   LabelCache,
@@ -613,6 +614,8 @@ export class ForCombobox<T = string>
       serialize: (item) => this.itemToFormValue()(item),
       disabled: this.effectiveDisabled,
     });
+    injectNativeFormResetToInitial(this.value);
+    injectNativeFormResetToInitial(this.query);
 
     // @sanctioned-pull(label-cache-window): the option window exists only while
     // the listbox is open, and the closed-state fallback reading it has no

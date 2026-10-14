@@ -85,7 +85,7 @@ The `value` model is a `readonly number[]`; two `forSliderThumb` pieces, one per
 <div forSlider [formField]="form.opacity">…</div>
 ```
 
-For native `<form>` submit, set `[name]` and the directive mirrors `value()` into N `<input type="hidden">` siblings (one per thumb). `data-touched` / `data-dirty` / `data-pending` / `data-invalid` are reflected on the host as boolean `data-*` attributes (present when `true`, absent otherwise).
+For native `<form>` submit, set `[name]` and the directive mirrors `value()` into N `<input type="hidden">` siblings (one per thumb). A native reset of the owning `<form>` returns `value()` to what it held when the slider first rendered. `data-touched` / `data-dirty` / `data-pending` / `data-invalid` are reflected on the host as boolean `data-*` attributes (present when `true`, absent otherwise).
 
 ## API
 
