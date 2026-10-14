@@ -629,7 +629,7 @@ Annotating a `viewChild` / `@ViewChild` reference (`ForTreeNodeDrag<FileNode>`) 
 
 | Key               | Behavior while **not** lifted | Behavior while **lifted**                                                                                                                                                    |
 | ----------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Ctrl/Cmd+Space`  | Lifts the focused node.       | —                                                                                                                                                                            |
+| `Shift+Enter`     | Lifts the focused node.       | —                                                                                                                                                                            |
 | `ArrowDown`       | Normal tree navigation.       | Moves the insertion point one row down.                                                                                                                                      |
 | `ArrowUp`         | Normal tree navigation.       | Moves the insertion point one row up.                                                                                                                                        |
 | `Home` / `End`    | Normal tree navigation.       | Moves the insertion point to the first / last row. Focus stays on the lifted node.                                                                                           |
@@ -639,6 +639,16 @@ Annotating a `viewChild` / `@ViewChild` reference (`ForTreeNodeDrag<FileNode>`) 
 | `Escape`          | —                             | Cancels the drag; the node is returned to its original position.                                                                                                             |
 | `Tab`             | Normal focus leave.           | Cancels the drag.                                                                                                                                                            |
 | Any other key     | Normal tree behavior.         | Consumed, so `*`, typeahead and your own item key handlers cannot move focus or expand nodes mid-drag. Ctrl / Cmd / Alt chords and function keys keep their browser meaning. |
+
+`Ctrl+Space` lifts too where the page receives it, but don't make it the only key you document: macOS takes Cmd+Space for Spotlight and Ctrl+Space for switching input sources, and many IMEs on Windows and Linux toggle on Ctrl+Space. To use another key, set `liftKey` in `provideForDragDropDefaults` and add the result to a `providers` array; it applies to every reorder coordinator in that scope. A key press that belongs to an IME composition never lifts.
+
+```ts
+import { provideForDragDropDefaults } from 'forty-cdk/defaults';
+
+export const reorderLiftKey = provideForDragDropDefaults({
+  liftKey: (event) => event.key === 'Enter' && event.ctrlKey,
+});
+```
 
 During a pointer drag, `Escape` cancels the drag and is consumed, so an enclosing dialog or popover stays open. A drop made while focus was on the dragged node, by keyboard or by pointer, moves focus with the node, or onto its new parent when that parent is collapsed; a pointer drop made while focus was elsewhere leaves it there.
 

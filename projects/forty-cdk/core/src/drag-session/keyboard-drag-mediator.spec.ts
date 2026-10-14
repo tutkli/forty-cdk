@@ -112,6 +112,37 @@ describe('createKeyboardDragMediator', () => {
     expect(onFocusLeave).not.toHaveBeenCalled();
   });
 
+  it('reports no leave for a focusout with no destination while focus stays inside a shadow root', async () => {
+    const shadowHost = document.createElement('div');
+    document.body.append(shadowHost);
+    const root = shadowHost.attachShadow({ mode: 'open' });
+    const shadowed = document.createElement('div');
+    const child = document.createElement('button');
+    shadowed.append(child);
+    root.append(shadowed);
+    try {
+      const onFocusLeave = vi.fn();
+      createKeyboardDragMediator({
+        host: shadowed,
+        document,
+        isBrowser: true,
+        destroyRef: destroy.ref,
+        isLifted: () => true,
+        onIdleKeydown: vi.fn(),
+        onLiftedKeydown: vi.fn(),
+        onFocusLeave,
+      });
+      child.focus();
+      expect(document.activeElement).toBe(shadowHost);
+
+      focusOut(child);
+      await Promise.resolve();
+      expect(onFocusLeave).not.toHaveBeenCalled();
+    } finally {
+      shadowHost.remove();
+    }
+  });
+
   it('reports a leave for a focusout with no destination once focus has settled outside', async () => {
     const { onFocusLeave } = wire({ isLifted: () => true });
     outside.focus();

@@ -1,4 +1,4 @@
-import { boxOf, el, expect, gotoFixture, test } from './_helpers';
+import { boxOf, el, expect, expectStays, gotoFixture, test } from './_helpers';
 
 const INITIAL = 'alpha,bravo,charlie,delta,echo,foxtrot';
 
@@ -20,6 +20,24 @@ test.describe('listbox-reorder — keyboard', () => {
     await expect(el(page, 'last-event')).toHaveText('1->2');
     await expect(el(page, 'order')).toHaveText('alpha,charlie,bravo,delta,echo,foxtrot');
     await expect(el(page, 'listbox')).not.toHaveAttribute('data-dragging', '');
+  });
+
+  test('Shift+Enter lifts without selecting, ArrowRight + Space drops the option one position later', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'listbox-reorder');
+
+    await el(page, 'opt-bravo').focus();
+    await page.keyboard.press('Shift+Enter');
+
+    await expect(el(page, 'listbox')).toHaveAttribute('data-dragging', '');
+    await expectStays(page, () => expect(el(page, 'selected')).toHaveText(''));
+
+    await page.keyboard.press('ArrowRight');
+    await page.keyboard.press(' ');
+
+    await expect(el(page, 'last-event')).toHaveText('1->2');
+    await expect(el(page, 'order')).toHaveText('alpha,charlie,bravo,delta,echo,foxtrot');
   });
 
   test('Escape cancels without reordering', async ({ page }) => {

@@ -307,19 +307,29 @@ The cycle reaches every focusable in the cell, `tabindex="-1"` included, so a he
 
 Three affordances contend for `Enter` and `Space` on a header cell, and the split follows WAI-ARIA lines so a single press never both sorts and lifts.
 
-| Key                        | Action                                                                                                                                                                   |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `Enter` / `Space`          | On a sortable header cell with no `[forDraggable]`: cycle the sort direction, keeping focus on the cell.                                                                 |
-| `Enter`                    | On a header cell that is both sortable and draggable: cycle the sort. `F2` still enters the cell.                                                                        |
-| `Space`                    | On a header cell that is both sortable and draggable: lift the column. On one pinned with `[dragDisabled]` there is no lift to collide with, so it sorts on both keys.   |
-| `Enter` / `Space`          | On a draggable header cell that is not sortable: lift the column.                                                                                                        |
-| `Ctrl+Space` / `Cmd+Space` | On any data cell inside a `[forTableRowReorder]` in `grid` / `treegrid`: lift the enclosing row. The plain `Space` stays selection and idle arrows stay grid navigation. |
-| `ArrowLeft` / `ArrowRight` | On a focused `[forTableColumnResizer]`: resize the column by `[step]` pixels, clamped to `[min]` / `[max]`, emitting one `resizeCommit` per press. RTL-mirrored.         |
-| `Page Up` / `Page Down`    | On a focused `[forTableColumnResizer]`: shrink / grow the column by `[largeStep]` pixels, clamped to `[min]` / `[max]`, emitting one `resizeCommit` per press.           |
-| `Home` / `End`             | On a focused `[forTableColumnResizer]`: snap the column to `[min]` / to a finite `[max]` (`End` does nothing while `max` is unbounded), emitting one `resizeCommit`.     |
-| `Escape`                   | During a pointer resize drag: restore the pre-drag width and emit no `resizeCommit`.                                                                                     |
+| Key                          | Action                                                                                                                                                                   |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `Enter` / `Space`            | On a sortable header cell with no `[forDraggable]`: cycle the sort direction, keeping focus on the cell.                                                                 |
+| `Enter`                      | On a header cell that is both sortable and draggable: cycle the sort. `F2` still enters the cell.                                                                        |
+| `Space`                      | On a header cell that is both sortable and draggable: lift the column. On one pinned with `[dragDisabled]` there is no lift to collide with, so it sorts on both keys.   |
+| `Enter` / `Space`            | On a draggable header cell that is not sortable: lift the column.                                                                                                        |
+| `Shift+Enter` / `Ctrl+Space` | On any data cell inside a `[forTableRowReorder]` in `grid` / `treegrid`: lift the enclosing row. The plain `Space` stays selection and idle arrows stay grid navigation. |
+| `ArrowLeft` / `ArrowRight`   | On a focused `[forTableColumnResizer]`: resize the column by `[step]` pixels, clamped to `[min]` / `[max]`, emitting one `resizeCommit` per press. RTL-mirrored.         |
+| `Page Up` / `Page Down`      | On a focused `[forTableColumnResizer]`: shrink / grow the column by `[largeStep]` pixels, clamped to `[min]` / `[max]`, emitting one `resizeCommit` per press.           |
+| `Home` / `End`               | On a focused `[forTableColumnResizer]`: snap the column to `[min]` / to a finite `[max]` (`End` does nothing while `max` is unbounded), emitting one `resizeCommit`.     |
+| `Escape`                     | During a pointer resize drag: restore the pre-drag width and emit no `resizeCommit`.                                                                                     |
 
 While a **column** is lifted, `ArrowLeft` / `ArrowRight` move it one position (RTL-mirrored), `Home` / `End` move it to the first / last position, `Enter` / `Space` drop it and `Escape` / `Tab` cancel. While a **row** is lifted, `ArrowUp` / `ArrowDown` move the target one row, `Home` / `End` move it to the first / last row of the dataset, `PageUp` / `PageDown` move by one rendered window under `[forTableVirtualized]` (and to the first / last row without it), `Enter` / `Space` drop and `Escape` / `Tab` cancel. After a row drop, focus follows the row to its new place, back onto the cell (or row) it was lifted from. After a row cancel under `[forTableVirtualized]`, the origin row scrolls back into the window and keeps focus. Focus leaving the reorder container cancels an in-flight lift too.
+
+`Ctrl+Space` is not reliable as the only row-lift key: macOS takes Cmd+Space for Spotlight and Ctrl+Space for switching input sources, and many IMEs on Windows and Linux toggle on Ctrl+Space. `Shift+Enter` reaches the page everywhere. To use another key, set `liftKey` in `provideForDragDropDefaults` and add the result to a `providers` array; it applies to every reorder coordinator in that scope. A key press that belongs to an IME composition never lifts.
+
+```ts
+import { provideForDragDropDefaults } from 'forty-cdk/defaults';
+
+export const reorderLiftKey = provideForDragDropDefaults({
+  liftKey: (event) => event.key === 'Enter' && event.ctrlKey,
+});
+```
 
 ## Accessibility
 

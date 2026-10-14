@@ -239,7 +239,7 @@ export class ForTableRowReorder {
       return;
     }
     const lift = this.#gridMode()
-      ? isDragLiftKey(event)
+      ? isDragLiftKey(event, this.#dragDefaults.liftKey)
       : this.#virtualized() && (event.key === ' ' || event.key === 'Enter');
     if (!lift) {
       return;

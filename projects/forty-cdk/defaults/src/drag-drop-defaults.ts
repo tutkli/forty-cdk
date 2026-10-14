@@ -5,8 +5,8 @@ import type { LocalizableText } from 'forty-cdk/core';
 import { provideDefaults } from './defaults';
 
 /**
- * Defaults inherited by descendant drag-drop lists in the surrounding injector
- * scope. Configure with `provideForDragDropDefaults` either at the application
+ * Defaults inherited by descendant drag-drop lists and reorder coordinators in
+ * the surrounding injector scope. Configure with `provideForDragDropDefaults` either at the application
  * root or in any component's `providers` array; partial overrides merge with
  * the parent scope.
  *
@@ -48,6 +48,15 @@ export interface ForDragDropDefaults {
   autoScrollEdgeSize: number;
   /** Maximum scroll delta in px applied per animation frame while auto-scrolling. */
   autoScrollMaxSpeed: number;
+  /**
+   * Whether a keydown on a focused item lifts it into a keyboard reorder in
+   * `[forListboxReorder]`, `[forTreeNodeDrag]` and `[forTableRowReorder]` (grid
+   * mode). The default accepts `Shift+Enter`, which no operating system
+   * reserves, and `Ctrl+Space` / `Cmd+Space`, which macOS and most IMEs claim
+   * before the page sees them. A keydown that belongs to an IME composition
+   * never lifts, whatever this returns.
+   */
+  liftKey: (event: KeyboardEvent) => boolean;
 }
 
 /**
@@ -63,6 +72,13 @@ export const FOR_DRAG_DROP_FALLBACK_DEFAULTS: ForDragDropDefaults = {
   announceCancel: (label) => `${label}, movement cancelled.`,
   autoScrollEdgeSize: 50,
   autoScrollMaxSpeed: 16,
+  liftKey: (event) =>
+    (event.key === 'Enter' &&
+      event.shiftKey &&
+      !event.ctrlKey &&
+      !event.metaKey &&
+      !event.altKey) ||
+    (event.key === ' ' && (event.ctrlKey || event.metaKey)),
 };
 
 /** Token holding the resolved drag-drop defaults for the current scope. */

@@ -43,7 +43,7 @@ import {
   treeParentLabel,
 } from './tree-drag-rows';
 import { injectTreeContext, type ForTreeVisibleNode } from './tree-context';
-import { FOR_TREE_DEFAULTS } from 'forty-cdk/defaults';
+import { FOR_DRAG_DROP_DEFAULTS, FOR_TREE_DEFAULTS } from 'forty-cdk/defaults';
 import type { ForTreeDragDropEvent } from './tree-drag-drop-event';
 
 const POINTER_ARM_THRESHOLD_PX = 5;
@@ -81,10 +81,10 @@ type DragMode = 'idle' | 'keyboard' | 'pointer';
  * Root-level drag-drop coordinator for `ForTree`. Apply on the same element as `[forTree]` to
  * enable reordering and re-parenting of tree nodes by pointer and keyboard.
  *
- * Keyboard: focus a node, then press Ctrl+Space (or Cmd+Space) to lift. While lifted, ArrowUp/Down
- * move the sibling position, Home/End jump to the first / last position, ArrowRight/Left change
- * depth, Space/Enter drops, Escape cancels. Every other key is consumed until the drag ends,
- * except Ctrl / Cmd / Alt chords and function keys.
+ * Keyboard: focus a node, then press the lift key (`ForDragDropDefaults.liftKey`, Shift+Enter by
+ * default). While lifted, ArrowUp/Down move the sibling position, Home/End jump to the first /
+ * last position, ArrowRight/Left change depth, Space/Enter drops, Escape cancels. Every other key
+ * is consumed until the drag ends, except Ctrl / Cmd / Alt chords and function keys.
  *
  * Pointer: drag any enabled item to a new position; an optional `[forTreeNodeDragHandle]` on an
  * item constrains the grab area. Escape cancels the drag.
@@ -121,6 +121,7 @@ export class ForTreeNodeDrag<T = string> implements ForTreeNodeDragContext {
   readonly #announcer = inject(LiveAnnouncer);
   readonly #destroyRef = inject(DestroyRef);
   readonly #defaults = inject(FOR_TREE_DEFAULTS);
+  readonly #dragDefaults = inject(FOR_DRAG_DROP_DEFAULTS);
   readonly #injector = inject(Injector);
 
   /** Disables all drag interactions on this tree. */
@@ -213,7 +214,7 @@ export class ForTreeNodeDrag<T = string> implements ForTreeNodeDragContext {
   }
 
   #onIdleKeydown(event: KeyboardEvent): void {
-    if (this.#mode !== 'idle' || !isDragLiftKey(event)) {
+    if (this.#mode !== 'idle' || !isDragLiftKey(event, this.#dragDefaults.liftKey)) {
       return;
     }
     if (this.disabled() || this.#ctx.disabled()) {

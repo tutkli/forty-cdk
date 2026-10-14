@@ -8,6 +8,7 @@ import {
 import { TestBed } from '@angular/core/testing';
 
 import { flush } from '../../src/test-utils';
+import { provideForDragDropDefaults } from 'forty-cdk/defaults';
 import { ForDraggable, moveItemInArray } from 'forty-cdk/drag-drop';
 import { ForTableVirtualized } from 'forty-cdk/table-virtualization';
 
@@ -1458,5 +1459,56 @@ describe('ForTableRowReorder — a lift key on an in-row control is left to that
     await settle();
 
     expect(query(`[data-testid="row-${index}"]`).getAttribute('data-dragging')).toBe('');
+  });
+});
+
+describe('ForTableRowReorder — lift key', () => {
+  afterEach(() => {
+    document.querySelectorAll('[aria-live]').forEach((node) => node.remove());
+  });
+
+  it('lifts and drops a grid row with Shift+Enter, ArrowDown, Space', async () => {
+    const { instance, settle, query } = await render(ListRowReorderHost);
+    const lifted = query('[data-testid="cell-1"]');
+    lifted.focus();
+
+    press(lifted, 'Enter', { shiftKey: true });
+    await settle();
+    expect(query('[data-testid="row-1"]').getAttribute('data-dragging')).toBe('');
+
+    press(lifted, 'ArrowDown');
+    press(lifted, ' ');
+    await settle();
+
+    expect(instance.last).toEqual({ from: 1, to: 2 });
+  });
+
+  it('does not lift on a Shift+Enter that commits an IME composition', async () => {
+    const { settle, query } = await render(ListRowReorderHost);
+    const lifted = query('[data-testid="cell-1"]');
+    lifted.focus();
+
+    press(lifted, 'Enter', { shiftKey: true, isComposing: true });
+    await settle();
+
+    expect(query('[forTableRowReorder]').hasAttribute('data-dragging')).toBe(false);
+  });
+
+  it('lifts with the scope liftKey and no longer with the default chords', async () => {
+    TestBed.configureTestingModule({
+      providers: [provideForDragDropDefaults({ liftKey: (event) => event.key === 'F2' })],
+    });
+    const { settle, query } = await render(ListRowReorderHost);
+    const lifted = query('[data-testid="cell-1"]');
+    lifted.focus();
+
+    press(lifted, ' ', { ctrlKey: true });
+    press(lifted, 'Enter', { shiftKey: true });
+    await settle();
+    expect(query('[forTableRowReorder]').hasAttribute('data-dragging')).toBe(false);
+
+    press(lifted, 'F2');
+    await settle();
+    expect(query('[data-testid="row-1"]').getAttribute('data-dragging')).toBe('');
   });
 });

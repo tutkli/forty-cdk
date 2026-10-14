@@ -119,7 +119,7 @@ export class ListboxDefaultExample {
 
 ### Sortable (reorder)
 
-With `[forListboxReorder]` on the listbox, drag a chip to a new place, or focus one and press `Ctrl`+`Space` to lift it, move it with the arrow keys and drop it with `Space` or `Enter`. Selection works as before: a click without movement still toggles the chip. [Reordering](#reordering) covers the output you apply, the full keyboard and the announcements.
+With `[forListboxReorder]` on the listbox, drag a chip to a new place, or focus one and press `Shift`+`Enter` to lift it, move it with the arrow keys and drop it with `Space` or `Enter`. Selection works as before: a click without movement still toggles the chip. [Reordering](#reordering) covers the output you apply, the full keyboard and the announcements.
 
 ### Signal Forms
 
@@ -264,9 +264,21 @@ export class DemoSortableTags {
 
 ### Reorder keyboard
 
-- **Ctrl+Space** (or **Cmd+Space**) lifts the focused option.
+- **Shift+Enter** lifts the focused option. **Ctrl+Space** lifts it too where the page receives that key.
 - While lifted: **arrow keys** step the target position (linearly in DOM order, so a wrapping grid sorts with either axis), **Home / End** jump to the ends, **Space / Enter** drop, keeping focus on the dropped option, **Escape / Tab** cancel.
-- The lift chord is intercepted in the capture phase, so it never collides with the option's native Space / Enter selection or with arrow navigation while idle.
+- The lift key is intercepted in the capture phase, so it never collides with the option's native Space / Enter selection or with arrow navigation while idle.
+
+**Ctrl+Space is not reliable, so don't make it the only key you document.** On macOS, Cmd+Space opens Spotlight and Ctrl+Space switches the input source once a second one is enabled, so the page never sees either. Many IMEs on Windows and Linux also toggle on Ctrl+Space. Shift+Enter reaches the page on every platform. To use another key, set `liftKey` in `provideForDragDropDefaults` and add the result to a `providers` array. It applies to every reorder coordinator in that scope (listbox, tree and table):
+
+```ts
+import { provideForDragDropDefaults } from 'forty-cdk/defaults';
+
+export const reorderLiftKey = provideForDragDropDefaults({
+  liftKey: (event) => event.key === 'Enter' && event.ctrlKey,
+});
+```
+
+A key press that belongs to an IME composition never lifts, whatever `liftKey` returns.
 
 ### Pointer
 

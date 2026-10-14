@@ -64,12 +64,13 @@ describe('keyboard drag focus-leave resolution (meta-guard)', () => {
     expect(callers().length).toBeGreaterThanOrEqual(4);
   });
 
-  it('resolves the leave in the mediator: containment plus a deferred re-check', () => {
+  it('resolves the leave in the mediator: containment plus a deferred re-check through open shadow roots', () => {
     const [, source] = mediatorSource();
     expect(source).toContain('relatedTarget');
     expect(source).toContain('instanceof Node');
     expect(source).toContain('queueMicrotask');
-    expect(source).toContain('activeElement');
+    expect(source).toContain('resolveActiveElement(');
+    expect(source).toContain('composedContains(');
   });
 
   it('has no coordinator answering "did focus leave?" a second time', () => {
