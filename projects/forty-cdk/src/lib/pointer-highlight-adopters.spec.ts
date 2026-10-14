@@ -40,6 +40,7 @@ import { LIBRARY_CODE } from '../test-utils/source-scan';
 const LISTENER = 'injectPointerMove';
 const CLAIM = 'createPointerHighlight';
 const COUNT = 200;
+const SUPPRESSION_ELAPSED_MS = 250;
 const indices = Array.from({ length: COUNT }, (_, i) => i);
 
 @Component({
@@ -48,7 +49,13 @@ const indices = Array.from({ length: COUNT }, (_, i) => i);
   template: `
     <div forListbox aria-label="Numbers">
       @for (i of indices; track i) {
-        <button type="button" forListboxOption [value]="i" [attr.data-target]="i === 5 ? '' : null">
+        <button
+          type="button"
+          forListboxOption
+          [value]="i"
+          [attr.data-target]="i === 5 ? '' : null"
+          [attr.data-rest]="i === 4 ? '' : null"
+        >
           {{ i }}
         </button>
       }
@@ -68,7 +75,12 @@ class ListboxHost {
       @if (open()) {
         <div forSelectContent>
           @for (i of indices; track i) {
-            <button forSelectOption [value]="i" [attr.data-target]="i === 5 ? '' : null">
+            <button
+              forSelectOption
+              [value]="i"
+              [attr.data-target]="i === 5 ? '' : null"
+              [attr.data-rest]="i === 4 ? '' : null"
+            >
               {{ i }}
             </button>
           }
@@ -92,7 +104,12 @@ class SelectHost {
       @if (open()) {
         <div forTimePickerContent>
           @for (slot of slots; track $index) {
-            <div forTimePickerOption [value]="slot" [attr.data-target]="$index === 5 ? '' : null">
+            <div
+              forTimePickerOption
+              [value]="slot"
+              [attr.data-target]="$index === 5 ? '' : null"
+              [attr.data-rest]="$index === 4 ? '' : null"
+            >
               {{ $index }}
             </div>
           }
@@ -115,7 +132,12 @@ class TimePickerHost {
       @if (open()) {
         <div forComboboxContent>
           @for (i of indices; track i) {
-            <div forComboboxOption [value]="i" [attr.data-target]="i === 5 ? '' : null">
+            <div
+              forComboboxOption
+              [value]="i"
+              [attr.data-target]="i === 5 ? '' : null"
+              [attr.data-rest]="i === 4 ? '' : null"
+            >
               {{ i }}
             </div>
           }
@@ -136,7 +158,13 @@ class ComboboxHost {
     <ul forTree aria-label="Numbers">
       @for (i of indices; track i) {
         <li forTreeItem [value]="i">
-          <div forTreeItemLabel [attr.data-target]="i === 5 ? '' : null">{{ i }}</div>
+          <div
+            forTreeItemLabel
+            [attr.data-target]="i === 5 ? '' : null"
+            [attr.data-rest]="i === 4 ? '' : null"
+          >
+            {{ i }}
+          </div>
         </li>
       }
     </ul>
@@ -154,7 +182,14 @@ class TreeHost {
       <tbody>
         @for (i of indices; track i) {
           <tr forTableRow>
-            <td forTableCell name="n" [attr.data-target]="i === 5 ? '' : null">{{ i }}</td>
+            <td
+              forTableCell
+              name="n"
+              [attr.data-target]="i === 5 ? '' : null"
+              [attr.data-rest]="i === 4 ? '' : null"
+            >
+              {{ i }}
+            </td>
           </tr>
         }
       </tbody>
@@ -178,7 +213,7 @@ class TableHost {
       <tbody>
         @for (i of indices; track i) {
           <tr forTableRow>
-            <td forTableCell name="n">{{ i }}</td>
+            <td forTableCell name="n" [attr.data-rest]="i === 4 ? '' : null">{{ i }}</td>
           </tr>
         }
       </tbody>
@@ -198,7 +233,13 @@ class TableHeaderHost {
       @if (open()) {
         <div forMenuContent>
           @for (i of indices; track i) {
-            <button forMenuItem [attr.data-target]="i === 5 ? '' : null">{{ i }}</button>
+            <button
+              forMenuItem
+              [attr.data-target]="i === 5 ? '' : null"
+              [attr.data-rest]="i === 4 ? '' : null"
+            >
+              {{ i }}
+            </button>
           }
         </div>
       }
@@ -369,6 +410,29 @@ describe('pointer highlight channel (meta-guard)', () => {
       }
 
       expect(tick.mock.calls.length).toBeLessThanOrEqual(1);
+    });
+
+    it(`${entry.file}: a move that did not move the pointer after a scroll claims nothing`, async () => {
+      const { fixture } = renderHost(entry.host);
+      await flush(fixture);
+      await nextMacrotask();
+      const target = document.querySelector<HTMLElement>('[data-target]')!;
+      const highlighted = (): boolean => target.closest('[data-highlighted]') !== null;
+      const resting = { pointerType: 'mouse', clientX: 10, clientY: 20 };
+      expect(highlighted()).toBe(false);
+      await new Promise((resolve) => setTimeout(resolve, SUPPRESSION_ELAPSED_MS));
+
+      document
+        .querySelector<HTMLElement>('[data-rest]')!
+        .dispatchEvent(pointerEvent('pointermove', resting));
+      target.dispatchEvent(new Event('scroll'));
+      target.dispatchEvent(pointerEvent('pointermove', resting));
+      await flush(fixture);
+      expect(highlighted()).toBe(false);
+
+      target.dispatchEvent(pointerEvent('pointermove', { ...resting, clientY: 21 }));
+      await flush(fixture);
+      expect(highlighted()).toBe(true);
     });
   }
 });

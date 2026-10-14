@@ -1,4 +1,13 @@
-import { activeDescendantIndex, el, expect, gotoFixture, test } from './_helpers';
+import {
+  activeDescendantIndex,
+  DEFAULT_POINTER_SUPPRESSION_MS,
+  el,
+  expect,
+  expectStays,
+  gotoFixture,
+  recordPointerMoves,
+  test,
+} from './_helpers';
 
 test.describe('Tree virtualization (Shape C)', () => {
   test('windowed render — only a small window of the 2550 nodes is mounted', async ({ page }) => {
@@ -70,10 +79,11 @@ test.describe('Tree virtualization (Shape C)', () => {
     await expect
       .poll(() => tree.getAttribute('aria-activedescendant'), { timeout: 10000 })
       .toBeTruthy();
+    await tree.hover();
+    await page.keyboard.press('Home');
     await page.keyboard.press('ArrowDown');
     await expect.poll(() => activeDescendantIndex(tree), { timeout: 10000 }).toBe('1');
 
-    await tree.hover();
     await page.mouse.wheel(0, 4000);
     await expect
       .poll(() => tree.getAttribute('aria-activedescendant'), { timeout: 10000 })
@@ -87,6 +97,39 @@ test.describe('Tree virtualization (Shape C)', () => {
     await expect
       .poll(() => tree.getAttribute('aria-activedescendant'), { timeout: 10000 })
       .toBe(await resumed.getAttribute('id'));
+  });
+
+  test('a stationary cursor does not take the active row after a wheel scroll (#2433)', async ({
+    page,
+    browserName,
+  }) => {
+    test.skip(
+      browserName !== 'webkit',
+      'Only WebKit dispatches a pointermove under a stationary cursor after a scroll',
+    );
+    await gotoFixture(page, 'tree-virtualized');
+    const tree = el(page, 'tree');
+    await tree.focus();
+    await expect
+      .poll(() => tree.getAttribute('aria-activedescendant'), { timeout: 10000 })
+      .toBeTruthy();
+    await tree.hover();
+    await page.keyboard.press('Home');
+    await page.keyboard.press('ArrowDown');
+    await expect.poll(() => activeDescendantIndex(tree), { timeout: 10000 }).toBe('1');
+
+    await page.waitForTimeout(DEFAULT_POINTER_SUPPRESSION_MS * 2);
+    const moves = await recordPointerMoves(page, 'tree');
+    await page.mouse.wheel(0, 4000);
+    await expect.poll(moves, { timeout: 10000 }).toBeGreaterThan(0);
+    await expectStays(page, async () =>
+      expect(await tree.getAttribute('aria-activedescendant')).toBeFalsy(),
+    );
+
+    await page.keyboard.press('Enter');
+    const resumed = page.locator('[data-index="1"]');
+    await expect(resumed).toHaveCount(1, { timeout: 10000 });
+    await expect(resumed).toHaveAttribute('aria-selected', 'true');
   });
 
   test('typeahead reaches a node the window scrolled past — End then "r" lands back on the first root', async ({

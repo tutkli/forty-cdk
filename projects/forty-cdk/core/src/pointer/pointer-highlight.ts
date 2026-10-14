@@ -10,15 +10,29 @@ import {
 } from '@angular/core';
 
 import { createPointerSuppression } from './pointer-suppression';
+import { StationaryPointerMoves } from './stationary-pointer-moves';
 
 export function injectPointerMove(handler: (event: PointerEvent) => void): void {
   if (!isPlatformBrowser(inject(PLATFORM_ID))) {
     return;
   }
   const host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+  const moves = inject(StationaryPointerMoves);
+  const release = moves.acquire();
   const controller = new AbortController();
-  host.addEventListener('pointermove', handler, { signal: controller.signal });
-  inject(DestroyRef).onDestroy(() => controller.abort());
+  host.addEventListener(
+    'pointermove',
+    (event) => {
+      if (!moves.isStationary(event)) {
+        handler(event);
+      }
+    },
+    { signal: controller.signal },
+  );
+  inject(DestroyRef).onDestroy(() => {
+    controller.abort();
+    release();
+  });
 }
 
 export interface PointerHighlightItem {
