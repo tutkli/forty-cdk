@@ -138,9 +138,10 @@ export class ForMenu extends MenuOverlayHost implements ForMenuContext {
   readonly dir = injectTextDirection(this._dirInput);
 
   /**
-   * When true, every opener is ignored and any open menu stays open until the
-   * consumer flips `open` themselves. Each opener reflects `data-disabled`; the
-   * items keep their per-item disabled semantics.
+   * When true, every opener is ignored and any open menu stays open until it is
+   * closed. Each opener reflects `data-disabled`, and every item of the menu and
+   * of its submenus is disabled, while keyboard navigation, Tab and Escape keep
+   * working.
    */
   readonly disabled = input(false, { transform: booleanAttribute });
 

@@ -1,6 +1,11 @@
 import { booleanAttribute, computed, Directive, input, output } from '@angular/core';
 
-import { hostButtonType, emitVetoableEvent, type VetoableEvent } from 'forty-cdk/core';
+import {
+  hostButtonType,
+  emitVetoableEvent,
+  preventPointerFocus,
+  type VetoableEvent,
+} from 'forty-cdk/core';
 import { injectMenuContext } from 'forty-cdk/core-overlay';
 import { createMenuItemInteraction } from './menu-item-interaction';
 
@@ -13,9 +18,11 @@ import { createMenuItemInteraction } from './menu-item-interaction';
  * wants to refine), call `event.preventDefault()` on the emitted event.
  *
  * Disabled items are skipped by arrow-key navigation, typeahead, and
- * Home/End, and ignore pointer hover, but stay in the DOM carrying
- * `aria-disabled="true"` (never the native `disabled` attribute) so assistive
- * tech can still perceive and announce them.
+ * Home/End, ignore pointer hover, and never take focus from a mouse press, but
+ * stay in the DOM carrying `aria-disabled="true"` (never the native `disabled`
+ * attribute) so assistive tech can still perceive and announce them. An item
+ * that becomes disabled while focused still answers the navigation keys and
+ * Tab.
  */
 @Directive({
   selector: '[forMenuItem]',
@@ -70,6 +77,10 @@ export class ForMenuItem {
    */
   readonly activate = output<VetoableEvent>();
 
+  constructor() {
+    preventPointerFocus(() => this.effectiveDisabled());
+  }
+
   protected onClick(): void {
     if (this.effectiveDisabled()) {
       return;
@@ -80,9 +91,6 @@ export class ForMenuItem {
   }
 
   protected onKeyDown(event: KeyboardEvent): void {
-    if (this.effectiveDisabled()) {
-      return;
-    }
     if (this.interaction.handleNavigation(event)) {
       return;
     }

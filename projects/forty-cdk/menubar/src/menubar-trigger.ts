@@ -16,6 +16,7 @@ import {
   IdGenerator,
   isHoverCapablePointer,
   navigateFromRovingItem,
+  preventPointerFocus,
 } from 'forty-cdk/core';
 import {
   AnchoredOverlayPositioningBase,
@@ -101,7 +102,10 @@ export class ForMenubarTrigger extends AnchoredOverlayPositioningBase {
   /** Identifies this trigger in the menubar's `value` model. */
   readonly value = input.required<string>();
 
-  /** Per-trigger disabled, in addition to the menubar's `disabled`. */
+  /**
+   * Per-trigger disabled, in addition to the menubar's `disabled`. A disabled
+   * trigger never takes focus from a mouse press.
+   */
   readonly disabled = input(false, { transform: booleanAttribute });
 
   /**
@@ -181,6 +185,7 @@ export class ForMenubarTrigger extends AnchoredOverlayPositioningBase {
       (h) => this.menubar.registerTrigger(h),
       (h) => this.menubar.unregisterTrigger(h),
     );
+    preventPointerFocus(() => this.effectiveDisabled());
   }
 
   /**

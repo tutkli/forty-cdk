@@ -325,6 +325,113 @@ describe('ForMenuSub', () => {
     });
   });
 
+  describe('disabled chain', () => {
+    @Component({
+      imports: IMPORTS,
+      template: `
+        <div forDropdownMenu [(open)]="open" [disabled]="rootDisabled()">
+          <button id="options" forDropdownMenuTrigger>Options</button>
+          @if (open()) {
+            <div forMenuContent>
+              <button id="cut" forMenuItem>Cut</button>
+              <div id="sub" forMenuSub [(open)]="subOpen">
+                <button id="more" forMenuSubTrigger [disabled]="triggerDisabled()">More</button>
+                @if (subOpen()) {
+                  <div forMenuSubContent>
+                    <button id="advanced" forMenuItem (activate)="activated.set(true)">
+                      Advanced
+                    </button>
+                  </div>
+                }
+              </div>
+              <button id="paste" forMenuItem>Paste</button>
+            </div>
+          }
+        </div>
+      `,
+    })
+    class DisabledChainHost {
+      readonly open = signal(true);
+      readonly subOpen = signal(false);
+      readonly rootDisabled = signal(false);
+      readonly triggerDisabled = signal(false);
+      readonly activated = signal(false);
+    }
+
+    const el = (id: string) => document.querySelector<HTMLElement>(`#${id}`)!;
+
+    it("the root's disabled reaches the sub-trigger, which then never opens", async () => {
+      const r = renderHost(DisabledChainHost);
+      await flush(r.fixture);
+      r.instance.rootDisabled.set(true);
+      await flush(r.fixture);
+
+      expect(el('more').getAttribute('aria-disabled')).toBe('true');
+      expect(el('sub').hasAttribute('data-disabled')).toBe(true);
+
+      el('more').click();
+      await flush(r.fixture);
+      expect(r.instance.subOpen()).toBe(false);
+
+      pressKey(el('more'), 'ArrowRight');
+      await flush(r.fixture);
+      expect(r.instance.subOpen()).toBe(false);
+    });
+
+    it("the root's disabled reaches every item of an open submenu", async () => {
+      const r = renderHost(DisabledChainHost);
+      await flush(r.fixture);
+      r.instance.subOpen.set(true);
+      await flush(r.fixture);
+      r.instance.rootDisabled.set(true);
+      await flush(r.fixture);
+
+      expect(el('advanced').getAttribute('aria-disabled')).toBe('true');
+
+      el('advanced').click();
+      await flush(r.fixture);
+      expect(r.instance.activated()).toBe(false);
+      expect(r.instance.open()).toBe(true);
+      expect(r.instance.subOpen()).toBe(true);
+    });
+
+    it('a sub-trigger disabled while focused still navigates the parent and types ahead', async () => {
+      const r = renderHost(DisabledChainHost);
+      await flush(r.fixture);
+      el('more').focus();
+      r.instance.triggerDisabled.set(true);
+      await flush(r.fixture);
+
+      pressKey(el('more'), 'ArrowDown');
+      await flush(r.fixture);
+      expect(document.activeElement).toBe(el('paste'));
+
+      el('more').focus();
+      pressKey(el('more'), 'c');
+      await flush(r.fixture);
+      expect(document.activeElement).toBe(el('cut'));
+
+      el('more').focus();
+      pressKey(el('more'), 'ArrowRight');
+      await flush(r.fixture);
+      expect(r.instance.subOpen()).toBe(false);
+    });
+
+    it('a sub-trigger disabled while focused still runs Tab-out to the root trigger', async () => {
+      const r = renderHost(DisabledChainHost);
+      await flush(r.fixture);
+      el('more').focus();
+      r.instance.triggerDisabled.set(true);
+      await flush(r.fixture);
+
+      pressKey(el('more'), 'Tab');
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+      expect(document.activeElement).toBe(el('options'));
+    });
+  });
+
   describe('parent navigation reaches the SubTrigger', () => {
     // The SubTrigger does not host-bind `data-highlighted`, so "ArrowDown from
     // the previous parent item lands on the SubTrigger" is a pure focus outcome

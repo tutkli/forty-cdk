@@ -18,8 +18,19 @@ import {
 } from 'forty-cdk/combobox';
 import { ForDialog, ForDialogTrigger } from 'forty-cdk/dialog';
 import { ForDrawer, ForDrawerTrigger } from 'forty-cdk/drawer';
+import { ForDropdownMenu, ForDropdownMenuTrigger } from 'forty-cdk/dropdown-menu';
 import { ForField, ForFieldControl, ForLabel } from 'forty-cdk/field';
 import { ForListbox, ForListboxOption } from 'forty-cdk/listbox';
+import {
+  ForMenuCheckboxItem,
+  ForMenuContent,
+  ForMenuItem,
+  ForMenuRadioGroup,
+  ForMenuRadioItem,
+  ForMenuSub,
+  ForMenuSubTrigger,
+} from 'forty-cdk/menu';
+import { ForMenubar, ForMenubarTrigger } from 'forty-cdk/menubar';
 import { ForSelect, ForSelectContent, ForSelectOption, ForSelectTrigger } from 'forty-cdk/select';
 import { provideNativeDateAdapter } from 'forty-cdk/shared';
 import { pointerEvent, pressWithMouse } from 'forty-cdk/testing';
@@ -357,6 +368,133 @@ class DrawerTriggerHost {
   readonly open = signal(false);
 }
 
+@Component({
+  imports: [ForDropdownMenu, ForDropdownMenuTrigger, ForMenuContent, ForMenuItem],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <div forDropdownMenu [(open)]="open">
+      <button forDropdownMenuTrigger>File</button>
+      @if (open()) {
+        <div forMenuContent>
+          <button forMenuItem data-arm data-focus>New</button>
+          <button forMenuItem disabled data-press>Rename</button>
+        </div>
+      }
+    </div>
+  `,
+})
+class MenuDisabledItemHost {
+  readonly open = signal(true);
+}
+
+@Component({
+  imports: [ForDropdownMenu, ForDropdownMenuTrigger, ForMenuContent, ForMenuCheckboxItem],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <div forDropdownMenu [(open)]="open">
+      <button forDropdownMenuTrigger>View</button>
+      @if (open()) {
+        <div forMenuContent>
+          <button forMenuCheckboxItem data-arm data-focus>Ruler</button>
+          <button forMenuCheckboxItem disabled data-press>Grid</button>
+        </div>
+      }
+    </div>
+  `,
+})
+class MenuDisabledCheckboxItemHost {
+  readonly open = signal(true);
+}
+
+@Component({
+  imports: [
+    ForDropdownMenu,
+    ForDropdownMenuTrigger,
+    ForMenuContent,
+    ForMenuRadioGroup,
+    ForMenuRadioItem,
+  ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <div forDropdownMenu [(open)]="open">
+      <button forDropdownMenuTrigger>Align</button>
+      @if (open()) {
+        <div forMenuContent>
+          <div forMenuRadioGroup>
+            <button forMenuRadioItem value="left" data-arm data-focus>Left</button>
+            <button forMenuRadioItem value="right" disabled data-press>Right</button>
+          </div>
+        </div>
+      }
+    </div>
+  `,
+})
+class MenuDisabledRadioItemHost {
+  readonly open = signal(true);
+}
+
+@Component({
+  imports: [
+    ForDropdownMenu,
+    ForDropdownMenuTrigger,
+    ForMenuContent,
+    ForMenuItem,
+    ForMenuSub,
+    ForMenuSubTrigger,
+  ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <div forDropdownMenu [(open)]="open">
+      <button forDropdownMenuTrigger>File</button>
+      @if (open()) {
+        <div forMenuContent>
+          <button forMenuItem data-arm data-focus>New</button>
+          <div forMenuSub [(open)]="subOpen">
+            <button forMenuSubTrigger disabled data-press>Share</button>
+            @if (subOpen()) {
+              <div forMenuSubContent><button forMenuItem>Email</button></div>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  `,
+})
+class MenuDisabledSubTriggerHost {
+  readonly open = signal(true);
+  readonly subOpen = signal(false);
+}
+
+@Component({
+  imports: [ForDropdownMenu, ForDropdownMenuTrigger, ForMenuContent, ForMenuItem],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <div forDropdownMenu [(open)]="open">
+      <button forDropdownMenuTrigger>File</button>
+      @if (open()) {
+        <div forMenuContent data-press>
+          <button forMenuItem data-arm data-focus>New</button>
+        </div>
+      }
+    </div>
+  `,
+})
+class MenuContentHost {
+  readonly open = signal(true);
+}
+
+@Component({
+  imports: [ForMenubar, ForMenubarTrigger],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <div forMenubar aria-label="Main">
+      <button forMenubarTrigger value="file" data-arm data-focus>File</button>
+      <button forMenubarTrigger value="edit" disabled data-press>Edit</button>
+    </div>
+  `,
+})
+class MenubarDisabledTriggerHost {}
+
 interface PressCase {
   readonly file: string;
   readonly host: Type<unknown>;
@@ -412,6 +550,12 @@ const SWEEP: readonly PressCase[] = [
   { file: 'combobox/src/combobox-content.ts', host: ComboboxContentHost },
   { file: 'combobox/src/combobox-list.ts', host: ComboboxListHost },
   { file: 'field/src/label.ts', host: FieldLabelHost },
+  { file: 'menu/src/menu-item.ts', host: MenuDisabledItemHost },
+  { file: 'menu/src/menu-checkbox-item.ts', host: MenuDisabledCheckboxItemHost },
+  { file: 'menu/src/menu-radio-item.ts', host: MenuDisabledRadioItemHost },
+  { file: 'menu/src/menu-sub-trigger.ts', host: MenuDisabledSubTriggerHost },
+  { file: 'menu/src/menu-content.ts', host: MenuContentHost },
+  { file: 'menubar/src/menubar-trigger.ts', host: MenubarDisabledTriggerHost },
 ];
 
 function declaringFile(helper: string): string {
@@ -455,9 +599,20 @@ describe('pointer focus guard (meta-guard)', () => {
     expect(callers().length).toBeGreaterThanOrEqual(SWEEP.length);
   });
 
-  it('has every option and treeitem host calling the helper', () => {
-    const hosts = filesWhere((source) => /role: '(option|treeitem)'/.test(source));
-    expect(hosts.length).toBeGreaterThanOrEqual(5);
+  it('has every option, treeitem and menuitem host calling the helper', () => {
+    const hosts = filesWhere((source) =>
+      /role: '(option|treeitem|menuitem(checkbox|radio)?)'/.test(source),
+    );
+    expect(hosts.filter((path) => path.startsWith('menu')).length).toBeGreaterThanOrEqual(5);
+    expect(hosts.filter((path) => !callers().includes(path))).toEqual([]);
+  });
+
+  it('has every menu and listbox surface carrying a static tabindex calling the helper', () => {
+    const hosts = filesWhere(
+      (source) => /role: '(menu|listbox)'/.test(source) && source.includes(`tabindex: '-1'`),
+    );
+    expect(hosts).toContain('menu/src/menu-content.ts');
+    expect(hosts.length).toBeGreaterThanOrEqual(3);
     expect(hosts.filter((path) => !callers().includes(path))).toEqual([]);
   });
 

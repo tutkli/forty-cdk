@@ -5,6 +5,7 @@ import {
   hostButtonType,
   injectPointerMove,
   isHoverCapablePointer,
+  preventPointerFocus,
   registerHandle,
   resolveListNavigation,
 } from 'forty-cdk/core';
@@ -49,6 +50,9 @@ import { handleMenuTabOut } from './menu-tab-out';
  * Pointer-driven opens (click / tap, detected by the `pointerdown` preceding
  * the click) move focus to the submenu's first item without highlighting it;
  * keyboard activation (Enter / Space / the open arrow) highlights it.
+ *
+ * A disabled trigger never opens its submenu and never takes focus from a mouse
+ * press. Once focused it still answers the navigation keys, Tab and typeahead.
  */
 @Directive({
   selector: '[forMenuSubTrigger]',
@@ -79,7 +83,8 @@ export class ForMenuSubTrigger {
   #pointerActivation = false;
 
   /**
-   * Whether the submenu can be opened. A disabled trigger stays focusable and announced.
+   * Whether the submenu can be opened. A disabled trigger stays focusable and
+   * announced. The trigger is also disabled while its `[forMenuSub]` is.
    */
   readonly disabled = input(false, { transform: booleanAttribute });
   readonly effectiveDisabled = computed(() => this.disabled() || this.submenu.disabled());
@@ -94,6 +99,7 @@ export class ForMenuSubTrigger {
       });
     }
     injectPointerMove((event) => this.onPointerMove(event));
+    preventPointerFocus(() => this.effectiveDisabled());
     const parent = this.submenu.parentMenu;
     const handle = {
       host: this.#host.nativeElement,
@@ -157,9 +163,6 @@ export class ForMenuSubTrigger {
 
   protected onKeyDown(event: KeyboardEvent): void {
     this.#pointerActivation = false;
-    if (this.effectiveDisabled()) {
-      return;
-    }
     const parent = this.submenu.parentMenu!;
     const isRtl = this.submenu.dir() === 'rtl';
     const openKey = isRtl ? 'ArrowLeft' : 'ArrowRight';
@@ -167,7 +170,9 @@ export class ForMenuSubTrigger {
 
     if (event.key === openKey) {
       event.preventDefault();
-      this.submenu.openMenu('first');
+      if (!this.effectiveDisabled()) {
+        this.submenu.openMenu('first');
+      }
       return;
     }
 
