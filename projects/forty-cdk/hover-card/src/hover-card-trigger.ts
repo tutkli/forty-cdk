@@ -101,7 +101,8 @@ export class ForHoverCardTrigger {
   }
 
   protected onPointerLeave(event: PointerEvent): void {
-    this.ctx().pointerLeaveTrigger({ x: event.clientX, y: event.clientY });
+    const outOfRange = event.relatedTarget === null && isNonTouchPointer(event);
+    this.ctx().pointerLeaveTrigger(outOfRange ? null : { x: event.clientX, y: event.clientY });
   }
 
   protected onFocus(): void {

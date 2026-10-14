@@ -480,7 +480,12 @@ describe('ForTooltip', () => {
       trigger.dispatchEvent(new PointerEvent('pointerenter', { pointerType: 'pen' }));
       await flush(r.fixture);
       trigger.dispatchEvent(
-        new PointerEvent('pointerleave', { pointerType: 'pen', clientX: 0, clientY: 0 }),
+        new PointerEvent('pointerleave', {
+          pointerType: 'pen',
+          clientX: 0,
+          clientY: 0,
+          relatedTarget: document.body,
+        }),
       );
       await flush(r.fixture);
       expect(r.instance.isOpen()).toBe(true);
@@ -491,6 +496,91 @@ describe('ForTooltip', () => {
       await flush(r.fixture);
 
       expect(r.instance.isOpen()).toBe(false);
+    });
+
+    it('closes a hoverable tooltip when a pen lifts out of hover range after leaving the trigger', async () => {
+      const r = renderHost(HoverableTooltipHost);
+      await flush(r.fixture);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+
+      trigger.dispatchEvent(new PointerEvent('pointerenter', { pointerType: 'pen' }));
+      await flush(r.fixture);
+      trigger.dispatchEvent(
+        new PointerEvent('pointerleave', {
+          pointerType: 'pen',
+          clientX: 0,
+          clientY: 0,
+          relatedTarget: document.body,
+        }),
+      );
+      await flush(r.fixture);
+      expect(r.instance.isOpen()).toBe(true);
+
+      const lift = new PointerEvent('pointerout', {
+        pointerType: 'pen',
+        bubbles: true,
+        relatedTarget: null,
+      });
+      expect(lift.pointerType).toBe('pen');
+      document.body.dispatchEvent(lift);
+      await flush(r.fixture);
+
+      expect(r.instance.isOpen()).toBe(false);
+    });
+
+    it('closes a hoverable tooltip when a pen lifts out of hover range over the trigger', async () => {
+      const r = renderHost(HoverableTooltipHost);
+      await flush(r.fixture);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+
+      trigger.dispatchEvent(new PointerEvent('pointerenter', { pointerType: 'pen' }));
+      await flush(r.fixture);
+      expect(r.instance.isOpen()).toBe(true);
+
+      trigger.dispatchEvent(
+        new PointerEvent('pointerout', { pointerType: 'pen', bubbles: true, relatedTarget: null }),
+      );
+      trigger.dispatchEvent(
+        new PointerEvent('pointerleave', {
+          pointerType: 'pen',
+          clientX: 10,
+          clientY: 10,
+          relatedTarget: null,
+        }),
+      );
+      await flush(r.fixture);
+
+      expect(r.instance.isOpen()).toBe(false);
+    });
+
+    it('keeps a hoverable tooltip open while a pen crosses from the trigger onto the content', async () => {
+      const r = renderHost(HoverableTooltipHost);
+      await flush(r.fixture);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+
+      trigger.dispatchEvent(new PointerEvent('pointerenter', { pointerType: 'pen' }));
+      await flush(r.fixture);
+      const content = document.body.querySelector<HTMLElement>('[forTooltipContent]')!;
+
+      trigger.dispatchEvent(
+        new PointerEvent('pointerout', {
+          pointerType: 'pen',
+          bubbles: true,
+          relatedTarget: content,
+        }),
+      );
+      trigger.dispatchEvent(
+        new PointerEvent('pointerleave', {
+          pointerType: 'pen',
+          clientX: 0,
+          clientY: 0,
+          relatedTarget: content,
+        }),
+      );
+      content.dispatchEvent(new PointerEvent('pointerenter', { pointerType: 'pen' }));
+      await flush(r.fixture);
+
+      expect(r.instance.isOpen()).toBe(true);
     });
 
     it('reopens on a later keyboard focus after a suppressed touch tap', async () => {
@@ -872,7 +962,9 @@ describe('ForTooltip', () => {
       const content = document.querySelector<HTMLElement>('[role="tooltip"]')!;
 
       // Leaving the trigger arms the grace bridge rather than closing.
-      trigger.dispatchEvent(new PointerEvent('pointerleave', { clientX: 0, clientY: 0 }));
+      trigger.dispatchEvent(
+        new PointerEvent('pointerleave', { clientX: 0, clientY: 0, relatedTarget: document.body }),
+      );
       await flush(r.fixture);
       expect(r.instance.isOpen()).toBe(true);
 

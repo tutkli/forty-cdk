@@ -42,8 +42,11 @@ export interface ForTooltipContext extends AnchoredPositioningContext {
 
   /** The pointer entered the trigger; opens after the resolved open delay (gated by `showOnOverflow`). */
   pointerEnterTrigger(): void;
-  /** The pointer left the trigger; closes, or arms the hoverable-content bridge from `cursor`. */
-  pointerLeaveTrigger(cursor: Point): void;
+  /**
+   * The pointer left the trigger; closes, or arms the hoverable-content bridge from `cursor`.
+   * `null` means the pointer left the document or a pen left hover range, so it closes.
+   */
+  pointerLeaveTrigger(cursor: Point | null): void;
   /** The trigger received focus; opens after the resolved open delay (gated by `showOnOverflow`). */
   focusTrigger(): void;
   /** The trigger lost focus; closes when nothing else keeps the tooltip alive. */

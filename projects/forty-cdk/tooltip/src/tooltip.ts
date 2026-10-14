@@ -281,12 +281,12 @@ export class ForTooltip extends AnchoredOverlayPositioningBase implements ForToo
     this.#hoverIntent.scheduleOpen();
   }
 
-  pointerLeaveTrigger(cursor: Point): void {
+  pointerLeaveTrigger(cursor: Point | null): void {
     this.#surface.leaveTrigger();
     if (this.#surface.triggerFocused()) {
       return;
     }
-    if (this.hoverableContent() && this.open() && this.#contentEl()) {
+    if (cursor && this.hoverableContent() && this.open() && this.#contentEl()) {
       this.#surface.armGrace(cursor);
       return;
     }

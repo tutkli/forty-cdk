@@ -164,14 +164,17 @@ export interface PointerGraceOptions {
    * `isNonTouchPointer`, so the pen that opened the surface can close it.
    */
   readonly tracksPointer?: (event: Pick<PointerEvent, 'pointerType'>) => boolean;
+  readonly exitsOutOfRange?: boolean;
 }
 
 /**
  * Attaches a document-level `pointermove` listener that calls {@link onExit}
  * on every tracked move outside {@link polygon}, until the returned cleanup
- * disarms it. The caller arms this on a trigger pointer-leave and disarms it
- * once the pointer reaches the content, the grace window elapses, or the
- * surface is otherwise resolved.
+ * disarms it. With {@link PointerGraceOptions.exitsOutOfRange}, a tracked
+ * `pointerout` with no `relatedTarget` (the pointer left the document, or a pen
+ * left the digitizer's hover range) is an exit too. The caller arms this on a
+ * trigger pointer-leave and disarms it once the pointer reaches the content,
+ * the grace window elapses, or the surface is otherwise resolved.
  *
  * Moves {@link PointerGraceOptions.tracksPointer} rejects are ignored: touch
  * opens by tap, never by hover, so a touch move has no safe triangle to leave.
@@ -206,5 +209,13 @@ export function attachPointerGrace(
   };
   const controller = new AbortController();
   doc.addEventListener('pointermove', onMove, { signal: controller.signal });
+  if (options.exitsOutOfRange) {
+    const onOut = (event: PointerEvent): void => {
+      if (tracksPointer(event) && event.relatedTarget === null) {
+        onExit();
+      }
+    };
+    doc.addEventListener('pointerout', onOut, { signal: controller.signal });
+  }
   return () => controller.abort();
 }
