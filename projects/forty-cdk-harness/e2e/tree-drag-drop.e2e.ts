@@ -1,4 +1,4 @@
-import { boxOf, el, expect, gotoFixture, test } from './_helpers';
+import { boxOf, el, expect, expectFocused, gotoFixture, test } from './_helpers';
 
 test.describe('tree-drag-drop — keyboard reorder', () => {
   test('Ctrl+Space lifts a node, ArrowUp + Space drops it one position higher', async ({
@@ -155,5 +155,28 @@ test.describe('tree-drag-drop — pointer drag', () => {
     await expect(el(page, 'item-resume')).toBeHidden();
 
     await page.mouse.up();
+  });
+
+  test('a pointer drop that re-parents the focused node keeps focus on it (#2265)', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'tree-drag-drop');
+
+    await el(page, 'toggle-documents').click();
+    await expect(el(page, 'item-resume')).toBeVisible();
+
+    const handle = await boxOf(el(page, 'handle-resume'));
+    const notes = await boxOf(el(page, 'item-notes'));
+    const rootLeft = (await boxOf(el(page, 'item-documents'))).x;
+
+    await page.mouse.move(handle.x + handle.width / 2, handle.y + handle.height / 2);
+    await page.mouse.down();
+    await expectFocused(el(page, 'item-resume'));
+    await page.mouse.move(handle.x + handle.width / 2 + 10, handle.y + handle.height / 2);
+    await page.mouse.move(rootLeft + 2, notes.y + notes.height + 4);
+    await page.mouse.up();
+
+    await expect(el(page, 'last-event')).toContainText('resume → parent:root');
+    await expectFocused(el(page, 'item-resume'));
   });
 });

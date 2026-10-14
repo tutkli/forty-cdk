@@ -182,6 +182,7 @@ export class ForVirtualReorder {
         host: this.#host,
         document: this.#document,
         armThreshold: POINTER_ARM_THRESHOLD_PX,
+        cancelOnEscape: true,
         canStart: (event) => this.#trackPointerPress(event),
         onLift: () => this.#pinOnPointerLift(),
         onMove: (event) => this.#trackScrub(event),

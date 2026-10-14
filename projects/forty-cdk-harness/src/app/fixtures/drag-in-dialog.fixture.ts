@@ -7,6 +7,7 @@ import {
   ForFreeDrag,
   moveItemInArray,
 } from 'forty-cdk/drag-drop';
+import { ForTree, ForTreeItem, ForTreeItemLabel, ForTreeNodeDrag } from 'forty-cdk/tree';
 import { queryFlag } from './_query-flag';
 
 interface Item {
@@ -19,14 +20,26 @@ interface Item {
  * drag is in flight must cancel the drag only; the enclosing dialog stays open
  * and a second Escape dismisses it (#1378 / #1410).
  *
- * Two variants share the route: the default renders a `[forDropList]` +
- * `[forDraggable]` list (pointer drag and keyboard lift), and `?freeDrag=1`
- * renders a `[forFreeDrag]` box inside a bounded viewport.
+ * Three variants share the route: the default renders a `[forDropList]` +
+ * `[forDraggable]` list (pointer drag and keyboard lift), `?freeDrag=1`
+ * renders a `[forFreeDrag]` box inside a bounded viewport, and `?tree=1` renders a
+ * `[forTree][forTreeNodeDrag]` (#2265).
  */
 @Component({
   selector: 'app-drag-in-dialog-fixture',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ForDialog, ForDialogTrigger, ForDialogClose, ForDropList, ForDraggable, ForFreeDrag],
+  imports: [
+    ForDialog,
+    ForDialogTrigger,
+    ForDialogClose,
+    ForDropList,
+    ForDraggable,
+    ForFreeDrag,
+    ForTree,
+    ForTreeItem,
+    ForTreeItemLabel,
+    ForTreeNodeDrag,
+  ],
   styles: [
     `
       [forDialog] {
@@ -98,6 +111,27 @@ interface Item {
           <div class="viewport" data-testid="viewport">
             <div class="box" forFreeDrag boundary=".viewport" data-testid="box"></div>
           </div>
+        } @else if (tree) {
+          <ul
+            forTree
+            forTreeNodeDrag
+            aria-label="Files"
+            data-testid="tree"
+            style="list-style: none; padding: 0"
+            (nodeDrop)="lastTreeDrop.set($event.node)"
+          >
+            @for (node of treeNodes; track node) {
+              <li
+                forTreeItem
+                [value]="node"
+                [attr.data-testid]="'tree-' + node"
+                style="height: 40px"
+              >
+                <div forTreeItemLabel>{{ node }}</div>
+              </li>
+            }
+          </ul>
+          <div data-testid="tree-last-drop">{{ lastTreeDrop() }}</div>
         } @else {
           <ul forDropList data-testid="list" (dragDrop)="onDrop($event)">
             @for (item of items(); track item.id; let i = $index) {
@@ -115,6 +149,9 @@ interface Item {
 export class DragInDialogFixture {
   protected readonly open = signal(false);
   protected readonly freeDrag = queryFlag('freeDrag');
+  protected readonly tree = queryFlag('tree');
+  protected readonly treeNodes = ['alpha', 'beta', 'gamma'];
+  protected readonly lastTreeDrop = signal('');
 
   protected readonly items = signal<Item[]>([
     { id: 1, label: 'Alpha' },

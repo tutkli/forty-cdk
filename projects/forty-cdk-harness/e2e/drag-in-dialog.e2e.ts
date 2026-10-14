@@ -1,6 +1,6 @@
 import type { Locator, Page } from '@playwright/test';
 
-import { boxOf, el, expect, expectFocused, gotoFixture, test } from './_helpers';
+import { boxOf, el, expect, expectFocused, expectStays, gotoFixture, test } from './_helpers';
 
 const ARM_PX = 6;
 
@@ -165,5 +165,33 @@ test.describe('drag inside a modal dialog — free drag', () => {
     await page.keyboard.press('Escape');
     await expect(el(page, 'dialog')).toHaveCount(0);
     await expectFocused(el(page, 'trigger'));
+  });
+});
+
+test.describe('drag inside a modal dialog — tree node drag (#2265)', () => {
+  test('a completed pointer drag still drops the node inside the dialog', async ({ page }) => {
+    await openDialog(page, { tree: '1' });
+
+    await pressAndDrag(page, el(page, 'tree-alpha'), 0, 70);
+    await page.mouse.up();
+
+    await expect(el(page, 'tree-last-drop')).toHaveText('alpha');
+  });
+
+  test('Escape during a pointer drag cancels the drag and leaves the dialog open', async ({
+    page,
+  }) => {
+    await openDialog(page, { tree: '1' });
+
+    await pressAndDrag(page, el(page, 'tree-alpha'), 0, 70);
+    await expect(el(page, 'tree')).toHaveAttribute('data-dragging', '');
+
+    await page.keyboard.press('Escape');
+    await expect(el(page, 'tree')).not.toHaveAttribute('data-dragging', '');
+    await page.mouse.up();
+
+    await expect(el(page, 'dialog')).toBeVisible();
+    await expectStays(page, () => expect(el(page, 'tree-last-drop')).toHaveText(''));
+    await expect.poll(() => activeElementInsideDialog(page)).toBe(true);
   });
 });

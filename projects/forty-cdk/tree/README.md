@@ -185,7 +185,7 @@ Type part of a category name: the tree narrows to the matches, expands their anc
 
 ### Drag & drop reordering
 
-`[forTreeNodeDrag]` on the root adds pointer and keyboard reordering and re-parenting; the ⠿ grip is an optional `[forTreeNodeDragHandle]`. The library never mutates your data, so apply the pure `moveTreeNode` helper in `(nodeDrop)`. On lift the dragged subtree collapses, which structurally prevents dropping a node into its own descendant.
+`[forTreeNodeDrag]` on the root adds pointer and keyboard reordering and re-parenting; the ⠿ grip is an optional `[forTreeNodeDragHandle]`. The library never mutates your data, so apply the pure `moveTreeNode` helper in `(nodeDrop)`. On lift the dragged subtree collapses, and its descendants are never offered as drop positions even when it is re-expanded mid-drag, so a node cannot be dropped into its own descendant.
 
 ### Virtualized (12,300 nodes)
 
@@ -627,16 +627,20 @@ Annotating a `viewChild` / `@ViewChild` reference (`ForTreeNodeDrag<FileNode>`) 
 
 ### Keyboard interaction
 
-| Key               | Behavior while **not** lifted | Behavior while **lifted**                                                                                                          |
-| ----------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `Ctrl/Cmd+Space`  | Lifts the focused node.       | —                                                                                                                                  |
-| `ArrowDown`       | Normal tree navigation.       | Moves the insertion point one row down.                                                                                            |
-| `ArrowUp`         | Normal tree navigation.       | Moves the insertion point one row up.                                                                                              |
-| `ArrowRight`      | Normal expand / enter.        | Deepens the target level by 1 (LTR; reversed under RTL).                                                                           |
-| `ArrowLeft`       | Normal collapse / leave.      | Shallows the target level by 1 (LTR; reversed under RTL).                                                                          |
-| `Space` / `Enter` | Normal select / activate.     | Drops the node at the current resolved position. Focus follows the node, or lands on its new parent when that parent is collapsed. |
-| `Escape`          | —                             | Cancels the drag; the node is returned to its original position.                                                                   |
-| `Tab`             | Normal focus leave.           | Cancels the drag.                                                                                                                  |
+| Key               | Behavior while **not** lifted | Behavior while **lifted**                                                                                                                                                    |
+| ----------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Ctrl/Cmd+Space`  | Lifts the focused node.       | —                                                                                                                                                                            |
+| `ArrowDown`       | Normal tree navigation.       | Moves the insertion point one row down.                                                                                                                                      |
+| `ArrowUp`         | Normal tree navigation.       | Moves the insertion point one row up.                                                                                                                                        |
+| `Home` / `End`    | Normal tree navigation.       | Moves the insertion point to the first / last row. Focus stays on the lifted node.                                                                                           |
+| `ArrowRight`      | Normal expand / enter.        | Deepens the target level by 1 (LTR; reversed under RTL).                                                                                                                     |
+| `ArrowLeft`       | Normal collapse / leave.      | Shallows the target level by 1 (LTR; reversed under RTL).                                                                                                                    |
+| `Space` / `Enter` | Normal select / activate.     | Drops the node at the current resolved position. Focus follows the node, or lands on its new parent when that parent is collapsed.                                           |
+| `Escape`          | —                             | Cancels the drag; the node is returned to its original position.                                                                                                             |
+| `Tab`             | Normal focus leave.           | Cancels the drag.                                                                                                                                                            |
+| Any other key     | Normal tree behavior.         | Consumed, so `*`, typeahead and your own item key handlers cannot move focus or expand nodes mid-drag. Ctrl / Cmd / Alt chords and function keys keep their browser meaning. |
+
+During a pointer drag, `Escape` cancels the drag and is consumed, so an enclosing dialog or popover stays open. A drop made while focus was on the dragged node, by keyboard or by pointer, moves focus with the node, or onto its new parent when that parent is collapsed; a pointer drop made while focus was elsewhere leaves it there.
 
 ### Minimal example
 
@@ -784,7 +788,7 @@ Pair it with the root's `--for-tree-drop-level` (the resolved depth) to indent t
 
 Advanced consumers can read the same resolved position programmatically: `[forTreeNodeDrag]` exposes a read-only `dropIndicator: Signal<ForTreeDropIndicator<T> | null>` (`{ anchor, position, level }`, `null` when idle). Injecting it through `ForTreeNodeDragContext` reads the same signal at `ForTreeDropIndicator<unknown>`, since a token cannot carry the node value type.
 
-On lift the dragged node's subtree is collapsed (and restored on drop / cancel). This keeps the drop geometry tractable and structurally prevents dropping a node into its own descendant; `[canDrop]` adds consumer-defined vetoes on top.
+On lift the dragged node's subtree is collapsed (and restored on drop / cancel). This keeps the drop geometry tractable. Independently of it, the lifted node's descendants are never offered as drop positions, so a re-expansion during the drag (a toggle click or a write to `[(expanded)]`) cannot let a node be dropped into its own descendant; `[canDrop]` adds consumer-defined vetoes on top.
 
 ### Localizing drag announcements
 

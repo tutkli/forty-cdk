@@ -1144,11 +1144,16 @@ interface FileNode {
 
 @Component({
   selector: 'test-file-node',
-  imports: [ForTreeItem, ForTreeItemLabel, ForTreeGroup, FileNodeView],
+  imports: [ForTreeItem, ForTreeItemLabel, ForTreeItemToggle, ForTreeGroup, FileNodeView],
   host: { style: 'display: contents' },
   template: `
     <li forTreeItem [value]="node().id" [attr.data-testid]="node().id">
-      <div forTreeItemLabel>{{ node().name }}</div>
+      <div forTreeItemLabel>
+        @if (node().children?.length) {
+          <span forTreeItemToggle aria-hidden="true">▸</span>
+        }
+        {{ node().name }}
+      </div>
       @if (node().children?.length && expanded().includes(node().id)) {
         <ul forTreeGroup>
           @for (child of node().children ?? []; track child.id) {
@@ -1189,8 +1194,10 @@ class AppliedDropTreeHost {
     },
     { id: 'readme', name: 'Readme' },
   ]);
+  readonly drops: ForTreeDragDropEvent[] = [];
 
   onDrop(event: ForTreeDragDropEvent): void {
+    this.drops.push(event);
     this.roots.update((roots) =>
       moveTreeNode(roots as FileNode[], {
         event,
@@ -1255,5 +1262,270 @@ describe('ForTreeNodeDrag — focus follows the dropped node (#2118)', () => {
     );
     expect(roots).toEqual(['readme', 'documents']);
     expect(document.activeElement).toBe(query('[data-testid="readme"]'));
+  });
+});
+
+describe('ForTreeNodeDrag — a lifted session owns the keyboard (#2265)', () => {
+  afterEach(() => {
+    document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
+  });
+
+  async function liftDocuments(): Promise<{
+    instance: AppliedDropTreeHost;
+    tree: HTMLElement;
+    documents: HTMLElement;
+    f: () => Promise<void>;
+  }> {
+    const { instance, query, flush: f } = renderHost(AppliedDropTreeHost);
+    await f();
+    const tree = query<HTMLElement>('[forTree]')!;
+    const documents = query<HTMLElement>('[data-testid="documents"]')!;
+    documents.focus();
+    dispatchKey(documents, ' ', { ctrlKey: true });
+    await f();
+    return { instance, tree, documents, f };
+  }
+
+  it('consumes `*` so the lifted subtree stays collapsed and the drop cannot land inside it', async () => {
+    const { instance, tree, documents, f } = await liftDocuments();
+    expect(instance.open()).not.toContain('documents');
+
+    const star = new KeyboardEvent('keydown', { key: '*', bubbles: true, cancelable: true });
+    documents.dispatchEvent(star);
+    await f();
+
+    expect(star.defaultPrevented).toBe(true);
+    expect(instance.open()).not.toContain('documents');
+
+    for (const key of ['ArrowDown', 'ArrowRight', ' ']) {
+      dispatchKey(tree, key);
+      await f();
+    }
+
+    expect(instance.drops).toHaveLength(1);
+    expect(instance.drops[0]!.node).toBe('documents');
+    expect(['resume', 'projects', 'documents']).not.toContain(instance.drops[0]!.newParent);
+  });
+
+  it('offers no descendant of the lifted node as a drop row after a re-expansion through [(expanded)]', async () => {
+    const { instance, tree, f } = await liftDocuments();
+
+    instance.open.set(['documents']);
+    await f();
+    expect(tree.querySelector('[data-testid="resume"]')).not.toBeNull();
+
+    for (const key of ['ArrowDown', 'ArrowRight', ' ']) {
+      dispatchKey(tree, key);
+      await f();
+    }
+
+    expect(instance.drops).toHaveLength(1);
+    expect(instance.drops[0]!.newParent).toBe('readme');
+  });
+
+  it('never anchors the drop indicator on a re-expanded descendant of the lifted node', async () => {
+    const { instance, tree, f } = await liftDocuments();
+
+    instance.open.set(['documents']);
+    await f();
+    dispatchKey(tree, 'ArrowDown');
+    await f();
+
+    const anchored = Array.from(tree.querySelectorAll('[data-drop-position]')).map((n) =>
+      n.getAttribute('data-testid'),
+    );
+    expect(anchored).toEqual(['readme']);
+  });
+
+  it('maps End to the last gap and Home to the first, keeping focus on the lifted node', async () => {
+    const { instance, query, flush: f } = renderHost(TreeDragHost);
+    await f();
+    const tree = query<HTMLElement>('[forTree]')!;
+    const music = query<HTMLElement>('[data-testid="music"]')!;
+
+    music.focus();
+    dispatchKey(music, ' ', { ctrlKey: true });
+    await f();
+
+    const end = new KeyboardEvent('keydown', { key: 'End', bubbles: true, cancelable: true });
+    music.dispatchEvent(end);
+    await f();
+    expect(end.defaultPrevented).toBe(true);
+    expect(document.activeElement).toBe(music);
+    expect(query('[data-testid="notes"]')!.getAttribute('data-drop-position')).toBe('after');
+
+    dispatchKey(music, 'Home');
+    await f();
+    expect(document.activeElement).toBe(music);
+    expect(query('[data-testid="docs"]')!.getAttribute('data-drop-position')).toBe('before');
+
+    dispatchKey(tree, ' ');
+    await f();
+    expect(instance.dropped()).toEqual(
+      expect.objectContaining({ node: 'music', newParent: null, currentIndex: 0 }),
+    );
+  });
+
+  it('drops at the last root position after End', async () => {
+    const { instance, query, flush: f } = renderHost(TreeDragHost);
+    await f();
+    const tree = query<HTMLElement>('[forTree]')!;
+    const music = query<HTMLElement>('[data-testid="music"]')!;
+
+    music.focus();
+    dispatchKey(music, ' ', { ctrlKey: true });
+    await f();
+    dispatchKey(music, 'End');
+    await f();
+    dispatchKey(tree, ' ');
+    await f();
+
+    expect(instance.dropped()).toEqual(
+      expect.objectContaining({ node: 'music', newParent: null, currentIndex: 2 }),
+    );
+  });
+
+  it('consumes a typeahead character so focus stays on the lifted node', async () => {
+    const { query, flush: f } = renderHost(TreeDragHost);
+    await f();
+    const docs = query<HTMLElement>('[data-testid="docs"]')!;
+
+    docs.focus();
+    dispatchKey(docs, ' ', { ctrlKey: true });
+    await f();
+
+    const letter = new KeyboardEvent('keydown', { key: 'n', bubbles: true, cancelable: true });
+    docs.dispatchEvent(letter);
+    await f();
+
+    expect(letter.defaultPrevented).toBe(true);
+    expect(document.activeElement).toBe(docs);
+    expect(query('[forTree]')!.hasAttribute('data-dragging')).toBe(true);
+  });
+
+  it('leaves a Ctrl / Cmd chord to the browser', async () => {
+    const { query, flush: f } = renderHost(TreeDragHost);
+    await f();
+    const docs = query<HTMLElement>('[data-testid="docs"]')!;
+
+    docs.focus();
+    dispatchKey(docs, ' ', { ctrlKey: true });
+    await f();
+
+    const chord = new KeyboardEvent('keydown', {
+      key: 'r',
+      ctrlKey: true,
+      bubbles: true,
+      cancelable: true,
+    });
+    docs.dispatchEvent(chord);
+
+    expect(chord.defaultPrevented).toBe(false);
+  });
+});
+
+describe('ForTreeNodeDrag — Escape cancels a pointer drag (#2265)', () => {
+  afterEach(() => {
+    document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
+  });
+
+  it('cancels the drag, consumes the key, restores the expansion and drops nothing', async () => {
+    const { instance, query, flush: f } = renderHost(TreeDragHost);
+    instance.open.set(['docs']);
+    await f();
+    const tree = query<HTMLElement>('[forTree]')!;
+    const label =
+      query<HTMLElement>('[data-testid="docs"]')!.querySelector<HTMLElement>('[forTreeItemLabel]')!;
+
+    firePointer(label, 'pointerdown', 100, 100);
+    firePointer(document, 'pointermove', 100, 120);
+    await f();
+    expect(tree.hasAttribute('data-dragging')).toBe(true);
+    expect(instance.open()).not.toContain('docs');
+
+    const escape = new KeyboardEvent('keydown', {
+      key: 'Escape',
+      bubbles: true,
+      cancelable: true,
+    });
+    document.dispatchEvent(escape);
+    await f();
+
+    expect(escape.defaultPrevented).toBe(true);
+    expect(tree.hasAttribute('data-dragging')).toBe(false);
+    expect(instance.open()).toContain('docs');
+
+    firePointer(document, 'pointerup', 100, 140);
+    await f();
+    expect(instance.dropped()).toBeNull();
+  });
+
+  it('leaves Escape alone for a press that never armed', async () => {
+    const { instance, query, flush: f } = renderHost(TreeDragHost);
+    await f();
+    const label =
+      query<HTMLElement>('[data-testid="docs"]')!.querySelector<HTMLElement>('[forTreeItemLabel]')!;
+
+    firePointer(label, 'pointerdown', 100, 100);
+    const escape = new KeyboardEvent('keydown', {
+      key: 'Escape',
+      bubbles: true,
+      cancelable: true,
+    });
+    document.dispatchEvent(escape);
+    firePointer(document, 'pointerup', 100, 100);
+    await f();
+
+    expect(escape.defaultPrevented).toBe(false);
+    expect(instance.dropped()).toBeNull();
+  });
+});
+
+describe('ForTreeNodeDrag — focus follows a pointer-dropped node that held focus (#2265)', () => {
+  afterEach(() => {
+    document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
+  });
+
+  it('focuses the re-parented node in its new place, not the node before its old one', async () => {
+    const { instance, query, flush: f } = renderHost(AppliedDropTreeHost);
+    await f();
+    const resume = query<HTMLElement>('[data-testid="resume"]')!;
+    const label = resume.querySelector<HTMLElement>('[forTreeItemLabel]')!;
+    resume.focus();
+
+    firePointer(label, 'pointerdown', 100, 10);
+    firePointer(document, 'pointermove', 100, -20);
+    await f();
+    firePointer(document, 'pointerup', 100, -20);
+    await f();
+    await f();
+
+    expect(instance.drops).toEqual([
+      expect.objectContaining({ node: 'resume', previousParent: 'documents', newParent: null }),
+    ]);
+    const moved = query<HTMLElement>('[data-testid="resume"]')!;
+    expect(moved).not.toBe(resume);
+    expect(document.activeElement).toBe(moved);
+  });
+
+  it('leaves focus alone when the dropped node did not hold it', async () => {
+    const { instance, query, flush: f } = renderHost(AppliedDropTreeHost);
+    await f();
+    const readme = query<HTMLElement>('[data-testid="readme"]')!;
+    const label =
+      query<HTMLElement>('[data-testid="resume"]')!.querySelector<HTMLElement>(
+        '[forTreeItemLabel]',
+      )!;
+    readme.focus();
+
+    firePointer(label, 'pointerdown', 100, 10);
+    firePointer(document, 'pointermove', 100, -20);
+    await f();
+    firePointer(document, 'pointerup', 100, -20);
+    await f();
+    await f();
+
+    expect(instance.drops).toHaveLength(1);
+    expect(document.activeElement).toBe(readme);
   });
 });

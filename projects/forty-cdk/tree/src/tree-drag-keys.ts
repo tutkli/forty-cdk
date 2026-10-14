@@ -7,7 +7,15 @@ import { resolveLiftedDragControl } from 'forty-cdk/core';
  */
 
 /** The action a key press maps to while a node is lifted (keyboard drag in progress). */
-export type TreeDragLiftedAction = 'cancel' | 'commit' | 'down' | 'up' | 'deepen' | 'shallow';
+export type TreeDragLiftedAction =
+  | 'cancel'
+  | 'commit'
+  | 'down'
+  | 'up'
+  | 'first'
+  | 'last'
+  | 'deepen'
+  | 'shallow';
 
 /**
  * Resolves the action for a key press while a node is lifted, honoring writing direction for
@@ -33,6 +41,12 @@ export function resolveTreeDragLiftedAction(
   if (key === 'ArrowUp') {
     return 'up';
   }
+  if (key === 'Home') {
+    return 'first';
+  }
+  if (key === 'End') {
+    return 'last';
+  }
   const isRtl = dir === 'rtl';
   if (key === (isRtl ? 'ArrowLeft' : 'ArrowRight')) {
     return 'deepen';
@@ -41,4 +55,8 @@ export function resolveTreeDragLiftedAction(
     return 'shallow';
   }
   return null;
+}
+
+export function isLiftedPassthroughKey(event: KeyboardEvent): boolean {
+  return event.ctrlKey || event.metaKey || event.altKey || /^F\d{1,2}$/.test(event.key);
 }
