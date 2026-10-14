@@ -715,7 +715,7 @@ export class ForDropList implements ForDropListContext {
       this.animateReorder() && this.#isBrowser && !this.#prefersReducedMotion() && moved;
     const preview = this.#previewController?.preview ?? null;
     if (this.#isBrowser && !this.#pointerDrag) {
-      this.#followDropFocus(liftedHost, container, currentIndex);
+      this.#followDropFocus(liftedHost, container, currentIndex, handle);
     }
     const animator = animate
       ? new ReorderAnimator({
@@ -750,16 +750,29 @@ export class ForDropList implements ForDropListContext {
     handle?.emitDragEnd(true);
   }
 
-  #followDropFocus(liftedHost: HTMLElement, container: ForDropListContext, index: number): void {
+  #followDropFocus(
+    liftedHost: HTMLElement,
+    container: ForDropListContext,
+    index: number,
+    handle: ForDraggableHandle | undefined,
+  ): void {
+    const item = handle?.data();
     this.#dropFocus = focusWhenMounted({
       injector: this.#injector,
       document: this.#document,
       from: liftedHost,
       target: (origin) => {
+        const items = container.items();
+        const carriers = handle === undefined ? [] : items.filter((h) => Object.is(h.data(), item));
+        if (carriers.some((h) => h.host.contains(origin))) {
+          return origin;
+        }
+        if (carriers.length > 0) {
+          return (carriers.find((h) => h === items[index]) ?? carriers[0]!).host;
+        }
         if (origin.isConnected) {
           return origin;
         }
-        const items = container.items();
         if (items.length === 0) {
           return null;
         }

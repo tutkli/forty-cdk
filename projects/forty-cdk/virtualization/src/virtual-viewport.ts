@@ -138,7 +138,12 @@ export class ForVirtualViewport implements ForVirtualViewportContext, OnInit {
   /** Total scroll size of all items, in pixels (drives the sizer). */
   readonly totalSize = computed(() => this.#virtualizer()?.totalSize() ?? this.#estimateTotal());
 
-  readonly #range = computed<readonly [number, number]>(
+  /**
+   * The rendered window as the inclusive-exclusive `[firstIndex, lastIndex + 1)` index range,
+   * sourced from the underlying virtualizer — not from {@link virtualItems}, so a row kept
+   * mounted by {@link setReorderingIndex} never widens it. `[0, 0]` until initialized.
+   */
+  readonly range: Signal<readonly [number, number]> = computed(
     () => this.#virtualizer()?.range() ?? [0, 0],
   );
 
@@ -168,7 +173,7 @@ export class ForVirtualViewport implements ForVirtualViewportContext, OnInit {
         }),
       );
       injectInfiniteScroll({
-        range: this.#range,
+        range: this.range,
         count: this.count,
         onLoadMore: () => this.endReached.emit(),
       });

@@ -271,6 +271,33 @@ test.describe('Table virtualized row reorder', () => {
     await expect(el(page, 'last-reorder')).toHaveText(`${from}->9999`);
   });
 
+  test('an Escape after an End jump scrolls the origin row back and keeps its cell focused', async ({
+    page,
+  }) => {
+    const indices = await scrollAndSettle(page);
+    const from = indices[Math.floor(indices.length / 2)]!;
+    expect(from).toBeGreaterThan(50);
+
+    await el(page, `cell-${from}-id`).focus();
+    await page.keyboard.press('Control+Space');
+    await page.keyboard.press('End');
+    await settleAtDatasetEnd(page);
+    await page.keyboard.press('Escape');
+
+    await expect
+      .poll(async () => {
+        const { indices: rendered, coversViewport } = await readWindow(page);
+        return (
+          coversViewport &&
+          rendered.includes(from) &&
+          rendered.at(-1)! - rendered[0]! === rendered.length - 1
+        );
+      })
+      .toBe(true);
+    await expectFocused(el(page, `cell-${from}-id`));
+    await expect(el(page, 'last-reorder')).toHaveText('none');
+  });
+
   test('keyboard End jump survives a lift on the LAST rendered row (#1671)', async ({ page }) => {
     const indices = await scrollAndSettle(page);
     const from = indices[indices.length - 1]!;

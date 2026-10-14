@@ -218,7 +218,7 @@ export class ForTableRowReorder {
       destroyRef.onDestroy(() => {
         this.#pointerSession?.destroy();
         if (this.#kbLiftedHost !== null) {
-          this.#cancelActive();
+          this.#cancelActive(false);
         }
         this.#registration.setReorderingRow(null);
       });
@@ -370,9 +370,9 @@ export class ForTableRowReorder {
     }
   }
 
-  #cancelActive(): void {
+  #cancelActive(restoreFocus = true): void {
     if (this.#kbPath === 'virtual') {
-      this.#kbCancel();
+      this.#kbCancel(restoreFocus);
     } else if (this.#kbPath === 'list') {
       this.#list.cancel();
       this.#kbTeardown(false);
@@ -430,18 +430,25 @@ export class ForTableRowReorder {
     );
     this.#kbTeardown(true);
     if (lifted !== null) {
-      this.#pendingFocus = focusWhenMounted({
-        injector: this.#injector,
-        document: this.#document,
-        from: lifted,
-        reveal: () => this.#registration.setReorderingRow(to),
-        target: () => this.#focusTargetIn(to, column),
-        release: () => {
-          this.#pendingFocus = null;
-          this.#registration.setReorderingRow(null);
-        },
-      });
+      this.#followRow(lifted, to, column, () => this.#registration.setReorderingRow(to));
     }
+  }
+
+  #followRow(lifted: HTMLElement, index: number, column: number, reveal: () => void): void {
+    this.#pendingFocus = focusWhenMounted({
+      injector: this.#injector,
+      document: this.#document,
+      from: lifted,
+      reveal,
+      target: () =>
+        this.#registration.virtualRowNavigation()?.isRowInWindow(index) === false
+          ? null
+          : this.#focusTargetIn(index, column),
+      release: () => {
+        this.#pendingFocus = null;
+        this.#registration.setReorderingRow(null);
+      },
+    });
   }
 
   #columnOf(rowHost: HTMLElement, focused: Element | null): number {
@@ -464,9 +471,18 @@ export class ForTableRowReorder {
     return (cells[column] ?? cells[cells.length - 1])?.host ?? row.host;
   }
 
-  #kbCancel(): void {
+  #kbCancel(restoreFocus: boolean): void {
+    const lifted = this.#kbLiftedHost;
+    const from = this.#kbFrom;
+    const column = lifted === null ? -1 : this.#columnOf(lifted, this.#kbFocusEl);
     this.#announcer.announce(this.#dragDefaults.announceCancel(this.#label()), 'assertive');
     this.#kbTeardown(false);
+    if (restoreFocus && lifted !== null) {
+      this.#followRow(lifted, from, column, () => {
+        this.#registration.setReorderingRow(from);
+        this.#registration.virtualRowNavigation()?.scrollToRow(from);
+      });
+    }
   }
 
   #resolveFocusTarget(host: HTMLElement): HTMLElement | SVGElement {

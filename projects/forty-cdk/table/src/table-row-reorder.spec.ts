@@ -1204,6 +1204,58 @@ describe('ForTableRowReorder — focus follows the dropped row (#2118)', () => {
     expect(Math.max(...rendered) - Math.min(...rendered)).toBe(rendered.length - 1);
   });
 
+  it('a virtualized Escape after an End jump keeps focus on the lifted cell, not <body>', async () => {
+    const { instance, settle, indices, cell } = await render(VirtualizedDragOutputsHost);
+    const from = Math.max(...indices());
+    const lifted = cell(from);
+    lifted.focus();
+
+    press(lifted, ' ', { ctrlKey: true });
+    await settle();
+    press(lifted, 'End');
+    await settle();
+    press(lifted, 'Escape');
+    await settle();
+
+    expect(instance.last).toBeNull();
+    expect(document.activeElement).toBe(cell(from));
+  });
+
+  it('a virtualized mode="table" Escape after an End jump keeps focus on the lifted row', async () => {
+    const { instance, settle, indices, query } = await render(TableModeInRowControlsHost);
+    const from = Math.min(...indices());
+    const row = query(`[data-testid="row-${from}"]`);
+    row.focus();
+
+    press(row, ' ');
+    await settle();
+    press(row, 'End');
+    await settle();
+    press(row, 'Escape');
+    await settle();
+
+    expect(instance.last).toBeNull();
+    expect(document.activeElement).toBe(query(`[data-testid="row-${from}"]`));
+  });
+
+  it('a virtualized Escape after a jump scrolls the origin back and releases the pin', async () => {
+    const { settle, indices, cell } = await mount();
+    const from = Math.max(...indices());
+    const lifted = cell(from);
+    lifted.focus();
+
+    press(lifted, ' ', { ctrlKey: true });
+    await settle();
+    press(lifted, 'End');
+    await settle();
+    press(lifted, 'Escape');
+    await settle();
+
+    const rendered = indices();
+    expect(rendered).toContain(from);
+    expect(Math.max(...rendered) - Math.min(...rendered)).toBe(rendered.length - 1);
+  });
+
   it('a non-virtualized grid drop moving a row up keeps focus on the cell it was lifted from', async () => {
     const { settle, query } = await render(AppliedListRowReorderHost);
     const lifted = query('[data-testid="cell-b-3"]');

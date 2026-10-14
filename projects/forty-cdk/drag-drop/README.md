@@ -199,8 +199,10 @@ name and leave "sortable" to `aria-sort`.
 
 Applying the move in `(dragDrop)` destroys or re-inserts the lifted element, which would otherwise
 leave focus on `<body>`. So after a **keyboard** drop whose lifted item held focus, `[forDropList]`
-restores focus to the item at `currentIndex` in the target container on the next render. That item is
-the same element the user just placed, whether it stayed in this list or transferred to a connected one.
+restores focus on the next render to the item whose `[dragData]` is the dropped item, falling back to the
+item at `currentIndex` in the target container when no item carries it any more. That is the item the user
+just placed, whether it stayed in this list or transferred to a connected one, and whether the `@for`
+tracks by item identity or by `$index`.
 
 Two escape hatches:
 

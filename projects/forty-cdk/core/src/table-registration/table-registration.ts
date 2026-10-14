@@ -103,6 +103,12 @@ export interface TableVirtualRowNavigation {
    */
   scrollToRow(index: number): void;
   /**
+   * Whether the virtualizer's own window covers the row at the absolute `index`. A row kept
+   * mounted only because it is focused or being reordered does not count, so
+   * `[forTableRowReorder]` can wait for a scroll it requested to land before it releases a pin.
+   */
+  isRowInWindow(index: number): boolean;
+  /**
    * The bounding rect of the scroll container along the visible viewport, or
    * `null` before it is available. `[forTableRowReorder]` reads it to map a
    * modifier-held pointer drag onto an absolute dataset index (windowed-scrub
