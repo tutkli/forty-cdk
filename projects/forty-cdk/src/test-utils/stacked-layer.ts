@@ -22,10 +22,14 @@ export class TestStackedLayer {
   /** How many times this layer was told focus landed outside it. */
   readonly focusOutside = signal(0);
 
+  /** How many times the stack dispatched Escape to this layer. */
+  readonly escapes = signal(0);
+
   /** Pushes the layer on top of the stack, owning `channels`. */
   stack(channels: readonly ('pointer' | 'focus')[]): void {
     this.#layer.activate({
       channels,
+      onEscapeKeyDown: () => this.escapes.set(this.escapes() + 1),
       onFocusOutside: () => this.focusOutside.set(this.focusOutside() + 1),
     });
   }

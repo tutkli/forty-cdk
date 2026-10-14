@@ -281,12 +281,13 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
       exemptElements: () => this.#surfaceElements(),
       onEscapeKeyDown: () => {
         if (!this.#containsFocusTarget(this.#document.activeElement)) {
-          return;
+          return false;
         }
         const current = this.value();
         this.close();
         const trigger = current !== null ? this.triggerHostFor(current) : null;
         trigger?.focus();
+        return true;
       },
       onPointerDownOutside: () => this.close(),
       onPointerDownInside: () => this.#surfacePointerDown.suppress(),

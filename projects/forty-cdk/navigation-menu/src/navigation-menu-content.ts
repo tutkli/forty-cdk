@@ -9,7 +9,13 @@ import {
   signal,
 } from '@angular/core';
 
-import { registerHandle, hostId, hostLabelledBy, isHoverCapablePointer } from 'forty-cdk/core';
+import {
+  registerHandle,
+  hostId,
+  hostLabelledBy,
+  isHoverCapablePointer,
+  isImeComposing,
+} from 'forty-cdk/core';
 import { warnIfMountedWhileClosed } from 'forty-cdk/core-overlay';
 import {
   injectNavigationMenuContext,
@@ -167,6 +173,7 @@ export class ForNavigationMenuContent {
   }
 
   protected onEscape(event: KeyboardEvent): void {
+    if (event.defaultPrevented || isImeComposing(event)) return;
     event.preventDefault();
     event.stopPropagation();
     const v = this.value();

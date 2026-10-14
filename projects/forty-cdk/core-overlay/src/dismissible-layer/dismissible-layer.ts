@@ -8,8 +8,9 @@ import { composedContains, isImeComposing, resolveEventTarget } from 'forty-cdk/
  * declares the channels it wants routed to it at {@link DismissibleLayer.activate};
  * {@link DismissibleLayerStack} dispatches an outside `pointerdown` / `focusin`
  * to the topmost layer that declared the matching channel. Escape is not a
- * channel — it is always dispatched to the literal topmost active layer (see
- * {@link DismissibleLayerStack}).
+ * channel — it is dispatched to the topmost active layer, and to a layer below
+ * only while every layer above it declines the key (see
+ * {@link DismissibleLayerActivateOptions.onEscapeKeyDown}).
  */
 export type DismissibleLayerChannel = 'pointer' | 'focus';
 
@@ -48,7 +49,7 @@ export interface DismissibleLayerActivateOptions {
    * outside `focusin` to the topmost layer declaring `'focus'`, so an
    * Escape-only surface (Tooltip, HoverCard) declares `[]` and stays
    * transparent to the real dismissible layers beneath it. Escape is dispatched
-   * to the literal topmost layer regardless of this declaration.
+   * from the topmost layer down regardless of this declaration.
    */
   channels: readonly DismissibleLayerChannel[];
 
@@ -61,8 +62,13 @@ export interface DismissibleLayerActivateOptions {
    */
   nesting?: DismissibleLayerNesting;
 
-  /** Fired when the user presses `Escape` while this is the topmost layer. */
-  onEscapeKeyDown?: (event: KeyboardEvent) => void;
+  /**
+   * Fired when the user presses `Escape` while this is the topmost layer, or while every layer
+   * stacked above it declined the key. Return `false` to decline it too: the key is then offered
+   * to the layer below, unless this layer is
+   * {@link DismissibleLayerActivateOptions.modal | modal}. Any other return value keeps it.
+   */
+  onEscapeKeyDown?: (event: KeyboardEvent) => unknown;
 
   /**
    * Fired when the user pointer-downs outside this layer's host. Return `true` when the handler
@@ -163,7 +169,11 @@ export class DismissibleLayerStack {
     if (this.#suppressDepth > 0) {
       return;
     }
-    this.#topmost()?.handleEscape(event);
+    for (const layer of [...this.#stack].reverse()) {
+      if (layer.isActive && (layer.handleEscape(event) || layer.isModal)) {
+        return;
+      }
+    }
   };
   readonly #onPointerDown = (event: Event): void => {
     if (this.#suppressDepth > 0) {
@@ -303,10 +313,6 @@ export class DismissibleLayerStack {
     return idx;
   }
 
-  #topmost(): DismissibleLayer | undefined {
-    return this.#stack[this.#stack.length - 1];
-  }
-
   #layersForChannel(channel: DismissibleLayerChannel): DismissibleLayer[] {
     const layers: DismissibleLayer[] = [];
     for (let i = this.#stack.length - 1; i >= 0; i--) {
@@ -334,9 +340,10 @@ export class DismissibleLayerStack {
  * dialogs, popovers, dropdown menus, drawers, and any other transient
  * overlay: Escape, pointer-down outside, focus-outside.
  *
- * Dispatch is per channel. Escape goes to the literal topmost active layer,
- * preserving the bubble-phase `stopPropagation` single-layer-per-Escape
- * contract. Pointer-down-outside and focus-outside instead go to the topmost
+ * Dispatch is per channel. Escape goes to the topmost active layer, and reaches
+ * a layer below only when every layer above it declined the key, so one Escape
+ * still closes at most one layer and never crosses a modal layer.
+ * Pointer-down-outside and focus-outside instead go to the topmost
  * layer that declared the matching channel: a layer that owns only Escape (e.g.
  * a Tooltip, declaring `channels: []`) is transparent to outside-pointer /
  * focus for the real dismissible layers beneath it, so a tooltip visible over
@@ -464,11 +471,13 @@ export class DismissibleLayer {
 
   /**
    * @internal Dispatched by {@link DismissibleLayerStack} to the topmost layer
-   * on `Escape`. Public only so the stack can call it without exploiting a TS
-   * visibility loophole; not part of the supported API (stripped from `.d.ts`).
+   * on `Escape`, and to each layer below it while the layers above decline the
+   * key. Returns whether this layer kept it. Public only so the stack can call it
+   * without exploiting a TS visibility loophole; not part of the supported API
+   * (stripped from `.d.ts`).
    */
-  handleEscape(event: KeyboardEvent): void {
-    this.#options.onEscapeKeyDown?.(event);
+  handleEscape(event: KeyboardEvent): boolean {
+    return this.#options.onEscapeKeyDown?.(event) !== false;
   }
 
   /**
