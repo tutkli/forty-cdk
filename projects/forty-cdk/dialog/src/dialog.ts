@@ -89,7 +89,10 @@ export class ForDialog extends ModalSurfaceBase<ForDialogCloseReason> implements
    */
   readonly modal = input(this.#defaults.modal ?? true, { transform: booleanAttribute });
 
-  /** When true (default), focus returns to the previously focused element on close. */
+  /**
+   * When true (default), focus returns to the previously focused element on close. Modal mode
+   * only: a non-modal dialog never moves focus on close.
+   */
   readonly returnFocus = input(this.#defaults.returnFocus ?? true, { transform: booleanAttribute });
 
   /**

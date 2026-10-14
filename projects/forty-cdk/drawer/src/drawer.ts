@@ -122,7 +122,10 @@ export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements
    */
   readonly modal = input(this.#defaults.modal ?? true, { transform: booleanAttribute });
 
-  /** When true (default), focus returns to the previously focused element on close. */
+  /**
+   * When true (default), focus returns to the previously focused element on close. Modal mode
+   * only: a non-modal drawer never moves focus on close.
+   */
   readonly returnFocus = input(this.#defaults.returnFocus ?? true, {
     transform: booleanAttribute,
   });

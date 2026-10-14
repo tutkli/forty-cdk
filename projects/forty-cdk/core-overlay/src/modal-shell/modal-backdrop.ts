@@ -8,6 +8,11 @@ import { injectPortal } from 'forty-cdk/core';
  */
 export interface ModalSurfaceBackdropContext {
   /**
+   * The surface's host element, which the backdrop is portaled immediately before. `null` when no
+   * surface host is rendered, and the backdrop is then appended to the container.
+   */
+  surfaceElement(): HTMLElement | null;
+  /**
    * Whether the surface is the topmost layer owning the pointer channel, so a press on its
    * backdrop is not an outside press of a layer stacked above it.
    */
@@ -43,6 +48,10 @@ export interface ModalBackdropHandle {
  * it on the surface for the piece's lifetime, and closes the surface with reason `'backdrop'` on a
  * click that lands on the backdrop itself.
  *
+ * The backdrop lands immediately before its surface in the container, so two positioned elements
+ * with no `z-index` paint the surface on top, and each backdrop of a stacked pair sits directly
+ * below its own surface.
+ *
  * The click closes the surface only when the surface was the topmost pointer layer as the press
  * began. A press that goes down while another layer is stacked above it (a nested drawer without a
  * backdrop of its own, a popover open inside the dialog) is that layer's outside press, so the
@@ -53,7 +62,7 @@ export interface ModalBackdropHandle {
  */
 export function injectModalBackdrop(surface: ModalBackdropSurface): ModalBackdropHandle {
   const host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
-  injectPortal({ target: surface.container });
+  injectPortal({ target: surface.container, before: () => surface.surfaceElement() });
   surface.registerBackdrop(host);
   inject(DestroyRef).onDestroy(() => surface.unregisterBackdrop(host));
 

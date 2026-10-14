@@ -16,6 +16,7 @@ type DialogTestingContext = ForDialogContext & {
   registerBackdrop(el: HTMLElement): void;
   unregisterBackdrop(el: HTMLElement): void;
   isTopmostPointerLayer(): boolean;
+  surfaceElement(): HTMLElement | null;
 };
 
 /** Options accepted by {@link provideForDialogTesting}. */
@@ -88,6 +89,7 @@ function createContext(ref: ForDialogRef): DialogTestingContext {
     registerInitialFocus: () => {},
     unregisterInitialFocus: () => {},
     isTopmostPointerLayer: () => true,
+    surfaceElement: () => null,
     requestClose: (reason: ForDialogCloseReason, value?: unknown) => ref.close(value, reason),
   };
 }

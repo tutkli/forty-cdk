@@ -43,7 +43,10 @@ export interface ForDrawerDefaults {
   closeThreshold?: number;
   /** Default `'first'`. Where to send focus on mount. */
   initialFocus?: 'first' | 'container';
-  /** Default `true`. Restore focus to the previously focused element on close. */
+  /**
+   * Default `true`. Restore focus to the previously focused element on close. Modal mode only: a
+   * non-modal surface never moves focus on close.
+   */
   returnFocus?: boolean;
   /**
    * Default `false`. When `true` the swipe gesture only arms on the

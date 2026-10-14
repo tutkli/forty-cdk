@@ -25,6 +25,13 @@ export interface PortalConfig {
    * Returns `null` or `undefined` to fall back to `document.body`.
    */
   readonly target?: HTMLElement | (() => HTMLElement | null | undefined);
+
+  /**
+   * Sibling the host is inserted immediately before, resolved in the same `afterNextRender`
+   * callback as `target`. Honoured only while that element is a child of the target; otherwise,
+   * or when it returns `null` / `undefined`, the host is appended.
+   */
+  readonly before?: () => Element | null | undefined;
 }
 
 /**
@@ -86,14 +93,18 @@ export function injectPortal(config: PortalConfig = {}): void {
 
   afterNextRenderCancellable(() => {
     const target = resolveTarget();
-    if (el.parentNode !== target) {
-      if (!el.hasAttribute('dir')) {
-        const parent = composedParentElement(el);
-        origin.set(parent);
-        stampAmbientDirection(el, parent);
-      }
-      target.appendChild(el);
+    const sibling = config.before?.() ?? null;
+    const anchor =
+      sibling !== null && sibling !== el && sibling.parentNode === target ? sibling : null;
+    if (el.parentNode === target && (anchor === null || el.nextSibling === anchor)) {
+      return;
     }
+    if (el.parentNode !== target && !el.hasAttribute('dir')) {
+      const parent = composedParentElement(el);
+      origin.set(parent);
+      stampAmbientDirection(el, parent);
+    }
+    target.insertBefore(el, anchor);
   });
 
   effect(() => {

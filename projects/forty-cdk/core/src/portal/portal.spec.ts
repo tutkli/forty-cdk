@@ -117,6 +117,30 @@ class ShadowWrapper {}
 })
 class ShadowDirectionHost {}
 
+@Component({
+  selector: 'anchored-bubble',
+  template: '<ng-content />',
+})
+class AnchoredBubble {
+  constructor() {
+    injectPortal({
+      target: () => document.getElementById('custom-target') as HTMLElement | null,
+      before: () => document.getElementById('portal-anchor'),
+    });
+  }
+}
+
+@Component({
+  host: { 'data-fixture': 'anchored-host' },
+  imports: [AnchoredBubble],
+  template: `
+    <div id="parent">
+      <anchored-bubble>anchored</anchored-bubble>
+    </div>
+  `,
+})
+class AnchoredHost {}
+
 describe('injectPortal', () => {
   afterEach(() => {
     // Stray `#custom-target` is a manually-appended container — not portaled,
@@ -309,6 +333,45 @@ describe('injectPortal', () => {
 
     const portaled = document.querySelector('lazy-target-bubble')!;
     expect(portaled.parentElement).toBe(target);
+  });
+
+  it('inserts the host immediately before a `before` sibling that is a child of the target', async () => {
+    const target = document.createElement('div');
+    target.id = 'custom-target';
+    const first = document.createElement('span');
+    const anchor = document.createElement('span');
+    anchor.id = 'portal-anchor';
+    target.append(first, anchor);
+    document.body.appendChild(target);
+
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+    const fixture = TestBed.createComponent(AnchoredHost);
+    await flush(fixture);
+
+    const portaled = document.querySelector('anchored-bubble')!;
+    expect(Array.from(target.children)).toEqual([first, portaled, anchor]);
+  });
+
+  it('appends the host when the `before` sibling is not a child of the target', async () => {
+    const target = document.createElement('div');
+    target.id = 'custom-target';
+    const inside = document.createElement('span');
+    target.append(inside);
+    document.body.appendChild(target);
+    const anchor = document.createElement('span');
+    anchor.id = 'portal-anchor';
+    document.body.appendChild(anchor);
+
+    try {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(AnchoredHost);
+      await flush(fixture);
+
+      const portaled = document.querySelector('anchored-bubble')!;
+      expect(Array.from(target.children)).toEqual([inside, portaled]);
+    } finally {
+      anchor.remove();
+    }
   });
 
   it('is idempotent: re-rendering does not move the element again', async () => {

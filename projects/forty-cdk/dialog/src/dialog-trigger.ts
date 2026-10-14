@@ -10,9 +10,9 @@ import { injectModalTrigger, warnIfOpenWithoutControls } from 'forty-cdk/core-ov
  * Wires `aria-haspopup="dialog"`, `aria-expanded`, `aria-controls`, and
  * `data-state` on the host. Two-way bind `[(open)]` to the same signal that
  * gates the surrounding `@if` around `[forDialog]`. Focus return on close is
- * handled by `[forDialog]` automatically — its focus trap captures the
- * previously-focused element on mount and restores it on destroy, which is
- * the trigger when the user clicked it.
+ * handled by `[forDialog]` in modal mode: it captures the previously-focused
+ * element on mount, which is the trigger when the user clicked it, and restores
+ * it on destroy. A non-modal dialog never moves focus on close.
  *
  * ```html
  * <button forDialogTrigger [(open)]="dialogOpen" controls="my-dialog">Open</button>

@@ -1265,6 +1265,11 @@ describe('ForDialogManager (programmatic)', () => {
       expect(first!.compareDocumentPosition(second!) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
         Node.DOCUMENT_POSITION_FOLLOWING,
       );
+      for (const backdrop of backdrops) {
+        expect(backdrop.nextElementSibling?.getAttribute('data-for-dialog-id')).toBe(
+          backdrop.getAttribute('data-for-dialog-id'),
+        );
+      }
       expect(document.querySelector('for-dialog-outlet')!.children).toHaveLength(0);
     });
   });
