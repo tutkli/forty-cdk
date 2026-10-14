@@ -286,8 +286,11 @@ When the listbox mounts, focus lands per the trigger's hint:
 
 - **Click / Enter / Space / ArrowDown** → focuses the currently-selected option, falling back to the first enabled option when no selection exists.
 - **ArrowUp** → focuses the currently-selected option, or the last enabled option when no selection exists.
+- **Home / End** → focuses the first / last enabled option, whatever is selected.
 
-Override programmatically with `forSelect.overlay.openOverlay('first' | 'last' | 'selected')`.
+Override programmatically with `forSelect.overlay.openOverlay('first' | 'last' | 'selected')`. The same targets hold on the [virtualized path](#virtualization), where they land `aria-activedescendant` instead of DOM focus.
+
+Once the listbox has been positioned, the option that received focus is scrolled into view, so an open on the last option of a long list reveals it inside a `max-height: var(--for-floating-available-height)` surface.
 
 ## Pointer highlight
 
@@ -298,7 +301,7 @@ Four properties of the pointer channel:
 - **It never selects and never moves DOM focus**, not even with `selectionFollowsFocus` set, because that input commits on every _keyboard_ focus move and hovering is not one. The pointer's own click still activates, and the multi-select range anchor `Shift+Space` spans from is untouched.
 - **The keyboard takes it back on the next move.** In the default path the highlight falls back to the DOM-focused option, so the first arrow / typeahead move drops the pointer highlight; in the virtualized path (`totalCount` set) hover moves `aria-activedescendant` itself, so the highlight and the option `Enter` activates never disagree there.
 - **Moving the pointer off `[forSelectContent]` releases it.** In the default path the highlight goes back to the DOM-focused option (the one `Enter` activates), so an open listbox never keeps a row decorated with the cursor somewhere else on the page. Crossing between two adjacent options is not a leave: the highlight moves straight from one to the other without blinking off. In the virtualized path the pointer's claim persists, because there it _is_ `aria-activedescendant` and dropping it would leave the listbox with no active option.
-- **A programmatic scroll cannot hijack it.** Opening the listbox scrolls the selected option into view, and keyboard navigation scrolls the active one. Either can slide a different option under a stationary cursor and make the browser fire a synthetic `pointermove` for it. Moves arriving in a short window after such a scroll are ignored, so the selected option keeps the highlight a mouse-opened listbox gives it (see [Initial focus on open](#initial-focus-on-open)).
+- **A programmatic scroll cannot hijack it.** Opening the listbox scrolls the option that received focus into view, and keyboard navigation scrolls the active one. Either can slide a different option under a stationary cursor and make the browser fire a synthetic `pointermove` for it. Moves arriving in a short window after such a scroll are ignored, so the focused option keeps the highlight a mouse-opened listbox gives it (see [Initial focus on open](#initial-focus-on-open)).
 
 A hover on a disabled option is ignored, and the highlight falls back to the focused option if the hovered one is disabled or unmounted while the cursor rests on it.
 
@@ -571,7 +574,7 @@ In both paths the pointer takes `data-highlighted` over too (see [Pointer highli
 
 Arrow / Home / End keys are handled by `[forSelectContent]` (not the individual options) in the virtualized path. The content delegates to an internal navigator that walks `moveIndex` against the full `totalCount`, using the persisted position snapshot to handle disabled options outside the rendered window. When navigation lands outside the current window, `(scrollToIndex)` fires with the target index; once the option mounts the bridge effect resolves the pending activedescendant.
 
-On open, `[forSelectContent]` seeds `aria-activedescendant` to the committed option and scrolls it into view when its position is known: in the rendered window, previously rendered (in the snapshot), or supplied via `[selectedIndex]`. An off-window committed value that was never rendered and has no `[selectedIndex]` falls back to focusing the first enabled option; when nothing is selected it also focuses the first enabled option.
+On open, `[forSelectContent]` seeds `aria-activedescendant` per the trigger's hint. `Home` / `End`, and `ArrowUp` with nothing selected, seed the first / last enabled option, emitting `(scrollToIndex)` when it lies outside the rendered window. Every other open seeds the committed option and scrolls it into view when its position is known: in the rendered window, previously rendered (in the snapshot), or supplied via `[selectedIndex]`. An off-window committed value that was never rendered and has no `[selectedIndex]` falls back to focusing the first enabled option; when nothing is selected it also focuses the first enabled option.
 
 ### Example with `injectVirtualizer`
 
@@ -676,7 +679,7 @@ In the default (non-virtualized) path the full APG range keyboard works while th
 - **Ctrl/Cmd+A** _(multi mode, non-virtualized)_: select every enabled option, or deselect them when all enabled options are already selected (toggle). A selected disabled or unrendered option stays selected either way.
 - **Ctrl+Shift+Home / Ctrl+Shift+End** _(multi mode, non-virtualized)_: extend the selection from the focused option to the first / last option and move focus to that edge.
 - **Escape**: close without changing selection. Returns focus to the trigger.
-- **Tab / Shift+Tab**: commit the focused option (single mode only; multi-mode keeps the existing selection) and let the browser advance focus to the next / previous focusable, mirroring native `<select>`. The directive does **not** `preventDefault`, so form workflows keep flowing through tab order.
+- **Tab / Shift+Tab**: commit the focused option (single mode only; multi-mode keeps the existing selection) and let the browser advance focus to the next / previous focusable, mirroring native `<select>`. The directive does **not** `preventDefault`, so form workflows keep flowing through tab order. A Tab that leaves the listbox from anything that is not an option (your own control inside it, or the listbox itself when every option is disabled) closes it without committing and continues from the trigger: `Tab` moves on to the control after it, `Shift+Tab` lands on the trigger.
 - **Typeahead**: single printable characters move focus to the first option whose text starts with the buffered string. Disabled options are skipped.
 
 ## Accessibility

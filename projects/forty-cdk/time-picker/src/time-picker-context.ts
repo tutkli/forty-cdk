@@ -169,6 +169,20 @@ export interface TimePickerPieceContext {
    * blinks off.
    */
   releasePointerHighlight(): void;
+  /**
+   * Scroll the slot initial focus landed on into view, unless it is the first
+   * enabled slot, already in view at the top. Called by
+   * `[forTimePickerContent]` on the positioner's first resolved position, once
+   * the surface is portaled and bounded: the focus move runs earlier, before
+   * the surface is bounded, so its own scroll is lost.
+   */
+  revealInitialFocus(): void;
+  /**
+   * The overlay shell's Tab-out wiring for `[forTimePickerContent]`: a Tab
+   * leaving the surface from anything that is not a slot continues from the
+   * trigger.
+   */
+  readonly tabOut: { readonly target: () => HTMLElement | null; readonly close: () => void };
 }
 
 /**

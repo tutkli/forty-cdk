@@ -402,6 +402,8 @@ export class ForSelect<T = string>
    */
   readonly overlay: ForSelectOverlayFacade = this.#controller;
 
+  private readonly tabOut = this.#controller.tabOut('tab', () => !this.#virtualized());
+
   /**
    * Shared APG range-selection state machine: owns the range anchor and the
    * Shift+Arrow / Shift+Space / Ctrl+A / Ctrl+Shift+Home/End actions plus the
@@ -676,7 +678,7 @@ export class ForSelect<T = string>
       (o) => o.disabled,
     );
     if (match) {
-      this.value.set([match.value]);
+      this.#rangeEngine.selectSingle(match.value);
     }
     return true;
   }
@@ -702,13 +704,13 @@ export class ForSelect<T = string>
     return false;
   }
 
-  private scrollSelectedOptionIntoView(): void {
-    if (this.totalCount() !== undefined) {
+  private revealInitialFocus(): void {
+    if (this.#virtualized()) {
       return;
     }
-    const selected = this.selectedOptionEl();
-    if (selected) {
-      this.#scrollActiveIntoView(selected);
+    const target = this.#controller.revealTarget(() => this.selectedOptionEl());
+    if (target) {
+      this.#scrollActiveIntoView(target);
     }
   }
 
@@ -760,6 +762,11 @@ export class ForSelect<T = string>
       return;
     }
     const navigator = this.#requireNavigator();
+    const target = this.#controller.initialFocus();
+    if (target !== 'selected') {
+      navigator.navigate(target);
+      return;
+    }
     const committed = this.#committedIndex(navigator);
     if (committed !== null) {
       navigator.seedActive(committed);
@@ -905,6 +912,7 @@ export class ForSelect<T = string>
       this.commitOnTab(target.value);
       return;
     }
+    this.#controller.focusTrigger();
     this.#controller.closeOverlay('tab');
   }
 
