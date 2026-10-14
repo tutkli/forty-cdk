@@ -1,6 +1,6 @@
 import { computed, Directive, effect, ElementRef, inject, input } from '@angular/core';
 
-import { hostButtonType, reflectDisabled } from 'forty-cdk/core';
+import { hostButtonType, hostId, reflectDisabled } from 'forty-cdk/core';
 import { type ForComboboxContext, injectComboboxTriggerContext } from './combobox-context';
 
 /**
@@ -15,10 +15,12 @@ import { type ForComboboxContext, injectComboboxTriggerContext } from './combobo
  * `[forComboboxAnchor]`), focus moves into `[forComboboxInput]` on open and
  * returns to the trigger on close (the standard `(autoFocusOnOpen)` /
  * `(autoFocusOnClose)` vetoable hooks now fire), and `[forComboboxContent]`
- * expects an inner `[forComboboxList]` to carry the listbox role.
+ * expects an inner `[forComboboxList]` to carry the listbox role while the
+ * content itself becomes a `role="dialog"` named by this trigger.
  *
- * Wires `aria-haspopup="listbox"`, `aria-expanded`, and `aria-controls`
- * (pointing to the popup surface while open). Native `disabled` reflects
+ * Wires `aria-haspopup="dialog"`, `aria-expanded`, and `aria-controls`
+ * (pointing to the dialog surface while open). A static `id` on the host is
+ * kept; without one the trigger gets a generated id. Native `disabled` reflects
  * `effectiveDisabled` (single-purpose trigger). The trigger is exempt from the
  * popup's dismissible layer — clicks on it route through `(click)` instead of
  * racing an outside-pointer dismissal.
@@ -31,15 +33,18 @@ import { type ForComboboxContext, injectComboboxTriggerContext } from './combobo
  *
  * Keyboard:
  * - **Click / Enter / Space** — toggle (open moves focus into the input).
- * - **ArrowDown** — open with the first enabled option highlighted.
- * - **ArrowUp** — open with the last enabled option highlighted.
+ * - **ArrowDown** — open with the committed selection highlighted, falling back
+ *   to the first enabled option.
+ * - **ArrowUp** — open with the committed selection highlighted, falling back
+ *   to the last enabled option.
  */
 @Directive({
   selector: '[forComboboxTrigger]',
   exportAs: 'forComboboxTrigger',
   host: {
     '[attr.type]': 'buttonType()',
-    '[attr.aria-haspopup]': '"listbox"',
+    '[id]': 'id()',
+    '[attr.aria-haspopup]': '"dialog"',
     '[attr.aria-expanded]': 'ctx().open() ? "true" : "false"',
     '[attr.aria-controls]': 'ctx().open() ? ctx().contentId() : null',
     '[attr.data-state]': 'ctx().open() ? "open" : "closed"',
@@ -67,6 +72,8 @@ export class ForComboboxTrigger<T = unknown> {
 
   protected readonly ctx = injectComboboxTriggerContext<T>(this.forComboboxTrigger);
 
+  protected readonly id = hostId('for-combobox-trigger');
+
   constructor() {
     const el = this.#host.nativeElement;
     // Registration is an imperative call into the resolved root's registry,
@@ -74,7 +81,7 @@ export class ForComboboxTrigger<T = unknown> {
     // resolved root changes (explicit reference swapped at runtime).
     effect((onCleanup) => {
       const ctx = this.ctx();
-      ctx.registerTrigger(el);
+      ctx.registerTrigger(el, this.id());
       onCleanup(() => ctx.unregisterTrigger(el));
     });
     reflectDisabled(computed(() => this.ctx().effectiveDisabled()));
@@ -90,12 +97,12 @@ export class ForComboboxTrigger<T = unknown> {
     }
     if (event.key === 'ArrowDown') {
       event.preventDefault();
-      this.ctx().openOverlay('first');
+      this.ctx().openOverlay('selected');
       return;
     }
     if (event.key === 'ArrowUp') {
       event.preventDefault();
-      this.ctx().openOverlay('last');
+      this.ctx().openOverlay(this.ctx().value().length > 0 ? 'selected' : 'last');
     }
   }
 }

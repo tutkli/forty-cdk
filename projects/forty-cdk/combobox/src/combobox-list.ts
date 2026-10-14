@@ -14,7 +14,8 @@ import { injectComboboxContext } from './combobox-context';
  * `[forComboboxContent]` next to `[forComboboxInput]` so the popup surface can
  * hold a search field without violating `aria-required-owned-elements` (a
  * `listbox` may only own `option` / `group` children). The list owns the
- * options; `[forComboboxContent]` becomes a neutral popup surface.
+ * options; `[forComboboxContent]` becomes the `role="dialog"` a
+ * `[forComboboxTrigger]` opens, or a neutral surface without one.
  *
  * ```html
  * <div forComboboxContent>

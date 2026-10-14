@@ -28,11 +28,14 @@ import { injectComboboxContext } from './combobox-context';
  * - **Editable (no list)** — content itself carries `role="listbox"`,
  *   `tabindex="-1"`, `aria-multiselectable`, and the labelled role
  *   (`aria-label` / `aria-labelledby`). The input's `aria-controls` points here.
- * - **Picker (list present)** — content drops the listbox semantics and becomes
- *   a neutral popup surface; `[forComboboxList]` takes over the listbox role and
- *   owns the options, the input lives inside the panel, and the input's
- *   `aria-controls` points to the list. `data-state`, positioning and dismissal
- *   behave identically in both.
+ * - **Picker (list present)** — content drops the listbox semantics;
+ *   `[forComboboxList]` takes over the listbox role and owns the options, the
+ *   input lives inside the panel, and the input's `aria-controls` points to the
+ *   list. With a `[forComboboxTrigger]` registered the content is the
+ *   `role="dialog"` the trigger's `aria-haspopup="dialog"` announces, named by
+ *   the trigger through `aria-labelledby` (a static `aria-label` or
+ *   `aria-labelledby` on the host wins); without one it is a neutral surface.
+ *   `data-state`, positioning and dismissal behave identically in both.
  *
  * Mount/unmount of the visible content is the consumer's responsibility —
  * wrap with `@if (open())` so `animate.enter` / `animate.leave` fire on the
@@ -76,7 +79,7 @@ import { injectComboboxContext } from './combobox-context';
   selector: '[forComboboxContent]',
   exportAs: 'forComboboxContent',
   host: {
-    '[attr.role]': 'hasList() ? null : "listbox"',
+    '[attr.role]': 'role()',
     '[attr.tabindex]': 'hasList() ? null : "-1"',
     '[id]': 'ctx.contentId()',
     '[attr.aria-labelledby]': 'labelledBy()',
@@ -96,13 +99,25 @@ export class ForComboboxContent {
   /** When a `[forComboboxList]` is registered the listbox semantics live there, not here. */
   protected readonly hasList = this.ctx.hasList;
 
+  readonly #isDialog = computed(() => this.hasList() && this.ctx.triggerId() !== null);
+
+  protected readonly role = computed(() =>
+    this.#isDialog() ? 'dialog' : this.hasList() ? null : 'listbox',
+  );
+
   protected readonly resolvedAriaLabel = hostAriaLabel(() =>
     this.hasList() ? null : this.ctx.ariaLabel(),
   );
 
-  protected readonly labelledBy = hostLabelledBy(() =>
-    this.hasList() || this.resolvedAriaLabel() ? null : this.ctx.inputId(),
-  );
+  protected readonly labelledBy = hostLabelledBy(() => {
+    if (this.resolvedAriaLabel()) {
+      return null;
+    }
+    if (this.#isDialog()) {
+      return this.ctx.triggerId();
+    }
+    return this.hasList() ? null : this.ctx.inputId();
+  });
 
   constructor() {
     const ctx = this.ctx;

@@ -177,15 +177,23 @@ test.describe('Combobox', () => {
       await expectFocused(el(page, 'combo-input'));
     });
 
-    test('the inner list owns the listbox role; the input controls the list', async ({ page }) => {
+    test('the inner list owns the listbox role inside a dialog named by the trigger', async ({
+      page,
+    }) => {
       await gotoFixture(page, 'combobox', { picker: '1' });
       await el(page, 'trigger').click();
       await expect(el(page, 'content')).toBeVisible();
 
       const list = el(page, 'list');
       await expect(list).toHaveAttribute('role', 'listbox');
-      // The popup surface is role-less so it can hold the input next to the list.
-      await expect(el(page, 'content')).not.toHaveAttribute('role', /.+/);
+      const content = el(page, 'content');
+      await expect(content).toHaveAttribute('role', 'dialog');
+      const triggerId = await el(page, 'trigger').getAttribute('id');
+      await expect(content).toHaveAttribute('aria-labelledby', triggerId!);
+      await expect(el(page, 'trigger')).toHaveAttribute(
+        'aria-controls',
+        (await content.getAttribute('id'))!,
+      );
       const listId = await list.getAttribute('id');
       await expect(el(page, 'combo-input')).toHaveAttribute('aria-controls', listId!);
     });
@@ -219,6 +227,21 @@ test.describe('Combobox', () => {
       await expect(el(page, 'content')).toBeVisible();
       await expectFocused(el(page, 'combo-input'));
       await expect(el(page, 'opt-apple')).toHaveAttribute('data-highlighted', '');
+    });
+
+    test('ArrowDown on the trigger opens on the committed selection', async ({ page }) => {
+      await gotoFixture(page, 'combobox', { picker: '1' });
+      const trigger = el(page, 'trigger');
+      await trigger.click();
+      await el(page, 'opt-banana').click();
+      await expect(el(page, 'content')).toHaveCount(0);
+      await expectFocused(trigger);
+
+      await trigger.press('ArrowDown');
+
+      await expectFocused(el(page, 'combo-input'));
+      await expect(el(page, 'opt-banana')).toHaveAttribute('data-highlighted', '');
+      await expect(el(page, 'opt-apple')).not.toHaveAttribute('data-highlighted');
     });
 
     test('a vetoed (autoFocusOnOpen) keeps focus on the trigger', async ({ page }) => {

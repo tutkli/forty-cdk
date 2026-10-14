@@ -12,6 +12,7 @@ import {
   ForComboboxList,
   ForComboboxOption,
   ForComboboxToggle,
+  ForComboboxTrigger,
 } from 'forty-cdk/combobox';
 import {
   ForListbox,
@@ -212,6 +213,60 @@ class ComboboxAdopted {
 })
 class ComboboxBare {
   readonly query = signal('');
+  readonly value = signal<readonly string[]>([]);
+  readonly open = signal(true);
+}
+
+@Component({
+  imports: [
+    ForCombobox,
+    ForComboboxTrigger,
+    ForComboboxInput,
+    ForComboboxContent,
+    ForComboboxList,
+    ForComboboxOption,
+  ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `<div forCombobox [(value)]="value" [(open)]="open">
+    <button forComboboxTrigger id="probe-trigger">Pick</button>
+    @if (open()) {
+      <div forComboboxContent aria-labelledby="probe-labelledby">
+        <input forComboboxInput />
+        <div forComboboxList>
+          <div forComboboxOption value="a">A</div>
+        </div>
+      </div>
+    }
+  </div>`,
+})
+class ComboboxPickerAdopted {
+  readonly value = signal<readonly string[]>([]);
+  readonly open = signal(true);
+}
+
+@Component({
+  imports: [
+    ForCombobox,
+    ForComboboxTrigger,
+    ForComboboxInput,
+    ForComboboxContent,
+    ForComboboxList,
+    ForComboboxOption,
+  ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `<div forCombobox [(value)]="value" [(open)]="open">
+    <button forComboboxTrigger>Pick</button>
+    @if (open()) {
+      <div forComboboxContent>
+        <input forComboboxInput />
+        <div forComboboxList>
+          <div forComboboxOption value="a">A</div>
+        </div>
+      </div>
+    }
+  </div>`,
+})
+class ComboboxPickerBare {
   readonly value = signal<readonly string[]>([]);
   readonly open = signal(true);
 }
@@ -563,6 +618,29 @@ export const COLLECTION_FAMILY_ADOPTERS: readonly StaticAdoptionAdopter[] = [
         seam: 'hostAriaLabel',
         probe: 'Probe toggle',
         fallback: 'Show options',
+      },
+    ],
+  },
+  {
+    label: 'Combobox (picker)',
+    adopted: ComboboxPickerAdopted,
+    bare: ComboboxPickerBare,
+    claims: [
+      {
+        key: '[forComboboxTrigger]',
+        channel: 'id',
+        source: 'combobox/src/combobox-trigger.ts',
+        seam: 'hostId',
+        probe: 'probe-trigger',
+        fallback: { generated: 'for-combobox-trigger' },
+      },
+      {
+        key: '[forComboboxContent]',
+        channel: 'aria-labelledby',
+        source: 'combobox/src/combobox-content.ts',
+        seam: 'hostLabelledBy',
+        probe: 'probe-labelledby',
+        fallback: { pairs: '[forComboboxTrigger]' },
       },
     ],
   },

@@ -273,6 +273,7 @@ export interface ComboboxPieceContext<T = unknown> {
    * and the element focus returns to on close. `null` in the editable anatomy.
    */
   readonly trigger: Signal<HTMLElement | null>;
+  readonly triggerId: Signal<string | null>;
 
   readonly content: Signal<HTMLElement | null>;
 
@@ -285,9 +286,10 @@ export interface ComboboxPieceContext<T = unknown> {
 
   /**
    * The optional `[forComboboxList]` listbox surface (picker anatomy). When
-   * registered, `[forComboboxContent]` drops its `role="listbox"` semantics and
-   * becomes a neutral popup surface; the list carries the listbox role and owns
-   * the options. `null` in the editable anatomy.
+   * registered, `[forComboboxContent]` drops its `role="listbox"` semantics —
+   * becoming the `role="dialog"` a trigger opens, or a neutral surface without
+   * one; the list carries the listbox role and owns the options. `null` in the
+   * editable anatomy.
    */
   readonly list: Signal<HTMLElement | null>;
   /** True when a `[forComboboxList]` is registered (picker anatomy). */
@@ -480,8 +482,11 @@ export interface ComboboxRegistrationContext<T = unknown> {
   registerInput(el: HTMLInputElement): void;
   /** Unregisters the input element. Reference-based. */
   unregisterInput(el: HTMLInputElement): void;
-  /** Registers the optional `[forComboboxTrigger]` button (picker anatomy). */
-  registerTrigger(el: HTMLElement): void;
+  /**
+   * Registers the optional `[forComboboxTrigger]` button (picker anatomy)
+   * together with the id it host-binds.
+   */
+  registerTrigger(el: HTMLElement, id: string): void;
   /** Unregisters the trigger button. Reference-based. */
   unregisterTrigger(el: HTMLElement): void;
   /** Registers a `[forComboboxToggle]` button without switching the anatomy. */

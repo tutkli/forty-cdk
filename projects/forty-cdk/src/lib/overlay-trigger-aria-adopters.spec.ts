@@ -116,7 +116,7 @@ const ADOPTERS: readonly OverlayTriggerAriaAdopter[] = [
     trigger: '[forComboboxTrigger]',
     source: 'combobox/src/combobox-trigger.ts',
     spec: 'combobox/src/combobox.spec.ts',
-    haspopup: 'listbox',
+    haspopup: 'dialog',
   },
   // Two roots, one trigger file.
   {
