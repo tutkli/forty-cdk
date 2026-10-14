@@ -31,8 +31,10 @@ import { injectSelectContext, type SelectContext } from './select-context';
  *
  * Initial focus is sent to the selected option (`'selected'`), the first
  * enabled option (`'first'`), or the last enabled option (`'last'`)
- * according to the trigger's hint. On destroy, focus returns to the
- * trigger when `returnFocus` is true.
+ * according to the trigger's hint, and that option is scrolled into view
+ * once the surface has been positioned. On destroy, focus returns to the
+ * trigger when `returnFocus` is true. A Tab that leaves the surface from
+ * anything that is not an option continues from the trigger.
  *
  * A mouse press on the surface that lands on no focusable element of its own
  * (padding, a group label, a separator) is cancelled, so focus stays on the
@@ -177,6 +179,7 @@ export class ForSelectContent {
             open: ctx.open,
             selectedOption: ctx.selectedOptionEl,
             collisionPadding: ctx.collisionPadding,
+            onFirstPosition: () => ctx.revealInitialFocus(),
           }
         : {
             kind: 'floating',
@@ -191,7 +194,7 @@ export class ForSelectContent {
             sticky: ctx.sticky,
             hideWhenDetached: ctx.hideWhenDetached,
             clipUntilPositioned: ctx.clipUntilPositioned,
-            onFirstPosition: () => ctx.scrollSelectedOptionIntoView(),
+            onFirstPosition: () => ctx.revealInitialFocus(),
           };
 
     injectOverlayShell({
@@ -228,6 +231,7 @@ export class ForSelectContent {
         // 'programmatic' still return focus to the trigger.
         skip: () => ctx.overlay.lastCloseReason() === 'tab',
       },
+      tabOut: ctx.tabOut,
     });
   }
 

@@ -206,6 +206,45 @@ test.describe('TimePicker', () => {
     await expectStays(page, async () => expectFocused(el(page, 'before')));
   });
 
+  for (const key of ['End', 'ArrowUp']) {
+    test(`reveals the last slot ${key} opens on, under the available-height recipe`, async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'time-picker', { available: '1' });
+      await el(page, 'trigger').focus();
+      await page.keyboard.press(key);
+      await expect(el(page, 'content')).toBeVisible();
+      const last = page.locator('[forTimePickerOption]').last();
+      await expectFocused(last);
+
+      await expect
+        .poll(async () => {
+          const opt = await last.boundingBox();
+          const content = await el(page, 'content').boundingBox();
+          if (!opt || !content) {
+            return false;
+          }
+          return opt.y >= content.y - 1 && opt.y + opt.height <= content.y + content.height + 1;
+        })
+        .toBe(true);
+      expect(await el(page, 'content').evaluate((e) => e.scrollTop)).toBeGreaterThan(0);
+    });
+  }
+
+  test('Tab from a consumer button inside the content lands after the trigger', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'time-picker', { helper: '1' });
+    await el(page, 'trigger').click();
+    await expect(el(page, 'content')).toBeVisible();
+    await el(page, 'helper').focus();
+
+    await page.keyboard.press('Tab');
+
+    await expect(el(page, 'content')).toHaveCount(0);
+    await expectFocused(el(page, 'after'));
+  });
+
   test('Tab on a focused slot commits the value and closes', async ({ page }) => {
     await gotoFixture(page, 'time-picker');
     await el(page, 'trigger').click();

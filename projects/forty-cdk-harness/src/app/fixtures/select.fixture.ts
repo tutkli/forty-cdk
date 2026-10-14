@@ -116,10 +116,24 @@ import { queryFlag } from './_query-flag';
               </button>
             }
           } @else {
-            <button data-testid="opt-apple" forSelectOption value="apple">Apple</button>
+            <button data-testid="opt-apple" forSelectOption value="apple" [disabled]="noneEnabled">
+              Apple
+            </button>
             <button data-testid="opt-banana" forSelectOption value="banana" disabled>Banana</button>
-            <button data-testid="opt-cherry" forSelectOption value="cherry">Cherry</button>
-            <button data-testid="opt-date" forSelectOption value="date">Date</button>
+            <button
+              data-testid="opt-cherry"
+              forSelectOption
+              value="cherry"
+              [disabled]="noneEnabled"
+            >
+              Cherry
+            </button>
+            <button data-testid="opt-date" forSelectOption value="date" [disabled]="noneEnabled">
+              Date
+            </button>
+          }
+          @if (helper) {
+            <button type="button" data-testid="helper">Help</button>
           }
         </div>
       }
@@ -177,6 +191,10 @@ export class SelectFixture {
   protected readonly padded = queryFlag('padded');
 
   protected readonly many = queryFlag('many');
+
+  protected readonly helper = queryFlag('helper');
+
+  protected readonly noneEnabled = queryFlag('noneEnabled');
   protected readonly manyOptions = Array.from({ length: 60 }, (_, i) => i);
 
   private readonly vetoOpen = queryFlag('vetoOpen');

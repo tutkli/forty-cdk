@@ -30,6 +30,9 @@ import { queryFlag } from './_query-flag';
         max-height: 200px;
         overflow-y: auto;
       }
+      [forTimePickerContent].available {
+        max-height: var(--for-floating-available-height);
+      }
       [forTimePickerContent].padded {
         padding-block: 12px;
       }
@@ -64,7 +67,12 @@ import { queryFlag } from './_query-flag';
         <span forTimePickerValue placeholder="Pick a time"></span>
       </button>
       @if (open()) {
-        <div forTimePickerContent data-testid="content" [class.padded]="padded">
+        <div
+          forTimePickerContent
+          data-testid="content"
+          [class.padded]="padded"
+          [class.available]="available"
+        >
           @for (slot of picker.slots(); track slot.id) {
             <div
               forTimePickerOption
@@ -74,6 +82,9 @@ import { queryFlag } from './_query-flag';
             >
               {{ slot.label }}
             </div>
+          }
+          @if (helper) {
+            <button type="button" data-testid="helper">Help</button>
           }
         </div>
       }
@@ -95,4 +106,8 @@ export class TimePickerFixture {
   protected readonly modal = queryFlag('modal');
 
   protected readonly padded = queryFlag('padded');
+
+  protected readonly available = queryFlag('available');
+
+  protected readonly helper = queryFlag('helper');
 }

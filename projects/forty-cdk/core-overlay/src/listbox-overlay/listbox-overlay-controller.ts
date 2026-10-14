@@ -10,6 +10,7 @@ import {
   lastEnabledHost,
   type ListNavigationAction,
   nextEnabledHandle,
+  resolveActiveElement,
   resolveListTypeahead,
   type SingleSlotConfig,
   type VetoableNativeEvent,
@@ -23,6 +24,7 @@ import {
   OverlayController,
   type OverlayEmitTargets,
 } from '../overlay-controller/overlay-controller';
+import type { OverlayShellTabOutConfig } from '../overlay-controller/overlay-shell';
 
 /**
  * Minimal option-handle shape the controller's focus algorithm needs: a host
@@ -331,6 +333,36 @@ export class ListboxOverlayController<
     }
     host.focus();
     return true;
+  }
+
+  /**
+   * The option an open surface still has to scroll into view: the registered option holding DOM
+   * focus, else `fallback()` when focus is on none of them. `null` when that option is the first
+   * enabled one, which the surface already shows at its top, or when there is none.
+   */
+  revealTarget(fallback: () => HTMLElement | null = () => null): HTMLElement | null {
+    const content = this.content();
+    if (content === null) {
+      return null;
+    }
+    const items = this.#items.items();
+    const active = resolveActiveElement(content.ownerDocument);
+    const target = items.find((o) => o.host === active)?.host ?? fallback();
+    return target === firstEnabledHost(items) ? null : target;
+  }
+
+  /**
+   * The overlay shell's Tab-out wiring: a Tab that leaves the open surface's tab cycle moves focus
+   * to the trigger, so the browser advances from there rather than from the body-appended portal,
+   * and closes with `reason`. The target resolves only while the overlay is open and `enabled()`
+   * holds, so an option that already committed and closed on the same Tab keeps the browser's own
+   * advance from the trigger.
+   */
+  tabOut(reason: CloseReason, enabled: () => boolean = () => true): OverlayShellTabOutConfig {
+    return {
+      target: () => (this.#deps.isOpen() && enabled() ? this.trigger() : null),
+      close: () => this.closeOverlay(reason),
+    };
   }
 
   toggle(initialFocus: Focus): void {

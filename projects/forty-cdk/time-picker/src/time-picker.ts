@@ -325,6 +325,8 @@ export class ForTimePicker<D>
    */
   readonly overlay: ForTimePickerOverlayContext = this.#controller;
 
+  private readonly tabOut = this.#controller.tabOut('tab');
+
   private readonly pointerHighlightedOption = this.#pointer.pointed;
 
   readonly #sentinel = computed(() => timeSentinel(this.adapter));
@@ -518,6 +520,14 @@ export class ForTimePicker<D>
 
   private releasePointerHighlight(): void {
     this.#pointer.release();
+  }
+
+  private revealInitialFocus(): void {
+    const target = this.#controller.revealTarget();
+    if (target) {
+      this.#pointer.suppress();
+      target.scrollIntoView?.({ block: 'nearest' });
+    }
   }
 
   commitOnTab(value: D): void {

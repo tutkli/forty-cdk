@@ -1088,6 +1088,102 @@ describe('ForSelect', () => {
       expect(r.instance.open()).toBe(true);
     });
 
+    describe('Tab from a focus that is not an option', () => {
+      @Component({
+        imports: BASE_IMPORTS,
+        template: `
+          <div forSelect [(open)]="open" [(value)]="value">
+            <button forSelectTrigger data-test-id="trigger">Fruit</button>
+            @if (open()) {
+              <div forSelectContent data-test-id="content">
+                <button
+                  data-test-id="apple"
+                  forSelectOption
+                  value="apple"
+                  [disabled]="allDisabled()"
+                >
+                  Apple
+                </button>
+                <button
+                  data-test-id="banana"
+                  forSelectOption
+                  value="banana"
+                  [disabled]="allDisabled()"
+                >
+                  Banana
+                </button>
+                @if (withButton()) {
+                  <button type="button" data-test-id="consumer">Help</button>
+                }
+              </div>
+            }
+          </div>
+        `,
+      })
+      class TabOutHost {
+        readonly open = signal(false);
+        readonly value = signal<readonly string[]>([]);
+        readonly allDisabled = signal(false);
+        readonly withButton = signal(true);
+      }
+
+      async function tabFrom(
+        r: RenderResult<TabOutHost>,
+        from: HTMLElement,
+        shiftKey = false,
+      ): Promise<KeyboardEvent> {
+        from.focus();
+        const event = new KeyboardEvent('keydown', {
+          key: 'Tab',
+          shiftKey,
+          bubbles: true,
+          cancelable: true,
+        });
+        from.dispatchEvent(event);
+        await flush(r.fixture);
+        return event;
+      }
+
+      it('Tab from a consumer button inside the content parks focus on the trigger', async () => {
+        const r = renderHost(TabOutHost);
+        r.instance.open.set(true);
+        await flush(r.fixture);
+
+        const event = await tabFrom(r, getOption('consumer'));
+
+        expect(activeTestId()).toBe('trigger');
+        expect(r.instance.open()).toBe(false);
+        expect(r.instance.value()).toEqual([]);
+        expect(event.defaultPrevented).toBe(false);
+      });
+
+      it('Shift+Tab from a consumer button inside the content lands on the trigger', async () => {
+        const r = renderHost(TabOutHost);
+        r.instance.open.set(true);
+        await flush(r.fixture);
+
+        const event = await tabFrom(r, getOption('consumer'), true);
+
+        expect(activeTestId()).toBe('trigger');
+        expect(r.instance.open()).toBe(false);
+        expect(event.defaultPrevented).toBe(true);
+      });
+
+      it('Tab from the content itself, when every option is disabled, parks focus on the trigger', async () => {
+        const r = renderHost(TabOutHost);
+        r.instance.allDisabled.set(true);
+        r.instance.withButton.set(false);
+        r.instance.open.set(true);
+        await flush(r.fixture);
+        expect(activeTestId()).toBe('content');
+
+        await tabFrom(r, getOption('content'));
+
+        expect(activeTestId()).toBe('trigger');
+        expect(r.instance.open()).toBe(false);
+      });
+    });
+
     it('Tab on a readonly select moves focus / closes but does not commit', async () => {
       const r = renderHost(SelectHost);
       r.instance.readonly.set(true);
@@ -1356,6 +1452,28 @@ describe('ForSelect', () => {
         pressKey(trigger, 'a');
         await flush(r.fixture);
         expect(r.instance.value()).toEqual(['apple']);
+      });
+
+      it('closed: a match that is already the selection emits no (valueChange)', async () => {
+        const r = renderHost(TypeaheadSelectHost);
+        r.instance.open.set(true);
+        await flush(r.fixture);
+        r.instance.open.set(false);
+        r.instance.value.set(['banana']);
+        await flush(r.fixture);
+
+        const select = r.fixture.debugElement
+          .query(By.directive(ForSelect))
+          .injector.get(ForSelect);
+        const emitted: (readonly string[])[] = [];
+        select.value.subscribe((v) => emitted.push(v));
+
+        const trigger = r.query<HTMLButtonElement>('[forSelectTrigger]')!;
+        pressKey(trigger, 'b');
+        await flush(r.fixture);
+
+        expect(r.instance.value()).toEqual(['banana']);
+        expect(emitted).toEqual([]);
       });
 
       it('closed: anchors the next match on the current selection', async () => {
@@ -3163,6 +3281,36 @@ describe('ForSelect', () => {
         expect(stub).not.toHaveBeenCalled();
       }));
 
+    for (const [key, position] of [
+      ['End', 'popper'],
+      ['ArrowUp', 'popper'],
+      ['End', 'item-aligned'],
+    ] as const) {
+      it(`reveals the last option ${key} focused once the positioner resolves (${position})`, () =>
+        withScrollStub(async (stub) => {
+          const r = renderHost(SelectHost);
+          r.instance.position.set(position);
+          await flush(r.fixture);
+          pressKey(r.query<HTMLButtonElement>('[forSelectTrigger]')!, key);
+          await flushPositioning(r.fixture);
+
+          expect(activeTestId()).toBe('date');
+          expect(stub.mock.contexts).toEqual([getOption('date')]);
+        }));
+    }
+
+    it('reveals the option focus landed on, not a disabled selection it could not focus', () =>
+      withScrollStub(async (stub) => {
+        const r = renderHost(SelectHost);
+        r.instance.cherryDisabled.set(true);
+        r.instance.value.set(['cherry']);
+        r.instance.open.set(true);
+        await flushPositioning(r.fixture);
+
+        expect(activeTestId()).toBe('apple');
+        expect(stub).not.toHaveBeenCalled();
+      }));
+
     @Component({
       imports: BASE_IMPORTS,
       template: `
@@ -3842,6 +3990,91 @@ describe('ForSelect', () => {
 
         expect(instance.scrolled()).toBeNull();
         expect(content.getAttribute('aria-activedescendant')).toBe(taOptOf(49).getAttribute('id'));
+      });
+    });
+
+    describe('opening from the trigger honours its edge target', () => {
+      const vtrigger = () => document.querySelector<HTMLButtonElement>('[data-test-id="trigger"]')!;
+
+      async function openWith(r: RenderResult<VirtualSelectHost>, key: string): Promise<void> {
+        pressKey(vtrigger(), key);
+        await flush(r.fixture);
+        await flush(r.fixture);
+      }
+
+      it('End with nothing selected opens on the last option and emits (scrollToIndex) for it', async () => {
+        const r = renderHost(VirtualSelectHost);
+        await openWith(r, 'End');
+
+        expect(r.instance.scrolled()).toBe(49);
+        expect(contentEl().getAttribute('aria-activedescendant')).toBe(
+          voptOf(49).getAttribute('id'),
+        );
+      });
+
+      it('ArrowUp with nothing selected opens on the last option', async () => {
+        const r = renderHost(VirtualSelectHost);
+        await openWith(r, 'ArrowUp');
+
+        expect(r.instance.scrolled()).toBe(49);
+        expect(contentEl().getAttribute('aria-activedescendant')).toBe(
+          voptOf(49).getAttribute('id'),
+        );
+      });
+
+      it('Home opens on the first option even with a value committed further down', async () => {
+        const r = renderHost(VirtualSelectHost);
+        r.instance.value.set(['item-5']);
+        await flush(r.fixture);
+        await openWith(r, 'Home');
+
+        expect(contentEl().getAttribute('aria-activedescendant')).toBe(
+          voptOf(0).getAttribute('id'),
+        );
+      });
+
+      it('End opens on the last option even with a value committed', async () => {
+        const r = renderHost(VirtualSelectHost);
+        r.instance.value.set(['item-5']);
+        await flush(r.fixture);
+        await openWith(r, 'End');
+
+        expect(r.instance.scrolled()).toBe(49);
+        expect(contentEl().getAttribute('aria-activedescendant')).toBe(
+          voptOf(49).getAttribute('id'),
+        );
+      });
+
+      it('ArrowDown keeps opening on the committed option', async () => {
+        const r = renderHost(VirtualSelectHost);
+        r.instance.value.set(['item-5']);
+        await flush(r.fixture);
+        await openWith(r, 'ArrowDown');
+
+        expect(contentEl().getAttribute('aria-activedescendant')).toBe(
+          voptOf(5).getAttribute('id'),
+        );
+      });
+
+      it('Tab with no active option parks focus on the trigger', async () => {
+        const r = renderHost(VirtualSelectHost);
+        r.instance.open.set(true);
+        await flush(r.fixture);
+        const content = contentEl();
+        content.focus();
+        r.instance.range.set([20, 30]);
+        await flush(r.fixture);
+        r.instance.total.set(60);
+        await flush(r.fixture);
+        expect(content.getAttribute('aria-activedescendant')).toBeNull();
+
+        content.dispatchEvent(
+          new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }),
+        );
+        await flush(r.fixture);
+
+        expect(r.instance.open()).toBe(false);
+        expect(document.activeElement).toBe(vtrigger());
       });
     });
 

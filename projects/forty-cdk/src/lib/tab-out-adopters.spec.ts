@@ -4,9 +4,6 @@ const OWN_TAB_HANDLING: Readonly<Record<string, string>> = {
   combobox:
     'focus stays on [forComboboxInput], whose keydown commits or closes on Tab before the browser moves focus',
   menu: 'every menu item and sub-trigger closes the whole menu chain on Tab through handleMenuTabOut',
-  select:
-    'the root and its options commit the highlighted option on Tab before the browser moves focus',
-  'time-picker': 'its options commit the highlighted slot on Tab before the browser moves focus',
 };
 
 const TAB_KEY_HANDLER = /key\s*===\s*'Tab'|case\s+'Tab'\s*:/;

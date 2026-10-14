@@ -38,6 +38,13 @@ export interface ItemAlignedConfig {
   readonly collisionPadding?: Signal<number | Padding>;
 
   /**
+   * Called once per open cycle, on the first resolved position, after the listbox has been
+   * portaled and its CSS vars written. When set it replaces the positioner's own first-position
+   * scroll of the anchored option, so the caller decides which option to reveal.
+   */
+  readonly onFirstPosition?: () => void;
+
+  /**
    * When `true` (default), the floating element is moved to `document.body`
    * on first render and removed on destroy. Set to `false` when the caller
    * already invokes `injectPortal()` on its own.
@@ -184,7 +191,8 @@ function itemAligned(
  * position — `data-position="item-aligned"`, the `--for-floating-anchor-width/-height`
  * and `--for-floating-available-height` CSS vars — and, on the first resolved position,
  * `scrollIntoView({ block: 'nearest' })` on the target option so the visual
- * anchor stays correct when the listbox is taller than the viewport.
+ * anchor stays correct when the listbox is taller than the viewport, unless
+ * `onFirstPosition` is supplied, which then owns that reveal.
  *
  * `--for-floating-available-height` is the same *concept* the anchored positioner
  * publishes (the maximum block-size the surface may occupy before it
@@ -206,10 +214,11 @@ export function injectItemAlignedPositioner(config: ItemAlignedConfig): void {
     reference: config.reference,
     open: config.open,
     portal: config.portal,
+    onFirstPosition: config.onFirstPosition,
     computeAndApply: (el, reference) => {
       const collisionPadding = paddingTop(config.collisionPadding?.(), 8);
 
-      let initialScrollDone = false;
+      let initialScrollDone = config.onFirstPosition !== undefined;
 
       return {
         // Placement is irrelevant — `itemAligned` overrides x/y outright —

@@ -485,7 +485,72 @@ test.describe('Select', () => {
     });
   });
 
-  test.describe('scroll-to-selected on open (popper, #1145)', () => {
+  test.describe('Tab out of the content from a focus that is not an option', () => {
+    test('Tab from a consumer button lands on the control after the trigger', async ({ page }) => {
+      await gotoFixture(page, 'select', { helper: '1' });
+      await el(page, 'trigger').click();
+      await expect(el(page, 'content')).toBeVisible();
+      await el(page, 'helper').focus();
+
+      await page.keyboard.press('Tab');
+
+      await expect(el(page, 'content')).toHaveCount(0);
+      await expectFocused(el(page, 'after'));
+    });
+
+    test('Shift+Tab from a consumer button lands on the trigger', async ({ page }) => {
+      await gotoFixture(page, 'select', { helper: '1' });
+      await el(page, 'trigger').click();
+      await expect(el(page, 'content')).toBeVisible();
+      await el(page, 'helper').focus();
+
+      await page.keyboard.press('Shift+Tab');
+
+      await expect(el(page, 'content')).toHaveCount(0);
+      await expectFocused(el(page, 'trigger'));
+    });
+
+    test('Tab from the content itself, with every option disabled, lands after the trigger', async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'select', { noneEnabled: '1' });
+      await el(page, 'trigger').click();
+      await expectFocused(el(page, 'content'));
+
+      await page.keyboard.press('Tab');
+
+      await expect(el(page, 'content')).toHaveCount(0);
+      await expectFocused(el(page, 'after'));
+    });
+
+    test('Tab on an option still commits it and advances past the trigger', async ({ page }) => {
+      await gotoFixture(page, 'select', { helper: '1' });
+      await el(page, 'trigger').click();
+      await expectFocused(el(page, 'opt-apple'));
+
+      await page.keyboard.press('Tab');
+
+      await expect(el(page, 'content')).toHaveCount(0);
+      await expect(el(page, 'trigger')).toContainText('Apple');
+      await expectFocused(el(page, 'after'));
+    });
+
+    test('Shift+Tab on an option still commits it and moves before the trigger', async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'select', { helper: '1' });
+      await el(page, 'trigger').click();
+      await expectFocused(el(page, 'opt-apple'));
+
+      await page.keyboard.press('Shift+Tab');
+
+      await expect(el(page, 'content')).toHaveCount(0);
+      await expect(el(page, 'trigger')).toContainText('Apple');
+      await expectFocused(el(page, 'before'));
+    });
+  });
+
+  test.describe('reveal of the initially focused option on open (#1145)', () => {
     async function openMany(page: Page, selected: string): Promise<void> {
       await gotoFixture(page, 'select', { many: '1', selected });
       await el(page, 'trigger').click();
@@ -516,6 +581,35 @@ test.describe('Select', () => {
 
       expect(await el(page, 'content').evaluate((e) => e.scrollTop)).toBeGreaterThan(0);
     });
+
+    for (const [key, position] of [
+      ['End', 'popper'],
+      ['ArrowUp', 'popper'],
+      ['End', 'item-aligned'],
+      ['ArrowUp', 'item-aligned'],
+    ] as const) {
+      test(`reveals the last option ${key} opens on with nothing selected (${position})`, async ({
+        page,
+      }) => {
+        await gotoFixture(page, 'select', { many: '1', position });
+        await el(page, 'trigger').focus();
+        await page.keyboard.press(key);
+        await expect(el(page, 'content')).toBeVisible();
+        await expectFocused(el(page, 'opt-item-59'));
+
+        await expect
+          .poll(async () => {
+            const opt = await el(page, 'opt-item-59').boundingBox();
+            const content = await el(page, 'content').boundingBox();
+            if (!opt || !content) {
+              return false;
+            }
+            return opt.y >= content.y - 1 && opt.y + opt.height <= content.y + content.height + 1;
+          })
+          .toBe(true);
+        expect(await el(page, 'content').evaluate((e) => e.scrollTop)).toBeGreaterThan(0);
+      });
+    }
 
     test('does not scroll when the selected option is already at the top', async ({ page }) => {
       await openMany(page, 'item-0');
