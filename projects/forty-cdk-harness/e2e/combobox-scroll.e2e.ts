@@ -1,4 +1,4 @@
-import { el, expect, expectStays, gotoFixture, test } from './_helpers';
+import { el, expect, expectStays, gotoFixture, recordPointerMoves, test } from './_helpers';
 
 test.describe('Combobox — auto-highlight scroll into view (#1066)', () => {
   test('opening with a below-the-fold selection scrolls the active option into view', async ({
@@ -42,26 +42,10 @@ test.describe('Combobox — auto-highlight scroll into view (#1066)', () => {
 
     await gotoFixture(page, 'combobox-scroll');
     await page.mouse.move(box.x + box.width / 2, box.y + 30);
-    await page.evaluate(() => {
-      const probe = window as unknown as { synthesizedMoves: number };
-      probe.synthesizedMoves = 0;
-      document.addEventListener(
-        'pointermove',
-        (event) => {
-          if ((event.target as Element).closest('[data-testid="content"]')) {
-            probe.synthesizedMoves += 1;
-          }
-        },
-        true,
-      );
-      document.querySelector<HTMLElement>('[data-testid="open-selected"]')!.click();
-    });
+    const moves = await recordPointerMoves(page, 'content');
+    await el(page, 'open-selected').evaluate((button: HTMLElement) => button.click());
 
-    await expect
-      .poll(() =>
-        page.evaluate(() => (window as unknown as { synthesizedMoves: number }).synthesizedMoves),
-      )
-      .toBeGreaterThan(0);
+    await expect.poll(moves).toBeGreaterThan(0);
     await expectStays(page, () =>
       expect(el(page, 'opt-item-30')).toHaveAttribute('data-highlighted', ''),
     );

@@ -1036,6 +1036,29 @@ export async function recordFlipStamps(page: Page): Promise<() => Promise<string
     page.evaluate(() => [...(window as unknown as { __flipStamps: string[] }).__flipStamps]);
 }
 
+export const DEFAULT_POINTER_SUPPRESSION_MS = 200;
+
+export async function recordPointerMoves(
+  page: Page,
+  testid: string,
+): Promise<() => Promise<number>> {
+  await page.evaluate((id) => {
+    const store = window as unknown as { __pointerMoves: number };
+    store.__pointerMoves = 0;
+    document.addEventListener(
+      'pointermove',
+      (event) => {
+        if ((event.target as Element).closest(`[data-testid="${id}"]`)) {
+          store.__pointerMoves += 1;
+        }
+      },
+      true,
+    );
+  }, testid);
+  return () =>
+    page.evaluate(() => (window as unknown as { __pointerMoves: number }).__pointerMoves);
+}
+
 export function afterFrames(page: Page, frames = 2): Promise<void> {
   return page.evaluate(
     (count) =>

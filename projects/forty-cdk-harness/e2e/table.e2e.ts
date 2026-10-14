@@ -1,11 +1,13 @@
 import {
   boxOf,
+  DEFAULT_POINTER_SUPPRESSION_MS,
   el,
   expect,
   expectFocused,
   expectRovingFocus,
   expectStays,
   gotoFixture,
+  recordPointerMoves,
   test,
 } from './_helpers';
 import { rowAt, rows } from './_table-helpers';
@@ -558,5 +560,31 @@ test.describe('Table (column resizing)', () => {
     const valuenow = Number(await resizer.getAttribute('aria-valuenow'));
     expect(valuenow).toBeCloseTo(cellBox!.width, 0);
     expect(valuenow).toBeGreaterThan(handleBox!.width);
+  });
+});
+
+test.describe('Table (pointer highlight)', () => {
+  test('a stationary cursor does not take the highlight after a wheel scroll (#2433)', async ({
+    page,
+    browserName,
+  }) => {
+    test.skip(
+      browserName !== 'webkit',
+      'Only WebKit dispatches a pointermove under a stationary cursor after a scroll',
+    );
+    await gotoFixture(page, 'table', { selectionMode: 'none' });
+    await el(page, 'cell-3-role').hover();
+    await el(page, 'cell-0-name').focus();
+    await page.keyboard.press('ArrowDown');
+    await expectRovingFocus(page, 'cell-1-name');
+    await expect(el(page, 'cell-1-name')).toHaveAttribute('data-highlighted', '');
+
+    await page.waitForTimeout(DEFAULT_POINTER_SUPPRESSION_MS * 2);
+    const moves = await recordPointerMoves(page, 'scroll-container');
+    await page.mouse.wheel(0, 120);
+    await expect.poll(moves, { timeout: 10000 }).toBeGreaterThan(0);
+    await expectStays(page, () =>
+      expect(el(page, 'cell-1-name')).toHaveAttribute('data-highlighted', ''),
+    );
   });
 });
