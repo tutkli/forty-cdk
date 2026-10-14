@@ -69,9 +69,11 @@ export class ForStepper implements ForStepperContext {
   readonly selectedIndex = model<number>(0);
 
   /**
-   * Emits once each time the stepper transitions **into** the completed terminal
-   * state — i.e. when `selectedIndex()` reaches `count()`. Does not re-emit while
-   * it stays completed; retreating via `previous()` and re-entering emits again.
+   * Emits once each time `selectedIndex()` moves **into** the completed terminal
+   * state, i.e. reaches `count()`. Does not re-emit while it stays completed;
+   * retreating via `previous()` and re-entering emits again. A change to the step
+   * list alone never emits: an emptied list is not completed, and a list shrinking
+   * under `selectedIndex()` enters the completed state silently.
    */
   readonly complete = output<void>();
 
@@ -136,22 +138,30 @@ export class ForStepper implements ForStepperContext {
   readonly count = computed(() => this.#items.items().length);
 
   /**
-   * True when the stepper is in the terminal **completed** state: `selectedIndex()`
-   * has reached `count()` (one past the last step). No step is current and every
+   * True when the stepper is in the terminal **completed** state: it has at least
+   * one step and `selectedIndex()` has reached `count()` (one past the last step). No step is current and every
    * `[forStepperContent]` panel is inactive while this holds.
    */
-  readonly isCompleted = computed(() => this.selectedIndex() >= this.count());
+  readonly isCompleted = computed(() => {
+    const count = this.count();
+    return count > 0 && this.selectedIndex() >= count;
+  });
 
   readonly #firstSelectableTriggerHost = computed(() => firstEnabledHost(this.#triggers.items()));
 
   constructor() {
-    let wasCompleted = this.isCompleted();
+    let previous: { completed: boolean; index: number } | null = null;
     effect(() => {
-      const completed = this.isCompleted();
-      if (completed && !wasCompleted) {
+      const current = { completed: this.isCompleted(), index: this.selectedIndex() };
+      if (
+        previous !== null &&
+        current.completed &&
+        !previous.completed &&
+        current.index !== previous.index
+      ) {
         this.complete.emit();
       }
-      wasCompleted = completed;
+      previous = current;
     });
   }
 

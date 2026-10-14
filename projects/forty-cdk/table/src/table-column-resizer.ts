@@ -21,6 +21,7 @@ import {
   createPointerDragSession,
   type PointerDragSession,
   DRAG_DEAD_ZONE_PX,
+  hostButtonType,
 } from 'forty-cdk/core';
 import { injectTableCellTabIndex } from './cell-tab-index';
 import { assertColumnName, injectTableContext, injectTableRegistration } from './table-context';
@@ -62,7 +63,9 @@ export interface TableResizeDescriptor {
  * (`tabindex="-1"`) and is reached via cell-entry: Enter / F2 focuses the first focusable
  * inside the header cell, and `Tab` cycles on to the rest, so it stays reachable behind a
  * column-menu button. It must sit on a natively-focusable element (a `<button>`) for either
- * to find it. In `mode="table"` it is a standalone tab stop (`tabindex="0"`).
+ * to find it. In `mode="table"` it is a standalone tab stop (`tabindex="0"`). A
+ * `<button>` host is forced to `type="button"`, so a click or `Enter` / `Space` on
+ * the handle never submits a surrounding `<form>`.
  *
  * Opt in to size-to-content with `[autoFit]`: double-clicking the handle then fits the
  * column to its widest data-cell content via `fitToContent()` (also callable imperatively
@@ -86,6 +89,7 @@ export interface TableResizeDescriptor {
   host: {
     role: 'separator',
     'aria-orientation': 'vertical',
+    '[attr.type]': 'buttonType()',
     '[attr.tabindex]': 'disabled() ? "-1" : tabindex()',
     '[attr.aria-valuenow]': 'ariaValueNow()',
     '[attr.aria-valuemin]': 'min()',
@@ -104,6 +108,8 @@ export class ForTableColumnResizer {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   readonly #document = inject(DOCUMENT);
   readonly #headerCell = inject(ForTableHeaderCell, { optional: true });
+
+  protected readonly buttonType = hostButtonType();
 
   /** Column identity; included in the `resizeCommit` payload and the published CSS var name. */
   readonly column = input.required<string>();

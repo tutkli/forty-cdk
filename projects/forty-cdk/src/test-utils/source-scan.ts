@@ -35,6 +35,12 @@ const SUITE_FILES = import.meta.glob('/projects/forty-cdk/src/**/*.ts', {
   eager: true,
 });
 
+const README_FILES = import.meta.glob('/projects/forty-cdk/*/README.md', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+});
+
 const ROOT = '/projects/forty-cdk/';
 
 /**
@@ -102,6 +108,13 @@ export const SPEC_CODE: ReadonlyMap<string, string> = new Map(
  * module included.
  */
 export const SUITE_SOURCES: ReadonlyMap<string, string> = sourcesFrom(SUITE_FILES, () => true);
+
+/**
+ * Every entry point's README, keyed `<entry-point>/README.md` — the markup a
+ * consumer copies, which is what a roster reads when its family is defined by
+ * the element a piece is documented on rather than by anything in its source.
+ */
+export const README_SOURCES: ReadonlyMap<string, string> = sourcesFrom(README_FILES, () => true);
 
 /**
  * The entry point a path belongs to: `dialog/src/dialog.ts` → `dialog`. A suite

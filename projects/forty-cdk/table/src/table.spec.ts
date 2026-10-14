@@ -264,6 +264,40 @@ class ResizerTabindexHost {
 class UnseededResizeTableHost {}
 
 @Component({
+  imports: [
+    ForTable,
+    ForTableHeaderRow,
+    ForTableHeaderCell,
+    ForTableColumnResizer,
+    ForTableSelectAll,
+  ],
+  template: `
+    <form (submit)="onSubmit($event)">
+      <div forTable selectionMode="multiple">
+        <div forTableHeaderRow>
+          <div forTableHeaderCell name="sel">
+            <button forTableSelectAll type="submit" data-testid="select-all"></button>
+          </div>
+          <div forTableHeaderCell name="name">
+            Name
+            <button forTableColumnResizer column="name" data-testid="resizer"></button>
+          </div>
+        </div>
+      </div>
+      <button type="submit" data-testid="native-submit">Save</button>
+    </form>
+  `,
+})
+class FormWrappedResizeTableHost {
+  readonly submits = signal(0);
+
+  onSubmit(event: Event): void {
+    event.preventDefault();
+    this.submits.update((count) => count + 1);
+  }
+}
+
+@Component({
   imports: [ForTable, ForTableHeaderRow, ForTableHeaderCell, ForTableColumnResizer],
   template: `
     <div forTable mode="grid">
@@ -2973,6 +3007,18 @@ describe('ForTable', () => {
   });
 
   describe('selection', () => {
+    it('select-all forces type="button" over a consumer type="submit" so a click does not submit a surrounding form', () => {
+      const { el, instance } = renderHost(FormWrappedResizeTableHost);
+      el.querySelector<HTMLElement>('[data-testid="native-submit"]')!.click();
+      expect(instance.submits()).toBe(1);
+
+      const selectAll = el.querySelector<HTMLElement>('[data-testid="select-all"]')!;
+      selectAll.click();
+
+      expect(selectAll.getAttribute('type')).toBe('button');
+      expect(instance.submits()).toBe(1);
+    });
+
     it('selectionMode="none": root has no aria-multiselectable, rows have no aria-selected, no data-selected', async () => {
       const { el, instance, flush } = renderHost(SelectionTableHost);
       instance.selectionMode.set('none');
@@ -4340,6 +4386,18 @@ describe('ForTable', () => {
       instance.mode.set('treegrid');
       await flush();
       expect(resizerEl(el).getAttribute('tabindex')).toBe('-1');
+    });
+
+    it('forces type="button" on a button host so a click does not submit a surrounding form', () => {
+      const { el, instance } = renderHost(FormWrappedResizeTableHost);
+      el.querySelector<HTMLElement>('[data-testid="native-submit"]')!.click();
+      expect(instance.submits()).toBe(1);
+
+      const resizer = resizerEl(el);
+      resizer.click();
+
+      expect(resizer.getAttribute('type')).toBe('button');
+      expect(instance.submits()).toBe(1);
     });
 
     it('in grid mode the header cell owns the single tab stop, not the resizer', async () => {
