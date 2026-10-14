@@ -12,6 +12,14 @@ import type { DateAdapter } from 'forty-cdk/date-adapter';
 export interface TimeValueSource<D> {
   readonly value: ModelSignal<D | null>;
   readonly adapter: DateAdapter<D>;
+  /**
+   * Records `value` as what the source's commit in progress resolved to in the
+   * picker, which grafts it onto its day and clamps it to its bounds before
+   * handing it back through the one-way `[value]` binding. Called synchronously
+   * from the picker's `valueChange` subscription; a source with no typed
+   * segments ignores it.
+   */
+  adoptCommit(value: D): void;
 }
 
 /**

@@ -127,18 +127,33 @@ export abstract class FormUiControlBase {
    */
   protected fieldAdopted?(): boolean;
 
+  /**
+   * Whether a composite this control is projected into, and defers to, is
+   * disabled — a date picker around the time source it composes. Folded into
+   * {@link effectiveDisabled}. Declared without an implementation so only a
+   * control that can be projected that way pays for the extra reactive read.
+   *
+   * A subclass must declare this as a **method**, for the same reason as
+   * {@link focus}. It is read lazily, so it may reference the subclass's own
+   * fields.
+   */
+  protected inheritedDisabled?(): boolean;
+
   readonly #fieldset = inject(FOR_FIELDSET_CONTEXT, { optional: true });
 
   /**
    * The control's own {@link disabled} OR'd with a surrounding disabled
-   * `[forFieldset]`. This is the value that gates interaction and drives
-   * `aria-disabled` / `data-disabled` — a native `<fieldset disabled>` does not
-   * reach custom-role controls (`forSwitch`, `forCheckbox`, …), so the group's
-   * disabled state must compose in here. Subclasses read this, never the raw
-   * {@link disabled} input.
+   * `[forFieldset]` and with a disabled composite it defers to. This is the
+   * value that gates interaction and drives `aria-disabled` / `data-disabled` —
+   * a native `<fieldset disabled>` does not reach custom-role controls
+   * (`forSwitch`, `forCheckbox`, …), so the group's disabled state must compose
+   * in here. Subclasses read this, never the raw {@link disabled} input.
    */
   readonly effectiveDisabled = computed(
-    () => this.disabled() || (this.#fieldset?.disabled() ?? false),
+    () =>
+      this.disabled() ||
+      (this.#fieldset?.disabled() ?? false) ||
+      (this.inheritedDisabled?.() ?? false),
   );
 
   readonly #hostEl = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;

@@ -111,7 +111,7 @@ export class ForTimePickerOption<D = unknown> {
   }
 
   protected onClick(): void {
-    if (this.effectiveDisabled() || this.#ctx.readonly()) {
+    if (this.effectiveDisabled() || this.#ctx.effectiveReadonly()) {
       return;
     }
     this.#ctx.activate(this.value());

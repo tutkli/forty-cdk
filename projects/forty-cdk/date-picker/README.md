@@ -296,6 +296,8 @@ Set `granularity` to `'hour'`, `'minute'`, or `'second'` to turn the picker into
 
 Bind the calendar **and** the time field **one-way** to `picker.value()` (not `[(value)]`). The picker is the single source of truth: when one-way bound to a timed value the calendar preserves the time-of-day on its own selection, and the picker re-grafts the previously entered time as a defensive fallback for the case where the calendar value was null or midnight (reading its own value, which the one-way children never clobber); a time-field edit emits a full date-time the picker mirrors in. A date-time picker never closes on a calendar selection, so the user can go on to set the time.
 
+Like the calendar, the projected time field or time picker takes the picker's `readonly` and `disabled` without a binding, so a read-only or disabled picker's time source accepts no edit and shows only the committed time. A typed time the picker clamps into `[minDate, maxDate]` behaves as in a standalone time field: while focus stays in the field its segments keep what was entered, and they show the clamped value once focus leaves.
+
 The content is a field boundary. Inside a [`[forField]`](../field/README.md#how-the-control-connects) the time field does not register with the field, which keeps reflecting the picker (its label target, `invalid` state and errors) while the panel is open.
 
 ```html

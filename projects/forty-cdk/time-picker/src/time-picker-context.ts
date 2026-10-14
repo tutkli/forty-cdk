@@ -88,6 +88,8 @@ export interface ForTimePickerContext<D = unknown> {
   readonly open: Signal<boolean>;
   readonly effectiveDisabled: Signal<boolean>;
   readonly readonly: Signal<boolean>;
+  /** `readonly`, or the read-only state of a `[forDatePicker]` the picker is projected into. */
+  readonly effectiveReadonly: Signal<boolean>;
   readonly required: Signal<boolean>;
   readonly invalid: Signal<boolean>;
   readonly pending: Signal<boolean>;

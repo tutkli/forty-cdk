@@ -14,7 +14,7 @@ import type { FormValueControl } from '@angular/forms/signals';
 import {
   clampToBounds,
   type DateRange,
-  FOR_CALENDAR_HOST,
+  FOR_PICKER_SOURCE_HOST,
   fortyError,
   injectDateAdapter,
   injectHiddenInput,
@@ -93,7 +93,7 @@ import { FOR_DATE_RANGE_PICKER_DEFAULTS } from 'forty-cdk/defaults';
   providers: [
     { provide: FOR_DATE_PICKER_CONTEXT, useExisting: ForDateRangePicker },
     { provide: FOR_DATE_RANGE_PICKER_CONTEXT, useExisting: ForDateRangePicker },
-    { provide: FOR_CALENDAR_HOST, useExisting: ForDateRangePicker },
+    { provide: FOR_PICKER_SOURCE_HOST, useExisting: ForDateRangePicker },
   ],
 })
 export class ForDateRangePicker<D>

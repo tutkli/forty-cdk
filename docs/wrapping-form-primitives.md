@@ -281,7 +281,7 @@ throws `FORCDK-DATE-PICKER-007` / `FORCDK-TIME-PICKER-004` in dev mode:
 
 ```ts
 import { Directive } from '@angular/core';
-import { FOR_CALENDAR_HOST, FOR_DATE_FIELD_HOST } from 'forty-cdk/core';
+import { FOR_DATE_FIELD_HOST, FOR_PICKER_SOURCE_HOST } from 'forty-cdk/core';
 import { FOR_DATE_PICKER_CONTEXT, ForDatePicker } from 'forty-cdk/date-picker';
 
 @Directive({
@@ -290,7 +290,7 @@ import { FOR_DATE_PICKER_CONTEXT, ForDatePicker } from 'forty-cdk/date-picker';
   providers: [
     { provide: FOR_DATE_PICKER_CONTEXT, useExisting: MyDatePicker },
     { provide: FOR_DATE_FIELD_HOST, useExisting: MyDatePicker },
-    { provide: FOR_CALENDAR_HOST, useExisting: MyDatePicker },
+    { provide: FOR_PICKER_SOURCE_HOST, useExisting: MyDatePicker },
   ],
 })
 export class MyDatePicker<D> extends ForDatePicker<D> {}
@@ -298,9 +298,10 @@ export class MyDatePicker<D> extends ForDatePicker<D> {}
 
 The picker finds its calendar through `contentChild(FOR_CALENDAR_CONTEXT)`, the token a
 `ForCalendar` subclass re-provides anyway (see [Wrapping non-form roots](wrapping-non-form-roots.md)).
-The other direction is `FOR_CALENDAR_HOST`, which `ForDatePicker` and `ForDateRangePicker` provide
-so the projected calendar takes the picker's `readonly` and `disabled`. A subclassed picker
-re-provides it as above, in either anatomy, or a read-only picker's calendar accepts picks again.
+The other direction is `FOR_PICKER_SOURCE_HOST`, which `ForDatePicker` and `ForDateRangePicker`
+provide so the projected calendar, time field and time picker take the picker's `readonly` and
+`disabled`. A subclassed picker re-provides it as above, in either anatomy, or a read-only
+picker's calendar accepts picks again and its time source edits a time the picker never commits.
 
 ## Choosing a pattern
 

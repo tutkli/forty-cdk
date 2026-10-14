@@ -18,8 +18,8 @@ import {
   composeWithTime,
   createSingleSlot,
   type FieldGranularity,
-  FOR_CALENDAR_HOST,
   FOR_DATE_FIELD_HOST,
+  FOR_PICKER_SOURCE_HOST,
   FOR_TIME_VALUE_SOURCE,
   fortyError,
   injectDateAdapter,
@@ -56,7 +56,8 @@ import { FOR_DATE_PICKER_DEFAULTS } from 'forty-cdk/defaults';
  *
  * Setting `granularity` finer than `'day'` makes it a date-time picker: project a `[forTimeField]`
  * beside the calendar and bind both children **one-way** to `picker.value()`, and the picker grafts
- * the entered time onto each selection. That requires a time-capable adapter.
+ * the entered time onto each selection. That requires a time-capable adapter. The time field, or a
+ * projected `[forTimePicker]`, takes the picker's `readonly` and `disabled` like the calendar.
  *
  * Set `anatomy="field"` to make a projected `[forDateField]` the control instead of the trigger,
  * the shape of the APG example: the field shows and edits the value, carries the label and the
@@ -132,7 +133,7 @@ import { FOR_DATE_PICKER_DEFAULTS } from 'forty-cdk/defaults';
   providers: [
     { provide: FOR_DATE_PICKER_CONTEXT, useExisting: ForDatePicker },
     { provide: FOR_DATE_FIELD_HOST, useExisting: ForDatePicker },
-    { provide: FOR_CALENDAR_HOST, useExisting: ForDatePicker },
+    { provide: FOR_PICKER_SOURCE_HOST, useExisting: ForDatePicker },
   ],
 })
 export class ForDatePicker<D>
@@ -340,14 +341,14 @@ export class ForDatePicker<D>
         }
         assertTimeSourceAdapter(timeSource.adapter, this.adapter as DateAdapter<unknown>);
         const day = this.value() ?? this.adapter.today();
-        this.value.set(
-          clampToBounds(
-            this.adapter,
-            composeWithTime(this.#time(), day, next),
-            this.minDate(),
-            this.maxDate(),
-          ),
+        const composed = clampToBounds(
+          this.adapter,
+          composeWithTime(this.#time(), day, next),
+          this.minDate(),
+          this.maxDate(),
         );
+        this.value.set(composed);
+        timeSource.adoptCommit(composed);
         this.markTouched();
       });
       onCleanup(() => sub.unsubscribe());

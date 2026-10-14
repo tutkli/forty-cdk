@@ -262,6 +262,7 @@ export class ForDateField<D>
           element: this.#host.nativeElement,
           focus: (options) => this.focus(options),
           reset: () => this.reset(),
+          adoptCommit: (value) => this.#engine.adoptCommit(value as D),
         },
         (field) => fieldHost.registerField(field),
         (field) => fieldHost.unregisterField(field),

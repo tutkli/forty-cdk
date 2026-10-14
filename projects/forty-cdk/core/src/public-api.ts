@@ -92,12 +92,12 @@ export {
   resolveActiveElement,
   resolveEventTarget,
 } from './composed-tree/composed-tree';
-export { type CalendarHost, FOR_CALENDAR_HOST } from './datetime/calendar-host';
 export { assertTimeCapable, compareDateOf, injectDateAdapter } from './datetime/date-adapter';
 export { DateFieldEngine } from './datetime/date-field-engine';
 export { type DateRange } from './datetime/date-range';
 export { type FieldGranularity } from './datetime/date-segments';
 export { ForDateTimeLiteralBase } from './datetime/literal-directive';
+export { FOR_PICKER_SOURCE_HOST, type PickerSourceHost } from './datetime/picker-source-host';
 export { RangeFieldComposer } from './datetime/range-field-composer';
 export { ForDateTimeSegmentBase, type SegmentEditorContext } from './datetime/segment-directive';
 export {
