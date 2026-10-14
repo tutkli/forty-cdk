@@ -1,11 +1,13 @@
 import type { Page } from '@playwright/test';
 import {
+  boxOf,
   dragFrom,
   dragFromSteps,
   el,
   expect,
   expectFocused,
   expectStays,
+  gesturePointer,
   gotoFixture,
   isMobileProject,
   rovingFirst,
@@ -509,17 +511,22 @@ test.describe('Carousel (drag / swipe) @mobile', () => {
   test('reduced motion suppresses live offset but still snaps index (D3)', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await gotoFixture(page, 'carousel');
-    const drag = await dragFromSteps(page, el(page, 'viewport'), { dx: -50, dy: 0 }, 3, {
-      stepDelayMs: 50,
-      release: false,
-      flickRelease: true,
-    });
+    const { x, y, width, height } = await boxOf(el(page, 'viewport'));
+    const startX = x + width / 2;
+    const startY = y + height / 2;
+    const pointer = gesturePointer(page);
+    await pointer.down(startX, startY);
+    await pointer.move(startX - 5, startY);
+    await page.waitForTimeout(50);
+    await pointer.move(startX - 55, startY);
+    await expect(el(page, 'viewport')).toHaveAttribute('data-dragging', '');
     const movementX = await page.evaluate(() => {
       const vp = document.querySelector('[data-testid="viewport"]') as HTMLElement;
       return getComputedStyle(vp).getPropertyValue('--for-carousel-swipe-movement-x').trim();
     });
     expect(movementX).toBe('');
-    await drag.up();
+    await pointer.move(startX - 105, startY);
+    await pointer.flick(startX - 155, startY);
     await expect(el(page, 'slide-1')).toHaveAttribute('data-state', 'active');
   });
 

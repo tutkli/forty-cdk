@@ -652,7 +652,9 @@ export async function dragFrom(
  * no-flick / boundary specs. The arm step and the `steps - 1` earlier moves
  * still observe `stepDelayMs`, so the cumulative offset is unchanged — only the
  * release-velocity sample is made robust. With `release: false` there is no
- * release to pair the final step with, so the flag is inert.
+ * release to pair the final step with, so the pair throws: a caller that reads
+ * mid-gesture state and then needs a flick ends the gesture itself with a
+ * move and {@link GesturePointer.flick} back to back after the read.
  *
  * Returns the pointer, so a caller passing `release: false` lifts it with
  * `up()`.
@@ -673,7 +675,12 @@ export async function dragFromSteps(
   const stepDelayMs = options.stepDelayMs ?? 50;
   const armPx = options.armPx ?? 5;
   const release = options.release ?? true;
-  const flick = (options.flickRelease ?? false) && release;
+  const flick = options.flickRelease ?? false;
+  if (flick && !release) {
+    throw new Error(
+      'dragFromSteps: flickRelease needs a release; it cannot be combined with release: false',
+    );
+  }
   const pacedSteps = flick ? steps - 1 : steps;
 
   const len = Math.hypot(step.dx, step.dy) || 1;
