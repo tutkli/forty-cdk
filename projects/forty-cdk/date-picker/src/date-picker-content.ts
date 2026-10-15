@@ -50,7 +50,6 @@ import { injectDatePickerContext } from './date-picker-context';
     tabindex: '-1',
     '[id]': 'ctx.contentId()',
     '[attr.aria-label]': 'resolvedAriaLabel()',
-    '[attr.aria-labelledby]': 'labelledBy()',
     '[attr.aria-modal]': 'ctx.modal() ? "true" : null',
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
   },

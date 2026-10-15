@@ -68,7 +68,6 @@ import {
   host: {
     role: 'menu',
     '[attr.id]': 'ctx.contentId() || null',
-    '[attr.aria-labelledby]': 'labelledBy()',
     '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.aria-orientation]': '"vertical"',
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',

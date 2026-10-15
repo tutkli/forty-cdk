@@ -82,7 +82,6 @@ import { injectComboboxContext } from './combobox-context';
     '[attr.role]': 'role()',
     '[attr.tabindex]': 'hasList() ? null : "-1"',
     '[id]': 'ctx.contentId()',
-    '[attr.aria-labelledby]': 'labelledBy()',
     '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.aria-multiselectable]': 'hasList() ? null : (ctx.multiple() ? "true" : null)',
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',

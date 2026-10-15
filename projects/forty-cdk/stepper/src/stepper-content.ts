@@ -27,7 +27,6 @@ import { injectStepperContext } from './stepper-context';
   host: {
     '[attr.role]': "ctx.mode() === 'interactive' ? 'tabpanel' : 'group'",
     '[id]': 'id()',
-    '[attr.aria-labelledby]': 'labelledBy()',
     '[attr.tabindex]': 'tabindex()',
     '[attr.aria-hidden]': 'current() ? null : "true"',
     '[attr.inert]': 'current() ? null : ""',

@@ -72,7 +72,6 @@ import { injectSelectContext, type SelectContext } from './select-context';
     '[attr.tabindex]': 'ctx.totalCount() !== undefined ? "0" : "-1"',
     '[attr.aria-activedescendant]': 'ctx.activeDescendantId()',
     '[id]': 'ctx.overlay.contentId()',
-    '[attr.aria-labelledby]': 'labelledBy()',
     '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.aria-multiselectable]': 'ctx.multiple() ? "true" : null',
     '[attr.aria-orientation]': 'ctx.orientation()',

@@ -50,7 +50,6 @@ import {
   exportAs: 'forFieldset',
   host: {
     '[attr.role]': 'roleAttr()',
-    '[attr.aria-labelledby]': 'labelledBy()',
     '[attr.aria-disabled]': '!isNativeFieldset() && disabled() ? "true" : null',
     '[attr.data-disabled]': 'disabled() ? "" : null',
   },

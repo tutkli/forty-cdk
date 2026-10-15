@@ -33,7 +33,6 @@ import { injectTabsContext } from './tabs-context';
     role: 'tabpanel',
     '[attr.tabindex]': 'tabindex()',
     '[id]': 'id()',
-    '[attr.aria-labelledby]': 'labelledBy()',
     '[attr.aria-hidden]': 'selected() ? null : "true"',
     '[attr.inert]': 'selected() ? null : ""',
     '[attr.data-state]': 'selected() ? "active" : "inactive"',

@@ -65,7 +65,6 @@ import { ModalTriggerRegistry } from './modal-trigger';
     '[attr.role]': 'alert() ? "alertdialog" : "dialog"',
     '[attr.aria-modal]': 'modal() ? "true" : null',
     '[attr.aria-label]': 'resolvedAriaLabel()',
-    '[attr.aria-labelledby]': 'labelledBy()',
     'data-state': 'open',
     tabindex: '-1',
   },

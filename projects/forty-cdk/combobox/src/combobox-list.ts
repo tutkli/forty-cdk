@@ -46,7 +46,6 @@ import { injectComboboxContext } from './combobox-context';
     role: 'listbox',
     tabindex: '-1',
     '[id]': 'ctx.listId()',
-    '[attr.aria-labelledby]': 'labelledBy()',
     '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.aria-multiselectable]': 'ctx.multiple() ? "true" : null',
   },

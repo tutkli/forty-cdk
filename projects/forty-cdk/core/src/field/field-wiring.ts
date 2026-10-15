@@ -6,6 +6,10 @@ import {
   contributeDescribedBy,
   type DescribedByContribution,
 } from '../host-attributes/described-by-owner';
+import {
+  claimReplacedAttribute,
+  type ReplacedAttributeClaim,
+} from '../host-attributes/replaced-attribute-owner';
 
 /**
  * A form control's contribution to its surrounding `[forField]`. The control
@@ -177,14 +181,6 @@ export const FOR_FIELD_CONTEXT = new InjectionToken<ForFieldContext | null>('FOR
 
 const INTERACTIVE_CONTENT = 'a[href], button, input, select, textarea, summary, [tabindex]';
 
-function applyAttr(el: HTMLElement, name: string, value: string | null): void {
-  if (value === null) {
-    el.removeAttribute(name);
-  } else if (el.getAttribute(name) !== value) {
-    el.setAttribute(name, value);
-  }
-}
-
 /**
  * Wires the calling directive's host element to a surrounding `[forField]`,
  * if one exists. When there is no ancestor field this is a near-zero-cost
@@ -199,7 +195,9 @@ function applyAttr(el: HTMLElement, name: string, value: string | null): void {
  *   the target, kept in sync via a single `effect`. A **static**
  *   `aria-labelledby` / `aria-errormessage` the consumer wrote on the target
  *   **replaces** the field's value (a name has one owner) and is restored
- *   verbatim on teardown, so the field never erases or overrides it;
+ *   verbatim on teardown, so the field never erases or overrides it. When
+ *   another library piece also names the target, the one registered first
+ *   keeps the attribute, and dev mode warns;
  * - **composes** `aria-describedby`: any value the consumer set statically on
  *   the target is captured on first wiring and preserved, with the field's own
  *   description / error ids appended after it — so a `aria-describedby="hint"`
@@ -237,9 +235,7 @@ export function injectFieldWiring(handle: Omit<FieldControlHandle, 'host'> = {})
   const adopted = handle.adopted;
   let previousTarget: HTMLElement | null = null;
   let ownsId = false;
-  let consumerLabelledBy: string | null = null;
-  let describedBy: DescribedByContribution | null = null;
-  let consumerErrorMessage: string | null = null;
+  let association: FieldAssociation | null = null;
 
   effect(() => {
     // Resolve the wiring target: the nominated focusable element when a
@@ -250,16 +246,11 @@ export function injectFieldWiring(handle: Omit<FieldControlHandle, 'host'> = {})
 
     if (previousTarget !== target) {
       if (previousTarget) {
-        clearFieldAttrs(previousTarget, ownsId, field.controlId(), {
-          labelledBy: consumerLabelledBy,
-          errorMessage: consumerErrorMessage,
-        });
-        describedBy?.release();
+        releaseTarget(previousTarget, ownsId, field.controlId());
         ownsId = false;
       }
-      consumerLabelledBy = target?.getAttribute('aria-labelledby') || null;
-      describedBy = target ? contributeDescribedBy(target, () => field.describedBy()) : null;
-      consumerErrorMessage = target?.getAttribute('aria-errormessage') || null;
+      association?.release();
+      association = target ? associate(target, field) : null;
       previousTarget = target;
     }
 
@@ -271,43 +262,45 @@ export function injectFieldWiring(handle: Omit<FieldControlHandle, 'host'> = {})
       target.setAttribute('id', field.controlId());
       ownsId = true;
     }
-    applyAttr(target, 'aria-labelledby', consumerLabelledBy ?? field.labelledBy());
-    describedBy?.write();
-    applyAttr(target, 'aria-errormessage', consumerErrorMessage ?? field.errorMessageId());
+    association?.write();
   });
 
   inject(DestroyRef).onDestroy(() => {
     if (previousTarget) {
-      clearFieldAttrs(previousTarget, ownsId, field.controlId(), {
-        labelledBy: consumerLabelledBy,
-        errorMessage: consumerErrorMessage,
-      });
+      releaseTarget(previousTarget, ownsId, field.controlId());
     }
-    describedBy?.release();
+    association?.release();
   });
 }
 
-interface ConsumerAssociation {
-  readonly labelledBy: string | null;
-  readonly errorMessage: string | null;
+interface FieldAssociation {
+  write(): void;
+  release(): void;
 }
 
 /**
- * Restores a previously-targeted element's `aria-labelledby` and
- * `aria-errormessage` to the consumer's captured values (removing each one
- * the consumer never set), and drops the field-owned `id` when this helper set
- * it. Symmetric with the migration-cleanup branch so
- * an arbitrary foreign `labelledElement` is left clean once the control is
- * destroyed or the target migrates.
+ * Claims the target's `aria-labelledby` and `aria-errormessage` and contributes
+ * to its `aria-describedby`, each through the attribute's per-element owner, so
+ * a consumer's static value and any other library piece's are kept.
  */
-function clearFieldAttrs(
-  target: HTMLElement,
-  ownsId: boolean,
-  controlId: string,
-  consumer: ConsumerAssociation,
-): void {
-  applyAttr(target, 'aria-labelledby', consumer.labelledBy);
-  applyAttr(target, 'aria-errormessage', consumer.errorMessage);
+function associate(target: HTMLElement, field: ForFieldContext): FieldAssociation {
+  const parts: ReadonlyArray<ReplacedAttributeClaim | DescribedByContribution> = [
+    claimReplacedAttribute(target, 'aria-labelledby', () => field.labelledBy()),
+    contributeDescribedBy(target, () => field.describedBy()),
+    claimReplacedAttribute(target, 'aria-errormessage', () => field.errorMessageId()),
+  ];
+  return {
+    write: () => parts.forEach((part) => part.write()),
+    release: () => parts.forEach((part) => part.release()),
+  };
+}
+
+/**
+ * Drops the field-owned `id` from a previously-targeted element when this
+ * helper set it, so an arbitrary foreign `labelledElement` is left clean once
+ * the control is destroyed or the target migrates.
+ */
+function releaseTarget(target: HTMLElement, ownsId: boolean, controlId: string): void {
   if (ownsId && target.getAttribute('id') === controlId) {
     target.removeAttribute('id');
   }

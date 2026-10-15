@@ -14,7 +14,6 @@ import { hostLabelledBy } from 'forty-cdk/core';
   exportAs: 'forListboxGroup',
   host: {
     role: 'group',
-    '[attr.aria-labelledby]': 'labelledBy()',
   },
 })
 export class ForListboxGroup {

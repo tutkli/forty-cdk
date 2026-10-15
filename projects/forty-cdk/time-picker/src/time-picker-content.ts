@@ -56,7 +56,6 @@ import { injectTimePickerContext } from './time-picker-context';
     role: 'listbox',
     tabindex: '-1',
     '[id]': 'ctx.overlay.contentId()',
-    '[attr.aria-labelledby]': 'labelledBy()',
     '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.aria-orientation]': 'ctx.orientation()',
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
