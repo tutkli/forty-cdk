@@ -28,9 +28,11 @@ import {
   assertDataStateContract,
   assertDismissibleLayerContract,
   assertFormControlContract,
+  assertNativeSubmissionContract,
   assertOverlayTriggerAriaContract,
   type DismissibleLayerMountOptions,
   type FormControlMountResult,
+  type NativeSubmissionHost,
 } from '../../src/test-utils/contract';
 import { assertTimeCapable, type FieldGranularity, type VetoableNativeEvent } from 'forty-cdk/core';
 import { type DateAdapter } from 'forty-cdk/date-adapter';
@@ -56,6 +58,7 @@ import {
   ForTimePickerTrigger,
 } from 'forty-cdk/time-picker';
 import { ForField, ForFieldDescription, ForFieldError, ForLabel } from 'forty-cdk/field';
+import { ForFieldset } from 'forty-cdk/fieldset';
 import { CalendarDate } from '@internationalized/date';
 import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized-date';
 import { pressKey, pressWithMouse } from 'forty-cdk/testing';
@@ -257,6 +260,60 @@ async function openPicker(r: R): Promise<void> {
   await flush(r.fixture);
 }
 
+@Component({
+  imports: [ForFieldset, ForDatePicker, ForDatePickerTrigger],
+  providers: [...provideNativeDateAdapter()],
+  template: `
+    <form>
+      <div forFieldset [disabled]="fieldsetDisabled()">
+        <div forDatePicker name="dob" [(value)]="value" ariaLabel="Date of birth">
+          <button forDatePickerTrigger>Pick</button>
+        </div>
+      </div>
+    </form>
+  `,
+})
+class DaySubmissionHost implements NativeSubmissionHost {
+  readonly value = signal<Date | null>(null);
+  readonly fieldsetDisabled = signal(false);
+  commit(): void {
+    this.value.set(new Date(2026, 11, 5));
+  }
+  clear(): void {
+    this.value.set(null);
+  }
+}
+
+@Component({
+  imports: [ForFieldset, ForDatePicker, ForDatePickerTrigger],
+  providers: [...provideNativeDateAdapter()],
+  template: `
+    <form>
+      <div forFieldset [disabled]="fieldsetDisabled()">
+        <div
+          forDatePicker
+          name="departure"
+          granularity="minute"
+          [(value)]="value"
+          ariaLabel="Departure"
+        >
+          <button forDatePickerTrigger>Pick</button>
+        </div>
+      </div>
+    </form>
+  `,
+})
+class MinuteSubmissionHost implements NativeSubmissionHost {
+  readonly value = signal<Date | null>(null);
+  readonly fieldsetDisabled = signal(false);
+  commit(): void {
+    this.value.set(new Date(2026, 11, 5, 14, 30));
+  }
+  clear(): void {
+    this.value.set(null);
+  }
+}
+
 describe('ForDatePicker', () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ['Date'] });
@@ -336,6 +393,16 @@ describe('ForDatePicker', () => {
     },
     { flags: ['disabled', 'readonly', 'required'] },
   );
+
+  assertNativeSubmissionContract(DaySubmissionHost, {
+    entries: [['dob', '2026-12-05']],
+    label: 'day',
+  });
+
+  assertNativeSubmissionContract(MinuteSubmissionHost, {
+    entries: [['departure', '2026-12-05T14:30']],
+    label: 'minute',
+  });
 
   assertOverlayTriggerAriaContract(
     {

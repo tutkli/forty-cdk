@@ -22,9 +22,12 @@ import {
 import {
   assertDataStateContract,
   assertFormControlContract,
+  assertNativeSubmissionContract,
   assertRovingTabindexContract,
   type FormControlMountResult,
+  type NativeSubmissionHost,
 } from '../../src/test-utils/contract';
+import { ForFieldset } from 'forty-cdk/fieldset';
 import { ForListbox } from './listbox';
 import { ForListboxGroup } from './listbox-group';
 import { ForListboxGroupLabel } from './listbox-group-label';
@@ -124,7 +127,43 @@ class ListboxFormControlHost {
   readonly isDirty = signal(false);
 }
 
+@Component({
+  imports: [ForFieldset, ForListbox],
+  template: `
+    <form>
+      <div forFieldset [disabled]="fieldsetDisabled()">
+        <div
+          forListbox
+          multiple
+          name="cities"
+          [(value)]="value"
+          [itemToFormValue]="toId"
+          ariaLabel="Cities"
+        ></div>
+      </div>
+    </form>
+  `,
+})
+class NativeSubmissionFixture implements NativeSubmissionHost {
+  readonly value = signal<readonly { readonly id: string }[]>([]);
+  readonly fieldsetDisabled = signal(false);
+  readonly toId = (item: { readonly id: string }): string => item.id;
+  commit(): void {
+    this.value.set([{ id: 'lis' }, { id: 'opo' }]);
+  }
+  clear(): void {
+    this.value.set([]);
+  }
+}
+
 describe('ForListbox', () => {
+  assertNativeSubmissionContract(NativeSubmissionFixture, {
+    entries: [
+      ['cities', 'lis'],
+      ['cities', 'opo'],
+    ],
+  });
+
   assertRovingTabindexContract(
     {
       mount: async () => {

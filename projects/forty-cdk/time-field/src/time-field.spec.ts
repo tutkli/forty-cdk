@@ -12,11 +12,14 @@ import {
 } from '../../src/test-utils';
 import {
   assertFormControlContract,
+  assertNativeSubmissionContract,
   assertRovingRemovalContract,
   type FormControlMountResult,
+  type NativeSubmissionHost,
 } from '../../src/test-utils/contract';
 import { NativeDateAdapter, provideNativeDateAdapter } from 'forty-cdk/shared';
 import { ForField, ForFieldDescription, ForLabel } from 'forty-cdk/field';
+import { ForFieldset } from 'forty-cdk/fieldset';
 import type { TimeSegmentType } from 'forty-cdk/core';
 import { pressKey } from 'forty-cdk/testing';
 import { ForTimeField } from './time-field';
@@ -107,6 +110,50 @@ class TimeFieldFormControlHost {
   readonly isInvalid = signal(false);
   readonly isTouched = signal(false);
   readonly isDirty = signal(false);
+}
+
+@Component({
+  imports: [ForFieldset, ForTimeField],
+  providers: [...provideNativeDateAdapter()],
+  template: `
+    <form>
+      <div forFieldset [disabled]="fieldsetDisabled()">
+        <div forTimeField name="alarm" [(value)]="value" ariaLabel="Alarm"></div>
+      </div>
+    </form>
+  `,
+})
+class MinuteSubmissionHost implements NativeSubmissionHost {
+  readonly value = signal<Date | null>(null);
+  readonly fieldsetDisabled = signal(false);
+  commit(): void {
+    this.value.set(new Date(2026, 11, 5, 14, 30, 15));
+  }
+  clear(): void {
+    this.value.set(null);
+  }
+}
+
+@Component({
+  imports: [ForFieldset, ForTimeField],
+  providers: [...provideNativeDateAdapter()],
+  template: `
+    <form>
+      <div forFieldset [disabled]="fieldsetDisabled()">
+        <div forTimeField name="lap" granularity="second" [(value)]="value" ariaLabel="Lap"></div>
+      </div>
+    </form>
+  `,
+})
+class SecondSubmissionHost implements NativeSubmissionHost {
+  readonly value = signal<Date | null>(null);
+  readonly fieldsetDisabled = signal(false);
+  commit(): void {
+    this.value.set(new Date(2026, 11, 5, 14, 30, 15));
+  }
+  clear(): void {
+    this.value.set(null);
+  }
 }
 
 type R = RenderResult<Host>;
@@ -212,6 +259,16 @@ describe('ForTimeField', () => {
       roleSupportsAriaRequired: false,
     },
   );
+
+  assertNativeSubmissionContract(MinuteSubmissionHost, {
+    entries: [['alarm', '14:30']],
+    label: 'minute',
+  });
+
+  assertNativeSubmissionContract(SecondSubmissionHost, {
+    entries: [['lap', '14:30:15']],
+    label: 'second',
+  });
 
   describe('focus (focus-on-error)', () => {
     it('moves focus to the first segment, not the group host', async () => {

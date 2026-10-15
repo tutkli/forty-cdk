@@ -9,9 +9,12 @@ import { flush, renderHost } from '../../src/test-utils';
 import {
   assertDataStateContract,
   assertFormControlContract,
+  assertNativeSubmissionContract,
   assertRovingTabindexContract,
   type FormControlMountResult,
+  type NativeSubmissionHost,
 } from '../../src/test-utils/contract';
+import { ForFieldset } from 'forty-cdk/fieldset';
 import { provideForToggleDefaults } from 'forty-cdk/defaults';
 import { ForToggleGroup } from './toggle-group';
 import { ForToggleGroupItem } from './toggle-group-item';
@@ -90,7 +93,38 @@ class ToggleGroupFormControlHost {
 const toggleItems = (host: HTMLElement): HTMLElement[] =>
   Array.from(host.querySelectorAll<HTMLElement>('[forToggleGroupItem]'));
 
+@Component({
+  imports: [ForFieldset, ForToggleGroup, ForToggleGroupItem],
+  template: `
+    <form>
+      <div forFieldset [disabled]="fieldsetDisabled()">
+        <div forToggleGroup name="formats" multiple [(value)]="value">
+          <button forToggleGroupItem value="bold">Bold</button>
+          <button forToggleGroupItem value="italic">Italic</button>
+        </div>
+      </div>
+    </form>
+  `,
+})
+class NativeSubmissionFixture implements NativeSubmissionHost {
+  readonly value = signal<readonly string[]>([]);
+  readonly fieldsetDisabled = signal(false);
+  commit(): void {
+    this.value.set(['bold', 'italic']);
+  }
+  clear(): void {
+    this.value.set([]);
+  }
+}
+
 describe('ForToggleGroup', () => {
+  assertNativeSubmissionContract(NativeSubmissionFixture, {
+    entries: [
+      ['formats', 'bold'],
+      ['formats', 'italic'],
+    ],
+  });
+
   assertDataStateContract({
     vocabulary: ['checked', 'unchecked'],
     mount: () => {

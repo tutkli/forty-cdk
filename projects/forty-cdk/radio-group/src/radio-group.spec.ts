@@ -8,10 +8,13 @@ import { flush, renderHost } from '../../src/test-utils';
 import {
   assertDataStateContract,
   assertFormControlContract,
+  assertNativeSubmissionContract,
   assertRovingTabindexContract,
   assertSingleValueModelContract,
   type FormControlMountResult,
+  type NativeSubmissionHost,
 } from '../../src/test-utils/contract';
+import { ForFieldset } from 'forty-cdk/fieldset';
 import { FOR_RADIO, ForRadio } from './radio';
 import { ForRadioGroup } from './radio-group';
 import { ForRadioIndicator } from './radio-indicator';
@@ -110,7 +113,35 @@ const groupOf = (host: HTMLElement) => host.querySelector<HTMLElement>('[forRadi
 const radioItems = (host: HTMLElement): HTMLElement[] =>
   Array.from(host.querySelectorAll<HTMLElement>('[forRadio]'));
 
+@Component({
+  imports: [ForFieldset, ForRadioGroup, ForRadio],
+  template: `
+    <form>
+      <div forFieldset [disabled]="fieldsetDisabled()">
+        <div forRadioGroup name="color" [(value)]="value">
+          <button forRadio value="red">Red</button>
+          <button forRadio value="green">Green</button>
+        </div>
+      </div>
+    </form>
+  `,
+})
+class NativeSubmissionFixture implements NativeSubmissionHost {
+  readonly value = signal<string | null>(null);
+  readonly fieldsetDisabled = signal(false);
+  commit(): void {
+    this.value.set('green');
+  }
+  clear(): void {
+    this.value.set(null);
+  }
+}
+
 describe('ForRadioGroup', () => {
+  assertNativeSubmissionContract(NativeSubmissionFixture, {
+    entries: [['color', 'green']],
+  });
+
   // The `role="radiogroup"` root is a non-focusable container — focus lives
   // on the roving radios — so it omits the `disabled` flag, whose assertion
   // is about the control itself staying focusable. `aria-readonly` IS

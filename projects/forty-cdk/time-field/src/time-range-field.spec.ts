@@ -12,11 +12,14 @@ import {
 } from '../../src/test-utils';
 import {
   assertFormControlContract,
+  assertNativeSubmissionContract,
   assertRovingRemovalContract,
   type FormControlMountResult,
+  type NativeSubmissionHost,
 } from '../../src/test-utils/contract';
 import { type DateRange, NativeDateAdapter, provideNativeDateAdapter } from 'forty-cdk/shared';
 import { ForField, ForFieldDescription, ForLabel } from 'forty-cdk/field';
+import { ForFieldset } from 'forty-cdk/fieldset';
 import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized-date';
 import { pressKey } from 'forty-cdk/testing';
 import { ForTimeRangeField } from './time-range-field';
@@ -153,6 +156,71 @@ class TimeRangeFieldFormControlHost {
   readonly isDirty = signal(false);
 }
 
+@Component({
+  imports: [ForFieldset, ForTimeRangeField, ForTimeRangeFieldStart, ForTimeRangeFieldEnd],
+  providers: [...provideNativeDateAdapter()],
+  template: `
+    <form>
+      <div forFieldset [disabled]="fieldsetDisabled()">
+        <div
+          forTimeRangeField
+          name="shift"
+          granularity="second"
+          [(value)]="value"
+          ariaLabel="Shift"
+        >
+          <div forTimeRangeFieldStart></div>
+          <div forTimeRangeFieldEnd></div>
+        </div>
+      </div>
+    </form>
+  `,
+})
+class SecondSubmissionHost implements NativeSubmissionHost {
+  readonly value = signal<DateRange<Date> | null>(null);
+  readonly fieldsetDisabled = signal(false);
+  commit(): void {
+    this.value.set({
+      start: new Date(2026, 11, 5, 9, 0, 30),
+      end: new Date(2026, 11, 5, 17, 15, 45),
+    });
+  }
+  clear(): void {
+    this.value.set(null);
+  }
+}
+
+@Component({
+  imports: [ForFieldset, ForTimeRangeField, ForTimeRangeFieldStart, ForTimeRangeFieldEnd],
+  providers: [...provideNativeDateAdapter()],
+  template: `
+    <form>
+      <div forFieldset [disabled]="fieldsetDisabled()">
+        <div
+          forTimeRangeField
+          name="night"
+          [allowOvernight]="true"
+          [(value)]="value"
+          ariaLabel="Night shift"
+        >
+          <div forTimeRangeFieldStart></div>
+          <div forTimeRangeFieldEnd></div>
+        </div>
+      </div>
+    </form>
+  `,
+})
+class OvernightSubmissionHost implements NativeSubmissionHost {
+  readonly value = signal<DateRange<Date> | null>(null);
+  readonly fieldsetDisabled = signal(false);
+  commit(): void {
+    this.value.set({ start: new Date(2026, 11, 5, 22, 0), end: new Date(2026, 11, 6, 6, 0) });
+  }
+  clear(): void {
+    this.value.set(null);
+  }
+}
+
 type R = RenderResult<Host>;
 
 const root = (r: R) => r.query('[forTimeRangeField]')!;
@@ -232,6 +300,22 @@ describe('ForTimeRangeField', () => {
       roleSupportsAriaRequired: false,
     },
   );
+
+  assertNativeSubmissionContract(SecondSubmissionHost, {
+    entries: [
+      ['shift-start', '09:00:30'],
+      ['shift-end', '17:15:45'],
+    ],
+    label: 'second',
+  });
+
+  assertNativeSubmissionContract(OvernightSubmissionHost, {
+    entries: [
+      ['night-start', '22:00'],
+      ['night-end', '06:00'],
+    ],
+    label: 'overnight',
+  });
 
   describe('focus (focus-on-error)', () => {
     const fieldOf = (r: R) =>

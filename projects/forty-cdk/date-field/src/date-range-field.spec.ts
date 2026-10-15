@@ -12,10 +12,13 @@ import {
 } from '../../src/test-utils';
 import {
   assertFormControlContract,
+  assertNativeSubmissionContract,
   type FormControlMountResult,
+  type NativeSubmissionHost,
 } from '../../src/test-utils/contract';
 import { type DateRange, NativeDateAdapter, provideNativeDateAdapter } from 'forty-cdk/shared';
 import { ForField, ForFieldDescription, ForLabel } from 'forty-cdk/field';
+import { ForFieldset } from 'forty-cdk/fieldset';
 import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized-date';
 import { pressKey } from 'forty-cdk/testing';
 import { ForDateRangeField } from './date-range-field';
@@ -146,6 +149,56 @@ class DateRangeFieldFormControlHost {
   readonly isDirty = signal(false);
 }
 
+@Component({
+  imports: [ForFieldset, ForDateRangeField, ForDateRangeFieldStart, ForDateRangeFieldEnd],
+  providers: [...provideNativeDateAdapter()],
+  template: `
+    <form>
+      <div forFieldset [disabled]="fieldsetDisabled()">
+        <div forDateRangeField name="stay" [(value)]="value" ariaLabel="Stay">
+          <div forDateRangeFieldStart></div>
+          <div forDateRangeFieldEnd></div>
+        </div>
+      </div>
+    </form>
+  `,
+})
+class DaySubmissionHost implements NativeSubmissionHost {
+  readonly value = signal<DateRange<Date> | null>(null);
+  readonly fieldsetDisabled = signal(false);
+  commit(): void {
+    this.value.set({ start: new Date(2026, 11, 5), end: new Date(2026, 11, 9) });
+  }
+  clear(): void {
+    this.value.set(null);
+  }
+}
+
+@Component({
+  imports: [ForFieldset, ForDateRangeField, ForDateRangeFieldStart, ForDateRangeFieldEnd],
+  providers: [...provideNativeDateAdapter()],
+  template: `
+    <form>
+      <div forFieldset [disabled]="fieldsetDisabled()">
+        <div forDateRangeField name="trip" granularity="minute" [(value)]="value" ariaLabel="Trip">
+          <div forDateRangeFieldStart></div>
+          <div forDateRangeFieldEnd></div>
+        </div>
+      </div>
+    </form>
+  `,
+})
+class MinuteSubmissionHost implements NativeSubmissionHost {
+  readonly value = signal<DateRange<Date> | null>(null);
+  readonly fieldsetDisabled = signal(false);
+  commit(): void {
+    this.value.set({ start: new Date(2026, 11, 5, 9, 15), end: new Date(2026, 11, 9, 18, 45) });
+  }
+  clear(): void {
+    this.value.set(null);
+  }
+}
+
 type R = RenderResult<Host>;
 
 const root = (r: R) => r.query('[forDateRangeField]')!;
@@ -212,6 +265,22 @@ describe('ForDateRangeField', () => {
       roleSupportsAriaRequired: false,
     },
   );
+
+  assertNativeSubmissionContract(DaySubmissionHost, {
+    entries: [
+      ['stay-start', '2026-12-05'],
+      ['stay-end', '2026-12-09'],
+    ],
+    label: 'day',
+  });
+
+  assertNativeSubmissionContract(MinuteSubmissionHost, {
+    entries: [
+      ['trip-start', '2026-12-05T09:15'],
+      ['trip-end', '2026-12-09T18:45'],
+    ],
+    label: 'minute',
+  });
 
   describe('focus (focus-on-error)', () => {
     const fieldOf = (r: R) =>

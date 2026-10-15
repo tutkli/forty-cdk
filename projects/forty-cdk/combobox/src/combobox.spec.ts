@@ -15,9 +15,12 @@ import {
   assertDataStateContract,
   assertDismissibleLayerContract,
   assertFormControlContract,
+  assertNativeSubmissionContract,
   assertOverlayTriggerAriaContract,
   type FormControlMountResult,
+  type NativeSubmissionHost,
 } from '../../src/test-utils/contract';
+import { ForFieldset } from 'forty-cdk/fieldset';
 import { ForField, ForFieldDescription, ForFieldError, ForLabel } from 'forty-cdk/field';
 import { ForDialog } from 'forty-cdk/dialog';
 import { pressKey, pressWithMouse } from 'forty-cdk/testing';
@@ -206,7 +209,35 @@ function typeInto(input: HTMLInputElement, text: string): void {
   input.dispatchEvent(new InputEvent('input', { inputType: 'insertText', data: text }));
 }
 
+@Component({
+  imports: [ForFieldset, ForCombobox, ForComboboxInput],
+  template: `
+    <form>
+      <div forFieldset [disabled]="fieldsetDisabled()">
+        <div forCombobox name="fruit" [(value)]="value" [itemToFormValue]="toId">
+          <input forComboboxInput aria-label="Fruit" />
+        </div>
+      </div>
+    </form>
+  `,
+})
+class NativeSubmissionFixture implements NativeSubmissionHost {
+  readonly value = signal<readonly { readonly id: string }[]>([]);
+  readonly fieldsetDisabled = signal(false);
+  readonly toId = (item: { readonly id: string }): string => item.id;
+  commit(): void {
+    this.value.set([{ id: 'apple' }]);
+  }
+  clear(): void {
+    this.value.set([]);
+  }
+}
+
 describe('ForCombobox', () => {
+  assertNativeSubmissionContract(NativeSubmissionFixture, {
+    entries: [['fruit', 'apple']],
+  });
+
   describe('focus (focus-on-error)', () => {
     it('moves focus to the input, not the wrapper host', async () => {
       const { el, fixture, flush } = renderHost(ComboboxHost);

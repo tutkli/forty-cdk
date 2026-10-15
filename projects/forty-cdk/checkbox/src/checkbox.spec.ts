@@ -6,8 +6,11 @@ import { pressKey } from 'forty-cdk/testing';
 import { renderHost } from '../../src/test-utils/render';
 import {
   assertFormControlContract,
+  assertNativeSubmissionContract,
   type FormControlMountResult,
+  type NativeSubmissionHost,
 } from '../../src/test-utils/contract';
+import { ForFieldset } from 'forty-cdk/fieldset';
 import { FOR_CHECKBOX, ForCheckbox } from './checkbox';
 import {
   FOR_CHECKBOX_HOST_DIRECTIVE_INPUTS,
@@ -62,7 +65,32 @@ const checkboxOf = (host: HTMLElement) => host.querySelector<HTMLButtonElement>(
 
 const divCheckboxOf = (host: HTMLElement) => host.querySelector<HTMLElement>('[forCheckbox]')!;
 
+@Component({
+  imports: [ForFieldset, ForCheckbox],
+  template: `
+    <form>
+      <div forFieldset [disabled]="fieldsetDisabled()">
+        <button forCheckbox name="terms" [(checked)]="value">Terms</button>
+      </div>
+    </form>
+  `,
+})
+class NativeSubmissionFixture implements NativeSubmissionHost {
+  readonly value = signal<boolean>(false);
+  readonly fieldsetDisabled = signal(false);
+  commit(): void {
+    this.value.set(true);
+  }
+  clear(): void {
+    this.value.set(false);
+  }
+}
+
 describe('ForCheckbox', () => {
+  assertNativeSubmissionContract(NativeSubmissionFixture, {
+    entries: [['terms', 'on']],
+  });
+
   describe('static accessibility', () => {
     it('sets role="checkbox", type="button", and starts unchecked', () => {
       const { el } = renderHost(CheckboxHost);

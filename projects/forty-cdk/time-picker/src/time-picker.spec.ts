@@ -21,14 +21,17 @@ import {
   assertDataStateContract,
   assertDismissibleLayerContract,
   assertFormControlContract,
+  assertNativeSubmissionContract,
   assertOverlayTriggerAriaContract,
   type DismissibleLayerMountOptions,
   type FormControlMountResult,
+  type NativeSubmissionHost,
 } from '../../src/test-utils/contract';
 import { type VetoableNativeEvent } from 'forty-cdk/core';
 import { type DateAdapter, FOR_DATE_ADAPTER } from 'forty-cdk/date-adapter';
 import { provideNativeDateAdapter } from 'forty-cdk/shared';
 import { ForField, ForFieldError, ForLabel } from 'forty-cdk/field';
+import { ForFieldset } from 'forty-cdk/fieldset';
 import { ForTimeField, ForTimeFieldLiteral, ForTimeFieldSegment } from 'forty-cdk/time-field';
 import { pressKey, pressWithMouse } from 'forty-cdk/testing';
 import {
@@ -191,6 +194,54 @@ class TimePickerFormControlHost {
   readonly isRequired = signal(false);
 }
 
+@Component({
+  imports: [ForFieldset, ForTimePicker, ForTimePickerTrigger],
+  providers: [...provideNativeDateAdapter()],
+  template: `
+    <form>
+      <div forFieldset [disabled]="fieldsetDisabled()">
+        <div forTimePicker name="alarm" [(value)]="value">
+          <button forTimePickerTrigger>Pick</button>
+        </div>
+      </div>
+    </form>
+  `,
+})
+class MinuteSubmissionHost implements NativeSubmissionHost {
+  readonly value = signal<Date | null>(null);
+  readonly fieldsetDisabled = signal(false);
+  commit(): void {
+    this.value.set(new Date(2026, 11, 5, 14, 30, 15));
+  }
+  clear(): void {
+    this.value.set(null);
+  }
+}
+
+@Component({
+  imports: [ForFieldset, ForTimePicker, ForTimePickerTrigger],
+  providers: [...provideNativeDateAdapter()],
+  template: `
+    <form>
+      <div forFieldset [disabled]="fieldsetDisabled()">
+        <div forTimePicker name="lap" granularity="second" [(value)]="value">
+          <button forTimePickerTrigger>Pick</button>
+        </div>
+      </div>
+    </form>
+  `,
+})
+class SecondSubmissionHost implements NativeSubmissionHost {
+  readonly value = signal<Date | null>(null);
+  readonly fieldsetDisabled = signal(false);
+  commit(): void {
+    this.value.set(new Date(2026, 11, 5, 14, 30, 15));
+  }
+  clear(): void {
+    this.value.set(null);
+  }
+}
+
 function getSlot(slotId: string): HTMLElement | null {
   return document.querySelector<HTMLElement>(`[data-testid="slot-${slotId}"]`);
 }
@@ -291,6 +342,16 @@ describe('ForTimePicker', () => {
     },
     { flags: ['disabled', 'readonly', 'required'] },
   );
+
+  assertNativeSubmissionContract(MinuteSubmissionHost, {
+    entries: [['alarm', '14:30']],
+    label: 'minute',
+  });
+
+  assertNativeSubmissionContract(SecondSubmissionHost, {
+    entries: [['lap', '14:30:15']],
+    label: 'second',
+  });
 
   assertOverlayTriggerAriaContract(
     {

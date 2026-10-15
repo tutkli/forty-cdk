@@ -19,8 +19,10 @@ import {
 } from '../../src/test-utils';
 import {
   assertFormControlContract,
+  assertNativeSubmissionContract,
   assertOverlayTriggerAriaContract,
   type FormControlMountResult,
+  type NativeSubmissionHost,
 } from '../../src/test-utils/contract';
 import {
   FOR_CALENDAR_CONTEXT,
@@ -30,6 +32,7 @@ import {
 } from 'forty-cdk/calendar';
 import { type DateRange, NativeDateAdapter, provideNativeDateAdapter } from 'forty-cdk/shared';
 import { ForField, ForFieldDescription, ForFieldError, ForLabel } from 'forty-cdk/field';
+import { ForFieldset } from 'forty-cdk/fieldset';
 import { pressKey } from 'forty-cdk/testing';
 
 import { ForDatePickerContent } from './date-picker-content';
@@ -134,6 +137,30 @@ class RangeFormControlHost {
   readonly isDisabled = signal(false);
   readonly isReadonly = signal(false);
   readonly isRequired = signal(false);
+}
+
+@Component({
+  imports: [ForFieldset, ForDateRangePicker, ForDatePickerTrigger],
+  providers: [...provideNativeDateAdapter()],
+  template: `
+    <form>
+      <div forFieldset [disabled]="fieldsetDisabled()">
+        <div forDateRangePicker name="stay" [(value)]="value" ariaLabel="Stay">
+          <button forDatePickerTrigger>Pick</button>
+        </div>
+      </div>
+    </form>
+  `,
+})
+class RangeSubmissionHost implements NativeSubmissionHost {
+  readonly value = signal<DateRange<Date> | null>(null);
+  readonly fieldsetDisabled = signal(false);
+  commit(): void {
+    this.value.set({ start: new Date(2026, 5, 10), end: new Date(2026, 5, 15) });
+  }
+  clear(): void {
+    this.value.set(null);
+  }
 }
 
 type R = RenderResult<Host>;
@@ -773,24 +800,11 @@ describe('ForDateRangePicker', () => {
     });
   });
 
-  describe('native hidden inputs', () => {
-    it('mirrors the committed range into <name>-start / <name>-end inputs', async () => {
-      const r = renderHost(Host);
-      r.instance.value.set({ start: new Date(2026, 5, 10), end: new Date(2026, 5, 15) });
-      await flush(r.fixture);
-
-      const start = document.querySelector<HTMLInputElement>('input[name="stay-start"]');
-      const end = document.querySelector<HTMLInputElement>('input[name="stay-end"]');
-      expect(start!.value).toBe('2026-06-10');
-      expect(end!.value).toBe('2026-06-15');
-    });
-
-    it('mounts no hidden inputs while the range is null', async () => {
-      const r = renderHost(Host);
-      await flush(r.fixture);
-      expect(document.querySelector('input[name="stay-start"]')).toBeNull();
-      expect(document.querySelector('input[name="stay-end"]')).toBeNull();
-    });
+  assertNativeSubmissionContract(RangeSubmissionHost, {
+    entries: [
+      ['stay-start', '2026-06-10'],
+      ['stay-end', '2026-06-15'],
+    ],
   });
 
   describe('Signal Forms via [formField]', () => {
