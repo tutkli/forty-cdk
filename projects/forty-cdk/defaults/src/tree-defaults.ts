@@ -12,7 +12,9 @@ export interface ForTreeDefaults {
   /**
    * Single-mode only: when `true`, every keyboard focus move (arrow
    * navigation, entering a child, leaving to the parent, a typeahead match)
-   * also selects the focused node. APG calls this optional and recommends caution — leave `false`
+   * also selects the focused node. A tree with `multiple` or
+   * `selectionMode="checkbox"` ignores it, so a scope default never replaces
+   * its checked set. APG calls this optional and recommends caution — leave `false`
    * unless the UX truly benefits from selection following focus.
    */
   selectionFollowsFocus: boolean;
