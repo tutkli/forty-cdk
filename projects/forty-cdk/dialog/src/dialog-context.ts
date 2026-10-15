@@ -4,12 +4,7 @@ import { assertRootContext, orphanContextError } from 'forty-cdk/core';
 import { type ModalSurfaceBackdropContext } from 'forty-cdk/core-overlay';
 
 export type ForDialogCloseReason =
-  | 'escape'
-  | 'backdrop'
-  | 'pointerDownOutside'
-  | 'focusOutside'
-  | 'closeButton'
-  | 'programmatic';
+  'escape' | 'backdrop' | 'pointerDownOutside' | 'focusOutside' | 'closeButton' | 'programmatic';
 
 /**
  * Coordination contract owned by `ForDialog` (declarative) or by the

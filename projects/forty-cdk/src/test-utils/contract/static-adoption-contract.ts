@@ -75,11 +75,7 @@
  * library id not already present); the other four **replace**.
  */
 export type StaticAdoptionChannel =
-  | 'id'
-  | 'for'
-  | 'aria-label'
-  | 'aria-labelledby'
-  | 'aria-describedby';
+  'id' | 'for' | 'aria-label' | 'aria-labelledby' | 'aria-describedby';
 
 /**
  * The core seams that implement adoption. A claim names the one its piece
@@ -113,10 +109,7 @@ export type StaticAdoptionSeam =
  *     itself not adopted.
  */
 export type StaticAdoptionFallback =
-  | string
-  | null
-  | { readonly generated: string }
-  | { readonly pairs: string };
+  string | null | { readonly generated: string } | { readonly pairs: string };
 
 export interface StaticAdoptionClaim {
   /** The piece's key in {@link StaticAdoptionMountResult.pieces}. */

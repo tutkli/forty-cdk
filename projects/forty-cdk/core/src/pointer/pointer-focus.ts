@@ -24,7 +24,7 @@ export function mouseFocusTarget(
   node: Node | null,
   boundary: Element | null = null,
 ): HTMLElement | null {
-  for (let current = node; current !== null && current !== boundary; ) {
+  for (let current = node; current !== null && current !== boundary;) {
     if (current.nodeType === current.ELEMENT_NODE && isMouseFocusable(current as Element)) {
       return current as HTMLElement;
     }

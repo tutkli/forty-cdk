@@ -67,8 +67,7 @@ export interface ForDrawerEntry extends OverlayManagerEntry {
   readonly pointerDownOutside: ((e: VetoableNativeEvent<PointerEvent>) => void) | undefined;
   readonly focusOutside: ((e: VetoableNativeEvent<FocusEvent>) => void) | undefined;
   readonly interactOutside:
-    | ((e: VetoableNativeEvent<PointerEvent | FocusEvent>) => void)
-    | undefined;
+    ((e: VetoableNativeEvent<PointerEvent | FocusEvent>) => void) | undefined;
   readonly swipeStart: ((e: ForDrawerSwipeEvent) => void) | undefined;
   readonly swipeMove: ((e: ForDrawerSwipeEvent) => void) | undefined;
   readonly swipeEnd: ((e: ForDrawerSwipeEndEvent) => void) | undefined;

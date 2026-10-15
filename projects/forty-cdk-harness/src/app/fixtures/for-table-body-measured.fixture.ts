@@ -33,12 +33,10 @@ interface Row {
 }
 
 function buildRows(): readonly Row[] {
-  return Array.from(
-    { length: TOTAL },
-    (_, i): Row =>
-      i % GROUP_EVERY === 0
-        ? { id: i, kind: 'header', label: `Group ${i / GROUP_EVERY}` }
-        : { id: i, kind: 'data', label: `Person ${i}` },
+  return Array.from({ length: TOTAL }, (_, i): Row =>
+    i % GROUP_EVERY === 0
+      ? { id: i, kind: 'header', label: `Group ${i / GROUP_EVERY}` }
+      : { id: i, kind: 'data', label: `Person ${i}` },
   );
 }
 

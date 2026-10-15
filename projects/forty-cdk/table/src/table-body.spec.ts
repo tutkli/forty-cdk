@@ -2186,9 +2186,8 @@ describe('ForTableBody', () => {
 
     it('applies rowAttrs and removes attributes dropped from a later map', async () => {
       const { instance, queryAll, fixture, flush } = renderHost(RowInteractionHost);
-      instance.rowAttrs.set(
-        (row): Record<string, string | null> =>
-          row.id === 1 ? { 'data-open': '', 'aria-current': 'true' } : {},
+      instance.rowAttrs.set((row): Record<string, string | null> =>
+        row.id === 1 ? { 'data-open': '', 'aria-current': 'true' } : {},
       );
       await flush();
       let rows = queryAll('[forTableRow]');
@@ -2207,8 +2206,8 @@ describe('ForTableBody', () => {
     it('applies rowAttrs in grid mode too (not scoped to table mode)', async () => {
       const { instance, queryAll, flush } = renderHost(RowInteractionHost);
       instance.mode.set('grid');
-      instance.rowAttrs.set(
-        (row): Record<string, string | null> => (row.id === 1 ? { 'data-open': '' } : {}),
+      instance.rowAttrs.set((row): Record<string, string | null> =>
+        row.id === 1 ? { 'data-open': '' } : {},
       );
       await flush();
       const rows = queryAll('[forTableRow]');

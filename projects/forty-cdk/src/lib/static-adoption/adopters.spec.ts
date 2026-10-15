@@ -236,7 +236,7 @@ function idDelegates(): Definition[] {
     .flatMap((code) => definitions(code))
     .filter(({ name }) => /^#?(?:register|adopt)/.test(name));
   const delegates: Definition[] = [];
-  for (let grew = true; grew; ) {
+  for (let grew = true; grew;) {
     grew = false;
     for (const candidate of candidates) {
       if (delegates.includes(candidate)) {

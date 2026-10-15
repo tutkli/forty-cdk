@@ -12,12 +12,7 @@ export type ForToastVariant = 'info' | 'success' | 'warning' | 'error';
 export type ForToastSwipeDirection = SwipeDirection | readonly SwipeDirection[] | null;
 
 export type ForToastCloseReason =
-  | 'auto'
-  | 'manual'
-  | 'action'
-  | 'escape'
-  | 'programmatic'
-  | 'swipe';
+  'auto' | 'manual' | 'action' | 'escape' | 'programmatic' | 'swipe';
 
 /**
  * Region a toast belongs to. Toasts route to the `<for-toast-viewport>` whose

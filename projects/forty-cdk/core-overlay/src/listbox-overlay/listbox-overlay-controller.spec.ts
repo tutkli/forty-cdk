@@ -23,12 +23,7 @@ interface FakeHandle extends ListboxOverlayOptionHandle {
 
 type Focus = 'first' | 'last' | 'selected';
 type CloseReason =
-  | 'escape'
-  | 'pointerDownOutside'
-  | 'focusOutside'
-  | 'select'
-  | 'tab'
-  | 'programmatic';
+  'escape' | 'pointerDownOutside' | 'focusOutside' | 'select' | 'tab' | 'programmatic';
 
 function makeHandle(
   parent: HTMLElement,
