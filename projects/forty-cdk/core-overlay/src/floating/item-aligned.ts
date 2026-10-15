@@ -6,6 +6,10 @@ import {
   type ReferenceElement,
 } from '@floating-ui/dom';
 
+import {
+  type FloatingCustomProperties,
+  injectFloatingCustomProperties,
+} from './floating-custom-properties';
 import { runPositioning } from './run-positioning';
 
 export interface ItemAlignedConfig {
@@ -210,6 +214,7 @@ function itemAligned(
  * treats them as no-ops.
  */
 export function injectItemAlignedPositioner(config: ItemAlignedConfig): void {
+  const vars = injectFloatingCustomProperties();
   runPositioning({
     reference: config.reference,
     open: config.open,
@@ -235,18 +240,12 @@ export function injectItemAlignedPositioner(config: ItemAlignedConfig): void {
           el.dataset['position'] = 'item-aligned';
 
           const triggerRect = reference.getBoundingClientRect();
-          el.style.setProperty('--for-floating-anchor-width', `${Math.round(triggerRect.width)}px`);
-          el.style.setProperty(
-            '--for-floating-anchor-height',
-            `${Math.round(triggerRect.height)}px`,
-          );
+          el.style.setProperty(vars.anchorWidth, `${Math.round(triggerRect.width)}px`);
+          el.style.setProperty(vars.anchorHeight, `${Math.round(triggerRect.height)}px`);
 
           const innerHeight = el.ownerDocument.defaultView?.innerHeight ?? 0;
           const availableHeight = Math.max(0, innerHeight - 2 * collisionPadding);
-          el.style.setProperty(
-            '--for-floating-available-height',
-            `${Math.round(availableHeight)}px`,
-          );
+          el.style.setProperty(vars.availableHeight, `${Math.round(availableHeight)}px`);
 
           if (!initialScrollDone) {
             initialScrollDone = true;
@@ -257,7 +256,7 @@ export function injectItemAlignedPositioner(config: ItemAlignedConfig): void {
           }
         },
         reset() {
-          resetItemAlignedStyles(el);
+          resetItemAlignedStyles(el, vars);
         },
       };
     },
@@ -276,10 +275,10 @@ export function injectItemAlignedPositioner(config: ItemAlignedConfig): void {
  * recomputes the position before painting, so the retained `translate` never
  * produces a stale-position flash.
  */
-function resetItemAlignedStyles(el: HTMLElement): void {
+function resetItemAlignedStyles(el: HTMLElement, vars: FloatingCustomProperties): void {
   el.style.removeProperty('clip-path');
-  el.style.removeProperty('--for-floating-anchor-width');
-  el.style.removeProperty('--for-floating-anchor-height');
-  el.style.removeProperty('--for-floating-available-height');
+  el.style.removeProperty(vars.anchorWidth);
+  el.style.removeProperty(vars.anchorHeight);
+  el.style.removeProperty(vars.availableHeight);
   el.removeAttribute('data-position');
 }

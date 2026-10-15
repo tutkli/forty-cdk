@@ -10,6 +10,7 @@ import {
   type Signal,
   signal,
 } from '@angular/core';
+import { CssVarNamespacer } from '@angular/platform-browser';
 
 import {
   attachSwipeDismiss,
@@ -189,6 +190,9 @@ export function injectDrawerDrag(config: DrawerDragConfig): DrawerDragHandle {
   const host = inject<ElementRef<HTMLElement>>(ElementRef);
   const errorHandler = inject(ErrorHandler);
   const prefersReducedMotion = injectPrefersReducedMotion();
+  const namespacer = inject(CssVarNamespacer);
+  const swipeMovementXVar = namespacer.namespace('--for-drawer-swipe-movement-x');
+  const swipeMovementYVar = namespacer.namespace('--for-drawer-swipe-movement-y');
 
   const side = config.side;
   const snapPoints = config.snapPoints;
@@ -519,8 +523,8 @@ export function injectDrawerDrag(config: DrawerDragConfig): DrawerDragHandle {
   // style recalc and transition together.
   effect(() => {
     const style = host.nativeElement.style;
-    style.setProperty('--for-drawer-swipe-movement-x', `${swipeMovementX()}px`);
-    style.setProperty('--for-drawer-swipe-movement-y', `${swipeMovementY()}px`);
+    style.setProperty(swipeMovementXVar, `${swipeMovementX()}px`);
+    style.setProperty(swipeMovementYVar, `${swipeMovementY()}px`);
   });
 
   // ---- Mount-time snap validation. Invoked by the directive's pre-shell

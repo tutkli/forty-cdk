@@ -16,14 +16,15 @@ Nothing else is required to render your first primitive. The packages forty-cdk 
 
 ## Peer dependencies
 
-Two peers are required, and every other one is optional and unlocks a specific part of the library.
+Three peers are required, and every other one is optional and unlocks a specific part of the library.
 
-| Peer                      | Range     | Required | What it is for                                                               |
-| ------------------------- | --------- | -------- | ---------------------------------------------------------------------------- |
-| `@angular/core`           | `^22.0.1` | Yes      | Signals, standalone directives and DI, which the whole library is built on.  |
-| `@angular/common`         | `^22.0.1` | Yes      | `DOCUMENT`, platform checks and the SSR-safe branches every primitive takes. |
-| `@angular/forms`          | `^22.0.1` | No       | Signal Forms. Needed only to bind a form primitive with `[formField]`.       |
-| `@internationalized/date` | `^3.0.0`  | No       | The calendar adapters behind `forty-cdk/internationalized-date`.             |
+| Peer                        | Range     | Required | What it is for                                                                        |
+| --------------------------- | --------- | -------- | ------------------------------------------------------------------------------------- |
+| `@angular/core`             | `^22.1.0` | Yes      | Signals, standalone directives and DI, which the whole library is built on.           |
+| `@angular/common`           | `^22.1.0` | Yes      | `DOCUMENT`, platform checks and the SSR-safe branches every primitive takes.          |
+| `@angular/platform-browser` | `^22.1.0` | Yes      | `CssVarNamespacer`, so every `--for-*` property follows `provideCssVarNamespacing()`. |
+| `@angular/forms`            | `^22.1.0` | No       | Signal Forms. Needed only to bind a form primitive with `[formField]`.                |
+| `@internationalized/date`   | `^3.0.0`  | No       | The calendar adapters behind `forty-cdk/internationalized-date`.                      |
 
 An optional peer you have not installed costs you nothing. Nothing outside the entry point that needs it imports it by value, so a bundle that never touches Signal Forms never resolves `@angular/forms`.
 

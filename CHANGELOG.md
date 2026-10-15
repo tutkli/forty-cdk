@@ -24,9 +24,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   those bounds. `FOR_SLIDER_HOST_DIRECTIVE_INPUTS` swaps `'min'` / `'max'` for `'rangeMin'` /
   `'rangeMax'`, and the inputs drop their `number | undefined` write type. `ForSliderContext.minValue` /
   `maxValue` are unchanged.
+- **Peer dependencies — BREAKING.** `@angular/core`, `@angular/common` and `@angular/forms` now
+  peer from `^22.1.0`, and `@angular/platform-browser` `^22.1.0` is a new required peer
+  ([#2480](https://github.com/tutkli/forty-cdk/issues/2480)). The library resolves its custom
+  property names through `CssVarNamespacer`, which Angular made public in 22.1. Every browser app
+  and `@angular/platform-server` already depend on `@angular/platform-browser`.
 
 ### Fixed
 
+- **Floating overlays**, **Select**, **Drawer**, **Table** — every `--for-*` custom property follows
+  `provideCssVarNamespacing()` ([#2480](https://github.com/tutkli/forty-cdk/issues/2480)). The
+  host-bound properties were namespaced by the consumer's compiler, but the ones written from code kept
+  their raw names, so with namespacing on no stylesheet could read all of them: popovers, menus and
+  selects lost their `--for-floating-anchor-*` / `--for-floating-available-*` sizing and transform
+  origin, a drawer stopped following the finger, and resized table columns snapped back to their
+  declared width. A `--for-floating-arrow-offset` set in component styles never reached the arrow.
+  The positioners, the drawer's swipe displacement, the table's column widths and the `var()` strings
+  the arrow and `ForTableBody.track` build now all use the namespaced name; with namespacing off every
+  name is unchanged.
 - **Virtualization**, **Table virtualization** — a data shrink no longer throws, and a changed
   estimate or key function reaches the windowing core
   ([#2225](https://github.com/tutkli/forty-cdk/issues/2225)). `injectVirtualizer` passed the count to

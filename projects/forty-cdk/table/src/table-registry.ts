@@ -1,4 +1,5 @@
 import { ElementRef, inject, Injectable, signal, type Signal } from '@angular/core';
+import { CssVarNamespacer } from '@angular/platform-browser';
 
 import {
   Collection,
@@ -26,6 +27,7 @@ import {
 @Injectable()
 export class TableRegistry implements TableRegistrationContext {
   readonly #rootEl = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+  readonly #namespacer = inject(CssVarNamespacer);
 
   readonly #headerRowEl = signal<HTMLElement | null>(null);
   readonly #headerCells = new Collection<ForTableCellHandle>();
@@ -140,11 +142,16 @@ export class TableRegistry implements TableRegistrationContext {
 
   /** Publishes a column's resolved width as `--for-table-col-<column>-width` on the root. */
   setColumnWidth(column: string, width: number): void {
-    this.#rootEl.style.setProperty(`--for-table-col-${column}-width`, `${width}px`);
+    this.#rootEl.style.setProperty(
+      this.#namespacer.namespace(`--for-table-col-${column}-width`),
+      `${width}px`,
+    );
   }
 
   /** Removes a column's published `--for-table-col-<column>-width` custom property. */
   removeColumnWidth(column: string): void {
-    this.#rootEl.style.removeProperty(`--for-table-col-${column}-width`);
+    this.#rootEl.style.removeProperty(
+      this.#namespacer.namespace(`--for-table-col-${column}-width`),
+    );
   }
 }

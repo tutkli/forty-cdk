@@ -28,7 +28,8 @@ The fixtures are deliberately:
   `parserOptions.projectService` for this directory.
 - **Named `*.fixture.ts`** (not `*.spec.ts`) so they are unmistakable.
 
-Three rules are enabled for their own fixture alone — `require-sanctioned-effect-marker`,
-`require-sanctioned-pull-marker` and `no-assertion-only-effect`. All three classify `effect()`
-bodies, and the other `effect()` fixtures contain those bodies on purpose, so leaving them on
-globally would break the one-rule-per-fixture invariant above.
+Four rules are enabled for their own fixture alone. `require-sanctioned-effect-marker`,
+`require-sanctioned-pull-marker` and `no-assertion-only-effect` all classify `effect()` bodies, and
+the other `effect()` fixtures contain those bodies on purpose. `namespaced-css-custom-property`
+reports raw `--for-*` strings, which other fixtures write and assert on as ordinary data. Leaving
+any of the four on globally would break the one-rule-per-fixture invariant above.

@@ -35,7 +35,7 @@ composition.
 npm install forty-cdk
 ```
 
-Requires `@angular/common` and `@angular/core` `^22.0.1`. Some primitives have optional peers
+Requires `@angular/common`, `@angular/core` and `@angular/platform-browser` `^22.1.0`. Some primitives have optional peers
 (`@angular/forms`, `@internationalized/date`) — see the
 [peer dependency reference](projects/forty-cdk/README.md#peer-dependencies).
 

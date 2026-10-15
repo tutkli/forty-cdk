@@ -7,6 +7,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { provideCssVarNamespacing } from '@angular/platform-browser';
 import type { ComputePositionReturn, Placement } from '@floating-ui/dom';
 
 import { installObserverPolyfills } from 'forty-cdk/testing';
@@ -129,6 +130,25 @@ class TrackingBubble {
 class TrackingBubbleHost {
   readonly anchor = viewChild.required<ElementRef<HTMLElement>>('anchor');
   readonly bubble = viewChild.required<TrackingBubble>('bubble');
+}
+
+@Component({
+  imports: [FloatingBubble],
+  styles: ['.arrow { --for-floating-arrow-offset: -4px; }'],
+  template: `
+    <div id="container">
+      <button #anchor type="button">Anchor</button>
+      <floating-bubble #bubble>
+        Content
+        <span #arrow class="arrow"></span>
+      </floating-bubble>
+    </div>
+  `,
+})
+class StyledArrowHost {
+  readonly anchor = viewChild.required<ElementRef<HTMLElement>>('anchor');
+  readonly bubble = viewChild.required<FloatingBubble>('bubble');
+  readonly arrowEl = viewChild.required<ElementRef<HTMLElement>>('arrow');
 }
 
 @Component({
@@ -628,6 +648,73 @@ describe('injectFloating', () => {
       expect(arrowEl.style.bottom).toBe('var(--for-floating-arrow-offset, 0px)');
       expect(arrowEl.style.bottom).not.toBe('-4px');
     });
+  });
+
+  describe('custom property names under provideCssVarNamespacing()', () => {
+    const OUTPUTS = [
+      'floating-anchor-width',
+      'floating-anchor-height',
+      'floating-available-width',
+      'floating-available-height',
+      'floating-content-transform-origin',
+    ];
+
+    it('writes every output under the namespaced name and clears the namespaced sizing vars on close', async () => {
+      TestBed.configureTestingModule({
+        providers: [provideZonelessChangeDetection(), provideCssVarNamespacing('app')],
+      });
+      const fixture = TestBed.createComponent(BubbleHost);
+      await flushPositioning(fixture);
+      const bubble = fixture.componentInstance.bubble();
+      const bubbleEl = document.querySelector<HTMLElement>('floating-bubble')!;
+
+      bubble.reference.set(fixture.componentInstance.anchor().nativeElement);
+      bubble.open.set(true);
+      await flushPositioning(fixture);
+
+      for (const output of OUTPUTS) {
+        expect(bubbleEl.style.getPropertyValue(`--app_for-${output}`)).not.toBe('');
+        expect(bubbleEl.style.getPropertyValue(`--for-${output}`)).toBe('');
+      }
+
+      bubble.open.set(false);
+      await flushPositioning(fixture);
+
+      expect(bubbleEl.style.getPropertyValue('--app_for-floating-anchor-width')).toBe('');
+      expect(bubbleEl.style.getPropertyValue('--app_for-floating-anchor-height')).toBe('');
+      expect(bubbleEl.style.getPropertyValue('--app_for-floating-available-width')).toBe('');
+      expect(bubbleEl.style.getPropertyValue('--app_for-floating-available-height')).toBe('');
+      expect(
+        bubbleEl.style.getPropertyValue('--app_for-floating-content-transform-origin'),
+      ).not.toBe('');
+    });
+
+    it.each([
+      { namespacing: true, name: '--app_for-floating-arrow-offset' },
+      { namespacing: false, name: '--for-floating-arrow-offset' },
+    ])(
+      'places the arrow from the --for-floating-arrow-offset a component stylesheet sets (namespacing: $namespacing)',
+      async ({ namespacing, name }) => {
+        TestBed.configureTestingModule({
+          providers: [
+            provideZonelessChangeDetection(),
+            namespacing ? provideCssVarNamespacing('app') : [],
+          ],
+        });
+        const fixture = TestBed.createComponent(StyledArrowHost);
+        await flushPositioning(fixture);
+        const bubble = fixture.componentInstance.bubble();
+        const arrowEl = fixture.componentInstance.arrowEl().nativeElement;
+
+        bubble.reference.set(fixture.componentInstance.anchor().nativeElement);
+        bubble.arrow.set(arrowEl);
+        bubble.open.set(true);
+        await flushPositioning(fixture);
+
+        expect(arrowEl.style.bottom).toBe(`var(${name}, 0px)`);
+        expect(getComputedStyle(arrowEl).getPropertyValue(name).trim()).toBe('-4px');
+      },
+    );
   });
 
   describe('data-side / data-align', () => {

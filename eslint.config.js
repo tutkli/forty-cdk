@@ -3470,6 +3470,55 @@ const fortyCdkPlugin = {
         };
       },
     },
+
+    'namespaced-css-custom-property': {
+      meta: {
+        type: 'problem',
+        docs: {
+          description:
+            'Forbid a raw `--for-*` custom property name in a string the compiler does not rewrite, so every name follows `provideCssVarNamespacing()`.',
+        },
+        schema: [],
+        messages: {
+          raw:
+            'This string names a `--for-*` custom property the compiler never sees, so it keeps the raw name while the host bindings and the consumer’s component styles are namespaced under `provideCssVarNamespacing()`. ' +
+            'Resolve the name through `inject(CssVarNamespacer).namespace(…)` from `@angular/platform-browser`, or publish it with a `[style.--for-…]` host binding. (tutkli/forty-cdk#2480.)',
+        },
+      },
+      create(context) {
+        const RAW_NAME = /^--for-/;
+        const RAW_VAR = /var\(\s*--for-/;
+        function isNamespaced(node) {
+          const parent = node.parent;
+          return (
+            parent?.type === 'CallExpression' &&
+            parent.arguments[0] === node &&
+            parent.callee.type === 'MemberExpression' &&
+            !parent.callee.computed &&
+            parent.callee.property.type === 'Identifier' &&
+            parent.callee.property.name === 'namespace'
+          );
+        }
+        return {
+          Literal(node) {
+            if (typeof node.value !== 'string') return;
+            if (RAW_VAR.test(node.value) || (RAW_NAME.test(node.value) && !isNamespaced(node))) {
+              context.report({ node, messageId: 'raw' });
+            }
+          },
+          TemplateLiteral(node) {
+            if (node.parent?.type === 'TaggedTemplateExpression') return;
+            const head = node.quasis[0].value.raw;
+            if (
+              node.quasis.some((quasi) => RAW_VAR.test(quasi.value.raw)) ||
+              (RAW_NAME.test(head) && !isNamespaced(node))
+            ) {
+              context.report({ node, messageId: 'raw' });
+            }
+          },
+        };
+      },
+    },
   },
 };
 
@@ -3687,6 +3736,8 @@ module.exports = tseslint.config(
       // #1598 item 2). ----
       'forty-cdk/no-doubled-live-region-channel': 'error',
 
+      'forty-cdk/namespaced-css-custom-property': 'error',
+
       // ---- Test isolation invariants (see @forty-cdk-test-isolation-rules
       // block above; CLAUDE.md § "Test isolation — non-negotiables"). ----
       'forty-cdk/no-bare-whenstable': 'error',
@@ -3787,6 +3838,7 @@ module.exports = tseslint.config(
       // (or a consumer's own code) to assert how it surfaces; it ships no
       // validation channel a consumer inherits.
       'forty-cdk/no-assertion-only-effect': 'off',
+      'forty-cdk/namespaced-css-custom-property': 'off',
     },
   },
 
@@ -3808,6 +3860,7 @@ module.exports = tseslint.config(
       'forty-cdk/require-sanctioned-effect-marker': 'off',
       'forty-cdk/require-sanctioned-pull-marker': 'off',
       'forty-cdk/no-assertion-only-effect': 'off',
+      'forty-cdk/namespaced-css-custom-property': 'off',
     },
   },
 
@@ -3820,6 +3873,7 @@ module.exports = tseslint.config(
       'forty-cdk/require-sanctioned-effect-marker': 'off',
       'forty-cdk/require-sanctioned-pull-marker': 'off',
       'forty-cdk/no-assertion-only-effect': 'off',
+      'forty-cdk/namespaced-css-custom-property': 'off',
     },
   },
 
@@ -3911,6 +3965,7 @@ module.exports = tseslint.config(
       // And the validation-channel rule: the sanctioned-effect / pull fixtures
       // both contain bare `effect()` bodies it would classify.
       'forty-cdk/no-assertion-only-effect': 'off',
+      'forty-cdk/namespaced-css-custom-property': 'off',
     },
   },
 
@@ -3932,6 +3987,13 @@ module.exports = tseslint.config(
     files: ['projects/forty-cdk/eslint-rules-fixtures/require-sanctioned-pull-marker.fixture.ts'],
     rules: {
       'forty-cdk/require-sanctioned-pull-marker': 'error',
+    },
+  },
+
+  {
+    files: ['projects/forty-cdk/eslint-rules-fixtures/namespaced-css-custom-property.fixture.ts'],
+    rules: {
+      'forty-cdk/namespaced-css-custom-property': 'error',
     },
   },
 
