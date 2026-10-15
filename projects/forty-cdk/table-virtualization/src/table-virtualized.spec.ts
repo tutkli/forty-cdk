@@ -861,3 +861,83 @@ describe('ForTableVirtualized — a windowed grid with no server total (#2069)',
     expect(scrollToRow).toHaveBeenCalledWith(3);
   });
 });
+
+@Component({
+  imports: [ForTable, ForTableVirtualized, ForTableRow, ForTableCell],
+  template: `
+    <div
+      forTable
+      mode="grid"
+      ariaLabel="People"
+      [rowCount]="rows().length"
+      forTableVirtualized
+      [estimateRowSize]="rowSize()"
+      #v="forTableVirtualized"
+      style="height: 400px; overflow: auto"
+    >
+      <div role="rowgroup" style="position: relative" [style.height.px]="v.totalSize()">
+        @for (vrow of v.virtualRows(); track vrow.index) {
+          <div
+            forTableRow
+            [virtualIndex]="vrow.index"
+            [value]="rows()[vrow.index]"
+            style="position: absolute; inset-inline: 0"
+            [style.transform]="'translateY(' + vrow.start + 'px)'"
+          >
+            <div forTableCell name="name">{{ rows()[vrow.index]!.name }}</div>
+          </div>
+        }
+      </div>
+    </div>
+  `,
+})
+class ReadmeAnatomyHost {
+  readonly rows = signal(Array.from({ length: 100 }, (_, i) => ({ name: `Person ${i}` })));
+  readonly rowSize = signal(44);
+}
+
+describe('ForTableVirtualized — the README anatomy under a data change (#2225)', () => {
+  let restoreObservers: () => void;
+  beforeAll(() => {
+    restoreObservers = installObserverPolyfills();
+  });
+  afterAll(() => restoreObservers());
+
+  beforeEach(() => {
+    vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockImplementation(function (
+      this: HTMLElement,
+    ) {
+      return this.hasAttribute('forTable') ? 400 : 0;
+    });
+  });
+
+  const rowIndices = (el: HTMLElement): number[] =>
+    Array.from(el.querySelectorAll('[role="row"]'), (row) =>
+      Number(row.getAttribute('aria-rowindex')),
+    );
+
+  it('renders exactly the rows left after a filter shrinks the dataset below the window', async () => {
+    const { el, instance, flush } = renderHost(ReadmeAnatomyHost);
+    await flush();
+    expect(rowIndices(el).length).toBeGreaterThan(3);
+
+    instance.rows.set(instance.rows().slice(0, 3));
+    await flush();
+
+    expect(rowIndices(el)).toEqual([1, 2, 3]);
+  });
+
+  it('repositions the unmeasured rows when the row estimate changes', async () => {
+    const { el, instance, flush } = renderHost(ReadmeAnatomyHost);
+    await flush();
+    const rowgroup = el.querySelector<HTMLElement>('[role="rowgroup"]')!;
+    expect(rowgroup.style.height).toBe('4400px');
+
+    instance.rowSize.set(32);
+    await flush();
+
+    expect(rowgroup.style.height).toBe('3200px');
+    const second = el.querySelector<HTMLElement>('[aria-rowindex="2"]')!;
+    expect(second.style.transform).toBe('translateY(32px)');
+  });
+});

@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Virtualization** — `injectVirtualizer` takes an `estimateVersion` signal
+  ([#2225](https://github.com/tutkli/forty-cdk/issues/2225)). Each new value after the first render
+  drops every cached size and re-estimates every item, so an estimate that changes at runtime (a
+  density toggle) moves the total size and the item offsets with it.
+
 ### Changed
 
 - **Slider — BREAKING.** `[forSlider]`'s `[min]` / `[max]` inputs are renamed `[rangeMin]` /
@@ -20,6 +27,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Virtualization**, **Table virtualization** — a data shrink no longer throws, and a changed
+  estimate or key function reaches the windowing core
+  ([#2225](https://github.com/tutkli/forty-cdk/issues/2225)). `injectVirtualizer` passed the count to
+  `@tanstack/virtual-core` only from an effect, so a read in the same pass still computed the old
+  window. Deleting or filtering rows in a `[forVirtualViewport]` keyed with `[getItemKey]`, or calling
+  `scrollToIndex` right after shrinking a keyed `injectVirtualizer` list, threw a `TypeError` from the
+  key function, and the `[forTableVirtualized]` raw anatomy threw from its row template when a filter
+  left fewer rows than the window held. Every read now hands the core the current count first.
+  `[forVirtualViewport]`'s `[estimateSize]` and `[forTableVirtualized]`'s `[estimateRowSize]` apply
+  after the first render, `[forVirtualViewport]`'s `[getItemKey]` re-keys every row when a different
+  function is bound, and a host destroyed before its first render releases the core's observers and
+  listeners. The table-virtualization README's infinite-scroll snippet reads its view query inside a
+  `computed` instead of in a field initializer, where it threw NG0951.
 - **Slider** — a touch drag started on the bare track survives finger drift across the page's scroll
   axis ([#2218](https://github.com/tutkli/forty-cdk/issues/2218)). Only `[forSliderThumb]` set
   `touch-action`, so on a scrollable page the browser took a pan that started on `[forSliderTrack]`,

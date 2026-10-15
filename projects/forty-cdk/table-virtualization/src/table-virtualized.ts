@@ -72,7 +72,10 @@ export class ForTableVirtualized {
   readonly #registration = injectTableRegistration();
   readonly #rootEl = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 
-  /** Estimated row size in px along the scroll axis (the fixed-size fast path). Read for the size estimate. */
+  /**
+   * Estimated row size in px along the scroll axis (the fixed-size fast path). A change re-estimates
+   * every row until that row is measured again.
+   */
   readonly estimateRowSize = input(44, { transform: numberAttribute });
 
   /**
@@ -106,6 +109,7 @@ export class ForTableVirtualized {
   readonly #virtualizer = injectVirtualizer({
     count: this.#rowCount,
     estimateSize: () => this.estimateRowSize(),
+    estimateVersion: this.estimateRowSize,
     scrollElement: this.#scrollElement,
   });
 
@@ -130,6 +134,8 @@ export class ForTableVirtualized {
       this.#registration.registerVirtualNavigation(null);
       this.#registration.registerVirtualWindow(null);
     });
+    // @sanctioned-effect(untracked-read): `tryResolvePending` reads its pending slot through
+    // `untracked`, so its write to that slot cannot re-run this effect.
     effect(() => {
       this.#registration.rows();
       this.#navigator.tryResolvePending();
