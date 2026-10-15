@@ -12,6 +12,10 @@ import {
  * id used to coordinate which item is open) and its disabled state, then
  * exposes them downstream so the trigger and content can share a single
  * source of truth.
+ *
+ * While its open panel sits in a `[forNavigationMenuViewport]`, the item
+ * reflects `aria-owns` pointing at that panel, so assistive technology reads
+ * it right after the trigger rather than at the viewport's place in the page.
  */
 @Directive({
   selector: '[forNavigationMenuItem]',
@@ -19,6 +23,7 @@ import {
   host: {
     '[attr.data-state]': 'state()',
     '[attr.data-disabled]': 'disabled() ? "" : null',
+    '[attr.aria-owns]': 'ownedContentId()',
   },
   providers: [
     {
@@ -52,6 +57,10 @@ export class ForNavigationMenuItem implements ForNavigationMenuItemContext {
   readonly disabled = input(false, { transform: booleanAttribute });
 
   protected readonly state = computed(() => (this.#ctx.isOpen(this.value()) ? 'open' : 'closed'));
+
+  protected readonly ownedContentId = computed(() =>
+    this.#ctx.isOpen(this.value()) ? this.#ctx.hostedContentIdFor(this.value()) : null,
+  );
 
   constructor() {
     assertInputBound(this.value, 'navigation-menu', '[forNavigationMenuItem]', 'value');

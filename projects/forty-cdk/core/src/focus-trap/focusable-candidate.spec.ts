@@ -1,6 +1,7 @@
 import {
   FOCUSABILITY_ATTRIBUTES,
   FOCUSABLE_SELECTOR,
+  findRelocatedTabStop,
   findTabbableEdges,
   isFocusableCandidate,
   isTabbableCandidate,
@@ -549,6 +550,81 @@ describe('focusable-candidate filter', () => {
     it('rejects a CSS-hidden element even with a valid tabindex', () => {
       const el = add('<button id="target" style="display:none">go</button>');
       expect(isTabbableCandidate(el, root)).toBe(false);
+    });
+  });
+
+  describe('findRelocatedTabStop', () => {
+    function layout(): Record<string, HTMLElement> {
+      root.innerHTML = `
+        <button id="anchor">anchor</button>
+        <button id="next">next</button>
+        <button id="last">last</button>
+        <div id="moved">
+          <a id="first-link" href="#a">a</a>
+          <a id="hidden-link" href="#b" hidden>b</a>
+          <a id="last-link" href="#c">c</a>
+        </div>
+        <button id="after">after</button>
+      `;
+      const byId = (id: string): HTMLElement => root.querySelector<HTMLElement>(`#${id}`)!;
+      return Object.fromEntries(
+        ['anchor', 'next', 'last', 'moved', 'first-link', 'last-link', 'after'].map((id) => [
+          id,
+          byId(id),
+        ]),
+      );
+    }
+
+    it('reads the moved tab stops right after the anchor in both directions', () => {
+      const el = layout();
+      const step = (from: HTMLElement, backward: boolean) =>
+        findRelocatedTabStop(from, el['anchor']!, el['moved']!, backward);
+
+      expect(step(el['anchor']!, false)).toBe(el['first-link']);
+      expect(step(el['first-link']!, false)).toBe(el['last-link']);
+      expect(step(el['last-link']!, false)).toBe(el['next']);
+      expect(step(el['last']!, false)).toBe(el['after']);
+      expect(step(el['next']!, true)).toBe(el['last-link']);
+      expect(step(el['first-link']!, true)).toBe(el['anchor']);
+      expect(step(el['after']!, true)).toBe(el['last']);
+    });
+
+    it('returns null for a press away from the stretch that document order already resolves', () => {
+      const el = layout();
+
+      expect(findRelocatedTabStop(el['next']!, el['anchor']!, el['moved']!, false)).toBeNull();
+      expect(findRelocatedTabStop(el['last']!, el['anchor']!, el['moved']!, true)).toBeNull();
+    });
+
+    it('returns null for a press that runs off the start of the sequence', () => {
+      const el = layout();
+
+      expect(findRelocatedTabStop(el['anchor']!, el['anchor']!, el['moved']!, true)).toBeNull();
+    });
+
+    it('skips past a moved subtree with no tab stop', () => {
+      const el = layout();
+      el['first-link']!.setAttribute('tabindex', '-1');
+      el['last-link']!.setAttribute('tabindex', '-1');
+
+      expect(findRelocatedTabStop(el['anchor']!, el['anchor']!, el['moved']!, false)).toBe(
+        el['next'],
+      );
+      expect(findRelocatedTabStop(el['last']!, el['anchor']!, el['moved']!, false)).toBeNull();
+    });
+
+    it('returns null for an anchor inside the moved subtree', () => {
+      const el = layout();
+
+      expect(
+        findRelocatedTabStop(el['first-link']!, el['first-link']!, el['moved']!, false),
+      ).toBeNull();
+    });
+
+    it('returns null for an active element outside the candidate set', () => {
+      const el = layout();
+
+      expect(findRelocatedTabStop(el['moved']!, el['anchor']!, el['moved']!, false)).toBeNull();
     });
   });
 });
