@@ -9,3 +9,38 @@ updates:
     groups:
       actions:
         patterns: ['*']
+
+  # Reads only the root package.json. The published peer ranges and the
+  # library `dependencies` floors in projects/forty-cdk/package.json are never
+  # touched: raising them stays a release decision.
+  #
+  # The `e2e` group cannot bump the E2E job's `container: image:` in
+  # .github/workflows/ci.yml. Its PR fails at "Verify the image ships this
+  # Playwright's browsers", which names the tag to bump by hand in that PR.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: chore(deps)
+    open-pull-requests-limit: 10
+    cooldown:
+      default-days: 3
+    groups:
+      angular:
+        patterns: ['@angular/*', '@angular-devkit/*', 'ng-packagr']
+      lint:
+        patterns: ['eslint', 'typescript-eslint', 'angular-eslint']
+      test:
+        patterns: ['vitest', '@vitest/*', 'jsdom']
+      e2e:
+        patterns: ['@playwright/test']
+      docs:
+        patterns: ['marked', 'shiki']
+      runtime:
+        patterns: ['@floating-ui/dom', '@tanstack/virtual-core']
+    ignore:
+      - dependency-name: typescript
+        versions: ['>=6.1.0']
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
