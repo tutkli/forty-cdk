@@ -3941,7 +3941,7 @@ module.exports = tseslint.config(
   // only includes `src/**`), so disable typed linting to avoid adding it to a
   // project just for ESLint — matching the playwright.config.ts treatment above.
   {
-    files: ['vitest.config.ts'],
+    files: ['vitest-base.config.ts'],
     languageOptions: {
       parserOptions: {
         projectService: false,

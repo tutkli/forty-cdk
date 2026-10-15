@@ -357,12 +357,15 @@ describe('SSR smoke tests', () => {
   // `resetTestingModule()` — leaving it in place would make the `<head>` sweep a
   // false negative for every fixture after the first one that injected.
   let headBaseline: readonly Element[] = [];
+  let inheritedHeadStyle: HTMLElement | null = null;
 
   beforeEach(() => {
     serverModeGlobal.ngServerMode = true;
     for (const name of ABSENT_ON_A_REAL_SERVER) {
       vi.stubGlobal(name, undefined);
     }
+    inheritedHeadStyle = document.getElementById('for-scroll-area-hide-native');
+    inheritedHeadStyle?.remove();
     headBaseline = Array.from(document.head.children);
     makeLayoutApisAbsent();
     makeRootNodeAbsent();
@@ -375,6 +378,7 @@ describe('SSR smoke tests', () => {
     for (const child of Array.from(document.head.children)) {
       if (!headBaseline.includes(child)) child.remove();
     }
+    if (inheritedHeadStyle !== null) document.head.append(inheritedHeadStyle);
     delete serverModeGlobal.ngServerMode;
   });
 

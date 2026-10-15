@@ -1,27 +1,18 @@
 # Nightly worst-case unit-test schedule.
 #
-# Meant to run the Vitest suite under a scheduler-hostile combination that
-# exposes cross-test state leaks (polyfills, live regions, fake timers, ad-hoc
-# body children).
+# Runs the Vitest suite under a scheduler-hostile combination that exposes
+# cross-test state leaks (polyfills, live regions, fake timers, ad-hoc body
+# children). FORTY_CDK_TEST_WORST_CASE switches `vitest-base.config.ts` to:
 #
-# ## What is actually exercised today
-#
-# The declared worst-case profile in `vitest.config.ts` is:
-#
-#   - pool: 'forks' + singleFork: true   — one worker, one process
+#   - pool: 'forks' + maxWorkers: 1      — one worker, one process
 #   - isolate: false                     — no per-file isolation
 #   - fileParallelism: false             — files run sequentially
 #   - sequence.shuffle: { files, tests } — randomised order each run
 #
-# None of it reaches the runner. On `@angular/build@22.0.3`,
-# `__vitest_worker__.config` reads the builder defaults with or without
-# FORTY_CDK_TEST_WORST_CASE: the default forks pool with several workers,
-# `isolate: false`, no shuffle. So this job runs the same schedule as
-# `pnpm test` in PR CI, which is already non-isolated: spec files share forked
-# workers, and a leak surfaces as an order-dependent failure on whichever
-# run happens to schedule the leaking file before its victim. The flags stay
-# declared so they take effect if the builder ever propagates user config to
-# the runner. See the comment block in `vitest.config.ts`.
+# PR CI runs the default schedule, several forked workers sharing spec files,
+# so a leak there only fails when the scheduler happens to put the leaking
+# file before its victim. Here every file shares the one worker in a new order
+# each night.
 #
 # ## Non-blocking by design
 #

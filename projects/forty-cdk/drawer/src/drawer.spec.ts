@@ -2576,6 +2576,7 @@ describe('ForDrawer scaleBackground / ForDrawerWrapper', () => {
     @Component({
       imports: [ForDrawer, ForDrawerWrapper],
       providers: [provideForDrawerDefaults({ scaleAmount: 0.9, scaleTranslateYpx: 20 })],
+      host: { 'data-fixture': 'defaults' },
       template: `
         <div forDrawerWrapper id="shell"></div>
         @if (open()) {

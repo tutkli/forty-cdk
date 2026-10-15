@@ -2,7 +2,7 @@
  * Permanent smoke test that the mock-reset invariants are wired up.
  *
  * The two `it()` blocks below share a module-scoped `vi.fn()`. With either
- * the repo-root `vitest.config.ts` OR the `vitest-invariants-setup.ts` setup
+ * the repo-root `vitest-base.config.ts` OR the `vitest-invariants-setup.ts` setup
  * file taking effect (see `angular.json`), the spy's call history is reset
  * between tests, so each test observes an empty `mock.calls` on entry.
  * Without either layer wired, whichever block runs second observes the call
