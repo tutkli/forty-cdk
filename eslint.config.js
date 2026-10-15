@@ -1925,8 +1925,8 @@ const fortyCdkPlugin = {
         const CONTRACTS = new Set(['FormValueControl', 'FormCheckboxControl']);
         // Resolves the contract name from one `implements` entry. Handles the
         // direct form (`implements FormValueControl<T>`) and wrapped type
-        // references (`implements Omit<FormValueControl<T>, 'min' | 'max'>`,
-        // the ForSlider shape) by scanning the entry's type arguments for a
+        // references (`implements Omit<FormValueControl<T>, 'min' | 'max'>`)
+        // by scanning the entry's type arguments for a
         // reference to either contract.
         function contractOf(entry) {
           if (entry.expression.type === 'Identifier' && CONTRACTS.has(entry.expression.name)) {

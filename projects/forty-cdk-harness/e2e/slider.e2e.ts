@@ -1,5 +1,14 @@
 import type { Locator, Page } from '@playwright/test';
-import { dragFrom, el, expect, expectFocused, expectStays, gotoFixture, test } from './_helpers';
+import {
+  dragFrom,
+  el,
+  expect,
+  expectFocused,
+  expectStays,
+  gesturePointer,
+  gotoFixture,
+  test,
+} from './_helpers';
 
 /**
  * Pointer / drag math coverage for `[forSlider]`. The Vitest layer used to
@@ -638,5 +647,27 @@ test.describe('Slider (@mobile touch drag)', () => {
     // The thumb's `aria-valuenow` mirrors the new value verbatim, so it
     // must match what `last-value` reports.
     await expect(el(page, 'thumb-0')).toHaveAttribute('aria-valuenow', String(v));
+  });
+
+  test('@mobile a touch drag from the bare track of a vertical slider is not taken by the page scroll', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'slider', { orientation: 'vertical', scrollable: '1' });
+    const box = await el(page, 'track').boundingBox();
+    if (!box) throw new Error('track has no bounding box');
+    const x = box.x + box.width / 2;
+    const scrollBefore = await page.evaluate(() => window.scrollY);
+
+    const pointer = gesturePointer(page);
+    await pointer.down(x, box.y + box.height * 0.9);
+    for (const fraction of [0.8, 0.6, 0.4, 0.2, 0.05]) {
+      await page.waitForTimeout(POINTER_MOVE_SETTLE_MS);
+      await pointer.move(x, box.y + box.height * fraction);
+    }
+    await pointer.up();
+
+    await expect(el(page, 'touched')).toHaveText('true');
+    expect(Number(await el(page, 'last-value').textContent())).toBeGreaterThan(90);
+    expect(await page.evaluate(() => window.scrollY)).toBe(scrollBefore);
   });
 });

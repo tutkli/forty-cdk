@@ -3,6 +3,7 @@ import { computed, Directive, ElementRef, inject, input, numberAttribute } from 
 import { registerHandle, hostAriaLabel } from 'forty-cdk/core';
 import {
   injectSliderContext,
+  sliderTouchAction,
   type ForSliderThumbBounds,
   type SliderArrowKey,
 } from './slider-context';
@@ -80,20 +81,7 @@ export class ForSliderThumb {
 
   protected readonly tabindex = computed(() => (this.ctx.effectiveDisabled() ? -1 : 0));
 
-  /**
-   * `touch-action` for the thumb: capture the slider's own axis so a finger
-   * drag along it can't be stolen by page scrolling (which would fire
-   * `pointercancel` mid-drag and can commit a mid-drag value), while freeing
-   * the perpendicular axis for scrolling. A horizontal slider drags along x
-   * (`pan-y`); a vertical slider drags along y (`pan-x`). Suppressed while the
-   * slider is disabled or readonly (no drag to protect).
-   */
-  protected readonly touchAction = computed<string | null>(() => {
-    if (this.ctx.effectiveDisabled() || this.ctx.readonly()) {
-      return null;
-    }
-    return this.ctx.orientation() === 'vertical' ? 'pan-x' : 'pan-y';
-  });
+  protected readonly touchAction = sliderTouchAction(this.ctx);
 
   protected readonly currentValue = computed(() => {
     const i = this.index();

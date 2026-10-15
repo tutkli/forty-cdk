@@ -14,6 +14,7 @@ import {
   output,
   PLATFORM_ID,
   signal,
+  type Signal,
 } from '@angular/core';
 import type { FormValueControl } from '@angular/forms/signals';
 
@@ -53,7 +54,7 @@ import { FOR_SLIDER_DEFAULTS } from 'forty-cdk/defaults';
  * - 2 entries → range slider.
  * - N entries → multi-thumb slider.
  *
- * Values are kept clamped to `[min, max]` and snapped to `step` increments.
+ * Values are kept clamped to `[rangeMin, rangeMax]` and snapped to `step` increments.
  * In multi-thumb mode they're constrained between neighbors so thumbs can't
  * cross (`minStepsBetweenThumbs` forces a minimum gap, in step units).
  *
@@ -93,7 +94,7 @@ import { FOR_SLIDER_DEFAULTS } from 'forty-cdk/defaults';
 })
 export class ForSlider
   extends FormUiControlBase
-  implements Omit<FormValueControl<readonly number[]>, 'min' | 'max'>, ForSliderContext
+  implements FormValueControl<readonly number[]>, ForSliderContext
 {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
   readonly #document = inject(DOCUMENT);
@@ -110,31 +111,17 @@ export class ForSlider
   readonly value = model<readonly number[]>([0]);
 
   /**
-   * Minimum value. Falls back to `0`. A slider's bounds are scalar
-   * by the ARIA slider pattern, but since Signal Forms v22 `FormUiControl.min`
-   * is typed `NonNullable<TValue>` — an array for this control — so `min` and
-   * `max` are excluded from the `FormValueControl` `implements` clause, and
-   * the transform widens the write type to satisfy the `[formField]` template
-   * type-check (which pushes `readonly number[] | undefined`). The form never
-   * produces a `min`/`max` state for an array-valued field at runtime (the
-   * `min()`/`max()` validators only apply to numeric fields), so non-number
-   * writes normalize to `undefined`.
+   * Lower bound of the value range. Not named `min` because `[formField]`
+   * reserves that name, so this one can be bound alongside it.
    */
-  readonly min = input(0 as number | undefined, {
-    transform: (value: number | readonly number[] | undefined): number | undefined =>
-      typeof value === 'number' ? value : undefined,
-  });
+  readonly rangeMin = input<number>(0);
   /**
-   * Maximum value. Falls back to `100`. Excluded from the
-   * `FormValueControl` `implements` clause and write-type-widened — see
-   * {@link min}.
+   * Upper bound of the value range. Not named `max` because `[formField]`
+   * reserves that name, so this one can be bound alongside it.
    */
-  readonly max = input(100 as number | undefined, {
-    transform: (value: number | readonly number[] | undefined): number | undefined =>
-      typeof value === 'number' ? value : undefined,
-  });
+  readonly rangeMax = input<number>(100);
   /**
-   * Increment values snap to. Values live on the `min` ± k·`step` grid: arrow
+   * Increment values snap to. Values live on the `rangeMin` ± k·`step` grid: arrow
    * keys move to the next grid point in the direction of travel, so a value
    * that starts off the grid snaps onto it instead of taking an oversized first
    * jump. Fractional steps (e.g. `0.1`) are supported: the snapped value is
@@ -146,16 +133,16 @@ export class ForSlider
    * Multiplier applied to `step` for `PageUp` / `PageDown`. Defaults to the
    * value from `provideForSliderDefaults` for the surrounding scope (10), so a
    * `step` of `1` pages by `10` and a `step` of `0.1` pages by `1`. It applies
-   * only from a value already on the `min` ± k·`step` grid — from an off-grid
+   * only from a value already on the `rangeMin` ± k·`step` grid — from an off-grid
    * value the key lands on the adjacent grid point instead, matching the
    * platform `stepUp()` / `stepDown()` rule.
    */
   readonly stepMultiplier = input(this.#defaults.stepMultiplier);
 
-  /** Effective minimum (defaults `0` when input is unset). Exposed to children via context. */
-  readonly minValue = computed(() => this.min() ?? 0);
-  /** Effective maximum (defaults `100`). Exposed to children via context. */
-  readonly maxValue = computed(() => this.max() ?? 100);
+  /** Lower bound of the value range. */
+  readonly minValue: Signal<number> = this.rangeMin;
+  /** Upper bound of the value range. */
+  readonly maxValue: Signal<number> = this.rangeMax;
 
   /**
    * Axis the thumb travels along. Reflected as `data-orientation`.
@@ -314,11 +301,11 @@ export class ForSlider
           warnedBounds = true;
           fortyWarn({
             code: 'FORCDK-SLIDER-002',
-            message: `[min]=${min} is greater than [max]=${max}.`,
+            message: `[rangeMin]=${min} is greater than [rangeMax]=${max}.`,
             cause:
               'Every thumb pins to the inverted bound and its aria-valuemin / aria-valuemax ' +
               'collapse to a single point, so the slider is not operable.',
-            fix: 'Set [min] <= [max].',
+            fix: 'Set [rangeMin] <= [rangeMax].',
           });
         }
         if (step > 0) {

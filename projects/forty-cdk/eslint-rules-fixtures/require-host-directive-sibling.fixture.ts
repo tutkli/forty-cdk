@@ -27,7 +27,7 @@ export class BrokenValueControl implements FormValueControl<string> {
 }
 
 // Expected: 1× forty-cdk/require-host-directive-sibling
-// The wrapped reference ForSlider uses (`Omit<FormValueControl<…>, …>`) is
+// A wrapped reference (`Omit<FormValueControl<…>, …>`) is
 // detected through the type arguments, not just the direct identifier.
 export class BrokenOmitControl implements Omit<FormValueControl<readonly number[]>, 'value'> {}
 

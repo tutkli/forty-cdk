@@ -1,4 +1,4 @@
-import { inject, InjectionToken, type Signal } from '@angular/core';
+import { computed, inject, InjectionToken, type Signal } from '@angular/core';
 
 import { orphanContextError, type WritingDirection } from 'forty-cdk/core';
 
@@ -13,11 +13,11 @@ export interface ForSliderThumbHandle {
 }
 
 /**
- * The reachable value range for one thumb: the slider's `[min, max]` narrowed
+ * The reachable value range for one thumb: the slider's `[rangeMin, rangeMax]` narrowed
  * by the adjacent thumbs and the `minStepsBetweenThumbs` gap, with both ends
  * rounded to the step's decimal precision. `max` is never below `min` — an
  * over-constrained configuration (a gap wider than the room the neighbors
- * leave, or `min > max`) collapses the range to a single point rather than
+ * leave, or `rangeMin > rangeMax`) collapses the range to a single point rather than
  * inverting it, so it is always safe to emit as `aria-valuemin` /
  * `aria-valuemax`.
  */
@@ -66,7 +66,7 @@ export interface ForSliderContext {
 
   // operations
   /**
-   * Set the value for a specific thumb. Snaps to step, clamps to `[min, max]`,
+   * Set the value for a specific thumb. Snaps to step, clamps to `[rangeMin, rangeMax]`,
    * and respects `minStepsBetweenThumbs` against neighbors. No-op while
    * `disabled` or `readonly`.
    */
@@ -82,7 +82,7 @@ export interface ForSliderContext {
 
   // pointer
   /**
-   * Map a pointer's client coordinates to a value in `[min, max]`,
+   * Map a pointer's client coordinates to a value in `[rangeMin, rangeMax]`,
    * respecting orientation, direction, and inversion.
    */
   pointerToValue(clientX: number, clientY: number): number;
@@ -112,6 +112,23 @@ export interface ForSliderContext {
 export type SliderArrowKey = 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight';
 
 export const FOR_SLIDER_CONTEXT = new InjectionToken<ForSliderContext>('FOR_SLIDER_CONTEXT');
+
+/**
+ * `touch-action` for a piece a drag can start on: capture the slider's own
+ * axis so a finger drag along it can't be stolen by page scrolling (which
+ * would fire `pointercancel` mid-drag and commit a mid-drag value), while
+ * freeing the perpendicular axis for scrolling. A horizontal slider drags
+ * along x (`pan-y`); a vertical slider drags along y (`pan-x`). `null` while
+ * the slider is disabled or readonly, since there is no drag to protect.
+ */
+export function sliderTouchAction(ctx: ForSliderContext): Signal<string | null> {
+  return computed(() => {
+    if (ctx.effectiveDisabled() || ctx.readonly()) {
+      return null;
+    }
+    return ctx.orientation() === 'vertical' ? 'pan-x' : 'pan-y';
+  });
+}
 
 export function injectSliderContext(piece: string): ForSliderContext {
   const ctx = inject(FOR_SLIDER_CONTEXT, { optional: true });

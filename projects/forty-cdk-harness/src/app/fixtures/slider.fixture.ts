@@ -93,8 +93,8 @@ import { ForSlider, ForSliderRange, ForSliderThumb, ForSliderTrack } from 'forty
       [orientation]="orientation"
       [dir]="dir"
       [disabled]="disabled"
-      [min]="min"
-      [max]="max"
+      [rangeMin]="min"
+      [rangeMax]="max"
       [step]="step"
       (valueChange)="onValueChange($event)"
       (valueCommit)="onValueCommit($event)"
@@ -119,6 +119,9 @@ import { ForSlider, ForSliderRange, ForSliderThumb, ForSliderTrack } from 'forty
     <output data-testid="value-commit-count">{{ valueCommitCount() }}</output>
     <output data-testid="last-value-commit">{{ valueCommitDisplay() }}</output>
     <output data-testid="touched">{{ touched() }}</output>
+    @if (scrollable) {
+      <div data-testid="spacer" style="height: 200vh"></div>
+    }
   `,
 })
 export class SliderFixture {
@@ -131,6 +134,7 @@ export class SliderFixture {
   protected readonly dir: 'ltr' | 'rtl' =
     this.#route.snapshot.queryParamMap.get('dir') === 'rtl' ? 'rtl' : 'ltr';
   protected readonly disabled = this.#route.snapshot.queryParamMap.get('disabled') === '1';
+  protected readonly scrollable = this.#route.snapshot.queryParamMap.get('scrollable') === '1';
 
   protected readonly min = parseFiniteNumber(this.#route.snapshot.queryParamMap.get('min')) ?? 0;
   protected readonly max = parseFiniteNumber(this.#route.snapshot.queryParamMap.get('max')) ?? 100;

@@ -11,8 +11,8 @@ import { ForSlider, ForSliderRange, ForSliderThumb, ForSliderTrack } from 'forty
         forSlider
         class="sl"
         [(value)]="value"
-        [min]="0"
-        [max]="1000"
+        [rangeMin]="0"
+        [rangeMax]="1000"
         [step]="10"
         [minStepsBetweenThumbs]="1"
       >

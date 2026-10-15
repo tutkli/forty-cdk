@@ -1,6 +1,6 @@
 import { DestroyRef, Directive, ElementRef, inject } from '@angular/core';
 
-import { injectSliderContext } from './slider-context';
+import { injectSliderContext, sliderTouchAction } from './slider-context';
 
 /**
  * The clickable track surface. Registers its element with `ForSlider` so the
@@ -10,7 +10,9 @@ import { injectSliderContext } from './slider-context';
  *
  * Reflects `data-orientation` and `data-disabled` so consumers can paint
  * the track from CSS. Position the visible track however you want — this
- * directive just owns the bounding-rect for the math.
+ * directive just owns the bounding-rect for the math. Binds the same
+ * axis-capturing `touch-action` as `[forSliderThumb]`, so a touch drag started
+ * on the bare track survives finger drift across the page's scroll axis.
  */
 @Directive({
   selector: '[forSliderTrack]',
@@ -18,11 +20,14 @@ import { injectSliderContext } from './slider-context';
   host: {
     '[attr.data-orientation]': 'ctx.orientation()',
     '[attr.data-disabled]': 'ctx.effectiveDisabled() ? "" : null',
+    '[style.touch-action]': 'touchAction()',
   },
 })
 export class ForSliderTrack {
   protected readonly ctx = injectSliderContext('ForSliderTrack');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
+
+  protected readonly touchAction = sliderTouchAction(this.ctx);
 
   constructor() {
     this.ctx.setTrack(this.#host.nativeElement);
