@@ -238,6 +238,7 @@ describe('injectVirtualizer', () => {
     el.setAttribute('data-index', '0');
     Object.defineProperty(el, 'offsetHeight', { configurable: true, value: 100 });
     Object.defineProperty(el, 'offsetWidth', { configurable: true, value: 100 });
+    (fixture.nativeElement as HTMLElement).appendChild(el);
     fixture.componentInstance.v.measureElement(el);
     await flush(fixture);
 
@@ -456,6 +457,7 @@ describe('injectVirtualizer', () => {
       measured.setAttribute('data-index', '0');
       Object.defineProperty(measured, 'offsetHeight', { configurable: true, value: 100 });
       Object.defineProperty(measured, 'offsetWidth', { configurable: true, value: 100 });
+      (fixture.nativeElement as HTMLElement).appendChild(measured);
       fixture.componentInstance.v.measureElement(measured);
       await flush(fixture);
 

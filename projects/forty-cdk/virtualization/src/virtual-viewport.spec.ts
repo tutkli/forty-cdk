@@ -237,6 +237,7 @@ describe('ForVirtualViewport — retained (pinned) row offset', () => {
     measured.setAttribute('data-index', '0');
     Object.defineProperty(measured, 'offsetHeight', { configurable: true, value: 100 });
     Object.defineProperty(measured, 'offsetWidth', { configurable: true, value: 100 });
+    (fixture.nativeElement as HTMLElement).appendChild(measured);
     fixture.componentInstance.viewport().measureElement(measured);
     await flush(fixture);
 
