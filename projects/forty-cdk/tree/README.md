@@ -769,7 +769,7 @@ export class Files {
 | Attribute               | Values       | When present                                  |
 | ----------------------- | ------------ | --------------------------------------------- |
 | `data-dragging`         | `""` (empty) | A drag session is live (pointer or keyboard). |
-| `data-drop-target`      | `""` (empty) | A valid drop target has been resolved.        |
+| `data-drop-target`      | `""` (empty) | The resolved position passes `[canDrop]`.     |
 | `--for-tree-drop-level` | integer 1–N  | The resolved depth of the current target.     |
 
 ### Drop indicator
@@ -780,24 +780,41 @@ While a drag is live, the single `[forTreeItem]` the lifted node would land besi
 | --------------- | -------------------- | ------------------------------------------------------------- |
 | `[forTreeItem]` | `data-drop-position` | `"before"` \| `"after"` (the line sits above / below the row) |
 
-Pair it with the root's `--for-tree-drop-level` (the resolved depth) to indent the line to the target level:
+Pair it with the root's `--for-tree-drop-level` (the resolved depth) to indent the line to the target level. The anchor row is already indented by its own nesting, so offset the line by the difference between the two levels rather than by the drop level alone. Publish each row's level from the item's exported `level()`, and draw the line on a positioned label so it lands on the anchor row:
+
+```html
+<li
+  forTreeItem
+  #item="forTreeItem"
+  class="tree-item"
+  [value]="node().id"
+  [style.--tree-node-level]="item.level()"
+>
+  <div forTreeItemLabel class="tree-label">…</div>
+</li>
+```
 
 ```css
-[forTreeItem][data-drop-position]::after {
+.tree-label {
+  position: relative;
+}
+.tree-item[data-drop-position] > .tree-label::after {
   content: '';
   position: absolute;
-  left: calc(var(--for-tree-drop-level, 1) * 1rem);
-  right: 0;
+  inset-inline-start: calc((var(--for-tree-drop-level, 1) - var(--tree-node-level, 1)) * 1rem);
+  inset-inline-end: 0;
   height: 2px;
   background: var(--accent);
 }
-[forTreeItem][data-drop-position='before']::after {
+.tree-item[data-drop-position='before'] > .tree-label::after {
   top: 0;
 }
-[forTreeItem][data-drop-position='after']::after {
+.tree-item[data-drop-position='after'] > .tree-label::after {
   bottom: 0;
 }
 ```
+
+`1rem` stands for the indent each nested group adds. `inset-inline-start` follows the writing direction, so the line indents from the right under `dir="rtl"`.
 
 Advanced consumers can read the same resolved position programmatically: `[forTreeNodeDrag]` exposes a read-only `dropIndicator: Signal<ForTreeDropIndicator<T> | null>` (`{ anchor, position, level }`, `null` when idle). Injecting it through `ForTreeNodeDragContext` reads the same signal at `ForTreeDropIndicator<unknown>`, since a token cannot carry the node value type.
 
@@ -805,7 +822,7 @@ On lift the dragged node's subtree is collapsed (and restored on drop / cancel).
 
 ### Localizing drag announcements
 
-While a drag is in flight, `[forTreeNodeDrag]` announces lift / move / drop / cancel / invalid-drop through an off-screen live region. The phrasing is English by default; override it per injector scope with `provideForTreeDefaults` so screen readers speak the consumer's language. `position` / `total` are 1-based, and `parentLabel` is `null` when the node lands at the root. Phrase the root-vs-parent distinction in your own language.
+While a drag is in flight, `[forTreeNodeDrag]` announces lift / move / drop / cancel / invalid-drop through an off-screen live region. The phrasing is English by default; override it per injector scope with `provideForTreeDefaults` so screen readers speak the consumer's language. `position` / `total` are 1-based, and `parentLabel` is `null` when the node lands at the root. Phrase the root-vs-parent distinction in your own language. `total` is `null` when the node lands in a collapsed parent: its children are not rendered, so the tree cannot count them, and the default phrasing leaves the total out.
 
 The `label` and `parentLabel` a formatter receives are the node's `[textValue]` when it carries one, and the accessible text of its `[forTreeItemLabel]` otherwise. That is the same text typeahead matches against, so a node is announced by the name the user types to reach it, and `aria-hidden` decoration inside the label (a toggle caret, a checkbox glyph) is excluded from both.
 
@@ -816,21 +833,21 @@ provideForTreeDefaults({
   dragAnnounceLift: (label) =>
     `${label} levantado. Usa las flechas para mover, Espacio para soltar, Escape para cancelar.`,
   dragAnnounceMove: (label, parentLabel, position, total) =>
-    `${label}: ${parentLabel ? `dentro de ${parentLabel}, ` : 'en la raíz, '}posición ${position} de ${total}.`,
+    `${label}: ${parentLabel ? `dentro de ${parentLabel}, ` : 'en la raíz, '}posición ${position}${total === null ? '' : ` de ${total}`}.`,
   dragAnnounceDrop: (label, parentLabel, position, total) =>
-    `${label} soltado ${parentLabel ? `dentro de ${parentLabel}, ` : 'en la raíz, '}posición ${position} de ${total}.`,
+    `${label} soltado ${parentLabel ? `dentro de ${parentLabel}, ` : 'en la raíz, '}posición ${position}${total === null ? '' : ` de ${total}`}.`,
   dragAnnounceCancel: (label) => `Cancelado. ${label} vuelve a su posición original.`,
   dragAnnounceInvalid: (label) => `No se puede soltar ${label} aquí.`,
 });
 ```
 
-| Default               | Type                                                                                      | Description                                                        |
-| --------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| `dragAnnounceLift`    | `(label: string) => string`                                                               | Announced when a node is picked up for drag.                       |
-| `dragAnnounceMove`    | `(label: string, parentLabel: string \| null, position: number, total: number) => string` | Announced on each intermediate move while a node is lifted.        |
-| `dragAnnounceDrop`    | `(label: string, parentLabel: string \| null, position: number, total: number) => string` | Announced when a node is committed to its new position.            |
-| `dragAnnounceCancel`  | `(label: string) => string`                                                               | Announced when a lift is cancelled and the node returns to origin. |
-| `dragAnnounceInvalid` | `(label: string) => string`                                                               | Announced when a `canDrop` veto rejects the attempted drop.        |
+| Default               | Type                                                                                              | Description                                                        |
+| --------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `dragAnnounceLift`    | `(label: string) => string`                                                                       | Announced when a node is picked up for drag.                       |
+| `dragAnnounceMove`    | `(label: string, parentLabel: string \| null, position: number, total: number \| null) => string` | Announced on each intermediate move while a node is lifted.        |
+| `dragAnnounceDrop`    | `(label: string, parentLabel: string \| null, position: number, total: number \| null) => string` | Announced when a node is committed to its new position.            |
+| `dragAnnounceCancel`  | `(label: string) => string`                                                                       | Announced when a lift is cancelled and the node returns to origin. |
+| `dragAnnounceInvalid` | `(label: string) => string`                                                                       | Announced when a `canDrop` veto rejects the attempted drop.        |
 
 ## API
 

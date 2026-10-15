@@ -27,24 +27,26 @@ export interface ForTreeDefaults {
    * `[forTreeNodeDrag]` announcement on each intermediate move while a node is
    * lifted (polite). `position` / `total` are 1-based; `parentLabel` is `null`
    * at the root, so the consumer phrases the root-vs-parent distinction in
-   * their own language. Override to localize.
+   * their own language. `total` is `null` for a drop into a collapsed parent,
+   * whose children are not rendered and cannot be counted. Override to localize.
    */
   dragAnnounceMove: (
     label: string,
     parentLabel: string | null,
     position: number,
-    total: number,
+    total: number | null,
   ) => string;
   /**
    * `[forTreeNodeDrag]` announcement when a node is committed to its new
    * position (assertive). `position` / `total` are 1-based; `parentLabel` is
-   * `null` at the root. Override to localize.
+   * `null` at the root, and `total` is `null` for a drop into a collapsed
+   * parent. Override to localize.
    */
   dragAnnounceDrop: (
     label: string,
     parentLabel: string | null,
     position: number,
-    total: number,
+    total: number | null,
   ) => string;
   /**
    * `[forTreeNodeDrag]` announcement when a lift is cancelled and the node
@@ -76,11 +78,13 @@ export const FOR_TREE_FALLBACK_DEFAULTS: ForTreeDefaults = {
     `Picked up ${label}. Use arrow keys to move, Space to drop, Escape to cancel.`,
   dragAnnounceMove: (label, parentLabel, position, total) => {
     const parentPart = parentLabel ? `under ${parentLabel}, ` : 'at root, ';
-    return `${label}: ${parentPart}position ${position} of ${total}.`;
+    const totalPart = total === null ? '' : ` of ${total}`;
+    return `${label}: ${parentPart}position ${position}${totalPart}.`;
   },
   dragAnnounceDrop: (label, parentLabel, position, total) => {
     const parentPart = parentLabel ? `under ${parentLabel}, ` : 'at root, ';
-    return `Dropped ${label} ${parentPart}position ${position} of ${total}.`;
+    const totalPart = total === null ? '' : ` of ${total}`;
+    return `Dropped ${label} ${parentPart}position ${position}${totalPart}.`;
   },
   dragAnnounceCancel: (label) => `Cancelled. ${label} returned to its original position.`,
   dragAnnounceInvalid: (label) => `Cannot drop ${label} here.`,

@@ -1,7 +1,7 @@
 import { dragAnnouncementLabel } from 'forty-cdk/core';
 
 import type { ForTreeVisibleNode } from './tree-context';
-import { type TreeDropRow } from './tree-drop-resolver';
+import { type TreeDropRow, type TreeDropTarget } from './tree-drop-resolver';
 
 /**
  * Pure helpers that turn the tree's visible-node list into the flat row / label data the
@@ -100,6 +100,32 @@ export function treeParentLabel<T>(
   }
   const entry = visible.find((e) => equals(e.handle.value(), parentValue));
   return entry ? treeNodeLabel(entry) : null;
+}
+
+/**
+ * The number of children the new parent will hold once the node lands, the node included, or
+ * `null` when that parent is a collapsed parent: its children are not visible rows, so the
+ * resolver's `siblingCount` cannot count them.
+ *
+ * @param visible The tree's currently visible nodes, in DOM order.
+ * @param target The resolved drop.
+ * @param isExpanded The tree's expansion probe.
+ * @param equals The tree's node-value comparator.
+ */
+export function treeDropTotal<T>(
+  visible: readonly ForTreeVisibleNode<T>[],
+  target: TreeDropTarget<T>,
+  isExpanded: (value: T) => boolean,
+  equals: (a: T, b: T) => boolean,
+): number | null {
+  const parentValue = target.parentValue;
+  if (parentValue !== null && !isExpanded(parentValue)) {
+    const parent = visible.find((e) => equals(e.handle.value(), parentValue));
+    if (parent?.handle.expandable()) {
+      return null;
+    }
+  }
+  return target.siblingCount + 1;
 }
 
 /**

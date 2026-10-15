@@ -313,6 +313,93 @@ describe('ForTreeNodeDrag — keyboard', () => {
   });
 });
 
+@Component({
+  imports: [ForTree, ForTreeNodeDrag, ForTreeItem, ForTreeItemLabel],
+  template: `
+    <ul forTree forTreeNodeDrag aria-label="Files">
+      <li forTreeItem value="only" data-testid="only"><div forTreeItemLabel>Only</div></li>
+    </ul>
+  `,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class SingleNodeDragHost {}
+
+describe('ForTreeNodeDrag — data-drop-target reflects whether the drop would be accepted (#2401)', () => {
+  async function liftMusic(
+    canDrop: ((e: ForTreeDragDropEvent) => boolean) | undefined,
+  ): Promise<{ tree: HTMLElement; f: () => Promise<void> }> {
+    const { instance, query, flush: f } = renderHost(TreeDragHost);
+    instance.canDropFn.set(canDrop);
+    await f();
+    const tree = query<HTMLElement>('[forTree]')!;
+    const music = query<HTMLElement>('[data-testid="music"]')!;
+    music.focus();
+    dispatchKey(music, ' ', { ctrlKey: true });
+    await f();
+    return { tree, f };
+  }
+
+  it('is present while the resolved drop has no veto', async () => {
+    const { tree } = await liftMusic(undefined);
+
+    expect(tree.hasAttribute('data-dragging')).toBe(true);
+    expect(tree.hasAttribute('data-drop-target')).toBe(true);
+  });
+
+  it('is absent while [canDrop] vetoes the resolved drop', async () => {
+    const { tree } = await liftMusic(() => false);
+
+    expect(tree.hasAttribute('data-dragging')).toBe(true);
+    expect(tree.hasAttribute('data-drop-target')).toBe(false);
+  });
+
+  it('follows the veto as the target moves between accepted and rejected positions', async () => {
+    const { tree, f } = await liftMusic((e) => e.newParent === null);
+    expect(tree.hasAttribute('data-drop-target')).toBe(true);
+
+    dispatchKey(tree, 'ArrowRight');
+    await f();
+    expect(tree.hasAttribute('data-drop-target')).toBe(false);
+
+    dispatchKey(tree, 'ArrowLeft');
+    await f();
+    expect(tree.hasAttribute('data-drop-target')).toBe(true);
+  });
+
+  it('hands [canDrop] the event the drop would commit', async () => {
+    const seen: ForTreeDragDropEvent[] = [];
+    const { tree, f } = await liftMusic((e) => {
+      seen.push(e);
+      return true;
+    });
+
+    dispatchKey(tree, 'ArrowRight');
+    await f();
+
+    expect(seen.at(-1)).toEqual({
+      node: 'music',
+      previousParent: null,
+      newParent: 'docs',
+      previousIndex: 1,
+      currentIndex: 0,
+    });
+  });
+
+  it('is absent when no drop position resolves', async () => {
+    const { query, flush: f } = renderHost(SingleNodeDragHost);
+    await f();
+    const tree = query<HTMLElement>('[forTree]')!;
+    const only = query<HTMLElement>('[data-testid="only"]')!;
+    only.focus();
+
+    dispatchKey(only, ' ', { ctrlKey: true });
+    await f();
+
+    expect(tree.hasAttribute('data-dragging')).toBe(true);
+    expect(tree.hasAttribute('data-drop-target')).toBe(false);
+  });
+});
+
 describe('ForTreeNodeDrag — lift key', () => {
   it('lifts and drops a node with Shift+Enter, ArrowDown, Space', async () => {
     const { instance, query, flush: f } = renderHost(TreeDragHost);
@@ -1319,6 +1406,48 @@ describe('ForTreeNodeDrag — focus follows the dropped node (#2118)', () => {
     );
     expect(roots).toEqual(['readme', 'documents']);
     expect(document.activeElement).toBe(query('[data-testid="readme"]'));
+  });
+});
+
+describe('ForTreeNodeDrag — the sibling count of a drop into a collapsed parent (#2401)', () => {
+  afterEach(() => {
+    document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
+  });
+
+  async function liftReadme(
+    open: readonly string[],
+  ): Promise<{ tree: HTMLElement; f: () => Promise<void> }> {
+    const { instance, query, flush: f } = renderHost(AppliedDropTreeHost);
+    instance.open.set(open);
+    await f();
+    const tree = query<HTMLElement>('[forTree]')!;
+    const readme = query<HTMLElement>('[data-testid="readme"]')!;
+    readme.focus();
+    dispatchKey(readme, ' ', { ctrlKey: true });
+    await f();
+    return { tree, f };
+  }
+
+  it('announces no total for the move and the drop, since the hidden children are not counted', async () => {
+    const { tree, f } = await liftReadme([]);
+
+    dispatchKey(tree, 'ArrowRight');
+    await f();
+    expect(liveRegion('polite')?.textContent).toBe('Readme: under Documents, position 1.');
+
+    dispatchKey(tree, ' ');
+    await f();
+    expect(liveRegion('assertive')?.textContent).toBe(
+      'Dropped Readme under Documents, position 1.',
+    );
+  });
+
+  it('still counts the children of an expanded parent', async () => {
+    const { tree, f } = await liftReadme(['documents']);
+
+    dispatchKey(tree, 'ArrowRight');
+    await f();
+    expect(liveRegion('polite')?.textContent).toBe('Readme: under Documents, position 3 of 3.');
   });
 });
 
