@@ -4,7 +4,7 @@ import { ForCheckbox } from 'forty-cdk/checkbox';
 interface Topping {
   readonly id: number;
   readonly label: string;
-  selected: boolean;
+  readonly selected: boolean;
 }
 
 @Component({
@@ -29,7 +29,12 @@ interface Topping {
 
       <div class="children">
         @for (topping of toppings(); track topping.id) {
-          <button forCheckbox class="cb-row" [(checked)]="topping.selected">
+          <button
+            forCheckbox
+            class="cb-row"
+            [checked]="topping.selected"
+            (checkedChange)="setTopping(topping.id, $event)"
+          >
             <span class="cb">
               <span class="cb-check" aria-hidden="true"></span>
             </span>
@@ -129,7 +134,7 @@ interface Topping {
   `,
 })
 export class CheckboxSelectAllExample {
-  protected readonly toppings = signal<Topping[]>([
+  protected readonly toppings = signal<readonly Topping[]>([
     { id: 1, label: 'Mozzarella', selected: true },
     { id: 2, label: 'Mushrooms', selected: false },
     { id: 3, label: 'Pepperoni', selected: false },
@@ -144,5 +149,9 @@ export class CheckboxSelectAllExample {
   protected toggleAll(): void {
     const next = !this.allChecked();
     this.toppings.update((list) => list.map((t) => ({ ...t, selected: next })));
+  }
+
+  protected setTopping(id: number, selected: boolean): void {
+    this.toppings.update((list) => list.map((t) => (t.id === id ? { ...t, selected } : t)));
   }
 }

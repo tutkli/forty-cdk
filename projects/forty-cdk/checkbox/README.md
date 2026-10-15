@@ -63,6 +63,12 @@ A parent checkbox reflects `indeterminate` when only some children are selected.
 import { Component, computed, signal } from '@angular/core';
 import { ForCheckbox } from 'forty-cdk/checkbox';
 
+interface Topping {
+  readonly id: number;
+  readonly label: string;
+  readonly selected: boolean;
+}
+
 @Component({
   selector: 'demo-select-all',
   imports: [ForCheckbox],
@@ -80,7 +86,12 @@ import { ForCheckbox } from 'forty-cdk/checkbox';
       Select all toppings
     </button>
     @for (item of items(); track item.id) {
-      <button forCheckbox class="cb-row" [(checked)]="item.selected">
+      <button
+        forCheckbox
+        class="cb-row"
+        [checked]="item.selected"
+        (checkedChange)="setItem(item.id, $event)"
+      >
         <span class="cb">
           <span class="cb-check" aria-hidden="true"></span>
         </span>
@@ -90,7 +101,7 @@ import { ForCheckbox } from 'forty-cdk/checkbox';
   `,
 })
 export class DemoSelectAll {
-  readonly items = signal([
+  readonly items = signal<readonly Topping[]>([
     { id: 1, label: 'Mozzarella', selected: false },
     { id: 2, label: 'Mushrooms', selected: true },
     { id: 3, label: 'Pepperoni', selected: false },
@@ -105,6 +116,10 @@ export class DemoSelectAll {
   toggleAll(): void {
     const next = !this.allChecked();
     this.items.update((list) => list.map((i) => ({ ...i, selected: next })));
+  }
+
+  setItem(id: number, selected: boolean): void {
+    this.items.update((list) => list.map((i) => (i.id === id ? { ...i, selected } : i)));
   }
 }
 ```
