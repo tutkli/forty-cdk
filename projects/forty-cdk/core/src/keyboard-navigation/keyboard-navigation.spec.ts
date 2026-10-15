@@ -349,14 +349,15 @@ describe('resolveTreeExpandCollapse', () => {
 describe('moveGridIndex', () => {
   const cols = 3; // 3x3 grid (indices 0..8)
 
-  it('next / prev step linearly without loop', () => {
+  it('next / prev step within the row without loop', () => {
     expect(moveGridIndex(0, 9, 'next', { cols })).toBe(1);
     expect(moveGridIndex(8, 9, 'next', { cols })).toBe(null);
     expect(moveGridIndex(8, 9, 'prev', { cols })).toBe(7);
   });
 
-  it('next / prev wrap with loop', () => {
-    expect(moveGridIndex(8, 9, 'next', { cols, loop: true })).toBe(0);
+  it('next / prev wrap to the other end of the same row with loop', () => {
+    expect(moveGridIndex(8, 9, 'next', { cols, loop: true })).toBe(6);
+    expect(moveGridIndex(3, 9, 'prev', { cols, loop: true })).toBe(5);
   });
 
   it('next-row / prev-row jump by cols', () => {
@@ -384,9 +385,15 @@ describe('moveGridIndex', () => {
     expect(moveGridIndex(4, 9, 'last', { cols, isDisabled })).toBe(7);
   });
 
-  it('skips disabled in next', () => {
+  it('skips disabled cells within the row in next', () => {
+    const isDisabled = (i: number) => i === 1;
+    expect(moveGridIndex(0, 9, 'next', { cols, isDisabled })).toBe(2);
+  });
+
+  it('next / prev return null when every remaining cell of the row is disabled', () => {
     const isDisabled = (i: number) => i === 1 || i === 2;
-    expect(moveGridIndex(0, 9, 'next', { cols, isDisabled })).toBe(3);
+    expect(moveGridIndex(0, 9, 'next', { cols, isDisabled })).toBe(null);
+    expect(moveGridIndex(3, 9, 'prev', { cols, isDisabled: (i) => i < 3 })).toBe(null);
   });
 
   it('next-row skips a disabled cell to the next enabled cell in the column', () => {
@@ -399,15 +406,20 @@ describe('moveGridIndex', () => {
     expect(moveGridIndex(0, 9, 'next-row', { cols, isDisabled })).toBe(null);
   });
 
-  it('next / prev treat the grid as a flat list, wrapping at the global ends with loop', () => {
-    expect(moveGridIndex(2, 9, 'next', { cols })).toBe(3);
-    expect(moveGridIndex(3, 9, 'prev', { cols })).toBe(2);
-    expect(moveGridIndex(0, 9, 'prev', { cols, loop: true })).toBe(8);
+  it('next / prev stop at the row edge instead of crossing into an adjacent row', () => {
+    expect(moveGridIndex(2, 9, 'next', { cols })).toBe(null);
+    expect(moveGridIndex(3, 9, 'prev', { cols })).toBe(null);
+    expect(moveGridIndex(0, 9, 'prev', { cols, loop: true })).toBe(2);
+  });
+
+  it('next / prev stay inside a partial last row', () => {
+    expect(moveGridIndex(6, 7, 'next', { cols })).toBe(null);
+    expect(moveGridIndex(6, 7, 'next', { cols, loop: true })).toBe(null);
   });
 
   it('handles cols = 1 like a vertical list', () => {
     expect(moveGridIndex(0, 5, 'next-row', { cols: 1 })).toBe(1);
-    expect(moveGridIndex(0, 5, 'next', { cols: 1 })).toBe(1);
+    expect(moveGridIndex(0, 5, 'next', { cols: 1 })).toBe(null);
   });
 
   it('page-down / page-up move by pageSize rows preserving the column', () => {

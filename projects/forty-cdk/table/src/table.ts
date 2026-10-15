@@ -848,7 +848,7 @@ export class ForTable<T = unknown> implements ForTableContext {
       return false;
     }
     const row = this.#rowOfCell(host);
-    if (!row?.expandable()) {
+    if (!row?.expandable() || row.value() === undefined) {
       return false;
     }
     const value = row.value() as T;
