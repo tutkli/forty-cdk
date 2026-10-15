@@ -40,6 +40,8 @@ export interface ForNavigationMenuContentHandle extends CollectionHandle {
   readonly host: HTMLElement;
   readonly value: Signal<string>;
   readonly id: Signal<string>;
+  /** Whether the panel sits in a registered viewport. Always `false` off the browser. */
+  readonly hosted: Signal<boolean>;
 }
 
 /**
@@ -177,6 +179,11 @@ export interface NavigationMenuContext extends ForNavigationMenuContext {
   unregisterViewport(handle: ForNavigationMenuViewportHandle): void;
   /** Currently-registered viewport (at most one), or `null`. */
   readonly viewport: Signal<ForNavigationMenuViewportHandle | null>;
+  /**
+   * The id of the panel paired with `value` while a viewport hosts it, or `null` while it sits in
+   * its item or is not mounted. Reactive.
+   */
+  hostedContentIdFor(value: string): string | null;
   /**
    * Route a `focusout` observed anywhere on the widget's surface to the root,
    * which acts on it only when the leave reports no destination

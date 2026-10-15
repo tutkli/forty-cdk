@@ -1,8 +1,10 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { Component, signal, viewChild } from '@angular/core';
 
+import { pressKey } from 'forty-cdk/testing';
+
 import { flush as flushAsync } from '../../src/test-utils/flush';
-import { renderHost } from '../../src/test-utils/render';
+import { type RenderResult, renderHost } from '../../src/test-utils/render';
 import { TestStackedLayer } from '../../src/test-utils/stacked-layer';
 import { ForNavigationMenu } from './navigation-menu';
 import { ForNavigationMenuContent } from './navigation-menu-content';
@@ -261,6 +263,56 @@ class ExternalViewportMegaMenuHost {
   readonly stacked = viewChild.required(TestStackedLayer);
 }
 
+@Component({
+  selector: 'tab-order-mega-menu-host',
+  imports: [
+    ForNavigationMenu,
+    ForNavigationMenuList,
+    ForNavigationMenuItem,
+    ForNavigationMenuTrigger,
+    ForNavigationMenuContent,
+    ForNavigationMenuViewport,
+  ],
+  template: `
+    <input data-id="before" />
+    <nav forNavigationMenu [(value)]="open">
+      <ul forNavigationMenuList>
+        <li forNavigationMenuItem value="products" data-id="item-products">
+          <button forNavigationMenuTrigger data-id="trigger-products">Products</button>
+          @if (open() === 'products') {
+            <div forNavigationMenuContent data-id="products">
+              <a href="/p/web" data-id="products-1">Web</a>
+              <a href="/p/mobile" data-id="products-2">Mobile</a>
+            </div>
+          }
+        </li>
+        <li forNavigationMenuItem value="solutions" data-id="item-solutions">
+          <button forNavigationMenuTrigger data-id="trigger-solutions">Solutions</button>
+          @if (open() === 'solutions') {
+            <div forNavigationMenuContent data-id="solutions">
+              <a href="/s/a" data-id="solutions-1">A</a>
+            </div>
+          }
+        </li>
+        <li forNavigationMenuItem value="company" data-id="item-company">
+          <button forNavigationMenuTrigger data-id="trigger-company">Company</button>
+          @if (open() === 'company') {
+            <div forNavigationMenuContent data-id="company">company panel</div>
+          }
+        </li>
+      </ul>
+      @if (withViewport()) {
+        <div forNavigationMenuViewport data-id="viewport"></div>
+      }
+    </nav>
+    <input data-id="after" />
+  `,
+})
+class TabOrderMegaMenuHost {
+  readonly open = signal<string | null>(null);
+  readonly withViewport = signal(true);
+}
+
 describe('ForNavigationMenuViewport', () => {
   let originalRO: typeof ResizeObserver;
 
@@ -513,6 +565,135 @@ describe('ForNavigationMenuViewport', () => {
       } finally {
         stranger.remove();
       }
+    });
+  });
+
+  describe('Tab order of a panel the viewport hosts', () => {
+    async function openProducts(): Promise<RenderResult<TabOrderMegaMenuHost>> {
+      const result = renderHost(TabOrderMegaMenuHost);
+      result.fixture.componentInstance.open.set('products');
+      await result.flush();
+      return result;
+    }
+
+    function tabFrom(el: HTMLElement, shiftKey = false): KeyboardEvent {
+      el.focus();
+      return pressKey(el, 'Tab', { shiftKey });
+    }
+
+    it('moves Tab from the open trigger to the first link of its panel', async () => {
+      const { query } = await openProducts();
+      const viewport = query<HTMLElement>('[data-id="viewport"]')!;
+      expect(query('[data-id="products"]')!.parentElement).toBe(viewport);
+
+      const event = tabFrom(query<HTMLElement>('[data-id="trigger-products"]')!);
+
+      expect(event.defaultPrevented).toBe(true);
+      expect(document.activeElement).toBe(query('[data-id="products-1"]'));
+    });
+
+    it('moves Tab between two links of the panel itself', async () => {
+      const { query } = await openProducts();
+
+      const event = tabFrom(query<HTMLElement>('[data-id="products-1"]')!);
+
+      expect(event.defaultPrevented).toBe(true);
+      expect(document.activeElement).toBe(query('[data-id="products-2"]'));
+    });
+
+    it('moves Tab from the last link of the panel to the next trigger and keeps it open', async () => {
+      const { query, flush } = await openProducts();
+
+      const event = tabFrom(query<HTMLElement>('[data-id="products-2"]')!);
+      await flush();
+
+      expect(event.defaultPrevented).toBe(true);
+      expect(document.activeElement).toBe(query('[data-id="trigger-solutions"]'));
+      expect(query('[data-id="products"]')).not.toBeNull();
+    });
+
+    it('moves Shift+Tab from the first link of the panel back to its trigger', async () => {
+      const { query } = await openProducts();
+
+      const event = tabFrom(query<HTMLElement>('[data-id="products-1"]')!, true);
+
+      expect(event.defaultPrevented).toBe(true);
+      expect(document.activeElement).toBe(query('[data-id="trigger-products"]'));
+    });
+
+    it('moves Shift+Tab from the next trigger to the last link of the panel', async () => {
+      const { query } = await openProducts();
+
+      const event = tabFrom(query<HTMLElement>('[data-id="trigger-solutions"]')!, true);
+
+      expect(event.defaultPrevented).toBe(true);
+      expect(document.activeElement).toBe(query('[data-id="products-2"]'));
+    });
+
+    it('moves Tab from a later trigger past the panel of an earlier one', async () => {
+      const { query } = await openProducts();
+
+      const event = tabFrom(query<HTMLElement>('[data-id="trigger-company"]')!);
+
+      expect(event.defaultPrevented).toBe(true);
+      expect(document.activeElement).toBe(query('[data-id="after"]'));
+    });
+
+    it('leaves Tab to the browser where the panel already follows its trigger', async () => {
+      const { fixture, query, flush } = renderHost(TabOrderMegaMenuHost);
+      fixture.componentInstance.withViewport.set(false);
+      fixture.componentInstance.open.set('products');
+      await flush();
+
+      expect(tabFrom(query<HTMLElement>('[data-id="trigger-products"]')!).defaultPrevented).toBe(
+        false,
+      );
+      expect(tabFrom(query<HTMLElement>('[data-id="products-2"]')!).defaultPrevented).toBe(false);
+    });
+
+    it('leaves Tab to the browser once the panel closes', async () => {
+      const { fixture, query, flush } = await openProducts();
+      fixture.componentInstance.open.set(null);
+      await flush();
+
+      expect(tabFrom(query<HTMLElement>('[data-id="trigger-products"]')!).defaultPrevented).toBe(
+        false,
+      );
+    });
+
+    it('ignores a Tab another handler already prevented', async () => {
+      const { query } = await openProducts();
+      const trigger = query<HTMLElement>('[data-id="trigger-products"]')!;
+      trigger.focus();
+      const event = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true });
+      event.preventDefault();
+
+      trigger.dispatchEvent(event);
+
+      expect(document.activeElement).toBe(trigger);
+    });
+
+    it('owns the hosted panel from its item, and only while it is open there', async () => {
+      const { fixture, query, flush } = await openProducts();
+      const item = query<HTMLElement>('[data-id="item-products"]')!;
+      const panel = query<HTMLElement>('[data-id="products"]')!;
+
+      expect(item.getAttribute('aria-owns')).toBe(panel.id);
+      expect(query('[data-id="item-solutions"]')!.hasAttribute('aria-owns')).toBe(false);
+
+      fixture.componentInstance.open.set(null);
+      await flush();
+
+      expect(item.hasAttribute('aria-owns')).toBe(false);
+    });
+
+    it('does not own a panel that stays inside its item', async () => {
+      const { fixture, query, flush } = renderHost(TabOrderMegaMenuHost);
+      fixture.componentInstance.withViewport.set(false);
+      fixture.componentInstance.open.set('products');
+      await flush();
+
+      expect(query('[data-id="item-products"]')!.hasAttribute('aria-owns')).toBe(false);
     });
   });
 

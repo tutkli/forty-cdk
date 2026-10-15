@@ -185,6 +185,7 @@ export {
 export { FOR_FIELDSET_CONTEXT, type ForFieldsetContext } from './field/fieldset-context';
 export { findFirstFocusable, injectFocusTrap } from './focus-trap/focus-trap';
 export {
+  findRelocatedTabStop,
   findTabbableEdges,
   isInitialFocusTarget,
   leavesTabSequence,

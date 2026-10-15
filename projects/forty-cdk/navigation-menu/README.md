@@ -263,6 +263,15 @@ The Viewport owns panel ordering: each Content is inserted in its **trigger's do
 
 Measurement always tracks the **active** panel. The Viewport's `--for-navigation-menu-viewport-width` / `--for-navigation-menu-viewport-height` reflect the entering panel as soon as it becomes active; a non-active panel kept mounted by `animate.leave` is intentionally no longer measured, so a leaving panel's size never drives the Viewport box mid-transition.
 
+### The open panel keeps its trigger's place
+
+Moving a panel into the Viewport changes where it sits in the document, and the Tab order and the screen-reader reading order both follow the document. While an item is open and the Viewport hosts its panel, the menu keeps both as if the panel still sat right after its trigger:
+
+- Tab from the open trigger moves into the panel, and Tab from the panel's last link moves on to the next trigger. Shift+Tab walks the same path back. Tab from a later trigger skips the panel, since it belongs to an earlier one. Inside the panel, Tab reaches every link even in Safari, which skips links when tabbing by default.
+- The `[forNavigationMenuItem]` reflects `aria-owns` pointing at the panel, so assistive technology reads the panel after the trigger rather than at the Viewport's place in the page.
+
+The Tab order is resolved against the page's focusable elements in document order, so a positive `tabindex` elsewhere on the page is read at its document position rather than ahead of everything else.
+
 ### Rendering the Viewport outside the `<nav>`
 
 The Viewport must be **declared** inside `[forNavigationMenu]` (DI resolves at the template's declaration site), but it may be **stamped** elsewhere: declare it in an `<ng-template>` inside the root and render that template into a page-level container via `ngTemplateOutlet` when the panel needs to escape the header's stacking or overflow context. Dismiss containment follows the panel rather than the nav subtree: focus or a pointerdown landing inside the Viewport or the active panel counts as inside the navigation, so Tab into an externally-hosted panel does not close it.
@@ -313,15 +322,16 @@ Dismissal is symmetric in both placements. Escape, outside pointerdown **and** t
 
 ## Keyboard
 
-| Key                                            | Behavior                                                                   |
-| ---------------------------------------------- | -------------------------------------------------------------------------- |
-| Tab                                            | Moves into the trigger row. Inside an open panel, moves through its links. |
-| Enter / Space                                  | Toggles the focused trigger.                                               |
-| ArrowDown (horizontal) / ArrowRight (vertical) | Opens the focused trigger.                                                 |
-| ArrowLeft / ArrowRight (horizontal)            | Moves focus across triggers.                                               |
-| ArrowUp / ArrowDown (vertical)                 | Moves focus across triggers.                                               |
-| Home / End                                     | Jump to first / last enabled trigger.                                      |
-| Escape                                         | Closes and returns focus to the trigger.                                   |
+| Key                                            | Behavior                                                                                                                                                          |
+| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Tab                                            | Moves into the trigger row. From an open trigger, moves into its panel and through its links, then on to the next trigger, wherever a Viewport renders the panel. |
+| Shift+Tab                                      | The same path in reverse: from the next trigger into the open panel's last link, and from its first link back to the trigger.                                     |
+| Enter / Space                                  | Toggles the focused trigger.                                                                                                                                      |
+| ArrowDown (horizontal) / ArrowRight (vertical) | Opens the focused trigger.                                                                                                                                        |
+| ArrowLeft / ArrowRight (horizontal)            | Moves focus across triggers.                                                                                                                                      |
+| ArrowUp / ArrowDown (vertical)                 | Moves focus across triggers.                                                                                                                                      |
+| Home / End                                     | Jump to first / last enabled trigger.                                                                                                                             |
+| Escape                                         | Closes and returns focus to the trigger.                                                                                                                          |
 
 ## Accessibility
 

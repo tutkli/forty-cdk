@@ -5106,6 +5106,10 @@ exports[`document structure > projects/forty-cdk/navigation-menu/README.md decla
       },
       {
         "depth": 3,
+        "slug": "the-open-panel-keeps-its-triggers-place",
+      },
+      {
+        "depth": 3,
         "slug": "rendering-the-viewport-outside-the-nav",
       },
     ],
@@ -5173,7 +5177,7 @@ exports[`document structure > projects/forty-cdk/navigation-menu/README.md decla
           "Behavior",
         ],
         "role": "plain",
-        "rows": 7,
+        "rows": 8,
       },
     ],
     "title": "Keyboard",

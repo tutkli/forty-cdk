@@ -10,11 +10,13 @@ import {
 } from '@angular/core';
 
 import {
+  findRelocatedTabStop,
   registerHandle,
   hostId,
   hostLabelledBy,
   isHoverCapablePointer,
   isImeComposing,
+  resolveActiveElement,
 } from 'forty-cdk/core';
 import { warnIfMountedWhileClosed } from 'forty-cdk/core-overlay';
 import {
@@ -29,10 +31,9 @@ import {
  *
  * Carries `aria-labelledby` pointing at the trigger and reflects
  * `data-state` for CSS hooks. A consumer-set **static** `aria-labelledby` on
- * the panel wins over that fallback and is preserved. No focus management is
- * imposed — content
- * is a regular landmark; Tab moves through links inside, then out to the
- * next focusable element after the wrapper.
+ * the panel wins over that fallback and is preserved. No focus is moved on open
+ * or close — content is a regular landmark; Tab moves from the trigger through
+ * the links inside, then out to the next focusable element after the trigger.
  *
  * When a `[forNavigationMenuViewport]` is present in the menu, the host
  * element re-parents itself into the viewport on mount so all active
@@ -48,6 +49,11 @@ import {
  * directive does not undo the re-parent on destroy: the consumer's `@if`
  * is destroying the element anyway, and Angular's renderer removes nodes
  * by their actual current parent.
+ *
+ * A panel the viewport hosts keeps its trigger's place in the Tab order and in the
+ * accessibility tree while it is open: Tab and Shift+Tab move as if the panel sat
+ * right after its trigger, and the owning `[forNavigationMenuItem]` reflects
+ * `aria-owns` pointing at it.
  *
  * `data-motion` is reflected (`from-start | from-end | to-start | to-end`)
  * for CSS keyframes that slide the entering and leaving panels together
@@ -85,12 +91,14 @@ export class ForNavigationMenuContent {
   protected readonly motion = computed(() => this.menu.motionFor(this.value()));
 
   readonly #mounted = signal(false);
+  readonly #hosted = computed(() => this.#mounted() && this.menu.viewport() !== null);
 
   constructor() {
     const handle = {
       host: this.#host,
       value: this.value,
       id: this.id,
+      hosted: this.#hosted,
     };
     // Registered synchronously so the trigger's `contentIdFor` lookup — and this
     // panel's own `aria-labelledby` — resolve during the same pass that renders
@@ -153,6 +161,33 @@ export class ForNavigationMenuContent {
       if (!this.#mounted()) return;
       this.#reparent();
     });
+
+    effect((onCleanup) => {
+      if (!this.#hosted() || !this.menu.isOpen(this.value())) return;
+      const doc = this.#host.ownerDocument;
+      const onKeyDown = (event: KeyboardEvent): void => this.#followTriggerOnTab(event);
+      doc.addEventListener('keydown', onKeyDown);
+      onCleanup(() => doc.removeEventListener('keydown', onKeyDown));
+    });
+  }
+
+  #followTriggerOnTab(event: KeyboardEvent): void {
+    if (
+      event.key !== 'Tab' ||
+      event.defaultPrevented ||
+      event.altKey ||
+      event.ctrlKey ||
+      event.metaKey
+    ) {
+      return;
+    }
+    const trigger = this.menu.triggerHostFor(this.value());
+    const active = resolveActiveElement(this.#host.ownerDocument);
+    if (trigger === null || active === null) return;
+    const target = findRelocatedTabStop(active, trigger, this.#host, event.shiftKey);
+    if (target === null) return;
+    event.preventDefault();
+    target.focus();
   }
 
   #reparent(): void {

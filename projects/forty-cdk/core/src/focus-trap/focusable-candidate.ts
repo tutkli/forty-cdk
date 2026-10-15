@@ -208,6 +208,78 @@ export function leavesTabSequence(
 }
 
 /**
+ * Where a Tab press from `active` lands when the tabbable descendants of `moved` are read as
+ * sitting right after `anchor` in the document's Tab sequence, or `null` when the press can be
+ * left to the browser.
+ *
+ * A press starting at `anchor` or inside `moved` always resolves to a stop, so the relocated
+ * stretch is walked the same way in a browser that skips some of its elements by default, as
+ * Safari does links. Any other press is left to the browser when document order lands on the same
+ * stop. `null` is also returned for an `active` or `anchor` outside the candidate set, an `anchor`
+ * inside `moved`, and a move that would run off either end of the sequence.
+ *
+ * Both sequences are read from {@link queryFocusableCandidates} over the document body, so the
+ * order limits stated there apply, and a positive `tabindex` is read in document order.
+ *
+ * Reads `getComputedStyle`, so callers must gate it behind `isPlatformBrowser`.
+ */
+export function findRelocatedTabStop(
+  active: Element,
+  anchor: HTMLElement,
+  moved: HTMLElement,
+  backward: boolean,
+): HTMLElement | null {
+  const doc = anchor.ownerDocument;
+  if (!doc.body || composedContains(moved, anchor)) {
+    return null;
+  }
+  const candidates = queryFocusableCandidates(doc.body);
+  const outside: HTMLElement[] = [];
+  const inside: HTMLElement[] = [];
+  for (const candidate of candidates) {
+    (composedContains(moved, candidate) ? inside : outside).push(candidate);
+  }
+  const anchorIndex = outside.indexOf(anchor);
+  if (anchorIndex === -1) {
+    return null;
+  }
+  const relocated = [
+    ...outside.slice(0, anchorIndex + 1),
+    ...inside,
+    ...outside.slice(anchorIndex + 1),
+  ];
+  const root = doc.documentElement;
+  const groups = new Map<HTMLInputElement, boolean>();
+  const step = backward ? -1 : 1;
+  const target = nextTabStop(relocated, active, step, root, groups);
+  if (target === null || active === anchor || composedContains(moved, active)) {
+    return target;
+  }
+  const native = nextTabStop(candidates, active, step, root, groups);
+  return target === native ? null : target;
+}
+
+function nextTabStop(
+  sequence: readonly HTMLElement[],
+  active: Element,
+  step: 1 | -1,
+  root: HTMLElement,
+  groups: Map<HTMLInputElement, boolean>,
+): HTMLElement | null {
+  const from = sequence.findIndex((el) => el === active);
+  if (from === -1) {
+    return null;
+  }
+  for (let i = from + step; i >= 0 && i < sequence.length; i += step) {
+    const candidate = sequence[i]!;
+    if (isTabStop(candidate, root, groups)) {
+      return candidate;
+    }
+  }
+  return null;
+}
+
+/**
  * The focusable descendant of `container` one step from `from` in candidate order — the next
  * one for `'forward'`, the previous for `'backward'` — wrapping around at either end, so a
  * caller cycling a bounded set never runs out. `null` only when `container` has no focusable

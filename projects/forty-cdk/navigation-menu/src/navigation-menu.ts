@@ -447,6 +447,16 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
   private readonly viewport: Signal<ForNavigationMenuViewportHandle | null> =
     this.#viewport.asReadonly();
 
+  private hostedContentIdFor(value: string): string | null {
+    for (const c of this.#contents.items()) {
+      const candidate = c.value();
+      if (!isUnset(candidate) && candidate === value && c.hosted()) {
+        return c.id();
+      }
+    }
+    return null;
+  }
+
   contentIdFor(value: string): string | null {
     for (const c of this.#contents.items()) {
       const candidate = c.value();

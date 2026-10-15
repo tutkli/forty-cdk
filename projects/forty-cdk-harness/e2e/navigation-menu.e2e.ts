@@ -317,19 +317,95 @@ test.describe('NavigationMenu keyboard / focus', () => {
   test('Tab from inside an open panel closes it once focus leaves the nav', async ({ page }) => {
     await gotoFixture(page, 'navigation-menu');
 
-    await el(page, 'trigger-products').focus();
+    await el(page, 'trigger-company').focus();
     await page.keyboard.press('ArrowDown');
-    await expect(el(page, 'content-products')).toBeVisible();
+    await expect(el(page, 'content-company')).toBeVisible();
 
-    // Tab through the single link, then once more to leave the nav entirely.
-    await el(page, 'link-products-2').focus();
+    await el(page, 'link-company-1').focus();
     await page.keyboard.press('Tab');
 
     // Focus is now on the trailing input outside the nav; the open panel
     // closes per APG (the dismissible layer's focus channel sees the focusin).
     await expectFocused(el(page, 'after'));
-    await expect(el(page, 'content-products')).toHaveCount(0);
+    await expect(el(page, 'content-company')).toHaveCount(0);
     await expect(el(page, 'active')).toHaveText('none');
+  });
+
+  test.describe('a panel the viewport hosts follows its trigger in the Tab order', () => {
+    test('Tab walks from a non-last trigger through its panel to the next trigger', async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'navigation-menu');
+
+      await el(page, 'trigger-products').focus();
+      await page.keyboard.press('ArrowDown');
+      await expect(el(page, 'content-products')).toBeVisible();
+      await expect(el(page, 'viewport').locator('[data-testid="content-products"]')).toHaveCount(1);
+
+      await page.keyboard.press('Tab');
+      await expectFocused(el(page, 'link-products-1'));
+
+      await page.keyboard.press('Tab');
+      await expectFocused(el(page, 'link-products-2'));
+
+      await page.keyboard.press('Tab');
+      await expectFocused(el(page, 'trigger-solutions'));
+      await expect(el(page, 'content-products')).toBeVisible();
+      await expect(el(page, 'active')).toHaveText('products');
+    });
+
+    test('Shift+Tab walks from the next trigger back through the panel to its trigger', async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'navigation-menu');
+
+      await el(page, 'trigger-products').focus();
+      await page.keyboard.press('ArrowDown');
+      await expect(el(page, 'content-products')).toBeVisible();
+
+      await el(page, 'trigger-solutions').focus();
+      await page.keyboard.press('Shift+Tab');
+      await expectFocused(el(page, 'link-products-2'));
+
+      await page.keyboard.press('Shift+Tab');
+      await expectFocused(el(page, 'link-products-1'));
+
+      await page.keyboard.press('Shift+Tab');
+      await expectFocused(el(page, 'trigger-products'));
+      await expect(el(page, 'content-products')).toBeVisible();
+    });
+
+    test('Tab from a later trigger skips the panel of an earlier one and leaves the nav', async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'navigation-menu');
+
+      await el(page, 'trigger-products').focus();
+      await page.keyboard.press('ArrowDown');
+      await expect(el(page, 'content-products')).toBeVisible();
+
+      await el(page, 'trigger-company').focus();
+      await page.keyboard.press('Tab');
+
+      await expectFocused(el(page, 'after'));
+      await expect(el(page, 'content-products')).toHaveCount(0);
+      await expect(el(page, 'active')).toHaveText('none');
+    });
+
+    test('the item owns its hosted panel in the accessibility tree', async ({ page }) => {
+      await gotoFixture(page, 'navigation-menu');
+
+      await el(page, 'trigger-products').focus();
+      await page.keyboard.press('ArrowDown');
+      const panel = el(page, 'content-products');
+      await expect(panel).toBeVisible();
+
+      const panelId = await panel.getAttribute('id');
+      await expect(el(page, 'trigger-products').locator('xpath=..')).toHaveAttribute(
+        'aria-owns',
+        panelId!,
+      );
+    });
   });
 
   test('Tab into a panel hosted by an external viewport keeps it open', async ({ page }) => {
