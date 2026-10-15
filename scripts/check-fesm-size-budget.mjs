@@ -19,11 +19,10 @@ import { repoRoot } from './lib/repo-path.mjs';
  *
  * Four decisions are load-bearing:
  *
- * - **It runs after `strip-fesm-comments.mjs`**, which is why it is last in
- *   `postbuild` rather than first. Comments are 38% of the emit by byte (2.83 MB
- *   → 1.75 MB), so a baseline taken before the strip would move by far more than
- *   any budget the day that step's `LOAD_BEARING` set changes — and it would
- *   measure bytes no consumer's bundler keeps.
+ * - **It measures the emit exactly as published.** Rolldown keeps only legal
+ *   and annotation comments, so the bytes recorded are code. That also makes
+ *   this the gate for the bundles shipping without the source JSDoc: were the
+ *   emit to start carrying it again, the total would grow far past its budget.
  * - **Raw bytes, not gzip.** Gzip is the number a consumer feels, but zlib's
  *   output is not byte-stable across Node / zlib versions, so a gzip baseline
  *   would drift between a local run and CI for reasons no commit caused. The
