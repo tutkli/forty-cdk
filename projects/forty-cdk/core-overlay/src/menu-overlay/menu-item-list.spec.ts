@@ -7,6 +7,8 @@ interface TestItem extends MenuItemHandle {
   readonly id: string;
 }
 
+const mountedHosts: HTMLElement[] = [];
+
 function makeItem(
   id: string,
   opts: { disabled?: boolean; text?: string; html?: string } = {},
@@ -19,6 +21,7 @@ function makeItem(
     host.textContent = opts.text ?? id;
   }
   document.body.appendChild(host);
+  mountedHosts.push(host);
   return {
     id,
     host,
@@ -38,6 +41,10 @@ describe('MenuItemList', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
     document.body.innerHTML = '';
+  });
+
+  afterEach(() => {
+    for (const host of mountedHosts.splice(0)) host.remove();
   });
 
   describe('registration', () => {
