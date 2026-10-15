@@ -1,18 +1,19 @@
 import { computed, DestroyRef, effect, ElementRef, inject, type Signal } from '@angular/core';
 
 import { composeIds, contributeDescribedBy } from './described-by-owner';
+import { claimReplacedAttribute } from './replaced-attribute-owner';
 
 /**
- * Resolves the `aria-labelledby` a piece should expose: the host element's
- * pre-existing **static** `aria-labelledby` when present, else the library's
- * own generated fallback (a trigger / heading / label id).
+ * Writes the `aria-labelledby` a piece exposes onto its host and returns it: the host element's
+ * pre-existing **static** `aria-labelledby` when present, else the library's own generated
+ * fallback (a trigger / heading / label id). The host must not also bind the attribute.
  *
  * A name has one owner, so a value the consumer wrote in the template always wins over the
  * fallback. A surface with no consumer value keeps its fallback verbatim.
  *
  * Only **static** values are adopted: a `[attr.aria-labelledby]="expr"` binding evaluates after
- * directive construction, so it is invisible here and still fights the host binding. This mirrors
- * the static-only boundary of `resolveHostId` / `adoptHostId`.
+ * directive construction, so it is invisible here and still fights the library's write. This
+ * mirrors the static-only boundary of `resolveHostId` / `adoptHostId`.
  *
  * Must be invoked in an injection context.
  *
@@ -20,8 +21,11 @@ import { composeIds, contributeDescribedBy } from './described-by-owner';
  *   carries no static `aria-labelledby`.
  */
 export function hostLabelledBy(fallback: () => string | null): Signal<string | null> {
-  const consumer = staticHostAttribute('aria-labelledby');
-  return computed(() => consumer ?? fallback());
+  const host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+  const claim = claimReplacedAttribute(host, 'aria-labelledby', fallback);
+  effect(() => claim.write());
+  inject(DestroyRef).onDestroy(() => claim.release());
+  return computed(() => claim.consumer ?? fallback());
 }
 
 /**

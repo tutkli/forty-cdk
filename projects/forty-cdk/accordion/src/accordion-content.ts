@@ -23,7 +23,6 @@ import { injectAccordionContext, injectAccordionItemContext } from './accordion-
   host: {
     '[id]': 'item.contentId()',
     '[attr.role]': '"region"',
-    '[attr.aria-labelledby]': 'labelledBy()',
     '[attr.aria-hidden]': 'item.expanded() ? null : "true"',
     '[attr.inert]': 'item.expanded() ? null : ""',
     '[attr.data-state]': 'item.expanded() ? "open" : "closed"',

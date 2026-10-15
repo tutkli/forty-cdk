@@ -20,7 +20,6 @@ import {
   exportAs: 'forMenuRadioGroup',
   host: {
     role: 'group',
-    '[attr.aria-labelledby]': 'labelledBy()',
   },
   providers: [
     { provide: FOR_MENU_RADIO_GROUP_CONTEXT, useExisting: ForMenuRadioGroup },

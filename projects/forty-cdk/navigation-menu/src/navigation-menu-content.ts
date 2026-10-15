@@ -66,7 +66,6 @@ import {
   exportAs: 'forNavigationMenuContent',
   host: {
     '[id]': 'id()',
-    '[attr.aria-labelledby]': 'labelledBy()',
     '[attr.data-state]': 'menu.isOpen(value()) ? "open" : "closed"',
     '[attr.data-motion]': 'motion()',
     '(pointerenter)': 'onPointerEnter($event)',

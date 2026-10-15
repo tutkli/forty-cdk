@@ -218,7 +218,7 @@ export class ForMenubar implements ForMenubarContext {
    * `linkedSignal` computes lazily, so `previous` is only populated when the
    * signal was read while the source was non-null. It always is: the opened
    * menu's `[forMenuContent]` mounts on the same change-detection pass, and its
-   * `id` / `aria-labelledby` host bindings read the multiplexed context's
+   * `id` host binding and `aria-labelledby` write read the multiplexed context's
    * `contentId()` / `triggerId()`, both of which resolve through
    * {@link lastTrigger}. Read it unconditionally in {@link lastTrigger} — a
    * `value() ?? #lastValue()` short-circuit would skip exactly the reads that

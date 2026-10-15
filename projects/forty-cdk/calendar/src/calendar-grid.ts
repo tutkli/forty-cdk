@@ -16,7 +16,6 @@ import { injectCalendarContext } from './calendar-context';
   exportAs: 'forCalendarGrid',
   host: {
     role: 'grid',
-    '[attr.aria-labelledby]': 'labelledBy()',
     '[attr.aria-disabled]': 'ctx.disabled() ? "true" : null',
     '[attr.aria-readonly]': 'ctx.readonly() ? "true" : null',
   },

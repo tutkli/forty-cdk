@@ -13,7 +13,6 @@ import { FOR_MENU_GROUP_CONTEXT, type ForMenuGroupContext } from './menu-group-c
   exportAs: 'forMenuGroup',
   host: {
     role: 'group',
-    '[attr.aria-labelledby]': 'labelledBy()',
   },
   providers: [{ provide: FOR_MENU_GROUP_CONTEXT, useExisting: ForMenuGroup }],
 })

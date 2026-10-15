@@ -90,7 +90,6 @@ type SwipeState = 'start' | 'move' | 'cancel' | 'end';
     '[attr.role]': 'computedRole()',
     '[attr.aria-live]': 'ariaLive()',
     'aria-atomic': 'true',
-    '[attr.aria-labelledby]': 'labelledBy()',
     tabindex: '0',
     '[attr.data-state]': '"open"',
     '[attr.data-variant]': 'variant()',
