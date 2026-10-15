@@ -1373,6 +1373,21 @@ class TreegridTableHost {
 }
 
 @Component({
+  imports: [ForTable, ForTableRow, ForTableCell],
+  template: `
+    <div forTable mode="treegrid">
+      <div role="rowgroup">
+        <div forTableRow expandable>
+          <div forTableCell name="name" data-testid="unvalued-0">a</div>
+          <div forTableCell name="val" data-testid="unvalued-1">v</div>
+        </div>
+      </div>
+    </div>
+  `,
+})
+class UnvaluedExpandableTreegridHost {}
+
+@Component({
   imports: [ForTable, ForTableVirtualized, ForTableRow, ForTableCell],
   template: `
     <div forTable forTableVirtualized mode="grid" [rowCount]="1000" #v="forTableVirtualized">
@@ -2027,6 +2042,60 @@ describe('ForTable', () => {
       expect(allCells[0]!.getAttribute('data-highlighted')).toBe('');
     });
 
+    it('ArrowRight on the last cell of a data row stays put instead of wrapping into the next row', async () => {
+      const { el, flush } = renderHost(GridTableHost);
+      const allCells = cells(el);
+      press(allCells[0]!, 'End');
+      await flush();
+      const e = press(allCells[2]!, 'ArrowRight');
+      await flush();
+      expect(e.defaultPrevented).toBe(true);
+      expect(allCells[3]!.hasAttribute('data-highlighted')).toBe(false);
+      expect(allCells[2]!.getAttribute('data-highlighted')).toBe('');
+      expect(allCells[2]!.getAttribute('tabindex')).toBe('0');
+    });
+
+    it('ArrowLeft on the first cell of a data row stays put instead of wrapping into the previous row', async () => {
+      const { el, flush } = renderHost(GridTableHost);
+      const allCells = cells(el);
+      press(allCells[0]!, 'ArrowDown');
+      await flush();
+      press(allCells[3]!, 'ArrowLeft');
+      await flush();
+      expect(allCells[2]!.hasAttribute('data-highlighted')).toBe(false);
+      expect(allCells[3]!.getAttribute('data-highlighted')).toBe('');
+      expect(allCells[3]!.getAttribute('tabindex')).toBe('0');
+    });
+
+    it('a disabled tail cell stops ArrowRight at the last enabled cell of the row', async () => {
+      const { el, instance, flush } = renderHost(GridTableHost);
+      instance.disabledRow.set(0);
+      instance.disabledCol.set('c');
+      await flush();
+      const allCells = cells(el);
+      press(allCells[0]!, 'ArrowRight');
+      await flush();
+      press(allCells[1]!, 'ArrowRight');
+      await flush();
+      expect(allCells[3]!.hasAttribute('data-highlighted')).toBe(false);
+      expect(allCells[1]!.getAttribute('data-highlighted')).toBe('');
+      expect(allCells[1]!.getAttribute('tabindex')).toBe('0');
+    });
+
+    it('RTL: ArrowLeft on the last cell of a data row stays put instead of wrapping into the next row', async () => {
+      const { el, instance, flush } = renderHost(GridTableHost);
+      instance.dir.set('rtl');
+      await flush();
+      const allCells = cells(el);
+      press(allCells[0]!, 'End');
+      await flush();
+      press(allCells[2]!, 'ArrowLeft');
+      await flush();
+      expect(allCells[3]!.hasAttribute('data-highlighted')).toBe(false);
+      expect(allCells[2]!.getAttribute('data-highlighted')).toBe('');
+      expect(allCells[2]!.getAttribute('tabindex')).toBe('0');
+    });
+
     it('disabled cell is skipped during navigation and reflects aria-disabled/data-disabled', async () => {
       const { el, instance, flush } = renderHost(GridTableHost);
       instance.disabledRow.set(1);
@@ -2260,6 +2329,34 @@ describe('ForTable', () => {
       const headerB = el.querySelector<HTMLElement>('[data-testid="h-b"]')!;
       expect(headerB.getAttribute('data-highlighted')).toBe('');
       expect(headerB.getAttribute('tabindex')).toBe('0');
+    });
+
+    it('ArrowLeft on the first data cell does not cross into the header row', async () => {
+      const { el, flush } = renderHost(GridWithHeaderHost);
+      const headerA = el.querySelector<HTMLElement>('[data-testid="h-a"]')!;
+      const headerC = el.querySelector<HTMLElement>('[data-testid="h-c"]')!;
+      const firstDataCell = el.querySelector<HTMLElement>('[data-testid="c-a0"]')!;
+      press(headerA, 'ArrowDown');
+      await flush();
+      press(firstDataCell, 'ArrowLeft');
+      await flush();
+      expect(headerC.hasAttribute('data-highlighted')).toBe(false);
+      expect(firstDataCell.getAttribute('data-highlighted')).toBe('');
+      expect(firstDataCell.getAttribute('tabindex')).toBe('0');
+    });
+
+    it('ArrowRight on the last header cell does not cross into the first data row', async () => {
+      const { el, flush } = renderHost(GridWithHeaderHost);
+      const headerA = el.querySelector<HTMLElement>('[data-testid="h-a"]')!;
+      const headerC = el.querySelector<HTMLElement>('[data-testid="h-c"]')!;
+      const firstDataCell = el.querySelector<HTMLElement>('[data-testid="c-a0"]')!;
+      press(headerA, 'End');
+      await flush();
+      press(headerC, 'ArrowRight');
+      await flush();
+      expect(firstDataCell.hasAttribute('data-highlighted')).toBe(false);
+      expect(headerC.getAttribute('data-highlighted')).toBe('');
+      expect(headerC.getAttribute('tabindex')).toBe('0');
     });
   });
 
@@ -5376,6 +5473,27 @@ describe('ForTable', () => {
       await flush();
       expect(e2.defaultPrevented).toBe(true);
       expect(instance.expanded()).not.toContain('a');
+    });
+
+    it('ArrowRight on an expandable row with no [value] falls through to cell navigation', async () => {
+      const { el, flush } = renderHost(UnvaluedExpandableTreegridHost);
+      const first = el.querySelector<HTMLElement>('[data-testid="unvalued-0"]')!;
+      const second = el.querySelector<HTMLElement>('[data-testid="unvalued-1"]')!;
+      const e = press(first, 'ArrowRight');
+      await flush();
+      expect(e.defaultPrevented).toBe(true);
+      expect(second.getAttribute('data-highlighted')).toBe('');
+      expect(second.getAttribute('tabindex')).toBe('0');
+    });
+
+    it('leaf rows emit aria-level / aria-posinset / aria-setsize like parent rows', async () => {
+      const { el, instance, flush } = renderHost(TreegridTableHost);
+      instance.expanded.set(['a']);
+      await flush();
+      const rowA1 = el.querySelector<HTMLElement>('[data-testid="row-a1"]')!;
+      expect(rowA1.getAttribute('aria-level')).toBe('2');
+      expect(rowA1.hasAttribute('aria-posinset')).toBe(true);
+      expect(rowA1.hasAttribute('aria-setsize')).toBe(true);
     });
 
     it('non-expandable (leaf) rows emit no aria-expanded and no data-state', async () => {

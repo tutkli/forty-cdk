@@ -177,9 +177,10 @@ export interface MoveGridIndexOptions extends MoveIndexOptions {
 /**
  * Computes the resulting index for a 2D grid navigation action.
  *
- * - `next` / `prev`: treats the grid as a flat list — steps forward / backward
- *   by one cell and, when `loop=true`, wraps at the global ends (last cell
- *   back to the first, and vice versa), skipping disabled cells.
+ * - `next` / `prev`: steps forward / backward by one cell within the current
+ *   row, skipping disabled cells. The move stops at the row edge and never
+ *   crosses into an adjacent row; when `loop=true` it wraps to the other end of
+ *   the same row instead.
  * - `next-row` / `prev-row`: moves to the cell in the same column one row down /
  *   up. If that cell is disabled, keeps moving in the same direction one row at
  *   a time until an enabled cell is found, so navigation never lands on a
@@ -252,9 +253,18 @@ export function moveGridIndex(
       return scanFirstEnabledInRange(end - 1, start - 1, -1, isDisabled);
     }
     case 'next':
-      return scanNextEnabled(current, count, 1, loop, isDisabled);
-    case 'prev':
-      return scanNextEnabled(current, count, -1, loop, isDisabled);
+    case 'prev': {
+      const start = rowOf(current) * cols;
+      const end = Math.min(start + cols, count);
+      const target = scanNextEnabled(
+        current - start,
+        end - start,
+        action === 'next' ? 1 : -1,
+        loop,
+        isDisabled && ((i) => isDisabled(start + i)),
+      );
+      return target === null ? null : start + target;
+    }
     case 'next-row':
     case 'prev-row': {
       const direction = action === 'next-row' ? 1 : -1;
