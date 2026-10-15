@@ -43,26 +43,30 @@ function installMatchMedia(stub: (query: string) => MediaQueryList): () => void 
  * ```
  */
 export function withReducedMotion(): () => void {
-  return installMatchMedia((query: string): MediaQueryList => {
-    const matches = REDUCE_QUERY.test(query);
-    return {
-      matches,
-      media: query,
-      onchange: null,
-      addEventListener: () => {},
-      removeEventListener: () => {},
-      addListener: () => {},
-      removeListener: () => {},
-      dispatchEvent: () => true,
-    } as MediaQueryList;
-  });
+  return installMatchMedia((query: string) => inertQuery(query, REDUCE_QUERY.test(query)));
 }
+
+function inertQuery(media: string, matches: boolean): MediaQueryList {
+  return {
+    matches,
+    media,
+    onchange: null,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    addListener: () => {},
+    removeListener: () => {},
+    dispatchEvent: () => true,
+  } as unknown as MediaQueryList;
+}
+
+type ChangeListener = (event: MediaQueryListEvent) => void;
 
 /** A reduced-motion preference a spec can change while a fixture is mounted. */
 export interface FlippableReducedMotion {
   /**
-   * Sets the preference and notifies every listener registered on the reduce query. Listeners on
-   * any other query are never called.
+   * Sets the preference and notifies every listener registered on the reduce query, through
+   * `addEventListener('change')`, the `addListener` alias or `onchange`, with an event carrying
+   * `matches` and `media`. Listeners on any other query are never called.
    */
   set(matches: boolean): void;
   /** Restores the previous `matchMedia`. Call it from an `afterEach` or a `finally`. */
@@ -71,46 +75,43 @@ export interface FlippableReducedMotion {
 
 /**
  * {@link withReducedMotion} with a preference that changes while the fixture is mounted: the
- * reduce query starts at `initial`, and `set()` notifies the `change` listeners registered on it,
+ * reduce query starts at `initial`, and `set()` notifies the change listeners registered on it,
  * as the browser does when the user changes the setting. Use it to assert that a primitive follows
  * the preference rather than reading it once.
  */
 export function withFlippableReducedMotion(initial = true): FlippableReducedMotion {
-  const listeners = new Set<(event: MediaQueryListEvent) => void>();
+  const listeners = new Set<ChangeListener>();
   const reduced = {
     matches: initial,
     media: '(prefers-reduced-motion: reduce)',
-    onchange: null,
-    addEventListener: (_type: string, listener: (event: MediaQueryListEvent) => void) => {
+    onchange: null as ChangeListener | null,
+    addEventListener: (_type: string, listener: ChangeListener) => {
       listeners.add(listener);
     },
-    removeEventListener: (_type: string, listener: (event: MediaQueryListEvent) => void) => {
+    removeEventListener: (_type: string, listener: ChangeListener) => {
       listeners.delete(listener);
     },
-    addListener: () => {},
-    removeListener: () => {},
+    addListener: (listener: ChangeListener) => {
+      listeners.add(listener);
+    },
+    removeListener: (listener: ChangeListener) => {
+      listeners.delete(listener);
+    },
     dispatchEvent: () => true,
   };
 
-  const restore = installMatchMedia(
-    (query: string): MediaQueryList =>
-      (REDUCE_QUERY.test(query)
-        ? reduced
-        : {
-            ...reduced,
-            matches: false,
-            media: query,
-            addEventListener: () => {},
-            removeEventListener: () => {},
-          }) as unknown as MediaQueryList,
+  const restore = installMatchMedia((query: string) =>
+    REDUCE_QUERY.test(query) ? (reduced as unknown as MediaQueryList) : inertQuery(query, false),
   );
 
   return {
     set: (matches: boolean) => {
       reduced.matches = matches;
-      for (const listener of listeners) {
-        listener({ matches } as MediaQueryListEvent);
+      const event = { matches, media: reduced.media } as MediaQueryListEvent;
+      for (const listener of [...listeners]) {
+        listener(event);
       }
+      reduced.onchange?.(event);
     },
     restore,
   };

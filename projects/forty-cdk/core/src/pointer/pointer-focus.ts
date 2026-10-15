@@ -14,20 +14,38 @@ export function preventPointerFocus(when: (event: MouseEvent) => boolean = () =>
   inject(DestroyRef).onDestroy(() => host.removeEventListener('mousedown', onMouseDown));
 }
 
+const DISABLEABLE_CONTROLS = new Set(['button', 'input', 'select', 'textarea']);
+
 export function pressFocusesDescendant(event: Event, host: Element): boolean {
-  for (
-    let node = resolveEventTarget(event);
-    node !== null && node !== host;
-    node = composedParentElement(node)
-  ) {
-    if (
-      node.nodeType === node.ELEMENT_NODE &&
-      ((node as Element).hasAttribute('tabindex') || (node as Element).matches(FOCUSABLE_SELECTOR))
-    ) {
-      return true;
+  return mouseFocusTarget(resolveEventTarget(event), host) !== null;
+}
+
+export function mouseFocusTarget(
+  node: Node | null,
+  boundary: Element | null = null,
+): HTMLElement | null {
+  for (let current = node; current !== null && current !== boundary; ) {
+    if (current.nodeType === current.ELEMENT_NODE && isMouseFocusable(current as Element)) {
+      return current as HTMLElement;
     }
+    current = composedParentElement(current);
   }
-  return false;
+  return null;
+}
+
+function isMouseFocusable(el: Element): boolean {
+  return (el.hasAttribute('tabindex') || el.matches(FOCUSABLE_SELECTOR)) && !isDisabledControl(el);
+}
+
+function isDisabledControl(el: Element): boolean {
+  if (!DISABLEABLE_CONTROLS.has(el.localName)) {
+    return false;
+  }
+  if (el.hasAttribute('disabled')) {
+    return true;
+  }
+  const fieldset = el.closest('fieldset[disabled]');
+  return fieldset !== null && !fieldset.querySelector(':scope > legend')?.contains(el);
 }
 
 export function focusAfterPress(host: HTMLElement): void {

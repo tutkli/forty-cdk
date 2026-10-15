@@ -67,6 +67,61 @@ describe('withFlippableReducedMotion', () => {
     }
   });
 
+  it('passes the reduce query as the change event media', () => {
+    const motion = withFlippableReducedMotion(false);
+    const listener = vi.fn();
+
+    try {
+      matchMedia(REDUCE).addEventListener('change', listener);
+
+      motion.set(true);
+
+      expect(listener).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ matches: true, media: REDUCE }),
+      );
+    } finally {
+      motion.restore();
+    }
+  });
+
+  it('notifies a listener registered through the legacy addListener alias', () => {
+    const motion = withFlippableReducedMotion(false);
+    const listener = vi.fn();
+
+    try {
+      const query = matchMedia(REDUCE);
+      query.addListener(listener);
+
+      motion.set(true);
+      expect(listener).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ matches: true, media: REDUCE }),
+      );
+
+      query.removeListener(listener);
+      motion.set(false);
+      expect(listener).toHaveBeenCalledTimes(1);
+    } finally {
+      motion.restore();
+    }
+  });
+
+  it('calls the onchange handler set on the query', () => {
+    const motion = withFlippableReducedMotion(true);
+    const handler = vi.fn();
+
+    try {
+      matchMedia(REDUCE).onchange = handler;
+
+      motion.set(false);
+
+      expect(handler).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ matches: false, media: REDUCE }),
+      );
+    } finally {
+      motion.restore();
+    }
+  });
+
   it('never matches a query other than the reduce one', () => {
     const motion = withFlippableReducedMotion(true);
 
@@ -84,7 +139,10 @@ describe('withFlippableReducedMotion', () => {
     const reduceListener = vi.fn();
 
     try {
-      matchMedia('(min-width: 640px)').addEventListener('change', widthListener);
+      const width = matchMedia('(min-width: 640px)');
+      width.addEventListener('change', widthListener);
+      width.addListener(widthListener);
+      width.onchange = widthListener;
       matchMedia(REDUCE).addEventListener('change', reduceListener);
 
       motion.set(true);

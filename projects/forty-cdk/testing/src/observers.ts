@@ -2,9 +2,11 @@
  * Installs inert `ResizeObserver` and `IntersectionObserver` stubs where the environment has no
  * usable constructor, and returns a callback that restores the previous globals.
  *
- * jsdom ships neither, and the anchored overlays, the scroll area and the navigation menu
- * construct one as they mount, so a spec rendering them fails with
- * `ResizeObserver is not defined` without it. The stubs observe nothing and never call back.
+ * jsdom ships neither. Carousel, Table and ScrollArea measure their pieces with a `ResizeObserver`
+ * as they mount, so a spec rendering a carousel viewport, a table header row (every
+ * `<for-table-body>` stamps one) or a scroll area scrollbar fails with
+ * `ResizeObserver is not defined` without it. No primitive constructs an `IntersectionObserver`;
+ * that stub is there for your own code. The stubs observe nothing and never call back.
  *
  * A constructor already present is left alone, and the restore puts back exactly what was there,
  * deleting the global when there was none. Pair the two around the spec file, so a stub never

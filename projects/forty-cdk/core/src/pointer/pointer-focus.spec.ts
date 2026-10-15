@@ -4,6 +4,7 @@ import { renderHost } from '../../../src/test-utils';
 import {
   createPressFocus,
   DEFAULT_PRESS_FOCUS_WINDOW_MS,
+  mouseFocusTarget,
   pressFocusesDescendant,
   preventPointerFocus,
 } from './pointer-focus';
@@ -133,6 +134,86 @@ describe('pressFocusesDescendant', () => {
     const inner = document.createElement('button');
     shell.attachShadow({ mode: 'open' }).appendChild(inner);
     expect(pressOn(inner)).toBe(true);
+  });
+
+  it('reports false for a press on a disabled control that carries tabindex', () => {
+    host.innerHTML = '<button disabled tabindex="0" data-target>off</button>';
+    expect(pressOn(host.querySelector('[data-target]')!)).toBe(false);
+  });
+});
+
+describe('mouseFocusTarget', () => {
+  let root: HTMLElement;
+
+  beforeEach(() => {
+    root = document.createElement('div');
+    document.body.appendChild(root);
+  });
+
+  afterEach(() => root.remove());
+
+  const target = (): HTMLElement => root.querySelector<HTMLElement>('[data-target]')!;
+  const focused = (): HTMLElement => root.querySelector<HTMLElement>('[data-focused]')!;
+
+  for (const [name, markup] of [
+    ['the pressed element itself', '<button data-target data-focused>go</button>'],
+    ['the nearest focusable ancestor', '<a href="#" data-focused><b data-target>go</b></a>'],
+    [
+      'an editable region inside a focusable cell',
+      '<div tabindex="0"><div contenteditable="true" data-target data-focused>x</div></div>',
+    ],
+    ['a summary', '<details><summary data-target data-focused>s</summary>x</details>'],
+    [
+      'an element carrying tabindex="-1"',
+      '<div tabindex="-1" data-focused><b data-target>x</b></div>',
+    ],
+    [
+      'the ancestor of a disabled control',
+      '<div tabindex="0" data-focused><button disabled data-target>off</button></div>',
+    ],
+    [
+      'a control in the first legend of a disabled fieldset',
+      '<fieldset disabled><legend><input data-target data-focused></legend></fieldset>',
+    ],
+  ] as const) {
+    it(`resolves ${name}`, () => {
+      root.innerHTML = markup;
+      expect(mouseFocusTarget(target())).toBe(focused());
+    });
+  }
+
+  it('skips a control inside a disabled fieldset', () => {
+    root.innerHTML =
+      '<div tabindex="0" data-focused><fieldset disabled><input data-target></fieldset></div>';
+    expect(mouseFocusTarget(target())).toBe(focused());
+  });
+
+  it('skips a hidden input', () => {
+    root.innerHTML = '<input type="hidden" data-target>';
+    expect(mouseFocusTarget(target())).toBeNull();
+  });
+
+  it('crosses an open shadow boundary to a focusable host', () => {
+    const shell = document.createElement('div');
+    shell.tabIndex = 0;
+    root.appendChild(shell);
+    const inner = document.createElement('span');
+    shell.attachShadow({ mode: 'open' }).appendChild(inner);
+
+    expect(mouseFocusTarget(inner)).toBe(shell);
+  });
+
+  it('resolves nothing at or above the boundary', () => {
+    root.tabIndex = 0;
+    root.innerHTML = '<span data-target>x</span>';
+
+    expect(mouseFocusTarget(target(), root)).toBeNull();
+    expect(mouseFocusTarget(target())).toBe(root);
+  });
+
+  it('resolves nothing for a press with no focusable ancestor', () => {
+    root.innerHTML = '<p data-target>x</p>';
+    expect(mouseFocusTarget(target())).toBeNull();
   });
 });
 
