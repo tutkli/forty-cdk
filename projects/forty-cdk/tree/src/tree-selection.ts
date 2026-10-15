@@ -4,6 +4,7 @@ import {
   appendMissing,
   dedupeValues,
   fortyError,
+  lookupByValue,
   membership,
   moveIndex,
   type RovingTabindex,
@@ -20,6 +21,8 @@ export interface TreeSelectionDeps<T> {
   readonly value: Signal<readonly T[]>;
   readonly expanded: Signal<readonly T[]>;
   readonly multiple: Signal<boolean>;
+  /** Whether a press toggles rather than replaces: `multiple` or checkbox mode. */
+  readonly multiSelect: Signal<boolean>;
   readonly disabled: Signal<boolean>;
   readonly selectionMode: Signal<'highlight' | 'checkbox'>;
   readonly cascade: Signal<boolean>;
@@ -86,20 +89,10 @@ export class TreeSelection<T> {
     if (this.#deps.disabled() || !this.#deps.isSelectable(value)) {
       return;
     }
-    const equals = this.#deps.compareWith();
-    if (this.#deps.selectionMode() === 'checkbox' && this.#deps.cascade()) {
-      const descendants = this.#resolveDescendants(value);
-      const group = dedupeValues([value, ...descendants], equals);
-      const current = this.#deps.value();
-      const isChecked = membership(current, equals);
-      const inGroup = membership(group, equals);
-      const checked = descendants.length === 0 ? isChecked(value) : descendants.every(isChecked);
-      const next = checked
-        ? current.filter((v) => !inGroup(v))
-        : dedupeValues([...current, ...group], equals);
-      this.#deps.setValue(this.#reconcileAncestors(value, next));
-    } else if (this.#deps.multiple() || this.#deps.selectionMode() === 'checkbox') {
-      this.#deps.setValue(toggleInArray(this.#deps.value(), value, equals));
+    if (this.#cascading()) {
+      this.#deps.setValue(this.#toggleGroup(value, this.#deps.value()));
+    } else if (this.#deps.multiSelect()) {
+      this.#deps.setValue(toggleInArray(this.#deps.value(), value, this.#deps.compareWith()));
     } else {
       this.#deps.setValue([value]);
     }
@@ -154,8 +147,11 @@ export class TreeSelection<T> {
     if (this.#deps.anchorValue() === null && currentIndex >= 0) {
       this.#deps.setAnchorValue(items[currentIndex]!.value());
     }
+    const current = this.#deps.value();
     this.#deps.setValue(
-      toggleInArray(this.#deps.value(), target.value(), this.#deps.compareWith()),
+      this.#cascading()
+        ? this.#toggleGroup(target.value(), current)
+        : toggleInArray(current, target.value(), this.#deps.compareWith()),
     );
   }
 
@@ -183,7 +179,15 @@ export class TreeSelection<T> {
       }
       span.push(item.value());
     }
-    this.#deps.setValue(appendMissing(this.#deps.value(), span, equals));
+    const current = this.#deps.value();
+    this.#deps.setValue(
+      this.#cascading()
+        ? this.#reconcileAncestors(
+            span,
+            appendMissing(current, this.#withDescendants(span), equals),
+          )
+        : appendMissing(current, span, equals),
+    );
   }
 
   selectAll(): void {
@@ -200,30 +204,78 @@ export class TreeSelection<T> {
     }
     const equals = this.#deps.compareWith();
     const current = this.#deps.value();
-    const allSelected = values.every(membership(current, equals));
-    if (allSelected) {
-      const isVisible = membership(values, equals);
-      this.#deps.setValue(current.filter((value) => !isVisible(value)));
-      return;
-    }
-    this.#deps.setValue(dedupeValues([...current, ...values], equals));
+    const cascading = this.#cascading();
+    const targets = cascading ? this.#withDescendants(values) : values;
+    const isTarget = membership(targets, equals);
+    const next = targets.every(membership(current, equals))
+      ? current.filter((value) => !isTarget(value))
+      : dedupeValues([...current, ...targets], equals);
+    this.#deps.setValue(cascading ? this.#reconcileAncestors(values, next) : next);
   }
 
-  #reconcileAncestors(value: T, next: readonly T[]): readonly T[] {
+  #cascading(): boolean {
+    return this.#deps.selectionMode() === 'checkbox' && this.#deps.cascade();
+  }
+
+  /**
+   * Cascade toggle of one node and its subtree, following the state the node
+   * shows: a node reading `'true'` clears the group, any other state checks it.
+   */
+  #toggleGroup(value: T, current: readonly T[]): readonly T[] {
+    const equals = this.#deps.compareWith();
+    const descendants = this.#resolveDescendants(value);
+    const group = dedupeValues([value, ...descendants], equals);
+    const isChecked = membership(current, equals);
+    const inGroup = membership(group, equals);
+    const checked = descendants.length === 0 ? isChecked(value) : descendants.every(isChecked);
+    const next = checked
+      ? current.filter((v) => !inGroup(v))
+      : dedupeValues([...current, ...group], equals);
+    return this.#reconcileAncestors([value], next);
+  }
+
+  #withDescendants(values: readonly T[]): T[] {
+    return dedupeValues(
+      values.flatMap((value) => [value, ...this.#resolveDescendants(value)]),
+      this.#deps.compareWith(),
+    );
+  }
+
+  /**
+   * Keeps each mounted ancestor of `values` in `next` exactly when all its
+   * descendants are. Every ancestor is visited once, deepest first, so a parent
+   * reads the already-settled entry of an intermediate one.
+   */
+  #reconcileAncestors(values: readonly T[], next: readonly T[]): readonly T[] {
     const equals = this.#deps.compareWith();
     const entries = this.#deps.visibleNodes();
-    const index = entries.findIndex((entry) => equals(entry.handle.value(), value));
-    if (index < 0) {
-      return next;
-    }
-    let level = entries[index]!.handle.level();
-    let result = next;
-    for (let i = index - 1; i >= 0 && level > 1; i--) {
-      const handle = entries[i]!.handle;
-      if (handle.level() >= level) {
+    const indexOf = lookupByValue(
+      entries.map((_, index) => index),
+      (index) => entries[index]!.handle.value(),
+      equals,
+    );
+    const ancestors = new Set<number>();
+    for (const value of values) {
+      const index = indexOf(value);
+      if (index === undefined) {
         continue;
       }
-      level = handle.level();
+      let level = entries[index]!.handle.level();
+      for (let i = index - 1; i >= 0 && level > 1; i--) {
+        const candidateLevel = entries[i]!.handle.level();
+        if (candidateLevel >= level) {
+          continue;
+        }
+        if (ancestors.has(i)) {
+          break;
+        }
+        ancestors.add(i);
+        level = candidateLevel;
+      }
+    }
+    let result = next;
+    for (const i of [...ancestors].sort((a, b) => b - a)) {
+      const handle = entries[i]!.handle;
       const ancestor = handle.value();
       if (!handle.selectable()) {
         continue;

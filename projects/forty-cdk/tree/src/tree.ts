@@ -88,7 +88,7 @@ type VisibleEntry<T> = ForTreeVisibleNode<T>;
   host: {
     role: 'tree',
     '[attr.aria-label]': 'resolvedAriaLabel()',
-    '[attr.aria-multiselectable]': 'multiple() ? "true" : null',
+    '[attr.aria-multiselectable]': 'multiSelect() ? "true" : null',
     '[attr.aria-orientation]': 'orientation()',
     '[attr.aria-disabled]': 'disabled() ? "true" : null',
     '[attr.data-orientation]': 'orientation()',
@@ -160,6 +160,10 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
    */
   readonly selectionMode = input<'highlight' | 'checkbox'>('highlight');
 
+  protected readonly multiSelect = computed(
+    () => this.multiple() || this.selectionMode() === 'checkbox',
+  );
+
   /**
    * Enables cascade selection in `selectionMode="checkbox"`: checking or
    * unchecking a node propagates to all its descendants, and a parent derives
@@ -168,7 +172,8 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
    * any other state checks it. Toggling a node also keeps each mounted ancestor's
    * own entry in `value` in step, so an ancestor is present exactly when all its
    * descendants are; an ancestor outside a virtualized window is left as it is.
-   * Ignored in `'highlight'` mode. Requires {@link ForTree.descendantsOf}.
+   * The `multiple` shortcuts (Shift+Arrow, Shift+Space, Ctrl/Cmd+A) cascade the
+   * same way. Ignored in `'highlight'` mode. Requires {@link ForTree.descendantsOf}.
    * Default `false`.
    */
   readonly cascade = input(false, { transform: booleanAttribute });
@@ -256,15 +261,16 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
   /**
    * Single-mode only: when true, every keyboard focus move (arrow navigation,
    * entering a child, leaving to the parent, a typeahead match) also selects
-   * the focused node. The default is read from `provideForTreeDefaults` for the
-   * surrounding scope.
+   * the focused node. Ignored under `multiple` or `selectionMode="checkbox"`,
+   * where a move never changes the value. The default is read from
+   * `provideForTreeDefaults` for the surrounding scope.
    *
    * Not supported together with virtualization (`totalCount` set): the
    * virtualized `aria-activedescendant` focus model resolves off-window
    * navigation targets asynchronously, so selection cannot follow focus there
    * without deriving the committed value from a render side effect.
-   * Keyboard-navigating a virtualized tree with it set throws in dev mode, from
-   * the move the combination degrades.
+   * Keyboard-navigating a virtualized single-select tree with it set throws in
+   * dev mode, from the move the combination degrades.
    */
   readonly selectionFollowsFocus = input(this.#defaults.selectionFollowsFocus, {
     transform: booleanAttribute,
@@ -393,6 +399,7 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
     compareWith: this.compareWith,
     selectedMembership: this.#isSelected,
     multiple: this.multiple,
+    multiSelect: this.multiSelect,
     disabled: this.disabled,
     selectionMode: this.selectionMode,
     cascade: this.cascade,
@@ -462,7 +469,7 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
       visibleNodes: this.#visibleEntries,
       visibleHandles: this.#visibleHandles,
       selectOnFocus: (value) => {
-        if (!this.multiple() && this.selectionFollowsFocus()) {
+        if (this.selectionFollowsFocus() && !this.multiSelect()) {
           this.value.set([value]);
           this.#anchorValue.set(value);
         }
@@ -756,7 +763,7 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
    * nothing — the `#virtualized()` gate makes the roving path inert.
    */
   #assertSelectionFollowsFocusSupported(): void {
-    if (this.#virtualized() && this.selectionFollowsFocus()) {
+    if (this.#virtualized() && this.selectionFollowsFocus() && !this.multiSelect()) {
       throwUnsupportedVirtualizedSelectionFollowsFocus({
         primitive: 'tree',
         focusModel: 'roving-tabindex',

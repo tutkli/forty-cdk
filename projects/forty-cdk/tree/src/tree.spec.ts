@@ -1459,6 +1459,11 @@ describe('ForTree', () => {
       expect(fixture.componentInstance.picked()).toEqual(['a', 'b']);
     });
 
+    it('announces the tree as multi-select without the multiple input', async () => {
+      const { el } = await setupCheckbox();
+      expect(treeOf(el).getAttribute('aria-multiselectable')).toBe('true');
+    });
+
     it('highlight mode is unaffected: aria-selected present, no aria-checked', async () => {
       @Component({
         imports: [ForTree, ForTreeItem, ForTreeItemLabel],
@@ -1770,6 +1775,242 @@ describe('ForTree', () => {
       cascadeCheckboxOf(el, 'g').click();
       await flush(fixture);
       expect(cascadeItemOf(el, 'g1').getAttribute('aria-checked')).toBe('true');
+    });
+  });
+
+  describe('checkbox mode keyboard (issue #2224)', () => {
+    const DESCENDANTS: Record<string, readonly string[]> = {
+      fruits: ['apple', 'pear'],
+      veggies: ['carrot'],
+    };
+
+    @Component({
+      imports: [ForTree, ForTreeItem, ForTreeItemLabel, ForTreeItemToggle, ForTreeGroup],
+      template: `
+        <ul
+          forTree
+          selectionMode="checkbox"
+          [cascade]="cascade()"
+          [descendantsOf]="descendantsFn"
+          [multiple]="isMulti()"
+          [selectionFollowsFocus]="follow()"
+          [(value)]="picked"
+          [(expanded)]="open"
+          aria-label="Food"
+        >
+          <li forTreeItem value="readme" data-test-id="readme">
+            <div forTreeItemLabel data-test-label="readme">Readme</div>
+          </li>
+          <li forTreeItem value="fruits" data-test-id="fruits">
+            <div forTreeItemLabel data-test-label="fruits">
+              <span forTreeItemToggle>▸</span>
+              Fruits
+            </div>
+            @if (open().includes('fruits')) {
+              <ul forTreeGroup>
+                <li forTreeItem value="apple" data-test-id="apple">
+                  <div forTreeItemLabel data-test-label="apple">Apple</div>
+                </li>
+                <li forTreeItem value="pear" data-test-id="pear">
+                  <div forTreeItemLabel data-test-label="pear">Pear</div>
+                </li>
+              </ul>
+            }
+          </li>
+          <li forTreeItem value="veggies" data-test-id="veggies">
+            <div forTreeItemLabel data-test-label="veggies">
+              <span forTreeItemToggle>▸</span>
+              Veggies
+            </div>
+            @if (open().includes('veggies')) {
+              <ul forTreeGroup>
+                <li forTreeItem value="carrot" data-test-id="carrot">
+                  <div forTreeItemLabel data-test-label="carrot">Carrot</div>
+                </li>
+              </ul>
+            }
+          </li>
+        </ul>
+      `,
+    })
+    class CheckboxKeyboardHost {
+      readonly picked = signal<readonly string[]>([]);
+      readonly open = signal<readonly string[]>([]);
+      readonly cascade = signal(true);
+      readonly isMulti = signal(false);
+      readonly follow = signal(false);
+      readonly descendantsFn = (v: string): readonly string[] => DESCENDANTS[v] ?? [];
+    }
+
+    async function setupKeyboard(configure?: (i: CheckboxKeyboardHost) => void) {
+      const result = renderHost(CheckboxKeyboardHost);
+      configure?.(result.instance);
+      await flush(result.fixture);
+      return result;
+    }
+
+    const sorted = (values: readonly string[]) => [...values].sort();
+
+    describe('selectionFollowsFocus is inert', () => {
+      it('keeps the checked set across ArrowDown, ArrowRight, ArrowLeft and a typeahead match', async () => {
+        const { el, fixture, instance } = await setupKeyboard((i) => {
+          i.follow.set(true);
+          i.open.set(['fruits']);
+          i.picked.set(['fruits', 'apple', 'pear']);
+        });
+        itemOf(el, 'readme').focus();
+
+        pressKey(itemOf(el, 'readme'), 'ArrowDown');
+        await flush(fixture);
+        expect(document.activeElement).toBe(itemOf(el, 'fruits'));
+        expect(instance.picked()).toEqual(['fruits', 'apple', 'pear']);
+
+        pressKey(itemOf(el, 'fruits'), 'ArrowRight');
+        await flush(fixture);
+        expect(document.activeElement).toBe(itemOf(el, 'apple'));
+        expect(instance.picked()).toEqual(['fruits', 'apple', 'pear']);
+
+        pressKey(itemOf(el, 'apple'), 'ArrowLeft');
+        await flush(fixture);
+        expect(document.activeElement).toBe(itemOf(el, 'fruits'));
+        expect(instance.picked()).toEqual(['fruits', 'apple', 'pear']);
+
+        pressKey(itemOf(el, 'fruits'), 'p');
+        await flush(fixture);
+        expect(document.activeElement).toBe(itemOf(el, 'pear'));
+        expect(instance.picked()).toEqual(['fruits', 'apple', 'pear']);
+        expect(itemOf(el, 'fruits').getAttribute('aria-checked')).toBe('true');
+      });
+
+      it('keeps the checked set without cascade too', async () => {
+        const { el, fixture, instance } = await setupKeyboard((i) => {
+          i.cascade.set(false);
+          i.follow.set(true);
+          i.picked.set(['readme', 'veggies']);
+        });
+        itemOf(el, 'readme').focus();
+
+        pressKey(itemOf(el, 'readme'), 'ArrowDown');
+        await flush(fixture);
+        expect(document.activeElement).toBe(itemOf(el, 'fruits'));
+        expect(instance.picked()).toEqual(['readme', 'veggies']);
+      });
+    });
+
+    describe('multi-select shortcuts follow the cascade', () => {
+      it('Shift+ArrowDown unchecking a child of a fully checked parent drops the parent', async () => {
+        const { el, fixture, instance } = await setupKeyboard((i) => {
+          i.isMulti.set(true);
+          i.open.set(['fruits']);
+          i.picked.set(['fruits', 'apple', 'pear']);
+        });
+
+        pressKey(itemOf(el, 'apple'), 'ArrowDown', { shiftKey: true });
+        await flush(fixture);
+
+        expect(document.activeElement).toBe(itemOf(el, 'pear'));
+        expect(instance.picked()).toEqual(['apple']);
+        expect(itemOf(el, 'fruits').getAttribute('aria-checked')).toBe('mixed');
+      });
+
+      it('Shift+ArrowDown onto a collapsed parent checks its whole subtree', async () => {
+        const { el, fixture, instance } = await setupKeyboard((i) => i.isMulti.set(true));
+
+        pressKey(itemOf(el, 'readme'), 'ArrowDown', { shiftKey: true });
+        await flush(fixture);
+
+        expect(sorted(instance.picked())).toEqual(['apple', 'fruits', 'pear']);
+        expect(itemOf(el, 'fruits').getAttribute('aria-checked')).toBe('true');
+      });
+
+      it('Shift+ArrowDown onto a checked collapsed parent unchecks its whole subtree', async () => {
+        const { el, fixture, instance } = await setupKeyboard((i) => {
+          i.isMulti.set(true);
+          i.picked.set(['fruits', 'apple', 'pear', 'readme']);
+        });
+
+        pressKey(itemOf(el, 'readme'), 'ArrowDown', { shiftKey: true });
+        await flush(fixture);
+
+        expect(instance.picked()).toEqual(['readme']);
+        expect(itemOf(el, 'fruits').getAttribute('aria-checked')).toBe('false');
+      });
+
+      it('Shift+Space checks the subtree of every collapsed parent in the range', async () => {
+        const { el, fixture, instance } = await setupKeyboard((i) => i.isMulti.set(true));
+        labelOf(el, 'readme').click();
+        await flush(fixture);
+
+        pressKey(itemOf(el, 'veggies'), ' ', { shiftKey: true });
+        await flush(fixture);
+
+        expect(sorted(instance.picked())).toEqual([
+          'apple',
+          'carrot',
+          'fruits',
+          'pear',
+          'readme',
+          'veggies',
+        ]);
+        expect(itemOf(el, 'fruits').getAttribute('aria-checked')).toBe('true');
+        expect(itemOf(el, 'veggies').getAttribute('aria-checked')).toBe('true');
+      });
+
+      it('Shift+Space completing the last children of a parent adds the parent', async () => {
+        const { el, fixture, instance } = await setupKeyboard((i) => {
+          i.isMulti.set(true);
+          i.open.set(['fruits']);
+        });
+        labelOf(el, 'apple').click();
+        await flush(fixture);
+        expect(instance.picked()).toEqual(['apple']);
+
+        pressKey(itemOf(el, 'pear'), ' ', { shiftKey: true });
+        await flush(fixture);
+
+        expect(sorted(instance.picked())).toEqual(['apple', 'fruits', 'pear']);
+        expect(itemOf(el, 'fruits').getAttribute('aria-checked')).toBe('true');
+      });
+
+      it('Ctrl+A checks the subtree of collapsed parents, then clears everything on repeat', async () => {
+        const { el, fixture, instance } = await setupKeyboard((i) => i.isMulti.set(true));
+
+        pressKey(itemOf(el, 'readme'), 'a', { ctrlKey: true });
+        await flush(fixture);
+        expect(sorted(instance.picked())).toEqual([
+          'apple',
+          'carrot',
+          'fruits',
+          'pear',
+          'readme',
+          'veggies',
+        ]);
+        expect(itemOf(el, 'fruits').getAttribute('aria-checked')).toBe('true');
+
+        pressKey(itemOf(el, 'readme'), 'a', { ctrlKey: true });
+        await flush(fixture);
+        expect(instance.picked()).toEqual([]);
+        expect(itemOf(el, 'fruits').getAttribute('aria-checked')).toBe('false');
+      });
+
+      it('Ctrl+A checks every node when a collapsed parent is only partly checked', async () => {
+        const { el, fixture, instance } = await setupKeyboard((i) => {
+          i.isMulti.set(true);
+          i.picked.set(['readme', 'fruits', 'veggies', 'apple']);
+        });
+
+        pressKey(itemOf(el, 'readme'), 'a', { ctrlKey: true });
+        await flush(fixture);
+
+        expect(sorted(instance.picked())).toEqual([
+          'apple',
+          'carrot',
+          'fruits',
+          'pear',
+          'readme',
+          'veggies',
+        ]);
+      });
     });
   });
 
@@ -3156,6 +3397,7 @@ describe('ForTree', () => {
           [(expanded)]="open"
           [totalCount]="total()"
           [selectionFollowsFocus]="followsFocus()"
+          [selectionMode]="selectionMode()"
           aria-label="Guard"
         >
           @for (node of nodes; track node.value) {
@@ -3182,6 +3424,7 @@ describe('ForTree', () => {
       readonly open = signal<readonly string[]>(['n-0']);
       readonly total = signal<number | undefined>(undefined);
       readonly followsFocus = signal(false);
+      readonly selectionMode = signal<'highlight' | 'checkbox'>('highlight');
       readonly nodes = [
         {
           value: 'n-0',
@@ -3213,7 +3456,11 @@ describe('ForTree', () => {
       ];
     }
 
-    async function setupGuard(captured: unknown[], followsFocus: boolean) {
+    async function setupGuard(
+      captured: unknown[],
+      followsFocus: boolean,
+      selectionMode: 'highlight' | 'checkbox' = 'highlight',
+    ) {
       class CapturingHandler implements ErrorHandler {
         handleError(err: unknown): void {
           captured.push(err);
@@ -3229,6 +3476,7 @@ describe('ForTree', () => {
       const fixture = TestBed.createComponent(GuardHost);
       fixture.componentInstance.total.set(3);
       fixture.componentInstance.followsFocus.set(followsFocus);
+      fixture.componentInstance.selectionMode.set(selectionMode);
       fixture.detectChanges();
       await flush(fixture);
       const tree = (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>(
@@ -3321,6 +3569,32 @@ describe('ForTree', () => {
       await flush(fixture);
       expect(captured).toEqual([]);
       expect(fixture.componentInstance.open()).toContain('n-2');
+    });
+
+    it('stays inert in checkbox mode: every move goes through and checks nothing', async () => {
+      const captured: unknown[] = [];
+      const { tree, fixture } = await setupGuard(captured, true, 'checkbox');
+      const root = fixture.nativeElement as HTMLElement;
+      const idOf = (value: string) => root.querySelector(`[data-test-id="${value}"]`)!.id;
+
+      pressKey(tree, 'ArrowDown');
+      await flush(fixture);
+      expect(tree.getAttribute('aria-activedescendant')).toBe(idOf('n-1'));
+
+      pressKey(tree, 'ArrowLeft');
+      await flush(fixture);
+      expect(tree.getAttribute('aria-activedescendant')).toBe(idOf('n-0'));
+
+      pressKey(tree, 'ArrowRight');
+      await flush(fixture);
+      expect(tree.getAttribute('aria-activedescendant')).toBe(idOf('n-1'));
+
+      pressKey(tree, 'c');
+      await flush(fixture);
+      expect(tree.getAttribute('aria-activedescendant')).toBe(idOf('n-2'));
+
+      expect(captured).toEqual([]);
+      expect(fixture.componentInstance.picked()).toEqual([]);
     });
 
     it('does not throw when selectionFollowsFocus is set without virtualization', async () => {
