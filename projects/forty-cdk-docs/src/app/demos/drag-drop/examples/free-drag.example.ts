@@ -12,7 +12,7 @@ import { ForDragHandle, ForFreeDrag } from 'forty-cdk/drag-drop';
       <div class="dialog">
         <header forFreeDrag rootElement=".dialog" boundary=".viewport" class="dialog-bar">
           <span forDragHandle aria-hidden="true" class="grip">⠿</span>
-          Drag by header
+          Drag by the grip
         </header>
         <div class="dialog-body">rootElement moves the whole panel.</div>
       </div>
@@ -90,7 +90,6 @@ import { ForDragHandle, ForFreeDrag } from 'forty-cdk/drag-drop';
       border-bottom: 1px solid var(--ex-border, #e5e0d6);
       font-size: 0.82rem;
       font-weight: 600;
-      cursor: grab;
       user-select: none;
     }
 

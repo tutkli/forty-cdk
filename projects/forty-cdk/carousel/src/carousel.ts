@@ -31,7 +31,6 @@ import {
   moveIndex,
   type PauseController,
   resolveText,
-  RovingTabindex,
   type WritingDirection,
 } from 'forty-cdk/core';
 import {
@@ -46,8 +45,8 @@ import { FOR_CAROUSEL_DEFAULTS } from 'forty-cdk/defaults';
 
 /**
  * Root of the Carousel primitive. Owns the active index, slide collection,
- * indicator collection, roving tabindex tracker, and computed geometry CSS
- * variables. Provides the shared context to descendant pieces.
+ * indicator collection, and computed geometry CSS variables. Provides the
+ * shared context to descendant pieces.
  *
  * Implements the [WAI-ARIA APG Carousel pattern](https://www.w3.org/WAI/ARIA/apg/patterns/carousel/).
  *
@@ -172,9 +171,6 @@ export class ForCarousel implements ForCarouselContext {
   readonly _dirInput = input<WritingDirection | null>(null, { alias: 'dir' });
   readonly dir = injectTextDirection(this._dirInput);
 
-  /** Roving tabindex tracker for the indicator group. */
-  private readonly roving = new RovingTabindex(() => this.#indicators.items());
-
   readonly #destroyRef = inject(DestroyRef);
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
   readonly #element = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -187,10 +183,24 @@ export class ForCarousel implements ForCarouselContext {
     () => this.#userPlaying() ?? (this.autoplay() && !this.#prefersReducedMotion()),
   );
 
-  readonly #pause: PauseController<'hover' | 'focus' | 'visibility'> = injectPauseController();
+  readonly #interactionPause: PauseController<'hover' | 'focus'> = injectPauseController({
+    trackPageVisibility: false,
+  });
 
-  /** Whether the carousel is actively auto-rotating right now. */
-  readonly rotating = computed(() => this.playing() && !this.#pause.paused());
+  readonly #visibilityPause: PauseController<'visibility'> = injectPauseController();
+
+  /**
+   * Whether the carousel is actively auto-rotating right now. A start the user
+   * activated (the rotation control or `play()`) rotates while focus or the
+   * pointer is still inside the carousel; an autoplay that started on its own
+   * pauses on both.
+   */
+  readonly rotating = computed(
+    () =>
+      this.playing() &&
+      !this.#visibilityPause.paused() &&
+      (this.#userPlaying() === true || !this.#interactionPause.paused()),
+  );
 
   #timerHandle: ReturnType<typeof setInterval> | null = null;
 
@@ -350,7 +360,6 @@ export class ForCarousel implements ForCarouselContext {
 
   private unregisterIndicator(handle: ForCarouselIndicatorHandle): void {
     this.#indicators.unregister(handle);
-    this.roving.unregister(handle.host);
   }
 
   /** Called by `ForCarouselViewport` at construction to wire the geometry observer. */
@@ -439,7 +448,11 @@ export class ForCarousel implements ForCarouselContext {
     return this.#indicators.items().some((i, idx) => idx === active && !i.disabled());
   }
 
-  /** Start auto-rotation (explicit, sticky). Overrides the reduced-motion auto-start gate. */
+  /**
+   * Start auto-rotation (explicit, sticky). Overrides the reduced-motion
+   * auto-start gate, and keeps rotating while focus or the pointer is inside the
+   * carousel. A backgrounded page still pauses it.
+   */
   play(): void {
     this.#userPlaying.set(true);
   }
@@ -455,11 +468,11 @@ export class ForCarousel implements ForCarouselContext {
   }
 
   protected onAutoplayPause(reason: 'hover' | 'focus'): void {
-    this.#pause.apply(reason);
+    this.#interactionPause.apply(reason);
   }
 
   protected onAutoplayResume(reason: 'hover' | 'focus'): void {
-    this.#pause.release(reason);
+    this.#interactionPause.release(reason);
   }
 
   protected onAutoplayFocusOut(event: FocusEvent): void {
@@ -467,7 +480,7 @@ export class ForCarousel implements ForCarouselContext {
     if (next && this.#element.nativeElement.contains(next)) {
       return;
     }
-    this.#pause.release('focus');
+    this.#interactionPause.release('focus');
   }
 
   #syncTimer(rotating: boolean, interval: number): void {

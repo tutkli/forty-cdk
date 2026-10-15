@@ -135,7 +135,7 @@ import {
         @for (slide of slides(); track slide; let i = $index) {
           <button
             forCarouselIndicator
-            [attr.aria-label]="'Go to slide ' + (i + 1)"
+            [ariaLabel]="'Go to slide ' + (i + 1)"
             [attr.data-testid]="'indicator-' + i"
           ></button>
         }

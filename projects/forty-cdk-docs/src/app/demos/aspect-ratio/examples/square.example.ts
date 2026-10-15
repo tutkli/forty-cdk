@@ -32,7 +32,7 @@ import { ForAspectRatio } from 'forty-cdk/aspect-ratio';
     .label {
       padding: 0.35rem 0.75rem;
       border-radius: 999px;
-      background: rgba(0, 0, 0, 0.25);
+      background: rgba(0, 0, 0, 0.4);
     }
   `,
 })

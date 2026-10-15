@@ -28,19 +28,22 @@ import { entryPointOf, LIBRARY_CODE, SPEC_CODE } from '../test-utils/source-scan
  *     paid for. Two trackers in one file is not hypothetical:
  *     `core/datetime/range-field-composer` builds one per endpoint, so keying on
  *     the file alone would let either cover for the other.
- *   - **`[forRadioGroup]` is a *declared* member, not a derived one**, and it is
- *     the reason this roster could not simply be scanned into existence. It owns
- *     a roving-tabindex model and adopts the contract in full, yet constructs no
- *     tracker: selection follows focus in the WAI-ARIA Radio Group pattern, so
- *     the group's Tab entry point is its checked radio and there is no
- *     user-driven roving pointer that could diverge from it. A tracker
- *     constructed there would be either redundant (the arrow path already moves
- *     the selection) or wrong (under `readonly`, arrows move focus without
- *     selecting, and the checked radio must stay the entry point). What the
+ *   - **`[forRadioGroup]` and `[forCarousel]` are *declared* members, not
+ *     derived ones**, and they are the reason this roster could not simply be
+ *     scanned into existence. Each owns a roving-tabindex model and adopts the
+ *     contract in full, yet constructs no tracker: selection follows focus, so
+ *     the group's Tab entry point is its checked radio or its current dot and
+ *     there is no user-driven roving pointer that could diverge from it. A
+ *     tracker constructed there would be either redundant (the arrow path
+ *     already moves the selection) or wrong: under RadioGroup's `readonly`,
+ *     arrows move focus without selecting, and the checked radio must stay the
+ *     entry point, while the carousel's current slide also moves through prev /
+ *     next, autoplay and drag, which never focus a dot
+ *     ([#2213](https://github.com/tutkli/forty-cdk/issues/2213)). What the
  *     asymmetry cost — a second implementation of the ladder — is paid off
  *     instead by `selectionTabStop`, the shared rungs `rovingTabStop` delegates
- *     to, and the declared-member case below checks that `[forRadio]` still
- *     resolves through it.
+ *     to, and the declared-member case below checks that each still resolves
+ *     through it.
  *   - **Comments are stripped before the scan.** `core/roving-tabindex`
  *     documents `new RovingTabindex()` as the way to build one, in a JSDoc line
  *     a bare scan reads as a fifteenth construction. Same anchoring failure the
@@ -113,6 +116,7 @@ interface RovingTabindexAdopter {
    * construct no tracker — otherwise the claim belongs on the derived side.
    */
   readonly handWrittenLadder?: string;
+  readonly readBacks?: readonly string[];
 }
 
 const ADOPTERS: readonly RovingTabindexAdopter[] = [
@@ -147,11 +151,6 @@ const ADOPTERS: readonly RovingTabindexAdopter[] = [
     trackers: ['toolbar/src/toolbar.ts::roving'],
   },
   {
-    root: '[forCarousel]',
-    spec: 'carousel/src/carousel.spec.ts',
-    trackers: ['carousel/src/carousel.ts::roving'],
-  },
-  {
     root: '[forTree]',
     spec: 'tree/src/tree.spec.ts',
     trackers: ['tree/src/tree.ts::roving'],
@@ -161,12 +160,19 @@ const ADOPTERS: readonly RovingTabindexAdopter[] = [
     spec: 'drag-drop/src/drag-drop.spec.ts',
     trackers: ['drag-drop/src/drop-list.ts::roving'],
   },
-  // The declared member: owns the model, constructs no tracker.
   {
     root: '[forRadioGroup]',
     spec: 'radio-group/src/radio-group.spec.ts',
     trackers: [],
     handWrittenLadder: 'radio-group/src/radio.ts',
+    readBacks: ['hasSelectedRadio()', 'isFirstEnabledRadio('],
+  },
+  {
+    root: '[forCarousel]',
+    spec: 'carousel/src/carousel.spec.ts',
+    trackers: [],
+    handWrittenLadder: 'carousel/src/carousel-indicator.ts',
+    readBacks: ['hasCurrentIndicator()', 'isFirstEnabledIndicator('],
   },
 ];
 
@@ -316,7 +322,7 @@ describe('roving-tabindex contract adoption (meta-guard)', () => {
   });
 
   it('finds every construction of the roving tracker', () => {
-    expect(trackerSites().length).toBeGreaterThanOrEqual(14);
+    expect(trackerSites().length).toBeGreaterThanOrEqual(13);
   });
 
   it('keys every construction it finds, so none can vanish from the roster', () => {
@@ -371,7 +377,8 @@ describe('roving-tabindex contract adoption (meta-guard)', () => {
           reasons.push(`no longer resolves its tab stop through ${SHARED_LADDER}`);
         }
         const source = sourceOf(ladder);
-        if (!source.includes('hasSelectedRadio()') || !source.includes('isFirstEnabledRadio(')) {
+        const readBacks = adopter.readBacks ?? [];
+        if (readBacks.length === 0 || readBacks.some((readBack) => !source.includes(readBack))) {
           reasons.push('no longer reads its root tab-stop read-backs');
         }
         return reasons.map((reason) => `${adopter.root}: ${reason}`);

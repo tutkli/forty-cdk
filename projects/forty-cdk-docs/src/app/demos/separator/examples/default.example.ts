@@ -8,14 +8,14 @@ import { ForSeparator } from 'forty-cdk/separator';
   template: `
     <div class="card">
       <span class="label">Account</span>
-      <hr forSeparator class="separator-h" />
+      <hr forSeparator class="separator" />
       <span class="label">Workspace</span>
-      <hr forSeparator class="separator-h" />
+      <hr forSeparator class="separator" />
       <div class="inline">
         <span>Edit</span>
-        <span forSeparator decorative orientation="vertical" class="separator-v"></span>
+        <span forSeparator decorative orientation="vertical" class="separator"></span>
         <span>Share</span>
-        <span forSeparator decorative orientation="vertical" class="separator-v"></span>
+        <span forSeparator decorative orientation="vertical" class="separator"></span>
         <span>Delete</span>
       </div>
     </div>
@@ -41,12 +41,21 @@ import { ForSeparator } from 'forty-cdk/separator';
       font-weight: 600;
     }
 
-    .separator-h {
-      width: 100%;
-      height: 1px;
+    .separator {
       margin: 0;
       border: 0;
       background: var(--ex-border, #e5e0d6);
+    }
+
+    .separator[data-orientation='horizontal'] {
+      inline-size: 100%;
+      block-size: 1px;
+    }
+
+    .separator[data-orientation='vertical'] {
+      inline-size: 1px;
+      block-size: 16px;
+      background: var(--ex-border-strong, #d0c9bc);
     }
 
     .inline {
@@ -54,12 +63,6 @@ import { ForSeparator } from 'forty-cdk/separator';
       align-items: center;
       gap: 0.75rem;
       color: var(--ex-muted, #585d66);
-    }
-
-    .separator-v {
-      width: 1px;
-      height: 16px;
-      background: var(--ex-border-strong, #d0c9bc);
     }
   `,
 })

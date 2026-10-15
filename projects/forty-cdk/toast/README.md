@@ -75,7 +75,7 @@ The viewport renders each toast in this shape (the declarative path composes the
 
 ## Examples
 
-Fire a toast and leave it alone: hovering pauses it, a drag swipes it away, and the stack reflects `data-front-stack-index` so the cards behind it can shrink.
+Fire a toast and leave it alone: hovering pauses it, a drag swipes it away, and the stack reflects `data-front-stack-index` so the cards behind it can shrink. Each demo on this page gives its viewport its own corner and its own `ariaLabel`, so the stacks never cover each other and every landmark has a unique name.
 
 ```ts
 import { ChangeDetectionStrategy, Component, DestroyRef, inject } from '@angular/core';
@@ -98,6 +98,7 @@ type Variant = 'info' | 'success' | 'warning' | 'error';
     <for-toast-viewport
       class="demo-toast-viewport"
       region="toast-variants"
+      ariaLabel="Variant notifications"
       [stackShift]="{ duration: 220, easing: 'cubic-bezier(0.05, 0.7, 0.1, 1)' }"
     />
   `,

@@ -82,7 +82,7 @@ interface Slide {
           <button
             forCarouselIndicator
             class="mcar-dot"
-            [attr.aria-label]="'Go to slide ' + (i + 1)"
+            [ariaLabel]="'Go to slide ' + (i + 1)"
           ></button>
         }
       </div>

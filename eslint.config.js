@@ -3962,6 +3962,7 @@ module.exports = tseslint.config(
     rules: {
       // Hard-ban `*ngIf` / `*ngFor` / `*ngSwitch` in favour of `@if` / `@for` / `@switch`.
       '@angular-eslint/template/prefer-control-flow': 'error',
+      '@angular-eslint/template/elements-content': ['error', { allowList: ['ariaLabel'] }],
     },
   },
 

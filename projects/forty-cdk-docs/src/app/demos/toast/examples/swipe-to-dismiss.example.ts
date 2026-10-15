@@ -22,6 +22,7 @@ import { ForToastManager, ForToastViewport } from 'forty-cdk/toast';
     <for-toast-viewport
       class="swipe-toast-viewport"
       region="toast-swipe"
+      ariaLabel="Swipe notifications"
       swipeDirection="right"
       [swipeThreshold]="60"
     />
@@ -66,10 +67,10 @@ import { ForToastManager, ForToastViewport } from 'forty-cdk/toast';
     .swipe-toast-viewport {
       position: fixed;
       right: 1rem;
-      bottom: 1rem;
+      top: 1rem;
       z-index: 80;
       display: flex;
-      flex-direction: column-reverse;
+      flex-direction: column;
       gap: 0.6rem;
       width: min(360px, calc(100vw - 2rem));
       margin: 0;

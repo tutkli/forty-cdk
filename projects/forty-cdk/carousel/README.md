@@ -57,7 +57,7 @@ Headless and styleless: it ships slide tracking, keyboard navigation, focus mana
 
 ## Examples
 
-Page through the slides with the buttons, the arrow keys or a drag. The root carries `data-orientation`, and `data-dragging` is on while a pointer holds the track.
+Page through the slides with the buttons or with the arrow keys on the dots. The root carries `data-orientation`, and only the current dot is in the tab order however the slide was reached.
 
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
@@ -144,7 +144,7 @@ interface Slide {
           <button
             forCarouselIndicator
             class="car-dot"
-            [attr.aria-label]="'Go to slide ' + (i + 1)"
+            [ariaLabel]="'Go to slide ' + (i + 1)"
           ></button>
         }
       </div>
@@ -186,7 +186,7 @@ Set `slidesPerView` above `1` to show several slides at once. Each slide is `fle
 
 ### Autoplay with pause control
 
-With `autoplay` set, the slides advance every three seconds, unless your system asks for reduced motion, in which case they wait for the rotation control. Hover the carousel or move focus into it and rotation pauses until you leave; stop it with the control and it stays stopped through hover and focus until you start it again. [Autoplay](#autoplay) has the full pause rules and why the control must be the first focusable child.
+With `autoplay` set, the slides advance every three seconds, unless your system asks for reduced motion, in which case they wait for the rotation control. Hover the carousel or move focus into it and rotation pauses until you leave; stop it with the control and it stays stopped through hover and focus until you start it again, and a Start from the control rotates straight away, with focus and the pointer still on it. [Autoplay](#autoplay) has the full pause rules and why the control must be the first focusable child.
 
 ### Pointer drag & touch swipe
 
@@ -238,8 +238,12 @@ focusable child** of the carousel to enable automatic slide rotation.
 
 **Behaviour:**
 
-- Rotation pauses on hover, on keyboard focus anywhere inside the carousel, and
-  while the browser tab is backgrounded. It resumes when none of those hold.
+- Rotation that started on its own (`autoplay`) pauses on hover, on keyboard
+  focus anywhere inside the carousel, and while the browser tab is backgrounded.
+  It resumes when none of those hold.
+- An explicit user Start (clicking the rotation control or calling `play()`)
+  rotates even while focus or the pointer is inside the carousel, which is where
+  the user is when they press it. Only a backgrounded tab still pauses it.
 - An explicit user stop (clicking the rotation control or calling `pause()`) is
   **sticky**: hover-in/out and focus-in/out will not restart it. Only an explicit
   Start does.
@@ -461,7 +465,8 @@ Reflected on the `[forCarouselViewport]` host this directive is applied to:
 ## Keyboard
 
 Keyboard navigation lives on the indicator group. Only the current
-indicator is in the tab order. Arrow keys move focus and activate the target slide
+indicator is in the tab order, including after prev / next, autoplay or a drag
+moved the slide. Arrow keys move focus and activate the target slide
 automatically.
 
 | Key                        | Action                                                                |
