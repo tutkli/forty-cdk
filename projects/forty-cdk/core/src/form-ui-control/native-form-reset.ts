@@ -40,7 +40,10 @@ function listenForFormReset(
   };
 }
 
-export function injectRenderedDefaultValue(el: () => ValueElement | null): void {
+export function injectNativeFormReset(
+  el: () => ValueElement | null,
+  onReset?: (text: string) => void,
+): void {
   if (!isPlatformBrowser(inject(PLATFORM_ID))) {
     return;
   }
@@ -50,38 +53,30 @@ export function injectRenderedDefaultValue(el: () => ValueElement | null): void 
     if (!element) {
       return;
     }
+    let baseline: string | null = null;
     const ref = untracked(() =>
       afterNextRender(
         () => {
-          element.defaultValue = element.value;
+          baseline = element.value;
         },
         { injector },
       ),
     );
-    onCleanup(() => ref.destroy());
-  });
-}
-
-export function injectNativeFormReset(
-  el: () => ValueElement | null,
-  onReset: (text: string) => void,
-): void {
-  if (!isPlatformBrowser(inject(PLATFORM_ID))) {
-    return;
-  }
-  injectRenderedDefaultValue(el);
-  effect((onCleanup) => {
-    const element = el();
-    if (!element) {
-      return;
-    }
-    onCleanup(
-      listenForFormReset(
-        element,
-        () => element.form,
-        () => onReset(element.value),
-      ),
+    const stop = listenForFormReset(
+      element,
+      () => element.form,
+      () => {
+        const text = baseline ?? element.value;
+        if (element.value !== text) {
+          element.value = text;
+        }
+        onReset?.(text);
+      },
     );
+    onCleanup(() => {
+      ref.destroy();
+      stop();
+    });
   });
 }
 

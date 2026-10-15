@@ -197,7 +197,6 @@ export { injectHiddenInput } from './form-ui-control/hidden-input';
 export {
   injectNativeFormReset,
   injectNativeFormResetToInitial,
-  injectRenderedDefaultValue,
 } from './form-ui-control/native-form-reset';
 export { TextValueControlBase } from './form-ui-control/text-value-control-base';
 export { mirrorExternalValue, mirrorValue } from './form-ui-control/value-mirror';

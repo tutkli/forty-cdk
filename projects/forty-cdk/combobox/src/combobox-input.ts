@@ -2,7 +2,7 @@ import { computed, Directive, DOCUMENT, effect, ElementRef, inject } from '@angu
 
 import {
   foldTypeaheadText,
-  injectRenderedDefaultValue,
+  injectNativeFormReset,
   isImeComposing,
   registerHandle,
   reflectDisabled,
@@ -102,7 +102,7 @@ export class ForComboboxInput {
       (el) => this.ctx.unregisterInput(el),
     );
     reflectDisabled(this.ctx.effectiveDisabled);
-    injectRenderedDefaultValue(() => this.#host.nativeElement);
+    injectNativeFormReset(() => this.#host.nativeElement);
 
     const doc = inject(DOCUMENT);
 

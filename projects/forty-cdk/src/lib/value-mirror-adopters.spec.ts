@@ -18,11 +18,11 @@ interface Exclusion {
 const EXCLUSIONS: Readonly<Record<string, Exclusion>> = {
   'combobox/src/combobox-input.ts': {
     reason:
-      'the input edits the query, not a form value; the root resets the query and the selection, and the input pins its first-render text as the reset default',
+      'the input edits the query, not a form value; the root resets the query and the selection, and the input restores its first-render text after the reset',
     holds: (code) =>
       !/\bimplements\b[^{]*\bFormValueControl\b/.test(code) &&
       /\bquery\b/.test(code) &&
-      /\binjectRenderedDefaultValue\(/.test(code),
+      /\binjectNativeFormReset\(\s*\(\)\s*=>\s*this\.#host\.nativeElement\s*\)/.test(code),
   },
 };
 
