@@ -6,8 +6,11 @@ import { renderHost } from '../../src/test-utils/render';
 import {
   assertDataStateContract,
   assertFormControlContract,
+  assertNativeSubmissionContract,
   type FormControlMountResult,
+  type NativeSubmissionHost,
 } from '../../src/test-utils/contract';
+import { ForFieldset } from 'forty-cdk/fieldset';
 import { ForToggle } from './toggle';
 
 @Component({
@@ -41,7 +44,32 @@ class ToggleHost {
   readonly fieldName = signal<string>('');
 }
 
+@Component({
+  imports: [ForFieldset, ForToggle],
+  template: `
+    <form>
+      <div forFieldset [disabled]="fieldsetDisabled()">
+        <button forToggle name="bold" [(checked)]="value">Bold</button>
+      </div>
+    </form>
+  `,
+})
+class NativeSubmissionFixture implements NativeSubmissionHost {
+  readonly value = signal<boolean>(false);
+  readonly fieldsetDisabled = signal(false);
+  commit(): void {
+    this.value.set(true);
+  }
+  clear(): void {
+    this.value.set(false);
+  }
+}
+
 describe('ForToggle', () => {
+  assertNativeSubmissionContract(NativeSubmissionFixture, {
+    entries: [['bold', 'on']],
+  });
+
   assertDataStateContract({
     vocabulary: ['checked', 'unchecked'],
     mount: () => {

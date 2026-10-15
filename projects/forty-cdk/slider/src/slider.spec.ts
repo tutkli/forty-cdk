@@ -5,7 +5,9 @@ import { TestBed } from '@angular/core/testing';
 import { renderHost } from '../../src/test-utils/render';
 import {
   assertFormControlContract,
+  assertNativeSubmissionContract,
   type FormControlMountResult,
+  type NativeSubmissionHost,
 } from '../../src/test-utils/contract';
 import { ForFieldset } from 'forty-cdk/fieldset';
 import { ForSlider } from './slider';
@@ -158,7 +160,35 @@ const keyUp = (target: HTMLElement, key: string, init: KeyboardEventInit = {}) =
 // than a real laid-out track. The keyboard / ARIA / form-control coverage
 // below does not need geometry and stays in Vitest.
 
+@Component({
+  imports: [ForFieldset, ForSlider],
+  template: `
+    <form>
+      <div forFieldset [disabled]="fieldsetDisabled()">
+        <div forSlider name="price" [(value)]="value"></div>
+      </div>
+    </form>
+  `,
+})
+class NativeSubmissionFixture implements NativeSubmissionHost {
+  readonly value = signal<readonly number[]>([]);
+  readonly fieldsetDisabled = signal(false);
+  commit(): void {
+    this.value.set([20, 80]);
+  }
+  clear(): void {
+    this.value.set([]);
+  }
+}
+
 describe('ForSlider', () => {
+  assertNativeSubmissionContract(NativeSubmissionFixture, {
+    entries: [
+      ['price', '20'],
+      ['price', '80'],
+    ],
+  });
+
   assertFormControlContract(
     () => {
       const r = renderHost(SliderFormControlHost);

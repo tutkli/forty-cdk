@@ -8,8 +8,11 @@ import { renderHost } from '../../src/test-utils/render';
 import {
   assertDataStateContract,
   assertFormControlContract,
+  assertNativeSubmissionContract,
   type FormControlMountResult,
+  type NativeSubmissionHost,
 } from '../../src/test-utils/contract';
+import { ForFieldset } from 'forty-cdk/fieldset';
 import { ForSwitch } from './switch';
 import {
   FOR_SWITCH_HOST_DIRECTIVE_INPUTS,
@@ -61,7 +64,32 @@ const switchOf = (host: HTMLElement) => host.querySelector<HTMLButtonElement>('b
 
 const divSwitchOf = (host: HTMLElement) => host.querySelector<HTMLElement>('[forSwitch]')!;
 
+@Component({
+  imports: [ForFieldset, ForSwitch],
+  template: `
+    <form>
+      <div forFieldset [disabled]="fieldsetDisabled()">
+        <button forSwitch name="notify" [(checked)]="value">Notify</button>
+      </div>
+    </form>
+  `,
+})
+class NativeSubmissionFixture implements NativeSubmissionHost {
+  readonly value = signal<boolean>(false);
+  readonly fieldsetDisabled = signal(false);
+  commit(): void {
+    this.value.set(true);
+  }
+  clear(): void {
+    this.value.set(false);
+  }
+}
+
 describe('ForSwitch', () => {
+  assertNativeSubmissionContract(NativeSubmissionFixture, {
+    entries: [['notify', 'on']],
+  });
+
   assertDataStateContract({
     vocabulary: ['checked', 'unchecked'],
     mount: () => {

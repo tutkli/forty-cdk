@@ -22,10 +22,13 @@ import {
   assertDataStateContract,
   assertDismissibleLayerContract,
   assertFormControlContract,
+  assertNativeSubmissionContract,
   assertOverlayTriggerAriaContract,
   type DismissibleLayerMountOptions,
   type FormControlMountResult,
+  type NativeSubmissionHost,
 } from '../../src/test-utils/contract';
+import { ForFieldset } from 'forty-cdk/fieldset';
 import { ForField, ForFieldDescription, ForFieldError, ForLabel } from 'forty-cdk/field';
 import { pressKey, pressWithMouse } from 'forty-cdk/testing';
 import { ForSelect } from './select';
@@ -213,7 +216,35 @@ function activeTestId(): string | null {
   return document.activeElement?.getAttribute('data-test-id') ?? null;
 }
 
+@Component({
+  imports: [ForFieldset, ForSelect, ForSelectTrigger],
+  template: `
+    <form>
+      <div forFieldset [disabled]="fieldsetDisabled()">
+        <div forSelect name="fruit" [(value)]="value" [itemToFormValue]="toId">
+          <button forSelectTrigger>Fruit</button>
+        </div>
+      </div>
+    </form>
+  `,
+})
+class NativeSubmissionFixture implements NativeSubmissionHost {
+  readonly value = signal<readonly { readonly id: string }[]>([]);
+  readonly fieldsetDisabled = signal(false);
+  readonly toId = (item: { readonly id: string }): string => item.id;
+  commit(): void {
+    this.value.set([{ id: 'apple' }]);
+  }
+  clear(): void {
+    this.value.set([]);
+  }
+}
+
 describe('ForSelect', () => {
+  assertNativeSubmissionContract(NativeSubmissionFixture, {
+    entries: [['fruit', 'apple']],
+  });
+
   describe('focus (focus-on-error)', () => {
     it('moves focus to the trigger, not the wrapper host', async () => {
       const { el, fixture, flush } = renderHost(SelectHost);

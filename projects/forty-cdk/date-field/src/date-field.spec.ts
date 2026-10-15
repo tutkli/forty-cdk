@@ -13,8 +13,10 @@ import {
 } from '../../src/test-utils';
 import {
   assertFormControlContract,
+  assertNativeSubmissionContract,
   assertRovingRemovalContract,
   type FormControlMountResult,
+  type NativeSubmissionHost,
 } from '../../src/test-utils/contract';
 import {
   InternationalizedDateAdapter,
@@ -24,6 +26,7 @@ import {
 } from 'forty-cdk/internationalized-date';
 import { NativeDateAdapter, provideNativeDateAdapter } from 'forty-cdk/shared';
 import { ForField, ForFieldDescription, ForLabel } from 'forty-cdk/field';
+import { ForFieldset } from 'forty-cdk/fieldset';
 import { pressKey } from 'forty-cdk/testing';
 import { ForDateField } from './date-field';
 import { provideForDateFieldDefaults } from 'forty-cdk/defaults';
@@ -113,6 +116,56 @@ class DateFieldFormControlHost {
   readonly isDirty = signal(false);
 }
 
+@Component({
+  imports: [ForFieldset, ForDateField],
+  providers: [...provideNativeDateAdapter()],
+  template: `
+    <form>
+      <div forFieldset [disabled]="fieldsetDisabled()">
+        <div forDateField name="dob" [(value)]="value" ariaLabel="Date of birth"></div>
+      </div>
+    </form>
+  `,
+})
+class DaySubmissionHost implements NativeSubmissionHost {
+  readonly value = signal<Date | null>(null);
+  readonly fieldsetDisabled = signal(false);
+  commit(): void {
+    this.value.set(new Date(2026, 11, 5));
+  }
+  clear(): void {
+    this.value.set(null);
+  }
+}
+
+@Component({
+  imports: [ForFieldset, ForDateField],
+  providers: [...provideNativeDateAdapter()],
+  template: `
+    <form>
+      <div forFieldset [disabled]="fieldsetDisabled()">
+        <div
+          forDateField
+          name="departure"
+          granularity="minute"
+          [(value)]="value"
+          ariaLabel="Departure"
+        ></div>
+      </div>
+    </form>
+  `,
+})
+class MinuteSubmissionHost implements NativeSubmissionHost {
+  readonly value = signal<Date | null>(null);
+  readonly fieldsetDisabled = signal(false);
+  commit(): void {
+    this.value.set(new Date(2026, 11, 5, 14, 30));
+  }
+  clear(): void {
+    this.value.set(null);
+  }
+}
+
 type R = RenderResult<Host>;
 
 const root = (r: R) => r.query('[forDateField]')!;
@@ -167,6 +220,16 @@ describe('ForDateField', () => {
       roleSupportsAriaRequired: false,
     },
   );
+
+  assertNativeSubmissionContract(DaySubmissionHost, {
+    entries: [['dob', '2026-12-05']],
+    label: 'day',
+  });
+
+  assertNativeSubmissionContract(MinuteSubmissionHost, {
+    entries: [['departure', '2026-12-05T14:30']],
+    label: 'minute',
+  });
 
   describe('focus (focus-on-error)', () => {
     it('moves focus to the first segment, not the group host', async () => {

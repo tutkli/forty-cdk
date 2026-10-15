@@ -4,7 +4,8 @@
  * layer, the anchored-overlay trigger ARIA trio, the `data-state`
  * styling vocabulary, consumer-set static attribute adoption, the
  * single-value selection / open-item model shape, the anchored-overlay
- * positioning-input family, per-family defaults-key parity.
+ * positioning-input family, per-family defaults-key parity, native form
+ * submission through hidden inputs.
  *
  * Each contract owns the assertions that are identical across every
  * primitive in its family. Migration is incremental: when a primitive's
@@ -91,3 +92,10 @@ export {
   type StaticAdoptionContractSetup,
   type StaticAdoptionContractOptions,
 } from './static-adoption-contract';
+
+export {
+  assertNativeSubmissionContract,
+  type NativeSubmissionEntries,
+  type NativeSubmissionHost,
+  type NativeSubmissionContractOptions,
+} from './native-submission-contract';

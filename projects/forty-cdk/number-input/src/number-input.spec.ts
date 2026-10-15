@@ -10,7 +10,9 @@ import { form, FormField, min as minRule, required } from '@angular/forms/signal
 
 import {
   assertFormControlContract,
+  assertNativeSubmissionContract,
   type FormControlMountResult,
+  type NativeSubmissionHost,
 } from '../../src/test-utils/contract';
 import { flush } from '../../src/test-utils';
 import { renderHost } from '../../src/test-utils/render';
@@ -68,7 +70,32 @@ class NumberHost {
 
 const inputOf = (host: HTMLElement) => host.querySelector<HTMLInputElement>('input')!;
 
+@Component({
+  imports: [ForFieldset, ForNumberInput],
+  template: `
+    <form>
+      <div forFieldset [disabled]="fieldsetDisabled()">
+        <input forNumberInput name="qty" [(value)]="value" aria-label="Quantity" />
+      </div>
+    </form>
+  `,
+})
+class NativeSubmissionFixture implements NativeSubmissionHost {
+  readonly value = signal<number | null>(null);
+  readonly fieldsetDisabled = signal(false);
+  commit(): void {
+    this.value.set(1234.5);
+  }
+  clear(): void {
+    this.value.set(null);
+  }
+}
+
 describe('ForNumberInput', () => {
+  assertNativeSubmissionContract(NativeSubmissionFixture, {
+    entries: [['qty', '1234.5']],
+  });
+
   describe('static accessibility', () => {
     it('sets role="spinbutton", numeric inputmode and starts empty', () => {
       const { el } = renderHost(NumberHost);
