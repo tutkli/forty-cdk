@@ -239,6 +239,7 @@ describe('ForCarousel', () => {
       },
       mountWithRemoval: async () => {
         const r = renderHost(CarouselHost);
+        r.instance.active.set(1);
         await r.flush();
         return {
           items: indicators(r.el),
@@ -862,6 +863,39 @@ describe('ForCarousel', () => {
       expect(indicator(el, 0).getAttribute('aria-label')).toBe('Ir a la diapositiva 1');
     });
 
+    it('an [ariaLabel] binding names every indicator on the first render', () => {
+      @Component({
+        imports: [...CAROUSEL_IMPORTS],
+        template: `
+          <div forCarousel ariaLabel="Featured">
+            <div forCarouselViewport>
+              <div forCarouselTrack>
+                @for (s of slides; track s; let i = $index) {
+                  <div forCarouselSlide>Slide {{ i }}</div>
+                }
+              </div>
+            </div>
+            <div forCarouselIndicators>
+              @for (s of slides; track s; let i = $index) {
+                <button
+                  forCarouselIndicator
+                  [attr.data-indicator]="i"
+                  [ariaLabel]="'Custom ' + i"
+                ></button>
+              }
+            </div>
+          </div>
+        `,
+      })
+      class CustomIndicatorLabelHost {
+        readonly slides = [0, 1, 2];
+      }
+
+      const { el } = renderHost(CustomIndicatorLabelHost);
+      expect(indicator(el, 0).getAttribute('aria-label')).toBe('Custom 0');
+      expect(indicator(el, 2).getAttribute('aria-label')).toBe('Custom 2');
+    });
+
     it('localized slide label reflects the live slide count', async () => {
       const { el, instance, flush } = renderHost(LocalizedCarouselHost);
       expect(slide(el, 0).getAttribute('aria-label')).toBe('Diapositiva 1 de 3');
@@ -875,6 +909,10 @@ describe('ForCarousel', () => {
   });
 
   describe('indicators tabindex', () => {
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
     it('after navigating to slide 1, indicator 1 gets tabindex=0', async () => {
       const { el, flush } = renderHost(CarouselHost);
       indicator(el, 0).focus();
@@ -883,6 +921,48 @@ describe('ForCarousel', () => {
       await flush();
       const all = indicators(el);
       expect(all[1]!.getAttribute('tabindex')).toBe('0');
+    });
+
+    it('after next is clicked away from the dots, the tab stop follows the current dot', async () => {
+      const { el, flush } = renderHost(CarouselHost);
+      await flush();
+      indicator(el, 0).focus();
+      await flush();
+      indicator(el, 0).blur();
+      next(el).click();
+      next(el).click();
+      await flush();
+      expect(indicator(el, 2).getAttribute('tabindex')).toBe('0');
+      expect(indicator(el, 0).getAttribute('tabindex')).toBe('-1');
+      expect(indicator(el, 1).getAttribute('tabindex')).toBe('-1');
+    });
+
+    it('after an autoplay tick, the tab stop follows the current dot', async () => {
+      vi.useFakeTimers();
+      const { el, instance, fixture, flush } = renderHost(CarouselHost);
+      await flush();
+      indicator(el, 0).focus();
+      await flush();
+      indicator(el, 0).blur();
+      instance.autoplay.set(true);
+      instance.autoplayInterval.set(1000);
+      fixture.detectChanges();
+      await flush();
+      vi.advanceTimersByTime(1000);
+      await flush();
+      expect(indicator(el, 1).getAttribute('tabindex')).toBe('0');
+      expect(indicator(el, 0).getAttribute('tabindex')).toBe('-1');
+    });
+
+    it('focusing a disabled dot leaves the tab stop on the current dot', async () => {
+      const { el, instance, flush } = renderHost(CarouselHost);
+      instance.disabledIndicators.set([2]);
+      instance.active.set(1);
+      await flush();
+      indicator(el, 2).focus();
+      await flush();
+      expect(indicator(el, 1).getAttribute('tabindex')).toBe('0');
+      expect(indicator(el, 2).getAttribute('tabindex')).toBe('-1');
     });
   });
 
@@ -1251,6 +1331,22 @@ describe('ForCarousel', () => {
       await flush();
       expect(slide(el, 1).getAttribute('data-state')).toBe('active');
     });
+
+    it('a Start under reduced motion rotates while focus stays on the control', async () => {
+      vi.useFakeTimers();
+      const { el, instance, fixture, flush } = renderHost(CarouselHost);
+      instance.autoplay.set(true);
+      instance.autoplayInterval.set(1000);
+      fixture.detectChanges();
+      await flush();
+      rotation(el).focus();
+      rotation(el).click();
+      await flush();
+      expect(root(el).getAttribute('data-rotating')).toBe('');
+      vi.advanceTimersByTime(1000);
+      await flush();
+      expect(slide(el, 1).getAttribute('data-state')).toBe('active');
+    });
   });
 
   describe('pause on hover / focus (fake timers)', () => {
@@ -1376,6 +1472,110 @@ describe('ForCarousel', () => {
       vi.advanceTimersByTime(1000);
       await flush();
       expect(slide(el, 1).getAttribute('data-state')).toBe('active');
+    });
+  });
+
+  describe('Start activated from inside the carousel', () => {
+    afterEach(() => {
+      vi.useRealTimers();
+      Object.defineProperty(document, 'visibilityState', {
+        configurable: true,
+        get: () => 'visible',
+      });
+    });
+
+    it('a keyboard Start rotates while focus stays on the control', async () => {
+      vi.useFakeTimers();
+      const { el, instance, fixture, flush } = renderHost(CarouselHost);
+      instance.autoplayInterval.set(1000);
+      fixture.detectChanges();
+      await flush();
+      rotation(el).focus();
+      await flush();
+      rotation(el).click();
+      await flush();
+      expect(document.activeElement).toBe(rotation(el));
+      expect(root(el).getAttribute('data-rotating')).toBe('');
+      expect(viewport(el).getAttribute('aria-live')).toBe('off');
+      vi.advanceTimersByTime(1000);
+      await flush();
+      expect(slide(el, 1).getAttribute('data-state')).toBe('active');
+    });
+
+    it('a pointer Start rotates while the pointer stays over the carousel', async () => {
+      vi.useFakeTimers();
+      const { el, instance, fixture, flush } = renderHost(CarouselHost);
+      instance.autoplayInterval.set(1000);
+      fixture.detectChanges();
+      await flush();
+      root(el).dispatchEvent(new PointerEvent('pointerenter', { bubbles: true }));
+      rotation(el).focus();
+      rotation(el).click();
+      await flush();
+      expect(root(el).getAttribute('data-rotating')).toBe('');
+      vi.advanceTimersByTime(1000);
+      await flush();
+      expect(slide(el, 1).getAttribute('data-state')).toBe('active');
+    });
+
+    it('Stop from inside halts rotation, and a later hover no longer resumes it', async () => {
+      vi.useFakeTimers();
+      const { el, instance, fixture, flush } = renderHost(CarouselHost);
+      instance.autoplayInterval.set(1000);
+      fixture.detectChanges();
+      await flush();
+      rotation(el).focus();
+      rotation(el).click();
+      await flush();
+      rotation(el).click();
+      await flush();
+      expect(root(el).hasAttribute('data-rotating')).toBe(false);
+      vi.advanceTimersByTime(3000);
+      await flush();
+      expect(slide(el, 0).getAttribute('data-state')).toBe('active');
+    });
+
+    it('an autoplay that started on its own still pauses on focus', async () => {
+      vi.useFakeTimers();
+      const { el, instance, fixture, flush } = renderHost(CarouselHost);
+      instance.autoplay.set(true);
+      instance.autoplayInterval.set(1000);
+      fixture.detectChanges();
+      await flush();
+      indicator(el, 0).focus();
+      await flush();
+      expect(root(el).hasAttribute('data-rotating')).toBe(false);
+      vi.advanceTimersByTime(3000);
+      await flush();
+      expect(slide(el, 0).getAttribute('data-state')).toBe('active');
+    });
+
+    it('the page-visibility pause still holds after a user Start', async () => {
+      vi.useFakeTimers();
+      const { el, instance, fixture, flush } = renderHost(CarouselHost);
+      instance.autoplayInterval.set(1000);
+      fixture.detectChanges();
+      await flush();
+      rotation(el).focus();
+      rotation(el).click();
+      await flush();
+      Object.defineProperty(document, 'visibilityState', {
+        configurable: true,
+        get: () => 'hidden',
+      });
+      document.dispatchEvent(new Event('visibilitychange'));
+      await flush();
+      expect(root(el).hasAttribute('data-rotating')).toBe(false);
+      vi.advanceTimersByTime(3000);
+      await flush();
+      expect(slide(el, 0).getAttribute('data-state')).toBe('active');
+      Object.defineProperty(document, 'visibilityState', {
+        configurable: true,
+        get: () => 'visible',
+      });
+      document.dispatchEvent(new Event('visibilitychange'));
+      await flush();
+      expect(root(el).getAttribute('data-rotating')).toBe('');
     });
   });
 

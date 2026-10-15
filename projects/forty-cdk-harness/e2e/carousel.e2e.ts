@@ -43,6 +43,22 @@ test.describe('Carousel (roving tabindex entry)', () => {
     await expect(el(page, 'indicator-0')).toHaveAttribute('aria-current', 'true');
     await expect(el(page, 'indicator-0')).toHaveAttribute('data-state', 'active');
   });
+
+  test('after Next moves the slide, Tab back into the group lands on the current dot', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'carousel');
+    await rovingFirst(page, 'indicator-0');
+    await page.keyboard.press('Shift+Tab');
+    await expectFocused(el(page, 'next'));
+    await page.keyboard.press('Enter');
+    await page.keyboard.press('Enter');
+    await expect(el(page, 'indicator-2')).toHaveAttribute('aria-current', 'true');
+    await expect(el(page, 'indicator-2')).toHaveAttribute('tabindex', '0');
+
+    await page.keyboard.press('Tab');
+    await expectFocused(el(page, 'indicator-2'));
+  });
 });
 
 test.describe('Carousel (arrow navigation + automatic activation)', () => {
@@ -348,15 +364,37 @@ test.describe('Carousel (autoplay — sticky stop)', () => {
     );
   });
 
-  test('clicking start after sticky stop resumes rotation', async ({ page }) => {
+  test('clicking start after sticky stop resumes rotation with the pointer still on it', async ({
+    page,
+  }) => {
     await gotoFixture(page, 'carousel', { autoplay: '1', autoplayInterval: '400' });
     await el(page, 'rotation').click();
     const stopped = await activeSlideTestid(page);
     await el(page, 'rotation').click();
-    await el(page, 'before').focus();
-    await page.mouse.move(0, 0);
+    await expect(el(page, 'rotation')).toHaveAttribute('data-playing', '');
     await expect(el(page, 'carousel-root')).toHaveAttribute('data-rotating', '');
     await expect.poll(() => activeSlideTestid(page)).not.toBe(stopped);
+  });
+});
+
+test.describe('Carousel (rotation control — Start from inside)', () => {
+  test('Space on the focused control starts rotation while focus stays on it', async ({ page }) => {
+    await gotoFixture(page, 'carousel', { autoplayInterval: '400' });
+    await el(page, 'rotation').focus();
+    await page.keyboard.press('Space');
+    await expect(el(page, 'rotation')).toHaveAttribute('aria-label', 'Stop automatic slide show');
+    await expect(el(page, 'carousel-root')).toHaveAttribute('data-rotating', '');
+    await expect(el(page, 'viewport')).toHaveAttribute('aria-live', 'off');
+    await expect(el(page, 'slide-0')).toHaveAttribute('data-state', 'inactive');
+    await expectFocused(el(page, 'rotation'));
+  });
+
+  test('a click on the control starts rotation while the pointer rests on it', async ({ page }) => {
+    await gotoFixture(page, 'carousel', { autoplayInterval: '400' });
+    await el(page, 'rotation').click();
+    await expect(el(page, 'carousel-root')).toHaveAttribute('data-rotating', '');
+    await expect(el(page, 'slide-0')).toHaveAttribute('data-state', 'inactive');
+    await expect(el(page, 'rotation')).toHaveAttribute('aria-label', 'Stop automatic slide show');
   });
 });
 
@@ -376,8 +414,6 @@ test.describe('Carousel (autoplay — reduced motion no auto-start)', () => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await gotoFixture(page, 'carousel', { autoplay: '1', autoplayInterval: '400' });
     await el(page, 'rotation').click();
-    await el(page, 'before').focus();
-    await page.mouse.move(0, 0);
     await expect(el(page, 'carousel-root')).toHaveAttribute('data-rotating', '');
     await expect(el(page, 'slide-0')).toHaveAttribute('data-state', 'inactive');
   });

@@ -120,14 +120,12 @@ export class ForRadio {
    *
    * Disabled radios are always -1.
    *
-   * The ladder is the shared `selectionTabStop`, and this is the one piece in
-   * the library that resolves it **without** consulting a `RovingTabindex`:
-   * selection follows focus in the Radio Group pattern, so the group's Tab entry
-   * point is its checked radio and there is no user-driven roving pointer that
-   * could diverge from it. See the roving-tabindex contract's adopter guard
-   * for why that
-   * makes RadioGroup a declared member of the roving family rather than a
-   * derived one.
+   * The ladder is the shared `selectionTabStop`, resolved **without**
+   * consulting a `RovingTabindex`: selection follows focus in the Radio Group
+   * pattern, so the group's Tab entry point is its checked radio and there is no
+   * user-driven roving pointer that could diverge from it. See the
+   * roving-tabindex contract's adopter guard for why that makes RadioGroup a
+   * declared member of the roving family rather than a derived one.
    */
   readonly tabindex = computed<-1 | 0>(() =>
     selectionTabStop({

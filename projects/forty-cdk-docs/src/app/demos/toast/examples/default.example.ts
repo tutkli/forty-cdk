@@ -25,6 +25,7 @@ type Variant = 'info' | 'success' | 'warning' | 'error';
     <for-toast-viewport
       class="demo-toast-viewport"
       region="toast-variants"
+      ariaLabel="Variant notifications"
       [stackShift]="{ duration: 220, easing: 'cubic-bezier(0.05, 0.7, 0.1, 1)' }"
     />
   `,

@@ -18,7 +18,11 @@ import { ForToastManager, ForToastViewport } from 'forty-cdk/toast';
       <button type="button" class="btn" (click)="save()">Save → Saved</button>
     </div>
 
-    <for-toast-viewport class="action-toast-viewport" region="toast-action" />
+    <for-toast-viewport
+      class="action-toast-viewport"
+      region="toast-action"
+      ariaLabel="Action notifications"
+    />
   `,
   styles: `
     app-toast-action-example {
@@ -63,7 +67,7 @@ import { ForToastManager, ForToastViewport } from 'forty-cdk/toast';
 
     .action-toast-viewport {
       position: fixed;
-      right: 1rem;
+      left: 1rem;
       bottom: 1rem;
       z-index: 80;
       display: flex;

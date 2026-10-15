@@ -4,7 +4,6 @@ import {
   assertRootContext,
   type ListNavigationAction,
   orphanContextError,
-  type RovingTabindex,
   type WritingDirection,
 } from 'forty-cdk/core';
 import { type CarouselAlign } from 'forty-cdk/defaults';
@@ -73,17 +72,15 @@ export interface ForCarouselContext {
 }
 
 /**
- * The carousel's piece-coordination surface: the roving tracker the indicators
- * share, the DOM-order index lookups, the viewport id the rotation control
- * points `aria-controls` at, and the localizable positional labels.
+ * The carousel's piece-coordination surface: the DOM-order index lookups, the
+ * viewport id the rotation control points `aria-controls` at, and the
+ * localizable positional labels.
  *
  * **Not** part of {@link ForCarouselContext} and never exported
  * from `public-api.ts` — a consumer drives the carousel through `scrollTo` /
  * `scrollNext`, never through the indicators' shared tab stop.
  */
 export interface CarouselPieceContext {
-  readonly roving: RovingTabindex;
-
   /** `activeIndex` clamped to the registered slides. */
   readonly effectiveIndex: Signal<number>;
 
@@ -120,7 +117,7 @@ export const FOR_CAROUSEL_CONTEXT = new InjectionToken<ForCarouselContext>('FOR_
  * The carousel's internal coordination surface: everything
  * {@link ForCarouselContext} publishes plus the {@link CarouselPieceContext}
  * members and the slide / indicator / viewport registration protocol the index
- * lookups, geometry observer and roving tabindex are driven from.
+ * lookups and geometry observer are driven from.
  *
  * Never exported from `public-api.ts`. It is the type the pieces read
  * {@link FOR_CAROUSEL_CONTEXT} at, so a consumer who injects that token gets the

@@ -136,7 +136,7 @@ interface TreeNodeData {
       transform: rotate(90deg);
     }
 
-    [dir='rtl'] .tree-toggle[data-state='closed'] svg {
+    .tree-toggle[data-state='closed']:dir(rtl) svg {
       transform: rotate(180deg);
     }
 

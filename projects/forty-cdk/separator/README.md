@@ -33,14 +33,14 @@ import { ForSeparator } from 'forty-cdk/separator';
   template: `
     <div class="card">
       <span class="label">Account</span>
-      <hr forSeparator class="separator-h" />
+      <hr forSeparator class="separator" />
       <span class="label">Workspace</span>
-      <hr forSeparator class="separator-h" />
+      <hr forSeparator class="separator" />
       <div class="inline">
         <span>Edit</span>
-        <span forSeparator decorative orientation="vertical" class="separator-v"></span>
+        <span forSeparator decorative orientation="vertical" class="separator"></span>
         <span>Share</span>
-        <span forSeparator decorative orientation="vertical" class="separator-v"></span>
+        <span forSeparator decorative orientation="vertical" class="separator"></span>
         <span>Delete</span>
       </div>
     </div>
