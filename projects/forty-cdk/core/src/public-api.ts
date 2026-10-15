@@ -239,6 +239,7 @@ export { isHoverCapablePointer, isNonTouchPointer } from './pointer/pointer-capa
 export {
   createPressFocus,
   focusAfterPress,
+  mouseFocusTarget,
   type PressFocus,
   pressFocusesDescendant,
   preventPointerFocus,

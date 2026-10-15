@@ -51,4 +51,21 @@ describe('forty-cdk/testing', () => {
 
     expect(elsewhere.map(([path]) => path)).toEqual([]);
   });
+
+  it('resolves the pressWithMouse focus target through the core resolver, with no selector of its own', () => {
+    const pointer = LIBRARY_CODE.get('testing/src/pointer.ts') ?? '';
+    const press = pointer.slice(pointer.indexOf('export function pressWithMouse'));
+
+    expect(pointer).toMatch(
+      /import\s*\{[^}]*\bmouseFocusTarget\b[^}]*\}\s*from\s*'forty-cdk\/core'/,
+    );
+    expect(press).toMatch(/\bmouseFocusTarget\(target\)/);
+    expect(
+      ownSources
+        .filter(([, code]) =>
+          /\[tabindex\]|:not\(\[disabled\]\)|\[contenteditable|\[href\]/.test(code),
+        )
+        .map(([path]) => path),
+    ).toEqual([]);
+  });
 });

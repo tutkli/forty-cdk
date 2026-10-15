@@ -53,4 +53,24 @@ describe('pressKey', () => {
     expect(seen).toEqual([]);
     expect(event.defaultPrevented).toBe(false);
   });
+
+  it('reaches a document listener from inside an open shadow root', () => {
+    const shadowButton = document.createElement('button');
+    parent.attachShadow({ mode: 'open' }).append(shadowButton);
+    const seen = vi.fn();
+    document.addEventListener('keydown', seen);
+
+    try {
+      const event = pressKey(shadowButton, 'Escape');
+
+      expect(seen).toHaveBeenCalledExactlyOnceWith(event);
+      expect(event.composed).toBe(true);
+    } finally {
+      document.removeEventListener('keydown', seen);
+    }
+  });
+
+  it('lets a caller opt out of composition', () => {
+    expect(pressKey(target, 'Escape', { composed: false }).composed).toBe(false);
+  });
 });
