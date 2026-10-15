@@ -1,18 +1,29 @@
 import { computed, inject, type Signal } from '@angular/core';
 
-import { FOR_TABLE_CONTEXT } from './table-context';
+import { FOR_TABLE_CONTEXT, injectTableContext } from './table-context';
+import { ForTableHeaderCell } from './table-header-cell';
 
 /**
  * The `tabindex` an interactive control placed inside a table cell carries: `0` in
  * `mode="table"`, where each control is its own tab stop, and `-1` in `grid` /
  * `treegrid`, where the control yields to the grid's single tab stop and is reached
- * through cell entry (`Enter` / `F2`). Outside a `[forTable]` it answers `0`, so a
- * control that also renders outside tables can bind it unconditionally.
+ * through cell entry (`Enter` / `F2`). A control in a header cell answers `0` in a grid
+ * too while the header row does not join it (an incomplete header row), since no cell
+ * entry can reach it there. Outside a `[forTable]` it answers `0`, so a control that
+ * also renders outside tables can bind it unconditionally.
  *
  * Must be called in an injection context. Bind the result as `[attr.tabindex]` on
  * a natively focusable element.
  */
 export function injectTableCellTabIndex(): Signal<0 | -1> {
   const table = inject(FOR_TABLE_CONTEXT, { optional: true });
-  return computed(() => (!table || table.mode() === 'table' ? 0 : -1));
+  const header = inject(ForTableHeaderCell, { optional: true })
+    ? injectTableContext('injectTableCellTabIndex')
+    : null;
+  return computed(() => {
+    if (!table || table.mode() === 'table') {
+      return 0;
+    }
+    return header && !header.headerParticipatesInRoving() ? 0 : -1;
+  });
 }

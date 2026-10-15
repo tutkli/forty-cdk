@@ -25,7 +25,8 @@ import { injectTableContext, type TableSelectAllState } from './table-context';
  * (`tabindex="-1"`) and is reached via cell-entry (Enter / F2, then `Tab` when it is not
  * the cell's first widget), so it must sit on a natively-focusable element (a
  * `<button>`) — a `tabindex`-only `<span>` is cell-entry-reachable only in
- * `mode="table"`.
+ * `mode="table"`. A grid whose header row does not join the grid leaves it a standalone
+ * tab stop (`tabindex="0"`), since no cell entry reaches it there.
  */
 @Directive({
   selector: '[forTableSelectAll]',

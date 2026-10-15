@@ -18,7 +18,7 @@ The library sets roles, `aria-label`, writing direction, `data-column`, sticky h
   <div role="rowgroup">
     <div forTableHeaderRow>
       <div forTableHeaderCell name="sel">
-        <span forTableSelectAll ariaLabel="Select all rows"></span>
+        <button type="button" forTableSelectAll ariaLabel="Select all rows"></button>
       </div>
       <div forTableHeaderCell name="name" forTableSortHeader column="name">
         Name
@@ -29,7 +29,9 @@ The library sets roles, `aria-label`, writing direction, `data-column`, sticky h
   <div role="rowgroup">
     <!-- one [forTableRow] per data row -->
     <div forTableRow [value]="row.id">
-      <div forTableCell name="sel"><span forTableRowSelector></span></div>
+      <div forTableCell name="sel">
+        <span forTableRowSelector [ariaLabel]="'Select ' + row.name"></span>
+      </div>
       <div forTableCell name="name">{{ row.name }}</div>
     </div>
   </div>
@@ -115,7 +117,7 @@ export class TableGridExample {
 
 ### Multiple row selection
 
-`selectionMode="multiple"` adds row selection. The row owns `aria-selected`; `[forTableRowSelector]` is a decorative per-row affordance and `[forTableSelectAll]` is a tri-state header checkbox. Click a row, the selector, or press `Space` on a focused cell.
+`selectionMode="multiple"` adds row selection. The row owns `aria-selected`; `[forTableRowSelector]` is a named `role="checkbox"` per row that stays out of the grid's tab order, and `[forTableSelectAll]` is a tri-state header checkbox on a `<button>`. Click a row or the selector, or press `Space` on a focused cell. On its header cell, `Enter` moves focus into the select-all, where `Space` toggles it.
 
 ### Single-column sort
 
@@ -525,7 +527,7 @@ A row you render yourself gets both halves from `(activate)` on `[forTableRow]`:
 
 ### Controls inside a cell
 
-The library's in-cell pieces (`[forTableRowSelector]`, `[forTableSelectAll]`, `[forTableColumnResizer]`) are their own tab stop in `mode="table"` and take `tabindex="-1"` in `grid` / `treegrid`, where cell entry reaches them and the grid keeps its single tab stop. The cells do not demote their descendants, so a control you add to a cell follows the same rule through `injectTableCellTabIndex()`. It answers `0` outside a `[forTable]`, so a control that also renders elsewhere can call it unconditionally:
+The library's in-cell pieces (`[forTableRowSelector]`, `[forTableSelectAll]`, `[forTableColumnResizer]`) are their own tab stop in `mode="table"` and take `tabindex="-1"` in `grid` / `treegrid`, where cell entry reaches them and the grid keeps its single tab stop. A header row that does not join the grid (an incomplete header row) has no cell entry, so the controls in its cells stay their own tab stop there too. The cells do not demote their descendants, so a control you add to a cell follows the same rule through `injectTableCellTabIndex()`. It answers `0` outside a `[forTable]`, so a control that also renders elsewhere can call it unconditionally:
 
 ```ts
 import { Directive } from '@angular/core';
@@ -741,12 +743,12 @@ Accessible per-row selection checkbox (place inside any cell of each `[forTableR
 
 ### Select-all checkbox
 
-Interactive header checkbox with tri-state. Reflects `aria-checked` and `data-state` derived from the aggregate selection state across all selectable rows. Clicking (or pressing Space / Enter) selects all when none or some are selected, and deselects those rows when all are, leaving any selected value outside them in `[(value)]`. No-op outside `'multiple'` mode. A selection the table cannot enumerate drives it from outside through [`[state]`](#selection-the-table-cannot-enumerate-state). Apply on a focusable element:
+Interactive header checkbox with tri-state. Reflects `aria-checked` and `data-state` derived from the aggregate selection state across all selectable rows. Clicking (or pressing Space / Enter) selects all when none or some are selected, and deselects those rows when all are, leaving any selected value outside them in `[(value)]`. No-op outside `'multiple'` mode. A selection the table cannot enumerate drives it from outside through [`[state]`](#selection-the-table-cannot-enumerate-state). Put it on a `<button type="button">`: in a grid, cell entry reaches only a natively focusable element.
 
 ```html
 <div forTableHeaderRow>
   <div forTableHeaderCell name="sel">
-    <span forTableSelectAll ariaLabel="Select all rows"></span>
+    <button type="button" forTableSelectAll ariaLabel="Select all rows"></button>
   </div>
   <div forTableHeaderCell name="name">Name</div>
 </div>
@@ -786,7 +788,7 @@ protected readonly peopleIds = computed(() => this.people().map((p) => p.id));
 
 ### Selection the table cannot enumerate: `[state]`
 
-`[selectableValues]` needs every value in hand. A server-paged list offering "select all matching the filter" has thousands of matches and one or two pages loaded, so its selection is a predicate ("everything the query matches, minus these exclusions") whose tri-state only its owner knows. Bind that tri-state to `[forTableSelectAll]`'s `[state]` and handle `(toggleAll)`: the checkbox reflects your state in `aria-checked` / `data-state`, and a click, `Space` or `Enter` emits `toggleAll` instead of writing the table's `[(value)]`. Feed `[(value)]` the loaded rows your predicate selects, so each row's `aria-selected` stays right. The `tabindex` still follows the table mode.
+`[selectableValues]` needs every value in hand. A server-paged list offering "select all matching the filter" has thousands of matches and one or two pages loaded, so its selection is a predicate ("everything the query matches, minus these exclusions") whose tri-state only its owner knows. Bind that tri-state to `[forTableSelectAll]`'s `[state]` and handle `(toggleAll)`: the checkbox reflects your state in `aria-checked` / `data-state`, and a click, `Space` or `Enter` emits `toggleAll` instead of writing the table's `[(value)]`. Feed `[(value)]` the loaded rows your predicate selects, so each row's `aria-selected` stays right. The `tabindex` follows the same rule as without `[state]`.
 
 ```html
 <div forTableHeaderCell name="sel">
@@ -818,7 +820,7 @@ protected readonly matchState = computed<TableSelectAllState>(() => {
   <div role="rowgroup">
     <div forTableHeaderRow>
       <div forTableHeaderCell name="sel">
-        <span forTableSelectAll ariaLabel="Select all rows"></span>
+        <button type="button" forTableSelectAll ariaLabel="Select all rows"></button>
       </div>
       <div forTableHeaderCell name="name">Name</div>
     </div>
@@ -827,7 +829,7 @@ protected readonly matchState = computed<TableSelectAllState>(() => {
     @for (row of rows(); track row.id) {
     <div forTableRow [value]="row.id">
       <div forTableCell name="sel">
-        <span forTableRowSelector></span>
+        <span forTableRowSelector [ariaLabel]="'Select ' + row.name"></span>
       </div>
       <div forTableCell name="name">{{ row.name }}</div>
     </div>

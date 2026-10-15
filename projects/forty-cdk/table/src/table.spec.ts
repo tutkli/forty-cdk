@@ -764,6 +764,85 @@ class CellTabIndexHost {
 }
 
 @Component({
+  imports: [...TABLE_IMPORTS, ForTableSelectAll, ForTableColumnResizer, TabIndexProbe],
+  template: `
+    <div forTable mode="grid" selectionMode="multiple" [(value)]="selection">
+      <div forTableHeaderRow>
+        <div forTableHeaderCell name="name" data-testid="h-name">
+          <button
+            type="button"
+            forTableSelectAll
+            ariaLabel="Select all rows"
+            data-testid="select-all"
+          ></button>
+          <button type="button" tabIndexProbe data-testid="header-probe">menu</button>
+          <button
+            forTableColumnResizer
+            column="name"
+            aria-label="Resize Name"
+            data-testid="resizer"
+          ></button>
+        </div>
+        @if (completeHeader()) {
+          <div forTableHeaderCell name="role" data-testid="h-role">Role</div>
+        }
+      </div>
+      @for (row of rows; track row) {
+        <div forTableRow [value]="row">
+          <div forTableCell name="name">
+            <button type="button" tabIndexProbe [attr.data-testid]="'cell-probe-' + row">
+              edit
+            </button>
+          </div>
+          <div forTableCell name="role">role {{ row }}</div>
+        </div>
+      }
+    </div>
+  `,
+})
+class HeaderControlsGridHost {
+  readonly completeHeader = signal(false);
+  readonly selection = signal<readonly unknown[]>([]);
+  readonly rows = [1, 2];
+}
+
+@Component({
+  imports: [...TABLE_IMPORTS, ForTableSelectAll, ForTableRowSelector],
+  template: `
+    <div forTable mode="grid" selectionMode="multiple" [(value)]="selection">
+      <div forTableHeaderRow>
+        <div forTableHeaderCell name="sel" data-testid="h-sel">
+          @if (onButton()) {
+            <button
+              type="button"
+              forTableSelectAll
+              ariaLabel="Select all rows"
+              data-testid="select-all"
+            ></button>
+          } @else {
+            <span forTableSelectAll ariaLabel="Select all rows" data-testid="select-all"></span>
+          }
+        </div>
+        <div forTableHeaderCell name="name">Name</div>
+      </div>
+      @for (row of rows; track row) {
+        <div forTableRow [value]="row">
+          <div forTableCell name="sel">
+            <span forTableRowSelector [ariaLabel]="'Select row ' + row"></span>
+          </div>
+          <div forTableCell name="name">row {{ row }}</div>
+        </div>
+      }
+    </div>
+  `,
+})
+class GridSelectAllHost {
+  readonly onButton = signal(true);
+  readonly selection = signal<readonly unknown[]>([]);
+  readonly rows = [1, 2, 3];
+}
+
+@Component({
   imports: [ForTable, ForTableRow, ForTableCell],
   template: `
     <table forTable mode="grid">
@@ -2595,6 +2674,66 @@ describe('ForTable', () => {
       instance.windowIndices.set([15, 16, 17, 18, 19]);
       await flush();
       expect(document.activeElement).toBe(el.querySelector('[data-testid="cell-17-b"]'));
+    });
+  });
+
+  describe('header controls keep a keyboard path in grid mode (#2223)', () => {
+    it('a header row that does not join the grid leaves its controls as their own tab stops', async () => {
+      const { el, instance, flush } = renderHost(HeaderControlsGridHost);
+      const byTestId = (id: string) => el.querySelector<HTMLElement>(`[data-testid="${id}"]`)!;
+      const headerControls = ['select-all', 'resizer', 'header-probe'].map(byTestId);
+
+      expect(byTestId('h-name').hasAttribute('tabindex')).toBe(false);
+      for (const control of headerControls) {
+        expect(control.getAttribute('tabindex')).toBe('0');
+      }
+      expect(byTestId('cell-probe-1').getAttribute('tabindex')).toBe('-1');
+
+      instance.completeHeader.set(true);
+      await flush();
+
+      expect(byTestId('h-name').getAttribute('tabindex')).toBe('0');
+      for (const control of headerControls) {
+        expect(control.getAttribute('tabindex')).toBe('-1');
+      }
+      expect(byTestId('cell-probe-1').getAttribute('tabindex')).toBe('-1');
+    });
+
+    it('Enter and F2 on the select-all header cell enter a <button> select-all, which Space toggles', async () => {
+      const { el, instance, flush } = renderHost(GridSelectAllHost);
+      const cell = el.querySelector<HTMLElement>('[data-testid="h-sel"]')!;
+      const selectAll = el.querySelector<HTMLElement>('[data-testid="select-all"]')!;
+
+      for (const key of ['Enter', 'F2']) {
+        cell.focus();
+        press(cell, key);
+        await flush();
+        expect(document.activeElement).toBe(selectAll);
+      }
+
+      press(selectAll, ' ');
+      await flush();
+      expect(selectAll.getAttribute('aria-checked')).toBe('true');
+      expect(instance.selection()).toEqual([1, 2, 3]);
+
+      press(selectAll, 'Escape');
+      await flush();
+      expect(document.activeElement).toBe(cell);
+    });
+
+    it('a <span> select-all is not entered from its grid cell, which is why the docs put it on a <button>', async () => {
+      const { el, instance, flush } = renderHost(GridSelectAllHost);
+      instance.onButton.set(false);
+      await flush();
+      const cell = el.querySelector<HTMLElement>('[data-testid="h-sel"]')!;
+
+      for (const key of ['Enter', 'F2']) {
+        cell.focus();
+        press(cell, key);
+        await flush();
+        expect(document.activeElement).toBe(cell);
+      }
+      expect(instance.selection()).toEqual([]);
     });
   });
 

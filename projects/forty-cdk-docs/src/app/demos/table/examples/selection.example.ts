@@ -55,8 +55,12 @@ const PEOPLE: readonly Person[] = [
         <div role="rowgroup">
           <div forTableHeaderRow class="tbl-row tbl-head">
             <div forTableHeaderCell name="sel" class="tbl-cell tbl-cell--sel">
-              <span forTableSelectAll ariaLabel="Select all rows" class="tbl-check tbl-check--all">
-              </span>
+              <button
+                type="button"
+                forTableSelectAll
+                aria-label="Select all rows"
+                class="tbl-check tbl-check--all"
+              ></button>
             </div>
             <div forTableHeaderCell name="name" class="tbl-cell">Name</div>
             <div forTableHeaderCell name="role" class="tbl-cell">Role</div>
@@ -67,7 +71,11 @@ const PEOPLE: readonly Person[] = [
           @for (person of people; track person.id) {
             <div forTableRow [value]="person.id" class="tbl-row">
               <div forTableCell name="sel" class="tbl-cell tbl-cell--sel">
-                <span forTableRowSelector class="tbl-check"></span>
+                <span
+                  forTableRowSelector
+                  [ariaLabel]="'Select ' + person.name"
+                  class="tbl-check"
+                ></span>
               </div>
               <div forTableCell name="name" class="tbl-cell">{{ person.name }}</div>
               <div forTableCell name="role" class="tbl-cell">{{ person.role }}</div>
@@ -110,9 +118,12 @@ const PEOPLE: readonly Person[] = [
       font-weight: 700;
     }
 
-    .tbl-row:not(.tbl-head):hover {
-      background: var(--ex-surface-2, #f2eee6);
+    .tbl-row:not(.tbl-head) {
       cursor: pointer;
+    }
+
+    .tbl-row:not(.tbl-head):not([data-selected]):hover {
+      background: var(--ex-surface-2, #f2eee6);
     }
 
     .tbl-row[data-selected] {
@@ -154,6 +165,7 @@ const PEOPLE: readonly Person[] = [
       justify-content: center;
       width: 1.05rem;
       height: 1.05rem;
+      padding: 0;
       border: 1.5px solid var(--ex-border-strong, #d0c9bc);
       border-radius: 5px;
       background: var(--ex-surface, #ffffff);
