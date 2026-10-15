@@ -137,6 +137,8 @@ export class ForNumberInput
    * commits as `1.24` and the displayed text, `aria-valuetext`, `aria-valuenow`
    * and the submitted value agree. `min` / `max` win over that rounding, and
    * compact, scientific and engineering notations commit the value unrounded.
+   * A value that was not typed (the bound value, or one reached by stepping)
+   * is neither rounded nor clamped by a commit.
    */
   readonly formatOptions = input<Intl.NumberFormatOptions | null>(null);
 
@@ -213,11 +215,13 @@ export class ForNumberInput
   });
 
   readonly #claim: (own: number | null) => void;
+  readonly #syncHiddenInput: () => void;
+  #typedValue: number | null = null;
 
   constructor() {
     super();
     reflectDisabled(this.effectiveDisabled);
-    injectHiddenInput({
+    this.#syncHiddenInput = injectHiddenInput({
       name: this.name,
       values: computed(() => {
         const current = this.value();
@@ -243,7 +247,10 @@ export class ForNumberInput
 
     injectNativeFormReset(
       () => this.#host.nativeElement,
-      (text) => this.#setValue(this.#parse(text)),
+      (text) => {
+        this.#typedValue = null;
+        this.#setValue(this.#parse(text));
+      },
     );
   }
 
@@ -295,6 +302,7 @@ export class ForNumberInput
     }
     const raw = (event.target as HTMLInputElement).value;
     if (raw.trim() === '') {
+      this.#typedValue = null;
       this.#setValue(null);
       return;
     }
@@ -302,7 +310,8 @@ export class ForNumberInput
     // Ignore unparseable input: keep the last valid value, leave the user's
     // in-progress text untouched; commit() reformats from the value on blur.
     if (parsed !== null) {
-      this.#setValue(this.#toModelValue(parsed));
+      this.#typedValue = this.#toModelValue(parsed);
+      this.#setValue(this.#typedValue);
     }
   }
 
@@ -352,18 +361,26 @@ export class ForNumberInput
   }
 
   /**
-   * Round the live value to the format's precision, clamp it to `[min, max]`
-   * and reformat the displayed text.
+   * Reformat the displayed text. A value the user typed since the last commit
+   * is first rounded to the format's precision and clamped to `[min, max]`; a
+   * value nobody typed is left as it is.
    */
   protected commit(): void {
-    const current = this.value();
-    if (current !== null) {
-      const clamped = this.#clamp(this.#toFormatPrecision(current));
-      if (clamped !== current) {
-        this.#setValue(clamped);
+    const typed = this.#typedValue;
+    this.#typedValue = null;
+    if (
+      typed !== null &&
+      Object.is(typed, this.value()) &&
+      !this.readonly() &&
+      !this.effectiveDisabled()
+    ) {
+      const normalized = this.#clamp(this.#toFormatPrecision(typed));
+      if (normalized !== typed) {
+        this.#setValue(normalized);
       }
     }
     this.#writeDisplay();
+    this.#syncHiddenInput();
   }
 
   #step(direction: 1 | -1, by: number): void {
@@ -380,6 +397,7 @@ export class ForNumberInput
   }
 
   #applyValue(raw: number): void {
+    this.#typedValue = null;
     this.#setValue(this.#clamp(raw));
     this.#writeDisplay();
   }

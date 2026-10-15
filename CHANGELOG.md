@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Number input** — a commit normalises only the text the user typed
+  ([#2216](https://github.com/tutkli/forty-cdk/issues/2216)). Enter or blur rounded and clamped
+  whatever value the field held, so tabbing through a field rewrote a bound value nobody typed,
+  readonly fields included: `0.075` under `{ style: 'percent' }` became `0.08`, `15` above
+  `[max]="10"` became `10`, `(valueChange)` fired and Signal Forms marked the field dirty. A stepped
+  value off the format's precision was rounded back on blur too. Only a value parsed from typed
+  text is rounded and clamped now; any other value keeps what it holds and only its text is
+  reformatted. An Enter that commits and submits the form in one keystroke now submits the
+  committed value, where the hidden input still carried the typed one.
+
 ## [0.34.0] - 2026-10-15
 
 ### Added
