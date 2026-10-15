@@ -170,14 +170,14 @@ export class DateFieldEngine<D> extends DateTimeFieldEngineBase<D, DateTimeParts
   }
 
   #preserveSourceTime(day: D): D {
-    const source = this.#config.source();
-    if (source === null || this.#config.adapter.supportsTime?.() !== true) {
+    const anchor = this.anchor();
+    if (anchor === null || this.#config.adapter.supportsTime?.() !== true) {
       return day;
     }
     return composeWithTime(
       assertTimeCapable(this.#config.adapter, this.#config.piece, { scope: this.#config.scope }),
       day,
-      source,
+      anchor,
     );
   }
 

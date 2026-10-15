@@ -718,6 +718,69 @@ describe('ForTimeRangeField', () => {
     });
   });
 
+  describe('leaving an endpoint of a bound range mid-edit (#2208)', () => {
+    const bound = (r: R) =>
+      r.instance.value.set({
+        start: new Date(2026, 5, 10, 9, 0),
+        end: new Date(2026, 5, 10, 17, 0),
+      });
+    const leave = (r: R, part: Part, to: 'end' | 'outside') =>
+      seg(r, 'start', part).dispatchEvent(
+        new FocusEvent('blur', { relatedTarget: to === 'end' ? seg(r, 'end', 'hour') : null }),
+      );
+
+    for (const to of ['end', 'outside'] as const) {
+      const where = to === 'end' ? 'to the end endpoint' : 'outside the field';
+
+      it(`keeps a start hour typed past the end when focus moves ${where}`, async () => {
+        const r = renderHost(Host);
+        bound(r);
+        await flush(r.fixture);
+
+        await type(r, 'start', 'hour', '18');
+        expect(r.instance.value()).toBeNull();
+        expect(root(r).getAttribute('data-range-error')).toBe('');
+
+        leave(r, 'hour', to);
+        await flush(r.fixture);
+        expect(seg(r, 'start', 'hour').textContent?.trim()).toBe('18');
+        expect(root(r).getAttribute('aria-invalid')).toBe('true');
+        expect(root(r).getAttribute('data-range-error')).toBe('');
+        expect(r.instance.value()).toBeNull();
+      });
+
+      for (const allowOvernight of [false, true]) {
+        it(`keeps a cleared start minute empty when focus moves ${where}${allowOvernight ? ' under allowOvernight' : ''}`, async () => {
+          const r = renderHost(Host);
+          r.instance.allowOvernight.set(allowOvernight);
+          bound(r);
+          await flush(r.fixture);
+
+          await key(r, 'start', 'minute', 'Delete');
+          expect(r.instance.value()).toBeNull();
+
+          leave(r, 'minute', to);
+          await flush(r.fixture);
+          expect(seg(r, 'start', 'minute').textContent?.trim()).toBe('mm');
+          expect(seg(r, 'start', 'hour').textContent?.trim()).toBe('09');
+          expect(r.instance.value()).toBeNull();
+        });
+      }
+    }
+
+    it('re-composes a cleared and retyped endpoint on the bound day', async () => {
+      const r = renderHost(Host);
+      bound(r);
+      await flush(r.fixture);
+
+      await key(r, 'start', 'minute', 'Delete');
+      await type(r, 'start', 'minute', '30');
+      const range = r.instance.value()!;
+      expect(range.start.getTime()).toBe(new Date(2026, 5, 10, 9, 30).getTime());
+      expect(range.end.getTime()).toBe(new Date(2026, 5, 10, 17, 0).getTime());
+    });
+  });
+
   describe('overnight ranges', () => {
     it('commits a midnight-crossing range when the start falls after the end', async () => {
       const r = renderHost(Host);

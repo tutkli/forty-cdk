@@ -1016,6 +1016,58 @@ describe('ForTimeField', () => {
     });
   });
 
+  describe('clearing and retyping a segment of a bound value (#2208)', () => {
+    const field = (r: R) =>
+      r.fixture.debugElement.query(By.directive(ForTimeField)).injector.get(ForTimeField);
+
+    it('keeps the calendar day of the bound value', async () => {
+      const r = renderHost(Host);
+      r.instance.value.set(new Date(2026, 5, 15, 9, 30));
+      await flush(r.fixture);
+
+      await key(r, 'minute', 'Delete');
+      expect(r.instance.value()).toBeNull();
+      await type(r, 'minute', '45');
+      expect(r.instance.value()!.getTime()).toBe(new Date(2026, 5, 15, 9, 45).getTime());
+    });
+
+    it('keeps the calendar day through two Backspaces', async () => {
+      const r = renderHost(Host);
+      r.instance.value.set(new Date(2026, 5, 15, 9, 30));
+      await flush(r.fixture);
+
+      await key(r, 'minute', 'Backspace');
+      await key(r, 'minute', 'Backspace');
+      await type(r, 'minute', '45');
+      expect(r.instance.value()!.getTime()).toBe(new Date(2026, 5, 15, 9, 45).getTime());
+    });
+
+    it('anchors on the sentinel again once the consumer writes null', async () => {
+      const r = renderHost(Host);
+      r.instance.value.set(new Date(2026, 5, 15, 9, 30));
+      await flush(r.fixture);
+
+      r.instance.value.set(null);
+      await flush(r.fixture);
+      await type(r, 'hour', '09');
+      await type(r, 'minute', '45');
+      expect(r.instance.value()!.getTime()).toBe(new Date(2000, 0, 1, 9, 45).getTime());
+    });
+
+    it('anchors on the sentinel again once clear() drops a cleared entry', async () => {
+      const r = renderHost(Host);
+      r.instance.value.set(new Date(2026, 5, 15, 9, 30));
+      await flush(r.fixture);
+
+      await key(r, 'minute', 'Delete');
+      field(r).clear();
+      await flush(r.fixture);
+      await type(r, 'hour', '09');
+      await type(r, 'minute', '45');
+      expect(r.instance.value()!.getTime()).toBe(new Date(2000, 0, 1, 9, 45).getTime());
+    });
+  });
+
   describe('clear() (#2232)', () => {
     const field = (r: R) =>
       r.fixture.debugElement.query(By.directive(ForTimeField)).injector.get(ForTimeField);

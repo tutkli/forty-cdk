@@ -1201,6 +1201,30 @@ describe('ForDateField', () => {
       expect(value.getSeconds()).toBe(45);
     });
 
+    it('keeps the bound value time-of-day when the day is cleared and retyped (#2208)', async () => {
+      const r = renderHost(Host);
+      r.instance.value.set(new Date(2026, 5, 15, 15, 0));
+      await flush(r.fixture);
+
+      await key(r, 'day', 'Delete');
+      expect(r.instance.value()).toBeNull();
+      await type(r, 'day', '16');
+      expect(r.instance.value()!.getTime()).toBe(new Date(2026, 5, 16, 15, 0).getTime());
+    });
+
+    it('composes midnight once the consumer writes null over a bound value (#2208)', async () => {
+      const r = renderHost(Host);
+      r.instance.value.set(new Date(2026, 5, 15, 15, 0));
+      await flush(r.fixture);
+
+      r.instance.value.set(null);
+      await flush(r.fixture);
+      await type(r, 'month', '06');
+      await type(r, 'day', '16');
+      await type(r, 'year', '2026');
+      expect(r.instance.value()!.getTime()).toBe(new Date(2026, 5, 16).getTime());
+    });
+
     it('composes midnight when typing a full date from an empty value', async () => {
       const r = renderHost(Host);
       await type(r, 'month', '06');
