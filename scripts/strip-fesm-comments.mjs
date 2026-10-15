@@ -44,8 +44,11 @@ import { repoRoot } from './lib/repo-path.mjs';
  * started from, which is the one thing a text splice can get wrong. A bundle
  * whose walk found no comment at all fails too, because the step is idempotent
  * — a second run legitimately removes nothing — and "removed nothing" would
- * otherwise be indistinguishable from "stopped finding anything". Every bundle
- * ends with a `sourceMappingURL` pointer, so one kept comment is the floor.
+ * otherwise be indistinguishable from "stopped finding anything". A bundle
+ * with a `.map` ends with a `sourceMappingURL` pointer, so one kept comment is
+ * the floor. A bundle with no `.map` has no floor: Rolldown emits neither the
+ * map nor the pointer for a bundle that only re-exports, and such a bundle is
+ * left as emitted and named in the report.
  */
 
 const FESM_DIR = join(repoRoot, 'dist', 'forty-cdk', 'fesm2022');
@@ -150,6 +153,7 @@ if (!bundles.length) {
 }
 
 const failures = [];
+const mapless = [];
 let before = 0;
 let after = 0;
 let stripped = 0;
@@ -166,8 +170,12 @@ for (const file of bundles) {
   kept += result.kept;
 
   if (!result.kept) {
+    if (!existsSync(`${path}.map`)) {
+      mapless.push(file);
+      continue;
+    }
     failures.push(
-      `${file}: the walk found no comment at all, not even the \`sourceMappingURL\` pointer every bundle ends with — so this run proves nothing about ${file}.`,
+      `${file}: the walk found no comment at all, not even the \`sourceMappingURL\` pointer a bundle with a \`.map\` ends with — so this run proves nothing about ${file}.`,
     );
     continue;
   }
@@ -200,5 +208,5 @@ if (failures.length) {
 
 const percent = ((after / before) * 100).toFixed(1);
 console.log(
-  `[strip-fesm-comments] OK — ${bundles.length} bundles, ${stripped} comments removed and ${kept} load-bearing ones kept; ${(before / 1024 / 1024).toFixed(2)} MB → ${(after / 1024 / 1024).toFixed(2)} MB (${percent}%), every bundle re-parsed to the same code and the same line count.`,
+  `[strip-fesm-comments] OK — ${bundles.length} bundles, ${stripped} comments removed and ${kept} load-bearing ones kept; ${(before / 1024 / 1024).toFixed(2)} MB → ${(after / 1024 / 1024).toFixed(2)} MB (${percent}%), every bundle re-parsed to the same code and the same line count.${mapless.length ? ` Left as emitted, with no comment and no \`.map\`: ${mapless.join(', ')}.` : ''}`,
 );

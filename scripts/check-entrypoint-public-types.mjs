@@ -190,19 +190,38 @@ function analyze(fileName, text) {
         stmt.exportClause &&
         ts.isNamedExports(stmt.exportClause)
       ) {
-        for (const el of stmt.exportClause.elements) barrelExports.add(sourceName(el));
+        for (const el of stmt.exportClause.elements) {
+          const imported = namedLocalToSource.get(sourceName(el));
+          if (imported) reexported.add(imported);
+          else barrelExports.add(sourceName(el));
+        }
       }
       continue;
     }
     const name = declarationName(stmt);
-    if (name) localDeclarations.set(name, stmt);
+    if (!name) continue;
+    localDeclarations.set(name, stmt);
+    if ((ts.getModifiers(stmt) ?? []).some((m) => m.kind === ts.SyntaxKind.ExportKeyword)) {
+      barrelExports.add(name);
+    }
   }
 
   const used = new Set();
+  const leaked = new Set();
+  const reached = new Set();
+  const pending = [];
+
+  function reach(name) {
+    if (!localDeclarations.has(name) || reached.has(name)) return;
+    reached.add(name);
+    pending.push(name);
+    if (!barrelExports.has(name)) leaked.add(name);
+  }
 
   function recordIdentifier(name) {
     const src = namedLocalToSource.get(name);
     if (src) used.add(src);
+    else reach(name);
   }
 
   function recordEntity(entity) {
@@ -225,27 +244,14 @@ function analyze(fileName, text) {
     }
   }
 
-  if (namedLocalToSource.size > 0 || namespaceLocals.size > 0) {
-    createVisitor(recordEntity, recordHeritageExpression)(sf);
-  }
-
-  const leaked = new Set();
-  const pending = [];
-
-  function recordLocal(entity) {
-    if (!ts.isIdentifier(entity)) return;
-    const name = entity.text;
-    if (!localDeclarations.has(name) || barrelExports.has(name) || leaked.has(name)) return;
-    leaked.add(name);
-    pending.push(name);
-  }
-
-  const visitLocal = createVisitor(recordLocal, recordLocal);
+  const visit = createVisitor(recordEntity, recordHeritageExpression);
   for (const name of barrelExports) {
-    const declaration = localDeclarations.get(name);
-    if (declaration) visitLocal(declaration);
+    if (localDeclarations.has(name)) {
+      reached.add(name);
+      pending.push(name);
+    }
   }
-  while (pending.length) visitLocal(localDeclarations.get(pending.shift()));
+  while (pending.length) visit(localDeclarations.get(pending.shift()));
 
   const unblessedSignature = [...used].sort().filter((name) => !BLESSED_CORE_SYMBOLS.has(name));
   const unblessedReexport = [...reexported]
