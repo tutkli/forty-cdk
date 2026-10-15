@@ -988,6 +988,106 @@ describe('ForNumberInput', () => {
       });
     });
 
+    describe('commit leaves a value nobody typed alone', () => {
+      const mountWith = async (
+        qty: number,
+        configure: (host: NumberHost) => void = () => undefined,
+      ) => {
+        const rendered = renderHost(NumberHost);
+        const host = rendered.fixture.componentInstance;
+        host.locale.set('en-US');
+        host.qty.set(qty);
+        configure(host);
+        await rendered.flush();
+        return { ...rendered, host, input: inputOf(rendered.el) };
+      };
+
+      const tabThrough = async (input: HTMLInputElement, flush: () => Promise<void>) => {
+        input.focus();
+        await flush();
+        input.dispatchEvent(new FocusEvent('blur'));
+        await flush();
+      };
+
+      it('keeps a readonly percent value unrounded on blur', async () => {
+        const { host, input, flush } = await mountWith(0.075, (h) => {
+          h.formatOptions.set({ style: 'percent' });
+          h.isReadonly.set(true);
+        });
+        await tabThrough(input, flush);
+        expect(host.qty()).toBe(0.075);
+        expect(input.getAttribute('aria-valuenow')).toBe('0.075');
+        expect(input.value).toBe('8%');
+      });
+
+      it('keeps a readonly value above max unclamped on blur', async () => {
+        const { host, input, flush } = await mountWith(15, (h) => {
+          h.max.set(10);
+          h.isReadonly.set(true);
+        });
+        await tabThrough(input, flush);
+        expect(host.qty()).toBe(15);
+      });
+
+      it('keeps an untyped editable currency value unrounded on blur', async () => {
+        const { host, input, flush } = await mountWith(1.239, (h) =>
+          h.formatOptions.set({ style: 'currency', currency: 'USD' }),
+        );
+        await tabThrough(input, flush);
+        expect(host.qty()).toBe(1.239);
+        expect(input.value).toBe('$1.24');
+      });
+
+      it('keeps an untyped editable value above max unclamped on Enter', async () => {
+        const { host, input, flush } = await mountWith(15, (h) => h.max.set(10));
+        input.focus();
+        pressKey(input, 'Enter');
+        await flush();
+        expect(host.qty()).toBe(15);
+      });
+
+      it('keeps a stepped value off the format precision on blur', async () => {
+        const { host, input, flush } = await mountWith(1.24, (h) => {
+          h.formatOptions.set({ style: 'currency', currency: 'USD' });
+          h.step.set(0.001);
+        });
+        input.focus();
+        pressKey(input, 'ArrowUp');
+        await flush();
+        expect(host.qty()).toBe(1.241);
+        input.dispatchEvent(new FocusEvent('blur'));
+        await flush();
+        expect(host.qty()).toBe(1.241);
+      });
+
+      it('keeps the value when the typed text did not parse', async () => {
+        const { host, input, flush } = await mountWith(1.239, (h) =>
+          h.formatOptions.set({ style: 'currency', currency: 'USD' }),
+        );
+        input.focus();
+        typeInto(input, 'abc');
+        await flush();
+        input.dispatchEvent(new FocusEvent('blur'));
+        await flush();
+        expect(host.qty()).toBe(1.239);
+        expect(input.value).toBe('$1.24');
+      });
+
+      it('keeps a value written externally after the user typed', async () => {
+        const { host, input, flush } = await mountWith(1, (h) =>
+          h.formatOptions.set({ style: 'currency', currency: 'USD' }),
+        );
+        input.focus();
+        typeInto(input, '2.345');
+        await flush();
+        host.qty.set(5.555);
+        await flush();
+        input.dispatchEvent(new FocusEvent('blur'));
+        await flush();
+        expect(host.qty()).toBe(5.555);
+      });
+    });
+
     it('round-trips a currency value unscaled on edit', async () => {
       const { el, fixture, flush } = renderHost(NumberHost);
       fixture.componentInstance.locale.set('en-US');
@@ -1306,6 +1406,48 @@ describe('ForNumberInput', () => {
       expect(inputOf(el).hasAttribute('name')).toBe(false);
       expect(Array.from(new FormData(formEl).entries())).toEqual([['qty', '1234.5']]);
     });
+
+    @Component({
+      imports: [ForNumberInput],
+      template: `
+        <form>
+          <input
+            forNumberInput
+            [(value)]="qty"
+            name="qty"
+            [max]="10"
+            [formatOptions]="formatOptions()"
+            locale="en-US"
+          />
+        </form>
+      `,
+    })
+    class CommitFormHost {
+      readonly qty = signal<number | null>(null);
+      readonly formatOptions = signal<Intl.NumberFormatOptions | null>(null);
+    }
+
+    const submitOnEnter = async (text: string, options: Intl.NumberFormatOptions | null) => {
+      const { el, fixture, flush } = renderHost(CommitFormHost);
+      fixture.componentInstance.formatOptions.set(options);
+      await flush();
+      const input = inputOf(el);
+      input.focus();
+      typeInto(input, text);
+      await flush();
+      pressKey(input, 'Enter');
+      return Array.from(new FormData(el.querySelector('form')!).entries());
+    };
+
+    it('submits the clamped value in the same Enter that commits it', async () => {
+      expect(await submitOnEnter('50', null)).toEqual([['qty', '10']]);
+    });
+
+    it('submits the rounded value in the same Enter that commits it', async () => {
+      expect(await submitOnEnter('1.239', { style: 'currency', currency: 'USD' })).toEqual([
+        ['qty', '1.24'],
+      ]);
+    });
   });
 
   describe('disabled fieldset', () => {
@@ -1408,6 +1550,38 @@ describe('ForNumberInput', () => {
       const { el, flush } = renderHost(SignalFormsHost);
       await flush();
       expect(byId(el, 'qty').getAttribute('aria-required')).toBe('true');
+    });
+
+    @Component({
+      imports: [ForNumberInput, FormField],
+      template: `
+        <input
+          forNumberInput
+          [formField]="order.price"
+          [formatOptions]="{ style: 'currency', currency: 'USD' }"
+          locale="en-US"
+          data-test-id="price"
+        />
+      `,
+    })
+    class PriceFormHost {
+      readonly model = signal({ price: 19.995 });
+      readonly order = form(this.model);
+    }
+
+    it('leaves a loaded value and the dirty flag alone on a tab-through', async () => {
+      const { el, fixture, flush } = renderHost(PriceFormHost);
+      await flush();
+      const input = byId(el, 'price');
+
+      input.focus();
+      await flush();
+      input.dispatchEvent(new FocusEvent('blur'));
+      await flush();
+
+      expect(fixture.componentInstance.model().price).toBe(19.995);
+      expect(fixture.componentInstance.order.price().dirty()).toBe(false);
+      expect(fixture.componentInstance.order.price().touched()).toBe(true);
     });
   });
 

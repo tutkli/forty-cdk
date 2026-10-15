@@ -64,17 +64,26 @@ export interface HiddenInputConfig<T = string> {
  * guarantee is "not part of the hydrated tree", not "strictly sequenced after
  * the hydration pass". If incremental hydration ever needs the stricter
  * ordering, move the initial mount into `afterNextRender`.
+ *
+ * Returns a function that writes the current values into the hidden inputs
+ * immediately. A control whose value changes in the same event that submits
+ * the form calls it, so the submission carries the new value rather than the
+ * one the next render would have written. It is a no-op on the server.
  */
-export function injectHiddenInput<T = string>(config: HiddenInputConfig<T>): void {
+export function injectHiddenInput<T = string>(config: HiddenInputConfig<T>): () => void {
   if (!isPlatformBrowser(inject(PLATFORM_ID))) {
-    return;
+    return () => undefined;
   }
 
   const host = inject<ElementRef<HTMLElement>>(ElementRef);
   const doc = inject(DOCUMENT);
   const inputs: HTMLInputElement[] = [];
+  let destroyed = false;
 
-  effect(() => {
+  const sync = (): void => {
+    if (destroyed) {
+      return;
+    }
     const name = config.name();
     const values = name ? config.values() : ([] as readonly T[]);
     const disabled = config.disabled?.() ?? false;
@@ -110,12 +119,17 @@ export function injectHiddenInput<T = string>(config: HiddenInputConfig<T>): voi
       }
       input.toggleAttribute('disabled', disabled);
     }
-  });
+  };
+
+  effect(sync);
 
   inject(DestroyRef).onDestroy(() => {
+    destroyed = true;
     for (const input of inputs) {
       input.remove();
     }
     inputs.length = 0;
   });
+
+  return sync;
 }

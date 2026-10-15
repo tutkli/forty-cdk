@@ -66,7 +66,7 @@ Type an amount: `value()` under the field follows it as a raw number, and when y
 
 ## Formatting
 
-`formatOptions` (+ optional `locale`) drives both the displayed text and `aria-valuetext`; `value()` stays a number, and that number is what a surrounding `<form>` submits (via a hidden input). Committing typed text (`Enter` or blur) rounds the value to the precision the format displays, so typing `1.239` into the field below commits `1.24`, and the text, `aria-valuetext`, `aria-valuenow` and the submitted value agree. `min` / `max` win over that rounding, and compact, scientific and engineering notations commit the typed value unrounded.
+`formatOptions` (+ optional `locale`) drives both the displayed text and `aria-valuetext`; `value()` stays a number, and that number is what a surrounding `<form>` submits (via a hidden input). Committing typed text (`Enter` or blur) rounds the value to the precision the format displays, so typing `1.239` into the field below commits `1.24`, and the text, `aria-valuetext`, `aria-valuenow` and the submitted value agree. `min` / `max` win over that rounding, and compact, scientific and engineering notations commit the typed value unrounded. Only typed text is rounded and clamped: a value the field was bound to, or one reached by stepping, keeps the number it holds when focus passes through, so tabbing past a field (readonly or not) never changes its value or marks a form dirty.
 
 ```html
 <input
