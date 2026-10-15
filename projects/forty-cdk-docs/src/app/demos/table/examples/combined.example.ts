@@ -115,7 +115,12 @@ const FALLBACK_WIDTH: Record<PersonColumn, number> = {
           (columnReorder)="onColumnReorder($event)"
         >
           <div forTableHeaderCell name="sel" class="ctbl-cell ctbl-sel">
-            <span forTableSelectAll ariaLabel="Select all rows" class="ctbl-check"></span>
+            <button
+              type="button"
+              forTableSelectAll
+              aria-label="Select all rows"
+              class="ctbl-check"
+            ></button>
           </div>
           @for (column of columns(); track column) {
             <div
@@ -156,7 +161,11 @@ const FALLBACK_WIDTH: Record<PersonColumn, number> = {
               [style.transform]="'translateY(' + vrow.start + 'px)'"
             >
               <div forTableCell name="sel" class="ctbl-cell ctbl-sel">
-                <span forTableRowSelector class="ctbl-check"></span>
+                <span
+                  forTableRowSelector
+                  [ariaLabel]="'Select ' + displayRows()[vrow.index]!.name"
+                  class="ctbl-check"
+                ></span>
               </div>
               @for (column of columns(); track column) {
                 <div forTableCell [name]="column" class="ctbl-cell">
@@ -255,6 +264,7 @@ const FALLBACK_WIDTH: Record<PersonColumn, number> = {
       justify-content: center;
       width: 1.05rem;
       height: 1.05rem;
+      padding: 0;
       border: 1.5px solid var(--ex-border-strong, #d0c9bc);
       border-radius: 5px;
       background: var(--ex-surface, #ffffff);

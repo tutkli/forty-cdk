@@ -26,10 +26,10 @@ stamps no expansion affordances. The examples below use `mode="grid"`, but each 
     <!-- selection column: drop the raw selector primitives into the cell templates -->
     <ng-container forTableColumnDef="sel" sticky width="48px">
       <ng-template forTableHeaderCellDef
-        ><span forTableSelectAll ariaLabel="Select all"></span
+        ><button type="button" forTableSelectAll ariaLabel="Select all"></button
       ></ng-template>
       <ng-template forTableCellDef [forTableCellDefRow]="rows()" let-row>
-        <span forTableRowSelector></span>
+        <span forTableRowSelector [ariaLabel]="'Select ' + row.name"></span>
       </ng-template>
     </ng-container>
 
