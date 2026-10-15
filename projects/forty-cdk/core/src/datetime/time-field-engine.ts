@@ -197,7 +197,7 @@ export class TimeFieldEngine<D> extends DateTimeFieldEngineBase<D, TimeParts, Ti
   }
 
   #base(): D {
-    return this.#config.source() ?? timeSentinel(this.#config.adapter);
+    return this.anchor() ?? timeSentinel(this.#config.adapter);
   }
 
   #clampToBounds(date: D): D {

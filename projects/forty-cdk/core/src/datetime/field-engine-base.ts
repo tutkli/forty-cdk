@@ -1,4 +1,4 @@
-import { computed, type Signal, untracked, type WritableSignal } from '@angular/core';
+import { computed, linkedSignal, type Signal, untracked, type WritableSignal } from '@angular/core';
 
 import type { RovingTabindex } from '../roving-tabindex/roving-tabindex';
 import type { DateAdapter } from 'forty-cdk/date-adapter';
@@ -103,7 +103,16 @@ export abstract class DateTimeFieldEngineBase<
 
   protected editor!: SegmentEditor<P, T>;
 
-  #ownCommit: { readonly source: D | null } | null = null;
+  #ownCommit: { readonly source: D | null; readonly rehydrate: boolean } | null = null;
+
+  readonly #retainedAnchor = linkedSignal<D | null, D | null>({
+    source: () => this.config.source(),
+    computation: () => null,
+  });
+
+  protected readonly anchor = computed<D | null>(
+    () => this.config.source() ?? this.#retainedAnchor(),
+  );
 
   #committing = false;
 
@@ -234,6 +243,7 @@ export abstract class DateTimeFieldEngineBase<
    */
   reset(): void {
     this.#ownCommit = null;
+    this.#retainedAnchor.set(null);
     this.editor.resetTyping();
     const source = untracked(this.config.source);
     this.parts.set(source === null ? this.emptyParts() : this.partsFrom(source));
@@ -277,13 +287,10 @@ export abstract class DateTimeFieldEngineBase<
   }
 
   protected settle(): void {
-    if (this.#ownCommit === null) {
-      return;
-    }
+    const commit = this.#ownCommit;
     this.#ownCommit = null;
-    const source = untracked(this.config.source);
-    if (source !== null) {
-      this.parts.set(this.partsFrom(source));
+    if (commit?.rehydrate) {
+      this.parts.set(this.partsFrom(commit.source!));
     }
   }
 
@@ -302,15 +309,35 @@ export abstract class DateTimeFieldEngineBase<
     if (transient) {
       return;
     }
+    const composed = this.composeFrom(next);
+    const anchor = untracked(this.anchor);
     this.#adopted = null;
     this.#committing = true;
     try {
-      this.config.onCommit(this.composeFrom(next));
+      this.config.onCommit(composed);
     } finally {
       this.#committing = false;
     }
-    this.#ownCommit = this.#adopted ?? { source: untracked(this.config.source) };
+    const source = untracked(this.config.source);
+    if (source === null && anchor !== null) {
+      this.#retainedAnchor.set(anchor);
+    }
+    const adopted = this.#takeAdopted();
+    this.#ownCommit = adopted
+      ? { source: adopted.source, rehydrate: true }
+      : {
+          source,
+          rehydrate:
+            source !== null &&
+            composed !== null &&
+            this.config.adapter.compare(source, composed) === 0,
+        };
+  }
+
+  #takeAdopted(): { readonly source: D } | null {
+    const adopted = this.#adopted;
     this.#adopted = null;
+    return adopted;
   }
 
   /**

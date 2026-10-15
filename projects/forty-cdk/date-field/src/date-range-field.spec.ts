@@ -597,6 +597,67 @@ describe('ForDateRangeField', () => {
     });
   });
 
+  describe('leaving an endpoint of a bound range mid-edit (#2208)', () => {
+    const leaveStartDay = (r: R, to: 'end' | 'outside') =>
+      seg(r, 'start', 'day').dispatchEvent(
+        new FocusEvent('blur', { relatedTarget: to === 'end' ? seg(r, 'end', 'month') : null }),
+      );
+
+    for (const to of ['end', 'outside'] as const) {
+      it(`keeps a start day typed past the end when focus moves ${to === 'end' ? 'to the end endpoint' : 'outside the field'}`, async () => {
+        const r = renderHost(Host);
+        r.instance.value.set({ start: new Date(2026, 5, 10), end: new Date(2026, 5, 20) });
+        await flush(r.fixture);
+
+        await type(r, 'start', 'day', '25');
+        expect(r.instance.value()).toBeNull();
+        expect(root(r).getAttribute('data-range-error')).toBe('');
+
+        leaveStartDay(r, to);
+        await flush(r.fixture);
+        expect(seg(r, 'start', 'day').textContent?.trim()).toBe('25');
+        expect(root(r).getAttribute('aria-invalid')).toBe('true');
+        expect(root(r).getAttribute('data-range-error')).toBe('');
+        expect(r.instance.value()).toBeNull();
+
+        await type(r, 'end', 'day', '30');
+        const range = r.instance.value()!;
+        expect(range.start.getTime()).toBe(new Date(2026, 5, 25).getTime());
+        expect(range.end.getTime()).toBe(new Date(2026, 5, 30).getTime());
+      });
+
+      it(`keeps a cleared start day empty when focus moves ${to === 'end' ? 'to the end endpoint' : 'outside the field'}`, async () => {
+        const r = renderHost(Host);
+        r.instance.value.set({ start: new Date(2026, 5, 10), end: new Date(2026, 5, 20) });
+        await flush(r.fixture);
+
+        await key(r, 'start', 'day', 'Delete');
+        expect(r.instance.value()).toBeNull();
+
+        leaveStartDay(r, to);
+        await flush(r.fixture);
+        expect(seg(r, 'start', 'day').textContent?.trim()).toBe('dd');
+        expect(seg(r, 'start', 'month').textContent?.trim()).toBe('06');
+        expect(r.instance.value()).toBeNull();
+      });
+    }
+
+    it('still shows a clamped endpoint of a complete range once focus leaves it', async () => {
+      const r = renderHost(Host);
+      r.instance.maxDate.set(new Date(2026, 5, 25));
+      r.instance.value.set({ start: new Date(2026, 5, 10), end: new Date(2026, 5, 20) });
+      await flush(r.fixture);
+
+      await type(r, 'end', 'day', '28');
+      expect(r.instance.value()!.end.getTime()).toBe(new Date(2026, 5, 25).getTime());
+      expect(seg(r, 'end', 'day').textContent?.trim()).toBe('28');
+
+      seg(r, 'end', 'day').dispatchEvent(new FocusEvent('blur'));
+      await flush(r.fixture);
+      expect(seg(r, 'end', 'day').textContent?.trim()).toBe('25');
+    });
+  });
+
   describe('field integration', () => {
     @Component({
       imports: [
