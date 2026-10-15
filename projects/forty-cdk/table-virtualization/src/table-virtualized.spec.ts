@@ -114,11 +114,12 @@ describe('ForTableVirtualized — retained row offset under measureRows', () => 
     return fixture;
   }
 
-  function measureRowZero(virt: ForTableVirtualized): void {
+  function measureRowZero(virt: ForTableVirtualized, container: HTMLElement): void {
     const el = document.createElement('div');
     el.setAttribute('data-index', '0');
     Object.defineProperty(el, 'offsetHeight', { configurable: true, value: 100 });
     Object.defineProperty(el, 'offsetWidth', { configurable: true, value: 100 });
+    container.appendChild(el);
     virt.measureRow(el);
   }
 
@@ -126,7 +127,7 @@ describe('ForTableVirtualized — retained row offset under measureRows', () => 
     const fixture = await mount();
     const virt = fixture.componentInstance.virt();
 
-    measureRowZero(virt);
+    measureRowZero(virt, fixture.nativeElement as HTMLElement);
     await flush(fixture);
 
     fakeCtx.focusedRowIndex.set(900);
@@ -141,7 +142,7 @@ describe('ForTableVirtualized — retained row offset under measureRows', () => 
     const fixture = await mount();
     const virt = fixture.componentInstance.virt();
 
-    measureRowZero(virt);
+    measureRowZero(virt, fixture.nativeElement as HTMLElement);
     await flush(fixture);
 
     fakeCtx.reorderingRowIndex.set(900);
