@@ -7,28 +7,411 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.34.0] - 2026-10-15
+
 ### Added
 
 - **Toolbar**, **Table**, **Date picker**, **Time picker**, **Time field** — provider helpers for
   subclassed roots ([#2260](https://github.com/tutkli/forty-cdk/issues/2260)). `provideForToolbar`,
-  `provideForTableRow`, `provideForDatePicker`, `provideForDateRangePicker`,
-  `provideForTimePicker` and `provideForTimeField` return the whole provider set of their root,
-  including the tokens a wrapper cannot import, and each root declares its own providers through
-  its helper. A subclass that re-provided only `FOR_TOOLBAR_CONTEXT` gave the toolbar a second Tab
-  stop on a nested toggle group, and a `ForTableRow` subclass could not be written at all. The
-  wrapping guides no longer import from `forty-cdk/core`. **A date-picker wrapper written before
-  0.32.0** re-provides only `FOR_DATE_PICKER_CONTEXT` and `FOR_DATE_FIELD_HOST`, so its read-only or
-  disabled picker's calendar accepts picks again: replace its `providers` with
-  `provideForDatePicker(MyDatePicker)`, and do the same with the matching helper on a subclassed
-  range picker, time picker or time field.
+  `provideForTableRow`, `provideForDatePicker`, `provideForDateRangePicker`, `provideForTimePicker`
+  and `provideForTimeField` return the whole provider set of their root, including the tokens a
+  wrapper cannot import, and each root declares its own providers through its helper. A subclass
+  that re-provided only `FOR_TOOLBAR_CONTEXT` gave the toolbar a second Tab stop on a nested toggle
+  group, and a `ForTableRow` subclass could not be written at all. The wrapping guides no longer
+  import from `forty-cdk/core`.
+
+- **Listbox**, **Tree**, **Table** — a configurable keyboard reorder lift key
+  ([#2234](https://github.com/tutkli/forty-cdk/issues/2234)). `[forListboxReorder]`,
+  `[forTreeNodeDrag]` and grid-mode `[forTableRowReorder]` lifted only on Ctrl/Cmd+Space, which
+  macOS and most IMEs take before the page sees it. They now ask the `liftKey` predicate of
+  `provideForDragDropDefaults({ liftKey })`, whose default accepts Shift+Enter with no other
+  modifier as well as Ctrl/Cmd+Space. A keydown that belongs to an IME composition never lifts, and
+  a keyboard lift inside a shadow root no longer cancels on a window blur. The Listbox README's
+  "Reordering" section, the Table README's keyboard table and the Tree README's "Keyboard
+  interaction" list the keys.
+
+- **Listbox**, **Select**, **Combobox**, **Time picker**, **Menu**, **Dropdown menu**, **Context
+  menu**, **Menubar**, **Navigation menu** — `loop` is scope-configurable, and so is the select's
+  `selectionFollowsFocus` ([#2262](https://github.com/tutkli/forty-cdk/issues/2262)). Each
+  primitive's `provideFor<Primitive>Defaults` takes `loop` (default `true`), and
+  `provideForSelectDefaults` takes `selectionFollowsFocus` (default `false`), the values they
+  hard-coded before, so nothing changes without a provider. A submenu reads `loop` from
+  `provideForMenuDefaults`, not from the dropdown or context menu's defaults.
+
+- **Date field**, **Time field** — `clear()` empties a partly typed entry
+  ([#2232](https://github.com/tutkli/forty-cdk/issues/2232)). `ForDateField`, `ForDateRangeField`,
+  `ForTimeField` and `ForTimeRangeField` gain `clear()`, which sets the value to `null` and empties
+  every segment, a draft or an out-of-order range included. A draft already reports `value()` as
+  `null`, so writing `null` through `[(value)]` changed nothing and left the typed digits on screen.
+  While a date or time picker adopts the field, `clear()` clears the picker's value and does nothing
+  while it is read-only or disabled. **To clear a field from a button, call `clear()` through its
+  template reference (`#field="forDateField"`) instead of writing `null`.** The Date field and Time
+  field READMEs' API tables list it.
+
+- **Shared** — two library pieces supplying `aria-labelledby` or `aria-errormessage` for one element
+  warn `FORCDK-CORE-013` in dev mode ([#2440](https://github.com/tutkli/forty-cdk/issues/2440)).
+  Each attribute holds one value, so when a `[forField]` targets a piece that already names itself
+  (a content panel, a list, a fieldset, a dialog surface) or two such pieces share an element, only
+  one is written and the other is never announced. Both attributes now have one owner per element:
+  your static value replaces every library value, otherwise the earliest piece that resolves one is
+  written, and the warning fires once while the contention lasts. **Move one of the pieces to
+  another element, or write the attribute statically.**
+
+### Changed
+
+- **Date picker**, **Time picker**, **Time field** — a subclassed root moves to its provider helper
+  ([#2260](https://github.com/tutkli/forty-cdk/issues/2260),
+  [#2226](https://github.com/tutkli/forty-cdk/issues/2226)). `forty-cdk/core` no longer exports
+  `FOR_CALENDAR_HOST` / `CalendarHost`, which the 0.32.0 and 0.33.0 wrapping guide told a
+  date-picker wrapper to import, so that wrapper no longer compiles. A wrapper written before 0.32.0
+  compiles but re-provides only `FOR_DATE_PICKER_CONTEXT` and `FOR_DATE_FIELD_HOST`, so a read-only
+  or disabled picker leaves its calendar and its projected time source editable. **Replace the
+  wrapper's `providers` with `provideForDatePicker(MyDatePicker)`, and do the same with the matching
+  helper on a subclassed range picker, time picker or time field.**
+
+- **Menubar** — only one `@if` per trigger mounts a menu
+  ([#2210](https://github.com/tutkli/forty-cdk/issues/2210)). A surface shared by one
+  `@if (open() !== null)`, or a `[forMenuContent]` mounted unconditionally, outlived the open state:
+  it took focus on load, never moved or returned focus on a switch, and swallowed Escape while the
+  bar was closed. Both shapes are retired, together with `ForMenubar.sharedContentId`,
+  `ForMenubarContext.sharedContentId` and the `allowsUnconditionalMount` member of `ForMenuContext`
+  in `forty-cdk/shared`. A `[forMenuContent]` still mounted while the bar is closed now warns
+  `FORCDK-CORE-006` in dev mode. **Wrap each trigger's `[forMenuContent]` in its own
+  `@if (open() === '<value>')`, as the README's "Mounting the menus" section shows, and drop any
+  read of `sharedContentId`.**
+
+- **Field**, **Dialog**, **Drawer**, **Tooltip**, **Hover card**, **Menu** — five context and
+  directive members change shape ([#2217](https://github.com/tutkli/forty-cdk/issues/2217),
+  [#2248](https://github.com/tutkli/forty-cdk/issues/2248),
+  [#2428](https://github.com/tutkli/forty-cdk/issues/2428),
+  [#2257](https://github.com/tutkli/forty-cdk/issues/2257)). `ForFieldContext.registerDescription`
+  and `registerError` take the host element. `registerBackdrop` leaves `ForDialogContext` and
+  `ForDrawerContext`, and `registerHandle` leaves `ForDrawerContext`: the pieces register
+  themselves. `pointerLeaveTrigger` on `ForTooltipContext` and `ForHoverCardContext` accepts `null`,
+  a leave with no destination. `ForMenuSub.disabled` is now a read-only signal of the effective
+  state, its own `[disabled]` or a disabled parent menu. **Code that implements or calls these
+  contexts through their tokens must follow the new members.**
+
+- **Popover**, **Dialog**, **Drawer**, **Tooltip**, **Select**, **Drag and drop** — direction
+  follows a `dir` above a shadow host, and a portaled surface inherits when none is declared
+  ([#2235](https://github.com/tutkli/forty-cdk/issues/2235)). A primitive inside a
+  `ViewEncapsulation.ShadowDom` component resolved ltr whatever `dir` sat above its host; it now
+  follows it. Every portaled surface, backdrop and toast viewport was stamped `dir="ltr"` when
+  nothing declared a direction; it is now stamped only when an ancestor or `<html>` declares one, so
+  the overlays of an app that sets `direction: rtl` in CSS inherit it again. Drag previews keep the
+  dragged item's direction. **If your overlay CSS matches `[dir="ltr"]`, declare `dir` on
+  `<html>`.**
+
+- **Tree**, **Table** — `data-highlighted` follows the pointer
+  ([#2264](https://github.com/tutkli/forty-cdk/issues/2264)). As in Listbox, Select and Time picker,
+  the hovered enabled node, or grid / treegrid cell, now carries `data-highlighted`, and the focused
+  one carries it only while nothing is hovered. Hover moves neither focus nor the tab stop, and the
+  next arrow key or leaving the tree / table hands the highlight back. In a virtualized tree, hover
+  also moves `aria-activedescendant`. **If you styled `[data-highlighted]` as the focus indicator of
+  these two primitives, it now also shows on hover.**
+
+- **Listbox**, **Tree**, **Table** — Shift+Enter lifts a reorderable item
+  ([#2234](https://github.com/tutkli/forty-cdk/issues/2234)). With the new default `liftKey`,
+  Shift+Enter on a focused `[forListboxReorder]` option, `[forTreeNodeDrag]` node or grid-mode
+  reorderable row starts a keyboard reorder and no longer reaches your own handlers. **To keep
+  Ctrl/Cmd+Space only, pass
+  `provideForDragDropDefaults({ liftKey: (e) => e.key === ' ' && (e.ctrlKey || e.metaKey) })`.**
+
+- **Input**, **Textarea**, **Search**, **Number input**, **OTP input**, **Checkbox**, **Switch**,
+  **Toggle**, **Radio group**, **Select**, **Listbox**, **Combobox**, **Slider**, **Date field**,
+  **Time field**, **Date picker**, **Time picker** — a native form reset returns every control to
+  its first-render value ([#2432](https://github.com/tutkli/forty-cdk/issues/2432),
+  [#2209](https://github.com/tutkli/forty-cdk/issues/2209)). The controls that submit through a
+  hidden input kept their value through a `<form>` reset, and the date and time fields kept a partly
+  typed draft. The text controls emptied the element but not `value()`, so the next blur brought the
+  old text back. Every control now writes the value it held at first render back into its model, the
+  date and time fields and field-anatomy pickers drop their draft, and a reset another listener
+  cancels changes nothing. **A text control now resets to its first-render text instead of `''`; to
+  reset to other values, `preventDefault()` the `reset` event and write them through the model.**
+
+- **Testing** — the event helpers behave like a browser press in more cases
+  ([#2256](https://github.com/tutkli/forty-cdk/issues/2256)). `pressKey`, `pointerEvent` and every
+  event `pressWithMouse` sends are now composed, so a key or press inside a shadow root reaches the
+  document listeners an overlay dismisses on. `pressWithMouse` focuses across open shadow roots,
+  treats `contenteditable` and `<summary>` as focusable, and skips disabled controls and
+  disabled-fieldset descendants; a `pointerdown` listener that prevents the default now suppresses
+  `mousedown`, `mouseup` and the focus move. `withFlippableReducedMotion().set()` also notifies
+  `addListener` listeners and `onchange`. **Pass `{ composed: false }` to `pressKey` /
+  `pointerEvent` to keep a non-composed event.**
 
 ### Fixed
+
+- **Dialog**, **Drawer**, **Popover**, **Select**, **Combobox**, **Dropdown menu**, **Context
+  menu**, **Time picker**, **Date picker**, **Tabs**, **Stepper** — Tab at the edges of a modal or
+  an overlay ([#2236](https://github.com/tutkli/forty-cdk/issues/2236),
+  [#2237](https://github.com/tutkli/forty-cdk/issues/2237)). Inside a dialog or drawer, the modal's
+  focus trap took Tab before an open overlay could: select, the menus and the time picker left focus
+  on their trigger, and a popover or date picker sent it to the dialog's first control and closed
+  with the wrong reason. Tab past the overlay's last control now moves to the element after its
+  trigger (Shift+Tab to the trigger) and closes it with reason `'tab'`, while the trap still wraps
+  at the dialog's own edges. A named native radio group now counts as one tab stop at those edges:
+  Tab from a checked radio that ends a modal wraps instead of leaving it, Shift+Tab lands on the
+  checked radio, and a popover or date picker ending in one tabs out to the trigger. A Tabs or
+  Stepper panel re-measures its fallback `tabindex` when a descendant's `href` or `controls`
+  changes.
+
+- **Date picker**, **Time picker**, **Popover**, **Dropdown menu**, **Context menu**, **Menubar**,
+  **Select**, **Combobox** — return focus goes where the close left it
+  ([#2214](https://github.com/tutkli/forty-cdk/issues/2214),
+  [#2250](https://github.com/tutkli/forty-cdk/issues/2250)). Closing a non-modal date or time picker
+  by pressing or focusing outside it returned focus to the trigger, taking it from the control just
+  clicked; focus now stays where the interaction put it and `(autoFocusOnClose)` is not emitted, as
+  in Popover, Select and the menus. With `anatomy="field"`, pressing a segment closes the surface
+  and leaves focus on that segment. A close reason also survived a reopen through `[(open)]`, so
+  after a Tab close a model-driven open and close skipped the return and left focus on `<body>`, and
+  `ForPopover.lastCloseReason()` reported the stale reason while open; it is now `null` on every
+  open.
+
+- **Dialog**, **Drawer** — nested modal stacks follow declared nesting, and peers belong to their
+  own modal ([#2242](https://github.com/tutkli/forty-cdk/issues/2242)). A parent and child modal
+  opened in one render pass left the child inert and unfocused, with Escape closing the parent; the
+  child is now topmost, focused and the first one Escape closes, and a nested drawer's `data-depth`
+  is correct. A non-modal dialog or drawer opened from inside a modal is no longer inert, and an
+  overlay opened from a background modal is now inert and hidden from assistive technology while a
+  nested modal sits on top.
+
+- **Dialog**, **Drawer** — the trigger of an open non-modal surface closes it
+  ([#2249](https://github.com/tutkli/forty-cdk/issues/2249)). Pressing it dismissed the surface on
+  `pointerdown` as an outside press, and the click opened it again, so the trigger could never close
+  it; the same hit a container-scoped modal surface whose trigger sits outside the container. The
+  open controlling trigger now counts as inside the surface, as on Popover, so the press emits no
+  `(dismiss)` or `(interactOutside)` and the click closes it through `[(open)]`.
+
+- **Dialog**, **Drawer** — the backdrop sits directly under its own surface
+  ([#2246](https://github.com/tutkli/forty-cdk/issues/2246)). The backdrop was appended after its
+  surface, so the README styling, which sets no `z-index`, painted it over the dialog. It is now
+  inserted immediately before its surface, and each backdrop of a stacked pair sits under its own.
+  The docs now state that a template `animate.leave` inside a component opened by `ForDialogManager`
+  / `ForDrawerManager` never runs (use `animateLeave` / `backdropAnimateLeave`) and that
+  `returnFocus` applies in modal mode only.
+
+- **Drawer**, **Dialog**, **Table**, **Date picker** — a handle, backdrop or wrapper survives a
+  structural swap ([#2248](https://github.com/tutkli/forty-cdk/issues/2248)). Swapping a
+  `[forDrawerHandle]`, a `[forDialogBackdrop]` / `[forDrawerBackdrop]` or a `[forDrawerWrapper]`
+  with two sibling `@if` blocks threw in production and aborted the render. The newest registration
+  now wins, a swapped-out wrapper gets its inline styles back, and a duplicate still mounted once
+  the render settles warns `FORCDK-CORE-005` in dev mode. `FORCDK-CORE-001`, `FORCDK-DRAWER-005` and
+  `FORCDK-DRAWER-006` are retired. `FORCDK-TABLE-005` is now dev-only, and in production a row def
+  with both or neither of a cell template and `placeholderCells` renders placeholder cells. The date
+  picker's adapter and range-mode errors (`FORCDK-DATE-PICKER-001`, `-005`, `-006`) throw on a pick
+  instead of at mount.
+
+- **Tooltip**, **Hover card** — scroll suppression is scoped to the overlay's own trigger, and a pen
+  or a mouse leaving the window closes the surface
+  ([#2243](https://github.com/tutkli/forty-cdk/issues/2243),
+  [#2428](https://github.com/tutkli/forty-cdk/issues/2428)). Any scroll on the page, an
+  auto-scrolling log or a scroll inside the card included, suppressed hover opens of every tooltip
+  and hover card, and returning to the trigger after scrolling the card let its pending close fire.
+  Only a scroll of a container holding that overlay's trigger now suppresses its hover open, the
+  same rule applies to `show()`, and a closed overlay no longer does work on scroll. A pen leaving
+  the trigger, a pen lifted out of hover range over it or just past it, and a mouse leaving the
+  window from it left the surface open until Escape, a scroll or a blur; each now closes it like a
+  mouse leave.
+
+- **Hover card**, **Tooltip** — Tab leaves the hover card from the trigger's place, and a swapped
+  trigger no longer holds the surface open
+  ([#2252](https://github.com/tutkli/forty-cdk/issues/2252)). Tab from the card's last control
+  jumped to the end of the page and the card closed only after `closeDelay`; Tab now moves to the
+  element after the trigger, Shift+Tab lands on the trigger, and both close the card at once. A
+  trigger swapped by `@if` under the pointer left the root hovered, so a later focus-opened tooltip
+  or card stayed open after blur.
+
+- **Navigation menu** — Escape belongs to whatever holds focus
+  ([#2258](https://github.com/tutkli/forty-cdk/issues/2258)). A hover-opened panel swallowed an
+  Escape pressed in a popover that kept focus beneath it, so nothing closed; that Escape now closes
+  the popover and the panel stays, never passing a modal layer. An Escape that cancels an IME
+  composition inside the panel, or that an inner widget already claimed with `preventDefault()`, no
+  longer closes the panel.
+
+- **Field**, **Fieldset** — consumer ids survive, and `[forFieldControl]` disables the native
+  control ([#2217](https://github.com/tutkli/forty-cdk/issues/2217)). A static `id` on `[forLabel]`,
+  `[forFieldDescription]` or `[forFieldError]` inside a field was overwritten by a generated one; it
+  is now kept, and the control's `aria-labelledby` / `aria-describedby` / `aria-errormessage`
+  reference it. A standalone `[forLabel]` keeps its own `for` and `id`, and a standalone
+  `[forFieldsetLegend]` its `id`. `[forFieldControl]` swallowed `[disabled]` and left the native
+  control enabled; it now sets the native `disabled` from its own input or a surrounding disabled
+  `[forFieldset]`.
+
+- **Field**, **Tooltip** — a field control that is also a tooltip trigger keeps its description
+  ([#2251](https://github.com/tutkli/forty-cdk/issues/2251)). `[forField]` and `[forTooltipTrigger]`
+  each overwrote `aria-describedby` on the same control, so it lost its description and error ids on
+  first render and after every tooltip toggle. The attribute now carries your own static ids, then
+  each library piece's ids in registration order.
+
+- **Date field**, **Time field**, **Date picker**, **Time picker** — a Signal Forms reset drops a
+  partly typed entry ([#2232](https://github.com/tutkli/forty-cdk/issues/2232)). A partly typed
+  date, a time with an empty AM/PM, or a half-entered or out-of-order range reports `value()` as
+  `null`, so `form().reset()` never reached the segments: the digits stayed, and a later keystroke
+  could commit a range built from them. The four fields and the field-anatomy pickers now implement
+  `reset()`, which empties the segments.
+
+- **Date field**, **Time field**, **Date picker**, **Time picker** — segment fields keep their tab
+  stop and read AM/PM correctly ([#2239](https://github.com/tutkli/forty-cdk/issues/2239)). When the
+  focused segment unmounted, on a granularity change or an `hourCycle` switch while AM/PM held the
+  tab stop, every segment was left at `tabindex="-1"`; the first segment now takes the tab stop
+  back. An empty AM/PM segment carries the empty-segment `aria-valuetext`, and ArrowUp / ArrowDown
+  toggle a filled period instead of always setting PM / AM. In a locale whose 12-hour clock counts
+  0–11 (`ja-JP`), the hour segment does too, matching the time picker's labels. Digits from
+  consecutive Unicode digit blocks type their real value instead of 9.
+
+- **Date picker**, **Time field**, **Time picker** — a date-time picker's time source follows its
+  `readonly` and `disabled` ([#2226](https://github.com/tutkli/forty-cdk/issues/2226)). A time field
+  or `[forTimePicker]` projected into a read-only or disabled `[forDatePicker]` stayed editable; it
+  now takes both states without a binding, like the calendar, reflects them in its attributes, and a
+  disabled time picker does not open. `ForTimePicker` and `ForTimePickerContext` gain
+  `effectiveReadonly`. A typed time the picker clamps into `[minDate, maxDate]` keeps its typed
+  segments until focus leaves, as in a standalone time field.
 
 - **Date picker** — `FORCDK-CORE-003` under the date picker's scope
   ([#2260](https://github.com/tutkli/forty-cdk/issues/2260)). A named `[forDatePicker]` at a time
   granularity over a day-only adapter, with a value and no projected field, reported the error as
   `[forty-cdk/core]` from its hidden input. It now reports as `[forty-cdk/date-picker]`, and the
   date fields report under `[forty-cdk/date-field]` on the same path.
+
+- **OTP input**, **Number input** — a value written while the input is focused reaches it
+  ([#2209](https://github.com/tutkli/forty-cdk/issues/2209)). Clearing an OTP code after a rejected
+  entry, or writing a Number input's value, while the field held focus stayed out of the DOM, and
+  the next keystroke brought the old text back; it now lands at once. OTP input derives `inputmode`
+  from `allowedPattern` (numeric only for a digits-only pattern) and no longer emits a native
+  `pattern`, names its input from a static `aria-label` on the wrapper, and gives the input an `id`
+  of its own for a field label, leaving a static `id` on the wrapper.
+
+- **Listbox**, **Select**, **Combobox** — pressing an option or a combobox action focuses it in
+  Safari and macOS Firefox too ([#2240](https://github.com/tutkli/forty-cdk/issues/2240)). Those
+  browsers do not focus a `<button>` on press, so after clicking an option of a multi-select or an
+  in-flow listbox, focus fell to the surface or `<body>` and the arrow keys and typeahead stopped
+  working. Options, a read-only listbox's or select's included, and `[forComboboxAction]` now focus
+  themselves on press. A `<button>` of your own inside the popup is still left to the browser, as
+  the Select README's Accessibility section notes. Dialog and drawer triggers move focus with
+  `preventScroll`.
+
+- **Radio group**, **Tabs**, **Toolbar**, **Toggle group**, **Accordion**, **Carousel**,
+  **Listbox**, **Select**, **Combobox**, **Menu**, **Menubar**, **Navigation menu**, **Stepper**,
+  **Tree**, **Table**, **Drag and drop** — Alt- and Cmd-held arrows go to the browser
+  ([#2241](https://github.com/tutkli/forty-cdk/issues/2241)). Alt+Arrow and Cmd+Arrow, the history
+  Back / Forward shortcuts, were handled as plain arrows and cancelled, so they could check another
+  radio or activate another tab. Arrows held with Alt or Meta are no longer handled or prevented,
+  nor are Home, End and the Page keys in the lists, and tree / treegrid expand and collapse ignore
+  them too.
+
+- **Listbox**, **Select**, **Combobox**, **Tree** — a virtualized list keeps its place after the
+  active row scrolls away ([#2238](https://github.com/tutkli/forty-cdk/issues/2238),
+  [#2231](https://github.com/tutkli/forty-cdk/issues/2231)). Typeahead restarted from the top and
+  emitted `(scrollToIndex)` to row 0 or the first match; it now continues after the remembered
+  position, like the arrow keys. A virtualized combobox with `[autoHighlight]="false"` sent
+  ArrowDown back to option 0, and Enter skipped the pick and submitted the enclosing form; both now
+  resume from the remembered option, which a query change or a close clears.
+
+- **Listbox**, **Select**, **Combobox**, **Tree**, **Table**, **Menu**, **Menubar**, **Time picker**
+  — a scroll under a resting cursor no longer moves the highlight in Safari
+  ([#2433](https://github.com/tutkli/forty-cdk/issues/2433)). WebKit fires a `pointermove` under a
+  stationary cursor after content scrolls, so a wheel scroll handed the highlight, and with it the
+  next Enter, to the row under the pointer, or moved focus in a menu. A move that did not change the
+  pointer's position after a scroll is now ignored.
+
+- **Table**, **Listbox**, **Select**, **Combobox**, **Tree** — selection labels follow
+  `compareWith`, and table select-all no longer throws on a very large set
+  ([#2263](https://github.com/tutkli/forty-cdk/issues/2263)). Select's trigger labels and open-time
+  anchor, and Combobox's chip labels, matched a selected value by its `itemToFormValue` string; they
+  now use `compareWith`, so they agree with `aria-selected`. Select-all over a very large
+  `selectableValues` threw a call-stack error. A Shift+Arrow range move in Listbox and Select no
+  longer lets a resting pointer take the highlight. **With object values that are not the option
+  objects themselves, pass a `compareWith`.**
+
+- **Select**, **Time picker** — the open lands where the key asked, and Tab leaves through the
+  trigger ([#2261](https://github.com/tutkli/forty-cdk/issues/2261)). Once the listbox is
+  positioned, the option that received focus is scrolled into view in both popper and item-aligned
+  modes, so an End open on a long list shows its last option; the time picker did not scroll at all.
+  A virtualized select honours Home, End and ArrowUp with no value, emitting `(scrollToIndex)` for
+  an off-window target. A Tab from your own control inside the listbox, or from a listbox whose
+  options are all disabled, closes it without committing and continues from the trigger instead of
+  from the end of `<body>`. Typeahead on a closed select that matches the current value no longer
+  emits `(valueChange)`.
+
+- **Combobox** — the picker trigger opens on the selection, and its popup is the dialog it announces
+  ([#2230](https://github.com/tutkli/forty-cdk/issues/2230)). ArrowDown / ArrowUp on
+  `[forComboboxTrigger]` open on the committed selection, falling back to the first / last enabled
+  option, as `[forSelectTrigger]` does. In the picker anatomy, the trigger reflects
+  `aria-haspopup="dialog"` instead of `"listbox"` and carries an `id` (a static one is kept), and
+  `[forComboboxContent]` becomes a `role="dialog"` named by the trigger, unless it carries its own
+  `aria-label` or `aria-labelledby`.
+
+- **Menu**, **Dropdown menu**, **Context menu**, **Menubar** — disabled items keep focus off on a
+  press and still let focus leave, and a disabled menu disables its submenus
+  ([#2257](https://github.com/tutkli/forty-cdk/issues/2257)). A mouse press on a disabled item, a
+  disabled sub-trigger or a disabled menubar trigger focused it, and a press on the surface, a group
+  label or a separator moved focus to the surface; both now leave focus where it was. An item that
+  became disabled while focused ignored every key, trapping focus; it now answers the arrows, Home /
+  End, typeahead and Tab, and only activation stays blocked. A disabled root now disables every
+  sub-trigger and every item of its submenus.
+
+- **Tree** — focus restore follows the node that held focus
+  ([#2239](https://github.com/tutkli/forty-cdk/issues/2239)). A focused node disabled and then
+  removed dropped focus to `<body>`; it now hands focus to its neighbour. Removing a node while
+  focus was elsewhere pulled focus, and the scroll position, into the tree; it no longer does.
+
+- **Tree** — a node drag owns the keyboard, Escape and the focus outcome
+  ([#2265](https://github.com/tutkli/forty-cdk/issues/2265)). While a node was lifted, `*`,
+  typeahead and item key handlers could re-expand its subtree, offer its descendants as drop rows or
+  move focus; every unmapped key is now consumed while lifted (Ctrl/Cmd/Alt chords and function keys
+  pass), Home / End move to the first / last row, and a lifted node's descendants are never drop
+  targets. Escape did not cancel a pointer drag and closed an enclosing dialog; it now cancels it
+  and is consumed, in table row reorder and virtual reorder too. A drop made while focus was on the
+  node, by pointer or keyboard, moves focus with it.
+
+- **Virtual reorder**, **Table**, **Drag and drop** — a keyboard cancel and a keyboard drop keep
+  focus on the right item ([#2247](https://github.com/tutkli/forty-cdk/issues/2247)). Escape after
+  moving a lifted row past the rendered window destroyed the origin row and dropped focus to
+  `<body>`; the origin row now scrolls back into view and keeps focus, in `[forVirtualReorder]` and
+  virtualized table row reorder. A keyboard drop in a `[forDropList]` whose `@for` tracks by
+  `$index` focused the old slot's new occupant; it now focuses the moved item, matched by
+  `[dragData]`. `ForVirtualViewport` exposes its rendered window as `range()`.
+
+- **Drawer**, **Carousel**, **Toast** — swipes are measured from the press
+  ([#2233](https://github.com/tutkli/forty-cdk/issues/2233)). The drawer's `handleOnly` check and
+  the inner-scroll guard of the drawer and carousel tested the element under the pointer when the
+  drag armed; they now test the element the press landed on, read a scroller's edge in its own
+  writing direction with 1 px of tolerance, and cross open shadow roots. The surface or track
+  follows the finger from the press instead of trailing it by the arming distance. A drawer release
+  that ends behind the press point now resolves a snap and emits `(swipeEnd)` instead of
+  `(swipeCancel)`. `SwipeEventDetail` gains `target`, the pressed element, which the toast's swipe
+  outputs carry. **A hand-built `SwipeEventDetail` must add `target`.**
+
+- **Stepper**, **Table** — button pieces never submit a form, and `(complete)` follows
+  `selectedIndex` ([#2259](https://github.com/tutkli/forty-cdk/issues/2259)). `[forStepperTrigger]`,
+  `[forTableColumnResizer]`, `[forTableSelectAll]` and `[forTableRowSelector]` on a `<button>` now
+  force `type="button"`, so they no longer submit a surrounding `<form>`. A disabled stepper leaves
+  Arrow, Home and End unconsumed instead of moving focus, an empty stepper no longer reads as
+  completed, and `(complete)` fires only when `selectedIndex` moves into the completed state, never
+  when the step list empties or shrinks.
+
+- **Toggle group** — a preselected `@for` group renders its tab stop
+  ([#2215](https://github.com/tutkli/forty-cdk/issues/2215)). With items in separate views and a
+  preselected value off the first item, the first render threw `NG0950` and the group had no Tab
+  stop; it now renders with the tab stop on the selected item, on the server too. A
+  `[forToggleGroupItem]` without `[value]` fails in dev mode with `FORCDK-CORE-010` instead of at
+  compile time.
+
+### Performance
+
+- **Table**, **Listbox**, **Select**, **Combobox**, **Tree** — selection membership is linear under
+  the default comparator ([#2263](https://github.com/tutkli/forty-cdk/issues/2263)). Select-all,
+  ranges and every option's `aria-selected` compared each value against the whole selection,
+  quadratic in the list size; they now cost one pass over each.
+
+- **Listbox**, **Select**, **Combobox**, **Tree** — scrolling a virtualized list no longer copies
+  every position seen so far ([#2238](https://github.com/tutkli/forty-cdk/issues/2238)). Each change
+  of the rendered window copied the accumulated position snapshot; it is now updated in place, so
+  the cost scales with the window instead of `totalCount`.
+
+- **Listbox**, **Select**, **Combobox**, **Time picker**, **Tree**, **Table**, **Menu** — moving the
+  pointer over an item no longer runs change detection on every move
+  ([#2264](https://github.com/tutkli/forty-cdk/issues/2264)).
 
 ## [0.33.0] - 2026-10-09
 
@@ -3665,7 +4048,8 @@ primitives.
 - **Display** — avatar, progress, meter, tree.
 - `forty-cdk/internationalized-date` secondary entry point exposing the `@internationalized/date` adapters for the date and time primitives.
 
-[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.33.0...HEAD
+[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.34.0...HEAD
+[0.34.0]: https://github.com/tutkli/forty-cdk/compare/v0.33.0...v0.34.0
 [0.33.0]: https://github.com/tutkli/forty-cdk/compare/v0.32.0...v0.33.0
 [0.32.0]: https://github.com/tutkli/forty-cdk/compare/v0.31.0...v0.32.0
 [0.31.0]: https://github.com/tutkli/forty-cdk/compare/v0.30.0...v0.31.0
