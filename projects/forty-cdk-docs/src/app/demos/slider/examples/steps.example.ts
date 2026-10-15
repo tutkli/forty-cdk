@@ -7,7 +7,7 @@ import { ForSlider, ForSliderRange, ForSliderThumb, ForSliderTrack } from 'forty
   imports: [ForSlider, ForSliderTrack, ForSliderRange, ForSliderThumb],
   template: `
     <div class="sl-demo">
-      <div forSlider class="sl" [(value)]="value" [min]="0" [max]="100" [step]="10">
+      <div forSlider class="sl" [(value)]="value" [rangeMin]="0" [rangeMax]="100" [step]="10">
         <span forSliderTrack class="sl-track">
           <span forSliderRange class="sl-range"></span>
           <span forSliderThumb class="sl-thumb" [index]="0" ariaLabel="Brightness"></span>

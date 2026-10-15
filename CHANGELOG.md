@@ -7,7 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Slider — BREAKING.** `[forSlider]`'s `[min]` / `[max]` inputs are renamed `[rangeMin]` /
+  `[rangeMax]` ([#2218](https://github.com/tutkli/forty-cdk/issues/2218)). Angular reserves `min` and
+  `max` on every node carrying `[formField]`, so a form-bound slider failed to compile with NG8022 when
+  given bounds, and no Signal Forms rule can supply them to an array-valued field: it was stuck at
+  0..100. `[forSlider] [formField]="f.price" [rangeMin]="0" [rangeMax]="1000"` compiles and reports
+  those bounds. `FOR_SLIDER_HOST_DIRECTIVE_INPUTS` swaps `'min'` / `'max'` for `'rangeMin'` /
+  `'rangeMax'`, and the inputs drop their `number | undefined` write type. `ForSliderContext.minValue` /
+  `maxValue` are unchanged.
+
 ### Fixed
+
+- **Slider** — a touch drag started on the bare track survives finger drift across the page's scroll
+  axis ([#2218](https://github.com/tutkli/forty-cdk/issues/2218)). Only `[forSliderThumb]` set
+  `touch-action`, so on a scrollable page the browser took a pan that started on `[forSliderTrack]`,
+  fired `pointercancel` and committed the mid-gesture value through `(valueCommit)`. The track now binds
+  the same `pan-y` (horizontal) / `pan-x` (vertical) value, omitted while disabled or readonly. The
+  README's API table now documents the `[0]` `value` default, the `null` `dir` default that resolves the
+  ambient direction, and the `data-required` hook.
 
 - **Number input** — a commit normalises only the text the user typed
   ([#2216](https://github.com/tutkli/forty-cdk/issues/2216)). Enter or blur rounded and clamped

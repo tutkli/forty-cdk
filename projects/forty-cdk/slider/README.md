@@ -14,7 +14,7 @@ A single primitive supports single, range, and multi-thumb sliders: the shape co
 ## Anatomy
 
 ```html
-<div forSlider [(value)]="value" [min]="0" [max]="100" [step]="1">
+<div forSlider [(value)]="value" [rangeMin]="0" [rangeMax]="100" [step]="1">
   <span forSliderTrack>
     <span forSliderRange></span>
     <span forSliderThumb [index]="0" ariaLabel="Volume"></span>
@@ -36,7 +36,7 @@ import { ForSlider, ForSliderRange, ForSliderThumb, ForSliderTrack } from 'forty
   imports: [ForSlider, ForSliderTrack, ForSliderRange, ForSliderThumb],
   template: `
     <div class="sl-demo">
-      <div forSlider class="sl" [(value)]="value" [min]="0" [max]="100">
+      <div forSlider class="sl" [(value)]="value" [rangeMin]="0" [rangeMax]="100">
         <span forSliderTrack class="sl-track">
           <span forSliderRange class="sl-range"></span>
           <span forSliderThumb class="sl-thumb" [index]="0" ariaLabel="Volume"></span>
@@ -60,7 +60,7 @@ export class SliderDefaultExample {
 The `value` model is a `readonly number[]`; two `forSliderThumb` pieces, one per `index`, make a range. Each thumb's `aria-valuemin` / `aria-valuemax` squeeze to its neighbor so the thumbs can't cross, and `minStepsBetweenThumbs` keeps a minimum gap in step units.
 
 ```html
-<div forSlider [(value)]="priceRange" [min]="0" [max]="1000" [step]="10">
+<div forSlider [(value)]="priceRange" [rangeMin]="0" [rangeMax]="1000" [step]="10">
   <span forSliderTrack>
     <span forSliderRange></span>
     <span forSliderThumb [index]="0" [ariaLabel]="'Minimum price'"></span>
@@ -85,6 +85,12 @@ The `value` model is a `readonly number[]`; two `forSliderThumb` pieces, one per
 <div forSlider [formField]="form.opacity">…</div>
 ```
 
+The bounds are `rangeMin` / `rangeMax` rather than `min` / `max` because `[formField]` reserves those two names. A form-bound slider takes its bounds the same way a standalone one does:
+
+```html
+<div forSlider [formField]="form.price" [rangeMin]="0" [rangeMax]="1000">…</div>
+```
+
 For native `<form>` submit, set `[name]` and the directive mirrors `value()` into N `<input type="hidden">` siblings (one per thumb). A native reset of the owning `<form>` returns `value()` to what it held when the slider first rendered. `data-touched` / `data-dirty` / `data-pending` / `data-invalid` are reflected on the host as boolean `data-*` attributes (present when `true`, absent otherwise).
 
 ## API
@@ -93,13 +99,13 @@ For native `<form>` submit, set `[name]` and the directive mirrors `value()` int
 
 | Property                | Type                                | Description                                                                                                                                                                                                                |
 | ----------------------- | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `value`                 | `model<readonly number[]>`          | Two-way bindable value array. Required by `FormValueControl<readonly number[]>`. Output. Emits on drag, keyboard, and track click.<br>**Default:** —                                                                       |
-| `min`                   | `input<number>`                     | Numeric minimum.<br>**Default:** `0`                                                                                                                                                                                       |
-| `max`                   | `input<number>`                     | Numeric maximum.<br>**Default:** `100`                                                                                                                                                                                     |
+| `value`                 | `model<readonly number[]>`          | Two-way bindable value array. Required by `FormValueControl<readonly number[]>`. Output. Emits on drag, keyboard, and track click.<br>**Default:** `[0]`                                                                   |
+| `rangeMin`              | `input<number>`                     | Lower bound of the value range. Named so it can sit beside `[formField]`, which reserves `min`.<br>**Default:** `0`                                                                                                        |
+| `rangeMax`              | `input<number>`                     | Upper bound of the value range. Named so it can sit beside `[formField]`, which reserves `max`.<br>**Default:** `100`                                                                                                      |
 | `step`                  | `input<number>`                     | Discrete value increment for arrows + drag.<br>**Default:** `1`                                                                                                                                                            |
 | `stepMultiplier`        | `input<number>`                     | Multiplier over `step` for `PageUp` / `PageDown` (configurable via `provideForSliderDefaults`).<br>**Default:** `10`                                                                                                       |
 | `orientation`           | `input<'horizontal' \| 'vertical'>` | `'horizontal'` or `'vertical'`.<br>**Default:** `'horizontal'`                                                                                                                                                             |
-| `dir`                   | `input<'ltr' \| 'rtl'>`             | `'ltr'` or `'rtl'`. RTL flips horizontal pointer mapping and `ArrowLeft`/`ArrowRight` semantics.<br>**Default:** `'ltr'`                                                                                                   |
+| `dir`                   | `input<'ltr' \| 'rtl' \| null>`     | Writing direction. `null` resolves the ambient direction; RTL flips horizontal pointer mapping and `ArrowLeft`/`ArrowRight` semantics.<br>**Default:** `null`                                                              |
 | `inverted`              | `input<boolean>`                    | Visually flips the value-to-position mapping (e.g. max on the left in horizontal LTR) and the arrow pair on that axis; see [Inverted](#inverted).<br>**Default:** `false`                                                  |
 | `minStepsBetweenThumbs` | `input<number>`                     | Multi-thumb only: minimum gap between adjacent thumbs in step units.<br>**Default:** `0`                                                                                                                                   |
 | `disabled`              | `input<boolean>`                    | Disables all interaction.<br>**Default:** `false`                                                                                                                                                                          |
@@ -118,6 +124,7 @@ For native `<form>` submit, set `[name]` and the directive mirrors `value()` int
 | `data-orientation` | `horizontal` \| `vertical` |
 | `data-disabled`    | present \| absent          |
 | `data-readonly`    | present \| absent          |
+| `data-required`    | present \| absent          |
 | `data-touched`     | present \| absent          |
 | `data-dirty`       | present \| absent          |
 | `data-pending`     | present \| absent          |
@@ -125,7 +132,7 @@ For native `<form>` submit, set `[name]` and the directive mirrors `value()` int
 
 ### `ForSliderTrack`
 
-The clickable track surface. PointerDown anywhere on the track that isn't a thumb finds the nearest thumb, jumps it to that position, focuses it, and starts a drag.
+The clickable track surface. PointerDown anywhere on the track that isn't a thumb finds the nearest thumb, jumps it to that position, focuses it, and starts a drag. Like each thumb, it sets `touch-action` to `pan-y` (horizontal) or `pan-x` (vertical), so a touch drag that starts on the track is not taken over by page scrolling; the property is omitted while the slider is disabled or readonly.
 
 | Data attribute     | Values                     |
 | ------------------ | -------------------------- |
@@ -166,12 +173,12 @@ Focus a thumb, then:
 | **ArrowLeft** _(LTR)_ / **ArrowRight** _(RTL)_ / **ArrowDown** | Decrease by `step`.                  |
 | **PageUp**                                                     | Increase by `step × stepMultiplier`. |
 | **PageDown**                                                   | Decrease by `step × stepMultiplier`. |
-| **Home**                                                       | Set to `min`.                        |
-| **End**                                                        | Set to `max`.                        |
+| **Home**                                                       | Set to `rangeMin`.                   |
+| **End**                                                        | Set to `rangeMax`.                   |
 
 Under `inverted`, only the arrow pair on the visual axis swaps (see [Inverted](#inverted)). Disabled and readonly thumbs are no-ops.
 
-Values live on the `min` ± k·`step` grid. A thumb already on the grid travels the full amount (`step`, or `step × stepMultiplier` for the page keys); a thumb **off** the grid lands on the adjacent grid point in the direction of travel and the page multiplier is discarded, matching the platform's `HTMLInputElement.stepUp()` / `stepDown()`. So ArrowRight from `23` with `[step]="10"` gives `30` and ArrowLeft gives `20`. The first jump is never oversized. Pointer drags are unaffected: they snap to the _nearest_ grid point, since a drag has no direction of travel.
+Values live on the `rangeMin` ± k·`step` grid. A thumb already on the grid travels the full amount (`step`, or `step × stepMultiplier` for the page keys); a thumb **off** the grid lands on the adjacent grid point in the direction of travel and the page multiplier is discarded, matching the platform's `HTMLInputElement.stepUp()` / `stepDown()`. So ArrowRight from `23` with `[step]="10"` gives `30` and ArrowLeft gives `20`. The first jump is never oversized. Pointer drags are unaffected: they snap to the _nearest_ grid point, since a drag has no direction of travel.
 
 ## Accessibility
 
@@ -183,7 +190,7 @@ Implements the [WAI-ARIA Slider pattern](https://www.w3.org/WAI/ARIA/apg/pattern
 - `disabled` thumbs receive `tabindex="-1"` and `aria-disabled="true"`.
 - **`aria-readonly` belongs on the thumb, not the root.** WAI-ARIA supports it on `role="slider"` but not on `role="group"`, so each thumb carries `aria-readonly="true"` while the root reflects the `data-readonly` styling hook only.
 - Provide `[ariaLabel]` on every thumb. Even single-thumb sliders benefit from explicit naming. The directive does not synthesize a label. When the name is already visible in the DOM, write a native `aria-labelledby` on the thumb instead; the directive leaves that attribute alone.
-- A degenerate configuration (`min` greater than `max`, or a non-positive `step`) leaves the slider inoperable and is dev-guarded by a `console.warn` in development builds.
+- A degenerate configuration (`rangeMin` greater than `rangeMax`, or a non-positive `step`) leaves the slider inoperable and is dev-guarded by a `console.warn` in development builds.
 
 ## Styling
 

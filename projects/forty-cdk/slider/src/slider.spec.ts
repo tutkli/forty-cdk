@@ -23,8 +23,8 @@ const SLIDER_IMPORTS = [ForSlider, ForSliderTrack, ForSliderRange, ForSliderThum
     <div
       forSlider
       [(value)]="picked"
-      [min]="min()"
-      [max]="max()"
+      [rangeMin]="min()"
+      [rangeMax]="max()"
       [step]="step()"
       [stepMultiplier]="stepMultiplier()"
       [orientation]="orientation()"
@@ -354,6 +354,34 @@ describe('ForSlider', () => {
       fixture.componentInstance.readonly.set(true);
       await flush();
       expect(thumb(el, 0).style.touchAction).toBe('');
+    });
+  });
+
+  describe('track touch-action (#2218)', () => {
+    it('sets touch-action:pan-y on the track of a horizontal slider', () => {
+      const { el } = renderHost(SliderHost);
+      expect(track(el).style.touchAction).toBe('pan-y');
+    });
+
+    it('sets touch-action:pan-x on the track of a vertical slider', async () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.orientation.set('vertical');
+      await flush();
+      expect(track(el).style.touchAction).toBe('pan-x');
+    });
+
+    it('omits touch-action on the track while disabled', async () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.disabled.set(true);
+      await flush();
+      expect(track(el).style.touchAction).toBe('');
+    });
+
+    it('omits touch-action on the track while readonly', async () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.readonly.set(true);
+      await flush();
+      expect(track(el).style.touchAction).toBe('');
     });
   });
 
@@ -793,7 +821,7 @@ describe('ForSlider', () => {
 
       expect(warn).toHaveBeenCalledTimes(1);
       expect(warn.mock.calls[0]![0]).toContain('[forty-cdk/slider]');
-      expect(warn.mock.calls[0]![0]).toContain('[min]');
+      expect(warn.mock.calls[0]![0]).toContain('[rangeMin]');
 
       fixture.componentInstance.min.set(300);
       await flush();
@@ -1364,6 +1392,41 @@ describe('ForSlider', () => {
         fixture.componentInstance.settings.volume().focusBoundControl();
         expect(document.activeElement).toBe(thumb(el, 0));
       });
+    });
+  });
+
+  describe('Signal Forms bounds (#2218)', () => {
+    @Component({
+      imports: [ForSlider, ForSliderTrack, ForSliderThumb, FormField],
+      template: `
+        <div forSlider [formField]="f.price" [rangeMin]="0" [rangeMax]="1000" [step]="10">
+          <span forSliderTrack>
+            @for (v of f.price().value(); let i = $index; track i) {
+              <span forSliderThumb [index]="i" [attr.data-test-id]="'thumb-' + i"></span>
+            }
+          </span>
+        </div>
+      `,
+    })
+    class BoundedFormHost {
+      readonly model = signal({ price: [500] as readonly number[] });
+      readonly f = form(this.model);
+    }
+
+    it('reports the bound range on a thumb of a [formField]-bound slider', async () => {
+      const { el, flush } = renderHost(BoundedFormHost);
+      await flush();
+      expect(thumb(el, 0).getAttribute('aria-valuemin')).toBe('0');
+      expect(thumb(el, 0).getAttribute('aria-valuemax')).toBe('1000');
+      expect(thumb(el, 0).getAttribute('aria-valuenow')).toBe('500');
+    });
+
+    it('writes a value past the default 100 back to the form field', async () => {
+      const { el, fixture, flush } = renderHost(BoundedFormHost);
+      await flush();
+      keyDown(thumb(el, 0), 'End');
+      await flush();
+      expect(fixture.componentInstance.model().price).toEqual([1000]);
     });
   });
 
