@@ -343,7 +343,7 @@ const fortyCdkPlugin = {
       create(context) {
         return {
           Program(node) {
-            const filename = context.filename || context.getFilename();
+            const filename = context.filename;
             const base = filename.split(/[\\/]/).pop() || '';
             if (/\.(component|service|directive)\./.test(base)) {
               context.report({ node, messageId: 'forbidden' });
@@ -401,7 +401,7 @@ const fortyCdkPlugin = {
         },
       },
       create(context) {
-        const filename = (context.filename || context.getFilename()).replace(/\\/g, '/');
+        const filename = context.filename.replace(/\\/g, '/');
         // The canonical waiters are the only places where `whenStable()` may be
         // invoked directly: `flush.ts` owns the `ComponentFixture` drain, and
         // `hydration.ts` owns the `ApplicationRef` one (a real SSR → hydration
@@ -590,7 +590,7 @@ const fortyCdkPlugin = {
           'matchMedia',
         ]);
         // The helper file owns its own install/restore contract and is exempt.
-        const filename = (context.filename || context.getFilename()).replace(/\\/g, '/');
+        const filename = context.filename.replace(/\\/g, '/');
         if (filename.endsWith('/projects/forty-cdk/testing/src/observers.ts')) {
           return {};
         }
@@ -635,9 +635,7 @@ const fortyCdkPlugin = {
         }
         return {
           Program(node) {
-            sourceText = context.sourceCode
-              ? context.sourceCode.getText(node)
-              : context.getSourceCode().getText(node);
+            sourceText = context.sourceCode.getText(node);
           },
           AssignmentExpression(node) {
             // (globalThis as …).X = … or globalThis.X = …
@@ -981,7 +979,7 @@ const fortyCdkPlugin = {
         },
       },
       create(context) {
-        const filename = (context.filename || context.getFilename()).replace(/\\/g, '/');
+        const filename = context.filename.replace(/\\/g, '/');
         // In specs the flush family is unambiguously the async render waiter.
         // The rule's own fixture (a `.fixture.ts`, linted via
         // `pnpm lint:rule-fixtures`) is included so the rule is proven to fire.
@@ -1052,7 +1050,7 @@ const fortyCdkPlugin = {
         },
       },
       create(context) {
-        const filename = (context.filename || context.getFilename()).replace(/\\/g, '/');
+        const filename = context.filename.replace(/\\/g, '/');
         const isSpec = filename.endsWith('.spec.ts');
         const isOwnFixture = filename.endsWith(
           '/eslint-rules-fixtures/no-redundant-not-tobenull.fixture.ts',
@@ -1065,7 +1063,7 @@ const fortyCdkPlugin = {
         // narrow enough that an unrelated later `x!` doesn't retro-flag a
         // legitimate null-check.
         const LOOKAHEAD = 6;
-        const sourceCode = context.sourceCode ?? context.getSourceCode();
+        const sourceCode = context.sourceCode;
 
         // `expect(<Identifier>).not.toBeNull()` → the identifier's name.
         function guardedIdentifier(node) {
@@ -1182,7 +1180,7 @@ const fortyCdkPlugin = {
         },
       },
       create(context) {
-        const filename = (context.filename || context.getFilename()).replace(/\\/g, '/');
+        const filename = context.filename.replace(/\\/g, '/');
         // In specs the flush family / overlay pieces are unambiguous. The
         // rule's own fixture (a `.fixture.ts`, linted via
         // `pnpm lint:rule-fixtures`) is included so the rule is proven to fire.
@@ -1324,7 +1322,7 @@ const fortyCdkPlugin = {
         },
       },
       create(context) {
-        const filename = (context.filename || context.getFilename()).replace(/\\/g, '/');
+        const filename = context.filename.replace(/\\/g, '/');
         // Scoped to specs, which is also what keeps `test-utils/` out by
         // construction rather than by an exemption list: `flush.ts` owns the
         // drain shape and `render.ts` renders the fixture once on mount, and
@@ -1373,7 +1371,7 @@ const fortyCdkPlugin = {
         const MARKER = /^\s*@sanctioned-sync-render/;
         const WELL_FORMED = /@sanctioned-sync-render\([a-z][a-z0-9-]*\)\s*:\s*\S/;
         const MARKER_WINDOW = 6;
-        const sourceCode = context.sourceCode ?? context.getSourceCode();
+        const sourceCode = context.sourceCode;
 
         function isDetectChangesStatement(statement) {
           if (statement.type !== 'ExpressionStatement') {
@@ -1526,7 +1524,7 @@ const fortyCdkPlugin = {
         },
       },
       create(context) {
-        const filename = (context.filename || context.getFilename()).replace(/\\/g, '/');
+        const filename = context.filename.replace(/\\/g, '/');
         const isSpec = filename.endsWith('.spec.ts');
         const isOwnFixture = filename.endsWith(
           '/eslint-rules-fixtures/no-async-tothrow.fixture.ts',
@@ -1667,7 +1665,7 @@ const fortyCdkPlugin = {
         }
         return {
           Program(node) {
-            const filename = context.filename || context.getFilename();
+            const filename = context.filename;
             const dir = path.dirname(filename);
             const normalized = filename.replace(/\\/g, '/');
             // Skip cross-cutting helpers and test utilities.
@@ -1748,7 +1746,7 @@ const fortyCdkPlugin = {
         },
       },
       create(context) {
-        const filename = context.filename || context.getFilename();
+        const filename = context.filename;
         const normalized = filename.replace(/\\/g, '/');
         const dir = path.dirname(filename);
         // Skip cross-cutting helpers and test utilities.
@@ -1903,7 +1901,7 @@ const fortyCdkPlugin = {
         },
       },
       create(context) {
-        const filename = (context.filename || context.getFilename()).replace(/\\/g, '/');
+        const filename = context.filename.replace(/\\/g, '/');
         // Match both layouts: per-entry-point (projects/forty-cdk/<entry>/src/**)
         // and the legacy folder layout (projects/forty-cdk/src/lib/**).
         const inLib =
@@ -2025,7 +2023,7 @@ const fortyCdkPlugin = {
         },
       },
       create(context) {
-        const filename = (context.filename || context.getFilename()).replace(/\\/g, '/');
+        const filename = context.filename.replace(/\\/g, '/');
         // Only constrain primitive barrels. Recognise both library layouts:
         //   - per-entry-point:  projects/forty-cdk/<entry>/src/public-api.ts
         //   - legacy folder:    projects/forty-cdk/src/lib/<name>/index.ts
@@ -2148,7 +2146,7 @@ const fortyCdkPlugin = {
         },
       },
       create(context) {
-        const sourceCode = context.sourceCode || context.getSourceCode();
+        const sourceCode = context.sourceCode;
         // A stable key for the signal expression being read / written, so
         // `this.#activeId` reads pair with `this.#activeId.set(…)` writes and
         // `count` pairs with `count.set(…)`. Source text is exact enough for
@@ -2363,7 +2361,7 @@ const fortyCdkPlugin = {
         },
       },
       create(context) {
-        const sourceCode = context.sourceCode || context.getSourceCode();
+        const sourceCode = context.sourceCode;
         const MARKER = /^\s*@sanctioned-effect/;
         const WELL_FORMED = /@sanctioned-effect\([a-z][a-z0-9-]*\)\s*:\s*\S/;
         // How many lines above the `effect(` call the marker may sit. A
@@ -2619,7 +2617,7 @@ const fortyCdkPlugin = {
         },
       },
       create(context) {
-        const sourceCode = context.sourceCode || context.getSourceCode();
+        const sourceCode = context.sourceCode;
         // Members whose call *is* the pull, and the free functions that exist to
         // run one on the caller's behalf. See the design notes above for why the
         // second list is named rather than resolved.
