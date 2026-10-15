@@ -100,7 +100,7 @@ jobs:
     # recommendation for Chromium, which otherwise exhausts the container's
     # default 64 MB `/dev/shm` and crashes mid-suite.
     container:
-      image: mcr.microsoft.com/playwright:v1.60.0-noble
+      image: mcr.microsoft.com/playwright:v1.64.1-noble
       options: --user 1001 --ipc=host
     timeout-minutes: 20
     strategy:
