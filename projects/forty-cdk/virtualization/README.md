@@ -43,14 +43,15 @@ readonly rows = signal(Array.from({ length: 10000 }, (_, i) => ({ label: `Row ${
 The viewport forces `overflow: auto` on its host; give it a fixed size (e.g. `height: 400px`).
 `orientation`, `overscan`, and `getItemKey` are optional inputs on `[forVirtualViewport]`; set
 `orientation` / `overscan` before first render (they are read once when the viewport initializes).
+`[estimateSize]` and `[getItemKey]` apply whenever they change.
 The template context exposes `row` (`$implicit`), `virtualItem`, `index`, and `count`. Do not set
 `position` / `transform` on the row yourself, because the directive owns them.
 
 Rows are keyed by index by default, so a sort or reorder that keeps the list length reuses each
 slot's DOM node for whichever item now sits there. Bind `[getItemKey]` (for example
 `(index) => rows()[index].id`) when a row holds state its node carries, such as an input's value,
-focus or an expanded detail: keys are recomputed whenever `*forVirtualFor` receives a new array, so
-each row's node and its measured size move with its item.
+focus or an expanded detail: keys are recomputed whenever `*forVirtualFor` receives a new array or a
+different function is bound, so each row's node and its measured size move with its item.
 
 `*forVirtualFor` writes the flat `aria-setsize` (the total count) and `aria-posinset` (`index + 1`)
 on each row root on every render, so it fits a flat list. A collection that binds its own positions,
@@ -341,15 +342,16 @@ See the [Combobox README](../combobox/README.md#virtualization) for the complete
 
 ### Options
 
-| Property        | Type                                  | Description                                                                                                                                                                                             |
-| --------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `count`         | `Signal<number>`                      | Reactive total number of items.<br>**Default:** required                                                                                                                                                |
-| `estimateSize`  | `(index: number) => number`           | Estimated pixel size along the scroll axis for the item at `index`.<br>**Default:** required                                                                                                            |
-| `scrollElement` | `Signal<HTMLElement \| null>`         | Reactive scroll container.<br>**Default:** required                                                                                                                                                     |
-| `orientation`   | `'vertical' \| 'horizontal'`          | Scroll axis.<br>**Default:** `'vertical'`                                                                                                                                                               |
-| `overscan`      | `number`                              | Extra items to render beyond the visible window on each side.<br>**Default:** `5`                                                                                                                       |
-| `getItemKey`    | `(index: number) => string \| number` | Stable key per item; used by `@for (track item.key)`. Recomputed when `count` or `dataVersion` changes.<br>**Default:** `(i) => i`                                                                      |
-| `dataVersion`   | `Signal<unknown>`                     | The data `getItemKey` reads, usually the array signal itself. Each new value recomputes every key, so a same-length reorder moves each keyed row and its measured size with its item.<br>**Default:** — |
+| Property          | Type                                  | Description                                                                                                                                                                                             |
+| ----------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `count`           | `Signal<number>`                      | Reactive total number of items.<br>**Default:** required                                                                                                                                                |
+| `estimateSize`    | `(index: number) => number`           | Estimated pixel size along the scroll axis for the item at `index`.<br>**Default:** required                                                                                                            |
+| `scrollElement`   | `Signal<HTMLElement \| null>`         | Reactive scroll container.<br>**Default:** required                                                                                                                                                     |
+| `orientation`     | `'vertical' \| 'horizontal'`          | Scroll axis.<br>**Default:** `'vertical'`                                                                                                                                                               |
+| `overscan`        | `number`                              | Extra items to render beyond the visible window on each side.<br>**Default:** `5`                                                                                                                       |
+| `getItemKey`      | `(index: number) => string \| number` | Stable key per item; used by `@for (track item.key)`. Recomputed when `count` or `dataVersion` changes.<br>**Default:** `(i) => i`                                                                      |
+| `dataVersion`     | `Signal<unknown>`                     | The data `getItemKey` reads, usually the array signal itself. Each new value recomputes every key, so a same-length reorder moves each keyed row and its measured size with its item.<br>**Default:** — |
+| `estimateVersion` | `Signal<unknown>`                     | What `estimateSize` reads, usually the signal holding the estimate. Each new value after the first render drops every cached size and re-estimates every item.<br>**Default:** —                        |
 
 ### Returned handle
 

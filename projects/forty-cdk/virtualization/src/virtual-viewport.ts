@@ -70,7 +70,10 @@ export class ForVirtualViewport implements ForVirtualViewportContext, OnInit {
   readonly #scrollElement = signal<HTMLElement | null>(this.#host.nativeElement);
   readonly #virtualizer = signal<ForVirtualizer | null>(null);
   readonly #data = signal<Signal<readonly unknown[]> | null>(null);
-  readonly #dataVersion = computed(() => this.#data()?.());
+  readonly #keyVersion = computed(() => {
+    const getItemKey = this.getItemKey();
+    return getItemKey === undefined ? undefined : { getItemKey, data: this.#data()?.() };
+  });
 
   /** Total number of items in the full list. */
   readonly virtualCount = input.required<number>();
@@ -86,8 +89,9 @@ export class ForVirtualViewport implements ForVirtualViewportContext, OnInit {
 
   /**
    * Stable key for the item at `index`. Defaults to the index. Keys are
-   * recomputed whenever the nested `*forVirtualFor` receives a new array, so a
-   * same-length reorder moves each keyed row's DOM node with its item.
+   * recomputed whenever the nested `*forVirtualFor` receives a new array or a
+   * different function is bound, so a same-length reorder moves each keyed row's
+   * DOM node with its item.
    */
   readonly getItemKey = input<((index: number) => string | number) | undefined>(undefined);
 
@@ -165,11 +169,12 @@ export class ForVirtualViewport implements ForVirtualViewportContext, OnInit {
         injectVirtualizer({
           count: this.count,
           estimateSize: (index) => this.#estimator()(index),
+          estimateVersion: this.#estimator,
           scrollElement: this.#scrollElement,
           orientation: this.orientation(),
           overscan: this.overscan(),
-          getItemKey: this.getItemKey(),
-          dataVersion: this.#dataVersion,
+          getItemKey: (index) => this.#keyOf(index),
+          dataVersion: this.#keyVersion,
         }),
       );
       injectInfiniteScroll({
@@ -232,7 +237,10 @@ export class ForVirtualViewport implements ForVirtualViewportContext, OnInit {
     for (let i = 0; i < index; i++) {
       start += estimator(i);
     }
-    const key = this.getItemKey()?.(index) ?? index;
-    return { index, key, start, size: estimator(index) };
+    return { index, key: this.#keyOf(index), start, size: estimator(index) };
+  }
+
+  #keyOf(index: number): string | number {
+    return this.getItemKey()?.(index) ?? index;
   }
 }

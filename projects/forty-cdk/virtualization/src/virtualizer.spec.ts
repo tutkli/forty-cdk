@@ -1,8 +1,10 @@
 import {
   Component,
-  type ElementRef,
+  ElementRef,
   PLATFORM_ID,
   computed,
+  effect,
+  inject,
   input,
   provideZonelessChangeDetection,
   signal,
@@ -910,6 +912,169 @@ describe('injectVirtualizer', () => {
 
       expect(captured.getAttribute('data-index')).toBe('2');
       expect(captured.textContent?.trim()).toBe('row-3');
+    });
+  });
+
+  describe('a data shrink reaches the core before any read', () => {
+    interface KeyedRow {
+      readonly id: string;
+    }
+
+    @Component({
+      selector: 'shrinking-keyed-host',
+      template: `
+        <div #scroll style="overflow:auto; height:200px">
+          <div [style.height.px]="v.totalSize()">
+            @for (item of v.virtualItems(); track item.key) {
+              <div [attr.data-index]="item.index">{{ rows()[item.index]!.id }}</div>
+            }
+          </div>
+        </div>
+      `,
+    })
+    class ShrinkingKeyedHost {
+      readonly rows = signal<readonly KeyedRow[]>(
+        Array.from({ length: 100 }, (_, i) => ({ id: `row-${i}` })),
+      );
+      readonly scrollRef = viewChild<ElementRef<HTMLElement>>('scroll');
+      readonly scrollElement = computed(() => this.scrollRef()?.nativeElement ?? null);
+      readonly v = injectVirtualizer({
+        count: computed(() => this.rows().length),
+        estimateSize: () => 40,
+        scrollElement: this.scrollElement,
+        getItemKey: (i) => this.rows()[i]!.id,
+        dataVersion: this.rows,
+      });
+    }
+
+    async function mount(): Promise<ComponentFixture<ShrinkingKeyedHost>> {
+      const fixture = TestBed.createComponent(ShrinkingKeyedHost);
+      fakeLayoutProps(fixture.nativeElement.querySelector('div') as HTMLElement, 200);
+      fixture.detectChanges();
+      await flush(fixture);
+      return fixture;
+    }
+
+    it('scrolls to the top of a filtered keyed list in the same handler that filtered it', async () => {
+      const fixture = await mount();
+      const { rows, v } = fixture.componentInstance;
+
+      rows.set(rows().slice(0, 10));
+      v.scrollToIndex(0);
+      await flush(fixture);
+
+      expect(v.totalSize()).toBe(10 * 40);
+    });
+
+    it('never yields an index past the shrunk count, even before the next render', async () => {
+      const fixture = await mount();
+      const { rows, v } = fixture.componentInstance;
+
+      rows.set(rows().slice(0, 3));
+
+      expect(v.virtualItems().map((item) => item.key)).toEqual(['row-0', 'row-1', 'row-2']);
+      expect(v.range()).toEqual([0, 3]);
+    });
+  });
+
+  describe('estimateVersion', () => {
+    @Component({
+      selector: 'estimate-version-host',
+      template: `
+        <div #scroll style="overflow:auto; height:200px">
+          <div [style.height.px]="v.totalSize()">
+            @for (item of v.virtualItems(); track item.key) {
+              <div [attr.data-index]="item.index">{{ item.index }}</div>
+            }
+          </div>
+        </div>
+      `,
+    })
+    class EstimateVersionHost {
+      readonly size = signal(40);
+      readonly scrollRef = viewChild<ElementRef<HTMLElement>>('scroll');
+      readonly scrollElement = computed(() => this.scrollRef()?.nativeElement ?? null);
+      readonly v = injectVirtualizer({
+        count: signal(100),
+        estimateSize: () => this.size(),
+        estimateVersion: this.size,
+        scrollElement: this.scrollElement,
+      });
+    }
+
+    it('re-estimates every unmeasured item when the version changes after mount', async () => {
+      const fixture = TestBed.createComponent(EstimateVersionHost);
+      fakeLayoutProps(fixture.nativeElement.querySelector('div') as HTMLElement, 200);
+      fixture.detectChanges();
+      await flush(fixture);
+      const { size, v } = fixture.componentInstance;
+      expect(v.totalSize()).toBe(4000);
+
+      size.set(20);
+      await flush(fixture);
+
+      expect(v.totalSize()).toBe(2000);
+      expect(v.virtualItems().find((item) => item.index === 3)?.start).toBe(60);
+    });
+  });
+
+  describe('teardown before the first render', () => {
+    class RecordingResizeObserver {
+      static instances: RecordingResizeObserver[] = [];
+      released = false;
+      constructor() {
+        RecordingResizeObserver.instances.push(this);
+      }
+      observe(): void {}
+      unobserve(): void {
+        this.released = true;
+      }
+      disconnect(): void {
+        this.released = true;
+      }
+    }
+
+    @Component({
+      selector: 'doomed-virtualizer',
+      template: '',
+    })
+    class Doomed {
+      readonly v = injectVirtualizer({
+        count: signal(100),
+        estimateSize: () => 40,
+        scrollElement: signal(inject<ElementRef<HTMLElement>>(ElementRef).nativeElement),
+      });
+
+      constructor() {
+        const host = inject(TeardownHost);
+        effect(() => host.show.set(false));
+      }
+    }
+
+    @Component({
+      selector: 'teardown-host',
+      imports: [Doomed],
+      template: `@if (show()) {
+        <doomed-virtualizer />
+      }`,
+    })
+    class TeardownHost {
+      readonly show = signal(true);
+    }
+
+    beforeEach(() => {
+      RecordingResizeObserver.instances = [];
+      vi.stubGlobal('ResizeObserver', RecordingResizeObserver);
+    });
+
+    it('releases the observers the first effect run attached', async () => {
+      const fixture = TestBed.createComponent(TeardownHost);
+      fixture.detectChanges();
+      await flush(fixture);
+
+      expect(fixture.nativeElement.querySelector('doomed-virtualizer')).toBeNull();
+      expect(RecordingResizeObserver.instances.length).toBeGreaterThan(0);
+      expect(RecordingResizeObserver.instances.every((observer) => observer.released)).toBe(true);
     });
   });
 

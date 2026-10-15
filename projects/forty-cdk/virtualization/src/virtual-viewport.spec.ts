@@ -602,4 +602,94 @@ describe('ForVirtualViewport — keyed rows follow their item across a same-coun
     expect(captured.textContent?.trim()).toBe('row-3');
     expect(rowAt(fixture, 3).textContent?.trim()).toBe('row-2');
   });
+
+  it('shrinks a keyed list without reading a key past the new data', async () => {
+    const fixture = await mount();
+
+    fixture.componentInstance.rows.update((rows) => rows.slice(0, -1));
+    await flush(fixture);
+
+    expect(rowAt(fixture, 0).getAttribute('aria-setsize')).toBe('99');
+  });
+
+  it('filters a keyed list down to fewer rows than the rendered window', async () => {
+    const fixture = await mount();
+
+    fixture.componentInstance.rows.update((rows) => rows.slice(0, 3));
+    await flush(fixture);
+
+    expect(rowEls(fixture).map((el) => el.textContent?.trim())).toEqual([
+      'row-0',
+      'row-1',
+      'row-2',
+    ]);
+  });
+
+  it('re-keys every row when a key function is bound after the first render', async () => {
+    const fixture = await mount(false);
+    fixture.componentInstance.keyOf = (index) => fixture.componentInstance.rows()[index]!.id;
+    fixture.componentInstance.rows.update((rows) => [...rows]);
+    await flush(fixture);
+    const captured = rowAt(fixture, 2);
+
+    fixture.componentInstance.swap(2, 3);
+    await flush(fixture);
+
+    expect(captured.getAttribute('data-index')).toBe('3');
+    expect(captured.textContent?.trim()).toBe('row-2');
+  });
+
+  it('keys a pinned row with the same function as the windowed rows after a rebind', async () => {
+    const fixture = await mount(false);
+    const viewport = fixture.componentInstance.viewport();
+
+    fixture.componentInstance.keyOf = (index) => `key-${index}`;
+    viewport.setReorderingIndex(50);
+    await flush(fixture);
+
+    const keys = viewport.virtualItems().map((item) => [item.index, item.key]);
+    expect(keys).toContainEqual([50, 'key-50']);
+    expect(keys).toContainEqual([2, 'key-2']);
+  });
+});
+
+describe('ForVirtualViewport — [estimateSize] changes after the first render', () => {
+  @Component({
+    host: { 'data-fixture': 'estimate-host' },
+    imports: [ForVirtualViewport, ForVirtualFor],
+    template: `
+      <div
+        forVirtualViewport
+        [virtualCount]="rows().length"
+        [estimateSize]="size()"
+        style="height: 200px; width: 200px"
+      >
+        <div *forVirtualFor="let row of rows()">{{ row.label }}</div>
+      </div>
+    `,
+  })
+  class EstimateHost {
+    readonly rows = signal<Row[]>(makeRows(1000));
+    readonly size = signal(40);
+  }
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+  });
+
+  it('resizes the sizer and repositions every unmeasured row', async () => {
+    const fixture = TestBed.createComponent(EstimateHost);
+    fakeLayout(viewportEl(fixture), 200);
+    fixture.detectChanges();
+    await flush(fixture);
+    const sizer = viewportEl(fixture).firstElementChild as HTMLElement;
+    expect(sizer.style.height).toBe('40000px');
+
+    fixture.componentInstance.size.set(20);
+    await flush(fixture);
+
+    expect(sizer.style.height).toBe('20000px');
+    const row = rowEls(fixture).find((el) => el.getAttribute('data-index') === '1')!;
+    expect(row.style.transform).toBe('translateY(20px)');
+  });
 });

@@ -126,15 +126,36 @@ Arrow / `Page` / `Ctrl+Home` / `Ctrl+End` grid actions that resolve a row outsid
 
 `range` is the true rendered window as an inclusive-exclusive `[firstIndex, lastIndex + 1)` range, sourced from the underlying virtualizer rather than from `virtualRows()` (which is augmented with the focused and reordering rows). It plugs straight into `injectInfiniteScroll`:
 
-<!-- snippet: fragment -->
-
 ```ts
-readonly detector = injectInfiniteScroll({
-  range: this.v().range,
-  count: this.loaded,
-  onLoadMore: () => this.loadNextPage(),
-});
+import { Component, computed, signal, viewChild } from '@angular/core';
+import { ForTable } from 'forty-cdk/table';
+import { ForTableVirtualized } from 'forty-cdk/table-virtualization';
+import { injectInfiniteScroll } from 'forty-cdk/virtualization';
+
+@Component({
+  selector: 'app-feed',
+  imports: [ForTable, ForTableVirtualized],
+  template: `<div
+    forTable
+    forTableVirtualized
+    mode="grid"
+    ariaLabel="Feed"
+    [rowCount]="loaded()"
+  ></div>`,
+})
+export class Feed {
+  readonly loaded = signal(50);
+  private readonly table = viewChild(ForTableVirtualized);
+
+  readonly detector = injectInfiniteScroll({
+    range: computed<readonly [number, number]>(() => this.table()?.range() ?? [0, 0]),
+    count: this.loaded,
+    onLoadMore: () => this.loaded.update((count) => count + 50),
+  });
+}
 ```
+
+The view query resolves only once the table renders, so read it inside the `computed`, never in the field initializer.
 
 ## Related
 
