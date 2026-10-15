@@ -18,12 +18,7 @@ import {
  * downstream code that switches on close reasons stays consistent.
  */
 export type ForSelectCloseReason =
-  | 'escape'
-  | 'pointerDownOutside'
-  | 'focusOutside'
-  | 'select'
-  | 'tab'
-  | 'programmatic';
+  'escape' | 'pointerDownOutside' | 'focusOutside' | 'select' | 'tab' | 'programmatic';
 
 /**
  * Where focus lands when the listbox opens. `'selected'` snaps to the first

@@ -72,13 +72,7 @@
  * Internal to the spec suite — never re-exported from `public-api.ts`.
  */
 export type FormControlFlag =
-  | 'disabled'
-  | 'readonly'
-  | 'required'
-  | 'invalid'
-  | 'pending'
-  | 'touched'
-  | 'dirty';
+  'disabled' | 'readonly' | 'required' | 'invalid' | 'pending' | 'touched' | 'dirty';
 
 export interface FormControlMountResult {
   /** The control's host element — the one that carries the ARIA / data flags. */

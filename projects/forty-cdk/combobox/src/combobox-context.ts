@@ -19,12 +19,7 @@ export { type ForComboboxOpenHighlight };
  * can switch on the reason regardless of overlay flavor.
  */
 export type ForComboboxCloseReason =
-  | 'escape'
-  | 'pointerDownOutside'
-  | 'focusOutside'
-  | 'select'
-  | 'tab'
-  | 'programmatic';
+  'escape' | 'pointerDownOutside' | 'focusOutside' | 'select' | 'tab' | 'programmatic';
 
 /**
  * Autocomplete mode applied to the input. Mirrors the

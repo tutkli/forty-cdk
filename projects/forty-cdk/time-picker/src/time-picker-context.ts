@@ -18,12 +18,7 @@ import type { ForTimeSlot, TimePickerGranularity } from './build-time-slots';
  * Why a time picker requested close.
  */
 export type ForTimePickerCloseReason =
-  | 'escape'
-  | 'pointerDownOutside'
-  | 'focusOutside'
-  | 'select'
-  | 'tab'
-  | 'programmatic';
+  'escape' | 'pointerDownOutside' | 'focusOutside' | 'select' | 'tab' | 'programmatic';
 
 /**
  * Where focus lands when the listbox opens.

@@ -43,13 +43,7 @@ export interface MenuSiblingNavigator {
  * the level that scheduled it — it never propagates up the menu chain.
  */
 export type ForMenuCloseReason =
-  | 'escape'
-  | 'pointerDownOutside'
-  | 'focusOutside'
-  | 'select'
-  | 'tab'
-  | 'hover'
-  | 'programmatic';
+  'escape' | 'pointerDownOutside' | 'focusOutside' | 'select' | 'tab' | 'hover' | 'programmatic';
 
 /**
  * Handle every item type (`menuitem`, `menuitemcheckbox`, `menuitemradio`)

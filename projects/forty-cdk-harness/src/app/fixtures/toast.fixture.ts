@@ -284,12 +284,7 @@ const LONG_DESCRIPTION =
   'enough to wrap onto several lines, so the row it sits in grows taller.';
 
 type ToastSide =
-  | 'top-right'
-  | 'top-left'
-  | 'top-center'
-  | 'bottom-right'
-  | 'bottom-left'
-  | 'bottom-center';
+  'top-right' | 'top-left' | 'top-center' | 'bottom-right' | 'bottom-left' | 'bottom-center';
 
 function parseSide(raw: string | null): ToastSide {
   switch (raw) {

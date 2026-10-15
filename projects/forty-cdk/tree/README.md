@@ -556,9 +556,7 @@ export class VirtualTree {
   readonly selected = signal<readonly string[]>([]);
   readonly expanded = signal<readonly string[]>([]);
 
-  readonly roots: TreeNode[] = [
-    /* large tree data */
-  ];
+  readonly roots: TreeNode[] = [/* large tree data */];
 
   readonly flat = computed(() => flatten(this.roots, new Set(this.expanded())));
 

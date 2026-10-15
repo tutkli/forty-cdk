@@ -14,11 +14,7 @@ import { type AnchoredPositioningContext } from 'forty-cdk/core-overlay';
  * reason. `'programmatic'` covers `[forPopoverClose]` and the trigger toggle-close.
  */
 export type ForPopoverCloseReason =
-  | 'escape'
-  | 'pointerDownOutside'
-  | 'focusOutside'
-  | 'tab'
-  | 'programmatic';
+  'escape' | 'pointerDownOutside' | 'focusOutside' | 'tab' | 'programmatic';
 
 /**
  * Coordination contract owned by `ForPopover`. Trigger / Content register

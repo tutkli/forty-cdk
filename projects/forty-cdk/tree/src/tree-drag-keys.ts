@@ -8,14 +8,7 @@ import { resolveLiftedDragControl } from 'forty-cdk/core';
 
 /** The action a key press maps to while a node is lifted (keyboard drag in progress). */
 export type TreeDragLiftedAction =
-  | 'cancel'
-  | 'commit'
-  | 'down'
-  | 'up'
-  | 'first'
-  | 'last'
-  | 'deepen'
-  | 'shallow';
+  'cancel' | 'commit' | 'down' | 'up' | 'first' | 'last' | 'deepen' | 'shallow';
 
 /**
  * Resolves the action for a key press while a node is lifted, honoring writing direction for

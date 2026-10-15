@@ -51,8 +51,7 @@ export interface ForDialogEntry extends OverlayManagerEntry {
   readonly pointerDownOutside: ((e: VetoableNativeEvent<PointerEvent>) => void) | undefined;
   readonly focusOutside: ((e: VetoableNativeEvent<FocusEvent>) => void) | undefined;
   readonly interactOutside:
-    | ((e: VetoableNativeEvent<PointerEvent | FocusEvent>) => void)
-    | undefined;
+    ((e: VetoableNativeEvent<PointerEvent | FocusEvent>) => void) | undefined;
   handleClose(reason: ForDialogCloseReason, value: unknown): void;
   injectorFor(parent: Injector): Injector;
 }
