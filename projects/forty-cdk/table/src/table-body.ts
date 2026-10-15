@@ -15,6 +15,7 @@ import {
   type TemplateRef,
   viewChildren,
 } from '@angular/core';
+import { CssVarNamespacer } from '@angular/platform-browser';
 
 import { fortyError } from 'forty-cdk/core';
 
@@ -371,6 +372,7 @@ interface RenderRow<T> {
 export class ForTableBody<T = unknown> {
   readonly #ctx = injectTableContext('ForTableBody');
   readonly #registration = injectTableRegistration('ForTableBody');
+  readonly #namespacer = inject(CssVarNamespacer);
 
   private readonly rowEls = viewChildren<ElementRef<HTMLElement>>('rowEl');
   readonly #measuredAt = new WeakMap<HTMLElement, string>();
@@ -652,7 +654,7 @@ export class ForTableBody<T = unknown> {
         assertColumnDefConfig(col);
         return (
           col.width() ??
-          `var(--for-table-col-${col.name()}-width, ${col.fallbackWidth() ?? 'minmax(0, 1fr)'})`
+          `var(${this.#namespacer.namespace(`--for-table-col-${col.name()}-width`)}, ${col.fallbackWidth() ?? 'minmax(0, 1fr)'})`
         );
       })
       .join(' '),

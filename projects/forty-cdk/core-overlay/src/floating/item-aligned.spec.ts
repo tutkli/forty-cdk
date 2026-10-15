@@ -6,6 +6,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { provideCssVarNamespacing } from '@angular/platform-browser';
 
 import { installObserverPolyfills } from 'forty-cdk/testing';
 
@@ -187,6 +188,37 @@ describe('injectItemAlignedPositioner', () => {
     await flushPositioning(fixture);
     expect(lbEl.dataset['position']).toBe('item-aligned');
     expect(lbEl.style.translate).toMatch(/^-?\d+px -?\d+px$/);
+  });
+
+  it('writes and clears its custom properties under the namespaced names with provideCssVarNamespacing()', async () => {
+    TestBed.configureTestingModule({
+      providers: [provideZonelessChangeDetection(), provideCssVarNamespacing('app')],
+    });
+    const fixture = TestBed.createComponent(Host);
+    await flushPositioning(fixture);
+
+    const lb = fixture.componentInstance.lb();
+    const lbEl = document.querySelector<HTMLElement>('item-aligned-listbox')!;
+
+    lb.reference.set(fixture.componentInstance.anchor().nativeElement);
+    lb.open.set(true);
+    await flushPositioning(fixture);
+
+    for (const output of [
+      'floating-anchor-width',
+      'floating-anchor-height',
+      'floating-available-height',
+    ]) {
+      expect(lbEl.style.getPropertyValue(`--app_for-${output}`)).not.toBe('');
+      expect(lbEl.style.getPropertyValue(`--for-${output}`)).toBe('');
+    }
+
+    lb.open.set(false);
+    await flushPositioning(fixture);
+
+    expect(lbEl.style.getPropertyValue('--app_for-floating-anchor-width')).toBe('');
+    expect(lbEl.style.getPropertyValue('--app_for-floating-anchor-height')).toBe('');
+    expect(lbEl.style.getPropertyValue('--app_for-floating-available-height')).toBe('');
   });
 });
 

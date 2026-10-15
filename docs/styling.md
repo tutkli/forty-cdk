@@ -137,6 +137,32 @@ Each primitive's README lists the exact properties it sets, under **CSS custom
 properties**. Floating overlays additionally expose anchor dimensions and a transform
 origin. See [Styling floating content](./styling-floating-content.md).
 
+#### With `provideCssVarNamespacing()`
+
+Angular's opt-in custom property namespacing renames every custom property the compiler
+sees, and every `--for-*` name follows it the way your own properties do. With
+`provideCssVarNamespacing('app')`, the library publishes `--for-progress-percentage` as
+`--app_for-progress-percentage`, whether a host binding or the positioning code writes it.
+Without a namespace argument the prefix is your `APP_ID`.
+
+- **In component styles, keep writing `--for-*`.** The compiler rewrites
+  `var(--for-progress-percentage)` to the namespaced name, so it matches.
+- **In a global stylesheet, write the namespaced name.** Angular does not rewrite global
+  CSS, and that is where portaled overlays are usually styled:
+
+  ```css
+  .popover {
+    max-height: var(--app_for-floating-available-height);
+  }
+  ```
+
+- **In TypeScript, resolve the name with `CssVarNamespacer`** from `@angular/platform-browser`
+  before you read it or build a `var()` around it:
+  `inject(CssVarNamespacer).namespace('--for-table-col-name-width')`.
+
+The one input property, `--for-floating-arrow-offset`, follows the same rule: set it under
+its plain name in component styles, or under the namespaced name in a global stylesheet.
+
 ---
 
 ## Overlays portal to `document.body` → use global CSS

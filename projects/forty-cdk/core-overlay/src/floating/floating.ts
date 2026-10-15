@@ -14,6 +14,10 @@ import {
   size,
 } from '@floating-ui/dom';
 
+import {
+  type FloatingCustomProperties,
+  injectFloatingCustomProperties,
+} from './floating-custom-properties';
 import { runPositioning } from './run-positioning';
 
 const PLACEMENT_OPPOSITE: Record<FloatingSide, FloatingSide> = {
@@ -294,6 +298,7 @@ export function buildFlipOptions(options: {
  */
 export function injectFloating(config: FloatingConfig): void {
   const fallbackShiftPadding = config.shiftPadding ?? 8;
+  const vars = injectFloatingCustomProperties();
 
   runPositioning({
     reference: config.reference,
@@ -352,12 +357,9 @@ export function injectFloating(config: FloatingConfig): void {
       const sizeOptions: Parameters<typeof size>[0] = {
         padding: sizePaddingValue,
         apply({ availableWidth, availableHeight }) {
+          el.style.setProperty(vars.availableWidth, `${Math.max(0, Math.round(availableWidth))}px`);
           el.style.setProperty(
-            '--for-floating-available-width',
-            `${Math.max(0, Math.round(availableWidth))}px`,
-          );
-          el.style.setProperty(
-            '--for-floating-available-height',
+            vars.availableHeight,
             `${Math.max(0, Math.round(availableHeight))}px`,
           );
         },
@@ -391,10 +393,10 @@ export function injectFloating(config: FloatingConfig): void {
           // Both real `Element`s and floating-ui `VirtualElement`s expose
           // `getBoundingClientRect`, so the call is safe.
           const rect = reference.getBoundingClientRect();
-          el.style.setProperty('--for-floating-anchor-width', `${Math.round(rect.width)}px`);
-          el.style.setProperty('--for-floating-anchor-height', `${Math.round(rect.height)}px`);
+          el.style.setProperty(vars.anchorWidth, `${Math.round(rect.width)}px`);
+          el.style.setProperty(vars.anchorHeight, `${Math.round(rect.height)}px`);
           el.style.setProperty(
-            '--for-floating-content-transform-origin',
+            vars.contentTransformOrigin,
             transformOriginFor(resolvedSide, resolvedAlign),
           );
 
@@ -421,7 +423,7 @@ export function injectFloating(config: FloatingConfig): void {
               top: ay != null ? `${ay}px` : '',
               right: '',
               bottom: '',
-              [opposite]: 'var(--for-floating-arrow-offset, 0px)',
+              [opposite]: `var(${vars.arrowOffset}, 0px)`,
             });
             // `data-placement` on the arrow stores the *side* only, for
             // historical reasons (CSS like `[data-placement="top"]`).
@@ -432,7 +434,7 @@ export function injectFloating(config: FloatingConfig): void {
           }
         },
         reset() {
-          resetFloatingStyles(el);
+          resetFloatingStyles(el, vars);
           if (arrowEl) {
             resetArrowStyles(arrowEl);
           }
@@ -453,15 +455,15 @@ export function injectFloating(config: FloatingConfig): void {
  * `afterNextRender` and recomputes all of them before painting, so a retained
  * value never produces a stale-position flash.
  */
-function resetFloatingStyles(el: HTMLElement): void {
+function resetFloatingStyles(el: HTMLElement, vars: FloatingCustomProperties): void {
   // Clearing (not re-arming) the hide baseline keeps a closing surface
   // visible for its `animate.leave`; the next mount re-applies the
   // `clip-path` baseline in `afterNextRender`.
   el.style.removeProperty('clip-path');
-  el.style.removeProperty('--for-floating-anchor-width');
-  el.style.removeProperty('--for-floating-anchor-height');
-  el.style.removeProperty('--for-floating-available-width');
-  el.style.removeProperty('--for-floating-available-height');
+  el.style.removeProperty(vars.anchorWidth);
+  el.style.removeProperty(vars.anchorHeight);
+  el.style.removeProperty(vars.availableWidth);
+  el.style.removeProperty(vars.availableHeight);
   el.removeAttribute('data-occluded');
   el.removeAttribute('data-detached');
 }

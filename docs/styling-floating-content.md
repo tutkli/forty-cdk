@@ -88,6 +88,8 @@ Arrow elements additionally consume:
 | ----------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------- |
 | `--for-floating-arrow-offset` | in        | Consumer-set. How far the arrow protrudes past the content edge. Negative values push out, `0px` is flush. Default `0px`. |
 
+With `provideCssVarNamespacing()`, every property in both tables carries the namespace: `--for-floating-available-height` becomes `--app_for-floating-available-height` under `provideCssVarNamespacing('app')`. Floating content portals to `document.body` and is usually styled from a global stylesheet, which Angular does not rewrite, so write the namespaced names there. Component styles keep the plain `--for-*` names. See [Styling](./styling.md#with-providecssvarnamespacing).
+
 ---
 
 ## Copy-paste snippets

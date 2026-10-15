@@ -6,6 +6,7 @@ import {
   ViewEncapsulation,
 } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { provideCssVarNamespacing } from '@angular/platform-browser';
 
 import { type VetoableEvent, type VetoableNativeEvent } from 'forty-cdk/core';
 import { ForDrawerStack, type DrawerStackHandle } from 'forty-cdk/core-overlay';
@@ -911,6 +912,25 @@ describe('ForDrawer (declarative)', () => {
         await flush(r.fixture);
 
         expect(drawer.style.getPropertyValue('--for-drawer-swipe-movement-y')).toBe('20px');
+      });
+
+      it('publishes the displacement under the same namespace as its host-bound depth with provideCssVarNamespacing()', async () => {
+        TestBed.configureTestingModule({ providers: [provideCssVarNamespacing('app')] });
+        const r = renderHost(DrawerHost);
+        r.instance.open.set(true);
+        await flush(r.fixture);
+        const drawer = document.querySelector<HTMLElement>('[forDrawer]')!;
+
+        dispatchPointer(drawer, 'pointerdown', 0, 0);
+        dispatchPointer(drawer, 'pointermove', 0, 20);
+        await flush(r.fixture);
+
+        expect(drawer.style.getPropertyValue('--app_for-drawer-swipe-movement-x')).toBe('0px');
+        expect(drawer.style.getPropertyValue('--app_for-drawer-swipe-movement-y')).toBe('20px');
+        expect(drawer.style.getPropertyValue('--app_for-drawer-depth')).toBe('0');
+        expect(drawer.style.getPropertyValue('--for-drawer-swipe-movement-x')).toBe('');
+        expect(drawer.style.getPropertyValue('--for-drawer-swipe-movement-y')).toBe('');
+        expect(drawer.style.getPropertyValue('--for-drawer-depth')).toBe('');
       });
 
       it('a snap-point release that reverses past the press resolves through swipeEnd', async () => {

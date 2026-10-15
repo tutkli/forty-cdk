@@ -270,7 +270,7 @@ exports[`document structure > docs/site/installation.md declares the sections an
           "What it is for",
         ],
         "role": "plain",
-        "rows": 4,
+        "rows": 5,
       },
     ],
     "title": "Peer dependencies",
@@ -311,6 +311,10 @@ exports[`document structure > docs/styling.md declares the sections and table sh
       {
         "depth": 3,
         "slug": "3-css-custom-properties--for-measured-values",
+      },
+      {
+        "depth": 4,
+        "slug": "with-providecssvarnamespacing",
       },
     ],
     "slug": "the-three-styling-hooks",

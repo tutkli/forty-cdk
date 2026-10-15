@@ -1,6 +1,6 @@
 import { Component, signal, viewChild } from '@angular/core';
-import { By } from '@angular/platform-browser';
-import { type ComponentFixture } from '@angular/core/testing';
+import { By, provideCssVarNamespacing } from '@angular/platform-browser';
+import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { TABLE_REGISTRATION_CONTEXT, type TableRegistrationContext } from 'forty-cdk/core';
 
 import { renderHost } from '../../src/test-utils';
@@ -2512,6 +2512,29 @@ describe('ForTableBody', () => {
       instance.widths.set({});
       await flush();
       expect(root.style.getPropertyValue('--for-table-col-name-width')).toBe('');
+    });
+  });
+
+  describe('column width names under provideCssVarNamespacing()', () => {
+    it('publishes, reads and clears the resize var under the namespaced name', async () => {
+      TestBed.configureTestingModule({ providers: [provideCssVarNamespacing('app')] });
+      const { instance, query, flush } = renderHost(FallbackWidthHost);
+      const root = query('[forTable]') as HTMLElement;
+
+      expect((query('[forTableHeaderRow]') as HTMLElement).style.gridTemplateColumns).toBe(
+        '48px ' +
+          'var(--app_for-table-col-name-width, minmax(120px, 2.5fr)) ' +
+          'var(--app_for-table-col-role-width, minmax(120px, 2.5fr))',
+      );
+
+      instance.widths.set({ name: 150 });
+      await flush();
+      expect(root.style.getPropertyValue('--app_for-table-col-name-width')).toBe('150px');
+      expect(root.style.getPropertyValue('--for-table-col-name-width')).toBe('');
+
+      instance.widths.set({});
+      await flush();
+      expect(root.style.getPropertyValue('--app_for-table-col-name-width')).toBe('');
     });
   });
 

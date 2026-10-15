@@ -20,14 +20,15 @@ npm install forty-cdk
 
 Required:
 
-- `@angular/common` `^22.0.1`
-- `@angular/core` `^22.0.1`
+- `@angular/common` `^22.1.0`
+- `@angular/core` `^22.1.0`
+- `@angular/platform-browser` `^22.1.0`, already installed by every Angular browser or server app
 
 Optional — install only if you use the matching entry point / primitives:
 
 | Peer                               | Needed by                                                                                                                                                                                                                                                                                                                                                                  |
 | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@angular/forms` `^22.0.1`         | Form-control primitives (`Switch`, `Checkbox`, `RadioGroup`, `Listbox`, `Select`, `Slider`, `Combobox`, …). They implement `FormValueControl` / `FormCheckboxControl` from `@angular/forms/signals` for `[formField]` auto-wiring. The contract is type-only, so the published bundle never references the package — consumers using only non-form primitives can skip it. |
+| `@angular/forms` `^22.1.0`         | Form-control primitives (`Switch`, `Checkbox`, `RadioGroup`, `Listbox`, `Select`, `Slider`, `Combobox`, …). They implement `FormValueControl` / `FormCheckboxControl` from `@angular/forms/signals` for `[formField]` auto-wiring. The contract is type-only, so the published bundle never references the package — consumers using only non-form primitives can skip it. |
 | `@internationalized/date` `^3.0.0` | The `forty-cdk/internationalized-date` entry point (`InternationalizedDateAdapter`, `InternationalizedDateTimeAdapter`). The date/time primitives themselves depend only on the abstract `DateAdapter` contract from `forty-cdk/date-adapter` — install this peer only when you import that entry point.                                                                   |
 
 ### Regular dependencies
