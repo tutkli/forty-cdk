@@ -29,10 +29,9 @@ export interface TreeDropTarget<T = unknown> {
   /** Resolved 1-based depth of the dropped node. */
   readonly level: number;
   /**
-   * Number of existing children under `parentValue` at the resolved `level` (excluding the
-   * dragged node, which is absent from `rows`). The dropped node will be sibling
-   * `index + 1` of `siblingCount + 1` after the move — the numbers screen-reader
-   * announcements report.
+   * Number of visible children under `parentValue` at the resolved `level`, excluding the
+   * dragged node, which is absent from `rows`. A collapsed parent's children are not rows, so
+   * this is `0` for a drop into one whatever it holds.
    */
   readonly siblingCount: number;
 }

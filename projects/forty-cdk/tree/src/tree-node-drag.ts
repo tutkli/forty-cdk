@@ -33,12 +33,14 @@ import {
   resolveDropIndicator,
   resolveTreeDrop,
   type TreeDropRow,
+  type TreeDropTarget,
 } from './tree-drop-resolver';
 import {
   buildTreeDropRows,
   isInsideGrabArea,
   resolveLiftGap,
   resolveTreeLiftContext,
+  treeDropTotal,
   treeNodeLabel,
   treeParentLabel,
 } from './tree-drag-rows';
@@ -130,6 +132,9 @@ export class ForTreeNodeDrag<T = string> implements ForTreeNodeDragContext {
   /**
    * Optional veto callback. Return `false` to reject a specific drop — the node is returned to its
    * original position and an announcement is made. When omitted, all drops are accepted.
+   *
+   * It is also consulted for every position the drag resolves while live, to reflect
+   * `data-drop-target`, so it must not have side effects.
    */
   readonly canDrop = input<((event: ForTreeDragDropEvent<T>) => boolean) | undefined>(undefined);
 
@@ -349,7 +354,7 @@ export class ForTreeNodeDrag<T = string> implements ForTreeNodeDragContext {
       this.#desiredLevel,
       this.#ctx.compareWith(),
     );
-    this.#publishDropTarget(rows, target.level);
+    this.#publishDropTarget(rows, target);
 
     this.#previewController?.moveTo({ x: event.clientX, y: event.clientY });
   }
@@ -407,15 +412,38 @@ export class ForTreeNodeDrag<T = string> implements ForTreeNodeDragContext {
     this.#desiredLevel = entry.handle.level();
 
     this._dragging.set(true);
-    this.#publishDropTarget(rows, this.#desiredLevel);
+    this.#publishDropTarget(
+      rows,
+      resolveTreeDrop(rows, this.#gapIndex, this.#desiredLevel, equals),
+    );
 
     this.#announcer.announce(this.#defaults.dragAnnounceLift(this.#label), 'assertive');
   }
 
-  #publishDropTarget(rows: TreeDropRow<T>[], level: number): void {
-    this._dropTargetValid.set(true);
-    this._dropLevel.set(level);
-    this.#dropIndicator.set(resolveDropIndicator(rows, this.#gapIndex, level));
+  #publishDropTarget(rows: TreeDropRow<T>[], target: TreeDropTarget<T>): void {
+    const indicator = resolveDropIndicator(rows, this.#gapIndex, target.level);
+    this._dropTargetValid.set(
+      indicator !== null &&
+        this.#liftedValue !== null &&
+        this.#accepts(this.#dropEvent(this.#liftedValue, target)),
+    );
+    this._dropLevel.set(target.level);
+    this.#dropIndicator.set(indicator);
+  }
+
+  #dropEvent(node: T, target: TreeDropTarget<T>): ForTreeDragDropEvent<T> {
+    return {
+      node,
+      previousParent: this.#previousParent,
+      newParent: target.parentValue,
+      previousIndex: this.#previousIndex,
+      currentIndex: target.index,
+    };
+  }
+
+  #accepts(event: ForTreeDragDropEvent<T>): boolean {
+    const veto = this.canDrop();
+    return veto === undefined || veto(event);
   }
 
   #commitSession(): void {
@@ -428,17 +456,10 @@ export class ForTreeNodeDrag<T = string> implements ForTreeNodeDragContext {
     const target = resolveTreeDrop(rows, this.#gapIndex, this.#desiredLevel, equals);
 
     const parentLabel = treeParentLabel(visible, target.parentValue, equals);
+    const total = treeDropTotal(visible, target, (v) => this.#ctx.isExpanded(v), equals);
+    const event = this.#dropEvent(this.#liftedValue, target);
 
-    const event: ForTreeDragDropEvent<T> = {
-      node: this.#liftedValue,
-      previousParent: this.#previousParent,
-      newParent: target.parentValue,
-      previousIndex: this.#previousIndex,
-      currentIndex: target.index,
-    };
-
-    const veto = this.canDrop();
-    if (veto !== undefined && !veto(event)) {
+    if (!this.#accepts(event)) {
       this.#restoreExpansion();
       this.#announcer.announce(this.#defaults.dragAnnounceInvalid(this.#label), 'assertive');
       this.#clearSession();
@@ -451,12 +472,7 @@ export class ForTreeNodeDrag<T = string> implements ForTreeNodeDragContext {
     }
     this.nodeDrop.emit(event);
     this.#announcer.announce(
-      this.#defaults.dragAnnounceDrop(
-        this.#label,
-        parentLabel,
-        target.index + 1,
-        target.siblingCount + 1,
-      ),
+      this.#defaults.dragAnnounceDrop(this.#label, parentLabel, target.index + 1, total),
       'assertive',
     );
     this.#clearSession();
@@ -522,17 +538,13 @@ export class ForTreeNodeDrag<T = string> implements ForTreeNodeDragContext {
     const rows = buildTreeDropRows(visible, this.#liftedValue, equals);
     const target = resolveTreeDrop(rows, this.#gapIndex, this.#desiredLevel, equals);
     this.#desiredLevel = target.level;
-    this.#publishDropTarget(rows, target.level);
+    this.#publishDropTarget(rows, target);
 
     const parentLabel = treeParentLabel(visible, target.parentValue, equals);
+    const total = treeDropTotal(visible, target, (v) => this.#ctx.isExpanded(v), equals);
 
     this.#announcer.announce(
-      this.#defaults.dragAnnounceMove(
-        this.#label,
-        parentLabel,
-        target.index + 1,
-        target.siblingCount + 1,
-      ),
+      this.#defaults.dragAnnounceMove(this.#label, parentLabel, target.index + 1, total),
       'polite',
     );
   }
