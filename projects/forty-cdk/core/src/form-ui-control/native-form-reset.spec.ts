@@ -11,11 +11,7 @@ import {
 
 import { nextMacrotask } from '../../../src/test-utils/flush';
 import { renderHost } from '../../../src/test-utils/render';
-import {
-  injectNativeFormReset,
-  injectNativeFormResetToInitial,
-  injectRenderedDefaultValue,
-} from './native-form-reset';
+import { injectNativeFormReset, injectNativeFormResetToInitial } from './native-form-reset';
 
 @Directive({
   selector: '[resetProbe]',
@@ -220,26 +216,26 @@ describe('injectNativeFormResetToInitial', () => {
   });
 });
 
-describe('injectRenderedDefaultValue', () => {
+describe('injectNativeFormReset on its own host', () => {
   @Directive({
-    selector: 'input[renderedDefaultProbe]',
+    selector: 'input[renderedTextProbe]',
   })
-  class RenderedDefaultProbe {
+  class RenderedTextProbe {
     constructor() {
       const host = inject<ElementRef<HTMLInputElement>>(ElementRef).nativeElement;
-      injectRenderedDefaultValue(() => host);
+      injectNativeFormReset(() => host);
     }
   }
 
   @Component({
-    imports: [RenderedDefaultProbe],
-    template: `<form><input renderedDefaultProbe value="markup" [value]="text" /></form>`,
+    imports: [RenderedTextProbe],
+    template: `<form><input renderedTextProbe value="markup" [value]="text" /></form>`,
   })
   class Host {
     readonly text = 'rendered';
   }
 
-  it('makes a form reset restore the text the element showed at its first render', async () => {
+  it('puts back the text the element showed at its first render once the reset has run', async () => {
     const { el, flush } = renderHost(Host);
     await flush();
     const input = el.querySelector('input')!;
@@ -247,6 +243,33 @@ describe('injectRenderedDefaultValue', () => {
 
     input.value = 'edited';
     el.querySelector('form')!.reset();
+    expect(input.value).toBe('markup');
+
+    await flush();
     expect(input.value).toBe('rendered');
+  });
+
+  it('leaves the value attribute as the markup wrote it', async () => {
+    const { el, flush } = renderHost(Host);
+    await flush();
+    const input = el.querySelector('input')!;
+    expect(input.getAttribute('value')).toBe('markup');
+
+    el.querySelector('form')!.reset();
+    await flush();
+    expect(input.getAttribute('value')).toBe('markup');
+  });
+
+  it('keeps the text a cancelled reset left alone', async () => {
+    const { el, flush } = renderHost(Host);
+    await flush();
+    const input = el.querySelector('input')!;
+    const form = el.querySelector('form')!;
+
+    input.value = 'edited';
+    form.addEventListener('reset', (event) => event.preventDefault(), { once: true });
+    form.reset();
+    await flush();
+    expect(input.value).toBe('edited');
   });
 });

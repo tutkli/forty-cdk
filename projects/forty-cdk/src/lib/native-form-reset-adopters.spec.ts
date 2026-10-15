@@ -797,6 +797,89 @@ describe('native form reset (#2432)', () => {
       expect(r.query<HTMLInputElement>('[data-testid="number"]')!.value).toBe('5');
       expect(submitted(form)).toEqual(initialSubmission);
     });
+
+    it('puts the first-render text back through a reset that changes no value', async () => {
+      const r = renderHost(TextHost);
+      await r.flush();
+      await r.flush();
+
+      r.el.querySelector('form')!.reset();
+      await r.flush();
+      expect(r.query<HTMLInputElement>('[data-testid="input"]')!.value).toBe('Ada');
+      expect(r.query<HTMLTextAreaElement>('[data-testid="textarea"]')!.value).toBe('Mathematician');
+      expect(r.query<HTMLInputElement>('[data-testid="search"]')!.value).toBe('engines');
+      expect(r.query<HTMLInputElement>('[data-testid="number"]')!.value).toBe('5');
+      expect(r.el.querySelector<HTMLInputElement>('[forOtpInput] input')!.value).toBe('12');
+    });
+  });
+
+  describe('the value attribute (#2465)', () => {
+    @Component({
+      imports: [ForInput, ForNumberInput, ForOtpInput, ForCombobox, ForComboboxInput],
+      template: `<form>
+        @if (shown()) {
+          <input
+            forInput
+            type="password"
+            name="password"
+            [(value)]="password"
+            data-testid="password"
+          />
+          <input forNumberInput name="qty" [(value)]="qty" data-testid="number" />
+          <div forOtpInput name="code" [(value)]="code" [length]="4" mask></div>
+          <div forCombobox name="fruit" [(value)]="fruit" [(query)]="query">
+            <input forComboboxInput aria-label="Fruit" data-testid="combobox" />
+          </div>
+        }
+      </form>`,
+    })
+    class RemountHost {
+      readonly shown = signal(true);
+      readonly password = signal('');
+      readonly qty = signal<number | null>(null);
+      readonly code = signal('');
+      readonly fruit = signal<readonly string[]>([]);
+      readonly query = signal('');
+    }
+
+    function visibleValueAttributes(r: RenderResult<RemountHost>): Array<string | null> {
+      return [...r.el.querySelectorAll('input')]
+        .filter((input) => input.type !== 'hidden')
+        .map((input) => input.getAttribute('value'));
+    }
+
+    it('never writes what a control holds at its first render into the value attribute', async () => {
+      const r = renderHost(RemountHost);
+      await r.flush();
+      await r.flush();
+      expect(visibleValueAttributes(r)).toEqual([null, null, null, null]);
+
+      r.instance.password.set('secret-password-123');
+      r.instance.qty.set(42);
+      r.instance.code.set('1234');
+      r.instance.query.set('Pea');
+      await r.flush();
+      expect(visibleValueAttributes(r)).toEqual([null, null, null, null]);
+
+      r.instance.shown.set(false);
+      await r.flush();
+      r.instance.shown.set(true);
+      await r.flush();
+      await r.flush();
+      const password = r.query<HTMLInputElement>('[data-testid="password"]')!;
+      expect(password.value).toBe('secret-password-123');
+      expect(r.el.querySelector<HTMLInputElement>('[forOtpInput] input')!.value).toBe('1234');
+      expect(visibleValueAttributes(r)).toEqual([null, null, null, null]);
+
+      r.el.querySelector('form')!.reset();
+      await r.flush();
+      expect(password.value).toBe('secret-password-123');
+      expect(r.instance.password()).toBe('secret-password-123');
+      expect(r.query<HTMLInputElement>('[data-testid="number"]')!.value).toBe('42');
+      expect(r.el.querySelector<HTMLInputElement>('[forOtpInput] input')!.value).toBe('1234');
+      expect(r.query<HTMLInputElement>('[data-testid="combobox"]')!.value).toBe('Pea');
+      expect(visibleValueAttributes(r)).toEqual([null, null, null, null]);
+    });
   });
 
   describe('adoption (meta-guard)', () => {

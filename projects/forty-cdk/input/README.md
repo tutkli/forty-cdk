@@ -10,7 +10,7 @@ Attribute directives for single- and multi-line text: a string value() that auto
 
 `ForInput` and `ForTextarea` implement Angular's `FormValueControl<string>` from `@angular/forms/signals`, so they auto-wire with `[formField]` and auto-associate inside a [`[forField]`](../field/README.md) (label, description, and error wiring) with zero extra markup. These are thin wrappers, not re-implementations: the native `<input>` / `<textarea>` keeps its own `type`, caret, IME composition, and native form submission. The directive only bridges the value to a signal and reflects validation state.
 
-A native reset of the owning `<form>` returns `value()` to the text the field showed when it first rendered, so the model and the field agree and a later blur keeps the reset. A reset another listener cancels changes nothing. The controls that submit through a hidden `<input>` (Checkbox, Switch, Select and the others) follow a native reset the same way, back to the value they held at first render.
+A native reset of the owning `<form>` returns `value()` to the text the field showed when it first rendered, so the model and the field agree and a later blur keeps the reset. That text is kept in memory and never written into the element's `value` attribute, so a `type="password"` field mounted with a value does not expose it in the DOM. A reset another listener cancels changes nothing. The controls that submit through a hidden `<input>` (Checkbox, Switch, Select and the others) follow a native reset the same way, back to the value they held at first render.
 
 ## When to choose
 
