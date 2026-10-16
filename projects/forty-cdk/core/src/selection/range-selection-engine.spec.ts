@@ -277,6 +277,13 @@ describe('RangeSelectionEngine', () => {
       expect(h.value()).toEqual(['a', 'c']);
     });
 
+    it('ignores an unwritten value handed to selectSingle', () => {
+      h.handle('a');
+      h.engine.selectSingle(unsetInput<string>());
+      expect(h.setValue).not.toHaveBeenCalled();
+      expect(h.compareWith.mock.calls.flat().some(isUnset)).toBe(false);
+    });
+
     it('never hands the unwritten sentinel to compareWith', () => {
       h.handle('a');
       h.handle(unsetInput<string>());

@@ -945,6 +945,47 @@ describe('ForTabs', () => {
     });
   });
 
+  describe('unwritten trigger value', () => {
+    @Component({
+      imports: [ForTabs, ForTabsList, ForTabsTrigger],
+      template: `
+        <div forTabs [(value)]="active">
+          <div forTabsList>
+            <button type="button" forTabsTrigger value="a" data-test-id="a">A</button>
+            <button type="button" forTabsTrigger data-test-id="pending">Pending</button>
+          </div>
+        </div>
+      `,
+    })
+    class UnboundTriggerHost {
+      readonly active = signal<string | null>('a');
+    }
+
+    it('does not commit the sentinel when an unbound trigger is clicked in a production build', async () => {
+      vi.stubGlobal('ngDevMode', false);
+      const { el, instance, flush } = renderHost(UnboundTriggerHost);
+      await flush();
+
+      triggerOf(el, 'pending').click();
+      await flush();
+
+      expect(instance.active()).toBe('a');
+    });
+
+    it('does not commit the sentinel when automatic activation reaches an unbound trigger in a production build', async () => {
+      vi.stubGlobal('ngDevMode', false);
+      const { el, instance, flush } = renderHost(UnboundTriggerHost);
+      await flush();
+
+      triggerOf(el, 'a').focus();
+      pressKey(triggerOf(el, 'a'), 'ArrowRight');
+      await flush();
+
+      expect(document.activeElement).toBe(triggerOf(el, 'pending'));
+      expect(instance.active()).toBe('a');
+    });
+  });
+
   describe('mounted-but-inactive a11y', () => {
     it('marks inactive panels aria-hidden + inert and clears both when activated', async () => {
       const { el, fixture, flush } = renderHost(TabsHost);

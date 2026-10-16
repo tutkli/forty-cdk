@@ -778,7 +778,13 @@ export class ForListbox<T = string>
     }
     const ordered = [...items].sort((a, b) => (a.posInSet() ?? 0) - (b.posInSet() ?? 0));
     const isSelected = this.#isSelected();
-    const selectedFirst = ordered.find((o) => !o.disabled() && isSelected(o.value()));
+    const selectedFirst = ordered.find((o) => {
+      if (o.disabled()) {
+        return false;
+      }
+      const value = o.value();
+      return !isUnset(value) && isSelected(value);
+    });
     const target = selectedFirst ?? ordered.find((o) => !o.disabled());
     if (target) {
       this.#setActiveId(target.id());

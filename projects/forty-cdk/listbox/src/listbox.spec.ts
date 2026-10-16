@@ -3253,6 +3253,44 @@ describe('ForListbox', () => {
       readonly compareWith = vi.fn((a: string, b: string) => a === b);
     }
 
+    @Component({
+      imports: [...LISTBOX_IMPORTS],
+      template: `
+        <ul forListbox [(value)]="picked" [selectionFollowsFocus]="true">
+          <li>
+            <button type="button" forListboxOption value="apple" data-test-id="apple">apple</button>
+          </li>
+          <li><button type="button" forListboxOption data-test-id="pending">pending</button></li>
+        </ul>
+      `,
+    })
+    class FollowFocusUnboundHost {
+      readonly picked = signal<readonly string[]>(['apple']);
+    }
+
+    @Component({
+      imports: [...LISTBOX_IMPORTS],
+      template: `
+        <div
+          forListbox
+          data-test-lb
+          [(value)]="picked"
+          [compareWith]="compareWith"
+          [totalCount]="2"
+          [visibleRange]="range"
+          aria-label="Virtual"
+        >
+          <button type="button" forListboxOption [posInSet]="0">pending</button>
+          <button type="button" forListboxOption value="apple" [posInSet]="1">apple</button>
+        </div>
+      `,
+    })
+    class VirtualUnboundHost {
+      readonly picked = signal<readonly string[]>(['apple']);
+      readonly compareWith = vi.fn((a: string, b: string) => a === b);
+      readonly range: readonly [number, number] = [0, 2];
+    }
+
     it('fails loudly when an option carries no value binding at all', () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(UnboundOptionHost);
@@ -3286,6 +3324,34 @@ describe('ForListbox', () => {
 
       expect(fixture.componentInstance.picked()).toEqual(['apple']);
       expect(fixture.componentInstance.compareWith.mock.calls.flat().some(isUnset)).toBe(false);
+    });
+
+    it('does not commit the sentinel when focus follows onto an unbound option in a production build', async () => {
+      vi.stubGlobal('ngDevMode', false);
+      const r = renderHost(FollowFocusUnboundHost);
+      await flush(r.fixture);
+
+      optOf(r.el, 'apple').focus();
+      pressKey(optOf(r.el, 'apple'), 'ArrowDown');
+      await flush(r.fixture);
+
+      expect(document.activeElement).toBe(optOf(r.el, 'pending'));
+      expect(r.instance.picked()).toEqual(['apple']);
+    });
+
+    it('never hands the sentinel to compareWith when a virtualized listbox seeds its active option on focus', async () => {
+      vi.stubGlobal('ngDevMode', false);
+      const r = renderHost(VirtualUnboundHost);
+      await flush(r.fixture);
+      r.instance.compareWith.mockClear();
+
+      r.el
+        .querySelector<HTMLElement>('[data-test-lb]')!
+        .dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+      await flush(r.fixture);
+
+      expect(r.instance.compareWith).toHaveBeenCalled();
+      expect(r.instance.compareWith.mock.calls.flat().some(isUnset)).toBe(false);
     });
 
     it('ignores a sentinel handed to activate() instead of committing it', async () => {

@@ -98,7 +98,7 @@ export class ForTabs implements ForTabsContext {
   }
 
   select(v: string): void {
-    if (this.disabled()) {
+    if (this.disabled() || isUnset(v)) {
       return;
     }
     this.value.set(v);
@@ -115,7 +115,7 @@ export class ForTabs implements ForTabsContext {
     }
     target.host.focus();
     if (this.activationMode() === 'automatic' && !target.disabled()) {
-      this.value.set(target.value());
+      this.select(target.value());
     }
   }
 
