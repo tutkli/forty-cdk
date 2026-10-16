@@ -4,7 +4,11 @@ import type {
   CalendarMonthRow,
   ForCalendarMonthCellHandle,
 } from './calendar-context';
-import { isCalendarActivationKey, resolveCalendarGridMove } from './calendar-keyboard';
+import {
+  calendarGridRowBounds,
+  isCalendarActivationKey,
+  resolveCalendarGridMove,
+} from './calendar-keyboard';
 import type { CalendarSubGridHost, CalendarViewStrategy } from './calendar-sub-grid';
 
 const GRID_COLUMNS = 3;
@@ -107,7 +111,7 @@ export class CalendarMonthNavigator<D> implements CalendarViewStrategy {
       return;
     }
     event.preventDefault();
-    this.#host.setFocusedDate(this.#host.clamp(this.#host.dateInMonth(target.year, target.month)));
+    this.#host.moveFocusedDate(this.#host.dateInMonth(target.year, target.month));
     this.#host.scheduleFocus(() => this.focusCell(this.#host.visibleMonthNumber()));
   }
 
@@ -131,11 +135,12 @@ export class CalendarMonthNavigator<D> implements CalendarViewStrategy {
   #resolveMove(event: KeyboardEvent, fromMonth: number): { year: number; month: number } | null {
     const year = this.#host.visibleYear();
     const base = year * 12 + (fromMonth - 1);
+    const row = calendarGridRowBounds(base, year * 12, year * 12 + 11, GRID_COLUMNS);
     const index = resolveCalendarGridMove<number>(event, this.#host.dir() === 'rtl', {
       horizontal: (step) => base + step,
       vertical: (step) => base + step * GRID_COLUMNS,
-      lineStart: () => year * 12,
-      lineEnd: () => year * 12 + 11,
+      lineStart: () => row.start,
+      lineEnd: () => row.end,
       pageBackward: () => base - 12,
       pageForward: () => base + 12,
     });
@@ -162,8 +167,11 @@ export interface CalendarMonthNavigatorHost<D> extends CalendarSubGridHost<D> {
   selectMonth(month: number): void;
   /** Page the visible year by `step`, re-applying the intended day and clamping. */
   pageByYears(step: number): void;
-  /** Set the roving focused date. */
-  setFocusedDate(date: D): void;
+  /**
+   * Move the roving focused date to `date`, clamped into `[min, max]`, announcing
+   * the new period when the active view's period changes.
+   */
+  moveFocusedDate(date: D): void;
   /** A date in (`year`, `month`) keeping the focused day clamped to the month length. */
   dateInMonth(year: number, month: number): D;
   /** Schedule `fn` to run after the next render (for post-re-render focus moves). */

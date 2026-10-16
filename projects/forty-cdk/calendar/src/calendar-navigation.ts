@@ -29,10 +29,11 @@ export interface CalendarNavigationHost<D> {
   readonly focusedDate: WritableSignal<D>;
   /** The selected value (read + written in single mode). */
   readonly value: WritableSignal<D | null>;
-  /** First day of the visible month. */
-  readonly visibleMonth: () => D;
-  /** The visible month's accessible label. */
-  readonly visibleMonthLabel: () => string;
+  /**
+   * The label of the period the active view shows: the month and year in day
+   * view, the year in month view, the block of years in year view.
+   */
+  readonly periodLabel: () => string;
   /** The visible month's full year. */
   readonly visibleYear: () => number;
   /** The visible month, **1-12**. */
@@ -41,7 +42,7 @@ export interface CalendarNavigationHost<D> {
   readonly bounds: CalendarBounds<D>;
   /** The range-selection collaborator. */
   readonly range: CalendarRangeSelection<D>;
-  /** Announce `label` politely (used when a navigation crosses a month boundary). */
+  /** Announce `label` politely (used when a navigation changes the active view's period). */
   announce(label: string): void;
   /** Schedule `fn` to run after the next render. */
   scheduleFocus(fn: () => void): void;
@@ -108,8 +109,8 @@ export class CalendarNavigation<D> {
 
   /**
    * Set the visible month to (`year`, `month`, **1-12**) without selecting,
-   * re-applying the intended day, clamping, and announcing a month change. A
-   * no-op while disabled.
+   * re-applying the intended day, clamping, and announcing a change of the
+   * active view's period. A no-op while disabled.
    */
   goTo(year: number, month: number): void {
     if (this.#host.disabled()) {
@@ -120,7 +121,7 @@ export class CalendarNavigation<D> {
 
   /** Apply a resolved day keyboard move: paging re-applies the intended day; a plain move records the origin. */
   applyDayKeyMove(target: D, isPaging: boolean): void {
-    const previousMonth = this.#host.visibleMonth();
+    const previousPeriod = this.#host.periodLabel();
     let next: D;
     if (isPaging) {
       this.#cursor.sync(this.#host.focusedDate());
@@ -132,7 +133,18 @@ export class CalendarNavigation<D> {
     }
     this.#host.focusedDate.set(next);
     this.#host.focusDayCell(next);
-    this.#announceMonthChange(previousMonth);
+    this.#announcePeriodChange(previousPeriod);
+  }
+
+  /**
+   * Apply a resolved month / year grid keyboard move: clamp `target` into
+   * bounds, make it the focused date, and announce a change of the active
+   * view's period.
+   */
+  moveFocusedDate(target: D): void {
+    const previousPeriod = this.#host.periodLabel();
+    this.#host.focusedDate.set(this.#host.bounds.clamp(target));
+    this.#announcePeriodChange(previousPeriod);
   }
 
   /** A date in (`year`, `month`) keeping the focused day clamped to the month length. */
@@ -144,17 +156,18 @@ export class CalendarNavigation<D> {
   }
 
   #pageTo(target: D): void {
-    const previousMonth = this.#host.visibleMonth();
+    const previousPeriod = this.#host.periodLabel();
     this.#cursor.sync(this.#host.focusedDate());
     const next = this.#host.bounds.clamp(this.#cursor.apply(target));
     this.#host.focusedDate.set(next);
     this.#cursor.markPaged(next);
-    this.#announceMonthChange(previousMonth);
+    this.#announcePeriodChange(previousPeriod);
   }
 
-  #announceMonthChange(previousMonth: D): void {
-    if (!this.#host.adapter.isSameDay(previousMonth, this.#host.visibleMonth())) {
-      this.#host.announce(this.#host.visibleMonthLabel());
+  #announcePeriodChange(previousPeriod: string): void {
+    const period = this.#host.periodLabel();
+    if (period !== previousPeriod) {
+      this.#host.announce(period);
     }
   }
 

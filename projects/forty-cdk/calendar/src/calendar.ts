@@ -270,8 +270,7 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
       selectionMode: this.selectionMode,
       focusedDate: this.focusedDate,
       value: this.value,
-      visibleMonth: () => this.visibleMonth(),
-      visibleMonthLabel: () => this.visibleMonthLabel(),
+      periodLabel: () => this.viewTriggerLabel(),
       visibleYear: () => this.visibleYear(),
       visibleMonthNumber: () => this.visibleMonthNumber(),
       bounds: this.#bounds,
@@ -335,7 +334,6 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
       isPreviousMonthDisabled: this.#bounds.isPreviousMonthDisabled,
       isNextMonthDisabled: this.#bounds.isNextMonthDisabled,
       isYearDisabled: (year) => this.#bounds.isYearDisabled(year),
-      clamp: (date) => this.#bounds.clamp(date),
       today: () => this.adapter.today(),
     };
   }
@@ -345,7 +343,7 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
     return {
       value: () => this.value(),
       pageByYears: (step: number) => this.#nav.pageByYears(step),
-      setFocusedDate: (date: D) => this.focusedDate.set(date),
+      moveFocusedDate: (date: D) => this.#nav.moveFocusedDate(date),
       dateInMonth: (year: number, month: number) => this.#nav.dateInMonth(year, month),
       scheduleFocus: (fn: () => void) => this.#scheduleFocus(fn),
     };
@@ -419,7 +417,11 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
   /** Rows of the year picker grid (3 columns) for the aligned block containing the visible year. */
   readonly yearRows = computed<readonly CalendarYearRow[]>(() => this.#yearNav.rows());
 
-  /** Label for the view trigger / heading, reflecting the active view. */
+  /**
+   * Label of the period the active view shows, for the view trigger and the
+   * heading: the month and year in day view, the year in month view, the block
+   * of years in year view.
+   */
   readonly viewTriggerLabel = computed(() => this.#strategyFor(this.view()).triggerLabel());
 
   readonly isPreviousDisabled = computed(() => this.#strategyFor(this.view()).isPreviousDisabled());
@@ -546,7 +548,8 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
    * Set the visible month to (`year`, `month`) without selecting a date.
    * `month` is **1-12**. Re-applies the user's intended day-of-month (clamped to
    * the target month's length), clamps the result into `[min, max]`, and
-   * announces the new period politely when the visible month changes. Keeps DOM
+   * announces the new period politely when the active view's period changes
+   * (the month in day view, the year in month view, the block in year view). Keeps DOM
    * focus on the caller — it does not move focus into the grid. A no-op while the
    * calendar is disabled.
    */
@@ -588,11 +591,12 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
 
   /**
    * Select a whole month (1-12): navigate to it within the current visible year
-   * and switch the view to `'day'`. No-op when the calendar is disabled /
-   * read-only or the month is out of `[min, max]`.
+   * and switch the view to `'day'`. It changes no value, so a read-only calendar
+   * drills down too. No-op when the calendar is disabled or the month is out of
+   * `[min, max]`.
    */
   selectMonth(month: number): void {
-    if (this.disabled() || this.readonly() || this.isMonthDisabled(month)) {
+    if (this.disabled() || this.isMonthDisabled(month)) {
       return;
     }
     this.goToMonth(month);
@@ -600,11 +604,12 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
   }
 
   /**
-   * Select a whole year: navigate to it and switch the view to `'month'`. No-op
-   * when the calendar is disabled / read-only or the year is out of `[min, max]`.
+   * Select a whole year: navigate to it and switch the view to `'month'`. It
+   * changes no value, so a read-only calendar drills down too. No-op when the
+   * calendar is disabled or the year is out of `[min, max]`.
    */
   selectYear(year: number): void {
-    if (this.disabled() || this.readonly() || this.isYearDisabled(year)) {
+    if (this.disabled() || this.isYearDisabled(year)) {
       return;
     }
     this.goToYear(year);

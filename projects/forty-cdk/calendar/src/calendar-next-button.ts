@@ -7,9 +7,9 @@ import { injectCalendarContext } from './calendar-context';
 /**
  * Pages the calendar forward. In `day` view pages by one month; in `month` view
  * pages by one year; in `year` view pages by one block. Apply on a `<button>`.
- * Keeps DOM focus on itself while paging; the `aria-live` heading announces the
- * new period. Auto-disabled at the view's bound, or when the whole calendar is
- * disabled.
+ * Keeps DOM focus on itself while paging; the calendar announces the new period
+ * through its off-screen live region. Auto-disabled at the view's bound, or when
+ * the whole calendar is disabled.
  *
  * Reflects the disabled state through `aria-disabled` + `data-disabled` only —
  * never the native `disabled` attribute — so a button that auto-disables at the
