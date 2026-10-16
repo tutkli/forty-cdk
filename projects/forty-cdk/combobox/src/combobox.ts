@@ -270,10 +270,11 @@ export class ForCombobox<T = string>
   readonly dismissible = input(true, { transform: booleanAttribute });
 
   /**
-   * When true (default), focus returns to the `[forComboboxTrigger]` on close.
-   * Only relevant in the picker anatomy (a trigger is registered) — in the
-   * editable anatomy focus never leaves the input, so there is nothing to
-   * return.
+   * When true (default), focus returns to the `[forComboboxTrigger]` on close
+   * in the picker anatomy. In the editable anatomy focus normally never leaves
+   * the input, so this only gates the return to the input after a close that
+   * unmounts the popup while focus is inside it, such as a `[forComboboxAction]`
+   * whose `(activate)` closes it.
    */
   readonly returnFocus = input(true, { transform: booleanAttribute });
 
@@ -411,8 +412,8 @@ export class ForCombobox<T = string>
 
   readonly content = this.#overlay.content;
 
-  readonly #toggles = signal<readonly HTMLElement[]>([]);
-  private readonly toggles = this.#toggles.asReadonly();
+  readonly #fieldButtons = signal<readonly HTMLElement[]>([]);
+  private readonly fieldButtons = this.#fieldButtons.asReadonly();
 
   readonly list = this.#listSlot.element;
   /** True once a `[forComboboxList]` has registered (picker anatomy). */
@@ -681,11 +682,11 @@ export class ForCombobox<T = string>
     this.#overlay.unregisterTrigger(el);
   }
 
-  private registerToggle(el: HTMLElement): void {
-    this.#toggles.update((list) => (list.includes(el) ? list : [...list, el]));
+  private registerFieldButton(el: HTMLElement): void {
+    this.#fieldButtons.update((list) => (list.includes(el) ? list : [...list, el]));
   }
-  private unregisterToggle(el: HTMLElement): void {
-    this.#toggles.update((list) => list.filter((x) => x !== el));
+  private unregisterFieldButton(el: HTMLElement): void {
+    this.#fieldButtons.update((list) => list.filter((x) => x !== el));
   }
 
   private registerContent(el: HTMLElement): void {
@@ -1162,7 +1163,7 @@ export class ForCombobox<T = string>
           return;
         }
       }
-      if (this.#toggles().some((toggle) => toggle.contains(next))) {
+      if (this.#fieldButtons().some((button) => button.contains(next))) {
         return;
       }
     }

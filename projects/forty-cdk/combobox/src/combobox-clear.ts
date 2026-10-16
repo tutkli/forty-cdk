@@ -1,6 +1,13 @@
-import { computed, Directive, inject, input } from '@angular/core';
+import { computed, Directive, ElementRef, inject, input } from '@angular/core';
 
-import { hostButtonType, hostAriaLabel, reflectDisabled, resolveTextInput } from 'forty-cdk/core';
+import {
+  hostButtonType,
+  hostAriaLabel,
+  preventPointerFocus,
+  reflectDisabled,
+  registerHandle,
+  resolveTextInput,
+} from 'forty-cdk/core';
 import { injectComboboxContext } from './combobox-context';
 import { FOR_COMBOBOX_DEFAULTS } from 'forty-cdk/defaults';
 
@@ -18,6 +25,11 @@ import { FOR_COMBOBOX_DEFAULTS } from 'forty-cdk/defaults';
  * an extra `@if`. Visibility is enforced with an inline `display: none`
  * (which beats any author `display` rule a consumer applies via a class) in
  * addition to the `hidden` attribute that removes it from the a11y tree.
+ *
+ * The press never takes focus itself, so an input that already has focus keeps
+ * it and the combobox is not marked touched. The button is exempt from the
+ * listbox's outside-pointer dismissal, so clearing an open listbox leaves it
+ * open.
  */
 @Directive({
   selector: '[forComboboxClear]',
@@ -57,7 +69,13 @@ export class ForComboboxClear {
   private readonly isDisabled = computed(() => this.ctx.effectiveDisabled() || this.ctx.readonly());
 
   constructor() {
+    registerHandle(
+      inject<ElementRef<HTMLElement>>(ElementRef).nativeElement,
+      (el) => this.ctx.registerFieldButton(el),
+      (el) => this.ctx.unregisterFieldButton(el),
+    );
     reflectDisabled(this.isDisabled);
+    preventPointerFocus();
   }
 
   private onClick(): void {

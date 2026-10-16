@@ -1,7 +1,7 @@
 import { Component, ErrorHandler, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { pressKey } from 'forty-cdk/testing';
+import { pressKey, pressWithMouse } from 'forty-cdk/testing';
 
 import { afterEachOverlayCleanup, flush, renderHost } from '../../src/test-utils';
 import { ForCombobox } from './combobox';
@@ -53,9 +53,15 @@ class ActionHost {
   readonly open = signal(true);
   readonly actionDisabled = signal(false);
   readonly actionCount = signal(0);
+  readonly closeOnAction = signal(false);
+  readonly focusBeforeClose = signal<HTMLElement | null>(null);
 
   onAction(): void {
     this.actionCount.update((n) => n + 1);
+    this.focusBeforeClose()?.focus();
+    if (this.closeOnAction()) {
+      this.open.set(false);
+    }
   }
 }
 
@@ -263,13 +269,14 @@ describe('ForComboboxAction', () => {
   });
 
   describe('disabled', () => {
-    it('drops out of the focus order and reflects aria-disabled / data-disabled', async () => {
+    it('stays out of the native Tab order and reflects aria-disabled / data-disabled', async () => {
       const r = renderHost(ActionHost);
       r.instance.actionDisabled.set(true);
       await flush(r.fixture);
 
       const action = getAction();
-      expect(action.hasAttribute('tabindex')).toBe(false);
+      expect(action.getAttribute('tabindex')).toBe('-1');
+      expect(action.tabIndex).toBe(-1);
       expect(action.getAttribute('aria-disabled')).toBe('true');
       expect(action.hasAttribute('data-disabled')).toBe(true);
     });
@@ -469,6 +476,73 @@ describe('ForComboboxAction', () => {
 
       expect(esc.defaultPrevented).toBe(true);
       expect(r.instance.open()).toBe(false);
+    });
+  });
+
+  describe('closing from (activate)', () => {
+    it('returns focus to the input when Enter on a Tab-focused action closes the popup', async () => {
+      const r = renderHost(ActionHost);
+      r.instance.closeOnAction.set(true);
+      await flush(r.fixture);
+      const input = getInput();
+      input.focus();
+
+      pressKey(input, 'Tab');
+      await flush(r.fixture);
+      expect(document.activeElement).toBe(getAction());
+
+      pressKey(getAction(), 'Enter');
+      await flush(r.fixture);
+
+      expect(r.instance.actionCount()).toBe(1);
+      expect(r.instance.open()).toBe(false);
+      expect(document.activeElement).toBe(input);
+    });
+
+    it('returns focus to the input when a click on the action closes the popup', async () => {
+      const r = renderHost(ActionHost);
+      r.instance.closeOnAction.set(true);
+      await flush(r.fixture);
+
+      pressWithMouse(getAction());
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+      expect(document.activeElement).toBe(getInput());
+    });
+
+    it('leaves focus where the handler moved it outside the popup', async () => {
+      const r = renderHost(ActionHost);
+      const outside = document.createElement('button');
+      document.body.appendChild(outside);
+      try {
+        r.instance.closeOnAction.set(true);
+        r.instance.focusBeforeClose.set(outside);
+        await flush(r.fixture);
+        getAction().focus();
+
+        pressKey(getAction(), 'Enter');
+        await flush(r.fixture);
+
+        expect(r.instance.open()).toBe(false);
+        expect(document.activeElement).toBe(outside);
+      } finally {
+        outside.remove();
+      }
+    });
+
+    it('does not move focus when the popup closes while the input holds it', async () => {
+      const r = renderHost(ActionHost);
+      await flush(r.fixture);
+      const input = getInput();
+      input.focus();
+      const focusSpy = vi.spyOn(input, 'focus');
+
+      r.instance.open.set(false);
+      await flush(r.fixture);
+
+      expect(focusSpy).not.toHaveBeenCalled();
+      expect(document.activeElement).toBe(input);
     });
   });
 

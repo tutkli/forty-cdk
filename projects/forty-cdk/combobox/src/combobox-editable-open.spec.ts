@@ -9,6 +9,7 @@ import {
   renderHost,
 } from '../../src/test-utils';
 import { ForCombobox } from './combobox';
+import { ForComboboxClear } from './combobox-clear';
 import { ForComboboxContent } from './combobox-content';
 import { type ForComboboxOpenHighlight } from './combobox-context';
 import { provideForComboboxDefaults } from 'forty-cdk/defaults';
@@ -127,6 +128,36 @@ class OpenHighlightDefaultsHost extends FruitHost {}
 })
 class ToggleHost extends FruitHost {
   readonly disabled = signal(false);
+}
+
+@Component({
+  imports: [ForCombobox, ForComboboxInput, ForComboboxContent, ForComboboxOption, ForComboboxClear],
+  template: `
+    <div
+      forCombobox
+      [(query)]="query"
+      [(value)]="value"
+      [(open)]="open"
+      (openChange)="openChanges.push($event)"
+      (touch)="touches.set(touches() + 1)"
+      (pointerDownOutside)="outsidePresses.set(outsidePresses() + 1)"
+    >
+      <input forComboboxInput />
+      <button forComboboxClear data-test-id="clear">×</button>
+      @if (open()) {
+        <div forComboboxContent>
+          @for (it of filtered(); track it.id) {
+            <div [attr.data-test-id]="it.id" forComboboxOption [value]="it.id" [label]="it.label">
+              {{ it.label }}
+            </div>
+          }
+        </div>
+      }
+    </div>
+  `,
+})
+class ClearHost extends FruitHost {
+  readonly outsidePresses = signal(0);
 }
 
 @Component({
@@ -481,6 +512,47 @@ describe('ForCombobox editable anatomy', () => {
       await flush(r.fixture);
 
       expect(r.instance.open()).toBe(false);
+    });
+  });
+
+  describe('[forComboboxClear]', () => {
+    it('clears an open listbox without dismissing it, moving focus or marking touched', async () => {
+      const r = renderHost(ClearHost);
+      const input = getInput();
+      input.focus();
+      typeInto(input, 'ap');
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe(true);
+      r.instance.openChanges.length = 0;
+
+      pressWithMouse(getByTestId('clear'));
+      await flush(r.fixture);
+
+      expect(r.instance.query()).toBe('');
+      expect(r.instance.open()).toBe(true);
+      expect(r.instance.openChanges).toEqual([]);
+      expect(r.instance.outsidePresses()).toBe(0);
+      expect(r.instance.touches()).toBe(0);
+      expect(document.activeElement).toBe(input);
+    });
+
+    it('treats focus moving onto the clear button as staying inside the combobox', async () => {
+      const r = renderHost(ClearHost);
+      getInput().dispatchEvent(
+        new FocusEvent('focusout', { bubbles: true, relatedTarget: getByTestId('clear') }),
+      );
+      await flush(r.fixture);
+
+      expect(r.instance.touches()).toBe(0);
+    });
+
+    it('cancels mousedown so the press never takes focus', () => {
+      renderHost(ClearHost);
+      const mousedown = new MouseEvent('mousedown', { bubbles: true, cancelable: true });
+
+      getByTestId('clear').dispatchEvent(mousedown);
+
+      expect(mousedown.defaultPrevented).toBe(true);
     });
   });
 

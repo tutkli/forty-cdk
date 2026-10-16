@@ -64,8 +64,8 @@ export class ForComboboxToggle {
   constructor() {
     registerHandle(
       inject<ElementRef<HTMLElement>>(ElementRef).nativeElement,
-      (el) => this.ctx.registerToggle(el),
-      (el) => this.ctx.unregisterToggle(el),
+      (el) => this.ctx.registerFieldButton(el),
+      (el) => this.ctx.unregisterFieldButton(el),
     );
     reflectDisabled(this.ctx.effectiveDisabled);
     preventPointerFocus();
