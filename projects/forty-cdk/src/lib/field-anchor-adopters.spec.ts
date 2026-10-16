@@ -73,7 +73,8 @@ interface AnchorHost {
     ForSelectContent,
   ],
   template: `
-    @switch (mode()) {
+    @let activeMode = mode();
+    @switch (activeMode) {
       @case ('field-anchor') {
         <test-form-field>
           <span forLabel>Fruit</span>
@@ -117,6 +118,7 @@ interface AnchorHost {
           </div>
         </test-form-field>
       }
+      @default never;
     }
   `,
 })
@@ -137,7 +139,8 @@ class SelectHost implements AnchorHost {
     ForComboboxContent,
   ],
   template: `
-    @switch (mode()) {
+    @let activeMode = mode();
+    @switch (activeMode) {
       @case ('field-anchor') {
         <test-form-field>
           <span forLabel>Fruit</span>
@@ -181,6 +184,7 @@ class SelectHost implements AnchorHost {
           </div>
         </test-form-field>
       }
+      @default never;
     }
   `,
 })
@@ -202,7 +206,8 @@ class ComboboxHost implements AnchorHost {
   ],
   providers: [...provideNativeDateAdapter()],
   template: `
-    @switch (mode()) {
+    @let activeMode = mode();
+    @switch (activeMode) {
       @case ('field-anchor') {
         <test-form-field>
           <span forLabel>Date</span>
@@ -246,6 +251,7 @@ class ComboboxHost implements AnchorHost {
           </div>
         </test-form-field>
       }
+      @default never;
     }
   `,
 })
@@ -267,7 +273,8 @@ class DatePickerHost implements AnchorHost {
   ],
   providers: [...provideNativeDateAdapter()],
   template: `
-    @switch (mode()) {
+    @let activeMode = mode();
+    @switch (activeMode) {
       @case ('field-anchor') {
         <test-form-field>
           <span forLabel>Time</span>
@@ -311,6 +318,7 @@ class DatePickerHost implements AnchorHost {
           </div>
         </test-form-field>
       }
+      @default never;
     }
   `,
 })

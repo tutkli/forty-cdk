@@ -132,7 +132,8 @@ type PeerKind =
   template: `
     <div forDialog ariaLabel="Dialog">
       <button type="button" data-test-id="before">before</button>
-      @switch (kind()) {
+      @let activeKind = kind();
+      @switch (activeKind) {
         @case ('select') {
           <div forSelect [(open)]="open" ariaLabel="Fruit">
             <button type="button" forSelectTrigger data-test-id="trigger">Fruit</button>
@@ -212,6 +213,7 @@ type PeerKind =
             }
           </div>
         }
+        @default never;
       }
       @if (trailing()) {
         <button type="button" data-test-id="after">after</button>

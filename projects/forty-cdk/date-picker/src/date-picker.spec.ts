@@ -2069,7 +2069,8 @@ describe('ForDatePicker', () => {
           <button data-testid="trigger" forDatePickerTrigger>Pick</button>
           @if (open()) {
             <div forDatePickerContent>
-              @switch (wrapper()) {
+              @let activeWrapper = wrapper();
+              @switch (activeWrapper) {
                 @case ('subclass') {
                   <div myCalendar [value]="picker.value()">
                     <table forCalendarGrid #g="forCalendarGrid">
@@ -2133,6 +2134,7 @@ describe('ForDatePicker', () => {
                     </table>
                   </div>
                 }
+                @default never;
               }
             </div>
           }

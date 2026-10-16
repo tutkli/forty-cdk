@@ -42,7 +42,7 @@ const INVOICES: readonly Invoice[] = Array.from({ length: 23 }, (_, i) => ({
         class="pgn"
         ariaLabel="Invoice pages"
         [(page)]="page"
-        [count]="pageCount()"
+        [count]="pageCount"
       >
         <button forPaginationPrevious class="pgn-btn pgn-nav" ariaLabel="Previous page">
           <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -199,7 +199,7 @@ const INVOICES: readonly Invoice[] = Array.from({ length: 23 }, (_, i) => ({
 export class PaginationDataExample {
   protected readonly total = INVOICES.length;
   protected readonly page = signal(1);
-  protected readonly pageCount = computed(() => Math.ceil(this.total / PAGE_SIZE));
+  protected readonly pageCount = Math.ceil(this.total / PAGE_SIZE);
 
   protected readonly pageRows = computed<readonly Invoice[]>(() => {
     const start = (this.page() - 1) * PAGE_SIZE;

@@ -51,6 +51,7 @@ type RenderedBlock =
           @case ('plain') {
             <compact-table [table]="block.table" />
           }
+          @default never(block);
         }
       }
     </section>

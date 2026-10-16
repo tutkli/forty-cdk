@@ -52,8 +52,8 @@ import { injectPressed } from './pressed';
   selector: '[forButton]',
   exportAs: 'forButton',
   host: {
-    '[attr.type]': 'resolvedType()',
-    '[attr.role]': 'resolvedRole()',
+    '[attr.type]': 'resolvedType',
+    '[attr.role]': 'resolvedRole',
     '[attr.tabindex]': 'resolvedTabindex()',
     '[attr.aria-disabled]': "effectiveDisabled() ? 'true' : null",
     '[attr.data-disabled]': "effectiveDisabled() ? '' : null",
@@ -106,10 +106,9 @@ export class ForButton {
   private readonly pressed = injectPressed({ disabled: this.effectiveDisabled });
   private readonly focusVisible = computed(() => this.#focused() && this.#keyboardModality());
 
-  private readonly resolvedType = computed(
-    () => this.#initialType ?? (this.#activation.nativeButton ? 'button' : null),
-  );
-  private readonly resolvedRole = computed(() => (this.#activation.nativeButton ? null : 'button'));
+  private readonly resolvedType =
+    this.#initialType ?? (this.#activation.nativeButton ? 'button' : null);
+  private readonly resolvedRole = this.#activation.nativeButton ? null : 'button';
   private readonly resolvedTabindex = this.#activation.tabindex;
 
   private onClick(event: MouseEvent): void {

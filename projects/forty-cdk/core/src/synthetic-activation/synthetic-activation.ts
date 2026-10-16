@@ -1,4 +1,4 @@
-import { computed, ElementRef, inject, type Signal } from '@angular/core';
+import { ElementRef, inject, signal, type Signal } from '@angular/core';
 
 /** Configuration for {@link injectSyntheticActivation}. */
 export interface SyntheticActivationConfig {
@@ -88,7 +88,7 @@ export function injectSyntheticActivation(
 
   return {
     nativeButton,
-    tabindex: computed(() => (nativeButton ? null : '0')),
+    tabindex: signal(nativeButton ? null : '0').asReadonly(),
     keydown(event: KeyboardEvent): void {
       if (nativeButton) {
         return;

@@ -446,7 +446,7 @@ The lower-level hooks (`visibleMonthNumber()`, `visibleYear()`, `monthOptions()`
     <h2 forCalendarHeading #h="forCalendarHeading" class="sr-only">{{ h.label() }}</h2>
   </header>
 
-  @switch (cal.view()) { @case ('day') {
+  @let view = cal.view(); @switch (view) { @case ('day') {
   <table forCalendarGrid #grid="forCalendarGrid">
     <thead forCalendarGridHeader>
       <tr>
@@ -489,7 +489,7 @@ The lower-level hooks (`visibleMonthNumber()`, `visibleYear()`, `monthOptions()`
       }
     </tbody>
   </table>
-  } }
+  } @default never; }
 </div>
 ```
 

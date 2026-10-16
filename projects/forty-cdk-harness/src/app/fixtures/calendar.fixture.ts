@@ -55,7 +55,8 @@ import { queryFlag } from './_query-flag';
             {{ heading.label() }}
           </h2>
         </header>
-        @switch (cal.view()) {
+        @let view = cal.view();
+        @switch (view) {
           @case ('day') {
             <table forCalendarGrid #grid="forCalendarGrid">
               <thead forCalendarGridHeader>
@@ -116,6 +117,7 @@ import { queryFlag } from './_query-flag';
               </tbody>
             </table>
           }
+          @default never;
         }
       </div>
     } @else if (isDropdowns) {

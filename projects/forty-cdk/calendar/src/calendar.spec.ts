@@ -338,7 +338,8 @@ class CalendarDropdownsHost {
       <h2 forCalendarHeading #heading="forCalendarHeading" data-testid="heading">
         {{ heading.label() }}
       </h2>
-      @switch (cal.view()) {
+      @let activeView = cal.view();
+      @switch (activeView) {
         @case ('day') {
           <table forCalendarGrid #grid="forCalendarGrid">
             <thead forCalendarGridHeader>
@@ -399,6 +400,7 @@ class CalendarDropdownsHost {
             </tbody>
           </table>
         }
+        @default never;
       }
     </div>
   `,
