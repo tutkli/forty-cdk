@@ -847,6 +847,88 @@ describe('ForCalendar', () => {
       expect(focusedCell(r)).toBe(cell(r, JUN_15));
     });
 
+    it('keeps the paged month of an empty calendar when [min] is rebound to an equal date in a new object', async () => {
+      const r = renderHost(CalendarHost);
+      r.instance.locale.set('en-US');
+      r.instance.value.set(null);
+      r.instance.min.set(new Date(2026, 5, 1));
+      await flush(r.fixture);
+
+      pressKey(focusedCell(r), 'PageDown');
+      await flush(r.fixture);
+      expect(r.query('[data-testid="heading"]')!.textContent).toContain('July 2026');
+
+      r.instance.min.set(new Date(2026, 5, 1));
+      await flush(r.fixture);
+
+      expect(r.query('[data-testid="heading"]')!.textContent).toContain('July 2026');
+      expect(focusedCell(r)).toBe(cell(r, new Date(2026, 6, 15)));
+    });
+
+    it('keeps the focused date of an empty calendar when [max] is rebound to an equal date in a new object', async () => {
+      const r = renderHost(CalendarHost);
+      r.instance.value.set(null);
+      r.instance.max.set(new Date(2026, 11, 31));
+      await flush(r.fixture);
+
+      pressKey(focusedCell(r), 'ArrowRight');
+      await flush(r.fixture);
+      expect(focusedCell(r)).toBe(cell(r, new Date(2026, 5, 16)));
+
+      r.instance.max.set(new Date(2026, 11, 31));
+      await flush(r.fixture);
+
+      expect(focusedCell(r)).toBe(cell(r, new Date(2026, 5, 16)));
+    });
+
+    it('keeps the focused date of an empty calendar when [min] moves to another date that still admits it', async () => {
+      const r = renderHost(CalendarHost);
+      r.instance.locale.set('en-US');
+      r.instance.value.set(null);
+      r.instance.min.set(new Date(2026, 5, 1));
+      await flush(r.fixture);
+
+      pressKey(focusedCell(r), 'PageDown');
+      await flush(r.fixture);
+
+      r.instance.min.set(new Date(2026, 5, 10));
+      await flush(r.fixture);
+
+      expect(r.query('[data-testid="heading"]')!.textContent).toContain('July 2026');
+      expect(focusedCell(r)).toBe(cell(r, new Date(2026, 6, 15)));
+    });
+
+    it('clamps the focused date of an empty calendar when a new [min] excludes it', async () => {
+      const r = renderHost(CalendarHost);
+      r.instance.locale.set('en-US');
+      r.instance.value.set(null);
+      await flush(r.fixture);
+
+      pressKey(focusedCell(r), 'PageDown');
+      await flush(r.fixture);
+      expect(focusedCell(r)).toBe(cell(r, new Date(2026, 6, 15)));
+
+      r.instance.min.set(new Date(2026, 7, 10));
+      await flush(r.fixture);
+
+      expect(r.query('[data-testid="heading"]')!.textContent).toContain('August 2026');
+      expect(focusedCell(r)).toBe(cell(r, new Date(2026, 7, 10)));
+    });
+
+    it('keeps the focused date of a calendar with a value when [min] is rebound', async () => {
+      const r = renderHost(CalendarHost);
+      r.instance.min.set(new Date(2026, 5, 1));
+      await flush(r.fixture);
+
+      pressKey(focusedCell(r), 'PageDown');
+      await flush(r.fixture);
+
+      r.instance.min.set(new Date(2026, 5, 1));
+      await flush(r.fixture);
+
+      expect(focusedCell(r)).toBe(cell(r, new Date(2026, 6, 15)));
+    });
+
     it('selects on click for available dates', async () => {
       const r = renderHost(CalendarHost);
       const target = cell(r, new Date(2026, 5, 20));
@@ -892,6 +974,47 @@ describe('ForCalendar', () => {
       await flush(r.fixture);
       expect(cell(r, new Date(2026, 5, 16)).getAttribute('aria-selected')).toBe('false');
       expect(cell(r, JUN_15).getAttribute('aria-selected')).toBe('true');
+    });
+
+    it('readonly: a click moves the tab stop and the highlight to the clicked cell without selecting it', async () => {
+      const r = renderHost(CalendarHost);
+      r.instance.readonly.set(true);
+      await flush(r.fixture);
+
+      const target = cell(r, new Date(2026, 5, 20));
+      target.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await flush(r.fixture);
+
+      expect(tabbableCells(r)).toEqual([target]);
+      expect(target.getAttribute('data-highlighted')).toBe('');
+      expect(cell(r, JUN_15).hasAttribute('data-highlighted')).toBe(false);
+      expect(target.getAttribute('aria-selected')).toBe('false');
+      expect(adapter.isSameDay(r.instance.value()!, JUN_15)).toBe(true);
+    });
+
+    it('a click on an unavailable date moves the tab stop to it without selecting it', async () => {
+      const r = renderHost(CalendarHost);
+      r.instance.unavailable.set((date) => date.getDate() === 20);
+      await flush(r.fixture);
+
+      const target = cell(r, new Date(2026, 5, 20));
+      target.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await flush(r.fixture);
+
+      expect(tabbableCells(r)).toEqual([target]);
+      expect(target.getAttribute('aria-selected')).toBe('false');
+      expect(cell(r, JUN_15).getAttribute('aria-selected')).toBe('true');
+    });
+
+    it('disabled: a click leaves the tab stop where it was', async () => {
+      const r = renderHost(CalendarHost);
+      r.instance.disabled.set(true);
+      await flush(r.fixture);
+
+      cell(r, new Date(2026, 5, 20)).dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await flush(r.fixture);
+
+      expect(tabbableCells(r)).toEqual([cell(r, JUN_15)]);
     });
   });
 
@@ -1056,6 +1179,42 @@ describe('ForCalendar', () => {
     const JUN_10 = new Date(2026, 5, 10);
     const JUN_15 = new Date(2026, 5, 15);
     const JUN_20 = new Date(2026, 5, 20);
+
+    it('keeps a pending preview where the keyboard left it when [min] is rebound to an equal date', async () => {
+      const r = renderHost(CalendarRangeHost);
+      r.instance.min.set(new Date(2026, 5, 1));
+      await flush(r.fixture);
+
+      click(rangeCell(r, JUN_10));
+      await flush(r.fixture);
+      pressKey(rangeCell(r, JUN_10), 'ArrowRight');
+      await flush(r.fixture);
+
+      r.instance.min.set(new Date(2026, 5, 1));
+      await flush(r.fixture);
+
+      const jun11 = new Date(2026, 5, 11);
+      expect(rangeCell(r, jun11).getAttribute('tabindex')).toBe('0');
+      expect(rangeCell(r, jun11).hasAttribute('data-range-end')).toBe(true);
+      expect(rangeCell(r, new Date(2026, 5, 12)).hasAttribute('data-range-preview')).toBe(false);
+    });
+
+    it('a click whose range length is rejected moves the tab stop and the preview to the clicked cell', async () => {
+      const r = renderHost(CalendarRangeHost);
+      r.instance.minRangeLength.set(5);
+      await flush(r.fixture);
+
+      click(rangeCell(r, JUN_10));
+      await flush(r.fixture);
+      const jun12 = new Date(2026, 5, 12);
+      click(rangeCell(r, jun12));
+      await flush(r.fixture);
+
+      expect(r.instance.range()).toBeNull();
+      expect(rangeCell(r, jun12).getAttribute('tabindex')).toBe('0');
+      expect(rangeCell(r, jun12).hasAttribute('data-range-end')).toBe(true);
+      expect(rangeCell(r, JUN_10).hasAttribute('data-range-start')).toBe(true);
+    });
 
     it('anchor → commit: sets range, emits data-range-start/end/in-range', async () => {
       const r = renderHost(CalendarRangeHost);

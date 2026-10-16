@@ -1,6 +1,11 @@
 import { inject, InjectionToken, type Signal } from '@angular/core';
 
-import { orphanContextError, type Unset, type WritingDirection } from 'forty-cdk/core';
+import {
+  assertRootContext,
+  orphanContextError,
+  type Unset,
+  type WritingDirection,
+} from 'forty-cdk/core';
 import { type DateAdapter } from 'forty-cdk/date-adapter';
 
 /** The active display mode of a `ForCalendar`. */
@@ -312,18 +317,56 @@ export interface ForCalendarContext<D> {
   adoptHeadingId(el: HTMLElement): void;
 }
 
-/** Injection token for {@link ForCalendarContext}, provided by `ForCalendar`. */
+/**
+ * The calls only the calendar's own pieces make on the root.
+ *
+ * @typeParam D The adapter's date type.
+ */
+export interface CalendarPieceContext<D> {
+  /**
+   * Reported by `[forCalendarCell]` on click. Selects `date`, or, when the
+   * selection is refused (read-only, unavailable, a rejected range length),
+   * still moves the focused date there so the clicked cell owns the tab stop.
+   * A no-op while the calendar is disabled.
+   */
+  activateDate(date: D): void;
+}
+
+/**
+ * The type the calendar's pieces read {@link FOR_CALENDAR_CONTEXT} at: the
+ * {@link ForCalendarContext} read surface plus the {@link CalendarPieceContext}
+ * calls.
+ *
+ * Never exported from `public-api.ts`. `ForCalendar` declares those members
+ * TS-`private`, which keeps them out of the emitted `.d.ts` while
+ * `useExisting` still satisfies this contract at runtime.
+ *
+ * @typeParam D The adapter's date type.
+ */
+export interface CalendarContext<D> extends ForCalendarContext<D>, CalendarPieceContext<D> {}
+
+/**
+ * Injection token for {@link ForCalendarContext}, provided by `ForCalendar`.
+ *
+ * Publicly typed as the read surface, which is the whole of what the token
+ * promises a consumer. The pieces read the same token at an internal type that
+ * adds their own calls, so a wrapper re-providing it must alias it to the root:
+ * `{ provide: FOR_CALENDAR_CONTEXT, useExisting: MyCalendar }`, where
+ * `MyCalendar` extends `ForCalendar`. A value that merely satisfies the
+ * declared type resolves too, and is rejected in dev mode by the first piece to
+ * resolve it.
+ */
 export const FOR_CALENDAR_CONTEXT = new InjectionToken<ForCalendarContext<unknown>>(
   'FOR_CALENDAR_CONTEXT',
 );
 
 /**
- * Injects the nearest {@link ForCalendarContext}, throwing a descriptive
- * error when used outside a `[forCalendar]` element.
+ * Injects the nearest calendar context, throwing a descriptive error when used
+ * outside a `[forCalendar]` element.
  *
  * @param piece Name of the calling directive, used in the error message.
  */
-export function injectCalendarContext(piece: string): ForCalendarContext<unknown> {
+export function injectCalendarContext(piece: string): CalendarContext<unknown> {
   const ctx = inject(FOR_CALENDAR_CONTEXT, { optional: true });
   if (!ctx) {
     throw orphanContextError({
@@ -333,5 +376,13 @@ export function injectCalendarContext(piece: string): ForCalendarContext<unknown
       token: 'FOR_CALENDAR_CONTEXT',
     });
   }
-  return ctx;
+  const widened = ctx as CalendarContext<unknown>;
+  assertRootContext({
+    entryPoint: 'calendar',
+    token: 'FOR_CALENDAR_CONTEXT',
+    root: '[forCalendar]',
+    piece,
+    probe: () => widened.activateDate,
+  });
+  return widened;
 }

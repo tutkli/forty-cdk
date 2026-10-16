@@ -115,6 +115,32 @@ test.describe('Calendar', () => {
     await page.keyboard.press('ArrowRight');
     await expectFocused(el(page, 'cell-2026-6-15'));
   });
+
+  for (const [label, flag] of [
+    ['read-only calendar', 'readonly'],
+    ['unavailable date', 'unavailable'],
+  ] as const) {
+    test(`a refused click on a ${label} moves the tab stop and the highlight to the clicked cell`, async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'calendar', { [flag]: '1' });
+      const target = el(page, 'cell-2026-6-20');
+
+      await target.click({ force: true });
+
+      await expectFocused(target);
+      await expect(target).toHaveAttribute('tabindex', '0');
+      await expect(target).toHaveAttribute('data-highlighted', '');
+      await expect(target).toHaveAttribute('aria-selected', 'false');
+      await expect(el(page, 'cell-2026-6-15')).toHaveAttribute('tabindex', '-1');
+      await expect(el(page, 'cell-2026-6-15')).not.toHaveAttribute('data-highlighted');
+
+      await page.keyboard.press('Tab');
+      await expectFocused(el(page, 'after'));
+      await page.keyboard.press('Shift+Tab');
+      await expectFocused(target);
+    });
+  }
 });
 
 test.describe('Calendar — month/year dropdowns', () => {

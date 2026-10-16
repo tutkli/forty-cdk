@@ -217,7 +217,14 @@ import { queryFlag } from './_query-flag';
         </table>
       </div>
     } @else {
-      <div forCalendar [(value)]="value" [max]="boundMax" [dir]="dir">
+      <div
+        forCalendar
+        [(value)]="value"
+        [max]="boundMax"
+        [dir]="dir"
+        [readonly]="isReadonly"
+        [isDateUnavailable]="unavailable"
+      >
         <header>
           <button forCalendarPrevButton [ariaLabel]="'Previous month'" data-testid="prev">‹</button>
           <h2 forCalendarHeading #heading="forCalendarHeading" data-testid="heading">
@@ -269,4 +276,8 @@ export class CalendarFixture {
   protected readonly isRange = queryFlag('range');
   protected readonly isDropdowns = queryFlag('dropdowns');
   protected readonly isViews = queryFlag('views');
+  protected readonly isReadonly = queryFlag('readonly');
+  protected readonly unavailable: (date: Date) => boolean = queryFlag('unavailable')
+    ? (date) => date.getDate() === 20
+    : () => false;
 }

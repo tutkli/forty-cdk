@@ -37,6 +37,7 @@
 export const REGISTRATION_SURFACES = {
   accordion: ['AccordionContext', 'ForAccordionTriggerHandle'],
   avatar: ['AvatarContext', 'AvatarPieceContext'],
+  calendar: ['CalendarContext', 'CalendarPieceContext'],
   carousel: [
     'CarouselContext',
     'CarouselPieceContext',

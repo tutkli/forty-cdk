@@ -76,19 +76,20 @@ export class CalendarNavigation<D> {
 
   /** Select `date`, unless the calendar is disabled / read-only or the date is unavailable. */
   selectDate(date: D): void {
-    if (this.#host.disabled() || this.#host.readonly() || this.#host.bounds.isUnavailable(date)) {
-      return;
-    }
-    if (this.#host.selectionMode() === 'range') {
-      if (this.#host.range.select(date)) {
-        this.#cursor.setFocusedDay(date);
-        this.#setFocusedDate(date);
-        this.#host.focusDayCell(date);
-      }
+    this.#select(date);
+  }
+
+  /**
+   * Apply a pointer activation of the day cell for `date`: select it, or, when
+   * the selection is refused, still move the focused date there so the clicked
+   * cell owns the tab stop. A no-op while the calendar is disabled.
+   */
+  activateDate(date: D): void {
+    if (this.#host.disabled() || this.#select(date)) {
       return;
     }
     this.#cursor.setFocusedDay(date);
-    this.#host.value.set(this.#withPreservedTime(date));
+    this.#setFocusedDate(date);
     this.#host.focusDayCell(date);
   }
 
@@ -155,6 +156,25 @@ export class CalendarNavigation<D> {
     const daysInMonth = adapter.getDaysInMonth(adapter.createDate(year, month, 1));
     const day = Math.min(adapter.getDate(this.#host.focusedDate()), daysInMonth);
     return adapter.createDate(year, month, day);
+  }
+
+  #select(date: D): boolean {
+    if (this.#host.disabled() || this.#host.readonly() || this.#host.bounds.isUnavailable(date)) {
+      return false;
+    }
+    if (this.#host.selectionMode() === 'range') {
+      if (!this.#host.range.select(date)) {
+        return false;
+      }
+      this.#cursor.setFocusedDay(date);
+      this.#setFocusedDate(date);
+      this.#host.focusDayCell(date);
+      return true;
+    }
+    this.#cursor.setFocusedDay(date);
+    this.#host.value.set(this.#withPreservedTime(date));
+    this.#host.focusDayCell(date);
+    return true;
   }
 
   #setFocusedDate(next: D): void {
