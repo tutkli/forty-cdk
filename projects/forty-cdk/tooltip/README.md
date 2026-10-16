@@ -123,7 +123,7 @@ With `hoverableContent` the bubble keeps `pointer-events`, so the pointer can re
 
 ### `ForTooltipTrigger`
 
-`ForTooltipTrigger` has no inputs of its own and coordinates via the `ForTooltip` context.
+`ForTooltipTrigger` has no inputs of its own and coordinates via the `ForTooltip` context. A subclass can override its `canOpen()` hook to keep a hover or a keyboard focus from opening the tooltip; see [Wrapping in a design system](#wrapping-in-a-design-system).
 
 | Data attribute | Values             |
 | -------------- | ------------------ |
@@ -348,3 +348,24 @@ Angular resolves `ng-template` DI at the template's **declaration** site, not wh
 ## Wrapping in a design system
 
 Subclass the root and re-provide `FOR_TOOLTIP_CONTEXT` with `useExisting` pointing at the subclass, since Angular does not inherit a directive's `providers`; [Wrapping non-form roots](../../../docs/wrapping-non-form-roots.md) walks the pattern.
+
+To decide per trigger whether the tooltip may open, subclass `ForTooltipTrigger` and override `canOpen()`. It is read on every hover and keyboard focus, so a wrapper that composes the root through `hostDirectives` can stay closed while it has no message, instead of describing the trigger with content that never mounts:
+
+```ts
+import { Directive, input } from '@angular/core';
+import { ForTooltip, ForTooltipTrigger } from 'forty-cdk/tooltip';
+
+@Directive({
+  selector: '[appTooltip]',
+  hostDirectives: [{ directive: ForTooltip, inputs: ['disabled: appTooltipDisabled'] }],
+})
+export class AppTooltip extends ForTooltipTrigger {
+  readonly appTooltip = input<string | null>('');
+
+  protected override canOpen(): boolean {
+    return !!this.appTooltip();
+  }
+}
+```
+
+The hook gates opens only. It does not close a tooltip that is already open, and the root's `open` model and `show()` do not consult it.

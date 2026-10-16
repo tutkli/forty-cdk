@@ -1,6 +1,8 @@
 import { NgTemplateOutlet } from '@angular/common';
 import {
   Component,
+  Directive,
+  input,
   type Provider,
   provideZonelessChangeDetection,
   signal,
@@ -1994,6 +1996,64 @@ describe('ForHoverCard', () => {
         expect(fixture.componentInstance.open()).toBe(true);
         expect(trigger.getAttribute('data-state')).toBe('open');
       });
+    });
+  });
+
+  describe('trigger subclass', () => {
+    @Directive({
+      selector: '[appPreview]',
+      hostDirectives: [{ directive: ForHoverCard, inputs: ['openDelay', 'closeDelay'] }],
+    })
+    class AppPreview extends ForHoverCardTrigger {
+      readonly appPreview = input('');
+
+      protected override canOpen(): boolean {
+        return this.appPreview() !== '';
+      }
+    }
+
+    @Component({
+      imports: [AppPreview],
+      template: `<a href="/x" [appPreview]="preview()" [openDelay]="0" [closeDelay]="0"
+        >Trigger</a
+      >`,
+    })
+    class SubclassHost {
+      readonly preview = signal('');
+    }
+
+    it('vetoes a hover open through canOpen', async () => {
+      const { query, flush, instance } = renderHost(SubclassHost);
+      await flush();
+      const trigger = query<HTMLAnchorElement>('a')!;
+
+      trigger.dispatchEvent(pointerEvent('pointerenter'));
+      await flush();
+      expect(trigger.getAttribute('data-state')).toBe('closed');
+
+      trigger.dispatchEvent(pointerEvent('pointerleave'));
+      instance.preview.set('Ada Lovelace');
+      await flush();
+      trigger.dispatchEvent(pointerEvent('pointerenter'));
+      await flush();
+      expect(trigger.getAttribute('data-state')).toBe('open');
+    });
+
+    it('vetoes a keyboard-focus open through canOpen', async () => {
+      const { query, flush, instance } = renderHost(SubclassHost);
+      await flush();
+      const trigger = query<HTMLAnchorElement>('a')!;
+
+      trigger.dispatchEvent(new FocusEvent('focus'));
+      await flush();
+      expect(trigger.getAttribute('data-state')).toBe('closed');
+
+      trigger.dispatchEvent(new FocusEvent('blur'));
+      instance.preview.set('Ada Lovelace');
+      await flush();
+      trigger.dispatchEvent(new FocusEvent('focus'));
+      await flush();
+      expect(trigger.getAttribute('data-state')).toBe('open');
     });
   });
 });

@@ -109,6 +109,8 @@ export class HoverCardDefaultExample {}
 
 ### `ForHoverCardTrigger`
 
+A subclass can override the trigger's `canOpen()` hook to keep a hover or a keyboard focus from opening the card; see [Wrapping in a design system](#wrapping-in-a-design-system).
+
 | Data attribute | Values             |
 | -------------- | ------------------ |
 | `data-state`   | `open` \| `closed` |
@@ -296,3 +298,24 @@ Angular resolves `ng-template` DI at the template's **declaration** site, not wh
 ## Wrapping in a design system
 
 Subclass the root and re-provide `FOR_HOVER_CARD_CONTEXT` with `useExisting` pointing at the subclass, since Angular does not inherit a directive's `providers`; [Wrapping non-form roots](../../../docs/wrapping-non-form-roots.md) walks the pattern.
+
+To decide per trigger whether the card may open, subclass `ForHoverCardTrigger` and override `canOpen()`. It is read on every hover and keyboard focus, so a wrapper that composes the root through `hostDirectives` can stay closed while it has nothing to preview:
+
+```ts
+import { Directive, input } from '@angular/core';
+import { ForHoverCard, ForHoverCardTrigger } from 'forty-cdk/hover-card';
+
+@Directive({
+  selector: '[appUserPreview]',
+  hostDirectives: [{ directive: ForHoverCard, inputs: ['disabled: appUserPreviewDisabled'] }],
+})
+export class AppUserPreview extends ForHoverCardTrigger {
+  readonly appUserPreview = input<string | null>(null);
+
+  protected override canOpen(): boolean {
+    return this.appUserPreview() !== null;
+  }
+}
+```
+
+The hook gates opens only. It does not close a card that is already open, and the root's `open` model and `show()` do not consult it.
