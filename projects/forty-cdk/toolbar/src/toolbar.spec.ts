@@ -518,6 +518,72 @@ describe('ForToolbar', () => {
       }
     });
 
+    it('per-item disabled link cancels a middle-click so it cannot open in a new tab', async () => {
+      const { fixture, query, flush } = renderHost(ToolbarHost);
+      fixture.componentInstance.linkDisabled.set(true);
+      await flush();
+      const link = query<HTMLAnchorElement>('a')!;
+
+      const spy = vi.fn();
+      link.addEventListener('auxclick', spy);
+      try {
+        const event = new MouseEvent('auxclick', { bubbles: true, cancelable: true, button: 1 });
+        link.dispatchEvent(event);
+        expect(event.defaultPrevented).toBe(true);
+        expect(spy).not.toHaveBeenCalled();
+      } finally {
+        link.removeEventListener('auxclick', spy);
+      }
+    });
+
+    it('per-item disabled link leaves a right-button auxclick alone', async () => {
+      const { fixture, query, flush } = renderHost(ToolbarHost);
+      fixture.componentInstance.linkDisabled.set(true);
+      await flush();
+      const link = query<HTMLAnchorElement>('a')!;
+
+      const event = new MouseEvent('auxclick', { bubbles: true, cancelable: true, button: 2 });
+      link.dispatchEvent(event);
+      expect(event.defaultPrevented).toBe(false);
+    });
+
+    it('disabled toolbar cancels a middle-click on the link', async () => {
+      const { fixture, query, flush } = renderHost(ToolbarHost);
+      fixture.componentInstance.disabled.set(true);
+      await flush();
+      const link = query<HTMLAnchorElement>('a')!;
+
+      const event = new MouseEvent('auxclick', { bubbles: true, cancelable: true, button: 1 });
+      link.dispatchEvent(event);
+      expect(event.defaultPrevented).toBe(true);
+    });
+
+    it('enabled link leaves a middle-click to the browser', async () => {
+      const { query, flush } = renderHost(ToolbarHost);
+      await flush();
+      const link = query<HTMLAnchorElement>('a')!;
+
+      const event = new MouseEvent('auxclick', { bubbles: true, cancelable: true, button: 1 });
+      link.dispatchEvent(event);
+      expect(event.defaultPrevented).toBe(false);
+    });
+
+    it('arrow keys and End skip a disabled link', async () => {
+      const { fixture, queryAll, flush } = renderHost(ToolbarHost);
+      fixture.componentInstance.linkDisabled.set(true);
+      await flush();
+      const buttons = queryAll<HTMLButtonElement>('button');
+
+      buttons[0]!.focus();
+      pressKey(buttons[0]!, 'End');
+      await flush();
+      expect(document.activeElement).toBe(buttons[1]);
+
+      pressKey(buttons[1]!, 'ArrowRight');
+      await flush();
+      expect(document.activeElement).toBe(buttons[0]);
+    });
+
     it('disabled toolbar leaves arrow keys on the link unconsumed', async () => {
       const { fixture, query, flush } = renderHost(ToolbarHost);
       fixture.componentInstance.disabled.set(true);

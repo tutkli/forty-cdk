@@ -44,8 +44,10 @@ export class ForToolbarButton {
    * Tabindex per APG: once any toolbar item has been focused, the roving
    * tracker owns the tab stop so re-entry restores the last focused item;
    * before that, fall back to the first-enabled entry point. Disabled items
-   * are always -1 — they stay arrow-reachable and focusable, they just never
-   * own the toolbar's single Tab stop.
+   * are always -1: they never own the toolbar's single Tab stop, and the arrow
+   * keys, Home and End skip them. They keep DOM focusability (no native
+   * `disabled`), so an item disabled while focused can still be left with the
+   * arrow keys.
    */
   readonly tabindex = computed<-1 | 0>(() => {
     if (this.effectiveDisabled()) {
