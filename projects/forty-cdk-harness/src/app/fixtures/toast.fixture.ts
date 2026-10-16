@@ -148,6 +148,9 @@ import {
       .toast-fixture-viewport [forToast].leaving-vp {
         animation: app-toast-out 300ms ease forwards;
       }
+      .toast-fixture-viewport [forToast].leaving-slow {
+        animation: app-toast-out 3000ms ease forwards;
+      }
     `,
   ],
   template: `
@@ -156,6 +159,9 @@ import {
       Dismiss all
     </button>
     <button data-testid="grow" type="button" (click)="grow()">Grow last toast</button>
+    <button data-testid="dismiss-first" type="button" (click)="manager.dismiss('toast-0')">
+      Dismiss the first toast
+    </button>
 
     <for-toast-viewport
       class="toast-fixture-viewport"
@@ -331,6 +337,7 @@ function parseAnimateClass(raw: string | null): string {
   switch (raw) {
     case 'leaving-own':
     case 'leaving-vp':
+    case 'leaving-slow':
       return raw;
     default:
       return '';

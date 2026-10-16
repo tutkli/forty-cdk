@@ -7,6 +7,8 @@ import {
   ViewEncapsulation,
   viewChild,
 } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
+import { provideForToastDefaults } from 'forty-cdk/defaults';
 import {
   ForDialog,
   ForDialogClose,
@@ -26,12 +28,24 @@ import { ForToastManager, type ForToastTemplateContext, ForToastViewport } from 
  * `ViewEncapsulation.None` lets the styles below reach the moved viewport and
  * the toast rendered inside it, both of which live outside this fixture's own
  * view once it moves.
+ *
+ * Query params:
+ *  - `?overModal=inert` — scopes `provideForToastDefaults({ overModal: 'inert' })`
+ *    to this fixture, so the open dialog inerts the viewport. Default `peer`.
  */
 @Component({
   selector: 'app-toast-over-dialog-fixture',
   changeDetection: ChangeDetectionStrategy.OnPush,
   encapsulation: ViewEncapsulation.None,
   imports: [ForDialog, ForDialogTrigger, ForDialogClose, ForToastViewport],
+  providers: [
+    provideForToastDefaults(() => ({
+      overModal:
+        inject(ActivatedRoute).snapshot.queryParamMap.get('overModal') === 'inert'
+          ? 'inert'
+          : 'peer',
+    })),
+  ],
   styles: [
     `
       for-toast-viewport {

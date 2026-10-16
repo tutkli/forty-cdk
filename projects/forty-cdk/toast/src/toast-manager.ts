@@ -16,7 +16,6 @@ import {
   type ForToastConfig,
   type ForToastInstance,
 } from './toast-context';
-import { FOR_TOAST_DEFAULTS } from 'forty-cdk/defaults';
 import { ForToastRef } from './toast-ref';
 
 /**
@@ -53,7 +52,6 @@ interface ToastEntry<R = unknown, D = unknown> {
 @Injectable({ providedIn: 'root' })
 export class ForToastManager {
   readonly #idGen = inject(IdGenerator);
-  readonly #defaults = inject(FOR_TOAST_DEFAULTS);
   readonly #doc = inject(DOCUMENT);
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
@@ -118,21 +116,6 @@ export class ForToastManager {
     for (const entry of [...this.#entries()]) {
       entry.ref.dismiss(reason);
     }
-  }
-
-  /** @internal Used by the viewport to read the configured hotkey. */
-  hotkey(): string {
-    return this.#defaults.hotkey;
-  }
-
-  /** @internal Default duration applied when a toast omits it. */
-  defaultDuration(): number {
-    return this.#defaults.duration;
-  }
-
-  /** @internal Default `maxVisible` applied to the viewport. */
-  defaultMaxVisible(): number {
-    return this.#defaults.maxVisible;
   }
 
   /**

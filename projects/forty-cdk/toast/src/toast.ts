@@ -38,6 +38,7 @@ import {
   type ForToastTextHandle,
   type ForToastVariant,
 } from './toast-context';
+import { FOR_TOAST_DEFAULTS } from 'forty-cdk/defaults';
 
 type SwipeState = 'start' | 'move' | 'cancel' | 'end';
 
@@ -68,7 +69,9 @@ type SwipeState = 'start' | 'move' | 'cancel' | 'end';
  * exit animations.
  *
  * Behavior:
- * - Auto-dismisses after `duration` ms (default 5000). `0` is sticky.
+ * - Auto-dismisses after `duration` ms (the scope's
+ *   `provideForToastDefaults({ duration })`, 5000 unless configured). `0` is
+ *   sticky.
  * - Hovering or focusing the toast pauses the timer; leaving / blurring
  *   resumes with the remaining time.
  * - Escape (while focus is inside) closes the toast.
@@ -113,6 +116,7 @@ export class ForToast implements ForToastContext {
   readonly #destroyRef = inject(DestroyRef);
   readonly #announcer = inject(LiveAnnouncer);
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
+  readonly #defaults = inject(FOR_TOAST_DEFAULTS);
 
   /**
    * Severity of the toast. `'error'` announces assertively and takes `role="alert"`; every other
@@ -120,8 +124,12 @@ export class ForToast implements ForToastContext {
    */
   readonly variant = input<ForToastVariant>('info');
 
-  /** Auto-dismiss timer in ms. `0` keeps the toast sticky. */
-  readonly duration = input(5000, { transform: numberAttribute });
+  /**
+   * Auto-dismiss timer in ms. `0` keeps the toast sticky. Defaults to the
+   * scope's `provideForToastDefaults({ duration })`, itself `5000` unless
+   * configured.
+   */
+  readonly duration = input(this.#defaults.duration, { transform: numberAttribute });
 
   /**
    * @internal Restart nonce bound by `ForToastViewport` from the instance's

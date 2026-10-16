@@ -1,4 +1,12 @@
-import { clickOutside, el, expect, gotoFixture, test } from './_helpers';
+import {
+  clickOutside,
+  el,
+  expect,
+  expectFocused,
+  expectStays,
+  gotoFixture,
+  test,
+} from './_helpers';
 
 test.describe('Toast over a modal dialog (#1083)', () => {
   test('clicking a toast does not close the dialog and the toast stays interactive', async ({
@@ -50,6 +58,35 @@ test.describe('Toast over a modal dialog (#1083)', () => {
     await expect(el(page, 'viewport').locator('[forToast]')).toBeFocused();
     await expect(el(page, 'dialog')).toBeVisible();
     await expect(el(page, 'last-close-reason')).toHaveText('none');
+  });
+
+  test('F6 under overModal "inert" moves no focus and leaves the key unprevented', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'toast-over-dialog', { overModal: 'inert' });
+
+    await el(page, 'trigger').click();
+    await expect(el(page, 'dialog')).toBeVisible();
+
+    await el(page, 'show-toast').click();
+    await expect(el(page, 'toast-action')).toBeVisible();
+    await expect(el(page, 'viewport')).toHaveAttribute('inert', '');
+
+    await el(page, 'show-toast').focus();
+    await expectFocused(el(page, 'show-toast'));
+    await page.evaluate(() => {
+      window.addEventListener('keydown', (event) => {
+        if (event.key === 'F6') {
+          document.body.dataset['f6Prevented'] = String(event.defaultPrevented);
+        }
+      });
+    });
+
+    await page.keyboard.press('F6');
+
+    await expectStays(page, () => expectFocused(el(page, 'show-toast')));
+    expect(await page.evaluate(() => document.body.dataset['f6Prevented'])).toBe('false');
+    await expect(el(page, 'dialog')).toBeVisible();
   });
 
   test('a pointer-down genuinely outside still closes the dialog', async ({ page }) => {
