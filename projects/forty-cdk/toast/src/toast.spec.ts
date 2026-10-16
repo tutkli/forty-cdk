@@ -733,9 +733,8 @@ describe('ForToast (declarative)', () => {
       expect(r.instance.swipeMoves).toHaveLength(2);
     });
 
-    it('crosses the threshold → swipeEnd, data-swipe="end", and (dismiss) with reason "swipe"', async () => {
+    it('crosses the threshold → swipeEnd and (dismiss) with reason "swipe"', async () => {
       const r = renderHost(DeclarativeHost);
-      r.instance.unmountOnClose = false;
       r.instance.swipeDirection.set('right');
       r.instance.swipeThreshold.set(50);
       await r.flush();
@@ -747,8 +746,29 @@ describe('ForToast (declarative)', () => {
       expect(r.instance.swipeEnds).toHaveLength(1);
       expect(r.instance.swipeCancels).toEqual([]);
       expect(r.instance.closes).toEqual(['swipe']);
+    });
+
+    it('paints data-swipe="end" and the released movement on a toast the dismissal unmounts', async () => {
+      const r = renderHost(DeclarativeHost);
+      r.instance.swipeDirection.set('right');
+      r.instance.swipeThreshold.set(50);
+      await r.flush();
+      const t = $(r.el, 'declarative')!;
+      pointer(t, 'pointerdown', { clientX: 0, clientY: 0 });
+      pointer(t, 'pointermove', { clientX: 20, clientY: 0 });
+      await r.flush();
+      pointer(t, 'pointermove', { clientX: 60, clientY: 0 });
+      await r.flush();
+      expect(t.getAttribute('data-swipe')).toBe('move');
+
+      pointer(t, 'pointerup', { clientX: 70, clientY: 0 });
+      await r.flush();
+
+      expect(r.instance.closes).toEqual(['swipe']);
+      expect(t.isConnected).toBe(false);
       expect(t.getAttribute('data-swipe')).toBe('end');
-      expect(t.style.getPropertyValue('--for-toast-swipe-movement-x')).toBe('60px');
+      expect(t.style.getPropertyValue('--for-toast-swipe-movement-x')).toBe('70px');
+      expect(t.style.getPropertyValue('--for-toast-swipe-movement-y')).toBe('0px');
     });
 
     it('releases under threshold → swipeCancel, data-swipe="cancel", no (dismiss)', async () => {
