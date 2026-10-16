@@ -7,16 +7,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.36.0] - 2026-10-16
+
+### Added
+
+- **Tooltip**, **Hover card** — a trigger subclass can veto hover and focus opens
+  ([#2517](https://github.com/tutkli/forty-cdk/issues/2517)). `ForTooltipTrigger` and
+  `ForHoverCardTrigger` gain a `protected canOpen()` hook, `true` by default, read before a hover or
+  a keyboard focus asks the root to open, so it may depend on signals. 0.35.0 made the triggers'
+  event handlers `private`, which left a wrapper extending the trigger with no way to stay closed
+  while it has nothing to show. The hook gates opens only: it does not close an open overlay, and
+  the root's `open` model and `show()` do not consult it. The "Wrapping in a design system" sections
+  of the Tooltip and Hover card READMEs show a wrapper overriding it.
+
 ### Fixed
 
+- **Dialog**, **Drawer** — a component opened through `ForDialogManager` / `ForDrawerManager` with
+  an `injector` stays inside the overlay's field boundary, and its per-open injector is destroyed
+  ([#2282](https://github.com/tutkli/forty-cdk/issues/2282)). On the `open({ injector })` path the
+  opened component's injector skipped the `[forDialog]` / `[forDrawer]` host, so a control inside it
+  registered with a `[forField]` the caller sat in, taking that field's label, description and error
+  wiring. That injector was also never destroyed, so the services passed in `providers` never ran
+  their `ngOnDestroy` or `DestroyRef` teardown. Both managers now keep the boundary, and destroy
+  each injector they create once the closed overlay unmounts.
+
+- **Menu** — sibling submenus are mutually exclusive, and a hover close no longer strands focus
+  ([#2315](https://github.com/tutkli/forty-cdk/issues/2315)). A hover, tap, click or keyboard open
+  of a `[forMenuSub]` could leave its open sibling open too; opening one now closes the other first.
+  A close on pointer leave, or from a sibling opening, dropped focus to `<body>` when it was inside
+  the closing submenu, so the menu stopped answering the keyboard; focus now returns to that
+  submenu's `[forMenuSubTrigger]`, and stays where it is when it was outside the submenu chain.
+
 - **Toast** — `duration`, `maxVisible` and `hotkey` follow a scoped `provideForToastDefaults`, and
-  the hotkey reports only the focus it moved ([#2295](https://github.com/tutkli/forty-cdk/issues/2295)).
-  The viewport read those three keys from the root-provided `ForToastManager`, so a feature shell
-  providing its own defaults kept the root's duration, cap and hotkey, and a declarative
-  `<div forToast>` with no `[duration]` ignored the defaults token entirely. Both now read the scope
-  they render in. Pressing the hotkey while the viewport is inerted behind a modal
-  (`overModal: 'inert'`) no longer swallows the key, and it no longer focuses a toast that is still
-  playing its leave animation.
+  the hotkey reports only the focus it moved
+  ([#2295](https://github.com/tutkli/forty-cdk/issues/2295)). The viewport read those three keys
+  from the root-provided `ForToastManager`, so a feature shell providing its own defaults kept the
+  root's duration, cap and hotkey, and a declarative `<div forToast>` with no `[duration]` ignored
+  the defaults token entirely. Both now read the scope they render in. Pressing the hotkey while the
+  viewport is inerted behind a modal (`overModal: 'inert'`) no longer swallows the key, and it no
+  longer focuses a toast that is still playing its leave animation.
+
+- **Toast** — a swipe dismissal leaves `data-swipe="end"` on the node it unmounts
+  ([#2296](https://github.com/tutkli/forty-cdk/issues/2296)). A toast kept in the DOM by
+  `animate.leave` or the viewport's `animateLeave` still carried the last painted
+  `data-swipe="move"` and movement variables, so an exit animation keyed on `"end"` never ran. The
+  terminal state and the released `--for-toast-swipe-movement-x` / `-y` are now written before
+  `(dismiss)` fires, and follow `provideCssVarNamespacing()`. The README's hero caption no longer
+  says a drag swipes the toast away, since the hero leaves swipe off; the "Swipe right to dismiss"
+  example shows it.
 
 ## [0.35.0] - 2026-10-16
 
@@ -4263,7 +4301,8 @@ primitives.
 - **Display** — avatar, progress, meter, tree.
 - `forty-cdk/internationalized-date` secondary entry point exposing the `@internationalized/date` adapters for the date and time primitives.
 
-[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.35.0...HEAD
+[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.36.0...HEAD
+[0.36.0]: https://github.com/tutkli/forty-cdk/compare/v0.35.0...v0.36.0
 [0.35.0]: https://github.com/tutkli/forty-cdk/compare/v0.34.0...v0.35.0
 [0.34.0]: https://github.com/tutkli/forty-cdk/compare/v0.33.0...v0.34.0
 [0.33.0]: https://github.com/tutkli/forty-cdk/compare/v0.32.0...v0.33.0
