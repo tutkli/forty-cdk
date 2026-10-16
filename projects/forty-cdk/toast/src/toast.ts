@@ -16,6 +16,7 @@ import {
   signal,
   untracked,
 } from '@angular/core';
+import { CssVarNamespacer } from '@angular/platform-browser';
 
 import {
   LiveAnnouncer,
@@ -196,6 +197,9 @@ export class ForToast implements ForToastContext {
   readonly #swipeMovementX = signal(0);
   readonly #swipeMovementY = signal(0);
   #swipeArming = false;
+  readonly #namespacer = inject(CssVarNamespacer);
+  readonly #swipeMovementXVar = this.#namespacer.namespace('--for-toast-swipe-movement-x');
+  readonly #swipeMovementYVar = this.#namespacer.namespace('--for-toast-swipe-movement-y');
 
   private readonly swipeState = this.#swipeState.asReadonly();
   private readonly swipeActiveDirection = this.#swipeActiveDirection.asReadonly();
@@ -375,6 +379,7 @@ export class ForToast implements ForToastContext {
         this.#swipeState.set('end');
         this.#swipeMovementX.set(detail.delta.x);
         this.#swipeMovementY.set(detail.delta.y);
+        this.#paintSwipeEnd(detail);
         this.swipeEnd.emit(detail);
         this.requestClose('swipe');
       },
@@ -427,6 +432,13 @@ export class ForToast implements ForToastContext {
     if (this.#swipeState() === 'cancel') {
       this.#resetSwipeState();
     }
+  }
+
+  #paintSwipeEnd({ delta }: SwipeEventDetail): void {
+    const host = this.#host.nativeElement;
+    host.setAttribute('data-swipe', 'end');
+    host.style.setProperty(this.#swipeMovementXVar, `${delta.x}px`);
+    host.style.setProperty(this.#swipeMovementYVar, `${delta.y}px`);
   }
 
   #resetSwipeState(): void {

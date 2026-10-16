@@ -106,6 +106,59 @@ describe('the caption a page prints above its hero', () => {
   });
 });
 
+const EXAMPLE_FILES = import.meta.glob('/projects/forty-cdk-docs/src/app/demos/*/examples/*.ts', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+});
+
+interface OptInGesture {
+  readonly slug: string;
+  readonly claim: RegExp;
+  readonly enabledBy: RegExp;
+}
+
+const OPT_IN_GESTURES: readonly OptInGesture[] = [
+  { slug: 'toast', claim: /\b(?:drag|swip)/i, enabledBy: /\bswipeDirection\b/ },
+];
+
+const HERO_SOURCE_PATH = /\bsourcePath="([^"]+)"/;
+
+function pageOf(slug: string): DemoPage {
+  const page = PAGES.find((candidate) => candidate.slug === slug);
+  if (page === undefined) {
+    throw new Error(`no demo page publishes ${slug}`);
+  }
+  return page;
+}
+
+function heroSourceOf(page: DemoPage): string {
+  const hero = page.source
+    .split('<demo-layout')
+    .slice(1)
+    .find((demo) => PROJECTED_AS_HERO.test(demo));
+  const sourcePath = hero === undefined ? undefined : HERO_SOURCE_PATH.exec(hero)?.[1];
+  const source =
+    sourcePath === undefined
+      ? undefined
+      : EXAMPLE_FILES[`/projects/forty-cdk-docs/src/app/demos/${sourcePath}`];
+  if (source === undefined) {
+    throw new Error(`${page.path} projects no hero whose example source could be read`);
+  }
+  return source;
+}
+
+describe('the caption a page prints above its hero, against what the hero enables', () => {
+  it('names an opt-in gesture only when the hero example turns it on', () => {
+    const unkept = OPT_IN_GESTURES.filter(({ slug, claim, enabledBy }) => {
+      const page = pageOf(slug);
+      return claim.test(documentOf(page).caption ?? '') && !enabledBy.test(heroSourceOf(page));
+    });
+
+    expect(unkept.map((gesture) => gesture.slug)).toEqual([]);
+  });
+});
+
 describe('the section a page renders its live demos in', () => {
   it('is declared by every document whose page projects one into the block', () => {
     const undeclared = PAGES.filter(
