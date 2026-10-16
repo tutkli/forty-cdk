@@ -20,10 +20,10 @@ import { injectTreeItemContext } from './tree-context';
   },
 })
 export class ForTreeItemCheckboxIndicator {
-  protected readonly item = injectTreeItemContext('ForTreeItemCheckboxIndicator');
+  private readonly item = injectTreeItemContext('ForTreeItemCheckboxIndicator');
 
-  protected readonly shown = computed(() => this.item.checkState() !== 'false');
-  protected readonly dataState = computed(() => {
+  private readonly shown = computed(() => this.item.checkState() !== 'false');
+  private readonly dataState = computed(() => {
     const state = this.item.checkState();
     return state === 'true' ? 'checked' : state === 'mixed' ? 'indeterminate' : 'unchecked';
   });

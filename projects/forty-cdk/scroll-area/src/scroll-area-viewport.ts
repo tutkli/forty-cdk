@@ -112,7 +112,7 @@ export class ForScrollAreaViewport {
     }
   }
 
-  protected onScroll(): void {
+  private onScroll(): void {
     this.#syncScroll();
     this.#ctx.noteUserScroll();
   }

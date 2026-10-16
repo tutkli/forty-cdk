@@ -40,7 +40,7 @@ import { injectTabsContext } from './tabs-context';
   },
 })
 export class ForTabsContent {
-  protected readonly group = injectTabsContext('ForTabsContent');
+  private readonly group = injectTabsContext('ForTabsContent');
 
   /**
    * Value of the tab this panel belongs to, paired with the `[forTabsTrigger]` carrying the same
@@ -71,7 +71,7 @@ export class ForTabsContent {
   readonly #hasFocusableContent = injectHasFocusableContent();
 
   readonly selected = computed(() => this.group.isSelected(this.value()));
-  protected readonly labelledBy = hostLabelledBy(() => this.group.triggerIdFor(this.value()));
+  private readonly labelledBy = hostLabelledBy(() => this.group.triggerIdFor(this.value()));
 
   /**
    * APG tabindex: `0` only when the panel has no focusable content of its
@@ -79,7 +79,7 @@ export class ForTabsContent {
    * attribute, so the panel does not add a redundant tab stop. An explicit
    * `interactiveContent` wins over the automatic detection.
    */
-  protected readonly tabindex = computed<'0' | null>(() => {
+  private readonly tabindex = computed<'0' | null>(() => {
     const override = this.interactiveContent();
     const interactive = override ?? this.#hasFocusableContent();
     return interactive ? null : '0';

@@ -57,7 +57,7 @@ import {
   },
 })
 export class ForTableHeaderCell {
-  protected readonly ctx = injectTableContext('ForTableHeaderCell');
+  private readonly ctx = injectTableContext('ForTableHeaderCell');
   readonly #registration = injectTableRegistration('ForTableHeaderCell');
 
   /**
@@ -156,7 +156,7 @@ export class ForTableHeaderCell {
   /** `true` when this cell owns its host `tabindex` / keydown as a plain roving grid cell (no draggable). */
   readonly #inRovingGrid = computed(() => !this.#yieldsToDraggable && this.#participates());
 
-  protected readonly tabindex = computed<0 | -1 | null>(() => {
+  private readonly tabindex = computed<0 | -1 | null>(() => {
     if (this.#yieldsToDraggable) {
       return null;
     }
@@ -166,11 +166,11 @@ export class ForTableHeaderCell {
     return this.#standaloneTabStop()?.() ? 0 : null;
   });
 
-  protected readonly colIndex = computed<number | null>(() =>
+  private readonly colIndex = computed<number | null>(() =>
     this.#participates() ? this.ctx.headerCellIndexOf(this.#host) + 1 : null,
   );
 
-  protected readonly highlighted = computed(
+  private readonly highlighted = computed(
     () =>
       !this.#yieldsToDraggable && this.#participates() && this.ctx.isCellHighlighted(this.#host),
   );
@@ -191,7 +191,7 @@ export class ForTableHeaderCell {
     }
   }
 
-  protected onFocus(): void {
+  private onFocus(): void {
     if (this.#participates()) {
       this.ctx.activateCell(this.#host);
     }
@@ -216,7 +216,7 @@ export class ForTableHeaderCell {
    * one of the trap's edges. Bailing there would leave the cycle silently absent inside every
    * dialog, and the cell's own `preventDefault` + focus move is what settles where focus lands.
    */
-  protected onKeyDown(event: KeyboardEvent): void {
+  private onKeyDown(event: KeyboardEvent): void {
     if (this.#inRovingGrid()) {
       this.ctx.handleCellKeydown(event, this.#host);
       return;

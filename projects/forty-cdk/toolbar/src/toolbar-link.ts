@@ -22,7 +22,7 @@ import { injectToolbarContext } from './toolbar-context';
   },
 })
 export class ForToolbarLink {
-  protected readonly toolbar = injectToolbarContext('ForToolbarLink');
+  private readonly toolbar = injectToolbarContext('ForToolbarLink');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   /**
@@ -68,21 +68,21 @@ export class ForToolbarLink {
     );
   }
 
-  protected onClick(event: MouseEvent): void {
+  private onClick(event: MouseEvent): void {
     if (this.effectiveDisabled()) {
       event.preventDefault();
       event.stopImmediatePropagation();
     }
   }
 
-  protected onFocus(): void {
+  private onFocus(): void {
     if (this.effectiveDisabled()) {
       return;
     }
     this.toolbar.roving.setActive(this.#host.nativeElement);
   }
 
-  protected onKeyDown(event: KeyboardEvent): void {
+  private onKeyDown(event: KeyboardEvent): void {
     navigateFromRovingItem(event, {
       groupDisabled: this.toolbar.disabled(),
       orientation: this.toolbar.orientation(),

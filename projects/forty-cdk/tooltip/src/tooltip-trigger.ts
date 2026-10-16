@@ -68,9 +68,9 @@ export class ForTooltipTrigger {
    */
   readonly forTooltipTrigger = input<ForTooltipContext | ''>('');
 
-  protected readonly ctx = injectTooltipTriggerContext(this.forTooltipTrigger);
+  private readonly ctx = injectTooltipTriggerContext(this.forTooltipTrigger);
 
-  protected readonly describedBy = hostDescribedBy(() =>
+  private readonly describedBy = hostDescribedBy(() =>
     this.ctx().open() ? this.ctx().contentId() : null,
   );
 
@@ -88,35 +88,35 @@ export class ForTooltipTrigger {
     });
   }
 
-  protected onPointerEnter(event: PointerEvent): void {
+  private onPointerEnter(event: PointerEvent): void {
     if (!isNonTouchPointer(event)) {
       return;
     }
     this.ctx().pointerEnterTrigger();
   }
 
-  protected onPointerDown(): void {
+  private onPointerDown(): void {
     this.#pressFocus.press();
     this.ctx().scheduleClose('press');
   }
 
-  protected onPointerUp(): void {
+  private onPointerUp(): void {
     this.#pressFocus.release();
   }
 
-  protected onPointerLeave(event: PointerEvent): void {
+  private onPointerLeave(event: PointerEvent): void {
     const outOfRange = event.relatedTarget === null && isNonTouchPointer(event);
     this.ctx().pointerLeaveTrigger(outOfRange ? null : { x: event.clientX, y: event.clientY });
   }
 
-  protected onFocus(): void {
+  private onFocus(): void {
     if (this.#pressFocus.consume()) {
       return;
     }
     this.ctx().focusTrigger();
   }
 
-  protected onBlur(): void {
+  private onBlur(): void {
     this.#pressFocus.reset();
     this.ctx().blurTrigger();
   }

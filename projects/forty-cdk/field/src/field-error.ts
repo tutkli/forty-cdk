@@ -43,7 +43,7 @@ function extractMessage(error: ValidationError.WithOptionalFieldTree): string {
   },
 })
 export class ForFieldError {
-  protected readonly ctx = injectFieldContext('ForFieldError');
+  private readonly ctx = injectFieldContext('ForFieldError');
 
   /** The control's current validation errors (Signal Forms). */
   readonly errors = computed(() => this.ctx.control()?.errors?.() ?? []);

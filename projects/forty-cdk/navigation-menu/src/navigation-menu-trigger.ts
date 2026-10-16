@@ -61,14 +61,14 @@ import {
   },
 })
 export class ForNavigationMenuTrigger {
-  protected readonly buttonType = hostButtonType();
+  private readonly buttonType = hostButtonType();
 
-  protected readonly menu = injectNavigationMenuContext('ForNavigationMenuTrigger');
+  private readonly menu = injectNavigationMenuContext('ForNavigationMenuTrigger');
   readonly #item = injectNavigationMenuItemContext('ForNavigationMenuTrigger');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   readonly id = hostId('for-navigation-menu-trigger');
-  protected readonly value: Signal<string> = this.#item.value;
+  private readonly value: Signal<string> = this.#item.value;
 
   /**
    * Effective disabled state: the owning `[forNavigationMenuItem]`'s
@@ -81,8 +81,8 @@ export class ForNavigationMenuTrigger {
     () => this.#item.disabled() || this.menu.disabled(),
   );
 
-  protected readonly isOpen = computed(() => this.menu.isOpen(this.value()));
-  protected readonly contentId = computed(() => this.menu.contentIdFor(this.value()));
+  private readonly isOpen = computed(() => this.menu.isOpen(this.value()));
+  private readonly contentId = computed(() => this.menu.contentIdFor(this.value()));
 
   constructor() {
     const handle = {
@@ -109,24 +109,24 @@ export class ForNavigationMenuTrigger {
     );
   }
 
-  protected onClick(): void {
+  private onClick(): void {
     if (this.effectiveDisabled()) return;
     this.menu.toggle(this.value());
   }
 
-  protected onPointerEnter(event: PointerEvent): void {
+  private onPointerEnter(event: PointerEvent): void {
     if (!isHoverCapablePointer(event)) return;
     if (this.effectiveDisabled()) return;
     this.menu.scheduleOpen(this.value(), 'hover');
   }
 
-  protected onPointerLeave(event: PointerEvent): void {
+  private onPointerLeave(event: PointerEvent): void {
     if (!isHoverCapablePointer(event)) return;
     if (this.effectiveDisabled()) return;
     this.menu.scheduleClose('hover', this.value());
   }
 
-  protected onKeyDown(event: KeyboardEvent): void {
+  private onKeyDown(event: KeyboardEvent): void {
     if (this.effectiveDisabled()) return;
     // Activation: Enter / Space toggle the disclosure.
     if (event.key === 'Enter' || event.key === ' ') {

@@ -28,9 +28,9 @@ export class ForTimePickerValue {
   /** Text shown when nothing is selected. Falls back to `[forTimePicker][placeholder]`. */
   readonly placeholder = input<string>('');
 
-  protected readonly isPlaceholder = computed(() => this.#ctx.value() === null);
+  private readonly isPlaceholder = computed(() => this.#ctx.value() === null);
 
-  protected readonly displayText = computed(
+  private readonly displayText = computed(
     () => this.#ctx.formattedValue() ?? (this.placeholder() || this.#ctx.placeholder()),
   );
 }

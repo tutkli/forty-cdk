@@ -104,13 +104,13 @@ export interface TableResizeDescriptor {
   },
 })
 export class ForTableColumnResizer {
-  protected readonly ctx = injectTableContext('ForTableColumnResizer');
+  private readonly ctx = injectTableContext('ForTableColumnResizer');
   readonly #registration = injectTableRegistration('ForTableColumnResizer');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   readonly #document = inject(DOCUMENT);
   readonly #headerCell = inject(ForTableHeaderCell, { optional: true });
 
-  protected readonly buttonType = hostButtonType();
+  private readonly buttonType = hostButtonType();
 
   /** Column identity; included in the `resizeCommit` payload and the published CSS var name. */
   readonly column = input.required<string>();
@@ -187,22 +187,22 @@ export class ForTableColumnResizer {
   readonly #upperBound = computed(() => Math.max(this.max(), this.min()));
 
   /** `aria-valuemax`, omitted when `max` is non-finite (the default unbounded case). */
-  protected readonly ariaValueMax = computed<number | null>(() =>
+  private readonly ariaValueMax = computed<number | null>(() =>
     Number.isFinite(this.#upperBound()) ? this.#upperBound() : null,
   );
 
   /** `aria-valuenow`: the explicit or measured width, clamped to the reflected range. */
-  protected readonly ariaValueNow = computed<number | null>(() => {
+  private readonly ariaValueNow = computed<number | null>(() => {
     const current = this.width() ?? this.measuredWidth();
     return current == null ? null : clamp(current, this.min(), this.#upperBound());
   });
 
-  protected readonly tabindex = injectTableCellTabIndex();
+  private readonly tabindex = injectTableCellTabIndex();
 
   readonly #resizing = signal(false);
 
   /** Whether a pointer drag is currently active (drives `data-resizing`). */
-  protected readonly resizing = this.#resizing.asReadonly();
+  private readonly resizing = this.#resizing.asReadonly();
 
   readonly #measuredWidth = signal<number | null>(null);
 
@@ -211,7 +211,7 @@ export class ForTableColumnResizer {
    * before any explicit `[width]` so the focusable separator never ships without a
    * current value on the measured-fallback path; an explicit `[width]` still wins.
    */
-  protected readonly measuredWidth = this.#measuredWidth.asReadonly();
+  private readonly measuredWidth = this.#measuredWidth.asReadonly();
 
   #pointerSession: PointerDragSession | null = null;
 
@@ -335,7 +335,7 @@ export class ForTableColumnResizer {
     this.width.set(this.#dragStartValue);
   }
 
-  protected onKeyDown(event: KeyboardEvent): void {
+  private onKeyDown(event: KeyboardEvent): void {
     if (this.disabled()) {
       return;
     }
@@ -373,7 +373,7 @@ export class ForTableColumnResizer {
     }
   }
 
-  protected onClick(event: MouseEvent): void {
+  private onClick(event: MouseEvent): void {
     event.stopPropagation();
   }
 

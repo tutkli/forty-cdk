@@ -19,14 +19,14 @@ import { injectDialogContext } from './dialog-context';
   },
 })
 export class ForDialogClose {
-  protected readonly buttonType = hostButtonType();
+  private readonly buttonType = hostButtonType();
 
   readonly #ctx = injectDialogContext('ForDialogClose');
 
   /** Optional value passed to `ForDialogRef.close()` (programmatic mode). */
   readonly closeWith = input<unknown>(undefined);
 
-  protected onClick(): void {
+  private onClick(): void {
     this.#ctx.requestClose('closeButton', this.closeWith());
   }
 }

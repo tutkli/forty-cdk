@@ -75,12 +75,12 @@ export class ForDraggable implements ForDraggableContext {
   readonly #document = inject(DOCUMENT);
   readonly #vcr = inject(ViewContainerRef);
   readonly #liftGuard = inject(FOR_DRAGGABLE_LIFT_GUARD, { optional: true });
-  protected readonly previewTpl = contentChild(ForDragPreview);
-  protected readonly placeholderTpl = contentChild(ForDragPlaceholder);
+  private readonly previewTpl = contentChild(ForDragPreview);
+  private readonly placeholderTpl = contentChild(ForDragPlaceholder);
   #placeholderView: EmbeddedViewRef<unknown> | null = null;
 
   /** `true` while a pointer-drag placeholder template occupies this item's slot (host hidden). */
-  protected readonly placeholderActive = signal(false);
+  private readonly placeholderActive = signal(false);
 
   #pointerDragging = false;
   #pointerSession: PointerDragSession | null = null;
@@ -126,10 +126,10 @@ export class ForDraggable implements ForDraggableContext {
    * coordinator composing the list (`[forVirtualReorder]`, the virtualized branch of
    * `[forTableRowReorder]`). Reflected as `data-dragging`.
    */
-  protected readonly dragging = computed(() => this.#list.isItemDragging(this.#host.nativeElement));
+  private readonly dragging = computed(() => this.#list.isItemDragging(this.#host.nativeElement));
 
   /** `true` when this item is the roving-tabindex active candidate. Reflected as `data-highlighted`. */
-  protected readonly highlighted = computed(() =>
+  private readonly highlighted = computed(() =>
     this.#list.isItemHighlighted(this.#host.nativeElement),
   );
 
@@ -137,7 +137,7 @@ export class ForDraggable implements ForDraggableContext {
    * `aria-roledescription` from the defaults while this item can be lifted; `null` while it
    * cannot, so an item that cannot move keeps the role name of its own element.
    */
-  protected readonly roleDescription = computed<string | null>(() =>
+  private readonly roleDescription = computed<string | null>(() =>
     this.effectiveDisabled() ? null : resolveText(this.#defaults.itemRoleDescription) || null,
   );
 
@@ -148,13 +148,13 @@ export class ForDraggable implements ForDraggableContext {
    * lift is disabled, so announcing the host as unavailable would disable the wrong thing.
    * `data-disabled` reflects the state either way.
    */
-  protected readonly ariaDisabled = computed<'true' | null>(() =>
+  private readonly ariaDisabled = computed<'true' | null>(() =>
     this.effectiveDisabled() && !this.#list.isRovingDelegated(this.#host.nativeElement)
       ? 'true'
       : null,
   );
 
-  protected readonly tabindex = computed<-1 | 0>(() => {
+  private readonly tabindex = computed<-1 | 0>(() => {
     const rovingTabindex = this.#list.itemTabindex(this.#host.nativeElement);
     if (rovingTabindex !== null) {
       return rovingTabindex;
@@ -165,7 +165,7 @@ export class ForDraggable implements ForDraggableContext {
     return this.#list.isFirstFocusableItem(this.#host.nativeElement) ? 0 : -1;
   });
 
-  protected readonly touchAction = this.#handleGuard.touchAction;
+  private readonly touchAction = this.#handleGuard.touchAction;
 
   constructor() {
     const handle: ForDraggableHandle = {
@@ -288,25 +288,25 @@ export class ForDraggable implements ForDraggableContext {
     this.#placeholderView = null;
   }
 
-  protected onNativeDragStart(event: Event): void {
+  private onNativeDragStart(event: Event): void {
     if (this.#pointerDragging) {
       event.preventDefault();
     }
   }
 
-  protected onFocus(): void {
+  private onFocus(): void {
     if (!this.effectiveDisabled()) {
       this.#list.setActiveItem(this.#host.nativeElement);
     }
   }
 
-  protected onBlur(): void {
+  private onBlur(): void {
     if (this.lifted() && !this.#pointerDragging) {
       this.#list.cancel();
     }
   }
 
-  protected onKeyDown(event: KeyboardEvent): void {
+  private onKeyDown(event: KeyboardEvent): void {
     if (this.#pointerDragging) {
       return;
     }

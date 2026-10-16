@@ -69,12 +69,12 @@ import { injectTimePickerContext } from './time-picker-context';
   ],
 })
 export class ForTimePickerContent {
-  protected readonly ctx = injectTimePickerContext('ForTimePickerContent');
+  private readonly ctx = injectTimePickerContext('ForTimePickerContent');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
-  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ctx.ariaLabel());
+  private readonly resolvedAriaLabel = hostAriaLabel(() => this.ctx.ariaLabel());
 
-  protected readonly labelledBy = hostLabelledBy(() =>
+  private readonly labelledBy = hostLabelledBy(() =>
     this.resolvedAriaLabel() ? null : this.ctx.overlay.triggerId(),
   );
 
@@ -179,7 +179,7 @@ export class ForTimePickerContent {
     });
   }
 
-  protected onPointerLeave(): void {
+  private onPointerLeave(): void {
     this.ctx.releasePointerHighlight();
   }
 }

@@ -18,7 +18,7 @@ import { injectToastContext, type ForToastTextHandle } from './toast-context';
 export class ForToastTitle {
   readonly #ctx = injectToastContext('ForToastTitle');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
-  protected readonly id = resolveHostId(this.#host.nativeElement, 'for-toast-title');
+  private readonly id = resolveHostId(this.#host.nativeElement, 'for-toast-title');
   readonly #text = signal('');
 
   constructor() {

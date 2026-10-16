@@ -51,7 +51,7 @@ import { injectHoverCardContext } from './hover-card-context';
   },
 })
 export class ForHoverCardContent {
-  protected readonly ctx = injectHoverCardContext('ForHoverCardContent');
+  private readonly ctx = injectHoverCardContext('ForHoverCardContent');
   readonly #el = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   readonly #doc = inject(DOCUMENT);
 
@@ -87,20 +87,20 @@ export class ForHoverCardContent {
     });
   }
 
-  protected onPointerEnter(): void {
+  private onPointerEnter(): void {
     this.ctx.pointerEnterContent();
   }
 
-  protected onPointerLeave(): void {
+  private onPointerLeave(): void {
     this.ctx.pointerLeaveContent();
   }
 
-  protected onFocusIn(): void {
+  private onFocusIn(): void {
     this.#focusWithin = true;
     this.ctx.focusEnterContent();
   }
 
-  protected onFocusOut(event: FocusEvent): void {
+  private onFocusOut(event: FocusEvent): void {
     const next = event.relatedTarget;
     if (next instanceof Node) {
       if (!composedContains(this.#el, next)) {

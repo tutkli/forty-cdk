@@ -102,19 +102,17 @@ export class ForButton {
   readonly #focused = signal(false);
   readonly #activation = injectSyntheticActivation({ disabled: this.effectiveDisabled });
   readonly #keyboardModality = injectFocusVisible();
-  protected readonly hovered = injectHovered({ disabled: this.effectiveDisabled });
-  protected readonly pressed = injectPressed({ disabled: this.effectiveDisabled });
-  protected readonly focusVisible = computed(() => this.#focused() && this.#keyboardModality());
+  private readonly hovered = injectHovered({ disabled: this.effectiveDisabled });
+  private readonly pressed = injectPressed({ disabled: this.effectiveDisabled });
+  private readonly focusVisible = computed(() => this.#focused() && this.#keyboardModality());
 
-  protected readonly resolvedType = computed(
+  private readonly resolvedType = computed(
     () => this.#initialType ?? (this.#activation.nativeButton ? 'button' : null),
   );
-  protected readonly resolvedRole = computed(() =>
-    this.#activation.nativeButton ? null : 'button',
-  );
-  protected readonly resolvedTabindex = this.#activation.tabindex;
+  private readonly resolvedRole = computed(() => (this.#activation.nativeButton ? null : 'button'));
+  private readonly resolvedTabindex = this.#activation.tabindex;
 
-  protected onClick(event: MouseEvent): void {
+  private onClick(event: MouseEvent): void {
     if (this.effectiveDisabled()) {
       event.preventDefault();
       event.stopImmediatePropagation();
@@ -123,19 +121,19 @@ export class ForButton {
     this.activate.emit();
   }
 
-  protected onKeydown(event: KeyboardEvent): void {
+  private onKeydown(event: KeyboardEvent): void {
     this.#activation.keydown(event);
   }
 
-  protected onKeyup(event: KeyboardEvent): void {
+  private onKeyup(event: KeyboardEvent): void {
     this.#activation.keyup(event);
   }
 
-  protected onFocusIn(): void {
+  private onFocusIn(): void {
     this.#focused.set(true);
   }
 
-  protected onFocusOut(): void {
+  private onFocusOut(): void {
     this.#focused.set(false);
     this.#activation.reset();
   }

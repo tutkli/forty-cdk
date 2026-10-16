@@ -62,7 +62,7 @@ import { type ForTimePickerContext, injectTimePickerTriggerContext } from './tim
   },
 })
 export class ForTimePickerTrigger<D = unknown> {
-  protected readonly buttonType = hostButtonType();
+  private readonly buttonType = hostButtonType();
 
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
@@ -75,9 +75,9 @@ export class ForTimePickerTrigger<D = unknown> {
    */
   readonly forTimePickerTrigger = input<ForTimePickerContext<D> | ''>('');
 
-  protected readonly ctx = injectTimePickerTriggerContext<D>(this.forTimePickerTrigger);
+  private readonly ctx = injectTimePickerTriggerContext<D>(this.forTimePickerTrigger);
 
-  protected readonly fieldAnatomy = computed(() => this.ctx().anatomy?.() === 'field');
+  private readonly fieldAnatomy = computed(() => this.ctx().anatomy?.() === 'field');
 
   constructor() {
     const el = this.#host.nativeElement;
@@ -89,11 +89,11 @@ export class ForTimePickerTrigger<D = unknown> {
     reflectDisabled(computed(() => this.ctx().effectiveDisabled()));
   }
 
-  protected onClick(): void {
+  private onClick(): void {
     this.ctx().overlay.toggle('selected');
   }
 
-  protected onKeyDown(event: KeyboardEvent): void {
+  private onKeyDown(event: KeyboardEvent): void {
     if (this.ctx().effectiveDisabled()) {
       return;
     }
@@ -113,7 +113,7 @@ export class ForTimePickerTrigger<D = unknown> {
     }
   }
 
-  protected onFocusOut(event: FocusEvent): void {
+  private onFocusOut(event: FocusEvent): void {
     const next = event.relatedTarget as HTMLElement | null;
     if (next) {
       const content = this.ctx().overlay.content();

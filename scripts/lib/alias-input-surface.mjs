@@ -2,7 +2,7 @@
  * The raw fields behind the library's aliased inputs, pinned as they stand today
  * ([#1724](https://github.com/tutkli/forty-cdk/issues/1724)).
  *
- * A `_`-prefixed member is internal, and `protected` is how the library states
+ * A `_`-prefixed member is internal, and `private` is how the library states
  * that to the compiler rather than to a reader — every other one in the emit
  * says it that way. The raw field of an aliased input is the single member that
  * cannot, and the reason that holds unconditionally is that narrowing it buys
@@ -25,7 +25,7 @@
  * it fails when a new `_`-prefixed public member appears without an entry here,
  * **and** when an entry outlives the member it names. Every other `_`-prefixed
  * public member is a plain failure with no entry available — those are the ones
- * `protected` covers.
+ * `private` covers.
  *
  * The conventions section "`dir` defaults to `null` and resolves the inherited
  * ambient direction" carries the rule for the shape itself.

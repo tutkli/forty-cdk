@@ -73,7 +73,7 @@ import { type ForDatePickerContext, injectDatePickerTriggerContext } from './dat
   },
 })
 export class ForDatePickerTrigger {
-  protected readonly buttonType = hostButtonType();
+  private readonly buttonType = hostButtonType();
 
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
@@ -89,9 +89,9 @@ export class ForDatePickerTrigger {
    */
   readonly forDatePickerTrigger = input<ForDatePickerContext | ''>('');
 
-  protected readonly ctx = injectDatePickerTriggerContext(this.forDatePickerTrigger);
+  private readonly ctx = injectDatePickerTriggerContext(this.forDatePickerTrigger);
 
-  protected readonly fieldAnatomy = computed(() => this.ctx().anatomy() === 'field');
+  private readonly fieldAnatomy = computed(() => this.ctx().anatomy() === 'field');
 
   constructor() {
     const el = this.#host.nativeElement;
@@ -106,11 +106,11 @@ export class ForDatePickerTrigger {
     reflectDisabled(computed(() => this.ctx().effectiveDisabled()));
   }
 
-  protected onClick(): void {
+  private onClick(): void {
     this.ctx().toggle();
   }
 
-  protected onKeyDown(event: KeyboardEvent): void {
+  private onKeyDown(event: KeyboardEvent): void {
     const ctx = this.ctx();
     if (ctx.effectiveDisabled() || (event.key !== 'ArrowDown' && event.key !== 'ArrowUp')) {
       return;
@@ -121,7 +121,7 @@ export class ForDatePickerTrigger {
     }
   }
 
-  protected onFocusOut(event: FocusEvent): void {
+  private onFocusOut(event: FocusEvent): void {
     const next = event.relatedTarget as HTMLElement | null;
     if (next) {
       // Focus moving into the surface we just opened — not a leave.

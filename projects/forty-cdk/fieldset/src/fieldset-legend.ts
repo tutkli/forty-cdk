@@ -32,9 +32,9 @@ import { FOR_FIELDSET_CONTEXT, hostStaticAttribute } from 'forty-cdk/core';
   },
 })
 export class ForFieldsetLegend {
-  protected readonly ctx = inject(FOR_FIELDSET_CONTEXT, { optional: true });
+  private readonly ctx = inject(FOR_FIELDSET_CONTEXT, { optional: true });
 
-  protected readonly legendId = hostStaticAttribute('id', () => this.ctx?.legendId() ?? null);
+  private readonly legendId = hostStaticAttribute('id', () => this.ctx?.legendId() ?? null);
 
   constructor() {
     const ctx = this.ctx;

@@ -33,9 +33,9 @@ import { injectToastContext } from './toast-context';
   },
 })
 export class ForToastAction {
-  protected readonly buttonType = hostButtonType();
+  private readonly buttonType = hostButtonType();
 
-  protected readonly ctx = injectToastContext('ForToastAction');
+  private readonly ctx = injectToastContext('ForToastAction');
 
   /**
    * Self-contained text read aloud in place of the visible label so the
@@ -53,7 +53,7 @@ export class ForToastAction {
     );
   }
 
-  protected onClick(): void {
+  private onClick(): void {
     this.ctx.requestClose('action');
   }
 }

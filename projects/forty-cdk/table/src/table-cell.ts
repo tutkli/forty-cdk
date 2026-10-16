@@ -45,8 +45,8 @@ import {
   },
 })
 export class ForTableCell {
-  protected readonly ctx = injectTableContext('ForTableCell');
-  protected readonly rowCtx = injectTableRowContext('ForTableCell');
+  private readonly ctx = injectTableContext('ForTableCell');
+  private readonly rowCtx = injectTableRowContext('ForTableCell');
   readonly #rowRegistration = injectTableRowRegistration('ForTableCell');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 
@@ -58,7 +58,7 @@ export class ForTableCell {
    */
   readonly injector = inject(Injector);
 
-  protected readonly role = computed(() => (this.ctx.mode() === 'table' ? 'cell' : 'gridcell'));
+  private readonly role = computed(() => (this.ctx.mode() === 'table' ? 'cell' : 'gridcell'));
 
   /** Column identifier, reflected as `data-column`. Required by later phases (sort, resize, reorder). */
   readonly name = input.required<string>();
@@ -78,7 +78,7 @@ export class ForTableCell {
    */
   readonly disabled = input(false, { transform: booleanAttribute });
 
-  protected readonly tabindex = computed<number | null>(() => {
+  private readonly tabindex = computed<number | null>(() => {
     if (this.ctx.mode() === 'table') {
       return null;
     }
@@ -88,11 +88,11 @@ export class ForTableCell {
     return this.ctx.cellTabIndex(this.#host);
   });
 
-  protected readonly colIndex = computed<number | null>(() =>
+  private readonly colIndex = computed<number | null>(() =>
     this.ctx.mode() === 'table' ? null : this.rowCtx.cellIndexOf(this.#host) + 1,
   );
 
-  protected readonly highlighted = computed(
+  private readonly highlighted = computed(
     () => this.ctx.mode() !== 'table' && this.ctx.isCellHighlighted(this.#host),
   );
 
@@ -112,11 +112,11 @@ export class ForTableCell {
     }
   }
 
-  protected onFocus(): void {
+  private onFocus(): void {
     this.ctx.activateCell(this.#host);
   }
 
-  protected onKeyDown(event: KeyboardEvent): void {
+  private onKeyDown(event: KeyboardEvent): void {
     this.ctx.handleCellKeydown(event, this.#host, this.name());
   }
 }

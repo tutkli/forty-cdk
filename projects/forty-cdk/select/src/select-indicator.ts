@@ -33,7 +33,7 @@ import { FOR_SELECT_OPTION, type ForSelectOption } from './select-option';
   },
 })
 export class ForSelectIndicator {
-  protected readonly option = injectParentOption();
+  private readonly option = injectParentOption();
 }
 
 function injectParentOption(): ForSelectOption {

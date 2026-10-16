@@ -30,7 +30,7 @@ import { FOR_STEPPER_DEFAULTS } from 'forty-cdk/defaults';
   },
 })
 export class ForStepperProgress {
-  protected readonly ctx = injectStepperContext('ForStepperProgress');
+  private readonly ctx = injectStepperContext('ForStepperProgress');
   readonly #defaults = inject(FOR_STEPPER_DEFAULTS);
 
   /**
@@ -52,7 +52,7 @@ export class ForStepperProgress {
    */
   readonly ariaLabel = input<string | null>(null);
 
-  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
+  private readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 
   readonly #completedCount = computed<number>(() => {
     const total = this.ctx.count();

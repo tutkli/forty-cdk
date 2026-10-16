@@ -47,7 +47,7 @@ import { injectNavigationMenuContext } from './navigation-menu-context';
   },
 })
 export class ForNavigationMenuIndicator {
-  protected readonly menu = injectNavigationMenuContext('ForNavigationMenuIndicator');
+  private readonly menu = injectNavigationMenuContext('ForNavigationMenuIndicator');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
@@ -78,12 +78,12 @@ export class ForNavigationMenuIndicator {
     return { x: tr.left - lr.left, y: tr.top - lr.top, width: tr.width, height: tr.height };
   });
 
-  protected readonly x = computed(() => this.#geometry().x);
-  protected readonly y = computed(() => this.#geometry().y);
-  protected readonly width = computed(() => this.#geometry().width);
-  protected readonly height = computed(() => this.#geometry().height);
+  private readonly x = computed(() => this.#geometry().x);
+  private readonly y = computed(() => this.#geometry().y);
+  private readonly width = computed(() => this.#geometry().width);
+  private readonly height = computed(() => this.#geometry().height);
 
-  protected readonly state = computed(() => (this.menu.activeTriggerHost() ? 'visible' : 'hidden'));
+  private readonly state = computed(() => (this.menu.activeTriggerHost() ? 'visible' : 'hidden'));
 
   constructor() {
     // Initial measure once the host (and its list parent) are attached.

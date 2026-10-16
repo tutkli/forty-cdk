@@ -45,9 +45,9 @@ import { injectTabsContext } from './tabs-context';
   },
 })
 export class ForTabsTrigger {
-  protected readonly buttonType = hostButtonType();
+  private readonly buttonType = hostButtonType();
 
-  protected readonly group = injectTabsContext('ForTabsTrigger');
+  private readonly group = injectTabsContext('ForTabsTrigger');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   /**
@@ -66,13 +66,13 @@ export class ForTabsTrigger {
   readonly selected = computed(() => this.group.isSelected(this.value()));
   readonly effectiveDisabled = computed(() => this.disabled() || this.group.disabled());
 
-  protected readonly controlsId = computed(() => this.group.contentIdFor(this.value()));
+  private readonly controlsId = computed(() => this.group.contentIdFor(this.value()));
 
   /**
    * APG tabindex: user-driven roving owns it once any trigger has been
    * focused. Before that, fall back to "selected, else first enabled".
    */
-  protected readonly tabindex = computed<-1 | 0>(() =>
+  private readonly tabindex = computed<-1 | 0>(() =>
     rovingTabStop({
       disabled: this.effectiveDisabled(),
       selected: this.selected(),
@@ -98,21 +98,21 @@ export class ForTabsTrigger {
     );
   }
 
-  protected onClick(): void {
+  private onClick(): void {
     if (this.effectiveDisabled()) {
       return;
     }
     this.group.select(this.value());
   }
 
-  protected onFocus(): void {
+  private onFocus(): void {
     if (this.effectiveDisabled()) {
       return;
     }
     this.group.roving.setActive(this.#host.nativeElement);
   }
 
-  protected onKeyDown(event: KeyboardEvent): void {
+  private onKeyDown(event: KeyboardEvent): void {
     navigateFromRovingItem(event, {
       groupDisabled: this.group.disabled(),
       orientation: this.group.orientation(),

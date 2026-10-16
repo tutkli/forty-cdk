@@ -110,31 +110,31 @@ export class ForTimePickerOption<D = unknown> {
     injectPointerMove(() => this.onPointerMove());
   }
 
-  protected onClick(): void {
+  private onClick(): void {
     if (this.effectiveDisabled() || this.#ctx.effectiveReadonly()) {
       return;
     }
     this.#ctx.activate(this.value());
   }
 
-  protected onFocus(): void {
+  private onFocus(): void {
     this.#focused.set(true);
     this.#ctx.notifyOptionFocus();
     this.#host.nativeElement.scrollIntoView?.({ block: 'nearest' });
   }
 
-  protected onBlur(): void {
+  private onBlur(): void {
     this.#focused.set(false);
   }
 
-  protected onPointerMove(): void {
+  private onPointerMove(): void {
     if (this.effectiveDisabled()) {
       return;
     }
     this.#ctx.highlightFromPointer(this.#host.nativeElement, this.id());
   }
 
-  protected onKeyDown(event: KeyboardEvent): void {
+  private onKeyDown(event: KeyboardEvent): void {
     if (this.effectiveDisabled()) {
       return;
     }

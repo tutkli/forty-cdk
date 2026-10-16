@@ -20,9 +20,9 @@ import { injectMeterContext } from './meter-context';
   },
 })
 export class ForMeterIndicator {
-  protected readonly context = injectMeterContext('ForMeterIndicator');
+  private readonly context = injectMeterContext('ForMeterIndicator');
 
-  protected percentageStyle(): string {
+  private percentageStyle(): string {
     return `${this.context.percentageAttr()}%`;
   }
 }

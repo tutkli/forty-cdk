@@ -139,7 +139,7 @@ export class OverlayManagerCore<TEntry extends OverlayManagerEntry> {
   readonly #document = inject(DOCUMENT);
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
   readonly #inertStack = inject(InertSiblingsStack);
-  protected readonly idGen = inject(IdGenerator);
+  private readonly idGen = inject(IdGenerator);
 
   readonly #entries = signal<readonly TEntry[]>([]);
   readonly #surfaces = new Map<string, OverlaySurface>();

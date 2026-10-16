@@ -92,7 +92,7 @@ export const FOR_SELECT_OPTION = new InjectionToken<ForSelectOption>('FOR_SELECT
   },
 })
 export class ForSelectOption<T = string> {
-  protected readonly buttonType = hostButtonType();
+  private readonly buttonType = hostButtonType();
 
   readonly #ctx = injectSelectContext<T>('ForSelectOption');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -127,11 +127,11 @@ export class ForSelectOption<T = string> {
   });
   readonly effectiveDisabled = computed(() => this.disabled() || this.#ctx.effectiveDisabled());
 
-  protected readonly ariaSetSize = computed<string | null>(() => {
+  private readonly ariaSetSize = computed<string | null>(() => {
     const total = this.#ctx.totalCount();
     return total === undefined ? null : String(total);
   });
-  protected readonly ariaPosInSet = computed<string | null>(() => {
+  private readonly ariaPosInSet = computed<string | null>(() => {
     if (this.#ctx.totalCount() === undefined) {
       return null;
     }
@@ -189,7 +189,7 @@ export class ForSelectOption<T = string> {
     injectPointerMove(() => this.onPointerMove());
   }
 
-  protected onClick(): void {
+  private onClick(): void {
     if (this.effectiveDisabled()) {
       return;
     }
@@ -203,23 +203,23 @@ export class ForSelectOption<T = string> {
     this.#ctx.notifyOptionClick(this.id());
   }
 
-  protected onFocus(): void {
+  private onFocus(): void {
     this.#focused.set(true);
     this.#ctx.notifyOptionFocus();
   }
 
-  protected onBlur(): void {
+  private onBlur(): void {
     this.#focused.set(false);
   }
 
-  protected onPointerMove(): void {
+  private onPointerMove(): void {
     if (this.effectiveDisabled()) {
       return;
     }
     this.#ctx.highlightFromPointer(this.#host.nativeElement, this.id());
   }
 
-  protected onKeyDown(event: KeyboardEvent): void {
+  private onKeyDown(event: KeyboardEvent): void {
     if (this.effectiveDisabled()) {
       return;
     }
@@ -294,7 +294,7 @@ export class ForSelectOption<T = string> {
     this.#ctx.overlay.handleTypeahead(event);
   }
 
-  protected onPointerDown(event: PointerEvent): void {
+  private onPointerDown(event: PointerEvent): void {
     if (this.#ctx.totalCount() === undefined) {
       return;
     }

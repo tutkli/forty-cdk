@@ -56,26 +56,26 @@ export class ForScrollAreaThumb {
     });
   }
 
-  protected widthPx(): number | null {
+  private widthPx(): number | null {
     return this.scrollbar.orientation() === 'horizontal' ? this.scrollbar.thumbSize() : null;
   }
-  protected heightPx(): number | null {
+  private heightPx(): number | null {
     return this.scrollbar.orientation() === 'vertical' ? this.scrollbar.thumbSize() : null;
   }
-  protected leftPx(): number | null {
+  private leftPx(): number | null {
     return this.scrollbar.orientation() === 'horizontal' ? 0 : null;
   }
-  protected topPx(): number | null {
+  private topPx(): number | null {
     return this.scrollbar.orientation() === 'vertical' ? 0 : null;
   }
-  protected transformValue(): string {
+  private transformValue(): string {
     if (this.scrollbar.orientation() === 'horizontal') {
       return `translateX(${this.scrollbar.thumbOffset()}px)`;
     }
     return `translateY(${this.scrollbar.thumbOffset()}px)`;
   }
 
-  protected onPointerDown(event: PointerEvent): void {
+  private onPointerDown(event: PointerEvent): void {
     if (event.pointerType === 'mouse' && event.button !== 0) return;
     event.preventDefault();
     this.#dragging.set(true);
@@ -98,7 +98,7 @@ export class ForScrollAreaThumb {
     doc.addEventListener('pointercancel', this.#onPointerUp, options);
   }
 
-  protected onLostPointerCapture(): void {
+  private onLostPointerCapture(): void {
     this.#endDrag();
   }
 

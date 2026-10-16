@@ -21,9 +21,9 @@ import { injectCalendarContext } from './calendar-context';
   },
 })
 export class ForCalendarGrid {
-  protected readonly ctx = injectCalendarContext('ForCalendarGrid');
+  private readonly ctx = injectCalendarContext('ForCalendarGrid');
 
-  protected readonly labelledBy = hostLabelledBy(() => this.ctx.headingId());
+  private readonly labelledBy = hostLabelledBy(() => this.ctx.headingId());
 
   /** Weekday column headers for the visible month, starting at `firstDayOfWeek`. */
   readonly weekDays = this.ctx.weekDays;

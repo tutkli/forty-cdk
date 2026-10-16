@@ -59,7 +59,7 @@ export abstract class TextValueControlBase
   }
 
   /** Bridges the native `input` event into the `value` model. */
-  protected onInput(event: Event): void {
+  private onInput(event: Event): void {
     if (this.effectiveDisabled() || this.readonly()) {
       return;
     }
@@ -74,12 +74,12 @@ export abstract class TextValueControlBase
   }
 
   /** Starts an IME composition; suppresses intermediate `input` propagation. */
-  protected onCompositionStart(): void {
+  private onCompositionStart(): void {
     this.#composing = true;
   }
 
   /** Ends an IME composition and flushes the final composed value once. */
-  protected onCompositionEnd(): void {
+  private onCompositionEnd(): void {
     this.#composing = false;
     if (this.effectiveDisabled() || this.readonly()) {
       return;
@@ -91,7 +91,7 @@ export abstract class TextValueControlBase
    * Marks the control touched and re-syncs the native element to `value()`,
    * discarding any text written to the element without an `input` event.
    */
-  protected onBlur(): void {
+  private onBlur(): void {
     this.markTouched();
     const el = this.#host.nativeElement;
     if (el.value !== this.value()) {

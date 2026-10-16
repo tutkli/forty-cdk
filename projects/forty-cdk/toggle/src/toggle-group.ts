@@ -251,7 +251,7 @@ export class ForToggleGroup
     this.roving.unregister(handle.host);
   }
 
-  protected onFocusOut(event: FocusEvent): void {
+  private onFocusOut(event: FocusEvent): void {
     const next = event.relatedTarget as HTMLElement | null;
     if (next && this.#host.nativeElement.contains(next)) {
       return;

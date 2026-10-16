@@ -71,7 +71,7 @@ export abstract class DateTimeFieldEngineBase<
   P extends SegmentParts,
   T extends SegmentType = SegmentType,
 > {
-  protected readonly config: BaseFieldEngineConfig<D>;
+  private readonly config: BaseFieldEngineConfig<D>;
 
   /** The effective locale: the field's own, then the adapter's, then the runtime default. */
   protected readonly locale = computed<string | undefined>(
@@ -93,15 +93,15 @@ export abstract class DateTimeFieldEngineBase<
   /** The entered parts, rehydrated from `source` and updated on every commit. */
   protected abstract readonly parts: WritableSignal<P>;
 
-  protected readonly editableOrder = computed<readonly SegmentType[]>(() =>
+  private readonly editableOrder = computed<readonly SegmentType[]>(() =>
     this.specs()
       .filter((spec): spec is Extract<FieldSpec, { kind: 'editable' }> => spec.kind === 'editable')
       .map((spec) => spec.type),
   );
 
-  protected readonly periodNames = computed(() => dayPeriodNames(this.locale()));
+  private readonly periodNames = computed(() => dayPeriodNames(this.locale()));
 
-  protected editor!: SegmentEditor<P, T>;
+  private editor!: SegmentEditor<P, T>;
 
   #ownCommit: { readonly source: D | null; readonly rehydrate: boolean } | null = null;
 
@@ -286,7 +286,7 @@ export abstract class DateTimeFieldEngineBase<
     return null;
   }
 
-  protected settle(): void {
+  private settle(): void {
     const commit = this.#ownCommit;
     this.#ownCommit = null;
     if (commit?.rehydrate) {
@@ -303,7 +303,7 @@ export abstract class DateTimeFieldEngineBase<
     return next;
   }
 
-  protected commitParts(rawNext: P, transient: boolean): void {
+  private commitParts(rawNext: P, transient: boolean): void {
     const next = this.finalizeCommitParts(rawNext, transient);
     this.parts.set(next);
     if (transient) {

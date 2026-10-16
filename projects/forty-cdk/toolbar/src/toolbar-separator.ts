@@ -45,11 +45,11 @@ export class ForToolbarSeparator {
     this.#toolbar.orientation() === 'vertical' ? 'horizontal' : 'vertical',
   );
 
-  protected readonly effectiveOrientation = computed<'horizontal' | 'vertical'>(
+  private readonly effectiveOrientation = computed<'horizontal' | 'vertical'>(
     () => this.orientation() ?? this.defaultOrientation(),
   );
 
-  protected ariaOrientation(): 'vertical' | null {
+  private ariaOrientation(): 'vertical' | null {
     if (this.decorative()) {
       return null;
     }

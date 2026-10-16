@@ -24,7 +24,7 @@ import { FOR_LISTBOX_OPTION, type ForListboxOption } from './listbox-option';
   },
 })
 export class ForListboxOptionIndicator {
-  protected readonly parent: ForListboxOption;
+  private readonly parent: ForListboxOption;
 
   constructor() {
     const parent = inject(FOR_LISTBOX_OPTION, { optional: true });

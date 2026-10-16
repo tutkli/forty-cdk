@@ -103,7 +103,7 @@ export class ForPagination implements ForPaginationContext {
    */
   readonly ariaLabel = input<string | null>(null);
 
-  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
+  private readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 
   /**
    * `count` coerced to a non-negative integer. A non-finite (`NaN` /

@@ -148,7 +148,7 @@ export interface TableRowReorderDescriptor {
   ],
 })
 export class ForTableRowReorder {
-  protected readonly ctx = injectTableContext('ForTableRowReorder');
+  private readonly ctx = injectTableContext('ForTableRowReorder');
   readonly #registration = injectTableRegistration('ForTableRowReorder');
   readonly #list = inject(ForDropList);
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;

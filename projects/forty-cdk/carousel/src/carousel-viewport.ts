@@ -28,7 +28,7 @@ import { type ForCarouselViewportHandle, injectCarouselContext } from './carouse
   },
 })
 export class ForCarouselViewport {
-  protected readonly ctx = injectCarouselContext('ForCarouselViewport');
+  private readonly ctx = injectCarouselContext('ForCarouselViewport');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   /** The resolved id of this element — generated or adopted from a consumer-set static `id`. */

@@ -165,7 +165,7 @@ export class ForOtpInput
    */
   readonly ariaLabel = input<string | null>(null);
 
-  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
+  private readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 
   /**
    * Class(es) applied to the injected `<input>`, which the consumer never writes in

@@ -76,12 +76,12 @@ import {
   },
 })
 export class ForMenuContent {
-  protected readonly ctx = injectMenuContext('ForMenuContent');
+  private readonly ctx = injectMenuContext('ForMenuContent');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
-  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ctx.ariaLabel() || null);
+  private readonly resolvedAriaLabel = hostAriaLabel(() => this.ctx.ariaLabel() || null);
 
-  protected readonly labelledBy = hostLabelledBy(() => {
+  private readonly labelledBy = hostLabelledBy(() => {
     if (this.resolvedAriaLabel() || this.ctx.triggerLabelsMenu?.() === false) {
       return null;
     }
@@ -180,7 +180,7 @@ export class ForMenuContent {
    * is (anchored on the item for keyboard navigation); only `data-highlighted`
    * clears. Gated to mouse — touch / pen never hover.
    */
-  protected onPointerLeave(event: PointerEvent): void {
+  private onPointerLeave(event: PointerEvent): void {
     if (!isHoverCapablePointer(event)) {
       return;
     }

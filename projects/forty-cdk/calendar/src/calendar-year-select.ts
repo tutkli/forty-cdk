@@ -29,7 +29,7 @@ import { type CalendarYearOption, injectCalendarContext } from './calendar-conte
   },
 })
 export class ForCalendarYearSelect {
-  protected readonly ctx = injectCalendarContext('ForCalendarYearSelect');
+  private readonly ctx = injectCalendarContext('ForCalendarYearSelect');
 
   /**
    * Lowest year listed in {@link years}. Defaults to 100 years before the
@@ -61,7 +61,7 @@ export class ForCalendarYearSelect {
     return out;
   });
 
-  protected onChange(event: Event): void {
+  private onChange(event: Event): void {
     this.ctx.goToYear(Number((event.target as HTMLSelectElement).value));
   }
 }

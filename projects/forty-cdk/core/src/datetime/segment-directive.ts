@@ -78,7 +78,7 @@ export abstract class ForDateTimeSegmentBase {
   /** Accessible name for this segment. Falls back to the segment type when unset. */
   abstract readonly ariaLabel: Signal<string | null>;
 
-  protected readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   /**
    * The accessible name bound to `aria-label`. Defaults to the explicit
@@ -89,13 +89,13 @@ export abstract class ForDateTimeSegmentBase {
     () => this.ariaLabel() ?? this.segment(),
   );
 
-  protected readonly valueNow = computed(() => this.ctx.delegate.segmentValue(this.segment()));
+  private readonly valueNow = computed(() => this.ctx.delegate.segmentValue(this.segment()));
 
-  protected readonly inputmode = computed<'numeric' | null>(() =>
+  private readonly inputmode = computed<'numeric' | null>(() =>
     this.segment() === 'dayPeriod' ? null : 'numeric',
   );
 
-  protected readonly highlighted = computed(
+  private readonly highlighted = computed(
     () => this.ctx.roving.active() === this.host.nativeElement,
   );
 
@@ -104,7 +104,7 @@ export abstract class ForDateTimeSegmentBase {
    * shared `RovingTabindex`). Before any interaction the first segment in the
    * locale order is the field's single tab entry; disabled fields are skipped.
    */
-  protected readonly tabindex = computed<-1 | 0>(() => {
+  private readonly tabindex = computed<-1 | 0>(() => {
     if (this.ctx.effectiveDisabled()) {
       return -1;
     }
@@ -124,15 +124,15 @@ export abstract class ForDateTimeSegmentBase {
     );
   }
 
-  protected onFocus(): void {
+  private onFocus(): void {
     this.ctx.delegate.focusSegment(this.segment());
   }
 
-  protected onBlur(event: FocusEvent): void {
+  private onBlur(event: FocusEvent): void {
     this.ctx.delegate.endTyping(event.relatedTarget);
   }
 
-  protected onKeyDown(event: KeyboardEvent): void {
+  private onKeyDown(event: KeyboardEvent): void {
     if (this.ctx.effectiveDisabled()) {
       return;
     }

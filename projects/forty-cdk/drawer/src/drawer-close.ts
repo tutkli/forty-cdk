@@ -19,14 +19,14 @@ import { injectDrawerContext } from './drawer-context';
   },
 })
 export class ForDrawerClose {
-  protected readonly buttonType = hostButtonType();
+  private readonly buttonType = hostButtonType();
 
   readonly #ctx = injectDrawerContext('ForDrawerClose');
 
   /** Optional value passed to `ForDrawerRef.close()` (programmatic mode). */
   readonly closeWith = input<unknown>(undefined);
 
-  protected onClick(): void {
+  private onClick(): void {
     this.#ctx.requestClose('closeButton', this.closeWith());
   }
 }

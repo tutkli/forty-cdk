@@ -135,9 +135,9 @@ export class ForCarousel implements ForCarouselContext {
    */
   readonly ariaLabel = input<string | null>(null);
 
-  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
+  private readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 
-  protected readonly roleDescription = computed(
+  private readonly roleDescription = computed(
     () => resolveText(this.#defaults.roleDescription) || null,
   );
 
@@ -220,7 +220,7 @@ export class ForCarousel implements ForCarouselContext {
 
   readonly #firstEnabledIndicatorHost = computed(() => firstEnabledHost(this.#indicators.items()));
 
-  protected readonly effectiveIndex = computed(() =>
+  private readonly effectiveIndex = computed(() =>
     clamp(this.activeIndex(), 0, Math.max(0, this.slideCount() - 1)),
   );
 
@@ -467,15 +467,15 @@ export class ForCarousel implements ForCarouselContext {
     this.#userPlaying.set(!this.playing());
   }
 
-  protected onAutoplayPause(reason: 'hover' | 'focus'): void {
+  private onAutoplayPause(reason: 'hover' | 'focus'): void {
     this.#interactionPause.apply(reason);
   }
 
-  protected onAutoplayResume(reason: 'hover' | 'focus'): void {
+  private onAutoplayResume(reason: 'hover' | 'focus'): void {
     this.#interactionPause.release(reason);
   }
 
-  protected onAutoplayFocusOut(event: FocusEvent): void {
+  private onAutoplayFocusOut(event: FocusEvent): void {
     const next = event.relatedTarget as Node | null;
     if (next && this.#element.nativeElement.contains(next)) {
       return;

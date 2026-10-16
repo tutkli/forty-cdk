@@ -220,13 +220,13 @@ export class ForPaneResizer {
    * Upper bound reflected to `aria-valuemax` and targeted by `End`: `max`, raised to `min`
    * when bound below it.
    */
-  protected readonly sanitizedMax = computed<number>(() => Math.max(this.max(), this.min()));
+  private readonly sanitizedMax = computed<number>(() => Math.max(this.max(), this.min()));
 
   /**
    * `value` clamped to `[min, sanitizedMax]`, reflected to `aria-valuenow`. The model keeps
    * the raw value a consumer wrote.
    */
-  protected readonly clampedValue = computed<number>(() =>
+  private readonly clampedValue = computed<number>(() =>
     clamp(this.value(), this.min(), this.sanitizedMax()),
   );
 
@@ -275,7 +275,7 @@ export class ForPaneResizer {
     }
   }
 
-  protected onKeyDown(event: KeyboardEvent): void {
+  private onKeyDown(event: KeyboardEvent): void {
     if (this.disabled()) {
       return;
     }
@@ -340,11 +340,11 @@ export class ForPaneResizer {
     this.resizing.emit(next);
   }
 
-  protected onKeyUp(_event: KeyboardEvent): void {
+  private onKeyUp(_event: KeyboardEvent): void {
     this.#flushKeyboardCommit();
   }
 
-  protected onBlur(): void {
+  private onBlur(): void {
     this.#flushKeyboardCommit();
   }
 

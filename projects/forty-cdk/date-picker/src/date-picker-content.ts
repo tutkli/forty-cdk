@@ -59,12 +59,12 @@ import { injectDatePickerContext } from './date-picker-context';
   ],
 })
 export class ForDatePickerContent {
-  protected readonly ctx = injectDatePickerContext('ForDatePickerContent');
+  private readonly ctx = injectDatePickerContext('ForDatePickerContent');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
-  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ctx.ariaLabel());
+  private readonly resolvedAriaLabel = hostAriaLabel(() => this.ctx.ariaLabel());
 
-  protected readonly labelledBy = hostLabelledBy(() =>
+  private readonly labelledBy = hostLabelledBy(() =>
     this.resolvedAriaLabel() ? null : this.ctx.triggerId(),
   );
 

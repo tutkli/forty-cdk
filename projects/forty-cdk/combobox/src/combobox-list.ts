@@ -51,12 +51,12 @@ import { injectComboboxContext } from './combobox-context';
   },
 })
 export class ForComboboxList {
-  protected readonly ctx = injectComboboxContext('ForComboboxList');
+  private readonly ctx = injectComboboxContext('ForComboboxList');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
-  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ctx.ariaLabel());
+  private readonly resolvedAriaLabel = hostAriaLabel(() => this.ctx.ariaLabel());
 
-  protected readonly labelledBy = hostLabelledBy(() =>
+  private readonly labelledBy = hostLabelledBy(() =>
     this.resolvedAriaLabel() ? null : this.ctx.inputId(),
   );
 

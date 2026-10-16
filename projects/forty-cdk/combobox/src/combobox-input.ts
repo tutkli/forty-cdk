@@ -87,13 +87,13 @@ import { injectComboboxContext } from './combobox-context';
 export class ForComboboxInput {
   // The input doesn't introspect the value type — it reads/writes the
   // query string and reads cached labels for inline autocomplete.
-  protected readonly ctx = injectComboboxContext<unknown>('ForComboboxInput');
+  private readonly ctx = injectComboboxContext<unknown>('ForComboboxInput');
   readonly #host = inject<ElementRef<HTMLInputElement>>(ElementRef);
 
   #composing = false;
   #completion: { readonly prefix: string; readonly label: string } | null = null;
 
-  protected readonly ariaAutocomplete = computed(() => this.ctx.autocompleteMode());
+  private readonly ariaAutocomplete = computed(() => this.ctx.autocompleteMode());
 
   constructor() {
     registerHandle(
@@ -136,11 +136,11 @@ export class ForComboboxInput {
     });
   }
 
-  protected onCompositionStart(): void {
+  private onCompositionStart(): void {
     this.#composing = true;
   }
 
-  protected onCompositionEnd(): void {
+  private onCompositionEnd(): void {
     this.#composing = false;
     if (this.ctx.effectiveDisabled() || this.ctx.readonly()) {
       return;
@@ -148,7 +148,7 @@ export class ForComboboxInput {
     this.#syncQuery(true, false);
   }
 
-  protected onInput(event: Event): void {
+  private onInput(event: Event): void {
     if (this.ctx.effectiveDisabled() || this.ctx.readonly()) {
       return;
     }
@@ -249,7 +249,7 @@ export class ForComboboxInput {
     return match ? match.label : null;
   }
 
-  protected onKeyDown(event: KeyboardEvent): void {
+  private onKeyDown(event: KeyboardEvent): void {
     if (isImeComposing(event)) {
       return;
     }
@@ -374,19 +374,19 @@ export class ForComboboxInput {
     }
   }
 
-  protected onFocus(): void {
+  private onFocus(): void {
     if (this.ctx.openOnFocus() && !this.ctx.open()) {
       this.ctx.openOverlay();
     }
   }
 
-  protected onBlur(): void {
+  private onBlur(): void {
     if (!this.#composing) {
       this.#acceptCompletion();
     }
   }
 
-  protected onClick(): void {
+  private onClick(): void {
     this.#acceptCompletion();
     // A click on the input while focused mirrors the focus-open intent —
     // useful when the user closed via Escape and wants to re-open without

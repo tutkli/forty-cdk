@@ -26,9 +26,9 @@ import { injectTreeItemContext } from './tree-context';
   },
 })
 export class ForTreeItemToggle {
-  protected readonly buttonType = hostButtonType();
+  private readonly buttonType = hostButtonType();
 
-  protected readonly item = injectTreeItemContext('ForTreeItemToggle');
+  private readonly item = injectTreeItemContext('ForTreeItemToggle');
 
   constructor() {
     const unregister = this.item.registerToggle();
@@ -36,7 +36,7 @@ export class ForTreeItemToggle {
     preventPointerFocus();
   }
 
-  protected onClick(event: MouseEvent): void {
+  private onClick(event: MouseEvent): void {
     event.stopPropagation();
     this.item.toggle();
     this.item.focusItem();

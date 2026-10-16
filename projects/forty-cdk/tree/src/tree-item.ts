@@ -183,7 +183,7 @@ export class ForTreeItem<T = string> implements ForTreeItemContext<T> {
    * land adjacent to this row, `null` otherwise (and always `null` without a drag coordinator).
    * Reflected as `data-drop-position`.
    */
-  protected readonly _dropPosition = computed<'before' | 'after' | null>(() => {
+  private readonly _dropPosition = computed<'before' | 'after' | null>(() => {
     const indicator = this.#drag?.dropIndicator();
     const equals = this.#tree.compareWith() as (a: unknown, b: unknown) => boolean;
     if (!indicator || !equals(indicator.anchor, this.value())) {
@@ -206,7 +206,7 @@ export class ForTreeItem<T = string> implements ForTreeItemContext<T> {
       : this.#container.items().length,
   );
 
-  protected readonly tabindex = computed<-1 | 0>(() => {
+  private readonly tabindex = computed<-1 | 0>(() => {
     if (this.effectiveDisabled()) {
       return -1;
     }
@@ -294,7 +294,7 @@ export class ForTreeItem<T = string> implements ForTreeItemContext<T> {
     this.#tree.roving.focusActive(this.#host.nativeElement);
   }
 
-  protected onFocus(): void {
+  private onFocus(): void {
     if (this.effectiveDisabled() || this.#virtualized()) {
       return;
     }
@@ -308,7 +308,7 @@ export class ForTreeItem<T = string> implements ForTreeItemContext<T> {
     this.#tree.highlightFromPointer(this.#host.nativeElement, this.id());
   }
 
-  protected onPointerDown(event: PointerEvent): void {
+  private onPointerDown(event: PointerEvent): void {
     if (!this.#virtualized()) return;
     event.preventDefault();
   }
@@ -320,7 +320,7 @@ export class ForTreeItem<T = string> implements ForTreeItemContext<T> {
     );
   }
 
-  protected onKeyDown(event: KeyboardEvent): void {
+  private onKeyDown(event: KeyboardEvent): void {
     const host = this.#host.nativeElement;
     // Tree items nest, so a keydown on a descendant bubbles through every
     // ancestor treeitem. Only the focused item (the event target) acts.

@@ -42,7 +42,7 @@ export abstract class ForTimeRangeFieldEndpointBase {
   /** Which endpoint this group edits. */
   protected abstract readonly which: TimeRangeFieldEndpoint;
 
-  protected readonly root = injectTimeRangeFieldContext('ForTimeRangeField endpoint');
+  private readonly root = injectTimeRangeFieldContext('ForTimeRangeField endpoint');
 
   /**
    * Accessible name for this endpoint group. Falls back to the scope default
@@ -70,7 +70,7 @@ export abstract class ForTimeRangeFieldEndpointBase {
   );
 
   /** Resolved accessible name for this endpoint group (explicit input or scope default). */
-  protected readonly label: Signal<string | null> = computed(
+  private readonly label: Signal<string | null> = computed(
     () => this.ariaLabel() ?? this.root.endpointLabel(this.which)(),
   );
 
@@ -78,7 +78,7 @@ export abstract class ForTimeRangeFieldEndpointBase {
    * Emitted `aria-label`: a consumer-set static value on the endpoint group
    * when present, else {@link label}.
    */
-  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.label() || null);
+  private readonly resolvedAriaLabel = hostAriaLabel(() => this.label() || null);
 }
 
 /**

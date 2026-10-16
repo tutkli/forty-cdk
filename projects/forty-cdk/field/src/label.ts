@@ -61,12 +61,12 @@ import { FOR_FIELD_CONTEXT } from './field-context';
   },
 })
 export class ForLabel {
-  protected readonly ctx = inject(FOR_FIELD_CONTEXT, { optional: true });
+  private readonly ctx = inject(FOR_FIELD_CONTEXT, { optional: true });
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
-  protected readonly labelId = hostStaticAttribute('id', () => this.ctx?.labelId() ?? null);
+  private readonly labelId = hostStaticAttribute('id', () => this.ctx?.labelId() ?? null);
 
-  protected readonly forAttr = hostStaticAttribute('for', () => {
+  private readonly forAttr = hostStaticAttribute('for', () => {
     if (!this.ctx || this.#host.nativeElement.tagName !== 'LABEL') {
       return null;
     }
@@ -82,7 +82,7 @@ export class ForLabel {
     preventPointerFocus((event) => event.button === 0 && this.#pressedTarget(event) !== null);
   }
 
-  protected onClick(event: MouseEvent): void {
+  private onClick(event: MouseEvent): void {
     const target = this.#pressedTarget(event);
     if (!target || !this.ctx) {
       return;

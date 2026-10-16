@@ -80,7 +80,7 @@ export interface TableSortDescriptor {
   },
 })
 export class ForTableSortHeader {
-  protected readonly ctx = injectTableContext('ForTableSortHeader');
+  private readonly ctx = injectTableContext('ForTableSortHeader');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   readonly #headerCell = inject(ForTableHeaderCell, { self: true, optional: true });
   readonly #hasDraggable = hostHasDraggable(this.#host);
@@ -127,7 +127,7 @@ export class ForTableSortHeader {
    * Truthy-only `aria-sort` / `data-sorted` value: `'ascending'` or `'descending'`
    * while sorted, `null` (absent) when `direction` is `'none'` or `sortable` is `false`.
    */
-  protected readonly activeDirection = computed<TableSortDirection | null>(() =>
+  private readonly activeDirection = computed<TableSortDirection | null>(() =>
     this.sortable() && this.direction() !== 'none' ? this.direction() : null,
   );
 
@@ -152,7 +152,7 @@ export class ForTableSortHeader {
    * originated from an interactive descendant of the header cell (which owns its
    * own activation).
    */
-  protected onClick(event: MouseEvent): void {
+  private onClick(event: MouseEvent): void {
     if (eventFromInteractiveDescendant(event)) {
       return;
     }
@@ -160,7 +160,7 @@ export class ForTableSortHeader {
   }
 
   /** Activates the sort: computes the next direction, updates the model, and emits `sortChange`. */
-  protected activate(): void {
+  private activate(): void {
     if (!this.sortable()) return;
     const next = this.#next(this.direction());
     this.direction.set(next);
@@ -178,7 +178,7 @@ export class ForTableSortHeader {
    * since there is no lift for `Space` to collide with
    * ([#1840](https://github.com/tutkli/forty-cdk/issues/1840)).
    */
-  protected onKeyDown(event: KeyboardEvent): void {
+  private onKeyDown(event: KeyboardEvent): void {
     const isEnter = event.key === 'Enter';
     const isSpace = event.key === ' ';
     if (!isEnter && !isSpace) {

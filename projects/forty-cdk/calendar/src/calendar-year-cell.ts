@@ -29,16 +29,16 @@ import { type ForCalendarYearCellHandle, injectCalendarContext } from './calenda
   },
 })
 export class ForCalendarYearCell {
-  protected readonly ctx = injectCalendarContext('ForCalendarYearCell');
+  private readonly ctx = injectCalendarContext('ForCalendarYearCell');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   /** The year this cell represents. */
   readonly year = input.required<number>();
 
-  protected readonly selected = computed(() => this.ctx.isYearSelected(this.year()));
-  protected readonly today = computed(() => this.ctx.isYearToday(this.year()));
-  protected readonly focused = computed(() => this.ctx.isYearFocused(this.year()));
-  protected readonly disabled = computed(() => this.ctx.isYearDisabled(this.year()));
+  private readonly selected = computed(() => this.ctx.isYearSelected(this.year()));
+  private readonly today = computed(() => this.ctx.isYearToday(this.year()));
+  private readonly focused = computed(() => this.ctx.isYearFocused(this.year()));
+  private readonly disabled = computed(() => this.ctx.isYearDisabled(this.year()));
 
   constructor() {
     const handle: ForCalendarYearCellHandle = {

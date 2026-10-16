@@ -117,7 +117,7 @@ export interface TableColumnReorderDescriptor {
   ],
 })
 export class ForTableColumnReorder {
-  protected readonly ctx = injectTableContext('ForTableColumnReorder');
+  private readonly ctx = injectTableContext('ForTableColumnReorder');
   readonly #list = inject(ForDropList);
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));

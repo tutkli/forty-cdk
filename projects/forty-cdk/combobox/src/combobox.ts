@@ -1142,7 +1142,7 @@ export class ForCombobox<T = string>
     this.#overlay.requestClose(reason);
   }
 
-  protected onFocusOut(event: FocusEvent): void {
+  private onFocusOut(event: FocusEvent): void {
     const next = event.relatedTarget as HTMLElement | null;
     const inputEl = this.#inputSlot.element();
     const content = this.content();

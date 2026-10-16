@@ -24,11 +24,11 @@ import { injectStepperContext } from './stepper-context';
   },
 })
 export class ForStepperNext {
-  protected readonly buttonType = hostButtonType();
+  private readonly buttonType = hostButtonType();
 
-  protected readonly ctx = injectStepperContext('ForStepperNext');
+  private readonly ctx = injectStepperContext('ForStepperNext');
 
-  protected onClick(): void {
+  private onClick(): void {
     this.ctx.next();
   }
 }

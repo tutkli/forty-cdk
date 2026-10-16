@@ -296,7 +296,7 @@ export class ForNumberInput
   }
 
   /** Live-parse the typed text into the value (unclamped — clamping waits for commit). */
-  protected onInput(event: Event): void {
+  private onInput(event: Event): void {
     if (this.effectiveDisabled() || this.readonly()) {
       return;
     }
@@ -315,7 +315,7 @@ export class ForNumberInput
     }
   }
 
-  protected onKeyDown(event: KeyboardEvent): void {
+  private onKeyDown(event: KeyboardEvent): void {
     if (this.effectiveDisabled() || this.readonly()) {
       return;
     }
@@ -365,7 +365,7 @@ export class ForNumberInput
    * is first rounded to the format's precision and clamped to `[min, max]`; a
    * value nobody typed is left as it is.
    */
-  protected commit(): void {
+  private commit(): void {
     const typed = this.#typedValue;
     this.#typedValue = null;
     if (

@@ -148,9 +148,9 @@ export class ForTreeNodeDrag<T = string> implements ForTreeNodeDragContext {
    */
   readonly nodeDrop = output<ForTreeDragDropEvent<T>>();
 
-  protected readonly _dragging = signal(false);
-  protected readonly _dropTargetValid = signal(false);
-  protected readonly _dropLevel = signal<number | null>(null);
+  private readonly _dragging = signal(false);
+  private readonly _dropTargetValid = signal(false);
+  private readonly _dropLevel = signal<number | null>(null);
 
   readonly #dropIndicator = signal<ForTreeDropIndicator<T> | null>(null);
 

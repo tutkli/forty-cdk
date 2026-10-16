@@ -35,9 +35,9 @@ export class ForSelectValue {
   /** Joiner for multi-mode label rendering. Default `', '`. */
   readonly separator = input<string>(', ');
 
-  protected readonly isPlaceholder = computed(() => this.#ctx.value().length === 0);
+  private readonly isPlaceholder = computed(() => this.#ctx.value().length === 0);
 
-  protected readonly displayText = computed(() => {
+  private readonly displayText = computed(() => {
     const labels = this.#ctx.selectedLabels();
     if (labels.length === 0) {
       return this.placeholder() || this.#ctx.placeholder();

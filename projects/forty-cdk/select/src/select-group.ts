@@ -22,7 +22,7 @@ export class ForSelectGroup {
   /** The id of the registered group label (or `null` if none). */
   readonly labelId = this.#labelId.asReadonly();
 
-  protected readonly labelledBy = hostLabelledBy(() => this.labelId());
+  private readonly labelledBy = hostLabelledBy(() => this.labelId());
 
   /** Called by `ForSelectGroupLabel` on mount. */
   registerLabel(id: string): void {

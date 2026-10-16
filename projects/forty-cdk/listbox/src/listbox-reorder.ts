@@ -146,7 +146,7 @@ export class ForListboxReorder {
    */
   readonly optionReorder = output<ForListboxReorderEvent>();
 
-  protected readonly _dragging = signal(false);
+  private readonly _dragging = signal(false);
 
   #mode: ReorderMode = 'idle';
   #liftedHost: HTMLElement | null = null;

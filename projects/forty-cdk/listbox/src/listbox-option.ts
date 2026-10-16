@@ -75,7 +75,7 @@ export const FOR_LISTBOX_OPTION = new InjectionToken<ForListboxOption>('FOR_LIST
   },
 })
 export class ForListboxOption<T = string> {
-  protected readonly buttonType = hostButtonType();
+  private readonly buttonType = hostButtonType();
 
   readonly #group = injectListboxContext<T>('ForListboxOption');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -129,12 +129,12 @@ export class ForListboxOption<T = string> {
     return this.#group.isOptionHighlighted(this.#host.nativeElement);
   });
 
-  protected readonly ariaSetSize = computed<string | null>(() => {
+  private readonly ariaSetSize = computed<string | null>(() => {
     const total = this.#group.totalCount();
     return total === undefined ? null : String(total);
   });
 
-  protected readonly ariaPosInSet = computed<string | null>(() => {
+  private readonly ariaPosInSet = computed<string | null>(() => {
     if (this.#group.totalCount() === undefined) {
       return null;
     }
@@ -144,7 +144,7 @@ export class ForListboxOption<T = string> {
 
   readonly effectiveDisabled = computed(() => this.disabled() || this.#group.effectiveDisabled());
 
-  protected readonly tabindex = computed<-1 | 0>(() => {
+  private readonly tabindex = computed<-1 | 0>(() => {
     if (this.effectiveDisabled()) {
       return -1;
     }
@@ -185,7 +185,7 @@ export class ForListboxOption<T = string> {
     injectPointerMove(() => this.onPointerMove());
   }
 
-  protected onClick(): void {
+  private onClick(): void {
     if (this.effectiveDisabled()) {
       return;
     }
@@ -199,28 +199,28 @@ export class ForListboxOption<T = string> {
     this.#group.notifyOptionClick(this.id());
   }
 
-  protected onPointerDown(event: PointerEvent): void {
+  private onPointerDown(event: PointerEvent): void {
     if (!this.#group.pressKeepsFocus()) {
       return;
     }
     event.preventDefault();
   }
 
-  protected onFocus(): void {
+  private onFocus(): void {
     if (this.effectiveDisabled()) {
       return;
     }
     this.#group.setActiveOption(this.#host.nativeElement);
   }
 
-  protected onPointerMove(): void {
+  private onPointerMove(): void {
     if (this.effectiveDisabled()) {
       return;
     }
     this.#group.highlightFromPointer(this.#host.nativeElement, this.id());
   }
 
-  protected onKeyDown(event: KeyboardEvent): void {
+  private onKeyDown(event: KeyboardEvent): void {
     if (this.effectiveDisabled()) {
       this.#navigate(event);
       return;

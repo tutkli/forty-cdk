@@ -69,7 +69,7 @@ export interface TableRawRowActivateEvent {
   providers: provideForTableRow(ForTableRow),
 })
 export class ForTableRow implements ForTableRowContext {
-  protected readonly ctx = injectTableContext('ForTableRow');
+  private readonly ctx = injectTableContext('ForTableRow');
   readonly #registration = injectTableRegistration('ForTableRow');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   readonly #cells = new Collection<ForTableCellHandle>();
@@ -117,7 +117,7 @@ export class ForTableRow implements ForTableRowContext {
    */
   readonly activate = output<TableRawRowActivateEvent>();
 
-  protected readonly rowIndex = computed<number | null>(() => {
+  private readonly rowIndex = computed<number | null>(() => {
     if (this.ctx.mode() === 'table') {
       return null;
     }
@@ -133,7 +133,7 @@ export class ForTableRow implements ForTableRowContext {
     return v !== undefined && this.ctx.isRowSelected(v);
   });
 
-  protected readonly ariaSelected = computed<'true' | 'false' | null>(() => {
+  private readonly ariaSelected = computed<'true' | 'false' | null>(() => {
     if (
       this.ctx.mode() === 'table' ||
       this.ctx.selectionMode() === 'none' ||
@@ -157,23 +157,23 @@ export class ForTableRow implements ForTableRowContext {
     }
   }
 
-  protected readonly ariaLevel = computed<number | null>(() =>
+  private readonly ariaLevel = computed<number | null>(() =>
     this.ctx.mode() === 'treegrid' ? this.level() : null,
   );
-  protected readonly posinset = computed<number | null>(() =>
+  private readonly posinset = computed<number | null>(() =>
     this.ctx.mode() === 'treegrid' ? this.ctx.rowPosinset(this.#host) : null,
   );
-  protected readonly setsize = computed<number | null>(() =>
+  private readonly setsize = computed<number | null>(() =>
     this.ctx.mode() === 'treegrid' ? this.ctx.rowSetsize(this.#host) : null,
   );
-  protected readonly ariaExpanded = computed<'true' | 'false' | null>(() =>
+  private readonly ariaExpanded = computed<'true' | 'false' | null>(() =>
     this.ctx.mode() === 'treegrid' && this.expandable()
       ? this.expanded()
         ? 'true'
         : 'false'
       : null,
   );
-  protected readonly expandState = computed<'open' | 'closed' | null>(() =>
+  private readonly expandState = computed<'open' | 'closed' | null>(() =>
     this.ctx.mode() === 'treegrid' && this.expandable()
       ? this.expanded()
         ? 'open'
@@ -216,14 +216,14 @@ export class ForTableRow implements ForTableRowContext {
     }
   }
 
-  protected onClick(event: MouseEvent): void {
+  private onClick(event: MouseEvent): void {
     this.#select(event);
     if (this.ctx.mode() !== 'table' && !eventFromInteractiveDescendant(event)) {
       this.activate.emit({ value: this.value(), event });
     }
   }
 
-  protected onKeydown(event: KeyboardEvent): void {
+  private onKeydown(event: KeyboardEvent): void {
     if (this.ctx.isCellActivation(event)) {
       this.activate.emit({ value: this.value(), event });
     }

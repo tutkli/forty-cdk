@@ -391,7 +391,7 @@ if (unblessedFailures.length) {
     console.error(`  forty-cdk/${entry}: ${unblessed.join(', ')}`);
   }
   console.error(
-    `\nEither narrow the leak (drop the re-export or the member, make it protected, or retype it to a local shape), or bless the symbol deliberately by adding it to scripts/lib/core-blessed-tier.mjs — which commits the library to its semver stability. See the core tier section in .claude/rules/conventions.md.`,
+    `\nEither narrow the leak (drop the re-export or the member, make it private, or retype it to a local shape), or bless the symbol deliberately by adding it to scripts/lib/core-blessed-tier.mjs — which commits the library to its semver stability. See the core tier section in .claude/rules/conventions.md.`,
   );
 }
 
@@ -439,7 +439,7 @@ if (unnameable.length) {
     console.error(`  forty-cdk/${entry}: ${unlisted.join(', ')}`);
   }
   console.error(
-    `\nA public signature must hand the consumer only types they can name from a supported import path. Either narrow the leak (drop the member, make it protected, or retype it to a shape they can name — a blessed core type rather than a second local spelling of it), or re-export the type from that entry point's public-api.ts with consumer-facing JSDoc. Listing it in scripts/lib/unnameable-public-types.mjs defers the fix and is not a resolution.`,
+    `\nA public signature must hand the consumer only types they can name from a supported import path. Either narrow the leak (drop the member, make it private, or retype it to a shape they can name — a blessed core type rather than a second local spelling of it), or re-export the type from that entry point's public-api.ts with consumer-facing JSDoc. Listing it in scripts/lib/unnameable-public-types.mjs defers the fix and is not a resolution.`,
   );
 }
 

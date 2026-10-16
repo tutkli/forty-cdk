@@ -19,8 +19,5 @@ import { injectDialogContext } from './dialog-context';
   },
 })
 export class ForDialogTitle {
-  protected readonly id = registerA11yName(
-    injectDialogContext('ForDialogTitle'),
-    'for-dialog-title',
-  );
+  private readonly id = registerA11yName(injectDialogContext('ForDialogTitle'), 'for-dialog-title');
 }

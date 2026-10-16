@@ -189,10 +189,10 @@ export class ForToast implements ForToastContext {
   readonly #swipeMovementY = signal(0);
   #swipeArming = false;
 
-  protected readonly swipeState = this.#swipeState.asReadonly();
-  protected readonly swipeActiveDirection = this.#swipeActiveDirection.asReadonly();
-  protected readonly swipeMovementX = this.#swipeMovementX.asReadonly();
-  protected readonly swipeMovementY = this.#swipeMovementY.asReadonly();
+  private readonly swipeState = this.#swipeState.asReadonly();
+  private readonly swipeActiveDirection = this.#swipeActiveDirection.asReadonly();
+  private readonly swipeMovementX = this.#swipeMovementX.asReadonly();
+  private readonly swipeMovementY = this.#swipeMovementY.asReadonly();
 
   readonly #normalizedSwipeDirections = computed<readonly SwipeDirection[]>(() => {
     // A non-dismissible toast forbids user-initiated dismissal of any kind —
@@ -211,7 +211,7 @@ export class ForToast implements ForToastContext {
   });
 
   /** `touch-action` for the host: free the axis no swipe direction uses. */
-  protected readonly touchAction = computed(() =>
+  private readonly touchAction = computed(() =>
     swipeTouchAction(this.#normalizedSwipeDirections()),
   );
 
@@ -265,10 +265,8 @@ export class ForToast implements ForToastContext {
     return [...titles, ...descriptions, ...altTexts].join('. ');
   });
 
-  protected readonly computedRole = computed(() =>
-    this.variant() === 'error' ? 'alert' : 'status',
-  );
-  protected readonly ariaLive = computed(() => (this.#hostIsLiveRegion() ? 'assertive' : 'off'));
+  private readonly computedRole = computed(() => (this.variant() === 'error' ? 'alert' : 'status'));
+  private readonly ariaLive = computed(() => (this.#hostIsLiveRegion() ? 'assertive' : 'off'));
 
   // Timer state — kept off the reactive graph because pause/resume are
   // imperative and we don't want to trip change detection on every tick.
@@ -417,7 +415,7 @@ export class ForToast implements ForToastContext {
    * arms. A re-armed swipe overwrites the state anyway, so this only matters
    * for the parked-after-cancel window.
    */
-  protected onPointerDown(): void {
+  private onPointerDown(): void {
     if (this.#swipeState() === 'cancel') {
       this.#resetSwipeState();
     }
@@ -430,15 +428,15 @@ export class ForToast implements ForToastContext {
     this.#swipeMovementY.set(0);
   }
 
-  protected onPause(reason: 'hover' | 'focus'): void {
+  private onPause(reason: 'hover' | 'focus'): void {
     this.#pause.apply(reason);
   }
 
-  protected onResume(reason: 'hover' | 'focus'): void {
+  private onResume(reason: 'hover' | 'focus'): void {
     this.#pause.release(reason);
   }
 
-  protected onMaybeResumeFocus(event: FocusEvent): void {
+  private onMaybeResumeFocus(event: FocusEvent): void {
     const next = event.relatedTarget as Node | null;
     if (next && this.#host.nativeElement.contains(next)) {
       return;
@@ -446,7 +444,7 @@ export class ForToast implements ForToastContext {
     this.onResume('focus');
   }
 
-  protected onKeyDown(event: KeyboardEvent): void {
+  private onKeyDown(event: KeyboardEvent): void {
     if (event.key !== 'Escape' || isImeComposing(event) || !this.dismissible()) {
       return;
     }

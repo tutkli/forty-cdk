@@ -64,9 +64,9 @@ export const FOR_MENU_CHECKBOX_ITEM = new InjectionToken<ForMenuCheckboxItem>(
   },
 })
 export class ForMenuCheckboxItem {
-  protected readonly buttonType = hostButtonType();
+  private readonly buttonType = hostButtonType();
 
-  protected readonly ctx = injectMenuContext('ForMenuCheckboxItem');
+  private readonly ctx = injectMenuContext('ForMenuCheckboxItem');
 
   /** Two-way bindable. */
   readonly checked = model<boolean>(false);
@@ -84,7 +84,7 @@ export class ForMenuCheckboxItem {
 
   readonly effectiveDisabled = computed(() => this.disabled() || this.ctx.disabled());
 
-  protected readonly interaction = createMenuItemInteraction({
+  private readonly interaction = createMenuItemInteraction({
     ctx: this.ctx,
     effectiveDisabled: this.effectiveDisabled,
     textValue: this.textValue,
@@ -106,7 +106,7 @@ export class ForMenuCheckboxItem {
     preventPointerFocus(() => this.effectiveDisabled());
   }
 
-  protected onClick(): void {
+  private onClick(): void {
     if (this.effectiveDisabled()) {
       return;
     }
@@ -116,7 +116,7 @@ export class ForMenuCheckboxItem {
     }
   }
 
-  protected onKeyDown(event: KeyboardEvent): void {
+  private onKeyDown(event: KeyboardEvent): void {
     if (this.interaction.handleNavigation(event)) {
       return;
     }

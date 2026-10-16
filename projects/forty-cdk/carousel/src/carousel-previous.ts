@@ -29,9 +29,9 @@ import { injectCarouselContext } from './carousel-context';
   },
 })
 export class ForCarouselPrevious {
-  protected readonly buttonType = hostButtonType();
+  private readonly buttonType = hostButtonType();
 
-  protected readonly ctx = injectCarouselContext('ForCarouselPrevious');
+  private readonly ctx = injectCarouselContext('ForCarouselPrevious');
 
   /**
    * Accessible label for this button (e.g. "Previous slide"). When `null`
@@ -40,11 +40,11 @@ export class ForCarouselPrevious {
    */
   readonly ariaLabel = input<string | null>(null);
 
-  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
+  private readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 
-  protected readonly isDisabled = computed(() => !this.ctx.canScrollPrev());
+  private readonly isDisabled = computed(() => !this.ctx.canScrollPrev());
 
-  protected activate(): void {
+  private activate(): void {
     if (this.isDisabled()) {
       return;
     }

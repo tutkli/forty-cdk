@@ -322,7 +322,7 @@ export class ForScrollAreaScrollbar {
     this.scrollToPosition(next);
   }
 
-  protected onTrackPointerDown(event: PointerEvent): void {
+  private onTrackPointerDown(event: PointerEvent): void {
     if ((event.pointerType === 'mouse' && event.button !== 0) || event.defaultPrevented) return;
     const mode = this.ctx.trackPress();
     if (mode === 'none') return;
@@ -343,7 +343,7 @@ export class ForScrollAreaScrollbar {
     this.#scheduleRepeat(this.ctx.trackPressRepeatDelay());
   }
 
-  protected onLostPointerCapture(): void {
+  private onLostPointerCapture(): void {
     this.#endPress();
   }
 

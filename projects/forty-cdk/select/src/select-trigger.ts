@@ -71,7 +71,7 @@ import {
   },
 })
 export class ForSelectTrigger<T = unknown> {
-  protected readonly buttonType = hostButtonType();
+  private readonly buttonType = hostButtonType();
 
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
@@ -87,7 +87,7 @@ export class ForSelectTrigger<T = unknown> {
   readonly forSelectTrigger = input<ForSelectContext<T> | ''>('');
 
   readonly #root = injectSelectTriggerContext<T>(this.forSelectTrigger);
-  protected readonly ctx: Signal<SelectContext<T>> = this.#root;
+  private readonly ctx: Signal<SelectContext<T>> = this.#root;
 
   constructor() {
     const el = this.#host.nativeElement;
@@ -102,11 +102,11 @@ export class ForSelectTrigger<T = unknown> {
     reflectDisabled(computed(() => this.ctx().effectiveDisabled()));
   }
 
-  protected onClick(): void {
+  private onClick(): void {
     this.#root().overlay.toggle('selected');
   }
 
-  protected onKeyDown(event: KeyboardEvent): void {
+  private onKeyDown(event: KeyboardEvent): void {
     if (this.ctx().effectiveDisabled()) {
       return;
     }
@@ -132,7 +132,7 @@ export class ForSelectTrigger<T = unknown> {
     this.ctx().handleClosedTypeahead(event);
   }
 
-  protected onFocusOut(event: FocusEvent): void {
+  private onFocusOut(event: FocusEvent): void {
     const next = event.relatedTarget as HTMLElement | null;
     if (next) {
       // Focus moving into the listbox content (we just opened it) — not a leave.

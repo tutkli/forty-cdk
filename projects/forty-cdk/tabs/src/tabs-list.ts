@@ -20,10 +20,10 @@ import { injectTabsContext } from './tabs-context';
   },
 })
 export class ForTabsList {
-  protected readonly group = injectTabsContext('ForTabsList');
+  private readonly group = injectTabsContext('ForTabsList');
 
   /** Accessible name for the tab list. Defers to a consumer `aria-labelledby`. */
   readonly ariaLabel = input<string | null>(null);
 
-  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
+  private readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 }

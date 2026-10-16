@@ -94,7 +94,7 @@ export class ForFileUpload implements ForFileUploadContext {
   readonly filesRejected = output<ForFileUploadRejection[]>();
 
   readonly #dragging = signal(false);
-  protected readonly dragging = this.#dragging.asReadonly();
+  private readonly dragging = this.#dragging.asReadonly();
   #dragDepth = 0;
   readonly #input = createSingleSlot<HTMLInputElement>({
     primitive: 'file-upload',
@@ -161,25 +161,25 @@ export class ForFileUpload implements ForFileUploadContext {
     if (rejected.length > 0) this.filesRejected.emit(rejected);
   }
 
-  protected onDragEnter(event: DragEvent): void {
+  private onDragEnter(event: DragEvent): void {
     if (this.effectiveDisabled()) return;
     event.preventDefault();
     this.#dragDepth++;
     this.#dragging.set(true);
   }
 
-  protected onDragOver(event: DragEvent): void {
+  private onDragOver(event: DragEvent): void {
     if (this.effectiveDisabled()) return;
     event.preventDefault();
     if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
   }
 
-  protected onDragLeave(): void {
+  private onDragLeave(): void {
     this.#dragDepth = Math.max(0, this.#dragDepth - 1);
     if (this.#dragDepth === 0) this.#dragging.set(false);
   }
 
-  protected onDrop(event: DragEvent): void {
+  private onDrop(event: DragEvent): void {
     this.#dragDepth = 0;
     this.#dragging.set(false);
     if (this.effectiveDisabled()) return;

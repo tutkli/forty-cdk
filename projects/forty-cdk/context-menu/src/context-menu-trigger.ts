@@ -126,7 +126,7 @@ export class ForContextMenuTrigger {
    */
   readonly forContextMenuTrigger = input<ForContextMenuContext | ''>('');
 
-  protected readonly ctx = injectContextMenuContext(this.forContextMenuTrigger);
+  private readonly ctx = injectContextMenuContext(this.forContextMenuTrigger);
 
   readonly #openerRegistration = computed(() => asMenuOpenerRegistration(this.ctx()));
 
@@ -180,7 +180,7 @@ export class ForContextMenuTrigger {
     injectPointerMove((event) => this.onPointerMove(event));
   }
 
-  protected onPointerDown(event: PointerEvent): void {
+  private onPointerDown(event: PointerEvent): void {
     this.#pointerActivation = true;
     this.#longPressOpened = false;
     this.#longPress.cancel();
@@ -192,7 +192,7 @@ export class ForContextMenuTrigger {
     this.#longPress.schedule(LONG_PRESS_DELAY_MS);
   }
 
-  protected onPointerMove(event: PointerEvent): void {
+  private onPointerMove(event: PointerEvent): void {
     if (!this.#longPress.isPending()) {
       return;
     }
@@ -203,11 +203,11 @@ export class ForContextMenuTrigger {
     }
   }
 
-  protected onPointerRelease(): void {
+  private onPointerRelease(): void {
     this.#longPress.cancel();
   }
 
-  protected onContextMenu(event: MouseEvent): void {
+  private onContextMenu(event: MouseEvent): void {
     this.#longPress.cancel();
     const longPressOpened = this.#longPressOpened;
     this.#longPressOpened = false;
@@ -233,7 +233,7 @@ export class ForContextMenuTrigger {
     this.#openFromFocusedRect();
   }
 
-  protected onKeyDown(event: KeyboardEvent): void {
+  private onKeyDown(event: KeyboardEvent): void {
     this.#pointerActivation = false;
     if (this.effectiveDisabled()) {
       return;

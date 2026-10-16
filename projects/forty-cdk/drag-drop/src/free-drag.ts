@@ -117,7 +117,7 @@ export class ForFreeDrag implements ForDraggableContext {
   /** True while a pointer drag is armed. Reflected as `data-dragging`. */
   readonly dragging = computed(() => this.#lift() !== null);
 
-  protected readonly touchAction = this.#handleGuard.touchAction;
+  private readonly touchAction = this.#handleGuard.touchAction;
 
   constructor() {
     if (this.#isBrowser) {

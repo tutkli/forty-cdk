@@ -24,7 +24,7 @@ import { injectDisclosureContext } from './disclosure-context';
   },
 })
 export class ForDisclosureContent {
-  protected readonly ctx = injectDisclosureContext('ForDisclosureContent');
+  private readonly ctx = injectDisclosureContext('ForDisclosureContent');
 
   constructor() {
     this.ctx.adoptContentId(inject<ElementRef<HTMLElement>>(ElementRef).nativeElement);

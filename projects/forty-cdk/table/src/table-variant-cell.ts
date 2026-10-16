@@ -30,9 +30,9 @@ import { injectTableContext } from './table-context';
 export class ForTableVariantCell {
   readonly #ctx = injectTableContext('ForTableVariantCell');
 
-  protected readonly role = computed(() => (this.#ctx.mode() === 'table' ? 'cell' : 'gridcell'));
+  private readonly role = computed(() => (this.#ctx.mode() === 'table' ? 'cell' : 'gridcell'));
 
-  protected readonly colSpan = computed<number | null>(() => {
+  private readonly colSpan = computed<number | null>(() => {
     const cols = this.#ctx.columnCount();
     return cols > 0 ? cols : null;
   });

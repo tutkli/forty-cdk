@@ -50,7 +50,7 @@ export class ForAspectRatio {
    * The host `aspect-ratio` style value, guarded so a `0`, negative, or
    * non-finite `ratio` never produces invalid CSS — it falls back to `1`.
    */
-  protected readonly resolvedRatio = computed(() => {
+  private readonly resolvedRatio = computed(() => {
     const value = this.ratio();
     return String(Number.isFinite(value) && value > 0 ? value : 1);
   });

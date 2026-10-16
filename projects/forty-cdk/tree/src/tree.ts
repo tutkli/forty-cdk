@@ -160,7 +160,7 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
    */
   readonly selectionMode = input<'highlight' | 'checkbox'>('highlight');
 
-  protected readonly multiSelect = computed(
+  private readonly multiSelect = computed(
     () => this.multiple() || this.selectionMode() === 'checkbox',
   );
 
@@ -246,7 +246,7 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
    */
   readonly ariaLabel = input<string | null>(null);
 
-  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
+  private readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 
   /**
    * Writing direction. When unset (default `null`), the inherited ambient
@@ -388,7 +388,7 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
    * single tab stop. In the roving path the host carries no tabindex (items own
    * their own tab stop). A disabled tree is never tabbable.
    */
-  protected readonly hostTabindex = computed<'0' | null>(() => {
+  private readonly hostTabindex = computed<'0' | null>(() => {
     if (this.disabled()) return null;
     return this.#virtualized() ? '0' : null;
   });
@@ -628,7 +628,7 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
     return this.#firstEnabledRoot() === el;
   }
 
-  protected onHostKeyDown(event: KeyboardEvent): void {
+  private onHostKeyDown(event: KeyboardEvent): void {
     if (!this.#virtualized() || this.disabled()) return;
     const host = this.#host.nativeElement;
     if (this.multiple() && this.#isMultiSelectShortcut(event)) {
@@ -670,7 +670,7 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
     this.handleTypeahead(event);
   }
 
-  protected onHostFocusIn(): void {
+  private onHostFocusIn(): void {
     if (!this.#virtualized() || this.disabled()) return;
     if (this.#activeId() !== null) return;
     const items = this.#items.items();
@@ -708,7 +708,7 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
     this.roving.setActive(host);
   }
 
-  protected onPointerLeave(): void {
+  private onPointerLeave(): void {
     this.#pointer.release();
   }
 

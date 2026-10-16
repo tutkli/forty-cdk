@@ -19,9 +19,9 @@ import { FOR_TOAST_DEFAULTS } from 'forty-cdk/defaults';
   },
 })
 export class ForToastClose {
-  protected readonly buttonType = hostButtonType();
+  private readonly buttonType = hostButtonType();
 
-  protected readonly ctx = injectToastContext('ForToastClose');
+  private readonly ctx = injectToastContext('ForToastClose');
   readonly #defaults = inject(FOR_TOAST_DEFAULTS);
 
   /**
@@ -33,11 +33,11 @@ export class ForToastClose {
    */
   readonly ariaLabel = input<string | null>();
 
-  protected readonly resolvedAriaLabel = hostAriaLabel(
+  private readonly resolvedAriaLabel = hostAriaLabel(
     () => resolveTextInput(this.ariaLabel(), this.#defaults.closeAriaLabel) || null,
   );
 
-  protected onClick(): void {
+  private onClick(): void {
     this.ctx.requestClose('manual');
   }
 }
