@@ -2296,3 +2296,87 @@ describe('ForMenubar', () => {
     });
   });
 });
+
+describe('ForMenubarTrigger value binding', () => {
+  @Component({
+    host: { 'data-fixture': 'menubar-for-open-host' },
+    imports: IMPORTS,
+    template: `
+      <div forMenubar [(value)]="open" aria-label="Main">
+        @for (menu of menus; track menu) {
+          <button forMenubarTrigger [value]="menu" [attr.data-test-id]="menu">{{ menu }}</button>
+          @if (open() === menu) {
+            <div forMenuContent>
+              <button forMenuItem>Item</button>
+            </div>
+          }
+        }
+      </div>
+    `,
+  })
+  class OpenForHost {
+    readonly open = signal<string | null>('view');
+    readonly menus = ['file', 'edit', 'view'];
+  }
+
+  @Component({
+    host: { 'data-fixture': 'menubar-unbound-trigger-host' },
+    imports: IMPORTS,
+    template: `
+      <div forMenubar [(value)]="open" aria-label="Main">
+        <button forMenubarTrigger value="file" data-test-id="file">File</button>
+        @if (open() === 'file') {
+          <div forMenuContent>
+            <button forMenuItem>New</button>
+          </div>
+        }
+        <button forMenubarTrigger data-test-id="unbound">Unbound</button>
+      </div>
+    `,
+  })
+  class UnboundTriggerHost {
+    readonly open = signal<string | null>(null);
+  }
+
+  const triggerOf = (el: HTMLElement, id: string): HTMLElement =>
+    el.querySelector<HTMLElement>(`[data-test-id="${id}"]`)!;
+
+  afterEachOverlayCleanup();
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+  });
+
+  it('renders the open trigger as the single tab stop on the first pass of an @for', async () => {
+    const r = renderHost(OpenForHost);
+    await flush(r.fixture);
+
+    expect(triggerOf(r.el, 'view').getAttribute('aria-expanded')).toBe('true');
+    expect(
+      ['file', 'edit', 'view'].map((m) => triggerOf(r.el, m).getAttribute('tabindex')),
+    ).toEqual(['-1', '-1', '0']);
+  });
+
+  it('fails loudly in dev mode when a trigger has no value binding', () => {
+    expect(() => renderHost(UnboundTriggerHost)).toThrowError(
+      /\[forty-cdk\/menubar\] FORCDK-CORE-010: \[forMenubarTrigger\] has no \[value\] binding/,
+    );
+  });
+
+  it('opens nothing from an unbound trigger in a production build', async () => {
+    vi.stubGlobal('ngDevMode', false);
+    const r = renderHost(UnboundTriggerHost);
+    await flush(r.fixture);
+
+    triggerOf(r.el, 'unbound').click();
+    await flush(r.fixture);
+    expect(r.instance.open()).toBeNull();
+
+    r.instance.open.set('file');
+    await flush(r.fixture);
+    triggerOf(r.el, 'file').focus();
+    pressKey(triggerOf(r.el, 'file'), 'ArrowRight');
+    await flush(r.fixture);
+    expect(r.instance.open()).toBe('file');
+  });
+});

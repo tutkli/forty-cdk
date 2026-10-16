@@ -17,7 +17,7 @@ import {
 } from '@angular/core';
 import { CssVarNamespacer } from '@angular/platform-browser';
 
-import { fortyError } from 'forty-cdk/core';
+import { assertInputBound, fortyError, isUnset, unsetInput } from 'forty-cdk/core';
 
 import { ForDraggable, ForDragPlaceholder } from 'forty-cdk/drag-drop';
 
@@ -379,8 +379,9 @@ export class ForTableBody<T = unknown> {
 
   constructor() {
     const bodyRowCount = computed(() =>
-      this.loading() ? Math.max(0, this.placeholderRows()) : this.rows().length,
+      this.loading() ? Math.max(0, this.placeholderRows()) : this.#data().length,
     );
+    assertInputBound(this.rows, 'table', '<for-table-body>', 'rows');
     this.#registration.registerBodyRowCount(bodyRowCount);
     inject(DestroyRef).onDestroy(() => this.#registration.registerBodyRowCount(null));
 
@@ -402,8 +403,16 @@ export class ForTableBody<T = unknown> {
     });
   }
 
-  /** The rows to render — already sorted / filtered / paged by the consumer (BYO-data). */
-  readonly rows = input.required<readonly T[]>();
+  /**
+   * The rows to render — already sorted / filtered / paged by the consumer (BYO-data). Mandatory —
+   * a body with no binding throws in dev mode.
+   */
+  readonly rows = input(unsetInput<readonly T[]>());
+
+  readonly #data = computed<readonly T[]>(() => {
+    const rows = this.rows();
+    return isUnset(rows) ? [] : rows;
+  });
 
   /**
    * Row identity used both for `@for` tracking and each row's selection `[value]`.
@@ -665,7 +674,7 @@ export class ForTableBody<T = unknown> {
    */
   private readonly renderRows = computed<readonly RenderRow<T>[]>(() => {
     const window = this.#registration.virtualWindow();
-    const data = this.rows();
+    const data = this.#data();
     const key = this.rowKey();
     const variants = this.rowDefs();
     for (const def of variants) {

@@ -1,6 +1,6 @@
 import { computed, Directive, ElementRef, inject, input } from '@angular/core';
 
-import { registerHandle } from 'forty-cdk/core';
+import { assertInputBound, isUnset, registerHandle, unsetInput } from 'forty-cdk/core';
 import { type ForCalendarYearCellHandle, injectCalendarContext } from './calendar-context';
 
 /**
@@ -24,23 +24,24 @@ import { type ForCalendarYearCellHandle, injectCalendarContext } from './calenda
     '[attr.data-today]': 'today() ? "" : null',
     '[attr.data-highlighted]': 'focused() ? "" : null',
     '[attr.data-disabled]': 'disabled() ? "" : null',
-    '(click)': 'ctx.selectYear(year())',
-    '(keydown)': 'ctx.handleYearCellKeydown($event, year())',
+    '(click)': 'onClick()',
+    '(keydown)': 'onKeyDown($event)',
   },
 })
 export class ForCalendarYearCell {
   private readonly ctx = injectCalendarContext('ForCalendarYearCell');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
-  /** The year this cell represents. */
-  readonly year = input.required<number>();
+  /** The year this cell represents. Mandatory — a cell with no binding throws in dev mode. */
+  readonly year = input(unsetInput<number>());
 
-  private readonly selected = computed(() => this.ctx.isYearSelected(this.year()));
-  private readonly today = computed(() => this.ctx.isYearToday(this.year()));
-  private readonly focused = computed(() => this.ctx.isYearFocused(this.year()));
-  private readonly disabled = computed(() => this.ctx.isYearDisabled(this.year()));
+  private readonly selected = computed(() => this.#bound((v) => this.ctx.isYearSelected(v)));
+  private readonly today = computed(() => this.#bound((v) => this.ctx.isYearToday(v)));
+  private readonly focused = computed(() => this.#bound((v) => this.ctx.isYearFocused(v)));
+  private readonly disabled = computed(() => this.#bound((v) => this.ctx.isYearDisabled(v)));
 
   constructor() {
+    assertInputBound(this.year, 'calendar', '[forCalendarYearCell]', 'year');
     const handle: ForCalendarYearCellHandle = {
       host: this.#host.nativeElement,
       year: this.year,
@@ -50,5 +51,24 @@ export class ForCalendarYearCell {
       (h) => this.ctx.registerYearCell(h),
       (h) => this.ctx.unregisterYearCell(h),
     );
+  }
+
+  #bound(read: (year: number) => boolean): boolean {
+    const year = this.year();
+    return isUnset(year) ? false : read(year);
+  }
+
+  private onClick(): void {
+    const year = this.year();
+    if (!isUnset(year)) {
+      this.ctx.selectYear(year);
+    }
+  }
+
+  private onKeyDown(event: KeyboardEvent): void {
+    const year = this.year();
+    if (!isUnset(year)) {
+      this.ctx.handleYearCellKeydown(event, year);
+    }
   }
 }

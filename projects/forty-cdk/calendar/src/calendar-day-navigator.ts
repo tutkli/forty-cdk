@@ -1,6 +1,6 @@
 import { computed } from '@angular/core';
 
-import { Collection } from 'forty-cdk/core';
+import { Collection, isUnset } from 'forty-cdk/core';
 import { type DateAdapter } from 'forty-cdk/date-adapter';
 import { buildMonthMatrix } from './build-month-matrix';
 import type { CalendarWeek, CalendarWeekday, ForCalendarCellHandle } from './calendar-context';
@@ -107,7 +107,10 @@ export class CalendarDayNavigator<D> implements CalendarViewStrategy {
 
   focusCell(target: D): boolean {
     const adapter = this.#host.adapter;
-    const handle = this.#cells.items().find((cell) => adapter.isSameDay(cell.date(), target));
+    const handle = this.#cells.items().find((cell) => {
+      const date = cell.date();
+      return !isUnset(date) && adapter.isSameDay(date, target);
+    });
     if (!handle) {
       return false;
     }

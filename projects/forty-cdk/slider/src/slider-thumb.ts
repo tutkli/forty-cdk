@@ -1,6 +1,12 @@
 import { computed, Directive, ElementRef, inject, input, numberAttribute } from '@angular/core';
 
-import { registerHandle, hostAriaLabel } from 'forty-cdk/core';
+import {
+  assertInputBound,
+  hostAriaLabel,
+  isUnset,
+  registerHandle,
+  unsetInput,
+} from 'forty-cdk/core';
 import {
   injectSliderContext,
   sliderTouchAction,
@@ -57,8 +63,11 @@ export class ForSliderThumb {
   private readonly ctx = injectSliderContext('ForSliderThumb');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
-  /** Position in the parent slider's `value()` array (0-based). */
-  readonly index = input.required({ transform: numberAttribute });
+  /**
+   * Position in the parent slider's `value()` array (0-based). Mandatory — a thumb with no binding
+   * throws in dev mode.
+   */
+  readonly index = input(unsetInput<number>(), { transform: numberAttribute });
 
   /**
    * Optional accessible name for this thumb (e.g. "Minimum price",
@@ -86,7 +95,7 @@ export class ForSliderThumb {
   private readonly currentValue = computed(() => {
     const i = this.index();
     const values = this.ctx.value();
-    if (i < 0 || i >= values.length) {
+    if (isUnset(i) || i < 0 || i >= values.length) {
       return this.ctx.minValue();
     }
     return values[i]!;
@@ -95,7 +104,7 @@ export class ForSliderThumb {
   private readonly fraction = computed(() => {
     const i = this.index();
     const fr = this.ctx.fractions();
-    if (i < 0 || i >= fr.length) {
+    if (isUnset(i) || i < 0 || i >= fr.length) {
       return 0;
     }
     return fr[i]!;
@@ -118,6 +127,7 @@ export class ForSliderThumb {
   private readonly ariaValueMax = computed(() => this.#bounds().max);
 
   constructor() {
+    assertInputBound(this.index, 'slider', '[forSliderThumb]', 'index');
     const handle = {
       host: this.#host.nativeElement,
       index: this.index,
@@ -130,7 +140,8 @@ export class ForSliderThumb {
   }
 
   private onKeyDown(event: KeyboardEvent): void {
-    if (this.ctx.effectiveDisabled() || this.ctx.readonly()) {
+    const index = this.index();
+    if (this.ctx.effectiveDisabled() || this.ctx.readonly() || isUnset(index)) {
       return;
     }
     switch (event.key) {
@@ -139,23 +150,23 @@ export class ForSliderThumb {
       case 'ArrowLeft':
       case 'ArrowRight':
         event.preventDefault();
-        this.ctx.bumpAt(this.index(), event.key as SliderArrowKey, false);
+        this.ctx.bumpAt(index, event.key as SliderArrowKey, false);
         return;
       case 'PageUp':
         event.preventDefault();
-        this.ctx.bumpAt(this.index(), 'PageUp', true);
+        this.ctx.bumpAt(index, 'PageUp', true);
         return;
       case 'PageDown':
         event.preventDefault();
-        this.ctx.bumpAt(this.index(), 'PageDown', true);
+        this.ctx.bumpAt(index, 'PageDown', true);
         return;
       case 'Home':
         event.preventDefault();
-        this.ctx.setExtreme(this.index(), 'min');
+        this.ctx.setExtreme(index, 'min');
         return;
       case 'End':
         event.preventDefault();
-        this.ctx.setExtreme(this.index(), 'max');
+        this.ctx.setExtreme(index, 'max');
         return;
       default:
         return;
@@ -163,6 +174,10 @@ export class ForSliderThumb {
   }
 
   private onKeyUp(event: KeyboardEvent): void {
+    const index = this.index();
+    if (isUnset(index)) {
+      return;
+    }
     switch (event.key) {
       case 'ArrowUp':
       case 'ArrowDown':
@@ -172,7 +187,7 @@ export class ForSliderThumb {
       case 'PageDown':
       case 'Home':
       case 'End':
-        this.ctx.commitInteraction(this.index());
+        this.ctx.commitInteraction(index);
         return;
       default:
         return;

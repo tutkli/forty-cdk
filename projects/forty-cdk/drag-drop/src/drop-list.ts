@@ -33,6 +33,7 @@ import {
   LiveAnnouncer,
   RovingTabindex,
   injectTextDirection,
+  isUnset,
   PreviewController,
   resolveBoundaryElement,
 } from 'forty-cdk/core';
@@ -697,7 +698,7 @@ export class ForDropList implements ForDropListContext {
     );
     const slot = slots[this.#flatIndex()];
     const handle = items.find((h) => h.host === liftedHost);
-    if (!slot) {
+    if (!slot || (handle !== undefined && isUnset(handle.data()))) {
       this.#teardown(connected);
       handle?.emitDragEnd(false);
       return;

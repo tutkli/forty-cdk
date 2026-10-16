@@ -9,6 +9,7 @@ import {
 } from '@angular/core';
 
 import {
+  assertInputBound,
   hostButtonType,
   adoptHostId,
   registerHandle,
@@ -17,6 +18,7 @@ import {
   isHoverCapablePointer,
   navigateFromRovingItem,
   preventPointerFocus,
+  unsetInput,
 } from 'forty-cdk/core';
 import {
   AnchoredOverlayPositioningBase,
@@ -99,8 +101,11 @@ export class ForMenubarTrigger extends AnchoredOverlayPositioningBase {
   protected readonly positioningDefaults = inject(FOR_MENUBAR_DEFAULTS);
   #pointerActivation = false;
 
-  /** Identifies this trigger in the menubar's `value` model. */
-  readonly value = input.required<string>();
+  /**
+   * Identifies this trigger in the menubar's `value` model. Mandatory — a trigger with no binding
+   * throws in dev mode.
+   */
+  readonly value = input(unsetInput<string>());
 
   /**
    * Per-trigger disabled, in addition to the menubar's `disabled`. A disabled
@@ -160,6 +165,7 @@ export class ForMenubarTrigger extends AnchoredOverlayPositioningBase {
 
   constructor() {
     super();
+    assertInputBound(this.value, 'menubar', '[forMenubarTrigger]', 'value');
     const handle = {
       host: this.#host.nativeElement,
       value: this.value,

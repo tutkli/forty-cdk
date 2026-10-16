@@ -27,6 +27,7 @@ import {
   injectHiddenInput,
   injectNativeFormResetToInitial,
   injectTextDirection,
+  isUnset,
   type PointerDragSession,
   roundToDecimals,
   roundToStepPrecision,
@@ -454,7 +455,11 @@ export class ForSlider
     this.#dragRect = trackEl?.getBoundingClientRect() ?? null;
     const hit = this.#resolveThumb(event.target);
     if (hit) {
-      this.#dragIndex = hit.index();
+      const index = hit.index();
+      if (isUnset(index)) {
+        return false;
+      }
+      this.#dragIndex = index;
       this.#engageThumb(event, hit.host);
       return true;
     }

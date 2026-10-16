@@ -17,6 +17,7 @@ import {
 import { isPlatformBrowser } from '@angular/common';
 
 import {
+  assertInputBound,
   isImeComposing,
   navigateFromRovingItem,
   registerHandle,
@@ -26,6 +27,7 @@ import {
   createTemplatePreview,
   type DragPreview,
   resolveText,
+  unsetInput,
 } from 'forty-cdk/core';
 import { createPointerHandleGuard } from './handle-guard';
 import {
@@ -85,8 +87,11 @@ export class ForDraggable implements ForDraggableContext {
   #pointerDragging = false;
   #pointerSession: PointerDragSession | null = null;
 
-  /** Data payload handed back in the `dragDrop` event when this item is dropped. */
-  readonly dragData = input.required<unknown>();
+  /**
+   * Data payload handed back in the `dragDrop` event when this item is dropped. Mandatory — an
+   * item with no binding throws in dev mode.
+   */
+  readonly dragData = input(unsetInput<unknown>());
 
   /**
    * When true, this item cannot be lifted. The item remains focusable, and where a roving
@@ -168,6 +173,7 @@ export class ForDraggable implements ForDraggableContext {
   private readonly touchAction = this.#handleGuard.touchAction;
 
   constructor() {
+    assertInputBound(this.dragData, 'drag-drop', '[forDraggable]', 'dragData');
     const handle: ForDraggableHandle = {
       host: this.#host.nativeElement,
       data: this.dragData,

@@ -32,6 +32,7 @@ import {
   serializeISOTime,
   timeSentinel,
   composeWithTime,
+  isUnset,
 } from 'forty-cdk/core';
 import { type TimeCapableDateAdapter } from 'forty-cdk/date-adapter';
 import { AnchoredFormValueControlBase, ListboxOverlayController } from 'forty-cdk/core-overlay';
@@ -493,14 +494,14 @@ export class ForTimePicker<D>
 
   isSelected(v: D): boolean {
     const current = this.value();
-    if (current === null) {
+    if (current === null || isUnset(v)) {
       return false;
     }
     return this.#sameTimeOfDay(v, current);
   }
 
   activate(v: D): void {
-    if (this.effectiveDisabled() || this.effectiveReadonly()) {
+    if (this.effectiveDisabled() || this.effectiveReadonly() || isUnset(v)) {
       return;
     }
     this.value.set(composeWithTime(this.adapter, this.value() ?? this.#sentinel(), v));
@@ -520,7 +521,7 @@ export class ForTimePicker<D>
         return false;
       }
       const v = o.value() as D;
-      return this.#sameTimeOfDay(v, current);
+      return !isUnset(v) && this.#sameTimeOfDay(v, current);
     });
     if (opt) {
       this.#pointer.suppress();
@@ -551,7 +552,7 @@ export class ForTimePicker<D>
   }
 
   commitOnTab(value: D): void {
-    if (this.effectiveDisabled()) {
+    if (this.effectiveDisabled() || isUnset(value)) {
       return;
     }
     if (!this.effectiveReadonly()) {
