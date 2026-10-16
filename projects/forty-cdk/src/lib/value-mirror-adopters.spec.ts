@@ -24,6 +24,14 @@ const EXCLUSIONS: Readonly<Record<string, Exclusion>> = {
       /\bquery\b/.test(code) &&
       /\binjectNativeFormReset\(\s*\(\)\s*=>\s*this\.#host\.nativeElement\s*\)/.test(code),
   },
+  'listbox/src/listbox-controller.ts': {
+    reason:
+      'the consumer owns the textbox and its text; the controller listens for an edit only to drop the active option of the listbox, and never reads or writes the text',
+    holds: (code) =>
+      !/\bimplements\b[^{]*\bFormValueControl\b/.test(code) &&
+      !/\.value\b/.test(code) &&
+      /onInput\(\): void \{[^}]*clearActiveOption\(\)/.test(code),
+  },
 };
 
 const OWN_WRITE_MIRROR_ALLOWLIST: Readonly<Record<string, string>> = {

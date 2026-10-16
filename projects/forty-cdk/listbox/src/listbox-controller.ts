@@ -3,6 +3,8 @@ import { computed, Directive, effect, ElementRef, inject, input, untracked } fro
 import { isImeComposing } from 'forty-cdk/core';
 import { asListboxContext, type ForListboxContext } from './listbox-context';
 
+const CARET_KEYS = new Set(['Home', 'End', 'ArrowLeft', 'ArrowRight']);
+
 /**
  * Drives a `[forListbox]` from an external textbox, following the
  * [WAI-ARIA editable combobox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/)
@@ -25,25 +27,31 @@ import { asListboxContext, type ForListboxContext } from './listbox-context';
  * - Enter clicks the active option, so it activates exactly as a pointer click
  *   would and runs the option's own `(click)` handler. With no active option,
  *   Enter is left alone.
- * - Every other key stays with the textbox: Home / End move the caret, and
- *   Escape is yours to handle (`[forSearch]` with `[clearOnEscape]="false"`).
+ * - Home / End / ArrowLeft / ArrowRight move the caret, and they and every edit
+ *   of the text drop the active option, returning visual focus to the textbox.
+ * - Every other key stays with the textbox, and Escape is yours to handle
+ *   (`[forSearch]` with `[clearOnEscape]="false"`).
  *
  * While a controller is registered the listbox and its options leave the tab
- * order, a press on an option keeps focus in the textbox, and hovering an
- * option makes it the active one. A listbox takes one controller; registering
- * a second one warns in dev mode.
+ * order, a press anywhere inside the listbox keeps focus in the textbox unless
+ * it lands on a focusable element of your own, hovering an option makes it the
+ * active one, and focus leaving the textbox marks the listbox touched. A
+ * listbox takes one controller: a second one warns in dev mode, and only the
+ * most recently registered one carries the combobox ARIA and handles keys.
  */
 @Directive({
   selector: '[forListboxController]',
   exportAs: 'forListboxController',
   host: {
-    '[attr.role]': '"combobox"',
+    '[attr.role]': 'active() ? "combobox" : null',
     autocomplete: 'off',
     'aria-autocomplete': 'list',
-    '[attr.aria-expanded]': 'expanded() ? "true" : "false"',
-    '[attr.aria-controls]': 'listbox().id()',
-    '[attr.aria-activedescendant]': 'listbox().activeDescendantId()',
+    '[attr.aria-expanded]': 'active() ? (expanded() ? "true" : "false") : null',
+    '[attr.aria-controls]': 'active() ? listbox().controlsId() : null',
+    '[attr.aria-activedescendant]': 'active() ? listbox().activeDescendantId() : null',
     '(keydown)': 'onKeyDown($event)',
+    '(input)': 'onInput()',
+    '(focusout)': 'onFocusOut($event)',
   },
 })
 export class ForListboxController<T = string> {
@@ -58,6 +66,10 @@ export class ForListboxController<T = string> {
 
   private readonly expanded = computed(() => this.listbox().options().length > 0);
 
+  private readonly active = computed(() =>
+    this.listbox().isActiveController(this.#host.nativeElement),
+  );
+
   constructor() {
     const el = this.#host.nativeElement;
     effect((onCleanup) => {
@@ -69,6 +81,7 @@ export class ForListboxController<T = string> {
 
   private onKeyDown(event: KeyboardEvent): void {
     if (
+      !this.active() ||
       event.defaultPrevented ||
       isImeComposing(event) ||
       event.altKey ||
@@ -83,8 +96,26 @@ export class ForListboxController<T = string> {
       this.listbox().moveActiveOption(event.key === 'ArrowDown' ? 'next' : 'prev');
       return;
     }
-    if (event.key === 'Enter' && this.listbox().activateActiveOption()) {
-      event.preventDefault();
+    if (event.key === 'Enter') {
+      if (this.listbox().activateActiveOption()) {
+        event.preventDefault();
+      }
+      return;
+    }
+    if (CARET_KEYS.has(event.key)) {
+      this.listbox().clearActiveOption();
+    }
+  }
+
+  private onInput(): void {
+    if (this.active()) {
+      this.listbox().clearActiveOption();
+    }
+  }
+
+  private onFocusOut(event: FocusEvent): void {
+    if (this.active()) {
+      this.listbox().controllerFocusOut(event.relatedTarget);
     }
   }
 }

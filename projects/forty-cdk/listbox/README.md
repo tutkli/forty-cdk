@@ -527,10 +527,13 @@ export class CommandPalette {
 What the controller changes:
 
 - **The input becomes the combobox.** It carries `role="combobox"` (over the `searchbox` role of `forSearch`), `aria-controls` naming the listbox, `aria-expanded="true"` while the listbox has options, and `aria-activedescendant` naming the active option. It also defaults to `aria-autocomplete="list"` and `autocomplete="off"`, and a static attribute of your own overrides either.
-- **The listbox leaves the tab order.** Neither the listbox nor its options keep a tab stop, a press on an option leaves focus in the input, and hovering an option makes it the active one. The listbox host's own `id` (generated unless you set a static one) is what `aria-controls` references.
-- **The active option resets when it unmounts.** Filtering an active option out of the list clears `aria-activedescendant`, and the next arrow starts from the first or last enabled option again. An option that survives the filter stays active.
-- **Selection still works.** `Enter` clicks the active option, so it selects in `[(value)]` exactly as a pointer click does and your own `(click)` handler runs. A palette that only runs commands can leave `[(value)]` unbound.
-- **One controller per listbox.** A second `[forListboxController]` on the same listbox warns in dev mode, and only the most recently registered one drives it.
+- **The listbox leaves the tab order.** Neither the listbox nor its options keep a tab stop, and hovering an option makes it the active one. A press anywhere inside the listbox, an option, a group label or the space between them, leaves focus in the input; only a focusable element of your own inside the listbox takes it.
+- **`aria-controls` names the listbox host's `id`.** Your own `id`, static or bound, is kept and followed. Without one, the listbox carries a generated `id` only while a controller is registered, so a listbox no controller drives binds no `id` at all.
+- **Editing the query returns visual focus to the input.** Typing, deleting and the caret keys (`Home`, `End`, `ArrowLeft`, `ArrowRight`) clear `aria-activedescendant`, as the editable combobox pattern prescribes, so a screen reader stops reporting an option while the user edits text and a following `Enter` is left to the input. The next arrow starts from the first or last enabled option again.
+- **The active option resets when it unmounts.** Filtering an active option out of the list clears `aria-activedescendant` too. An option that survives a programmatic change of the list stays active.
+- **Selection still works.** `Enter` clicks the active option, so it selects in `[(value)]` exactly as a pointer click does and your own `(click)` handler runs. A palette that only runs commands can leave `[(value)]` unbound. On a [virtualized](#virtualization) listbox, `Enter` after the active option has scrolled out of the window selects that option by value; there is no element to click, so its `(click)` handler does not run.
+- **Leaving the input marks the listbox touched.** Focus moving from the input to anywhere outside it and the listbox sets `touched` and emits `(touch)`, so a `[formField]` or `[(touched)]` bound on the listbox sees the touch even though DOM focus never entered it.
+- **One controller per listbox.** A second `[forListboxController]` on the same listbox warns in dev mode. Only the most recently registered one drives it: the others carry no `role`, `aria-controls`, `aria-expanded` or `aria-activedescendant`, and their keys stay plain text editing.
 
 `Escape` is yours: the controller never handles it, so bind `[clearOnEscape]="false"` on `forSearch` when `Escape` should reach an enclosing dialog on the first press rather than clear the query. The keys the controller handles are listed under [Keyboard](#driven-by-a-text-input).
 
@@ -553,7 +556,7 @@ What the controller changes:
 | `disabled` / `readonly` / `required` / `invalid` / `pending` | `input<boolean>`                                 | Reflected as `aria-*` / `data-*`.<br>**Default:** —                                                                                                                                                                             |
 | `name`                                                       | `input<string>`                                  | For form association. A native reset of the owning `<form>` restores `value` to its first-render value.<br>**Default:** —                                                                                                       |
 | `errors`                                                     | `input<ValidationError.WithOptionalFieldTree[]>` | Wired by `[formField]`.<br>**Default:** —                                                                                                                                                                                       |
-| `touched`                                                    | `model<boolean>`                                 | Set on focusout outside the listbox.<br>**Default:** —                                                                                                                                                                          |
+| `touched`                                                    | `model<boolean>`                                 | Set on focusout outside the listbox, and, while a `[forListboxController]` drives it, on focusout from the input to outside both.<br>**Default:** —                                                                             |
 
 | Data attribute     | Values                     |
 | ------------------ | -------------------------- |
@@ -636,14 +639,15 @@ When `readonly` is set, the focus-moving shortcuts (Shift+Arrow, Ctrl+Shift+Home
 
 With a [`[forListboxController]`](#command-palette) on an input, DOM focus stays in the input and the keys below act on it. Typeahead, `Space` and the multi-mode range shortcuts do not apply: printable keys edit the text.
 
-| Key                     | Behavior                                                                                                                 |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| **ArrowDown / ArrowUp** | Move the active option across groups, skipping disabled options. With none active, land on the first / last enabled one. |
-| **Enter**               | Click the active option. With none active, the key is left to the input.                                                 |
-| **Home / End**          | Move the caret, as in any text input.                                                                                    |
-| **Escape**              | Left to the input and your own handling.                                                                                 |
+| Key                        | Behavior                                                                                                                 |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| **ArrowDown / ArrowUp**    | Move the active option across groups, skipping disabled options. With none active, land on the first / last enabled one. |
+| **Enter**                  | Click the active option. With none active, the key is left to the input.                                                 |
+| **Home / End**             | Move the caret, as in any text input, and clear the active option.                                                       |
+| **ArrowLeft / ArrowRight** | Move the caret, as in any text input, and clear the active option.                                                       |
+| **Escape**                 | Left to the input and your own handling.                                                                                 |
 
-Arrow navigation wraps as the listbox's `loop` says and scrolls the active option into view. A modified arrow (`Shift`, `Alt`, `Ctrl`, `Cmd`) is left to the input.
+Arrow navigation wraps as the listbox's `loop` says and scrolls the active option into view. Any edit of the text clears the active option as the caret keys do. A modified key (`Shift`, `Alt`, `Ctrl`, `Cmd`) is left to the input and keeps the active option.
 
 ## Accessibility
 

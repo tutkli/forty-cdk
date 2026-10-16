@@ -179,8 +179,17 @@ export interface ListboxPieceContext {
    * registered.
    */
   pressKeepsFocus(): boolean;
-  /** The listbox host's id, which the controller's `aria-controls` references. */
-  readonly id: Signal<string>;
+  /**
+   * The listbox host's current `id`, which the controller's `aria-controls`
+   * references: the consumer's own, static or bound, else the generated one the
+   * host carries while a controller is registered.
+   */
+  controlsId(): string;
+  /**
+   * `true` unless another `[forListboxController]` holds the listbox, so only
+   * the most recently registered controller reflects ARIA and handles keys.
+   */
+  isActiveController(el: HTMLElement): boolean;
   /**
    * Move the active option one step, skipping disabled options; with nothing
    * active, `'next'` lands on the first enabled option and `'prev'` on the last.
@@ -188,15 +197,28 @@ export interface ListboxPieceContext {
   moveActiveOption(direction: 'next' | 'prev'): void;
   /**
    * Click the active option's host, so the option activates and the consumer's
-   * own `(click)` handler runs. Returns `false` when no enabled option is active.
+   * own `(click)` handler runs. In the virtualized path, an active option the
+   * window has unmounted is activated by value instead. Returns `false` when no
+   * enabled option is active.
    */
   activateActiveOption(): boolean;
+  /**
+   * Drop the active option, returning visual focus to the controller's textbox
+   * as a caret key or a query edit does in the editable combobox pattern.
+   */
+  clearActiveOption(): void;
+  /**
+   * Reported by the controller when DOM focus leaves it. Marks the listbox
+   * touched unless `next` is inside the listbox host.
+   */
+  controllerFocusOut(next: EventTarget | null): void;
 }
 
 /**
  * The registration protocol of `[forListboxController]`. While a controller is
- * registered the listbox keeps no tab stop of its own and reflects its active
- * option through `aria-activedescendant` on the controller instead of its host.
+ * registered the listbox keeps no tab stop of its own, carries an `id` for the
+ * controller's `aria-controls`, and reflects its active option through
+ * `aria-activedescendant` on the controller instead of its host.
  */
 export interface ListboxRegistrationContext {
   registerController(el: HTMLElement): void;
