@@ -454,6 +454,66 @@ describe('ForSearch', () => {
       expect(fixture.componentInstance.text()).toBe('');
     });
 
+    it("keeps the value through the browser's own search-field clear when false", async () => {
+      const { el, fixture, flush } = renderHost(SearchHost);
+      const input = searchOf(el);
+
+      fixture.componentInstance.clearOnEscape.set(false);
+      typeInto(input, 'query');
+      await flush();
+
+      pressKey(input, 'Escape');
+      typeInto(input, '');
+      await flush();
+      expect(fixture.componentInstance.text()).toBe('query');
+      expect(input.value).toBe('query');
+    });
+
+    it('bridges a user edit that follows the unhandled Escape', async () => {
+      const { el, fixture, flush } = renderHost(SearchHost);
+      const input = searchOf(el);
+
+      fixture.componentInstance.clearOnEscape.set(false);
+      typeInto(input, 'query');
+      await flush();
+
+      pressKey(input, 'Escape');
+      input.value = '';
+      input.dispatchEvent(new InputEvent('input', { inputType: 'deleteByCut' }));
+      await flush();
+      expect(fixture.componentInstance.text()).toBe('');
+    });
+
+    it('bridges an input event once a later key press has followed the Escape', async () => {
+      const { el, fixture, flush } = renderHost(SearchHost);
+      const input = searchOf(el);
+
+      fixture.componentInstance.clearOnEscape.set(false);
+      typeInto(input, 'query');
+      await flush();
+
+      pressKey(input, 'Escape');
+      pressKey(input, 'Backspace');
+      typeInto(input, '');
+      await flush();
+      expect(fixture.componentInstance.text()).toBe('');
+    });
+
+    it('bridges only the first input event after the Escape', async () => {
+      const { el, fixture, flush } = renderHost(SearchHost);
+      const input = searchOf(el);
+
+      fixture.componentInstance.clearOnEscape.set(false);
+      typeInto(input, 'query');
+      await flush();
+
+      pressKey(input, 'Escape');
+      typeInto(input, '');
+      typeInto(input, '');
+      await flush();
+      expect(fixture.componentInstance.text()).toBe('');
+    });
+
     @Component({
       imports: [ForDialog, ForSearch],
       template: `

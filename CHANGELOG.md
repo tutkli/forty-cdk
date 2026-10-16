@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Search** — `[clearOnEscape]="false"` keeps the query on a `type="search"` host
+  ([#2274](https://github.com/tutkli/forty-cdk/issues/2274)). `ForSearch` left the key alone as
+  documented, but Chromium then ran its own search-field clear and the `input` event it fires wrote
+  `''` into the value, so the command palette the search and listbox READMEs describe lost its query
+  on the first `Escape`. The directive now undoes that native clear, and the enclosing dialog still
+  receives the key.
+
 ## [0.36.0] - 2026-10-16
 
 ### Added
