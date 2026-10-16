@@ -6,6 +6,7 @@ import {
   ForAccordionItem,
 } from 'forty-cdk/accordion';
 import { FOR_AVATAR_CONTEXT, ForAvatarFallback } from 'forty-cdk/avatar';
+import { FOR_CALENDAR_CONTEXT, ForCalendarHeading } from 'forty-cdk/calendar';
 import { FOR_CAROUSEL_CONTEXT, ForCarouselPrevious } from 'forty-cdk/carousel';
 import { FOR_CONTEXT_MENU_CONTEXT, ForContextMenuTrigger } from 'forty-cdk/context-menu';
 import { FOR_DATE_PICKER_CONTEXT, ForDatePickerTrigger } from 'forty-cdk/date-picker';
@@ -120,6 +121,14 @@ class ImpostorAccordionHost {}
   template: `<span forAvatarFallback></span>`,
 })
 class ImpostorAvatarHost {}
+
+@Component({
+  imports: [ForCalendarHeading],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [{ provide: FOR_CALENDAR_CONTEXT, useValue: {} }],
+  template: `<h2 forCalendarHeading></h2>`,
+})
+class ImpostorCalendarHost {}
 
 @Component({
   imports: [ForCarouselPrevious],
@@ -293,6 +302,15 @@ const GUARDED: readonly GuardedRoot[] = [
     root: '[forAvatar]',
     piece: 'ForAvatarFallback',
     host: ImpostorAvatarHost,
+  },
+  {
+    entryPoint: 'calendar',
+    source: 'calendar/src/calendar-context.ts',
+    calls: 1,
+    token: 'FOR_CALENDAR_CONTEXT',
+    root: '[forCalendar]',
+    piece: 'ForCalendarHeading',
+    host: ImpostorCalendarHost,
   },
   {
     entryPoint: 'carousel',

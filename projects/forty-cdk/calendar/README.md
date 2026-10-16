@@ -188,7 +188,7 @@ export class CalendarDefaultExample {
 
 ### States
 
-One class and one directive, three states. `disabled` turns off focus movement and selection for the whole calendar; `readonly` keeps days focusable and the grid still pages, but clicking or pressing `Enter` no longer changes the selection. Each reflects a root hook (`data-disabled` and `data-readonly`), and the example's stylesheet keys on nothing else.
+One class and one directive, three states. `disabled` turns off focus movement and selection for the whole calendar; `readonly` keeps days focusable and the grid still pages, but clicking or pressing `Enter` no longer changes the selection, and a click moves only the focused day to the clicked cell. Each reflects a root hook (`data-disabled` and `data-readonly`), and the example's stylesheet keys on nothing else.
 
 ### Constraints & week start
 
@@ -257,7 +257,7 @@ Set `selectionMode="range"` and bind `[(range)]` to get date-range selection. In
 
 **`min` / `max` / `isDateUnavailable`** still gate both endpoints. An unavailable or out-of-bounds date cannot become an anchor or an end.
 
-**`minRangeLength` / `maxRangeLength`.** Constrain the inclusive day count of the committed range. A click that would violate either limit is a no-op (the anchor is preserved). Both default to `null` (unconstrained).
+**`minRangeLength` / `maxRangeLength`.** Constrain the inclusive day count of the committed range. A click that would violate either limit commits nothing: the anchor is preserved, and the clicked cell becomes the focused day and the end of the preview. Both default to `null` (unconstrained).
 
 **Cell facets (range mode).** Four boolean `data-*` attributes are added to `[forCalendarCell]`:
 

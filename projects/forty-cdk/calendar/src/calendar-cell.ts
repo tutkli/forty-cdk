@@ -91,7 +91,7 @@ export class ForCalendarCell<D> {
   private onClick(): void {
     const date = this.date();
     if (!isUnset(date)) {
-      this.ctx.selectDate(date);
+      this.ctx.activateDate(date);
     }
   }
 

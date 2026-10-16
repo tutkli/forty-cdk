@@ -11,6 +11,7 @@ import {
   model,
   numberAttribute,
   signal,
+  type WritableSignal,
 } from '@angular/core';
 
 import {
@@ -44,6 +45,13 @@ import { CalendarNavigation } from './calendar-navigation';
 import { CalendarRangeSelection } from './calendar-range-selection';
 import type { CalendarSubGridHost, CalendarViewStrategy } from './calendar-sub-grid';
 import { CalendarYearNavigator } from './calendar-year-navigator';
+
+interface FocusedDateSource<D> {
+  readonly value: D | null;
+  readonly range: DateRange<D> | null;
+  readonly min: D | null;
+  readonly max: D | null;
+}
 
 /**
  * Headless implementation of a single-date calendar grid following the
@@ -240,9 +248,29 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
 
   /**
    * Internal focused date (the roving entry point), seeded from
-   * `value ?? range.start ?? today`, with today clamped into `[min, max]`.
+   * `value ?? range.start ?? today`, with today clamped into `[min, max]`. It is
+   * re-seeded when `value` or `range` changes; a change of `min` / `max` keeps
+   * it while it stays within the new bounds.
    */
-  readonly focusedDate = linkedSignal<D>(() => this.#seedDate());
+  readonly focusedDate: WritableSignal<D> = linkedSignal<FocusedDateSource<D>, D>({
+    source: () => ({
+      value: this.value(),
+      range: this.range(),
+      min: this.min(),
+      max: this.max(),
+    }),
+    computation: (source, previous) => {
+      if (
+        previous !== undefined &&
+        source.value === previous.source.value &&
+        source.range === previous.source.range &&
+        this.#bounds.contains(previous.value)
+      ) {
+        return previous.value;
+      }
+      return this.#seedDate();
+    },
+  });
 
   readonly #bounds = new CalendarBounds<D>({
     adapter: this.adapter,
@@ -538,6 +566,10 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
 
   selectDate(date: D): void {
     this.#nav.selectDate(date);
+  }
+
+  private activateDate(date: D): void {
+    this.#nav.activateDate(date);
   }
 
   pageMonths(delta: number): void {

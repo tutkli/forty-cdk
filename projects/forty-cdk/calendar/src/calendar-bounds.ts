@@ -96,6 +96,11 @@ export class CalendarBounds<D> {
     return this.#host.isDateUnavailable()(date);
   }
 
+  /** Whether `date` falls within `[min, max]`, ignoring availability and `disabled`. */
+  contains(date: D): boolean {
+    return !this.#outOfBounds(date, date);
+  }
+
   /** Clamp `date` into `[min, max]`, returning the nearer bound when outside. */
   clamp(date: D): D {
     const adapter = this.#host.adapter;
