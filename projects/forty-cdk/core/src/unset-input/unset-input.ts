@@ -4,8 +4,16 @@ import { fortyError } from '../errors/errors';
 const UNSET: unique symbol = Symbol('forty-cdk:unset-input');
 
 /**
- * The sentinel a piece seeds an otherwise-required input with, typed as the
- * input's own `T` so nothing downstream has to widen to `T | undefined`.
+ * The type of the {@link unsetInput} sentinel. A signal typed `T | Unset`
+ * belongs to a piece whose binding may not be written yet; narrow it with
+ * {@link isUnset} before the value is used as a `T`.
+ */
+export type Unset = typeof UNSET;
+
+/**
+ * The sentinel a piece seeds an otherwise-required input with, typed
+ * `T | Unset` so every read site has to narrow with {@link isUnset} before it
+ * uses the value.
  *
  * A piece registers with its parent during the content view's *creation* pass
  * and has its binding written in that view's *update* pass, so any parent
@@ -17,10 +25,9 @@ const UNSET: unique symbol = Symbol('forty-cdk:unset-input');
  *
  * The sentinel is a module-private `symbol`, so it can never collide with a
  * consumer value — which `undefined` can, on the roots generic over an
- * unconstrained `T`. The cast is the one place the library lies about the
- * input's type; keep it here rather than at the call sites, and never let the
- * sentinel reach a consumer callback (`compareWith`, `itemToLabel`, …): guard
- * with {@link isUnset} before the value leaves the read site.
+ * unconstrained `T`. Never let the sentinel reach a consumer callback
+ * (`compareWith`, `itemToLabel`, …): guard with {@link isUnset} before the
+ * value leaves the read site.
  *
  * The read is still tracked — Angular's input signal registers itself as a
  * producer before it resolves a value — so the binding's write marks the
@@ -28,11 +35,11 @@ const UNSET: unique symbol = Symbol('forty-cdk:unset-input');
  *
  * @example
  * ```ts
- * readonly value = input(unsetInput<T>());
+ * readonly value: InputSignal<T | Unset> = input(unsetInput<T>());
  * ```
  */
-export function unsetInput<T>(): T {
-  return UNSET as unknown as T;
+export function unsetInput<T>(): T | Unset {
+  return UNSET;
 }
 
 /**
@@ -41,8 +48,33 @@ export function unsetInput<T>(): T {
  * `false` result means the value is a genuine `T`, including `null`,
  * `undefined`, or any other value a consumer's domain may contain.
  */
-export function isUnset(value: unknown): boolean {
+export function isUnset(value: unknown): value is Unset {
   return value === UNSET;
+}
+
+/** A handle paired with the value read from it, known not to be {@link Unset}. */
+export interface BoundEntry<H, T> {
+  readonly handle: H;
+  readonly value: T;
+}
+
+/**
+ * The handles whose binding is written, each paired with the value that was
+ * read to decide it. A fold downstream of the filter reads `entry.value` as a
+ * `T` instead of calling the signal again, which the compiler cannot narrow.
+ */
+export function boundEntries<H, T>(
+  handles: readonly H[],
+  valueOf: (handle: H) => T | Unset,
+): BoundEntry<H, T>[] {
+  const entries: BoundEntry<H, T>[] = [];
+  for (const handle of handles) {
+    const value = valueOf(handle);
+    if (!isUnset(value)) {
+      entries.push({ handle, value });
+    }
+  }
+  return entries;
 }
 
 /**

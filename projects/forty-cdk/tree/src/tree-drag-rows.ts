@@ -37,7 +37,7 @@ export function buildTreeDropRows<T>(
   return visible
     .filter((e) => {
       const lifted =
-        (liftedValue !== null && equals(e.handle.value(), liftedValue)) ||
+        (liftedValue !== null && equals(e.value, liftedValue)) ||
         (e.parentHost !== null && excluded.has(e.parentHost));
       if (lifted) {
         excluded.add(e.handle.host);
@@ -47,7 +47,7 @@ export function buildTreeDropRows<T>(
     .map((e) => {
       const rect = e.handle.host.getBoundingClientRect();
       return {
-        value: e.handle.value(),
+        value: e.value,
         level: e.handle.level(),
         left: rect.left,
         top: rect.top,
@@ -98,7 +98,7 @@ export function treeParentLabel<T>(
   if (parentValue === null) {
     return null;
   }
-  const entry = visible.find((e) => equals(e.handle.value(), parentValue));
+  const entry = visible.find((e) => equals(e.value, parentValue));
   return entry ? treeNodeLabel(entry) : null;
 }
 
@@ -120,7 +120,7 @@ export function treeDropTotal<T>(
 ): number | null {
   const parentValue = target.parentValue;
   if (parentValue !== null && !isExpanded(parentValue)) {
-    const parent = visible.find((e) => equals(e.handle.value(), parentValue));
+    const parent = visible.find((e) => equals(e.value, parentValue));
     if (parent?.handle.expandable()) {
       return null;
     }
@@ -149,8 +149,8 @@ export function resolveTreeLiftContext<T>(
     (e) => e.parentHost === parentHost && visible.indexOf(e) < visibleIdx,
   ).length;
   return {
-    value: entry.handle.value(),
-    parentValue: parentEntry ? parentEntry.handle.value() : null,
+    value: entry.value,
+    parentValue: parentEntry ? parentEntry.value : null,
     previousIndex,
   };
 }
@@ -178,7 +178,7 @@ export function resolveLiftGap<T>(
     return Math.min(visibleIdx, rows.length);
   }
   const gap = rows.findIndex((r) => {
-    const nextEntry = visibleAfter.find((e) => equals(e.handle.value(), r.value));
+    const nextEntry = visibleAfter.find((e) => equals(e.value, r.value));
     return nextEntry && visibleAfter.indexOf(nextEntry) >= visibleIdx;
   });
   return gap < 0 ? rows.length : gap;

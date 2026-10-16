@@ -19,7 +19,7 @@ import { ForTabs, ForTabsList, ForTabsTrigger } from 'forty-cdk/tabs';
 import type { WritingDirection } from 'forty-cdk/shared';
 ```
 
-There is nothing to install and, unless you mount more than one forty-cdk app on a page (see [Multiple apps on one page](#multiple-apps-on-one-page)), nothing to provide: 35 of the 45 exports are structural types erased at compile time, seven runtime values are re-exported from core and resolve to the same singly-compiled module every primitive already loads, and `FOR_DATE_ADAPTER`, `NativeDateAdapter` and `provideNativeDateAdapter` are re-exported from [`forty-cdk/date-adapter`](../date-adapter). Import those three from `forty-cdk/date-adapter` when you provide an adapter at the application root: this entry point loads the core, so a root import of it puts the code every primitive shares in your `main` bundle.
+There is nothing to install and, unless you mount more than one forty-cdk app on a page (see [Multiple apps on one page](#multiple-apps-on-one-page)), nothing to provide: 36 of the 47 exports are structural types erased at compile time, eight runtime values are re-exported from core and resolve to the same singly-compiled module every primitive already loads, and `FOR_DATE_ADAPTER`, `NativeDateAdapter` and `provideNativeDateAdapter` are re-exported from [`forty-cdk/date-adapter`](../date-adapter). Import those three from `forty-cdk/date-adapter` when you provide an adapter at the application root: this entry point loads the core, so a root import of it puts the code every primitive shares in your `main` bundle.
 
 ## What it exports
 
@@ -33,6 +33,7 @@ There is nothing to install and, unless you mount more than one forty-cdk app on
 | **Fieldset**               | `FOR_FIELDSET_CONTEXT`, `ForFieldsetContext`                                                                                                                                                                                                                                                                                                      |
 | **Accessible text**        | `accessibleTextContent`                                                                                                                                                                                                                                                                                                                           |
 | **Localization**           | `LocalizableText`                                                                                                                                                                                                                                                                                                                                 |
+| **Unbound inputs**         | `Unset`, `isUnset`                                                                                                                                                                                                                                                                                                                                |
 | **Id generation**          | `FOR_ID_SALT`, `provideForIdSalt`                                                                                                                                                                                                                                                                                                                 |
 | **Other**                  | `ListboxOverlayContext`, `DragPreview`, `SwipeDirection`, `SwipeEventDetail`                                                                                                                                                                                                                                                                      |
 
@@ -53,6 +54,23 @@ const label = accessibleTextContent(host).trim();
 ```
 
 The result is untrimmed, so apply your own `.trim()` when comparing. Deriving the text yourself with `textContent` works until an `aria-hidden` glyph appears inside the host, at which point your definition and the library's silently disagree.
+
+## Narrowing an item's unbound value
+
+A handle or context a primitive publishes for its item pieces, such as `ForListboxOptionHandle` or `ForTreeItemContext`, types the item's value `T | Unset`. The item registers with its root before Angular writes its `[value]` binding, so for one change-detection pass the value is the `Unset` sentinel. If you write your own item piece or read these handles, narrow with `isUnset` before the value reaches anything that expects a `T`:
+
+<!-- snippet: fragment -->
+
+```ts
+import { isUnset } from 'forty-cdk/shared';
+
+const value = handle.value();
+if (!isUnset(value)) {
+  select(value);
+}
+```
+
+The sentinel is a private `symbol`, so it never equals a value of yours, `null` and `undefined` included.
 
 ## Localizing default text
 

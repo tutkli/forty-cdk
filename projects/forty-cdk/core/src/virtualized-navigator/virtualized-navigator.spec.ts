@@ -8,14 +8,14 @@ import {
 import { TestBed } from '@angular/core/testing';
 
 import { Typeahead } from '../typeahead/typeahead';
-import { isUnset, unsetInput } from '../unset-input/unset-input';
+import { isUnset, type Unset, unsetInput } from '../unset-input/unset-input';
 import { VirtualizedNavigator } from './virtualized-navigator';
 
 interface FakeHandle {
   readonly id: () => string;
   readonly pos: () => number | null;
   readonly disabled: () => boolean;
-  readonly value: () => string;
+  readonly value: () => string | Unset;
   readonly host: HTMLElement;
 }
 

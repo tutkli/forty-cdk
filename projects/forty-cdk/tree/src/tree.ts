@@ -35,6 +35,7 @@ import {
   injectTypeahead,
   hostAriaLabel,
   VirtualizedResume,
+  type Unset,
 } from 'forty-cdk/core';
 import {
   ActiveDescendantFocusModel,
@@ -307,7 +308,7 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
         if (isUnset(value)) {
           continue;
         }
-        result.push({ handle, parentHost });
+        result.push({ handle, value, parentHost });
         if (isOpen(value)) {
           const child = handle.childContainer();
           if (child) {
@@ -331,9 +332,9 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
   readonly #visibleHandles = computed(() => this.#visibleEntries().map((entry) => entry.handle));
 
   readonly #nonSelectableValues = computed<readonly T[]>(() =>
-    this.#visibleHandles()
-      .filter((handle) => !handle.selectable())
-      .map((handle) => handle.value()),
+    this.#visibleEntries()
+      .filter((entry) => !entry.handle.selectable())
+      .map((entry) => entry.value),
   );
 
   readonly #isNonSelectable = selectionMembership(this.#nonSelectableValues, this.compareWith);
@@ -345,11 +346,11 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
       return null;
     }
     const isSelected = this.#isSelected();
-    for (const handle of this.#visibleHandles()) {
+    for (const { handle, value } of this.#visibleEntries()) {
       if (handle.disabled()) {
         continue;
       }
-      if (isSelected(handle.value())) {
+      if (isSelected(value)) {
         return handle.host;
       }
     }
@@ -405,7 +406,6 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
     cascade: this.cascade,
     descendantsOf: this.descendantsOf,
     visibleNodes: this.#visibleEntries,
-    visibleHandles: this.#visibleHandles,
     isSelectable: (value) => this.#isSelectable(value),
     roving: this.roving,
     setValue: (next) => this.value.set(next),
@@ -491,11 +491,11 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
     });
   }
 
-  isExpanded(value: T): boolean {
+  isExpanded(value: T | Unset): boolean {
     return !isUnset(value) && this.#isExpanded()(value);
   }
 
-  isSelected(value: T): boolean {
+  isSelected(value: T | Unset): boolean {
     return !isUnset(value) && this.#isSelected()(value);
   }
 
@@ -517,7 +517,7 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
    * An item whose `[value]` binding is not written yet reports `'false'`, and
    * your `descendantsOf` is never called for it.
    */
-  checkState(value: T): 'true' | 'false' | 'mixed' {
+  checkState(value: T | Unset): 'true' | 'false' | 'mixed' {
     if (isUnset(value)) {
       return 'false';
     }
@@ -528,7 +528,7 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
    * Open or close a node. An item whose `[value]` binding is not written yet is
    * ignored, so it never enters the `expanded` model.
    */
-  setExpanded(value: T, open: boolean): void {
+  setExpanded(value: T | Unset, open: boolean): void {
     if (isUnset(value)) {
       return;
     }
@@ -547,7 +547,7 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
    * value. An item whose `[value]` binding is not written yet is dropped, and
    * so is one belonging to a `[selectable]="false"` node.
    */
-  select(value: T): void {
+  select(value: T | Unset): void {
     if (isUnset(value)) {
       return;
     }
@@ -723,7 +723,7 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
     item.select();
   }
 
-  #activationVetoed(value: T, event: MouseEvent | KeyboardEvent): boolean {
+  #activationVetoed(value: T | Unset, event: MouseEvent | KeyboardEvent): boolean {
     if (isUnset(value)) {
       return true;
     }

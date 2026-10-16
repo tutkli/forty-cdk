@@ -1,11 +1,15 @@
 import { computed, signal, type Signal } from '@angular/core';
 
-import { unsetInput } from 'forty-cdk/core';
+import { type Unset, unsetInput } from 'forty-cdk/core';
 
 import type { ForSelectOptionHandle } from './select-context';
 import { createSelectVirtualizedNavigator } from './select-virtualized-navigator';
 
-function makeHandle(id: string, value: Signal<string>, pos: number): ForSelectOptionHandle<string> {
+function makeHandle(
+  id: string,
+  value: Signal<string | Unset>,
+  pos: number,
+): ForSelectOptionHandle<string> {
   return {
     host: document.createElement('div'),
     id: signal(id),

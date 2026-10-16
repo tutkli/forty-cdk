@@ -295,9 +295,6 @@ export class ForMenubar implements ForMenubarContext {
   }
 
   triggerFor(value: string): ForMenubarTriggerHandle | null {
-    if (isUnset(value)) {
-      return null;
-    }
     return this.#triggerCollection.items().find((t) => t.value() === value) ?? null;
   }
 
@@ -376,7 +373,10 @@ export class ForMenubar implements ForMenubarContext {
     if (target === null) {
       return false;
     }
-    this.openTrigger(target.value(), 'first');
+    const targetValue = target.value();
+    if (!isUnset(targetValue)) {
+      this.openTrigger(targetValue, 'first');
+    }
     return true;
   }
 

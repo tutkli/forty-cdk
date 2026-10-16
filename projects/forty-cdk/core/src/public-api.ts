@@ -314,7 +314,14 @@ export {
 } from './typeahead/list-typeahead';
 export { findTypeaheadMatch, foldTypeaheadText } from './typeahead/match-options';
 export { injectTypeahead, type Typeahead } from './typeahead/typeahead';
-export { assertInputBound, isUnset, unsetInput } from './unset-input/unset-input';
+export {
+  assertInputBound,
+  type BoundEntry,
+  boundEntries,
+  isUnset,
+  type Unset,
+  unsetInput,
+} from './unset-input/unset-input';
 export {
   createVetoableEvent,
   createVetoableNativeEvent,

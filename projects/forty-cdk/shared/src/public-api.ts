@@ -18,6 +18,7 @@ export type {
   SwipeEventDetail,
   TimeGranularity,
   TimeSegmentType,
+  Unset,
   VetoableEvent,
   VetoableNativeEvent,
   WritingDirection,
@@ -28,6 +29,7 @@ export {
   FOR_FIELDSET_CONTEXT,
   FOR_ID_SALT,
   injectDateAdapter,
+  isUnset,
   provideForIdSalt,
 } from 'forty-cdk/core';
 export type {

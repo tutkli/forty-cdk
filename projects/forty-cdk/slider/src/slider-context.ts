@@ -1,6 +1,6 @@
 import { computed, inject, InjectionToken, type Signal } from '@angular/core';
 
-import { orphanContextError, type WritingDirection } from 'forty-cdk/core';
+import { orphanContextError, type Unset, type WritingDirection } from 'forty-cdk/core';
 
 /**
  * One thumb registered with `ForSlider`. The handle exposes the host element
@@ -9,7 +9,8 @@ import { orphanContextError, type WritingDirection } from 'forty-cdk/core';
  */
 export interface ForSliderThumbHandle {
   readonly host: HTMLElement;
-  readonly index: Signal<number>;
+  /** The thumb's index, or {@link Unset} before its binding is written. */
+  readonly index: Signal<number | Unset>;
 }
 
 /**

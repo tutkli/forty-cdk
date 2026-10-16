@@ -1,13 +1,13 @@
 import { computed, signal, type Signal } from '@angular/core';
 
-import { unsetInput } from 'forty-cdk/core';
+import { type Unset, unsetInput } from 'forty-cdk/core';
 
 import type { ForComboboxOptionHandle } from './combobox-context';
 import { createComboboxVirtualizedNavigator } from './combobox-virtualized-navigator';
 
 function makeHandle(
   id: string,
-  value: Signal<string>,
+  value: Signal<string | Unset>,
   label: Signal<string>,
   pos: number,
 ): ForComboboxOptionHandle<string> {

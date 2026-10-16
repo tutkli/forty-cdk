@@ -6,9 +6,10 @@ import {
   input,
   isDevMode,
   TemplateRef,
+  type InputSignal,
 } from '@angular/core';
 
-import { assertInputBound, isUnset, unsetInput } from 'forty-cdk/core';
+import { assertInputBound, isUnset, unsetInput, type Unset } from 'forty-cdk/core';
 
 import {
   registerTableColumnDef,
@@ -190,7 +191,9 @@ export class ForTableColumnDef {
    * Column identifier — reflected as `data-column` on the stamped cells and used to key the resize
    * width var. Mandatory — an unbound def throws in dev mode.
    */
-  readonly name = input(unsetInput<string>(), { alias: 'forTableColumnDef' });
+  readonly name: InputSignal<string | Unset> = input(unsetInput<string>(), {
+    alias: 'forTableColumnDef',
+  });
 
   /**
    * Sticky placement forwarded to both the header cell and every data cell:

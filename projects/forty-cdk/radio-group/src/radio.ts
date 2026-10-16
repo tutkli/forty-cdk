@@ -6,6 +6,7 @@ import {
   inject,
   InjectionToken,
   input,
+  type InputSignal,
 } from '@angular/core';
 
 import {
@@ -18,6 +19,7 @@ import {
   navigateFromRovingItem,
   selectionTabStop,
   unsetInput,
+  type Unset,
 } from 'forty-cdk/core';
 import { type ForRadioGroupContext, injectRadioGroupContext } from './radio-group-context';
 
@@ -85,7 +87,7 @@ export class ForRadio {
    * Unique identifier for this radio's value. Mandatory — an unbound radio throws in dev mode.
    * `''` is a valid value, distinct from the group's `null` "nothing selected".
    */
-  readonly value = input(unsetInput<string>());
+  readonly value: InputSignal<string | Unset> = input(unsetInput<string>());
 
   /** When true, this radio is disabled (independent of the group's disabled). */
   readonly disabled = input(false, { transform: booleanAttribute });

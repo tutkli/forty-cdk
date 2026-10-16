@@ -6,6 +6,7 @@ import {
   orphanContextError,
   type RovingTabindex,
   type WritingDirection,
+  type Unset,
 } from 'forty-cdk/core';
 
 /**
@@ -19,7 +20,8 @@ export interface ForToggleGroupItemHandle extends CollectionHandle {
    * and queries it against the roving-tabindex tracker.
    */
   readonly host: HTMLElement;
-  readonly value: Signal<string>;
+  /** The item's value, or {@link Unset} before its binding is written. */
+  readonly value: Signal<string | Unset>;
   readonly disabled: Signal<boolean>;
 }
 

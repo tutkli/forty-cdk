@@ -6,6 +6,7 @@ import {
   inject,
   InjectionToken,
   input,
+  type InputSignal,
 } from '@angular/core';
 
 import {
@@ -17,6 +18,7 @@ import {
   injectPointerMove,
   preventPointerFocus,
   unsetInput,
+  type Unset,
 } from 'forty-cdk/core';
 import { injectComboboxContext } from './combobox-context';
 
@@ -89,7 +91,7 @@ export class ForComboboxOption<T = string> {
    *
    * Mandatory — an unbound option throws in dev mode.
    */
-  readonly value = input(unsetInput<T>());
+  readonly value: InputSignal<T | Unset> = input(unsetInput<T>());
 
   /**
    * Visible label used by `[forComboboxInput]` for inline autocomplete

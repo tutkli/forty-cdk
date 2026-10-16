@@ -1,11 +1,11 @@
 import { provideZonelessChangeDetection, signal, type WritableSignal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { isUnset, unsetInput } from '../unset-input/unset-input';
+import { isUnset, type Unset, unsetInput } from '../unset-input/unset-input';
 import { RangeSelectionEngine, type RangeSelectionOptionHandle } from './range-selection-engine';
 
 interface FakeHandle extends RangeSelectionOptionHandle<string> {
-  readonly value: WritableSignal<string>;
+  readonly value: WritableSignal<string | Unset>;
   readonly disabled: WritableSignal<boolean>;
 }
 
@@ -19,7 +19,7 @@ interface Harness {
   readonly compareWith: ReturnType<typeof vi.fn>;
   readonly reveal: ReturnType<typeof vi.fn>;
   readonly parent: HTMLElement;
-  handle(value: string, opts?: { disabled?: boolean }): FakeHandle;
+  handle(value: string | Unset, opts?: { disabled?: boolean }): FakeHandle;
 }
 
 function createHarness(): Harness {
@@ -51,7 +51,11 @@ function createHarness(): Harness {
     const host = document.createElement('button');
     host.tabIndex = -1;
     parent.appendChild(host);
-    const item: FakeHandle = { host, value: signal(v), disabled: signal(opts.disabled ?? false) };
+    const item: FakeHandle = {
+      host,
+      value: signal<string | Unset>(v),
+      disabled: signal(opts.disabled ?? false),
+    };
     options.update((items) => [...items, item]);
     return item;
   };

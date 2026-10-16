@@ -9,7 +9,7 @@ import {
   type Signal,
 } from '@angular/core';
 
-import { Collection, fortyError, isUnset } from 'forty-cdk/core';
+import { boundEntries, Collection, fortyError } from 'forty-cdk/core';
 
 import type {
   ForTableColumnDef,
@@ -106,6 +106,18 @@ export interface TableDefRegistration {
   unregisterPlaceholderCellDefault(handle: TableDefHandle<ForTablePlaceholderCellDefault>): void;
 }
 
+/** A registered column def whose `name` binding is written, with the name it was read with. */
+export interface BoundColumnDef {
+  readonly def: ForTableColumnDef;
+  readonly name: string;
+}
+
+/** A registered row variant def whose `when` binding is written, with the predicate it was read with. */
+export interface BoundRowDef {
+  readonly def: ForTableRowDef<unknown>;
+  readonly when: (row: unknown, index: number) => boolean;
+}
+
 export const TABLE_DEF_REGISTRATION = new InjectionToken<TableDefRegistration>(
   'TABLE_DEF_REGISTRATION',
 );
@@ -137,11 +149,11 @@ export class TableDefRegistry implements ForTableDefRegistry, TableDefRegistrati
    * until its name can be read. Reading the unwritten input tracks it, so the
    * binding's write folds the def in. See `unsetInput`.
    */
-  readonly columnDefs: Signal<readonly ForTableColumnDef[]> = computed(() =>
-    this.#columns
-      .items()
-      .map((handle) => handle.def)
-      .filter((def) => !isUnset(def.name())),
+  readonly columnDefs: Signal<readonly BoundColumnDef[]> = computed(() =>
+    boundEntries(
+      this.#columns.items().map((handle) => handle.def),
+      (def) => def.name(),
+    ).map(({ handle: def, value: name }) => ({ def, name })),
   );
 
   /**
@@ -149,11 +161,11 @@ export class TableDefRegistry implements ForTableDefRegistry, TableDefRegistrati
    * Held back until the def's `when` predicate can be read, exactly like
    * {@link columnDefs}.
    */
-  readonly rowDefs: Signal<readonly ForTableRowDef<unknown>[]> = computed(() =>
-    this.#rowDefs
-      .items()
-      .map((handle) => handle.def)
-      .filter((def) => !isUnset(def.when())),
+  readonly rowDefs: Signal<readonly BoundRowDef[]> = computed(() =>
+    boundEntries(
+      this.#rowDefs.items().map((handle) => handle.def),
+      (def) => def.when(),
+    ).map(({ handle: def, value: when }) => ({ def, when })),
   );
 
   /** The shared column drag placeholder (the first in document order), or `null`. */
@@ -168,7 +180,7 @@ export class TableDefRegistry implements ForTableDefRegistry, TableDefRegistrati
 
   /** The `name` of every registered column def, in document order. */
   readonly columnNames: Signal<readonly string[]> = computed(() =>
-    this.columnDefs().map((def) => def.name()),
+    this.columnDefs().map((column) => column.name),
   );
 
   /** Whether no def of any kind is registered. */

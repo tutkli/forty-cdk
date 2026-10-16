@@ -1,6 +1,6 @@
 import { signal, type Signal } from '@angular/core';
 
-import { isUnset } from '../unset-input/unset-input';
+import { isUnset, type Unset } from '../unset-input/unset-input';
 import type { VirtualizedNavigatorEntry } from './virtualized-navigator';
 
 /**
@@ -65,7 +65,7 @@ export class VirtualizedResume<T, E extends VirtualizedResumeEntry<T>> {
    * Retains nothing when the position is unknown or the value binding is not
    * written yet.
    */
-  retain(pos: number | null, value: T): void {
+  retain(pos: number | null, value: T | Unset): void {
     this.#target.set(pos === null || isUnset(value) ? null : { pos, value });
   }
 

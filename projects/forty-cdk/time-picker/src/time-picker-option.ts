@@ -6,6 +6,7 @@ import {
   inject,
   input,
   signal,
+  type InputSignal,
 } from '@angular/core';
 
 import {
@@ -16,6 +17,7 @@ import {
   registerHandle,
   resolveListNavigation,
   unsetInput,
+  type Unset,
 } from 'forty-cdk/core';
 import { injectTimePickerContext } from './time-picker-context';
 
@@ -70,7 +72,7 @@ export class ForTimePickerOption<D = unknown> {
    * `[forTimePicker]`'s `slots()` computed. Mandatory — an option with no binding throws in dev
    * mode.
    */
-  readonly value = input(unsetInput<D>());
+  readonly value: InputSignal<D | Unset> = input(unsetInput<D>());
 
   /**
    * When `true`, this option cannot be selected, and a mouse press on it leaves focus where it

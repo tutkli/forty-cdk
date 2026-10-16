@@ -6,6 +6,7 @@ import {
   orphanContextError,
   type RovingTabindex,
   type WritingDirection,
+  type Unset,
 } from 'forty-cdk/core';
 
 /**
@@ -15,6 +16,8 @@ import {
  */
 export interface ForTreeVisibleNode<T = unknown> {
   readonly handle: ForTreeItemHandle<T>;
+  /** The node's value, as read when the node was flattened. */
+  readonly value: T;
   readonly parentHost: HTMLElement | null;
 }
 
@@ -28,13 +31,10 @@ export interface ForTreeItemHandle<T = unknown> {
   /** The `role="treeitem"` host element. */
   readonly host: HTMLElement;
   /**
-   * Stable node value. Reads the `unsetInput` sentinel while the item's
-   * `[value]` binding is still unwritten — the window the synchronous
-   * registration opens, and the reason the item can register at all without
-   * `afterNextRender`. Guard with `isUnset` before the value leaves the read
-   * site (a `descendantsOf` call) or reaches either writable model.
+   * Stable node value, or {@link Unset} while the item's `[value]` binding is
+   * still unwritten.
    */
-  readonly value: Signal<T>;
+  readonly value: Signal<T | Unset>;
   /** Effective disabled state (own `disabled` OR the root's `disabled`). */
   readonly disabled: Signal<boolean>;
   /**
@@ -122,20 +122,20 @@ export interface ForTreeContext<T = unknown> {
    */
   notifyItemClick(itemId: string): void;
 
-  isExpanded(value: T): boolean;
-  isSelected(value: T): boolean;
+  isExpanded(value: T | Unset): boolean;
+  isSelected(value: T | Unset): boolean;
   /**
    * Tri-state check status of a node in checkbox mode: `'true'` / `'false'`, or
    * `'mixed'` for a cascade parent with some-but-not-all descendants checked.
    */
-  checkState(value: T): 'true' | 'false' | 'mixed';
+  checkState(value: T | Unset): 'true' | 'false' | 'mixed';
   /** Open or close a node, mutating the `expanded` array immutably. */
-  setExpanded(value: T, open: boolean): void;
+  setExpanded(value: T | Unset, open: boolean): void;
   /**
    * Single mode replaces the selection; multi mode toggles the value. A value
    * belonging to a `[selectable]="false"` node is ignored.
    */
-  select(value: T): void;
+  select(value: T | Unset): void;
   /**
    * Move roving focus from `currentItem` to the next / previous / first /
    * last enabled node in visible (flattened) order. In single mode with
@@ -247,7 +247,8 @@ export const FOR_TREE_CONTAINER_CONTEXT = new InjectionToken<ForTreeContainerCon
  * container.
  */
 export interface ForTreeItemContext<T = unknown> {
-  readonly value: Signal<T>;
+  /** The node's value, or {@link Unset} before its binding is written. */
+  readonly value: Signal<T | Unset>;
   readonly level: Signal<number>;
   readonly expanded: Signal<boolean>;
   readonly expandable: Signal<boolean>;

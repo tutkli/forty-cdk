@@ -9,6 +9,7 @@ import {
   type WritingDirection,
   RovingTabindex,
   injectTextDirection,
+  type Unset,
 } from 'forty-cdk/core';
 import {
   FOR_TABS_CONTEXT,
@@ -93,11 +94,11 @@ export class ForTabs implements ForTabsContext {
 
   readonly #firstEnabledTriggerHost = computed(() => firstEnabledHost(this.#triggers.items()));
 
-  isSelected(v: string): boolean {
+  isSelected(v: string | Unset): boolean {
     return this.value() === v;
   }
 
-  select(v: string): void {
+  select(v: string | Unset): void {
     if (this.disabled() || isUnset(v)) {
       return;
     }
@@ -136,7 +137,7 @@ export class ForTabs implements ForTabsContext {
     this.#contents.unregister(handle);
   }
 
-  triggerIdFor(value: string): string | null {
+  triggerIdFor(value: string | Unset): string | null {
     for (const t of this.#triggers.items()) {
       const candidate = t.value();
       if (!isUnset(candidate) && candidate === value) {
@@ -146,7 +147,7 @@ export class ForTabs implements ForTabsContext {
     return null;
   }
 
-  contentIdFor(value: string): string | null {
+  contentIdFor(value: string | Unset): string | null {
     for (const c of this.#contents.items()) {
       const candidate = c.value();
       if (!isUnset(candidate) && candidate === value) {

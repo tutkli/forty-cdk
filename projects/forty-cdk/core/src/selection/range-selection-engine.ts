@@ -2,7 +2,7 @@ import { signal, type Signal } from '@angular/core';
 
 import { nextEnabledHandle } from '../collection/enabled-handle-navigation';
 import { appendMissing, isInArray, membership, toggleInArray } from './selection';
-import { isUnset } from '../unset-input/unset-input';
+import { isUnset, type Unset } from '../unset-input/unset-input';
 
 /**
  * Minimal option-handle shape the range-selection algorithm needs: a host
@@ -14,7 +14,7 @@ import { isUnset } from '../unset-input/unset-input';
  */
 export interface RangeSelectionOptionHandle<T> {
   readonly host: HTMLElement;
-  readonly value: Signal<T>;
+  readonly value: Signal<T | Unset>;
   readonly disabled: Signal<boolean>;
 }
 
@@ -93,7 +93,7 @@ export class RangeSelectionEngine<T, H extends RangeSelectionOptionHandle<T>> {
    * value is already selected. No disabled / readonly guard — the caller applies
    * it before delegating.
    */
-  selectSingle(value: T): void {
+  selectSingle(value: T | Unset): void {
     if (isUnset(value)) {
       return;
     }

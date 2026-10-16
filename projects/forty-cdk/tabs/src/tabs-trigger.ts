@@ -1,4 +1,12 @@
-import { booleanAttribute, computed, Directive, ElementRef, inject, input } from '@angular/core';
+import {
+  booleanAttribute,
+  computed,
+  Directive,
+  ElementRef,
+  inject,
+  input,
+  type InputSignal,
+} from '@angular/core';
 
 import {
   assertInputBound,
@@ -8,6 +16,7 @@ import {
   navigateFromRovingItem,
   rovingTabStop,
   unsetInput,
+  type Unset,
 } from 'forty-cdk/core';
 import { injectTabsContext } from './tabs-context';
 
@@ -54,7 +63,7 @@ export class ForTabsTrigger {
    * Value this trigger selects, paired with the `[forTabsContent]` carrying the same value.
    * Mandatory — an unbound trigger throws in dev mode.
    */
-  readonly value = input(unsetInput<string>());
+  readonly value: InputSignal<string | Unset> = input(unsetInput<string>());
   /**
    * Whether this trigger can be activated. A disabled trigger leaves the `Tab` sequence but stays
    * reachable by arrow navigation and announced; activating it does nothing.

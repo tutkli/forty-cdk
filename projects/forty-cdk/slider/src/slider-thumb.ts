@@ -1,4 +1,12 @@
-import { computed, Directive, ElementRef, inject, input, numberAttribute } from '@angular/core';
+import {
+  computed,
+  Directive,
+  ElementRef,
+  inject,
+  input,
+  numberAttribute,
+  type InputSignalWithTransform,
+} from '@angular/core';
 
 import {
   assertInputBound,
@@ -6,6 +14,7 @@ import {
   isUnset,
   registerHandle,
   unsetInput,
+  type Unset,
 } from 'forty-cdk/core';
 import {
   injectSliderContext,
@@ -67,7 +76,9 @@ export class ForSliderThumb {
    * Position in the parent slider's `value()` array (0-based). Mandatory — a thumb with no binding
    * throws in dev mode.
    */
-  readonly index = input(unsetInput<number>(), { transform: numberAttribute });
+  readonly index: InputSignalWithTransform<number | Unset, unknown> = input(unsetInput<number>(), {
+    transform: numberAttribute,
+  });
 
   /**
    * Optional accessible name for this thumb (e.g. "Minimum price",
@@ -114,13 +125,11 @@ export class ForSliderThumb {
 
   private readonly ariaValueText = computed(() => this.valueText() || null);
 
-  readonly #bounds = computed<ForSliderThumbBounds>(
-    () =>
-      this.ctx.thumbBounds()[this.index()] ?? {
-        min: this.ctx.minValue(),
-        max: this.ctx.maxValue(),
-      },
-  );
+  readonly #bounds = computed<ForSliderThumbBounds>(() => {
+    const i = this.index();
+    const bounds = isUnset(i) ? undefined : this.ctx.thumbBounds()[i];
+    return bounds ?? { min: this.ctx.minValue(), max: this.ctx.maxValue() };
+  });
 
   private readonly ariaValueMin = computed(() => this.#bounds().min);
 

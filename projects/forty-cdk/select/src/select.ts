@@ -38,6 +38,8 @@ import {
   type VetoableEvent,
   type VetoableNativeEvent,
   VirtualizedResume,
+  boundEntries,
+  type Unset,
 } from 'forty-cdk/core';
 import { AnchoredFormValueControlBase, ListboxOverlayController } from 'forty-cdk/core-overlay';
 import {
@@ -555,14 +557,14 @@ export class ForSelect<T = string>
       return null;
     }
     const byValue = lookupByValue(
-      this.#controller.options().filter((o) => !isUnset(o.value())),
-      (o) => o.value(),
+      boundEntries(this.#controller.options(), (o) => o.value()),
+      (entry) => entry.value,
       this.compareWith(),
     );
     for (const v of values) {
-      const opt = byValue(v);
-      if (opt) {
-        return opt.host;
+      const entry = byValue(v);
+      if (entry) {
+        return entry.handle.host;
       }
     }
     return null;
@@ -626,7 +628,7 @@ export class ForSelect<T = string>
     return this.#isSelected()(v);
   }
 
-  activate(v: T): void {
+  activate(v: T | Unset): void {
     if (this.effectiveDisabled() || this.readonly() || isUnset(v)) {
       return;
     }
@@ -698,15 +700,18 @@ export class ForSelect<T = string>
       return false;
     }
     const byValue = lookupByValue(
-      this.#controller.options().filter((o) => !o.disabled() && !isUnset(o.value())),
-      (o) => o.value(),
+      boundEntries(
+        this.#controller.options().filter((o) => !o.disabled()),
+        (o) => o.value(),
+      ),
+      (entry) => entry.value,
       this.compareWith(),
     );
     for (const v of values) {
-      const opt = byValue(v);
-      if (opt) {
+      const entry = byValue(v);
+      if (entry) {
         this.#pointer.suppress();
-        opt.host.focus();
+        entry.handle.host.focus();
         return true;
       }
     }
@@ -746,7 +751,7 @@ export class ForSelect<T = string>
     host.scrollIntoView?.({ block: 'nearest' });
   }
 
-  private commitOnTab(value: T): void {
+  private commitOnTab(value: T | Unset): void {
     if (this.effectiveDisabled() || isUnset(value)) {
       return;
     }
@@ -892,7 +897,7 @@ export class ForSelect<T = string>
     return idx;
   }
 
-  #activeTarget(): { readonly value: T; readonly resumePos: number | null } | null {
+  #activeTarget(): { readonly value: T | Unset; readonly resumePos: number | null } | null {
     const id = this.#activeId();
     if (id === null) {
       const resumed = this.#resume.resolve();

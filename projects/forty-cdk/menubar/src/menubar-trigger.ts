@@ -6,6 +6,7 @@ import {
   inject,
   input,
   signal,
+  type InputSignal,
 } from '@angular/core';
 
 import {
@@ -19,6 +20,8 @@ import {
   navigateFromRovingItem,
   preventPointerFocus,
   unsetInput,
+  isUnset,
+  type Unset,
 } from 'forty-cdk/core';
 import {
   AnchoredOverlayPositioningBase,
@@ -105,7 +108,7 @@ export class ForMenubarTrigger extends AnchoredOverlayPositioningBase {
    * Identifies this trigger in the menubar's `value` model. Mandatory — a trigger with no binding
    * throws in dev mode.
    */
-  readonly value = input(unsetInput<string>());
+  readonly value: InputSignal<string | Unset> = input(unsetInput<string>());
 
   /**
    * Per-trigger disabled, in addition to the menubar's `disabled`. A disabled
@@ -219,7 +222,7 @@ export class ForMenubarTrigger extends AnchoredOverlayPositioningBase {
     if (this.isOpen()) {
       this.menubar.closeOpen();
     } else {
-      this.menubar.openTrigger(this.value(), 'first', modality);
+      this.#open('first', modality);
     }
   }
 
@@ -237,23 +240,23 @@ export class ForMenubarTrigger extends AnchoredOverlayPositioningBase {
     }
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
-      this.menubar.openTrigger(this.value(), 'first');
+      this.#open('first');
       return;
     }
     if (orientation === 'horizontal') {
       if (event.key === 'ArrowDown') {
         event.preventDefault();
-        this.menubar.openTrigger(this.value(), 'first');
+        this.#open('first');
         return;
       }
       if (event.key === 'ArrowUp') {
         event.preventDefault();
-        this.menubar.openTrigger(this.value(), 'last');
+        this.#open('last');
         return;
       }
     } else if (event.key === (dir === 'rtl' ? 'ArrowLeft' : 'ArrowRight')) {
       event.preventDefault();
-      this.menubar.openTrigger(this.value(), 'first');
+      this.#open('first');
       return;
     }
 
@@ -264,6 +267,13 @@ export class ForMenubarTrigger extends AnchoredOverlayPositioningBase {
 
     // Typeahead among sibling triggers.
     this.menubar.handleTriggerTypeahead(event);
+  }
+
+  #open(initialFocus: 'first' | 'last', modality?: MenuActivationModality): void {
+    const value = this.value();
+    if (!isUnset(value)) {
+      this.menubar.openTrigger(value, initialFocus, modality);
+    }
   }
 
   #navigate(event: KeyboardEvent): boolean {
@@ -289,6 +299,9 @@ export class ForMenubarTrigger extends AnchoredOverlayPositioningBase {
     if (!isHoverCapablePointer(event) || this.effectiveDisabled()) {
       return;
     }
-    this.menubar.pointerEnterTrigger(this.value());
+    const value = this.value();
+    if (!isUnset(value)) {
+      this.menubar.pointerEnterTrigger(value);
+    }
   }
 }

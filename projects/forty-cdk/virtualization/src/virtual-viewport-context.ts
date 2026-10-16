@@ -1,6 +1,6 @@
 import { InjectionToken, inject, type Signal } from '@angular/core';
 
-import { assertRootContext, orphanContextError } from 'forty-cdk/core';
+import { assertRootContext, orphanContextError, type Unset } from 'forty-cdk/core';
 
 import { type VirtualItem } from './virtualizer';
 
@@ -28,8 +28,8 @@ export interface ForVirtualViewportContext {
  * `useExisting` still satisfies this contract at runtime.
  */
 export interface VirtualViewportContext extends ForVirtualViewportContext {
-  registerData(data: Signal<readonly unknown[]>): void;
-  unregisterData(data: Signal<readonly unknown[]>): void;
+  registerData(data: Signal<readonly unknown[] | Unset>): void;
+  unregisterData(data: Signal<readonly unknown[] | Unset>): void;
 }
 
 /**

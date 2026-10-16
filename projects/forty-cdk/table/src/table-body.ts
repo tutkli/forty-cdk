@@ -14,16 +14,18 @@ import {
   type Signal,
   type TemplateRef,
   viewChildren,
+  type InputSignal,
 } from '@angular/core';
 import { CssVarNamespacer } from '@angular/platform-browser';
 
-import { assertInputBound, fortyError, isUnset, unsetInput } from 'forty-cdk/core';
+import { assertInputBound, fortyError, isUnset, unsetInput, type Unset } from 'forty-cdk/core';
 
 import { ForDraggable, ForDragPlaceholder } from 'forty-cdk/drag-drop';
 
 import { assertColumnDefConfig, type ForTableColumnDef } from './column-def';
 import {
   assertTableDefRegistry,
+  type BoundColumnDef,
   type ForTableDefRegistry,
   injectOwnTableDefRegistry,
   provideForTableDefRegistry,
@@ -163,7 +165,8 @@ interface RenderRow<T> {
     ForDragPlaceholder,
   ],
   template: `
-    <ng-template #headerCellContent let-col let-cell="cell">
+    <ng-template #headerCellContent let-column let-cell="cell">
+      @let col = column.def;
       <ng-container
         [ngTemplateOutlet]="col.header().template"
         [ngTemplateOutletInjector]="cell.injector"
@@ -171,8 +174,8 @@ interface RenderRow<T> {
       @if (col.resizable()) {
         <button
           forTableColumnResizer
-          [column]="col.name()"
-          [width]="columnWidths()[col.name()]"
+          [column]="column.name"
+          [width]="columnWidths()[column.name]"
           [min]="col.resizeMin()"
           [max]="col.resizeMax()"
           [step]="col.resizeStep()"
@@ -180,7 +183,7 @@ interface RenderRow<T> {
           [fitIncludesHeader]="col.fitIncludesHeader()"
           [widthRevert]="onColumnWidthRevert"
           [attr.aria-label]="col.resizeAriaLabel()"
-          (widthChange)="onColumnWidthChange(col.name(), $event)"
+          (widthChange)="onColumnWidthChange(column.name, $event)"
           (resizeCommit)="resizeCommit.emit($event)"
         ></button>
       }
@@ -194,26 +197,27 @@ interface RenderRow<T> {
         [style.grid-template-columns]="track()"
         (columnReorder)="columnReorder.emit($event)"
       >
-        @for (col of orderedColumns(); track col.name()) {
+        @for (column of orderedColumns(); track column.name) {
+          @let col = column.def;
           @if (col.reorderable()) {
             <div
               #headerCell="forTableHeaderCell"
               forTableHeaderCell
-              [name]="col.name()"
+              [name]="column.name"
               [sticky]="col.sticky()"
               [class]="col.headerClass()"
               forTableSortHeader
-              [column]="col.name()"
+              [column]="column.name"
               [sortable]="col.sortable()"
-              [direction]="directionFor(col.name())"
+              [direction]="directionFor(column.name)"
               (sortChange)="sortChange.emit($event)"
               forDraggable
-              [dragData]="col.name()"
+              [dragData]="column.name"
             >
               <ng-container
                 [ngTemplateOutlet]="headerCellContent"
                 [ngTemplateOutletInjector]="headerCell.injector"
-                [ngTemplateOutletContext]="{ $implicit: col, cell: headerCell }"
+                [ngTemplateOutletContext]="{ $implicit: column, cell: headerCell }"
               />
               @if (columnDragPlaceholder(); as placeholder) {
                 <ng-template forDragPlaceholder>
@@ -225,19 +229,19 @@ interface RenderRow<T> {
             <div
               #headerCell="forTableHeaderCell"
               forTableHeaderCell
-              [name]="col.name()"
+              [name]="column.name"
               [sticky]="col.sticky()"
               [class]="col.headerClass()"
               forTableSortHeader
-              [column]="col.name()"
+              [column]="column.name"
               [sortable]="col.sortable()"
-              [direction]="directionFor(col.name())"
+              [direction]="directionFor(column.name)"
               (sortChange)="sortChange.emit($event)"
             >
               <ng-container
                 [ngTemplateOutlet]="headerCellContent"
                 [ngTemplateOutletInjector]="headerCell.injector"
-                [ngTemplateOutletContext]="{ $implicit: col, cell: headerCell }"
+                [ngTemplateOutletContext]="{ $implicit: column, cell: headerCell }"
               />
             </div>
           }
@@ -245,23 +249,24 @@ interface RenderRow<T> {
       </div>
     } @else {
       <div forTableHeaderRow [style.display]="'grid'" [style.grid-template-columns]="track()">
-        @for (col of orderedColumns(); track col.name()) {
+        @for (column of orderedColumns(); track column.name) {
+          @let col = column.def;
           <div
             #headerCell="forTableHeaderCell"
             forTableHeaderCell
-            [name]="col.name()"
+            [name]="column.name"
             [sticky]="col.sticky()"
             [class]="col.headerClass()"
             forTableSortHeader
-            [column]="col.name()"
+            [column]="column.name"
             [sortable]="col.sortable()"
-            [direction]="directionFor(col.name())"
+            [direction]="directionFor(column.name)"
             (sortChange)="sortChange.emit($event)"
           >
             <ng-container
               [ngTemplateOutlet]="headerCellContent"
               [ngTemplateOutletInjector]="headerCell.injector"
-              [ngTemplateOutletContext]="{ $implicit: col, cell: headerCell }"
+              [ngTemplateOutletContext]="{ $implicit: column, cell: headerCell }"
             />
           </div>
         }
@@ -275,12 +280,13 @@ interface RenderRow<T> {
       @if (loading()) {
         @for (placeholder of placeholderRange(); track placeholder) {
           <div forTableRow [style.display]="'grid'" [style.grid-template-columns]="track()">
-            @for (col of orderedColumns(); track col.name()) {
+            @for (column of orderedColumns(); track column.name) {
+              @let col = column.def;
               <div
                 #cell="forTableCell"
                 forTableCell
                 disabled
-                [name]="col.name()"
+                [name]="column.name"
                 [sticky]="col.sticky()"
                 [class]="col.cellClass()"
               >
@@ -315,12 +321,13 @@ interface RenderRow<T> {
           >
             @if (r.variant; as variant) {
               @if (variant.placeholderCells()) {
-                @for (col of orderedColumns(); track col.name()) {
+                @for (column of orderedColumns(); track column.name) {
+                  @let col = column.def;
                   <div
                     #cell="forTableCell"
                     forTableCell
                     disabled
-                    [name]="col.name()"
+                    [name]="column.name"
                     [sticky]="col.sticky()"
                     [class]="col.cellClass()"
                   >
@@ -346,11 +353,12 @@ interface RenderRow<T> {
                 </div>
               }
             } @else {
-              @for (col of orderedColumns(); track col.name()) {
+              @for (column of orderedColumns(); track column.name) {
+                @let col = column.def;
                 <div
                   #cell="forTableCell"
                   forTableCell
-                  [name]="col.name()"
+                  [name]="column.name"
                   [sticky]="col.sticky()"
                   [class]="col.cellClass()"
                 >
@@ -407,7 +415,7 @@ export class ForTableBody<T = unknown> {
    * The rows to render — already sorted / filtered / paged by the consumer (BYO-data). Mandatory —
    * a body with no binding throws in dev mode.
    */
-  readonly rows = input(unsetInput<readonly T[]>());
+  readonly rows: InputSignal<readonly T[] | Unset> = input(unsetInput<readonly T[]>());
 
   readonly #data = computed<readonly T[]>(() => {
     const rows = this.rows();
@@ -628,16 +636,16 @@ export class ForTableBody<T = unknown> {
   private readonly cellRole = computed(() => (this.#ctx.mode() === 'table' ? 'cell' : 'gridcell'));
 
   /** The columns to render, resolved from `displayedColumns` (or all defs, in order). */
-  private readonly orderedColumns = computed<readonly ForTableColumnDef[]>(() => {
-    const defs = this.columns();
+  private readonly orderedColumns = computed<readonly BoundColumnDef[]>(() => {
+    const columns = this.columns();
     const order = this.displayedColumns();
     if (!order) {
-      return defs;
+      return columns;
     }
-    const byName = new Map(defs.map((def) => [def.name(), def]));
+    const byName = new Map(columns.map((column) => [column.name, column]));
     return order
       .map((name) => byName.get(name))
-      .filter((def): def is ForTableColumnDef => def != null);
+      .filter((column): column is BoundColumnDef => column != null);
   });
 
   /**
@@ -646,7 +654,7 @@ export class ForTableBody<T = unknown> {
    * `[forDraggable]`). A body with no reorderable column keeps the plain header row.
    */
   private readonly hasReorderable = computed(() =>
-    this.orderedColumns().some((col) => col.reorderable()),
+    this.orderedColumns().some((column) => column.def.reorderable()),
   );
 
   /**
@@ -657,11 +665,11 @@ export class ForTableBody<T = unknown> {
    */
   readonly track: Signal<string> = computed(() =>
     this.orderedColumns()
-      .map((col) => {
-        assertColumnDefConfig(col);
+      .map(({ def, name }) => {
+        assertColumnDefConfig(def);
         return (
-          col.width() ??
-          `var(${this.#namespacer.namespace(`--for-table-col-${col.name()}-width`)}, ${col.fallbackWidth() ?? 'minmax(0, 1fr)'})`
+          def.width() ??
+          `var(${this.#namespacer.namespace(`--for-table-col-${name}-width`)}, ${def.fallbackWidth() ?? 'minmax(0, 1fr)'})`
         );
       })
       .join(' '),
@@ -677,11 +685,11 @@ export class ForTableBody<T = unknown> {
     const data = this.#data();
     const key = this.rowKey();
     const variants = this.rowDefs();
-    for (const def of variants) {
+    for (const { def } of variants) {
       assertRowDefConfig(def);
     }
     const matchVariant = (datum: T, index: number): ForTableRowDef<unknown> | null =>
-      variants.find((def) => def.when()(datum, index)) ?? null;
+      variants.find(({ when }) => when(datum, index))?.def ?? null;
     if (window) {
       const out: RenderRow<T>[] = [];
       for (const vrow of window.rows()) {

@@ -6,6 +6,7 @@ import {
   type CollectionHandle,
   orphanContextError,
   unresolvedRootError,
+  type Unset,
   type VetoableNativeEvent,
   type WritingDirection,
 } from 'forty-cdk/core';
@@ -54,7 +55,8 @@ export interface ForComboboxOptionHandle<T = unknown> extends CollectionHandle {
    */
   readonly host: HTMLElement;
   readonly id: Signal<string>;
-  readonly value: Signal<T>;
+  /** The option's value, or {@link Unset} before its binding is written. */
+  readonly value: Signal<T | Unset>;
   readonly label: Signal<string>;
   readonly disabled: Signal<boolean>;
   /**
@@ -72,7 +74,8 @@ export interface ForComboboxChipHandle<T = unknown> extends CollectionHandle {
    * focus between hosts.
    */
   readonly host: HTMLElement;
-  readonly value: Signal<T>;
+  /** The chip's value, or {@link Unset} before its binding is written. */
+  readonly value: Signal<T | Unset>;
 }
 
 /**

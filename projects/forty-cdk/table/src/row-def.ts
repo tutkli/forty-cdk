@@ -6,9 +6,10 @@ import {
   input,
   isDevMode,
   TemplateRef,
+  type InputSignal,
 } from '@angular/core';
 
-import { assertInputBound, fortyError, unsetInput } from 'forty-cdk/core';
+import { assertInputBound, fortyError, unsetInput, type Unset } from 'forty-cdk/core';
 
 import { type ForTableCellDefContext } from './column-def';
 import { registerTableRowDef } from './def-registry';
@@ -122,7 +123,8 @@ export class ForTableRowDef<T> {
    *
    * Mandatory — an unbound def throws in dev mode.
    */
-  readonly when = input(unsetInput<(row: T, index: number) => boolean>());
+  readonly when: InputSignal<((row: T, index: number) => boolean) | Unset> =
+    input(unsetInput<(row: T, index: number) => boolean>());
 
   /**
    * The variant's full-span content template. Present for a full-span def; absent

@@ -6655,7 +6655,7 @@ exports[`document structure > projects/forty-cdk/shared/README.md declares the s
           "Exports",
         ],
         "role": "plain",
-        "rows": 10,
+        "rows": 11,
       },
     ],
     "title": "What it exports",
@@ -6665,6 +6665,12 @@ exports[`document structure > projects/forty-cdk/shared/README.md declares the s
     "slug": "reading-a-controls-accessible-text",
     "tables": [],
     "title": "Reading a control's accessible text",
+  },
+  {
+    "headings": [],
+    "slug": "narrowing-an-items-unbound-value",
+    "tables": [],
+    "title": "Narrowing an item's unbound value",
   },
   {
     "headings": [],

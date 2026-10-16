@@ -24,6 +24,7 @@ import {
   nextEnabledHandle,
   injectTextDirection,
   hostAriaLabel,
+  type Unset,
 } from 'forty-cdk/core';
 import { injectDismissibleLayer, createDebouncedAction } from 'forty-cdk/core-overlay';
 import { createSkipDelayWindow, FOR_NAVIGATION_MENU_DEFAULTS } from 'forty-cdk/defaults';
@@ -213,11 +214,11 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
     });
   }
 
-  isOpen(value: string): boolean {
+  isOpen(value: string | Unset): boolean {
     return this.value() === value;
   }
 
-  toggle(value: string): void {
+  toggle(value: string | Unset): void {
     if (this.disabled()) return;
     if (this.value() === value) {
       this.close();
@@ -230,7 +231,7 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
    * Opens the item with the given `value`. The dismissible layer is armed while any item is open,
    * whether it was opened here or written through `[(value)]`.
    */
-  open(value: string): void {
+  open(value: string | Unset): void {
     if (this.disabled()) return;
     // The single write funnel into `value`, so it is where the `unsetInput`
     // sentinel is stopped: a trigger whose `[forNavigationMenuItem]` has no
@@ -297,7 +298,7 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
     });
   }
 
-  scheduleOpen(value: string, reason: NavigationMenuScheduleReason): void {
+  scheduleOpen(value: string | Unset, reason: NavigationMenuScheduleReason): void {
     if (this.disabled()) return;
     if (isUnset(value)) return;
     this.#closeAction.cancel();
@@ -311,7 +312,7 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
     this.#openAction.schedule(this.#skipDelayWindow.active() ? 0 : this.openDelay());
   }
 
-  scheduleClose(reason: NavigationMenuScheduleReason, value?: string): void {
+  scheduleClose(reason: NavigationMenuScheduleReason, value?: string | Unset): void {
     if (reason === 'click' || reason === 'keyboard') {
       this.#clearOpenTimer();
       this.#closeAction.cancel();
@@ -414,7 +415,7 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
     target.host.scrollIntoView?.({ block: 'nearest' });
   }
 
-  focusTrigger(value: string): void {
+  focusTrigger(value: string | Unset): void {
     const host = this.triggerHostFor(value);
     if (!host) {
       return;
@@ -434,7 +435,10 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
   }
   private unregisterContent(handle: ForNavigationMenuContentHandle): void {
     this.#contents.unregister(handle);
-    this.#clearMotion(handle.value());
+    const value = handle.value();
+    if (!isUnset(value)) {
+      this.#clearMotion(value);
+    }
   }
   private registerViewport(handle: ForNavigationMenuViewportHandle): void {
     this.#viewport.set(handle);
@@ -447,7 +451,7 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
   private readonly viewport: Signal<ForNavigationMenuViewportHandle | null> =
     this.#viewport.asReadonly();
 
-  private hostedContentIdFor(value: string): string | null {
+  private hostedContentIdFor(value: string | Unset): string | null {
     for (const c of this.#contents.items()) {
       const candidate = c.value();
       if (!isUnset(candidate) && candidate === value && c.hosted()) {
@@ -457,7 +461,7 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
     return null;
   }
 
-  contentIdFor(value: string): string | null {
+  contentIdFor(value: string | Unset): string | null {
     for (const c of this.#contents.items()) {
       const candidate = c.value();
       if (!isUnset(candidate) && candidate === value) {
@@ -467,7 +471,7 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
     return null;
   }
 
-  triggerIdFor(value: string): string | null {
+  triggerIdFor(value: string | Unset): string | null {
     for (const t of this.#triggers.items()) {
       const candidate = t.value();
       if (!isUnset(candidate) && candidate === value) {
@@ -477,7 +481,7 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
     return null;
   }
 
-  triggerHostFor(value: string): HTMLElement | null {
+  triggerHostFor(value: string | Unset): HTMLElement | null {
     for (const t of this.#triggers.items()) {
       const candidate = t.value();
       if (!isUnset(candidate) && candidate === value) {
@@ -524,7 +528,10 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
    * "Start" and "end" are logical — index 0 in DOM order is start, which is visually on the right
    * under `dir="rtl"` — so keyframes authored with logical CSS flip automatically.
    */
-  motionFor(value: string): ForNavigationMenuMotion | null {
+  motionFor(value: string | Unset): ForNavigationMenuMotion | null {
+    if (isUnset(value)) {
+      return null;
+    }
     const { from, to, leaving } = this.#transition();
     if (value === to) {
       return this.#enterMotion(from, value);

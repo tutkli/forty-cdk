@@ -1,6 +1,6 @@
-import { booleanAttribute, computed, Directive, input } from '@angular/core';
+import { booleanAttribute, computed, Directive, input, type InputSignal } from '@angular/core';
 
-import { assertInputBound, unsetInput } from 'forty-cdk/core';
+import { assertInputBound, unsetInput, type Unset } from 'forty-cdk/core';
 import {
   FOR_NAVIGATION_MENU_ITEM_CONTEXT,
   type ForNavigationMenuItemContext,
@@ -45,7 +45,7 @@ export class ForNavigationMenuItem implements ForNavigationMenuItemContext {
    * registration would leave the pre-hydration DOM without its
    * `aria-controls` / `aria-labelledby` linkage.
    */
-  readonly value = input(unsetInput<string>());
+  readonly value: InputSignal<string | Unset> = input(unsetInput<string>());
 
   /**
    * Per-item disabled. Stands on its own — the root `[forNavigationMenu]`'s

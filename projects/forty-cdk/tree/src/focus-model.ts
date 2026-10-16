@@ -12,6 +12,7 @@ import {
   VirtualizedNavigator,
   type VirtualizedNavigatorDeps,
   type VirtualizedResume,
+  type Unset,
 } from 'forty-cdk/core';
 import type { ForTreeItemHandle, ForTreeVisibleNode } from './tree-context';
 
@@ -93,7 +94,7 @@ export interface RovingFocusModelDeps<T = unknown> {
    * parent, a typeahead match) when single-mode selection should track focus;
    * a no-op when the tree is multi-select or the option is off.
    */
-  readonly selectOnFocus: (value: T) => void;
+  readonly selectOnFocus: (value: T | Unset) => void;
   readonly beforeKeyboardMove: () => void;
 }
 
@@ -122,7 +123,7 @@ export class RovingFocusModel<T = unknown> implements FocusModel<T> {
     }
     const handle = entry.handle;
     return {
-      value: handle.value(),
+      value: entry.value,
       expandable: handle.expandable(),
       disabled: handle.disabled(),
       selectable: handle.selectable(),
@@ -418,10 +419,11 @@ export class ActiveDescendantFocusModel<T = unknown> implements FocusModel<T> {
     const live = this.#deps.items().find((o) => o.id() === currentId);
     if (live) {
       const pos = live.itemIndex();
-      if (pos !== null) {
+      const value = live.value();
+      if (pos !== null && !isUnset(value)) {
         return {
           pos,
-          value: live.value(),
+          value,
           level: live.level(),
           expandable: live.expandable(),
           disabled: live.disabled(),

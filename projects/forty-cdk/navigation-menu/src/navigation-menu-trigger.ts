@@ -7,6 +7,7 @@ import {
   isHoverCapablePointer,
   isImeComposing,
   resolveListNavigation,
+  type Unset,
 } from 'forty-cdk/core';
 import {
   injectNavigationMenuContext,
@@ -68,7 +69,7 @@ export class ForNavigationMenuTrigger {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   readonly id = hostId('for-navigation-menu-trigger');
-  private readonly value: Signal<string> = this.#item.value;
+  private readonly value: Signal<string | Unset> = this.#item.value;
 
   /**
    * Effective disabled state: the owning `[forNavigationMenuItem]`'s
