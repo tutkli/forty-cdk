@@ -9,6 +9,7 @@ import {
 import {
   ForCombobox,
   ForComboboxAction,
+  ForComboboxClear,
   ForComboboxContent,
   ForComboboxInput,
   ForComboboxList,
@@ -201,6 +202,18 @@ class ComboboxOptionHost {
 class ComboboxToggleHost {
   readonly open = signal(false);
 }
+
+@Component({
+  imports: [ForCombobox, ForComboboxInput, ForComboboxClear],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <div forCombobox query="ap">
+      <input forComboboxInput aria-label="Fruit" data-arm data-focus />
+      <button forComboboxClear data-press>×</button>
+    </div>
+  `,
+})
+class ComboboxClearHost {}
 
 @Component({
   imports: [ForCombobox, ForComboboxInput, ForComboboxContent, ForComboboxOption],
@@ -575,6 +588,7 @@ const SWEEP: readonly PressCase[] = [
   { file: 'time-picker/src/time-picker-content.ts', host: TimePickerContentHost },
   { file: 'combobox/src/combobox-option.ts', host: ComboboxOptionHost },
   { file: 'combobox/src/combobox-toggle.ts', host: ComboboxToggleHost },
+  { file: 'combobox/src/combobox-clear.ts', host: ComboboxClearHost },
   { file: 'combobox/src/combobox-content.ts', host: ComboboxContentHost },
   { file: 'combobox/src/combobox-list.ts', host: ComboboxListHost },
   { file: 'field/src/label.ts', host: FieldLabelHost },

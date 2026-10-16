@@ -276,11 +276,11 @@ export interface ComboboxPieceContext<T = unknown> {
   readonly content: Signal<HTMLElement | null>;
 
   /**
-   * The registered `[forComboboxToggle]` buttons (editable anatomy). Exempt from
-   * the popup's outside-pointer dismissal and treated as inside by the root's
-   * focus-out check, so a press on one toggles instead of dismissing.
+   * The registered `[forComboboxToggle]` and `[forComboboxClear]` buttons.
+   * Exempt from the popup's outside-pointer dismissal and treated as inside by
+   * the root's focus-out check, so a press on one acts instead of dismissing.
    */
-  readonly toggles: Signal<readonly HTMLElement[]>;
+  readonly fieldButtons: Signal<readonly HTMLElement[]>;
 
   /**
    * The optional `[forComboboxList]` listbox surface (picker anatomy). When
@@ -487,10 +487,10 @@ export interface ComboboxRegistrationContext<T = unknown> {
   registerTrigger(el: HTMLElement, id: string): void;
   /** Unregisters the trigger button. Reference-based. */
   unregisterTrigger(el: HTMLElement): void;
-  /** Registers a `[forComboboxToggle]` button without switching the anatomy. */
-  registerToggle(el: HTMLElement): void;
-  /** Unregisters a toggle button. Reference-based. */
-  unregisterToggle(el: HTMLElement): void;
+  /** Registers a `[forComboboxToggle]` or `[forComboboxClear]` button without switching the anatomy. */
+  registerFieldButton(el: HTMLElement): void;
+  /** Unregisters a toggle or clear button. Reference-based. */
+  unregisterFieldButton(el: HTMLElement): void;
   /** Registers the `[forComboboxContent]` popup surface. */
   registerContent(el: HTMLElement): void;
   /** Unregisters the popup surface. Reference-based. */

@@ -4,6 +4,7 @@ import {
   el,
   expect,
   expectFocused,
+  expectStays,
   gotoFixture,
   imeEnd,
   imeStart,
@@ -397,6 +398,33 @@ test.describe('Combobox', () => {
       await expectFocused(el(page, 'combo-input'));
     });
 
+    test('Enter on an action whose (activate) closes the popup returns focus to the input', async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'combobox', { action: '1', open: '1', actionCloses: '1' });
+      await el(page, 'combo-input').click();
+      await el(page, 'combo-input').press('Tab');
+      await expectFocused(el(page, 'action'));
+
+      await el(page, 'action').press('Enter');
+
+      await expect(el(page, 'action-count')).toHaveText('1');
+      await expect(el(page, 'content')).toHaveCount(0);
+      await expectFocused(el(page, 'combo-input'));
+    });
+
+    test('clicking an action whose (activate) closes the popup returns focus to the input', async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'combobox', { action: '1', open: '1', actionCloses: '1' });
+
+      await el(page, 'action').click();
+
+      await expect(el(page, 'action-count')).toHaveText('1');
+      await expect(el(page, 'content')).toHaveCount(0);
+      await expectFocused(el(page, 'combo-input'));
+    });
+
     test('outside pointer still dismisses while focus is on the action', async ({ page }) => {
       await gotoFixture(page, 'combobox', { action: '1', open: '1' });
       await el(page, 'combo-input').click();
@@ -588,6 +616,24 @@ test.describe('Combobox', () => {
       await expect(el(page, 'opt-banana')).toHaveAttribute('data-highlighted', '');
       await expectFocused(input);
       await expect(el(page, 'toggle')).toHaveAttribute('aria-expanded', 'true');
+    });
+  });
+
+  test.describe('clear button (editable anatomy)', () => {
+    test('a press on an open listbox clears the query, keeps the listbox open and focus in the input', async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'combobox', { clear: '1' });
+      const input = el(page, 'combo-input');
+      await input.click();
+      await input.pressSequentially('ap');
+      await expect(el(page, 'content')).toBeVisible();
+
+      await el(page, 'clear').click();
+
+      await expect(input).toHaveValue('');
+      await expectStays(page, () => expect(el(page, 'content')).toBeVisible());
+      await expectFocused(input);
     });
   });
 

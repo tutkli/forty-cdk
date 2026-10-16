@@ -7,6 +7,7 @@ import {
   ForComboboxChip,
   ForComboboxChipRemove,
   ForComboboxChips,
+  ForComboboxClear,
   ForComboboxContent,
   ForComboboxInput,
   ForComboboxList,
@@ -38,6 +39,7 @@ const LONG_FRUITS = Array.from({ length: 60 }, (_, i) => `item-${i}`);
     ForComboboxChips,
     ForComboboxChip,
     ForComboboxChipRemove,
+    ForComboboxClear,
     ForComboboxToggle,
   ],
   styles: [
@@ -194,6 +196,9 @@ const LONG_FRUITS = Array.from({ length: 60 }, (_, i) => `item-${i}`);
           @if (toggle) {
             <button data-testid="toggle" forComboboxToggle>▾</button>
           }
+          @if (showClear) {
+            <button data-testid="clear" forComboboxClear>×</button>
+          }
         }
         @if (open()) {
           <div forComboboxContent data-testid="content">
@@ -301,6 +306,8 @@ export class ComboboxFixture {
   // so the action stays in the DOM while the popup is closed — the mounted-but-
   // closed anatomy where Tab must let focus leave (#1389 item 9, CLAIM 1).
   protected readonly actionMounted = queryFlag('actionMounted');
+  protected readonly actionCloses = queryFlag('actionCloses');
+  protected readonly showClear = queryFlag('clear');
   // `?noinput=1` renders a picker with actions but NO in-panel `[forComboboxInput]`,
   // so the ring cycles among the actions with no input slot (#1389 item 9, CLAIM 3).
   protected readonly noInput = queryFlag('noinput');
@@ -321,6 +328,9 @@ export class ComboboxFixture {
 
   protected onAction(): void {
     this.actionCount.update((n) => n + 1);
+    if (this.actionCloses) {
+      this.open.set(false);
+    }
   }
 
   protected onAutoFocusOnOpen(event: VetoableEvent): void {

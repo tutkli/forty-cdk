@@ -1,12 +1,14 @@
 import { computed, Directive, ElementRef, inject } from '@angular/core';
 
 import {
+  composedContains,
   registerHandle,
   hostAriaLabel,
   hostLabelledBy,
   injectFieldLabelExemption,
   pressFocusesDescendant,
   preventPointerFocus,
+  resolveActiveElement,
   FOR_FIELD_ANCHOR_CONTEXT,
   FOR_FIELD_CONTEXT,
 } from 'forty-cdk/core';
@@ -40,8 +42,9 @@ import { injectComboboxContext } from './combobox-context';
  * Mount/unmount of the visible content is the consumer's responsibility —
  * wrap with `@if (open())` so `animate.enter` / `animate.leave` fire on the
  * natural mount cycle. While mounted, the surface dismisses on pointer-down
- * outside / focus outside; the input, any `[forComboboxToggle]` and (picker
- * anatomy) the trigger are exempt from outside checks.
+ * outside / focus outside; the input, any `[forComboboxToggle]` or
+ * `[forComboboxClear]` and (picker anatomy) the trigger are exempt from outside
+ * checks.
  *
  * Focus:
  * - **Editable anatomy (no trigger)** — focus stays in the input across the
@@ -53,7 +56,11 @@ import { injectComboboxContext } from './combobox-context';
  *   selected with the mouse as a result. A press on an action still focuses it,
  *   and a press on a consumer control takes focus wherever the browser puts it.
  *   If focus reaches the surface programmatically, a fallback Escape channel
- *   still closes the popup and returns focus to the input.
+ *   still closes the popup and returns focus to the input. A close that
+ *   unmounts the surface while focus is inside it (an `(activate)` handler that
+ *   closes the popup, a pick made while an action holds focus) also returns
+ *   focus to the input, gated by `[returnFocus]`; a close after focus already
+ *   left the surface moves nothing.
  * - **Picker anatomy (trigger present)** — on open, focus moves into the input
  *   (the search field inside the panel); on close it returns to the trigger.
  *   Both moves are vetoable via `(autoFocusOnOpen)` / `(autoFocusOnClose)` on
@@ -85,6 +92,8 @@ import { injectComboboxContext } from './combobox-context';
     '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.aria-multiselectable]': 'hasList() ? null : (ctx.multiple() ? "true" : null)',
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
+    '(focusin)': 'onFocusIn()',
+    '(focusout)': 'onFocusOut($event)',
   },
   providers: [
     { provide: FOR_FIELD_CONTEXT, useValue: null },
@@ -94,6 +103,8 @@ import { injectComboboxContext } from './combobox-context';
 export class ForComboboxContent {
   private readonly ctx = injectComboboxContext('ForComboboxContent');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
+
+  #focusWithin = false;
 
   /** When a `[forComboboxList]` is registered the listbox semantics live there, not here. */
   private readonly hasList = this.ctx.hasList;
@@ -139,8 +150,8 @@ export class ForComboboxContent {
     // from inside their own callbacks, which the shell runs after construction
     // (`initialFocus` in `afterNextRender`, `returnFocus` on destroy). So the
     // gate reads a fresh `trigger()` at each decision point instead of a
-    // construction-time snapshot, and the editable anatomy still performs no
-    // imperative move and fires neither hook.
+    // construction-time snapshot, and the editable anatomy still fires neither
+    // hook.
     const hasTrigger = computed(() => ctx.trigger() !== null);
 
     const config: OverlayShellConfig = {
@@ -173,8 +184,9 @@ export class ForComboboxContent {
         emitInteractOutside: (veto) => ctx.emitInteractOutside(veto),
         // The input owns the visible focus and toggles via its own click /
         // focus handlers; the trigger (picker anatomy) toggles via its own
-        // click handler. Without exemption a pointer-down on either would race
-        // the dismissal layer.
+        // click handler, and a toggle or clear button acts on its own press.
+        // Without exemption a pointer-down on any of them would race the
+        // dismissal layer.
         exemptElements: injectFieldLabelExemption(() => {
           const els: Element[] = [];
           const input = ctx.input();
@@ -182,13 +194,14 @@ export class ForComboboxContent {
           const trigger = ctx.trigger();
           if (trigger) els.push(trigger);
           for (const chip of ctx.chips()) els.push(chip.host);
-          els.push(...ctx.toggles());
+          els.push(...ctx.fieldButtons());
           return els;
         }),
       },
-      // Picker anatomy only: move focus into the input on open, return it to the
-      // trigger on close. The editable anatomy keeps focus in the input
-      // throughout, so its gate vetoes / skips before either hook is emitted.
+      // Picker anatomy: move focus into the input on open, return it to the
+      // trigger on close. The editable anatomy moves focus only back to the
+      // input, when a close unmounts the surface while it holds focus, and emits
+      // neither hook.
       initialFocus: {
         move: () => {
           const input = ctx.input();
@@ -202,14 +215,13 @@ export class ForComboboxContent {
       },
       returnFocus: {
         enabled: ctx.returnFocus,
-        target: () => ctx.trigger(),
-        veto: () => ctx.emitAutoFocusOnClose(),
-        // The anatomy gate comes first: the editable anatomy never reaches
-        // `veto`, so it never emits. Then, on Tab focus already landed where the
-        // user tabbed; re-focusing the trigger would steal it back.
+        target: () => ctx.trigger() ?? ctx.input(),
+        veto: () => hasTrigger() && ctx.emitAutoFocusOnClose(),
+        // On Tab focus already landed where the user tabbed; re-focusing the
+        // trigger would steal it back.
         skip: () => {
           if (!hasTrigger()) {
-            return true;
+            return !this.#focusLeftWithSurface();
           }
           return ctx.lastCloseReason() === 'tab';
         },
@@ -217,5 +229,26 @@ export class ForComboboxContent {
     };
 
     injectOverlayShell(config);
+  }
+
+  private onFocusIn(): void {
+    this.#focusWithin = true;
+  }
+
+  private onFocusOut(event: FocusEvent): void {
+    const next = event.relatedTarget;
+    if (next instanceof Node && !composedContains(this.#host.nativeElement, next)) {
+      this.#focusWithin = false;
+    }
+  }
+
+  #focusLeftWithSurface(): boolean {
+    if (!this.#focusWithin) {
+      return false;
+    }
+    const host = this.#host.nativeElement;
+    const doc = host.ownerDocument;
+    const active = resolveActiveElement(doc);
+    return active === null || active === doc.body || composedContains(host, active);
   }
 }

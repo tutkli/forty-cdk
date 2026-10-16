@@ -77,7 +77,7 @@ import { injectComboboxContext } from './combobox-context';
     role: 'button',
     '[attr.type]': 'buttonType()',
     '[id]': 'id()',
-    '[attr.tabindex]': 'disabled() ? null : "-1"',
+    tabindex: '-1',
     '[attr.aria-disabled]': 'disabled() ? "true" : null',
     '[attr.data-disabled]': 'disabled() ? "" : null',
     '[attr.data-highlighted]': 'focused() ? "" : null',
@@ -94,9 +94,10 @@ export class ForComboboxAction {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   /**
-   * Disable the action. A disabled action drops out of the focus ring (its
-   * `tabindex` is removed and keyboard navigation skips it), reflects
-   * `aria-disabled="true"` + `data-disabled=""`, and ignores activation.
+   * Disable the action. A disabled action drops out of the focus ring (Tab and
+   * Shift+Tab skip it, and it keeps `tabindex="-1"` so the native Tab order
+   * never reaches it either), reflects `aria-disabled="true"` +
+   * `data-disabled=""`, and ignores activation.
    */
   readonly disabled = input(false, { transform: booleanAttribute });
 
@@ -104,7 +105,10 @@ export class ForComboboxAction {
    * Fired on click / Enter / Space. Purely a side-effect hook — it **never**
    * mutates `[(value)]`, so the form model and `options()` are untouched. The
    * consumer decides what happens (create an item, open a dialog, …) and whether
-   * to close the popup afterwards.
+   * to close the popup afterwards. In the editable anatomy, closing it from here
+   * returns focus to the input unless the handler already moved focus out of
+   * the popup; the picker anatomy returns it to the `[forComboboxTrigger]` as on
+   * any close.
    */
   readonly activate = output<void>();
 

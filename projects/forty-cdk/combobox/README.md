@@ -363,7 +363,9 @@ An action:
 - **never touches `value` / `options()`.** It registers in a collection separate
   from options, so `options()`, `aria-setsize`, and `aria-posinset` are
   unaffected and activation emits `(activate)` instead of mutating `[(value)]`. The
-  consumer decides what happens and whether to close the popup afterwards.
+  consumer decides what happens and whether to close the popup afterwards. In the
+  editable anatomy a close from `(activate)` returns focus to the input, unless
+  your handler already moved it out of the popup.
 - **is `role="button"`, not `role="option"`.** Assistive tech announces it as an
   action, not as one of N choices.
 - **is reached by Tab, not the arrow keys** (see below), so it stays reachable no
@@ -395,10 +397,10 @@ outside-focus dismissal checks, exactly like the input.
 
 ### Action item API
 
-| Member       | Type           | Notes                                                                                                      |
-| ------------ | -------------- | ---------------------------------------------------------------------------------------------------------- |
-| `[disabled]` | `boolean`      | Drops the action out of the focus ring (`tabindex` removed), reflects `aria-disabled`, ignores activation. |
-| `(activate)` | `output<void>` | Fired on click / Enter / Space. Never mutates `[(value)]`.                                                 |
+| Member       | Type           | Notes                                                                                                            |
+| ------------ | -------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `[disabled]` | `boolean`      | Drops the action out of the focus ring (it keeps `tabindex="-1"`), reflects `aria-disabled`, ignores activation. |
+| `(activate)` | `output<void>` | Fired on click / Enter / Space. Never mutates `[(value)]`.                                                       |
 
 `[forComboboxAction]` host-binds `role="button"`, `type="button"` (on a native
 `<button>` host only, leaving any other element with no `type`), a primitive-managed
@@ -575,7 +577,7 @@ Each dismiss reason emits a vetoable event from `[forCombobox]`. Call `preventDe
 
 The two anatomies have different focus models:
 
-- **Editable anatomy**: the input retains focus the entire time the listbox is open and on close; the active option is tracked via `aria-activedescendant`, never via `.focus()`. There is no automatic focus move, so `(autoFocusOnOpen)` / `(autoFocusOnClose)` never fire. If you need to move focus elsewhere, do it from your own keydown handler. The combobox won't fight you.
+- **Editable anatomy**: the input retains focus the entire time the listbox is open and on close; the active option is tracked via `aria-activedescendant`, never via `.focus()`. The one automatic move is back to the input, when a close unmounts the popup while focus is inside it (a `[forComboboxAction]` whose `(activate)` closes the popup), gated by `[returnFocus]`. `(autoFocusOnOpen)` / `(autoFocusOnClose)` never fire. If you need to move focus elsewhere, do it from your own keydown handler. The combobox won't fight you.
 - **Picker anatomy**: focus moves into the input on open and returns to the `[forComboboxTrigger]` on close, exactly like the other trigger-anchored overlays (`[forPopover]`, `[forDropdownMenu]`, `[forSelect]`). Both moves emit a vetoable event on `[forCombobox]`; call `preventDefault()` to keep focus where it is:
 
 | Output               | When                                        | `preventDefault()` effect   |
@@ -822,6 +824,7 @@ Implements the [WAI-ARIA Combobox pattern](https://www.w3.org/WAI/ARIA/apg/patte
 - `[forComboboxTrigger]` (picker anatomy) is a real `<button>` reflecting `aria-haspopup="dialog"`, `aria-expanded`, `aria-controls` (the dialog surface, while open), an `id` (a static one is kept), and native `disabled` from the combobox's effective disabled. The popup is a dialog rather than a listbox because focus moves into the search input inside it. It is exempt from the popup's outside-pointer dismissal layer, like the input.
 - `[forComboboxContent]` and `[forComboboxList]` cancel a `mousedown` that would otherwise move focus onto the surface or blur the input, so a press between options leaves focus in the input. A press on a focusable descendant is let through.
 - `[forComboboxToggle]` (editable anatomy) is a real `<button>` with `tabindex="-1"`, a localizable `aria-label`, `aria-expanded`, `aria-controls` (the listbox, while open) and native `disabled`. It cancels `mousedown` so focus stays in the input, and it is exempt from the outside-pointer dismissal layer.
+- `[forComboboxClear]` has `tabindex="-1"` and a localizable `aria-label`. It cancels `mousedown` too, and is exempt from the outside-pointer dismissal layer, so clearing an open listbox leaves it open with focus in the input and the combobox untouched.
 - In single mode, `aria-selected="true"` follows the activedescendant (the option Enter would activate). In multi mode it follows membership in `value()`, so every selected option carries `aria-selected="true"` simultaneously.
 - `data-state="checked" | "unchecked"` always reflects membership in `value()`, so consumers can paint a checkmark icon with pure CSS regardless of mode.
 - `data-highlighted=""` marks the option that is the current `aria-activedescendant`. Because focus stays on the `<input>`, there is no `:focus` on the option to style. `data-highlighted` is the canonical CSS hook.
