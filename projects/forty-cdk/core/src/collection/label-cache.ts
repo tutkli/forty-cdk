@@ -1,7 +1,7 @@
 import { computed, linkedSignal, type Signal } from '@angular/core';
 
 import { lookupByValue } from '../selection/selection';
-import { isUnset } from '../unset-input/unset-input';
+import { isUnset, type Unset } from '../unset-input/unset-input';
 
 /**
  * Minimal option-handle shape a {@link LabelCache} reads. Every member is a
@@ -11,8 +11,8 @@ import { isUnset } from '../unset-input/unset-input';
 export interface LabelCacheHandle<T> {
   /** Stable host `id` — the activedescendant target in the virtualized path. */
   readonly id: Signal<string>;
-  /** The option's underlying value. */
-  readonly value: Signal<T>;
+  /** The option's underlying value, or {@link Unset} before its binding is written. */
+  readonly value: Signal<T | Unset>;
   /** The option's resolved display label. */
   readonly label: Signal<string>;
   /** Whether the option is disabled. */

@@ -33,6 +33,7 @@ import {
   type VetoableNativeEvent,
   VirtualizedResume,
   type WritingDirection,
+  type Unset,
 } from 'forty-cdk/core';
 import {
   AnchoredFormValueControlBase,
@@ -809,7 +810,7 @@ export class ForCombobox<T = string>
     this.#activateValue(handle.value(), handle.label(), handle.id());
   }
 
-  #activateValue(v: T, label: string, id: string | null): void {
+  #activateValue(v: T | Unset, label: string, id: string | null): void {
     if (this.effectiveDisabled() || this.readonly() || isUnset(v)) {
       return;
     }

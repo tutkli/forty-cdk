@@ -492,9 +492,7 @@ export class ForTreeNodeDrag<T = string> implements ForTreeNodeDragContext {
 
   #visibleHost(value: T): HTMLElement | null {
     const equals = this.#ctx.compareWith();
-    return (
-      this.#ctx.visibleNodes().find((e) => equals(e.handle.value(), value))?.handle.host ?? null
-    );
+    return this.#ctx.visibleNodes().find((e) => equals(e.value, value))?.handle.host ?? null;
   }
 
   #cancelSession(restore: boolean): void {

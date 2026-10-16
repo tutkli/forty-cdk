@@ -17,6 +17,8 @@ import {
   isHoverCapablePointer,
   isImeComposing,
   resolveActiveElement,
+  type Unset,
+  isUnset,
 } from 'forty-cdk/core';
 import { warnIfMountedWhileClosed } from 'forty-cdk/core-overlay';
 import {
@@ -86,7 +88,7 @@ export class ForNavigationMenuContent {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 
   readonly id = hostId('for-navigation-menu-content');
-  private readonly value: Signal<string> = this.#item.value;
+  private readonly value: Signal<string | Unset> = this.#item.value;
   private readonly labelledBy = hostLabelledBy(() => this.menu.triggerIdFor(this.value()));
   private readonly motion = computed(() => this.menu.motionFor(this.value()));
 
@@ -123,7 +125,10 @@ export class ForNavigationMenuContent {
       // placeholder — `value` is the owning item's binding, which the consumer
       // has written by the time the helper's render hook runs (before that it
       // reads the `unsetInput` sentinel).
-      condition: () => `open() === '${this.value()}'`,
+      condition: () => {
+        const value = this.value();
+        return isUnset(value) ? 'open() === <item value>' : `open() === '${value}'`;
+      },
       open: () => this.menu.isOpen(this.value()),
     });
 

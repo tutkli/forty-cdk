@@ -44,6 +44,7 @@ import {
   hostAriaLabel,
   hostId,
   VirtualizedResume,
+  type Unset,
 } from 'forty-cdk/core';
 import {
   FOR_LISTBOX_CONTEXT,
@@ -485,7 +486,7 @@ export class ForListbox<T = string>
     return this.#isSelected()(v);
   }
 
-  activate(v: T): void {
+  activate(v: T | Unset): void {
     if (this.effectiveDisabled() || this.readonly() || isUnset(v)) {
       return;
     }

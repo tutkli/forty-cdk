@@ -5,6 +5,7 @@ import {
   type CollectionHandle,
   orphanContextError,
   unresolvedRootError,
+  type Unset,
   type WritingDirection,
 } from 'forty-cdk/core';
 import {
@@ -42,7 +43,8 @@ export interface ForSelectOptionHandle<T = unknown> extends CollectionHandle {
    * option and scrolls it into view.
    */
   readonly host: HTMLElement;
-  readonly value: Signal<T>;
+  /** The option's value, or {@link Unset} before its binding is written. */
+  readonly value: Signal<T | Unset>;
   /**
    * The option's resolved display label as a reactive `Signal<string>` — the
    * trimmed `textContent` of the host. The root folds it into a persisted
@@ -176,7 +178,7 @@ export interface ForSelectContext<T = unknown> {
 
   isSelected(value: T): boolean;
   /** Toggle in multi-mode, replace + close in single-mode. No-op on disabled / readonly. */
-  activate(value: T): void;
+  activate(value: T | Unset): void;
 
   /**
    * Multi-select only (APG range keyboard, Ctrl/Cmd+A). Add every enabled
@@ -317,7 +319,7 @@ export interface SelectPieceContext<T = unknown> {
    * (or previous) focusable in tab order. Multi-mode skips the value-set
    * — selection toggles already happened via Space / Enter / click.
    */
-  commitOnTab(value: T): void;
+  commitOnTab(value: T | Unset): void;
 
   /**
    * Full source length when virtualizing, `undefined` in the default

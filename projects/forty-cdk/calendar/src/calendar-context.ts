@@ -1,6 +1,6 @@
 import { inject, InjectionToken, type Signal } from '@angular/core';
 
-import { orphanContextError, type WritingDirection } from 'forty-cdk/core';
+import { orphanContextError, type Unset, type WritingDirection } from 'forty-cdk/core';
 import { type DateAdapter } from 'forty-cdk/date-adapter';
 
 /** The active display mode of a `ForCalendar`. */
@@ -37,8 +37,8 @@ export interface CalendarYearRow {
 export interface ForCalendarMonthCellHandle {
   /** The `role="gridcell"` host element. */
   readonly host: HTMLElement;
-  /** The month this cell represents, **1-12**. */
-  readonly month: Signal<number>;
+  /** The month this cell represents, **1-12**, or {@link Unset} before its binding is written. */
+  readonly month: Signal<number | Unset>;
 }
 
 /**
@@ -48,8 +48,8 @@ export interface ForCalendarMonthCellHandle {
 export interface ForCalendarYearCellHandle {
   /** The `role="gridcell"` host element. */
   readonly host: HTMLElement;
-  /** The year this cell represents. */
-  readonly year: Signal<number>;
+  /** The year this cell represents, or {@link Unset} before its binding is written. */
+  readonly year: Signal<number | Unset>;
 }
 
 /** A selectable month in the visible year, for building a month dropdown. */
@@ -128,8 +128,8 @@ export interface CalendarWeek<D> {
 export interface ForCalendarCellHandle<D> {
   /** The `role="gridcell"` host element. */
   readonly host: HTMLElement;
-  /** The date this cell represents. */
-  readonly date: Signal<D>;
+  /** The date this cell represents, or {@link Unset} before its binding is written. */
+  readonly date: Signal<D | Unset>;
 }
 
 /**

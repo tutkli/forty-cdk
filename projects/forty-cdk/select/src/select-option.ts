@@ -7,6 +7,7 @@ import {
   InjectionToken,
   input,
   signal,
+  type InputSignal,
 } from '@angular/core';
 
 import {
@@ -21,6 +22,7 @@ import {
   preventPointerFocus,
   resolveListNavigation,
   unsetInput,
+  type Unset,
 } from 'forty-cdk/core';
 import { injectSelectContext } from './select-context';
 
@@ -106,7 +108,7 @@ export class ForSelectOption<T = string> {
    *
    * Mandatory — an unbound option throws in dev mode.
    */
-  readonly value = input(unsetInput<T>());
+  readonly value: InputSignal<T | Unset> = input(unsetInput<T>());
   /**
    * Whether the option can be activated. A disabled option stays rendered and announced, is
    * skipped by arrow navigation and typeahead, and a mouse press on it leaves focus where it was.

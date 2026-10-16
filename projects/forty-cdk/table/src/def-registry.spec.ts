@@ -545,7 +545,7 @@ describe('ForTableBody def registration seam (#1372)', () => {
       expect(target.columnNames()).toEqual([]);
 
       bound.set('name');
-      expect(target.columnDefs()).toEqual([def]);
+      expect(target.columnDefs()).toEqual([{ def, name: 'name' }]);
       expect(target.columnNames()).toEqual(['name']);
     });
 
@@ -561,7 +561,7 @@ describe('ForTableBody def registration seam (#1372)', () => {
       expect(target.rowDefs()).toEqual([]);
 
       bound.set(predicate);
-      expect(target.rowDefs()).toEqual([def]);
+      expect(target.rowDefs()).toEqual([{ def, when: predicate }]);
     });
 
     @Component({

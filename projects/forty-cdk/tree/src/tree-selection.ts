@@ -10,7 +10,7 @@ import {
   type RovingTabindex,
   toggleInArray,
 } from 'forty-cdk/core';
-import type { ForTreeItemHandle, ForTreeVisibleNode } from './tree-context';
+import type { ForTreeVisibleNode } from './tree-context';
 
 /**
  * Wiring for {@link TreeSelection}. Bridges the engine to `ForTree`'s signal
@@ -32,8 +32,6 @@ export interface TreeSelectionDeps<T> {
   readonly selectedMembership: Signal<(value: T) => boolean>;
   /** Flattened visible nodes (each with its resolved parent host). */
   readonly visibleNodes: Signal<readonly ForTreeVisibleNode<T>[]>;
-  /** Visible node handles in flattened order. */
-  readonly visibleHandles: Signal<readonly ForTreeItemHandle<T>[]>;
   /** Whether a value belongs to a node that takes part in selection. */
   readonly isSelectable: (value: T) => boolean;
   /** The shared roving-tabindex tracker, used to move focus on shift-extend. */
@@ -110,7 +108,7 @@ export class TreeSelection<T> {
     }
     const siblings = entries
       .filter((entry) => entry.parentHost === current.parentHost && entry.handle.expandable())
-      .map((entry) => entry.handle.value());
+      .map((entry) => entry.value);
     this.#deps.setExpanded(
       appendMissing(this.#deps.expanded(), siblings, this.#deps.compareWith()),
     );
@@ -120,14 +118,14 @@ export class TreeSelection<T> {
     if (this.#deps.disabled() || !this.#deps.multiple()) {
       return;
     }
-    const items = this.#deps.visibleHandles();
+    const items = this.#deps.visibleNodes();
     if (items.length === 0) {
       return;
     }
-    const currentIndex = items.findIndex((item) => item.host === currentItem);
+    const currentIndex = items.findIndex((item) => item.handle.host === currentItem);
     const next = moveIndex(currentIndex < 0 ? 0 : currentIndex, items.length, action, {
       loop: false,
-      isDisabled: (i) => items[i]!.disabled(),
+      isDisabled: (i) => items[i]!.handle.disabled(),
     });
     if (next === null) {
       return;
@@ -136,8 +134,8 @@ export class TreeSelection<T> {
     if (!target) {
       return;
     }
-    this.#deps.roving.focusActive(target.host);
-    if (!target.selectable()) {
+    this.#deps.roving.focusActive(target.handle.host);
+    if (!target.handle.selectable()) {
       return;
     }
     // Establish the range anchor at the origin of the shift-extend run so a
@@ -145,13 +143,13 @@ export class TreeSelection<T> {
     // from a stale (or absent) anchor. A pre-existing anchor (e.g. from a prior
     // click) is left in place, matching the listbox range contract.
     if (this.#deps.anchorValue() === null && currentIndex >= 0) {
-      this.#deps.setAnchorValue(items[currentIndex]!.value());
+      this.#deps.setAnchorValue(items[currentIndex]!.value);
     }
     const current = this.#deps.value();
     this.#deps.setValue(
       this.#cascading()
-        ? this.#toggleGroup(target.value(), current)
-        : toggleInArray(current, target.value(), this.#deps.compareWith()),
+        ? this.#toggleGroup(target.value, current)
+        : toggleInArray(current, target.value, this.#deps.compareWith()),
     );
   }
 
@@ -159,25 +157,25 @@ export class TreeSelection<T> {
     if (this.#deps.disabled() || !this.#deps.multiple()) {
       return;
     }
-    const items = this.#deps.visibleHandles();
-    const currentIndex = items.findIndex((item) => item.host === currentItem);
+    const items = this.#deps.visibleNodes();
+    const currentIndex = items.findIndex((item) => item.handle.host === currentItem);
     if (currentIndex < 0) {
       return;
     }
     const equals = this.#deps.compareWith();
     const anchorValue = this.#deps.anchorValue();
     const anchorIndex =
-      anchorValue === null ? currentIndex : items.findIndex((i) => equals(i.value(), anchorValue));
+      anchorValue === null ? currentIndex : items.findIndex((i) => equals(i.value, anchorValue));
     const start = anchorIndex < 0 ? currentIndex : anchorIndex;
     const [lo, hi] = start <= currentIndex ? [start, currentIndex] : [currentIndex, start];
 
     const span: T[] = [];
     for (let i = lo; i <= hi; i++) {
       const item = items[i];
-      if (!item || item.disabled() || !item.selectable()) {
+      if (!item || item.handle.disabled() || !item.handle.selectable()) {
         continue;
       }
-      span.push(item.value());
+      span.push(item.value);
     }
     const current = this.#deps.value();
     this.#deps.setValue(
@@ -196,9 +194,8 @@ export class TreeSelection<T> {
     }
     const values = this.#deps
       .visibleNodes()
-      .map((entry) => entry.handle)
-      .filter((handle) => !handle.disabled() && handle.selectable())
-      .map((handle) => handle.value());
+      .filter((entry) => !entry.handle.disabled() && entry.handle.selectable())
+      .map((entry) => entry.value);
     if (values.length === 0) {
       return;
     }
@@ -251,7 +248,7 @@ export class TreeSelection<T> {
     const entries = this.#deps.visibleNodes();
     const indexOf = lookupByValue(
       entries.map((_, index) => index),
-      (index) => entries[index]!.handle.value(),
+      (index) => entries[index]!.value,
       equals,
     );
     const ancestors = new Set<number>();
@@ -275,8 +272,7 @@ export class TreeSelection<T> {
     }
     let result = next;
     for (const i of [...ancestors].sort((a, b) => b - a)) {
-      const handle = entries[i]!.handle;
-      const ancestor = handle.value();
+      const { handle, value: ancestor } = entries[i]!;
       if (!handle.selectable()) {
         continue;
       }

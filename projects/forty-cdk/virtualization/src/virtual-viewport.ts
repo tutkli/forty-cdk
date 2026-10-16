@@ -15,6 +15,8 @@ import {
   untracked,
 } from '@angular/core';
 
+import { type Unset } from 'forty-cdk/core';
+
 import {
   FOR_VIRTUAL_VIEWPORT_CONTEXT,
   type ForVirtualViewportContext,
@@ -69,7 +71,7 @@ export class ForVirtualViewport implements ForVirtualViewportContext, OnInit {
   readonly #injector = inject(Injector);
   readonly #scrollElement = signal<HTMLElement | null>(this.#host.nativeElement);
   readonly #virtualizer = signal<ForVirtualizer | null>(null);
-  readonly #data = signal<Signal<readonly unknown[]> | null>(null);
+  readonly #data = signal<Signal<readonly unknown[] | Unset> | null>(null);
   readonly #keyVersion = computed(() => {
     const getItemKey = this.getItemKey();
     return getItemKey === undefined ? undefined : { getItemKey, data: this.#data()?.() };
@@ -225,11 +227,11 @@ export class ForVirtualViewport implements ForVirtualViewportContext, OnInit {
     this.#virtualizer()?.measureElement(element);
   }
 
-  private registerData(data: Signal<readonly unknown[]>): void {
+  private registerData(data: Signal<readonly unknown[] | Unset>): void {
     this.#data.set(data);
   }
 
-  private unregisterData(data: Signal<readonly unknown[]>): void {
+  private unregisterData(data: Signal<readonly unknown[] | Unset>): void {
     if (untracked(this.#data) === data) {
       this.#data.set(null);
     }

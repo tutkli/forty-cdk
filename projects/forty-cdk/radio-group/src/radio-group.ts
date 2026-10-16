@@ -20,6 +20,7 @@ import {
   moveIndex,
   type WritingDirection,
   injectTextDirection,
+  type Unset,
 } from 'forty-cdk/core';
 import {
   FOR_RADIO_GROUP_CONTEXT,
@@ -151,7 +152,7 @@ export class ForRadioGroup
     target?.focus(options);
   }
 
-  isSelected(v: string): boolean {
+  isSelected(v: string | Unset): boolean {
     return this.value() === v;
   }
 

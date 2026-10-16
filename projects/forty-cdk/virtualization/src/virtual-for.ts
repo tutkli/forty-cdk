@@ -7,9 +7,10 @@ import {
   effect,
   inject,
   input,
+  type InputSignal,
 } from '@angular/core';
 
-import { isUnset, unsetInput } from 'forty-cdk/core';
+import { isUnset, unsetInput, type Unset } from 'forty-cdk/core';
 
 import { injectVirtualViewportContext } from './virtual-viewport-context';
 import { type VirtualItem } from './virtualizer';
@@ -57,7 +58,9 @@ export class ForVirtualFor<T> {
   readonly #views = new Map<string | number, EmbeddedViewRef<ForVirtualForContext<T>>>();
 
   /** The full list of items to virtualize. */
-  readonly forVirtualForOf = input(unsetInput<readonly T[]>(), { alias: 'forVirtualForOf' });
+  readonly forVirtualForOf: InputSignal<readonly T[] | Unset> = input(unsetInput<readonly T[]>(), {
+    alias: 'forVirtualForOf',
+  });
 
   constructor() {
     this.#viewport.registerData(this.forVirtualForOf);

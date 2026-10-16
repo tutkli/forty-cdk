@@ -1,4 +1,12 @@
-import { booleanAttribute, computed, Directive, ElementRef, inject, input } from '@angular/core';
+import {
+  booleanAttribute,
+  computed,
+  Directive,
+  ElementRef,
+  inject,
+  input,
+  type InputSignal,
+} from '@angular/core';
 
 import {
   assertInputBound,
@@ -8,6 +16,7 @@ import {
   registerHandle,
   unsetInput,
   FOR_HOST_ROVING_CONTEXT,
+  type Unset,
 } from 'forty-cdk/core';
 import { injectToggleGroupContext } from './toggle-group-context';
 
@@ -56,7 +65,7 @@ export class ForToggleGroupItem {
    * Identifier added to / removed from the group's `value`. Mandatory — an unbound item throws in
    * dev mode.
    */
-  readonly value = input(unsetInput<string>());
+  readonly value: InputSignal<string | Unset> = input(unsetInput<string>());
 
   /** Per-item disabled (in addition to the group's `disabled`). */
   readonly disabled = input(false, { transform: booleanAttribute });

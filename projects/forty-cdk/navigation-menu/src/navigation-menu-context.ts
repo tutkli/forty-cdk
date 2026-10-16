@@ -5,6 +5,7 @@ import {
   type CollectionHandle,
   type ListNavigationAction,
   orphanContextError,
+  type Unset,
   type WritingDirection,
 } from 'forty-cdk/core';
 
@@ -22,7 +23,7 @@ export interface ForNavigationMenuTriggerHandle extends CollectionHandle {
    * trigger, scrolls it into view, and measures it for indicator positioning.
    */
   readonly host: HTMLElement;
-  readonly value: Signal<string>;
+  readonly value: Signal<string | Unset>;
   readonly disabled: Signal<boolean>;
   readonly id: Signal<string>;
 }
@@ -38,7 +39,7 @@ export interface ForNavigationMenuContentHandle extends CollectionHandle {
    * measured for viewport sizing and counted as a dismiss-exempt surface.
    */
   readonly host: HTMLElement;
-  readonly value: Signal<string>;
+  readonly value: Signal<string | Unset>;
   readonly id: Signal<string>;
   /** Whether the panel sits in a registered viewport. Always `false` off the browser. */
   readonly hosted: Signal<boolean>;
@@ -89,11 +90,11 @@ export interface ForNavigationMenuContext {
   readonly loop: Signal<boolean>;
   readonly disabled: Signal<boolean>;
 
-  isOpen(value: string): boolean;
+  isOpen(value: string | Unset): boolean;
   /** Toggle the open item (open if closed, close if currently open). */
-  toggle(value: string): void;
+  toggle(value: string | Unset): void;
   /** Open the given item (no-op if already open). */
-  open(value: string): void;
+  open(value: string | Unset): void;
   /** Close any open item. */
   close(): void;
 
@@ -101,18 +102,18 @@ export interface ForNavigationMenuContext {
    * Schedule open / close with the configured delays. Keyboard-driven changes
    * (`reason`) skip the delays.
    */
-  scheduleOpen(value: string, reason: NavigationMenuScheduleReason): void;
+  scheduleOpen(value: string | Unset, reason: NavigationMenuScheduleReason): void;
   /**
    * Schedule a hover close. Pass the leaving trigger's `value` so a quick
    * hover-then-leave on a still-closed trigger cancels its own pending open;
    * a pending open for a sibling (hover-across) is left to take over.
    */
-  scheduleClose(reason: NavigationMenuScheduleReason, value?: string): void;
+  scheduleClose(reason: NavigationMenuScheduleReason, value?: string | Unset): void;
   cancelPending(): void;
 
   navigate(currentTrigger: HTMLElement, action: ListNavigationAction): void;
   /** Focus the trigger associated with the given value, if any. */
-  focusTrigger(value: string): void;
+  focusTrigger(value: string | Unset): void;
 
   /**
    * Looks up the content id for a given item value. Reactive.
@@ -126,19 +127,19 @@ export interface ForNavigationMenuContext {
    * skipped — it can never pair with a lookup value — and the tracked dependency
    * re-runs the lookup once that binding lands.
    */
-  contentIdFor(value: string): string | null;
+  contentIdFor(value: string | Unset): string | null;
   /**
    * Looks up the trigger id for a given item value. Reactive. Same
    * synchronous-registration and not-yet-bound handling as
    * {@link contentIdFor}.
    */
-  triggerIdFor(value: string): string | null;
+  triggerIdFor(value: string | Unset): string | null;
   /**
    * Looks up the trigger host element for a given item value. Reactive. Same
    * synchronous-registration and not-yet-bound handling as
    * {@link contentIdFor}.
    */
-  triggerHostFor(value: string): HTMLElement | null;
+  triggerHostFor(value: string | Unset): HTMLElement | null;
   /** Layout-oriented selector for indicator positioning. */
   readonly activeTriggerHost: Signal<HTMLElement | null>;
   /** Host element of the currently-active content, if any. */
@@ -153,7 +154,7 @@ export interface ForNavigationMenuContext {
    * `value`. Returns `null` when no transition applies (first open, value
    * not currently entering or leaving, indices unknown).
    */
-  motionFor(value: string): ForNavigationMenuMotion | null;
+  motionFor(value: string | Unset): ForNavigationMenuMotion | null;
 }
 
 export type NavigationMenuScheduleReason = 'hover' | 'keyboard' | 'click';
@@ -183,7 +184,7 @@ export interface NavigationMenuContext extends ForNavigationMenuContext {
    * The id of the panel paired with `value` while a viewport hosts it, or `null` while it sits in
    * its item or is not mounted. Reactive.
    */
-  hostedContentIdFor(value: string): string | null;
+  hostedContentIdFor(value: string | Unset): string | null;
   /**
    * Route a `focusout` observed anywhere on the widget's surface to the root,
    * which acts on it only when the leave reports no destination
@@ -198,13 +199,10 @@ export interface NavigationMenuContext extends ForNavigationMenuContext {
 /** Per-item context, consumed by the trigger and content. */
 export interface ForNavigationMenuItemContext {
   /**
-   * The item's id, matched against the menu's `value`. Reads the `unsetInput`
-   * sentinel until the consumer's `[value]` binding is written — the root's
-   * lookups skip a handle in that state rather than throwing, which is what lets
-   * the trigger and content register synchronously. Guard with `isUnset` before
-   * letting the value leave a read site.
+   * The item's id, matched against the menu's `value`, or {@link Unset} until
+   * the consumer's `[value]` binding is written.
    */
-  readonly value: Signal<string>;
+  readonly value: Signal<string | Unset>;
   /**
    * The item's own `[disabled]`, without the root `[forNavigationMenu]`'s
    * `disabled` folded in. The trigger composes the two into its

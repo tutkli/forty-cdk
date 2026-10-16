@@ -5,6 +5,7 @@ import {
   type ListNavigationAction,
   orphanContextError,
   type WritingDirection,
+  type Unset,
 } from 'forty-cdk/core';
 
 /**
@@ -17,7 +18,7 @@ import {
  */
 export interface ForRadioHandle {
   readonly host: HTMLElement;
-  readonly value: Signal<string>;
+  readonly value: Signal<string | Unset>;
   readonly disabled: Signal<boolean>;
 }
 
@@ -41,7 +42,7 @@ export interface ForRadioGroupContext {
   /** True when some registered, enabled radio's value matches the group's current value. */
   readonly hasSelectedRadio: Signal<boolean>;
 
-  isSelected(value: string): boolean;
+  isSelected(value: string | Unset): boolean;
   /** Selects `value` if the group is interactive. */
   select(value: string): void;
   /** Moves focus + selection from `currentRadio` according to `action`. */

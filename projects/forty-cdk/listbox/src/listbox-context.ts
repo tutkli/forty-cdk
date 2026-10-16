@@ -4,12 +4,14 @@ import {
   assertRootContext,
   type ListNavigationAction,
   orphanContextError,
+  type Unset,
   type WritingDirection,
 } from 'forty-cdk/core';
 
 export interface ForListboxOptionHandle<T = unknown> {
   readonly host: HTMLElement;
-  readonly value: Signal<T>;
+  /** The option's value, or {@link Unset} before its binding is written. */
+  readonly value: Signal<T | Unset>;
   /**
    * The option's accessible text, trimmed. The root folds it into the
    * virtualized position snapshot so typeahead can reach an option the window
@@ -69,7 +71,7 @@ export interface ForListboxContext<T = unknown> {
 
   isSelected(value: T): boolean;
   /** Toggle in multi-mode, replace in single-mode. No-op on disabled / readonly. */
-  activate(value: T): void;
+  activate(value: T | Unset): void;
   /** Move focus from `currentOption` according to `action`. May also select if `selectionFollowsFocus` is on. */
   navigate(currentOption: HTMLElement, action: ListNavigationAction): void;
   /**

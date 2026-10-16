@@ -1,6 +1,6 @@
-import { computed, Directive, ElementRef, inject, input } from '@angular/core';
+import { computed, Directive, ElementRef, inject, input, type InputSignal } from '@angular/core';
 
-import { assertInputBound, isUnset, registerHandle, unsetInput } from 'forty-cdk/core';
+import { assertInputBound, isUnset, registerHandle, unsetInput, type Unset } from 'forty-cdk/core';
 import { type ForCalendarCellHandle, injectCalendarContext } from './calendar-context';
 
 /**
@@ -49,7 +49,7 @@ export class ForCalendarCell<D> {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   /** The date this cell represents. Mandatory — a cell with no binding throws in dev mode. */
-  readonly date = input(unsetInput<D>());
+  readonly date: InputSignal<D | Unset> = input(unsetInput<D>());
 
   private readonly selected = computed(() => this.#bound((d) => this.ctx.isSelected(d), false));
   private readonly isToday = computed(() => this.#bound((d) => this.ctx.isToday(d), false));

@@ -4,6 +4,7 @@ import {
   type CollectionHandle,
   type ListNavigationAction,
   orphanContextError,
+  type Unset,
   type WritingDirection,
 } from 'forty-cdk/core';
 import {
@@ -27,7 +28,8 @@ export interface ForMenubarTriggerHandle extends CollectionHandle {
    * trigger and anchors the open menu's floating surface to it.
    */
   readonly host: HTMLElement;
-  readonly value: Signal<string>;
+  /** The trigger's value, or {@link Unset} before its binding is written. */
+  readonly value: Signal<string | Unset>;
   readonly disabled: Signal<boolean>;
   /**
    * Typeahead-match override for the trigger row. Non-empty wins over the

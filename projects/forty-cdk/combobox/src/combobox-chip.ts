@@ -1,4 +1,4 @@
-import { computed, Directive, ElementRef, inject, input } from '@angular/core';
+import { computed, Directive, ElementRef, inject, input, type InputSignal } from '@angular/core';
 
 import {
   assertInputBound,
@@ -6,6 +6,7 @@ import {
   isUnset,
   registerHandle,
   unsetInput,
+  type Unset,
 } from 'forty-cdk/core';
 import { injectComboboxContext } from './combobox-context';
 
@@ -53,7 +54,7 @@ export class ForComboboxChip<T = string> {
    * (`[value]="someObject"` specializes `T`). Mandatory — a chip with no binding throws in dev
    * mode.
    */
-  readonly value = input(unsetInput<T>());
+  readonly value: InputSignal<T | Unset> = input(unsetInput<T>());
 
   /**
    * `data-value` reflection — for string `T` this is the value verbatim

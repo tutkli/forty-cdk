@@ -6,6 +6,7 @@ import {
   inject,
   input,
   signal,
+  type InputSignal,
 } from '@angular/core';
 
 import {
@@ -19,6 +20,7 @@ import {
   resolveListNavigation,
   resolveTreeExpandCollapse,
   unsetInput,
+  type Unset,
 } from 'forty-cdk/core';
 import {
   FOR_TREE_ITEM_CONTEXT,
@@ -85,7 +87,7 @@ export class ForTreeItem<T = string> implements ForTreeItemContext<T> {
    * `aria-posinset="0"` / `aria-setsize="0"`, values WAI-ARIA defines no meaning
    * for.
    */
-  readonly value = input(unsetInput<T>());
+  readonly value: InputSignal<T | Unset> = input(unsetInput<T>());
 
   /**
    * Disables this node: not selectable, skipped by keyboard navigation, and a

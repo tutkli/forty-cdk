@@ -6,6 +6,7 @@ import {
   orphanContextError,
   type RovingTabindex,
   type WritingDirection,
+  type Unset,
 } from 'forty-cdk/core';
 import { type TabsActivationMode } from 'forty-cdk/defaults';
 
@@ -18,7 +19,7 @@ export { type TabsActivationMode };
 export interface ForTabsTriggerHandle {
   readonly host: HTMLElement;
   readonly id: Signal<string>;
-  readonly value: Signal<string>;
+  readonly value: Signal<string | Unset>;
   readonly disabled: Signal<boolean>;
 }
 
@@ -29,7 +30,7 @@ export interface ForTabsTriggerHandle {
 export interface ForTabsContentHandle {
   readonly host: HTMLElement;
   readonly id: Signal<string>;
-  readonly value: Signal<string>;
+  readonly value: Signal<string | Unset>;
 }
 
 /**
@@ -45,9 +46,9 @@ export interface ForTabsContext {
   readonly activationMode: Signal<TabsActivationMode>;
   readonly roving: RovingTabindex;
 
-  isSelected(value: string): boolean;
+  isSelected(value: string | Unset): boolean;
   /** Selects `value` if the tabs widget is interactive. */
-  select(value: string): void;
+  select(value: string | Unset): void;
   /** Moves focus from `currentTrigger`. In automatic mode also selects the new tab. */
   navigate(currentTrigger: HTMLElement, action: ListNavigationAction): void;
 
@@ -63,13 +64,13 @@ export interface ForTabsContext {
    * it can never pair with a lookup value — and the tracked dependency re-runs
    * the lookup once that binding lands.
    */
-  triggerIdFor(value: string): string | null;
+  triggerIdFor(value: string | Unset): string | null;
   /**
    * Looks up the content id for a given tab value. Reactive. Same
    * synchronous-registration and not-yet-bound handling as
    * {@link triggerIdFor}.
    */
-  contentIdFor(value: string): string | null;
+  contentIdFor(value: string | Unset): string | null;
   /** True when `el` is the first enabled trigger in registration order. */
   isFirstEnabledTrigger(el: HTMLElement): boolean;
   /**

@@ -1,4 +1,12 @@
-import { booleanAttribute, computed, Directive, ElementRef, inject, input } from '@angular/core';
+import {
+  booleanAttribute,
+  computed,
+  Directive,
+  ElementRef,
+  inject,
+  input,
+  type InputSignal,
+} from '@angular/core';
 
 import {
   assertInputBound,
@@ -7,6 +15,7 @@ import {
   hostId,
   hostLabelledBy,
   unsetInput,
+  type Unset,
 } from 'forty-cdk/core';
 import { injectTabsContext } from './tabs-context';
 
@@ -46,7 +55,7 @@ export class ForTabsContent {
    * Value of the tab this panel belongs to, paired with the `[forTabsTrigger]` carrying the same
    * value. Mandatory — an unbound panel throws in dev mode.
    */
-  readonly value = input(unsetInput<string>());
+  readonly value: InputSignal<string | Unset> = input(unsetInput<string>());
 
   /**
    * Overrides the automatic focusable-content detection that drives the

@@ -6,6 +6,7 @@ import {
   orphanContextError,
   unresolvedRootError,
   type WritingDirection,
+  type Unset,
 } from 'forty-cdk/core';
 import {
   type FloatingAlign,
@@ -118,10 +119,10 @@ export interface ForTimePickerContext<D = unknown> {
   readonly overlay: ForTimePickerOverlayContext;
 
   readonly slots: Signal<readonly ForTimeSlot<D>[]>;
-  isSelected(value: D): boolean;
-  activate(value: D): void;
+  isSelected(value: D | Unset): boolean;
+  activate(value: D | Unset): void;
   focusSelectedOption(): boolean;
-  commitOnTab(value: D): void;
+  commitOnTab(value: D | Unset): void;
   markTouched(): void;
 }
 
