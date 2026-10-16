@@ -109,6 +109,25 @@ test.describe('Submenu pointer hover — DropdownMenu', () => {
     await expect(el(page, 'dd-menu')).toBeVisible();
   });
 
+  test('a hover-close after a click open returns focus to the sub-trigger and keeps the keys alive', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'menu-sub');
+    await openDropdown(page);
+    await el(page, 'dd-sub-trigger').click();
+    await expect(el(page, 'dd-sub-menu')).toBeVisible();
+    await expectFocused(el(page, 'dd-sub-item-1'));
+
+    const box = (await el(page, 'dd-sub-trigger').boundingBox())!;
+    await page.mouse.move(5, box.y + box.height / 2, { steps: 8 });
+    await expect(el(page, 'dd-sub-menu')).toHaveCount(0);
+    await expect(el(page, 'dd-menu')).toBeVisible();
+    await expectFocused(el(page, 'dd-sub-trigger'));
+
+    await page.keyboard.press('ArrowDown');
+    await expectFocused(el(page, 'dd-item-2'));
+  });
+
   test('hovering into the content then out of it closes the submenu', async ({ page }) => {
     await gotoFixture(page, 'menu-sub');
     await openDropdown(page);

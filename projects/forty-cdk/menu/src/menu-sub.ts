@@ -13,8 +13,10 @@ import {
 import type { ReferenceElement } from '@floating-ui/dom';
 
 import {
+  composedContains,
   isHoverCapablePointer,
   orphanContextError,
+  resolveActiveElement,
   type VetoableEvent,
   type VetoableNativeEvent,
   type WritingDirection,
@@ -34,6 +36,8 @@ import {
   resolveGraceSide,
 } from 'forty-cdk/core-overlay';
 import { FOR_MENU_DEFAULTS } from 'forty-cdk/defaults';
+
+const openSubmenus = new WeakMap<ForMenuContext, ForMenuSub>();
 
 /**
  * Root for a nested submenu inside a parent `[forDropdownMenu]` /
@@ -57,6 +61,9 @@ import { FOR_MENU_DEFAULTS } from 'forty-cdk/defaults';
  * item nor a click on the root's trigger fires the submenu's outside-handler
  * (the item's click flow closes everything via propagated `closeMenu`, and the
  * trigger's own click closes the root).
+ *
+ * A menu holds one open submenu at a time: opening one by any path closes
+ * the open sibling first, with reason `'programmatic'`.
  *
  * Closing this submenu propagates `closeMenu` upward for every reason
  * except `'escape'`, `'hover'` and `'programmatic'` — Escape inside a submenu
@@ -237,11 +244,13 @@ export class ForMenuSub extends MenuOverlayHost implements ForMenuContext {
       this.#cancelPointerScheduling();
       this.#suppressOpenFocus = options.suppressFocusMoves ?? false;
       this.#suppressCloseFocus = false;
+      this.#claimOpenSlot();
     },
     onClose: (reason, options) => {
       this.#cancelPointerScheduling();
       this.#suppressOpenFocus = false;
       this.#suppressCloseFocus = options.suppressFocusMoves ?? false;
+      this.#releaseOpenSlot();
       if (reason !== 'escape' && reason !== 'hover' && reason !== 'programmatic') {
         this.parentMenu.closeMenu(reason);
       }
@@ -365,8 +374,35 @@ export class ForMenuSub extends MenuOverlayHost implements ForMenuContext {
       return;
     }
     // Hover-close affects only this level (like Escape / programmatic — no
-    // upward propagation) and suppresses the trigger return-focus.
-    this._overlay.closeMenu('hover', { suppressFocusMoves: true });
+    // upward propagation) and returns focus to the trigger only when it held it.
+    this.#closeWithoutStrandingFocus('hover');
+  }
+
+  #closeWithoutStrandingFocus(reason: 'hover' | 'programmatic'): void {
+    this._overlay.closeMenu(reason, { suppressFocusMoves: !this.#chainHoldsFocus() });
+  }
+
+  #chainHoldsFocus(): boolean {
+    const content = this.content();
+    if (content && composedContains(content, resolveActiveElement(content.ownerDocument))) {
+      return true;
+    }
+    const child = openSubmenus.get(this);
+    return child ? child.#chainHoldsFocus() : false;
+  }
+
+  #claimOpenSlot(): void {
+    const sibling = openSubmenus.get(this.parentMenu);
+    openSubmenus.set(this.parentMenu, this);
+    if (sibling && sibling !== this && sibling.open()) {
+      sibling.#closeWithoutStrandingFocus('programmatic');
+    }
+  }
+
+  #releaseOpenSlot(): void {
+    if (openSubmenus.get(this.parentMenu) === this) {
+      openSubmenus.delete(this.parentMenu);
+    }
   }
 
   #armPointerGrace(cursor: Point): void {
@@ -457,6 +493,7 @@ export class ForMenuSub extends MenuOverlayHost implements ForMenuContext {
   }
 
   #teardownPointer(): void {
+    this.#releaseOpenSlot();
     this.#clearOpenTimer();
     this.#closeAction.cancel();
     this.#disarmPointerGrace();
@@ -474,7 +511,7 @@ export class ForMenuSub extends MenuOverlayHost implements ForMenuContext {
   }
 
   override emitAutoFocusOnClose(): boolean {
-    // Hover-close must not yank focus back to the trigger.
+    // A hover-close outside the submenu must not yank focus back to the trigger.
     if (this.#suppressCloseFocus) {
       this.#suppressCloseFocus = false;
       return true;

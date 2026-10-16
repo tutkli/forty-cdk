@@ -128,6 +128,47 @@ class MenubarWithSubmenuHost {
 }
 
 @Component({
+  imports: [
+    ForMenubar,
+    ForMenubarTrigger,
+    ForMenuContent,
+    ForMenuItem,
+    ForMenuSub,
+    ForMenuSubTrigger,
+  ],
+  template: `
+    <div forMenubar [(value)]="open">
+      <button forMenubarTrigger value="file">File</button>
+      @if (open() === 'file') {
+        <div forMenuContent>
+          <div forMenuSub [(open)]="recent">
+            <button id="recent" forMenuSubTrigger>Open recent</button>
+            @if (recent()) {
+              <div forMenuSubContent>
+                <button id="recent-a" forMenuItem>a.txt</button>
+              </div>
+            }
+          </div>
+          <div forMenuSub [(open)]="share">
+            <button id="share" forMenuSubTrigger>Share</button>
+            @if (share()) {
+              <div forMenuSubContent>
+                <button id="share-email" forMenuItem>Email</button>
+              </div>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  `,
+})
+class MenubarWithSiblingSubmenusHost {
+  readonly open = signal<string | null>(null);
+  readonly recent = signal(false);
+  readonly share = signal(false);
+}
+
+@Component({
   imports: IMPORTS,
   template: `
     <div forMenubar [(value)]="open">
@@ -1961,6 +2002,27 @@ describe('ForMenubar', () => {
       await flush(r.fixture);
 
       expect(r.instance.recent()).toBe(true);
+      expect(r.instance.open()).toBe('file');
+    });
+
+    it('opening a submenu closes its open sibling and keeps the menu open', async () => {
+      const r = renderHost(MenubarWithSiblingSubmenusHost);
+      r.instance.open.set('file');
+      await flush(r.fixture);
+
+      const recent = document.querySelector<HTMLElement>('#recent')!;
+      recent.focus();
+      pressKey(recent, 'ArrowRight');
+      await flush(r.fixture);
+      expect(document.activeElement?.id).toBe('recent-a');
+
+      document.querySelector<HTMLElement>('#share')!.click();
+      await flush(r.fixture);
+
+      expect(r.instance.recent()).toBe(false);
+      expect(r.instance.share()).toBe(true);
+      expect(document.querySelectorAll('[forMenuSubContent]')).toHaveLength(1);
+      expect(document.activeElement?.id).toBe('share-email');
       expect(r.instance.open()).toBe('file');
     });
 
