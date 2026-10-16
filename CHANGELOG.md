@@ -7,71 +7,209 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.35.0] - 2026-10-16
+
 ### Added
 
 - **Virtualization** — `injectVirtualizer` takes an `estimateVersion` signal
   ([#2225](https://github.com/tutkli/forty-cdk/issues/2225)). Each new value after the first render
-  drops every cached size and re-estimates every item, so an estimate that changes at runtime (a
-  density toggle) moves the total size and the item offsets with it.
+  re-estimates every item not yet measured, so an estimate that changes at runtime (a density
+  toggle) moves the total size and the item offsets with it, while an item already measured keeps
+  its size.
+
+- **Virtualization**, **Table virtualization** — `cancelScroll()` stops a scroll still in flight
+  ([#2492](https://github.com/tutkli/forty-cdk/issues/2492)). `ForVirtualizer`, `ForVirtualViewport`
+  and `ForTableVirtualized` gain `cancelScroll()`, which stops a `scrollToIndex` / `scrollToOffset`
+  (`scrollToRow` on the table) that is still correcting its position while the rows around its
+  target are measured, and leaves the container where it is. `[forVirtualReorder]` and
+  `[forTableRowReorder]` call it when a pointer drag lifts a row, so a scroll still landing no
+  longer moves the rows under the pointer. A new scroll already replaces the running one, so call it
+  only to stop without starting another, for instance when your own pointer gesture takes over the
+  container, as the Virtualization README's "Jumping to an item" section shows.
 
 ### Changed
 
 - **Slider — BREAKING.** `[forSlider]`'s `[min]` / `[max]` inputs are renamed `[rangeMin]` /
-  `[rangeMax]` ([#2218](https://github.com/tutkli/forty-cdk/issues/2218)). Angular reserves `min` and
-  `max` on every node carrying `[formField]`, so a form-bound slider failed to compile with NG8022 when
-  given bounds, and no Signal Forms rule can supply them to an array-valued field: it was stuck at
-  0..100. `[forSlider] [formField]="f.price" [rangeMin]="0" [rangeMax]="1000"` compiles and reports
-  those bounds. `FOR_SLIDER_HOST_DIRECTIVE_INPUTS` swaps `'min'` / `'max'` for `'rangeMin'` /
-  `'rangeMax'`, and the inputs drop their `number | undefined` write type. `ForSliderContext.minValue` /
-  `maxValue` are unchanged.
-- **Peer dependencies — BREAKING.** `@angular/core`, `@angular/common` and `@angular/forms` now
-  peer from `^22.1.0`, and `@angular/platform-browser` `^22.1.0` is a new required peer
+  `[rangeMax]` ([#2218](https://github.com/tutkli/forty-cdk/issues/2218)). Angular reserves `min`
+  and `max` on every node carrying `[formField]`, so a form-bound slider failed to compile with
+  NG8022 when given bounds, and no Signal Forms rule can supply them to an array-valued field: it
+  was stuck at 0..100. `[forSlider] [formField]="f.price" [rangeMin]="0" [rangeMax]="1000"` compiles
+  and reports those bounds. `FOR_SLIDER_HOST_DIRECTIVE_INPUTS` swaps `'min'` / `'max'` for
+  `'rangeMin'` / `'rangeMax'`, and the inputs drop their `number | undefined` write type.
+  `ForSliderContext.minValue` / `maxValue` are unchanged, and `FORCDK-SLIDER-002` names the new
+  inputs.
+
+- **Peer dependencies — BREAKING.** `@angular/core`, `@angular/common` and `@angular/forms` now peer
+  from `^22.1.0`, and `@angular/platform-browser` `^22.1.0` is a new required peer
   ([#2480](https://github.com/tutkli/forty-cdk/issues/2480)). The library resolves its custom
   property names through `CssVarNamespacer`, which Angular made public in 22.1. Every browser app
   and `@angular/platform-server` already depend on `@angular/platform-browser`.
+
+- **Every primitive — BREAKING.** Members a class declared `protected` only so its own template or
+  host bindings could read them are now `private`
+  ([#2487](https://github.com/tutkli/forty-cdk/issues/2487)): 784 of the library's 912 `protected`
+  members, which the `.d.ts` files now list as untyped `private` placeholders. A subclass that read
+  or overrode one of them no longer compiles, and neither does one that declares its own member
+  under the same name. A member a subclass is meant to read or override, or one that implements an
+  abstract base member, stays `protected`. **Read the public input, signal or context member
+  instead, and rename a subclass member that collides.**
+
+- **Calendar**, **Combobox**, **Listbox**, **Menubar**, **Navigation menu**, **Radio group**,
+  **Select**, **Slider**, **Tabs**, **Time picker**, **Toggle group**, **Tree**, **Virtualization**
+  — item handles and contexts type an unbound value as `T | Unset`
+  ([#2505](https://github.com/tutkli/forty-cdk/issues/2505)). An item piece registers with its root
+  before Angular writes its `[value]` binding, so for one change-detection pass its value is a
+  sentinel, which the handles and contexts these primitives publish typed as plain `T`. Members such
+  as `ForListboxOptionHandle.value`, `ForTreeItemContext.value` and the navigation menu context's
+  `isOpen(value)` now say `T | Unset`, and `forty-cdk/shared` exports `Unset` and the `isUnset` type
+  guard. **Code that implements or reads these contexts through their tokens narrows the value with
+  `isUnset` before it reaches anything that expects a `T`**, as the Shared README's "Narrowing an
+  item's unbound value" section shows.
+
+- **Tree — BREAKING.** `ForTreeDefaults.dragAnnounceMove` and `dragAnnounceDrop` receive
+  `total: number | null` ([#2401](https://github.com/tutkli/forty-cdk/issues/2401)). A drop into a
+  collapsed parent has no rendered children to count, so the builders receive `null` there, and the
+  English default leaves the total out. **A custom builder passed to `provideForTreeDefaults` must
+  handle `null`.**
 
 ### Fixed
 
 - **Floating overlays**, **Select**, **Drawer**, **Table** — every `--for-*` custom property follows
   `provideCssVarNamespacing()` ([#2480](https://github.com/tutkli/forty-cdk/issues/2480)). The
-  host-bound properties were namespaced by the consumer's compiler, but the ones written from code kept
-  their raw names, so with namespacing on no stylesheet could read all of them: popovers, menus and
-  selects lost their `--for-floating-anchor-*` / `--for-floating-available-*` sizing and transform
-  origin, a drawer stopped following the finger, and resized table columns snapped back to their
-  declared width. A `--for-floating-arrow-offset` set in component styles never reached the arrow.
-  The positioners, the drawer's swipe displacement, the table's column widths and the `var()` strings
-  the arrow and `ForTableBody.track` build now all use the namespaced name; with namespacing off every
-  name is unchanged.
+  host-bound properties were namespaced by the consumer's compiler, but the ones written from code
+  kept their raw names, so with namespacing on no stylesheet could read all of them: popovers, menus
+  and selects lost their `--for-floating-anchor-*` / `--for-floating-available-*` sizing and
+  transform origin, a drawer stopped following the finger, and resized table columns snapped back to
+  their declared width. A `--for-floating-arrow-offset` set in component styles never reached the
+  arrow. The positioners, the drawer's swipe displacement, the table's column widths and the `var()`
+  strings the arrow and `ForTableBody.track` build now all use the namespaced name; with namespacing
+  off every name is unchanged.
+
 - **Virtualization**, **Table virtualization** — a data shrink no longer throws, and a changed
   estimate or key function reaches the windowing core
-  ([#2225](https://github.com/tutkli/forty-cdk/issues/2225)). `injectVirtualizer` passed the count to
-  `@tanstack/virtual-core` only from an effect, so a read in the same pass still computed the old
-  window. Deleting or filtering rows in a `[forVirtualViewport]` keyed with `[getItemKey]`, or calling
-  `scrollToIndex` right after shrinking a keyed `injectVirtualizer` list, threw a `TypeError` from the
-  key function, and the `[forTableVirtualized]` raw anatomy threw from its row template when a filter
-  left fewer rows than the window held. Every read now hands the core the current count first.
-  `[forVirtualViewport]`'s `[estimateSize]` and `[forTableVirtualized]`'s `[estimateRowSize]` apply
-  after the first render, `[forVirtualViewport]`'s `[getItemKey]` re-keys every row when a different
-  function is bound, and a host destroyed before its first render releases the core's observers and
-  listeners. The table-virtualization README's infinite-scroll snippet reads its view query inside a
-  `computed` instead of in a field initializer, where it threw NG0951.
+  ([#2225](https://github.com/tutkli/forty-cdk/issues/2225)). `injectVirtualizer` passed the count
+  to `@tanstack/virtual-core` only from an effect, so a read in the same pass still computed the old
+  window. Deleting or filtering rows in a `[forVirtualViewport]` keyed with `[getItemKey]`, or
+  calling `scrollToIndex` right after shrinking a keyed `injectVirtualizer` list, threw a
+  `TypeError` from the key function, and the `[forTableVirtualized]` raw anatomy threw from its row
+  template when a filter left fewer rows than the window held. Every read now hands the core the
+  current count first. `[forVirtualViewport]`'s `[estimateSize]` and `[forTableVirtualized]`'s
+  `[estimateRowSize]` apply after the first render to every row not yet measured,
+  `[forVirtualViewport]`'s `[getItemKey]` re-keys every row when a different function is bound, and
+  a host destroyed before its first render releases the core's observers and listeners. The
+  table-virtualization README's infinite-scroll snippet reads its view query inside a `computed`
+  instead of in a field initializer, where it threw NG0951.
+
 - **Slider** — a touch drag started on the bare track survives finger drift across the page's scroll
   axis ([#2218](https://github.com/tutkli/forty-cdk/issues/2218)). Only `[forSliderThumb]` set
   `touch-action`, so on a scrollable page the browser took a pan that started on `[forSliderTrack]`,
-  fired `pointercancel` and committed the mid-gesture value through `(valueCommit)`. The track now binds
-  the same `pan-y` (horizontal) / `pan-x` (vertical) value, omitted while disabled or readonly. The
-  README's API table now documents the `[0]` `value` default, the `null` `dir` default that resolves the
-  ambient direction, and the `data-required` hook.
+  fired `pointercancel` and committed the mid-gesture value through `(valueCommit)`. The track now
+  binds the same `pan-y` (horizontal) / `pan-x` (vertical) value, omitted while disabled or
+  readonly. The README's API table now documents the `[0]` `value` default, the `null` `dir` default
+  that resolves the ambient direction, and the `data-required` hook.
 
 - **Number input** — a commit normalises only the text the user typed
   ([#2216](https://github.com/tutkli/forty-cdk/issues/2216)). Enter or blur rounded and clamped
   whatever value the field held, so tabbing through a field rewrote a bound value nobody typed,
   readonly fields included: `0.075` under `{ style: 'percent' }` became `0.08`, `15` above
   `[max]="10"` became `10`, `(valueChange)` fired and Signal Forms marked the field dirty. A stepped
-  value off the format's precision was rounded back on blur too. Only a value parsed from typed
-  text is rounded and clamped now; any other value keeps what it holds and only its text is
-  reformatted. An Enter that commits and submits the form in one keystroke now submits the
-  committed value, where the hidden input still carried the typed one.
+  value off the format's precision was rounded back on blur too. Only a value parsed from typed text
+  is rounded and clamped now; any other value keeps what it holds and only its text is reformatted.
+  An Enter that commits and submits the form in one keystroke now submits the committed value, where
+  the hidden input still carried the typed one.
+
+- **Tree** — checkbox mode is multi-select
+  ([#2224](https://github.com/tutkli/forty-cdk/issues/2224)). `selectionMode="checkbox"` without
+  `multiple` left `aria-multiselectable` off, an inherited `selectionFollowsFocus` default from
+  `provideForTreeDefaults` replaced the checked set on every arrow move, and a virtualized checkbox
+  or `multiple` tree in that scope threw in dev mode on its first keyboard move. A checkbox tree now
+  reports `aria-multiselectable="true"`, and `selectionFollowsFocus` is ignored under `multiple` or
+  checkbox mode. With `cascade`, Shift+Arrow, Shift+Space and Ctrl/Cmd+A toggle each node together
+  with its subtree and keep every visible ancestor in step, where they bypassed the cascade; in a
+  virtualized tree an ancestor outside the rendered window is left as it is, as the README's
+  "Intentional limitations" section documents.
+
+- **Tree** — the drop feedback describes the drop that will happen
+  ([#2401](https://github.com/tutkli/forty-cdk/issues/2401)). `data-drop-target` is now present only
+  when a drop position resolves and `[canDrop]` accepts the event that drop would commit, checked on
+  lift and on every move through the same event the drop commits, so a row no longer advertises a
+  drop the veto will refuse. A drop into a collapsed parent no longer announces a sibling total it
+  cannot see; the position is unchanged, since the node lands as the first child. The README's
+  drop-indicator recipe puts a class on the row and offsets the label with `inset-inline-start` from
+  the anchor's own level, so it neither double-indents nor ignores RTL.
+
+- **Date field**, **Time field** — a range endpoint keeps what was typed when focus leaves it, and a
+  cleared segment retypes onto the bound value
+  ([#2208](https://github.com/tutkli/forty-cdk/issues/2208)). In `ForDateRangeField` and
+  `ForTimeRangeField`, an endpoint edited into an out-of-order range, or with a segment cleared, was
+  rewritten from its previous value on blur: the edit vanished with its `aria-invalid` and
+  `data-range-error`, while `value()` stayed `null` under a range that looked complete. In a single
+  `ForTimeField`, a segment cleared and retyped composed onto 2000-01-01 instead of the bound date,
+  and a `ForDateField` at granularity `'day'` composed midnight instead of the bound time. Leaving a
+  single field or a complete range still clamps its segments.
+
+- **Table** — grid ArrowRight / ArrowLeft stop at the row edge
+  ([#2222](https://github.com/tutkli/forty-cdk/issues/2222)). In grid and treegrid mode they wrapped
+  into the next or previous row, and ArrowLeft from the first data cell climbed into the header;
+  they now stop at the row's first or last cell, and with `loop` wrap to the other end of the same
+  row. A treegrid row marked expandable without a `[value]` no longer swallows ArrowRight: the key
+  moves to the next cell. The README states that every treegrid row emits `aria-level` /
+  `aria-posinset` / `aria-setsize`.
+
+- **Table** — grid header controls are reachable from the keyboard
+  ([#2223](https://github.com/tutkli/forty-cdk/issues/2223)). A resizer, a `[forTableSelectAll]` or
+  your own control in a header cell whose header row does not join the roving grid had neither a tab
+  stop nor a cell entry; it is a tab stop now. The README, the declarative-columns guide and the
+  demos put `[forTableSelectAll]` on a `<span>`, which nothing can focus, and left
+  `[forTableRowSelector]` unnamed. **Put `[forTableSelectAll]` on a `<button>` and give every row
+  selector an accessible name, as the README's Anatomy now does.**
+
+- **Navigation menu** — a panel hosted by `[forNavigationMenuViewport]` follows its trigger in Tab
+  and reading order ([#2219](https://github.com/tutkli/forty-cdk/issues/2219)). In a mega-menu
+  layout the viewport sits after the whole list, so Tab from an open trigger skipped its own panel.
+  While an item is open, Tab and Shift+Tab now move as if the panel sat right after its trigger, and
+  `[forNavigationMenuItem]` sets `aria-owns` to the panel so assistive technology reads it there
+  too.
+
+- **Input**, **OTP input** — a native form reset no longer writes the first-render text into the
+  `value` attribute ([#2465](https://github.com/tutkli/forty-cdk/issues/2465)). Every control that
+  follows a native reset pinned its baseline to `defaultValue`, which is the `value` content
+  attribute, so a field mounted with a value already in its model (any field under an `@if`, in a
+  `@for` row or in a tab panel) wrote that text into the DOM: a remounted `type="password"`
+  `[forInput]` or a masked `[forOtpInput]` exposed its secret to attribute selectors, `outerHTML`
+  serialisers and `MutationObserver`s. The baseline is kept in memory now, and a reset still returns
+  the field to it.
+
+- **Carousel** — Start rotates while focus or the pointer is inside, and the dots' tab stop follows
+  the current slide ([#2213](https://github.com/tutkli/forty-cdk/issues/2213)). Activating the
+  rotation control, or calling `play()`, while focus or the pointer was inside the carousel left it
+  paused for as long as either stayed inside, so a keyboard user's Start did nothing. A Start the
+  user asks for now rotates at once, and only a hidden page still holds it; an autoplay that started
+  on its own keeps pausing on hover and focus. The indicator tab stop moved off the current dot
+  after prev / next, autoplay or a drag; it now follows the current slide.
+
+- **Calendar**, **Combobox**, **Drag & drop**, **Menubar**, **Slider**, **Table**, **Time picker**,
+  **Virtualization** — ten pieces no longer throw NG0950 before their binding is written
+  ([#2442](https://github.com/tutkli/forty-cdk/issues/2442)). `<for-table-body>` inside a wrapper
+  component threw on its first render, because the table root reads its `rows` for `aria-rowcount`
+  before the wrapper binds them, and so did a `[forMenubar]` that mounts open with its triggers in
+  an `@for`. `[forCalendarCell]`'s `date`, `[forCalendarMonthCell]`'s `month`,
+  `[forCalendarYearCell]`'s `year`, `[forComboboxChip]`'s `value`, `[forDraggable]`'s `dragData`,
+  `[forMenubarTrigger]`'s `value`, `[forSliderThumb]`'s `index`, `<for-table-body>`'s `rows`,
+  `[forTimePickerOption]`'s `value` and `*forVirtualFor`'s `of` are no longer `input.required`, so a
+  missing binding no longer fails to compile with NG8008 and throws `FORCDK-CORE-010` in dev mode
+  instead. In a production build, a `[forTabsTrigger]`, a listbox or select option or a
+  `[forTreeItem]` left without `[value]` no longer writes the library's internal sentinel into
+  `[(value)]` or the selection, or hands it to your `compareWith`, and in dev mode an unbound
+  `[forNavigationMenuContent]` mounted while closed no longer throws a `TypeError` from its own
+  warning.
+
+- **Toolbar** — a disabled `[forToolbarLink]` no longer opens on middle-click
+  ([#2385](https://github.com/tutkli/forty-cdk/issues/2385)). It cancelled only `click`, and
+  browsers dispatch a middle-click as `auxclick`, so its `href` still opened in a new tab. The
+  `tabindex` JSDoc and the README now state the policy the toolbar applies: the arrow keys, Home and
+  End skip a disabled item and it never holds the Tab stop, but it stays focusable so an item
+  disabled while focused can be left.
 
 ## [0.34.0] - 2026-10-15
 
@@ -4114,7 +4252,8 @@ primitives.
 - **Display** — avatar, progress, meter, tree.
 - `forty-cdk/internationalized-date` secondary entry point exposing the `@internationalized/date` adapters for the date and time primitives.
 
-[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.34.0...HEAD
+[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.35.0...HEAD
+[0.35.0]: https://github.com/tutkli/forty-cdk/compare/v0.34.0...v0.35.0
 [0.34.0]: https://github.com/tutkli/forty-cdk/compare/v0.33.0...v0.34.0
 [0.33.0]: https://github.com/tutkli/forty-cdk/compare/v0.32.0...v0.33.0
 [0.32.0]: https://github.com/tutkli/forty-cdk/compare/v0.31.0...v0.32.0
