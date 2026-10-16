@@ -1574,6 +1574,24 @@ describe('ForToastViewport', () => {
     expect(v.getAttribute('aria-label')).toBe('Static name');
   });
 
+  it('creates both LiveAnnouncer regions at mount, before any toast is shown', () => {
+    @Component({
+      imports: [ForToastViewport],
+      template: `<for-toast-viewport [container]="host" />`,
+    })
+    class EmptyViewportHost {
+      readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+    }
+
+    const r = renderHost(EmptyViewportHost);
+    expect(r.el.querySelector('[forToast]')).toBeNull();
+    for (const politeness of ['polite', 'assertive'] as const) {
+      const region = getLiveAnnouncerRegion(politeness);
+      expect(region!.hasAttribute('data-for-modal-exempt')).toBe(true);
+      expect(region!.textContent).toBe('');
+    }
+  });
+
   it('exposes data-toast-count reflecting visible toasts', async () => {
     const r = renderHost(ProgrammaticHost);
     const v = r.el.querySelector<HTMLElement>('for-toast-viewport, [forToastViewport]')!;

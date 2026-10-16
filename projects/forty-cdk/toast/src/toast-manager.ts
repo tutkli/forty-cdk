@@ -9,7 +9,7 @@ import {
   signal,
 } from '@angular/core';
 
-import { IdGenerator } from 'forty-cdk/core';
+import { IdGenerator, LiveAnnouncer } from 'forty-cdk/core';
 import {
   DEFAULT_TOAST_REGION,
   type ForToastCloseReason,
@@ -75,6 +75,10 @@ export class ForToastManager {
 
   /** Reactive count of currently open toasts. */
   readonly count = computed(() => this.#entries().length);
+
+  constructor() {
+    inject(LiveAnnouncer);
+  }
 
   /**
    * Open a toast. Returns a `ForToastRef` you can use to dismiss / update
