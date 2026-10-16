@@ -20,6 +20,13 @@ import { ERROR_CODE_AREAS, ERROR_CODE_INDEX } from '../doc/error-codes';
         A value in braces, like <code>{{ placeholder }}</code
         >, is filled in when the message is reported.
       </p>
+      <p class="hint">
+        To keep one misconfigured primitive from taking down the view it renders in, wrap it in an
+        <code>&#64;boundary</code> block. Which errors that contains, and which it does not, is in
+        <a [routerLink]="['/shared']" fragment="containing-a-configuration-error"
+          >Containing a configuration error</a
+        >.
+      </p>
     </header>
 
     @for (area of areas; track area.area) {

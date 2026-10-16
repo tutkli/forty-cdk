@@ -6718,6 +6718,22 @@ exports[`document structure > projects/forty-cdk/shared/README.md declares the s
   },
   {
     "headings": [],
+    "slug": "containing-a-configuration-error",
+    "tables": [
+      {
+        "columns": [
+          "What went wrong",
+          "Example",
+          "Contained by @boundary",
+        ],
+        "role": "plain",
+        "rows": 4,
+      },
+    ],
+    "title": "Containing a configuration error",
+  },
+  {
+    "headings": [],
     "slug": "behavior-notes",
     "tables": [],
     "title": "Behavior notes",

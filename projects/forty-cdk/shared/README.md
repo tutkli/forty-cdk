@@ -234,6 +234,67 @@ onKeyDown(event: KeyboardEvent): void {
 
 A closed shadow root exposes neither `activeElement` nor `shadowRoot`, so nothing above can see into one: its controls are neither initial-focus candidates nor edges of a `Tab` cycle. The walk sees only the host, and only when the host is focusable in its own right. Give such a host a tab stop of its own (`tabindex="0"`, paired with `delegatesFocus: true` so the browser forwards focus to the right control inside), or keep closed roots out of a trapped surface.
 
+## Containing a configuration error
+
+A misconfigured primitive throws a `FORCDK-*` error, and without a guard that error aborts the render of the whole view the primitive sits in. Angular's `@boundary` block contains most of them: when the guarded content throws while Angular creates or renders it, the `@error` branch renders in its place and the rest of the view keeps working.
+
+```ts
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import {
+  ForTable,
+  ForTableBody,
+  ForTableCellDef,
+  ForTableColumnDef,
+  ForTableHeaderCellDef,
+} from 'forty-cdk/table';
+
+interface Person {
+  readonly name: string;
+}
+
+@Component({
+  selector: 'app-people',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [ForTable, ForTableBody, ForTableColumnDef, ForTableHeaderCellDef, ForTableCellDef],
+  template: `
+    @boundary {
+      <div forTable aria-label="People">
+        <for-table-body [rows]="people">
+          <ng-container forTableColumnDef="name" [width]="nameWidth()">
+            <ng-template forTableHeaderCellDef>Name</ng-template>
+            <ng-template forTableCellDef let-person>{{ person.name }}</ng-template>
+          </ng-container>
+        </for-table-body>
+      </div>
+    } @error {
+      <p role="alert">The people table could not be displayed.</p>
+      <button type="button" (click)="$reset()">Try again</button>
+    }
+  `,
+})
+export class People {
+  protected readonly people: readonly Person[] = [{ name: 'Ada' }];
+  protected readonly nameWidth = signal('12rem');
+}
+```
+
+A `nameWidth` of `'12rem; z-index: 9'` makes the table throw `FORCDK-TABLE-008`, and the page shows the fallback instead of failing as a whole. The error still reaches your `ErrorHandler`, so error reporting keeps seeing it. `$reset()` renders the guarded content again, and it fails again until the configuration is fixed. The `$error` context variable carries the error itself if the fallback should say more.
+
+Keep one primitive per boundary. The `@error` branch replaces everything inside the block, so a boundary around a whole page contains the error by blanking the page.
+
+| What went wrong                           | Example                                                                                                                                      | Contained by `@boundary`                |
+| ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| A value a render-time derivation reads    | a `[forTableColumnDef]` `width` that is not one track (`FORCDK-TABLE-008`); a `granularity` the date adapter cannot fill (`FORCDK-CORE-003`) | Yes                                     |
+| A piece outside its root                  | a `[forTabsTrigger]` with no `[forTabs]` around it (`FORCDK-TABS-001`)                                                                       | Yes, the throw happens as it is created |
+| A required binding that was never written | a `[forTabsTrigger]` with no `value` (`FORCDK-CORE-010`)                                                                                     | Yes                                     |
+| An assertion inside an event handler      | an arrow key in a virtualized listbox with `selectionFollowsFocus` (`FORCDK-CORE-009`)                                                       | No                                      |
+
+Three things it does not do:
+
+- **It does not catch an error thrown by a keyboard or pointer handler.** Angular sends those straight to your `ErrorHandler`, and the guarded content stays on screen. The library's guards in handlers stop the move they protect, so the key does nothing and the `ErrorHandler` holds the report.
+- **It has nothing to catch for a warning.** A message that the error pages mark as a warning is logged with `console.warn` and never thrown.
+- **It catches only what runs in your build.** The assertions that exist to tell you about a mistake run in dev mode only, so in a production build the table above renders with the bad width rather than throwing. The errors a primitive cannot continue past throw in production too, and the boundary contains them there as well: a piece outside its root is one, a date or time primitive whose adapter lacks the time methods (`FORCDK-CORE-003`) is another.
+
 ## Behavior notes
 
 - **Not a primitive.** There are no directives here and nothing to add to `imports`.
