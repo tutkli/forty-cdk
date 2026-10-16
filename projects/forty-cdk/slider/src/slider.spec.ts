@@ -2,6 +2,8 @@ import { Component, provideZonelessChangeDetection, signal, viewChild } from '@a
 import { form, FormField } from '@angular/forms/signals';
 import { TestBed } from '@angular/core/testing';
 
+import { pressKey } from 'forty-cdk/testing';
+
 import { renderHost } from '../../src/test-utils/render';
 import {
   assertFormControlContract,
@@ -1537,5 +1539,41 @@ describe('ForSlider', () => {
       fixture.detectChanges();
       expect(thumb(el, 0).getAttribute('aria-valuenow')).toBe('51');
     });
+  });
+});
+
+describe('ForSliderThumb with no index binding', () => {
+  @Component({
+    host: { 'data-fixture': 'unbound-thumb-host' },
+    imports: [ForSlider, ForSliderTrack, ForSliderThumb],
+    template: `
+      <div forSlider [(value)]="picked">
+        <span forSliderTrack>
+          <span forSliderThumb data-test-id="thumb-0" ariaLabel="Volume"></span>
+        </span>
+      </div>
+    `,
+  })
+  class UnboundThumbHost {
+    readonly picked = signal<readonly number[]>([50]);
+  }
+
+  it('fails loudly in dev mode', () => {
+    expect(() => renderHost(UnboundThumbHost)).toThrowError(
+      /\[forty-cdk\/slider\] FORCDK-CORE-010: \[forSliderThumb\] has no \[index\] binding/,
+    );
+  });
+
+  it('renders and ignores the keyboard in a production build', async () => {
+    vi.stubGlobal('ngDevMode', false);
+    const r = renderHost(UnboundThumbHost);
+    await r.flush();
+
+    pressKey(thumb(r.el, 0), 'ArrowRight');
+    pressKey(thumb(r.el, 0), 'End');
+    await r.flush();
+
+    expect(r.instance.picked()).toEqual([50]);
+    expect(thumb(r.el, 0).getAttribute('aria-valuenow')).toBe('0');
   });
 });

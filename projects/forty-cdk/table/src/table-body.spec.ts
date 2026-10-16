@@ -1,4 +1,4 @@
-import { Component, signal, viewChild } from '@angular/core';
+import { Component, input, signal, viewChild } from '@angular/core';
 import { By, provideCssVarNamespacing } from '@angular/platform-browser';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { TABLE_REGISTRATION_CONTEXT, type TableRegistrationContext } from 'forty-cdk/core';
@@ -1662,6 +1662,74 @@ describe('ForTableBody', () => {
       const measureRow = publishWindow(fixture, [5, 6, 7], 880);
       await flush();
       expect(measureRow).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('a body inside a wrapper component', () => {
+    @Component({
+      selector: 'people-body',
+      imports: [ForTableBody, ForTableColumnDef, ForTableHeaderCellDef, ForTableCellDef],
+      template: `
+        <for-table-body [rows]="rows()">
+          <ng-container forTableColumnDef="name">
+            <ng-template forTableHeaderCellDef>Name</ng-template>
+            <ng-template forTableCellDef>cell</ng-template>
+          </ng-container>
+        </for-table-body>
+      `,
+    })
+    class PeopleBody {
+      readonly rows = input.required<readonly Row[]>();
+    }
+
+    @Component({
+      imports: [ForTable, PeopleBody],
+      template: `
+        <div forTable mode="grid" ariaLabel="People">
+          <people-body [rows]="rows" />
+        </div>
+      `,
+    })
+    class WrappedBodyHost {
+      readonly rows = buildRows();
+    }
+
+    @Component({
+      imports: [ForTable, ForTableBody, ForTableColumnDef, ForTableHeaderCellDef, ForTableCellDef],
+      template: `
+        <div forTable mode="grid" ariaLabel="People">
+          <for-table-body>
+            <ng-container forTableColumnDef="name">
+              <ng-template forTableHeaderCellDef>Name</ng-template>
+              <ng-template forTableCellDef>cell</ng-template>
+            </ng-container>
+          </for-table-body>
+        </div>
+      `,
+    })
+    class UnboundBodyHost {}
+
+    it('derives aria-rowcount on the first render although the root reads the count before the wrapper binds rows', async () => {
+      const { query, flush } = renderHost(WrappedBodyHost);
+      await flush();
+
+      expect(query('[forTable]')?.getAttribute('aria-rowcount')).toBe('4');
+    });
+
+    it('fails loudly in dev mode when the body has no rows binding', () => {
+      expect(() => renderHost(UnboundBodyHost)).toThrowError(
+        /\[forty-cdk\/table\] FORCDK-CORE-010: <for-table-body> has no \[rows\] binding/,
+      );
+    });
+
+    it('renders no data row for an unbound body in a production build', async () => {
+      vi.stubGlobal('ngDevMode', false);
+      const { query, queryAll, flush } = renderHost(UnboundBodyHost);
+      await flush();
+
+      expect(queryAll('[role="row"]')).toHaveLength(1);
+      expect(queryAll('[role="columnheader"]')).toHaveLength(1);
+      expect(query('[forTable]')?.getAttribute('aria-rowcount')).toBe('1');
     });
   });
 

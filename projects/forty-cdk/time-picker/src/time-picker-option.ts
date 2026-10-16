@@ -9,11 +9,13 @@ import {
 } from '@angular/core';
 
 import {
+  assertInputBound,
   hostId,
   injectPointerMove,
   preventPointerFocus,
   registerHandle,
   resolveListNavigation,
+  unsetInput,
 } from 'forty-cdk/core';
 import { injectTimePickerContext } from './time-picker-context';
 
@@ -65,9 +67,10 @@ export class ForTimePickerOption<D = unknown> {
 
   /**
    * The date-time value this option represents. Provided by the parent
-   * `[forTimePicker]`'s `slots()` computed.
+   * `[forTimePicker]`'s `slots()` computed. Mandatory — an option with no binding throws in dev
+   * mode.
    */
-  readonly value = input.required<D>();
+  readonly value = input(unsetInput<D>());
 
   /**
    * When `true`, this option cannot be selected, and a mouse press on it leaves focus where it
@@ -96,6 +99,7 @@ export class ForTimePickerOption<D = unknown> {
   });
 
   constructor() {
+    assertInputBound(this.value, 'time-picker', '[forTimePickerOption]', 'value');
     const handle = {
       host: this.#host.nativeElement,
       value: this.value,

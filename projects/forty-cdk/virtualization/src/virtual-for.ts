@@ -9,6 +9,8 @@ import {
   input,
 } from '@angular/core';
 
+import { isUnset, unsetInput } from 'forty-cdk/core';
+
 import { injectVirtualViewportContext } from './virtual-viewport-context';
 import { type VirtualItem } from './virtualizer';
 
@@ -55,7 +57,7 @@ export class ForVirtualFor<T> {
   readonly #views = new Map<string | number, EmbeddedViewRef<ForVirtualForContext<T>>>();
 
   /** The full list of items to virtualize. */
-  readonly forVirtualForOf = input.required<readonly T[]>({ alias: 'forVirtualForOf' });
+  readonly forVirtualForOf = input(unsetInput<readonly T[]>(), { alias: 'forVirtualForOf' });
 
   constructor() {
     this.#viewport.registerData(this.forVirtualForOf);
@@ -74,6 +76,9 @@ export class ForVirtualFor<T> {
   #render(): void {
     const items = this.#viewport.virtualItems();
     const data = this.forVirtualForOf();
+    if (isUnset(data)) {
+      return;
+    }
     const count = this.#viewport.count();
     const horizontal = this.#viewport.orientation() === 'horizontal';
 

@@ -1,6 +1,6 @@
 import { computed, Directive, ElementRef, inject, input } from '@angular/core';
 
-import { registerHandle } from 'forty-cdk/core';
+import { assertInputBound, isUnset, registerHandle, unsetInput } from 'forty-cdk/core';
 import { type ForCalendarCellHandle, injectCalendarContext } from './calendar-context';
 
 /**
@@ -40,7 +40,7 @@ import { type ForCalendarCellHandle, injectCalendarContext } from './calendar-co
     '[attr.data-range-preview]': 'rangePreview() ? "" : null',
     '(click)': 'onClick()',
     '(keydown)': 'onKeyDown($event)',
-    '(pointerenter)': 'ctx.setHovered(date())',
+    '(pointerenter)': 'onPointerEnter()',
     '(pointerleave)': 'ctx.setHovered(null)',
   },
 })
@@ -48,21 +48,30 @@ export class ForCalendarCell<D> {
   private readonly ctx = injectCalendarContext('ForCalendarCell');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
-  /** The date this cell represents. */
-  readonly date = input.required<D>();
+  /** The date this cell represents. Mandatory — a cell with no binding throws in dev mode. */
+  readonly date = input(unsetInput<D>());
 
-  private readonly selected = computed(() => this.ctx.isSelected(this.date()));
-  private readonly isToday = computed(() => this.ctx.isToday(this.date()));
-  private readonly focused = computed(() => this.ctx.isFocused(this.date()));
-  private readonly unavailable = computed(() => this.ctx.isUnavailable(this.date()));
-  private readonly outsideMonth = computed(() => this.ctx.isOutsideMonth(this.date()));
-  private readonly dateLabel = computed(() => this.ctx.getDateLabel(this.date()));
-  private readonly rangeStart = computed(() => this.ctx.isRangeStart(this.date()));
-  private readonly rangeEnd = computed(() => this.ctx.isRangeEnd(this.date()));
-  private readonly inRange = computed(() => this.ctx.isInRange(this.date()));
-  private readonly rangePreview = computed(() => this.ctx.isRangePreview(this.date()));
+  private readonly selected = computed(() => this.#bound((d) => this.ctx.isSelected(d), false));
+  private readonly isToday = computed(() => this.#bound((d) => this.ctx.isToday(d), false));
+  private readonly focused = computed(() => this.#bound((d) => this.ctx.isFocused(d), false));
+  private readonly unavailable = computed(() =>
+    this.#bound((d) => this.ctx.isUnavailable(d), false),
+  );
+  private readonly outsideMonth = computed(() =>
+    this.#bound((d) => this.ctx.isOutsideMonth(d), false),
+  );
+  private readonly dateLabel = computed(() =>
+    this.#bound<string | null>((d) => this.ctx.getDateLabel(d), null),
+  );
+  private readonly rangeStart = computed(() => this.#bound((d) => this.ctx.isRangeStart(d), false));
+  private readonly rangeEnd = computed(() => this.#bound((d) => this.ctx.isRangeEnd(d), false));
+  private readonly inRange = computed(() => this.#bound((d) => this.ctx.isInRange(d), false));
+  private readonly rangePreview = computed(() =>
+    this.#bound((d) => this.ctx.isRangePreview(d), false),
+  );
 
   constructor() {
+    assertInputBound(this.date, 'calendar', '[forCalendarCell]', 'date');
     const handle: ForCalendarCellHandle<unknown> = {
       host: this.#host.nativeElement,
       date: this.date,
@@ -74,11 +83,29 @@ export class ForCalendarCell<D> {
     );
   }
 
+  #bound<R>(read: (date: D) => R, fallback: R): R {
+    const date = this.date();
+    return isUnset(date) ? fallback : read(date);
+  }
+
   private onClick(): void {
-    this.ctx.selectDate(this.date());
+    const date = this.date();
+    if (!isUnset(date)) {
+      this.ctx.selectDate(date);
+    }
   }
 
   private onKeyDown(event: KeyboardEvent): void {
-    this.ctx.handleCellKeydown(event, this.date());
+    const date = this.date();
+    if (!isUnset(date)) {
+      this.ctx.handleCellKeydown(event, date);
+    }
+  }
+
+  private onPointerEnter(): void {
+    const date = this.date();
+    if (!isUnset(date)) {
+      this.ctx.setHovered(date);
+    }
   }
 }

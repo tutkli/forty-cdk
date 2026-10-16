@@ -23,6 +23,7 @@ import {
   type VetoableEvent,
   type VetoableNativeEvent,
   hostAriaLabel,
+  isUnset,
 } from 'forty-cdk/core';
 import { type MenuActivationModality, FOR_MENU_CONTEXT } from 'forty-cdk/core-overlay';
 import { MenubarMenuContext } from './menubar-menu-context';
@@ -294,6 +295,9 @@ export class ForMenubar implements ForMenubarContext {
   }
 
   triggerFor(value: string): ForMenubarTriggerHandle | null {
+    if (isUnset(value)) {
+      return null;
+    }
     return this.#triggerCollection.items().find((t) => t.value() === value) ?? null;
   }
 
@@ -428,8 +432,12 @@ export class ForMenubar implements ForMenubarContext {
   }
 
   #switchOpenTo(handle: ForMenubarTriggerHandle, modality: MenuActivationModality): void {
+    const value = handle.value();
+    if (isUnset(value)) {
+      return;
+    }
     this.menuCtx.prepareOpen('first', modality, { suppressOpenFocus: true });
     handle.host.focus();
-    this.value.set(handle.value());
+    this.value.set(value);
   }
 }

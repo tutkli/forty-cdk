@@ -3552,3 +3552,42 @@ describe('ForDropList — geometry follows a window that recycles its rows (#212
     expect(host.lastDrop()?.currentIndex).toBe(0);
   });
 });
+
+describe('ForDraggable with no dragData binding', () => {
+  @Component({
+    host: { 'data-fixture': 'unbound-draggable-host' },
+    imports: [...DND_IMPORTS],
+    template: `
+      <ul forDropList (dragDrop)="drops.push($event)">
+        <li forDraggable (dragEnd)="ends.push($event)" data-test-id="1">Unbound</li>
+        <li forDraggable [dragData]="'two'" data-test-id="2">Two</li>
+      </ul>
+    `,
+  })
+  class UnboundDraggableHost {
+    readonly drops: ForDragDropEvent[] = [];
+    readonly ends: ForDragEndEvent[] = [];
+  }
+
+  it('fails loudly in dev mode', () => {
+    expect(() => renderHost(UnboundDraggableHost)).toThrowError(
+      /\[forty-cdk\/drag-drop\] FORCDK-CORE-010: \[forDraggable\] has no \[dragData\] binding/,
+    );
+  });
+
+  it('commits no drop for an unbound item in a production build', async () => {
+    vi.stubGlobal('ngDevMode', false);
+    const { el, fixture, instance } = renderHost(UnboundDraggableHost);
+    await flush(fixture);
+    const unbound = itemEl(el, 1);
+
+    unbound.focus();
+    pressKey(unbound, ' ');
+    pressKey(unbound, 'ArrowDown');
+    pressKey(unbound, ' ');
+    await flush(fixture);
+
+    expect(instance.drops).toEqual([]);
+    expect(instance.ends).toEqual([{ dropped: false }]);
+  });
+});

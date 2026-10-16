@@ -1,6 +1,6 @@
 import { computed, Directive, ElementRef, inject, input } from '@angular/core';
 
-import { registerHandle } from 'forty-cdk/core';
+import { assertInputBound, isUnset, registerHandle, unsetInput } from 'forty-cdk/core';
 import { type ForCalendarMonthCellHandle, injectCalendarContext } from './calendar-context';
 
 /**
@@ -25,23 +25,27 @@ import { type ForCalendarMonthCellHandle, injectCalendarContext } from './calend
     '[attr.data-today]': 'today() ? "" : null',
     '[attr.data-highlighted]': 'focused() ? "" : null',
     '[attr.data-disabled]': 'disabled() ? "" : null',
-    '(click)': 'ctx.selectMonth(month())',
-    '(keydown)': 'ctx.handleMonthCellKeydown($event, month())',
+    '(click)': 'onClick()',
+    '(keydown)': 'onKeyDown($event)',
   },
 })
 export class ForCalendarMonthCell {
   private readonly ctx = injectCalendarContext('ForCalendarMonthCell');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
-  /** The month this cell represents, **1-12**. */
-  readonly month = input.required<number>();
+  /**
+   * The month this cell represents, **1-12**. Mandatory — a cell with no binding throws in dev
+   * mode.
+   */
+  readonly month = input(unsetInput<number>());
 
-  private readonly selected = computed(() => this.ctx.isMonthSelected(this.month()));
-  private readonly today = computed(() => this.ctx.isMonthToday(this.month()));
-  private readonly focused = computed(() => this.ctx.isMonthFocused(this.month()));
-  private readonly disabled = computed(() => this.ctx.isMonthDisabled(this.month()));
+  private readonly selected = computed(() => this.#bound((v) => this.ctx.isMonthSelected(v)));
+  private readonly today = computed(() => this.#bound((v) => this.ctx.isMonthToday(v)));
+  private readonly focused = computed(() => this.#bound((v) => this.ctx.isMonthFocused(v)));
+  private readonly disabled = computed(() => this.#bound((v) => this.ctx.isMonthDisabled(v)));
 
   constructor() {
+    assertInputBound(this.month, 'calendar', '[forCalendarMonthCell]', 'month');
     const handle: ForCalendarMonthCellHandle = {
       host: this.#host.nativeElement,
       month: this.month,
@@ -51,5 +55,24 @@ export class ForCalendarMonthCell {
       (h) => this.ctx.registerMonthCell(h),
       (h) => this.ctx.unregisterMonthCell(h),
     );
+  }
+
+  #bound(read: (month: number) => boolean): boolean {
+    const month = this.month();
+    return isUnset(month) ? false : read(month);
+  }
+
+  private onClick(): void {
+    const month = this.month();
+    if (!isUnset(month)) {
+      this.ctx.selectMonth(month);
+    }
+  }
+
+  private onKeyDown(event: KeyboardEvent): void {
+    const month = this.month();
+    if (!isUnset(month)) {
+      this.ctx.handleMonthCellKeydown(event, month);
+    }
   }
 }

@@ -1,4 +1,11 @@
-import { Component, model, provideZonelessChangeDetection, signal, viewChild } from '@angular/core';
+import {
+  Component,
+  input,
+  model,
+  provideZonelessChangeDetection,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { CalendarDate, CalendarDateTime } from '@internationalized/date';
 
@@ -2340,6 +2347,139 @@ describe('ForCalendar', () => {
           fixture.nativeElement.querySelectorAll('[forCalendarMonthCell][tabindex="0"]').length,
         ).toBe(1);
       });
+    });
+  });
+
+  describe('cells rendered by a wrapper component', () => {
+    @Component({
+      selector: 'day-cell',
+      imports: [ForCalendarCell],
+      template: `<span
+        forCalendarCell
+        [date]="date()"
+        [attr.data-testid]="'cell-' + key()"
+      ></span>`,
+    })
+    class DayCell {
+      readonly date = input.required<unknown>();
+      readonly key = input.required<string>();
+    }
+
+    @Component({
+      host: { 'data-fixture': 'wrapped-day-cells' },
+      imports: [ForCalendar, ForCalendarGrid, DayCell],
+      providers: [...provideNativeDateAdapter()],
+      template: `
+        <div forCalendar [value]="value">
+          <div forCalendarGrid #grid="forCalendarGrid">
+            @for (week of grid.weeks(); track week.key) {
+              @for (c of week.days; track c.key) {
+                <day-cell [date]="c.date" [key]="c.key" />
+              }
+            }
+          </div>
+        </div>
+      `,
+    })
+    class WrappedDayCellsHost {
+      readonly value = new Date(2026, 5, 15);
+    }
+
+    it('renders the selected date as the single tab stop on the first pass', () => {
+      const r = renderHost(WrappedDayCellsHost);
+      const selected = r.query(`[data-testid="cell-${keyOf(r.instance.value)}"]`)!;
+
+      expect(selected.getAttribute('aria-selected')).toBe('true');
+      expect(r.queryAll('[forCalendarCell][tabindex="0"]')).toEqual([selected]);
+    });
+  });
+
+  describe('cells with no binding', () => {
+    @Component({
+      host: { 'data-fixture': 'unbound-day-cell' },
+      imports: [ForCalendar, ForCalendarCell],
+      providers: [...provideNativeDateAdapter()],
+      template: `
+        <div forCalendar [(value)]="value">
+          <span forCalendarCell data-testid="unbound"></span>
+        </div>
+      `,
+    })
+    class UnboundDayCellHost {
+      readonly value = signal<Date | null>(null);
+    }
+
+    @Component({
+      host: { 'data-fixture': 'unbound-month-cell' },
+      imports: [ForCalendar, ForCalendarMonthCell],
+      providers: [...provideNativeDateAdapter()],
+      template: `
+        <div forCalendar [(view)]="view">
+          <span forCalendarMonthCell data-testid="unbound"></span>
+        </div>
+      `,
+    })
+    class UnboundMonthCellHost {
+      readonly view = signal<CalendarView>('month');
+    }
+
+    @Component({
+      host: { 'data-fixture': 'unbound-year-cell' },
+      imports: [ForCalendar, ForCalendarYearCell],
+      providers: [...provideNativeDateAdapter()],
+      template: `
+        <div forCalendar [(view)]="view">
+          <span forCalendarYearCell data-testid="unbound"></span>
+        </div>
+      `,
+    })
+    class UnboundYearCellHost {
+      readonly view = signal<CalendarView>('year');
+    }
+
+    it('fails loudly in dev mode for each cell kind', () => {
+      expect(() => renderHost(UnboundDayCellHost)).toThrowError(
+        /\[forty-cdk\/calendar\] FORCDK-CORE-010: \[forCalendarCell\] has no \[date\] binding/,
+      );
+      TestBed.resetTestingModule();
+      expect(() => renderHost(UnboundMonthCellHost)).toThrowError(
+        /FORCDK-CORE-010: \[forCalendarMonthCell\] has no \[month\] binding/,
+      );
+      TestBed.resetTestingModule();
+      expect(() => renderHost(UnboundYearCellHost)).toThrowError(
+        /FORCDK-CORE-010: \[forCalendarYearCell\] has no \[year\] binding/,
+      );
+    });
+
+    it('selects nothing from an unbound day cell in a production build', async () => {
+      vi.stubGlobal('ngDevMode', false);
+      const r = renderHost(UnboundDayCellHost);
+      await r.flush();
+      const cell = r.query('[data-testid="unbound"]')!;
+
+      cell.click();
+      pressKey(cell, 'Enter');
+      await r.flush();
+
+      expect(r.instance.value()).toBeNull();
+      expect(cell.getAttribute('aria-selected')).toBe('false');
+      expect(cell.hasAttribute('aria-label')).toBe(false);
+    });
+
+    it('drills down from neither an unbound month nor an unbound year cell in a production build', async () => {
+      vi.stubGlobal('ngDevMode', false);
+      const month = renderHost(UnboundMonthCellHost);
+      await month.flush();
+      month.query('[data-testid="unbound"]')!.click();
+      await month.flush();
+      expect(month.instance.view()).toBe('month');
+
+      TestBed.resetTestingModule();
+      const year = renderHost(UnboundYearCellHost);
+      await year.flush();
+      year.query('[data-testid="unbound"]')!.click();
+      await year.flush();
+      expect(year.instance.view()).toBe('year');
     });
   });
 });

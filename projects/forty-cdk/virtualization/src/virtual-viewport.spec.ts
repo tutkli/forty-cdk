@@ -1,4 +1,4 @@
-import { Component, provideZonelessChangeDetection, signal, viewChild } from '@angular/core';
+import { Component, input, provideZonelessChangeDetection, signal, viewChild } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { flush } from '../../src/test-utils';
@@ -692,5 +692,65 @@ describe('ForVirtualViewport — [estimateSize] changes after the first render',
     expect(sizer.style.height).toBe('20000px');
     const row = rowEls(fixture).find((el) => el.getAttribute('data-index') === '1')!;
     expect(row.style.transform).toBe('translateY(20px)');
+  });
+});
+
+describe('ForVirtualFor rendered by a wrapper component inside the viewport', () => {
+  @Component({
+    selector: 'wrapped-rows',
+    imports: [ForVirtualFor],
+    template: `<div *forVirtualFor="let row of rows()">{{ row.label }}</div>`,
+  })
+  class WrappedRows {
+    readonly rows = input.required<readonly Row[]>();
+  }
+
+  @Component({
+    host: { 'data-fixture': 'wrapped-rows-host' },
+    imports: [ForVirtualViewport, WrappedRows],
+    template: `
+      <div
+        forVirtualViewport
+        [virtualCount]="rows.length"
+        [estimateSize]="40"
+        [getItemKey]="keyOf()"
+        style="height: 200px; width: 200px"
+      >
+        <wrapped-rows [rows]="rows" />
+      </div>
+    `,
+  })
+  class WrappedRowsHost {
+    readonly rows = makeRows(100);
+    readonly keyOf = signal<((index: number) => string) | undefined>(undefined);
+  }
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+  });
+
+  async function mount(keyed: boolean): Promise<ComponentFixture<WrappedRowsHost>> {
+    const fixture = TestBed.createComponent(WrappedRowsHost);
+    if (keyed) {
+      fixture.componentInstance.keyOf.set((index) => `row-${index}`);
+    }
+    fakeLayout(viewportEl(fixture), 200);
+    fixture.detectChanges();
+    await flush(fixture);
+    return fixture;
+  }
+
+  it('renders the window on the first pass when rows are bound through the wrapper', async () => {
+    const fixture = await mount(false);
+
+    expect(rowEls(fixture).length).toBeGreaterThan(0);
+    expect(rowEls(fixture)[0]!.textContent?.trim()).toBe('Row 0');
+  });
+
+  it('renders the window on the first pass with keyed rows bound through the wrapper', async () => {
+    const fixture = await mount(true);
+
+    expect(rowEls(fixture).length).toBeGreaterThan(0);
+    expect(rowEls(fixture)[0]!.textContent?.trim()).toBe('Row 0');
   });
 });

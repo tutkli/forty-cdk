@@ -1,6 +1,12 @@
 import { computed, Directive, ElementRef, inject, input } from '@angular/core';
 
-import { isImeComposing, registerHandle } from 'forty-cdk/core';
+import {
+  assertInputBound,
+  isImeComposing,
+  isUnset,
+  registerHandle,
+  unsetInput,
+} from 'forty-cdk/core';
 import { injectComboboxContext } from './combobox-context';
 
 /**
@@ -44,9 +50,10 @@ export class ForComboboxChip<T = string> {
    * The value this chip represents — must match an entry in
    * `[forCombobox][(value)]` per the parent's `[compareWith]`.
    * Generic over `T` (default `string`); inferred from the binding
-   * (`[value]="someObject"` specializes `T`).
+   * (`[value]="someObject"` specializes `T`). Mandatory — a chip with no binding throws in dev
+   * mode.
    */
-  readonly value = input.required<T>();
+  readonly value = input(unsetInput<T>());
 
   /**
    * `data-value` reflection — for string `T` this is the value verbatim
@@ -56,12 +63,18 @@ export class ForComboboxChip<T = string> {
    */
   private readonly dataValue = computed(() => {
     const v = this.value();
+    if (isUnset(v)) {
+      return null;
+    }
     return typeof v === 'string' ? (v as string) : this.ctx.itemToFormValue()(v);
   });
 
   /** Resolved label of the underlying option, used by `[forComboboxChipRemove]` for its `aria-label`. */
   readonly label = computed(() => {
     const v = this.value();
+    if (isUnset(v)) {
+      return '';
+    }
     const equals = this.ctx.compareWith();
     const cached = this.ctx.selectedEntries().find((o) => equals(o.value, v));
     if (cached) {
@@ -71,6 +84,7 @@ export class ForComboboxChip<T = string> {
   });
 
   constructor() {
+    assertInputBound(this.value, 'combobox', '[forComboboxChip]', 'value');
     const handle = {
       host: this.#host.nativeElement,
       value: this.value,
@@ -122,8 +136,11 @@ export class ForComboboxChip<T = string> {
       }
       case 'Backspace':
       case 'Delete': {
-        event.preventDefault();
         const v = this.value();
+        if (isUnset(v)) {
+          break;
+        }
+        event.preventDefault();
         const prev = chips[index - 1];
         const next = chips[index + 1];
         this.ctx.removeValue(v);

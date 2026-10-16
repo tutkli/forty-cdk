@@ -1,6 +1,9 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
+import { isUnset } from 'forty-cdk/core';
+import { pressKey } from 'forty-cdk/testing';
+
 import { flush, renderHost } from '../../src/test-utils';
 import { ForCombobox } from './combobox';
 import { ForComboboxChip } from './combobox-chip';
@@ -232,5 +235,77 @@ describe('ForComboboxChipRemove aria-label (issue #1481)', () => {
     const after = document.querySelector<HTMLButtonElement>('[data-test-remove="Banana"]')!;
     expect(after).toBe(before);
     expect(after.getAttribute('aria-label')).toBe('Quitar Banana');
+  });
+});
+
+describe('ForComboboxChip with no value binding', () => {
+  interface Fruit {
+    readonly id: string;
+  }
+
+  @Component({
+    host: { 'data-fixture': 'unbound-chip-host' },
+    imports: [...CHIPS_IMPORTS, ForComboboxChip],
+    template: `
+      <div
+        forCombobox
+        multiple
+        [(value)]="value"
+        [compareWith]="compareWith"
+        [itemToStringLabel]="itemToStringLabel"
+        [itemToFormValue]="itemToFormValue"
+      >
+        <div forComboboxChips>
+          <span forComboboxChip [value]="value()[0]!" data-test-id="apple">apple</span>
+          <span forComboboxChip data-test-id="unbound">unbound</span>
+          <input forComboboxInput />
+        </div>
+      </div>
+    `,
+  })
+  class UnboundChipHost {
+    readonly value = signal<readonly Fruit[]>([{ id: 'apple' }]);
+    readonly compareWith = vi.fn((a: Fruit, b: Fruit) => a.id === b.id);
+    readonly itemToStringLabel = vi.fn((item: Fruit) => item.id);
+    readonly itemToFormValue = vi.fn((item: Fruit) => item.id);
+  }
+
+  const sentinelCalls = (host: UnboundChipHost): boolean =>
+    [host.compareWith, host.itemToStringLabel, host.itemToFormValue].some((spy) =>
+      spy.mock.calls.flat().some(isUnset),
+    );
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+  });
+
+  it('fails loudly in dev mode', () => {
+    expect(() => renderHost(UnboundChipHost)).toThrowError(
+      /\[forty-cdk\/combobox\] FORCDK-CORE-010: \[forComboboxChip\] has no \[value\] binding/,
+    );
+  });
+
+  it('never hands the sentinel to a consumer callback in a production build', async () => {
+    vi.stubGlobal('ngDevMode', false);
+    const r = renderHost(UnboundChipHost);
+    await flush(r.fixture);
+
+    expect(r.instance.itemToFormValue).toHaveBeenCalled();
+    expect(sentinelCalls(r.instance)).toBe(false);
+    expect(r.query('[data-test-id="unbound"]')!.hasAttribute('data-value')).toBe(false);
+  });
+
+  it('removes nothing when Backspace is pressed on an unbound chip in a production build', async () => {
+    vi.stubGlobal('ngDevMode', false);
+    const r = renderHost(UnboundChipHost);
+    await flush(r.fixture);
+    const chip = r.query<HTMLElement>('[data-test-id="unbound"]')!;
+
+    chip.focus();
+    pressKey(chip, 'Backspace');
+    await flush(r.fixture);
+
+    expect(r.instance.value()).toEqual([{ id: 'apple' }]);
+    expect(sentinelCalls(r.instance)).toBe(false);
   });
 });

@@ -2052,3 +2052,81 @@ describe('ForTimePicker', () => {
     });
   });
 });
+
+describe('ForTimePickerOption value binding', () => {
+  @Component({
+    host: { 'data-fixture': 'open-preselected-picker' },
+    imports: BASE_IMPORTS,
+    providers: [...provideNativeDateAdapter()],
+    template: `
+      <div forTimePicker [(value)]="value" [(open)]="open" [step]="60" #picker="forTimePicker">
+        <button forTimePickerTrigger>Pick</button>
+        @if (open()) {
+          <div forTimePickerContent>
+            @for (slot of picker.slots(); track slot.id) {
+              <div forTimePickerOption [value]="slot.value">{{ slot.label }}</div>
+            }
+          </div>
+        }
+      </div>
+    `,
+  })
+  class OpenPreselectedHost {
+    readonly value = signal<Date | null>(new Date(2026, 0, 1, 10, 0));
+    readonly open = signal(true);
+  }
+
+  @Component({
+    host: { 'data-fixture': 'unbound-option-picker' },
+    imports: BASE_IMPORTS,
+    providers: [...provideNativeDateAdapter()],
+    template: `
+      <div forTimePicker [(value)]="value" [(open)]="open">
+        <button forTimePickerTrigger>Pick</button>
+        @if (open()) {
+          <div forTimePickerContent>
+            <div forTimePickerOption [value]="ten" data-testid="ten">10:00</div>
+            <div forTimePickerOption data-testid="unbound">Unbound</div>
+          </div>
+        }
+      </div>
+    `,
+  })
+  class UnboundOptionHost {
+    readonly ten = new Date(2026, 0, 1, 10, 0);
+    readonly value = signal<Date | null>(new Date(2026, 0, 1, 10, 0));
+    readonly open = signal(true);
+  }
+
+  afterEachOverlayCleanup();
+
+  it('focuses the selected slot of a picker that mounts open', async () => {
+    const r = renderHost(OpenPreselectedHost);
+    await r.flush();
+
+    const selected = document.querySelectorAll<HTMLElement>(
+      '[forTimePickerOption][aria-selected="true"]',
+    );
+    expect(selected).toHaveLength(1);
+    expect(document.activeElement).toBe(selected[0]);
+  });
+
+  it('fails loudly in dev mode when an option has no value binding', () => {
+    expect(() => renderHost(UnboundOptionHost)).toThrowError(
+      /\[forty-cdk\/time-picker\] FORCDK-CORE-010: \[forTimePickerOption\] has no \[value\] binding/,
+    );
+  });
+
+  it('commits nothing from an unbound option in a production build', async () => {
+    vi.stubGlobal('ngDevMode', false);
+    const r = renderHost(UnboundOptionHost);
+    await r.flush();
+    const unbound = document.querySelector<HTMLElement>('[data-testid="unbound"]')!;
+
+    expect(unbound.getAttribute('aria-selected')).toBe('false');
+    unbound.click();
+    await r.flush();
+
+    expect(r.instance.value()).toEqual(new Date(2026, 0, 1, 10, 0));
+  });
+});
