@@ -2,6 +2,8 @@ import {
   ApplicationRef,
   type ComponentRef,
   computed,
+  type DestroyableInjector,
+  DestroyRef,
   DOCUMENT,
   EnvironmentInjector,
   inject,
@@ -14,7 +16,13 @@ import {
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 
-import { composedClosest, IdGenerator, resolveActiveElement } from 'forty-cdk/core';
+import {
+  composedClosest,
+  FOR_FIELD_ANCHOR_CONTEXT,
+  FOR_FIELD_CONTEXT,
+  IdGenerator,
+  resolveActiveElement,
+} from 'forty-cdk/core';
 import { InertSiblingsStack } from '../inert-siblings/inert-siblings';
 import type { OverlayRef } from './overlay-ref';
 
@@ -297,31 +305,44 @@ export class OverlayManagerCore<TEntry extends OverlayManagerEntry> {
    * path. When the caller passed an `injector` on the `open()` config, `scope`
    * re-parents the opened component on that caller scope instead — so DI inside
    * the opened component resolves the scope's providers (a lazy route, a
-   * component `providers`). The host's `contextToken` is copied across as a
-   * value provider so the primitive's own pieces still resolve
-   * `FOR_<PRIMITIVE>_CONTEXT` exactly as on the declarative path.
+   * component `providers`). The host's `contextToken` and the field-boundary
+   * tokens are copied across as value providers so the primitive's own pieces
+   * still resolve `FOR_<PRIMITIVE>_CONTEXT`, and a control in the opened
+   * component stays cut off from the caller's `[forField]`, exactly as on the
+   * declarative path.
+   *
+   * Each injector it creates is destroyed when the view owning `parent` is
+   * destroyed, after the opened component it served, or when a new parent
+   * replaces it, so the services passed in `providers` run their teardown.
    */
   protected createInjectorFactory(
     providers: readonly Provider[],
     scope?: { readonly injector: Injector; readonly contextToken: ProviderToken<unknown> },
   ): (parent: Injector) => Injector {
-    let cachedInjector: Injector | null = null;
-    let cachedParent: Injector | null = null;
+    let cached: {
+      readonly parent: Injector;
+      readonly injector: Injector;
+      readonly release: () => void;
+    } | null = null;
     return (parent: Injector): Injector => {
-      if (cachedInjector && cachedParent === parent) {
-        return cachedInjector;
+      if (cached?.parent === parent) {
+        return cached.injector;
       }
-      cachedParent = parent;
-      cachedInjector = scope
+      cached?.release();
+      const injector = scope
         ? Injector.create({
             parent: scope.injector,
             providers: [
-              { provide: scope.contextToken, useValue: parent.get(scope.contextToken) },
+              ...[scope.contextToken, ...FIELD_BOUNDARY_TOKENS].map((token) => ({
+                provide: token,
+                useValue: parent.get(token),
+              })),
               ...providers,
             ],
           })
         : Injector.create({ parent, providers: [...providers] });
-      return cachedInjector;
+      cached = { parent, injector, release: bindInjectorLifetime(injector, parent) };
+      return injector;
     };
   }
 
@@ -399,6 +420,31 @@ export class OverlayManagerCore<TEntry extends OverlayManagerEntry> {
     });
     this.#outletRef = outletRef;
   }
+}
+
+const FIELD_BOUNDARY_TOKENS: readonly ProviderToken<unknown>[] = [
+  FOR_FIELD_CONTEXT,
+  FOR_FIELD_ANCHOR_CONTEXT,
+];
+
+/**
+ * Destroys `injector` when the scope `parent` belongs to is destroyed, and
+ * returns a release that destroys it early and drops that hook. Either path
+ * destroys it once.
+ */
+function bindInjectorLifetime(injector: DestroyableInjector, parent: Injector): () => void {
+  let destroyed = false;
+  const destroy = (): void => {
+    if (!destroyed) {
+      destroyed = true;
+      injector.destroy();
+    }
+  };
+  const unregister = parent.get(DestroyRef).onDestroy(destroy);
+  return () => {
+    unregister();
+    destroy();
+  };
 }
 
 /**

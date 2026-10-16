@@ -190,7 +190,11 @@ export interface ForDrawerOpenConfig<D = unknown> {
    */
   classList?: string | readonly string[];
 
-  /** Extra providers for the opened component's injector. */
+  /**
+   * Extra providers for the opened component's injector (alongside `FOR_DRAWER_DATA` + `ForDrawerRef`).
+   * Their instances are destroyed once the closed drawer unmounts, so their
+   * `ngOnDestroy` and `DestroyRef` teardown runs.
+   */
   providers?: Provider[];
 
   /**
@@ -202,7 +206,9 @@ export interface ForDrawerOpenConfig<D = unknown> {
    * values still win over the resolved scoped defaults. Omit it to keep today's
    * root-scope behavior. Pass the ambient `inject(Injector)` from the caller —
    * `open()` is normally invoked outside an injection context, so an explicit
-   * handle is the predictable contract.
+   * handle is the predictable contract. The drawer stays a field boundary: a
+   * control in the opened component never registers with a `[forField]` the
+   * caller sits in.
    */
   injector?: Injector;
 

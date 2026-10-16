@@ -1,4 +1,4 @@
-import { Component, signal, type Type, type WritableSignal } from '@angular/core';
+import { Component, inject, Injector, signal, type Type, type WritableSignal } from '@angular/core';
 import { By } from '@angular/platform-browser';
 
 import { afterEachOverlayCleanup, renderHost } from '../test-utils';
@@ -7,8 +7,8 @@ import { LIBRARY_CODE } from '../test-utils/source-scan';
 import { provideNativeDateAdapter } from 'forty-cdk/shared';
 import { ForCombobox, ForComboboxContent, ForComboboxInput } from 'forty-cdk/combobox';
 import { ForDatePicker, ForDatePickerContent, ForDatePickerTrigger } from 'forty-cdk/date-picker';
-import { ForDialog } from 'forty-cdk/dialog';
-import { ForDrawer } from 'forty-cdk/drawer';
+import { ForDialog, ForDialogManager } from 'forty-cdk/dialog';
+import { ForDrawer, ForDrawerManager } from 'forty-cdk/drawer';
 import { ForField, ForFieldControl, ForLabel } from 'forty-cdk/field';
 import { ForPopover, ForPopoverContent, ForPopoverTrigger } from 'forty-cdk/popover';
 import { ForSelect, ForSelectContent, ForSelectTrigger } from 'forty-cdk/select';
@@ -187,6 +187,54 @@ class DrawerHost implements BoundaryHost {
   readonly open = signal(false);
 }
 
+@Component({
+  imports: [...FIELD_IMPORTS],
+  template: `
+    <input forFieldControl data-test-id="stray" />
+    <div forField>
+      <span forLabel data-test-id="inner-label">Inner</span>
+      <input forFieldControl data-test-id="inner" />
+    </div>
+  `,
+})
+class ManagedContent {}
+
+@Component({
+  selector: 'app-scope-capture',
+  template: '',
+})
+class ScopeCapture {
+  readonly injector = inject(Injector);
+}
+
+@Component({
+  imports: [...FIELD_IMPORTS, ScopeCapture],
+  template: `
+    <div forField>
+      <span forLabel>Outer</span>
+      <input forFieldControl />
+      <app-scope-capture />
+    </div>
+  `,
+})
+class ManagedScopeHost {}
+
+const MANAGERS: readonly {
+  readonly name: string;
+  open(injector: Injector): void;
+}[] = [
+  {
+    name: 'ForDialogManager',
+    open: (injector) =>
+      injector.get(ForDialogManager).open(ManagedContent, { injector, ariaLabel: 'Details' }),
+  },
+  {
+    name: 'ForDrawerManager',
+    open: (injector) =>
+      injector.get(ForDrawerManager).open(ManagedContent, { injector, ariaLabel: 'Details' }),
+  },
+];
+
 const BOUNDARIES: readonly {
   readonly piece: string;
   readonly source: string;
@@ -249,6 +297,28 @@ describe('overlay surfaces are field boundaries', () => {
       expect(control).not.toBeNull();
 
       r.instance.open.set(true);
+      await r.flush();
+      const stray = byTestId('stray');
+
+      expect(field.control()).toBe(control);
+      expect(stray!.hasAttribute('aria-labelledby')).toBe(false);
+      expect(byTestId('inner')!.getAttribute('aria-labelledby')).toBe(byTestId('inner-label')!.id);
+      expect(warn.mock.calls.flat().join(' ')).not.toContain('FORCDK-FIELD-002');
+    });
+  }
+
+  for (const { name, open } of MANAGERS) {
+    it(`${name}.open({ injector }): a control in the opened component does not take over the caller's field`, async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const r = renderHost(ManagedScopeHost);
+      await r.flush();
+      const field = r.fixture.debugElement.query(By.directive(ForField)).injector.get(ForField);
+      const control = field.control();
+      expect(control).not.toBeNull();
+
+      const scope = r.fixture.debugElement.query(By.directive(ScopeCapture))
+        .componentInstance as ScopeCapture;
+      open(scope.injector);
       await r.flush();
       const stray = byTestId('stray');
 

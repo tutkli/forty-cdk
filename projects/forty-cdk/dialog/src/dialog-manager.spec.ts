@@ -2,9 +2,11 @@ import {
   afterNextRender,
   afterRenderEffect,
   Component,
+  DestroyRef,
   effect,
   ElementRef,
   inject,
+  Injectable,
   Injector,
   InjectionToken,
   provideZonelessChangeDetection,
@@ -63,6 +65,28 @@ class TokenInjectingDialog {
 })
 class TypedDataDialog {
   readonly data: ConfirmData | null = injectDialogData<ConfirmData>();
+}
+
+const TEARDOWN_LOG = new InjectionToken<string[]>('TEARDOWN_LOG');
+
+@Injectable()
+class TeardownProbe {
+  constructor() {
+    const log = inject(TEARDOWN_LOG);
+    inject(DestroyRef).onDestroy(() => log.push('provider'));
+  }
+}
+
+@Component({
+  template: `<p id="probe">probe</p>`,
+})
+class ProbeDialog {
+  readonly probe = inject(TeardownProbe);
+
+  constructor() {
+    const log = inject(TEARDOWN_LOG);
+    inject(DestroyRef).onDestroy(() => log.push('component'));
+  }
 }
 
 function setup(extraProviders: Parameters<typeof TestBed.configureTestingModule>[0] = {}): {
@@ -1360,6 +1384,55 @@ describe('ForDialogManager (programmatic)', () => {
 
       expect(dialogs.openCount()).toBe(1);
       expect(document.querySelector('#message')?.textContent).toBe('after');
+    });
+  });
+
+  describe('per-open injector teardown', () => {
+    it('destroys the providers passed to open() after the closed dialog unmounts', async () => {
+      const log: string[] = [];
+      const { dialogs } = setup();
+      const ref = dialogs.open(ProbeDialog, {
+        providers: [TeardownProbe, { provide: TEARDOWN_LOG, useValue: log }],
+      });
+      TestBed.tick();
+      expect(document.querySelector('#probe')).not.toBeNull();
+      expect(log).toEqual([]);
+
+      ref.close();
+      await ref.closed;
+      TestBed.tick();
+
+      expect(log).toEqual(['component', 'provider']);
+    });
+
+    it('destroys them on the open({ injector }) path too', async () => {
+      const log: string[] = [];
+      const { dialogs } = setup();
+      const ref = dialogs.open(ProbeDialog, {
+        injector: TestBed.inject(Injector),
+        providers: [TeardownProbe, { provide: TEARDOWN_LOG, useValue: log }],
+      });
+      TestBed.tick();
+      expect(log).toEqual([]);
+
+      ref.close();
+      await ref.closed;
+      TestBed.tick();
+
+      expect(log).toEqual(['component', 'provider']);
+    });
+
+    it('destroys them when the manager tears down with the dialog still open', () => {
+      const log: string[] = [];
+      const { dialogs } = setup();
+      dialogs.open(ProbeDialog, {
+        providers: [TeardownProbe, { provide: TEARDOWN_LOG, useValue: log }],
+      });
+      TestBed.tick();
+
+      TestBed.resetTestingModule();
+
+      expect(log).toEqual(['component', 'provider']);
     });
   });
 });
