@@ -6,7 +6,7 @@ import {
   ForComboboxInput,
   ForComboboxOption,
 } from 'forty-cdk/combobox';
-import { ForListbox, ForListboxOption } from 'forty-cdk/listbox';
+import { ForListbox, ForListboxController, ForListboxOption } from 'forty-cdk/listbox';
 import { ForSelect, ForSelectContent, ForSelectOption, ForSelectTrigger } from 'forty-cdk/select';
 import { pressKey } from 'forty-cdk/testing';
 import { ForTree, ForTreeItem, ForTreeItemLabel } from 'forty-cdk/tree';
@@ -55,6 +55,30 @@ abstract class WindowedHost {
   `,
 })
 class ListboxHost extends WindowedHost {}
+
+@Component({
+  imports: [ForListbox, ForListboxController, ForListboxOption],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <input [forListboxController]="list" aria-label="Rows" data-keys />
+    <div
+      forListbox
+      #list="forListbox"
+      aria-label="Rows"
+      [(value)]="picked"
+      [totalCount]="20"
+      [visibleRange]="range()"
+      (scrollToIndex)="onScrollToIndex($event)"
+    >
+      @for (row of windowRows(); track row.index) {
+        <button type="button" forListboxOption [value]="'row-' + row.index" [posInSet]="row.index">
+          Row {{ row.index }}
+        </button>
+      }
+    </div>
+  `,
+})
+class ListboxControllerHost extends WindowedHost {}
 
 @Component({
   imports: [ForSelect, ForSelectTrigger, ForSelectContent, ForSelectOption],
@@ -162,6 +186,13 @@ const CASES: readonly ResumeCase[] = [
     typeahead: true,
   },
   {
+    name: 'listbox driven by a controller',
+    owner: 'listbox/src/listbox.ts',
+    host: ListboxControllerHost,
+    pressesToSecondRow: 3,
+    typeahead: false,
+  },
+  {
     name: 'select',
     owner: 'select/src/select.ts',
     host: SelectHost,
@@ -253,11 +284,11 @@ describe('virtualized resume position adopters (issue #2123)', () => {
       .sort();
 
     expect(navigatesVirtually.length).toBeGreaterThan(3);
-    expect(CASES.map((c) => c.owner).sort()).toEqual(navigatesVirtually);
+    expect([...new Set(CASES.map((c) => c.owner))].sort()).toEqual(navigatesVirtually);
   });
 
   it('retains the position through the shared VirtualizedResume in every covered root', () => {
-    for (const { owner } of CASES) {
+    for (const owner of new Set(CASES.map((c) => c.owner))) {
       const code = LIBRARY_CODE.get(owner)!;
       expect(code, owner).toMatch(/new VirtualizedResume</);
       expect(code, owner).toMatch(/#resume\.retain\(/);
@@ -270,7 +301,7 @@ describe('virtualized resume position adopters (issue #2123)', () => {
       [...code.matchAll(/getResumePos: \(\) => ([\w.#]+\(\))/g)].map((m) => `${path}: ${m[1]}`),
     );
 
-    expect(sites.length).toBe(CASES.length);
+    expect(sites.length).toBe(new Set(CASES.map((c) => c.owner)).size);
     for (const site of sites) {
       expect(site).toMatch(/resume\.pos\(\)$/);
     }

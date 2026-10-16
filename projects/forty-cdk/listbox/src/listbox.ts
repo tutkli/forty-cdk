@@ -42,7 +42,9 @@ import {
   injectTypeahead,
   isUnset,
   hostAriaLabel,
-  hostId,
+  IdGenerator,
+  pressFocusesDescendant,
+  preventPointerFocus,
   VirtualizedResume,
   type Unset,
 } from 'forty-cdk/core';
@@ -92,7 +94,6 @@ import {
   exportAs: 'forListbox',
   host: {
     role: 'listbox',
-    '[id]': 'id()',
     '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.aria-orientation]': 'orientation()',
     '[attr.aria-multiselectable]': 'multiple() ? "true" : null',
@@ -303,10 +304,11 @@ export class ForListbox<T = string>
   readonly #virtualized = computed(() => this.totalCount() !== undefined);
 
   /**
-   * The host's id. A consumer-set static `id` is kept; otherwise one is
-   * generated. A `[forListboxController]` references it from `aria-controls`.
+   * The id the host carries while a `[forListboxController]` drives it and the
+   * consumer set none. Minted at construction whether or not it is used, so the
+   * id sequence does not depend on which listboxes are controlled.
    */
-  readonly id = hostId('for-listbox');
+  readonly #generatedId = inject(IdGenerator).next('for-listbox');
 
   readonly #controller = createSingleSlot<HTMLElement>({
     primitive: 'listbox',
@@ -444,6 +446,8 @@ export class ForListbox<T = string>
       disabled: this.effectiveDisabled,
     });
     injectNativeFormResetToInitial(this.value);
+    const host = this.#host.nativeElement;
+    preventPointerFocus((event) => this.#controlled() && !pressFocusesDescendant(event, host));
     // @sanctioned-pull(navigator-position-map): the rendered window is transient,
     // so a window nothing reads during is lost to the lazy fold.
     effect(() => {
@@ -583,10 +587,39 @@ export class ForListbox<T = string>
 
   private registerController(el: HTMLElement): void {
     this.#controller.register(el);
+    const host = this.#host.nativeElement;
+    if (!host.id) {
+      host.id = this.#generatedId;
+    }
   }
 
   private unregisterController(el: HTMLElement): void {
     this.#controller.unregister(el);
+    const host = this.#host.nativeElement;
+    if (this.#controller.value() === null && host.id === this.#generatedId) {
+      host.removeAttribute('id');
+    }
+  }
+
+  private controlsId(): string {
+    return this.#host.nativeElement.id || this.#generatedId;
+  }
+
+  private isActiveController(el: HTMLElement): boolean {
+    const occupant = this.#controller.value();
+    return occupant === null || occupant === el;
+  }
+
+  private clearActiveOption(): void {
+    this.#resume.clear();
+    this.#activeId.set(null);
+  }
+
+  private controllerFocusOut(next: EventTarget | null): void {
+    if (next instanceof Node && this.#host.nativeElement.contains(next)) {
+      return;
+    }
+    this.markTouched();
   }
 
   private moveActiveOption(direction: 'next' | 'prev'): void {
@@ -616,9 +649,12 @@ export class ForListbox<T = string>
   }
 
   private activateActiveOption(): boolean {
-    const id = this.#activeId();
-    if (id === null || this.effectiveDisabled()) {
+    if (this.effectiveDisabled()) {
       return false;
+    }
+    const id = this.#activeId();
+    if (id === null) {
+      return this.#virtualized() && this.#activateResumed();
     }
     const handle = this.#options.items().find((o) => o.id() === id);
     if (!handle || handle.disabled()) {
@@ -737,13 +773,14 @@ export class ForListbox<T = string>
     this.activate(handle.value());
   }
 
-  #activateResumed(): void {
+  #activateResumed(): boolean {
     const resumed = this.#resume.resolve();
     if (resumed === null || resumed.entry.disabled) {
-      return;
+      return false;
     }
     this.#requireNavigator().seedActive(resumed.pos);
     this.activate(resumed.entry.value);
+    return true;
   }
 
   /**

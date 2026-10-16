@@ -1,4 +1,5 @@
 import { Component, signal } from '@angular/core';
+import { form, FormField } from '@angular/forms/signals';
 import { By } from '@angular/platform-browser';
 
 import { ForSearch } from 'forty-cdk/search';
@@ -105,6 +106,62 @@ class SearchPaletteHost {}
 })
 class TwoControllersHost {}
 
+@Component({
+  imports: [ForListbox, ForListboxController, ForListboxOption],
+  template: `
+    @if (withController()) {
+      <input [forListboxController]="list" aria-label="Search" />
+    }
+    <div forListbox #list="forListbox" [id]="listId()" ariaLabel="Commands">
+      <button type="button" forListboxOption value="home">Go home</button>
+    </div>
+  `,
+})
+class BoundIdHost {
+  readonly withController = signal(false);
+  readonly listId = signal('my-list');
+}
+
+@Component({
+  imports: [ForListbox, ForListboxOption],
+  template: `
+    <div forListbox ariaLabel="Commands">
+      <button type="button" forListboxOption value="home">Go home</button>
+    </div>
+  `,
+})
+class UncontrolledHost {}
+
+@Component({
+  imports: [ForListbox, ForListboxController, ForListboxOption, FormField],
+  template: `
+    <input [forListboxController]="list" aria-label="Search" />
+    <div forListbox #list="forListbox" [formField]="f.topic" ariaLabel="Topics">
+      <button type="button" forListboxOption value="a">A</button>
+      <button type="button" forListboxOption value="b">B</button>
+    </div>
+    <button type="button" data-test-id="outside">Outside</button>
+  `,
+})
+class FormFieldHost {
+  readonly model = signal({ topic: [] as readonly string[] });
+  readonly f = form(this.model);
+}
+
+@Component({
+  imports: [ForListbox, ForListboxController, ForListboxOption],
+  template: `
+    <input [forListboxController]="list" aria-label="Search" />
+    <div forListbox #list="forListbox" [(touched)]="touched" ariaLabel="Topics">
+      <button type="button" forListboxOption value="a">A</button>
+      <a href="#more" data-test-id="link">More</a>
+    </div>
+  `,
+})
+class TouchedHost {
+  readonly touched = signal(false);
+}
+
 const inputOf = (root: HTMLElement): HTMLInputElement =>
   root.querySelector<HTMLInputElement>('input')!;
 const listboxOf = (root: HTMLElement): HTMLElement =>
@@ -156,6 +213,29 @@ describe('ForListboxController', () => {
       await flush();
 
       expect(inputOf(el).getAttribute('role')).toBe('combobox');
+    });
+
+    it('binds no id on a listbox no controller drives', async () => {
+      const { el, flush } = renderHost(UncontrolledHost);
+      await flush();
+
+      expect(listboxOf(el).hasAttribute('id')).toBe(false);
+    });
+
+    it('keeps a bound id, and points aria-controls at it once a controller registers', async () => {
+      const { el, fixture, flush } = renderHost(BoundIdHost);
+      await flush();
+      expect(listboxOf(el).id).toBe('my-list');
+
+      fixture.componentInstance.withController.set(true);
+      await flush();
+      expect(listboxOf(el).id).toBe('my-list');
+      expect(inputOf(el).getAttribute('aria-controls')).toBe('my-list');
+
+      fixture.componentInstance.listId.set('renamed-list');
+      await flush();
+      expect(listboxOf(el).id).toBe('renamed-list');
+      expect(inputOf(el).getAttribute('aria-controls')).toBe('renamed-list');
     });
   });
 
@@ -240,16 +320,66 @@ describe('ForListboxController', () => {
       expect(scrollIntoView).toHaveBeenCalledWith({ block: 'nearest' });
     });
 
-    it('leaves Home, End, Escape and printable keys to the textbox', async () => {
+    for (const key of ['Home', 'End', 'ArrowLeft', 'ArrowRight']) {
+      it(`returns visual focus to the textbox on ${key}, leaving the caret move to the input`, async () => {
+        const { el, fixture, flush } = renderHost(PaletteHost);
+        await flush();
+        const input = inputOf(el);
+        pressKey(input, 'ArrowDown');
+        await flush();
+
+        expect(pressKey(input, key).defaultPrevented).toBe(false);
+        await flush();
+        expect(input.hasAttribute('aria-activedescendant')).toBe(false);
+        expect(options(el).some((option) => option.hasAttribute('data-highlighted'))).toBe(false);
+
+        expect(pressKey(input, 'Enter').defaultPrevented).toBe(false);
+        await flush();
+        expect(fixture.componentInstance.ran).toEqual([]);
+      });
+    }
+
+    it('returns visual focus to the textbox when the query is edited', async () => {
       const { el, flush } = renderHost(PaletteHost);
       await flush();
       const input = inputOf(el);
       pressKey(input, 'ArrowDown');
       await flush();
 
-      for (const key of ['Home', 'End', 'Escape', 'a', ' ']) {
+      input.value = 'o';
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      await flush();
+
+      expect(optionOf(el, 'home')).not.toBeNull();
+      expect(input.hasAttribute('aria-activedescendant')).toBe(false);
+      pressKey(input, 'ArrowDown');
+      await flush();
+      expect(input.getAttribute('aria-activedescendant')).toBe(optionOf(el, 'home').id);
+    });
+
+    it('leaves Escape and printable keys to the textbox', async () => {
+      const { el, flush } = renderHost(PaletteHost);
+      await flush();
+      const input = inputOf(el);
+      pressKey(input, 'ArrowDown');
+      await flush();
+
+      for (const key of ['Escape', 'a', ' ']) {
         expect(pressKey(input, key).defaultPrevented).toBe(false);
       }
+      await flush();
+      expect(input.getAttribute('aria-activedescendant')).toBe(optionOf(el, 'home').id);
+    });
+
+    it('keeps the active option on a modified Home or End', async () => {
+      const { el, flush } = renderHost(PaletteHost);
+      await flush();
+      const input = inputOf(el);
+      pressKey(input, 'ArrowDown');
+      await flush();
+
+      pressKey(input, 'Home', { shiftKey: true });
+      pressKey(input, 'End', { ctrlKey: true });
       await flush();
       expect(input.getAttribute('aria-activedescendant')).toBe(optionOf(el, 'home').id);
     });
@@ -339,6 +469,42 @@ describe('ForListboxController', () => {
       expect(input.getAttribute('aria-activedescendant')).toBe(optionOf(el, 'delete').id);
     });
 
+    it('keeps focus in the input when a group label is pressed', async () => {
+      const { el, flush } = renderHost(PaletteHost);
+      await flush();
+      const input = inputOf(el);
+      input.focus();
+
+      pressWithMouse(el.querySelector<HTMLElement>('[forListboxGroupLabel]')!);
+      await flush();
+
+      expect(document.activeElement).toBe(input);
+    });
+
+    it('keeps focus in the input when the listbox itself is pressed', async () => {
+      const { el, flush } = renderHost(PaletteHost);
+      await flush();
+      const input = inputOf(el);
+      input.focus();
+
+      pressWithMouse(listboxOf(el));
+      await flush();
+
+      expect(document.activeElement).toBe(input);
+    });
+
+    it('lets a focusable of your own inside the listbox take focus on a press', async () => {
+      const { el, flush } = renderHost(TouchedHost);
+      await flush();
+      inputOf(el).focus();
+      const link = el.querySelector<HTMLElement>('[data-test-id="link"]')!;
+
+      pressWithMouse(link);
+      await flush();
+
+      expect(document.activeElement).toBe(link);
+    });
+
     it('makes the hovered option the active one', async () => {
       const { el, flush } = renderHost(PaletteHost);
       await flush();
@@ -347,6 +513,54 @@ describe('ForListboxController', () => {
       await flush();
 
       expect(inputOf(el).getAttribute('aria-activedescendant')).toBe(optionOf(el, 'settings').id);
+    });
+  });
+
+  describe('touched', () => {
+    const blurTo = (input: HTMLElement, next: Element | null): void => {
+      input.dispatchEvent(new FocusEvent('focusout', { relatedTarget: next, bubbles: true }));
+    };
+
+    it('marks the listbox touched when focus leaves the input', async () => {
+      const { el, fixture, flush } = renderHost(TouchedHost);
+      await flush();
+      const input = inputOf(el);
+      input.focus();
+
+      blurTo(input, document.body);
+      await flush();
+
+      expect(fixture.componentInstance.touched()).toBe(true);
+      expect(listboxOf(el).getAttribute('data-touched')).toBe('');
+    });
+
+    it('stays untouched while focus moves from the input into the listbox', async () => {
+      const { el, fixture, flush } = renderHost(TouchedHost);
+      await flush();
+      const input = inputOf(el);
+      input.focus();
+
+      blurTo(input, el.querySelector('[data-test-id="link"]'));
+      await flush();
+
+      expect(fixture.componentInstance.touched()).toBe(false);
+    });
+
+    it('reports the touch to a bound [formField]', async () => {
+      const { el, fixture, flush } = renderHost(FormFieldHost);
+      await flush();
+      const input = inputOf(el);
+      input.focus();
+      pressKey(input, 'ArrowDown');
+      await flush();
+      pressKey(input, 'Enter');
+      await flush();
+
+      blurTo(input, el.querySelector('[data-test-id="outside"]'));
+      await flush();
+
+      expect(fixture.componentInstance.model().topic).toEqual(['a']);
+      expect(fixture.componentInstance.f.topic().touched()).toBe(true);
     });
   });
 
@@ -382,6 +596,30 @@ describe('ForListboxController', () => {
           /\[forty-cdk\/listbox\] FORCDK-CORE-005: A \[forListbox\] coordinates a single \[forListboxController\], but 2 are registered/,
         ),
       );
+    });
+
+    it('leaves every controller but the most recently registered one inert', async () => {
+      vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const { el, flush } = renderHost(TwoControllersHost);
+      await flush();
+      const inputs = el.querySelectorAll<HTMLInputElement>('input');
+      const older = inputs[0]!;
+      const newer = inputs[1]!;
+
+      for (const name of ['role', 'aria-controls', 'aria-expanded']) {
+        expect(older.hasAttribute(name), name).toBe(false);
+      }
+      expect(newer.getAttribute('role')).toBe('combobox');
+
+      expect(pressKey(older, 'ArrowDown').defaultPrevented).toBe(false);
+      await flush();
+      expect(older.hasAttribute('aria-activedescendant')).toBe(false);
+      expect(newer.hasAttribute('aria-activedescendant')).toBe(false);
+
+      pressKey(newer, 'ArrowDown');
+      await flush();
+      expect(newer.getAttribute('aria-activedescendant')).toBe(options(el)[0]!.id);
+      expect(older.hasAttribute('aria-activedescendant')).toBe(false);
     });
   });
 });

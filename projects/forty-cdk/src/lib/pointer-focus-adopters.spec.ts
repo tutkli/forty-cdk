@@ -20,7 +20,13 @@ import { ForDialog, ForDialogTrigger } from 'forty-cdk/dialog';
 import { ForDrawer, ForDrawerTrigger } from 'forty-cdk/drawer';
 import { ForDropdownMenu, ForDropdownMenuTrigger } from 'forty-cdk/dropdown-menu';
 import { ForField, ForFieldControl, ForLabel } from 'forty-cdk/field';
-import { ForListbox, ForListboxOption } from 'forty-cdk/listbox';
+import {
+  ForListbox,
+  ForListboxController,
+  ForListboxGroup,
+  ForListboxGroupLabel,
+  ForListboxOption,
+} from 'forty-cdk/listbox';
 import {
   ForMenuCheckboxItem,
   ForMenuContent,
@@ -89,6 +95,27 @@ class TreeDisabledItemHost {}
   `,
 })
 class ListboxDisabledOptionHost {}
+
+@Component({
+  imports: [
+    ForListbox,
+    ForListboxController,
+    ForListboxGroup,
+    ForListboxGroupLabel,
+    ForListboxOption,
+  ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <input [forListboxController]="list" aria-label="Search" data-arm data-focus />
+    <div forListbox #list="forListbox" aria-label="Commands">
+      <div forListboxGroup>
+        <div forListboxGroupLabel data-press>Navigation</div>
+        <button type="button" forListboxOption value="home">Go home</button>
+      </div>
+    </div>
+  `,
+})
+class ListboxControlledHost {}
 
 @Component({
   imports: [ForSelect, ForSelectTrigger, ForSelectContent, ForSelectOption],
@@ -540,6 +567,7 @@ function pressWithoutFocus(target: HTMLElement): void {
 const SWEEP: readonly PressCase[] = [
   { file: 'tree/src/tree-item-toggle.ts', host: TreeToggleHost },
   { file: 'tree/src/tree-item.ts', host: TreeDisabledItemHost },
+  { file: 'listbox/src/listbox.ts', host: ListboxControlledHost },
   { file: 'listbox/src/listbox-option.ts', host: ListboxDisabledOptionHost },
   { file: 'select/src/select-option.ts', host: SelectDisabledOptionHost },
   { file: 'select/src/select-content.ts', host: SelectContentHost },

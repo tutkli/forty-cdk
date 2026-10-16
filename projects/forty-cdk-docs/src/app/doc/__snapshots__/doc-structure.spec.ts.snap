@@ -4674,7 +4674,7 @@ exports[`document structure > projects/forty-cdk/listbox/README.md declares the 
           "Behavior",
         ],
         "role": "plain",
-        "rows": 4,
+        "rows": 5,
       },
     ],
     "title": "Keyboard",
