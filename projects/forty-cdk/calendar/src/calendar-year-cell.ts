@@ -38,7 +38,9 @@ export class ForCalendarYearCell {
   private readonly selected = computed(() => this.#bound((v) => this.ctx.isYearSelected(v)));
   private readonly today = computed(() => this.#bound((v) => this.ctx.isYearToday(v)));
   private readonly focused = computed(() => this.#bound((v) => this.ctx.isYearFocused(v)));
-  private readonly disabled = computed(() => this.#bound((v) => this.ctx.isYearDisabled(v)));
+  private readonly disabled = computed(
+    () => this.ctx.disabled() || this.#bound((v) => this.ctx.isYearDisabled(v)),
+  );
 
   constructor() {
     assertInputBound(this.year, 'calendar', '[forCalendarYearCell]', 'year');

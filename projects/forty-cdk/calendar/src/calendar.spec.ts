@@ -9,7 +9,7 @@ import {
 import { TestBed } from '@angular/core/testing';
 import { CalendarDate, CalendarDateTime } from '@internationalized/date';
 
-import { compareDateOf, type DateRange } from 'forty-cdk/core';
+import { compareDateOf, type DateRange, LiveAnnouncer } from 'forty-cdk/core';
 import { type DateAdapter, type TimeCapableDateAdapter } from 'forty-cdk/date-adapter';
 import { flush, renderHost, type RenderResult } from '../../src/test-utils';
 import { buildMonthMatrix } from './build-month-matrix';
@@ -2327,6 +2327,226 @@ describe('ForCalendar', () => {
       await flush(r.fixture);
 
       expect(document.activeElement).toBe(monthCell(r, 6));
+    });
+
+    describe('Home / End stay in the focused row', () => {
+      const tabStop = (r: RenderResult<CalendarViewsHost>, selector: string) =>
+        r.queryAll(`${selector}[tabindex="0"]`);
+
+      it('month grid: Home / End land on the first / last month of the row', async () => {
+        const r = renderHost(CalendarViewsHost);
+        r.instance.value.set(new Date(2026, 4, 15));
+        r.instance.view.set('month');
+        await flush(r.fixture);
+
+        pressKey(monthCell(r, 5), 'Home');
+        await flush(r.fixture);
+        expect(tabStop(r, '[forCalendarMonthCell]')).toEqual([monthCell(r, 4)]);
+
+        pressKey(monthCell(r, 4), 'End');
+        await flush(r.fixture);
+        expect(tabStop(r, '[forCalendarMonthCell]')).toEqual([monthCell(r, 6)]);
+        expect(trigger(r).textContent!.trim()).toBe('2026');
+      });
+
+      it('month grid: Home / End stay in the last row', async () => {
+        const r = renderHost(CalendarViewsHost);
+        r.instance.value.set(new Date(2026, 10, 15));
+        r.instance.view.set('month');
+        await flush(r.fixture);
+
+        pressKey(monthCell(r, 11), 'End');
+        await flush(r.fixture);
+        expect(tabStop(r, '[forCalendarMonthCell]')).toEqual([monthCell(r, 12)]);
+
+        pressKey(monthCell(r, 12), 'Home');
+        await flush(r.fixture);
+        expect(tabStop(r, '[forCalendarMonthCell]')).toEqual([monthCell(r, 10)]);
+      });
+
+      it('year grid: Home / End land on the first / last year of the row', async () => {
+        const r = renderHost(CalendarViewsHost);
+        r.instance.value.set(new Date(2023, 5, 15));
+        r.instance.view.set('year');
+        await flush(r.fixture);
+
+        pressKey(yearCell(r, 2023), 'Home');
+        await flush(r.fixture);
+        expect(tabStop(r, '[forCalendarYearCell]')).toEqual([yearCell(r, 2022)]);
+
+        pressKey(yearCell(r, 2022), 'End');
+        await flush(r.fixture);
+        expect(tabStop(r, '[forCalendarYearCell]')).toEqual([yearCell(r, 2024)]);
+        expect(trigger(r).textContent!.trim()).toBe('2016 – 2027');
+      });
+    });
+
+    describe('period announcements and grid names outside the day view', () => {
+      const spyAnnounce = () => vi.spyOn(TestBed.inject(LiveAnnouncer), 'announce');
+      const gridName = (r: RenderResult<CalendarViewsHost>, selector: string) => {
+        const id = r.query(selector)!.getAttribute('aria-labelledby')!;
+        return document.getElementById(id)!.textContent!.trim();
+      };
+
+      it('announces the next year when ArrowRight leaves December in the month grid', async () => {
+        const r = renderHost(CalendarViewsHost);
+        r.instance.value.set(new Date(2026, 11, 15));
+        r.instance.view.set('month');
+        await flush(r.fixture);
+        const announce = spyAnnounce();
+
+        pressKey(monthCell(r, 12), 'ArrowRight');
+        await flush(r.fixture);
+
+        expect(announce.mock.calls).toEqual([['2027', 'polite']]);
+      });
+
+      it('announces the year PageDown moves the month grid to', async () => {
+        const r = renderHost(CalendarViewsHost);
+        r.instance.view.set('month');
+        await flush(r.fixture);
+        const announce = spyAnnounce();
+
+        pressKey(monthCell(r, 6), 'PageDown');
+        await flush(r.fixture);
+
+        expect(announce.mock.calls).toEqual([['2027', 'polite']]);
+      });
+
+      it('does not announce a month-grid move that stays in the visible year', async () => {
+        const r = renderHost(CalendarViewsHost);
+        r.instance.view.set('month');
+        await flush(r.fixture);
+        const announce = spyAnnounce();
+
+        pressKey(monthCell(r, 6), 'ArrowRight');
+        await flush(r.fixture);
+
+        expect(monthCell(r, 7).getAttribute('tabindex')).toBe('0');
+        expect(announce).not.toHaveBeenCalled();
+      });
+
+      it('announces the next block when ArrowRight leaves the last year of the block', async () => {
+        const r = renderHost(CalendarViewsHost);
+        r.instance.value.set(new Date(2027, 5, 15));
+        r.instance.view.set('year');
+        await flush(r.fixture);
+        const announce = spyAnnounce();
+
+        pressKey(yearCell(r, 2027), 'ArrowRight');
+        await flush(r.fixture);
+
+        expect(announce.mock.calls).toEqual([['2028 – 2039', 'polite']]);
+      });
+
+      it('announces the month view period, not a month, from the next button', async () => {
+        const r = renderHost(CalendarViewsHost);
+        r.instance.view.set('month');
+        await flush(r.fixture);
+        const announce = spyAnnounce();
+
+        click(nextBtn(r));
+        await flush(r.fixture);
+
+        expect(announce.mock.calls).toEqual([['2027', 'polite']]);
+      });
+
+      it('announces the year view block from the previous button', async () => {
+        const r = renderHost(CalendarViewsHost);
+        r.instance.view.set('year');
+        await flush(r.fixture);
+        const announce = spyAnnounce();
+
+        click(prevBtn(r));
+        await flush(r.fixture);
+
+        expect(announce.mock.calls).toEqual([['2004 – 2015', 'polite']]);
+      });
+
+      it('names the month and year grids after the period they show', async () => {
+        const r = renderHost(CalendarViewsHost);
+        r.instance.view.set('month');
+        await flush(r.fixture);
+        expect(gridName(r, '[forCalendarMonthGrid]')).toBe('2026');
+        expect(gridName(r, '[forCalendarMonthGrid]')).toBe(trigger(r).textContent!.trim());
+
+        r.instance.view.set('year');
+        await flush(r.fixture);
+        expect(gridName(r, '[forCalendarYearGrid]')).toBe('2016 – 2027');
+        expect(gridName(r, '[forCalendarYearGrid]')).toBe(trigger(r).textContent!.trim());
+      });
+
+      it('keeps the month grid name when a move stays in the visible year', async () => {
+        const r = renderHost(CalendarViewsHost);
+        r.instance.view.set('month');
+        await flush(r.fixture);
+
+        pressKey(monthCell(r, 6), 'ArrowDown');
+        await flush(r.fixture);
+
+        expect(gridName(r, '[forCalendarMonthGrid]')).toBe('2026');
+      });
+    });
+
+    describe('read-only drill-down', () => {
+      it('a month cell click returns a read-only calendar to the day view', async () => {
+        const r = renderHost(CalendarViewsHost);
+        r.instance.readonly.set(true);
+        await flush(r.fixture);
+
+        click(trigger(r));
+        await flush(r.fixture);
+        expect(viewRoot(r).getAttribute('data-view')).toBe('month');
+
+        click(monthCell(r, 3));
+        await flush(r.fixture);
+
+        expect(viewRoot(r).getAttribute('data-view')).toBe('day');
+        expect(r.queryAll('[data-testid^="cell-2026-3-"]').length).toBe(31);
+        expect(r.instance.value()!.getMonth()).toBe(5);
+      });
+
+      it('Enter on a year cell drills a read-only calendar into the month view', async () => {
+        const r = renderHost(CalendarViewsHost);
+        r.instance.readonly.set(true);
+        r.instance.view.set('year');
+        await flush(r.fixture);
+
+        pressKey(yearCell(r, 2025), 'Enter');
+        await flush(r.fixture);
+
+        expect(viewRoot(r).getAttribute('data-view')).toBe('month');
+        expect(trigger(r).textContent!.trim()).toBe('2025');
+        expect(r.instance.value()!.getFullYear()).toBe(2026);
+      });
+    });
+
+    describe('a disabled calendar marks its month and year cells', () => {
+      it('month cells carry aria-disabled and data-disabled', async () => {
+        const r = renderHost(CalendarViewsHost);
+        r.instance.disabled.set(true);
+        r.instance.view.set('month');
+        await flush(r.fixture);
+
+        for (const cell of r.queryAll('[forCalendarMonthCell]')) {
+          expect(cell.getAttribute('aria-disabled')).toBe('true');
+          expect(cell.getAttribute('data-disabled')).toBe('');
+        }
+        expect(r.queryAll('[forCalendarMonthCell]').length).toBe(12);
+      });
+
+      it('year cells carry aria-disabled and data-disabled', async () => {
+        const r = renderHost(CalendarViewsHost);
+        r.instance.disabled.set(true);
+        r.instance.view.set('year');
+        await flush(r.fixture);
+
+        for (const cell of r.queryAll('[forCalendarYearCell]')) {
+          expect(cell.getAttribute('aria-disabled')).toBe('true');
+          expect(cell.getAttribute('data-disabled')).toBe('');
+        }
+        expect(r.queryAll('[forCalendarYearCell]').length).toBe(12);
+      });
     });
 
     describe('reactive updates', () => {

@@ -53,6 +53,21 @@ export function resolveCalendarGridMove<T>(
   }
 }
 
+/**
+ * The first and last value of the row holding `position`, in a grid laying the
+ * consecutive values `first` to `last` out `columns` per row. A short last row
+ * ends at `last`. Feeds the month and year grids' `Home` / `End`.
+ */
+export function calendarGridRowBounds(
+  position: number,
+  first: number,
+  last: number,
+  columns: number,
+): { start: number; end: number } {
+  const start = position - ((position - first) % columns);
+  return { start, end: Math.min(start + columns - 1, last) };
+}
+
 /** Whether a keydown is the activation key (`Enter` / `Space`) every sub-grid selects on. */
 export function isCalendarActivationKey(event: KeyboardEvent): boolean {
   return event.key === 'Enter' || event.key === ' ' || event.key === 'Spacebar';

@@ -42,7 +42,9 @@ export class ForCalendarMonthCell {
   private readonly selected = computed(() => this.#bound((v) => this.ctx.isMonthSelected(v)));
   private readonly today = computed(() => this.#bound((v) => this.ctx.isMonthToday(v)));
   private readonly focused = computed(() => this.#bound((v) => this.ctx.isMonthFocused(v)));
-  private readonly disabled = computed(() => this.#bound((v) => this.ctx.isMonthDisabled(v)));
+  private readonly disabled = computed(
+    () => this.ctx.disabled() || this.#bound((v) => this.ctx.isMonthDisabled(v)),
+  );
 
   constructor() {
     assertInputBound(this.month, 'calendar', '[forCalendarMonthCell]', 'month');

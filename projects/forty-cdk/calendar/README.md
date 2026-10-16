@@ -306,7 +306,7 @@ Set `selectionMode="range"` and bind `[(range)]` to get date-range selection. In
 | `goToMonth(month)`  | Set the visible month within the current visible year. `month` is **1-12**.             |
 | `goToYear(year)`    | Set the visible year, keeping the current visible month.                                |
 
-All three methods re-apply the user's intended day-of-month (clamped to the target month's length), clamp the result into `[min, max]`, and announce the new period politely when the visible month changes. They keep DOM focus on the caller and do not move focus into the grid. They are a no-op while the calendar is `disabled`.
+All three methods re-apply the user's intended day-of-month (clamped to the target month's length), clamp the result into `[min, max]`, and announce the new period politely when the period the active view shows changes. They keep DOM focus on the caller and do not move focus into the grid. They are a no-op while the calendar is `disabled`.
 
 ### Read accessors and predicates
 
@@ -395,15 +395,17 @@ The lower-level hooks (`visibleMonthNumber()`, `visibleYear()`, `monthOptions()`
 
 `ForCalendar` supports two additional views (**month grid** and **year grid**) so users can jump quickly to a different month or year without paging one at a time. All three views share a single `[(view)]` model and the same `focusedDate` cursor.
 
+The heading's `label()` follows the active view, with the same text as the view trigger: the month and year in day view, the year in month view, the block of years in year view. Every grid is named by the heading, so each one is named after the period it shows. A keyboard move or a prev / next press that changes that period announces it. Drilling down changes no value, so a `readonly` calendar still drills from a year to its months and from a month to its days.
+
 ### Pieces
 
-| Class                    | Selector                   | Role                                                                                                                    |
-| ------------------------ | -------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `ForCalendarViewTrigger` | `[forCalendarViewTrigger]` | Button that cycles the view: day → month → year. Auto-disabled when the calendar is disabled.                           |
-| `ForCalendarMonthGrid`   | `[forCalendarMonthGrid]`   | 4×3 month grid (`role="grid"`). Exposes `rows()`, an array of `CalendarMonthRow`, each with three `CalendarYearOption`. |
-| `ForCalendarMonthCell`   | `[forCalendarMonthCell]`   | One month (`role="gridcell"`). Requires `[month]` (1–12). Click drills down to day view for that month.                 |
-| `ForCalendarYearGrid`    | `[forCalendarYearGrid]`    | 4×3 year grid (`role="grid"`). Exposes `rows()`, an array of `CalendarYearRow`, each with three `CalendarYearOption`.   |
-| `ForCalendarYearCell`    | `[forCalendarYearCell]`    | One year (`role="gridcell"`). Requires `[year]`. Click drills down to month view for that year.                         |
+| Class                    | Selector                   | Role                                                                                                                     |
+| ------------------------ | -------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `ForCalendarViewTrigger` | `[forCalendarViewTrigger]` | Button that cycles the view: day → month → year. Auto-disabled when the calendar is disabled.                            |
+| `ForCalendarMonthGrid`   | `[forCalendarMonthGrid]`   | 4×3 month grid (`role="grid"`). Exposes `rows()`, an array of `CalendarMonthRow`, each with three `CalendarMonthOption`. |
+| `ForCalendarMonthCell`   | `[forCalendarMonthCell]`   | One month (`role="gridcell"`). Requires `[month]` (1–12). Click drills down to day view for that month.                  |
+| `ForCalendarYearGrid`    | `[forCalendarYearGrid]`    | 4×3 year grid (`role="grid"`). Exposes `rows()`, an array of `CalendarYearRow`, each with three `CalendarYearOption`.    |
+| `ForCalendarYearCell`    | `[forCalendarYearCell]`    | One year (`role="gridcell"`). Requires `[year]`. Click drills down to month view for that year.                          |
 
 ### `view` model — `ForCalendar`
 

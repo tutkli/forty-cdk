@@ -193,7 +193,11 @@ export interface ForCalendarContext<D> {
   readonly monthRows: Signal<readonly CalendarMonthRow[]>;
   /** Rows of the year picker grid (3 columns) for the aligned block containing the visible year. */
   readonly yearRows: Signal<readonly CalendarYearRow[]>;
-  /** Label for the active view shown on the view-trigger button. */
+  /**
+   * Label of the period the active view shows, on the view trigger and the
+   * heading: the month and year in day view, the year in month view, the block
+   * of years in year view.
+   */
   readonly viewTriggerLabel: Signal<string>;
   /** Whether the prev button should be disabled for the active view. */
   readonly isPreviousDisabled: Signal<boolean>;
@@ -202,9 +206,15 @@ export interface ForCalendarContext<D> {
 
   /** Cycle the view one step coarser: `day → month → year`, clamped at `'year'`. */
   cycleView(): void;
-  /** Drill into a month (1-12): navigate to it and switch to day view. No-op when disabled/read-only/out of bounds. */
+  /**
+   * Drill into a month (1-12): navigate to it and switch to day view, read-only
+   * included. No-op when disabled or out of bounds.
+   */
   selectMonth(month: number): void;
-  /** Drill into a year: navigate to it and switch to month view. No-op when disabled/read-only/out of bounds. */
+  /**
+   * Drill into a year: navigate to it and switch to month view, read-only
+   * included. No-op when disabled or out of bounds.
+   */
   selectYear(year: number): void;
   /** Page backward by one month / year / block depending on the active view. */
   pagePrevious(): void;
