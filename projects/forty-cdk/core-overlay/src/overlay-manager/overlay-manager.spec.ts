@@ -12,10 +12,13 @@ import {
   Injector,
   type OnInit,
   type Provider,
+  type ProviderToken,
   provideZonelessChangeDetection,
   type Type,
 } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+
+import { FOR_FIELD_ANCHOR_CONTEXT, FOR_FIELD_CONTEXT } from 'forty-cdk/core';
 
 import { flush, nextMacrotask } from '../../../src/test-utils';
 import {
@@ -97,6 +100,13 @@ class TestManager extends OverlayManagerCore<TestEntry> {
 
   exposeInjectorFactory(providers: readonly Provider[]): (parent: Injector) => Injector {
     return this.createInjectorFactory(providers);
+  }
+
+  exposeScopedInjectorFactory(
+    injector: Injector,
+    contextToken: ProviderToken<unknown>,
+  ): (parent: Injector) => Injector {
+    return this.createInjectorFactory([], { injector, contextToken });
   }
 
   exposeResolveReturnFocusTarget(): HTMLElement | null {
@@ -538,6 +548,58 @@ describe('OverlayManagerCore', () => {
       const parentA = TestBed.inject(Injector);
       const parentB = Injector.create({ parent: parentA, providers: [] });
       expect(factory(parentA)).not.toBe(factory(parentB));
+    });
+
+    it('destroys the injector it replaces for a new parent', () => {
+      const manager = makeManager();
+      const factory = manager.exposeInjectorFactory([]);
+      const parentA = TestBed.inject(Injector);
+      const parentB = Injector.create({ parent: parentA, providers: [] });
+      const destroyed = vi.fn();
+      factory(parentA).get(DestroyRef).onDestroy(destroyed);
+
+      factory(parentB);
+
+      expect(destroyed).toHaveBeenCalledTimes(1);
+    });
+
+    it('destroys the injector once with its parent scope', () => {
+      const manager = makeManager();
+      const factory = manager.exposeInjectorFactory([]);
+      const parent = Injector.create({ parent: TestBed.inject(Injector), providers: [] });
+      const destroyed = vi.fn();
+      factory(parent).get(DestroyRef).onDestroy(destroyed);
+
+      parent.destroy();
+
+      expect(destroyed).toHaveBeenCalledTimes(1);
+    });
+
+    it('copies the field-boundary tokens from the parent on the scoped path', () => {
+      const manager = makeManager();
+      const context = { value: 'surface' };
+      const parent = Injector.create({
+        parent: TestBed.inject(Injector),
+        providers: [
+          { provide: TOKEN, useValue: context },
+          { provide: FOR_FIELD_CONTEXT, useValue: null },
+          { provide: FOR_FIELD_ANCHOR_CONTEXT, useValue: null },
+        ],
+      });
+      const scope = Injector.create({
+        parent: TestBed.inject(Injector),
+        providers: [
+          { provide: FOR_FIELD_CONTEXT, useValue: { outer: true } },
+          { provide: FOR_FIELD_ANCHOR_CONTEXT, useValue: { outer: true } },
+        ],
+      });
+      const factory = manager.exposeScopedInjectorFactory(scope, TOKEN);
+
+      const injector = factory(parent);
+
+      expect(injector.get(TOKEN)).toBe(context);
+      expect(injector.get(FOR_FIELD_CONTEXT)).toBeNull();
+      expect(injector.get(FOR_FIELD_ANCHOR_CONTEXT)).toBeNull();
     });
   });
 });

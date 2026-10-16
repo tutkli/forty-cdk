@@ -144,7 +144,11 @@ export interface ForDialogOpenConfig<D = unknown> {
    */
   classList?: string | readonly string[];
 
-  /** Extra providers for the opened component's injector (alongside `FOR_DIALOG_DATA` + `ForDialogRef`). */
+  /**
+   * Extra providers for the opened component's injector (alongside `FOR_DIALOG_DATA` + `ForDialogRef`).
+   * Their instances are destroyed once the closed dialog unmounts, so their
+   * `ngOnDestroy` and `DestroyRef` teardown runs.
+   */
   providers?: Provider[];
 
   /**
@@ -156,7 +160,9 @@ export interface ForDialogOpenConfig<D = unknown> {
    * values still win over the resolved scoped defaults. Omit it to keep today's
    * root-scope behavior. Pass the ambient `inject(Injector)` from the caller —
    * `open()` is normally invoked outside an injection context, so an explicit
-   * handle is the predictable contract.
+   * handle is the predictable contract. The dialog stays a field boundary: a
+   * control in the opened component never registers with a `[forField]` the
+   * caller sits in.
    */
   injector?: Injector;
 
