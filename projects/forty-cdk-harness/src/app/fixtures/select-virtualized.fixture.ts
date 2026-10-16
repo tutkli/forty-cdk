@@ -77,7 +77,7 @@ export class SelectVirtualizedFixture {
   private readonly scrollElement = computed(() => this.scrollRef()?.nativeElement ?? null);
 
   protected readonly v = injectVirtualizer({
-    count: computed(() => this.items.length),
+    count: signal(this.items.length).asReadonly(),
     estimateSize: () => 36,
     scrollElement: this.scrollElement,
   });

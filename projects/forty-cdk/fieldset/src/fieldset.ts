@@ -49,8 +49,8 @@ import {
   selector: '[forFieldset]',
   exportAs: 'forFieldset',
   host: {
-    '[attr.role]': 'roleAttr()',
-    '[attr.aria-disabled]': '!isNativeFieldset() && disabled() ? "true" : null',
+    '[attr.role]': 'roleAttr',
+    '[attr.aria-disabled]': '!isNativeFieldset && disabled() ? "true" : null',
     '[attr.data-disabled]': 'disabled() ? "" : null',
   },
   providers: [{ provide: FOR_FIELDSET_CONTEXT, useExisting: ForFieldset }],
@@ -89,16 +89,14 @@ export class ForFieldset implements ForFieldsetContext {
   readonly legendId = this.#legendId.asReadonly();
 
   /** Whether the host element is a native `<fieldset>` (no role/labelledby needed). */
-  private readonly isNativeFieldset = computed(
-    () => this.#host.nativeElement.tagName === 'FIELDSET',
-  );
+  private readonly isNativeFieldset = this.#host.nativeElement.tagName === 'FIELDSET';
 
   /**
    * Native `disabled` is reflected only on a real `<fieldset>` (where it
    * natively disables descendant controls); a non-`<fieldset>` host advertises
    * its disabled state via `aria-disabled` instead.
    */
-  private readonly nativeDisabled = computed(() => this.isNativeFieldset() && this.disabled());
+  private readonly nativeDisabled = computed(() => this.isNativeFieldset && this.disabled());
 
   constructor() {
     reflectDisabled(this.nativeDisabled);
@@ -108,7 +106,7 @@ export class ForFieldset implements ForFieldsetContext {
   }
 
   /** `role="group"` on a non-`<fieldset>` element, else null. */
-  private readonly roleAttr = computed(() => (this.isNativeFieldset() ? null : 'group'));
+  private readonly roleAttr = this.isNativeFieldset ? null : 'group';
 
   /**
    * Resolved `aria-labelledby`: a consumer-set static value when present, else
@@ -117,7 +115,7 @@ export class ForFieldset implements ForFieldsetContext {
    * none).
    */
   private readonly labelledBy = hostLabelledBy(() =>
-    !this.isNativeFieldset() && this.#legends() > 0 ? this.legendId() : null,
+    !this.isNativeFieldset && this.#legends() > 0 ? this.legendId() : null,
   );
 
   /**

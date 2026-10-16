@@ -3239,7 +3239,7 @@ const fortyCdkPlugin = {
     // `item.disabled` natively while its `aria-disabled` reads `ariaDisabled()`
     // (the APG "expanded panel that refuses to collapse" state), and
     // `[forFieldset]` reflects `nativeDisabled` while its ARIA branch reads
-    // `!isNativeFieldset() && disabled()` — a host that by definition never
+    // `!isNativeFieldset && disabled()` — a host that by definition never
     // takes the native attribute.
     //
     // Two shapes stay out of reach, both guarded instead by the `disabled`
@@ -3795,6 +3795,20 @@ module.exports = tseslint.config(
       '@angular-eslint/no-output-native': 'error',
       // `onX` output names are still banned (React idiom, CLAUDE.md output rule).
       '@angular-eslint/no-output-on-prefix': 'error',
+      // A `computed` / `effect` that reads no signal never re-runs: it is either
+      // a constant wearing a reactive type or a dependency the author thought
+      // they tracked. A constant is a plain `readonly` field, or
+      // `signal(…).asReadonly()` where the API types it as a `Signal`.
+      '@angular-eslint/reactive-context-must-read-signal': 'error',
+      // Off on purpose. The rule wants every `inject()` field above every other
+      // member; the library instead declares an injection beside the state it
+      // feeds, and its own `inject*` helpers (`injectAccordionContext`,
+      // `injectHovered`, …) sit among the inputs they read. Taught those
+      // helpers (`additionalInjectFunctions`), the rule reports 207 library
+      // sites with no autofix, for a hazard that cannot ship silently: reading an
+      // injected field before it is initialized throws at construction, and every
+      // primitive is constructed by its spec and by the SSR sweep (#2490).
+      '@angular-eslint/inject-at-top': 'off',
     },
   },
 
@@ -3839,6 +3853,10 @@ module.exports = tseslint.config(
       // validation channel a consumer inherits.
       'forty-cdk/no-assertion-only-effect': 'off',
       'forty-cdk/namespaced-css-custom-property': 'off',
+      // A spec that records when the scheduler first runs an `effect()` or
+      // `afterRenderEffect()` reads no signal on purpose: it is probing the run,
+      // not deriving state.
+      '@angular-eslint/reactive-context-must-read-signal': 'off',
     },
   },
 
@@ -3895,6 +3913,8 @@ module.exports = tseslint.config(
       },
     },
     rules: {
+      // Needs type information, which this block switches off.
+      '@angular-eslint/reactive-context-must-read-signal': 'off',
       'no-restricted-globals': 'off',
       'no-restricted-imports': 'off',
       'no-restricted-syntax': 'off',
@@ -3948,6 +3968,8 @@ module.exports = tseslint.config(
       },
     },
     rules: {
+      // Needs type information, which this block switches off.
+      '@angular-eslint/reactive-context-must-read-signal': 'off',
       '@typescript-eslint/no-unused-vars': 'off',
       '@typescript-eslint/no-explicit-any': 'off',
       'no-restricted-globals': 'off',
@@ -4011,6 +4033,8 @@ module.exports = tseslint.config(
       },
     },
     rules: {
+      // Needs type information, which this block switches off.
+      '@angular-eslint/reactive-context-must-read-signal': 'off',
       'no-restricted-imports': 'off',
     },
   },
@@ -4023,6 +4047,13 @@ module.exports = tseslint.config(
       // Hard-ban `*ngIf` / `*ngFor` / `*ngSwitch` in favour of `@if` / `@for` / `@switch`.
       '@angular-eslint/template/prefer-control-flow': 'error',
       '@angular-eslint/template/elements-content': ['error', { allowList: ['ariaLabel'] }],
+      '@angular-eslint/template/prefer-style-binding': 'error',
+      // A `@switch` over a union closes with `@default never;`, so the template
+      // type-check fails when a member gains no `@case`. The check narrows only
+      // a stable value: switch on a `@let` (`@let view = cal.view();`), never on
+      // the signal call itself, which every clause re-reads unnarrowed. Over a
+      // discriminated union, check the object: `@default never(block);`.
+      '@angular-eslint/template/require-switch-default': 'error',
     },
   },
 

@@ -234,7 +234,7 @@ export function injectVirtualizer(options: VirtualizerOptions): ForVirtualizer {
     return {
       virtualItems: signal<readonly VirtualItem[]>([]).asReadonly(),
       totalSize: computed(() => estimateTotal(options.count(), options.estimateSize)),
-      range: computed<readonly [number, number]>(() => [0, 0]),
+      range: signal<readonly [number, number]>([0, 0]).asReadonly(),
       scrollToIndex: () => undefined,
       scrollToOffset: () => undefined,
       measureElement: () => undefined,

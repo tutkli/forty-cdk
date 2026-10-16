@@ -81,7 +81,8 @@ import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized
         </h2>
       </header>
 
-      @switch (cal.view()) {
+      @let view = cal.view();
+      @switch (view) {
         @case ('day') {
           <table forCalendarGrid #grid="forCalendarGrid" class="calendar-grid">
             <thead forCalendarGridHeader>
@@ -144,6 +145,7 @@ import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized
             </tbody>
           </table>
         }
+        @default never;
       }
     </div>
   `,
