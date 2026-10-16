@@ -892,6 +892,91 @@ describe('ForDialog (declarative)', () => {
         sibling.remove();
       }
     });
+
+    describe('[modal] rebound while open', () => {
+      @Component({
+        imports: [ForDialog],
+        template: `
+          @if (open()) {
+            <div forDialog (dismiss)="open.set(false)" [modal]="modal()" ariaLabel="t">
+              <button type="button">a</button>
+            </div>
+          }
+        `,
+      })
+      class RebindModalHost {
+        readonly open = signal(false);
+        readonly modal = signal(false);
+      }
+
+      it('keeps aria-modal absent alongside the live page when a non-modal dialog turns modal', async () => {
+        const sibling = document.createElement('section');
+        document.body.appendChild(sibling);
+
+        try {
+          const r = renderHost(RebindModalHost);
+          r.instance.open.set(true);
+          await flush(r.fixture);
+
+          r.instance.modal.set(true);
+          await flush(r.fixture);
+
+          const dialog = document.querySelector<HTMLElement>('[forDialog]')!;
+          expect(dialog.hasAttribute('aria-modal')).toBe(false);
+          expect(sibling.hasAttribute('inert')).toBe(false);
+          expect(document.body.style.overflow).toBe('');
+        } finally {
+          sibling.remove();
+        }
+      });
+
+      it('keeps aria-modal="true" alongside the inert page when a modal dialog turns non-modal', async () => {
+        const sibling = document.createElement('section');
+        document.body.appendChild(sibling);
+
+        try {
+          const r = renderHost(RebindModalHost);
+          r.instance.modal.set(true);
+          r.instance.open.set(true);
+          await flush(r.fixture);
+
+          r.instance.modal.set(false);
+          await flush(r.fixture);
+
+          const dialog = document.querySelector<HTMLElement>('[forDialog]')!;
+          expect(dialog.getAttribute('aria-modal')).toBe('true');
+          expect(sibling.hasAttribute('inert')).toBe(true);
+          expect(document.body.style.overflow).toBe('hidden');
+        } finally {
+          sibling.remove();
+        }
+      });
+
+      it('applies the rebound mode on the next open', async () => {
+        const sibling = document.createElement('section');
+        document.body.appendChild(sibling);
+
+        try {
+          const r = renderHost(RebindModalHost);
+          r.instance.open.set(true);
+          await flush(r.fixture);
+          r.instance.modal.set(true);
+          await flush(r.fixture);
+
+          r.instance.open.set(false);
+          await flush(r.fixture);
+          r.instance.open.set(true);
+          await flush(r.fixture);
+
+          const dialog = document.querySelector<HTMLElement>('[forDialog]')!;
+          expect(dialog.getAttribute('aria-modal')).toBe('true');
+          expect(sibling.hasAttribute('inert')).toBe(true);
+          expect(document.body.style.overflow).toBe('hidden');
+        } finally {
+          sibling.remove();
+        }
+      });
+    });
   });
 
   describe('reactive updates', () => {

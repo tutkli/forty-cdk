@@ -1189,6 +1189,27 @@ describe('ForDatePicker', () => {
       await openPicker(r);
       expect(content()!.hasAttribute('aria-modal')).toBe(false);
     });
+
+    it('keeps aria-modal absent when modal turns on while the non-modal surface is open', async () => {
+      const r = renderHost(Host);
+      await openPicker(r);
+
+      r.instance.modal.set(true);
+      await flush(r.fixture);
+
+      expect(content()!.hasAttribute('aria-modal')).toBe(false);
+    });
+
+    it('keeps aria-modal="true" when modal turns off while the modal surface is open', async () => {
+      const r = renderHost(Host);
+      r.instance.modal.set(true);
+      await openPicker(r);
+
+      r.instance.modal.set(false);
+      await flush(r.fixture);
+
+      expect(content()!.getAttribute('aria-modal')).toBe('true');
+    });
   });
 
   describe('date-time (granularity > day)', () => {

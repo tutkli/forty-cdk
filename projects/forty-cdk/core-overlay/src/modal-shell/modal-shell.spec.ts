@@ -483,6 +483,22 @@ describe('injectModalShell', () => {
       expect(ctx.handle().isModal()).toBe(true);
       ctx.destroy();
     });
+
+    it('reports the activated mode through modal() after a later toggle in either direction', async () => {
+      const modal = signal(false);
+      const ctx = mountShell(() => ({
+        modal,
+        returnFocus: signal(true),
+        initialFocus: signal('first'),
+      }));
+      await flush(ctx.fixture);
+      expect(ctx.handle().modal()).toBe(false);
+
+      modal.set(true);
+      await flush(ctx.fixture);
+      expect(ctx.handle().modal()).toBe(false);
+      ctx.destroy();
+    });
   });
 
   describe('autoFocusOnOpen veto wiring', () => {

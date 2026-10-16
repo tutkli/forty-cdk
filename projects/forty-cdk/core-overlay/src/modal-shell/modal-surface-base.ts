@@ -63,7 +63,7 @@ import { ModalTriggerRegistry } from './modal-trigger';
 @Directive({
   host: {
     '[attr.role]': 'alert() ? "alertdialog" : "dialog"',
-    '[attr.aria-modal]': 'modal() ? "true" : null',
+    '[attr.aria-modal]': 'modalInEffect() ? "true" : null',
     '[attr.aria-label]': 'resolvedAriaLabel()',
     'data-state': 'open',
     tabindex: '-1',
@@ -136,8 +136,9 @@ export abstract class ModalSurfaceBase<Reason extends string> {
 
   /**
    * Whether the surface activates modal semantics (`aria-modal`, focus trap,
-   * body scroll lock, inert siblings). Implemented by the subclass so its
-   * default can be seeded from the primitive's scope defaults.
+   * body scroll lock, inert siblings). Read once at mount: a later change takes
+   * effect on the next mount. Implemented by the subclass so its default can be
+   * seeded from the primitive's scope defaults.
    */
   abstract readonly modal: Signal<boolean>;
 
@@ -217,6 +218,8 @@ export abstract class ModalSurfaceBase<Reason extends string> {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
   readonly #triggers = inject(ModalTriggerRegistry);
   #shell: ModalShellHandle | null = null;
+
+  private readonly modalInEffect = computed(() => this.#shell?.modal() ?? this.modal());
 
   /**
    * Resolved `aria-labelledby`: a consumer-set static value when present, else
