@@ -39,7 +39,7 @@ import { FOR_DATE_RANGE_PICKER_DEFAULTS } from 'forty-cdk/defaults';
  * (`[forDatePickerTrigger]`, `[forDatePickerContent]`, `[forDatePickerValue]`,
  * `[forDatePickerAnchor]`) through the shared {@link DatePickerBase}.
  *
- * Where `ForDatePicker[selectionMode="range"]` exposes the range through a
+ * Where `ForCalendar[selectionMode="range"]` exposes the range through a
  * plain two-way `[(range)]` model (no form contract), `ForDateRangePicker` is
  * the root **and** the form value: it implements
  * `FormValueControl<DateRange<D> | null>`, so the committed range

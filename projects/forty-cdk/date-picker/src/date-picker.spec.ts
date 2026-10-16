@@ -1210,6 +1210,15 @@ describe('ForDatePicker', () => {
 
       expect(content()!.getAttribute('aria-modal')).toBe('true');
     });
+
+    it("focuses the calendar's focused cell on open in modal mode, not the first focusable", async () => {
+      const r = renderHost(Host);
+      r.instance.modal.set(true);
+      r.instance.value.set(new Date(2026, 5, 18));
+      await openPicker(r);
+
+      expect(document.activeElement).toBe(cell('2026-6-18'));
+    });
   });
 
   describe('date-time (granularity > day)', () => {

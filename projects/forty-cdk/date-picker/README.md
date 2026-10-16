@@ -11,7 +11,7 @@ A trigger that opens a floating calendar to pick a date, composing ForCalendar i
 
 Reinterpreted idiomatically for modern Angular: a focusable trigger that opens a floating surface wrapping a projected [`ForCalendar`](../calendar/README.md).
 
-`ForDatePicker` is the root **and** the form value: it implements `FormValueControl<D | null>` from `@angular/forms/signals`, so it auto-wires with `[formField]`. The trigger is the focusable control that carries `name` / `disabled` / `invalid`; selection state flows root → projected calendar via `[(value)]`. The library reuses its existing overlay stack (trigger-anchored Popover positioning, dismissible layer, return-focus) rather than re-implementing positioning, dismissal, or focus return. The modal opt-in routes through the shared modal shell (focus trap + inert background + scroll lock).
+`ForDatePicker` is the root **and** the form value: it implements `FormValueControl<D | null>` from `@angular/forms/signals`, so it auto-wires with `[formField]`. The trigger is the focusable control that carries `disabled` / `invalid` / `required` / `readonly`, while `name` submits the value through a hidden input (see [Native submission](#native-submission)); selection state flows root → projected calendar via `[(value)]`. The library reuses its existing overlay stack (trigger-anchored Popover positioning, dismissible layer, return-focus) rather than re-implementing positioning, dismissal, or focus return. The modal opt-in routes through the shared modal shell (focus trap + inert background + scroll lock).
 
 ## When to choose
 
@@ -187,7 +187,7 @@ With `granularity="minute"` and a time-capable adapter the picker becomes a date
 
 ### Constraints
 
-`minDate` disables every day before today and `isDateUnavailable` blocks weekends. The picker forwards both to the projected calendar, where they reflect `aria-disabled` and refuse selection while the arrow keys still travel across them. Only an available weekday can be committed.
+`minDate` disables every day before today and `isDateUnavailable` blocks weekends. Forward both to the projected calendar's `[min]` / `[isDateUnavailable]`, where they reflect `aria-disabled` and refuse selection while the arrow keys still travel across them. Only an available weekday can be committed. The picker does not forward them itself: on a calendar bound without them, it clamps an out-of-range pick into `[minDate, maxDate]` and commits an unavailable date as picked.
 
 ### Range selection
 
@@ -220,11 +220,15 @@ Open the picker and click a first day: the trigger keeps its placeholder, becaus
 
 Plus the shared `FormUiControl` inputs from the base (`disabled`, `readonly`, `required`, `invalid`, `pending`, `dirty`, `name`, `errors`, and the `touched` model) and the floating tunables (`sideOffset`, `alignOffset`, `avoidCollisions`, `collisionPadding`, `sticky`, `hideWhenDetached`).
 
-A native reset of the owning `<form>` returns `value` to what it held when the picker first rendered. In the [field anatomy](#field-anatomy) it also drops a partly typed entry in the projected field.
-
 > **`locale` only styles the trigger display.** It drives the text rendered by `[forDatePickerValue]` (both here and on `ForDateRangePicker`); it is **not** forwarded to the projected `ForCalendar`. Bind the calendar's own `[locale]` to localize its heading / weekday / cell labels, exactly as you forward `[min]` / `[max]`.
 
 > **Why `minDate` / `maxDate`, not `min` / `max`?** `ForDatePicker` is a `FormValueControl`, and `FormUiControl` reserves `min` / `max` for numeric validators (`InputSignal<number | undefined>`). A date-typed `min` / `max` would break that contract, so the date bounds use the `*Date` suffix. (`ForCalendar` is not a form control, so it keeps `min` / `max`.)
+
+### Native submission
+
+When `name` is set, a hidden `<input name="…">` is mounted right after the `[forDatePicker]` element and mirrors the committed value as an ISO date (`YYYY-MM-DD`), or as an ISO date-time (`YYYY-MM-DDTHH:mm`, plus `:ss` at `granularity="second"`) at a granularity finer than `'day'`. It is removed while the value is `null` and disabled with the picker. The trigger itself carries no `name` attribute.
+
+A native reset of the owning `<form>` returns `value` to what it held when the picker first rendered. In the [field anatomy](#field-anatomy) it also drops a partly typed entry in the projected field.
 
 ### Data attributes
 
@@ -451,7 +455,7 @@ Defaults are configured with `provideForDateRangePickerDefaults` (`side` / `alig
 | **Escape**                                         | Dismiss the surface and return focus to the trigger (when `dismissible`).                                                                                        |
 | **Tab / Shift+Tab** past either end of the surface | Non-modal: Tab moves on to the element after the trigger and Shift+Tab lands on the trigger, closing the surface when `dismissible`. Modal: focus stays trapped. |
 
-Inside the surface, the projected `ForCalendar` owns the full grid keyboard map (arrows / `Home` / `End` / `PageUp` / `PageDown` / `Enter` / `Space`). On open, focus lands on the calendar's focused cell (`value ?? today`, with today clamped into the calendar's `[min, max]`) in non-modal mode, or the first focusable element in modal mode.
+Inside the surface, the projected `ForCalendar` owns the full grid keyboard map (arrows / `Home` / `End` / `PageUp` / `PageDown` / `Enter` / `Space`). On open, focus lands on the calendar's focused cell (`value ?? today`, with today clamped into the calendar's `[min, max]`) in both modes. When no cell can take focus, the surface itself is focused.
 
 ## Accessibility
 

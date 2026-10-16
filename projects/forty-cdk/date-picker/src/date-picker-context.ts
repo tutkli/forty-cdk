@@ -22,8 +22,8 @@ export type ForDatePickerAnatomy = 'trigger' | 'field';
  * delegate behavior — they never import the root class directly.
  *
  * The root is the `FormValueControl<D | null>`; the trigger is the focusable
- * element that carries `name` / `disabled` / `invalid` for `[formField]`
- * autowiring.
+ * element that carries `disabled` / `invalid` / `required` / `readonly` for
+ * `[formField]` autowiring.
  *
  * `open` is read-only — route writes through `toggle()` / `close()`. The date
  * `value` is not exposed; the value piece renders the pre-formatted
