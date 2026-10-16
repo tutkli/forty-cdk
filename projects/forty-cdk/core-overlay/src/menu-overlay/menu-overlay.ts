@@ -242,6 +242,7 @@ export class MenuOverlay<H extends MenuItemHandle = MenuItemHandle> {
   }
 
   registerContent(el: HTMLElement): void {
+    this.#openers.mountSurface();
     this.#controller.registerContent(el);
   }
 

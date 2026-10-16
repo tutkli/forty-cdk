@@ -22,6 +22,10 @@ export const routes: Routes = [
       import('./fixtures/dialog-programmatic.fixture').then((m) => m.DialogProgrammaticFixture),
   },
   {
+    path: 'dialog-swap',
+    loadComponent: () => import('./fixtures/dialog-swap.fixture').then((m) => m.DialogSwapFixture),
+  },
+  {
     path: 'drawer-programmatic',
     loadComponent: () =>
       import('./fixtures/drawer-programmatic.fixture').then((m) => m.DrawerProgrammaticFixture),
