@@ -6,7 +6,8 @@ import { injectCalendarContext } from './calendar-context';
 /**
  * The calendar's date table (`role="grid"`). Apply on a `<table>`. Labelled by
  * the `[forCalendarHeading]` via `aria-labelledby`, and reflects `aria-disabled`
- * / `aria-readonly` from the root.
+ * / `aria-readonly` from the root. In `selectionMode="range"` it carries
+ * `aria-multiselectable="true"`, since a committed range selects several cells.
  *
  * Exposes the month's `weekDays()` (column headers) and `weeks()` (day rows)
  * for the consumer to iterate — bind `cell.date` to each `[forCalendarCell]`.
@@ -18,6 +19,7 @@ import { injectCalendarContext } from './calendar-context';
     role: 'grid',
     '[attr.aria-disabled]': 'ctx.disabled() ? "true" : null',
     '[attr.aria-readonly]': 'ctx.readonly() ? "true" : null',
+    '[attr.aria-multiselectable]': 'ctx.selectionMode() === "range" ? "true" : null',
   },
 })
 export class ForCalendarGrid {

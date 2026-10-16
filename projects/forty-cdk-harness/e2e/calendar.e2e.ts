@@ -199,6 +199,27 @@ test.describe('Calendar — range', () => {
     await expect(el(page, 'cell-2026-6-11')).toHaveAttribute('data-in-range', '');
   });
 
+  test('arrows after a click move the preview away from the cell the pointer rests on', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'calendar', { range: '1' });
+
+    await el(page, 'cell-2026-6-10').click();
+    await expect(el(page, 'cell-2026-6-10')).toHaveAttribute('data-range-start', '');
+    for (const day of ['11', '12', '13']) {
+      await page.keyboard.press('ArrowRight');
+      await expectFocused(el(page, `cell-2026-6-${day}`));
+    }
+
+    await expect(el(page, 'cell-2026-6-13')).toHaveAttribute('data-range-end', '');
+    await expect(el(page, 'cell-2026-6-12')).toHaveAttribute('data-range-preview', '');
+    await expect(el(page, 'cell-2026-6-10')).not.toHaveAttribute('data-range-end');
+
+    await page.keyboard.press('Enter');
+    await expect(el(page, 'cell-2026-6-13')).toHaveAttribute('data-range-end', '');
+    await expect(el(page, 'cell-2026-6-12')).toHaveAttribute('data-in-range', '');
+  });
+
   test('aria-selected is true across the committed range band', async ({ page }) => {
     await gotoFixture(page, 'calendar', { range: '1' });
 
