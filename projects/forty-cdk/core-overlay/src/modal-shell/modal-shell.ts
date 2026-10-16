@@ -1,4 +1,12 @@
-import { DestroyRef, DOCUMENT, ElementRef, inject, type Signal } from '@angular/core';
+import {
+  computed,
+  DestroyRef,
+  DOCUMENT,
+  ElementRef,
+  inject,
+  type Signal,
+  signal,
+} from '@angular/core';
 
 import {
   afterNextRenderCancellable,
@@ -150,6 +158,12 @@ export interface ModalShellHandle {
   /** True while the shell activated focus-trap + scroll-lock + inert (modal mode). */
   readonly isModal: () => boolean;
   /**
+   * The mode the surface is in: {@link ModalShellConfig.modal} until the shell activates, then the
+   * mode it activated with, for the rest of the mount. Bind modality attributes to this so they
+   * never disagree with the trap, the inert siblings and the scroll lock.
+   */
+  readonly modal: Signal<boolean>;
+  /**
    * Whether the surface's dismissible layer is active and no layer owning the pointer channel is
    * stacked above it, so an outside press is the surface's to handle.
    */
@@ -231,6 +245,7 @@ export function injectModalShell(config: ModalShellConfig): ModalShellHandle {
   // shell activated, regardless of any `modal()` toggle on a doomed
   // instance.
   let activatedAsModal = false;
+  const activatedMode = signal<boolean | null>(null);
   let inertHandle: InertSiblingsHandle | null = null;
   let activatedContainer: HTMLElement | null = null;
 
@@ -264,6 +279,7 @@ export function injectModalShell(config: ModalShellConfig): ModalShellHandle {
     }
     const isModal = config.modal();
     activatedAsModal = isModal;
+    activatedMode.set(isModal);
 
     // 3a. Dismissible layer. Pushed onto the stack BEFORE moving focus so
     //     focusin events triggered by our own focus management land on this
@@ -431,6 +447,7 @@ export function injectModalShell(config: ModalShellConfig): ModalShellHandle {
 
   return {
     isModal: () => activatedAsModal,
+    modal: computed(() => activatedMode() ?? config.modal()),
     isTopmostPointerLayer: () => dismissible.isTopmostFor('pointer'),
   };
 }

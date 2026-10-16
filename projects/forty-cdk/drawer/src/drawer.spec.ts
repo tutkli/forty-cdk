@@ -1958,6 +1958,66 @@ describe('ForDrawer (declarative)', () => {
         sibling.remove();
       }
     });
+
+    describe('[modal] rebound while open', () => {
+      @Component({
+        imports: [ForDrawer],
+        template: `
+          @if (open()) {
+            <div forDrawer (dismiss)="open.set(false)" [modal]="modal()" ariaLabel="Nav">
+              <button type="button">a</button>
+            </div>
+          }
+        `,
+      })
+      class RebindModalHost {
+        readonly open = signal(false);
+        readonly modal = signal(false);
+      }
+
+      it('keeps aria-modal absent alongside the live page when a non-modal drawer turns modal', async () => {
+        const sibling = document.createElement('section');
+        document.body.appendChild(sibling);
+
+        try {
+          const r = renderHost(RebindModalHost);
+          r.instance.open.set(true);
+          await flush(r.fixture);
+
+          r.instance.modal.set(true);
+          await flush(r.fixture);
+
+          const drawer = document.querySelector<HTMLElement>('[forDrawer]')!;
+          expect(drawer.hasAttribute('aria-modal')).toBe(false);
+          expect(sibling.hasAttribute('inert')).toBe(false);
+          expect(document.body.style.overflow).toBe('');
+        } finally {
+          sibling.remove();
+        }
+      });
+
+      it('keeps aria-modal="true" alongside the inert page when a modal drawer turns non-modal', async () => {
+        const sibling = document.createElement('section');
+        document.body.appendChild(sibling);
+
+        try {
+          const r = renderHost(RebindModalHost);
+          r.instance.modal.set(true);
+          r.instance.open.set(true);
+          await flush(r.fixture);
+
+          r.instance.modal.set(false);
+          await flush(r.fixture);
+
+          const drawer = document.querySelector<HTMLElement>('[forDrawer]')!;
+          expect(drawer.getAttribute('aria-modal')).toBe('true');
+          expect(sibling.hasAttribute('inert')).toBe(true);
+          expect(document.body.style.overflow).toBe('hidden');
+        } finally {
+          sibling.remove();
+        }
+      });
+    });
   });
 
   describe('prefers-reduced-motion: reduce', () => {

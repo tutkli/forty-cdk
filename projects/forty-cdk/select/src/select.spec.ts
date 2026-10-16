@@ -1805,6 +1805,21 @@ describe('ForSelect', () => {
       expect(content.hasAttribute('aria-modal')).toBe(false);
     });
 
+    for (const mountedModal of [false, true]) {
+      it(`keeps data-modal at the mount-time mode when [modal] flips to ${!mountedModal} while open`, async () => {
+        const r = renderHost(SelectHost);
+        r.instance.modal.set(mountedModal);
+        r.instance.open.set(true);
+        await flush(r.fixture);
+
+        r.instance.modal.set(!mountedModal);
+        await flush(r.fixture);
+
+        const content = document.querySelector<HTMLElement>('[forSelectContent]')!;
+        expect(content.hasAttribute('data-modal')).toBe(mountedModal);
+      });
+    }
+
     it('still portals the listbox to document.body in modal mode', async () => {
       const r = renderHost(SelectHost);
       r.instance.modal.set(true);

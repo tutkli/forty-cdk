@@ -1680,6 +1680,20 @@ describe('ForTimePicker', () => {
       await flush(r.fixture);
       expect(getContent()).toBeNull();
     });
+
+    for (const mountedModal of [false, true]) {
+      it(`keeps data-modal at the mount-time mode when [modal] flips to ${!mountedModal} while open`, async () => {
+        const r = renderHost(TimePickerDismissContractHost);
+        r.instance.modal.set(mountedModal);
+        r.instance.open.set(true);
+        await flush(r.fixture);
+
+        r.instance.modal.set(!mountedModal);
+        await flush(r.fixture);
+
+        expect(getContent()!.hasAttribute('data-modal')).toBe(mountedModal);
+      });
+    }
   });
 
   describe('[forField] label press inside a focusable container (issue #2010)', () => {

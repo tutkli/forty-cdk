@@ -1,4 +1,4 @@
-import { Directive, ElementRef, inject } from '@angular/core';
+import { Directive, ElementRef, inject, type Signal, signal } from '@angular/core';
 
 import {
   registerHandle,
@@ -60,7 +60,7 @@ import { injectTimePickerContext } from './time-picker-context';
     '[attr.aria-orientation]': 'ctx.orientation()',
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
     '[attr.data-orientation]': 'ctx.orientation()',
-    '[attr.data-modal]': 'ctx.modal() ? "" : null',
+    '[attr.data-modal]': 'modal() ? "" : null',
     '(pointerleave)': 'onPointerLeave()',
   },
   providers: [
@@ -71,6 +71,7 @@ import { injectTimePickerContext } from './time-picker-context';
 export class ForTimePickerContent {
   private readonly ctx = injectTimePickerContext('ForTimePickerContent');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly modal: Signal<boolean>;
 
   private readonly resolvedAriaLabel = hostAriaLabel(() => this.ctx.ariaLabel());
 
@@ -107,7 +108,7 @@ export class ForTimePickerContent {
     };
 
     if (ctx.modal()) {
-      injectModalShell({
+      this.modal = injectModalShell({
         modal: ctx.modal,
         returnFocus: ctx.returnFocus,
         initialFocus: {
@@ -130,10 +131,11 @@ export class ForTimePickerContent {
           emitFocusOutside: (veto) => ctx.overlay.emitFocusOutside(veto),
           emitInteractOutside: (veto) => ctx.overlay.emitInteractOutside(veto),
         },
-      });
+      }).modal;
       return;
     }
 
+    this.modal = signal(false).asReadonly();
     injectOverlayShell({
       positioner: {
         kind: 'floating',

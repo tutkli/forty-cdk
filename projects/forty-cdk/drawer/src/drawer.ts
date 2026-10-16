@@ -118,7 +118,8 @@ export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements
   /**
    * When true (default), sets `aria-modal="true"`, locks body scroll, traps
    * focus, and inerts body siblings. Set to `false` for a non-modal
-   * navigation drawer that coexists with the rest of the page.
+   * navigation drawer that coexists with the rest of the page. Read once at
+   * mount: a change while the drawer is open takes effect on the next open.
    */
   readonly modal = input(this.#defaults.modal ?? true, { transform: booleanAttribute });
 

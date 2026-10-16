@@ -86,6 +86,8 @@ export class ForDialog extends ModalSurfaceBase<ForDialogCloseReason> implements
   /**
    * When true (default), sets `aria-modal="true"`, locks body scroll, and
    * traps focus. Set to `false` for non-modal popups (rare for dialogs).
+   * Read once at mount: a change while the dialog is open takes effect on the
+   * next open.
    */
   readonly modal = input(this.#defaults.modal ?? true, { transform: booleanAttribute });
 

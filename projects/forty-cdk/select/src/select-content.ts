@@ -1,4 +1,4 @@
-import { Directive, ElementRef, inject } from '@angular/core';
+import { Directive, ElementRef, inject, type Signal, signal } from '@angular/core';
 
 import {
   registerHandle,
@@ -76,7 +76,7 @@ import { injectSelectContext, type SelectContext } from './select-context';
     '[attr.aria-multiselectable]': 'ctx.multiple() ? "true" : null',
     '[attr.aria-orientation]': 'ctx.orientation()',
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
-    '[attr.data-modal]': 'ctx.modal() ? "" : null',
+    '[attr.data-modal]': 'modal() ? "" : null',
     '[attr.data-orientation]': 'ctx.orientation()',
     '(keydown)': 'onKeyDown($event)',
     '(pointerleave)': 'onPointerLeave()',
@@ -90,6 +90,7 @@ export class ForSelectContent {
   readonly #select = injectSelectContext('ForSelectContent');
   private readonly ctx: SelectContext = this.#select;
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly modal: Signal<boolean>;
 
   private readonly resolvedAriaLabel = hostAriaLabel(() => this.ctx.ariaLabel());
 
@@ -139,7 +140,7 @@ export class ForSelectContent {
     // whose surface is structurally different. The surface mounts lazily via
     // `@if (open())`, well after `modal` settles.
     if (ctx.modal()) {
-      injectModalShell({
+      this.modal = injectModalShell({
         modal: ctx.modal,
         returnFocus: ctx.returnFocus,
         // The trap owns Tab; the shell runs `focusInitial()` (selected →
@@ -166,7 +167,7 @@ export class ForSelectContent {
           emitFocusOutside: (veto) => ctx.overlay.emitFocusOutside(veto),
           emitInteractOutside: (veto) => ctx.overlay.emitInteractOutside(veto),
         },
-      });
+      }).modal;
       return;
     }
 
@@ -196,6 +197,7 @@ export class ForSelectContent {
             onFirstPosition: () => ctx.revealInitialFocus(),
           };
 
+    this.modal = signal(false).asReadonly();
     injectOverlayShell({
       positioner,
       dismiss: {

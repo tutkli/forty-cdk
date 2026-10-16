@@ -1,4 +1,4 @@
-import { Directive, ElementRef, inject } from '@angular/core';
+import { Directive, ElementRef, inject, type Signal, signal } from '@angular/core';
 
 import {
   registerHandle,
@@ -50,7 +50,7 @@ import { injectDatePickerContext } from './date-picker-context';
     tabindex: '-1',
     '[id]': 'ctx.contentId()',
     '[attr.aria-label]': 'resolvedAriaLabel()',
-    '[attr.aria-modal]': 'ctx.modal() ? "true" : null',
+    '[attr.aria-modal]': 'modal() ? "true" : null',
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
   },
   providers: [
@@ -61,6 +61,7 @@ import { injectDatePickerContext } from './date-picker-context';
 export class ForDatePickerContent {
   private readonly ctx = injectDatePickerContext('ForDatePickerContent');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly modal: Signal<boolean>;
 
   private readonly resolvedAriaLabel = hostAriaLabel(() => this.ctx.ariaLabel());
 
@@ -84,7 +85,7 @@ export class ForDatePickerContent {
     });
 
     if (ctx.modal()) {
-      injectModalShell({
+      this.modal = injectModalShell({
         modal: ctx.modal,
         returnFocus: ctx.returnFocus,
         // Land on the calendar's active cell with a first-focusable fallback,
@@ -111,10 +112,11 @@ export class ForDatePickerContent {
           emitFocusOutside: (veto) => ctx.emitFocusOutside(veto),
           emitInteractOutside: (veto) => ctx.emitInteractOutside(veto),
         },
-      });
+      }).modal;
       return;
     }
 
+    this.modal = signal(false).asReadonly();
     injectOverlayShell({
       positioner: {
         kind: 'floating',
