@@ -352,7 +352,7 @@ Angular resolves `ng-template` DI at the template's **declaration** site, not wh
 
 `[forSelect]` defaults to `position="popper"`, the standard floating-ui anchored placement (`side` / `align` / `sideOffset` / `alignOffset` with `flip` + `shift` collision handling). Set `position="item-aligned"` to switch to the macOS-native algorithm: the listbox overlays the trigger so the **selected option's vertical center** lines up with the **trigger's vertical center**. The visual effect is that opening the menu doesn't shift the eye: the selected value stays in place, and the rest of the options expand around it. Better UX for short lists with a known selected value (country / language / role pickers).
 
-When nothing is selected, the algorithm falls back to the first enabled option. The listbox is clamped inside the viewport with `collisionPadding`; if the listbox is taller than the viewport the directive snaps it to the padding line and scrolls the selected option into view via `scrollIntoView({ block: 'nearest' })`.
+When nothing is selected, the algorithm falls back to the first enabled option. Horizontally the listbox's inline-start edge lines up with the trigger's, which is its right edge under `dir="rtl"`. The listbox is clamped inside the viewport with `collisionPadding` on every edge; if the listbox is taller than the viewport the directive snaps it to the padding line and scrolls the selected option into view via `scrollIntoView({ block: 'nearest' })`.
 
 ```html
 <div

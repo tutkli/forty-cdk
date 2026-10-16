@@ -84,6 +84,8 @@ import { queryFlag } from './_query-flag';
       [multiple]="multiple"
       [position]="position"
       [modal]="modal"
+      [dir]="rtl ? 'rtl' : null"
+      [style.text-align]="trailing ? 'right' : null"
       placeholder="Pick a fruit"
       ariaLabel="Fruit picker"
       (autoFocusOnOpen)="onAutoOpen($event)"
@@ -108,6 +110,7 @@ import { queryFlag } from './_query-flag';
           [class.scrollable]="many"
           [class.pop-in]="popin"
           [class.padded]="padded"
+          [style.width.px]="wide ? 320 : null"
         >
           @if (many) {
             @for (i of manyOptions; track i) {
@@ -189,6 +192,12 @@ export class SelectFixture {
   protected readonly popin = queryFlag('popin');
 
   protected readonly padded = queryFlag('padded');
+
+  protected readonly rtl = queryFlag('rtl');
+
+  protected readonly trailing = queryFlag('trailing');
+
+  protected readonly wide = queryFlag('wide');
 
   protected readonly many = queryFlag('many');
 

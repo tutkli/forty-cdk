@@ -14,6 +14,7 @@ import { flushPositioning } from '../../../src/test-utils';
 import {
   injectItemAlignedPositioner,
   offsetCenterWithinListbox,
+  resolveItemAlignedX,
   resolveItemAlignedY,
 } from './item-aligned';
 
@@ -289,6 +290,90 @@ describe('resolveItemAlignedY', () => {
     });
 
     expect(y).toBe(trigger.triggerTop);
+  });
+});
+
+describe('resolveItemAlignedX', () => {
+  const viewport = { viewportWidth: 1000, paddingLeft: 8, paddingRight: 8 };
+
+  it('aligns the left edges in LTR when the listbox fits', () => {
+    const x = resolveItemAlignedX({
+      ...viewport,
+      triggerLeft: 200,
+      triggerWidth: 80,
+      listboxWidth: 300,
+      rtl: false,
+    });
+
+    expect(x).toBe(200);
+  });
+
+  it('clamps to the right padding for an LTR trigger near the right edge', () => {
+    const x = resolveItemAlignedX({
+      ...viewport,
+      triggerLeft: 900,
+      triggerWidth: 80,
+      listboxWidth: 300,
+      rtl: false,
+    });
+
+    expect(x).toBe(viewport.viewportWidth - 300 - viewport.paddingRight);
+  });
+
+  it('aligns the right edges in RTL when the listbox fits', () => {
+    const x = resolveItemAlignedX({
+      ...viewport,
+      triggerLeft: 600,
+      triggerWidth: 80,
+      listboxWidth: 300,
+      rtl: true,
+    });
+
+    expect(x + 300).toBe(600 + 80);
+  });
+
+  it('clamps to the left padding for an RTL trigger near the left edge', () => {
+    const x = resolveItemAlignedX({
+      ...viewport,
+      triggerLeft: 20,
+      triggerWidth: 80,
+      listboxWidth: 300,
+      rtl: true,
+    });
+
+    expect(x).toBe(viewport.paddingLeft);
+  });
+
+  it('honors asymmetric padding on each edge', () => {
+    const geometry = { viewportWidth: 1000, paddingLeft: 24, paddingRight: 40 };
+
+    expect(
+      resolveItemAlignedX({
+        ...geometry,
+        triggerLeft: 900,
+        triggerWidth: 80,
+        listboxWidth: 300,
+        rtl: false,
+      }),
+    ).toBe(1000 - 300 - 40);
+    expect(
+      resolveItemAlignedX({
+        ...geometry,
+        triggerLeft: 0,
+        triggerWidth: 80,
+        listboxWidth: 300,
+        rtl: true,
+      }),
+    ).toBe(24);
+  });
+
+  it('pins a listbox wider than the viewport to its inline-start padding', () => {
+    const wide = { triggerLeft: 400, triggerWidth: 80, listboxWidth: 1200 };
+
+    expect(resolveItemAlignedX({ ...viewport, ...wide, rtl: false })).toBe(viewport.paddingLeft);
+    expect(resolveItemAlignedX({ ...viewport, ...wide, rtl: true }) + 1200).toBe(
+      viewport.viewportWidth - viewport.paddingRight,
+    );
   });
 });
 

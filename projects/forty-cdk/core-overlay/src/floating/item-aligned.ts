@@ -10,6 +10,7 @@ import {
   type FloatingCustomProperties,
   injectFloatingCustomProperties,
 } from './floating-custom-properties';
+import { isFloatingRtl } from './floating-direction';
 import { runPositioning } from './run-positioning';
 
 export interface ItemAlignedConfig {
@@ -36,7 +37,7 @@ export interface ItemAlignedConfig {
 
   /**
    * Padding (px) the listbox keeps from the viewport edge. Default `8`.
-   * Drives both the viewport clamp on the listbox top/bottom and the
+   * Drives both the viewport clamp on every edge of the listbox and the
    * `--for-floating-available-height` CSS variable.
    */
   readonly collisionPadding?: Signal<number | Padding>;
@@ -56,14 +57,24 @@ export interface ItemAlignedConfig {
   readonly portal?: boolean;
 }
 
-function paddingTop(padding: number | Padding | undefined, fallback: number): number {
+interface ItemAlignedPadding {
+  readonly top: number;
+  readonly left: number;
+  readonly right: number;
+}
+
+function paddingSide(
+  padding: number | Padding | undefined,
+  side: keyof ItemAlignedPadding,
+  fallback: number,
+): number {
   if (padding == null) {
     return fallback;
   }
   if (typeof padding === 'number') {
     return padding;
   }
-  return padding.top ?? fallback;
+  return padding[side] ?? fallback;
 }
 
 function findFirstEnabledOption(listbox: HTMLElement): HTMLElement | null {
@@ -119,6 +130,30 @@ export function resolveItemAlignedY(geometry: ItemAlignedGeometry): number {
   return maxY > minY ? Math.max(minY, Math.min(desiredY, maxY)) : minY;
 }
 
+export interface ItemAlignedInlineGeometry {
+  readonly triggerLeft: number;
+  readonly triggerWidth: number;
+  readonly listboxWidth: number;
+  readonly viewportWidth: number;
+  readonly paddingLeft: number;
+  readonly paddingRight: number;
+  readonly rtl: boolean;
+}
+
+export function resolveItemAlignedX(geometry: ItemAlignedInlineGeometry): number {
+  const { triggerLeft, triggerWidth, listboxWidth, viewportWidth, paddingLeft, paddingRight, rtl } =
+    geometry;
+  const minX = paddingLeft;
+  const maxX = viewportWidth - listboxWidth - paddingRight;
+
+  if (maxX < minX) {
+    return rtl ? maxX : minX;
+  }
+
+  const desiredX = rtl ? triggerLeft + triggerWidth - listboxWidth : triggerLeft;
+  return Math.max(minX, Math.min(desiredX, maxX));
+}
+
 function offsetTopWithinChain(el: HTMLElement): number {
   const view = el.ownerDocument.defaultView;
   let top = 0;
@@ -143,16 +178,16 @@ export function offsetCenterWithinListbox(target: HTMLElement, listbox: HTMLElem
 
 /**
  * Custom floating-ui middleware. Computes raw `x`/`y` so the *target option's
- * vertical center* lines up with the *trigger's vertical center*, then clamps
- * the listbox inside the viewport with `padding`. Cross-axis: listbox left
- * edge aligned to the trigger left edge.
+ * vertical center* lines up with the *trigger's vertical center*, and the
+ * listbox's inline-start edge lines up with the trigger's, mirrored under RTL.
+ * Both axes are clamped inside the viewport with `padding`.
  *
  * Falls back to the first enabled option inside the listbox when no option
  * is selected — matches the macOS `<select>` behavior.
  */
 function itemAligned(
   selectedOption: () => HTMLElement | null,
-  paddingFn: () => number,
+  padding: ItemAlignedPadding,
 ): Middleware {
   return {
     name: 'item-aligned',
@@ -173,10 +208,20 @@ function itemAligned(
         listboxHeight: floating.offsetHeight,
         targetCenter: target ? offsetCenterWithinListbox(target, floating) : null,
         viewportHeight,
-        padding: paddingFn(),
+        padding: padding.top,
       });
 
-      return { x: triggerRect.left, y };
+      const x = resolveItemAlignedX({
+        triggerLeft: triggerRect.left,
+        triggerWidth: triggerRect.width,
+        listboxWidth: floating.offsetWidth,
+        viewportWidth: floating.ownerDocument.documentElement.clientWidth,
+        paddingLeft: padding.left,
+        paddingRight: padding.right,
+        rtl: isFloatingRtl(floating),
+      });
+
+      return { x, y };
     },
   };
 }
@@ -207,7 +252,8 @@ function itemAligned(
  * reports. A consumer's `max-height: var(--for-floating-available-height)` therefore
  * works unchanged across `position="popper"` and `position="item-aligned"`.
  * `--for-floating-available-width` is **not** published here: item-aligned
- * pins the cross axis to the trigger's left edge and computes no width budget.
+ * aligns the listbox's inline-start edge with the trigger's and computes no
+ * width budget.
  *
  * `side`, `align`, `sideOffset`, `alignOffset`, `placement`, `flip`, `shift`,
  * and `arrow` are intentionally **not** part of this API — item-aligned mode
@@ -221,7 +267,13 @@ export function injectItemAlignedPositioner(config: ItemAlignedConfig): void {
     portal: config.portal,
     onFirstPosition: config.onFirstPosition,
     computeAndApply: (el, reference) => {
-      const collisionPadding = paddingTop(config.collisionPadding?.(), 8);
+      const paddingInput = config.collisionPadding?.();
+      const padding: ItemAlignedPadding = {
+        top: paddingSide(paddingInput, 'top', 8),
+        left: paddingSide(paddingInput, 'left', 8),
+        right: paddingSide(paddingInput, 'right', 8),
+      };
+      const collisionPadding = padding.top;
 
       let initialScrollDone = config.onFirstPosition !== undefined;
 
@@ -230,12 +282,7 @@ export function injectItemAlignedPositioner(config: ItemAlignedConfig): void {
         // but `computePosition` requires *some* placement. Pick a stable one
         // so middleware data stays predictable.
         placement: 'bottom-start' satisfies Placement,
-        middleware: [
-          itemAligned(
-            () => config.selectedOption(),
-            () => collisionPadding,
-          ),
-        ],
+        middleware: [itemAligned(() => config.selectedOption(), padding)],
         apply() {
           el.dataset['position'] = 'item-aligned';
 

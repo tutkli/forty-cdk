@@ -849,6 +849,38 @@ describe('injectFloating', () => {
         'left bottom',
       );
     });
+
+    it('mirrors --for-floating-content-transform-origin on the inline axis when the content is dir="rtl"', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(ModernBubbleHost);
+      await flushPositioning(fixture);
+      const bubble = fixture.componentInstance.bubble();
+      const bubbleEl = document.querySelector<HTMLElement>('modern-bubble')!;
+      bubbleEl.setAttribute('dir', 'rtl');
+      const origin = (): string =>
+        bubbleEl.style.getPropertyValue('--for-floating-content-transform-origin');
+
+      bubble.reference.set(fixture.componentInstance.anchor().nativeElement);
+      bubble.side.set('bottom');
+      bubble.align.set('start');
+      bubble.open.set(true);
+      await flushPositioning(fixture);
+      expect(origin()).toBe('right top');
+
+      bubble.side.set('top');
+      bubble.align.set('end');
+      await flushPositioning(fixture);
+      expect(origin()).toBe('left bottom');
+
+      bubble.align.set('center');
+      await flushPositioning(fixture);
+      expect(origin()).toBe('center bottom');
+
+      bubble.side.set('right');
+      bubble.align.set('start');
+      await flushPositioning(fixture);
+      expect(origin()).toBe('left top');
+    });
   });
 
   describe('avoidCollisions', () => {
