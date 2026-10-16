@@ -167,8 +167,7 @@ export interface ForComboboxContext<T = unknown> {
   /**
    * Selected entries paired with their resolved label (from the option
    * cache) — convenient for rendering chips with `@for`. Falls back to
-   * `itemToStringLabel(value)` when no matching option is registered (and
-   * to the raw string when `T` is `string`).
+   * `itemToStringLabel(value)` when no matching option is registered.
    */
   readonly selected: Signal<readonly { value: T; label: string }[]>;
 

@@ -3833,12 +3833,16 @@ describe('ForSelect', () => {
       readonly range = signal<readonly [number, number]>([0, 10]);
       readonly selIndex = signal<number | undefined>(undefined);
       readonly scrolled = signal<number | null>(null);
+      deferScroll = false;
       windowRows() {
         const [s, e] = this.range();
         return Array.from({ length: e - s }, (_, k) => ({ index: s + k }));
       }
       onScrollToIndex(idx: number) {
         this.scrolled.set(idx);
+        if (this.deferScroll) {
+          return;
+        }
         const start = Math.max(0, Math.min(idx - 4, (this.total() ?? 0) - 10));
         this.range.set([start, start + 10]);
       }
@@ -4172,6 +4176,30 @@ describe('ForSelect', () => {
       await flush(r.fixture);
       const opt49 = document.querySelector<HTMLButtonElement>('[data-test-id="opt-49"]');
       expect(content.getAttribute('aria-activedescendant')).toBe(opt49!.getAttribute('id'));
+    });
+
+    it('drops a pending off-window move when the consumer closes through [(open)]', async () => {
+      const r = renderHost(VirtualSelectHost);
+      r.instance.deferScroll = true;
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      const content = contentEl();
+      content.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+      await flush(r.fixture);
+
+      content.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }));
+      await flush(r.fixture);
+      expect(r.instance.scrolled()).toBe(49);
+      expect(document.querySelector('[data-test-id="opt-49"]')).toBeNull();
+
+      r.instance.open.set(false);
+      await flush(r.fixture);
+      r.instance.range.set([40, 50]);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      expect(voptOf(49)).not.toBeNull();
+      expect(contentEl().hasAttribute('aria-activedescendant')).toBe(false);
     });
 
     it('PageDown jumps to the last index like End; PageUp returns to the first', async () => {

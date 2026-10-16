@@ -223,6 +223,35 @@ class RestoreHost extends FruitHost {
 })
 class RestoreDefaultsHost extends FruitHost {}
 
+@Component({
+  imports: [ForCombobox, ForComboboxInput, ForComboboxContent, ForComboboxOption],
+  host: { 'data-fixture': 'restore-label' },
+  template: `
+    <div
+      forCombobox
+      restoreQueryOnClose
+      [(query)]="query"
+      [(value)]="value"
+      [(open)]="open"
+      [itemToStringLabel]="toName"
+    >
+      <input forComboboxInput />
+      @if (open()) {
+        <div forComboboxContent>
+          @for (it of filtered(); track it.id) {
+            <div [attr.data-test-id]="it.id" forComboboxOption [value]="it.id" [label]="it.label">
+              {{ it.label }}
+            </div>
+          }
+        </div>
+      }
+    </div>
+  `,
+})
+class RestoreLabelHost extends FruitHost {
+  readonly toName = (id: string) => FRUITS.find((it) => it.id === id)?.label ?? id;
+}
+
 function getInput(): HTMLInputElement {
   return document.querySelector<HTMLInputElement>('[forComboboxInput]')!;
 }
@@ -661,6 +690,25 @@ describe('ForCombobox editable anatomy', () => {
       await flush(r.fixture);
 
       expect(r.instance.query()).toBe('Ap');
+    });
+
+    it('restores a seeded string id through [itemToStringLabel] before its option renders', async () => {
+      const r = renderHost(RestoreLabelHost);
+      r.instance.value.set(['banana']);
+      await flush(r.fixture);
+
+      const input = getInput();
+      input.focus();
+      typeInto(input, 'Ap');
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe(true);
+      expect(document.querySelector('[data-test-id="banana"]')).toBeNull();
+
+      pressKey(input, 'Escape');
+      await flush(r.fixture);
+
+      expect(r.instance.query()).toBe('Banana');
+      expect(input.value).toBe('Banana');
     });
 
     it('applies provideForComboboxDefaults({ restoreQueryOnClose }) to the scope', async () => {
