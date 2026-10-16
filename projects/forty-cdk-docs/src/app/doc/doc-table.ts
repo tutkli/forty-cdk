@@ -7,7 +7,10 @@ import type { DocPageApiTable, DocPageCell, DocPagePlainTable } from './doc-mode
 export interface RenderedApiRow {
   readonly property: SafeHtml;
   readonly propertyText: string;
-  /** The type up to its first type argument, which is what the column shows. */
+  /**
+   * What the column shows: the name before the first `<` when that is a single
+   * name (`input` for `input<boolean>`), the whole type otherwise.
+   */
   readonly typeKind: string;
   readonly typeFull: string;
   readonly hasDetail: boolean;
@@ -73,7 +76,7 @@ export function renderApiTable(
       const defaultValue = cell(row.default);
       const description = cell(row.description);
       const typeFull = type.text.trim();
-      const typeKind = typeFull.split('<')[0]!.trim() || typeFull;
+      const typeKind = typeKindOf(typeFull);
       return {
         property: property.html,
         propertyText: property.text,
@@ -88,6 +91,13 @@ export function renderApiTable(
       };
     }),
   };
+}
+
+const TYPE_NAME = /^[A-Za-z_$][\w$.]*$/;
+
+function typeKindOf(type: string): string {
+  const name = type.split('<')[0]!.trim();
+  return TYPE_NAME.test(name) ? name : type;
 }
 
 /** Render any other table, keeping its header row and equal-width data rows. */
