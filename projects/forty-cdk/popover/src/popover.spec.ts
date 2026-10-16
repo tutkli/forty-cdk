@@ -264,6 +264,20 @@ describe('ForPopover', () => {
       expect(trigger.getAttribute('disabled')).toBe('');
     });
 
+    it('leaves an open popover dismissible by Escape once disabled', async () => {
+      const r = renderHost(PopoverHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      r.instance.disabled.set(true);
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe(true);
+
+      pressKey(document, 'Escape');
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+    });
+
     it('does not toggle when only the trigger is disabled', async () => {
       const r = renderHost(TriggerDisabledHost);
       r.instance.triggerDisabled.set(true);
@@ -575,6 +589,58 @@ describe('ForPopover', () => {
       expect(r.instance.captured).toHaveLength(1);
       expect(typeof r.instance.captured[0]?.preventDefault).toBe('function');
       expect(r.instance.captured[0]?.defaultPrevented).toBe(true);
+    });
+
+    it('keeps focus in the input across open and close in the README "Open without stealing focus" recipe', async () => {
+      @Component({
+        imports: [ForPopover, ForPopoverAnchor, ForPopoverTrigger, ForPopoverContent],
+        template: `
+          <div
+            forPopover
+            [(open)]="open"
+            (autoFocusOnOpen)="$event.preventDefault()"
+            (autoFocusOnClose)="$event.preventDefault()"
+            ariaLabel="Results"
+          >
+            <input
+              forPopoverAnchor
+              #q
+              type="search"
+              (input)="open.set(true)"
+              placeholder="Search…"
+            />
+            <button forPopoverTrigger hidden></button>
+
+            @if (open()) {
+              <div forPopoverContent>
+                <button type="button">First result</button>
+              </div>
+            }
+          </div>
+        `,
+      })
+      class Host {
+        readonly open = signal(false);
+      }
+
+      const r = renderHost(Host);
+      const input = r.query<HTMLInputElement>('input[type="search"]')!;
+      const trigger = r.query<HTMLButtonElement>('[forPopoverTrigger]')!;
+      const triggerFocus = vi.spyOn(trigger, 'focus');
+
+      input.focus();
+      input.dispatchEvent(new Event('input'));
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(true);
+      expect(document.querySelector('[forPopoverContent] button')).not.toBeNull();
+      expect(document.activeElement).toBe(input);
+
+      r.instance.open.set(false);
+      await flush(r.fixture);
+
+      expect(triggerFocus).not.toHaveBeenCalled();
+      expect(document.activeElement).toBe(input);
     });
   });
 
