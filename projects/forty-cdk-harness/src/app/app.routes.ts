@@ -181,6 +181,10 @@ export const routes: Routes = [
     loadComponent: () => import('./fixtures/textarea.fixture').then((m) => m.TextareaFixture),
   },
   {
+    path: 'search',
+    loadComponent: () => import('./fixtures/search.fixture').then((m) => m.SearchFixture),
+  },
+  {
     path: 'tabs',
     loadComponent: () => import('./fixtures/tabs.fixture').then((m) => m.TabsFixture),
   },

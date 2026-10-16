@@ -59,7 +59,7 @@ export abstract class TextValueControlBase
   }
 
   /** Bridges the native `input` event into the `value` model. */
-  private onInput(event: Event): void {
+  protected onInput(event: Event): void {
     if (this.effectiveDisabled() || this.readonly()) {
       return;
     }

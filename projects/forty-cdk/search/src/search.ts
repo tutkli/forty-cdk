@@ -72,13 +72,16 @@ export class ForSearch
 {
   readonly #host = inject<ElementRef<HTMLInputElement>>(ElementRef);
 
+  #escapeLeftToBrowser = false;
+
   /**
    * Whether `Escape` clears a non-empty value before propagating. Defaults to
    * `true`, the native `<input type="search">` affordance. Set it to `false`
    * for a command palette, where the search box is the enclosing overlay's only
    * content and one `Escape` should dismiss it rather than clear the query
    * first: the directive then neither acts on nor consumes the key, so the
-   * enclosing dismissible layer sees it on the first press.
+   * enclosing dismissible layer sees it on the first press, and the value
+   * survives the browser's own `Escape` clear of a `type="search"` host.
    */
   readonly clearOnEscape = input(true, { transform: booleanAttribute });
 
@@ -114,9 +117,29 @@ export class ForSearch
     this.#host.nativeElement.focus();
   }
 
+  /**
+   * Bridges the native `input` event into the value model, except the
+   * browser's own clear of a `type="search"` field after an `Escape` that
+   * `[clearOnEscape]="false"` left alone.
+   */
+  protected override onInput(event: Event): void {
+    const nativeClear = this.#escapeLeftToBrowser && !(event instanceof InputEvent);
+    this.#escapeLeftToBrowser = false;
+    if (nativeClear) {
+      this.#host.nativeElement.value = this.value();
+      return;
+    }
+    super.onInput(event);
+  }
+
   /** Clears a non-empty value on `Escape`, consuming the key only when it does. */
   private onKeyDown(event: KeyboardEvent): void {
-    if (event.key !== 'Escape' || isImeComposing(event) || !this.clearOnEscape()) {
+    this.#escapeLeftToBrowser = false;
+    if (event.key !== 'Escape' || isImeComposing(event)) {
+      return;
+    }
+    if (!this.clearOnEscape()) {
+      this.#escapeLeftToBrowser = true;
       return;
     }
     if (this.effectiveDisabled() || this.readonly() || this.value() === '') {
