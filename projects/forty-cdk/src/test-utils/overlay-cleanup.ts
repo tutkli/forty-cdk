@@ -30,9 +30,10 @@ import { afterEach } from 'vitest';
  *
  * The selector list covers the canonical overlay roles plus
  * `[data-state="open"]` to catch any future overlay primitive that
- * forgets to register here. The body-style reset undoes any
- * scroll-lock residue (`overflow`, `paddingRight`) left by a
- * mid-flight throw before `BodyScrollLock` could restore it.
+ * forgets to register here. The style reset undoes any scroll-lock
+ * residue (`overflow` and `paddingRight` on `<body>`, `overflow` on
+ * `<html>`) left by a mid-flight throw before `BodyScrollLock` could
+ * restore it.
  *
  * Every selector is anchored with `:scope >`, so the scrub only ever
  * reaches **direct children of `document.body`** — which is precisely
@@ -49,6 +50,7 @@ export function afterEachOverlayCleanup(): void {
   afterEach(() => {
     document.body.style.overflow = '';
     document.body.style.paddingRight = '';
+    document.documentElement.style.overflow = '';
     document.body
       .querySelectorAll(
         ':scope > [role="dialog"], :scope > [role="alertdialog"], :scope > [role="menu"], :scope > [role="listbox"], :scope > [role="tooltip"], :scope > [data-state="open"]',

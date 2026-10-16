@@ -16,13 +16,6 @@ import { isPlatformBrowser } from '@angular/common';
  * lets the CSS cascade take over again. It does NOT snapshot the values at
  * lock time and rewrite them at unlock time.
  *
- * On overlay-scrollbar / mobile platforms there is no classic scrollbar
- * (`innerWidth - clientWidth === 0` for the body path), so the lock never
- * writes `padding-right`. In that case the final unlock leaves
- * `target.style.paddingRight` untouched, so a consumer's unrelated inline
- * `padding-right` survives. The clear-don't-restore contract only applies to
- * values the lock owns.
- *
  * Why: any code (route transition, theme toggle, the consumer themselves)
  * that mutates `target.style.overflow` between `lock()` and the final
  * `unlock()` would otherwise be silently clobbered when we restored the
@@ -30,10 +23,22 @@ import { isPlatformBrowser } from '@angular/common';
  * only while it exists; intervening mutations win, and the resting state
  * is whatever stylesheet rules apply.
  *
- * The scrollbar-width compensation prevents content jumping when overflow
- * goes from `auto` (scrollbar shown) to `hidden` (scrollbar hidden).
- * For the body path the width is `window.innerWidth - documentElement.clientWidth`;
- * for an element path it is `target.offsetWidth - target.clientWidth`.
+ * **The page lock reaches the viewport.** Body overflow scrolls the viewport
+ * only while `<html>` declares none of its own, so when `<html>` computes a
+ * scrollable overflow (`html { overflow-y: scroll }`) the body lock also
+ * writes `overflow: hidden` on `<html>`, and clears it on the final unlock
+ * under the same contract.
+ *
+ * **Compensation is measured, not assumed.** The lock reads the width of the
+ * scrolling box (`documentElement.clientWidth` for the body path, the
+ * target's own `clientWidth` for an element) before and after writing
+ * `overflow: hidden`, and pads the target by exactly the width the hidden
+ * scrollbar gave back. Borders never count. When nothing is given back (an
+ * overlay-scrollbar platform, a page that does not overflow), or when
+ * `scrollbar-gutter: stable` keeps the space reserved, no `padding-right` is
+ * written, so a consumer's unrelated inline `padding-right` survives the
+ * lock. A container whose width is fixed under `box-sizing: content-box`
+ * grows by the compensation rather than absorbing it.
  *
  * SSR: the service is `providedIn: 'root'` so its counter map is scoped to a
  * single Angular bootstrap (one per SSR request). Server-side calls are
@@ -45,7 +50,10 @@ export class BodyScrollLock {
   readonly #window = this.#document.defaultView;
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
-  readonly #targets = new Map<HTMLElement, { count: number; wrotePaddingRight: boolean }>();
+  readonly #targets = new Map<
+    HTMLElement,
+    { count: number; wrotePaddingRight: boolean; wroteRootOverflow: boolean }
+  >();
 
   /**
    * Acquire the scroll lock on `target` (default `document.body`). The first
@@ -58,31 +66,30 @@ export class BodyScrollLock {
     }
     let record = this.#targets.get(target);
     if (!record) {
-      record = { count: 0, wrotePaddingRight: false };
+      record = { count: 0, wrotePaddingRight: false, wroteRootOverflow: false };
       this.#targets.set(target, record);
     }
     if (record.count === 0) {
-      target.style.overflow = 'hidden';
+      const root = this.#document.documentElement;
       const isBody = target === this.#document.body;
+      const scroller = isBody ? root : target;
       const win = this.#window;
-      let scrollbarWidth: number;
-      if (isBody) {
-        const docEl = this.#document.documentElement;
-        scrollbarWidth = win ? win.innerWidth - docEl.clientWidth : 0;
-        if (scrollbarWidth > 0 && win && !this.#gutterIsStable(win, [docEl, target])) {
-          const computed = win.getComputedStyle(target).paddingRight;
-          const currentPx = parseFloat(computed) || 0;
-          target.style.paddingRight = `${currentPx + scrollbarWidth}px`;
-          record.wrotePaddingRight = true;
-        }
-      } else {
-        scrollbarWidth = target.offsetWidth - target.clientWidth;
-        if (scrollbarWidth > 0 && win && !this.#gutterIsStable(win, [target])) {
-          const computed = win.getComputedStyle(target).paddingRight;
-          const currentPx = parseFloat(computed) || 0;
-          target.style.paddingRight = `${currentPx + scrollbarWidth}px`;
-          record.wrotePaddingRight = true;
-        }
+      const widthBefore = scroller.clientWidth;
+      const paddingRight = win ? parseFloat(win.getComputedStyle(target).paddingRight) || 0 : 0;
+      const lockRoot = isBody && win !== null && this.#scrollsViewport(win, root);
+      const gutterIsStable =
+        win !== null && this.#gutterIsStable(win, isBody ? [root, target] : [target]);
+
+      target.style.overflow = 'hidden';
+      if (lockRoot) {
+        root.style.overflow = 'hidden';
+        record.wroteRootOverflow = true;
+      }
+
+      const scrollbarWidth = scroller.clientWidth - widthBefore;
+      if (scrollbarWidth > 0 && !gutterIsStable) {
+        target.style.paddingRight = `${paddingRight + scrollbarWidth}px`;
+        record.wrotePaddingRight = true;
       }
     }
     record.count++;
@@ -104,9 +111,11 @@ export class BodyScrollLock {
     record.count--;
     if (record.count === 0) {
       target.style.overflow = '';
+      if (record.wroteRootOverflow) {
+        this.#document.documentElement.style.overflow = '';
+      }
       if (record.wrotePaddingRight) {
         target.style.paddingRight = '';
-        record.wrotePaddingRight = false;
       }
       this.#targets.delete(target);
     }
@@ -116,7 +125,7 @@ export class BodyScrollLock {
    * True when any of the given elements reserves the scrollbar gutter via
    * `scrollbar-gutter: stable` (or `stable both-edges`). The gutter then
    * survives the `overflow: hidden` toggle, so no padding compensation is
-   * needed.
+   * needed, even though `clientWidth` reports the reserved space as freed.
    */
   #gutterIsStable(win: Window, els: readonly HTMLElement[]): boolean {
     for (const el of els) {
@@ -126,5 +135,12 @@ export class BodyScrollLock {
       }
     }
     return false;
+  }
+
+  #scrollsViewport(win: Window, root: HTMLElement): boolean {
+    const style = win.getComputedStyle(root);
+    return [style.overflowX, style.overflowY].some(
+      (value) => value === 'auto' || value === 'scroll',
+    );
   }
 }

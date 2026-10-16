@@ -21,6 +21,14 @@ import {
         border: 2px solid #aaa;
         background: #f5f5f5;
       }
+      [data-testid='container'].scrollable {
+        overflow: auto;
+        border-width: 1px;
+        box-sizing: border-box;
+      }
+      [data-testid='container-spacer'] {
+        height: 1000px;
+      }
       [forDrawerBackdrop] {
         position: absolute;
         inset: 0;
@@ -40,8 +48,11 @@ import {
     `,
   ],
   template: `
-    <div data-testid="container" #container>
+    <div data-testid="container" #container [class.scrollable]="scrollable()">
       <button data-testid="in-container-bg" type="button">In-container bg</button>
+      @if (scrollable()) {
+        <div data-testid="container-spacer"></div>
+      }
       @if (open()) {
         <div
           forDrawer
@@ -70,6 +81,9 @@ export class DrawerContainedFixture {
   readonly open = signal(false);
   readonly lastCloseReason = signal<ForDrawerCloseReason | null>(null);
   protected readonly modal = signal(this.#route.snapshot.queryParamMap.get('modal') === 'true');
+  protected readonly scrollable = signal(
+    this.#route.snapshot.queryParamMap.get('scrollable') === 'true',
+  );
   protected readonly initialFocus = signal<'first' | 'container'>(
     this.#route.snapshot.queryParamMap.get('initialFocus') === 'container' ? 'container' : 'first',
   );

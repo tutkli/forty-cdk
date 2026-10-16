@@ -52,21 +52,6 @@ describe('BodyScrollLock', () => {
     expect(document.body.style.overflow).toBe('');
   });
 
-  it('clears the inline padding-right style on unlock', () => {
-    lock.lock();
-    lock.unlock();
-    expect(document.body.style.paddingRight).toBe('');
-  });
-
-  it('clears (does not restore) a pre-existing padding-right inline style on unlock', () => {
-    // Same rationale as overflow: the lock owns the inline style only
-    // while it exists; on unlock we clear and let the cascade take over.
-    document.body.style.paddingRight = '24px';
-    lock.lock();
-    lock.unlock();
-    expect(document.body.style.paddingRight).toBe('');
-  });
-
   it('does not restore a stale captured overflow value on unlock (regression #149)', () => {
     // Pre-lock inline value 'auto' is the value the old implementation
     // would snapshot. Under the "clear, don't restore" contract we drop
@@ -91,42 +76,18 @@ describe('BodyScrollLock', () => {
     expect(document.body.style.overflow).toBe('');
   });
 
-  it('does not restore a stale captured padding-right value on unlock (regression #149)', () => {
-    document.body.style.paddingRight = '24px';
-
-    lock.lock();
-    document.body.style.paddingRight = '32px';
-    lock.unlock();
-
-    // The old implementation would write back '24px'; the new contract
-    // clears unconditionally and lets the cascade take over.
-    expect(document.body.style.paddingRight).not.toBe('24px');
-    expect(document.body.style.paddingRight).toBe('');
-  });
-
-  describe('no classic scrollbar (scrollbarWidth === 0)', () => {
-    let innerWidthDescriptor: PropertyDescriptor | undefined;
-
-    beforeEach(() => {
-      // jsdom reports documentElement.clientWidth === 0 and innerWidth === 1024,
-      // which is the classic-scrollbar path. Force innerWidth to match
-      // clientWidth so `innerWidth - clientWidth === 0`, modelling an
-      // overlay-scrollbar / mobile platform with no classic scrollbar.
-      innerWidthDescriptor = Object.getOwnPropertyDescriptor(window, 'innerWidth');
-      Object.defineProperty(window, 'innerWidth', {
-        configurable: true,
-        get: () => document.documentElement.clientWidth,
-      });
+  function modelClientWidth(
+    el: HTMLElement,
+    widths: { scrolling: number; locked: number },
+    lockedBy: HTMLElement = el,
+  ): void {
+    Object.defineProperty(el, 'clientWidth', {
+      configurable: true,
+      get: () => (lockedBy.style.overflow === 'hidden' ? widths.locked : widths.scrolling),
     });
+  }
 
-    afterEach(() => {
-      if (innerWidthDescriptor) {
-        Object.defineProperty(window, 'innerWidth', innerWidthDescriptor);
-      } else {
-        delete (window as unknown as Record<string, unknown>)['innerWidth'];
-      }
-    });
-
+  describe('no scrollbar is given back', () => {
     it('does not write padding-right on lock', () => {
       lock.lock();
       expect(document.body.style.overflow).toBe('hidden');
@@ -141,10 +102,83 @@ describe('BodyScrollLock', () => {
       expect(document.body.style.paddingRight).toBe('24px');
       expect(document.body.style.overflow).toBe('');
     });
+
+    it('does not pad when the viewport keeps its width across the lock', () => {
+      modelClientWidth(document.documentElement, { scrolling: 1009, locked: 1009 }, document.body);
+      try {
+        lock.lock();
+        expect(document.body.style.paddingRight).toBe('');
+      } finally {
+        delete (document.documentElement as unknown as Record<string, unknown>)['clientWidth'];
+      }
+    });
+  });
+
+  describe('classic page scrollbar', () => {
+    beforeEach(() => {
+      modelClientWidth(document.documentElement, { scrolling: 1009, locked: 1024 }, document.body);
+    });
+
+    afterEach(() => {
+      delete (document.documentElement as unknown as Record<string, unknown>)['clientWidth'];
+    });
+
+    it('pads the body by the scrollbar width measured before overflow is hidden', () => {
+      lock.lock();
+      expect(document.body.style.paddingRight).toBe('15px');
+    });
+
+    it('adds the compensation to the padding the body already has', () => {
+      document.body.style.paddingRight = '24px';
+      lock.lock();
+      expect(document.body.style.paddingRight).toBe('39px');
+    });
+
+    it('clears the inline padding-right style on unlock', () => {
+      lock.lock();
+      lock.unlock();
+      expect(document.body.style.paddingRight).toBe('');
+    });
+
+    it('clears (does not restore) a pre-existing padding-right inline style on unlock', () => {
+      // Same rationale as overflow: the lock owns the inline style only
+      // while it exists; on unlock we clear and let the cascade take over.
+      document.body.style.paddingRight = '24px';
+      lock.lock();
+      lock.unlock();
+      expect(document.body.style.paddingRight).toBe('');
+    });
+
+    it('does not restore a stale captured padding-right value on unlock (regression #149)', () => {
+      document.body.style.paddingRight = '24px';
+
+      lock.lock();
+      document.body.style.paddingRight = '32px';
+      lock.unlock();
+
+      // The old implementation would write back '24px'; the new contract
+      // clears unconditionally and lets the cascade take over.
+      expect(document.body.style.paddingRight).not.toBe('24px');
+      expect(document.body.style.paddingRight).toBe('');
+    });
+
+    it('clears the compensation on the last unlock', () => {
+      lock.lock();
+      lock.lock();
+      lock.unlock();
+      expect(document.body.style.paddingRight).toBe('15px');
+      lock.unlock();
+      expect(document.body.style.paddingRight).toBe('');
+    });
   });
 
   describe('scrollbar-gutter: stable', () => {
+    beforeEach(() => {
+      modelClientWidth(document.documentElement, { scrolling: 1009, locked: 1024 }, document.body);
+    });
+
     afterEach(() => {
+      delete (document.documentElement as unknown as Record<string, unknown>)['clientWidth'];
       document.documentElement.style.removeProperty('scrollbar-gutter');
       document.body.style.removeProperty('scrollbar-gutter');
     });
@@ -166,7 +200,6 @@ describe('BodyScrollLock', () => {
       document.body.style.setProperty('scrollbar-gutter', 'stable');
       lock.lock();
       expect(document.body.style.paddingRight).toBe('');
-      lock.unlock();
     });
 
     it('leaves a pre-existing inline padding-right untouched on unlock under a stable gutter', () => {
@@ -176,6 +209,41 @@ describe('BodyScrollLock', () => {
       expect(document.body.style.paddingRight).toBe('24px');
       lock.unlock();
       expect(document.body.style.paddingRight).toBe('24px');
+    });
+  });
+
+  describe('<html> declaring its own overflow', () => {
+    afterEach(() => {
+      document.documentElement.style.cssText = '';
+    });
+
+    it('locks <html> too when its overflow scrolls the viewport', () => {
+      document.documentElement.style.overflowY = 'scroll';
+      lock.lock();
+      expect(document.documentElement.style.overflow).toBe('hidden');
+      expect(document.body.style.overflow).toBe('hidden');
+    });
+
+    it('clears the <html> overflow on the last unlock only', () => {
+      document.documentElement.style.overflowY = 'auto';
+      lock.lock();
+      lock.lock();
+      lock.unlock();
+      expect(document.documentElement.style.overflow).toBe('hidden');
+      lock.unlock();
+      expect(document.documentElement.style.overflow).toBe('');
+    });
+
+    it('leaves <html> alone when its overflow cannot scroll the viewport', () => {
+      document.documentElement.style.overflow = 'clip';
+      lock.lock();
+      lock.unlock();
+      expect(document.documentElement.style.overflow).toBe('clip');
+    });
+
+    it('leaves <html> alone by default', () => {
+      lock.lock();
+      expect(document.documentElement.style.overflow).toBe('');
     });
   });
 
@@ -211,6 +279,26 @@ describe('BodyScrollLock', () => {
       expect(container.style.overflow).toBe('hidden');
       lock.unlock(container);
       expect(container.style.overflow).toBe('');
+    });
+
+    it('pads the container by its scrollbar width, borders excluded', () => {
+      Object.defineProperty(container, 'offsetWidth', { configurable: true, get: () => 402 });
+      modelClientWidth(container, { scrolling: 383, locked: 400 });
+      container.style.paddingRight = '8px';
+      lock.lock(container);
+      expect(container.style.paddingRight).toBe('25px');
+      lock.unlock(container);
+      expect(container.style.paddingRight).toBe('');
+    });
+
+    it('never locks <html> for a container', () => {
+      document.documentElement.style.overflowY = 'scroll';
+      try {
+        lock.lock(container);
+        expect(document.documentElement.style.overflow).toBe('');
+      } finally {
+        document.documentElement.style.cssText = '';
+      }
     });
 
     it('body lock and container lock are independent', () => {
