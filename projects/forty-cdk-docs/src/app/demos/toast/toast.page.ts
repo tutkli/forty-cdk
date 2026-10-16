@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ViewEncapsulation } from '@angular/core';
 
 import { EXAMPLE_SOURCES } from '../../doc/example-source';
 import { DemoLayout } from '../../ui/demo-layout';
@@ -12,6 +12,7 @@ import { DOC } from '../../../generated/docs/primitives/toast.generated';
 @Component({
   selector: 'app-toast-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  encapsulation: ViewEncapsulation.None,
   imports: [PrimitivePage, DemoLayout, ToastDefaultExample, ToastActionExample, ToastSwipeExample],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
@@ -31,6 +32,18 @@ import { DOC } from '../../../generated/docs/primitives/toast.generated';
         <app-toast-swipe-example />
       </demo-layout>
     </primitive-page>
+  `,
+  styles: `
+    for-toast-viewport.demo-toast-viewport {
+      anchor-name: --toast-variants-stack;
+    }
+
+    @media (width < 47rem) {
+      for-toast-viewport.action-toast-viewport {
+        position-anchor: --toast-variants-stack;
+        bottom: calc(anchor(top) + 0.6rem);
+      }
+    }
   `,
 })
 export class ToastPage {
