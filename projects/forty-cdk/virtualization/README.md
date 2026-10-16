@@ -357,7 +357,7 @@ See the [Combobox README](../combobox/README.md#virtualization) for the complete
 | `overscan`        | `number`                              | Extra items to render beyond the visible window on each side.<br>**Default:** `5`                                                                                                                       |
 | `getItemKey`      | `(index: number) => string \| number` | Stable key per item; used by `@for (track item.key)`. Recomputed when `count` or `dataVersion` changes.<br>**Default:** `(i) => i`                                                                      |
 | `dataVersion`     | `Signal<unknown>`                     | The data `getItemKey` reads, usually the array signal itself. Each new value recomputes every key, so a same-length reorder moves each keyed row and its measured size with its item.<br>**Default:** — |
-| `estimateVersion` | `Signal<unknown>`                     | What `estimateSize` reads, usually the signal holding the estimate. Each new value after the first render drops every cached size and re-estimates every item.<br>**Default:** —                        |
+| `estimateVersion` | `Signal<unknown>`                     | What `estimateSize` reads, usually the signal holding the estimate. Each new value after the first render re-estimates every item not yet measured; a measured item keeps its size.<br>**Default:** —   |
 
 ### Returned handle
 

@@ -68,9 +68,9 @@ export interface VirtualizerOptions {
   readonly dataVersion?: Signal<unknown>;
   /**
    * Reactive marker of what `estimateSize` reads, typically the signal holding the estimate. Each
-   * new value after the first render drops every cached size and re-estimates every item, so the
-   * total size and the offsets follow an estimate that changes at runtime. Without it the estimate
-   * is read for an item only until that item is first laid out.
+   * new value after the first render re-estimates every item not yet measured, so the total size
+   * and the offsets follow an estimate that changes at runtime; a measured item keeps its measured
+   * size. Without it the estimate is read for an item only until that item is first laid out.
    */
   readonly estimateVersion?: Signal<unknown>;
   /**
@@ -260,7 +260,6 @@ export function injectVirtualizer(options: VirtualizerOptions): ForVirtualizer {
   let itemKey = getItemKey;
   let keyedVersion: unknown = UNSYNCED;
   let estimatedVersion: unknown = UNSYNCED;
-  let reconciling = false;
 
   const virtualizer = new Virtualizer<HTMLElement, HTMLElement>({
     count: 0,
@@ -273,9 +272,7 @@ export function injectVirtualizer(options: VirtualizerOptions): ForVirtualizer {
     scrollToFn: elementScroll,
     observeElementRect,
     observeElementOffset: observeOffsetAcrossReattach,
-    onChange: () => {
-      if (!reconciling) notify.set(0);
-    },
+    onChange: () => notify.set(0),
   });
 
   const syncCore = (): void => {
@@ -288,23 +285,15 @@ export function injectVirtualizer(options: VirtualizerOptions): ForVirtualizer {
       }
     }
     const estimate = estimateVersion === undefined ? UNSYNCED : estimateVersion();
+    if (estimatedVersion !== UNSYNCED && !Object.is(estimate, estimatedVersion)) {
+      itemKey = getItemKey === undefined ? (index) => index : (index) => getItemKey(index);
+    }
+    estimatedVersion = estimate;
     const stale =
       count !== virtualizer.options.count ||
       (itemKey !== undefined && itemKey !== virtualizer.options.getItemKey);
     if (stale) {
       virtualizer.setOptions({ ...virtualizer.options, count, getItemKey: itemKey });
-    }
-    const remeasure = estimatedVersion !== UNSYNCED && !Object.is(estimate, estimatedVersion);
-    estimatedVersion = estimate;
-    if (remeasure) {
-      reconciling = true;
-      try {
-        virtualizer.measure();
-      } finally {
-        reconciling = false;
-      }
-    }
-    if (stale || remeasure) {
       virtualizer.getTotalSize();
     }
   };
