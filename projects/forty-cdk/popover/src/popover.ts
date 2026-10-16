@@ -88,9 +88,9 @@ export class ForPopover extends AnchoredOverlayPositioningBase implements ForPop
   });
 
   /**
-   * When true, trigger interaction is ignored and any open popover stays
-   * open until the consumer flips `open` themselves. Disable on the trigger
-   * side; the content side keeps its dismissible behavior unaffected.
+   * When true, the trigger does not toggle the popover. An already open
+   * popover is not closed by disabling it, and Escape, pointer-down outside
+   * and focus outside still close it unless `dismissible` is false.
    */
   readonly disabled = input(false, { transform: booleanAttribute });
 

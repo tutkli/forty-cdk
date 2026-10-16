@@ -142,23 +142,22 @@ The dismiss outputs and the auto-focus pair are vetoable: each receives a `Vetoa
 ### Open without stealing focus
 
 ```html
-<div forPopover [(open)]="open">
+<div
+  forPopover
+  [(open)]="open"
+  (autoFocusOnOpen)="$event.preventDefault()"
+  (autoFocusOnClose)="$event.preventDefault()"
+>
   <input forPopoverAnchor #q type="search" (input)="open.set(true)" placeholder="Search…" />
   <button forPopoverTrigger hidden></button>
 
   @if (open()) {
-  <div
-    forPopoverContent
-    (autoFocusOnOpen)="$event.preventDefault()"
-    (autoFocusOnClose)="$event.preventDefault()"
-  >
-    …
-  </div>
+  <div forPopoverContent>…</div>
   }
 </div>
 ```
 
-The popover opens / closes alongside the input but never steals focus from it. That behavior is handy for live-search panels where every keystroke matters.
+The popover opens / closes alongside the input but never steals focus from it. Both vetoes are outputs of `[forPopover]`, so they go on the root: `[forPopoverContent]` declares no outputs. That behavior is handy for live-search panels where every keystroke matters.
 
 ### `ForPopoverTrigger`
 
