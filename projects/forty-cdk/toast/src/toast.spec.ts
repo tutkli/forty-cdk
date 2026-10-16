@@ -2154,6 +2154,90 @@ describe('global defaults via provideForToastDefaults', () => {
   });
 });
 
+@Component({
+  imports: [ForToastViewport],
+  providers: [provideForToastDefaults({ duration: 1_000, maxVisible: 1, hotkey: 'F8' })],
+  template: `
+    <button type="button" data-test-id="opener">Opener</button>
+    <for-toast-viewport [container]="host" />
+  `,
+})
+class ScopedDefaultsShell {
+  readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+  readonly toasts = inject(ForToastManager);
+}
+
+@Component({
+  imports: [ForToast],
+  template: `<div forToast data-test-id="declarative" (dismiss)="closes.push($event)"></div>`,
+})
+class DefaultDurationDeclarativeHost {
+  readonly closes: string[] = [];
+}
+
+describe('scoped defaults via a component-level provideForToastDefaults', () => {
+  afterEachOverlayCleanup();
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('a scoped duration auto-dismisses a toast that omits its own', async () => {
+    vi.useFakeTimers();
+    const r = renderHost(ScopedDefaultsShell);
+    r.instance.toasts.show({ title: 'Quick' });
+    await r.flush();
+    vi.advanceTimersByTime(999);
+    await r.flush();
+    expect(r.instance.toasts.count()).toBe(1);
+    vi.advanceTimersByTime(1);
+    await r.flush();
+    expect(r.instance.toasts.count()).toBe(0);
+  });
+
+  it('a scoped maxVisible caps the viewport in that scope', async () => {
+    const r = renderHost(ScopedDefaultsShell);
+    r.instance.toasts.show({ title: 'A' });
+    r.instance.toasts.show({ title: 'B' });
+    await r.flush();
+    const titles = r.queryAll('[forToastTitle]').map((e) => e.textContent?.trim());
+    expect(titles).toEqual(['B']);
+    expect(r.instance.toasts.count()).toBe(2);
+  });
+
+  it('a scoped hotkey replaces the root one for the viewport in that scope', async () => {
+    const r = renderHost(ScopedDefaultsShell);
+    r.instance.toasts.show({ title: 'A' });
+    await r.flush();
+    const opener = $(r.el, 'opener')!;
+    opener.focus();
+
+    const f6 = new KeyboardEvent('keydown', { key: 'F6', bubbles: true, cancelable: true });
+    document.dispatchEvent(f6);
+    await r.flush();
+    expect(f6.defaultPrevented).toBe(false);
+    expect(document.activeElement).toBe(opener);
+
+    const f8 = new KeyboardEvent('keydown', { key: 'F8', bubbles: true, cancelable: true });
+    document.dispatchEvent(f8);
+    await r.flush();
+    expect(f8.defaultPrevented).toBe(true);
+    expect(document.activeElement).toBe(r.query('[forToast]'));
+  });
+
+  it('a declarative [forToast] with no [duration] reads the duration default', async () => {
+    vi.useFakeTimers();
+    TestBed.configureTestingModule({ providers: [provideForToastDefaults({ duration: 1_000 })] });
+    const r = renderHost(DefaultDurationDeclarativeHost);
+    vi.advanceTimersByTime(999);
+    await r.flush();
+    expect(r.instance.closes).toEqual([]);
+    vi.advanceTimersByTime(1);
+    await r.flush();
+    expect(r.instance.closes).toEqual(['auto']);
+  });
+});
+
 describe('exit / enter animation cascade (config → viewport)', () => {
   afterEachOverlayCleanup();
 

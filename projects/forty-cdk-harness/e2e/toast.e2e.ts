@@ -435,6 +435,21 @@ test.describe('Toast focus after dismissing the focused toast (#2126)', () => {
     await expectFocused(el(page, 'toast-1'));
     await expect(el(page, 'toast-0')).toHaveCount(0);
   });
+
+  test('F6 skips a toast held by its leave animation for the next live one', async ({ page }) => {
+    await gotoFixture(page, 'toast', { side: 'top-right', animateLeave: 'leaving-slow' });
+    await el(page, 'enqueue').click();
+    await el(page, 'enqueue').click();
+    await expect(el(page, 'toast-1')).toBeVisible();
+
+    await el(page, 'dismiss-first').click();
+    await expect(el(page, 'toast-count')).toHaveText('1');
+
+    await page.keyboard.press('F6');
+
+    await expectFocused(el(page, 'toast-1'));
+    await expect(el(page, 'toast-0')).toHaveCount(1);
+  });
 });
 
 /**

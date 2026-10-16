@@ -88,7 +88,10 @@ import { ForToastTitle } from './toast-title';
  *
  * Hotkey: pressing the configured `hotkey` (default `F6`) anywhere in the
  * document focuses the first toast. Override per-viewport with `[hotkey]`
- * or globally with `provideForToastDefaults({ hotkey: '…' })`. The listener
+ * or per scope with `provideForToastDefaults({ hotkey: '…' })`. When focus
+ * cannot land on that toast (the viewport is inerted behind a modal under
+ * `overModal: 'inert'`), the key is left to the next viewport or to the
+ * browser. The listener
  * is owned once by `ForToastManager`, so the hotkey never double-fires when
  * several viewports are mounted. Dismissing the toast that holds focus moves
  * focus to the next rendered toast, else the previous one, else back to the
@@ -143,7 +146,7 @@ import { ForToastTitle } from './toast-title';
         [animate.enter]="toastAnimateEnter(toast)"
         [animate.leave]="toastAnimateLeave(toast)"
         [variant]="toast.config.variant ?? 'info'"
-        [duration]="toast.config.duration ?? defaultDuration()"
+        [duration]="toast.config.duration ?? defaultDuration"
         [restartToken]="toast.generation"
         [dismissible]="toast.config.dismissible !== false"
         [swipeDirection]="toast.config.swipeDirection ?? swipeDirection()"
@@ -227,16 +230,16 @@ export class ForToastViewport {
    */
   readonly container = input<HTMLElement | null>(null);
 
-  /** Hotkey to focus the viewport. Default reads from `provideForToastDefaults`, falling back to `F6`. */
+  /** Hotkey to focus the viewport. Empty (the default) reads the scope's `provideForToastDefaults({ hotkey })`, itself `F6` unless configured. */
   readonly hotkey = input<string>('');
 
   /**
    * Maximum number of toasts rendered at once. Older toasts collapse out of
    * the visible stack but stay in `manager.toasts()` until dismissed. When
-   * unset (`null`, the default), the viewport falls back to the global
+   * unset (`null`, the default), the viewport falls back to the scope's
    * `provideForToastDefaults({ maxVisible })` value (itself `Infinity` unless
    * configured, which renders all live toasts). Setting `[maxVisible]`
-   * per-viewport overrides the global default.
+   * per-viewport overrides the scope default.
    *
    * **Overflow is parked, not auto-expired.** A toast pushed out of the
    * visible window is unmounted, so its auto-dismiss timer is not running
@@ -312,7 +315,7 @@ export class ForToastViewport {
    */
   readonly stackShift = input<ForToastStackShift | number | null>(null);
 
-  private readonly defaultDuration = computed(() => this.#manager.defaultDuration());
+  private readonly defaultDuration = this.#defaults.duration;
 
   readonly #reducedMotion = injectPrefersReducedMotion();
 
@@ -322,11 +325,11 @@ export class ForToastViewport {
 
   /**
    * Resolved `maxVisible` limit: the per-viewport `[maxVisible]` when set,
-   * otherwise the global `provideForToastDefaults({ maxVisible })` value.
+   * otherwise the scope's `provideForToastDefaults({ maxVisible })` value.
    */
   private readonly resolvedMaxVisible = computed(() => {
     const own = this.maxVisible();
-    return own ?? this.#manager.defaultMaxVisible();
+    return own ?? this.#defaults.maxVisible;
   });
 
   /**
@@ -356,7 +359,7 @@ export class ForToastViewport {
 
     const registration: ForToastViewportRegistration = {
       region: this.region,
-      hotkey: () => this.hotkey() || this.#manager.hotkey(),
+      hotkey: () => this.hotkey() || this.#defaults.hotkey,
       focusFirst: () => this.#focusFirst(),
     };
     this.#active = computed(() => this.#manager.isActiveViewport(registration));
@@ -406,11 +409,15 @@ export class ForToastViewport {
   /** Focus the first rendered toast host. Returns `true` when focus moved. */
   #focusFirst(): boolean {
     const host = this.#host.nativeElement;
-    const first = host.querySelector<HTMLElement>('[forToast]');
+    const first = this.rows()[0]?.nativeElement;
     if (!first) {
       return false;
     }
     const active = resolveActiveElement(this.#doc);
+    first.focus();
+    if (resolveActiveElement(this.#doc) !== first) {
+      return false;
+    }
     if (
       active instanceof HTMLElement &&
       active !== this.#doc.body &&
@@ -418,7 +425,6 @@ export class ForToastViewport {
     ) {
       this.#origin = active;
     }
-    first.focus();
     return true;
   }
 

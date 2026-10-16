@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Toast** — `duration`, `maxVisible` and `hotkey` follow a scoped `provideForToastDefaults`, and
+  the hotkey reports only the focus it moved ([#2295](https://github.com/tutkli/forty-cdk/issues/2295)).
+  The viewport read those three keys from the root-provided `ForToastManager`, so a feature shell
+  providing its own defaults kept the root's duration, cap and hotkey, and a declarative
+  `<div forToast>` with no `[duration]` ignored the defaults token entirely. Both now read the scope
+  they render in. Pressing the hotkey while the viewport is inerted behind a modal
+  (`overModal: 'inert'`) no longer swallows the key, and it no longer focuses a toast that is still
+  playing its leave animation.
+
 ## [0.35.0] - 2026-10-16
 
 ### Added
