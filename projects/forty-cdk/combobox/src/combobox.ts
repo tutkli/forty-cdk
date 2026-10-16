@@ -554,9 +554,7 @@ export class ForCombobox<T = string>
       if (opt) {
         return { value: v, label: opt.label };
       }
-      // Fall back to the consumer-provided label fn so non-string items
-      // still render a meaningful string before the option cache warms up.
-      return { value: v, label: typeof v === 'string' ? (v as string) : toLabel(v) };
+      return { value: v, label: toLabel(v) };
     });
   });
 

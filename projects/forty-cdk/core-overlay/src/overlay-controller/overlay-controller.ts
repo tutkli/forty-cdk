@@ -1,4 +1,10 @@
-import type { OutputEmitterRef, Signal, WritableSignal } from '@angular/core';
+import {
+  effect,
+  type OutputEmitterRef,
+  type Signal,
+  untracked,
+  type WritableSignal,
+} from '@angular/core';
 
 import {
   emitVetoableNativeEvent,
@@ -151,7 +157,9 @@ export interface OverlayControllerDeps<Focus, CloseReason> {
   readonly onOpen?: (initialFocus: Focus, options: OverlayTransitionOptions) => void;
   /**
    * Side effect run after {@link OverlayController.close} flips the open state
-   * to `false`, receiving the close reason and the transition options.
+   * to `false`, receiving the close reason and the transition options. Also
+   * runs, with the programmatic reason, when the open state turns `false`
+   * through any other channel, such as a consumer's `[(open)]` write.
    */
   readonly onClose?: (reason: CloseReason, options: OverlayTransitionOptions) => void;
   /**
@@ -198,6 +206,9 @@ export class OverlayController<Focus, CloseReason> {
   readonly #autoFocusOnOpen: () => boolean;
   readonly #autoFocusOnClose: () => boolean;
 
+  /** Set by {@link close} so the open-state observer skips the edge it already handled. */
+  #closedHere = false;
+
   /** The trigger's stable id, adopted from a consumer-set static id when present. */
   readonly triggerId: Signal<string>;
 
@@ -237,6 +248,21 @@ export class OverlayController<Focus, CloseReason> {
     this.content = this.#contentSlot.element;
     this.initialFocus = this.#initialFocusState.target;
     this.lastCloseReason = this.#closeReasonState.reason;
+
+    let wasOpen = untracked(deps.isOpen);
+    // @sanctioned-effect(untracked-read): only `isOpen` is tracked, and the close
+    // it runs leaves that state where the other channel already put it.
+    effect(() => {
+      const open = deps.isOpen();
+      untracked(() => {
+        const closedElsewhere = wasOpen && !open && !this.#closedHere;
+        wasOpen = open;
+        this.#closedHere = false;
+        if (closedElsewhere) {
+          this.close(deps.programmaticReason);
+        }
+      });
+    });
   }
 
   /** Set the initial-focus target ahead of the next open. */
@@ -319,6 +345,7 @@ export class OverlayController<Focus, CloseReason> {
    * surface is open must still be closable.
    */
   close(reason: CloseReason, transition: OverlayTransitionOptions = {}): void {
+    this.#closedHere = true;
     this.#closeReasonState.close(reason, () => this.#deps.setOpen(false));
     this.#deps.onClose?.(reason, transition);
   }

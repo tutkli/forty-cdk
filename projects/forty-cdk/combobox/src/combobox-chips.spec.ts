@@ -134,6 +134,44 @@ describe('ForComboboxChips', () => {
   });
 });
 
+describe('string-valued chip labels before the option renders', () => {
+  @Component({
+    host: { 'data-fixture': 'string-id-chip-host' },
+    imports: CHIP_REMOVE_IMPORTS,
+    template: `
+      <div forCombobox multiple #cb="forCombobox" [(value)]="value" [itemToStringLabel]="toName">
+        <div forComboboxChips>
+          @for (c of cb.selected(); track c.value) {
+            <span forComboboxChip [value]="c.value" [attr.data-chip]="c.value">
+              {{ c.label }}
+              <button forComboboxChipRemove [attr.data-test-remove]="c.value">×</button>
+            </span>
+          }
+          <input forComboboxInput />
+        </div>
+      </div>
+    `,
+  })
+  class StringIdChipHost {
+    readonly value = signal<readonly string[]>(['p1']);
+    readonly toName = (id: string) => (id === 'p1' ? 'Paris' : id);
+  }
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+  });
+
+  it('labels a seeded string id through [itemToStringLabel]', async () => {
+    const r = renderHost(StringIdChipHost);
+    await flush(r.fixture);
+
+    expect(r.query<HTMLElement>('[data-chip="p1"]')!.textContent).toContain('Paris');
+    expect(r.query<HTMLButtonElement>('[data-test-remove="p1"]')!.getAttribute('aria-label')).toBe(
+      'Remove Paris',
+    );
+  });
+});
+
 describe('ForComboboxChipRemove aria-label (issue #1481)', () => {
   const CHIP_REMOVE_TEMPLATE = `
     <div forCombobox multiple [(query)]="query" [(value)]="value" [(open)]="open">

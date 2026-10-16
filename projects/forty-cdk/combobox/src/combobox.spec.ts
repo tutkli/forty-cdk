@@ -3410,6 +3410,27 @@ describe('ForCombobox trigger + list (picker anatomy, issue #675)', () => {
       expect(r.instance.open()).toBe(false);
       expect(r.instance.query()).toBe('');
     });
+
+    it('resets the query when the consumer closes through [(open)]', async () => {
+      const r = renderHost(PickerHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      typeInto(getPickerInput(), 'ap');
+      await flush(r.fixture);
+      expect(r.instance.query()).toBe('ap');
+
+      r.instance.open.set(false);
+      await flush(r.fixture);
+      expect(r.instance.query()).toBe('');
+
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      expect(getPickerInput().value).toBe('');
+      for (const id of ['apple', 'apricot', 'banana', 'cherry', 'date']) {
+        expect(document.querySelector(`[data-test-id="${id}"]`)).not.toBeNull();
+      }
+    });
   });
 
   describe('picker initial highlight on open (issue #754)', () => {
@@ -4411,8 +4432,13 @@ describe('ForCombobox virtualization', () => {
       return ITEMS.slice(start, end).map((it, i) => ({ ...it, posInSet: start + i }));
     });
 
+    deferScroll = false;
+
     onScrollToIndex(idx: number): void {
       this.scrollToIndexCalls.push(idx);
+      if (this.deferScroll) {
+        return;
+      }
       // Mimic a virtualizer: scroll the requested index into a 10-row
       // window centered around it.
       const start = Math.max(0, Math.min(ITEMS.length - 10, idx - 5));
@@ -4558,6 +4584,29 @@ describe('ForCombobox virtualization', () => {
     // pending pos resolves to its id.
     const item99 = document.querySelector<HTMLElement>('[data-test-id="item-99"]')!;
     expect(input.getAttribute('aria-activedescendant')).toBe(item99.id);
+  });
+
+  it('drops a pending off-window move when the consumer closes through [(open)]', async () => {
+    const r = renderHost(VirtHost);
+    r.instance.deferScroll = true;
+    r.instance.open.set(true);
+    await flush(r.fixture);
+    const input = getInput();
+    input.focus();
+
+    pressKey(input, 'End');
+    await flush(r.fixture);
+    expect(r.instance.scrollToIndexCalls).toContain(99);
+    expect(document.querySelector('[data-test-id="item-99"]')).toBeNull();
+
+    r.instance.open.set(false);
+    await flush(r.fixture);
+    r.instance.range.set([90, 100]);
+    r.instance.open.set(true);
+    await flush(r.fixture);
+
+    const item90 = document.querySelector<HTMLElement>('[data-test-id="item-90"]')!;
+    expect(input.getAttribute('aria-activedescendant')).toBe(item90.id);
   });
 
   it('scrolling the active option out of view does not snap the window back to the top', async () => {

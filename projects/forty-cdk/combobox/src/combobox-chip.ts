@@ -81,7 +81,7 @@ export class ForComboboxChip<T = string> {
     if (cached) {
       return cached.label;
     }
-    return typeof v === 'string' ? (v as string) : this.ctx.itemToStringLabel()(v);
+    return this.ctx.itemToStringLabel()(v);
   });
 
   constructor() {
