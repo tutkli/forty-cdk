@@ -85,8 +85,19 @@ export class ForHoverCardTrigger {
     });
   }
 
+  /**
+   * Whether a hover or a keyboard focus on this trigger may open the card.
+   * Override it in a subclass to veto those opens, for example while a wrapper
+   * has nothing to preview. It is read on each open request, so it may depend
+   * on signals. It does not close a card that is already open, and opens
+   * through the root's `open` model or `show()` do not consult it.
+   */
+  protected canOpen(): boolean {
+    return true;
+  }
+
   private onPointerEnter(event: PointerEvent): void {
-    if (!isNonTouchPointer(event)) {
+    if (!isNonTouchPointer(event) || !this.canOpen()) {
       return;
     }
     this.ctx().pointerEnterTrigger();
@@ -106,7 +117,7 @@ export class ForHoverCardTrigger {
   }
 
   private onFocus(): void {
-    if (this.#pressFocus.consume()) {
+    if (this.#pressFocus.consume() || !this.canOpen()) {
       return;
     }
     this.ctx().focusTrigger();

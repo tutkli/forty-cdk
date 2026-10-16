@@ -1,6 +1,8 @@
 import { NgTemplateOutlet } from '@angular/common';
 import {
   Component,
+  Directive,
+  input,
   type Provider,
   provideZonelessChangeDetection,
   signal,
@@ -2287,6 +2289,69 @@ describe('ForTooltip', () => {
       r.instance.open.set(false);
       await flush(r.fixture);
       expect(trigger.getAttribute('data-state')).toBe('closed');
+    });
+  });
+
+  describe('trigger subclass', () => {
+    afterEachOverlayCleanup();
+
+    @Directive({
+      selector: '[appTooltip]',
+      hostDirectives: [{ directive: ForTooltip, inputs: ['openDelay', 'closeDelay'] }],
+    })
+    class AppTooltip extends ForTooltipTrigger {
+      readonly appTooltip = input('');
+
+      protected override canOpen(): boolean {
+        return this.appTooltip() !== '';
+      }
+    }
+
+    @Component({
+      imports: [AppTooltip],
+      template: `
+        <button type="button" [appTooltip]="message()" [openDelay]="0" [closeDelay]="0">
+          Hover me
+        </button>
+      `,
+    })
+    class SubclassHost {
+      readonly message = signal('');
+    }
+
+    it('vetoes a hover open through canOpen', async () => {
+      const r = renderHost(SubclassHost);
+      await flush(r.fixture);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+
+      trigger.dispatchEvent(new PointerEvent('pointerenter', { pointerType: 'mouse' }));
+      await flush(r.fixture);
+      expect(trigger.getAttribute('data-state')).toBe('closed');
+      expect(trigger.hasAttribute('aria-describedby')).toBe(false);
+
+      trigger.dispatchEvent(new PointerEvent('pointerleave', { pointerType: 'mouse' }));
+      r.instance.message.set('Hint');
+      await flush(r.fixture);
+      trigger.dispatchEvent(new PointerEvent('pointerenter', { pointerType: 'mouse' }));
+      await flush(r.fixture);
+      expect(trigger.getAttribute('data-state')).toBe('open');
+    });
+
+    it('vetoes a keyboard-focus open through canOpen', async () => {
+      const r = renderHost(SubclassHost);
+      await flush(r.fixture);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+
+      trigger.dispatchEvent(new FocusEvent('focus'));
+      await flush(r.fixture);
+      expect(trigger.getAttribute('data-state')).toBe('closed');
+
+      trigger.dispatchEvent(new FocusEvent('blur'));
+      r.instance.message.set('Hint');
+      await flush(r.fixture);
+      trigger.dispatchEvent(new FocusEvent('focus'));
+      await flush(r.fixture);
+      expect(trigger.getAttribute('data-state')).toBe('open');
     });
   });
 });
