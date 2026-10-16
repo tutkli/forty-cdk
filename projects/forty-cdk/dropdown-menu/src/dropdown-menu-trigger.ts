@@ -98,7 +98,7 @@ function injectDropdownMenuTriggerContext(
   },
 })
 export class ForDropdownMenuTrigger {
-  protected readonly buttonType = hostButtonType();
+  private readonly buttonType = hostButtonType();
 
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
   #pointerActivation = false;
@@ -125,7 +125,7 @@ export class ForDropdownMenuTrigger {
    */
   readonly forDropdownMenuTrigger = input<ForMenuContext | ''>('');
 
-  protected readonly ctx = injectDropdownMenuTriggerContext(this.forDropdownMenuTrigger);
+  private readonly ctx = injectDropdownMenuTriggerContext(this.forDropdownMenuTrigger);
 
   readonly #openerRegistration = computed(() => asMenuOpenerRegistration(this.ctx()));
 
@@ -181,11 +181,11 @@ export class ForDropdownMenuTrigger {
     reflectDisabled(this.effectiveDisabled);
   }
 
-  protected onPointerDown(): void {
+  private onPointerDown(): void {
     this.#pointerActivation = true;
   }
 
-  protected onClick(): void {
+  private onClick(): void {
     const modality: MenuActivationModality = this.#pointerActivation ? 'pointer' : 'keyboard';
     this.#pointerActivation = false;
     if (this.effectiveDisabled()) {
@@ -195,7 +195,7 @@ export class ForDropdownMenuTrigger {
     this.ctx().toggle('first', modality);
   }
 
-  protected onKeyDown(event: KeyboardEvent): void {
+  private onKeyDown(event: KeyboardEvent): void {
     this.#pointerActivation = false;
     if (this.effectiveDisabled()) {
       return;

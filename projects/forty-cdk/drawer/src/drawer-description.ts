@@ -17,7 +17,7 @@ import { injectDrawerContext } from './drawer-context';
   },
 })
 export class ForDrawerDescription {
-  protected readonly id = registerA11yDescription(
+  private readonly id = registerA11yDescription(
     injectDrawerContext('ForDrawerDescription'),
     'for-drawer-description',
   );

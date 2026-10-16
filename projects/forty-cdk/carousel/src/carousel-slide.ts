@@ -31,7 +31,7 @@ import { injectCarouselContext } from './carousel-context';
   },
 })
 export class ForCarouselSlide {
-  protected readonly ctx = injectCarouselContext('ForCarouselSlide');
+  private readonly ctx = injectCarouselContext('ForCarouselSlide');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   /**
@@ -46,15 +46,15 @@ export class ForCarouselSlide {
   readonly #index = computed(() => this.ctx.indexOfSlide(this.#host.nativeElement));
 
   /** Whether this is the current (active) slide. */
-  protected readonly current = computed(() => this.ctx.isCurrent(this.#index()));
+  private readonly current = computed(() => this.ctx.isCurrent(this.#index()));
 
   /** Whether this slide is within the visible window. */
-  protected readonly inView = computed(() => this.ctx.isInView(this.#index()));
+  private readonly inView = computed(() => this.ctx.isInView(this.#index()));
 
-  protected readonly roleDescription = computed(() => this.ctx.slideRoleDescription());
+  private readonly roleDescription = computed(() => this.ctx.slideRoleDescription());
 
   /** The positional `"N of M"` label used when no explicit `ariaLabel` is set. */
-  protected readonly positionLabel = computed(() => {
+  private readonly positionLabel = computed(() => {
     const i = this.#index();
     return i < 0 ? null : this.ctx.slideLabel(i + 1);
   });

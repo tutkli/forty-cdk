@@ -63,14 +63,14 @@ import {
   },
 })
 export class ForSwitch extends FormUiControlBase implements FormCheckboxControl {
-  protected readonly buttonType = hostButtonType();
+  private readonly buttonType = hostButtonType();
 
   /** Two-way bindable on/off state. Required by `FormCheckboxControl`. */
   readonly checked = model<boolean>(false);
 
   readonly #activation = injectSyntheticActivation({ disabled: this.effectiveDisabled });
 
-  protected readonly tabindex = this.#activation.tabindex;
+  private readonly tabindex = this.#activation.tabindex;
 
   constructor() {
     super();
@@ -82,22 +82,22 @@ export class ForSwitch extends FormUiControlBase implements FormCheckboxControl 
     injectNativeFormResetToInitial(this.checked);
   }
 
-  protected onClick(): void {
+  private onClick(): void {
     if (this.effectiveDisabled() || this.readonly()) {
       return;
     }
     this.checked.update((v) => !v);
   }
 
-  protected onKeydown(event: KeyboardEvent): void {
+  private onKeydown(event: KeyboardEvent): void {
     this.#activation.keydown(event);
   }
 
-  protected onKeyup(event: KeyboardEvent): void {
+  private onKeyup(event: KeyboardEvent): void {
     this.#activation.keyup(event);
   }
 
-  protected onBlur(): void {
+  private onBlur(): void {
     this.#activation.reset();
     this.markTouched();
   }

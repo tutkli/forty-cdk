@@ -20,15 +20,15 @@ import { injectFileUploadContext } from './file-upload-context';
   },
 })
 export class ForFileUploadTrigger {
-  protected readonly buttonType = hostButtonType();
+  private readonly buttonType = hostButtonType();
 
-  protected readonly ctx = injectFileUploadContext('[forFileUploadTrigger]');
+  private readonly ctx = injectFileUploadContext('[forFileUploadTrigger]');
 
   constructor() {
     reflectDisabled(this.ctx.effectiveDisabled);
   }
 
-  protected onClick(): void {
+  private onClick(): void {
     this.ctx.openFileDialog();
   }
 }

@@ -47,7 +47,7 @@ export class ForMenuItemIndicator {
   readonly #checkbox = inject(FOR_MENU_CHECKBOX_ITEM, { optional: true });
   readonly #radio = inject(FOR_MENU_RADIO_ITEM, { optional: true });
 
-  protected readonly checked = computed(() => {
+  private readonly checked = computed(() => {
     if (this.#checkbox) {
       return this.#checkbox.checked();
     }

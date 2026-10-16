@@ -92,23 +92,23 @@ import { injectComboboxContext } from './combobox-context';
   ],
 })
 export class ForComboboxContent {
-  protected readonly ctx = injectComboboxContext('ForComboboxContent');
+  private readonly ctx = injectComboboxContext('ForComboboxContent');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   /** When a `[forComboboxList]` is registered the listbox semantics live there, not here. */
-  protected readonly hasList = this.ctx.hasList;
+  private readonly hasList = this.ctx.hasList;
 
   readonly #isDialog = computed(() => this.hasList() && this.ctx.triggerId() !== null);
 
-  protected readonly role = computed(() =>
+  private readonly role = computed(() =>
     this.#isDialog() ? 'dialog' : this.hasList() ? null : 'listbox',
   );
 
-  protected readonly resolvedAriaLabel = hostAriaLabel(() =>
+  private readonly resolvedAriaLabel = hostAriaLabel(() =>
     this.hasList() ? null : this.ctx.ariaLabel(),
   );
 
-  protected readonly labelledBy = hostLabelledBy(() => {
+  private readonly labelledBy = hostLabelledBy(() => {
     if (this.resolvedAriaLabel()) {
       return null;
     }

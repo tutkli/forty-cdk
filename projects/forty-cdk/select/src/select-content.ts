@@ -88,12 +88,12 @@ import { injectSelectContext, type SelectContext } from './select-context';
 })
 export class ForSelectContent {
   readonly #select = injectSelectContext('ForSelectContent');
-  protected readonly ctx: SelectContext = this.#select;
+  private readonly ctx: SelectContext = this.#select;
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
-  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ctx.ariaLabel());
+  private readonly resolvedAriaLabel = hostAriaLabel(() => this.ctx.ariaLabel());
 
-  protected readonly labelledBy = hostLabelledBy(() =>
+  private readonly labelledBy = hostLabelledBy(() =>
     this.resolvedAriaLabel() ? null : this.ctx.overlay.triggerId(),
   );
 
@@ -234,13 +234,13 @@ export class ForSelectContent {
     });
   }
 
-  protected onKeyDown(event: KeyboardEvent): void {
+  private onKeyDown(event: KeyboardEvent): void {
     if (this.ctx.totalCount() !== undefined) {
       this.ctx.handleVirtualizedKeydown(event);
     }
   }
 
-  protected onPointerLeave(): void {
+  private onPointerLeave(): void {
     this.ctx.releasePointerHighlight();
   }
 }

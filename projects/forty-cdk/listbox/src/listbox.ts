@@ -180,7 +180,7 @@ export class ForListbox<T = string>
    */
   readonly ariaLabel = input<string | null>(null);
 
-  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
+  private readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 
   /**
    * Axis the arrow keys navigate. Reflected as `data-orientation`.
@@ -338,7 +338,7 @@ export class ForListbox<T = string>
     this.#virtualized() || this.#controlled() ? this.#activeId() : null,
   );
 
-  protected readonly hostActiveDescendantId = computed<string | null>(() =>
+  private readonly hostActiveDescendantId = computed<string | null>(() =>
     this.#controlled() ? null : this.activeDescendantId(),
   );
 
@@ -349,7 +349,7 @@ export class ForListbox<T = string>
    * all disabled — so the control is still reachable. A disabled listbox, and
    * one driven by a `[forListboxController]`, is never tabbable.
    */
-  protected readonly hostTabindex = computed<'0' | null>(() => {
+  private readonly hostTabindex = computed<'0' | null>(() => {
     if (this.effectiveDisabled() || this.#controlled()) {
       return null;
     }
@@ -666,7 +666,7 @@ export class ForListbox<T = string>
     }
   }
 
-  protected onHostKeyDown(event: KeyboardEvent): void {
+  private onHostKeyDown(event: KeyboardEvent): void {
     if (!this.#virtualized() || this.effectiveDisabled()) {
       return;
     }
@@ -765,7 +765,7 @@ export class ForListbox<T = string>
     return handled;
   }
 
-  protected onHostFocusIn(): void {
+  private onHostFocusIn(): void {
     if (!this.#virtualized() || this.effectiveDisabled()) {
       return;
     }
@@ -785,7 +785,7 @@ export class ForListbox<T = string>
     }
   }
 
-  protected onFocusOut(event: FocusEvent): void {
+  private onFocusOut(event: FocusEvent): void {
     const next = event.relatedTarget as HTMLElement | null;
     if (next && this.#host.nativeElement.contains(next)) {
       return;
@@ -793,7 +793,7 @@ export class ForListbox<T = string>
     this.markTouched();
   }
 
-  protected onPointerLeave(): void {
+  private onPointerLeave(): void {
     this.#pointer.release();
   }
 }

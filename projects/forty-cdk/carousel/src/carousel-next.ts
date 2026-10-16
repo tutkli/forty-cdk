@@ -29,9 +29,9 @@ import { injectCarouselContext } from './carousel-context';
   },
 })
 export class ForCarouselNext {
-  protected readonly buttonType = hostButtonType();
+  private readonly buttonType = hostButtonType();
 
-  protected readonly ctx = injectCarouselContext('ForCarouselNext');
+  private readonly ctx = injectCarouselContext('ForCarouselNext');
 
   /**
    * Accessible label for this button (e.g. "Next slide"). When `null`
@@ -40,11 +40,11 @@ export class ForCarouselNext {
    */
   readonly ariaLabel = input<string | null>(null);
 
-  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
+  private readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 
-  protected readonly isDisabled = computed(() => !this.ctx.canScrollNext());
+  private readonly isDisabled = computed(() => !this.ctx.canScrollNext());
 
-  protected activate(): void {
+  private activate(): void {
     if (this.isDisabled()) {
       return;
     }

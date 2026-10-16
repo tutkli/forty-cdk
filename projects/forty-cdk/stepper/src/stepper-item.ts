@@ -37,7 +37,7 @@ import {
   providers: [{ provide: FOR_STEPPER_ITEM_CONTEXT, useExisting: ForStepperItem }],
 })
 export class ForStepperItem implements ForStepperItemContext, ForStepperItemHandle {
-  protected readonly ctx = injectStepperContext('ForStepperItem');
+  private readonly ctx = injectStepperContext('ForStepperItem');
 
   /** Host element — satisfies `ForStepperItemHandle.host` for collection registration. */
   readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;

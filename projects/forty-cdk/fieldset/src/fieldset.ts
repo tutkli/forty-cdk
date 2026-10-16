@@ -89,7 +89,7 @@ export class ForFieldset implements ForFieldsetContext {
   readonly legendId = this.#legendId.asReadonly();
 
   /** Whether the host element is a native `<fieldset>` (no role/labelledby needed). */
-  protected readonly isNativeFieldset = computed(
+  private readonly isNativeFieldset = computed(
     () => this.#host.nativeElement.tagName === 'FIELDSET',
   );
 
@@ -98,7 +98,7 @@ export class ForFieldset implements ForFieldsetContext {
    * natively disables descendant controls); a non-`<fieldset>` host advertises
    * its disabled state via `aria-disabled` instead.
    */
-  protected readonly nativeDisabled = computed(() => this.isNativeFieldset() && this.disabled());
+  private readonly nativeDisabled = computed(() => this.isNativeFieldset() && this.disabled());
 
   constructor() {
     reflectDisabled(this.nativeDisabled);
@@ -108,7 +108,7 @@ export class ForFieldset implements ForFieldsetContext {
   }
 
   /** `role="group"` on a non-`<fieldset>` element, else null. */
-  protected readonly roleAttr = computed(() => (this.isNativeFieldset() ? null : 'group'));
+  private readonly roleAttr = computed(() => (this.isNativeFieldset() ? null : 'group'));
 
   /**
    * Resolved `aria-labelledby`: a consumer-set static value when present, else
@@ -116,7 +116,7 @@ export class ForFieldset implements ForFieldsetContext {
    * else null (a native `<fieldset>`/`<legend>` groups implicitly and needs
    * none).
    */
-  protected readonly labelledBy = hostLabelledBy(() =>
+  private readonly labelledBy = hostLabelledBy(() =>
     !this.isNativeFieldset() && this.#legends() > 0 ? this.legendId() : null,
   );
 

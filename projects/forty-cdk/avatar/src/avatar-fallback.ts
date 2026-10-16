@@ -18,5 +18,5 @@ import { injectAvatarContext } from './avatar-context';
   },
 })
 export class ForAvatarFallback {
-  protected readonly parent = injectAvatarContext('ForAvatarFallback');
+  private readonly parent = injectAvatarContext('ForAvatarFallback');
 }

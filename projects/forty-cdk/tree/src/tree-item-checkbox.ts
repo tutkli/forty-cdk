@@ -29,14 +29,14 @@ import { injectTreeContext, injectTreeItemContext } from './tree-context';
 })
 export class ForTreeItemCheckbox {
   readonly #tree = injectTreeContext('ForTreeItemCheckbox');
-  protected readonly item = injectTreeItemContext('ForTreeItemCheckbox');
+  private readonly item = injectTreeItemContext('ForTreeItemCheckbox');
 
-  protected readonly dataState = computed(() => {
+  private readonly dataState = computed(() => {
     const state = this.item.checkState();
     return state === 'true' ? 'checked' : state === 'mixed' ? 'indeterminate' : 'unchecked';
   });
 
-  protected onClick(event: MouseEvent): void {
+  private onClick(event: MouseEvent): void {
     event.stopPropagation();
     if (!this.item.selectable()) {
       fortyWarn({

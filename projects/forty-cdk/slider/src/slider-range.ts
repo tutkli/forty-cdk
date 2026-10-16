@@ -28,5 +28,5 @@ import { injectSliderContext } from './slider-context';
   },
 })
 export class ForSliderRange {
-  protected readonly ctx = injectSliderContext('ForSliderRange');
+  private readonly ctx = injectSliderContext('ForSliderRange');
 }

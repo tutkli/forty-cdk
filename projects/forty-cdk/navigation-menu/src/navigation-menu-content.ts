@@ -81,14 +81,14 @@ import {
   },
 })
 export class ForNavigationMenuContent {
-  protected readonly menu = injectNavigationMenuContext('ForNavigationMenuContent');
+  private readonly menu = injectNavigationMenuContext('ForNavigationMenuContent');
   readonly #item = injectNavigationMenuItemContext('ForNavigationMenuContent');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 
   readonly id = hostId('for-navigation-menu-content');
-  protected readonly value: Signal<string> = this.#item.value;
-  protected readonly labelledBy = hostLabelledBy(() => this.menu.triggerIdFor(this.value()));
-  protected readonly motion = computed(() => this.menu.motionFor(this.value()));
+  private readonly value: Signal<string> = this.#item.value;
+  private readonly labelledBy = hostLabelledBy(() => this.menu.triggerIdFor(this.value()));
+  private readonly motion = computed(() => this.menu.motionFor(this.value()));
 
   readonly #mounted = signal(false);
   readonly #hosted = computed(() => this.#mounted() && this.menu.viewport() !== null);
@@ -196,17 +196,17 @@ export class ForNavigationMenuContent {
     viewport.insertPanel(this.#host, this.menu.triggerHostFor(this.value()));
   }
 
-  protected onPointerEnter(event: PointerEvent): void {
+  private onPointerEnter(event: PointerEvent): void {
     if (!isHoverCapablePointer(event)) return;
     this.menu.cancelPending();
   }
 
-  protected onPointerLeave(event: PointerEvent): void {
+  private onPointerLeave(event: PointerEvent): void {
     if (!isHoverCapablePointer(event)) return;
     this.menu.scheduleClose('hover');
   }
 
-  protected onEscape(event: KeyboardEvent): void {
+  private onEscape(event: KeyboardEvent): void {
     if (event.defaultPrevented || isImeComposing(event)) return;
     event.preventDefault();
     event.stopPropagation();

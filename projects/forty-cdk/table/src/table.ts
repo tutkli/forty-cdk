@@ -134,7 +134,7 @@ export class ForTable<T = unknown> implements ForTableContext {
    */
   readonly ariaLabel = input<string | null>(null);
 
-  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
+  private readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 
   /**
    * Writing direction. When unset (default `null`), the inherited ambient
@@ -258,7 +258,7 @@ export class ForTable<T = unknown> implements ForTableContext {
    */
   readonly cellActivate = output<TableCellActivateEvent<T>>();
 
-  protected readonly headerSize = injectElementSize(this.#registry.headerRowEl);
+  private readonly headerSize = injectElementSize(this.#registry.headerRowEl);
 
   readonly #roving = new RovingTabindex(() => this.#flatCells());
   readonly #pointer = createPointerHighlight({ items: () => this.#flatCells() });
@@ -423,7 +423,7 @@ export class ForTable<T = unknown> implements ForTableContext {
    */
   readonly #windowed = computed(() => this.#registry.virtualWindow() !== null);
 
-  protected readonly rowCountAttr = computed<number | null>(() => {
+  private readonly rowCountAttr = computed<number | null>(() => {
     if (this.mode() === 'table') {
       return null;
     }
@@ -436,7 +436,7 @@ export class ForTable<T = unknown> implements ForTableContext {
     }
     return this.#registry.rows().length + this.dataRowIndexOffset();
   });
-  protected readonly colCountAttr = computed<number | null>(() => {
+  private readonly colCountAttr = computed<number | null>(() => {
     if (this.mode() === 'table') {
       return null;
     }
@@ -527,7 +527,7 @@ export class ForTable<T = unknown> implements ForTableContext {
     }
   }
 
-  protected onPointerLeave(): void {
+  private onPointerLeave(): void {
     this.#pointer.release();
   }
 
@@ -601,7 +601,7 @@ export class ForTable<T = unknown> implements ForTableContext {
    * A real departure parks the cell instead of forgetting it, so {@link onFocusIn} can hand
    * interaction mode back when focus returns to one of its widgets.
    */
-  protected onFocusOut(event: FocusEvent): void {
+  private onFocusOut(event: FocusEvent): void {
     const entered = this.#enteredCell();
     if (!entered) {
       return;
@@ -648,7 +648,7 @@ export class ForTable<T = unknown> implements ForTableContext {
    * cell, without entering interaction mode, so the tab stop and the row a virtualized grid keeps
    * mounted are always the ones holding focus.
    */
-  protected onFocusIn(event: FocusEvent): void {
+  private onFocusIn(event: FocusEvent): void {
     const target = event.target;
     if (target instanceof Node) {
       this.#followFocusIntoCell(target);

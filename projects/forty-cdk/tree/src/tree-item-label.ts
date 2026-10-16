@@ -26,7 +26,7 @@ export class ForTreeItemLabel {
     inject(DestroyRef).onDestroy(() => this.#item.setLabel(null));
   }
 
-  protected onClick(event: MouseEvent): void {
+  private onClick(event: MouseEvent): void {
     this.#tree.activateItem(this.#item, event);
     this.#item.focusItem();
   }

@@ -88,7 +88,7 @@ import { injectComboboxContext } from './combobox-context';
   },
 })
 export class ForComboboxAction {
-  protected readonly buttonType = hostButtonType();
+  private readonly buttonType = hostButtonType();
 
   readonly #ctx = injectComboboxContext('ForComboboxAction');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -112,7 +112,7 @@ export class ForComboboxAction {
   readonly id = hostId('for-combobox-action');
 
   /** True while the action holds DOM focus — reflected as `data-highlighted`. */
-  protected readonly focused = signal(false);
+  private readonly focused = signal(false);
 
   readonly #handle = {
     host: this.#host.nativeElement,
@@ -144,7 +144,7 @@ export class ForComboboxAction {
     });
   }
 
-  protected onClick(): void {
+  private onClick(): void {
     if (this.#isInert()) {
       return;
     }
@@ -152,7 +152,7 @@ export class ForComboboxAction {
     this.activate.emit();
   }
 
-  protected onKeyDown(event: KeyboardEvent): void {
+  private onKeyDown(event: KeyboardEvent): void {
     switch (event.key) {
       case 'Enter':
       case ' ':

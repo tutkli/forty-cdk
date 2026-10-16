@@ -20,5 +20,5 @@ import { injectStepperItemContext } from './stepper-context';
   },
 })
 export class ForStepperIndicator {
-  protected readonly item = injectStepperItemContext('ForStepperIndicator');
+  private readonly item = injectStepperItemContext('ForStepperIndicator');
 }

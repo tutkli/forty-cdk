@@ -80,7 +80,7 @@ export class ForToolbar implements ForToolbarContext {
    */
   readonly ariaLabel = input<string | null>(null);
 
-  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
+  private readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 
   /**
    * Axis the arrow keys navigate. Reflected as `data-orientation`.

@@ -56,9 +56,9 @@ export class ForNavigationMenuItem implements ForNavigationMenuItemContext {
    */
   readonly disabled = input(false, { transform: booleanAttribute });
 
-  protected readonly state = computed(() => (this.#ctx.isOpen(this.value()) ? 'open' : 'closed'));
+  private readonly state = computed(() => (this.#ctx.isOpen(this.value()) ? 'open' : 'closed'));
 
-  protected readonly ownedContentId = computed(() =>
+  private readonly ownedContentId = computed(() =>
     this.#ctx.isOpen(this.value()) ? this.#ctx.hostedContentIdFor(this.value()) : null,
   );
 

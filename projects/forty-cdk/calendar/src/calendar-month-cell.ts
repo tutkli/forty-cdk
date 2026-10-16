@@ -30,16 +30,16 @@ import { type ForCalendarMonthCellHandle, injectCalendarContext } from './calend
   },
 })
 export class ForCalendarMonthCell {
-  protected readonly ctx = injectCalendarContext('ForCalendarMonthCell');
+  private readonly ctx = injectCalendarContext('ForCalendarMonthCell');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   /** The month this cell represents, **1-12**. */
   readonly month = input.required<number>();
 
-  protected readonly selected = computed(() => this.ctx.isMonthSelected(this.month()));
-  protected readonly today = computed(() => this.ctx.isMonthToday(this.month()));
-  protected readonly focused = computed(() => this.ctx.isMonthFocused(this.month()));
-  protected readonly disabled = computed(() => this.ctx.isMonthDisabled(this.month()));
+  private readonly selected = computed(() => this.ctx.isMonthSelected(this.month()));
+  private readonly today = computed(() => this.ctx.isMonthToday(this.month()));
+  private readonly focused = computed(() => this.ctx.isMonthFocused(this.month()));
+  private readonly disabled = computed(() => this.ctx.isMonthDisabled(this.month()));
 
   constructor() {
     const handle: ForCalendarMonthCellHandle = {

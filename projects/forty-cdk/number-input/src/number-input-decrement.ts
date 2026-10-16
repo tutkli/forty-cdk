@@ -33,16 +33,16 @@ import { injectNumberInputGroup } from './number-input-context';
   },
 })
 export class ForNumberInputDecrement {
-  protected readonly buttonType = hostButtonType();
+  private readonly buttonType = hostButtonType();
 
-  protected readonly group = injectNumberInputGroup('ForNumberInputDecrement');
+  private readonly group = injectNumberInputGroup('ForNumberInputDecrement');
 
   /** Accessible name for the button. Emits `aria-label` only when truthy. */
   readonly ariaLabel = input<string | null>(null);
 
-  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
+  private readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 
-  protected readonly isDisabled = computed(() => {
+  private readonly isDisabled = computed(() => {
     const field = this.group.field();
     return !field || field.effectiveDisabled() || field.readonly() || field.atMin();
   });
@@ -51,7 +51,7 @@ export class ForNumberInputDecrement {
     reflectDisabled(this.isDisabled);
   }
 
-  protected step(): void {
+  private step(): void {
     const field = this.group.field();
     if (!field) {
       return;

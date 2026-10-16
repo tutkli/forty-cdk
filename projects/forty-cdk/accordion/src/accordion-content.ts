@@ -31,10 +31,10 @@ import { injectAccordionContext, injectAccordionItemContext } from './accordion-
   },
 })
 export class ForAccordionContent {
-  protected readonly parent = injectAccordionContext('ForAccordionContent');
-  protected readonly item = injectAccordionItemContext('ForAccordionContent');
+  private readonly parent = injectAccordionContext('ForAccordionContent');
+  private readonly item = injectAccordionItemContext('ForAccordionContent');
 
-  protected readonly labelledBy = hostLabelledBy(() => this.item.triggerId());
+  private readonly labelledBy = hostLabelledBy(() => this.item.triggerId());
 
   constructor() {
     this.item.adoptContentId(inject<ElementRef<HTMLElement>>(ElementRef).nativeElement);

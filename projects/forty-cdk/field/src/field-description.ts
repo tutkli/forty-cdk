@@ -16,7 +16,7 @@ import { injectFieldContext } from './field-context';
   },
 })
 export class ForFieldDescription {
-  protected readonly ctx = injectFieldContext('ForFieldDescription');
+  private readonly ctx = injectFieldContext('ForFieldDescription');
 
   constructor() {
     const unregister = this.ctx.registerDescription(

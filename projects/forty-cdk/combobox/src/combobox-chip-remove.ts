@@ -32,20 +32,18 @@ import { FOR_COMBOBOX_DEFAULTS } from 'forty-cdk/defaults';
   },
 })
 export class ForComboboxChipRemove {
-  protected readonly buttonType = hostButtonType();
+  private readonly buttonType = hostButtonType();
 
   // The value type is opaque to chip-remove: it just forwards whatever the
   // parent chip exposes back into `removeValue`. At runtime the chip and
   // the parent `[forCombobox]` share the same `T` because the consumer
   // binds them with the same value source.
-  protected readonly ctx = injectComboboxContext<unknown>('ForComboboxChipRemove');
+  private readonly ctx = injectComboboxContext<unknown>('ForComboboxChipRemove');
   readonly #chip = inject<ForComboboxChip<unknown>>(ForComboboxChip, { optional: true });
   readonly #defaults = inject(FOR_COMBOBOX_DEFAULTS);
 
   /** Disabled when the combobox is disabled or read-only — chip removal is unavailable. */
-  protected readonly isDisabled = computed(
-    () => this.ctx.effectiveDisabled() || this.ctx.readonly(),
-  );
+  private readonly isDisabled = computed(() => this.ctx.effectiveDisabled() || this.ctx.readonly());
 
   constructor() {
     if (!this.#chip) {
@@ -59,11 +57,9 @@ export class ForComboboxChipRemove {
     reflectDisabled(this.isDisabled);
   }
 
-  protected readonly ariaLabel = computed(() =>
-    this.#defaults.chipRemoveLabel(this.#chip!.label()),
-  );
+  private readonly ariaLabel = computed(() => this.#defaults.chipRemoveLabel(this.#chip!.label()));
 
-  protected onClick(event: MouseEvent): void {
+  private onClick(event: MouseEvent): void {
     if (this.isDisabled()) {
       return;
     }

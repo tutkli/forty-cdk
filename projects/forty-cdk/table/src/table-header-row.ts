@@ -21,12 +21,12 @@ import { injectTableContext, injectTableRegistration } from './table-context';
   },
 })
 export class ForTableHeaderRow {
-  protected readonly ctx = injectTableContext('ForTableHeaderRow');
+  private readonly ctx = injectTableContext('ForTableHeaderRow');
   readonly #registration = injectTableRegistration('ForTableHeaderRow');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   /** 1-based `aria-rowindex` for the header row (`1` in grid / treegrid mode, else absent). */
-  protected readonly rowIndex = this.ctx.headerRowIndex;
+  private readonly rowIndex = this.ctx.headerRowIndex;
 
   constructor() {
     const el = this.#host.nativeElement;

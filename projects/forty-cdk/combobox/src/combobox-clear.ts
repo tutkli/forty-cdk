@@ -32,9 +32,9 @@ import { FOR_COMBOBOX_DEFAULTS } from 'forty-cdk/defaults';
   },
 })
 export class ForComboboxClear {
-  protected readonly buttonType = hostButtonType();
+  private readonly buttonType = hostButtonType();
 
-  protected readonly ctx = injectComboboxContext('ForComboboxClear');
+  private readonly ctx = injectComboboxContext('ForComboboxClear');
   readonly #defaults = inject(FOR_COMBOBOX_DEFAULTS);
 
   /**
@@ -45,24 +45,22 @@ export class ForComboboxClear {
    */
   readonly ariaLabel = input<string | null>();
 
-  protected readonly resolvedAriaLabel = hostAriaLabel(
+  private readonly resolvedAriaLabel = hostAriaLabel(
     () => resolveTextInput(this.ariaLabel(), this.#defaults.clearAriaLabel) || null,
   );
 
-  protected readonly hasContent = computed(
+  private readonly hasContent = computed(
     () => this.ctx.value().length > 0 || this.ctx.query().length > 0,
   );
 
   /** Disabled when the combobox is disabled or read-only — the clear action is unavailable. */
-  protected readonly isDisabled = computed(
-    () => this.ctx.effectiveDisabled() || this.ctx.readonly(),
-  );
+  private readonly isDisabled = computed(() => this.ctx.effectiveDisabled() || this.ctx.readonly());
 
   constructor() {
     reflectDisabled(this.isDisabled);
   }
 
-  protected onClick(): void {
+  private onClick(): void {
     if (this.isDisabled()) {
       return;
     }

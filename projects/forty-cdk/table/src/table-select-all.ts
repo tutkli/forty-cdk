@@ -43,7 +43,7 @@ import { injectTableContext, type TableSelectAllState } from './table-context';
   },
 })
 export class ForTableSelectAll {
-  protected readonly ctx = injectTableContext('ForTableSelectAll');
+  private readonly ctx = injectTableContext('ForTableSelectAll');
 
   /** Accessible label for the control (e.g. "Select all rows"). Truthy-only. */
   readonly ariaLabel = input<string | null>(null);
@@ -62,29 +62,29 @@ export class ForTableSelectAll {
    */
   readonly toggleAll = output<void>();
 
-  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
+  private readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 
-  protected readonly tabindex = injectTableCellTabIndex();
+  private readonly tabindex = injectTableCellTabIndex();
 
-  protected readonly buttonType = hostButtonType();
+  private readonly buttonType = hostButtonType();
 
   readonly #resolvedState = computed(() => this.state() ?? this.ctx.selectAllState());
 
-  protected readonly ariaChecked = computed<'true' | 'false' | 'mixed'>(() => {
+  private readonly ariaChecked = computed<'true' | 'false' | 'mixed'>(() => {
     const state = this.#resolvedState();
     return state === 'all' ? 'true' : state === 'some' ? 'mixed' : 'false';
   });
 
-  protected readonly dataState = computed(() => {
+  private readonly dataState = computed(() => {
     const state = this.#resolvedState();
     return state === 'all' ? 'checked' : state === 'some' ? 'indeterminate' : 'unchecked';
   });
 
-  protected onClick(): void {
+  private onClick(): void {
     this.#toggle();
   }
 
-  protected onKeyDown(event: KeyboardEvent): void {
+  private onKeyDown(event: KeyboardEvent): void {
     if (event.key === ' ' || event.key === 'Enter') {
       event.preventDefault();
       this.#toggle();

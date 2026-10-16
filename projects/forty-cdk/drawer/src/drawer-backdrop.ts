@@ -61,8 +61,8 @@ import { FOR_DRAWER_INSTANCE_ID, injectDrawerContext } from './drawer-context';
   },
 })
 export class ForDrawerBackdrop {
-  protected readonly ctx = injectDrawerContext('ForDrawerBackdrop');
-  protected readonly backdrop = injectModalBackdrop(this.ctx);
+  private readonly ctx = injectDrawerContext('ForDrawerBackdrop');
+  private readonly backdrop = injectModalBackdrop(this.ctx);
 
   /**
    * Per-instance drawer id when opened through `ForDrawerManager` (reflected
@@ -70,5 +70,5 @@ export class ForDrawerBackdrop {
    * with its drawer and drive its exit animation). `null` in the declarative
    * path, where the host binding emits no attribute.
    */
-  protected readonly instanceId = inject(FOR_DRAWER_INSTANCE_ID, { optional: true });
+  private readonly instanceId = inject(FOR_DRAWER_INSTANCE_ID, { optional: true });
 }

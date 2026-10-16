@@ -34,7 +34,7 @@ import { injectModalTrigger, warnIfOpenWithoutControls } from 'forty-cdk/core-ov
   },
 })
 export class ForDrawerTrigger {
-  protected readonly buttonType = hostButtonType();
+  private readonly buttonType = hostButtonType();
 
   /**
    * Two-way bindable. Bind to the same signal that gates the surrounding
@@ -80,7 +80,7 @@ export class ForDrawerTrigger {
     });
   }
 
-  protected onClick(): void {
+  private onClick(): void {
     if (this.disabled()) {
       return;
     }

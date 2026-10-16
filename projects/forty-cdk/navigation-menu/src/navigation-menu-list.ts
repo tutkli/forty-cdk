@@ -15,5 +15,5 @@ import { injectNavigationMenuContext } from './navigation-menu-context';
   },
 })
 export class ForNavigationMenuList {
-  protected readonly ctx = injectNavigationMenuContext('ForNavigationMenuList');
+  private readonly ctx = injectNavigationMenuContext('ForNavigationMenuList');
 }

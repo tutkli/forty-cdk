@@ -115,7 +115,7 @@ export class ForSearch
   }
 
   /** Clears a non-empty value on `Escape`, consuming the key only when it does. */
-  protected onKeyDown(event: KeyboardEvent): void {
+  private onKeyDown(event: KeyboardEvent): void {
     if (event.key !== 'Escape' || isImeComposing(event) || !this.clearOnEscape()) {
       return;
     }

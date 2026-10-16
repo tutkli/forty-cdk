@@ -48,7 +48,7 @@ import { injectComboboxContext } from './combobox-context';
 })
 export class ForComboboxEmpty {
   readonly #ctx = injectComboboxContext('ForComboboxEmpty');
-  protected readonly shouldShow = computed(
+  private readonly shouldShow = computed(
     () => (this.#ctx.totalCount() ?? this.#ctx.options().length) === 0,
   );
 }

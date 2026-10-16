@@ -105,13 +105,13 @@ export class ForDateField<D>
   readonly #defaults = inject(FOR_DATE_FIELD_DEFAULTS);
   readonly #fieldHost = inject(FOR_DATE_FIELD_HOST, { optional: true }) as DateFieldHost<D> | null;
   readonly #adopter = computed(() => (this.#fieldHost?.adoptsField() ? this.#fieldHost : null));
-  protected readonly resolvedDisabled = computed(
+  private readonly resolvedDisabled = computed(
     () => this.effectiveDisabled() || (this.#adopter()?.effectiveDisabled() ?? false),
   );
-  protected readonly resolvedReadonly = computed(
+  private readonly resolvedReadonly = computed(
     () => this.readonly() || (this.#adopter()?.readonly() ?? false),
   );
-  protected readonly resolvedRequired = computed(
+  private readonly resolvedRequired = computed(
     () => this.required() || (this.#adopter()?.required() ?? false),
   );
 
@@ -180,7 +180,7 @@ export class ForDateField<D>
   /** Accessible name for the field group. Emits no `aria-label` while `null`. */
   readonly ariaLabel = input<string | null>(null);
 
-  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
+  private readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 
   /**
    * Writing direction. When unset (default `null`), the inherited ambient
@@ -210,7 +210,7 @@ export class ForDateField<D>
    */
   readonly segments: Signal<readonly FieldSegment[]>;
 
-  protected readonly empty: Signal<boolean>;
+  private readonly empty: Signal<boolean>;
 
   constructor() {
     super();
@@ -335,7 +335,7 @@ export class ForDateField<D>
     return this.invalid() || (this.#adopter()?.invalid() ?? false);
   }
 
-  protected onFocusOut(event: FocusEvent): void {
+  private onFocusOut(event: FocusEvent): void {
     const next = event.relatedTarget as Node | null;
     if (next && this.#host.nativeElement.contains(next)) {
       return;

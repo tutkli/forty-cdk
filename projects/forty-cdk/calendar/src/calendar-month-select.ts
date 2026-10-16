@@ -29,12 +29,12 @@ import { injectCalendarContext } from './calendar-context';
   },
 })
 export class ForCalendarMonthSelect {
-  protected readonly ctx = injectCalendarContext('ForCalendarMonthSelect');
+  private readonly ctx = injectCalendarContext('ForCalendarMonthSelect');
 
   /** The twelve localized, bounds-aware month options for the visible year. */
   readonly options = this.ctx.monthOptions;
 
-  protected onChange(event: Event): void {
+  private onChange(event: Event): void {
     this.ctx.goToMonth(Number((event.target as HTMLSelectElement).value));
   }
 }

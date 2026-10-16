@@ -25,9 +25,9 @@ import { injectPaginationContext } from './pagination-context';
   },
 })
 export class ForPaginationPrevious {
-  protected readonly buttonType = hostButtonType();
+  private readonly buttonType = hostButtonType();
 
-  protected readonly ctx = injectPaginationContext('ForPaginationPrevious');
+  private readonly ctx = injectPaginationContext('ForPaginationPrevious');
 
   /**
    * Accessible label for this button (e.g. "Previous page"). When `null`
@@ -36,11 +36,11 @@ export class ForPaginationPrevious {
    */
   readonly ariaLabel = input<string | null>(null);
 
-  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
+  private readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 
-  protected readonly isDisabled = computed(() => this.ctx.isFirst() || this.ctx.disabled());
+  private readonly isDisabled = computed(() => this.ctx.isFirst() || this.ctx.disabled());
 
-  protected activate(): void {
+  private activate(): void {
     if (this.isDisabled()) {
       return;
     }

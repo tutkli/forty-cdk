@@ -33,9 +33,9 @@ import { injectProgressContext } from './progress-context';
   },
 })
 export class ForProgressIndicator {
-  protected readonly context = injectProgressContext('ForProgressIndicator');
+  private readonly context = injectProgressContext('ForProgressIndicator');
 
-  protected percentageStyle(): string | null {
+  private percentageStyle(): string | null {
     const p = this.context.percentageAttr();
     return p === null ? null : `${p}%`;
   }

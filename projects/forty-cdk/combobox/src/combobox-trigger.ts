@@ -54,7 +54,7 @@ import { type ForComboboxContext, injectComboboxTriggerContext } from './combobo
   },
 })
 export class ForComboboxTrigger<T = unknown> {
-  protected readonly buttonType = hostButtonType();
+  private readonly buttonType = hostButtonType();
 
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
@@ -70,9 +70,9 @@ export class ForComboboxTrigger<T = unknown> {
    */
   readonly forComboboxTrigger = input<ForComboboxContext<T> | ''>('');
 
-  protected readonly ctx = injectComboboxTriggerContext<T>(this.forComboboxTrigger);
+  private readonly ctx = injectComboboxTriggerContext<T>(this.forComboboxTrigger);
 
-  protected readonly id = hostId('for-combobox-trigger');
+  private readonly id = hostId('for-combobox-trigger');
 
   constructor() {
     const el = this.#host.nativeElement;
@@ -87,11 +87,11 @@ export class ForComboboxTrigger<T = unknown> {
     reflectDisabled(computed(() => this.ctx().effectiveDisabled()));
   }
 
-  protected onClick(): void {
+  private onClick(): void {
     this.ctx().toggle();
   }
 
-  protected onKeyDown(event: KeyboardEvent): void {
+  private onKeyDown(event: KeyboardEvent): void {
     if (this.ctx().effectiveDisabled()) {
       return;
     }

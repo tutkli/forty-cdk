@@ -23,7 +23,7 @@ import { FOR_CHECKBOX, type ForCheckbox } from './checkbox';
   },
 })
 export class ForCheckboxIndicator {
-  protected readonly parent: ForCheckbox;
+  private readonly parent: ForCheckbox;
 
   constructor() {
     const parent = inject(FOR_CHECKBOX, { optional: true });

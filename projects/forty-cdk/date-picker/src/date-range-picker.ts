@@ -105,7 +105,7 @@ export class ForDateRangePicker<D>
     scope: 'date-picker',
   });
 
-  protected readonly anatomy: Signal<ForDatePickerAnatomy> =
+  private readonly anatomy: Signal<ForDatePickerAnatomy> =
     signal<ForDatePickerAnatomy>('trigger').asReadonly();
 
   readonly triggerId = signal(this.idGen.next('for-date-range-picker-trigger'));

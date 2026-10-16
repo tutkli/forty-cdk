@@ -69,7 +69,7 @@ export class ForHoverCardTrigger {
    */
   readonly forHoverCardTrigger = input<ForHoverCardContext | ''>('');
 
-  protected readonly ctx = injectHoverCardTriggerContext(this.forHoverCardTrigger);
+  private readonly ctx = injectHoverCardTriggerContext(this.forHoverCardTrigger);
 
   readonly #pressFocus = createPressFocus();
 
@@ -85,34 +85,34 @@ export class ForHoverCardTrigger {
     });
   }
 
-  protected onPointerEnter(event: PointerEvent): void {
+  private onPointerEnter(event: PointerEvent): void {
     if (!isNonTouchPointer(event)) {
       return;
     }
     this.ctx().pointerEnterTrigger();
   }
 
-  protected onPointerDown(): void {
+  private onPointerDown(): void {
     this.#pressFocus.press();
   }
 
-  protected onPointerUp(): void {
+  private onPointerUp(): void {
     this.#pressFocus.release();
   }
 
-  protected onPointerLeave(event: PointerEvent): void {
+  private onPointerLeave(event: PointerEvent): void {
     const outOfRange = event.relatedTarget === null && isNonTouchPointer(event);
     this.ctx().pointerLeaveTrigger(outOfRange ? null : { x: event.clientX, y: event.clientY });
   }
 
-  protected onFocus(): void {
+  private onFocus(): void {
     if (this.#pressFocus.consume()) {
       return;
     }
     this.ctx().focusTrigger();
   }
 
-  protected onBlur(): void {
+  private onBlur(): void {
     this.#pressFocus.reset();
     this.ctx().blurTrigger();
   }

@@ -35,7 +35,7 @@ import { injectModalTrigger, warnIfOpenWithoutControls } from 'forty-cdk/core-ov
   },
 })
 export class ForDialogTrigger {
-  protected readonly buttonType = hostButtonType();
+  private readonly buttonType = hostButtonType();
 
   /**
    * Two-way bindable. Bind to the same signal that gates the surrounding
@@ -84,7 +84,7 @@ export class ForDialogTrigger {
     });
   }
 
-  protected onClick(): void {
+  private onClick(): void {
     if (this.disabled()) {
       return;
     }

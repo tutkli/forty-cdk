@@ -22,9 +22,9 @@ import { injectCalendarContext } from './calendar-context';
   },
 })
 export class ForCalendarMonthGrid {
-  protected readonly ctx = injectCalendarContext('ForCalendarMonthGrid');
+  private readonly ctx = injectCalendarContext('ForCalendarMonthGrid');
 
-  protected readonly labelledBy = hostLabelledBy(() => this.ctx.headingId());
+  private readonly labelledBy = hostLabelledBy(() => this.ctx.headingId());
 
   /** Rows of the month picker grid (3 columns) for the visible year. */
   readonly rows = this.ctx.monthRows;

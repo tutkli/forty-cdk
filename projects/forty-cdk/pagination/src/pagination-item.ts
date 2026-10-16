@@ -19,9 +19,9 @@ import { injectPaginationContext } from './pagination-context';
   },
 })
 export class ForPaginationItem {
-  protected readonly buttonType = hostButtonType();
+  private readonly buttonType = hostButtonType();
 
-  protected readonly ctx = injectPaginationContext('ForPaginationItem');
+  private readonly ctx = injectPaginationContext('ForPaginationItem');
 
   /** The 1-based page number this button navigates to. */
   readonly page = input.required<number>();
@@ -39,7 +39,7 @@ export class ForPaginationItem {
     reflectDisabled(this.effectiveDisabled);
   }
 
-  protected activate(): void {
+  private activate(): void {
     if (this.effectiveDisabled()) {
       return;
     }

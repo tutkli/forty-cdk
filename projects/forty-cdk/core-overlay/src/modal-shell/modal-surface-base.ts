@@ -93,7 +93,7 @@ export abstract class ModalSurfaceBase<Reason extends string> {
    * Resolved `aria-label`: a consumer-set static value on the surface when
    * present, else the {@link ariaLabel} input.
    */
-  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
+  private readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 
   /**
    * Portal target for the surface. Defaults to `document.body`. Pair with

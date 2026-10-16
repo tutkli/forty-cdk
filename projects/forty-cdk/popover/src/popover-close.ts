@@ -17,11 +17,11 @@ import { injectPopoverContext } from './popover-context';
   },
 })
 export class ForPopoverClose {
-  protected readonly buttonType = hostButtonType();
+  private readonly buttonType = hostButtonType();
 
   readonly #ctx = injectPopoverContext('ForPopoverClose');
 
-  protected onClick(): void {
+  private onClick(): void {
     this.#ctx.close();
   }
 }

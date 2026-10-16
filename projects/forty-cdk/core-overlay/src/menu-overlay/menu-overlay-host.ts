@@ -81,19 +81,19 @@ export abstract class MenuOverlayHost<
    * runtime — which is what the trigger directives' `asMenuOpenerRegistration`
    * narrowing relies on.
    */
-  protected registerOpener(element: HTMLElement, options?: MenuOpenerOptions): void {
+  private registerOpener(element: HTMLElement, options?: MenuOpenerOptions): void {
     this._overlay.registerOpener(element, options);
   }
 
-  protected unregisterOpener(element: HTMLElement): void {
+  private unregisterOpener(element: HTMLElement): void {
     this._overlay.unregisterOpener(element);
   }
 
-  protected activateOpener(element: HTMLElement, returnFocusTarget?: HTMLElement | null): void {
+  private activateOpener(element: HTMLElement, returnFocusTarget?: HTMLElement | null): void {
     this._overlay.activateOpener(element, returnFocusTarget);
   }
 
-  protected returnFocusTarget(): HTMLElement | null {
+  private returnFocusTarget(): HTMLElement | null {
     return this._overlay.returnFocusTarget();
   }
 

@@ -39,8 +39,8 @@ import { FOR_DIALOG_INSTANCE_ID, injectDialogContext } from './dialog-context';
   },
 })
 export class ForDialogBackdrop {
-  protected readonly ctx = injectDialogContext('ForDialogBackdrop');
-  protected readonly backdrop = injectModalBackdrop(this.ctx);
+  private readonly ctx = injectDialogContext('ForDialogBackdrop');
+  private readonly backdrop = injectModalBackdrop(this.ctx);
 
   /**
    * Per-instance dialog id when opened through `ForDialogManager` (reflected
@@ -48,5 +48,5 @@ export class ForDialogBackdrop {
    * with its dialog and drive its exit animation). `null` in the declarative
    * path, where the host binding emits no attribute.
    */
-  protected readonly instanceId = inject(FOR_DIALOG_INSTANCE_ID, { optional: true });
+  private readonly instanceId = inject(FOR_DIALOG_INSTANCE_ID, { optional: true });
 }

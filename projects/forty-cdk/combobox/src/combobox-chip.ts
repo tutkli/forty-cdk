@@ -37,7 +37,7 @@ import { injectComboboxContext } from './combobox-context';
   },
 })
 export class ForComboboxChip<T = string> {
-  protected readonly ctx = injectComboboxContext<T>('ForComboboxChip');
+  private readonly ctx = injectComboboxContext<T>('ForComboboxChip');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   /**
@@ -54,7 +54,7 @@ export class ForComboboxChip<T = string> {
    * the parent's `itemToFormValue` so the attribute carries the same
    * wire format as the hidden inputs (typically JSON or a per-item id).
    */
-  protected readonly dataValue = computed(() => {
+  private readonly dataValue = computed(() => {
     const v = this.value();
     return typeof v === 'string' ? (v as string) : this.ctx.itemToFormValue()(v);
   });
@@ -82,7 +82,7 @@ export class ForComboboxChip<T = string> {
     );
   }
 
-  protected onKeyDown(event: KeyboardEvent): void {
+  private onKeyDown(event: KeyboardEvent): void {
     if (this.ctx.effectiveDisabled() || this.ctx.readonly()) {
       return;
     }

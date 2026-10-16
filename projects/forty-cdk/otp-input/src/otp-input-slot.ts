@@ -35,7 +35,7 @@ import { injectOtpInputContext } from './otp-input-context';
   },
 })
 export class ForOtpInputSlot {
-  protected readonly ctx = injectOtpInputContext('ForOtpInputSlot');
+  private readonly ctx = injectOtpInputContext('ForOtpInputSlot');
 
   /** This slot's position (0-based). */
   readonly index = input.required<number>();

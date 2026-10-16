@@ -69,7 +69,7 @@ export const FOR_RADIO = new InjectionToken<ForRadio>('FOR_RADIO');
   },
 })
 export class ForRadio {
-  protected readonly buttonType = hostButtonType();
+  private readonly buttonType = hostButtonType();
 
   readonly #ctx = injectRadioGroupContext('ForRadio');
 
@@ -136,7 +136,7 @@ export class ForRadio {
     }),
   );
 
-  protected onClick(): void {
+  private onClick(): void {
     const value = this.value();
     if (this.effectiveDisabled() || this.group.readonly() || isUnset(value)) {
       return;
@@ -144,7 +144,7 @@ export class ForRadio {
     this.group.select(value);
   }
 
-  protected onKeyDown(event: KeyboardEvent): void {
+  private onKeyDown(event: KeyboardEvent): void {
     this.#activation.keydown(event);
     navigateFromRovingItem(event, {
       groupDisabled: this.group.effectiveDisabled(),
@@ -154,11 +154,11 @@ export class ForRadio {
     });
   }
 
-  protected onKeyUp(event: KeyboardEvent): void {
+  private onKeyUp(event: KeyboardEvent): void {
     this.#activation.keyup(event);
   }
 
-  protected onBlur(): void {
+  private onBlur(): void {
     this.#activation.reset();
   }
 }

@@ -24,11 +24,11 @@ import { injectStepperContext } from './stepper-context';
   },
 })
 export class ForStepperPrevious {
-  protected readonly buttonType = hostButtonType();
+  private readonly buttonType = hostButtonType();
 
-  protected readonly ctx = injectStepperContext('ForStepperPrevious');
+  private readonly ctx = injectStepperContext('ForStepperPrevious');
 
-  protected onClick(): void {
+  private onClick(): void {
     this.ctx.previous();
   }
 }

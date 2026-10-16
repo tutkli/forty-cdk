@@ -19,8 +19,5 @@ import { injectDrawerContext } from './drawer-context';
   },
 })
 export class ForDrawerTitle {
-  protected readonly id = registerA11yName(
-    injectDrawerContext('ForDrawerTitle'),
-    'for-drawer-title',
-  );
+  private readonly id = registerA11yName(injectDrawerContext('ForDrawerTitle'), 'for-drawer-title');
 }

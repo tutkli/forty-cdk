@@ -34,11 +34,11 @@ export class ForComboboxSeparator {
    */
   readonly decorative = input(false, { transform: booleanAttribute });
 
-  protected roleAttr(): 'separator' | 'none' {
+  private roleAttr(): 'separator' | 'none' {
     return this.decorative() ? 'none' : 'separator';
   }
 
-  protected ariaOrientationAttr(): 'vertical' | null {
+  private ariaOrientationAttr(): 'vertical' | null {
     if (this.decorative()) {
       return null;
     }

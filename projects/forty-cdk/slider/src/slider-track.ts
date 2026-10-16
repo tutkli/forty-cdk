@@ -24,10 +24,10 @@ import { injectSliderContext, sliderTouchAction } from './slider-context';
   },
 })
 export class ForSliderTrack {
-  protected readonly ctx = injectSliderContext('ForSliderTrack');
+  private readonly ctx = injectSliderContext('ForSliderTrack');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
-  protected readonly touchAction = sliderTouchAction(this.ctx);
+  private readonly touchAction = sliderTouchAction(this.ctx);
 
   constructor() {
     this.ctx.setTrack(this.#host.nativeElement);

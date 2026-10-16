@@ -46,9 +46,9 @@ import { injectToggleGroupContext } from './toggle-group-context';
   },
 })
 export class ForToggleGroupItem {
-  protected readonly buttonType = hostButtonType();
+  private readonly buttonType = hostButtonType();
 
-  protected readonly group = injectToggleGroupContext('ForToggleGroupItem');
+  private readonly group = injectToggleGroupContext('ForToggleGroupItem');
   readonly #rovingHost = inject(FOR_HOST_ROVING_CONTEXT, { optional: true, skipSelf: true });
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
@@ -116,7 +116,7 @@ export class ForToggleGroupItem {
     }
   }
 
-  protected onClick(): void {
+  private onClick(): void {
     const value = this.value();
     if (this.effectiveDisabled() || isUnset(value)) {
       return;
@@ -124,7 +124,7 @@ export class ForToggleGroupItem {
     this.group.toggle(value);
   }
 
-  protected onFocus(): void {
+  private onFocus(): void {
     if (this.effectiveDisabled()) {
       return;
     }
@@ -132,7 +132,7 @@ export class ForToggleGroupItem {
     owner.roving.setActive(this.#host.nativeElement);
   }
 
-  protected onKeyDown(event: KeyboardEvent): void {
+  private onKeyDown(event: KeyboardEvent): void {
     const rovingHost = this.#rovingHost;
     const owner = rovingHost ?? this.group;
     navigateFromRovingItem(event, {

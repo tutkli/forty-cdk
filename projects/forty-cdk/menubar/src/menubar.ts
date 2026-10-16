@@ -141,7 +141,7 @@ export class ForMenubar implements ForMenubarContext {
   /** Optional accessible name for the menubar. */
   readonly ariaLabel = input<string | null>(null);
 
-  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
+  private readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 
   /**
    * Fires when Escape is pressed while one of the bar's menus is the topmost

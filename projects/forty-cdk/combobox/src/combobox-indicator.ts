@@ -36,7 +36,7 @@ import { FOR_COMBOBOX_OPTION, type ForComboboxOption } from './combobox-option';
   },
 })
 export class ForComboboxIndicator {
-  protected readonly option = injectParentOption();
+  private readonly option = injectParentOption();
 }
 
 function injectParentOption(): ForComboboxOption {

@@ -23,5 +23,5 @@ import { injectStepperContext } from './stepper-context';
   },
 })
 export class ForStepperCompletedContent {
-  protected readonly ctx = injectStepperContext('ForStepperCompletedContent');
+  private readonly ctx = injectStepperContext('ForStepperCompletedContent');
 }

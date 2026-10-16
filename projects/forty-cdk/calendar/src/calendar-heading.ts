@@ -20,7 +20,7 @@ import { injectCalendarContext } from './calendar-context';
   },
 })
 export class ForCalendarHeading {
-  protected readonly ctx = injectCalendarContext('ForCalendarHeading');
+  private readonly ctx = injectCalendarContext('ForCalendarHeading');
 
   /** The visible month's accessible label, e.g. `"June 2026"`. */
   readonly label = this.ctx.visibleMonthLabel;

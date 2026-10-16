@@ -19,9 +19,9 @@ import { injectScrollAreaContext } from './scroll-area-context';
   },
 })
 export class ForScrollAreaCorner {
-  protected readonly ctx = injectScrollAreaContext('ForScrollAreaCorner');
+  private readonly ctx = injectScrollAreaContext('ForScrollAreaCorner');
 
-  protected readonly visible = computed<boolean>(() => {
+  private readonly visible = computed<boolean>(() => {
     if (this.ctx.type() === 'always') return true;
     const hOverflow = this.ctx.scrollWidth() - this.ctx.clientWidth() > 1;
     const vOverflow = this.ctx.scrollHeight() - this.ctx.clientHeight() > 1;

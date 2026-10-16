@@ -23,7 +23,7 @@ import {
   providers: [{ provide: FOR_ACCORDION_ITEM_CONTEXT, useExisting: ForAccordionItem }],
 })
 export class ForAccordionItem implements ForAccordionItemContext {
-  protected readonly parent = injectAccordionContext('ForAccordionItem');
+  private readonly parent = injectAccordionContext('ForAccordionItem');
   readonly #idGen = inject(IdGenerator);
 
   /** Unique identifier of this item within the accordion. Required. */

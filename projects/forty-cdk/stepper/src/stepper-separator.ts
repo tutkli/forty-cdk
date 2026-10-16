@@ -21,6 +21,6 @@ import { injectStepperContext, injectStepperItemContext } from './stepper-contex
   },
 })
 export class ForStepperSeparator {
-  protected readonly ctx = injectStepperContext('ForStepperSeparator');
-  protected readonly item = injectStepperItemContext('ForStepperSeparator');
+  private readonly ctx = injectStepperContext('ForStepperSeparator');
+  private readonly item = injectStepperItemContext('ForStepperSeparator');
 }

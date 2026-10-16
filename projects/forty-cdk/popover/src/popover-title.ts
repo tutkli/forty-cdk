@@ -19,7 +19,7 @@ import { injectPopoverContext } from './popover-context';
   },
 })
 export class ForPopoverTitle {
-  protected readonly id = registerA11yName(
+  private readonly id = registerA11yName(
     injectPopoverContext('ForPopoverTitle'),
     'for-popover-title',
   );

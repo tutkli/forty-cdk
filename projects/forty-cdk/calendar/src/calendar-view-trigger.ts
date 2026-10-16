@@ -30,9 +30,9 @@ import { injectCalendarContext } from './calendar-context';
   },
 })
 export class ForCalendarViewTrigger {
-  protected readonly buttonType = hostButtonType();
+  private readonly buttonType = hostButtonType();
 
-  protected readonly ctx = injectCalendarContext('ForCalendarViewTrigger');
+  private readonly ctx = injectCalendarContext('ForCalendarViewTrigger');
 
   /** Label for the active view, e.g. `"June 2026"` / `"2026"` / `"2016 – 2027"`. */
   readonly label = this.ctx.viewTriggerLabel;

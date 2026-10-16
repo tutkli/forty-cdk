@@ -129,7 +129,7 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
    */
   readonly ariaLabel = input<string | null>(null);
 
-  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
+  private readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 
   /**
    * ms before a hover opens an item. Default `200`. The default is read from
@@ -172,7 +172,7 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
       untracked(() => this.#advance(previous?.value, previous?.source ?? null, to)),
   });
 
-  protected readonly renderedValue = computed(() => this.#transition().to);
+  private readonly renderedValue = computed(() => this.#transition().to);
 
   /**
    * The `value` immediately before the current one: `null` when the menu was closed before it,
@@ -356,7 +356,7 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
    * against the same containment set and reports it through `onPointerDownInside`, so a
    * pointer-induced blur does not dismiss a panel the user is still interacting with.
    */
-  protected handleSurfaceFocusOut(event: FocusEvent): void {
+  private handleSurfaceFocusOut(event: FocusEvent): void {
     if (this.value() === null) {
       return;
     }

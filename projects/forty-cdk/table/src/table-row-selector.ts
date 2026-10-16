@@ -35,30 +35,30 @@ import { injectTableContext, injectTableRowContext } from './table-context';
   },
 })
 export class ForTableRowSelector {
-  protected readonly ctx = injectTableContext('ForTableRowSelector');
-  protected readonly row = injectTableRowContext('ForTableRowSelector');
+  private readonly ctx = injectTableContext('ForTableRowSelector');
+  private readonly row = injectTableRowContext('ForTableRowSelector');
 
   /** Accessible label for the selection checkbox (e.g. "Select row"). Truthy-only. */
   readonly ariaLabel = input<string | null>(null);
 
-  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
+  private readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 
-  protected readonly tabindex = injectTableCellTabIndex();
+  private readonly tabindex = injectTableCellTabIndex();
 
-  protected readonly buttonType = hostButtonType();
+  private readonly buttonType = hostButtonType();
 
-  protected readonly ariaChecked = computed<'true' | 'false'>(() =>
+  private readonly ariaChecked = computed<'true' | 'false'>(() =>
     this.row.selected() ? 'true' : 'false',
   );
 
-  protected readonly dataState = computed(() => (this.row.selected() ? 'checked' : 'unchecked'));
+  private readonly dataState = computed(() => (this.row.selected() ? 'checked' : 'unchecked'));
 
-  protected onClick(event: MouseEvent): void {
+  private onClick(event: MouseEvent): void {
     event.stopPropagation();
     this.row.toggleSelected();
   }
 
-  protected onKeyDown(event: KeyboardEvent): void {
+  private onKeyDown(event: KeyboardEvent): void {
     if (event.key === ' ' || event.key === 'Enter') {
       event.preventDefault();
       this.row.toggleSelected();

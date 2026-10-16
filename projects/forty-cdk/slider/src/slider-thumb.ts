@@ -54,7 +54,7 @@ import {
   },
 })
 export class ForSliderThumb {
-  protected readonly ctx = injectSliderContext('ForSliderThumb');
+  private readonly ctx = injectSliderContext('ForSliderThumb');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   /** Position in the parent slider's `value()` array (0-based). */
@@ -70,7 +70,7 @@ export class ForSliderThumb {
    */
   readonly ariaLabel = input<string | null>(null);
 
-  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
+  private readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 
   /**
    * Optional human-readable value override (e.g. "$1,200" instead of "1200").
@@ -79,11 +79,11 @@ export class ForSliderThumb {
    */
   readonly valueText = input<string>('');
 
-  protected readonly tabindex = computed(() => (this.ctx.effectiveDisabled() ? -1 : 0));
+  private readonly tabindex = computed(() => (this.ctx.effectiveDisabled() ? -1 : 0));
 
-  protected readonly touchAction = sliderTouchAction(this.ctx);
+  private readonly touchAction = sliderTouchAction(this.ctx);
 
-  protected readonly currentValue = computed(() => {
+  private readonly currentValue = computed(() => {
     const i = this.index();
     const values = this.ctx.value();
     if (i < 0 || i >= values.length) {
@@ -92,7 +92,7 @@ export class ForSliderThumb {
     return values[i]!;
   });
 
-  protected readonly fraction = computed(() => {
+  private readonly fraction = computed(() => {
     const i = this.index();
     const fr = this.ctx.fractions();
     if (i < 0 || i >= fr.length) {
@@ -101,9 +101,9 @@ export class ForSliderThumb {
     return fr[i]!;
   });
 
-  protected readonly ariaValueNow = computed(() => this.currentValue());
+  private readonly ariaValueNow = computed(() => this.currentValue());
 
-  protected readonly ariaValueText = computed(() => this.valueText() || null);
+  private readonly ariaValueText = computed(() => this.valueText() || null);
 
   readonly #bounds = computed<ForSliderThumbBounds>(
     () =>
@@ -113,9 +113,9 @@ export class ForSliderThumb {
       },
   );
 
-  protected readonly ariaValueMin = computed(() => this.#bounds().min);
+  private readonly ariaValueMin = computed(() => this.#bounds().min);
 
-  protected readonly ariaValueMax = computed(() => this.#bounds().max);
+  private readonly ariaValueMax = computed(() => this.#bounds().max);
 
   constructor() {
     const handle = {
@@ -129,7 +129,7 @@ export class ForSliderThumb {
     );
   }
 
-  protected onKeyDown(event: KeyboardEvent): void {
+  private onKeyDown(event: KeyboardEvent): void {
     if (this.ctx.effectiveDisabled() || this.ctx.readonly()) {
       return;
     }
@@ -162,7 +162,7 @@ export class ForSliderThumb {
     }
   }
 
-  protected onKeyUp(event: KeyboardEvent): void {
+  private onKeyUp(event: KeyboardEvent): void {
     switch (event.key) {
       case 'ArrowUp':
       case 'ArrowDown':

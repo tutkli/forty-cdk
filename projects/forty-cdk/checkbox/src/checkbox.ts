@@ -85,7 +85,7 @@ export const FOR_CHECKBOX = new InjectionToken<ForCheckbox>('FOR_CHECKBOX');
   },
 })
 export class ForCheckbox extends FormUiControlBase implements FormCheckboxControl {
-  protected readonly buttonType = hostButtonType();
+  private readonly buttonType = hostButtonType();
 
   /** Two-way bindable on/off state. Required by `FormCheckboxControl`. */
   readonly checked = model<boolean>(false);
@@ -100,7 +100,7 @@ export class ForCheckbox extends FormUiControlBase implements FormCheckboxContro
    */
   readonly indeterminate = model<boolean>(false);
 
-  protected readonly ariaChecked = computed<'true' | 'false' | 'mixed'>(() => {
+  private readonly ariaChecked = computed<'true' | 'false' | 'mixed'>(() => {
     if (this.indeterminate()) return 'mixed';
     return this.checked() ? 'true' : 'false';
   });
@@ -117,7 +117,7 @@ export class ForCheckbox extends FormUiControlBase implements FormCheckboxContro
 
   readonly #activation = injectSyntheticActivation({ disabled: this.effectiveDisabled });
 
-  protected readonly tabindex = this.#activation.tabindex;
+  private readonly tabindex = this.#activation.tabindex;
 
   constructor() {
     super();
@@ -132,7 +132,7 @@ export class ForCheckbox extends FormUiControlBase implements FormCheckboxContro
     injectNativeFormResetToInitial(this.indeterminate);
   }
 
-  protected onClick(): void {
+  private onClick(): void {
     if (this.effectiveDisabled() || this.readonly()) {
       return;
     }
@@ -142,15 +142,15 @@ export class ForCheckbox extends FormUiControlBase implements FormCheckboxContro
     this.checked.update((v) => !v);
   }
 
-  protected onKeydown(event: KeyboardEvent): void {
+  private onKeydown(event: KeyboardEvent): void {
     this.#activation.keydown(event);
   }
 
-  protected onKeyup(event: KeyboardEvent): void {
+  private onKeyup(event: KeyboardEvent): void {
     this.#activation.keyup(event);
   }
 
-  protected onBlur(): void {
+  private onBlur(): void {
     this.#activation.reset();
     this.markTouched();
   }

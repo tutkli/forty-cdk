@@ -38,7 +38,7 @@ import { FOR_COMBOBOX_DEFAULTS } from 'forty-cdk/defaults';
   },
 })
 export class ForComboboxChips {
-  protected readonly ctx = injectComboboxContext('ForComboboxChips');
+  private readonly ctx = injectComboboxContext('ForComboboxChips');
   readonly #defaults = inject(FOR_COMBOBOX_DEFAULTS);
 
   /**
@@ -50,7 +50,7 @@ export class ForComboboxChips {
    */
   readonly ariaLabel = input<string | null>();
 
-  protected readonly resolvedAriaLabel = hostAriaLabel(
+  private readonly resolvedAriaLabel = hostAriaLabel(
     () => resolveTextInput(this.ariaLabel(), this.#defaults.chipsAriaLabel) || null,
   );
 }

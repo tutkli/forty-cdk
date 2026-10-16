@@ -192,11 +192,11 @@ export class ForScrollArea implements ForScrollAreaContext {
     );
   }
 
-  protected onPointerEnter(): void {
+  private onPointerEnter(): void {
     this.#hovering.set(true);
   }
 
-  protected onPointerLeave(): void {
+  private onPointerLeave(): void {
     this.#hovering.set(false);
   }
 

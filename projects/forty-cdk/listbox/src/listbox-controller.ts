@@ -52,11 +52,11 @@ export class ForListboxController<T = string> {
   /** The listbox this textbox drives, passed as its `forListbox` export. */
   readonly forListboxController = input.required<ForListboxContext<T>>();
 
-  protected readonly listbox = computed(() =>
+  private readonly listbox = computed(() =>
     asListboxContext(this.forListboxController(), 'ForListboxController'),
   );
 
-  protected readonly expanded = computed(() => this.listbox().options().length > 0);
+  private readonly expanded = computed(() => this.listbox().options().length > 0);
 
   constructor() {
     const el = this.#host.nativeElement;
@@ -67,7 +67,7 @@ export class ForListboxController<T = string> {
     });
   }
 
-  protected onKeyDown(event: KeyboardEvent): void {
+  private onKeyDown(event: KeyboardEvent): void {
     if (
       event.defaultPrevented ||
       isImeComposing(event) ||

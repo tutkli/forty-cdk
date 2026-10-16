@@ -90,7 +90,7 @@ export class ForMeter implements ForMeterContext {
    */
   readonly ariaLabel = input<string | null>(null);
 
-  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
+  private readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 
   readonly #range = computed(() => {
     const min = this.min();

@@ -53,11 +53,11 @@ import { injectPopoverContext } from './popover-context';
   ],
 })
 export class ForPopoverContent {
-  protected readonly ctx = injectPopoverContext('ForPopoverContent');
+  private readonly ctx = injectPopoverContext('ForPopoverContent');
 
-  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ctx.ariaLabel());
-  protected readonly labelledBy = hostLabelledBy(() => this.ctx.labelledBy());
-  protected readonly describedBy = hostDescribedBy(() => this.ctx.describedBy());
+  private readonly resolvedAriaLabel = hostAriaLabel(() => this.ctx.ariaLabel());
+  private readonly labelledBy = hostLabelledBy(() => this.ctx.labelledBy());
+  private readonly describedBy = hostDescribedBy(() => this.ctx.describedBy());
 
   constructor() {
     this.ctx.adoptContentId(inject<ElementRef<HTMLElement>>(ElementRef).nativeElement);

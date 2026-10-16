@@ -35,7 +35,7 @@ import { injectFileUploadContext } from './file-upload-context';
 })
 export class ForFileUploadInput {
   readonly #el = inject<ElementRef<HTMLInputElement>>(ElementRef).nativeElement;
-  protected readonly ctx = injectFileUploadContext('[forFileUploadInput]');
+  private readonly ctx = injectFileUploadContext('[forFileUploadInput]');
 
   constructor() {
     registerHandle(
@@ -45,7 +45,7 @@ export class ForFileUploadInput {
     );
   }
 
-  protected onChange(): void {
+  private onChange(): void {
     const files = this.#el.files;
     if (files && files.length > 0) this.ctx.acceptFiles(files);
   }

@@ -33,9 +33,9 @@ import { injectDisclosureContext } from './disclosure-context';
   },
 })
 export class ForDisclosureTrigger {
-  protected readonly buttonType = hostButtonType();
+  private readonly buttonType = hostButtonType();
 
-  protected readonly ctx = injectDisclosureContext('ForDisclosureTrigger');
+  private readonly ctx = injectDisclosureContext('ForDisclosureTrigger');
 
   /** Disables this trigger only, in addition to the root's `disabled`. */
   readonly disabled = input(false, { transform: booleanAttribute });
@@ -48,7 +48,7 @@ export class ForDisclosureTrigger {
     reflectDisabled(this.effectiveDisabled);
   }
 
-  protected onClick(): void {
+  private onClick(): void {
     if (this.effectiveDisabled()) {
       return;
     }

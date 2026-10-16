@@ -19,5 +19,5 @@ import { injectCarouselContext } from './carousel-context';
   },
 })
 export class ForCarouselTrack {
-  protected readonly ctx = injectCarouselContext('ForCarouselTrack');
+  private readonly ctx = injectCarouselContext('ForCarouselTrack');
 }

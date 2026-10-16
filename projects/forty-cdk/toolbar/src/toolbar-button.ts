@@ -25,9 +25,9 @@ import { injectToolbarContext } from './toolbar-context';
   },
 })
 export class ForToolbarButton {
-  protected readonly buttonType = hostButtonType();
+  private readonly buttonType = hostButtonType();
 
-  protected readonly toolbar = injectToolbarContext('ForToolbarButton');
+  private readonly toolbar = injectToolbarContext('ForToolbarButton');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   /** Per-item disabled (in addition to the toolbar's `disabled`). */
@@ -69,21 +69,21 @@ export class ForToolbarButton {
     );
   }
 
-  protected onClick(event: MouseEvent): void {
+  private onClick(event: MouseEvent): void {
     if (this.effectiveDisabled()) {
       event.preventDefault();
       event.stopImmediatePropagation();
     }
   }
 
-  protected onFocus(): void {
+  private onFocus(): void {
     if (this.effectiveDisabled()) {
       return;
     }
     this.toolbar.roving.setActive(this.#host.nativeElement);
   }
 
-  protected onKeyDown(event: KeyboardEvent): void {
+  private onKeyDown(event: KeyboardEvent): void {
     navigateFromRovingItem(event, {
       groupDisabled: this.toolbar.disabled(),
       orientation: this.toolbar.orientation(),

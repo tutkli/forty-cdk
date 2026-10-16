@@ -62,15 +62,15 @@ export class ForVisuallyHidden {
 
   readonly #focused = signal(false);
 
-  protected readonly styles = computed(() =>
+  private readonly styles = computed(() =>
     this.focusable() && this.#focused() ? null : VISUALLY_HIDDEN_STYLE,
   );
 
-  protected onFocusIn(): void {
+  private onFocusIn(): void {
     this.#focused.set(true);
   }
 
-  protected onFocusOut(event: FocusEvent): void {
+  private onFocusOut(event: FocusEvent): void {
     const next = event.relatedTarget as Node | null;
     if (next && this.#host.nativeElement.contains(next)) {
       return;

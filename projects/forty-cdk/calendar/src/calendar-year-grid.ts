@@ -22,9 +22,9 @@ import { injectCalendarContext } from './calendar-context';
   },
 })
 export class ForCalendarYearGrid {
-  protected readonly ctx = injectCalendarContext('ForCalendarYearGrid');
+  private readonly ctx = injectCalendarContext('ForCalendarYearGrid');
 
-  protected readonly labelledBy = hostLabelledBy(() => this.ctx.headingId());
+  private readonly labelledBy = hostLabelledBy(() => this.ctx.headingId());
 
   /** Rows of the year picker grid (3 columns) for the aligned block containing the visible year. */
   readonly rows = this.ctx.yearRows;

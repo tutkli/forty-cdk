@@ -67,11 +67,11 @@ export class ForAvatarImage {
     this.#emit = emit;
   }
 
-  protected status(): ForAvatarStatus {
+  private status(): ForAvatarStatus {
     return this.#parent.status();
   }
 
-  protected onLoad(): void {
+  private onLoad(): void {
     // Ignore a `load` that fires for a request the host has already moved past
     // (the native event can arrive after `src` was reassigned).
     if (!this.#isCurrentRequest()) return;
@@ -79,7 +79,7 @@ export class ForAvatarImage {
     this.#emit('loaded');
   }
 
-  protected onError(): void {
+  private onError(): void {
     if (!this.#isCurrentRequest()) return;
     if (!this.#host.complete) return;
     this.#emit('error');

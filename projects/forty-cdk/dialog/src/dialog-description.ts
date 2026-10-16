@@ -18,7 +18,7 @@ import { injectDialogContext } from './dialog-context';
   },
 })
 export class ForDialogDescription {
-  protected readonly id = registerA11yDescription(
+  private readonly id = registerA11yDescription(
     injectDialogContext('ForDialogDescription'),
     'for-dialog-description',
   );

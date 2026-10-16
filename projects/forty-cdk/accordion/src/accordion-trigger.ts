@@ -38,11 +38,11 @@ import { injectAccordionContext, injectAccordionItemContext } from './accordion-
   },
 })
 export class ForAccordionTrigger {
-  protected readonly buttonType = hostButtonType();
+  private readonly buttonType = hostButtonType();
 
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
-  protected readonly parent = injectAccordionContext('ForAccordionTrigger');
-  protected readonly item = injectAccordionItemContext('ForAccordionTrigger');
+  private readonly parent = injectAccordionContext('ForAccordionTrigger');
+  private readonly item = injectAccordionItemContext('ForAccordionTrigger');
 
   /**
    * APG: aria-disabled is true only when the panel is open AND the accordion
@@ -58,7 +58,7 @@ export class ForAccordionTrigger {
    * disabled triggers uniformly unreachable. The APG Accordion pattern does not
    * require disabled headers to remain focusable.
    */
-  protected readonly ariaDisabled = computed(() => {
+  private readonly ariaDisabled = computed(() => {
     if (this.item.disabled()) {
       return false;
     }
@@ -79,7 +79,7 @@ export class ForAccordionTrigger {
     reflectDisabled(this.item.disabled);
   }
 
-  protected onKeyDown(event: KeyboardEvent): void {
+  private onKeyDown(event: KeyboardEvent): void {
     const action = resolveListNavigation(event, {
       orientation: this.parent.orientation(),
       dir: this.parent.dir(),

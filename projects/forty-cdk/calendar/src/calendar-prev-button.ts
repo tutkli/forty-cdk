@@ -31,20 +31,18 @@ import { injectCalendarContext } from './calendar-context';
   },
 })
 export class ForCalendarPrevButton {
-  protected readonly buttonType = hostButtonType();
+  private readonly buttonType = hostButtonType();
 
-  protected readonly ctx = injectCalendarContext('ForCalendarPrevButton');
+  private readonly ctx = injectCalendarContext('ForCalendarPrevButton');
 
   /** Accessible name for the button. A `null` (default) or empty value emits no attribute. */
   readonly ariaLabel = input<string | null>(null);
 
-  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
+  private readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 
-  protected readonly disabled = computed(
-    () => this.ctx.disabled() || this.ctx.isPreviousDisabled(),
-  );
+  private readonly disabled = computed(() => this.ctx.disabled() || this.ctx.isPreviousDisabled());
 
-  protected page(): void {
+  private page(): void {
     if (this.disabled()) {
       return;
     }

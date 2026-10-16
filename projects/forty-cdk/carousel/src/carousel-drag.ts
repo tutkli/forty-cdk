@@ -49,7 +49,7 @@ import { injectCarouselContext } from './carousel-context';
   },
 })
 export class ForCarouselDrag {
-  protected readonly ctx = injectCarouselContext('ForCarouselDrag');
+  private readonly ctx = injectCarouselContext('ForCarouselDrag');
 
   /** Disable pointer drag without removing the directive. Default `false`. */
   readonly disabled = input(false, { transform: booleanAttribute });
@@ -109,7 +109,7 @@ export class ForCarouselDrag {
     this.#destroyRef.onDestroy(cleanup);
   }
 
-  protected onDragStart(event: Event): void {
+  private onDragStart(event: Event): void {
     if (this.#dragging()) event.preventDefault();
   }
 

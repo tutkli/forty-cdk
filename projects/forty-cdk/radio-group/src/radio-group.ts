@@ -202,7 +202,7 @@ export class ForRadioGroup
     this.#items.unregister(handle);
   }
 
-  protected onFocusOut(event: FocusEvent): void {
+  private onFocusOut(event: FocusEvent): void {
     const next = event.relatedTarget as HTMLElement | null;
     if (next && this.#host.nativeElement.contains(next)) {
       return;

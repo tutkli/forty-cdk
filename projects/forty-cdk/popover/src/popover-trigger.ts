@@ -49,7 +49,7 @@ import { type ForPopoverContext, injectPopoverTriggerContext } from './popover-c
   },
 })
 export class ForPopoverTrigger {
-  protected readonly buttonType = hostButtonType();
+  private readonly buttonType = hostButtonType();
 
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
@@ -64,7 +64,7 @@ export class ForPopoverTrigger {
    */
   readonly forPopoverTrigger = input<ForPopoverContext | ''>('');
 
-  protected readonly ctx = injectPopoverTriggerContext(this.forPopoverTrigger);
+  private readonly ctx = injectPopoverTriggerContext(this.forPopoverTrigger);
 
   /** Disables this trigger only, in addition to the root's `disabled`. */
   readonly disabled = input(false, { transform: booleanAttribute });
@@ -85,7 +85,7 @@ export class ForPopoverTrigger {
     reflectDisabled(this.effectiveDisabled);
   }
 
-  protected onClick(): void {
+  private onClick(): void {
     if (this.effectiveDisabled()) {
       return;
     }

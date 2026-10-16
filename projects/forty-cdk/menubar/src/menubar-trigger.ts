@@ -91,9 +91,9 @@ import { FOR_MENUBAR_DEFAULTS } from 'forty-cdk/defaults';
   },
 })
 export class ForMenubarTrigger extends AnchoredOverlayPositioningBase {
-  protected readonly buttonType = hostButtonType();
+  private readonly buttonType = hostButtonType();
 
-  protected readonly menubar = injectMenubarContext('ForMenubarTrigger');
+  private readonly menubar = injectMenubarContext('ForMenubarTrigger');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
   readonly #idGen = inject(IdGenerator);
   protected readonly positioningDefaults = inject(FOR_MENUBAR_DEFAULTS);
@@ -149,9 +149,9 @@ export class ForMenubarTrigger extends AnchoredOverlayPositioningBase {
 
   readonly effectiveDisabled = computed(() => this.disabled() || this.menubar.disabled());
 
-  protected readonly isOpen = computed(() => this.menubar.value() === this.value());
+  private readonly isOpen = computed(() => this.menubar.value() === this.value());
 
-  protected readonly tabindex = computed<0 | -1>(() => {
+  private readonly tabindex = computed<0 | -1>(() => {
     if (this.effectiveDisabled()) {
       return -1;
     }
@@ -200,11 +200,11 @@ export class ForMenubarTrigger extends AnchoredOverlayPositioningBase {
     adoptHostId(el, this.#ownContentId);
   }
 
-  protected onPointerDown(): void {
+  private onPointerDown(): void {
     this.#pointerActivation = true;
   }
 
-  protected onClick(): void {
+  private onClick(): void {
     const modality: MenuActivationModality = this.#pointerActivation ? 'pointer' : 'keyboard';
     this.#pointerActivation = false;
     if (this.effectiveDisabled()) {
@@ -217,7 +217,7 @@ export class ForMenubarTrigger extends AnchoredOverlayPositioningBase {
     }
   }
 
-  protected onKeyDown(event: KeyboardEvent): void {
+  private onKeyDown(event: KeyboardEvent): void {
     this.#pointerActivation = false;
     if (this.effectiveDisabled()) {
       this.#navigate(event);
@@ -269,7 +269,7 @@ export class ForMenubarTrigger extends AnchoredOverlayPositioningBase {
     });
   }
 
-  protected onFocus(): void {
+  private onFocus(): void {
     if (this.effectiveDisabled()) {
       return;
     }
@@ -279,7 +279,7 @@ export class ForMenubarTrigger extends AnchoredOverlayPositioningBase {
     this.menubar.setFocusedTrigger(this.#host.nativeElement);
   }
 
-  protected onPointerEnter(event: PointerEvent): void {
+  private onPointerEnter(event: PointerEvent): void {
     if (!isHoverCapablePointer(event) || this.effectiveDisabled()) {
       return;
     }

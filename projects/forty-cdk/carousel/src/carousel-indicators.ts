@@ -22,7 +22,7 @@ import { injectCarouselContext } from './carousel-context';
   },
 })
 export class ForCarouselIndicators {
-  protected readonly ctx = injectCarouselContext('ForCarouselIndicators');
+  private readonly ctx = injectCarouselContext('ForCarouselIndicators');
 
   /**
    * Accessible label for the picker group (e.g. "Choose slide to display").
@@ -31,5 +31,5 @@ export class ForCarouselIndicators {
    */
   readonly ariaLabel = input<string | null>(null);
 
-  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
+  private readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 }

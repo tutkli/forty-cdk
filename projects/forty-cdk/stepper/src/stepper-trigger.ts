@@ -48,17 +48,17 @@ import { injectStepperContext, injectStepperItemContext } from './stepper-contex
   },
 })
 export class ForStepperTrigger {
-  protected readonly ctx = injectStepperContext('ForStepperTrigger');
-  protected readonly item = injectStepperItemContext('ForStepperTrigger');
+  private readonly ctx = injectStepperContext('ForStepperTrigger');
+  private readonly item = injectStepperItemContext('ForStepperTrigger');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 
-  protected readonly buttonType = hostButtonType();
+  private readonly buttonType = hostButtonType();
 
   /** Generated (or consumer-set static) id for this trigger. Used by content panels for `aria-labelledby`. */
   readonly id = hostId('for-stepper-trigger');
 
   /** Id of the content panel this trigger controls (the matching panel by step index). */
-  protected readonly controlsId = computed(() => this.ctx.contentIdFor(this.item.index()));
+  private readonly controlsId = computed(() => this.ctx.contentIdFor(this.item.index()));
 
   /**
    * APG tabindex cascade (interactive mode only). In progress mode returns
@@ -70,7 +70,7 @@ export class ForStepperTrigger {
    * - `0` if this is the first selectable trigger (fallback entry point).
    * - `-1` otherwise.
    */
-  protected readonly tabindex = computed<0 | -1 | null>(() => {
+  private readonly tabindex = computed<0 | -1 | null>(() => {
     if (this.ctx.mode() !== 'interactive') {
       return null;
     }
@@ -99,21 +99,21 @@ export class ForStepperTrigger {
     );
   }
 
-  protected onClick(): void {
+  private onClick(): void {
     if (this.ctx.mode() !== 'interactive' || !this.item.selectable()) {
       return;
     }
     this.item.select();
   }
 
-  protected onFocus(): void {
+  private onFocus(): void {
     if (this.ctx.mode() !== 'interactive' || !this.item.selectable()) {
       return;
     }
     this.ctx.roving.setActive(this.#host);
   }
 
-  protected onKeyDown(event: KeyboardEvent): void {
+  private onKeyDown(event: KeyboardEvent): void {
     navigateFromRovingItem(event, {
       groupDisabled: this.ctx.mode() !== 'interactive' || this.ctx.disabled(),
       orientation: this.ctx.orientation(),

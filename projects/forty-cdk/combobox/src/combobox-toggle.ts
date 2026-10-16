@@ -44,9 +44,9 @@ import { FOR_COMBOBOX_DEFAULTS } from 'forty-cdk/defaults';
   },
 })
 export class ForComboboxToggle {
-  protected readonly buttonType = hostButtonType();
+  private readonly buttonType = hostButtonType();
 
-  protected readonly ctx = injectComboboxContext('ForComboboxToggle');
+  private readonly ctx = injectComboboxContext('ForComboboxToggle');
   readonly #defaults = inject(FOR_COMBOBOX_DEFAULTS);
 
   /**
@@ -57,7 +57,7 @@ export class ForComboboxToggle {
    */
   readonly ariaLabel = input<string | null>();
 
-  protected readonly resolvedAriaLabel = hostAriaLabel(
+  private readonly resolvedAriaLabel = hostAriaLabel(
     () => resolveTextInput(this.ariaLabel(), this.#defaults.toggleAriaLabel) || null,
   );
 
@@ -71,7 +71,7 @@ export class ForComboboxToggle {
     preventPointerFocus();
   }
 
-  protected onClick(): void {
+  private onClick(): void {
     if (this.ctx.effectiveDisabled()) {
       return;
     }

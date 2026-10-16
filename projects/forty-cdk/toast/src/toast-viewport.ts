@@ -194,7 +194,7 @@ export class ForToastViewport {
    * stays interactive over the modal; `'inert'` drops the marker so the modal
    * inerts the viewport and a click on a toast dismisses it.
    */
-  protected readonly overModal = this.#defaults.overModal;
+  private readonly overModal = this.#defaults.overModal;
 
   /**
    * Accessible name for the viewport region, exposed as `aria-label`. Defaults
@@ -205,7 +205,7 @@ export class ForToastViewport {
    */
   readonly ariaLabel = input<string | null>();
 
-  protected readonly resolvedAriaLabel = hostAriaLabel(
+  private readonly resolvedAriaLabel = hostAriaLabel(
     () => resolveTextInput(this.ariaLabel(), this.#defaults.viewportAriaLabel) || null,
   );
 
@@ -312,7 +312,7 @@ export class ForToastViewport {
    */
   readonly stackShift = input<ForToastStackShift | number | null>(null);
 
-  protected readonly defaultDuration = computed(() => this.#manager.defaultDuration());
+  private readonly defaultDuration = computed(() => this.#manager.defaultDuration());
 
   readonly #reducedMotion = injectPrefersReducedMotion();
 
@@ -324,7 +324,7 @@ export class ForToastViewport {
    * Resolved `maxVisible` limit: the per-viewport `[maxVisible]` when set,
    * otherwise the global `provideForToastDefaults({ maxVisible })` value.
    */
-  protected readonly resolvedMaxVisible = computed(() => {
+  private readonly resolvedMaxVisible = computed(() => {
     const own = this.maxVisible();
     return own ?? this.#manager.defaultMaxVisible();
   });
@@ -336,7 +336,7 @@ export class ForToastViewport {
    */
   readonly #active: Signal<boolean>;
 
-  protected readonly visible = computed<readonly ForToastInstance[]>(() => {
+  private readonly visible = computed<readonly ForToastInstance[]>(() => {
     if (!this.#active()) {
       return [];
     }
@@ -454,14 +454,14 @@ export class ForToastViewport {
     this.#host.nativeElement.focus();
   }
 
-  protected onFocusOut(event: FocusEvent): void {
+  private onFocusOut(event: FocusEvent): void {
     const next = event.relatedTarget;
     if (next instanceof Node && !composedContains(this.#host.nativeElement, next)) {
       this.#origin = null;
     }
   }
 
-  protected onClose(toast: ForToastInstance, reason: ForToastCloseReason): void {
+  private onClose(toast: ForToastInstance, reason: ForToastCloseReason): void {
     toast.dismiss(reason);
   }
 
@@ -471,7 +471,7 @@ export class ForToastViewport {
    * set so the `[class]` binding emits no extra tokens and leaves the
    * directive's own host attributes untouched.
    */
-  protected rowClass(toast: ForToastInstance): string {
+  private rowClass(toast: ForToastInstance): string {
     const { class: own, classList } = toast.config;
     return resolveConfigClass({ class: [this.toastClass(), own].join(' '), classList }) ?? '';
   }
@@ -481,7 +481,7 @@ export class ForToastViewport {
    * otherwise the viewport-level `[template]`. `null` renders the built-in
    * shape.
    */
-  protected rowTemplate(toast: ForToastInstance): TemplateRef<ForToastTemplateContext> | null {
+  private rowTemplate(toast: ForToastInstance): TemplateRef<ForToastTemplateContext> | null {
     return toast.config.template ?? this.template();
   }
 
@@ -490,7 +490,7 @@ export class ForToastViewport {
    * when set, otherwise the viewport-level `[animateEnter]`. Empty when neither
    * is set.
    */
-  protected toastAnimateEnter(toast: ForToastInstance): string {
+  private toastAnimateEnter(toast: ForToastInstance): string {
     return toast.config.animateEnter ?? this.animateEnter();
   }
 
@@ -499,7 +499,7 @@ export class ForToastViewport {
    * when set, otherwise the viewport-level `[animateLeave]`. Empty when neither
    * is set, which keeps the toast's unmount synchronous on dismiss.
    */
-  protected toastAnimateLeave(toast: ForToastInstance): string {
+  private toastAnimateLeave(toast: ForToastInstance): string {
     return toast.config.animateLeave ?? this.animateLeave();
   }
 }

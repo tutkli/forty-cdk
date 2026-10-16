@@ -125,7 +125,7 @@ export class ForComboboxOption<T = string> {
   readonly highlighted = computed(() => this.#ctx.isActive(this.id()));
   readonly effectiveDisabled = computed(() => this.disabled() || this.#ctx.effectiveDisabled());
 
-  protected readonly ariaSelected = computed(() => {
+  private readonly ariaSelected = computed(() => {
     if (this.#ctx.multiple()) {
       return this.selected() ? 'true' : 'false';
     }
@@ -133,7 +133,7 @@ export class ForComboboxOption<T = string> {
   });
 
   /** Reflects `aria-posinset` (1-based) in the virtualized path; `null` otherwise. */
-  protected readonly ariaPosInSet = computed<string | null>(() => {
+  private readonly ariaPosInSet = computed<string | null>(() => {
     if (this.#ctx.totalCount() === undefined) {
       return null;
     }
@@ -142,7 +142,7 @@ export class ForComboboxOption<T = string> {
   });
 
   /** Reflects `aria-setsize` when the consumer wires up `[totalCount]`. */
-  protected readonly ariaSetSize = computed<string | null>(() => {
+  private readonly ariaSetSize = computed<string | null>(() => {
     const total = this.#ctx.totalCount();
     return total === undefined ? null : String(total);
   });
@@ -187,14 +187,14 @@ export class ForComboboxOption<T = string> {
     injectPointerMove(() => this.onPointerMove());
   }
 
-  protected onClick(): void {
+  private onClick(): void {
     if (this.effectiveDisabled() || this.#ctx.readonly()) {
       return;
     }
     this.#ctx.activate(this.#handle);
   }
 
-  protected onPointerMove(): void {
+  private onPointerMove(): void {
     if (this.effectiveDisabled()) {
       return;
     }

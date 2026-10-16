@@ -16,7 +16,7 @@ import { injectPopoverContext } from './popover-context';
   },
 })
 export class ForPopoverDescription {
-  protected readonly id = registerA11yDescription(
+  private readonly id = registerA11yDescription(
     injectPopoverContext('ForPopoverDescription'),
     'for-popover-description',
   );

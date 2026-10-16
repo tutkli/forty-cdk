@@ -151,11 +151,11 @@ export class ForVirtualViewport implements ForVirtualViewportContext, OnInit {
     () => this.#virtualizer()?.range() ?? [0, 0],
   );
 
-  protected readonly sizerWidth = computed(() =>
+  private readonly sizerWidth = computed(() =>
     this.orientation() === 'horizontal' ? `${this.totalSize()}px` : '100%',
   );
 
-  protected readonly sizerHeight = computed(() =>
+  private readonly sizerHeight = computed(() =>
     this.orientation() === 'horizontal' ? '100%' : `${this.totalSize()}px`,
   );
 

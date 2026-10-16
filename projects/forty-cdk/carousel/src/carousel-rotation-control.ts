@@ -29,9 +29,9 @@ import { FOR_CAROUSEL_DEFAULTS } from 'forty-cdk/defaults';
   },
 })
 export class ForCarouselRotationControl {
-  protected readonly buttonType = hostButtonType();
+  private readonly buttonType = hostButtonType();
 
-  protected readonly ctx = injectCarouselContext('ForCarouselRotationControl');
+  private readonly ctx = injectCarouselContext('ForCarouselRotationControl');
   readonly #defaults = inject(FOR_CAROUSEL_DEFAULTS);
 
   /**
@@ -51,7 +51,7 @@ export class ForCarouselRotationControl {
   readonly stopLabel = input<string | null>();
 
   /** The current accessible name — `stopLabel` while playing, else `startLabel`. */
-  protected readonly label = computed(
+  private readonly label = computed(
     () =>
       (this.ctx.playing()
         ? resolveTextInput(this.stopLabel(), this.#defaults.rotationStopLabel)

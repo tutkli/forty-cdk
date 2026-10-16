@@ -23,10 +23,10 @@ import { injectStepperContext } from './stepper-context';
   },
 })
 export class ForStepperList {
-  protected readonly ctx = injectStepperContext('ForStepperList');
+  private readonly ctx = injectStepperContext('ForStepperList');
 
   /** Accessible name for the step list. Defers to a consumer `aria-labelledby`. */
   readonly ariaLabel = input<string | null>(null);
 
-  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
+  private readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 }

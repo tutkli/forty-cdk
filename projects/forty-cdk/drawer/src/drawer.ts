@@ -324,7 +324,7 @@ export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements
   readonly swipeMovementY = this.#drag.swipeMovementY;
 
   /** `touch-action` for the surface while it arms the swipe; see `handleOnly`. */
-  protected readonly touchAction = this.#drag.touchAction;
+  private readonly touchAction = this.#drag.touchAction;
 
   /** Host element of this drawer surface — exposed via `ForDrawerContext`. */
   get hostElement(): HTMLElement {

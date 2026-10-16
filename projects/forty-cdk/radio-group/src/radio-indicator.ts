@@ -22,7 +22,7 @@ import { FOR_RADIO, type ForRadio } from './radio';
   },
 })
 export class ForRadioIndicator {
-  protected readonly parent: ForRadio;
+  private readonly parent: ForRadio;
 
   constructor() {
     const parent = inject(FOR_RADIO, { optional: true });

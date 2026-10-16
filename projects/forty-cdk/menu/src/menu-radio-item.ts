@@ -62,10 +62,10 @@ export const FOR_MENU_RADIO_ITEM = new InjectionToken<ForMenuRadioItem>('FOR_MEN
   },
 })
 export class ForMenuRadioItem {
-  protected readonly buttonType = hostButtonType();
+  private readonly buttonType = hostButtonType();
 
-  protected readonly menu = injectMenuContext('ForMenuRadioItem');
-  protected readonly group = injectMenuRadioGroupContext('ForMenuRadioItem');
+  private readonly menu = injectMenuContext('ForMenuRadioItem');
+  private readonly group = injectMenuRadioGroupContext('ForMenuRadioItem');
 
   /** Identifier added to / read from the radio group's `value`. Required. */
   readonly value = input.required<string>();
@@ -85,7 +85,7 @@ export class ForMenuRadioItem {
 
   readonly effectiveDisabled = computed(() => this.disabled() || this.menu.disabled());
 
-  protected readonly interaction = createMenuItemInteraction({
+  private readonly interaction = createMenuItemInteraction({
     ctx: this.menu,
     effectiveDisabled: this.effectiveDisabled,
     textValue: this.textValue,
@@ -107,7 +107,7 @@ export class ForMenuRadioItem {
     preventPointerFocus(() => this.effectiveDisabled());
   }
 
-  protected onClick(): void {
+  private onClick(): void {
     if (this.effectiveDisabled()) {
       return;
     }
@@ -117,7 +117,7 @@ export class ForMenuRadioItem {
     }
   }
 
-  protected onKeyDown(event: KeyboardEvent): void {
+  private onKeyDown(event: KeyboardEvent): void {
     if (this.interaction.handleNavigation(event)) {
       return;
     }

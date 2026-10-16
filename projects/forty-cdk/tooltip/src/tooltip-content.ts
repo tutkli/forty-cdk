@@ -44,7 +44,7 @@ import { injectTooltipContext } from './tooltip-context';
   },
 })
 export class ForTooltipContent {
-  protected readonly ctx = injectTooltipContext('ForTooltipContent');
+  private readonly ctx = injectTooltipContext('ForTooltipContent');
 
   constructor() {
     const el = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;

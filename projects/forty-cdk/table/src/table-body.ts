@@ -595,33 +595,31 @@ export class ForTableBody<T = unknown> {
   });
 
   /** The registered column definitions, in document order. */
-  protected readonly columns = computed(() => this.#defs().columnDefs());
+  private readonly columns = computed(() => this.#defs().columnDefs());
 
   /** The registered full-span row variants, in document order (first match wins per datum). */
-  protected readonly rowDefs = computed(() => this.#defs().rowDefs());
+  private readonly rowDefs = computed(() => this.#defs().rowDefs());
 
   /** The optional shared drag placeholder for reorderable columns, or `null`. */
-  protected readonly columnDragPlaceholder = computed(() => this.#defs().columnDragPlaceholder());
+  private readonly columnDragPlaceholder = computed(() => this.#defs().columnDragPlaceholder());
 
   /** The optional body-level default placeholder-cell template, or `null`. */
-  protected readonly placeholderCellDefault = computed(() => this.#defs().placeholderCellDefault());
+  private readonly placeholderCellDefault = computed(() => this.#defs().placeholderCellDefault());
 
   /**
    * Resolves the placeholder template a column stamps into its cell, in both
    * stamping paths: the column's own `[forTablePlaceholderCellDef]`, else the body-level
    * `[forTablePlaceholderCellDefault]`, else `null` for an empty cell.
    */
-  protected placeholderTemplateFor(col: ForTableColumnDef): TemplateRef<unknown> | null {
+  private placeholderTemplateFor(col: ForTableColumnDef): TemplateRef<unknown> | null {
     return col.placeholderCell()?.template ?? this.placeholderCellDefault()?.template ?? null;
   }
 
   /** The role a stamped cell carries: `'cell'` in `table` mode, `'gridcell'` otherwise. */
-  protected readonly cellRole = computed(() =>
-    this.#ctx.mode() === 'table' ? 'cell' : 'gridcell',
-  );
+  private readonly cellRole = computed(() => (this.#ctx.mode() === 'table' ? 'cell' : 'gridcell'));
 
   /** The columns to render, resolved from `displayedColumns` (or all defs, in order). */
-  protected readonly orderedColumns = computed<readonly ForTableColumnDef[]>(() => {
+  private readonly orderedColumns = computed<readonly ForTableColumnDef[]>(() => {
     const defs = this.columns();
     const order = this.displayedColumns();
     if (!order) {
@@ -638,7 +636,7 @@ export class ForTableBody<T = unknown> {
    * header row to the drag-reorder path (`[forTableColumnReorder]` + per-cell
    * `[forDraggable]`). A body with no reorderable column keeps the plain header row.
    */
-  protected readonly hasReorderable = computed(() =>
+  private readonly hasReorderable = computed(() =>
     this.orderedColumns().some((col) => col.reorderable()),
   );
 
@@ -665,7 +663,7 @@ export class ForTableBody<T = unknown> {
    * has published a window it maps the window's slice into `rows` (absolute
    * index + pixel offset per row); otherwise it maps every row in flow order.
    */
-  protected readonly renderRows = computed<readonly RenderRow<T>[]>(() => {
+  private readonly renderRows = computed<readonly RenderRow<T>[]>(() => {
     const window = this.#registration.virtualWindow();
     const data = this.rows();
     const key = this.rowKey();
@@ -712,17 +710,17 @@ export class ForTableBody<T = unknown> {
   });
 
   /** Full scroll height (px) applied to the rowgroup when virtualized, else `null` (natural height). */
-  protected readonly sizerHeight = computed<number | null>(() => {
+  private readonly sizerHeight = computed<number | null>(() => {
     const window = this.#registration.virtualWindow();
     return window && !this.loading() ? window.totalSize() : null;
   });
 
-  protected readonly placeholderRange = computed(() =>
+  private readonly placeholderRange = computed(() =>
     Array.from({ length: Math.max(0, this.placeholderRows()) }, (_, i) => i),
   );
 
   /** Resolves a `sortable` column's current direction from the single `sort` descriptor. */
-  protected directionFor(column: string): TableSortDirection {
+  private directionFor(column: string): TableSortDirection {
     const descriptor = this.sort();
     return descriptor && descriptor.column === column ? descriptor.direction : 'none';
   }
@@ -732,22 +730,22 @@ export class ForTableBody<T = unknown> {
    * `interactiveRows` and in `table` mode, the only mode where a row may own a tab
    * stop and `Enter` without colliding with the roving grid's cell-entry.
    */
-  protected readonly rowsKeyboardInteractive = computed(
+  private readonly rowsKeyboardInteractive = computed(
     () => this.interactiveRows() && this.#ctx.mode() === 'table',
   );
 
   /** The `tabindex` for a stamped row: `0` for a keyboard-interactive data row, `null` otherwise. */
-  protected rowTabIndex(row: RenderRow<T>): 0 | null {
+  private rowTabIndex(row: RenderRow<T>): 0 | null {
     return this.rowsKeyboardInteractive() && !row.variant ? 0 : null;
   }
 
   /** Resolves the `rowClass` hook for a stamped row, or `undefined` when unset. */
-  protected rowClassFor(row: RenderRow<T>): string | Record<string, boolean> | undefined {
+  private rowClassFor(row: RenderRow<T>): string | Record<string, boolean> | undefined {
     return this.rowClass()?.(row.datum, row.index);
   }
 
   /** Resolves the `rowAttrs` hook for a stamped row, or `undefined` when unset. */
-  protected rowAttrsFor(row: RenderRow<T>): Record<string, string | null> | undefined {
+  private rowAttrsFor(row: RenderRow<T>): Record<string, string | null> | undefined {
     return this.rowAttrs()?.(row.datum, row.index);
   }
 
@@ -757,7 +755,7 @@ export class ForTableBody<T = unknown> {
    * (`undefined`) emission and no-ops when the width is unchanged, so seeding the
    * handle from `columnWidths` never loops back into a redundant model write.
    */
-  protected onColumnWidthChange(column: string, width: number | undefined): void {
+  private onColumnWidthChange(column: string, width: number | undefined): void {
     if (width === undefined) {
       return;
     }
@@ -776,17 +774,17 @@ export class ForTableBody<T = unknown> {
    * A function reference rather than an output, because the revert happens during the handle's
    * teardown. The body outlives it, so its own `columnWidthsChange` still reaches the consumer.
    */
-  protected readonly onColumnWidthRevert = (descriptor: TableResizeDescriptor): void => {
+  private readonly onColumnWidthRevert = (descriptor: TableResizeDescriptor): void => {
     this.onColumnWidthChange(descriptor.column, descriptor.width);
   };
 
-  protected onRowClick(row: RenderRow<T>, event: MouseEvent): void {
+  private onRowClick(row: RenderRow<T>, event: MouseEvent): void {
     if (this.interactiveRows()) {
       this.#activateRow(row, event);
     }
   }
 
-  protected onRowEnter(row: RenderRow<T>, event: Event): void {
+  private onRowEnter(row: RenderRow<T>, event: Event): void {
     if (this.rowsKeyboardInteractive()) {
       if (this.#activateRow(row, event)) {
         event.preventDefault();
@@ -798,7 +796,7 @@ export class ForTableBody<T = unknown> {
     }
   }
 
-  protected onRowContextMenu(row: RenderRow<T>, event: MouseEvent): void {
+  private onRowContextMenu(row: RenderRow<T>, event: MouseEvent): void {
     if (!this.interactiveRows() || row.variant) {
       return;
     }

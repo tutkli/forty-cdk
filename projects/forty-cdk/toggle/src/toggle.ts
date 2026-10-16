@@ -55,7 +55,7 @@ import {
   },
 })
 export class ForToggle extends FormUiControlBase implements FormCheckboxControl {
-  protected readonly buttonType = hostButtonType();
+  private readonly buttonType = hostButtonType();
 
   /**
    * Two-way bindable on/off state. Required by `FormCheckboxControl`, so the
@@ -77,7 +77,7 @@ export class ForToggle extends FormUiControlBase implements FormCheckboxControl 
     injectNativeFormResetToInitial(this.checked);
   }
 
-  protected onClick(): void {
+  private onClick(): void {
     if (this.effectiveDisabled() || this.readonly()) {
       return;
     }

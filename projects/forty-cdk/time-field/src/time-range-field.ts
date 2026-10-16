@@ -193,7 +193,7 @@ export class ForTimeRangeField<D>
   /** Accessible name for the whole range field group. Emits no `aria-label` while `null`. */
   readonly ariaLabel = input<string | null>(null);
 
-  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
+  private readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 
   /**
    * Writing direction. When unset (default `null`), the inherited ambient
@@ -217,17 +217,17 @@ export class ForTimeRangeField<D>
   readonly #endLabel = computed<string | null>(() => resolveText(this.#defaults.endLabel));
 
   /** `aria-invalid` reflects the form-driven invalidity OR a self-detected disorder. */
-  protected readonly ariaInvalid = computed(() => this.invalid() || this.#composer.disordered());
+  private readonly ariaInvalid = computed(() => this.invalid() || this.#composer.disordered());
 
   /**
    * Both endpoints complete but the start falls after the end — an unorderable
    * range. Never flagged when {@link allowOvernight} is set, where a `start > end`
    * entry is a valid midnight-crossing range instead of an error.
    */
-  protected readonly disordered = computed(() => this.#composer.disordered());
+  private readonly disordered = computed(() => this.#composer.disordered());
 
   /** `true` only while both endpoints are entirely empty — neither shows entered digits. */
-  protected readonly empty = computed(() => this.#startEngine.empty() && this.#endEngine.empty());
+  private readonly empty = computed(() => this.#startEngine.empty() && this.#endEngine.empty());
 
   /**
    * Folds a self-detected out-of-order range into the base invalidity so
@@ -383,7 +383,7 @@ export class ForTimeRangeField<D>
     return which === 'start' ? this.#startLabel : this.#endLabel;
   }
 
-  protected onFocusOut(event: FocusEvent): void {
+  private onFocusOut(event: FocusEvent): void {
     const next = event.relatedTarget as Node | null;
     if (!next || !this.#host.nativeElement.contains(next)) {
       this.markTouched();

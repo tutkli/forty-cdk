@@ -101,7 +101,7 @@ function violationsOf(found, roster) {
           id,
           message:
             `${id}: ${name} is public but is not an input, so nothing forces it onto the emitted ` +
-            `surface — mark it \`protected\`, which host bindings read from inside the class anyway.`,
+            `surface — mark it \`private\`, which host bindings read from inside the class anyway.`,
         });
       } else if (alias.startsWith('_')) {
         failures.push({
@@ -133,7 +133,7 @@ function violationsOf(found, roster) {
           id,
           message:
             `${id}: ${name} is listed in ALIAS_INPUT_SURFACE but is no longer emitted as a public ` +
-            `member — the list has rotted (renamed, removed, or now \`protected\`?). Drop the entry.`,
+            `member — the list has rotted (renamed, removed, or now \`private\`?). Drop the entry.`,
         });
       }
     }
@@ -229,7 +229,7 @@ if (failures.length) {
     console.error(`  ${message}`);
   }
   console.error(
-    `\nA \`_\`-prefixed member is internal, and \`protected\` is how that is stated to the compiler. ` +
+    `\nA \`_\`-prefixed member is internal, and \`private\` is how that is stated to the compiler. ` +
       `The raw field of an aliased input is the one that cannot say it, for two reasons that both ` +
       `hold: narrowing it emits the same bytes (TypeScript writes \`protected\` members into the ` +
       `\`.d.ts\` with their full type; only TS-\`private\` collapses), and it breaks every consumer ` +

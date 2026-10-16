@@ -76,9 +76,9 @@ import { handleMenuTabOut } from './menu-tab-out';
   },
 })
 export class ForMenuSubTrigger {
-  protected readonly buttonType = hostButtonType();
+  private readonly buttonType = hostButtonType();
 
-  protected readonly submenu = injectMenuContext('ForMenuSubTrigger');
+  private readonly submenu = injectMenuContext('ForMenuSubTrigger');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
   #pointerActivation = false;
 
@@ -117,11 +117,11 @@ export class ForMenuSubTrigger {
     );
   }
 
-  protected onPointerDown(): void {
+  private onPointerDown(): void {
     this.#pointerActivation = true;
   }
 
-  protected onClick(): void {
+  private onClick(): void {
     const modality: MenuActivationModality = this.#pointerActivation ? 'pointer' : 'keyboard';
     this.#pointerActivation = false;
     if (this.effectiveDisabled()) {
@@ -130,7 +130,7 @@ export class ForMenuSubTrigger {
     this.submenu.openMenu('first', modality);
   }
 
-  protected onPointerEnter(event: PointerEvent): void {
+  private onPointerEnter(event: PointerEvent): void {
     if (!isHoverCapablePointer(event)) {
       return;
     }
@@ -140,7 +140,7 @@ export class ForMenuSubTrigger {
     this.submenu.scheduleOpenByPointer?.();
   }
 
-  protected onPointerMove(event: PointerEvent): void {
+  private onPointerMove(event: PointerEvent): void {
     if (!isHoverCapablePointer(event)) {
       return;
     }
@@ -154,14 +154,14 @@ export class ForMenuSubTrigger {
     this.submenu.parentMenu?.clearItemHighlights();
   }
 
-  protected onPointerLeave(event: PointerEvent): void {
+  private onPointerLeave(event: PointerEvent): void {
     if (!isHoverCapablePointer(event)) {
       return;
     }
     this.submenu.onTriggerPointerLeave?.({ x: event.clientX, y: event.clientY });
   }
 
-  protected onKeyDown(event: KeyboardEvent): void {
+  private onKeyDown(event: KeyboardEvent): void {
     this.#pointerActivation = false;
     const parent = this.submenu.parentMenu!;
     const isRtl = this.submenu.dir() === 'rtl';

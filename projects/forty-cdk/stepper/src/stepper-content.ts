@@ -35,7 +35,7 @@ import { injectStepperContext } from './stepper-context';
   },
 })
 export class ForStepperContent {
-  protected readonly ctx = injectStepperContext('ForStepperContent');
+  private readonly ctx = injectStepperContext('ForStepperContent');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 
   /**
@@ -61,7 +61,7 @@ export class ForStepperContent {
    * Resolved `aria-labelledby`: a consumer-set static value when present, else
    * the id of the trigger that labels this panel.
    */
-  protected readonly labelledBy = hostLabelledBy(() => this.ctx.triggerIdFor(this.index()));
+  private readonly labelledBy = hostLabelledBy(() => this.ctx.triggerIdFor(this.index()));
 
   /**
    * APG tabindex: `'0'` only when in interactive mode and the panel has no
@@ -69,7 +69,7 @@ export class ForStepperContent {
    * itself. A panel containing buttons / links / form controls gets no
    * `tabindex`, avoiding a redundant tab stop.
    */
-  protected readonly tabindex = computed<'0' | null>(() => {
+  private readonly tabindex = computed<'0' | null>(() => {
     if (this.ctx.mode() !== 'interactive') {
       return null;
     }

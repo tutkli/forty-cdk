@@ -46,9 +46,9 @@ import { FOR_SEARCH_DEFAULTS } from 'forty-cdk/defaults';
   },
 })
 export class ForSearchClear {
-  protected readonly buttonType = hostButtonType();
+  private readonly buttonType = hostButtonType();
 
-  protected readonly group = injectSearchGroup('ForSearchClear');
+  private readonly group = injectSearchGroup('ForSearchClear');
   readonly #defaults = inject(FOR_SEARCH_DEFAULTS);
 
   /**
@@ -59,18 +59,18 @@ export class ForSearchClear {
    */
   readonly ariaLabel = input<string | null>();
 
-  protected readonly resolvedAriaLabel = hostAriaLabel(
+  private readonly resolvedAriaLabel = hostAriaLabel(
     () => resolveTextInput(this.ariaLabel(), this.#defaults.clearAriaLabel) || null,
   );
 
   /** `true` while there is text to clear; drives the self-hide logic. */
-  protected readonly hasContent = computed(() => (this.group.field()?.value().length ?? 0) > 0);
+  private readonly hasContent = computed(() => (this.group.field()?.value().length ?? 0) > 0);
 
   /**
    * Disabled when the search field is absent, disabled, or read-only — the
    * clear action is unavailable in those states.
    */
-  protected readonly isDisabled = computed(() => {
+  private readonly isDisabled = computed(() => {
     const field = this.group.field();
     return !field || field.effectiveDisabled() || field.readonly();
   });
@@ -79,7 +79,7 @@ export class ForSearchClear {
     reflectDisabled(this.isDisabled);
   }
 
-  protected onClick(): void {
+  private onClick(): void {
     const field = this.group.field();
     if (!field || this.isDisabled()) {
       return;

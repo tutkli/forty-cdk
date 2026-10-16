@@ -72,14 +72,14 @@ import {
   },
 })
 export class ForNavigationMenuViewport {
-  protected readonly menu = injectNavigationMenuContext('ForNavigationMenuViewport');
+  private readonly menu = injectNavigationMenuContext('ForNavigationMenuViewport');
   readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 
   readonly #measureTick = signal(0);
-  protected readonly width = computed(() => this.#measureSize().width);
-  protected readonly height = computed(() => this.#measureSize().height);
+  private readonly width = computed(() => this.#measureSize().width);
+  private readonly height = computed(() => this.#measureSize().height);
 
-  protected readonly state = computed(() => (this.menu.value() !== null ? 'open' : 'closed'));
+  private readonly state = computed(() => (this.menu.value() !== null ? 'open' : 'closed'));
 
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 

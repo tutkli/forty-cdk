@@ -35,9 +35,9 @@ import { injectCarouselContext } from './carousel-context';
   },
 })
 export class ForCarouselIndicator {
-  protected readonly buttonType = hostButtonType();
+  private readonly buttonType = hostButtonType();
 
-  protected readonly ctx = injectCarouselContext('ForCarouselIndicator');
+  private readonly ctx = injectCarouselContext('ForCarouselIndicator');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   /**
@@ -57,10 +57,10 @@ export class ForCarouselIndicator {
   readonly #index = computed(() => this.ctx.indexOfIndicator(this.#host.nativeElement));
 
   /** Whether this indicator corresponds to the current active slide. */
-  protected readonly current = computed(() => this.ctx.isCurrent(this.#index()));
+  private readonly current = computed(() => this.ctx.isCurrent(this.#index()));
 
   /** Default positional label used when no explicit `ariaLabel` is set. */
-  protected readonly positionLabel = computed(() => {
+  private readonly positionLabel = computed(() => {
     const i = this.#index();
     return i < 0 ? null : this.ctx.indicatorLabel(i + 1);
   });
@@ -71,7 +71,7 @@ export class ForCarouselIndicator {
    * the current slide coincide there, while prev / next, autoplay and drag move
    * the current slide without focusing a dot.
    */
-  protected readonly tabindex = computed<-1 | 0>(() =>
+  private readonly tabindex = computed<-1 | 0>(() =>
     selectionTabStop({
       disabled: this.disabled(),
       selected: this.current(),
@@ -89,14 +89,14 @@ export class ForCarouselIndicator {
     );
   }
 
-  protected onClick(): void {
+  private onClick(): void {
     if (this.disabled()) {
       return;
     }
     this.ctx.scrollTo(this.#index());
   }
 
-  protected onKeyDown(event: KeyboardEvent): void {
+  private onKeyDown(event: KeyboardEvent): void {
     navigateFromRovingItem(event, {
       groupDisabled: false,
       orientation: this.ctx.orientation(),

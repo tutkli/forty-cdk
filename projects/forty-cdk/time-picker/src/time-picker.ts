@@ -441,17 +441,17 @@ export class ForTimePicker<D>
   }
 
   /** Registers a projected `[forTimeField]`; the field calls it on creation. */
-  protected registerField(field: AdoptedField): void {
+  private registerField(field: AdoptedField): void {
     this.#fieldSlot.register(field);
   }
 
   /** Removes a projected `[forTimeField]`; the field calls it on destroy. */
-  protected unregisterField(field: AdoptedField): void {
+  private unregisterField(field: AdoptedField): void {
     this.#fieldSlot.unregister(field);
   }
 
   /** Writes a value typed in the adopted `[forTimeField]`. Ignored while read-only or disabled. */
-  protected commitFieldValue(value: D | null): void {
+  private commitFieldValue(value: D | null): void {
     if (this.effectiveReadonly() || this.effectiveDisabled()) {
       return;
     }

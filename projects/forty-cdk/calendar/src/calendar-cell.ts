@@ -45,22 +45,22 @@ import { type ForCalendarCellHandle, injectCalendarContext } from './calendar-co
   },
 })
 export class ForCalendarCell<D> {
-  protected readonly ctx = injectCalendarContext('ForCalendarCell');
+  private readonly ctx = injectCalendarContext('ForCalendarCell');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   /** The date this cell represents. */
   readonly date = input.required<D>();
 
-  protected readonly selected = computed(() => this.ctx.isSelected(this.date()));
-  protected readonly isToday = computed(() => this.ctx.isToday(this.date()));
-  protected readonly focused = computed(() => this.ctx.isFocused(this.date()));
-  protected readonly unavailable = computed(() => this.ctx.isUnavailable(this.date()));
-  protected readonly outsideMonth = computed(() => this.ctx.isOutsideMonth(this.date()));
-  protected readonly dateLabel = computed(() => this.ctx.getDateLabel(this.date()));
-  protected readonly rangeStart = computed(() => this.ctx.isRangeStart(this.date()));
-  protected readonly rangeEnd = computed(() => this.ctx.isRangeEnd(this.date()));
-  protected readonly inRange = computed(() => this.ctx.isInRange(this.date()));
-  protected readonly rangePreview = computed(() => this.ctx.isRangePreview(this.date()));
+  private readonly selected = computed(() => this.ctx.isSelected(this.date()));
+  private readonly isToday = computed(() => this.ctx.isToday(this.date()));
+  private readonly focused = computed(() => this.ctx.isFocused(this.date()));
+  private readonly unavailable = computed(() => this.ctx.isUnavailable(this.date()));
+  private readonly outsideMonth = computed(() => this.ctx.isOutsideMonth(this.date()));
+  private readonly dateLabel = computed(() => this.ctx.getDateLabel(this.date()));
+  private readonly rangeStart = computed(() => this.ctx.isRangeStart(this.date()));
+  private readonly rangeEnd = computed(() => this.ctx.isRangeEnd(this.date()));
+  private readonly inRange = computed(() => this.ctx.isInRange(this.date()));
+  private readonly rangePreview = computed(() => this.ctx.isRangePreview(this.date()));
 
   constructor() {
     const handle: ForCalendarCellHandle<unknown> = {
@@ -74,11 +74,11 @@ export class ForCalendarCell<D> {
     );
   }
 
-  protected onClick(): void {
+  private onClick(): void {
     this.ctx.selectDate(this.date());
   }
 
-  protected onKeyDown(event: KeyboardEvent): void {
+  private onKeyDown(event: KeyboardEvent): void {
     this.ctx.handleCellKeydown(event, this.date());
   }
 }
