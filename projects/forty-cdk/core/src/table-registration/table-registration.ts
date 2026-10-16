@@ -103,6 +103,11 @@ export interface TableVirtualRowNavigation {
    */
   scrollToRow(index: number): void;
   /**
+   * Stop a {@link scrollToRow} that is still running. `[forTableRowReorder]` calls it when a
+   * pointer drag lifts a row, so the scroll no longer moves the rows under the pointer.
+   */
+  cancelScroll(): void;
+  /**
    * Whether the virtualizer's own window covers the row at the absolute `index`. A row kept
    * mounted only because it is focused or being reordered does not count, so
    * `[forTableRowReorder]` can wait for a scroll it requested to land before it releases a pin.

@@ -114,6 +114,14 @@ export interface ForVirtualizer {
   /** Scroll the container to an absolute pixel offset. */
   scrollToOffset(offset: number): void;
   /**
+   * Stop a `scrollToIndex` / `scrollToOffset` that is still running. An index scroll keeps
+   * correcting its position for a few frames while the rows around its target are measured;
+   * after this call it writes nothing more, and the container stays where it is. A new
+   * `scrollToIndex` / `scrollToOffset` already replaces the previous one, so call this only to
+   * stop without starting another, for instance when a pointer gesture takes over the scroll.
+   */
+  cancelScroll(): void;
+  /**
    * Record the measured size of a rendered item element (dynamic sizes).
    * Passing `null` sweeps detached (evicted) elements from the measurement
    * cache and stops observing them, so recycled rows scrolled out of the window
@@ -237,6 +245,7 @@ export function injectVirtualizer(options: VirtualizerOptions): ForVirtualizer {
       range: signal<readonly [number, number]>([0, 0]).asReadonly(),
       scrollToIndex: () => undefined,
       scrollToOffset: () => undefined,
+      cancelScroll: () => undefined,
       measureElement: () => undefined,
       measurementFor: () => null,
     };
@@ -347,6 +356,9 @@ export function injectVirtualizer(options: VirtualizerOptions): ForVirtualizer {
     scrollToOffset: (offset) => {
       untracked(syncCore);
       virtualizer.scrollToOffset(offset);
+    },
+    cancelScroll: () => {
+      virtualizer.cancelScroll();
     },
     measureElement: (element) => {
       untracked(syncCore);

@@ -116,6 +116,7 @@ export class ForTableVirtualized {
   readonly #navigator = new TableVirtualizedNavigator({
     rows: this.#registration.rows,
     scrollToRow: (index) => this.scrollToRow(index),
+    cancelScroll: () => this.cancelScroll(),
     scrollViewportRect: () => this.#scrollElement().getBoundingClientRect(),
     range: () => this.#virtualizer.range(),
     rowCount: this.#rowCount,
@@ -192,6 +193,11 @@ export class ForTableVirtualized {
    */
   scrollToRow(index: number, options?: { align?: 'start' | 'center' | 'end' | 'auto' }): void {
     this.#virtualizer.scrollToIndex(index, options);
+  }
+
+  /** Stop a {@link scrollToRow} that is still running, leaving the container where it is. */
+  cancelScroll(): void {
+    this.#virtualizer.cancelScroll();
   }
 
   /**

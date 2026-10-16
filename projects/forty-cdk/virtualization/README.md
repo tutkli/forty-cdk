@@ -262,6 +262,12 @@ this.v.scrollToIndex(500, { align: 'start' });
 `align` accepts `'start'` | `'center'` | `'end'` | `'auto'` (default). `'auto'`
 scrolls the minimum amount needed to bring the item into view.
 
+With measured rows, the scroll keeps correcting its position for a few frames while the rows
+around the target are measured. A new `scrollToIndex` or `scrollToOffset` replaces the one in
+progress, and a scroll the user makes stops it. To stop it without starting another, for instance
+when your own pointer gesture takes over the container, call `cancelScroll()`: the container stays
+where it is. `[forVirtualReorder]` does this when a pointer drag lifts a row.
+
 ## Drag-reorder
 
 `[forVirtualReorder]` makes a windowed `*forVirtualFor` list reorderable by pointer
@@ -362,6 +368,7 @@ See the [Combobox README](../combobox/README.md#virtualization) for the complete
 | `range`          | `Signal<readonly [number, number]>` | The `[firstIndex, lastIndex + 1)` rendered window, `[0, 0]` when empty. Feeds a list primitive's `[visibleRange]`. |
 | `scrollToIndex`  | method                              | Scroll the container so the item at `index` is in view.                                                            |
 | `scrollToOffset` | method                              | Scroll to an absolute pixel offset.                                                                                |
+| `cancelScroll`   | method                              | Stop a `scrollToIndex` / `scrollToOffset` still correcting its position, leaving the container where it is.        |
 | `measureElement` | method                              | Record the measured size of a rendered item element.                                                               |
 
 ## Accessibility
