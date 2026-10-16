@@ -66,6 +66,42 @@ class SubMenuHost {
       <button forDropdownMenuTrigger>Options</button>
       @if (open()) {
         <div forMenuContent>
+          <button id="cut" forMenuItem>Cut</button>
+          <div forMenuSub [(open)]="shareOpen">
+            <button id="share" forMenuSubTrigger>Share</button>
+            @if (shareOpen()) {
+              <div id="share-content" forMenuSubContent>
+                <button id="email" forMenuItem (activate)="lastSelected.set('email')">Email</button>
+              </div>
+            }
+          </div>
+          <div forMenuSub [(open)]="exportOpen">
+            <button id="export" forMenuSubTrigger>Export</button>
+            @if (exportOpen()) {
+              <div id="export-content" forMenuSubContent>
+                <button id="pdf" forMenuItem (activate)="lastSelected.set('pdf')">PDF</button>
+              </div>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  `,
+})
+class SiblingSubMenuHost {
+  readonly open = signal(false);
+  readonly shareOpen = signal(false);
+  readonly exportOpen = signal(false);
+  readonly lastSelected = signal<string | null>(null);
+}
+
+@Component({
+  imports: IMPORTS,
+  template: `
+    <div forDropdownMenu [(open)]="open">
+      <button forDropdownMenuTrigger>Options</button>
+      @if (open()) {
+        <div forMenuContent>
           <div
             forMenuSub
             [(open)]="subOpen"
@@ -1118,7 +1154,22 @@ describe('ForMenuSub', () => {
         expect(document.activeElement?.id).not.toBe('advanced');
       });
 
-      it('a hover-close still does not return focus to the sub-trigger', async () => {
+      it('a hover-close leaves focus where it is when focus is outside the submenu', async () => {
+        const { instance, flush } = renderHost(SubMenuHost);
+        instance.open.set(true);
+        await flush();
+
+        await hoverOpen(flush);
+        const cut = document.querySelector<HTMLElement>('#cut')!;
+        cut.focus();
+
+        await hoverCloseFromContent(flush);
+
+        expect(instance.subOpen()).toBe(false);
+        expect(document.activeElement).toBe(cut);
+      });
+
+      it('a hover-close returns focus to the sub-trigger when focus is inside the submenu', async () => {
         const { instance, flush } = renderHost(SubMenuHost);
         instance.open.set(true);
         await flush();
@@ -1132,7 +1183,28 @@ describe('ForMenuSub', () => {
         await hoverCloseFromContent(flush);
 
         expect(instance.subOpen()).toBe(false);
-        expect(document.activeElement?.id).not.toBe('more');
+        expect(instance.open()).toBe(true);
+        expect(document.activeElement).toBe(more);
+      });
+
+      it('a hover-close after a pointer-click open returns focus to the sub-trigger', async () => {
+        const { instance, flush } = renderHost(SubMenuHost);
+        instance.open.set(true);
+        await flush();
+
+        const more = document.querySelector<HTMLElement>('#more')!;
+        more.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+        more.click();
+        await flush();
+        expect(document.activeElement?.id).toBe('advanced');
+
+        more.dispatchEvent(pointerEvent('pointerleave', { clientX: 999, clientY: 999 }));
+        await flush();
+        vi.advanceTimersByTime(1000);
+        await flush();
+
+        expect(instance.subOpen()).toBe(false);
+        expect(document.activeElement).toBe(more);
       });
 
       it('a keyboard close after a hover-open returns focus to the sub-trigger', async () => {
@@ -1187,6 +1259,111 @@ describe('ForMenuSub', () => {
         expect(instance.open()).toBe(true);
         expect(document.querySelector('#parent-content')).not.toBeNull();
       });
+    });
+  });
+
+  describe('sibling submenus are mutually exclusive', () => {
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => vi.useRealTimers());
+
+    function expandedTriggers(): string[] {
+      return Array.from(document.querySelectorAll('[forMenuSubTrigger][aria-expanded="true"]')).map(
+        (el) => el.id,
+      );
+    }
+
+    function tap(el: HTMLElement): void {
+      el.dispatchEvent(
+        new PointerEvent('pointerdown', { bubbles: true, cancelable: true, pointerType: 'touch' }),
+      );
+      el.click();
+    }
+
+    async function hoverOpenExport(flush: () => Promise<void>): Promise<void> {
+      document.querySelector('#export')!.dispatchEvent(pointerEvent('pointerenter'));
+      await flush();
+      vi.advanceTimersByTime(100);
+      await flush();
+    }
+
+    it('a hover-open closes a keyboard-opened sibling', async () => {
+      const { instance, flush } = renderHost(SiblingSubMenuHost);
+      instance.open.set(true);
+      await flush();
+
+      const share = document.querySelector<HTMLElement>('#share')!;
+      share.focus();
+      pressKey(share, 'ArrowRight');
+      await flush();
+      expect(document.activeElement?.id).toBe('email');
+
+      document.querySelector<HTMLElement>('#cut')!.focus();
+      await hoverOpenExport(flush);
+
+      expect(document.querySelectorAll('[forMenuSubContent]')).toHaveLength(1);
+      expect(document.querySelector('#export-content')).not.toBeNull();
+      expect(expandedTriggers()).toEqual(['export']);
+      expect(instance.open()).toBe(true);
+      expect(document.activeElement?.id).toBe('cut');
+    });
+
+    it('returns focus to the sub-trigger of a closed sibling that held it', async () => {
+      const { instance, flush } = renderHost(SiblingSubMenuHost);
+      instance.open.set(true);
+      await flush();
+
+      const share = document.querySelector<HTMLElement>('#share')!;
+      share.focus();
+      pressKey(share, 'ArrowRight');
+      await flush();
+      expect(document.activeElement?.id).toBe('email');
+
+      await hoverOpenExport(flush);
+
+      expect(expandedTriggers()).toEqual(['export']);
+      expect(document.activeElement).toBe(share);
+    });
+
+    it('a keyboard open closes a hover-opened sibling', async () => {
+      const { instance, flush } = renderHost(SiblingSubMenuHost);
+      instance.open.set(true);
+      await flush();
+
+      await hoverOpenExport(flush);
+      expect(expandedTriggers()).toEqual(['export']);
+
+      const share = document.querySelector<HTMLElement>('#share')!;
+      share.focus();
+      pressKey(share, 'ArrowRight');
+      await flush();
+
+      expect(document.querySelectorAll('[forMenuSubContent]')).toHaveLength(1);
+      expect(expandedTriggers()).toEqual(['share']);
+      expect(document.activeElement?.id).toBe('email');
+      expect(instance.open()).toBe(true);
+    });
+
+    it('tapping a sibling sub-trigger swaps the open submenu, and its item still activates', async () => {
+      const { instance, flush } = renderHost(SiblingSubMenuHost);
+      instance.open.set(true);
+      await flush();
+
+      tap(document.querySelector<HTMLElement>('#share')!);
+      await flush();
+      expect(expandedTriggers()).toEqual(['share']);
+
+      tap(document.querySelector<HTMLElement>('#export')!);
+      await flush();
+
+      expect(document.querySelectorAll('[forMenuSubContent]')).toHaveLength(1);
+      expect(expandedTriggers()).toEqual(['export']);
+      expect(document.activeElement?.id).toBe('pdf');
+      expect(instance.open()).toBe(true);
+
+      tap(document.querySelector<HTMLElement>('#pdf')!);
+      await flush();
+
+      expect(instance.lastSelected()).toBe('pdf');
     });
   });
 

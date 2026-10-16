@@ -274,6 +274,8 @@ Bind `[(open)]="mySignal"` on either level instead only when the component class
 
 Closing semantics propagate upward by default: activating an item inside a submenu (or pressing Tab, or clicking outside both menus) tears down the entire chain. Escape closes only the level that has focus. Inside a submenu, it closes the submenu and returns focus to the `[forMenuSubTrigger]`, leaving the parent open.
 
+A menu keeps one submenu open at a time. Opening a submenu by hover, tap, click or keyboard first closes its open sibling. If focus was inside that sibling, it returns to the sibling's `[forMenuSubTrigger]`, so it never falls to `<body>`.
+
 The submenu's dismissible layer exempts the **parent menu's content**, so clicking on a parent menu item doesn't fire the submenu's outside-handler. Instead, the parent item's own click activates and tears down everything via the propagated `closeMenu`. It also inherits the parent's own exemptions, so the root's triggers (the `[forDropdownMenuTrigger]` button, every `[forMenubarTrigger]`) count as inside at every level. A click on one while a submenu is open reaches the trigger's own click handler with the chain intact: the dropdown button closes the whole chain once, and a menubar trigger closes or switches menus exactly as it does with no submenu open.
 
 ### Pointer (mouse hover)
@@ -281,7 +283,7 @@ The submenu's dismissible layer exempts the **parent menu's content**, so clicki
 Additive to the click / keyboard behaviour, a `[forMenuSubTrigger]` also opens its submenu on **mouse hover**, like native desktop menus:
 
 - **pointerenter** over the sub-trigger opens the submenu after `subMenuOpenDelay` (default `100`ms), **without** moving focus into it (only keyboard / click move focus in).
-- **pointerleave** closes it after `subMenuCloseDelay` (default `100`ms), _unless_ the pointer is travelling toward the open submenu. A pointer-grace "safe triangle" is drawn from the cursor to the submenu's near edge; while the pointer stays inside it (heading to the submenu) the close is held off. The triangle's lifetime is capped by `subMenuPointerGraceDuration` (default `300`ms).
+- **pointerleave** closes it after `subMenuCloseDelay` (default `100`ms), _unless_ the pointer is travelling toward the open submenu. A pointer-grace "safe triangle" is drawn from the cursor to the submenu's near edge; while the pointer stays inside it (heading to the submenu) the close is held off. The triangle's lifetime is capped by `subMenuPointerGraceDuration` (default `300`ms). The close leaves focus where it is, unless focus is inside the submenu: then it returns to the `[forMenuSubTrigger]` and the parent menu keeps responding to the keyboard.
 - Touch / pen never hover, so they open the submenu by tap (the native click). The hover listeners are gated to `pointerType === 'mouse'`.
 
 Tune the timings per injector scope with `provideForMenuDefaults` (applies to every submenu in the surrounding scope, across DropdownMenu / ContextMenu / Menubar):
