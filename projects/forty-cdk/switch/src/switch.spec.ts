@@ -1,6 +1,5 @@
-import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
+import { Component, signal, viewChild } from '@angular/core';
 import { form, FormField, readonly as fieldReadonly, required } from '@angular/forms/signals';
-import { TestBed } from '@angular/core/testing';
 
 import { pressKey } from 'forty-cdk/testing';
 
@@ -486,19 +485,14 @@ describe('ForSwitch', () => {
   });
 
   describe('FormCheckboxControl contract', () => {
-    it('does not expose a `value` property (forbidden by the interface)', () => {
-      TestBed.configureTestingModule({
-        providers: [provideZonelessChangeDetection()],
-      });
+    it('declares no `value` member (forbidden by the interface)', () => {
+      @Component({ imports: [ForSwitch], template: `<button forSwitch></button>` })
+      class HostWithRef {
+        readonly ref = viewChild.required(ForSwitch);
+      }
 
-      @Component({ imports: [ForSwitch], template: `<button forSwitch #ref="forSwitch"></button>` })
-      class HostWithRef {}
-
-      const fixture = TestBed.createComponent(HostWithRef);
-      fixture.detectChanges();
-      const button = fixture.nativeElement.querySelector('button')!;
-      // The host attribute reflects no `value`; rely on the public surface staying clean.
-      expect(button.hasAttribute('value')).toBe(false);
+      const r = renderHost(HostWithRef);
+      expect('value' in r.instance.ref()).toBe(false);
     });
   });
 });
