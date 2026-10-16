@@ -166,9 +166,9 @@ Plain push button. Apply on `<button>` so Enter / Space activate via native sema
 
 Hyperlink. Apply on `<a>`; `Enter` follows the link via native semantics.
 
-| Property   | Type             | Description                                                                                                                                                                                                                                                      |
-| ---------- | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `disabled` | `input<boolean>` | Per-item disabled, in addition to the toolbar's `disabled`. When true the link is announced as `aria-disabled` and activation is suppressed. Because `<a>` has no native `disabled`, it stays focusable and assistive tech still announces it.<br>**Default:** — |
+| Property   | Type             | Description                                                                                                                                                                                                                                                                                    |
+| ---------- | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `disabled` | `input<boolean>` | Per-item disabled, in addition to the toolbar's `disabled`. When true the link is announced as `aria-disabled`, and neither a click nor a middle-click follows its `href`. Because `<a>` has no native `disabled`, it stays focusable and assistive tech still announces it.<br>**Default:** — |
 
 | Data attribute     | Values                     |
 | ------------------ | -------------------------- |
@@ -203,7 +203,7 @@ Implements the [WAI-ARIA Toolbar pattern](https://www.w3.org/WAI/ARIA/apg/patter
 
 - **Single Tab stop that follows focus.** The toolbar takes one place in the tab order; only the entry-point item carries `tabindex="0"`. Before any interaction the entry point is the first enabled item; once you move focus with the arrows (or Home / End), the tab stop follows the last focused item, so Shift+Tab back into the toolbar restores it (matching APG and the Tabs / Tree primitives). Arrow keys move focus inside, Home / End jump to the first / last enabled item.
 - **Always label the toolbar.** Pass the reactive `[ariaLabel]` input (or a native `aria-labelledby` pointing at a visible label element) so screen-reader users know what the toolbar acts on. Not optional: APG requires it.
-- **Disabled items stay focusable.** Both `<button forToolbarButton>` and `<a forToolbarLink>` expose `aria-disabled="true"` and suppress click rather than setting the native `disabled` attribute. Removing an item from the focus order would deviate from APG; users can still hear "disabled". An item disabled while it holds focus (an Undo button with nothing left to undo) keeps the arrow keys, Home and End, so the user can move on without leaving the toolbar.
+- **Disabled items are skipped, not removed.** Both `<button forToolbarButton>` and `<a forToolbarLink>` expose `aria-disabled="true"` and suppress activation rather than setting the native `disabled` attribute. The arrow keys, Home and End skip a disabled item and it never holds the toolbar's Tab stop, but it stays focusable: an item disabled while it holds focus (an Undo button with nothing left to undo) keeps the arrow keys, Home and End, so the user can move on without leaving the toolbar.
 - **Toggle groups don't change roles.** Inside a toolbar, `[forToggleGroup]` keeps `role="group"` (semantically a related set of buttons). The toolbar role lives only on the outer container.
 - **Cross-axis separators.** `[forToolbarSeparator]` defaults to the orientation perpendicular to the toolbar so the line is visible. Override by setting `orientation` explicitly.
 

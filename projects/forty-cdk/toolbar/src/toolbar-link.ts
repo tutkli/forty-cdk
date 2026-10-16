@@ -19,6 +19,7 @@ import { injectToolbarContext } from './toolbar-context';
     '(focus)': 'onFocus()',
     '(keydown)': 'onKeyDown($event)',
     '(click)': 'onClick($event)',
+    '(auxclick)': 'onAuxClick($event)',
   },
 })
 export class ForToolbarLink {
@@ -26,9 +27,9 @@ export class ForToolbarLink {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   /**
-   * Per-item disabled (in addition to the toolbar's `disabled`). Native `<a>`
-   * has no `disabled` attribute — we rely on `aria-disabled` and prevent
-   * navigation in the click handler.
+   * Per-item disabled (in addition to the toolbar's `disabled`). The link is
+   * announced as `aria-disabled`, and neither a click nor a middle-click
+   * follows its `href`.
    */
   readonly disabled = input(false, { transform: booleanAttribute });
 
@@ -43,8 +44,9 @@ export class ForToolbarLink {
    * Tabindex per APG: once any toolbar item has been focused, the roving
    * tracker owns the tab stop so re-entry restores the last focused item;
    * before that, fall back to the first-enabled entry point. Disabled links
-   * are always -1 — they stay arrow-reachable and focusable, they just never
-   * own the toolbar's single Tab stop.
+   * are always -1: they never own the toolbar's single Tab stop, and the arrow
+   * keys, Home and End skip them. They keep DOM focusability, so a link
+   * disabled while focused can still be left with the arrow keys.
    */
   readonly tabindex = computed<-1 | 0>(() => {
     if (this.effectiveDisabled()) {
@@ -72,6 +74,12 @@ export class ForToolbarLink {
     if (this.effectiveDisabled()) {
       event.preventDefault();
       event.stopImmediatePropagation();
+    }
+  }
+
+  private onAuxClick(event: MouseEvent): void {
+    if (event.button === 1) {
+      this.onClick(event);
     }
   }
 
