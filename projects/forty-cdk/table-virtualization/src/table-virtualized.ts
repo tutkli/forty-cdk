@@ -74,7 +74,7 @@ export class ForTableVirtualized {
 
   /**
    * Estimated row size in px along the scroll axis (the fixed-size fast path). A change re-estimates
-   * every row until that row is measured again.
+   * every row not yet measured; a measured row keeps its measured size.
    */
   readonly estimateRowSize = input(44, { transform: numberAttribute });
 

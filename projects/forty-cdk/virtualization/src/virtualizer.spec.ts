@@ -1018,6 +1018,63 @@ describe('injectVirtualizer', () => {
       expect(v.totalSize()).toBe(2000);
       expect(v.virtualItems().find((item) => item.index === 3)?.start).toBe(60);
     });
+
+    @Component({
+      selector: 'keyed-estimate-version-host',
+      template: `
+        <div #scroll style="overflow:auto; height:200px">
+          <div [style.height.px]="v.totalSize()">
+            @for (item of v.virtualItems(); track item.key) {
+              <div [attr.data-index]="item.index">{{ item.index }}</div>
+            }
+          </div>
+        </div>
+      `,
+    })
+    class KeyedEstimateVersionHost {
+      readonly size = signal(40);
+      readonly scrollRef = viewChild<ElementRef<HTMLElement>>('scroll');
+      readonly scrollElement = computed(() => this.scrollRef()?.nativeElement ?? null);
+      readonly v = injectVirtualizer({
+        count: signal(100),
+        estimateSize: () => this.size(),
+        estimateVersion: this.size,
+        getItemKey: (index) => `row-${index}`,
+        scrollElement: this.scrollElement,
+      });
+    }
+
+    for (const [label, host] of [
+      ['index keys', EstimateVersionHost],
+      ['getItemKey', KeyedEstimateVersionHost],
+    ] as const) {
+      it(`keeps a measured size across a version change (${label})`, async () => {
+        const fixture = TestBed.createComponent<EstimateVersionHost | KeyedEstimateVersionHost>(
+          host,
+        );
+        fakeLayoutProps(fixture.nativeElement.querySelector('div') as HTMLElement, 200);
+        fixture.detectChanges();
+        await flush(fixture);
+        const { size, v } = fixture.componentInstance;
+
+        const measured = document.createElement('div');
+        measured.setAttribute('data-index', '0');
+        Object.defineProperty(measured, 'offsetHeight', { configurable: true, value: 100 });
+        Object.defineProperty(measured, 'offsetWidth', { configurable: true, value: 100 });
+        (fixture.nativeElement as HTMLElement).appendChild(measured);
+        v.measureElement(measured);
+        await flush(fixture);
+        expect(v.totalSize()).toBe(100 + 99 * 40);
+
+        size.set(20);
+        await flush(fixture);
+
+        expect(v.measurementFor(0)?.size).toBe(100);
+        expect(v.measurementFor(1)?.size).toBe(20);
+        expect(v.measurementFor(3)?.start).toBe(140);
+        expect(v.totalSize()).toBe(100 + 99 * 20);
+      });
+    }
   });
 
   describe('teardown before the first render', () => {
