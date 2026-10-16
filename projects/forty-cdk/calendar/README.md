@@ -253,7 +253,7 @@ Set `selectionMode="range"` and bind `[(range)]` to get date-range selection. In
 
 **Interaction model.** Click (or `Enter` / `Space`) a first cell to set the anchor; the grid enters selecting state. Click (or `Enter` / `Space`) a second cell **in either direction** to commit the range. Clicking before the anchor commits the inverted band `[click, anchor]` (matching the hover preview) rather than starting over. There is no separate "start over" gesture and no explicit Escape-to-cancel: once a range is committed, the next click begins a fresh anchor, and `range` keeps the committed range until the second click replaces it.
 
-**Keyboard in range mode.** `Enter` / `Space` on the focused cell sets the anchor on the first press and commits on the second (same key as single mode). While selecting, arrow / `Home` / `End` / `PageUp` / `PageDown` move the keyboard focus and update the preview cursor (the keyboard equivalent of pointer hover); moving before the anchor previews (and commits) the inverted band.
+**Keyboard in range mode.** `Enter` / `Space` on the focused cell sets the anchor on the first press and commits on the second (same key as single mode). While selecting, arrow / `Home` / `End` / `PageUp` / `PageDown` move the keyboard focus and update the preview cursor (the keyboard equivalent of pointer hover); moving before the anchor previews (and commits) the inverted band. The preview follows whichever device moved last: a keyboard move, a selection or a page change takes the cursor back from a pointer resting on the grid, and the pointer takes it again when it enters another cell.
 
 **`min` / `max` / `isDateUnavailable`** still gate both endpoints. An unavailable or out-of-bounds date cannot become an anchor or an end.
 
@@ -290,7 +290,7 @@ Set `selectionMode="range"` and bind `[(range)]` to get date-range selection. In
 }
 ```
 
-**`aria-selected`** in range mode is `"true"` across every committed-range cell (inclusive). During selecting (range null), it is `"false"` everywhere.
+**`aria-selected`** in range mode is `"true"` across every committed-range cell (inclusive), and the grid carries `aria-multiselectable="true"`. While a new anchor is pending, `aria-selected` is `"false"` everywhere, but `range` keeps the previously committed range until the second click replaces it.
 
 **Scope.** Range mode is day-granular only: `granularity` / time is orthogonal and not supported alongside it.
 
@@ -573,6 +573,7 @@ Implements the [WAI-ARIA Grid pattern](https://www.w3.org/WAI/ARIA/apg/patterns/
 - **`aria-labelledby`** wires the grid to the heading so it names the visible period. Paging the month is announced through a dedicated off-screen `aria-live="polite"` region (owned by `[forCalendar]`), so the period is read on navigation without the heading double-announcing as both a live region and the grid's label.
 - **`aria-label`** on every cell carries the full localized date (e.g. `"Monday, June 15, 2026"`) so screen readers announce the whole date, not the bare day number that stays the cell's visible content. Outside-month padding days are suffixed (`" (outside month)"`) so they are distinguishable. Override the format via `ForCalendar`'s `dateLabel` input.
 - **`aria-selected`** is always emitted (`"true"` / `"false"`); **`aria-current="date"`** marks today; **`aria-disabled`** marks unavailable dates (truthy-only).
+- **`aria-multiselectable="true"`** is set on the day grid in `selectionMode="range"`, where a committed range selects several cells, and is absent in single mode.
 - **Roving tabindex**: exactly one cell (the focused date) is tabbable. `Tab` enters and leaves the grid in one stop.
 - **Boolean `data-*`** on the cell, present when true and absent when false: `data-selected`, `data-today`, `data-highlighted` (the focused/roving cell), `data-disabled` and `data-outside-month`.
 

@@ -1226,6 +1226,83 @@ describe('ForCalendar', () => {
       expect(adapter.isSameDay(range!.end, JUN_15)).toBe(true);
     });
 
+    describe('a pointer resting on the grid and the keyboard', () => {
+      const hover = (r: RenderResult<CalendarRangeHost>, date: Date) =>
+        rangeCell(r, date).dispatchEvent(new PointerEvent('pointerenter', { bubbles: true }));
+
+      it('an arrow key takes the preview cursor back, so Enter commits the band the grid shows', async () => {
+        const r = renderHost(CalendarRangeHost);
+        const JUN_13 = new Date(2026, 5, 13);
+
+        hover(r, JUN_10);
+        click(rangeCell(r, JUN_10));
+        await flush(r.fixture);
+        for (const day of [10, 11, 12]) {
+          pressKey(rangeCell(r, new Date(2026, 5, day)), 'ArrowRight');
+          await flush(r.fixture);
+        }
+
+        expect(rangeCell(r, JUN_10).hasAttribute('data-range-start')).toBe(true);
+        expect(rangeCell(r, JUN_10).hasAttribute('data-range-end')).toBe(false);
+        expect(rangeCell(r, JUN_13).hasAttribute('data-range-end')).toBe(true);
+        expect(rangeCell(r, new Date(2026, 5, 12)).hasAttribute('data-range-preview')).toBe(true);
+
+        pressKey(rangeCell(r, JUN_13), 'Enter');
+        await flush(r.fixture);
+
+        const range = r.instance.range()!;
+        expect(adapter.isSameDay(range.start, JUN_10)).toBe(true);
+        expect(adapter.isSameDay(range.end, JUN_13)).toBe(true);
+      });
+
+      it('a re-paging key drops the hover of a cell the new month no longer renders', async () => {
+        const r = renderHost(CalendarRangeHost);
+        const JUL_10 = new Date(2026, 6, 10);
+
+        hover(r, JUN_10);
+        click(rangeCell(r, JUN_10));
+        await flush(r.fixture);
+        pressKey(rangeCell(r, JUN_10), 'PageDown');
+        await flush(r.fixture);
+
+        expect(rangeCell(r, JUL_10).hasAttribute('data-range-end')).toBe(true);
+        expect(rangeCell(r, new Date(2026, 6, 1)).hasAttribute('data-range-preview')).toBe(true);
+      });
+
+      it('Enter anchors the preview on the focused cell, not on the hovered one', async () => {
+        const r = renderHost(CalendarRangeHost);
+
+        hover(r, JUN_20);
+        pressKey(rangeCell(r, JUN_10), 'Enter');
+        await flush(r.fixture);
+
+        expect(rangeCell(r, JUN_10).hasAttribute('data-range-start')).toBe(true);
+        expect(rangeCell(r, JUN_10).hasAttribute('data-range-end')).toBe(true);
+        expect(rangeCell(r, JUN_20).hasAttribute('data-range-preview')).toBe(false);
+      });
+
+      it('a pointer entering another cell after the keyboard move reclaims the cursor', async () => {
+        const r = renderHost(CalendarRangeHost);
+
+        hover(r, JUN_10);
+        click(rangeCell(r, JUN_10));
+        await flush(r.fixture);
+        pressKey(rangeCell(r, JUN_10), 'ArrowRight');
+        await flush(r.fixture);
+        hover(r, JUN_15);
+        await flush(r.fixture);
+
+        expect(rangeCell(r, JUN_15).hasAttribute('data-range-end')).toBe(true);
+        expect(rangeCell(r, new Date(2026, 5, 11)).hasAttribute('data-range-end')).toBe(false);
+      });
+    });
+
+    it('marks the grid aria-multiselectable, since a committed band selects several cells', () => {
+      const r = renderHost(CalendarRangeHost);
+
+      expect(r.query('[forCalendarGrid]')!.getAttribute('aria-multiselectable')).toBe('true');
+    });
+
     it('maxRangeLength: clicking past the limit is a no-op, anchor is preserved', async () => {
       const r = renderHost(CalendarRangeHost);
       r.instance.maxRangeLength.set(3);
@@ -1334,6 +1411,12 @@ describe('ForCalendar', () => {
         expect(td.hasAttribute('data-in-range')).toBe(false);
         expect(td.hasAttribute('data-range-preview')).toBe(false);
       }
+    });
+
+    it('leaves aria-multiselectable off the grid in single mode', () => {
+      const r = renderHost(CalendarHost);
+
+      expect(r.query('[forCalendarGrid]')!.hasAttribute('aria-multiselectable')).toBe(false);
     });
 
     it('single-mode value and data-selected are unchanged', async () => {

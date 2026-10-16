@@ -98,6 +98,11 @@ export class CalendarRangeSelection<D> {
     this.#hovered.set(date);
   }
 
+  /** Drop the pointer's claim on the preview cursor, so it follows the focused date again. */
+  clearHover(): void {
+    this.#hovered.set(null);
+  }
+
   /**
    * Apply a click on `date` to the anchor → commit flow. The first click sets
    * the anchor and leaves the committed range untouched until the second click

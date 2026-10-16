@@ -55,7 +55,9 @@ export interface CalendarNavigationHost<D> {
  * {@link IntendedDayCursor} and every focused-date move — single / range
  * selection, month / year paging, direct `goTo`, and the resolved day keyboard
  * move — keeping the intended-day, clamp, and announce machinery in one place
- * instead of scattered across the root and the sub-grids.
+ * instead of scattered across the root and the sub-grids. Every move of the
+ * focused date also drops a pointer hover from the range preview cursor, so the
+ * preview follows the device that moved last.
  *
  * Constructed directly (`new CalendarNavigation(host, seed)`); it holds no
  * injection context, mirroring how `SegmentEditor` is lifted out of the date /
@@ -80,7 +82,7 @@ export class CalendarNavigation<D> {
     if (this.#host.selectionMode() === 'range') {
       if (this.#host.range.select(date)) {
         this.#cursor.setFocusedDay(date);
-        this.#host.focusedDate.set(date);
+        this.#setFocusedDate(date);
         this.#host.focusDayCell(date);
       }
       return;
@@ -131,7 +133,7 @@ export class CalendarNavigation<D> {
       next = this.#host.bounds.clamp(target);
       this.#cursor.setFocusedDay(next);
     }
-    this.#host.focusedDate.set(next);
+    this.#setFocusedDate(next);
     this.#host.focusDayCell(next);
     this.#announcePeriodChange(previousPeriod);
   }
@@ -143,7 +145,7 @@ export class CalendarNavigation<D> {
    */
   moveFocusedDate(target: D): void {
     const previousPeriod = this.#host.periodLabel();
-    this.#host.focusedDate.set(this.#host.bounds.clamp(target));
+    this.#setFocusedDate(this.#host.bounds.clamp(target));
     this.#announcePeriodChange(previousPeriod);
   }
 
@@ -155,11 +157,16 @@ export class CalendarNavigation<D> {
     return adapter.createDate(year, month, day);
   }
 
+  #setFocusedDate(next: D): void {
+    this.#host.range.clearHover();
+    this.#host.focusedDate.set(next);
+  }
+
   #pageTo(target: D): void {
     const previousPeriod = this.#host.periodLabel();
     this.#cursor.sync(this.#host.focusedDate());
     const next = this.#host.bounds.clamp(this.#cursor.apply(target));
-    this.#host.focusedDate.set(next);
+    this.#setFocusedDate(next);
     this.#cursor.markPaged(next);
     this.#announcePeriodChange(previousPeriod);
   }
