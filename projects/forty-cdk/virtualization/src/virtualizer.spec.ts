@@ -1080,6 +1080,125 @@ describe('injectVirtualizer', () => {
     });
   });
 
+  describe('an index scroll still correcting its target', () => {
+    const TARGET = 500;
+    const LANDED = TARGET * 40 + 40 - 200;
+    const CORRECTED = TARGET * 40 + 100 - 200;
+
+    let frames: Map<number, FrameRequestCallback>;
+
+    function runFrames(count: number): void {
+      for (let i = 0; i < count; i++) {
+        const due = [...frames.values()];
+        frames.clear();
+        for (const callback of due) {
+          callback(performance.now());
+        }
+      }
+    }
+
+    async function mount(): Promise<{
+      fixture: ComponentFixture<Host>;
+      el: HTMLElement;
+      writes: number[];
+    }> {
+      frames = new Map();
+      let nextFrame = 0;
+      vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+        frames.set(++nextFrame, callback);
+        return nextFrame;
+      });
+      vi.spyOn(window, 'cancelAnimationFrame').mockImplementation((id) => {
+        frames.delete(id);
+      });
+      const fixture = TestBed.createComponent(Host);
+      const el = fixture.nativeElement.querySelector('div') as HTMLElement;
+      expect(el.ownerDocument.defaultView).toBe(window);
+      fakeLayoutProps(el, 200);
+      let top = 0;
+      const writes: number[] = [];
+      Object.defineProperty(el, 'scrollTop', {
+        configurable: true,
+        get: () => top,
+        set: (value: number) => {
+          top = value;
+        },
+      });
+      el.scrollTo = ((options: ScrollToOptions) => {
+        top = options.top ?? top;
+        writes.push(top);
+        el.dispatchEvent(new Event('scroll'));
+      }) as typeof el.scrollTo;
+      fixture.detectChanges();
+      await flush(fixture);
+      runFrames(6);
+      expect(frames.size).toBe(0);
+      writes.length = 0;
+      return { fixture, el, writes };
+    }
+
+    function growTarget(fixture: ComponentFixture<Host>): void {
+      const row = document.createElement('div');
+      row.setAttribute('data-index', String(TARGET));
+      Object.defineProperty(row, 'offsetHeight', { configurable: true, value: 100 });
+      Object.defineProperty(row, 'offsetWidth', { configurable: true, value: 400 });
+      (fixture.nativeElement as HTMLElement).appendChild(row);
+      fixture.componentInstance.v.measureElement(row);
+    }
+
+    it('rewrites the offset when its target is measured after the first write', async () => {
+      const { fixture, el, writes } = await mount();
+
+      fixture.componentInstance.v.scrollToIndex(TARGET);
+      expect(writes).toEqual([LANDED]);
+
+      growTarget(fixture);
+      runFrames(6);
+
+      expect(writes).toEqual([LANDED, CORRECTED]);
+      expect(el.scrollTop).toBe(CORRECTED);
+    });
+
+    it('a second scrollToIndex replaces the first, which writes nothing more', async () => {
+      const { fixture, el, writes } = await mount();
+      const { v } = fixture.componentInstance;
+
+      v.scrollToIndex(TARGET);
+      v.scrollToIndex(10);
+      growTarget(fixture);
+      runFrames(6);
+
+      expect(writes).toEqual([LANDED, 400]);
+      expect(el.scrollTop).toBe(400);
+    });
+
+    it('a scroll the library did not write retires it', async () => {
+      const { fixture, el, writes } = await mount();
+
+      fixture.componentInstance.v.scrollToIndex(TARGET);
+      el.scrollTop = LANDED - 20;
+      el.dispatchEvent(new Event('scroll'));
+      growTarget(fixture);
+      runFrames(6);
+
+      expect(writes).toEqual([LANDED]);
+      expect(el.scrollTop).toBe(LANDED - 20);
+    });
+
+    it('cancelScroll stops it where it is', async () => {
+      const { fixture, el, writes } = await mount();
+      const { v } = fixture.componentInstance;
+
+      v.scrollToIndex(TARGET);
+      v.cancelScroll();
+      growTarget(fixture);
+      runFrames(6);
+
+      expect(writes).toEqual([LANDED]);
+      expect(el.scrollTop).toBe(LANDED);
+    });
+  });
+
   describe('SSR empty window', () => {
     beforeEach(() => {
       TestBed.configureTestingModule({
@@ -1122,6 +1241,7 @@ describe('injectVirtualizer', () => {
       (fakeEl as HTMLElement & { scrollTo: unknown }).scrollTo = spyScrollTo;
       expect(() => v.scrollToOffset(50)).not.toThrow();
       expect(() => v.scrollToIndex(5)).not.toThrow();
+      expect(() => v.cancelScroll()).not.toThrow();
       expect(() => v.measureElement(fakeEl)).not.toThrow();
       expect(() => v.measureElement(null)).not.toThrow();
       expect(v.measurementFor(0)).toBeNull();

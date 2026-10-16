@@ -207,6 +207,14 @@ export class ForVirtualViewport implements ForVirtualViewportContext, OnInit {
   }
 
   /**
+   * Stop a `scrollToIndex` / `scrollToOffset` that is still running, leaving the container
+   * where it is. No-op until initialized.
+   */
+  cancelScroll(): void {
+    this.#virtualizer()?.cancelScroll();
+  }
+
+  /**
    * Record the measured size of a rendered item element. Passing `null` sweeps
    * detached (recycled) rows from the measurement cache and stops observing
    * them — the viewport already performs this sweep after every render, so a

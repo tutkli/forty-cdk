@@ -953,6 +953,52 @@ class GuardedReorderHost {
   readonly disabledRow = signal<number | null>(null);
 }
 
+describe('ForVirtualReorder — a pointer lift stops a scroll still running (#2492)', () => {
+  afterEach(() => {
+    document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
+  });
+
+  it('cancels the viewport scroll when an armed drag lifts the row', async () => {
+    const cancelScroll = vi.spyOn(ForVirtualViewport.prototype, 'cancelScroll');
+    const { query, flush: f } = await mount();
+
+    query('[data-testid="row-2"]')!.dispatchEvent(pointer('pointerdown', 0, 100));
+    expect(cancelScroll).not.toHaveBeenCalled();
+
+    document.dispatchEvent(pointer('pointermove', 0, 120));
+    expect(cancelScroll).toHaveBeenCalledTimes(1);
+
+    document.dispatchEvent(pointer('pointerup', 0, 120));
+    await f();
+    expect(cancelScroll).toHaveBeenCalledTimes(1);
+  });
+
+  it('cancels nothing for a press that never arms', async () => {
+    const cancelScroll = vi.spyOn(ForVirtualViewport.prototype, 'cancelScroll');
+    const { query, flush: f } = await mount();
+
+    query('[data-testid="row-2"]')!.dispatchEvent(pointer('pointerdown', 0, 100));
+    document.dispatchEvent(pointer('pointerup', 0, 100));
+    await f();
+
+    expect(cancelScroll).not.toHaveBeenCalled();
+  });
+
+  it('cancels nothing when a keyboard lift starts', async () => {
+    const cancelScroll = vi.spyOn(ForVirtualViewport.prototype, 'cancelScroll');
+    const { query, flush: f } = await mount();
+    const row = query('[data-testid="row-2"]')!;
+    row.focus();
+
+    dispatchKey(row, ' ');
+    await f();
+    dispatchKey(row, 'Escape');
+    await f();
+
+    expect(cancelScroll).not.toHaveBeenCalled();
+  });
+});
+
 describe('ForVirtualReorder — the pointer guard set matches the sibling coordinators (#1697)', () => {
   afterEach(() => {
     document.querySelectorAll('[aria-live]').forEach((n) => n.remove());

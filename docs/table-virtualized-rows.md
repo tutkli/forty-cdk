@@ -161,6 +161,7 @@ Consumers of the wrapper then bind `[scrollContainer]="shell"`.
 | `range()`                      | `Signal<readonly [number, number]>` | The rendered window as `[firstIndex, lastIndex + 1)`, sourced from the true virtualizer window (not the focus-augmented `virtualRows()`). Plugs straight into `injectInfiniteScroll`. |
 | `totalSize()`                  | `Signal<number>`                    | Total scroll height of all rows in px. Bind to the body container height.                                                                                                             |
 | `scrollToRow(index, options?)` | method                              | Scroll the container so row `index` is in view.                                                                                                                                       |
+| `cancelScroll()`               | method                              | Stop a `scrollToRow` still correcting its position, leaving the container where it is.                                                                                                |
 | `measureRow(el)`               | method                              | Record a rendered row element's measured size (for dynamic row heights).                                                                                                              |
 
 ## Tree-shaking

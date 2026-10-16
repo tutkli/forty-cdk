@@ -462,6 +462,7 @@ export class ForVirtualReorder {
       return false;
     }
     this.#cancelPendingFocus();
+    this.#viewport.cancelScroll();
     this.#mode = 'pointer';
     this.#viewport.setReorderingIndex(this.#absoluteIndex(host));
     return true;

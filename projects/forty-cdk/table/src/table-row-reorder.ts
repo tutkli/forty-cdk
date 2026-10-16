@@ -554,6 +554,7 @@ export class ForTableRowReorder {
     }
     this.#pendingFocus?.cancel();
     this.#pendingFocus = null;
+    this.#registration.virtualRowNavigation()?.cancelScroll();
     this.#mode = 'pointer';
     const handle = this.#registration.rows().find((r) => r.host === rowHost);
     this.#registration.setReorderingRow(handle?.virtualIndex() ?? null);

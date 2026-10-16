@@ -561,6 +561,50 @@ describe('ForTableRowReorder — the pointer pin follows the armed session (#169
   });
 });
 
+describe('ForTableRowReorder — a pointer lift stops a scroll still running (#2492)', () => {
+  afterEach(() => {
+    document.querySelectorAll('[aria-live]').forEach((node) => node.remove());
+  });
+
+  async function liftHarness() {
+    const harness = await render(SvgGrabTargetHost);
+    const root = harness.fixture.nativeElement as HTMLElement;
+    return {
+      ...harness,
+      press: (index: number, y: number) =>
+        root
+          .querySelector<HTMLElement>(`[data-testid="row-${index}"]`)!
+          .dispatchEvent(pointer('pointerdown', 0, y)),
+    };
+  }
+
+  it('cancels the virtualizer scroll when an armed drag lifts the row', async () => {
+    const cancelScroll = vi.spyOn(ForTableVirtualized.prototype, 'cancelScroll');
+    const { press, settle } = await liftHarness();
+
+    press(2, 100);
+    expect(cancelScroll).not.toHaveBeenCalled();
+
+    document.dispatchEvent(pointer('pointermove', 0, 120));
+    expect(cancelScroll).toHaveBeenCalledTimes(1);
+
+    document.dispatchEvent(pointer('pointerup', 0, 120));
+    await settle();
+    expect(cancelScroll).toHaveBeenCalledTimes(1);
+  });
+
+  it('cancels nothing for a press that never arms', async () => {
+    const cancelScroll = vi.spyOn(ForTableVirtualized.prototype, 'cancelScroll');
+    const { press, settle } = await liftHarness();
+
+    press(2, 100);
+    document.dispatchEvent(pointer('pointerup', 0, 100));
+    await settle();
+
+    expect(cancelScroll).not.toHaveBeenCalled();
+  });
+});
+
 @Component({
   imports: [
     ForTable,

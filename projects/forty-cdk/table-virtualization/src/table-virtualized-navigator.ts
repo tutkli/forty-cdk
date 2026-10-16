@@ -24,6 +24,8 @@ export interface TableVirtualizedNavigatorDeps {
   readonly rows: Signal<readonly ForTableRowHandle[]>;
   /** Scroll the virtualizer so the row at the absolute index mounts. */
   readonly scrollToRow: (index: number) => void;
+  /** Stop a scroll `scrollToRow` started that is still running. When absent, nothing is stopped. */
+  readonly cancelScroll?: () => void;
   /** The scroll container's bounding rect, or `null` before it is available. */
   readonly scrollViewportRect: () => DOMRect | null;
   /**
@@ -114,6 +116,11 @@ export class TableVirtualizedNavigator {
   /** Scroll the virtualizer so the row at the absolute `index` is in the window. */
   scrollToRow(index: number): void {
     this.#deps.scrollToRow(index);
+  }
+
+  /** Stop a scroll {@link scrollToRow} started that is still running. */
+  cancelScroll(): void {
+    this.#deps.cancelScroll?.();
   }
 
   /** Whether the virtualizer's own window covers the row at the absolute `index`. */
