@@ -67,7 +67,8 @@ export interface ForDialogOpenConfig<D = unknown> {
   /**
    * Explicit element focus returns to on close. Omit it (the default) and the
    * manager resolves the true origin automatically — the trigger that opened
-   * the modal chain, threaded across a close→open swap so a confirm dialog
+   * the modal chain, threaded across a swap in either order (`ref.close()`
+   * then `open()`, or `open()` then `ref.close()`) so a confirm dialog
    * replacing a form dialog restores focus to the original trigger rather than
    * dropping it to `<body>`. Pass an element to override that
    * resolution, or `null` to opt out entirely and fall back to the element the
@@ -265,10 +266,7 @@ export class ForDialogManager extends OverlayManagerCore<ForDialogEntry> {
   ): ForDialogRef<R> {
     const { id, remove } = this.nextId();
 
-    const returnFocusTarget =
-      config.returnFocusTarget !== undefined
-        ? config.returnFocusTarget
-        : this.resolveReturnFocusTarget();
+    const returnFocusTarget = this.resolveReturnFocusTarget(config.returnFocusTarget);
 
     const defaults = config.injector
       ? config.injector.get(FOR_DIALOG_DEFAULTS, this.#defaults)

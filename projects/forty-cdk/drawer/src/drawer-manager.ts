@@ -76,7 +76,8 @@ export interface ForDrawerOpenConfig<D = unknown> {
   /**
    * Explicit element focus returns to on close. Omit it (the default) and the
    * manager resolves the true origin automatically — the trigger that opened
-   * the drawer chain, threaded across a close→open swap so a drawer replacing
+   * the drawer chain, threaded across a swap in either order (`ref.close()`
+   * then `open()`, or `open()` then `ref.close()`) so a drawer replacing
    * another restores focus to the original trigger rather than dropping it to
    * `<body>`. Pass an element to override that resolution, or `null` to
    * opt out entirely and fall back to the element the drawer captures at
@@ -345,10 +346,7 @@ export class ForDrawerManager extends OverlayManagerCore<ForDrawerEntry> {
 
     const { id, remove } = this.nextId();
 
-    const returnFocusTarget =
-      config.returnFocusTarget !== undefined
-        ? config.returnFocusTarget
-        : this.resolveReturnFocusTarget();
+    const returnFocusTarget = this.resolveReturnFocusTarget(config.returnFocusTarget);
 
     const defaults = config.injector
       ? config.injector.get(FOR_DRAWER_DEFAULTS, this.#defaults)

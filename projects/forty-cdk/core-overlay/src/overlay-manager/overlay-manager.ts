@@ -13,11 +13,13 @@ import {
   type ProviderToken,
   type Signal,
   signal,
+  untracked,
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 
 import {
   composedClosest,
+  composedContains,
   FOR_FIELD_ANCHOR_CONTEXT,
   FOR_FIELD_CONTEXT,
   IdGenerator,
@@ -34,7 +36,9 @@ import type { OverlayRef } from './overlay-ref';
  * entry's ref and reads its `isClosed` flag (to tell a still-open parent apart
  * from one being swapped out during return-focus origin resolution), so the
  * base requires just those two members — both reason-agnostic, so the base
- * stays independent of each ref's close-reason union.
+ * stays independent of each ref's close-reason union. `returnFocusTarget` is
+ * the target threaded to the directive, which the core rewrites when the
+ * overlay it points into closes first.
  *
  * Internal core tier — exported from `forty-cdk/core` for the library's own
  * entry points, with no semver guarantee.
@@ -42,6 +46,7 @@ import type { OverlayRef } from './overlay-ref';
 export interface OverlayManagerEntry {
   readonly id: string;
   readonly ref: Pick<OverlayRef, 'close' | 'isClosed'>;
+  readonly returnFocusTarget?: HTMLElement | null;
 }
 
 /**
@@ -162,6 +167,7 @@ export class OverlayManagerCore<TEntry extends OverlayManagerEntry> {
   #outletRef: ComponentRef<OverlayManagerOutlet<TEntry>> | null = null;
   #destroying = false;
   #lastReturnFocusOrigin: HTMLElement | null = null;
+  #pendingRemovals = 0;
 
   constructor(config: OverlayManagerConfig<TEntry>) {
     this.#config = config;
@@ -182,17 +188,21 @@ export class OverlayManagerCore<TEntry extends OverlayManagerEntry> {
    * - **Genuine outside element** (focus is on the trigger, not inside any
    *   managed overlay host) → that element is the origin.
    * - **Inside a still-live managed overlay** (a stacked open on top of an open
-   *   overlay) → return focus into that live parent, so the origin is the
-   *   focused element itself.
+   *   overlay, or an open→close swap) → the focused element itself. Should that
+   *   overlay close first, `beginLeave` hands its own origin to this entry.
    * - **Inside an overlay that is closing / already gone** (a close→open swap:
    *   its ref is closed, or it has left the entries list but its DOM host is
-   *   still mounted for this tick) → inherit the chain's origin, i.e. the
-   *   origin resolved for the most recent open.
+   *   still mounted for this tick) → inherit the chain's origin.
    * - **No usable focus** (`<body>` / `documentElement` / none) → inherit the
    *   chain's origin too.
    *
-   * The resolved origin is remembered so the next swap in the chain can inherit
-   * it. Callers may bypass this and thread a caller-chosen element instead.
+   * The chain's origin is inherited only while the chain is alive (some
+   * overlay is still registered, or one was removed in the current task) and
+   * only while it is still in the document; otherwise the result is `null`.
+   *
+   * `explicit` is the caller's `returnFocusTarget`, returned as is when it is
+   * not `undefined`. An explicit element still becomes the chain's origin, so
+   * a swap out of that overlay inherits it.
    *
    * Both halves of the resolution read the composed tree: the capture
    * descends through open shadow roots, so a trigger inside one is the origin
@@ -201,18 +211,18 @@ export class OverlayManagerCore<TEntry extends OverlayManagerEntry> {
    * deep element while classifying it with a plain `closest` would report every
    * shadow-nested trigger as an outside element.
    */
-  protected resolveReturnFocusTarget(): HTMLElement | null {
+  protected resolveReturnFocusTarget(explicit?: HTMLElement | null): HTMLElement | null {
     const active = resolveActiveElement(this.#document);
     const captured = active instanceof HTMLElement ? active : null;
-    const origin = this.#computeReturnFocusOrigin(captured);
-    this.#lastReturnFocusOrigin = origin;
-    return origin;
+    const resolved = untracked(() => this.#computeReturnFocusOrigin(captured));
+    this.#lastReturnFocusOrigin = explicit ?? resolved;
+    return explicit === undefined ? resolved : explicit;
   }
 
   #computeReturnFocusOrigin(captured: HTMLElement | null): HTMLElement | null {
     const { body, documentElement } = this.#document;
     if (captured === null || captured === body || captured === documentElement) {
-      return this.#lastReturnFocusOrigin;
+      return this.#chainOrigin();
     }
     const { idAttribute, backdropAttribute } = this.#config;
     const host = composedClosest(captured, `[${idAttribute}]:not([${backdropAttribute}])`);
@@ -223,7 +233,61 @@ export class OverlayManagerCore<TEntry extends OverlayManagerEntry> {
     const parentStillOpen = this.#entries().some(
       (entry) => entry.id === hostId && !entry.ref.isClosed(),
     );
-    return parentStillOpen ? captured : this.#lastReturnFocusOrigin;
+    return parentStillOpen ? captured : this.#chainOrigin();
+  }
+
+  #chainOrigin(): HTMLElement | null {
+    const origin = this.#lastReturnFocusOrigin;
+    if (origin !== null && !origin.isConnected) {
+      this.#lastReturnFocusOrigin = null;
+      return null;
+    }
+    return this.#entries().length > 0 || this.#pendingRemovals > 0 ? origin : null;
+  }
+
+  #handOffReturnFocus(id: string): void {
+    const entries = this.#entries();
+    const closing = entries.find((entry) => entry.id === id);
+    if (closing === undefined) {
+      return;
+    }
+    const origin = closing.returnFocusTarget ?? null;
+    const host = this.#surfaces.get(id)?.host ?? null;
+    const inside = (target: HTMLElement | null | undefined): boolean =>
+      host !== null && target != null && composedContains(host, target);
+    if (origin !== null || inside(this.#lastReturnFocusOrigin)) {
+      this.#lastReturnFocusOrigin = origin;
+    }
+    if (host === null) {
+      return;
+    }
+    let handedOff = false;
+    const next = entries.map((entry) => {
+      if (entry.id === id || entry.ref.isClosed() || !inside(entry.returnFocusTarget)) {
+        return entry;
+      }
+      handedOff = true;
+      return { ...entry, returnFocusTarget: origin };
+    });
+    if (handedOff) {
+      this.#entries.set(next);
+    }
+  }
+
+  #releaseChainAfterTask(): void {
+    if (this.#destroying || !this.#isBrowser) {
+      if (this.#entries().length === 0) {
+        this.#lastReturnFocusOrigin = null;
+      }
+      return;
+    }
+    this.#pendingRemovals += 1;
+    setTimeout(() => {
+      this.#pendingRemovals -= 1;
+      if (this.#pendingRemovals === 0 && this.#entries().length === 0) {
+        this.#lastReturnFocusOrigin = null;
+      }
+    }, 0);
   }
 
   /**
@@ -241,12 +305,15 @@ export class OverlayManagerCore<TEntry extends OverlayManagerEntry> {
       removed = true;
       this.#surfaces.delete(id);
       this.#entries.update((arr) => arr.filter((e) => e.id !== id));
+      untracked(() => this.#releaseChainAfterTask());
     };
     return { id, remove };
   }
 
   /**
-   * Drives the exit animation on the overlay root and, in lockstep,
+   * Hands the closing entry's return-focus origin on (see
+   * `resolveReturnFocusTarget`), then drives the exit animation on the overlay
+   * root and, in lockstep,
    * on the portaled backdrop (both resolved from the `OverlaySurface` stored at
    * attach time — the backdrop's template `animate.leave` never fires under the
    * manager's `ngComponentOutlet` mount), then calls `remove`. Runs `remove`
@@ -260,6 +327,9 @@ export class OverlayManagerCore<TEntry extends OverlayManagerEntry> {
     backdropLeaveClass: string | undefined,
     remove: () => void,
   ): void {
+    if (!this.#destroying) {
+      untracked(() => this.#handOffReturnFocus(id));
+    }
     if (this.#destroying || typeof requestAnimationFrame === 'undefined') {
       remove();
       return;

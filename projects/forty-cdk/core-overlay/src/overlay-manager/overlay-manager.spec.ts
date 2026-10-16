@@ -98,6 +98,24 @@ class TestManager extends OverlayManagerCore<TestEntry> {
     return { ref, id };
   }
 
+  openTracked(explicit?: HTMLElement | null): { ref: OverlayRef; id: string } {
+    const { id, remove } = this.nextId();
+    const returnFocusTarget = this.resolveReturnFocusTarget(explicit);
+    const ref = new OverlayRef(
+      () => this.beginLeave(id, undefined, undefined, remove),
+      'programmatic',
+    );
+    const entry: TestEntry = {
+      id,
+      ref,
+      returnFocusTarget,
+      component: TestOverlayOutlet,
+      injectorFor: this.createInjectorFactory([]),
+    };
+    this.register(entry);
+    return { ref, id };
+  }
+
   exposeInjectorFactory(providers: readonly Provider[]): (parent: Injector) => Injector {
     return this.createInjectorFactory(providers);
   }
@@ -410,13 +428,14 @@ describe('OverlayManagerCore', () => {
       const trigger = document.createElement('button');
       document.body.appendChild(trigger);
       const orphanHost = document.createElement('div');
-      orphanHost.setAttribute('data-test-overlay-id', 'gone');
       const inner = document.createElement('button');
       orphanHost.appendChild(inner);
       document.body.appendChild(orphanHost);
       try {
         trigger.focus();
-        expect(manager.exposeResolveReturnFocusTarget()).toBe(trigger);
+        const { ref, id } = manager.openTracked();
+        orphanHost.setAttribute('data-test-overlay-id', id);
+        ref.close();
 
         inner.focus();
         expect(manager.exposeResolveReturnFocusTarget()).toBe(trigger);
@@ -449,7 +468,40 @@ describe('OverlayManagerCore', () => {
       }
     });
 
-    it('inherits the chain origin when nothing is focused (body)', () => {
+    it('inherits the chain origin when nothing is focused during a swap (body)', () => {
+      const manager = makeManager();
+      const trigger = document.createElement('button');
+      document.body.appendChild(trigger);
+      try {
+        trigger.focus();
+        const { ref } = manager.openTracked();
+        ref.close();
+
+        trigger.blur();
+        expect(manager.exposeResolveReturnFocusTarget()).toBe(trigger);
+      } finally {
+        trigger.remove();
+      }
+    });
+
+    it('drops the chain origin once the task that closed the last overlay ends', async () => {
+      const manager = makeManager();
+      const trigger = document.createElement('button');
+      document.body.appendChild(trigger);
+      try {
+        trigger.focus();
+        const { ref } = manager.openTracked();
+        ref.close();
+        await nextMacrotask();
+
+        trigger.blur();
+        expect(manager.exposeResolveReturnFocusTarget()).toBeNull();
+      } finally {
+        trigger.remove();
+      }
+    });
+
+    it('returns null for a body capture with no overlay ever opened', () => {
       const manager = makeManager();
       const trigger = document.createElement('button');
       document.body.appendChild(trigger);
@@ -458,8 +510,103 @@ describe('OverlayManagerCore', () => {
         expect(manager.exposeResolveReturnFocusTarget()).toBe(trigger);
 
         trigger.blur();
+        expect(manager.exposeResolveReturnFocusTarget()).toBeNull();
+      } finally {
+        trigger.remove();
+      }
+    });
+
+    it('does not inherit a chain origin that has left the document', () => {
+      const manager = makeManager();
+      const trigger = document.createElement('button');
+      document.body.appendChild(trigger);
+      trigger.focus();
+      const { ref } = manager.openTracked();
+      trigger.remove();
+      ref.close();
+
+      expect(manager.exposeResolveReturnFocusTarget()).toBeNull();
+    });
+
+    it('records an explicit target as the chain origin a swap out of it inherits', () => {
+      const manager = makeManager();
+      const trigger = document.createElement('button');
+      const explicit = document.createElement('button');
+      document.body.append(trigger, explicit);
+      try {
+        trigger.focus();
+        const { ref } = manager.openTracked(explicit);
+        ref.close();
+
+        trigger.blur();
+        expect(manager.exposeResolveReturnFocusTarget()).toBe(explicit);
+      } finally {
+        trigger.remove();
+        explicit.remove();
+      }
+    });
+
+    it('hands the closing overlay its origin to an overlay whose target lies inside it (open before close)', () => {
+      const manager = makeManager();
+      const trigger = document.createElement('button');
+      const firstHost = document.createElement('div');
+      const next = document.createElement('button');
+      firstHost.appendChild(next);
+      document.body.append(trigger, firstHost);
+      try {
+        trigger.focus();
+        const first = manager.openTracked();
+        firstHost.setAttribute('data-test-overlay-id', first.id);
+        manager.lastOutlet!.host!.registerSurface(first.id, {
+          host: firstHost,
+          backdrop: () => null,
+        });
+
+        next.focus();
+        const second = manager.openTracked();
+        const targetOf = (id: string): HTMLElement | null | undefined =>
+          manager.lastOutlet!.host!.entries().find((entry) => entry.id === id)?.returnFocusTarget;
+        expect(targetOf(second.id)).toBe(next);
+
+        first.ref.close();
+
+        expect(targetOf(second.id)).toBe(trigger);
+        trigger.blur();
+        second.ref.close();
         expect(manager.exposeResolveReturnFocusTarget()).toBe(trigger);
       } finally {
+        firstHost.remove();
+        trigger.remove();
+      }
+    });
+
+    it('leaves a stacked overlay target alone when the overlay it points into stays open', () => {
+      const manager = makeManager();
+      const trigger = document.createElement('button');
+      const firstHost = document.createElement('div');
+      const next = document.createElement('button');
+      firstHost.appendChild(next);
+      document.body.append(trigger, firstHost);
+      try {
+        trigger.focus();
+        const first = manager.openTracked();
+        firstHost.setAttribute('data-test-overlay-id', first.id);
+        manager.lastOutlet!.host!.registerSurface(first.id, {
+          host: firstHost,
+          backdrop: () => null,
+        });
+        next.focus();
+        const second = manager.openTracked();
+        const third = manager.openTracked(document.createElement('button'));
+
+        third.ref.close();
+
+        expect(
+          manager.lastOutlet!.host!.entries().find((entry) => entry.id === second.id)
+            ?.returnFocusTarget,
+        ).toBe(next);
+      } finally {
+        firstHost.remove();
         trigger.remove();
       }
     });
@@ -503,7 +650,6 @@ describe('OverlayManagerCore', () => {
         const trigger = document.createElement('button');
         document.body.appendChild(trigger);
         const orphanHost = document.createElement('div');
-        orphanHost.setAttribute('data-test-overlay-id', 'gone');
         const widget = document.createElement('shadow-widget');
         orphanHost.appendChild(widget);
         const inner = document.createElement('button');
@@ -511,7 +657,9 @@ describe('OverlayManagerCore', () => {
         document.body.appendChild(orphanHost);
         try {
           trigger.focus();
-          expect(manager.exposeResolveReturnFocusTarget()).toBe(trigger);
+          const { ref, id } = manager.openTracked();
+          orphanHost.setAttribute('data-test-overlay-id', id);
+          ref.close();
 
           inner.focus();
           expect(manager.exposeResolveReturnFocusTarget()).toBe(trigger);

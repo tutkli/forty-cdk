@@ -180,6 +180,7 @@ export class MenuOpenerRegistry {
   readonly #entries = signal<readonly MenuOpenerEntry[]>([]);
   readonly #activeElement = signal<HTMLElement | null>(null);
   #returnFocusTarget: HTMLElement | null = null;
+  #activatedSinceMount = false;
 
   readonly #active = computed<MenuOpenerEntry | null>(() => {
     const entries = this.#entries();
@@ -305,13 +306,21 @@ export class MenuOpenerRegistry {
   activate(element: HTMLElement, returnFocusTarget: HTMLElement | null = null): void {
     this.#activeElement.set(element);
     this.#returnFocusTarget = returnFocusTarget;
+    this.#activatedSinceMount = true;
+  }
+
+  mountSurface(): void {
+    if (!this.#activatedSinceMount) {
+      this.#returnFocusTarget = null;
+    }
+    this.#activatedSinceMount = false;
   }
 
   /**
    * The return-focus target of the current open: the one {@link activate}
-   * recorded while it is still in the document, else the active opener. Read at
-   * close time rather than derived, because a menu action may remove the
-   * recorded element from the document.
+   * recorded for it while it is still in the document, else the active opener.
+   * Read at close time rather than derived, because a menu action may remove
+   * the recorded element from the document.
    */
   returnFocusTarget(): HTMLElement | null {
     const target = this.#returnFocusTarget;
