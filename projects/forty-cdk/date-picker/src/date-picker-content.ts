@@ -88,8 +88,8 @@ export class ForDatePickerContent {
       this.modal = injectModalShell({
         modal: ctx.modal,
         returnFocus: ctx.returnFocus,
-        // Land on the calendar's active cell with a first-focusable fallback,
-        // matching the non-modal path below — both modes focus the same cell.
+        // Land on the calendar's active cell, falling back to the dialog
+        // container — both modes focus the same cell.
         initialFocus: {
           move: () => ctx.focusCalendarCell(),
           veto: () => ctx.emitAutoFocusOnOpen(),
@@ -147,7 +147,7 @@ export class ForDatePickerContent {
         }),
       },
       // Move focus to the calendar's roving cell on open; the shell falls back
-      // to the first focusable descendant when no cell is found.
+      // to the content host when no cell is found.
       initialFocus: {
         move: () => ctx.focusCalendarCell(),
         veto: () => ctx.emitAutoFocusOnOpen(),

@@ -45,7 +45,8 @@ import { FOR_DATE_PICKER_DEFAULTS } from 'forty-cdk/defaults';
  *
  * The root is the form value: it implements `FormValueControl<D | null>`, so it auto-wires with
  * `[formField]` and auto-associates inside a `[forField]`. The trigger is the focusable control
- * carrying `name` / `disabled` / `invalid`.
+ * carrying `disabled` / `invalid` / `required` / `readonly`; `name` submits the value through a
+ * hidden input mounted after the root.
  *
  * The surface defaults to a non-modal popover anchored to the trigger, dismissed on Escape or an
  * outside pointer, returning focus on close; set `modal` for the trapped, inert, scroll-locked
