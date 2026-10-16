@@ -469,7 +469,7 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
       visibleNodes: this.#visibleEntries,
       visibleHandles: this.#visibleHandles,
       selectOnFocus: (value) => {
-        if (this.selectionFollowsFocus() && !this.multiSelect()) {
+        if (this.selectionFollowsFocus() && !this.multiSelect() && !isUnset(value)) {
           this.value.set([value]);
           this.#anchorValue.set(value);
         }
@@ -492,11 +492,11 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
   }
 
   isExpanded(value: T): boolean {
-    return this.#isExpanded()(value);
+    return !isUnset(value) && this.#isExpanded()(value);
   }
 
   isSelected(value: T): boolean {
-    return this.#isSelected()(value);
+    return !isUnset(value) && this.#isSelected()(value);
   }
 
   /**
@@ -677,7 +677,11 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
     if (items.length === 0) return;
     const ordered = [...items].sort((a, b) => (a.itemIndex() ?? 0) - (b.itemIndex() ?? 0));
     const isSelected = this.#isSelected();
-    const selectedFirst = ordered.find((h) => !h.disabled() && isSelected(h.value()));
+    const selectedFirst = ordered.find((h) => {
+      if (h.disabled()) return false;
+      const value = h.value();
+      return !isUnset(value) && isSelected(value);
+    });
     const target = selectedFirst ?? ordered.find((h) => !h.disabled());
     if (target) this.#setActiveId(target.id());
   }

@@ -3804,6 +3804,70 @@ describe('ForTree', () => {
       readonly open = signal<readonly string[]>([]);
     }
 
+    @Component({
+      imports: [ForTree, ForTreeItem, ForTreeItemLabel, ForTreeItemToggle, ForTreeGroup],
+      template: `
+        <ul forTree [(value)]="picked" [(expanded)]="open" [selectionFollowsFocus]="true">
+          <li forTreeItem value="parent" data-test-id="parent">
+            <div forTreeItemLabel><span forTreeItemToggle>▸</span>Parent</div>
+            <ul forTreeGroup>
+              <li forTreeItem data-test-id="pending">
+                <div forTreeItemLabel>Pending</div>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      `,
+    })
+    class FollowFocusUnboundChildHost {
+      readonly picked = signal<readonly string[]>([]);
+      readonly open = signal<readonly string[]>(['parent']);
+    }
+
+    @Component({
+      imports: [ForTree, ForTreeItem, ForTreeItemLabel],
+      template: `
+        <ul forTree [(value)]="picked" [(expanded)]="open" [compareWith]="compareWith" multiple>
+          <li forTreeItem value="apple" data-test-id="apple">
+            <div forTreeItemLabel>Apple</div>
+          </li>
+          <li forTreeItem data-test-id="pending">
+            <div forTreeItemLabel>Pending</div>
+          </li>
+        </ul>
+      `,
+    })
+    class UnboundCompareWithHost {
+      readonly picked = signal<readonly string[]>(['apple']);
+      readonly open = signal<readonly string[]>(['apple']);
+      readonly compareWith = vi.fn((a: string, b: string) => a === b);
+    }
+
+    @Component({
+      imports: [ForTree, ForTreeItem, ForTreeItemLabel],
+      template: `
+        <ul
+          forTree
+          data-test-tree
+          [(value)]="picked"
+          [compareWith]="compareWith"
+          [totalCount]="2"
+          aria-label="Virtual"
+        >
+          <li forTreeItem [itemIndex]="0" [level]="1" [setSize]="2" [posInSet]="1">
+            <div forTreeItemLabel>Pending</div>
+          </li>
+          <li forTreeItem value="apple" [itemIndex]="1" [level]="1" [setSize]="2" [posInSet]="2">
+            <div forTreeItemLabel>Apple</div>
+          </li>
+        </ul>
+      `,
+    })
+    class VirtualUnboundHost {
+      readonly picked = signal<readonly string[]>(['apple']);
+      readonly compareWith = vi.fn((a: string, b: string) => a === b);
+    }
+
     it('fails loudly when an item carries no value binding at all', () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(UnboundItemHost);
@@ -3856,6 +3920,44 @@ describe('ForTree', () => {
       await flush(fixture);
 
       expect(instance.picked()).toEqual(['apple']);
+    });
+
+    it('does not commit the sentinel when focus follows into an unbound child in a production build', async () => {
+      vi.stubGlobal('ngDevMode', false);
+      const { el, fixture, instance } = renderHost(FollowFocusUnboundChildHost);
+      await flush(fixture);
+
+      itemOf(el, 'parent').focus();
+      await flush(fixture);
+      pressKey(itemOf(el, 'parent'), 'ArrowRight');
+      await flush(fixture);
+
+      expect(document.activeElement).toBe(itemOf(el, 'pending'));
+      expect(instance.picked()).toEqual([]);
+    });
+
+    it('never hands the sentinel to compareWith from an unbound item in a production build', async () => {
+      vi.stubGlobal('ngDevMode', false);
+      const { fixture, instance } = renderHost(UnboundCompareWithHost);
+      await flush(fixture);
+
+      expect(instance.compareWith).toHaveBeenCalled();
+      expect(instance.compareWith.mock.calls.flat().some(isUnset)).toBe(false);
+    });
+
+    it('never hands the sentinel to compareWith when a virtualized tree seeds its active item on focus', async () => {
+      vi.stubGlobal('ngDevMode', false);
+      const { el, fixture, instance } = renderHost(VirtualUnboundHost);
+      await flush(fixture);
+      instance.compareWith.mockClear();
+
+      el.querySelector<HTMLElement>('[data-test-tree]')!.dispatchEvent(
+        new FocusEvent('focusin', { bubbles: true }),
+      );
+      await flush(fixture);
+
+      expect(instance.compareWith).toHaveBeenCalled();
+      expect(instance.compareWith.mock.calls.flat().some(isUnset)).toBe(false);
     });
 
     it('ignores a sentinel handed to select() instead of committing it', async () => {

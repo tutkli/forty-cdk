@@ -94,6 +94,9 @@ export class RangeSelectionEngine<T, H extends RangeSelectionOptionHandle<T>> {
    * it before delegating.
    */
   selectSingle(value: T): void {
+    if (isUnset(value)) {
+      return;
+    }
     const current = this.#deps.value();
     if (current.length === 1 && isInArray(current, value, this.#deps.compareWith())) {
       return;
