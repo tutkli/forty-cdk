@@ -18,6 +18,7 @@ import {
   type FloatingCustomProperties,
   injectFloatingCustomProperties,
 } from './floating-custom-properties';
+import { isFloatingRtl } from './floating-direction';
 import { runPositioning } from './run-positioning';
 
 const PLACEMENT_OPPOSITE: Record<FloatingSide, FloatingSide> = {
@@ -222,14 +223,17 @@ function splitPlacement(p: Placement): { side: FloatingSide; align: FloatingAlig
  * Compute the CSS `transform-origin` so a CSS scale animates outward from
  * the anchor edge. With `side: 'bottom', align: 'start'` the origin is
  * `left top` — a `scale(0.95)` collapses toward the trigger's bottom-left
- * corner.
+ * corner. Under `rtl` the inline axis mirrors, so the same placement pivots
+ * from `right top`.
  */
-function transformOriginFor(side: FloatingSide, align: FloatingAlign): string {
+function transformOriginFor(side: FloatingSide, align: FloatingAlign, rtl: boolean): string {
   let x: 'left' | 'right' | 'center';
   let y: 'top' | 'bottom' | 'center';
   if (side === 'top' || side === 'bottom') {
     y = side === 'top' ? 'bottom' : 'top';
-    x = align === 'start' ? 'left' : align === 'end' ? 'right' : 'center';
+    const start = rtl ? 'right' : 'left';
+    const end = rtl ? 'left' : 'right';
+    x = align === 'start' ? start : align === 'end' ? end : 'center';
   } else {
     x = side === 'left' ? 'right' : 'left';
     y = align === 'start' ? 'top' : align === 'end' ? 'bottom' : 'center';
@@ -397,7 +401,7 @@ export function injectFloating(config: FloatingConfig): void {
           el.style.setProperty(vars.anchorHeight, `${Math.round(rect.height)}px`);
           el.style.setProperty(
             vars.contentTransformOrigin,
-            transformOriginFor(resolvedSide, resolvedAlign),
+            transformOriginFor(resolvedSide, resolvedAlign, isFloatingRtl(el)),
           );
 
           // hide() with strategy 'referenceHidden' — anchor scrolled off-screen.

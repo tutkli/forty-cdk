@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test';
-import { clickOutside, el, expect, expectFocused, gotoFixture, test } from './_helpers';
+import { boxOf, clickOutside, el, expect, expectFocused, gotoFixture, test } from './_helpers';
 
 test.describe('Select', () => {
   test('opens on trigger click and moves focus into the listbox', async ({ page }) => {
@@ -355,6 +355,44 @@ test.describe('Select', () => {
       await expect
         .poll(async () => content.evaluate((c) => (c as HTMLElement).style.translate))
         .toMatch(/^-?\d+px -?\d+px$/);
+    });
+
+    test('keeps a listbox wider than its right-edge trigger inside the viewport', async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'select', { position: 'item-aligned', trailing: '1', wide: '1' });
+      const trigger = await boxOf(el(page, 'trigger'));
+      const viewportWidth = await page.evaluate(() => document.documentElement.clientWidth);
+      expect(trigger.x + 320).toBeGreaterThan(viewportWidth);
+
+      await el(page, 'trigger').click();
+      const content = el(page, 'content');
+      await expect(content).toHaveAttribute('data-position', 'item-aligned');
+
+      await expect
+        .poll(async () => {
+          const box = await boxOf(content);
+          return Math.round(viewportWidth - (box.x + box.width));
+        })
+        .toBe(8);
+      expect((await boxOf(content)).x).toBeGreaterThanOrEqual(8);
+    });
+
+    test('aligns the listbox right edge with the trigger under dir="rtl"', async ({ page }) => {
+      await gotoFixture(page, 'select', { position: 'item-aligned', rtl: '1', wide: '1' });
+      const trigger = await boxOf(el(page, 'trigger'));
+
+      await el(page, 'trigger').click();
+      const content = el(page, 'content');
+      await expect(content).toHaveAttribute('dir', 'rtl');
+      await expect(content).toHaveAttribute('data-position', 'item-aligned');
+
+      await expect
+        .poll(async () => {
+          const box = await boxOf(content);
+          return Math.round(box.x + box.width - (trigger.x + trigger.width));
+        })
+        .toBe(0);
     });
 
     // `?popin=1` gives the surface a `scale(0.9)` enter animation, so the

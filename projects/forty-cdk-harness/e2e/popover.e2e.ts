@@ -182,7 +182,7 @@ test.describe('Popover', () => {
     expect(availableWidth).toBeLessThanOrEqual(viewport.w);
   });
 
-  test('content opened in a dir="rtl" subtree stays RTL and aligns start to its inline-start edge', async ({
+  test('content opened in a dir="rtl" subtree stays RTL, aligns start to its inline-start edge and pivots from it', async ({
     page,
   }) => {
     await gotoFixture(page, 'popover', { rtlRegion: '1' });
@@ -199,5 +199,14 @@ test.describe('Popover', () => {
         return Math.round(box.x + box.width - (trigger.x + trigger.width));
       })
       .toBe(0);
+
+    const side = await content.getAttribute('data-side');
+    await expect
+      .poll(async () =>
+        content.evaluate((c) =>
+          (c as HTMLElement).style.getPropertyValue('--for-floating-content-transform-origin'),
+        ),
+      )
+      .toBe(`right ${side === 'top' ? 'bottom' : 'top'}`);
   });
 });
