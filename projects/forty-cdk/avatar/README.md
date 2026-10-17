@@ -22,7 +22,7 @@ It is headless and presentational: it tracks the load lifecycle of an `<img>` an
 
 ## Examples
 
-Let the image load, then break its URL: `data-status` moves between `loading`, `loaded` and `error`, and the fallback only appears once the delay has passed without an image.
+The image loads, so `data-status` settles on `loaded` and the initials never render: `fallbackDelayMs` holds the fallback back for 500 ms, so a fast load never flashes it. Failed load below breaks the URL to show the `error` path.
 
 ```ts
 import { ChangeDetectionStrategy, Component } from '@angular/core';

@@ -58,10 +58,6 @@ import { ForField, ForFieldControl, ForFieldDescription, ForLabel } from 'forty-
       color: var(--ex-text, #17191c);
     }
 
-    .field[data-invalid] .input {
-      border-color: #ef4444;
-    }
-
     .field-desc {
       margin: 0;
       font-size: 0.82rem;

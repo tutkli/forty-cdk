@@ -22,7 +22,7 @@ No ARIA role is imposed on the drop zone, which is a plain container. The `<inpu
 
 ## Examples
 
-Click the zone or drop a file on it. The zone sets `data-dragging` while a file hovers it, and the chosen files arrive as a `FileList` you render yourself.
+Press the button, or drop a file anywhere on the zone. The zone sets `data-dragging` while a file hovers it, and the chosen files arrive as a `FileList` you render yourself.
 
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';

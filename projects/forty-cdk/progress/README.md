@@ -26,7 +26,7 @@ Pass a numeric `value` for a determinate bar, or `null` for indeterminate ("load
 
 ## Examples
 
-The bar reflects `data-value` against `data-min` / `data-max` and moves `data-state` between `loading`, `complete` and `indeterminate`.
+Press Advance until the bar fills: it reflects `data-value` against `data-min` / `data-max`, and `data-state` moves from `loading` to `complete` at `max`, where the stylesheet turns it green and `announceCompletion` reads the completion out.
 
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
@@ -37,16 +37,25 @@ import { ForProgress, ForProgressIndicator } from 'forty-cdk/progress';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ForProgress, ForProgressIndicator],
   template: `
-    <div class="row">
-      <div forProgress class="track" [value]="value()" [max]="100" announceCompletion>
-        <div forProgressIndicator class="indicator"></div>
+    <div class="stack">
+      <div class="row">
+        <div forProgress class="track" [value]="value()" [max]="100" announceCompletion>
+          <div forProgressIndicator class="indicator"></div>
+        </div>
+        <span class="value">{{ value() }}%</span>
       </div>
-      <span class="value">{{ value() }}%</span>
+      <button type="button" class="btn" (click)="advance()">
+        {{ value() === 100 ? 'Restart' : 'Advance' }}
+      </button>
     </div>
   `,
 })
 export class ProgressDefaultExample {
   protected readonly value = signal(60);
+
+  protected advance(): void {
+    this.value.update((value) => (value === 100 ? 0 : Math.min(100, value + 20)));
+  }
 }
 ```
 

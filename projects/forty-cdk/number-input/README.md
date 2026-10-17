@@ -62,7 +62,7 @@ One class and one directive, three states. `disabled` reflects `data-disabled` o
 
 ### Formatting & precision
 
-Type an amount: `value()` under the field follows it as a raw number, and when you press `Enter` or leave the field the text reformats through `formatOptions` as US dollars and `value()` rounds to the cents it shows. `↑` / `↓` step it by 1. [Formatting](#formatting) covers `locale`, what a surrounding form submits, and the `step` a percent style needs.
+Type an amount: `value()` under the field follows it as a raw number, and when you press `Enter` or leave the field the text reformats through `formatOptions` as US dollars and `value()` rounds to the cents it shows. `↑` / `↓` step it to the next whole dollar, because stepping snaps to the `step` grid ([Keyboard](#keyboard)). [Formatting](#formatting) covers `locale`, what a surrounding form submits, and the `step` a percent style needs.
 
 ## Formatting
 

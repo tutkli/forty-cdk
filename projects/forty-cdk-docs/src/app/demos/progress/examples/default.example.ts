@@ -6,11 +6,16 @@ import { ForProgress, ForProgressIndicator } from 'forty-cdk/progress';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ForProgress, ForProgressIndicator],
   template: `
-    <div class="row">
-      <div forProgress class="track" [value]="value()" [max]="100" announceCompletion>
-        <div forProgressIndicator class="indicator"></div>
+    <div class="stack">
+      <div class="row">
+        <div forProgress class="track" [value]="value()" [max]="100" announceCompletion>
+          <div forProgressIndicator class="indicator"></div>
+        </div>
+        <span class="value">{{ value() }}%</span>
       </div>
-      <span class="value">{{ value() }}%</span>
+      <button type="button" class="btn" (click)="advance()">
+        {{ value() === 100 ? 'Restart' : 'Advance' }}
+      </button>
     </div>
   `,
   styles: `
@@ -18,8 +23,16 @@ import { ForProgress, ForProgressIndicator } from 'forty-cdk/progress';
       display: contents;
     }
 
-    .row {
+    .stack {
       width: min(380px, 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.9rem;
+    }
+
+    .row {
+      width: 100%;
       display: flex;
       align-items: center;
       gap: 1rem;
@@ -52,6 +65,23 @@ import { ForProgress, ForProgressIndicator } from 'forty-cdk/progress';
       text-align: right;
     }
 
+    .btn {
+      appearance: none;
+      font: inherit;
+      font-weight: 600;
+      font-size: 0.9rem;
+      padding: 0.5rem 0.9rem;
+      border-radius: var(--ex-radius-sm, 14px);
+      border: 1px solid var(--ex-border-strong, #d0c9bc);
+      background: var(--ex-surface, #ffffff);
+      color: var(--ex-text, #17191c);
+      cursor: pointer;
+    }
+
+    .btn:hover {
+      background: var(--ex-surface-2, #f2eee6);
+    }
+
     @media (prefers-reduced-motion: reduce) {
       .indicator {
         transition: none;
@@ -61,4 +91,8 @@ import { ForProgress, ForProgressIndicator } from 'forty-cdk/progress';
 })
 export class ProgressDefaultExample {
   protected readonly value = signal(60);
+
+  protected advance(): void {
+    this.value.update((value) => (value === 100 ? 0 : Math.min(100, value + 20)));
+  }
 }
