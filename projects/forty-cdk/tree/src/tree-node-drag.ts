@@ -165,6 +165,8 @@ export class ForTreeNodeDrag<T = string> implements ForTreeNodeDragContext {
   #previousIndex = 0;
   #gapIndex = 0;
   #desiredLevel = 1;
+  #liftLevel = 1;
+  #pointerOriginX = 0;
   #previewController: PreviewController | null = null;
   #wasExpanded = false;
   #liftedHost: HTMLElement | null = null;
@@ -262,6 +264,7 @@ export class ForTreeNodeDrag<T = string> implements ForTreeNodeDragContext {
         visible,
         this.#liftedValue,
         this.#ctx.compareWith(),
+        this.#ctx.dir(),
       ).length;
       this.#gapIndex = action === 'last' ? rowCount : Math.min(this.#gapIndex + 1, rowCount);
     } else if (action === 'up') {
@@ -297,6 +300,7 @@ export class ForTreeNodeDrag<T = string> implements ForTreeNodeDragContext {
       return false;
     }
     this.#liftedHost = itemHost;
+    this.#pointerOriginX = event.clientX;
     return true;
   }
 
@@ -333,13 +337,21 @@ export class ForTreeNodeDrag<T = string> implements ForTreeNodeDragContext {
   }
 
   #applyPointerPosition(event: PointerEvent): TreeDropRow<T>[] {
+    const dir = this.#ctx.dir();
     const rows = buildTreeDropRows(
       this.#ctx.visibleNodes(),
       this.#liftedValue,
       this.#ctx.compareWith(),
+      dir,
     );
     this.#gapIndex = gapFromPointerY(rows, event.clientY);
-    this.#desiredLevel = levelFromPointerX(rows, this.#gapIndex, event.clientX);
+    this.#desiredLevel = levelFromPointerX(
+      rows,
+      this.#gapIndex,
+      event.clientX,
+      { level: this.#liftLevel, x: this.#pointerOriginX },
+      dir,
+    );
     return rows;
   }
 
@@ -407,9 +419,10 @@ export class ForTreeNodeDrag<T = string> implements ForTreeNodeDragContext {
 
     const visibleAfter = this.#ctx.visibleNodes();
     const equals = this.#ctx.compareWith();
-    const rows = buildTreeDropRows(visibleAfter, this.#liftedValue, equals);
+    const rows = buildTreeDropRows(visibleAfter, this.#liftedValue, equals, this.#ctx.dir());
     this.#gapIndex = resolveLiftGap(rows, visibleAfter, visibleIdx, mode, equals);
-    this.#desiredLevel = entry.handle.level();
+    this.#liftLevel = entry.handle.level();
+    this.#desiredLevel = this.#liftLevel;
 
     this._dragging.set(true);
     this.#publishDropTarget(
@@ -452,7 +465,7 @@ export class ForTreeNodeDrag<T = string> implements ForTreeNodeDragContext {
     }
     const visible = this.#ctx.visibleNodes();
     const equals = this.#ctx.compareWith();
-    const rows = buildTreeDropRows(visible, this.#liftedValue, equals);
+    const rows = buildTreeDropRows(visible, this.#liftedValue, equals, this.#ctx.dir());
     const target = resolveTreeDrop(rows, this.#gapIndex, this.#desiredLevel, equals);
 
     const parentLabel = treeParentLabel(visible, target.parentValue, equals);
@@ -533,7 +546,7 @@ export class ForTreeNodeDrag<T = string> implements ForTreeNodeDragContext {
 
   #resolveAndAnnounceMove(visible: readonly ForTreeVisibleNode<T>[]): void {
     const equals = this.#ctx.compareWith();
-    const rows = buildTreeDropRows(visible, this.#liftedValue, equals);
+    const rows = buildTreeDropRows(visible, this.#liftedValue, equals, this.#ctx.dir());
     const target = resolveTreeDrop(rows, this.#gapIndex, this.#desiredLevel, equals);
     this.#desiredLevel = target.level;
     this.#publishDropTarget(rows, target);

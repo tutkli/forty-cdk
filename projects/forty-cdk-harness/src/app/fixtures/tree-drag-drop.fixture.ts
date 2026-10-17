@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import {
   ForTree,
   type ForTreeDragDropEvent,
@@ -107,26 +108,34 @@ export class TreeDragNode {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ForTree, ForTreeNodeDrag, TreeDragNode],
   template: `
-    <ul
-      forTree
-      forTreeNodeDrag
-      [(expanded)]="open"
-      [canDrop]="canDropFn"
-      (nodeDrop)="onDrop($event)"
-      data-testid="tree"
-      aria-label="File system"
-      style="list-style: none; padding: 0"
-    >
-      @for (n of roots(); track n.id) {
-        <app-tree-drag-node [node]="n" [expanded]="open()" />
-      }
-    </ul>
+    <div [attr.dir]="dir">
+      <ul
+        forTree
+        forTreeNodeDrag
+        [(expanded)]="open"
+        [canDrop]="canDropFn"
+        (nodeDrop)="onDrop($event)"
+        data-testid="tree"
+        aria-label="File system"
+        style="list-style: none; padding: 0"
+      >
+        @for (n of roots(); track n.id) {
+          <app-tree-drag-node [node]="n" [expanded]="open()" />
+        }
+      </ul>
+    </div>
     <pre data-testid="tree-shape">{{ shape() }}</pre>
     <div data-testid="last-event">{{ lastEvent() }}</div>
   `,
 })
 export class TreeDragDropFixture {
-  readonly open = signal<readonly string[]>([]);
+  readonly #route = inject(ActivatedRoute);
+
+  readonly dir = this.#route.snapshot.queryParamMap.get('dir');
+
+  readonly open = signal<readonly string[]>(
+    this.#route.snapshot.queryParamMap.get('open')?.split(',').filter(Boolean) ?? [],
+  );
 
   readonly roots = signal<FileNode[]>([
     {

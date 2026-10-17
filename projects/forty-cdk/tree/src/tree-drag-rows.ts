@@ -1,4 +1,4 @@
-import { dragAnnouncementLabel } from 'forty-cdk/core';
+import { dragAnnouncementLabel, type WritingDirection } from 'forty-cdk/core';
 
 import type { ForTreeVisibleNode } from './tree-context';
 import { type TreeDropRow, type TreeDropTarget } from './tree-drop-resolver';
@@ -27,11 +27,13 @@ export interface TreeLiftContext<T = unknown> {
  * @param liftedValue The value of the node being dragged, filtered out of the result with its
  * descendants.
  * @param equals The tree's node-value comparator.
+ * @param dir Resolved writing direction, which decides the edge each row's `start` reads.
  */
 export function buildTreeDropRows<T>(
   visible: readonly ForTreeVisibleNode<T>[],
   liftedValue: T | null,
   equals: (a: T, b: T) => boolean,
+  dir: WritingDirection,
 ): TreeDropRow<T>[] {
   const excluded = new Set<HTMLElement>();
   return visible
@@ -49,7 +51,7 @@ export function buildTreeDropRows<T>(
       return {
         value: e.value,
         level: e.handle.level(),
-        left: rect.left,
+        start: dir === 'rtl' ? rect.right : rect.left,
         top: rect.top,
         bottom: rect.bottom,
       };
