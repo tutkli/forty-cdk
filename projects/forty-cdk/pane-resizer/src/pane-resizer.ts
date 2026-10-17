@@ -60,7 +60,7 @@ import {
  *   [max]="700"
  *   [step]="8"
  *   [largeStep]="80"
- *   aria-controls="pane-a pane-b"
+ *   controls="pane-a pane-b"
  * ></div>
  * ```
  */
@@ -71,7 +71,7 @@ import {
     role: 'separator',
     '[attr.aria-orientation]': 'orientation()',
     '[attr.data-orientation]': 'orientation()',
-    '[attr.tabindex]': 'disabled() ? null : "0"',
+    '[attr.tabindex]': 'disabled() ? "-1" : "0"',
     '[attr.aria-valuenow]': 'clampedValue()',
     '[attr.aria-valuemin]': 'min()',
     '[attr.aria-valuemax]': 'sanitizedMax()',
@@ -99,7 +99,7 @@ export class ForPaneResizer {
   readonly orientation = input<'horizontal' | 'vertical'>('horizontal');
 
   /**
-   * Disables the resizer: it drops out of tab order, no keyboard or pointer
+   * Disables the resizer: it drops out of tab order (`tabindex="-1"`), no keyboard or pointer
    * mutation fires, and `aria-disabled` / `data-disabled` are reflected.
    */
   readonly disabled = input(false, { transform: booleanAttribute });
@@ -144,7 +144,8 @@ export class ForPaneResizer {
   /**
    * Space-separated list of element ids the resizer splits. Surfaces as
    * `aria-controls`. Recommended per APG so AT can relate the resizer to the
-   * panes it affects.
+   * panes it affects. Set it through this input: a static `aria-controls`
+   * attribute on the host is replaced by this binding.
    */
   readonly controls = input<string | null>(null);
 

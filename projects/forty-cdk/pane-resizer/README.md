@@ -23,7 +23,7 @@ It carries `role="separator"` plus live `aria-value*`, is tabbable, handles arro
     [(value)]="size"
     [min]="120"
     [max]="640"
-    aria-controls="pane-a pane-b"
+    controls="pane-a pane-b"
     aria-label="Resize panes"
   ></div>
 
@@ -142,7 +142,7 @@ Implements the [WAI-ARIA Window Splitter pattern](https://www.w3.org/WAI/ARIA/ap
 
 - **Follows the Window Splitter pattern verbatim.**
   - `aria-orientation` is reflected **explicitly** (both `'horizontal'` and `'vertical'`) so AT can announce the resize axis.
-  - `aria-controls` is recommended: point it at the panes the resizer splits so AT can relate them.
+  - `aria-controls` is recommended: point the `controls` input at the panes the resizer splits so AT can relate them. Use the input rather than a static `aria-controls` attribute, which the input's binding replaces.
 - **`aria-valuetext`** when the bare number is not meaningful (e.g. `"30 percent of viewport"`).
 - **`data-disabled`** is reflected when `disabled` is true so consumers can flip styling and pointer affordances in CSS.
 - **Accessible name.** Provide a name via native `aria-label` / `aria-labelledby` on the host so AT announces what the resizer adjusts.

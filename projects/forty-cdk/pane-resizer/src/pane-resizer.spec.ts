@@ -131,9 +131,31 @@ describe('ForPaneResizer', () => {
       await flush();
       const el = query<HTMLElement>('[forPaneResizer]')!;
 
-      expect(el.hasAttribute('tabindex')).toBe(false);
+      expect(el.getAttribute('tabindex')).toBe('-1');
       expect(el.getAttribute('aria-disabled')).toBe('true');
       expect(el.getAttribute('data-disabled')).toBe('');
+    });
+
+    it('takes a disabled <button> host out of the tab order', async () => {
+      @Component({
+        imports: [ForPaneResizer],
+        template: `<button forPaneResizer [disabled]="disabled()"></button>`,
+      })
+      class ButtonHost {
+        readonly disabled = signal(true);
+      }
+
+      const { fixture, query, flush } = renderHost(ButtonHost);
+      await flush();
+      const button = query<HTMLButtonElement>('button')!;
+
+      expect(button.getAttribute('tabindex')).toBe('-1');
+      expect(button.tabIndex).toBe(-1);
+      expect(button.disabled).toBe(false);
+
+      fixture.componentInstance.disabled.set(false);
+      await flush();
+      expect(button.getAttribute('tabindex')).toBe('0');
     });
 
     it('reflects dir to the native dir attribute for both ltr and rtl', async () => {
