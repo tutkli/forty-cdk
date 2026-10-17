@@ -231,6 +231,10 @@ Input tables are not yet tabulated for this primitive. See the feature sections 
 | `[forSelect]`          | `data-state`       | `open` \| `closed`         |
 | `[forSelect]`          | `data-disabled`    | present \| absent          |
 | `[forSelect]`          | `data-readonly`    | present \| absent          |
+| `[forSelect]`          | `data-touched`     | present \| absent          |
+| `[forSelect]`          | `data-dirty`       | present \| absent          |
+| `[forSelect]`          | `data-pending`     | present \| absent          |
+| `[forSelect]`          | `data-invalid`     | present \| absent          |
 | `[forSelectTrigger]`   | `data-state`       | `open` \| `closed`         |
 | `[forSelectTrigger]`   | `data-disabled`    | present \| absent          |
 | `[forSelectTrigger]`   | `data-readonly`    | present \| absent          |

@@ -145,11 +145,15 @@ invokes it: the clear button, the `Escape` key, or your own code through the
 | --------------- | --------- | ------- | -------------------------------------------------------------------------------------------------------------- |
 | `clearOnEscape` | `boolean` | `true`  | Whether `Escape` clears a non-empty value before propagating. Set to `false` for command-palette compositions. |
 
-| Data attribute  | Values                                  |
-| --------------- | --------------------------------------- |
-| `data-disabled` | present when the field is disabled      |
-| `data-readonly` | present when the field is read-only     |
-| `data-empty`    | present while the value is `''` (empty) |
+| Data attribute  | Values                                      |
+| --------------- | ------------------------------------------- |
+| `data-disabled` | present when the field is disabled          |
+| `data-readonly` | present when the field is read-only         |
+| `data-empty`    | present while the value is `''` (empty)     |
+| `data-touched`  | present once the field has been touched     |
+| `data-dirty`    | present while the bound `dirty` is `true`   |
+| `data-pending`  | present while async validation is in flight |
+| `data-invalid`  | present while the field is invalid          |
 
 ### `ForSearchGroup`
 
