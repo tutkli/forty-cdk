@@ -73,38 +73,38 @@ export class MyPopover extends ForPopover {}
 ```
 
 Every non-form root that needs a plain re-provide, and the token to name. `ForTable` and
-`ForToolbar` are not in this table, because each needs its provider helper instead (see the sections
-below).
+`ForToolbar` are not in this table, because each needs its provider helper instead, and neither is
+`ForVirtualViewport`, because it is a component and is composed rather than subclassed (see the
+sections below).
 
-| Root                                                | Token to re-provide            |
-| --------------------------------------------------- | ------------------------------ |
-| `ForAccordion`                                      | `FOR_ACCORDION_CONTEXT`        |
-| `ForAvatar`                                         | `FOR_AVATAR_CONTEXT`           |
-| `ForCalendar`                                       | `FOR_CALENDAR_CONTEXT`         |
-| `ForCarousel`                                       | `FOR_CAROUSEL_CONTEXT`         |
-| `ForContextMenu` / `ForDropdownMenu` / `ForMenuSub` | `FOR_MENU_CONTEXT`             |
-| `ForDialog`                                         | `FOR_DIALOG_CONTEXT`           |
-| `ForDisclosure`                                     | `FOR_DISCLOSURE_CONTEXT`       |
-| `ForDraggable` / `ForFreeDrag`                      | `FOR_DRAGGABLE_CONTEXT`        |
-| `ForDrawer`                                         | `FOR_DRAWER_CONTEXT`           |
-| `ForDropList`                                       | `FOR_DROP_LIST_CONTEXT`        |
-| `ForField`                                          | `FOR_FIELD_CONTEXT`            |
-| `ForFieldset`                                       | `FOR_FIELDSET_CONTEXT`         |
-| `ForFileUpload`                                     | `FOR_FILE_UPLOAD_CONTEXT`      |
-| `ForHoverCard`                                      | `FOR_HOVER_CARD_CONTEXT`       |
-| `ForMenubar`                                        | `FOR_MENUBAR_CONTEXT`          |
-| `ForMeter`                                          | `FOR_METER_CONTEXT`            |
-| `ForNavigationMenu`                                 | `FOR_NAVIGATION_MENU_CONTEXT`  |
-| `ForPagination`                                     | `FOR_PAGINATION_CONTEXT`       |
-| `ForPopover`                                        | `FOR_POPOVER_CONTEXT`          |
-| `ForProgress`                                       | `FOR_PROGRESS_CONTEXT`         |
-| `ForScrollArea`                                     | `FOR_SCROLL_AREA_CONTEXT`      |
-| `ForStepper`                                        | `FOR_STEPPER_CONTEXT`          |
-| `ForTabs`                                           | `FOR_TABS_CONTEXT`             |
-| `ForToast`                                          | `FOR_TOAST_CONTEXT`            |
-| `ForTooltip`                                        | `FOR_TOOLTIP_CONTEXT`          |
-| `ForTree`                                           | `FOR_TREE_CONTEXT`             |
-| `ForVirtualViewport`                                | `FOR_VIRTUAL_VIEWPORT_CONTEXT` |
+| Root                                                | Token to re-provide           |
+| --------------------------------------------------- | ----------------------------- |
+| `ForAccordion`                                      | `FOR_ACCORDION_CONTEXT`       |
+| `ForAvatar`                                         | `FOR_AVATAR_CONTEXT`          |
+| `ForCalendar`                                       | `FOR_CALENDAR_CONTEXT`        |
+| `ForCarousel`                                       | `FOR_CAROUSEL_CONTEXT`        |
+| `ForContextMenu` / `ForDropdownMenu` / `ForMenuSub` | `FOR_MENU_CONTEXT`            |
+| `ForDialog`                                         | `FOR_DIALOG_CONTEXT`          |
+| `ForDisclosure`                                     | `FOR_DISCLOSURE_CONTEXT`      |
+| `ForDraggable` / `ForFreeDrag`                      | `FOR_DRAGGABLE_CONTEXT`       |
+| `ForDrawer`                                         | `FOR_DRAWER_CONTEXT`          |
+| `ForDropList`                                       | `FOR_DROP_LIST_CONTEXT`       |
+| `ForField`                                          | `FOR_FIELD_CONTEXT`           |
+| `ForFieldset`                                       | `FOR_FIELDSET_CONTEXT`        |
+| `ForFileUpload`                                     | `FOR_FILE_UPLOAD_CONTEXT`     |
+| `ForHoverCard`                                      | `FOR_HOVER_CARD_CONTEXT`      |
+| `ForMenubar`                                        | `FOR_MENUBAR_CONTEXT`         |
+| `ForMeter`                                          | `FOR_METER_CONTEXT`           |
+| `ForNavigationMenu`                                 | `FOR_NAVIGATION_MENU_CONTEXT` |
+| `ForPagination`                                     | `FOR_PAGINATION_CONTEXT`      |
+| `ForPopover`                                        | `FOR_POPOVER_CONTEXT`         |
+| `ForProgress`                                       | `FOR_PROGRESS_CONTEXT`        |
+| `ForScrollArea`                                     | `FOR_SCROLL_AREA_CONTEXT`     |
+| `ForStepper`                                        | `FOR_STEPPER_CONTEXT`         |
+| `ForTabs`                                           | `FOR_TABS_CONTEXT`            |
+| `ForToast`                                          | `FOR_TOAST_CONTEXT`           |
+| `ForTooltip`                                        | `FOR_TOOLTIP_CONTEXT`         |
+| `ForTree`                                           | `FOR_TREE_CONTEXT`            |
 
 `ForTree` also provides `FOR_TREE_CONTAINER_CONTEXT`, the container every root-level `[forTreeItem]`
 registers through, so a subclass re-provides both tokens with `useExisting`. With only the first
@@ -206,6 +206,20 @@ The library's own `[forToolbar]` and `[forTableRow]` declare their providers thr
 helpers, so a subclass cannot drift from the set the root really installs. Wrapping through
 `hostDirectives` needs none of this.
 
+### `ForVirtualViewport` is a component: compose it, do not subclass it
+
+Every root above is a directive. `ForVirtualViewport` is a component, and its own template renders
+the sizer its rows are positioned in. A subclass inherits neither that template nor anything else of
+the base's view, so neither subclass works: a `@Directive` subclass throws
+`NG0903: Directives cannot inherit Components`, and a `@Component` subclass renders its own
+template in place of the sizer, so the rows have no total-size spacer and the list cannot scroll.
+
+Compose the viewport inside your wrapper's template and render the rows there with
+`*forVirtualFor`, stamping the consumer's row template into each one with `NgTemplateOutlet`. The
+viewport in your template provides `FOR_VIRTUAL_VIEWPORT_CONTEXT` to the rows it renders, so the
+wrapper re-provides nothing. [Virtualization](../projects/forty-cdk/virtualization/README.md#wrapping-in-a-design-system)
+has the full wrapper.
+
 ## What a wrapper must not swallow
 
 Wrapping the root is safe. Wrapping the _pieces_ into a single opaque component is where design
@@ -233,5 +247,6 @@ systems lose behaviour the primitives were built to give them:
 | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
 | Styled wrapper around one root                                   | subclass + re-provide the context token                                                                 |
 | `ForTable`, `ForToolbar`, `ForTableRow`                          | subclass + spread `provideForTable(MyRoot)` / `provideForToolbar(MyRoot)` / `provideForTableRow(MyRow)` |
+| `ForVirtualViewport`                                             | compose it in the wrapper's template, rows stamped through `NgTemplateOutlet`                           |
 | Wrapper that must extend a different base class                  | `hostDirectives`, re-exposing the surface by hand                                                       |
 | Form-value control (`Switch`, `Select`, `Slider`, `Combobox`, …) | [Wrapping form primitives](wrapping-form-primitives.md)                                                 |
