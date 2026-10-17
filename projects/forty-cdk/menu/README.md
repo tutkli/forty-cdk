@@ -246,7 +246,7 @@ Every item type emits a vetoable `(activate)` event, whose handlers receive a `V
 
 ## Submenu
 
-A nested menu is opened by a `[forMenuSubTrigger]`, which is itself a `menuitem` in the parent menu. The `[forMenuSub]` root owns the submenu's open state, item collection, and dismissible layer.
+A nested menu is opened by a `[forMenuSubTrigger]`, which is itself a `menuitem` in the parent menu. The `[forMenuSub]` root owns the submenu's open state, item collection, and dismissible layer. It takes the positioning inputs the [`ForMenu` table](#formenu) lists, with the same defaults except `side`: with no `side` set in `provideForMenuDefaults`, a submenu opens away from its parent item, `'right'` in LTR and `'left'` in RTL.
 
 Both `[forMenuSub]` (`exportAs: 'forMenuSub'`) and the parent `[forDropdownMenu]` / `[forContextMenu]` own `open` as a `model<boolean>`, so the minimal case needs no consumer signals at all. Expose each with a template reference variable (`#menu="forDropdownMenu"`, `#sub="forMenuSub"`) and drive the `@if` straight off its `open()`:
 

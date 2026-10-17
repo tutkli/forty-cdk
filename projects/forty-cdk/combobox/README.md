@@ -196,7 +196,23 @@ The primitive never owns the scroll container, so it virtualizes with any window
 
 ## API
 
-Input tables are not yet tabulated for this primitive. See the feature sections below for documented inputs and the prose descriptions of each input.
+Only the positioning inputs every anchored root inherits are tabulated for this primitive so far. See the feature sections below for the other inputs and their prose descriptions.
+
+### `ForCombobox` positioning inputs
+
+| Property              | Type                                    | Description                                                                                                                                                                           |
+| --------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `side`                | `input<FloatingSide>`                   | Anchor side (`'top'` / `'right'` / `'bottom'` / `'left'`). Falls back to `provideForComboboxDefaults`.<br>**Default:** `'bottom'`                                                     |
+| `align`               | `input<FloatingAlign>`                  | Alignment along `side` (`'start'` / `'center'` / `'end'`). Falls back to `provideForComboboxDefaults`.<br>**Default:** `'start'`                                                      |
+| `sideOffset`          | `input<number>`                         | Gap (px) between the anchor and the content along the main axis. Falls back to `provideForComboboxDefaults`.<br>**Default:** `4`                                                      |
+| `alignOffset`         | `input<number>`                         | Gap (px) along the cross axis (parallel to `side`).<br>**Default:** `0`                                                                                                               |
+| `avoidCollisions`     | `input<boolean>`                        | When `true`, `flip` and `shift` keep the content inside the viewport. Set `false` for strict positioning where overflow is acceptable.<br>**Default:** `true`                         |
+| `collisionPadding`    | `input<number>`                         | Padding (px) for the `flip` / `shift` / `size` collision middlewares. Falls back to `provideForComboboxDefaults`.<br>**Default:** `8`                                                 |
+| `sticky`              | `input<'partial' \| 'always' \| false>` | `'always'` keeps the requested placement even when the content leaves the viewport. `'partial'` and `false` let `shift` slide it back into view.<br>**Default:** `'partial'`          |
+| `hideWhenDetached`    | `input<boolean>`                        | When `true`, the content carries `data-detached` while the anchor has scrolled out of every clipping ancestor, so CSS can hide it.<br>**Default:** `false`                            |
+| `clipUntilPositioned` | `input<boolean>`                        | Clips the content until its first position resolves, so it never flashes at the viewport corner. Set `false` so an `animate.enter` plays from its first frame.<br>**Default:** `true` |
+
+The content anchors to the field box when a `[forComboboxAnchor]` is present; see [Anchoring to a field box](#anchoring-to-a-field-box).
 
 ### Data attributes
 
