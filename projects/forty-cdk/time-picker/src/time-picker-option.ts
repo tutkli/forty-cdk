@@ -43,8 +43,8 @@ import { injectTimePickerContext } from './time-picker-context';
  *   the typed prefix, read with or without the hour's leading zero (`6` and
  *   `06` both reach `06:30`).
  * - **Tab / Shift+Tab** — commit the focused slot and let the browser advance
- *   focus to the next / previous focusable. With `modal` set, Tab is left to the
- *   focus trap and commits nothing.
+ *   focus to the next / previous focusable. When the listbox mounted modal, Tab is
+ *   left to the focus trap and commits nothing.
  * - **Escape** — routed through the content's keydown to close the listbox.
  */
 @Directive({
@@ -158,7 +158,7 @@ export class ForTimePickerOption<D = unknown> {
     }
 
     if (event.key === 'Tab') {
-      if (this.#ctx.modal()) {
+      if (this.#ctx.mountedModal()) {
         return;
       }
       this.#ctx.commitOnTab(this.value());

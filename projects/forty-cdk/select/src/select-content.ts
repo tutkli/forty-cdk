@@ -168,6 +168,7 @@ export class ForSelectContent {
           emitInteractOutside: (veto) => ctx.overlay.emitInteractOutside(veto),
         },
       }).modal;
+      this.#publishModal();
       return;
     }
 
@@ -198,6 +199,7 @@ export class ForSelectContent {
           };
 
     this.modal = signal(false).asReadonly();
+    this.#publishModal();
     injectOverlayShell({
       positioner,
       dismiss: {
@@ -234,6 +236,15 @@ export class ForSelectContent {
       },
       tabOut: ctx.tabOut,
     });
+  }
+
+  #publishModal(): void {
+    const ctx = this.#select;
+    registerHandle(
+      this.modal,
+      (modal) => ctx.registerContentModal(modal),
+      (modal) => ctx.unregisterContentModal(modal),
+    );
   }
 
   private onKeyDown(event: KeyboardEvent): void {

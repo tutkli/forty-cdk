@@ -1820,6 +1820,39 @@ describe('ForSelect', () => {
       });
     }
 
+    it('commits the focused option on Tab when [modal] flips to true over the mounted anchored listbox', async () => {
+      const r = renderHost(SelectHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      r.instance.modal.set(true);
+      await flush(r.fixture);
+
+      const banana = getOption('banana');
+      banana.focus();
+      pressKey(banana, 'Tab');
+      await flush(r.fixture);
+
+      expect(r.instance.value()).toEqual(['banana']);
+      expect(r.instance.open()).toBe(false);
+    });
+
+    it('leaves Tab to the focus trap when [modal] flips to false over the mounted modal listbox', async () => {
+      const r = renderHost(SelectHost);
+      r.instance.modal.set(true);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      r.instance.modal.set(false);
+      await flush(r.fixture);
+
+      const banana = getOption('banana');
+      banana.focus();
+      pressKey(banana, 'Tab');
+      await flush(r.fixture);
+
+      expect(r.instance.value()).toEqual([]);
+      expect(r.instance.open()).toBe(true);
+    });
+
     it('still portals the listbox to document.body in modal mode', async () => {
       const r = renderHost(SelectHost);
       r.instance.modal.set(true);
@@ -3819,6 +3852,7 @@ describe('ForSelect', () => {
           [totalCount]="total()"
           [visibleRange]="range()"
           [selectedIndex]="selIndex()"
+          [modal]="modal()"
           (scrollToIndex)="onScrollToIndex($event)"
         >
           <button forSelectTrigger data-test-id="trigger">
@@ -3847,6 +3881,7 @@ describe('ForSelect', () => {
       readonly total = signal<number | undefined>(50);
       readonly range = signal<readonly [number, number]>([0, 10]);
       readonly selIndex = signal<number | undefined>(undefined);
+      readonly modal = signal(false);
       readonly scrolled = signal<number | null>(null);
       deferScroll = false;
       windowRows() {
@@ -4172,6 +4207,47 @@ describe('ForSelect', () => {
 
         expect(r.instance.open()).toBe(false);
         expect(document.activeElement).toBe(vtrigger());
+      });
+    });
+
+    describe('Tab after a [modal] rebind over the mounted listbox', () => {
+      async function activateSecondAfterRebind(
+        mountedModal: boolean,
+      ): Promise<{ r: RenderResult<VirtualSelectHost>; content: HTMLElement }> {
+        const r = renderHost(VirtualSelectHost);
+        r.instance.modal.set(mountedModal);
+        r.instance.open.set(true);
+        await flush(r.fixture);
+        r.instance.modal.set(!mountedModal);
+        await flush(r.fixture);
+        const content = contentEl();
+        content.focus();
+        content.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+        await flush(r.fixture);
+        pressKey(content, 'ArrowDown');
+        await flush(r.fixture);
+        expect(content.getAttribute('aria-activedescendant')).toBe(voptOf(1).getAttribute('id'));
+        return { r, content };
+      }
+
+      it('commits the active option when [modal] flipped to true over the anchored listbox', async () => {
+        const { r, content } = await activateSecondAfterRebind(false);
+
+        pressKey(content, 'Tab');
+        await flush(r.fixture);
+
+        expect(r.instance.value()).toEqual(['item-1']);
+        expect(r.instance.open()).toBe(false);
+      });
+
+      it('leaves Tab to the focus trap when [modal] flipped to false over the modal listbox', async () => {
+        const { r, content } = await activateSecondAfterRebind(true);
+
+        pressKey(content, 'Tab');
+        await flush(r.fixture);
+
+        expect(r.instance.value()).toEqual([]);
+        expect(r.instance.open()).toBe(true);
       });
     });
 
