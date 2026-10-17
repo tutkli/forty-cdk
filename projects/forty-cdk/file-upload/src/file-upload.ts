@@ -32,6 +32,10 @@ import type { ForFileUploadRejection } from './file-upload-rejection';
  * `multiple="false"` — every selected file lands in exactly one of the two
  * outputs.
  *
+ * A drag carrying no files, such as selected text or a link, is left to its
+ * default behaviour: the zone neither accepts it as a drop target nor
+ * swallows its drop.
+ *
  * Reflects `data-dragging` while files are dragged over the zone and
  * `data-disabled` when the zone is disabled, either through its own
  * `disabled` or through a surrounding disabled `[forFieldset]`.
@@ -162,14 +166,14 @@ export class ForFileUpload implements ForFileUploadContext {
   }
 
   private onDragEnter(event: DragEvent): void {
-    if (this.effectiveDisabled()) return;
+    if (this.effectiveDisabled() || !isFileDrag(event)) return;
     event.preventDefault();
     this.#dragDepth++;
     this.#dragging.set(true);
   }
 
   private onDragOver(event: DragEvent): void {
-    if (this.effectiveDisabled()) return;
+    if (this.effectiveDisabled() || !isFileDrag(event)) return;
     event.preventDefault();
     if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
   }
@@ -182,7 +186,7 @@ export class ForFileUpload implements ForFileUploadContext {
   private onDrop(event: DragEvent): void {
     this.#dragDepth = 0;
     this.#dragging.set(false);
-    if (this.effectiveDisabled()) return;
+    if (this.effectiveDisabled() || !isFileDrag(event)) return;
     event.preventDefault();
     const dropped = event.dataTransfer?.files;
     if (!dropped || dropped.length === 0) return;
@@ -211,4 +215,8 @@ export class ForFileUpload implements ForFileUploadContext {
     for (const file of files) dataTransfer.items.add(file);
     return dataTransfer.files;
   }
+}
+
+function isFileDrag(event: DragEvent): boolean {
+  return event.dataTransfer?.types.includes('Files') ?? false;
 }

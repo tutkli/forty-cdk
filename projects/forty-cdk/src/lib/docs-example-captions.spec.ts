@@ -31,6 +31,7 @@ describe('docs example captions perform on their demos', () => {
       const drop = new Event('drop', { bubbles: true, cancelable: true });
       Object.defineProperty(drop, 'dataTransfer', {
         value: {
+          types: ['Files'],
           files: [
             new File(['x'], 'report.pdf', { type: 'application/pdf' }),
           ] as unknown as FileList,

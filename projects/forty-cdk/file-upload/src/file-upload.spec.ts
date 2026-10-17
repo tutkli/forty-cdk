@@ -125,6 +125,18 @@ class FieldsetDropOnlyHost {
   }
 }
 
+const dragEvent = (
+  type: string,
+  files: File[] = [],
+  types: readonly string[] = ['Files'],
+): Event => {
+  const event = new Event(type, { bubbles: true, cancelable: true });
+  Object.defineProperty(event, 'dataTransfer', {
+    value: { types, files: files as unknown as FileList, dropEffect: 'none' },
+  });
+  return event;
+};
+
 describe('ForFileUpload', () => {
   describe('input attribute mirroring', () => {
     it('reflects type="file", accept, multiple, and disabled on the native input', async () => {
@@ -205,7 +217,7 @@ describe('ForFileUpload', () => {
       const { el, flush: f } = renderHost(FileUploadHost);
       const zone = el.querySelector('[forFileUpload]') as HTMLElement;
 
-      zone.dispatchEvent(new Event('dragenter', { bubbles: true, cancelable: true }));
+      zone.dispatchEvent(dragEvent('dragenter'));
       await f();
       expect(zone.getAttribute('data-dragging')).toBe('');
 
@@ -218,9 +230,9 @@ describe('ForFileUpload', () => {
       const { el, flush: f } = renderHost(FileUploadHost);
       const zone = el.querySelector('[forFileUpload]') as HTMLElement;
 
-      zone.dispatchEvent(new Event('dragenter', { bubbles: true, cancelable: true }));
+      zone.dispatchEvent(dragEvent('dragenter'));
       await f();
-      zone.dispatchEvent(new Event('dragenter', { bubbles: true, cancelable: true }));
+      zone.dispatchEvent(dragEvent('dragenter'));
       await f();
 
       zone.dispatchEvent(new Event('dragleave', { bubbles: true }));
@@ -233,16 +245,45 @@ describe('ForFileUpload', () => {
     });
   });
 
+  describe('non-file drags', () => {
+    const textTypes = ['text/plain', 'text/uri-list'];
+
+    it('neither reflects data-dragging nor claims a text or link drag', async () => {
+      const { el, flush: f } = renderHost(FileUploadHost);
+      const zone = el.querySelector<HTMLElement>('[forFileUpload]')!;
+
+      const dragenter = dragEvent('dragenter', [], textTypes);
+      const dragover = dragEvent('dragover', [], textTypes);
+      zone.dispatchEvent(dragenter);
+      zone.dispatchEvent(dragover);
+      await f();
+
+      expect(zone.hasAttribute('data-dragging')).toBe(false);
+      expect(dragenter.defaultPrevented).toBe(false);
+      expect(dragover.defaultPrevented).toBe(false);
+    });
+
+    it('leaves a dropped text or link to its default action and emits nothing', async () => {
+      const { el, instance, flush: f } = renderHost(FileUploadHost);
+      const zone = el.querySelector<HTMLElement>('[forFileUpload]')!;
+
+      const drop = dragEvent('drop', [], textTypes);
+      zone.dispatchEvent(drop);
+      await f();
+
+      expect(drop.defaultPrevented).toBe(false);
+      expect(instance.capturedFiles()).toBeNull();
+      expect(instance.rejectedFiles()).toBeNull();
+    });
+  });
+
   describe('filesChange on drop', () => {
     it('emits the dropped files when a file is dropped', async () => {
       const { el, instance, flush: f } = renderHost(FileUploadDropOnlyHost);
       const zone = el.querySelector<HTMLElement>('[forFileUpload]')!;
 
       const file = new File(['x'], 'a.txt', { type: 'text/plain' });
-      const event = new Event('drop', { bubbles: true, cancelable: true });
-      Object.defineProperty(event, 'dataTransfer', {
-        value: { files: [file] as unknown as FileList, dropEffect: 'none' },
-      });
+      const event = dragEvent('drop', [file]);
       zone.dispatchEvent(event);
       await f();
 
@@ -281,10 +322,7 @@ describe('ForFileUpload', () => {
     }
 
     const drop = (zone: HTMLElement, files: File[]): void => {
-      const event = new Event('drop', { bubbles: true, cancelable: true });
-      Object.defineProperty(event, 'dataTransfer', {
-        value: { files: files as unknown as FileList, dropEffect: 'none' },
-      });
+      const event = dragEvent('drop', files);
       zone.dispatchEvent(event);
     };
 
@@ -420,8 +458,6 @@ describe('ForFileUpload', () => {
   });
 
   describe('drag state while disabled', () => {
-    const dragEvent = (type: string): Event => new Event(type, { bubbles: true, cancelable: true });
-
     it('clears data-dragging when disabled mid-drag and a dragleave arrives', async () => {
       const { el, instance, flush: f } = renderHost(FileUploadHost);
       const zone = el.querySelector<HTMLElement>('[forFileUpload]')!;
@@ -448,13 +484,7 @@ describe('ForFileUpload', () => {
       instance.disabled.set(true);
       await f();
 
-      const event = dragEvent('drop');
-      Object.defineProperty(event, 'dataTransfer', {
-        value: {
-          files: [new File(['x'], 'a.txt', { type: 'text/plain' })] as unknown as FileList,
-          dropEffect: 'none',
-        },
-      });
+      const event = dragEvent('drop', [new File(['x'], 'a.txt', { type: 'text/plain' })]);
       zone.dispatchEvent(event);
       await f();
 
@@ -517,10 +547,7 @@ describe('ForFileUpload', () => {
       await f();
 
       const file = new File(['x'], 'b.txt', { type: 'text/plain' });
-      const event = new Event('drop', { bubbles: true, cancelable: true });
-      Object.defineProperty(event, 'dataTransfer', {
-        value: { files: [file] as unknown as FileList, dropEffect: 'none' },
-      });
+      const event = dragEvent('drop', [file]);
       zone.dispatchEvent(event);
       await f();
 
@@ -529,16 +556,8 @@ describe('ForFileUpload', () => {
   });
 
   describe('surrounding disabled [forFieldset]', () => {
-    const dropEvent = (): Event => {
-      const event = new Event('drop', { bubbles: true, cancelable: true });
-      Object.defineProperty(event, 'dataTransfer', {
-        value: {
-          files: [new File(['x'], 'b.txt', { type: 'text/plain' })] as unknown as FileList,
-          dropEffect: 'none',
-        },
-      });
-      return event;
-    };
+    const dropEvent = (): Event =>
+      dragEvent('drop', [new File(['x'], 'b.txt', { type: 'text/plain' })]);
 
     it('disables the zone, trigger and input while the group is disabled', async () => {
       const { el, instance, flush: f } = renderHost(FieldsetFileUploadHost);
@@ -564,9 +583,9 @@ describe('ForFileUpload', () => {
       const zone = el.querySelector<HTMLElement>('[forFileUpload]')!;
       await f();
 
-      const dragover = new Event('dragover', { bubbles: true, cancelable: true });
+      const dragover = dragEvent('dragover');
       zone.dispatchEvent(dragover);
-      zone.dispatchEvent(new Event('dragenter', { bubbles: true, cancelable: true }));
+      zone.dispatchEvent(dragEvent('dragenter'));
       zone.dispatchEvent(dropEvent());
       await f();
 
@@ -664,15 +683,9 @@ describe('ForFileUpload', () => {
       const setValue = vi.spyOn(input, 'value', 'set');
 
       const zone = el.querySelector<HTMLElement>('[forFileUpload]')!;
-      const event = new Event('drop', { bubbles: true, cancelable: true });
-      Object.defineProperty(event, 'dataTransfer', {
-        value: {
-          files: [
-            new File(['x'], 'b.exe', { type: 'application/octet-stream' }),
-          ] as unknown as FileList,
-          dropEffect: 'none',
-        },
-      });
+      const event = dragEvent('drop', [
+        new File(['x'], 'b.exe', { type: 'application/octet-stream' }),
+      ]);
       zone.dispatchEvent(event);
       await f();
 
@@ -712,10 +725,7 @@ describe('ForFileUpload', () => {
       setInputFiles(input, []);
       const zone = el.querySelector<HTMLElement>('[forFileUpload]')!;
       const drop = async (files: File[]): Promise<void> => {
-        const event = new Event('drop', { bubbles: true, cancelable: true });
-        Object.defineProperty(event, 'dataTransfer', {
-          value: { files: files as unknown as FileList, dropEffect: 'none' },
-        });
+        const event = dragEvent('drop', files);
         zone.dispatchEvent(event);
         await flush();
       };
