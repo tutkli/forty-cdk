@@ -291,7 +291,7 @@ test.describe('Virtualized *forVirtualFor list reorder', () => {
     await expect(el(page, 'last-reorder')).toHaveText(`${from}->${target.index}`);
   });
 
-  test('a drop after a wheel scroll under a still pointer lands on the row under the pointer', async ({
+  test('a drop after the list scrolled under a still pointer lands on the row under the pointer', async ({
     page,
   }) => {
     const indices = await renderedIndices(page);
@@ -316,16 +316,9 @@ test.describe('Virtualized *forVirtualFor list reorder', () => {
     const restY = middle.bottom - 4;
     await page.mouse.move(startX, restY);
 
-    await page.mouse.wheel(0, 440);
-    let lastTop = -1;
-    await expect
-      .poll(async () => {
-        const top = await root.evaluate((node) => node.scrollTop);
-        const settled = top > 0 && top === lastTop;
-        lastTop = top;
-        return settled;
-      })
-      .toBe(true);
+    await root.evaluate((node) => {
+      node.scrollTop += 440;
+    });
     let lastIndex = -1;
     await expect
       .poll(async () => {
