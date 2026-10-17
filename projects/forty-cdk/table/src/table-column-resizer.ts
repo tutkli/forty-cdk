@@ -34,13 +34,23 @@ export interface TableResizeDescriptor {
 }
 
 /**
+ * Payload of `[widthRevert]`: which column was reverted and the width (px) it had before the
+ * gesture, `undefined` when the column had no width yet.
+ */
+export interface TableResizeRevertDescriptor {
+  column: string;
+  width: number | undefined;
+}
+
+/**
  * Turns a focusable element inside a `[forTableHeaderCell]` into a column-resize
  * handle. Supports pointer drag (with a dead-zone so a plain click is a no-op) and
  * keyboard resize, both constrained to `[min, max]`: `ArrowLeft` / `ArrowRight` step by
  * `step` (RTL-mirrored), `Page Up` / `Page Down` shrink / grow by `largeStep`, `Home`
  * snaps to `min` and `End` to a finite `max`, the same keymap as `[forPaneResizer]`.
  * Pressing `Escape` (or a `pointercancel`) during a drag reverts the width to where
- * the gesture started and emits no `resizeCommit`. Being destroyed mid-drag reverts
+ * the gesture started and emits no `resizeCommit`; a column that had no width goes back
+ * to `undefined`, so no width var stays published. Being destroyed mid-drag reverts
  * too, reporting the pre-drag width through the `[widthRevert]` callback because the
  * `[(width)]` model can no longer emit during teardown.
  *
@@ -172,15 +182,16 @@ export class ForTableColumnResizer {
   /**
    * Teardown-only revert channel. Called with the pre-drag width when the handle is
    * destroyed mid-drag — the column is removed, or `resizable` is toggled off — so the
-   * transient drag width never survives as the consumer's persisted value. On every
-   * other revert path (`Escape`, `pointercancel`) the pre-drag width arrives through
-   * `[(width)]` / `widthChange` as usual and this callback does not fire.
+   * transient drag width never survives as the consumer's persisted value. The width is
+   * `undefined` when the column had none before the gesture. On every other revert path
+   * (`Escape`, `pointercancel`) the pre-drag width arrives through `[(width)]` /
+   * `widthChange` as usual and this callback does not fire.
    *
    * Bound as a function reference (`[widthRevert]="onRevert"`), not as an event binding:
    * the `[(width)]` model — like any `output()` on this directive — is already destroyed
    * when the unmount revert happens, so an emitter-based channel cannot deliver it.
    */
-  readonly widthRevert = input<((descriptor: TableResizeDescriptor) => void) | undefined>(
+  readonly widthRevert = input<((descriptor: TableResizeRevertDescriptor) => void) | undefined>(
     undefined,
   );
 
@@ -216,6 +227,7 @@ export class ForTableColumnResizer {
   #pointerSession: PointerDragSession | null = null;
 
   #dragStartCoord = 0;
+  #dragStartWidth: number | undefined = undefined;
   #dragStartValue = 0;
   #dragInvert = false;
   #dragCurrent = 0;
@@ -298,7 +310,8 @@ export class ForTableColumnResizer {
     const ltr = this.ctx.dir() !== 'rtl';
     this.#dragInvert = !ltr;
     this.#dragStartCoord = event.clientX;
-    this.#dragStartValue = this.width() ?? this.#measureBaseWidth();
+    this.#dragStartWidth = this.width();
+    this.#dragStartValue = this.#dragStartWidth ?? this.#measureBaseWidth();
     this.#dragCurrent = this.#dragStartValue;
     return true;
   }
@@ -324,15 +337,15 @@ export class ForTableColumnResizer {
 
   #onDragCancel(): void {
     this.#resizing.set(false);
-    if (this.#dragCurrent === this.#dragStartValue) {
-      return;
-    }
     this.#dragCurrent = this.#dragStartValue;
-    if (this.#destroying) {
-      this.widthRevert()?.({ column: this.column(), width: this.#dragStartValue });
+    if (this.width() === this.#dragStartWidth) {
       return;
     }
-    this.width.set(this.#dragStartValue);
+    if (this.#destroying) {
+      this.widthRevert()?.({ column: this.column(), width: this.#dragStartWidth });
+      return;
+    }
+    this.width.set(this.#dragStartWidth);
   }
 
   private onKeyDown(event: KeyboardEvent): void {

@@ -36,7 +36,11 @@ import {
   type TableSortDescriptor,
   type TableSortDirection,
 } from './table-sort-header';
-import { ForTableColumnResizer, type TableResizeDescriptor } from './table-column-resizer';
+import {
+  ForTableColumnResizer,
+  type TableResizeDescriptor,
+  type TableResizeRevertDescriptor,
+} from './table-column-resizer';
 import { ForTableColumnLabel } from './table-column-label';
 import { ForTableColumnReorder, type TableColumnReorderDescriptor } from './table-column-reorder';
 import { ForTableRowReorder, type TableRowReorderDescriptor } from './table-row-reorder';
@@ -321,8 +325,8 @@ class FormWrappedResizeTableHost {
 class RemovableResizeTableHost {
   readonly show = signal(true);
   readonly width = signal<number | undefined>(100);
-  readonly reverts: TableResizeDescriptor[] = [];
-  readonly onWidthRevert = (descriptor: TableResizeDescriptor): void => {
+  readonly reverts: TableResizeRevertDescriptor[] = [];
+  readonly onWidthRevert = (descriptor: TableResizeRevertDescriptor): void => {
     this.reverts.push(descriptor);
     this.width.set(descriptor.width);
   };
@@ -5060,6 +5064,55 @@ describe('ForTable', () => {
       await flush();
       expect(instance.width()).toBe(100);
       expect(instance.reverts).toEqual([]);
+    });
+
+    it('Escape mid-drag on an unset width restores it to unset and publishes no var', async () => {
+      const { el, instance, flush } = renderHost(RemovableResizeTableHost);
+      instance.width.set(undefined);
+      await flush();
+      const r = resizerEl(el);
+
+      r.dispatchEvent(pointerEvent('pointerdown', { clientX: 200 }));
+      document.dispatchEvent(pointerEvent('pointermove', { clientX: 250 }));
+      await flush();
+      expect(instance.width()).toBe(50);
+
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      await flush();
+      expect(instance.width()).toBeUndefined();
+      expect(tableRootEl(el).style.getPropertyValue('--for-table-col-name-width')).toBe('');
+      expect(instance.reverts).toEqual([]);
+    });
+
+    it('a pointercancel mid-drag on an unset width restores it to unset', async () => {
+      const { el, instance, flush } = renderHost(RemovableResizeTableHost);
+      instance.width.set(undefined);
+      await flush();
+      const r = resizerEl(el);
+
+      r.dispatchEvent(pointerEvent('pointerdown', { clientX: 200 }));
+      document.dispatchEvent(pointerEvent('pointermove', { clientX: 250 }));
+      document.dispatchEvent(pointerEvent('pointercancel', { clientX: 250 }));
+      await flush();
+      expect(instance.width()).toBeUndefined();
+      expect(tableRootEl(el).style.getPropertyValue('--for-table-col-name-width')).toBe('');
+    });
+
+    it('destroying the handle mid-drag on an unset width reports an unset width through [widthRevert]', async () => {
+      const { el, instance, flush } = renderHost(RemovableResizeTableHost);
+      instance.width.set(undefined);
+      await flush();
+      const r = resizerEl(el);
+
+      r.dispatchEvent(pointerEvent('pointerdown', { clientX: 200 }));
+      document.dispatchEvent(pointerEvent('pointermove', { clientX: 260 }));
+      await flush();
+      expect(instance.width()).toBe(60);
+
+      instance.show.set(false);
+      await flush();
+      expect(instance.reverts).toEqual([{ column: 'name', width: undefined }]);
+      expect(instance.width()).toBeUndefined();
     });
 
     it('throws a prefixed error for a CSS-unsafe resizer column name', () => {

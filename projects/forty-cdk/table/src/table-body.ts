@@ -35,7 +35,11 @@ import { eventFromInteractiveDescendant } from './interactive-descendant';
 import { assertRowDefConfig, type ForTableRowDef } from './row-def';
 import { ForTableCell } from './table-cell';
 import { ForTableColumnReorder, type TableColumnReorderDescriptor } from './table-column-reorder';
-import { ForTableColumnResizer, type TableResizeDescriptor } from './table-column-resizer';
+import {
+  ForTableColumnResizer,
+  type TableResizeDescriptor,
+  type TableResizeRevertDescriptor,
+} from './table-column-resizer';
 import { injectTableContext, injectTableRegistration } from './table-context';
 import { ForTableHeaderCell } from './table-header-cell';
 import { ForTableHeaderRow } from './table-header-row';
@@ -124,7 +128,8 @@ interface RenderRow<T> {
  * Sorting stays consumer-applied: the body derives each header's `aria-sort` from `sort` and
  * re-emits activation through `sortChange`. Resize width state can be owned by the body through
  * `[(columnWidths)]`, keyed by column name, with per-def `resizeMin` / `resizeMax` / `resizeStep` /
- * `autoFit` / `fitIncludesHeader` tuning; gesture-end commits still surface through `resizeCommit`.
+ * `resizeLargeStep` / `resizeDisabled` / `autoFit` / `fitIncludesHeader` tuning; gesture-end
+ * commits still surface through `resizeCommit`.
  * Selection stays consumer-placed — drop `[forTableRowSelector]` / `[forTableSelectAll]` into the
  * cell templates and set `rowKey` to give each row a selection identity.
  *
@@ -168,7 +173,7 @@ interface RenderRow<T> {
     <ng-template #headerCellContent let-column let-cell="cell">
       @let col = column.def;
       <ng-container
-        [ngTemplateOutlet]="col.header().template"
+        [ngTemplateOutlet]="col.header()?.template ?? null"
         [ngTemplateOutletInjector]="cell.injector"
       />
       @if (col.resizable()) {
@@ -179,6 +184,8 @@ interface RenderRow<T> {
           [min]="col.resizeMin()"
           [max]="col.resizeMax()"
           [step]="col.resizeStep()"
+          [largeStep]="col.resizeLargeStep()"
+          [disabled]="col.resizeDisabled()"
           [autoFit]="col.autoFit()"
           [fitIncludesHeader]="col.fitIncludesHeader()"
           [widthRevert]="onColumnWidthRevert"
@@ -207,10 +214,11 @@ interface RenderRow<T> {
               [sticky]="col.sticky()"
               [class]="col.headerClass()"
               forTableSortHeader
+              #sortHeader="forTableSortHeader"
               [column]="column.name"
               [sortable]="col.sortable()"
               [direction]="directionFor(column.name)"
-              (sortChange)="sortChange.emit($event)"
+              (sortChange)="onSortChange(sortHeader, $event)"
               forDraggable
               [dragData]="column.name"
             >
@@ -233,10 +241,11 @@ interface RenderRow<T> {
               [sticky]="col.sticky()"
               [class]="col.headerClass()"
               forTableSortHeader
+              #sortHeader="forTableSortHeader"
               [column]="column.name"
               [sortable]="col.sortable()"
               [direction]="directionFor(column.name)"
-              (sortChange)="sortChange.emit($event)"
+              (sortChange)="onSortChange(sortHeader, $event)"
             >
               <ng-container
                 [ngTemplateOutlet]="headerCellContent"
@@ -258,10 +267,11 @@ interface RenderRow<T> {
             [sticky]="col.sticky()"
             [class]="col.headerClass()"
             forTableSortHeader
+            #sortHeader="forTableSortHeader"
             [column]="column.name"
             [sortable]="col.sortable()"
             [direction]="directionFor(column.name)"
-            (sortChange)="sortChange.emit($event)"
+            (sortChange)="onSortChange(sortHeader, $event)"
           >
             <ng-container
               [ngTemplateOutlet]="headerCellContent"
@@ -363,7 +373,7 @@ interface RenderRow<T> {
                   [class]="col.cellClass()"
                 >
                   <ng-container
-                    [ngTemplateOutlet]="col.dataCell().template"
+                    [ngTemplateOutlet]="col.dataCell()?.template ?? null"
                     [ngTemplateOutletInjector]="cell.injector"
                     [ngTemplateOutletContext]="{ $implicit: r.datum, index: r.index }"
                   />
@@ -437,7 +447,8 @@ export class ForTableBody<T = unknown> {
   /**
    * The single active sort descriptor. Each `sortable` column derives its
    * `aria-sort` from it (the "one sorted column" rule); the consumer updates it
-   * from `sortChange` and re-sorts `rows`.
+   * from `sortChange` and re-sorts `rows`. An activation the consumer does not
+   * adopt leaves every header's `aria-sort` where `sort` puts it.
    */
   readonly sort = input<TableSortDescriptor | null>(null);
 
@@ -497,8 +508,9 @@ export class ForTableBody<T = unknown> {
    * handle exposes `aria-valuenow` from the first render and the column's grid
    * track picks up the seeded width immediately — and is updated immutably on
    * every live width change the handle reports (pointer drag, keyboard resize,
-   * auto-fit), including the pre-drag revert of a handle destroyed mid-drag. Only
-   * `resizable` columns participate; other names are ignored.
+   * auto-fit), including the pre-drag revert of a handle destroyed mid-drag. A
+   * cancelled gesture on a column the map held no width for removes the key again.
+   * Only `resizable` columns participate; other names are ignored.
    *
    * The map is JSON-serializable, so persisting a user's column layout is
    * `[(columnWidths)]` plus one storage write. Together with `[displayedColumns]`
@@ -666,7 +678,7 @@ export class ForTableBody<T = unknown> {
   readonly track: Signal<string> = computed(() =>
     this.orderedColumns()
       .map(({ def, name }) => {
-        assertColumnDefConfig(def);
+        assertColumnDefConfig(def, name);
         return (
           def.width() ??
           `var(${this.#namespacer.namespace(`--for-table-col-${name}-width`)}, ${def.fallbackWidth() ?? 'minmax(0, 1fr)'})`
@@ -768,15 +780,22 @@ export class ForTableBody<T = unknown> {
 
   /**
    * Folds a stamped resizer's live width update into the `[(columnWidths)]` map
-   * immutably, keyed by the column name. Ignores the resizer's initial unset
-   * (`undefined`) emission and no-ops when the width is unchanged, so seeding the
-   * handle from `columnWidths` never loops back into a redundant model write.
+   * immutably, keyed by the column name. An `undefined` width — a cancelled gesture on a
+   * column that had no width — removes the key, so the column keeps following its
+   * `fallbackWidth`. No-ops when the map already holds the value, so seeding the handle
+   * from `columnWidths` never loops back into a redundant model write.
    */
   private onColumnWidthChange(column: string, width: number | undefined): void {
+    const current = this.columnWidths();
     if (width === undefined) {
+      if (!Object.hasOwn(current, column)) {
+        return;
+      }
+      const next = { ...current };
+      delete next[column];
+      this.columnWidths.set(next);
       return;
     }
-    const current = this.columnWidths();
     if (current[column] === width) {
       return;
     }
@@ -791,9 +810,20 @@ export class ForTableBody<T = unknown> {
    * A function reference rather than an output, because the revert happens during the handle's
    * teardown. The body outlives it, so its own `columnWidthsChange` still reaches the consumer.
    */
-  private readonly onColumnWidthRevert = (descriptor: TableResizeDescriptor): void => {
+  private readonly onColumnWidthRevert = (descriptor: TableResizeRevertDescriptor): void => {
     this.onColumnWidthChange(descriptor.column, descriptor.width);
   };
+
+  /**
+   * Re-emits a stamped header's activation through `sortChange`, then puts the header's
+   * direction back on `sort`. The header writes the direction it computed into its own model,
+   * and the `[direction]` binding is pushed again only when `sort` changes, so a consumer that
+   * ignores the event would otherwise leave the header announcing a sort `sort` does not hold.
+   */
+  private onSortChange(header: ForTableSortHeader, descriptor: TableSortDescriptor): void {
+    header.direction.set(this.directionFor(descriptor.column));
+    this.sortChange.emit(descriptor);
+  }
 
   private onRowClick(row: RenderRow<T>, event: MouseEvent): void {
     if (this.interactiveRows()) {

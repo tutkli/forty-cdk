@@ -33,7 +33,11 @@ export {
   type TableSortDirection,
   type TableSortDescriptor,
 } from './table-sort-header';
-export { ForTableColumnResizer, type TableResizeDescriptor } from './table-column-resizer';
+export {
+  ForTableColumnResizer,
+  type TableResizeDescriptor,
+  type TableResizeRevertDescriptor,
+} from './table-column-resizer';
 export { ForTableColumnLabel } from './table-column-label';
 export { ForTableColumnReorder, type TableColumnReorderDescriptor } from './table-column-reorder';
 export { ForTableRowReorder, type TableRowReorderDescriptor } from './table-row-reorder';

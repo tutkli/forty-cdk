@@ -60,13 +60,18 @@ stamps no expansion affordances. The examples below use `mode="grid"`, but each 
   `grid-template-columns`**: each column contributes its `[width]`, falling back to the published
   `--for-table-col-<name>-width` resize var. A resized column therefore drives its own track with no glue.
 - **Auto-wired from per-column flags:** `sortable` wires `[forTableSortHeader]` (the body derives each
-  header's direction from its `[sort]` input and re-emits `(sortChange)`), and `resizable` wires
+  header's direction from its `[sort]` input and re-emits `(sortChange)`; a header activation you do not
+  adopt into `[sort]` leaves `aria-sort` where it was), and `resizable` wires
   `[forTableColumnResizer]` (re-emitted through `(resizeCommit)`; give `resizeAriaLabel` so the handle
   is named). Tune the handle per column on `[forTableColumnDef]`: `[resizeMin]` / `[resizeMax]` (bounds,
-  driving `aria-valuemin` / `aria-valuemax`), `[resizeStep]` (arrow-key increment), `autoFit`
+  driving `aria-valuemin` / `aria-valuemax`), `[resizeStep]` (arrow-key increment), `[resizeLargeStep]`
+  (`Page Up` / `Page Down` increment, `100` by default), `resizeDisabled` (freezes the handle without
+  removing it: it leaves the tab order and ignores keyboard, pointer and double-click input), `autoFit`
   (double-click size-to-content, **on by default**; set `[autoFit]="false"` to disable), and
   `fitIncludesHeader` (also account for the header label, isolated with a `[forTableColumnLabel]` inside
-  the `[forTableHeaderCellDef]` template). Let the body own width **state** with `[(columnWidths)]` (see
+  the `[forTableHeaderCellDef]` template). Every def declares both a `[forTableHeaderCellDef]` and a
+  `[forTableCellDef]` template; a displayed def missing either throws `FORCDK-TABLE-013` in dev mode,
+  naming the column. Let the body own width **state** with `[(columnWidths)]` (see
   [Persisting column widths](#persisting-column-widths-columnwidths)), or keep applying widths yourself
   from `(resizeCommit)`.
 - **Consumer-placed in templates:** selection (`[forTableRowSelector]` / `[forTableSelectAll]`) and any
@@ -167,6 +172,10 @@ export class PeopleTable {
   }
 }
 ```
+
+A gesture that ends without a commit leaves the map as it was: `Escape`, a `pointercancel`, or the
+handle unmounting mid-drag puts back the column's pre-drag width, and for a column the map held no
+width for, removes the key again, so the column keeps following its `fallbackWidth`.
 
 Only `resizable` columns participate; unknown names are ignored. Together with `[displayedColumns]` and
 `[sort]`, `[(columnWidths)]` makes the full user-configurable table state three bindings. Prefer

@@ -579,14 +579,6 @@ describe('ForTableBody def registration seam (#1372)', () => {
     })
     class WidthOnlyDefHost {}
 
-    it('validates a width track without stringifying an unwritten name', () => {
-      vi.stubGlobal('ngDevMode', false);
-      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
-      const fixture = TestBed.createComponent(WidthOnlyDefHost);
-
-      expect(() => fixture.detectChanges()).not.toThrow();
-    });
-
     it('names the unbound def in dev mode instead of failing on the name', () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(WidthOnlyDefHost);

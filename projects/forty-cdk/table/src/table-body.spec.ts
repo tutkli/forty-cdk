@@ -840,6 +840,38 @@ class BadWidthHost {
 }
 
 @Component({
+  imports: [ForTable, ForTableBody, ForTableColumnDef, ForTableHeaderCellDef],
+  template: `
+    <div forTable>
+      <for-table-body [rows]="rows">
+        <ng-container forTableColumnDef="name">
+          <ng-template forTableHeaderCellDef>Name</ng-template>
+        </ng-container>
+      </for-table-body>
+    </div>
+  `,
+})
+class MissingCellDefHost {
+  readonly rows = [{ name: 'Ada' }];
+}
+
+@Component({
+  imports: [ForTable, ForTableBody, ForTableColumnDef, ForTableCellDef],
+  template: `
+    <div forTable>
+      <for-table-body [rows]="rows">
+        <ng-container forTableColumnDef="name">
+          <ng-template forTableCellDef let-row>{{ row.name }}</ng-template>
+        </ng-container>
+      </for-table-body>
+    </div>
+  `,
+})
+class MissingHeaderDefHost {
+  readonly rows = [{ name: 'Ada' }];
+}
+
+@Component({
   imports: [
     ForTable,
     ForTableBody,
@@ -863,6 +895,8 @@ class BadWidthHost {
           [resizeMin]="min()"
           [resizeMax]="max()"
           [resizeStep]="step()"
+          [resizeLargeStep]="largeStep()"
+          [resizeDisabled]="resizeDisabled()"
           [autoFit]="autoFit()"
           [fitIncludesHeader]="fitIncludesHeader()"
         >
@@ -889,6 +923,8 @@ class ResizeOptionsHost {
   readonly min = signal(0);
   readonly max = signal(Infinity);
   readonly step = signal(25);
+  readonly largeStep = signal(100);
+  readonly resizeDisabled = signal(false);
   readonly autoFit = signal(true);
   readonly fitIncludesHeader = signal(false);
   readonly lastCommit = signal<TableResizeDescriptor | null>(null);
@@ -1297,6 +1333,41 @@ describe('ForTableBody', () => {
       new MouseEvent('click', { bubbles: true }),
     );
     expect(instance.lastSort()).toEqual({ column: 'name', direction: 'ascending' });
+  });
+
+  it('keeps aria-sort on the sort input when the consumer does not adopt sortChange', async () => {
+    const { instance, query, flush } = renderHost(BodyHost);
+    const nameHeader = query('[forTableHeaderCell][data-column="name"]')!;
+
+    nameHeader.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await flush();
+    expect(instance.lastSort()).toEqual({ column: 'name', direction: 'ascending' });
+    expect(nameHeader.hasAttribute('aria-sort')).toBe(false);
+    expect(nameHeader.hasAttribute('data-sorted')).toBe(false);
+
+    nameHeader.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await flush();
+    expect(instance.lastSort()).toEqual({ column: 'name', direction: 'ascending' });
+    expect(nameHeader.hasAttribute('aria-sort')).toBe(false);
+  });
+
+  it('cycles the next direction from the adopted sort input', async () => {
+    const { instance, query, flush } = renderHost(BodyHost);
+    const nameHeader = query('[forTableHeaderCell][data-column="name"]')!;
+
+    nameHeader.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    instance.sort.set(instance.lastSort());
+    await flush();
+    expect(nameHeader.getAttribute('aria-sort')).toBe('ascending');
+
+    nameHeader.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(instance.lastSort()).toEqual({ column: 'name', direction: 'descending' });
+    await flush();
+    expect(nameHeader.getAttribute('aria-sort')).toBe('ascending');
+
+    instance.sort.set(instance.lastSort());
+    await flush();
+    expect(nameHeader.getAttribute('aria-sort')).toBe('descending');
   });
 
   it('renders a resize handle only for resizable columns, with the supplied label', () => {
@@ -2488,6 +2559,48 @@ describe('ForTableBody', () => {
       expect(instance.lastCommit()).toEqual({ column: 'name', width: 160 });
     });
 
+    it('forwards resizeLargeStep to the stamped handle as its Page Up / Page Down step', async () => {
+      const { instance, query, flush } = renderHost(ResizeOptionsHost);
+      instance.largeStep.set(40);
+      await flush();
+      const handle = query('[forTableColumnResizer]')!;
+
+      handle.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'PageDown', bubbles: true, cancelable: true }),
+      );
+      await flush();
+      expect(instance.widths()['name']).toBe(190);
+
+      handle.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'PageUp', bubbles: true, cancelable: true }),
+      );
+      await flush();
+      expect(instance.widths()['name']).toBe(150);
+    });
+
+    it('freezes the stamped handle with resizeDisabled while keeping it rendered', async () => {
+      const { instance, query, flush } = renderHost(ResizeOptionsHost);
+      instance.resizeDisabled.set(true);
+      await flush();
+      const handle = query('[forTableColumnResizer]')!;
+      expect(handle.getAttribute('aria-disabled')).toBe('true');
+      expect(handle.getAttribute('data-disabled')).toBe('');
+      expect(handle.getAttribute('tabindex')).toBe('-1');
+
+      handle.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }),
+      );
+      handle.dispatchEvent(pointerEvent('pointerdown', { clientX: 300 }));
+      document.dispatchEvent(pointerEvent('pointermove', { clientX: 340 }));
+      await flush();
+      expect(instance.widths()['name']).toBe(150);
+      expect(instance.lastCommit()).toBeNull();
+
+      instance.resizeDisabled.set(false);
+      await flush();
+      expect(handle.hasAttribute('aria-disabled')).toBe(false);
+    });
+
     it('ignores a non-primary mouse press on the resize handle', async () => {
       const { instance, query, flush } = renderHost(ResizeOptionsHost);
       const handle = query('[forTableColumnResizer]')!;
@@ -2570,6 +2683,42 @@ describe('ForTableBody', () => {
       expect(instance.widths()['name']).toBe(150);
       expect(instance.lastCommit()).toBeNull();
       expect(warn.mock.calls.flat().join(' ')).not.toContain('NG0953');
+    });
+
+    it('cancelling a drag on a column with no width leaves it out of columnWidths', async () => {
+      const { instance, query, flush } = renderHost(ResizeOptionsHost);
+      instance.widths.set({});
+      await flush();
+      const handle = query('[forTableColumnResizer]')!;
+      const root = query('[forTable]') as HTMLElement;
+
+      handle.dispatchEvent(pointerEvent('pointerdown', { clientX: 300 }));
+      document.dispatchEvent(pointerEvent('pointermove', { clientX: 340 }));
+      await flush();
+      expect(instance.widths()['name']).toBe(40);
+
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      await flush();
+      expect(instance.widths()).toEqual({});
+      expect(root.style.getPropertyValue('--for-table-col-name-width')).toBe('');
+      expect(instance.lastCommit()).toBeNull();
+    });
+
+    it('destroying the handle mid-drag on a column with no width leaves it out of columnWidths', async () => {
+      const { instance, query, flush } = renderHost(ResizeOptionsHost);
+      instance.widths.set({});
+      await flush();
+      const handle = query('[forTableColumnResizer]')!;
+
+      handle.dispatchEvent(pointerEvent('pointerdown', { clientX: 300 }));
+      document.dispatchEvent(pointerEvent('pointermove', { clientX: 340 }));
+      await flush();
+      expect(instance.widths()['name']).toBe(40);
+
+      instance.resizable.set(false);
+      await flush();
+      expect(query('[forTableColumnResizer]')).toBeNull();
+      expect(instance.widths()).toEqual({});
     });
 
     it('clears the track var when a column width is removed from columnWidths', async () => {
@@ -2729,7 +2878,7 @@ describe('ForTableBody', () => {
 
     it('throws from a forTableColumnDef declaring a width that escapes the declaration', () => {
       expect(() => renderHost(BadWidthHost)).toThrowError(
-        /\[forty-cdk\/table\][\s\S]*width[\s\S]*terminates the declaration/,
+        /\[forty-cdk\/table\] FORCDK-TABLE-008: Invalid width [\s\S]* declared on forTableColumnDef="name": [\s\S]*terminates the declaration/,
       );
     });
 
@@ -2738,6 +2887,28 @@ describe('ForTableBody', () => {
       expect((query('[forTableHeaderRow]') as HTMLElement).style.gridTemplateColumns).toBe(
         'var(--for-table-col-name-width, minmax(0, 1fr))',
       );
+    });
+  });
+
+  describe('column template validation', () => {
+    it('throws a coded error naming the column def that has no cell template', () => {
+      expect(() => renderHost(MissingCellDefHost)).toThrowError(
+        /\[forty-cdk\/table\] FORCDK-TABLE-013: forTableColumnDef="name" declares no <ng-template forTableCellDef>/,
+      );
+    });
+
+    it('throws a coded error naming the column def that has no header template', () => {
+      expect(() => renderHost(MissingHeaderDefHost)).toThrowError(
+        /\[forty-cdk\/table\] FORCDK-TABLE-013: forTableColumnDef="name" declares no <ng-template forTableHeaderCellDef>/,
+      );
+    });
+
+    it('skips the template check in production, rendering an empty cell', () => {
+      vi.stubGlobal('ngDevMode', false);
+      const { query } = renderHost(MissingCellDefHost);
+
+      expect(query('[forTableHeaderCell][data-column="name"]')?.textContent?.trim()).toBe('Name');
+      expect(query('[forTableRow] [data-column="name"]')?.textContent?.trim()).toBe('');
     });
   });
 
