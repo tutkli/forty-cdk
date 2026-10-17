@@ -5,6 +5,7 @@ import {
   expectFocused,
   expectStays,
   gotoFixture,
+  recordFocusInsWithin,
   test,
 } from './_helpers';
 
@@ -52,6 +53,19 @@ test.describe('DatePicker', () => {
     await page.keyboard.press('Tab');
     await expectFocused(el(page, 'after'));
     await expect(el(page, 'content')).toHaveCount(0);
+  });
+
+  test('Tab off the calendar never re-enters the closing content when the trigger is the last tabbable', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'date-picker', { triggerLast: '1' });
+    await el(page, 'trigger').click();
+    await expectFocused(el(page, FOCUSED_CELL));
+    const focusIns = await recordFocusInsWithin(page, 'content');
+
+    await page.keyboard.press('Tab');
+    await expect(el(page, 'content')).toHaveCount(0);
+    expect(await focusIns()).toBe(0);
   });
 
   test('Shift+Tab off the first control lands on the trigger and closes', async ({ page }) => {

@@ -376,7 +376,8 @@ export function injectOverlayShell(config: OverlayShellConfig): void {
 /**
  * Moves focus to the tab-out target when a Tab press would leave the surface's Tab cycle, then
  * closes the surface when `closes`. A forward Tab keeps its default action so the browser advances
- * from the target; a backward one is prevented so focus stays on it. Returns whether it closed.
+ * from the target, with the surface inert until that action has run so the advance never lands
+ * back inside it; a backward one is prevented so focus stays on it. Returns whether it closed.
  */
 function handleTabOut(
   event: KeyboardEvent,
@@ -410,12 +411,22 @@ function handleTabOut(
   }
   if (backward) {
     event.preventDefault();
+  } else {
+    skipDuringDefaultAction(host);
   }
   if (!closes) {
     return false;
   }
   config.close();
   return true;
+}
+
+function skipDuringDefaultAction(host: HTMLElement): void {
+  if (host.hasAttribute('inert')) {
+    return;
+  }
+  host.setAttribute('inert', '');
+  setTimeout(() => host.removeAttribute('inert'), 0);
 }
 
 /**
