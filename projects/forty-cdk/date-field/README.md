@@ -87,7 +87,7 @@ export class DateFieldDefaultExample {
 
 ### Date & time
 
-With a time-capable adapter, a `granularity` coarser than `'day'` appends hour / minute segments and the value becomes a `CalendarDateTime`. A 12-hour cycle adds an AM/PM segment you toggle with `↑` / `↓` or by typing `a` / `p`.
+With a time-capable adapter, a `granularity` finer than `'day'` appends hour / minute segments and the value becomes a `CalendarDateTime`. A 12-hour cycle adds an AM/PM segment you toggle with `↑` / `↓` or by typing `a` / `p`.
 
 ### Localized segment labels
 
@@ -139,7 +139,7 @@ export class DobFormField {
 
 ### Date & time range
 
-With a time-capable adapter, a `granularity` coarser than `'day'` appends time segments to both endpoints and the value becomes a `CalendarDateTime` range, which is handy for a check-in to check-out with times. A 12-hour `hourCycle` adds an AM/PM segment to each side.
+With a time-capable adapter, a `granularity` finer than `'day'` appends time segments to both endpoints and the value becomes a `CalendarDateTime` range, which is handy for a check-in to check-out with times. A 12-hour `hourCycle` adds an AM/PM segment to each side.
 
 ### Range in Signal Forms
 
@@ -154,7 +154,7 @@ With a time-capable adapter, a `granularity` coarser than `'day'` appends time s
 | `value`       | `model<D \| null>`                               | Two-way bindable entered date, or `null` while any segment is empty. The `FormValueControl` backing.<br>**Default:** `null`                                                   |
 | `minDate`     | `input<D \| null>`                               | Minimum date (inclusive). A composed value below it is clamped up. Named `minDate` (see note below).<br>**Default:** `null`                                                   |
 | `maxDate`     | `input<D \| null>`                               | Maximum date (inclusive). A composed value above it is clamped down.<br>**Default:** `null`                                                                                   |
-| `granularity` | `input<'day' \| 'hour' \| 'minute' \| 'second'>` | Date-time precision. `'day'` is date-only; coarser-than-day appends time segments. See below.<br>**Default:** `'day'`                                                         |
+| `granularity` | `input<'day' \| 'hour' \| 'minute' \| 'second'>` | Date-time precision. `'day'` is date-only; a finer granularity appends time segments. See below.<br>**Default:** `'day'`                                                      |
 | `hourCycle`   | `input<12 \| 24 \| null>`                        | 12/24-hour cycle for the time segments. `null` → the scope's `hourCycle`, then the locale. 12-hour adds the AM/PM segment.<br>**Default:** `null`                             |
 | `locale`      | `input<string \| null>`                          | BCP 47 locale driving segment order, separators, and month name. `null` → the adapter's `locale()`, then the runtime locale.<br>**Default:** `null`                           |
 | `placeholder` | `input<Partial<Record<SegmentType, string>>>`    | Per-segment placeholder while empty. Unspecified parts fall back to the scope's `placeholder`, then to `dd` / `mm` / `yyyy` / `hh` / `mm` / `ss` / `--`.<br>**Default:** `{}` |
@@ -181,6 +181,11 @@ A native reset of the owning `<form>` returns `value` to what it held when the f
 | `[forDateField]`        | `data-disabled`    | present \| absent |
 | `[forDateField]`        | `data-readonly`    | present \| absent |
 | `[forDateField]`        | `data-empty`       | present \| absent |
+| `[forDateField]`        | `data-required`    | present \| absent |
+| `[forDateField]`        | `data-touched`     | present \| absent |
+| `[forDateField]`        | `data-dirty`       | present \| absent |
+| `[forDateField]`        | `data-pending`     | present \| absent |
+| `[forDateField]`        | `data-invalid`     | present \| absent |
 | `[forDateFieldSegment]` | `data-highlighted` | present \| absent |
 | `[forDateFieldSegment]` | `data-placeholder` | present \| absent |
 | `[forDateFieldSegment]` | `data-disabled`    | present \| absent |
@@ -284,7 +289,7 @@ readonly booking = form(this.model);
 | `value`       | `model<DateRange<D> \| null>`                    | Two-way bindable committed range, or `null` while incomplete or out of order. The `FormValueControl` backing.<br>**Default:** `null`                |
 | `minDate`     | `input<D \| null>`                               | Minimum date (inclusive) for both endpoints. A composed endpoint below it is clamped up. Named `minDate` (see note below).<br>**Default:** `null`   |
 | `maxDate`     | `input<D \| null>`                               | Maximum date (inclusive) for both endpoints. A composed endpoint above it is clamped down.<br>**Default:** `null`                                   |
-| `granularity` | `input<'day' \| 'hour' \| 'minute' \| 'second'>` | Date-time precision shared by both endpoints. `'day'` is date-only; coarser-than-day appends time segments.<br>**Default:** `'day'`                 |
+| `granularity` | `input<'day' \| 'hour' \| 'minute' \| 'second'>` | Date-time precision shared by both endpoints. `'day'` is date-only; a finer granularity appends time segments.<br>**Default:** `'day'`              |
 | `hourCycle`   | `input<12 \| 24 \| null>`                        | 12/24-hour cycle for the time segments. `null` → the scope's `hourCycle`, then the locale. 12-hour adds the AM/PM segment.<br>**Default:** `null`   |
 | `locale`      | `input<string \| null>`                          | BCP 47 locale driving segment order, separators, and month name. `null` → the adapter's `locale()`, then the runtime locale.<br>**Default:** `null` |
 | `placeholder` | `input<Partial<Record<SegmentType, string>>>`    | Per-segment placeholder while empty, applied to both endpoints. Unspecified parts fall back to the scope's `placeholder`.<br>**Default:** `{}`      |
@@ -297,7 +302,7 @@ The endpoint groups each accept an `ariaLabel` input for their own group label, 
 
 > **Why `minDate` / `maxDate`, not `min` / `max`?** Beyond the reason above, `FormUiControl.min` / `max` are additionally typed `NonNullable<TValue>` (the range object itself), which is meaningless as a bound.
 
-`[forDateRangeField]` reflects the same `data-disabled` / `data-readonly` / `data-empty` hooks as `[forDateField]`, plus `data-range-error`; `[forDateRangeFieldSegment]` reflects the same four segment hooks. `data-empty` marks the field only while **both** endpoints are entirely empty; a partially-filled or complete-but-disordered range is **not** empty.
+`[forDateRangeField]` reflects the same root hooks as `[forDateField]` (`data-disabled` / `data-readonly` / `data-empty` / `data-required` and the four form-state hooks), plus `data-range-error`; `[forDateRangeFieldSegment]` reflects the same four segment hooks. `data-empty` marks the field only while **both** endpoints are entirely empty; a partially-filled or complete-but-disordered range is **not** empty.
 
 ### Ordering
 
@@ -315,14 +320,14 @@ Each endpoint is its own tab stop, so `Tab` moves start group → end group → 
 
 Key behavior applies per segment. Horizontal arrows mirror under `dir="rtl"`.
 
-| Key                        | Behavior                                                                                |
-| -------------------------- | --------------------------------------------------------------------------------------- |
-| **0–9**                    | Type the value; auto-advances to the next segment when full.                            |
-| **ArrowUp / ArrowDown**    | Step the value. Day and month wrap; year clamps. Empty seeds from today.                |
-| **ArrowLeft / ArrowRight** | Move to the previous / next segment (no wrap).                                          |
-| **Home / End**             | Jump to the segment minimum / maximum.                                                  |
-| **Backspace**              | Delete the last entered digit; the value becomes `null` when the last digit is removed. |
-| **Delete**                 | Clear the whole segment (the value becomes `null` until refilled).                      |
+| Key                        | Behavior                                                                                                                                                                       |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **0–9**                    | Type the value; auto-advances to the next segment when full.                                                                                                                   |
+| **ArrowUp / ArrowDown**    | Step the value. Day and month wrap; year clamps. An empty date part seeds from today; an empty hour from its minimum (midnight, or 1 AM in 12-hour), minute and second from 0. |
+| **ArrowLeft / ArrowRight** | Move to the previous / next segment (no wrap).                                                                                                                                 |
+| **Home / End**             | Jump to the segment minimum / maximum.                                                                                                                                         |
+| **Backspace**              | Delete the last entered digit; the value becomes `null` when the last digit is removed.                                                                                        |
+| **Delete**                 | Clear the whole segment (the value becomes `null` until refilled).                                                                                                             |
 
 The day clamps to the current month's length (e.g. 31 → 28 in February), and a composed value is clamped into `[minDate, maxDate]`. While focus stays in the field its segments keep what was entered, so editing one part never rewrites the others; they show the clamped value once focus leaves. Stepping the hour skips a wall-clock hour the day does not have, such as a spring-forward DST gap.
 
@@ -340,7 +345,7 @@ Composes the [WAI-ARIA Spinbutton pattern](https://www.w3.org/WAI/ARIA/apg/patte
 
 ## Styling
 
-The library is styleless, so style the boolean `data-*` hooks yourself: `[data-highlighted]` (the focused/roving segment), `[data-placeholder]` (empty), `[data-disabled]` and `[data-readonly]` on the segments, and `[data-empty]` / `[data-disabled]` / `[data-readonly]` on the root group.
+The library is styleless, so style the boolean `data-*` hooks yourself: `[data-highlighted]` (the focused/roving segment), `[data-placeholder]` (empty), `[data-disabled]` and `[data-readonly]` on the segments, and `[data-empty]` / `[data-disabled]` / `[data-readonly]` / `[data-required]` plus the form-state hooks `[data-touched]` / `[data-dirty]` / `[data-pending]` / `[data-invalid]` on the root group.
 
 forty-cdk ships no styles: put your own class on each piece and key your CSS off the `data-*` attributes listed under [Data attributes](#data-attributes), not off the `for*` selectors ([Styling forty-cdk](../../../docs/styling.md) explains why).
 

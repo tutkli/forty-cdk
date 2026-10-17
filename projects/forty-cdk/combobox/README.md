@@ -205,6 +205,10 @@ Input tables are not yet tabulated for this primitive. See the feature sections 
 | `[forCombobox]`          | `data-state`       | `open` \| `closed`                                                  |
 | `[forCombobox]`          | `data-disabled`    | present / absent                                                    |
 | `[forCombobox]`          | `data-readonly`    | present / absent                                                    |
+| `[forCombobox]`          | `data-touched`     | present / absent                                                    |
+| `[forCombobox]`          | `data-dirty`       | present / absent                                                    |
+| `[forCombobox]`          | `data-pending`     | present / absent                                                    |
+| `[forCombobox]`          | `data-invalid`     | present / absent                                                    |
 | `[forComboboxInput]`     | `data-state`       | `open` \| `closed`                                                  |
 | `[forComboboxInput]`     | `data-disabled`    | present / absent                                                    |
 | `[forComboboxToggle]`    | `data-state`       | `open` \| `closed`                                                  |

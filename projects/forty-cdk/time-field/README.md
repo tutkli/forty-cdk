@@ -97,7 +97,7 @@ export class TimeFieldDefaultExample {
 
 ### Bounded time
 
-`minTime` and `maxTime` fence the time-of-day to office hours. Only the time component is compared, so stepping the hour past `17:00` or before `09:00` with `↑` / `↓` clamps back into the 09:00 – 17:00 window.
+`minTime` and `maxTime` fence the time-of-day to office hours. Only the time component is compared, so stepping the hour past `17:00` or before `09:00` with `↑` / `↓` keeps the value inside the 09:00 – 17:00 window. The segments show the stepped hour while focus stays in the field and the clamped time once it leaves.
 
 ### Signal Forms
 
@@ -144,7 +144,7 @@ export class ApptTimeFormField {
 
 ### Bounded range
 
-`minTime` and `maxTime` fence both endpoints to a window. Only the time component is compared, so stepping a segment past 18:00 or before 08:00 clamps back in. That keeps a booking slot inside business hours, with the `start <= end` invariant still enforced on top.
+`minTime` and `maxTime` fence both endpoints to a window. Only the time component is compared, so stepping a segment past 18:00 or before 08:00 keeps the endpoint's value inside the window, and its segments show the clamped time once focus leaves the field. That keeps a booking slot inside business hours, with the `start <= end` invariant still enforced on top.
 
 ### Range in Signal Forms
 
@@ -186,6 +186,11 @@ A native reset of the owning `<form>` returns `value` to what it held when the f
 | `[forTimeField]`        | `data-disabled`    | present \| absent |
 | `[forTimeField]`        | `data-readonly`    | present \| absent |
 | `[forTimeField]`        | `data-empty`       | present \| absent |
+| `[forTimeField]`        | `data-required`    | present \| absent |
+| `[forTimeField]`        | `data-touched`     | present \| absent |
+| `[forTimeField]`        | `data-dirty`       | present \| absent |
+| `[forTimeField]`        | `data-pending`     | present \| absent |
+| `[forTimeField]`        | `data-invalid`     | present \| absent |
 | `[forTimeFieldSegment]` | `data-highlighted` | present \| absent |
 | `[forTimeFieldSegment]` | `data-placeholder` | present \| absent |
 | `[forTimeFieldSegment]` | `data-disabled`    | present \| absent |
@@ -264,7 +269,7 @@ readonly schedule = form(this.model);
 | Property         | Type                                              | Description                                                                                                                                                                                                                                                                       |
 | ---------------- | ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `value`          | `model<DateRange<D> \| null>`                     | Two-way bindable committed range, or `null` while incomplete or out of order. The `FormValueControl` backing.<br>**Default:** `null`                                                                                                                                              |
-| `minTime`        | `input<D \| null>`                                | Earliest time-of-day (inclusive) for both endpoints. A composed endpoint earlier is clamped up. See note below.<br>**Default:** —                                                                                                                                                 |
+| `minTime`        | `input<D \| null>`                                | Earliest time-of-day (inclusive) for both endpoints. A composed endpoint earlier is clamped up. See note below.<br>**Default:** `null`                                                                                                                                            |
 | `maxTime`        | `input<D \| null>`                                | Latest time-of-day (inclusive) for both endpoints. A composed endpoint later is clamped down.<br>**Default:** `null`                                                                                                                                                              |
 | `allowOvernight` | `input<boolean>`                                  | When `true`, a `start > end` entry is read as a range crossing midnight (the end advances to the next day) instead of an error. In this mode the endpoints operate purely on time-of-day (a bound value's calendar days are re-anchored on the sentinel).<br>**Default:** `false` |
 | `granularity`    | `input<'hour' \| 'minute' \| 'second'>`           | Smallest editable unit shared by both endpoints.<br>**Default:** `'minute'`                                                                                                                                                                                                       |
@@ -280,7 +285,7 @@ The endpoint groups each accept an `ariaLabel` input for their own group label, 
 
 > **Why `minTime` / `maxTime`, not `min` / `max`?** Beyond the reason above, `FormUiControl.min` / `max` are additionally typed `NonNullable<TValue>` (the range object itself), which is meaningless as a bound. Only the time-of-day component of the bounds is considered.
 
-`[forTimeRangeField]` reflects the same `data-disabled` / `data-readonly` / `data-empty` hooks as `[forTimeField]`, plus `data-range-error`; `[forTimeRangeFieldSegment]` reflects the same four segment hooks. `data-empty` marks the field only while **both** endpoints are entirely empty; a partially-filled or complete-but-disordered range is **not** empty.
+`[forTimeRangeField]` reflects the same root hooks as `[forTimeField]` (`data-disabled` / `data-readonly` / `data-empty` / `data-required` and the four form-state hooks), plus `data-range-error`; `[forTimeRangeFieldSegment]` reflects the same four segment hooks. `data-empty` marks the field only while **both** endpoints are entirely empty; a partially-filled or complete-but-disordered range is **not** empty.
 
 ### Ordering
 
@@ -302,15 +307,15 @@ Each endpoint is its own tab stop, so `Tab` moves start group → end group → 
 
 Key behavior applies per segment. Horizontal arrows mirror under `dir="rtl"`.
 
-| Key                        | Behavior                                                                                                     |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| **0–9**                    | Type the value; auto-advances to the next segment when full.                                                 |
-| **a / p**                  | On the AM/PM segment, set the period of the entered hour.                                                    |
-| **ArrowUp / ArrowDown**    | Step the value. Hour / minute / second wrap; the AM/PM segment toggles. Empty seeds from midnight.           |
-| **ArrowLeft / ArrowRight** | Move to the previous / next segment (no wrap).                                                               |
-| **Home / End**             | Jump to the segment minimum / maximum (the AM/PM segment → AM / PM).                                         |
-| **Backspace**              | Delete the last entered digit of a numeric segment; the value becomes `null` when the last digit is removed. |
-| **Delete**                 | Clear the whole numeric segment (the value becomes `null` until refilled).                                   |
+| Key                        | Behavior                                                                                                                                                                               |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **0–9**                    | Type the value; auto-advances to the next segment when full.                                                                                                                           |
+| **a / p**                  | On the AM/PM segment, set the period of the entered hour.                                                                                                                              |
+| **ArrowUp / ArrowDown**    | Step the value. Hour / minute / second wrap; the AM/PM segment toggles. An empty hour seeds from its minimum (midnight in 24-hour, 1 AM in 12-hour), an empty minute or second from 0. |
+| **ArrowLeft / ArrowRight** | Move to the previous / next segment (no wrap).                                                                                                                                         |
+| **Home / End**             | Jump to the segment minimum / maximum (the AM/PM segment → AM / PM).                                                                                                                   |
+| **Backspace**              | Delete the last entered digit of a numeric segment; the value becomes `null` when the last digit is removed.                                                                           |
+| **Delete**                 | Clear the whole numeric segment (the value becomes `null` until refilled).                                                                                                             |
 
 The hour, minute, and second clamp to their valid ranges (hour to the cycle, minute / second to 0–59), and a composed value is clamped into `[minTime, maxTime]` by time-of-day. While focus stays in the field its segments keep what was entered, so editing one part never rewrites the others; they show the clamped value once focus leaves. Stepping the hour of a bound date-time skips a wall-clock hour its day does not have, such as a spring-forward DST gap. The AM/PM period is never derived from the entered hour: it stays empty, and the value `null`, until you set it, and Delete / Backspace leave it as it is. In a locale whose 12-hour clock counts 0–11 (`ja-JP`), the hour segment does too, matching the time picker's slot labels.
 
@@ -328,7 +333,7 @@ Composes the [WAI-ARIA Spinbutton pattern](https://www.w3.org/WAI/ARIA/apg/patte
 
 ## Styling
 
-The library is styleless: style the boolean `data-*` hooks yourself. The segments carry `[data-highlighted]` (the focused/roving segment), `[data-placeholder]` (empty), `[data-disabled]` and `[data-readonly]`, and the root group carries `[data-empty]` / `[data-disabled]` / `[data-readonly]`.
+The library is styleless: style the boolean `data-*` hooks yourself. The segments carry `[data-highlighted]` (the focused/roving segment), `[data-placeholder]` (empty), `[data-disabled]` and `[data-readonly]`, and the root group carries `[data-empty]` / `[data-disabled]` / `[data-readonly]` / `[data-required]` plus the form-state hooks `[data-touched]` / `[data-dirty]` / `[data-pending]` / `[data-invalid]`.
 
 forty-cdk ships no styles: put your own class on each piece and key your CSS off the `data-*` attributes listed under [Data attributes](#data-attributes), not off the `for*` selectors ([Styling forty-cdk](../../../docs/styling.md) explains why).
 

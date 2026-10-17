@@ -563,6 +563,10 @@ What the controller changes:
 | `data-orientation` | `horizontal` \| `vertical` |
 | `data-disabled`    | present \| absent          |
 | `data-readonly`    | present \| absent          |
+| `data-touched`     | present \| absent          |
+| `data-dirty`       | present \| absent          |
+| `data-pending`     | present \| absent          |
+| `data-invalid`     | present \| absent          |
 
 > **Requiring a non-empty selection.** The value is a `readonly T[]`, and Angular's `required()`
 > treats only `''`, `false`, `null`, and `NaN` as empty. An empty array counts as _present_, so

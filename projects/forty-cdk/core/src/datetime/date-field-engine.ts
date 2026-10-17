@@ -79,7 +79,7 @@ export class DateFieldEngine<D> extends DateTimeFieldEngineBase<D, DateTimeParts
   readonly #config: DateFieldEngineConfig<D>;
 
   /**
-   * The locale-ordered segment specs. A granularity coarser than a day builds
+   * The locale-ordered segment specs. A granularity finer than a day builds
    * hour / minute / second segments, so a day-only adapter throws here — at the
    * derivation that asked for a time segment, not from a scheduler callback.
    */
