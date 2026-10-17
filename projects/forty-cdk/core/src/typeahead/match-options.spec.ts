@@ -60,6 +60,20 @@ describe('findTypeaheadMatch', () => {
     expect(match(FRUITS, { buffer: 'z' })).toBeNull();
   });
 
+  it('matches an option when any of its candidate texts starts with the query', () => {
+    const slots = [['05:00'], ['06:00', '6:00'], ['16:00']] as const;
+    const find = (buffer: string): readonly string[] | null =>
+      findTypeaheadMatch(
+        slots,
+        { buffer, repeated: false, anchorIndex: -1 },
+        (o) => o,
+        () => false,
+      );
+    expect(find('6')).toBe(slots[1]);
+    expect(find('06')).toBe(slots[1]);
+    expect(find('16')).toBe(slots[2]);
+  });
+
   describe('repeated single-character cycling', () => {
     it('steps to the next same-initial option after the anchor', () => {
       expect(match(FRUITS, { buffer: 'aa', repeated: true, anchorIndex: 0 })).toBe(FRUITS[1]);

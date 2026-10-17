@@ -14,6 +14,7 @@ import {
 import type { FormValueControl } from '@angular/forms/signals';
 
 import {
+  accessibleTextContent,
   type AdoptedField,
   assertTimeCapable,
   createPointerHighlight,
@@ -29,6 +30,7 @@ import {
   type VetoableNativeEvent,
   injectTextDirection,
   FOR_TIME_VALUE_SOURCE,
+  secondsOfDay,
   serializeISOTime,
   timeSentinel,
   composeWithTime,
@@ -39,7 +41,7 @@ import { type TimeCapableDateAdapter } from 'forty-cdk/date-adapter';
 import { AnchoredFormValueControlBase, ListboxOverlayController } from 'forty-cdk/core-overlay';
 import {
   buildTimeSlots,
-  timeOfDaySeconds,
+  selectedSlotSeconds,
   type ForTimeSlot,
   type TimePickerGranularity,
 } from './build-time-slots';
@@ -161,7 +163,9 @@ export class ForTimePicker<D>
 
   /**
    * Finest time unit compared when determining if a slot is selected.
-   * Default `'minute'`. Use `'second'` when the value carries seconds.
+   * Default `'minute'`. Use `'second'` when the value carries seconds. When
+   * several slots share the value's unit (`'hour'` with a step under 60), only
+   * the slot the value falls in at step resolution is selected.
    */
   readonly granularity = input<TimePickerGranularity>('minute');
 
@@ -326,6 +330,7 @@ export class ForTimePicker<D>
     programmaticReason: 'programmatic',
     markTouched: () => this.markTouched(),
     onNavigateFocus: () => this.#pointer.suppress(),
+    typeaheadText: (o) => slotTypeaheadText(accessibleTextContent(o.host)),
   });
 
   /**
@@ -387,6 +392,13 @@ export class ForTimePicker<D>
       formatOptions: this.#effectiveFormatOptions(),
       locale: this.locale() ?? undefined,
     });
+  });
+
+  readonly #selectedSlotSeconds = computed(() => {
+    const current = this.value();
+    return current === null
+      ? null
+      : selectedSlotSeconds(this.adapter, current, this.step(), this.granularity());
   });
 
   /** Formatted display of the current value, or `null` when empty. */
@@ -488,17 +500,12 @@ export class ForTimePicker<D>
     injectNativeFormResetToInitial(this.value, () => this.reset());
   }
 
-  #sameTimeOfDay(a: D, b: D): boolean {
-    const g = this.granularity();
-    return timeOfDaySeconds(this.adapter, a, g) === timeOfDaySeconds(this.adapter, b, g);
-  }
-
   isSelected(v: D | Unset): boolean {
-    const current = this.value();
-    if (current === null || isUnset(v)) {
+    const selected = this.#selectedSlotSeconds();
+    if (selected === null || isUnset(v)) {
       return false;
     }
-    return this.#sameTimeOfDay(v, current);
+    return secondsOfDay(this.adapter, v) === selected;
   }
 
   activate(v: D | Unset): void {
@@ -512,18 +519,9 @@ export class ForTimePicker<D>
   }
 
   focusSelectedOption(): boolean {
-    const current = this.value();
-    if (current === null) {
-      return false;
-    }
-    const items = this.#controller.options();
-    const opt = items.find((o) => {
-      if (o.disabled()) {
-        return false;
-      }
-      const v = o.value() as D;
-      return !isUnset(v) && this.#sameTimeOfDay(v, current);
-    });
+    const opt = this.#controller
+      .options()
+      .find((o) => !o.disabled() && this.isSelected(o.value() as D | Unset));
     if (opt) {
       this.#pointer.suppress();
       opt.host.focus();
@@ -566,6 +564,15 @@ export class ForTimePicker<D>
   override markTouched(): void {
     super.markTouched();
   }
+}
+
+/**
+ * The texts a slot is typeahead-matched against: its label, plus the label without the hour's
+ * leading zero, so typing `6` reaches `06:30` as typing `0` then `6` does.
+ */
+function slotTypeaheadText(label: string): readonly string[] {
+  const unpadded = label.replace(/^(\D*)0(?=\d)/, '$1');
+  return unpadded === label ? [label] : [label, unpadded];
 }
 
 /**
