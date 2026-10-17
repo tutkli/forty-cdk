@@ -3,7 +3,7 @@ import { computed, inject, InjectionToken, type Signal } from '@angular/core';
 import { orphanContextError, unresolvedRootError } from 'forty-cdk/core';
 import { type AnchoredPositioningContext, type Point } from 'forty-cdk/core-overlay';
 
-/** Reason a show / hide was scheduled — `escape` and `press` bypass the close delay. */
+/** Reason a show / hide was scheduled — `focus` bypasses the open delay, `escape` and `press` the close delay. */
 export type TooltipScheduleReason = 'hover' | 'focus' | 'escape' | 'press';
 
 /**
@@ -47,7 +47,7 @@ export interface ForTooltipContext extends AnchoredPositioningContext {
    * `null` means the pointer left the document or a pen left hover range, so it closes.
    */
   pointerLeaveTrigger(cursor: Point | null): void;
-  /** The trigger received focus; opens after the resolved open delay (gated by `showOnOverflow`). */
+  /** The trigger received keyboard focus; opens immediately, bypassing the open delay (gated by `showOnOverflow`). */
   focusTrigger(): void;
   /** The trigger lost focus; closes when nothing else keeps the tooltip alive. */
   blurTrigger(): void;
@@ -57,10 +57,11 @@ export interface ForTooltipContext extends AnchoredPositioningContext {
   pointerLeaveContent(): void;
 
   /**
-   * Schedule the tooltip to open after `openDelay` ms (instant when delay is 0).
-   * Hover-driven opens are suppressed while an ancestor scroll container is
-   * moving content under a stationary cursor, so a row sliding past the pointer
-   * can't flicker a tooltip open; the `'focus'` path is never suppressed.
+   * Schedule the tooltip to open after `openDelay` ms (instant when delay is 0,
+   * and always instant for `'focus'`). Hover-driven opens are suppressed while
+   * an ancestor scroll container is moving content under a stationary cursor,
+   * so a row sliding past the pointer can't flicker a tooltip open; the
+   * `'focus'` path is never suppressed.
    */
   scheduleOpen(reason: TooltipScheduleReason): void;
   /** Schedule the tooltip to close after `closeDelay` ms (instant on `escape` and `press`). */

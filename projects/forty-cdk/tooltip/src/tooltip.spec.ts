@@ -375,20 +375,35 @@ describe('ForTooltip', () => {
   describe('focus interaction', () => {
     afterEachOverlayCleanup();
 
-    it('opens on focus respecting openDelay', async () => {
+    it('opens on keyboard focus without waiting out openDelay, so aria-describedby is set when focus lands', async () => {
       const r = renderHost(TooltipHost);
       await flush(r.fixture);
       const trigger = r.query<HTMLButtonElement>('button')!;
 
       vi.useFakeTimers();
       trigger.dispatchEvent(new FocusEvent('focus'));
+      r.fixture.detectChanges();
 
-      vi.advanceTimersByTime(699);
+      expect(r.instance.isOpen()).toBe(true);
+      expect(trigger.getAttribute('aria-describedby')).toBe(
+        document.querySelector('[role="tooltip"]')!.id,
+      );
+    });
+
+    it('turns a pending hover open into an immediate open when the trigger takes keyboard focus', async () => {
+      const r = renderHost(TooltipHost);
+      await flush(r.fixture);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+
+      vi.useFakeTimers();
+      trigger.dispatchEvent(new PointerEvent('pointerenter', { pointerType: 'mouse' }));
+      vi.advanceTimersByTime(300);
       r.fixture.detectChanges();
       expect(r.instance.isOpen()).toBe(false);
 
-      vi.advanceTimersByTime(1);
+      trigger.dispatchEvent(new FocusEvent('focus'));
       r.fixture.detectChanges();
+
       expect(r.instance.isOpen()).toBe(true);
     });
 
@@ -621,6 +636,38 @@ describe('ForTooltip', () => {
       trigger.dispatchEvent(new PointerEvent('pointerdown', { pointerType: 'mouse' }));
       trigger.dispatchEvent(new FocusEvent('focus'));
       await flush(r.fixture);
+      expect(r.instance.isOpen()).toBe(false);
+    });
+
+    it('dismisses a keyboard-opened tooltip on the click a keyboard activation fires, bypassing closeDelay', async () => {
+      const r = renderHost(TooltipHost);
+      r.instance.closeDelay.set(5_000);
+      await flush(r.fixture);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+
+      trigger.dispatchEvent(new FocusEvent('focus'));
+      await flush(r.fixture);
+      expect(r.instance.isOpen()).toBe(true);
+
+      trigger.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await flush(r.fixture);
+
+      expect(r.instance.isOpen()).toBe(false);
+      expect(trigger.hasAttribute('aria-describedby')).toBe(false);
+    });
+
+    it('cancels a pending hover-open when the trigger is activated from the keyboard within openDelay', async () => {
+      const r = renderHost(TooltipHost);
+      await flush(r.fixture);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+
+      vi.useFakeTimers();
+      trigger.dispatchEvent(new PointerEvent('pointerenter', { pointerType: 'mouse' }));
+      vi.advanceTimersByTime(300);
+      trigger.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+      vi.advanceTimersByTime(5_000);
+      r.fixture.detectChanges();
       expect(r.instance.isOpen()).toBe(false);
     });
 
@@ -2079,10 +2126,8 @@ describe('ForTooltip', () => {
       expect(r.instance.isOpen()).toBe(false);
     });
 
-    it('scheduleOpen("focus") opens while an ancestor is scrolling', async () => {
+    it('scheduleOpen("focus") opens immediately, bypassing openDelay, while an ancestor is scrolling', async () => {
       const r = renderHost(TooltipHost);
-      r.instance.openDelay.set(0);
-      r.instance.closeDelay.set(0);
       await flush(r.fixture);
       const tooltip = getTooltip(r);
 
@@ -2107,15 +2152,14 @@ describe('ForTooltip', () => {
       expect(r.instance.isOpen()).toBe(false);
     });
 
-    it('keeps the open a keyboard focus armed through the scroll that reveals the trigger', async () => {
+    it('opens on a keyboard focus that lands while an ancestor is scrolling', async () => {
       const r = renderHost(TooltipHost);
       await flush(r.fixture);
       const trigger = r.query<HTMLButtonElement>('button')!;
 
       vi.useFakeTimers();
-      trigger.dispatchEvent(new FocusEvent('focus'));
       document.dispatchEvent(new Event('scroll'));
-      vi.advanceTimersByTime(700);
+      trigger.dispatchEvent(new FocusEvent('focus'));
       r.fixture.detectChanges();
 
       expect(r.instance.isOpen()).toBe(true);

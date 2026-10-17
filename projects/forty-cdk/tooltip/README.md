@@ -37,7 +37,7 @@ Hover / focus delays, Escape-to-dismiss, portal rendering, and `@floating-ui/dom
 
 ## Examples
 
-Hover or focus the trigger and wait out the delay. The tip opens with `data-state`, and `Escape` closes it without moving focus.
+Hover the trigger and wait out the delay, or Tab to it to open the tip at once. The tip opens with `data-state`, and `Escape` closes it without moving focus.
 
 ```ts
 import { ChangeDetectionStrategy, Component } from '@angular/core';
@@ -107,11 +107,11 @@ With `hoverableContent` the bubble keeps `pointer-events`, so the pointer can re
 | `alignOffset`      | `input<number>`                                        | Gap (px) along the cross axis.<br>**Default:** `0`                                                                                                                                                                                                |
 | `collisionPadding` | `input<number \| undefined>`                           | Padding (px) for the `flip` / `shift` / `size` collision middlewares. Falls back to `provideForTooltipDefaults` (`8`).<br>**Default:** —                                                                                                          |
 | `arrowPadding`     | `input<number>`                                        | Padding (px) keeping `[forTooltipArrow]` clear of the content edges. Falls back to `provideForTooltipDefaults` (`0`).<br>**Default:** —                                                                                                           |
-| `openDelay`        | `input<number \| undefined>`                           | ms before showing after hover/focus enters. Falls back to `provideForTooltipDefaults` (`700`).<br>**Default:** —                                                                                                                                  |
+| `openDelay`        | `input<number \| undefined>`                           | ms before showing after hover enters. Keyboard focus opens immediately. Falls back to `provideForTooltipDefaults` (`700`).<br>**Default:** —                                                                                                      |
 | `closeDelay`       | `input<number \| undefined>`                           | ms before hiding after hover/focus leaves. Escape ignores this. Falls back to `provideForTooltipDefaults` (`300`).<br>**Default:** —                                                                                                              |
 | `disabled`         | `input<boolean>`                                       | When `true`, all interaction is ignored.<br>**Default:** —                                                                                                                                                                                        |
 | `showOnOverflow`   | `input<boolean \| undefined>`                          | Show only when the trigger's own text is truncated (`scrollWidth > clientWidth`). Falls back to `provideForTooltipDefaults` (`false`).<br>**Default:** —                                                                                          |
-| `hoverableContent` | `input<boolean \| undefined>`                          | Let the pointer move into the content without dismissing it (drops `pointer-events: none` while open). Falls back to `provideForTooltipDefaults` (`true`).<br>**Default:** —                                                                      |
+| `hoverableContent` | `input<boolean \| undefined>`                          | Let the pointer move into the content without dismissing it. When `false`, the content carries `pointer-events: none`. Falls back to `provideForTooltipDefaults` (`true`).<br>**Default:** —                                                      |
 | `escapeKeyDown`    | `OutputEmitterRef<VetoableNativeEvent<KeyboardEvent>>` | Output. Fires when Escape is pressed while the tooltip is open, wherever focus lives. Call `preventDefault()` on the emitted veto to keep it open; the native `KeyboardEvent` is on `.event`.<br>**Default:** —                                   |
 | `openChange`       | `OutputEmitterRef<boolean>`                            | Output. Implicit from `model()`. Emits only on internal transitions (delay timers, Escape, a press on the trigger, scroll, and the force-close that runs when `disabled` flips to true), not on consumer writes via `[(open)]`.<br>**Default:** — |
 
@@ -148,7 +148,7 @@ With `hoverableContent` the bubble keeps `pointer-events`, so the pointer can re
 
 | Key                 | Library fallback | Meaning                                                                                    |
 | ------------------- | ---------------- | ------------------------------------------------------------------------------------------ |
-| `openDelay`         | `700`            | ms before showing after hover/focus enters.                                                |
+| `openDelay`         | `700`            | ms before showing after hover enters. Keyboard focus opens immediately.                    |
 | `closeDelay`        | `300`            | ms before hiding after hover/focus leaves.                                                 |
 | `skipDelayDuration` | `300`            | Window (ms) after a peer closes during which the next open is instant.                     |
 | `side`              | `'top'`          | Anchor side for tooltips that don't set `side` themselves.                                 |
@@ -230,7 +230,8 @@ For an **instant, unconditional** open or close that ignores the delays and both
 
 ## Keyboard
 
-- **Tab** to the trigger → opens the tooltip after `openDelay`. The scroll that brings an off-screen trigger into view does not cancel it.
+- **Tab** to the trigger → opens the tooltip immediately, without waiting out `openDelay`, so the trigger already carries its `aria-describedby` when a screen reader announces it. The scroll that brings an off-screen trigger into view does not close it.
+- **Enter** / **Space** on a `<button>` trigger → activates it and closes the tooltip immediately, like a pointer press.
 - **Tab** away → closes after `closeDelay`.
 - **Escape** while open → closes immediately, regardless of `closeDelay`.
 
@@ -317,12 +318,12 @@ While `disabled` is `true`, hover and focus are ignored and an already-open tool
 
 ## Behavior notes
 
-- **Activating the trigger dismisses the tooltip.** A press (`pointerdown`) on the trigger closes an open tooltip immediately: the user is acting on the control, not asking for its description, so the bubble shouldn't cover the result of the click. The focus the same press induces does **not** reopen it (see below); the tooltip stays dismissed until the pointer leaves and re-enters, or the trigger is focused again from the keyboard. To keep the tooltip open across a click, drive `[(open)]` yourself.
+- **Activating the trigger dismisses the tooltip.** A press (`pointerdown`) on the trigger, or the `click` a keyboard Enter / Space fires on a `<button>`, closes an open tooltip immediately: the user is acting on the control, not asking for its description, so the bubble shouldn't cover the result. The focus a pointer press induces does **not** reopen it (see below); the tooltip stays dismissed until the pointer leaves and re-enters, or the trigger is focused again from the keyboard. To keep the tooltip open across an activation, drive `[(open)]` yourself.
 - **Only keyboard focus opens via the focus path.** Open-on-focus fires only when focus does **not** follow a pointer press on the trigger (i.e. a real keyboard `Tab`). A mouse, pen, or touch press that focuses the trigger never opens (or reopens) the tooltip, because hover already covers pointer users. A press counts for a short window only, so a press that never focuses the trigger (a `<button>` in macOS Safari or Firefox, a toolbar that prevents `mousedown` to keep the editor focused) does not swallow a later keyboard focus.
 - **Portal**: the content element is moved to `document.body` on first render. Any styles you scope to the wrapper won't reach it, so style the bubble globally or via a class on the content directive itself.
 - **`pointer-events: none`** is applied only when `hoverableContent` is set to `false`. By default (`hoverableContent` is `true`) the pointer may rest over the bubble (WCAG 2.1 SC 1.4.13 "Hoverable"), and clicks land on the bubble rather than passing through to whatever is behind. Set `hoverableContent` to `false` (per-instance or via `provideForTooltipDefaults`) to restore the pass-through behavior, and keep the content non-interactive per APG regardless.
 - **Keep content non-interactive**. Tooltips don't trap focus and won't survive a click into them. APG explicitly forbids interactive children.
-- **`hoverableContent`** lets the pointer move into the bubble without dismissing it, which is useful for descriptive text the user may want to select. It drops the default `pointer-events: none` while open and bridges the trigger / content gap with a pointer-grace "safe triangle" so a slow diagonal traversal doesn't close the tooltip. The content must still stay non-interactive per APG.
+- **`hoverableContent`** lets the pointer move into the bubble without dismissing it, which is useful for descriptive text the user may want to select. It bridges the trigger / content gap with a pointer-grace "safe triangle" so a slow diagonal traversal doesn't close the tooltip. The content must still stay non-interactive per APG.
 - **`showOnOverflow`** gates the tooltip on the trigger being truncated (`scrollWidth > clientWidth`). This is the common pattern for ellipsized labels, where the tooltip adds nothing once the full text already fits. When the trigger's text fits, hover and focus are ignored.
 - **Closes on scroll.** When a scroll container holding the trigger moves it under a stationary cursor (wheel / trackpad scrolling a virtualized or overflow-scroll list), an open tooltip closes immediately and that tooltip's hover opens stay suppressed for a short window while the scroll is in flight, so that tooltips on rows sliding past the pointer don't linger or flicker open. This is always on; a genuine pointer move after scrolling settles opens the tooltip normally again. A scroll that does not move the trigger (inside the bubble, or in an unrelated container such as an auto-scrolling log) neither closes the tooltip nor delays its hover open, and so does any scroll while the trigger holds focus, so a keyboard-opened tooltip survives the scroll that brings its trigger into view.
 - **Touch**: APG flags tooltips as problematic on touch devices (no hover, no separate focus, no obvious dismiss). The trigger filters touch pointers out of both the hover-open and focus-open paths, so a tap does **not** open the tooltip. Only mouse or pen hover and keyboard focus do, and a pen that leaves the trigger closes the tooltip the same way a mouse does. For touch-first UI where the descriptive content must be reachable on tap, consider a Popover.

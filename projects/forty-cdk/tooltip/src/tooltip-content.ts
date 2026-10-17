@@ -11,11 +11,13 @@ import { injectTooltipContext } from './tooltip-context';
  * The tooltip bubble. Carries `role="tooltip"`, is portaled to
  * `document.body`, and is positioned by `@floating-ui/dom` while mounted.
  *
- * Default `pointer-events: none` is applied via host styles so the bubble
- * layers above content without intercepting hover. When the root opts in with
- * `hoverableContent`, `pointer-events` is dropped while open so the pointer
- * can rest over the bubble without dismissing it. Override with your own CSS
- * if needed — but per APG, do not put interactive elements inside.
+ * The content is hoverable by default (`hoverableContent` resolves to `true`,
+ * WCAG 2.1 SC 1.4.13): the pointer may rest over the bubble without dismissing
+ * it, and clicks land on the bubble rather than on what lies behind it. When
+ * `hoverableContent` resolves to `false`, `pointer-events: none` is applied via
+ * host styles so the bubble layers above content without intercepting the
+ * pointer. Override with your own CSS if needed — but per APG, do not put
+ * interactive elements inside.
  *
  * The directive does not manage DOM presence — wrap with
  * `@if (tip.open())` (using a template ref on `[forTooltip]`) so the

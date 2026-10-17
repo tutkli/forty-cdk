@@ -83,9 +83,11 @@ export class ForTooltip extends AnchoredOverlayPositioningBase implements ForToo
   });
 
   /**
-   * Per-tooltip override for the open delay (ms). When `undefined`
-   * (default), falls back to `ForTooltipDefaults.openDelay` from the
-   * surrounding `provideForTooltipDefaults` scope (700ms unless configured).
+   * Per-tooltip override for the hover open delay (ms). Keyboard focus ignores
+   * this and opens immediately, so the description exists when the focused
+   * trigger is announced. When `undefined` (default), falls back to
+   * `ForTooltipDefaults.openDelay` from the surrounding
+   * `provideForTooltipDefaults` scope (700ms unless configured).
    */
   readonly openDelay = input<number | undefined>(undefined);
 
@@ -124,10 +126,10 @@ export class ForTooltip extends AnchoredOverlayPositioningBase implements ForToo
 
   /**
    * Per-tooltip override for whether the pointer may move into the content
-   * without dismissing the tooltip. When `true`, the content drops its
-   * default `pointer-events: none` while open and a pointer-grace "safe
-   * triangle" bridges the gap between trigger and content so a slow diagonal
-   * traversal doesn't close it. When `undefined` (default), falls back to
+   * without dismissing the tooltip. When `true`, the content takes the pointer
+   * and a pointer-grace "safe triangle" bridges the gap between trigger and
+   * content so a slow diagonal traversal doesn't close it; when `false`, the
+   * content carries `pointer-events: none`. When `undefined` (default), falls back to
    * `ForTooltipDefaults.hoverableContent` from the surrounding
    * `provideForTooltipDefaults` scope (`true` unless configured).
    *
@@ -298,7 +300,7 @@ export class ForTooltip extends AnchoredOverlayPositioningBase implements ForToo
     if (this.#suppressedByOverflow()) {
       return;
     }
-    this.#hoverIntent.scheduleOpen();
+    this.scheduleOpen('focus');
   }
 
   blurTrigger(): void {
@@ -324,7 +326,7 @@ export class ForTooltip extends AnchoredOverlayPositioningBase implements ForToo
     if (reason !== 'focus' && this.#scrollSuppressed()) {
       return;
     }
-    this.#hoverIntent.scheduleOpen();
+    this.#hoverIntent.scheduleOpen(reason === 'focus');
   }
 
   scheduleClose(reason: TooltipScheduleReason): void {
@@ -394,8 +396,8 @@ export class ForTooltip extends AnchoredOverlayPositioningBase implements ForToo
    * silently (bypassing `closeDelay` and without opening the skip-delay window)
    * so a peer row sliding under the cursor can't reopen instantly while the
    * scroll is in flight. A no-op when nothing is open or armed, and while the
-   * trigger holds focus: a keyboard-held tooltip, and the open its focus armed,
-   * survive the scroll that brings the trigger into view.
+   * trigger holds focus: a keyboard-held tooltip survives the scroll that brings
+   * the trigger into view.
    */
   #dismissOnScroll(): void {
     if (this.#surface.triggerFocused()) {

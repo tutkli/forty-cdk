@@ -1,4 +1,4 @@
-import { el, expect, gotoFixture, isMobileProject, test } from './_helpers';
+import { el, expect, expectStays, gotoFixture, isMobileProject, test } from './_helpers';
 
 test.describe('Tooltip', () => {
   test('opens on hover (openDelay=0) and closes on pointerleave', async ({ page }) => {
@@ -33,6 +33,21 @@ test.describe('Tooltip', () => {
     await page.waitForTimeout(100);
     await expect(el(page, 'tooltip')).toHaveCount(0);
   });
+
+  for (const key of ['Enter', 'Space']) {
+    test(`${key} on a keyboard-focused trigger dismisses the tooltip and it stays dismissed`, async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'tooltip');
+      await el(page, 'trigger').focus();
+      await expect(el(page, 'tooltip')).toBeVisible();
+
+      await page.keyboard.press(key);
+      await expect(el(page, 'tooltip')).toHaveCount(0);
+      await expect(el(page, 'trigger')).toBeFocused();
+      await expectStays(page, () => expect(el(page, 'tooltip')).toHaveCount(0));
+    });
+  }
 
   test('Escape closes immediately', async ({ page }) => {
     await gotoFixture(page, 'tooltip');
