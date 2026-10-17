@@ -572,6 +572,66 @@ describe('createPointerDragSession', () => {
     expect(atRelease.defaultPrevented).toBe(false);
   });
 
+  it('a second armed release before any click replaces the pending trap instead of being aborted by it', () => {
+    const { host, session } = setup();
+    track(host, session);
+
+    host.dispatchEvent(pointer('pointerdown', 0, 0, 0, 1));
+    document.dispatchEvent(pointer('pointermove', 20, 0, 0, 1));
+    document.dispatchEvent(pointer('pointerup', 20, 0, 0, 1));
+
+    host.dispatchEvent(pointer('pointerdown', 100, 0, 0, 2));
+    document.dispatchEvent(pointer('pointermove', 120, 0, 0, 2));
+    document.dispatchEvent(pointer('pointerup', 120, 0, 0, 2));
+
+    const atSecondRelease = new MouseEvent('click', {
+      bubbles: true,
+      cancelable: true,
+      clientX: 120,
+      clientY: 0,
+    });
+    document.dispatchEvent(atSecondRelease);
+    expect(atSecondRelease.defaultPrevented).toBe(true);
+
+    const atFirstRelease = new MouseEvent('click', {
+      bubbles: true,
+      cancelable: true,
+      clientX: 20,
+      clientY: 0,
+    });
+    document.dispatchEvent(atFirstRelease);
+    expect(atFirstRelease.defaultPrevented).toBe(false);
+  });
+
+  it('destroy() removes every click trap left by back-to-back armed releases', () => {
+    const { host, session } = setup();
+    track(host, session);
+    const button = document.createElement('button');
+    document.body.appendChild(button);
+    teardown.push(() => button.remove());
+
+    host.dispatchEvent(pointer('pointerdown', 0, 0, 0, 1));
+    document.dispatchEvent(pointer('pointermove', 20, 0, 0, 1));
+    document.dispatchEvent(pointer('pointerup', 20, 0, 0, 1));
+
+    host.dispatchEvent(pointer('pointerdown', 100, 0, 0, 2));
+    document.dispatchEvent(pointer('pointermove', 120, 0, 0, 2));
+    document.dispatchEvent(pointer('pointerup', 120, 0, 0, 2));
+
+    session.destroy();
+
+    for (const x of [20, 120]) {
+      const click = new MouseEvent('click', {
+        bubbles: true,
+        cancelable: true,
+        clientX: x,
+        clientY: 0,
+      });
+      button.dispatchEvent(click);
+      expect(click.defaultPrevented).toBe(false);
+    }
+  });
+
   it('does not suppress a click after a non-armed release', () => {
     const { host, session } = setup();
     track(host, session);
