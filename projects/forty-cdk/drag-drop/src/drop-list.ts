@@ -820,7 +820,7 @@ export class ForDropList implements ForDropListContext {
     seen.add(this);
     const result: ForDropListContext[] = [];
     for (const ctx of [...explicit, ...groupMembers]) {
-      const closed = ctx instanceof ForDropList && ctx.#coordinator !== null;
+      const closed = #coordinator in ctx && ctx.#coordinator !== null;
       if (!seen.has(ctx) && !ctx.disabled() && !closed) {
         seen.add(ctx);
         result.push(ctx);
