@@ -193,6 +193,10 @@ const clickOnlyDismisses = (code: string): boolean =>
   code.includes(`'(click)': 'onClick()'`) &&
   /onClick\(\): void \{\s*this\.ctx\(\)\.scheduleClose\('press'\);\s*\}/.test(code);
 
+const clickOnlyResetsPointerClassification = (code: string): boolean =>
+  code.includes(`'(click)': 'onClick()'`) &&
+  /onClick\(\): void \{\s*this\.#pointerActivation = false;\s*\}/.test(code);
+
 /**
  * Pieces a README places on a `<button>` that deliberately leave its `type`
  * alone, each with the condition that makes it right. A condition rather than a
@@ -212,8 +216,8 @@ const EXCLUSIONS: Readonly<Record<string, { reason: string; holds: (code: string
   },
   forContextMenuTrigger: {
     reason:
-      'opens on a context-menu gesture rather than a click, so it owns no activation of its host',
-    holds: ownsNoClickActivation,
+      'opens on a context-menu gesture rather than a click, so it owns no activation of its host; its click only clears the pointer classification',
+    holds: clickOnlyResetsPointerClassification,
   },
   forDialogInitialFocus: {
     reason:

@@ -222,7 +222,23 @@ Setting `[totalCount]` switches `ForSelect` to the virtualized activedescendant 
 
 ## API
 
-Input tables are not yet tabulated for this primitive. See the feature sections below for documented inputs and the prose descriptions of each input.
+Only the positioning inputs every anchored root inherits are tabulated for this primitive so far. See the feature sections below for the other inputs and their prose descriptions.
+
+### `ForSelect` positioning inputs
+
+| Property              | Type                                    | Description                                                                                                                                                                           |
+| --------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `side`                | `input<FloatingSide>`                   | Anchor side (`'top'` / `'right'` / `'bottom'` / `'left'`). Falls back to `provideForSelectDefaults`.<br>**Default:** `'bottom'`                                                       |
+| `align`               | `input<FloatingAlign>`                  | Alignment along `side` (`'start'` / `'center'` / `'end'`). Falls back to `provideForSelectDefaults`.<br>**Default:** `'start'`                                                        |
+| `sideOffset`          | `input<number>`                         | Gap (px) between the anchor and the content along the main axis. Falls back to `provideForSelectDefaults`.<br>**Default:** `4`                                                        |
+| `alignOffset`         | `input<number>`                         | Gap (px) along the cross axis (parallel to `side`).<br>**Default:** `0`                                                                                                               |
+| `avoidCollisions`     | `input<boolean>`                        | When `true`, `flip` and `shift` keep the content inside the viewport. Set `false` for strict positioning where overflow is acceptable.<br>**Default:** `true`                         |
+| `collisionPadding`    | `input<number>`                         | Padding (px) for the `flip` / `shift` / `size` collision middlewares. Falls back to `provideForSelectDefaults`.<br>**Default:** `8`                                                   |
+| `sticky`              | `input<'partial' \| 'always' \| false>` | `'always'` keeps the requested placement even when the content leaves the viewport. `'partial'` and `false` let `shift` slide it back into view.<br>**Default:** `'partial'`          |
+| `hideWhenDetached`    | `input<boolean>`                        | When `true`, the content carries `data-detached` while the anchor has scrolled out of every clipping ancestor, so CSS can hide it.<br>**Default:** `false`                            |
+| `clipUntilPositioned` | `input<boolean>`                        | Clips the content until its first position resolves, so it never flashes at the viewport corner. Set `false` so an `animate.enter` plays from its first frame.<br>**Default:** `true` |
+
+All nine are no-ops in modal mode, and every one but `collisionPadding` is a no-op with `position="item-aligned"`; see [macOS-style alignment](#macos-style-alignment) and [Modal touch presentation](#modal-touch-presentation).
 
 ### Data attributes
 
@@ -388,7 +404,7 @@ The directive sets the shared `--for-floating-available-height` on the content h
 }
 ```
 
-When `position="item-aligned"`, the following inputs are **no-ops**: `side`, `align`, `sideOffset`, `alignOffset`, `avoidCollisions`, `sticky`, `hideWhenDetached`. Only `collisionPadding` (default `8`) is honored. It drives both the viewport clamp and the available-height variable. The content gets `data-position="item-aligned"` so consumers can target it with CSS; in popper mode the attribute is absent and the `data-side` / `data-align` / `data-placement` markers from `injectFloating` apply instead.
+When `position="item-aligned"`, the following inputs are **no-ops**: `side`, `align`, `sideOffset`, `alignOffset`, `avoidCollisions`, `sticky`, `hideWhenDetached`, `clipUntilPositioned`. Only `collisionPadding` (default `8`) is honored. It drives both the viewport clamp and the available-height variable. The content gets `data-position="item-aligned"` so consumers can target it with CSS; in popper mode the attribute is absent and the `data-side` / `data-align` / `data-placement` markers from `injectFloating` apply instead.
 
 The default stays `popper` so existing consumers' visuals don't shift on upgrade. Opt in per primitive when the macOS feel is what you want.
 
@@ -426,7 +442,7 @@ What modal mode changes:
 - **`data-modal`** is reflected on the surface for styling. `aria-modal` is deliberately **not** emitted: the surface keeps `role="listbox"`, which does not support the property ([ARIA 1.2 §aria-modal](https://www.w3.org/TR/wai-aria-1.2/#aria-modal) gates it to `dialog` / `alertdialog`), so the attribute would announce nothing while tripping `aria-allowed-attr`. Modality comes from the `inert` background the shell applies.
 - **Dismiss** (`dismissible`), **return-focus** (`returnFocus`), `ariaLabel`, and the `(autoFocusOnOpen)` / `(autoFocusOnClose)` veto hooks all behave the same as popover mode.
 
-The mode is read **once** when `[forSelectContent]` mounts (the two shells are structurally different; switching at runtime would need a remount, and the surface mounts lazily via `@if (open())`, well after `modal` settles). Every **anchored-positioning input is a no-op** in modal mode: `position` (`popper` / `item-aligned`), `side`, `align`, `sideOffset`, `alignOffset`, `sticky`, `hideWhenDetached`, `avoidCollisions`, `collisionPadding`.
+The mode is read **once** when `[forSelectContent]` mounts (the two shells are structurally different; switching at runtime would need a remount, and the surface mounts lazily via `@if (open())`, well after `modal` settles). Every **anchored-positioning input is a no-op** in modal mode: `position` (`popper` / `item-aligned`), `side`, `align`, `sideOffset`, `alignOffset`, `sticky`, `hideWhenDetached`, `avoidCollisions`, `collisionPadding`, `clipUntilPositioned`.
 
 > **Not** a swipe / snap-point sheet. This is the batteries-included _modal_ presentation of a value field. The draggable bottom-sheet (snap points, swipe-to-dismiss) is a different use case. For that, compose a `ForListbox` inside a `ForDrawer` by hand. It loses the form-value wiring, which is why it isn't an internal mode here.
 

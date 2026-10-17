@@ -10,9 +10,16 @@ import {
   inject,
   Injector,
   input,
+  untracked,
 } from '@angular/core';
 
-import { fortyWarn, hostId, injectPointerMove } from 'forty-cdk/core';
+import {
+  composedContains,
+  fortyWarn,
+  hostId,
+  injectPointerMove,
+  resolveActiveElement,
+} from 'forty-cdk/core';
 import {
   asMenuOpenerRegistration,
   createDebouncedAction,
@@ -29,6 +36,17 @@ import {
 const LONG_PRESS_DELAY_MS = 500;
 const LONG_PRESS_MOVE_TOLERANCE_PX = 10;
 
+const claimedPresses = new WeakSet<Event>();
+
+function raisesContextMenu(event: PointerEvent): boolean {
+  return (
+    event.button === 2 ||
+    (event.button === 0 && event.ctrlKey) ||
+    event.pointerType === 'touch' ||
+    event.pointerType === 'pen'
+  );
+}
+
 /**
  * Region that opens its parent `[forContextMenu]` on the `contextmenu` event
  * (right-click / long-press on touch) and on the keyboard equivalents
@@ -38,7 +56,12 @@ const LONG_PRESS_MOVE_TOLERANCE_PX = 10;
  * the menu next to whatever they're working on. A keyboard activation from a
  * focused descendant also returns focus to that descendant on close, falling
  * back to the region when a menu action removed it. The native context menu is
- * suppressed via `event.preventDefault()`.
+ * suppressed via `event.preventDefault()`, including the `contextmenu` a
+ * platform raises when the keyboard activator is released.
+ *
+ * A region nested inside another takes precedence: the innermost enabled
+ * region claims the gesture and the outer one ignores it. A `contextmenu` or
+ * key press already cancelled with `preventDefault()` opens nothing.
  *
  * A pointer activation skips `data-highlighted` on the initially focused item;
  * a keyboard activation highlights it.
@@ -88,7 +111,8 @@ const LONG_PRESS_MOVE_TOLERANCE_PX = 10;
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '(pointerdown)': 'onPointerDown($event)',
     '(pointerup)': 'onPointerRelease()',
-    '(pointercancel)': 'onPointerRelease()',
+    '(pointercancel)': 'onPointerCancel()',
+    '(click)': 'onClick()',
     '(contextmenu)': 'onContextMenu($event)',
     '(keydown)': 'onKeyDown($event)',
   },
@@ -102,6 +126,7 @@ export class ForContextMenuTrigger {
   #longPressOpened = false;
   #pressX = 0;
   #pressY = 0;
+  #releaseTrailingGuard: (() => void) | null = null;
   readonly #longPress: DebouncedAction = createDebouncedAction(() => this.#onLongPress());
 
   /**
@@ -176,17 +201,26 @@ export class ForContextMenuTrigger {
       });
       onCleanup(() => openers.unregisterOpener(el));
     });
-    inject(DestroyRef).onDestroy(() => this.#longPress.cancel());
+    effect(() => {
+      if (!this.ctx().open()) {
+        untracked(() => this.#releaseTrailingGuard?.());
+      }
+    });
+    inject(DestroyRef).onDestroy(() => {
+      this.#longPress.cancel();
+      this.#releaseTrailingGuard?.();
+    });
     injectPointerMove((event) => this.onPointerMove(event));
   }
 
   private onPointerDown(event: PointerEvent): void {
-    this.#pointerActivation = true;
+    this.#pointerActivation = raisesContextMenu(event);
     this.#longPressOpened = false;
     this.#longPress.cancel();
-    if (event.pointerType !== 'touch' || this.effectiveDisabled()) {
+    if (event.pointerType !== 'touch' || claimedPresses.has(event) || this.effectiveDisabled()) {
       return;
     }
+    claimedPresses.add(event);
     this.#pressX = event.clientX;
     this.#pressY = event.clientY;
     this.#longPress.schedule(LONG_PRESS_DELAY_MS);
@@ -207,14 +241,22 @@ export class ForContextMenuTrigger {
     this.#longPress.cancel();
   }
 
+  private onPointerCancel(): void {
+    this.#longPress.cancel();
+    this.#pointerActivation = false;
+  }
+
+  private onClick(): void {
+    this.#pointerActivation = false;
+  }
+
   private onContextMenu(event: MouseEvent): void {
     this.#longPress.cancel();
     const longPressOpened = this.#longPressOpened;
     this.#longPressOpened = false;
     const pointerActivation = this.#pointerActivation;
     this.#pointerActivation = false;
-    if (this.effectiveDisabled()) {
-      // Let the native browser menu show.
+    if (event.defaultPrevented || this.effectiveDisabled()) {
       return;
     }
     event.preventDefault();
@@ -235,7 +277,7 @@ export class ForContextMenuTrigger {
 
   private onKeyDown(event: KeyboardEvent): void {
     this.#pointerActivation = false;
-    if (this.effectiveDisabled()) {
+    if (event.defaultPrevented || this.effectiveDisabled()) {
       return;
     }
     const isShiftF10 = event.key === 'F10' && event.shiftKey;
@@ -246,6 +288,28 @@ export class ForContextMenuTrigger {
     // Stop the browser from opening its own context menu on top of ours.
     event.preventDefault();
     this.#openFromFocusedRect();
+    if (this.ctx().open()) {
+      this.#guardTrailingContextMenu();
+    }
+  }
+
+  #guardTrailingContextMenu(): void {
+    this.#releaseTrailingGuard?.();
+    const doc = this.#document;
+    const swallow = (event: Event): void => {
+      release();
+      if (this.ctx().open()) {
+        event.preventDefault();
+      }
+    };
+    const release = (): void => {
+      doc.removeEventListener('contextmenu', swallow, true);
+      doc.removeEventListener('pointerdown', release, true);
+      this.#releaseTrailingGuard = null;
+    };
+    doc.addEventListener('contextmenu', swallow, true);
+    doc.addEventListener('pointerdown', release, true);
+    this.#releaseTrailingGuard = release;
   }
 
   #onLongPress(): void {
@@ -260,10 +324,11 @@ export class ForContextMenuTrigger {
 
   #openFromFocusedRect(): void {
     const trigger = this.#host.nativeElement;
-    const focused = this.#document.activeElement as HTMLElement | null;
+    const focused = resolveActiveElement(this.#document);
     // Anchor at the focused element when it lives inside the trigger; fall
     // back to the trigger itself otherwise (e.g. focus is on the trigger).
-    const anchorEl = focused && trigger.contains(focused) ? focused : trigger;
+    const anchorEl =
+      focused instanceof HTMLElement && composedContains(trigger, focused) ? focused : trigger;
     this.#activate(anchorEl === trigger ? null : anchorEl);
     this.ctx().setVirtualAnchorFromRect(anchorEl.getBoundingClientRect());
     this.#openMenu('keyboard');
@@ -275,11 +340,27 @@ export class ForContextMenuTrigger {
 
   #openMenu(modality: MenuActivationModality): void {
     const ctx = this.ctx();
+    const reused = ctx.open() ? null : ctx.content();
     ctx.openMenu('first', modality);
     if (!ctx.open()) {
       return;
     }
-    afterNextRender(() => this.#closeIfNothingMounted(ctx), { injector: this.#injector });
+    afterNextRender(
+      () => {
+        if (reused !== null) {
+          this.#focusReusedSurface(ctx, reused);
+        }
+        this.#closeIfNothingMounted(ctx);
+      },
+      { injector: this.#injector },
+    );
+  }
+
+  #focusReusedSurface(ctx: ContextMenuContext, surface: HTMLElement): void {
+    if (!ctx.open() || ctx.content() !== surface || ctx.emitAutoFocusOnOpen()) {
+      return;
+    }
+    ctx.focusInitialEnabledItem(ctx.initialFocus());
   }
 
   #closeIfNothingMounted(ctx: ContextMenuContext): void {
