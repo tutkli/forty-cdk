@@ -15,9 +15,10 @@ import {
  * `role="spinbutton"`, the `aria-valuemin` /
  * `aria-valuemax` / `aria-valuenow` / `aria-valuetext` reflection, the roving
  * tabindex (scoped to the surrounding endpoint group), and the full keyboard map
- * (digits, a/p for AM·PM, ArrowUp/Down to step, ArrowLeft/Right to move between
- * segments — mirrored under RTL, Home/End for the bounds, Backspace to delete the
- * last entered digit, Delete to clear the whole segment).
+ * (digits from a hardware or an on-screen keyboard, a/p for AM·PM, ArrowUp/Down to
+ * step, ArrowLeft/Right to move between segments — mirrored under RTL, Home/End for
+ * the bounds, Backspace to delete the last entered digit, Delete to clear the whole
+ * segment).
  *
  * All state lives on the root `ForDateRangeField`; the segment only reads its
  * endpoint's coordination surface and forwards intents. The rendered text comes

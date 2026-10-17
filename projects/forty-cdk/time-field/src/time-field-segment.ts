@@ -18,7 +18,8 @@ import { DEFAULT_TIME_FIELD_SEGMENT_LABELS, FOR_TIME_FIELD_DEFAULTS } from 'fort
  * `role="spinbutton"`, the `aria-valuemin` / `aria-valuemax` / `aria-valuenow` /
  * `aria-valuetext` reflection, the roving tabindex, and the full keyboard map:
  *
- * - **digits** fill a numeric segment and auto-advance to the next when full;
+ * - **digits** fill a numeric segment and auto-advance to the next when full,
+ *   from a hardware or an on-screen keyboard alike;
  * - **a / p** set the period on the `dayPeriod` segment;
  * - **ArrowUp / ArrowDown** step the value (hour / minute / second wrap; dayPeriod toggles);
  * - **ArrowLeft / ArrowRight** move between segments (mirrored under RTL, no wrap);

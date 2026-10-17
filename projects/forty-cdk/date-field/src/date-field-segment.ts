@@ -18,7 +18,8 @@ import { DEFAULT_DATE_FIELD_SEGMENT_LABELS, FOR_DATE_FIELD_DEFAULTS } from 'fort
  * `aria-valuenow` / `aria-valuetext` reflection, the roving tabindex, and the
  * full keyboard map:
  *
- * - **digits** fill a numeric segment and auto-advance to the next when full;
+ * - **digits** fill a numeric segment and auto-advance to the next when full,
+ *   from a hardware or an on-screen keyboard alike;
  * - **a / p** set the period on the AM/PM (`dayPeriod`) segment;
  * - **ArrowUp / ArrowDown** step the value (day / month / hour / minute / second
  *   wrap, year clamps, dayPeriod toggles);

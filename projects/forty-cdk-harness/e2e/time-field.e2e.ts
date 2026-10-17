@@ -1,4 +1,4 @@
-import { el, expect, expectFocused, gotoFixture, test } from './_helpers';
+import { el, expect, expectFocused, gotoFixture, isMobileProject, test } from './_helpers';
 
 test.describe('TimeField', () => {
   test('roving entry: one segment is tabbable and Tab enters then exits the field', async ({
@@ -120,5 +120,32 @@ test.describe('TimeField', () => {
     await page.keyboard.press('p');
     await expect(el(page, 'value')).toHaveText('21:30');
     await expect(el(page, 'dayPeriod')).toHaveText('PM');
+  });
+
+  test.describe('@mobile on-screen keyboard', () => {
+    test('@mobile tapped segments take on-screen keyboard digits and the AM/PM letter', async ({
+      page,
+    }, testInfo) => {
+      test.skip(!isMobileProject(testInfo), 'locator.tap() requires hasTouch:true');
+      await gotoFixture(page, 'time-field', { h12: '1' });
+
+      await el(page, 'hour').tap();
+      await expectFocused(el(page, 'hour'));
+      expect(await el(page, 'hour').evaluate((node: HTMLElement) => node.isContentEditable)).toBe(
+        true,
+      );
+
+      await page.keyboard.insertText('0');
+      await page.keyboard.insertText('9');
+      await expectFocused(el(page, 'minute'));
+      await page.keyboard.insertText('3');
+      await page.keyboard.insertText('0');
+      await expectFocused(el(page, 'dayPeriod'));
+      await expect(el(page, 'value')).toHaveText('empty');
+
+      await page.keyboard.insertText('p');
+      await expect(el(page, 'value')).toHaveText('21:30');
+      await expect(el(page, 'dayPeriod')).toHaveText('PM');
+    });
   });
 });

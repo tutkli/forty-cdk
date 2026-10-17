@@ -1,8 +1,10 @@
 import { computed, Directive, ElementRef, inject, type Signal } from '@angular/core';
 
 import { registerHandle } from '../collection/register-handle';
+import { isImeComposing } from '../keyboard-navigation/ime-composition';
 import type { WritingDirection } from '../keyboard-navigation/keyboard-navigation';
 import type { RovingTabindex } from '../roving-tabindex/roving-tabindex';
+import { captureContent } from './editable-content';
 import type { SegmentEditorDelegate, SegmentType } from './segment-editor';
 import { unicodeDigitValue } from './unicode-digit';
 
@@ -37,8 +39,12 @@ export interface SegmentEditorContext {
  * reflection, the roving tabindex, the digit / arrow / Home-End / Backspace
  * (pop last digit) / Delete (clear whole segment) keyboard map (RTL-mirrored
  * ArrowLeft / ArrowRight), and the segment
- * registration. All state lives on the root via {@link SegmentEditorContext};
- * the segment only reads it and forwards intents.
+ * registration. While the field is neither disabled nor read-only the host is a
+ * `contenteditable="plaintext-only"` editing host, so a touch device opens its
+ * on-screen keyboard; text the browser would insert goes through the same digit /
+ * AM·PM handling as a key press and never reaches the DOM. All state lives on the
+ * root via {@link SegmentEditorContext}; the segment only reads it and forwards
+ * intents.
  *
  * `@Directive` without a `selector` so the public subclasses
  * (`ForDateFieldSegment` / `ForTimeFieldSegment`) declare the concrete
@@ -49,9 +55,10 @@ export interface SegmentEditorContext {
   host: {
     role: 'spinbutton',
     '[attr.tabindex]': 'tabindex()',
+    '[attr.contenteditable]': 'editable() ? "plaintext-only" : null',
     '[attr.inputmode]': 'inputmode()',
-    '[attr.autocorrect]': '"off"',
-    '[attr.spellcheck]': '"false"',
+    '[attr.autocorrect]': 'editable() ? "off" : null',
+    '[attr.spellcheck]': 'editable() ? "false" : null',
     '[attr.aria-valuemin]': 'ctx.delegate.segmentMin(segment())',
     '[attr.aria-valuemax]': 'ctx.delegate.segmentMax(segment())',
     '[attr.aria-valuenow]': 'valueNow()',
@@ -64,6 +71,9 @@ export interface SegmentEditorContext {
     '[attr.data-disabled]': 'ctx.effectiveDisabled() ? "" : null',
     '[attr.data-readonly]': 'ctx.readonly() ? "" : null',
     '(keydown)': 'onKeyDown($event)',
+    '(beforeinput)': 'onBeforeInput($event)',
+    '(input)': 'onInput($event)',
+    '(compositionend)': 'onCompositionEnd($event)',
     '(focus)': 'onFocus()',
     '(blur)': 'onBlur($event)',
   },
@@ -91,9 +101,13 @@ export abstract class ForDateTimeSegmentBase {
 
   private readonly valueNow = computed(() => this.ctx.delegate.segmentValue(this.segment()));
 
+  private readonly editable = computed(() => !this.ctx.effectiveDisabled() && !this.ctx.readonly());
+
   private readonly inputmode = computed<'numeric' | null>(() =>
-    this.segment() === 'dayPeriod' ? null : 'numeric',
+    this.editable() && this.segment() !== 'dayPeriod' ? 'numeric' : null,
   );
+
+  #restoreContent: (() => void) | null = null;
 
   private readonly highlighted = computed(
     () => this.ctx.roving.active() === this.host.nativeElement,
@@ -126,25 +140,100 @@ export abstract class ForDateTimeSegmentBase {
 
   private onFocus(): void {
     this.ctx.delegate.focusSegment(this.segment());
+    if (this.editable()) {
+      const host = this.host.nativeElement;
+      host.ownerDocument.getSelection()?.collapse(host, 0);
+    }
   }
 
   private onBlur(event: FocusEvent): void {
     this.ctx.delegate.endTyping(event.relatedTarget);
   }
 
+  private onBeforeInput(event: InputEvent): void {
+    if (!event.cancelable) {
+      this.#restoreContent ??= captureContent(this.host.nativeElement);
+      return;
+    }
+    event.preventDefault();
+    if (!this.editable()) {
+      return;
+    }
+    const type = this.segment();
+    switch (event.inputType) {
+      case 'deleteContentBackward':
+        this.ctx.delegate.backspace(type);
+        return;
+      case 'deleteContentForward':
+        this.ctx.delegate.clear(type);
+        return;
+      case 'insertCompositionText':
+      case 'insertFromComposition':
+      case 'deleteCompositionText':
+        return;
+      default:
+        if (event.data !== null) {
+          this.#typeText(type, event.data);
+        }
+    }
+  }
+
+  private onInput(event: InputEvent): void {
+    const restore = this.#restoreContent;
+    this.#restoreContent = null;
+    restore?.();
+    const type = this.segment();
+    if (
+      event.inputType === 'insertCompositionText' &&
+      event.data &&
+      type === 'dayPeriod' &&
+      this.editable()
+    ) {
+      this.ctx.delegate.setDayPeriodFromKey(event.data.charAt(0));
+    }
+  }
+
+  private onCompositionEnd(event: CompositionEvent): void {
+    if (event.data && this.editable()) {
+      this.#typeText(this.segment(), event.data);
+    }
+  }
+
+  #typeText(type: SegmentType, text: string): void {
+    const host = this.host.nativeElement;
+    const chars = Array.from(text);
+    for (let i = 0; i < chars.length; i++) {
+      this.#typeCharacter(type, chars[i]!);
+      const next = this.ctx.roving.active();
+      if (next !== null && next !== host && i < chars.length - 1) {
+        next.dispatchEvent(
+          new InputEvent('beforeinput', {
+            inputType: 'insertText',
+            data: chars.slice(i + 1).join(''),
+            cancelable: true,
+          }),
+        );
+        return;
+      }
+    }
+  }
+
+  #typeCharacter(type: SegmentType, char: string): boolean {
+    const digit = unicodeDigitValue(char);
+    if (digit !== null) {
+      this.ctx.delegate.typeDigit(type, digit);
+      return true;
+    }
+    return type === 'dayPeriod' && this.ctx.delegate.setDayPeriodFromKey(char);
+  }
+
   private onKeyDown(event: KeyboardEvent): void {
-    if (this.ctx.effectiveDisabled()) {
+    if (this.ctx.effectiveDisabled() || isImeComposing(event)) {
       return;
     }
     const type = this.segment();
     const key = event.key;
-    const digit = unicodeDigitValue(key);
-    if (digit !== null) {
-      event.preventDefault();
-      this.ctx.delegate.typeDigit(type, digit);
-      return;
-    }
-    if (type === 'dayPeriod' && this.ctx.delegate.setDayPeriodFromKey(key)) {
+    if (this.#typeCharacter(type, key)) {
       event.preventDefault();
       return;
     }

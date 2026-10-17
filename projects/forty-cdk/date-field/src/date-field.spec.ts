@@ -823,6 +823,148 @@ describe('ForDateField', () => {
     });
   });
 
+  describe('on-screen keyboard entry (#2276)', () => {
+    const beforeInput = (target: HTMLElement, init: InputEventInit): InputEvent => {
+      const event = new InputEvent('beforeinput', { bubbles: true, ...init });
+      target.dispatchEvent(event);
+      return event;
+    };
+
+    it('makes each segment a plaintext-only editing host with a numeric keyboard', () => {
+      const r = renderHost(Host);
+      for (const type of ['month', 'day', 'year'] as const) {
+        expect(seg(r, type).getAttribute('contenteditable')).toBe('plaintext-only');
+        expect(seg(r, type).getAttribute('inputmode')).toBe('numeric');
+        expect(seg(r, type).getAttribute('autocorrect')).toBe('off');
+        expect(seg(r, type).getAttribute('spellcheck')).toBe('false');
+      }
+    });
+
+    it('drops the editing host and the keyboard hints while disabled or read-only', async () => {
+      const r = renderHost(Host);
+      for (const flag of ['disabled', 'readonly'] as const) {
+        r.instance[flag].set(true);
+        await flush(r.fixture);
+        for (const attribute of ['contenteditable', 'inputmode', 'autocorrect', 'spellcheck']) {
+          expect(seg(r, 'month').hasAttribute(attribute)).toBe(false);
+        }
+        r.instance[flag].set(false);
+        await flush(r.fixture);
+        expect(seg(r, 'month').getAttribute('contenteditable')).toBe('plaintext-only');
+      }
+    });
+
+    it('collapses the selection into the segment it focuses', () => {
+      const r = renderHost(Host);
+      seg(r, 'day').focus();
+      expect(document.getSelection()?.anchorNode).toBe(seg(r, 'day'));
+    });
+
+    it('types inserted text into the segment and keeps the browser from inserting it', async () => {
+      const r = renderHost(Host);
+      seg(r, 'month').focus();
+      const first = beforeInput(seg(r, 'month'), {
+        inputType: 'insertText',
+        data: '1',
+        cancelable: true,
+      });
+      beforeInput(seg(r, 'month'), { inputType: 'insertText', data: '2', cancelable: true });
+      await flush(r.fixture);
+
+      expect(first.defaultPrevented).toBe(true);
+      expect(seg(r, 'month').getAttribute('aria-valuenow')).toBe('12');
+      expect(seg(r, 'month').textContent?.trim()).toBe('12');
+      expect(document.activeElement).toBe(seg(r, 'day'));
+    });
+
+    it('types every digit of a multi-character insertion', async () => {
+      const r = renderHost(Host);
+      beforeInput(seg(r, 'year'), { inputType: 'insertText', data: '2026', cancelable: true });
+      await flush(r.fixture);
+      expect(seg(r, 'year').getAttribute('aria-valuenow')).toBe('2026');
+    });
+
+    it('carries the rest of an insertion into the segment it advances to', async () => {
+      const r = renderHost(Host);
+      seg(r, 'month').focus();
+      seg(r, 'month').dispatchEvent(
+        new CompositionEvent('compositionend', { bubbles: true, data: '120520' }),
+      );
+      await flush(r.fixture);
+      expect(seg(r, 'month').getAttribute('aria-valuenow')).toBe('12');
+      expect(seg(r, 'day').getAttribute('aria-valuenow')).toBe('5');
+      expect(seg(r, 'year').getAttribute('aria-valuenow')).toBe('20');
+      expect(document.activeElement).toBe(seg(r, 'year'));
+    });
+
+    it('ignores inserted text that is not a digit', async () => {
+      const r = renderHost(Host);
+      const event = beforeInput(seg(r, 'month'), {
+        inputType: 'insertText',
+        data: 'x',
+        cancelable: true,
+      });
+      await flush(r.fixture);
+      expect(event.defaultPrevented).toBe(true);
+      expect(seg(r, 'month').getAttribute('aria-valuenow')).toBeNull();
+      expect(seg(r, 'month').textContent?.trim()).toBe('mm');
+    });
+
+    it('pops a digit on a backward delete and clears the segment on a forward delete', async () => {
+      const r = renderHost(Host);
+      r.instance.value.set(new Date(2026, 5, 15));
+      await flush(r.fixture);
+
+      beforeInput(seg(r, 'day'), { inputType: 'deleteContentBackward', cancelable: true });
+      await flush(r.fixture);
+      expect(seg(r, 'day').getAttribute('aria-valuenow')).toBe('1');
+
+      beforeInput(seg(r, 'year'), { inputType: 'deleteContentForward', cancelable: true });
+      await flush(r.fixture);
+      expect(seg(r, 'year').getAttribute('aria-valuenow')).toBeNull();
+    });
+
+    it('undoes a composition the browser cannot cancel and types its digits once it ends', async () => {
+      const r = renderHost(Host);
+      const month = seg(r, 'month');
+      const text = month.firstChild!;
+      month.focus();
+
+      beforeInput(month, { inputType: 'insertCompositionText', data: '1', cancelable: false });
+      text.nodeValue = '1mm';
+      month.append('1');
+      month.dispatchEvent(
+        new InputEvent('input', { bubbles: true, inputType: 'insertCompositionText', data: '1' }),
+      );
+      expect(Array.from(month.childNodes)).toEqual([text]);
+      expect(month.textContent?.trim()).toBe('mm');
+      expect(month.getAttribute('aria-valuenow')).toBeNull();
+
+      month.dispatchEvent(new CompositionEvent('compositionend', { bubbles: true, data: '١٢' }));
+      await flush(r.fixture);
+      expect(month.getAttribute('aria-valuenow')).toBe('12');
+      expect(month.firstChild).toBe(text);
+      expect(text.nodeValue?.trim()).toBe('12');
+    });
+
+    it('leaves a key pressed during a composition to the input method', async () => {
+      const r = renderHost(Host);
+      r.instance.value.set(new Date(2026, 5, 15));
+      await flush(r.fixture);
+
+      const event = new KeyboardEvent('keydown', {
+        key: 'Backspace',
+        isComposing: true,
+        bubbles: true,
+        cancelable: true,
+      });
+      seg(r, 'day').dispatchEvent(event);
+      await flush(r.fixture);
+      expect(event.defaultPrevented).toBe(false);
+      expect(seg(r, 'day').getAttribute('aria-valuenow')).toBe('15');
+    });
+  });
+
   describe('locale ordering & direction', () => {
     it('orders segments and separators per the locale (en-US)', () => {
       const r = renderHost(Host);

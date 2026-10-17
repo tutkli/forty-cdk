@@ -95,6 +95,7 @@ import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/international
     }
 
     .range-segment {
+      caret-color: transparent;
       padding: 0.05rem 0.15rem;
       border-radius: 4px;
       outline: none;
