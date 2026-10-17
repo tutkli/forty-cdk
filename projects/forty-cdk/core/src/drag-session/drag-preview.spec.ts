@@ -149,15 +149,82 @@ describe('createDragPreview strips the identity hooks from the clone', () => {
   });
 });
 
+describe('createDragPreview keeps the cloned live content from acting on the page', () => {
+  let source: HTMLElement;
+
+  beforeEach(() => {
+    source = document.createElement('div');
+    document.body.appendChild(source);
+  });
+
+  afterEach(() => {
+    source.remove();
+    document.querySelectorAll('[data-for-drag-preview]').forEach((n) => n.remove());
+  });
+
+  function previewClone(): HTMLElement {
+    return document.body.querySelector<HTMLElement>('[data-for-drag-preview]')!;
+  }
+
+  it('leaves the dragged item radio checked when the clone joins the document', () => {
+    source.innerHTML = '<input type="radio" name="primary" checked />';
+    const radio = source.querySelector('input')!;
+
+    createDragPreview(source, document);
+
+    expect(radio.checked).toBe(true);
+  });
+
+  it('strips name and form from every cloned form control', () => {
+    source.innerHTML = `
+      <input name="a" form="f" />
+      <select name="b" form="f"></select>
+      <textarea name="c" form="f"></textarea>
+      <button name="d" form="f"></button>
+    `;
+
+    createDragPreview(source, document);
+
+    expect(previewClone().querySelectorAll('[name], [form]')).toHaveLength(0);
+    expect(source.querySelectorAll('[name]')).toHaveLength(4);
+  });
+
+  it('strips autoplay from cloned media', () => {
+    source.innerHTML = '<video autoplay></video><audio autoplay></audio>';
+
+    createDragPreview(source, document);
+
+    expect(previewClone().querySelectorAll('[autoplay]')).toHaveLength(0);
+    expect(source.querySelectorAll('[autoplay]')).toHaveLength(2);
+  });
+
+  it('replaces a cloned iframe with an empty box the size of the source frame', () => {
+    source.innerHTML = '<iframe src="about:blank"></iframe>';
+    source.querySelector('iframe')!.getBoundingClientRect = () =>
+      ({ width: 120, height: 80 }) as DOMRect;
+
+    createDragPreview(source, document);
+
+    expect(previewClone().querySelector('iframe')).toBeNull();
+    const box = previewClone().firstElementChild as HTMLElement;
+    expect(box.style.width).toBe('120px');
+    expect(box.style.height).toBe('80px');
+    expect(source.querySelector('iframe')).not.toBeNull();
+  });
+});
+
 describe('settle fallback timeout scales from the computed transition duration', () => {
   afterEach(() => {
     document.querySelectorAll('[data-for-drag-preview]').forEach((n) => n.remove());
   });
 
-  function fakeWin(transitionDuration: string): Window {
+  function fakeWin(
+    transitionDuration: string,
+    transition: Partial<Pick<CSSStyleDeclaration, 'transitionProperty' | 'transitionDelay'>> = {},
+  ): Window {
     const timeouts: { fn: () => void; delay: number }[] = [];
     return {
-      getComputedStyle: () => ({ transitionDuration }) as CSSStyleDeclaration,
+      getComputedStyle: () => ({ transitionDuration, ...transition }) as CSSStyleDeclaration,
       setTimeout: ((fn: () => void, delay: number): number => {
         timeouts.push({ fn, delay });
         return timeouts.length;
@@ -191,15 +258,75 @@ describe('settle fallback timeout scales from the computed transition duration',
     expect(timeouts[0]!.delay).toBe(800 + 50);
   });
 
-  it('uses only the first comma-separated segment for the fallback', () => {
+  function settleDelay(
+    transitionDuration: string,
+    transition: Partial<Pick<CSSStyleDeclaration, 'transitionProperty' | 'transitionDelay'>>,
+  ): number | undefined {
     const nodes = [document.createElement('span')];
     const preview = createTemplatePreview(nodes, document.body, document, () => undefined);
-    const win = fakeWin('600ms, 2s');
+    const win = fakeWin(transitionDuration, transition);
+
+    preview.settle(10, 20, win);
+
+    return (win as unknown as { __timeouts: { delay: number }[] }).__timeouts[0]?.delay;
+  }
+
+  it('times the fallback from the transform entry rather than the first one', () => {
+    expect(
+      settleDelay('120ms, 300ms', {
+        transitionProperty: 'opacity, transform',
+        transitionDelay: '0s, 0s',
+      }),
+    ).toBe(300 + 50);
+  });
+
+  it('adds the transform transition delay to its duration', () => {
+    expect(
+      settleDelay('200ms', { transitionProperty: 'transform', transitionDelay: '100ms' }),
+    ).toBe(200 + 100 + 50);
+  });
+
+  it('repeats a shorter duration or delay list to match the property list', () => {
+    expect(
+      settleDelay('100ms, 400ms', {
+        transitionProperty: 'opacity, color, transform',
+        transitionDelay: '20ms',
+      }),
+    ).toBe(100 + 20 + 50);
+  });
+
+  it('lets a later transform entry override an earlier all', () => {
+    expect(
+      settleDelay('1s, 200ms', { transitionProperty: 'all, transform', transitionDelay: '0s' }),
+    ).toBe(200 + 50);
+  });
+
+  it('subtracts a negative delay from the transform duration', () => {
+    expect(
+      settleDelay('300ms', { transitionProperty: 'transform', transitionDelay: '-100ms' }),
+    ).toBe(200 + 50);
+  });
+
+  it('falls back to the longest transition when none targets transform', () => {
+    expect(
+      settleDelay('200ms, 100ms', {
+        transitionProperty: 'opacity, color',
+        transitionDelay: '50ms, 0s',
+      }),
+    ).toBe(250 + 50);
+  });
+
+  it('destroys immediately when transition-property is none', () => {
+    const onDestroy = vi.fn();
+    const nodes = [document.createElement('span')];
+    const preview = createTemplatePreview(nodes, document.body, document, onDestroy);
+    const win = fakeWin('300ms', { transitionProperty: 'none', transitionDelay: '0s' });
 
     preview.settle(10, 20, win);
 
     const timeouts = (win as unknown as { __timeouts: { delay: number }[] }).__timeouts;
-    expect(timeouts[0]!.delay).toBe(600 + 50);
+    expect(timeouts).toHaveLength(0);
+    expect(onDestroy).toHaveBeenCalledTimes(1);
   });
 
   it('the scaled fallback still destroys the preview when it fires', () => {

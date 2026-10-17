@@ -136,4 +136,70 @@ describe('PreviewController', () => {
     controller.moveTo({ x: 6, y: 6 });
     expect(lockAxis.mock.calls.length).toBe(callsAfterConstruction + 2);
   });
+
+  describe('boundary clamp measures the floating preview box', () => {
+    function rectOf(left: number, top: number, width: number, height: number): DOMRect {
+      return {
+        left,
+        top,
+        right: left + width,
+        bottom: top + height,
+        width,
+        height,
+        x: left,
+        y: top,
+        toJSON() {},
+      };
+    }
+
+    function suppliedPreview(width: number, height: number): DragPreview & { lastX: number } {
+      const element = document.createElement('div');
+      element.getBoundingClientRect = () => rectOf(0, 0, width, height);
+      return {
+        lastX: Number.NaN,
+        element,
+        moveTo(x: number) {
+          this.lastX = x;
+        },
+        settle() {},
+        destroy() {},
+      };
+    }
+
+    function liftWith(preview: DragPreview): PreviewController {
+      source.getBoundingClientRect = () => rectOf(0, 0, 50, 40);
+      const boundary = document.createElement('div');
+      boundary.getBoundingClientRect = () => rectOf(0, 0, 300, 100);
+      return new PreviewController({
+        source,
+        point: { x: 10, y: 20 },
+        preview,
+        doc: document,
+        boundary,
+        lockAxis: () => null,
+      });
+    }
+
+    it('keeps a supplied preview wider than the item inside the boundary', () => {
+      const preview = suppliedPreview(200, 40);
+      liftWith(preview).moveTo({ x: 290, y: 20 });
+
+      expect(preview.lastX).toBe(100);
+    });
+
+    it('lets a supplied preview narrower than the item reach the boundary end edge', () => {
+      const preview = suppliedPreview(20, 40);
+      liftWith(preview).moveTo({ x: 290, y: 20 });
+
+      expect(preview.lastX).toBe(280);
+    });
+
+    it('falls back to the item box for a supplied preview that exposes no element', () => {
+      const preview = suppliedPreview(200, 40);
+      delete (preview as { element?: HTMLElement }).element;
+      liftWith(preview).moveTo({ x: 290, y: 20 });
+
+      expect(preview.lastX).toBe(250);
+    });
+  });
 });

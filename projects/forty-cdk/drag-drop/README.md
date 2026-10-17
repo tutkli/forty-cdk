@@ -157,7 +157,10 @@ whole gesture (and past the drop, while a settle transition runs) it answers the
 selector (`[forDraggable]`, or a composed one such as `[forTableRow]`) and repeats its `data-index`.
 `id` and `data-testid` are stripped from the clone and its whole subtree, so a hook that identifies
 a single element stays unambiguous; anything that **enumerates** items by attribute selector during
-a drag must filter the preview out with `:not([data-for-drag-preview])`.
+a drag must filter the preview out with `:not([data-for-drag-preview])`. The clone is also made
+inert before it joins the document: `name`, `form`, `autofocus` and `autoplay` are stripped, and
+every `iframe`, `object` and `embed` becomes an empty box of the same size, so a cloned radio never
+unchecks the item's own and no cloned media plays or frame reloads.
 
 ## Keyboard
 
@@ -433,7 +436,9 @@ always provided by the consumer via CSS; the library imposes none.
 ```
 
 With no such CSS, `animateReorder` is a graceful no-op: transforms clear instantly and the
-preview is destroyed promptly.
+preview is destroyed promptly. Otherwise the preview is destroyed when its `transform` transition
+ends, and never before that transition's `transition-delay` plus duration have elapsed, wherever
+`transform` sits in a multi-property `transition` list.
 
 ## Orientation
 
