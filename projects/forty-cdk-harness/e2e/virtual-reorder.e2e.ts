@@ -206,6 +206,27 @@ test.describe('Virtualized *forVirtualFor list reorder', () => {
     expect(Number(match![2])).toBeGreaterThan(from + 1000);
   });
 
+  test('Shift+pointer scrub to the viewport end edge drops the lifted row last', async ({
+    page,
+  }) => {
+    const fromBox = await el(page, 'row-0').boundingBox();
+    const rootBox = await el(page, 'root').boundingBox();
+    if (!rootBox || !fromBox) throw new Error('Elements not found');
+
+    const startX = fromBox.x + fromBox.width / 2;
+    const startY = fromBox.y + fromBox.height / 2;
+
+    await page.keyboard.down('Shift');
+    await page.mouse.move(startX, startY);
+    await page.mouse.down();
+    await page.mouse.move(startX, startY + 5);
+    await page.mouse.move(startX, rootBox.y + rootBox.height + 10);
+    await page.mouse.up();
+    await page.keyboard.up('Shift');
+
+    await expect(el(page, 'last-reorder')).toHaveText('0->9999');
+  });
+
   test('pointer auto-scroll past the window reaches a row beyond it, with absolute indices', async ({
     page,
   }) => {

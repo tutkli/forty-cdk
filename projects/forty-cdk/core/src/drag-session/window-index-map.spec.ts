@@ -59,23 +59,28 @@ describe('resolveScrubReorder', () => {
     expect(resolveScrubReorder({ ...base, pointer: 100 })).toEqual({ from: 50, to: 0 });
   });
 
-  it('maps the viewport end edge to the last dataset index, shifted past the removed row', () => {
-    expect(resolveScrubReorder({ ...base, pointer: 500 })).toEqual({ from: 50, to: 9998 });
+  it('maps the viewport end edge to the last dataset index', () => {
+    expect(resolveScrubReorder({ ...base, pointer: 500 })).toEqual({ from: 50, to: 9999 });
+    expect(resolveScrubReorder({ ...base, from: 0, count: 3, pointer: 500 })).toEqual({
+      from: 0,
+      to: 2,
+    });
   });
 
   it('maps a mid-viewport pointer to the proportional far index', () => {
-    expect(resolveScrubReorder({ ...base, pointer: 300 })).toEqual({ from: 50, to: 4999 });
+    expect(resolveScrubReorder({ ...base, pointer: 300 })).toEqual({ from: 50, to: 5000 });
   });
 
   it('clamps a pointer beyond either edge to the dataset bounds', () => {
     expect(resolveScrubReorder({ ...base, pointer: 40 })).toEqual({ from: 50, to: 0 });
-    expect(resolveScrubReorder({ ...base, pointer: 9000 })).toEqual({ from: 50, to: 9998 });
+    expect(resolveScrubReorder({ ...base, pointer: 9000 })).toEqual({ from: 50, to: 9999 });
   });
 
-  it('does not shift a target at or below the lifted row', () => {
-    expect(
-      resolveScrubReorder({ ...base, viewportStart: 0, viewportEnd: 100, pointer: 0 }),
-    ).toEqual({ from: 50, to: 0 });
+  it("maps a pointer over the lifted row's own position to that position", () => {
+    expect(resolveScrubReorder({ ...base, from: 1, count: 3, pointer: 300 })).toEqual({
+      from: 1,
+      to: 1,
+    });
   });
 });
 
@@ -118,7 +123,7 @@ describe('resolveWindowedReorder', () => {
         currentIndex: 1,
         scrub,
       }),
-    ).toEqual({ from: 50, to: 9998 });
+    ).toEqual({ from: 50, to: 9999 });
   });
 
   it('reports a lift as its own absolute index, which is the from of a same-slot pair', () => {
