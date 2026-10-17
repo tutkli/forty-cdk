@@ -115,7 +115,7 @@ Where a composite is named on the wrapper itself (the `role="group"` of `[forDat
 
 ## Examples
 
-Focus the control through its label and watch the `[forField]` host: it reflects `data-disabled`, `data-required`, `data-touched` and `data-invalid` for the whole block.
+Press the label and focus lands on the control. The `[forField]` host reflects the control's `required` as `data-required`, which the stylesheet turns into the asterisk; States below binds `invalid` and `disabled` to show the other two attributes.
 
 ```ts
 import { ChangeDetectionStrategy, Component } from '@angular/core';
@@ -151,7 +151,7 @@ One class and one directive, four states. The control's own `required`, `invalid
 
 ### Validation with Signal Forms
 
-`[forFieldError]` reads the control's Signal Forms errors automatically. You render `err.messages()`; the field wires `aria-errormessage` and folds the id into `aria-describedby` while invalid. The `[forCheckbox]` auto-associates because it extends the shared form base. Tick then untick to surface the required error.
+`[forFieldError]` reads the control's Signal Forms errors automatically. You render `err.messages()`; the field wires `aria-errormessage` and folds the id into `aria-describedby` while invalid. The `[forCheckbox]` auto-associates because it extends the shared form base. Tick and untick it, then move focus away, to surface the required error.
 
 ## API
 

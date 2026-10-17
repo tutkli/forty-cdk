@@ -42,7 +42,7 @@ Nesting composes like native fieldsets: a disabled outer `[forFieldset]` keeps e
 
 ## Examples
 
-Disable the group and every control inside it follows. The fieldset reflects `data-disabled` and reaches custom-role controls a native `<fieldset disabled>` cannot.
+Two fields grouped under one legend, which names the group for assistive tech while each control keeps its own label. Disable a group below shows `disabled` reaching every control inside, custom-role controls a native `<fieldset disabled>` misses included.
 
 ```ts
 import { ChangeDetectionStrategy, Component } from '@angular/core';
