@@ -42,7 +42,8 @@ const SET_SIZE_ROLES = new Set([
 
 const IMPLICIT_SET_SIZE_TAGS = new Set(['article', 'li', 'option', 'tr']);
 
-const NAMING_ATTRIBUTE = /(?:^|\s)(?:aria-label|aria-labelledby|\[ariaLabel\]|ariaLabel)\s*=/;
+const NAMING_ATTRIBUTE =
+  /(?:^|\s)(?:aria-label|aria-labelledby|\[attr\.aria-label\]|\[attr\.aria-labelledby\]|\[ariaLabel\]|ariaLabel)\s*=/;
 
 const TAB_STOP = /\stabindex="0"/;
 

@@ -452,4 +452,63 @@ it: the directive never takes a focused row's node out of the document.
 
 ## Wrapping in a design system
 
-Subclass the root and re-provide `FOR_VIRTUAL_VIEWPORT_CONTEXT` with `useExisting` pointing at the subclass, since Angular does not inherit a directive's `providers`; [Wrapping non-form roots](../../../docs/wrapping-non-form-roots.md) walks the pattern.
+`ForVirtualViewport` is a component: its own template renders the sizer the rows are
+positioned in. A subclass inherits no template, so do not subclass it. A `@Directive`
+subclass throws `NG0903`, and a `@Component` subclass renders no sizer, so its list
+cannot scroll. Compose the viewport in your wrapper's template instead, and stamp the
+consumer's row template into each row with `NgTemplateOutlet`:
+
+```ts
+import { NgTemplateOutlet } from '@angular/common';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  TemplateRef,
+  contentChild,
+  input,
+} from '@angular/core';
+import { ForVirtualFor, ForVirtualViewport } from 'forty-cdk/virtualization';
+
+@Component({
+  selector: 'my-virtual-list',
+  imports: [ForVirtualViewport, ForVirtualFor, NgTemplateOutlet],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <div
+      forVirtualViewport
+      class="my-virtual-list"
+      [virtualCount]="items().length"
+      [estimateSize]="estimateSize()"
+      role="list"
+      [attr.aria-label]="ariaLabel()"
+      tabindex="0"
+    >
+      <div
+        *forVirtualFor="let item of items(); let index = index"
+        class="my-virtual-list-row"
+        role="listitem"
+      >
+        <ng-container *ngTemplateOutlet="row(); context: { $implicit: item, index: index }" />
+      </div>
+    </div>
+  `,
+})
+export class MyVirtualList<T> {
+  readonly items = input.required<readonly T[]>();
+  readonly estimateSize = input(44);
+  readonly ariaLabel = input<string | null>(null);
+  readonly row = contentChild.required(TemplateRef);
+}
+```
+
+```html
+<my-virtual-list [items]="users()" [estimateSize]="48" ariaLabel="Users">
+  <ng-template let-user>{{ user.name }}</ng-template>
+</my-virtual-list>
+```
+
+The wrapper re-provides nothing: the viewport in its template provides
+`FOR_VIRTUAL_VIEWPORT_CONTEXT` to the rows it renders. When your consumers need
+`scrollToIndex()`, expose the viewport with `viewChild.required(ForVirtualViewport)`.
+The other non-form roots wrap by subclassing; [Wrapping non-form roots](../../../docs/wrapping-non-form-roots.md)
+covers them.

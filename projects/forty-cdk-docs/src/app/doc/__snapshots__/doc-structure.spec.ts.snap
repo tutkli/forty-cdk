@@ -801,6 +801,10 @@ exports[`document structure > docs/wrapping-non-form-roots.md declares the secti
         "depth": 3,
         "slug": "fortoolbar-and-fortablerow-spread-their-helpers-too",
       },
+      {
+        "depth": 3,
+        "slug": "forvirtualviewport-is-a-component-compose-it-do-not-subclass-it",
+      },
     ],
     "slug": "re-provide-the-context-token--this-is-the-one-that-breaks",
     "tables": [
@@ -810,7 +814,7 @@ exports[`document structure > docs/wrapping-non-form-roots.md declares the secti
           "Token to re-provide",
         ],
         "role": "plain",
-        "rows": 27,
+        "rows": 26,
       },
     ],
     "title": "Re-provide the context token — this is the one that breaks",
@@ -831,7 +835,7 @@ exports[`document structure > docs/wrapping-non-form-roots.md declares the secti
           "Pattern",
         ],
         "role": "plain",
-        "rows": 4,
+        "rows": 5,
       },
     ],
     "title": "Choosing a pattern",

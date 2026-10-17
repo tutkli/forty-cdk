@@ -47,10 +47,12 @@ export interface VirtualViewportContext extends ForVirtualViewportContext {
  * `[forVirtualViewport]`.
  *
  * `*forVirtualFor` reads the same token at an internal type that adds its data
- * channel, so a wrapper re-providing it must alias it to the viewport:
- * `{ provide: FOR_VIRTUAL_VIEWPORT_CONTEXT, useExisting: MyViewport }`, where
- * `MyViewport` extends `ForVirtualViewport`. A value that merely satisfies the
- * declared type resolves too, and is rejected in dev mode by `*forVirtualFor`.
+ * channel, so it must resolve to the viewport itself, which the viewport's own
+ * `useExisting` provider guarantees. `ForVirtualViewport` is a component, so a
+ * design system wraps it by composing it in its own template rather than by
+ * subclassing it, and that wrapper provides nothing. A value that merely
+ * satisfies the declared type resolves too, and is rejected in dev mode by
+ * `*forVirtualFor`.
  */
 export const FOR_VIRTUAL_VIEWPORT_CONTEXT = new InjectionToken<ForVirtualViewportContext>(
   'FOR_VIRTUAL_VIEWPORT_CONTEXT',
