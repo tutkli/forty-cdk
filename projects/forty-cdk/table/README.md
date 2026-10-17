@@ -206,18 +206,18 @@ One grid-mode table composing six features on the same element: multiple row sel
 
 ### `ForTableColumnResizer`
 
-| Property            | Type                                                         | Description                                                                                                                                                                                                                                         |
-| ------------------- | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `column`            | `string` (required)                                          | Column identity; included in the `resizeCommit` payload and the CSS var name.<br>**Default:** —                                                                                                                                                     |
-| `width`             | `model<number>()`                                            | Current column width in pixels. Two-way bindable via `[(width)]`. Fires `widthChange` on every live update.<br>**Default:** —                                                                                                                       |
-| `min`               | `number`                                                     | Minimum width in pixels.<br>**Default:** `0`                                                                                                                                                                                                        |
-| `max`               | `number`                                                     | Maximum width in pixels. No upper bound by default.<br>**Default:** `Infinity`                                                                                                                                                                      |
-| `step`              | `number`                                                     | Pixels applied per `ArrowLeft` / `ArrowRight` press.<br>**Default:** `10`                                                                                                                                                                           |
-| `largeStep`         | `number`                                                     | Pixels applied per `Page Up` (shrink) / `Page Down` (grow) press, the same direction as `[forPaneResizer]`.<br>**Default:** `100`                                                                                                                   |
-| `disabled`          | `boolean`                                                    | Takes the handle out of the tab order (`tabindex="-1"`) and makes keyboard, pointer drag and the `[autoFit]` double-click no-ops. Reflects `aria-disabled` / `data-disabled`. An imperative `fitToContent()` still applies.<br>**Default:** `false` |
-| `autoFit`           | `boolean`                                                    | Opt-in: `dblclick` on the handle fits the column to its content width via `fitToContent()`. No behaviour change when unset.<br>**Default:** `false`                                                                                                 |
-| `fitIncludesHeader` | `boolean`                                                    | Opt-in: auto-fit also accounts for the header label (marked with a sibling `[forTableColumnLabel]`), fitting to `max(header label, …data cells)`. Degrades to data-cells-only with no marker present.<br>**Default:** `false`                       |
-| `widthRevert`       | `((descriptor: TableResizeDescriptor) => void) \| undefined` | Teardown-only revert callback, bound as a function reference. Called with the pre-drag width when the handle is destroyed mid-drag, where `[(width)]` can no longer emit. Silent on the `Escape` / `pointercancel` reverts.<br>**Default:** —       |
+| Property            | Type                                                               | Description                                                                                                                                                                                                                                                                          |
+| ------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `column`            | `string` (required)                                                | Column identity; included in the `resizeCommit` payload and the CSS var name.<br>**Default:** —                                                                                                                                                                                      |
+| `width`             | `model<number>()`                                                  | Current column width in pixels. Two-way bindable via `[(width)]`. Fires `widthChange` on every live update.<br>**Default:** —                                                                                                                                                        |
+| `min`               | `number`                                                           | Minimum width in pixels.<br>**Default:** `0`                                                                                                                                                                                                                                         |
+| `max`               | `number`                                                           | Maximum width in pixels. No upper bound by default.<br>**Default:** `Infinity`                                                                                                                                                                                                       |
+| `step`              | `number`                                                           | Pixels applied per `ArrowLeft` / `ArrowRight` press.<br>**Default:** `10`                                                                                                                                                                                                            |
+| `largeStep`         | `number`                                                           | Pixels applied per `Page Up` (shrink) / `Page Down` (grow) press, the same direction as `[forPaneResizer]`.<br>**Default:** `100`                                                                                                                                                    |
+| `disabled`          | `boolean`                                                          | Takes the handle out of the tab order (`tabindex="-1"`) and makes keyboard, pointer drag and the `[autoFit]` double-click no-ops. Reflects `aria-disabled` / `data-disabled`. An imperative `fitToContent()` still applies.<br>**Default:** `false`                                  |
+| `autoFit`           | `boolean`                                                          | Opt-in: `dblclick` on the handle fits the column to its content width via `fitToContent()`. No behaviour change when unset.<br>**Default:** `false`                                                                                                                                  |
+| `fitIncludesHeader` | `boolean`                                                          | Opt-in: auto-fit also accounts for the header label (marked with a sibling `[forTableColumnLabel]`), fitting to `max(header label, …data cells)`. Degrades to data-cells-only with no marker present.<br>**Default:** `false`                                                        |
+| `widthRevert`       | `((descriptor: TableResizeRevertDescriptor) => void) \| undefined` | Teardown-only revert callback, bound as a function reference. Called with the pre-drag width (`undefined` when the column had none) when the handle is destroyed mid-drag, where `[(width)]` can no longer emit. Silent on the `Escape` / `pointercancel` reverts.<br>**Default:** — |
 
 ### Data attributes
 
@@ -916,7 +916,7 @@ Seed the initial width through the bound signal (`nameWidth = signal(200)`); the
 
 Arrow-key resize (`ArrowLeft` / `ArrowRight`) moves the width by `[step]` pixels per press, respecting `[min]` / `[max]`. In RTL, the directions are mirrored. `Page Up` / `Page Down` shrink / grow it by `[largeStep]` (default `100`), and `Home` / `End` snap it to `[min]` / a finite `[max]`, the keymap `[forPaneResizer]` uses. `aria-valuenow` reflects the width clamped to `[min]` / `[max]`, while `[(width)]` keeps whatever you bound. Set `[disabled]` to freeze one column's handle without removing it: it leaves the tab order and ignores keyboard, pointer and double-click input.
 
-`Escape` (or a `pointercancel`) mid-drag restores the pre-drag width through `[(width)]` and emits no `resizeCommit`. Unmounting the handle mid-drag (the column is dropped, or `resizable` is toggled off) reverts too, but the destroyed `[(width)]` model can no longer emit, so the pre-drag width is reported through the `[widthRevert]` callback instead. Bind it as a function reference when you persist widths and columns can disappear during a gesture:
+`Escape` (or a `pointercancel`) mid-drag restores the pre-drag width through `[(width)]` and emits no `resizeCommit`. A column that had no width goes back to `undefined`, so the gesture leaves no `--for-table-col-<name>-width` published and the column keeps its fluid track. Unmounting the handle mid-drag (the column is dropped, or `resizable` is toggled off) reverts too, but the destroyed `[(width)]` model can no longer emit, so the pre-drag width is reported through the `[widthRevert]` callback instead, as `undefined` for a column that had none. Bind it as a function reference when you persist widths and columns can disappear during a gesture:
 
 ```html
 <button
@@ -931,12 +931,20 @@ Arrow-key resize (`ArrowLeft` / `ArrowRight`) moves the width by `[step]` pixels
 <!-- snippet: fragment -->
 
 ```ts
-readonly onWidthRevert = ({ column, width }: TableResizeDescriptor): void => {
-  this.persistedWidths.update((widths) => ({ ...widths, [column]: width }));
+readonly onWidthRevert = ({ column, width }: TableResizeRevertDescriptor): void => {
+  this.persistedWidths.update((widths) => {
+    const next = { ...widths };
+    if (width === undefined) {
+      delete next[column];
+    } else {
+      next[column] = width;
+    }
+    return next;
+  });
 };
 ```
 
-`<for-table-body>` wires this internally: a stamped handle destroyed mid-drag folds its pre-drag width back into `[(columnWidths)]`, so the declarative layer needs no extra binding.
+`<for-table-body>` wires this internally: a stamped handle destroyed mid-drag folds its pre-drag width back into `[(columnWidths)]`, or removes the column's key when it had none, so the declarative layer needs no extra binding.
 
 ### Size-to-content (auto-fit)
 

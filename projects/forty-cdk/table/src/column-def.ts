@@ -9,7 +9,7 @@ import {
   type InputSignal,
 } from '@angular/core';
 
-import { assertInputBound, isUnset, unsetInput, type Unset } from 'forty-cdk/core';
+import { assertInputBound, fortyError, unsetInput, type Unset } from 'forty-cdk/core';
 
 import {
   registerTableColumnDef,
@@ -214,8 +214,9 @@ export class ForTableColumnDef {
    * When set, `ForTableBody` renders a `[forTableColumnResizer]` inside the column's
    * header cell and re-emits its commits through the body's `resizeCommit` output.
    * Provide `resizeAriaLabel` so the handle is named. Tune the handle per column with
-   * `resizeMin` / `resizeMax` / `resizeStep` / `autoFit` / `fitIncludesHeader`, and
-   * seed / track its width through the body's `[(columnWidths)]`.
+   * `resizeMin` / `resizeMax` / `resizeStep` / `resizeLargeStep` / `resizeDisabled` /
+   * `autoFit` / `fitIncludesHeader`, and seed / track its width through the body's
+   * `[(columnWidths)]`.
    */
   readonly resizable = input(false, { transform: booleanAttribute });
 
@@ -257,6 +258,21 @@ export class ForTableColumnDef {
    * `[forTableColumnResizer]`'s `step`. Default `10`.
    */
   readonly resizeStep = input<number>(10);
+
+  /**
+   * Pixels applied per `Page Up` (shrink) / `Page Down` (grow) press on the auto-wired
+   * resize handle (only meaningful with `resizable`). Forwarded to the stamped
+   * `[forTableColumnResizer]`'s `largeStep`. Default `100`.
+   */
+  readonly resizeLargeStep = input<number>(100);
+
+  /**
+   * Freezes the auto-wired resize handle while keeping it rendered (only meaningful with
+   * `resizable`). Forwarded to the stamped `[forTableColumnResizer]`'s `disabled`: the
+   * handle leaves the tab order and ignores keyboard, pointer and double-click input, and
+   * reflects `aria-disabled` / `data-disabled`. Default `false`.
+   */
+  readonly resizeDisabled = input(false, { transform: booleanAttribute });
 
   /**
    * Whether double-clicking the auto-wired resize handle fits the column to its
@@ -324,10 +340,16 @@ export class ForTableColumnDef {
    */
   readonly cellClass = input<string | null>(null);
 
-  /** The column's header-cell template. */
-  readonly header = contentChild.required(ForTableHeaderCellDef);
-  /** The column's data-cell template. */
-  readonly dataCell = contentChild.required(ForTableCellDef);
+  /**
+   * The column's header-cell template. Mandatory — a displayed def without one throws in
+   * dev mode.
+   */
+  readonly header = contentChild(ForTableHeaderCellDef);
+  /**
+   * The column's data-cell template. Mandatory — a displayed def without one throws in
+   * dev mode.
+   */
+  readonly dataCell = contentChild(ForTableCellDef);
   /**
    * The column's optional placeholder-cell template. When absent, `ForTableBody`
    * falls back to its `[forTablePlaceholderCellDefault]`, then to an empty cell.
@@ -341,28 +363,39 @@ export class ForTableColumnDef {
 }
 
 /**
- * Dev-mode guard for one column definition's CSS-bound config: its `name`
- * (interpolated into the `--for-table-col-<name>-width` custom property) and
- * its `width` / `fallbackWidth` track fragments.
+ * Dev-mode guard for one column definition: its header and data-cell templates,
+ * its `name` (interpolated into the `--for-table-col-<name>-width` custom
+ * property) and its `width` / `fallbackWidth` track fragments.
  *
  * Called from `ForTableBody`'s track builder — the point at which the values are
  * interpolated — rather than from an `effect` on the def, so the throw carries a
  * stack naming the render that would have produced the broken declaration and
  * no reactive node is created per def in a production build. It follows that
  * only a *displayed* column is checked, which is exactly the set whose values
- * reach CSS.
+ * reach CSS and whose templates are stamped.
  *
  * @param def The column definition to check.
+ * @param name The def's bound name, as the registry resolved it.
  */
-export function assertColumnDefConfig(def: ForTableColumnDef): void {
+export function assertColumnDefConfig(def: ForTableColumnDef, name: string): void {
   if (!isDevMode()) {
     return;
   }
-  const name = def.name();
-  const piece = isUnset(name) ? '[forTableColumnDef]' : `forTableColumnDef="${name}"`;
-  if (!isUnset(name)) {
-    assertColumnName(name, 'ForTableColumnDef');
+  const piece = `forTableColumnDef="${name}"`;
+  const missing = [
+    def.header() ? null : '<ng-template forTableHeaderCellDef>',
+    def.dataCell() ? null : '<ng-template forTableCellDef>',
+  ].filter((template) => template !== null);
+  if (missing.length > 0) {
+    throw fortyError({
+      code: 'FORCDK-TABLE-013',
+      message: `${piece} declares no ${missing.join(' and no ')}.`,
+      fix:
+        'Declare an <ng-template forTableHeaderCellDef> and an <ng-template forTableCellDef> ' +
+        'inside every [forTableColumnDef].',
+    });
   }
+  assertColumnName(name, 'ForTableColumnDef');
   const width = def.width();
   if (width !== null) {
     assertColumnTrack(width, 'width', piece);
