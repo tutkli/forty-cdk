@@ -29,9 +29,13 @@ import {
  * - `--for-navigation-menu-viewport-height` (px)
  *
  * Drive `width` / `height` from these in CSS to get fluid resize between
- * panels. The directive is a real interactive surface (it hosts the
- * focusable content), so `aria-hidden="false"` is reflected explicitly to
- * counteract any wrapper that defaults to hidden.
+ * panels.
+ *
+ * `data-state` is `open` while any item is open (the root's `value` is not
+ * `null`) and `closed` otherwise. It follows the value rather than what the
+ * viewport holds: a panel kept by `animate.leave` is still inside while the
+ * viewport reads `closed`, and an open item whose content is not mounted
+ * leaves it `open` and empty.
  *
  * Two panels can briefly co-exist inside the viewport during a transition, since a leaving panel
  * stays mounted for as long as the consumer's `@if` keeps it, so a cross-fade or slide is possible.
@@ -83,14 +87,12 @@ export class ForNavigationMenuViewport {
 
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
-  // Tracked panels in insertion order, each with its last known trigger host.
-  // Ordering resolves a trigger's document position from this list rather than
-  // a DOM `aria-labelledby` → `getElementById` round-trip, which silently
-  // returns `null` whenever a panel's trigger is not yet resolvable (its item's
-  // `[value]` binding may still be unwritten, so the parent's lookup skips the
-  // handle) and degrades ordering to mount order. The
-  // content re-invokes `insertPanel` once its trigger registers, so the list
-  // and the resulting DOM order self-heal. Insertion order is preserved so
+  // Tracked panels in insertion order, each with its last known trigger host,
+  // from which ordering resolves the trigger's document position. A panel's
+  // trigger may not be resolvable yet (its item's `[value]` binding may still be
+  // unwritten, so the parent's lookup skips the handle); the content re-invokes
+  // `insertPanel` once its trigger registers, so the list and the resulting DOM
+  // order self-heal. Insertion order is preserved so
   // panels whose trigger is not yet known keep a stable relative position
   // (sorted to the end) instead of thrashing as siblings re-insert.
   readonly #panels: { panel: HTMLElement; triggerHost: HTMLElement | null }[] = [];

@@ -189,9 +189,7 @@ class ContextMenuBare {
       <li forNavigationMenuItem value="products">
         <button forNavigationMenuTrigger id="probe-trigger">Products</button>
         @if (value() === 'products') {
-          <div forNavigationMenuContent id="probe-content" aria-labelledby="probe-labelledby">
-            Panel
-          </div>
+          <div forNavigationMenuContent id="probe-content">Panel</div>
         }
       </li>
     </ul>
@@ -368,14 +366,6 @@ export const MENU_FAMILY_ADOPTERS: readonly StaticAdoptionAdopter[] = [
         seam: 'hostId',
         probe: 'probe-content',
         fallback: { generated: 'for-navigation-menu-content' },
-      },
-      {
-        key: '[forNavigationMenuContent]',
-        channel: 'aria-labelledby',
-        source: 'navigation-menu/src/navigation-menu-content.ts',
-        seam: 'hostLabelledBy',
-        probe: 'probe-labelledby',
-        fallback: { pairs: '[forNavigationMenuTrigger]' },
       },
       {
         key: '[forNavigationMenu]',

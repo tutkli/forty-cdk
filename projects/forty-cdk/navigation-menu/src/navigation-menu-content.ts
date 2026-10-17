@@ -13,7 +13,6 @@ import {
   findRelocatedTabStop,
   registerHandle,
   hostId,
-  hostLabelledBy,
   isHoverCapablePointer,
   isImeComposing,
   resolveActiveElement,
@@ -31,11 +30,14 @@ import {
  * (consumer drives it from `forNavigationMenu.value()` or
  * `forNavigationMenuItem`'s state) so animations work natively.
  *
- * Carries `aria-labelledby` pointing at the trigger and reflects
- * `data-state` for CSS hooks. A consumer-set **static** `aria-labelledby` on
- * the panel wins over that fallback and is preserved. No focus is moved on open
- * or close — content is a regular landmark; Tab moves from the trigger through
- * the links inside, then out to the next focusable element after the trigger.
+ * Reflects `data-state` for CSS hooks and emits no role and no accessible name:
+ * as in the APG disclosure navigation pattern, the panel is the region a
+ * trigger's `aria-expanded` / `aria-controls` discloses, not a landmark. A
+ * consumer who wants a named region uses an element that carries one (a
+ * `<section>` with its own `aria-labelledby`, for instance), and the directive
+ * leaves those attributes alone. No focus is moved on open or close; Tab moves
+ * from the trigger through the links inside, then out to the next focusable
+ * element after the trigger.
  *
  * When a `[forNavigationMenuViewport]` is present in the menu, the host
  * element re-parents itself into the viewport on mount so all active
@@ -89,7 +91,6 @@ export class ForNavigationMenuContent {
 
   readonly id = hostId('for-navigation-menu-content');
   private readonly value: Signal<string | Unset> = this.#item.value;
-  private readonly labelledBy = hostLabelledBy(() => this.menu.triggerIdFor(this.value()));
   private readonly motion = computed(() => this.menu.motionFor(this.value()));
 
   readonly #mounted = signal(false);
@@ -102,9 +103,8 @@ export class ForNavigationMenuContent {
       id: this.id,
       hosted: this.#hosted,
     };
-    // Registered synchronously so the trigger's `contentIdFor` lookup — and this
-    // panel's own `aria-labelledby` — resolve during the same pass that renders
-    // them, including a server render, where `afterNextRender` never fires and a
+    // Registered synchronously so the trigger's `contentIdFor` lookup resolves
+    // during the same pass that renders it, including a server render, where `afterNextRender` never fires and a
     // deferred registration left the pre-hydration DOM unpaired
     // ([#1409](https://github.com/tutkli/forty-cdk/issues/1409) is the same
     // failure class in Tabs). The parent's lookups can read `handle.value()`

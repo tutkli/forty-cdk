@@ -724,9 +724,8 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
       },
       {
         select: '[forNavigationMenuContent]',
-        attributes: { 'data-state': 'open' },
+        attributes: { 'data-state': 'open', role: null, 'aria-labelledby': null },
         present: ['id'],
-        pairs: { 'aria-labelledby': '[forNavigationMenuTrigger]' },
       },
     ],
   },
@@ -741,7 +740,11 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
       {
         select: '[forNavigationMenuContent]',
         within: '[forNavigationMenuItem]',
-        pairs: { 'aria-labelledby': '[forNavigationMenuTrigger]' },
+        attributes: { 'aria-labelledby': null },
+      },
+      {
+        select: '[forNavigationMenuTrigger]',
+        pairs: { 'aria-controls': '[forNavigationMenuContent]' },
       },
     ],
   },

@@ -13,15 +13,9 @@ import { ForDisclosure, ForDisclosureTrigger } from 'forty-cdk/disclosure';
 import { ForDropdownMenu, ForDropdownMenuTrigger } from 'forty-cdk/dropdown-menu';
 import { ForListbox } from 'forty-cdk/listbox';
 import { ForMenuContent, ForMenuItem } from 'forty-cdk/menu';
-import {
-  ForNavigationMenu,
-  ForNavigationMenuContent,
-  ForNavigationMenuItem,
-  ForNavigationMenuList,
-  ForNavigationMenuTrigger,
-} from 'forty-cdk/navigation-menu';
 import { ForSelect, ForSelectContent, ForSelectTrigger } from 'forty-cdk/select';
 import { ForSlider, ForSliderThumb } from 'forty-cdk/slider';
+import { ForTabs, ForTabsContent, ForTabsList, ForTabsTrigger } from 'forty-cdk/tabs';
 import { ForTimePicker, ForTimePickerContent, ForTimePickerTrigger } from 'forty-cdk/time-picker';
 import { installObserverPolyfills } from 'forty-cdk/testing';
 
@@ -98,35 +92,22 @@ describe('consumer-set static attribute adoption', () => {
 
     it('does not adopt a consumer [attr.aria-labelledby] binding', async () => {
       @Component({
-        imports: [
-          ForNavigationMenu,
-          ForNavigationMenuList,
-          ForNavigationMenuItem,
-          ForNavigationMenuTrigger,
-          ForNavigationMenuContent,
-        ],
+        imports: [ForTabs, ForTabsList, ForTabsTrigger, ForTabsContent],
         changeDetection: ChangeDetectionStrategy.OnPush,
-        template: `<nav forNavigationMenu [(value)]="value">
-          <ul forNavigationMenuList>
-            <li forNavigationMenuItem value="products">
-              <button forNavigationMenuTrigger id="trigger-id">Products</button>
-              @if (value() === 'products') {
-                <div forNavigationMenuContent [attr.aria-labelledby]="bound">Panel</div>
-              }
-            </li>
-          </ul>
-        </nav>`,
+        template: `<div forTabs value="products">
+          <div forTabsList>
+            <button forTabsTrigger value="products" id="trigger-id">Products</button>
+          </div>
+          <div forTabsContent value="products" [attr.aria-labelledby]="bound">Panel</div>
+        </div>`,
       })
       class BoundHost {
-        readonly value = signal<string | null>('products');
         readonly bound = 'my-heading';
       }
 
       const ctx = mount(BoundHost);
       await ctx.flush();
-      expect(ctx.query('[forNavigationMenuContent]')!.getAttribute('aria-labelledby')).toBe(
-        'trigger-id',
-      );
+      expect(ctx.query('[forTabsContent]')!.getAttribute('aria-labelledby')).toBe('trigger-id');
     });
 
     it('does not adopt a consumer [attr.aria-label] binding', async () => {
