@@ -237,6 +237,8 @@ export function createPointerDragSession(opts: PointerDragSessionOptions): Point
   };
 
   const installClickTrap = (release: { x: number; y: number }): void => {
+    removeClickTrap();
+    const controller = new AbortController();
     const trap = (event: MouseEvent): void => {
       if (
         Math.abs(event.clientX - release.x) <= CLICK_SUPPRESS_TOLERANCE_PX &&
@@ -245,9 +247,11 @@ export function createPointerDragSession(opts: PointerDragSessionOptions): Point
         event.stopPropagation();
         event.preventDefault();
       }
-      removeClickTrap();
+      controller.abort();
+      if (clickTrap === controller) {
+        clickTrap = null;
+      }
     };
-    const controller = new AbortController();
     clickTrap = controller;
     document.addEventListener('click', trap, { capture: true, signal: controller.signal });
     setTimeout(() => {
