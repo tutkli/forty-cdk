@@ -876,7 +876,7 @@ describe('ForVirtualReorder — the pointer pin follows the armed session (#1695
     document.dispatchEvent(pointer('pointerup', 0, 120));
   });
 
-  it('a press during a keyboard lift keeps the lifted row pinned, focused and committable', async () => {
+  it('a drag from the lifted row during a keyboard lift arms no second gesture', async () => {
     const { instance, query, indices, viewport, flush: f } = await mount();
     const row = query('[data-testid="row-2"]')!;
     row.focus();
@@ -884,23 +884,81 @@ describe('ForVirtualReorder — the pointer pin follows the armed session (#1695
     dispatchKey(row, ' ');
     await f();
 
-    query('[data-testid="row-4"]')!.dispatchEvent(pointer('pointerdown', 0, 140));
+    row.dispatchEvent(pointer('pointerdown', 0, 100));
+    document.dispatchEvent(pointer('pointermove', 0, 180));
+    document.dispatchEvent(pointer('pointerup', 0, 180));
     await f();
+
+    expect(instance.events()).toBe(0);
+    expect(assertiveText()).not.toContain('cancelled');
 
     viewport.scrollTo({ top: 20000 });
     await f();
     await f();
 
     expect(indices()).toContain(2);
-    expect(indices()).not.toContain(4);
     expect(query('[data-testid="row-2"]')).toBe(row);
-    expect(document.activeElement).toBe(row);
+    expect(row.getAttribute('data-dragging')).toBe('');
 
-    document.dispatchEvent(pointer('pointerup', 0, 140));
     dispatchKey(row, ' ');
     await f();
 
+    expect(instance.events()).toBe(1);
     expect(instance.last()).toEqual({ from: 2, to: 2 });
+  });
+
+  it('a drag from another row during a keyboard lift cancels the lift and runs as the only gesture', async () => {
+    const { instance, query, flush: f } = await mount();
+    const row = query('[data-testid="row-2"]')!;
+    row.focus();
+
+    dispatchKey(row, ' ');
+    await f();
+
+    const other = query('[data-testid="row-5"]')!;
+    other.dispatchEvent(pointer('pointerdown', 0, 220));
+    other.focus();
+    await f();
+
+    expect(assertiveText()).toContain('movement cancelled');
+    expect(row.hasAttribute('data-dragging')).toBe(false);
+
+    document.dispatchEvent(pointer('pointermove', 0, 260));
+    await f();
+
+    expect(row.hasAttribute('data-dragging')).toBe(false);
+    expect(other.getAttribute('data-dragging')).toBe('');
+
+    document.dispatchEvent(pointer('pointerup', 0, 260));
+    await f();
+
+    expect(instance.events()).toBe(1);
+    expect(instance.last()?.from).toBe(5);
+  });
+
+  it('Space after a click on another row lifts that row instead of dropping the stale lift', async () => {
+    const { instance, query, flush: f } = await mount();
+    const row = query('[data-testid="row-2"]')!;
+    row.focus();
+
+    dispatchKey(row, ' ');
+    await f();
+
+    const other = query('[data-testid="row-5"]')!;
+    other.dispatchEvent(pointer('pointerdown', 0, 220));
+    other.focus();
+    document.dispatchEvent(pointer('pointerup', 0, 220));
+    await f();
+
+    dispatchKey(other, ' ');
+    await f();
+
+    expect(instance.events()).toBe(0);
+    expect(row.hasAttribute('data-dragging')).toBe(false);
+    expect(other.getAttribute('data-dragging')).toBe('');
+
+    dispatchKey(other, 'Escape');
+    await f();
   });
 
   it('a lift key pressed during an armed pointer drag starts no keyboard gesture', async () => {

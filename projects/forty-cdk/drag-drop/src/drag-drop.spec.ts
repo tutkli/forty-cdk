@@ -1458,6 +1458,22 @@ describe('ForDropList + ForDraggable', () => {
       const list = comp.listRef();
       const el = fixture.nativeElement as HTMLElement;
       const first = itemEl(el, 1);
+      const stubRect = (node: HTMLElement, top: number, bottom: number): void => {
+        const value: DOMRect = {
+          left: 0,
+          top,
+          right: 200,
+          bottom,
+          width: 200,
+          height: bottom - top,
+          x: 0,
+          y: top,
+          toJSON() {},
+        };
+        node.getBoundingClientRect = () => value;
+      };
+      stubRect(listEl(el), 0, 60);
+      draggables(el).forEach((item, i) => stubRect(item, i * 20, i * 20 + 20));
 
       const rafSpy = vi.spyOn(window, 'requestAnimationFrame');
       const cancelSpy = vi.spyOn(window, 'cancelAnimationFrame');
@@ -1480,6 +1496,7 @@ describe('ForDropList + ForDraggable', () => {
       expect(cancelledDuringDrop).toContain(coalescedFrame);
       const drop = comp.lastDrop();
       expect(drop!.previousIndex).toBe(0);
+      expect(drop!.currentIndex).toBe(2);
       expect(listEl(el).hasAttribute('data-dragging')).toBe(false);
     });
   });
@@ -3550,6 +3567,72 @@ describe('ForDropList — geometry follows a window that recycles its rows (#212
     list.drop();
 
     expect(host.lastDrop()?.currentIndex).toBe(0);
+  });
+
+  async function mountScrollableList() {
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+    const fixture = TestBed.createComponent(SingleListHost);
+    const host = fixture.componentInstance;
+    host.rows.set(Array.from({ length: 6 }, (_, i) => ({ id: i + 1, label: `Row ${i + 1}` })));
+    fixture.detectChanges();
+    await flush(fixture);
+    const el = fixture.nativeElement as HTMLElement;
+    const listHost = listEl(el);
+    let scrollTop = 0;
+    Object.defineProperty(listHost, 'scrollTop', { configurable: true, get: () => scrollTop });
+    listHost.getBoundingClientRect = () => rect(0, 120);
+    const layoutRows = (): void => {
+      for (const item of draggables(el)) {
+        const top = (Number(item.getAttribute('data-test-id')) - 1) * 20 - scrollTop;
+        item.getBoundingClientRect = () => rect(top, top + 20);
+      }
+    };
+    layoutRows();
+    const frames: FrameRequestCallback[] = [];
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => frames.push(cb));
+    vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => undefined);
+    return {
+      fixture,
+      host,
+      el,
+      list: fixture.debugElement.children[0]!.injector.get(ForDropList),
+      runFrames: (): void => frames.splice(0).forEach((cb) => cb(0)),
+      scrollBy: (delta: number): void => {
+        scrollTop += delta;
+        layoutRows();
+      },
+    };
+  }
+
+  it('a drop after the list scrolled under a still pointer lands where the pointer rests now', async () => {
+    const { host, el, list, runFrames, scrollBy } = await mountScrollableList();
+
+    list.pointerLift(itemEl(el, 1), { x: 100, y: 10 });
+    list.pointerMove({ x: 100, y: 55 });
+    runFrames();
+
+    scrollBy(40);
+    list.drop();
+
+    expect(host.lastDrop()?.currentIndex).toBe(4);
+  });
+
+  it('a drop after the window recycled under a still pointer resolves against the rows rendered now', async () => {
+    const { fixture, host, el, list, runFrames, scrollBy } = await mountScrollableList();
+
+    list.pointerLift(itemEl(el, 1), { x: 100, y: 10 });
+    list.pointerMove({ x: 100, y: 55 });
+    runFrames();
+
+    host.rows.update((rows) => [...rows.filter((row) => row.id !== 2), { id: 7, label: 'Row 7' }]);
+    fixture.detectChanges();
+    await flush(fixture);
+    scrollBy(40);
+    expect(list.items().length).toBe(6);
+
+    list.drop();
+
+    expect(host.lastDrop()?.currentIndex).toBe(3);
   });
 });
 

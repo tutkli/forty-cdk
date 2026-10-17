@@ -91,9 +91,11 @@ function injectViewport(): ForVirtualViewport {
  * **One gesture at a time**. The pin is
  * written when a pointer drag **arms**, not when the press lands, and released on its commit or
  * cancel — so an ordinary click on a row pins nothing and leaves no retained node behind. Pointer
- * and keyboard reorder are mutually exclusive: while a keyboard lift is live the coordinator stands
- * its pointer channel down (no pin, no scrub tracking, no arming), and a lift key pressed during a
- * pointer drag is ignored. Whichever gesture starts first owns the pin until it commits or aborts.
+ * and keyboard reorder are mutually exclusive: while a keyboard lift is live, a press on the lifted
+ * row arms nothing, and a press on any other row cancels the lift, as a click that moves focus off
+ * a lifted item does in a plain `[forDropList]`, so a drag that follows is an ordinary pointer
+ * gesture. A lift key pressed during a pointer drag is ignored. Whichever gesture is live owns the
+ * pin until it commits or aborts.
  *
  * A pointer press is refused outright — nothing tracked, no `'pointer'` mode, no pin — when the
  * list is `disabled`, when a **mouse** press uses a non-primary button (touch and pen presses keep
@@ -433,10 +435,13 @@ export class ForVirtualReorder {
   }
 
   #trackPointerPress(event: PointerEvent): boolean {
+    const host = this.#draggableHost(event.target);
+    if (host !== null && this.#mode === 'keyboard' && host !== this.#kbLiftedHost) {
+      this.#kbCancel(false);
+    }
     if (this.#list.effectiveDisabled() || (event.pointerType === 'mouse' && event.button !== 0)) {
       return false;
     }
-    const host = this.#draggableHost(event.target);
     if (host === null) {
       return false;
     }

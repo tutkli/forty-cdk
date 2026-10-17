@@ -70,6 +70,8 @@ A row's `[forDragPlaceholder]` renders in the lifted row's own slot for the whol
 
 Every lift, move, drop and cancel is announced through the live announcer using the `provideForDragDropDefaults` message builders, so a scope override localizes them centrally. Pointer and keyboard gestures alike announce dataset positions counted against the dataset size, and name the row by its accessible text, so an `aria-hidden` handle glyph is not read out.
 
+Only one gesture is live at a time. Focus leaving the viewport cancels a keyboard lift, and so does a press on any other row, so a drag that follows it is an ordinary pointer gesture. A press on the lifted row itself starts no pointer drag.
+
 The lifted row carries drag-drop's `data-dragging` hook for the whole gesture (the coordinator owns the keyboard lift, so it marks the row on the drop list's behalf), and the viewport carries it too. Style either exactly as you would in a non-windowed `[forDropList]`. Each row's `[forDraggable]` emits `dragStart` and `dragEnd` for a keyboard gesture as it does for a pointer one, and `dragStart.index` is the dataset index.
 
 ## What it adds over a bare `[forDropList]`

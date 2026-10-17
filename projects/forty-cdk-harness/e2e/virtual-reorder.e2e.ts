@@ -35,6 +35,27 @@ async function scrollAndSettle(page: Page, minStart = 50): Promise<number[]> {
   return renderedIndices(page);
 }
 
+/**
+ * The rendered row whose box spans viewport `y`, skipping the lifted row and the floating
+ * preview, which both sit at the pointer during a drag.
+ */
+async function rowUnder(
+  page: Page,
+  y: number,
+): Promise<{ index: number; top: number; bottom: number } | null> {
+  return page
+    .locator('[forDraggable]:not([data-for-drag-preview]):not([data-dragging])')
+    .evaluateAll((nodes, at) => {
+      const row = nodes.find((n) => {
+        const box = n.getBoundingClientRect();
+        return box.top <= at && at < box.bottom;
+      });
+      if (!row) return null;
+      const box = row.getBoundingClientRect();
+      return { index: Number(row.getAttribute('data-index')), top: box.top, bottom: box.bottom };
+    }, y);
+}
+
 test.describe('Virtualized *forVirtualFor list reorder', () => {
   test.beforeEach(async ({ page }) => {
     await gotoFixture(page, 'virtual-reorder');
@@ -265,6 +286,45 @@ test.describe('Virtualized *forVirtualFor list reorder', () => {
 
     await page.mouse.move(startX, target.bottom - 4);
     await page.mouse.move(startX, target.bottom - 3);
+    await page.mouse.up();
+
+    await expect(el(page, 'last-reorder')).toHaveText(`${from}->${target.index}`);
+  });
+
+  test('a drop after a wheel scroll under a still pointer lands on the row under the pointer', async ({
+    page,
+  }) => {
+    const indices = await renderedIndices(page);
+    const from = indices[1]!;
+
+    const fromRow = el(page, `row-${from}`);
+    const root = el(page, 'root');
+    const rootBox = await root.boundingBox();
+    const fromBox = await fromRow.boundingBox();
+    if (!rootBox || !fromBox) throw new Error('Elements not found');
+
+    const startX = fromBox.x + fromBox.width / 2;
+    const startY = fromBox.y + fromBox.height / 2;
+
+    await page.mouse.move(startX, startY);
+    await page.mouse.down();
+    await page.mouse.move(startX, startY + 5);
+    await expect(fromRow).toHaveAttribute('data-dragging', '');
+
+    const middle = await rowUnder(page, rootBox.y + rootBox.height / 2);
+    if (!middle) throw new Error('No row under the viewport middle');
+    const restY = middle.bottom - 4;
+    await page.mouse.move(startX, restY);
+
+    await page.mouse.wheel(0, 440);
+    await expect.poll(() => root.evaluate((node) => node.scrollTop)).toBe(440);
+    await expect
+      .poll(async () => (await rowUnder(page, restY))?.index ?? -1)
+      .toBe(middle.index + 10);
+    const target = await rowUnder(page, restY);
+    if (!target) throw new Error('No row under the pointer');
+    expect(restY).toBeGreaterThan((target.top + target.bottom) / 2);
+
     await page.mouse.up();
 
     await expect(el(page, 'last-reorder')).toHaveText(`${from}->${target.index}`);
