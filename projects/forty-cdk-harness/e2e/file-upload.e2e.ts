@@ -58,6 +58,26 @@ test.describe('FileUpload', () => {
     await expect(el(page, 'zone')).not.toHaveAttribute('data-dragging');
   });
 
+  test('a text drag neither lights the zone up nor has its drop swallowed', async ({ page }) => {
+    await gotoFixture(page, 'file-upload');
+
+    const prevented = await el(page, 'zone').evaluate((zone) => {
+      const dataTransfer = new DataTransfer();
+      dataTransfer.setData('text/plain', 'hello');
+      return ['dragenter', 'dragover', 'drop'].map((type) => {
+        const event = new DragEvent(type, { dataTransfer, bubbles: true, cancelable: true });
+        zone.dispatchEvent(event);
+        return event.defaultPrevented;
+      });
+    });
+
+    expect(prevented).toEqual([false, false, false]);
+    await expectStays(page, async () => {
+      await expect(el(page, 'zone')).not.toHaveAttribute('data-dragging');
+      await expect(el(page, 'count')).toHaveText('0');
+    });
+  });
+
   test('drop filters by accept: accepted emit, rejected reported, input reflects accepted', async ({
     page,
   }) => {
