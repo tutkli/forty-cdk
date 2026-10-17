@@ -343,7 +343,9 @@ export class ForDropList implements ForDropListContext {
    *
    * It is **not** folded into the list's own lift state: `moveLifted` / `drop` /
    * `cancel` still act on nothing, because the coordinator owns the target index, the
-   * announcements and the teardown. End it with {@link endCoordinatorLift}.
+   * announcements and the teardown. It is still the only gesture in the list: while it is
+   * live, `lift` and `pointerLift` return `-1`, so no item's own `[forDraggable]` lifts beside
+   * it. End it with {@link endCoordinatorLift}.
    */
   beginCoordinatorLift(el: HTMLElement, index: number): void {
     this.#coordinatorLiftedHost.set(el);
@@ -392,7 +394,7 @@ export class ForDropList implements ForDropListContext {
   }
 
   #beginLift(el: HTMLElement): number {
-    if (this.effectiveDisabled() || this.#liftedHost() !== null) {
+    if (this.effectiveDisabled() || this.isDragging()) {
       return -1;
     }
     const items = this.#items.items();
@@ -592,11 +594,10 @@ export class ForDropList implements ForDropListContext {
   }
 
   #flushResolve(lifted: HTMLElement): void {
-    if (this.#resolveRaf === null) {
-      return;
+    if (this.#resolveRaf !== null) {
+      this.#document.defaultView?.cancelAnimationFrame(this.#resolveRaf);
+      this.#resolveRaf = null;
     }
-    this.#document.defaultView?.cancelAnimationFrame(this.#resolveRaf);
-    this.#resolveRaf = null;
     if (this.#lastPoint !== null) {
       this.#resolveDrop(this.#lastPoint, lifted);
     }

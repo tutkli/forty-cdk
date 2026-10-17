@@ -516,8 +516,37 @@ describe('ForTableRowReorder — the pointer pin follows the armed session (#169
     document.dispatchEvent(pointer('pointerup', 0, 120));
   });
 
-  it('a press during a keyboard lift pins no second row and leaves the gesture committable', async () => {
-    const { instance, settle, indices, cell, scrollTo } = await mount();
+  it('a drag from the lifted row during a keyboard lift arms no second gesture', async () => {
+    const { instance, settle, indices, cell, query, scrollTo } = await mount();
+    const from = Math.max(...indices());
+    const lifted = cell(from);
+    lifted.focus();
+
+    press(lifted, ' ', { ctrlKey: true });
+    await settle();
+
+    lifted.dispatchEvent(pointer('pointerdown', 0, 140));
+    document.dispatchEvent(pointer('pointermove', 0, 180));
+    document.dispatchEvent(pointer('pointerup', 0, 180));
+    await settle();
+
+    expect(instance.reorders).toBe(0);
+    expect(liveRegionText()).not.toContain('cancelled');
+
+    const rendered = await scrollTo(200 * ROW_HEIGHT);
+
+    expect(rendered).toContain(from);
+    expect(query(`[data-index="${from}"]`).getAttribute('data-dragging')).toBe('');
+
+    press(lifted, ' ');
+    await settle();
+
+    expect(instance.reorders).toBe(1);
+    expect(instance.last).toEqual({ from, to: from });
+  });
+
+  it('a drag from another row during a keyboard lift cancels the lift and runs as the only gesture', async () => {
+    const { instance, settle, indices, cell, query } = await mount();
     const from = Math.max(...indices());
     const pressed = from - 2;
     const lifted = cell(from);
@@ -527,19 +556,49 @@ describe('ForTableRowReorder — the pointer pin follows the armed session (#169
     await settle();
 
     cell(pressed).dispatchEvent(pointer('pointerdown', 0, 140));
+    cell(pressed).focus();
     await settle();
 
-    const rendered = await scrollTo(200 * ROW_HEIGHT);
+    expect(liveRegionText()).toContain('movement cancelled');
+    expect(query(`[data-index="${from}"]`).hasAttribute('data-dragging')).toBe(false);
 
-    expect(rendered).toContain(from);
-    expect(rendered).not.toContain(pressed);
-    expect(document.activeElement).toBe(lifted);
+    document.dispatchEvent(pointer('pointermove', 0, 180));
+    await settle();
 
+    expect(query(`[data-index="${from}"]`).hasAttribute('data-dragging')).toBe(false);
+    expect(query(`[data-index="${pressed}"]`).getAttribute('data-dragging')).toBe('');
+
+    document.dispatchEvent(pointer('pointerup', 0, 180));
+    await settle();
+
+    expect(instance.reorders).toBe(1);
+    expect(instance.last?.from).toBe(pressed);
+  });
+
+  it('a lift key after a click on another row lifts that row instead of dropping the stale lift', async () => {
+    const { instance, settle, indices, cell, query } = await mount();
+    const from = Math.max(...indices());
+    const pressed = from - 2;
+    const lifted = cell(from);
+    lifted.focus();
+
+    press(lifted, ' ', { ctrlKey: true });
+    await settle();
+
+    cell(pressed).dispatchEvent(pointer('pointerdown', 0, 140));
+    cell(pressed).focus();
     document.dispatchEvent(pointer('pointerup', 0, 140));
-    press(lifted, ' ');
     await settle();
 
-    expect(instance.last).toEqual({ from, to: from });
+    press(cell(pressed), ' ', { ctrlKey: true });
+    await settle();
+
+    expect(instance.reorders).toBe(0);
+    expect(query(`[data-index="${from}"]`).hasAttribute('data-dragging')).toBe(false);
+    expect(query(`[data-index="${pressed}"]`).getAttribute('data-dragging')).toBe('');
+
+    press(cell(pressed), 'Escape');
+    await settle();
   });
 
   it('a lift key pressed during an armed pointer drag starts no keyboard gesture', async () => {

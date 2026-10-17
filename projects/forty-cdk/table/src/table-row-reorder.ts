@@ -103,9 +103,10 @@ export interface TableRowReorderDescriptor {
  * Focus leaving the rowgroup cancels a keyboard lift. A window recycle that briefly blurs
  * the retained lifted row does not: focus returns to it once the window settles.
  *
- * **One gesture at a time.** Pointer and keyboard reorder are mutually exclusive: a live
- * keyboard lift stands the pointer channel down, and a lift key pressed during a pointer
- * drag is ignored.
+ * **One gesture at a time.** Pointer and keyboard reorder are mutually exclusive: while a
+ * keyboard lift is live, a press on the lifted row arms nothing and a press on any other row
+ * cancels the lift, so a drag that follows is an ordinary pointer gesture. A lift key pressed
+ * during a pointer drag is ignored.
  *
  * A pointer press is refused outright when the rowgroup is `disabled`, when a **mouse** press
  * uses a non-primary button (touch and pen presses keep whatever `button` their engine
@@ -533,14 +534,14 @@ export class ForTableRowReorder {
   }
 
   #trackPointerPress(event: PointerEvent): boolean {
+    const target = event.target;
+    const rowHost = target instanceof Element ? target.closest<HTMLElement>('[forTableRow]') : null;
+    if (rowHost !== null && this.#mode === 'keyboard' && rowHost !== this.#kbLiftedHost) {
+      this.#cancelActive(false);
+    }
     if (this.#list.effectiveDisabled() || (event.pointerType === 'mouse' && event.button !== 0)) {
       return false;
     }
-    const target = event.target;
-    if (!(target instanceof Element)) {
-      return false;
-    }
-    const rowHost = target.closest<HTMLElement>('[forTableRow]');
     if (rowHost === null) {
       return false;
     }
