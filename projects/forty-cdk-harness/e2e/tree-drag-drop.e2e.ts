@@ -1,3 +1,5 @@
+import type { Page } from '@playwright/test';
+
 import { boxOf, el, expect, expectFocused, gotoFixture, test } from './_helpers';
 
 test.describe('tree-drag-drop — keyboard reorder', () => {
@@ -178,5 +180,64 @@ test.describe('tree-drag-drop — pointer drag', () => {
 
     await expect(el(page, 'last-event')).toContainText('resume → parent:root');
     await expectFocused(el(page, 'item-resume'));
+  });
+});
+
+test.describe('tree-drag-drop — pointer depth', () => {
+  async function drag(page: Page, node: string, below: string, dx: number): Promise<void> {
+    const handle = await boxOf(el(page, `handle-${node}`));
+    const target = await boxOf(el(page, `label-${below}`));
+    const x = handle.x + handle.width / 2;
+    const y = handle.y + handle.height / 2;
+
+    await page.mouse.move(x, y);
+    await page.mouse.down();
+    await page.mouse.move(x, y - 10);
+    await page.mouse.move(x + dx, target.y + target.height - 2);
+    await page.mouse.up();
+  }
+
+  test('moving right past half an indent nests into a collapsed root that shows no child', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'tree-drag-drop');
+
+    await drag(page, 'notes', 'documents', 60);
+
+    await expect(el(page, 'last-event')).toHaveText('notes → parent:documents idx:0');
+  });
+
+  test('a pointer reaches a depth no visible row occupies: into a collapsed parent', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'tree-drag-drop', { open: 'documents' });
+
+    await drag(page, 'notes', 'projects', 100);
+
+    await expect(el(page, 'last-event')).toHaveText('notes → parent:projects idx:0');
+  });
+
+  test('without a horizontal move the dragged node keeps its own depth', async ({ page }) => {
+    await gotoFixture(page, 'tree-drag-drop', { open: 'documents' });
+
+    await drag(page, 'notes', 'projects', 0);
+
+    await expect(el(page, 'last-event')).toHaveText('notes → parent:root idx:1');
+  });
+
+  test('under dir="rtl" moving left deepens the drop', async ({ page }) => {
+    await gotoFixture(page, 'tree-drag-drop', { dir: 'rtl', open: 'documents' });
+
+    await drag(page, 'notes', 'projects', -90);
+
+    await expect(el(page, 'last-event')).toHaveText('notes → parent:projects idx:0');
+  });
+
+  test('under dir="rtl" moving right outdents the drop', async ({ page }) => {
+    await gotoFixture(page, 'tree-drag-drop', { dir: 'rtl', open: 'documents' });
+
+    await drag(page, 'resume', 'projects', 50);
+
+    await expect(el(page, 'last-event')).toHaveText('resume → parent:root idx:1');
   });
 });

@@ -651,6 +651,8 @@ export const reorderLiftKey = provideForDragDropDefaults({
 });
 ```
 
+A pointer drag picks the depth from how far the pointer has moved sideways since the press. The node keeps its own depth until the pointer has travelled half an indent step; from there, each step toward the inline end deepens the drop by one level and each step toward the inline start raises it by one, so under `dir="rtl"` moving left deepens. The step is the indent between the `[forTreeItem]` hosts of two visible depths, and 24px while only one depth is visible or the hosts carry no indent of their own. The depth then stays within what the insertion point allows: no shallower than the row below it and at most one level deeper than the row above, so a pointer can drop into a collapsed parent, as `ArrowRight` does from the keyboard.
+
 During a pointer drag, `Escape` cancels the drag and is consumed, so an enclosing dialog or popover stays open. A drop made while focus was on the dragged node, by keyboard or by pointer, moves focus with the node, or onto its new parent when that parent is collapsed; a pointer drop made while focus was elsewhere leaves it there.
 
 ### Minimal example

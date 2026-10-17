@@ -1,11 +1,13 @@
+import type { WritingDirection } from 'forty-cdk/core';
+
 /** One visible tree row as the resolver sees it. Rects in viewport coords. */
 export interface TreeDropRow<T = unknown> {
   /** The node's value. */
   readonly value: T;
   /** 1-based depth. */
   readonly level: number;
-  /** rect.left — used to map levels to x. */
-  readonly left: number;
+  /** Inline-start edge: `rect.left` in LTR, `rect.right` in RTL. */
+  readonly start: number;
   readonly top: number;
   readonly bottom: number;
 }
@@ -36,8 +38,25 @@ export interface TreeDropTarget<T = unknown> {
   readonly siblingCount: number;
 }
 
+export interface TreeDragPointerOrigin {
+  readonly level: number;
+  readonly x: number;
+}
+
+export const TREE_DROP_FALLBACK_INDENT_PX = 24;
+
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
+}
+
+function dropBand(
+  rows: readonly TreeDropRow<unknown>[],
+  gap: number,
+): { readonly min: number; readonly max: number } {
+  const prev = gap > 0 ? (rows[gap - 1] ?? null) : null;
+  const next = gap < rows.length ? (rows[gap] ?? null) : null;
+  const max = prev ? prev.level + 1 : 1;
+  return { min: Math.min(next ? next.level : 1, max), max };
 }
 
 /**
@@ -63,16 +82,8 @@ export function resolveTreeDrop<T>(
   }
 
   const gap = clamp(gapIndex, 0, rows.length);
-  const prev = gap > 0 ? (rows[gap - 1] ?? null) : null;
-  const next = gap < rows.length ? (rows[gap] ?? null) : null;
-
-  const maxLevel = prev ? prev.level + 1 : 1;
-  let minLevel = next ? next.level : 1;
-  if (minLevel > maxLevel) {
-    minLevel = maxLevel;
-  }
-
-  const level = clamp(desiredLevel, minLevel, maxLevel);
+  const band = dropBand(rows, gap);
+  const level = clamp(desiredLevel, band.min, band.max);
 
   let parentValue: T | null = null;
   if (level > 1) {
@@ -169,51 +180,57 @@ export function resolveDropIndicator<T>(
   return { anchor: rows[gap]!.value, position: 'before', level };
 }
 
+export function treeIndentStep(
+  rows: readonly TreeDropRow<unknown>[],
+  dir: WritingDirection,
+): number {
+  const sign = dir === 'rtl' ? -1 : 1;
+  const edges = new Map<number, number>();
+  for (const row of rows) {
+    const edge = sign * row.start;
+    const known = edges.get(row.level);
+    if (known === undefined || edge < known) {
+      edges.set(row.level, edge);
+    }
+  }
+
+  const levels = [...edges.keys()].sort((a, b) => a - b);
+  const steps: number[] = [];
+  for (let i = 1; i < levels.length; i++) {
+    const deeper = levels[i]!;
+    const shallower = levels[i - 1]!;
+    const step = (edges.get(deeper)! - edges.get(shallower)!) / (deeper - shallower);
+    if (step > 0) {
+      steps.push(step);
+    }
+  }
+  if (steps.length === 0) {
+    return TREE_DROP_FALLBACK_INDENT_PX;
+  }
+  steps.sort((a, b) => a - b);
+  return steps[Math.floor(steps.length / 2)]!;
+}
+
 /**
- * Maps a pointer x coordinate to the nearest candidate level within the allowed band
- * at `gapIndex`. Uses each level's representative left (minimum left observed among rows
- * at that level) and falls back to linear interpolation when a level isn't present.
+ * Maps a pointer x coordinate to a drop depth: the lifted node's own depth, plus one level per
+ * indent step the pointer has moved toward inline-end since the press (minus one per
+ * step toward inline-start), clamped to the band of depths allowed at `gapIndex`.
  *
  * @param rows Visible rows in DOM order, dragged node excluded.
  * @param gapIndex Gap index (same as passed to `resolveTreeDrop`).
  * @param x Pointer x in viewport coordinates.
+ * @param origin The lifted node's depth and the pointer x at press.
+ * @param dir Resolved writing direction.
  */
 export function levelFromPointerX(
   rows: readonly TreeDropRow<unknown>[],
   gapIndex: number,
   x: number,
+  origin: TreeDragPointerOrigin,
+  dir: WritingDirection,
 ): number {
-  if (rows.length === 0) {
-    return 1;
-  }
-
-  const next = gapIndex < rows.length ? (rows[gapIndex] ?? null) : null;
-  const minLevel = next ? next.level : 1;
-
-  const levelLefts = new Map<number, number>();
-  for (const row of rows) {
-    const existing = levelLefts.get(row.level);
-    if (existing === undefined || row.left < existing) {
-      levelLefts.set(row.level, row.left);
-    }
-  }
-
-  const candidateLevels = Array.from(levelLefts.keys()).sort((a, b) => a - b);
-
-  if (candidateLevels.length === 0) {
-    return minLevel;
-  }
-
-  let bestLevel = candidateLevels[0]!;
-  let bestDist = Infinity;
-  for (const lvl of candidateLevels) {
-    const lx = levelLefts.get(lvl)!;
-    const dist = Math.abs(x - lx);
-    if (dist < bestDist) {
-      bestDist = dist;
-      bestLevel = lvl;
-    }
-  }
-
-  return bestLevel;
+  const band = dropBand(rows, clamp(gapIndex, 0, rows.length));
+  const moved = dir === 'rtl' ? origin.x - x : x - origin.x;
+  const level = origin.level + Math.round(moved / treeIndentStep(rows, dir));
+  return clamp(level, band.min, band.max);
 }
