@@ -166,6 +166,56 @@ describe('createHoverIntent', () => {
       scheduler.scheduleOpen();
       expect(open()).toBe(true);
     });
+
+    it('opens instantly when immediate, bypassing the resolved open delay', () => {
+      vi.useFakeTimers();
+      const open = signal(false);
+      const scheduler = createHoverIntent({
+        open,
+        isDisabled: () => false,
+        openDelay: () => 700,
+        closeDelay: () => 300,
+        coordinator: createStubCoordinator(),
+      });
+
+      scheduler.scheduleOpen(true);
+      expect(open()).toBe(true);
+      expect(scheduler.isPending()).toBe(false);
+    });
+
+    it('cancels a pending delayed open when an immediate open runs', () => {
+      vi.useFakeTimers();
+      const open = signal(false);
+      const scheduler = createHoverIntent({
+        open,
+        isDisabled: () => false,
+        openDelay: () => 700,
+        closeDelay: () => 300,
+        coordinator: createStubCoordinator(),
+      });
+
+      scheduler.scheduleOpen();
+      expect(scheduler.isPending()).toBe(true);
+      scheduler.scheduleOpen(true);
+
+      expect(open()).toBe(true);
+      expect(scheduler.isPending()).toBe(false);
+    });
+
+    it('is a no-op while disabled even when immediate', () => {
+      vi.useFakeTimers();
+      const open = signal(false);
+      const scheduler = createHoverIntent({
+        open,
+        isDisabled: () => true,
+        openDelay: () => 700,
+        closeDelay: () => 300,
+        coordinator: createStubCoordinator(),
+      });
+
+      scheduler.scheduleOpen(true);
+      expect(open()).toBe(false);
+    });
   });
 
   describe('scheduleClose', () => {

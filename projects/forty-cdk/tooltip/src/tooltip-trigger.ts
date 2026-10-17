@@ -13,11 +13,14 @@ import { type ForTooltipContext, injectTooltipTriggerContext } from './tooltip-c
  * path is gated by the shared `isNonTouchPointer` predicate, so a pen hovers
  * the tooltip while a touch tap does not.
  *
- * Activating the trigger dismisses the tooltip: `pointerdown` schedules an
- * immediate close. The user is acting on the control rather than asking for
- * its description, so the bubble must not cover the result of the click. The
- * focus the same press induces does NOT reopen it — only keyboard focus opens
- * the tooltip. The open-on-focus path fires solely when focus does not follow
+ * Activating the trigger dismisses the tooltip immediately, on `pointerdown`
+ * and on `click` — the event a keyboard Enter / Space activation of a
+ * `<button>` fires. The user is acting on the control rather than asking for
+ * its description, so the bubble must not cover the result. The focus a
+ * pointer press induces does NOT reopen it — only keyboard focus opens the
+ * tooltip, and it opens it immediately, without waiting out `openDelay`, so
+ * the description exists when the focused trigger is announced. The
+ * open-on-focus path fires solely when focus does not follow
  * a pointer press on the trigger (mouse, pen, or touch): hover already covers
  * pointer users, so pointer-induced focus is ignored. A press that does not
  * focus the trigger (a `<button>` in macOS Safari, a toolbar preventing
@@ -49,6 +52,7 @@ import { type ForTooltipContext, injectTooltipTriggerContext } from './tooltip-c
     '(pointerenter)': 'onPointerEnter($event)',
     '(pointerdown)': 'onPointerDown()',
     '(pointerup)': 'onPointerUp()',
+    '(click)': 'onClick()',
     '(pointerleave)': 'onPointerLeave($event)',
     '(focus)': 'onFocus()',
     '(blur)': 'onBlur()',
@@ -113,6 +117,10 @@ export class ForTooltipTrigger {
 
   private onPointerUp(): void {
     this.#pressFocus.release();
+  }
+
+  private onClick(): void {
+    this.ctx().scheduleClose('press');
   }
 
   private onPointerLeave(event: PointerEvent): void {

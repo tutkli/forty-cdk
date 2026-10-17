@@ -35,8 +35,11 @@ export interface HoverIntentOptions {
  * Hover-intent scheduler handle returned by {@link createHoverIntent}.
  */
 export interface HoverIntentScheduler {
-  /** Schedule the open after the resolved open delay (instant when delay is 0 or skipped). */
-  scheduleOpen(): void;
+  /**
+   * Schedule the open after the resolved open delay (instant when delay is 0 or skipped);
+   * `immediate` bypasses the delay.
+   */
+  scheduleOpen(immediate?: boolean): void;
   /** Schedule the close after the resolved close delay; `immediate` bypasses the delay. */
   scheduleClose(immediate: boolean): void;
   /** Cancel any pending open / close timer without changing state. */
@@ -73,7 +76,7 @@ export function createHoverIntent(options: HoverIntentOptions): HoverIntentSched
     options.coordinator.startSkipDelay();
   }
 
-  function scheduleOpen(): void {
+  function scheduleOpen(immediate = false): void {
     cancelPending();
     if (options.isDisabled()) {
       return;
@@ -81,7 +84,7 @@ export function createHoverIntent(options: HoverIntentOptions): HoverIntentSched
     if (options.open()) {
       return;
     }
-    const base = options.coordinator.skipDelay() ? 0 : options.openDelay();
+    const base = immediate || options.coordinator.skipDelay() ? 0 : options.openDelay();
     const delay = Math.max(0, base);
     if (delay === 0) {
       options.open.set(true);

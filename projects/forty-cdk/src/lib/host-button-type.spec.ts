@@ -189,6 +189,10 @@ const SELECTOR = /selector:\s*'([^']*)'/g;
 
 const ownsNoClickActivation = (code: string): boolean => !code.includes(`'(click)'`);
 
+const clickOnlyDismisses = (code: string): boolean =>
+  code.includes(`'(click)': 'onClick()'`) &&
+  /onClick\(\): void \{\s*this\.ctx\(\)\.scheduleClose\('press'\);\s*\}/.test(code);
+
 /**
  * Pieces a README places on a `<button>` that deliberately leave its `type`
  * alone, each with the condition that makes it right. A condition rather than a
@@ -203,8 +207,8 @@ const EXCLUSIONS: Readonly<Record<string, { reason: string; holds: (code: string
   },
   forTooltipTrigger: {
     reason:
-      'describes the control it sits on and owns no activation, so a submit button with a tooltip stays one',
-    holds: ownsNoClickActivation,
+      'describes the control it sits on and owns no activation, so a submit button with a tooltip stays one; its click only dismisses the tooltip',
+    holds: clickOnlyDismisses,
   },
   forContextMenuTrigger: {
     reason:
