@@ -154,6 +154,7 @@ export class ForDrawerSurface {
   ],
   template: `
     @for (entry of entries(); track entry.id) {
+      <ng-container />
       <div
         forDrawer
         [forDrawerSurface]="entry.id"

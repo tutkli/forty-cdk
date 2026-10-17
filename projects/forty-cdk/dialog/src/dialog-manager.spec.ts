@@ -488,6 +488,38 @@ describe('ForDialogManager (programmatic)', () => {
     });
   });
 
+  describe('close-then-open swap without an exit animation (#2524)', () => {
+    it('renders only the incoming dialog', async () => {
+      const { dialogs } = setup();
+      const a = dialogs.open(ConfirmDialog, { data: { message: 'a' } });
+
+      a.close();
+      const b = dialogs.open(ConfirmDialog, { data: { message: 'b' } });
+      await a.closed;
+      TestBed.tick();
+
+      const hosts = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')];
+      expect(hosts.map((h) => h.querySelector('#message')?.textContent)).toEqual(['b']);
+      b.close();
+    });
+
+    it('returns focus to the original trigger when the incoming dialog closes', async () => {
+      const { dialogs, trigger } = setup();
+      const a = dialogs.open(ConfirmDialog, { data: { message: 'a' } });
+      expect(document.activeElement?.id).toBe('ok');
+
+      a.close();
+      const b = dialogs.open(ConfirmDialog, { data: { message: 'b' } });
+      await a.closed;
+      TestBed.tick();
+
+      b.close();
+      await b.closed;
+      TestBed.tick();
+      expect(document.activeElement).toBe(trigger);
+    });
+  });
+
   describe('dismissible-layer parity with [forDialog]', () => {
     it('dismisses on outside pointer-down when dismissible (default)', async () => {
       const { dialogs } = setup();

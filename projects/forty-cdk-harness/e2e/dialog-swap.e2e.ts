@@ -3,6 +3,7 @@ import { el, expect, gotoFixture, test } from './_helpers';
 const SCENARIOS = [
   { name: 'open-then-close', query: {} },
   { name: 'open-then-close with an exit animation', query: { animateLeave: '1' } },
+  { name: 'close-then-open', query: { closeFirst: '1' } },
   { name: 'close-then-open with an exit animation', query: { closeFirst: '1', animateLeave: '1' } },
 ] as const;
 
