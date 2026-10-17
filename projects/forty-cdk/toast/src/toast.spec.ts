@@ -2517,7 +2517,6 @@ interface ReflowProbe {
    * reports how many live observer callbacks it reached.
    */
   readonly deliver: () => number;
-  readonly restore: () => void;
 }
 
 /**
@@ -2529,15 +2528,10 @@ interface ReflowProbe {
  * `deliver()` is one tick, which is why the install pass takes a single call: a
  * browser coalesces the initial observation with the resize the mutation caused
  * into the same delivery.
- *
- * Restoring is gated on the captured global being a *usable* constructor, for the
- * reason `installObserverPolyfills` gates on it: a presence check would happily put
- * back a broken value an earlier spec left behind.
  */
 function installResizeObserverStub(): ReflowProbe {
   const observed: Element[] = [];
   const live: (() => void)[] = [];
-  const original = (globalThis as { ResizeObserver?: typeof ResizeObserver }).ResizeObserver;
 
   class StubResizeObserver {
     readonly #notify: () => void;
@@ -2561,8 +2555,7 @@ function installResizeObserverStub(): ReflowProbe {
     }
   }
 
-  (globalThis as { ResizeObserver?: typeof ResizeObserver }).ResizeObserver =
-    StubResizeObserver as unknown as typeof ResizeObserver;
+  vi.stubGlobal('ResizeObserver', StubResizeObserver);
 
   return {
     observed,
@@ -2572,13 +2565,6 @@ function installResizeObserverStub(): ReflowProbe {
         notify();
       }
       return delivered.length;
-    },
-    restore: () => {
-      if (typeof original === 'function') {
-        (globalThis as { ResizeObserver?: typeof ResizeObserver }).ResizeObserver = original;
-      } else {
-        delete (globalThis as { ResizeObserver?: typeof ResizeObserver }).ResizeObserver;
-      }
     },
   };
 }
@@ -2596,7 +2582,6 @@ describe('stack-shift glide (ForToastViewport)', () => {
 
   afterEach(() => {
     probe.restore();
-    reflow.restore();
   });
 
   const glidedTitles = (): string[] => probe.glides.map((glide) => titleOf(glide.row));

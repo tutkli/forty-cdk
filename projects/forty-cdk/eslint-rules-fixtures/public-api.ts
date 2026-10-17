@@ -11,7 +11,7 @@
  * is exactly the false-negative the rule guards against: a dead-but-public
  * defaults file is, by definition, re-exported from the barrel.
  *
- * See tutkli/forty-cdk#1262 and CLAUDE.md > "Defaults providers".
+ * See tutkli/forty-cdk#1262 and .claude/rules/conventions.md § "Defaults providers".
  */
 
 export { FOR_NO_UNUSED_DEFAULTS_SIBLING_FIXTURE_DEFAULTS } from './no-unused-defaults-sibling.fixture';

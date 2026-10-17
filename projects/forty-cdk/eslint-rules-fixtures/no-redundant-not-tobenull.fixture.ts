@@ -3,7 +3,7 @@
  *
  * `expect(x).not.toBeNull()` followed by `x!` is noise: the non-null
  * assertion already states the claim and throws on a null just as loudly.
- * See CLAUDE.md > Testing notes > Test isolation — non-negotiables > rule 10.
+ * See .claude/rules/testing.md § "Test isolation — non-negotiables" rule 10.
  *
  * This file exists to prove the rule fires; the two guarded-then-asserted
  * pairs are intentional violations. The standalone null-check that follows is

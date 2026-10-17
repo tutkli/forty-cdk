@@ -314,17 +314,9 @@ class TabOrderMegaMenuHost {
 }
 
 describe('ForNavigationMenuViewport', () => {
-  let originalRO: typeof ResizeObserver;
-
   beforeEach(() => {
-    originalRO = globalThis.ResizeObserver;
-    (globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver = FakeResizeObserver;
+    vi.stubGlobal('ResizeObserver', FakeResizeObserver);
     FakeResizeObserver.instances = [];
-  });
-
-  afterEach(() => {
-    (globalThis as unknown as { ResizeObserver: typeof ResizeObserver }).ResizeObserver =
-      originalRO;
   });
 
   describe('re-parenting', () => {
@@ -1052,8 +1044,7 @@ describe('ForNavigationMenuViewport', () => {
       // DOM tree (re-parenting, data-state, orientation). The actual size
       // populating the CSS variables on first read is asserted in the
       // Playwright suite (`navigation-menu.e2e.ts`).
-      (globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver =
-        undefined as unknown as typeof ResizeObserver;
+      vi.stubGlobal('ResizeObserver', undefined);
       const { fixture, query, flush } = renderHost(MegaMenuHost);
       await flush();
 

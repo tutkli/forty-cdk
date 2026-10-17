@@ -4,8 +4,8 @@
  * A bare `flush()` / `flushPositioning()` / `nextMacrotask()` /
  * `settleHydration()` statement leaves the returned `Promise<void>` un-awaited,
  * so the async render drain escapes the test and assertions can run against
- * stale DOM. Specs must `await` every such call. See CLAUDE.md > Testing notes >
- * Test isolation — non-negotiables > rule 12.
+ * stale DOM. Specs must `await` every such call. See .claude/rules/testing.md § "Test isolation —
+ * non-negotiables" rule 12.
  *
  * This file exists to prove the rule fires; the four floating statements are
  * intentional violations. The `await`ed calls that follow are the correct

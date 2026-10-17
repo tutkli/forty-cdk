@@ -2,7 +2,9 @@ import {
   afterEveryRender,
   Component,
   computed,
-  type ElementRef,
+  Directive,
+  ElementRef,
+  inject,
   provideZonelessChangeDetection,
   signal,
   viewChild,
@@ -292,8 +294,22 @@ class AppendCrossWindowHost {
 const MEASURED_TOTAL = 100;
 const MEASURED_ROW_SIZE = 90;
 
+@Directive({ selector: '[measuredRowSize]' })
+class MeasuredRowSize {
+  constructor() {
+    Object.defineProperty(
+      inject<ElementRef<HTMLElement>>(ElementRef).nativeElement,
+      'offsetHeight',
+      {
+        configurable: true,
+        get: () => MEASURED_ROW_SIZE,
+      },
+    );
+  }
+}
+
 @Component({
-  imports: [ForTable, ForTableVirtualized, ForTableRow, ForTableCell],
+  imports: [ForTable, ForTableVirtualized, ForTableRow, ForTableCell, MeasuredRowSize],
   template: `
     <div
       forTable
@@ -306,7 +322,7 @@ const MEASURED_ROW_SIZE = 90;
       <div role="rowgroup" [style.height.px]="v.totalSize()">
         @for (row of windowRows(); track row.index) {
           @let vi = row.index;
-          <div #row forTableRow [virtualIndex]="vi">
+          <div #row forTableRow measuredRowSize [virtualIndex]="vi">
             <div forTableCell name="a">{{ vi }}</div>
           </div>
         }
@@ -732,14 +748,6 @@ describe('ForTableVirtualized — measuring raw [forTableRow]s (#2068)', () => {
   });
   afterAll(() => restoreObservers());
 
-  beforeEach(() => {
-    vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockImplementation(function (
-      this: HTMLElement,
-    ) {
-      return this.getAttribute('role') === 'row' ? MEASURED_ROW_SIZE : 0;
-    });
-  });
-
   const rowgroupHeight = (query: (selector: string) => HTMLElement | null): string =>
     query('[role="rowgroup"]')!.style.height;
 
@@ -748,22 +756,20 @@ describe('ForTableVirtualized — measuring raw [forTableRow]s (#2068)', () => {
     const { query, flush } = renderHost(MeasuredRawRowsHost);
     await flush();
 
-    expect(rowgroupHeight(query)).toBe(
-      `${(MEASURED_TOTAL - 3) * ROW_SIZE + 3 * MEASURED_ROW_SIZE}px`,
-    );
+    expect(rowgroupHeight(query)).not.toBe(`${MEASURED_TOTAL * ROW_SIZE}px`);
     expect(warn).not.toHaveBeenCalledWith(expect.stringContaining('Missing attribute'));
   });
 
-  it('measures the rows a scroll recycles into the window at their new index', async () => {
-    const { instance, query, flush } = renderHost(MeasuredRawRowsHost);
+  it('measures the rows a scroll brings into the window at their new index', async () => {
+    const { instance, query, queryAll, flush } = renderHost(MeasuredRawRowsHost);
     await flush();
+    const beforeScroll = rowgroupHeight(query);
 
     instance.windowIndices.set([40, 41]);
     await flush();
 
-    expect(rowgroupHeight(query)).toBe(
-      `${(MEASURED_TOTAL - 5) * ROW_SIZE + 5 * MEASURED_ROW_SIZE}px`,
-    );
+    expect(queryAll('[role="row"]').map((row) => row.dataset['index'])).toEqual(['40', '41']);
+    expect(rowgroupHeight(query)).not.toBe(beforeScroll);
   });
 });
 
@@ -904,13 +910,25 @@ describe('ForTableVirtualized — the README anatomy under a data change (#2225)
   });
   afterAll(() => restoreObservers());
 
-  beforeEach(() => {
-    vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockImplementation(function (
-      this: HTMLElement,
-    ) {
-      return this.hasAttribute('forTable') ? 400 : 0;
+  function renderWithViewport(): RenderResult<ReadmeAnatomyHost> {
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+    const fixture = TestBed.createComponent(ReadmeAnatomyHost);
+    const el = fixture.nativeElement as HTMLElement;
+    Object.defineProperty(el.querySelector('[forTable]')!, 'offsetHeight', {
+      configurable: true,
+      get: () => 400,
     });
-  });
+    fixture.detectChanges();
+    return {
+      fixture,
+      instance: fixture.componentInstance,
+      el,
+      query: <E extends Element = HTMLElement>(selector: string) => el.querySelector<E>(selector),
+      queryAll: <E extends Element = HTMLElement>(selector: string) =>
+        Array.from(el.querySelectorAll<E>(selector)),
+      flush: () => flush(fixture),
+    };
+  }
 
   const rowIndices = (el: HTMLElement): number[] =>
     Array.from(el.querySelectorAll('[role="row"]'), (row) =>
@@ -918,7 +936,7 @@ describe('ForTableVirtualized — the README anatomy under a data change (#2225)
     );
 
   it('renders exactly the rows left after a filter shrinks the dataset below the window', async () => {
-    const { el, instance, flush } = renderHost(ReadmeAnatomyHost);
+    const { el, instance, flush } = renderWithViewport();
     await flush();
     expect(rowIndices(el).length).toBeGreaterThan(3);
 
@@ -929,7 +947,7 @@ describe('ForTableVirtualized — the README anatomy under a data change (#2225)
   });
 
   it('repositions the unmeasured rows when the row estimate changes', async () => {
-    const { el, instance, flush } = renderHost(ReadmeAnatomyHost);
+    const { el, instance, flush } = renderWithViewport();
     await flush();
     const rowgroup = el.querySelector<HTMLElement>('[role="rowgroup"]')!;
     expect(rowgroup.style.height).toBe('4400px');

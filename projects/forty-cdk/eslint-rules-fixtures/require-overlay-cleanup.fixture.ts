@@ -5,8 +5,8 @@
  * must call `afterEachOverlayCleanup()` (from
  * `projects/forty-cdk/src/test-utils/overlay-cleanup.ts`) at least once in the
  * file, so a test throwing mid-render can't orphan the portaled node and leak
- * stale ARIA into the next spec. See CLAUDE.md > Testing notes > Test isolation
- * — non-negotiables > rule 5 and tutkli/forty-cdk#1155 / #1256.
+ * stale ARIA into the next spec. See .claude/rules/testing.md § "Test isolation — non-negotiables"
+ * rule 5 and tutkli/forty-cdk#1155 / #1256.
  *
  * This file imports a portaling content directive but never calls
  * `afterEachOverlayCleanup()`, so the rule fires once. The compliant shape

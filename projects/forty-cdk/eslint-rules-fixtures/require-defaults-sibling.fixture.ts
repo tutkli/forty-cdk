@@ -7,7 +7,7 @@
  * rule derives from its own basename (`require-defaults-sibling.fixture` →
  * `FOR_REQUIRE_DEFAULTS_SIBLING.FIXTURE_DEFAULTS`) while no matching
  * `-defaults.ts` sibling exists next to it, so the rule fires once. See
- * tutkli/forty-cdk#584, #1157 and CLAUDE.md > "Defaults providers".
+ * tutkli/forty-cdk#584, #1157 and .claude/rules/conventions.md § "Defaults providers".
  */
 
 // Expected: 1× forty-cdk/require-defaults-sibling

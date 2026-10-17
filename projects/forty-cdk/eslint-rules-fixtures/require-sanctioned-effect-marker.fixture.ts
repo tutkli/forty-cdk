@@ -6,7 +6,7 @@
  * `effect(` call — `// @sanctioned-effect(<invariant>): <why the write cannot
  * cycle>`. The invariant name is what a reviewer verifies and what a future
  * refactor must preserve, and `grep @sanctioned-effect` is the library's
- * complete carve-out ledger. See CLAUDE.md > conventions > "The
+ * complete carve-out ledger. See .claude/rules/conventions.md § "The
  * sanctioned-effect marker".
  */
 

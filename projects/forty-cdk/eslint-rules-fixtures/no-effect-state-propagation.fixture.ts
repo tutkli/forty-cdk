@@ -6,7 +6,7 @@
  * state-propagation anti-pattern (implicit cycles, double change-detection,
  * ordering bugs). Derive the value with `computed()` / `linkedSignal()`
  * instead, or wrap the read in `untracked()` when the current value is
- * genuinely needed without subscribing. See CLAUDE.md > "Never propagate
+ * genuinely needed without subscribing. See CLAUDE.md § "Never propagate
  * state inside `effect()`".
  */
 

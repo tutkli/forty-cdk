@@ -10,7 +10,7 @@
  * exempts the two legitimate doublers by construction rather than by name — an
  * `aria-disabled` encoding a *different* condition stays legal. See
  * tutkli/forty-cdk#1550 / #1455 / #561 (D2) and `.claude/rules/conventions.md`
- * > "the two channels are mutually exclusive".
+ * § "the two channels are mutually exclusive".
  */
 
 declare function Directive(metadata: unknown): ClassDecorator;

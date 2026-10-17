@@ -53,7 +53,8 @@
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:install": "playwright install --with-deps chromium webkit",
     "lint": "eslint .",
-    "lint:rule-fixtures": "eslint --no-ignore projects/forty-cdk/eslint-rules-fixtures"
+    "check:rule-fixtures": "node scripts/check-rule-fixtures.mjs",
+    "check:lint-citations": "node scripts/check-lint-citations.mjs"
   },
   "private": true,
   "packageManager": "pnpm@11.8.0",

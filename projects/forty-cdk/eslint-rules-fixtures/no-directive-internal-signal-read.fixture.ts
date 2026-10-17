@@ -6,8 +6,7 @@
  * forbidden — the contract is the rendered DOM, not the directive's
  * private signal shape. Imperative method calls (`directive.close()` on a
  * stored variable) remain allowed; this rule targets the inline chained
- * pattern. See CLAUDE.md > Testing notes > Test isolation —
- * non-negotiables > rule 6.
+ * pattern. See .claude/rules/testing.md § "Test isolation — non-negotiables" rule 6.
  */
 
 // Synthetic directive token whose name starts with `For` — matches the

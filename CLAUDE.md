@@ -21,6 +21,8 @@ pnpm test                  # ng test forty-cdk → @angular/build:unit-test (Vit
 pnpm test:docs             # gen:docs-data + the doc-snippet / hero-fence / doc-prose checks + ng test forty-cdk-docs
 pnpm exec ng test forty-cdk --watch  # watch mode for tests
 pnpm lint                  # eslint . (flat config, codifies CLAUDE.md non-negotiables)
+pnpm check:rule-fixtures   # every lint rule still reports exactly what its fixture's Expected markers say
+pnpm check:lint-citations  # every section a lint message, fixture header or workflow cites exists
 pnpm test:e2e              # playwright test (Chromium + WebKit; spins ng serve forty-cdk-harness)
 pnpm test:e2e:ui           # playwright test --ui
 pnpm test:e2e:install      # playwright install --with-deps chromium webkit

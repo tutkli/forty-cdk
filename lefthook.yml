@@ -11,3 +11,18 @@ pre-commit:
     typecheck:
       glob: '*.ts'
       run: pnpm typecheck:lib
+    rule-fixtures:
+      glob:
+        - 'eslint.config.js'
+        - 'scripts/check-rule-fixtures.mjs'
+        - 'projects/forty-cdk/eslint-rules-fixtures/*'
+      run: pnpm check:rule-fixtures
+    lint-citations:
+      glob:
+        - 'eslint.config.js'
+        - 'CLAUDE.md'
+        - '.claude/rules/*.md'
+        - '.github/**/*'
+        - 'scripts/check-lint-citations.mjs'
+        - 'projects/forty-cdk/eslint-rules-fixtures/*'
+      run: pnpm check:lint-citations
