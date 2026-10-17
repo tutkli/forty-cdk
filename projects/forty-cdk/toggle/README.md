@@ -175,6 +175,10 @@ Choose between the two form-control shapes by the value you need: `ForToggle` (`
 | `data-disabled` | present \| absent        |
 | `data-readonly` | present \| absent        |
 | `data-required` | present \| absent        |
+| `data-touched`  | present \| absent        |
+| `data-dirty`    | present \| absent        |
+| `data-pending`  | present \| absent        |
+| `data-invalid`  | present \| absent        |
 
 ### `ForToggleGroup`
 
@@ -201,6 +205,11 @@ Choose between the two form-control shapes by the value you need: `ForToggle` (`
 | `data-orientation` | `horizontal` \| `vertical` |
 | `data-disabled`    | present \| absent          |
 | `data-readonly`    | present \| absent          |
+| `data-required`    | present \| absent          |
+| `data-touched`     | present \| absent          |
+| `data-dirty`       | present \| absent          |
+| `data-pending`     | present \| absent          |
+| `data-invalid`     | present \| absent          |
 
 ### `ForToggleGroupItem`
 

@@ -4637,7 +4637,7 @@ exports[`document structure > projects/forty-cdk/listbox/README.md declares the 
           "Description",
         ],
         "role": "api",
-        "rows": 2,
+        "rows": 3,
       },
       {
         "columns": [
@@ -8465,7 +8465,7 @@ exports[`document structure > projects/forty-cdk/toggle/README.md declares the s
           "Values",
         ],
         "role": "plain",
-        "rows": 4,
+        "rows": 8,
       },
       {
         "columns": [
@@ -8482,7 +8482,7 @@ exports[`document structure > projects/forty-cdk/toggle/README.md declares the s
           "Values",
         ],
         "role": "plain",
-        "rows": 3,
+        "rows": 8,
       },
       {
         "columns": [

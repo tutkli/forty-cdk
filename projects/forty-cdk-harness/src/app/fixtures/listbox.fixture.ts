@@ -31,21 +31,25 @@ const FRUITS: readonly Fruit[] = [
     <input data-testid="before" placeholder="before-listbox" />
     <button data-testid="remove-active" type="button" (click)="removeApple()">remove</button>
     <button data-testid="disable-active" type="button" (click)="disableApple()">disable</button>
-    <ul forListbox [(value)]="value" [multiple]="multiple" aria-label="Fruit listbox">
+    <div
+      forListbox
+      [(value)]="value"
+      [multiple]="multiple"
+      aria-label="Fruit listbox"
+      style="display: grid; justify-items: start"
+    >
       @for (fruit of fruits(); track fruit.value) {
-        <li>
-          <button
-            [attr.data-testid]="'opt-' + fruit.value"
-            type="button"
-            forListboxOption
-            [value]="fruit.value"
-            [disabled]="fruit.disabled"
-          >
-            {{ fruit.label }}
-          </button>
-        </li>
+        <button
+          [attr.data-testid]="'opt-' + fruit.value"
+          type="button"
+          forListboxOption
+          [value]="fruit.value"
+          [disabled]="fruit.disabled"
+        >
+          {{ fruit.label }}
+        </button>
       }
-    </ul>
+    </div>
     <input data-testid="after" placeholder="after-listbox" />
   `,
 })

@@ -21,17 +21,13 @@ It also supports typeahead and `FormValueControl<readonly T[]>` integration. `[f
 ## Anatomy
 
 ```html
-<ul forListbox [(value)]="picked" aria-label="Fruit">
-  <li>
-    <button type="button" forListboxOption value="apple">
-      Apple
-      <span forListboxOptionIndicator>✓</span>
-    </button>
-  </li>
-  <li>
-    <button type="button" forListboxOption value="banana">Banana</button>
-  </li>
-</ul>
+<div forListbox [(value)]="picked" aria-label="Fruit">
+  <button type="button" forListboxOption value="apple">
+    Apple
+    <span forListboxOptionIndicator>✓</span>
+  </button>
+  <button type="button" forListboxOption value="banana">Banana</button>
+</div>
 ```
 
 Wrap options in a `[forListboxGroup]` (labelled by `[forListboxGroupLabel]`) for advisory grouping, or add `[forListboxReorder]` on the same element as `[forListbox]` to make the options pointer- and keyboard-sortable (see [Reordering](#reordering)).
@@ -55,33 +51,31 @@ interface Option {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ForListbox, ForListboxOption, ForListboxOptionIndicator],
   template: `
-    <ul forListbox class="listbox" [(value)]="value" aria-label="Languages">
+    <div forListbox class="listbox" [(value)]="value" aria-label="Languages">
       @for (opt of options; track opt.value) {
-        <li>
-          <button
-            type="button"
-            forListboxOption
-            class="listbox-option"
-            [value]="opt.value"
-            [disabled]="opt.disabled ?? false"
-          >
-            {{ opt.label }}
-            <span forListboxOptionIndicator class="listbox-indicator">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path
-                  d="m4.5 12.75 6 6 9-13.5"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.75"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
-            </span>
-          </button>
-        </li>
+        <button
+          type="button"
+          forListboxOption
+          class="listbox-option"
+          [value]="opt.value"
+          [disabled]="opt.disabled ?? false"
+        >
+          {{ opt.label }}
+          <span forListboxOptionIndicator class="listbox-indicator">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="m4.5 12.75 6 6 9-13.5"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.75"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </span>
+        </button>
       }
-    </ul>
+    </div>
   `,
 })
 export class ListboxDefaultExample {
@@ -104,13 +98,11 @@ export class ListboxDefaultExample {
 `multiple` lets several options be selected, so a click toggles an option instead of replacing the selection, and enables the APG range model: `Shift`+`Arrow` extends the selection, `Shift`+`Space` fills a range, and `Ctrl`+`A` toggles all.
 
 ```html
-<ul forListbox multiple [(value)]="tags" aria-label="Tags">
-  <li>
-    <button type="button" forListboxOption class="listbox-option" value="urgent">Urgent</button>
-  </li>
-  <li><button type="button" forListboxOption class="listbox-option" value="bug">Bug</button></li>
-  <li><button type="button" forListboxOption class="listbox-option" value="ui">UI</button></li>
-</ul>
+<div forListbox multiple [(value)]="tags" aria-label="Tags">
+  <button type="button" forListboxOption class="listbox-option" value="urgent">Urgent</button>
+  <button type="button" forListboxOption class="listbox-option" value="bug">Bug</button>
+  <button type="button" forListboxOption class="listbox-option" value="ui">UI</button>
+</div>
 ```
 
 ### Option groups
@@ -134,19 +126,11 @@ import { ForListbox, ForListboxOption } from 'forty-cdk/listbox';
   selector: 'demo-priorities',
   imports: [ForListbox, ForListboxOption, FormField],
   template: `
-    <ul forListbox multiple [formField]="prefs.priorities" aria-label="Priorities">
-      <li>
-        <button type="button" forListboxOption class="listbox-option" value="speed">Speed</button>
-      </li>
-      <li>
-        <button type="button" forListboxOption class="listbox-option" value="quality">
-          Quality
-        </button>
-      </li>
-      <li>
-        <button type="button" forListboxOption class="listbox-option" value="cost">Cost</button>
-      </li>
-    </ul>
+    <div forListbox multiple [formField]="prefs.priorities" aria-label="Priorities">
+      <button type="button" forListboxOption class="listbox-option" value="speed">Speed</button>
+      <button type="button" forListboxOption class="listbox-option" value="quality">Quality</button>
+      <button type="button" forListboxOption class="listbox-option" value="cost">Cost</button>
+    </div>
   `,
 })
 export class DemoPriorities {
@@ -190,15 +174,13 @@ interface City {
   selector: 'demo-cities',
   imports: [ForListbox, ForListboxOption],
   template: `
-    <ul forListbox multiple [(value)]="picked" [compareWith]="byId" aria-label="Cities">
+    <div forListbox multiple [(value)]="picked" [compareWith]="byId" aria-label="Cities">
       @for (c of cities; track c.id) {
-        <li>
-          <button type="button" forListboxOption class="listbox-option" [value]="c">
-            {{ c.name }}
-          </button>
-        </li>
+        <button type="button" forListboxOption class="listbox-option" [value]="c">
+          {{ c.name }}
+        </button>
       }
-    </ul>
+    </div>
   `,
 })
 export class DemoCities {
@@ -228,21 +210,19 @@ import { ForListbox, ForListboxOption, ForListboxReorder } from 'forty-cdk/listb
   selector: 'demo-sortable-tags',
   imports: [ForListbox, ForListboxOption, ForListboxReorder],
   template: `
-    <ul
+    <div
       forListbox
       forListboxReorder
       multiple
       [(value)]="selected"
       (optionReorder)="reorder($event)"
       aria-label="Tags"
-      style="display: flex; flex-wrap: wrap; gap: 8px; list-style: none; padding: 0"
+      style="display: flex; flex-wrap: wrap; gap: 8px"
     >
       @for (tag of tags(); track tag) {
-        <li>
-          <button type="button" forListboxOption [value]="tag" class="chip">{{ tag }}</button>
-        </li>
+        <button type="button" forListboxOption [value]="tag" class="chip">{{ tag }}</button>
       }
-    </ul>
+    </div>
   `,
 })
 export class DemoSortableTags {
@@ -554,9 +534,9 @@ What the controller changes:
 | `dir`                                                        | `input<'ltr' \| 'rtl' \| null>`                  | Text direction. `null` inherits the nearest `[dir]` / `<html dir>`, else `'ltr'`.<br>**Default:** `null`                                                                                                                        |
 | `selectionFollowsFocus`                                      | `input<boolean>`                                 | Single-mode only. When true, a keyboard focus move (arrow nav or a typeahead match) also selects the focused option. APG flags this as case-by-case, so leave off unless your UX specifically benefits.<br>**Default:** `false` |
 | `disabled` / `readonly` / `required` / `invalid` / `pending` | `input<boolean>`                                 | Reflected as `aria-*` / `data-*`.<br>**Default:** —                                                                                                                                                                             |
-| `name`                                                       | `input<string>`                                  | For form association. A native reset of the owning `<form>` restores `value` to its first-render value.<br>**Default:** —                                                                                                       |
+| `name`                                                       | `input<string>`                                  | For form association. A native reset of the owning `<form>` restores `value` to its first-render value.<br>**Default:** `''`                                                                                                    |
 | `errors`                                                     | `input<ValidationError.WithOptionalFieldTree[]>` | Wired by `[formField]`.<br>**Default:** —                                                                                                                                                                                       |
-| `touched`                                                    | `model<boolean>`                                 | Set on focusout outside the listbox, and, while a `[forListboxController]` drives it, on focusout from the input to outside both.<br>**Default:** —                                                                             |
+| `touched`                                                    | `model<boolean>`                                 | Set on focusout outside the listbox, and, while a `[forListboxController]` drives it, on focusout from the input to outside both.<br>**Default:** `false`                                                                       |
 
 | Data attribute     | Values                     |
 | ------------------ | -------------------------- |
@@ -582,10 +562,11 @@ What the controller changes:
 
 ### `ForListboxOption`
 
-| Property   | Type                | Description                                                                                                       |
-| ---------- | ------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `value`    | `input.required<T>` | The option's value (defaults to `string`). Must be unique within the listbox per `compareWith`.<br>**Default:** — |
-| `disabled` | `input<boolean>`    | Disables this option independently of the group.<br>**Default:** —                                                |
+| Property   | Type                    | Description                                                                                                                                                                                                                                                     |
+| ---------- | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`    | `input<T>`              | The option's value (defaults to `string`). Must be unique within the listbox per `compareWith`. Required in practice though not by the template compiler: an option left unbound throws in dev mode, and a production build never selects it.<br>**Default:** — |
+| `posInSet` | `input<number \| null>` | Zero-based position of this option in the full data, emitted as `aria-posinset` (`posInSet + 1`). Required in the [virtualized path](#virtualization); leave unset otherwise.<br>**Default:** `null`                                                            |
+| `disabled` | `input<boolean>`        | Disables this option independently of the group.<br>**Default:** —                                                                                                                                                                                              |
 
 | Data attribute     | Values                   | Notes                                                                                                                                                    |
 | ------------------ | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -659,6 +640,7 @@ Implements the [WAI-ARIA Listbox pattern](https://www.w3.org/WAI/ARIA/apg/patter
 
 - **Label the listbox** via the reactive `[ariaLabel]` input or a native `aria-labelledby` pointing at a visible label element.
 - **Use `<button>` for each option** so Space / Enter activate via native click. Other host elements break keyboard activation.
+- **Put the options straight inside the listbox, or inside a `[forListboxGroup]`.** A `role="listbox"` may own only options and groups, so a list-item wrapper between the two (an `<li>` under a `<ul forListbox>`) exposes a list item the role does not allow, and some screen readers then announce the options one list item at a time. Leave the wrapper out, or mark it `role="none"`.
 - **Visible text on each option** is what typeahead matches against, so keep it descriptive and unique-prefixed.
 - **`selectionFollowsFocus`** is an opt-in for single-select. Avoid combining it with side effects that depend on commit semantics, because it changes the form value on every arrow key and typeahead match.
 - **`data-highlighted=""`** is reflected on the option that is the current active item in both the roving-tabindex and activedescendant paths. It shares its vocabulary with the menu / select / combobox primitives and is useful when you want a uniform "keyboard focus ring" across surfaces without coupling to `:focus`. It follows the pointer as well as the keyboard (see [Pointer highlight](#pointer-highlight)), so it is the one hook to style rather than pairing it with `:hover`.

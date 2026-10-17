@@ -10,6 +10,14 @@ import {
 } from './_helpers';
 
 test.describe('Listbox', () => {
+  test('the listbox owns its options with no list item between them', async ({ page }) => {
+    await gotoFixture(page, 'listbox');
+    const listbox = page.getByRole('listbox', { name: 'Fruit listbox' });
+
+    await expect(listbox.getByRole('option')).toHaveCount(4);
+    await expect(listbox.getByRole('listitem')).toHaveCount(0);
+  });
+
   test('Tab into the listbox lands on the first enabled option', async ({ page }) => {
     await gotoFixture(page, 'listbox');
     await el(page, 'before').focus();
