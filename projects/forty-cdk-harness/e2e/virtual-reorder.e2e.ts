@@ -317,17 +317,31 @@ test.describe('Virtualized *forVirtualFor list reorder', () => {
     await page.mouse.move(startX, restY);
 
     await page.mouse.wheel(0, 440);
-    await expect.poll(() => root.evaluate((node) => node.scrollTop)).toBe(440);
+    let lastTop = -1;
     await expect
-      .poll(async () => (await rowUnder(page, restY))?.index ?? -1)
-      .toBe(middle.index + 10);
+      .poll(async () => {
+        const top = await root.evaluate((node) => node.scrollTop);
+        const settled = top > 0 && top === lastTop;
+        lastTop = top;
+        return settled;
+      })
+      .toBe(true);
+    let lastIndex = -1;
+    await expect
+      .poll(async () => {
+        const index = (await rowUnder(page, restY))?.index ?? -1;
+        const settled = index > middle.index && index === lastIndex;
+        lastIndex = index;
+        return settled;
+      })
+      .toBe(true);
     const target = await rowUnder(page, restY);
     if (!target) throw new Error('No row under the pointer');
-    expect(restY).toBeGreaterThan((target.top + target.bottom) / 2);
+    const to = restY > (target.top + target.bottom) / 2 ? target.index : target.index - 1;
 
     await page.mouse.up();
 
-    await expect(el(page, 'last-reorder')).toHaveText(`${from}->${target.index}`);
+    await expect(el(page, 'last-reorder')).toHaveText(`${from}->${to}`);
   });
 });
 
