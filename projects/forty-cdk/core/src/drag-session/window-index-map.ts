@@ -70,15 +70,17 @@ export interface ScrubReorderParams {
  * Resolves a **windowed-scrub** drop: maps the pointer's position over the scroll
  * viewport to an absolute dataset index, so a single gesture can drop a lifted row
  * at an arbitrary far target without auto-scroll having to mount it first. The
- * viewport's main-axis extent maps linearly onto the whole dataset — the start
- * edge targets index `0`, the end edge the last index — independent of which rows
- * are currently rendered, so a concurrent auto-scroll never desyncs the result.
+ * viewport's main-axis extent maps linearly onto the final positions of the whole
+ * dataset — the start edge lands the row at index `0`, the end edge at the last
+ * index — independent of which rows are currently rendered, so a concurrent
+ * auto-scroll never desyncs the result.
  *
  * Returns `null` when scrubbing is not engaged or the geometry is degenerate
  * (zero-height viewport, empty dataset); the caller then uses its normal
  * mounted-rect resolution, leaving the in-window path unchanged. Otherwise returns
- * the post-removal `from` / `to` pair (matching {@link translateWindowReorder}), so
- * `moveItemInArray` over the full array moves the right row.
+ * the `from` / `to` pair with `to` as the row's final index (matching
+ * {@link translateWindowReorder}), so `moveItemInArray` over the full array moves
+ * the right row to the right place.
  */
 export function resolveScrubReorder(params: ScrubReorderParams): WindowReorderResult | null {
   if (!params.engaged || params.count <= 0) {
@@ -89,8 +91,7 @@ export function resolveScrubReorder(params: ScrubReorderParams): WindowReorderRe
     return null;
   }
   const fraction = Math.min(1, Math.max(0, (params.pointer - params.viewportStart) / span));
-  const target = Math.round(fraction * (params.count - 1));
-  return { from: params.from, to: indexAfterRemoval(target, params.from) };
+  return { from: params.from, to: Math.round(fraction * (params.count - 1)) };
 }
 
 /** Inputs for {@link resolveWindowedReorder}. */
