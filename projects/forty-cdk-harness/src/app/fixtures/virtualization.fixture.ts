@@ -44,23 +44,25 @@ interface Row {
     >
       go
     </button>
-    <div
-      forVirtualViewport
-      #vp="forVirtualViewport"
-      data-testid="viewport"
-      [attr.data-orientation]="orientation"
-      [virtualCount]="rows().length"
-      [estimateSize]="itemSize"
-      [orientation]="orientation"
-      [overscan]="overscan"
-    >
+    <div [attr.dir]="dir">
       <div
-        class="row"
-        *forVirtualFor="let row of rows()"
-        [style.height.px]="orientation === 'vertical' ? itemSize : null"
-        [style.width.px]="orientation === 'horizontal' ? itemSize : null"
+        forVirtualViewport
+        #vp="forVirtualViewport"
+        data-testid="viewport"
+        [attr.data-orientation]="orientation"
+        [virtualCount]="rows().length"
+        [estimateSize]="itemSize"
+        [orientation]="orientation"
+        [overscan]="overscan"
       >
-        Row {{ row.index }}
+        <div
+          class="row"
+          *forVirtualFor="let row of rows()"
+          [style.height.px]="orientation === 'vertical' ? itemSize : null"
+          [style.width.px]="orientation === 'horizontal' ? itemSize : null"
+        >
+          Row {{ row.index }}
+        </div>
       </div>
     </div>
   `,
@@ -72,6 +74,9 @@ export class VirtualizationFixture {
     this.#route.snapshot.queryParamMap.get('orientation') === 'horizontal'
       ? 'horizontal'
       : 'vertical';
+
+  protected readonly dir: 'rtl' | null =
+    this.#route.snapshot.queryParamMap.get('dir') === 'rtl' ? 'rtl' : null;
 
   protected readonly itemSize = this.#num('itemSize', 40);
   protected readonly overscan = this.#num('overscan', 5);

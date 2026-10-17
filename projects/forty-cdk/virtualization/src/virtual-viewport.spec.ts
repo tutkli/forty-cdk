@@ -867,3 +867,134 @@ describe('ForVirtualFor rendered by a wrapper component inside the viewport', ()
     expect(rowEls(fixture)[0]!.textContent?.trim()).toBe('Row 0');
   });
 });
+
+describe('ForVirtualViewport — writing direction', () => {
+  @Component({
+    imports: [ForVirtualViewport, ForVirtualFor],
+    template: `
+      <div
+        forVirtualViewport
+        #vp="forVirtualViewport"
+        [virtualCount]="rows().length"
+        [estimateSize]="40"
+        [orientation]="orientation()"
+        [overscan]="0"
+        [dir]="dir()"
+        style="height: 200px; width: 200px"
+      >
+        <div *forVirtualFor="let row of rows()">{{ row.label }}</div>
+      </div>
+    `,
+  })
+  class DirHost {
+    readonly rows = signal<Row[]>(makeRows(1000));
+    readonly orientation = signal<'vertical' | 'horizontal'>('horizontal');
+    readonly dir = signal<'ltr' | 'rtl' | null>(null);
+    readonly viewport = viewChild.required(ForVirtualViewport);
+  }
+
+  function installFakeHorizontalScroll(el: HTMLElement): void {
+    let left = 0;
+    Object.defineProperty(el, 'scrollLeft', {
+      configurable: true,
+      get: () => left,
+      set: (value: number) => {
+        left = value;
+      },
+    });
+    el.scrollTo = ((options: ScrollToOptions) => {
+      left = options.left ?? left;
+      el.dispatchEvent(new Event('scroll'));
+    }) as typeof el.scrollTo;
+  }
+
+  async function mount(
+    configure: (host: DirHost) => void = () => undefined,
+  ): Promise<ComponentFixture<DirHost>> {
+    const fixture = TestBed.createComponent(DirHost);
+    configure(fixture.componentInstance);
+    const el = viewportEl(fixture);
+    fakeLayout(el, 200);
+    installFakeHorizontalScroll(el);
+    fixture.detectChanges();
+    await flush(fixture);
+    return fixture;
+  }
+
+  function rowAt(fixture: ComponentFixture<DirHost>, index: number): HTMLElement | undefined {
+    return rowEls(fixture).find((el) => el.getAttribute('data-index') === String(index));
+  }
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+  });
+
+  afterEach(() => {
+    document.documentElement.removeAttribute('dir');
+  });
+
+  it('reflects the resolved direction to the host dir attribute', async () => {
+    const fixture = await mount();
+    expect(viewportEl(fixture).getAttribute('dir')).toBe('ltr');
+
+    fixture.componentInstance.dir.set('rtl');
+    await flush(fixture);
+    expect(viewportEl(fixture).getAttribute('dir')).toBe('rtl');
+  });
+
+  it('lays horizontal rows out from the right edge once <html dir> flips to rtl at runtime', async () => {
+    const fixture = await mount();
+    expect(rowAt(fixture, 1)?.style.left).toBe('0px');
+    expect(rowAt(fixture, 1)?.style.right).toBe('');
+    expect(rowAt(fixture, 1)?.style.transform).toBe('translateX(40px)');
+
+    document.documentElement.setAttribute('dir', 'rtl');
+    await flush(fixture);
+
+    expect(viewportEl(fixture).getAttribute('dir')).toBe('rtl');
+    expect(rowAt(fixture, 1)?.style.left).toBe('');
+    expect(rowAt(fixture, 1)?.style.right).toBe('0px');
+    expect(rowAt(fixture, 1)?.style.transform).toBe('translateX(-40px)');
+
+    document.documentElement.setAttribute('dir', 'ltr');
+    await flush(fixture);
+
+    expect(rowAt(fixture, 1)?.style.left).toBe('0px');
+    expect(rowAt(fixture, 1)?.style.right).toBe('');
+    expect(rowAt(fixture, 1)?.style.transform).toBe('translateX(40px)');
+  });
+
+  it('advances the window as an rtl scroller scrolls to a negative scrollLeft', async () => {
+    const fixture = await mount((host) => host.dir.set('rtl'));
+    expect(rowAt(fixture, 0)).toBeDefined();
+
+    const el = viewportEl(fixture);
+    el.scrollLeft = -4000;
+    el.dispatchEvent(new Event('scroll'));
+    await flush(fixture);
+
+    expect(rowAt(fixture, 0)).toBeUndefined();
+    expect(rowAt(fixture, 100)?.style.transform).toBe('translateX(-4000px)');
+  });
+
+  it('scrollToIndex writes a negative scrollLeft in rtl', async () => {
+    const fixture = await mount((host) => host.dir.set('rtl'));
+
+    fixture.componentInstance.viewport().scrollToIndex(50, { align: 'start' });
+    await flush(fixture);
+
+    expect(viewportEl(fixture).scrollLeft).toBe(-2000);
+    expect(rowAt(fixture, 50)?.style.transform).toBe('translateX(-2000px)');
+  });
+
+  it('keeps a vertical list on translateY from the left edge in rtl', async () => {
+    const fixture = await mount((host) => {
+      host.orientation.set('vertical');
+      host.dir.set('rtl');
+    });
+
+    expect(rowAt(fixture, 1)?.style.left).toBe('0px');
+    expect(rowAt(fixture, 1)?.style.right).toBe('');
+    expect(rowAt(fixture, 1)?.style.transform).toBe('translateY(40px)');
+  });
+});

@@ -15,7 +15,7 @@ import {
   untracked,
 } from '@angular/core';
 
-import { type Unset } from 'forty-cdk/core';
+import { injectTextDirection, type Unset, type WritingDirection } from 'forty-cdk/core';
 
 import {
   FOR_VIRTUAL_VIEWPORT_CONTEXT,
@@ -59,6 +59,7 @@ const DEFAULT_OVERSCAN = 5;
   providers: [{ provide: FOR_VIRTUAL_VIEWPORT_CONTEXT, useExisting: ForVirtualViewport }],
   host: {
     '[style.overflow]': '"auto"',
+    '[attr.dir]': 'dir()',
   },
   template: `
     <div style="position: relative" [style.width]="sizerWidth()" [style.height]="sizerHeight()">
@@ -88,6 +89,15 @@ export class ForVirtualViewport implements ForVirtualViewportContext, OnInit {
 
   /** Items rendered beyond the visible window on each side. Resolved once on init. */
   readonly overscan = input<number>(DEFAULT_OVERSCAN);
+
+  /**
+   * Writing direction. When `null` (the default) the direction is resolved from the nearest
+   * ancestor carrying a `dir` attribute (or `<html dir>`), defaulting to `'ltr'`. An explicit
+   * `[dir]` always wins. The resolved value is reflected to the host `dir` attribute; a horizontal
+   * list in RTL starts at the right edge of the viewport and scrolls leftwards.
+   */
+  readonly _dirInput = input<WritingDirection | null>(null, { alias: 'dir' });
+  readonly dir = injectTextDirection(this._dirInput);
 
   /**
    * Stable key for the item at `index`. Defaults to the index. Keys are
@@ -174,6 +184,7 @@ export class ForVirtualViewport implements ForVirtualViewportContext, OnInit {
           estimateVersion: this.#estimator,
           scrollElement: this.#scrollElement,
           orientation: this.orientation(),
+          dir: this.dir,
           overscan: this.overscan(),
           getItemKey: (index) => this.#keyOf(index),
           dataVersion: this.#keyVersion,
