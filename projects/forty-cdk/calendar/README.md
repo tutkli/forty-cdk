@@ -612,7 +612,7 @@ import { CalendarDate, today, getLocalTimeZone } from '@internationalized/date';
 @Component({
   selector: 'app-date',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  /* ... */
+  template: `<p>Today is {{ date()?.toString() }}</p>`,
 })
 export class DatePage {
   readonly date = signal<CalendarDate | null>(null);

@@ -427,9 +427,12 @@ corpus had drifted into twice. If a new language is genuinely needed, load its g
 **Every TypeScript fence is type-checked**, by `scripts/check-doc-snippets.mjs` under
 `pnpm test:docs` ([#1918](https://github.com/tutkli/forty-cdk/issues/1918)). The fence roster is the
 compiler's own — whatever `resolveFenceLanguage()` reads as TypeScript is written to a file and run
-through `tsc` with the workspace `paths`, so `forty-cdk/<entry>` resolves to source and a renamed
-symbol fails the gate at the document and line the fence sits on. Inline templates are not checked;
-imports and symbol names are, which is the drift the corpus actually produced. Two shapes opt out,
+through the Angular compiler with the workspace `paths` and `strictTemplates`, so `forty-cdk/<entry>`
+resolves to source and a renamed symbol fails the gate at the document and line the fence sits on.
+Inline templates are type-checked too ([#2312](https://github.com/tutkli/forty-cdk/issues/2312)): a
+directive missing from `imports`, a reference read outside the `@if` that declares it, or a `[min]`
+binding beside `[formField]` fails at the template line, exactly as it would in a consumer's
+application. Two shapes opt out,
 each with an HTML comment on the line above the fence (a blank line between the two is fine, Prettier
 inserts one): `<!-- snippet: fragment -->` for a fence that is deliberately not a whole module — a
 lone class member, a `providers: […]` array, a call on `this.` — which is never compiled; and

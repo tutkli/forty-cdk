@@ -135,6 +135,7 @@ import { ForTableVirtualized } from 'forty-cdk/table-virtualization';
 
 @Component({
   selector: 'my-data-grid',
+  template: '<ng-content />',
   hostDirectives: [
     {
       directive: ForTableVirtualized,

@@ -105,14 +105,14 @@ export class TimeFieldDefaultExample {
 
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
-import { form } from '@angular/forms/signals';
+import { form, FormField } from '@angular/forms/signals';
 import { CalendarDateTime } from '@internationalized/date';
 import { ForTimeField, ForTimeFieldLiteral, ForTimeFieldSegment } from 'forty-cdk/time-field';
 
 @Component({
   selector: 'app-appt-time-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ForTimeField, ForTimeFieldSegment, ForTimeFieldLiteral],
+  imports: [ForTimeField, ForTimeFieldSegment, ForTimeFieldLiteral, FormField],
   template: `
     <div
       forTimeField

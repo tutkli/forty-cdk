@@ -115,12 +115,12 @@ For a set of related toggles, `ForToggleGroup` implements `FormValueControl<read
 
 ```ts
 import { Component, signal } from '@angular/core';
-import { form, required, requiredError, validate } from '@angular/forms/signals';
+import { form, FormField, required, requiredError, validate } from '@angular/forms/signals';
 import { ForToggleGroup, ForToggleGroupItem } from 'forty-cdk/toggle';
 
 @Component({
   selector: 'demo-formats',
-  imports: [ForToggleGroup, ForToggleGroupItem /* , FormField from @angular/forms */],
+  imports: [ForToggleGroup, ForToggleGroupItem, FormField],
   template: `
     <div forToggleGroup multiple [formField]="prefs.formats" aria-label="Formats">
       <button forToggleGroupItem value="bold">B</button>

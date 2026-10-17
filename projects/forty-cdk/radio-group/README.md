@@ -86,12 +86,12 @@ export class RadioGroupDefaultExample {
 
 ```ts
 import { Component, signal } from '@angular/core';
-import { form, required } from '@angular/forms/signals';
+import { form, FormField, required } from '@angular/forms/signals';
 import { ForRadio, ForRadioGroup } from 'forty-cdk/radio-group';
 
 @Component({
   selector: 'demo-shipping',
-  imports: [ForRadioGroup, ForRadio /* , FormField from @angular/forms */],
+  imports: [ForRadioGroup, ForRadio, FormField],
   template: `
     <div forRadioGroup [formField]="checkout.shipping" aria-labelledby="ship-label">
       <span id="ship-label">Shipping</span>

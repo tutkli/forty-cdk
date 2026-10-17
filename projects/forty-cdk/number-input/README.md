@@ -96,10 +96,10 @@ import { ForNumberInput } from 'forty-cdk/number-input';
   selector: 'demo-order',
   imports: [ForField, ForLabel, ForFieldError, ForNumberInput, FormField],
   template: `
-    <div forField>
+    <div forField #field="forField">
       <label forLabel>Quantity</label>
-      <input forNumberInput [formField]="order.qty" [min]="1" />
-      @if (err.shown()) {
+      <input forNumberInput [formField]="order.qty" />
+      @if (field.invalid()) {
         <p forFieldError #err="forFieldError">{{ err.messages().join(', ') }}</p>
       }
     </div>
@@ -113,6 +113,8 @@ export class DemoOrder {
   });
 }
 ```
+
+Under `[formField]` the bounds come from the schema: Angular rejects a `[min]` or `[max]` binding on a node that carries `[formField]` (NG8022), and the field's `min()` / `max()` rules reach the spinbutton's `min` / `max` instead, so `aria-valuemin`, `aria-valuemax` and clamping follow them.
 
 ## API
 

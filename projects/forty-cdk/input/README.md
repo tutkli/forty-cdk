@@ -52,10 +52,10 @@ import { ForInput } from 'forty-cdk/input';
   imports: [ForField, ForLabel, ForFieldError, ForInput, FormField],
   template: `
     <form>
-      <div forField>
+      <div forField #field="forField">
         <label forLabel>Full name</label>
         <input forInput class="input" [formField]="profile.name" />
-        @if (err.shown()) {
+        @if (field.invalid()) {
           <p forFieldError #err="forFieldError">{{ err.messages().join(', ') }}</p>
         }
       </div>
