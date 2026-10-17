@@ -5,7 +5,6 @@ describe('resolveSnapTarget', () => {
     const r = resolveSnapTarget({
       snapPoints: [0.25, 0.5, 1] as const,
       snapPositions: [200, 400, 800],
-      activeSnapPoint: 0.5,
       position: 380,
       velocity: 0.05,
       closeThreshold: 0.25,
@@ -14,11 +13,10 @@ describe('resolveSnapTarget', () => {
     expect(r.nextSnapPoint).toBe(0.5);
   });
 
-  it('biases one snap further on a fast positive velocity (away from edge)', () => {
+  it('a fast away-from-edge flick targets the first snap above the release position', () => {
     const r = resolveSnapTarget({
       snapPoints: [0.25, 0.5, 1] as const,
       snapPositions: [200, 400, 800],
-      activeSnapPoint: 0.5,
       position: 410,
       velocity: 1, // fast away from edge
       closeThreshold: 0.25,
@@ -27,11 +25,10 @@ describe('resolveSnapTarget', () => {
     expect(r.nextSnapPoint).toBe(1);
   });
 
-  it('biases one snap closer on a fast negative velocity (toward edge)', () => {
+  it('a fast toward-edge flick targets the first snap below the release position', () => {
     const r = resolveSnapTarget({
       snapPoints: [0.25, 0.5, 1] as const,
       snapPositions: [200, 400, 800],
-      activeSnapPoint: 0.5,
       position: 380,
       velocity: -1, // fast toward edge
       closeThreshold: 0.25,
@@ -40,11 +37,70 @@ describe('resolveSnapTarget', () => {
     expect(r.nextSnapPoint).toBe(0.25);
   });
 
+  it('a toward-edge flick released below every snap dismisses', () => {
+    const r = resolveSnapTarget({
+      snapPoints: [0.25, 0.5, 1] as const,
+      snapPositions: [200, 400, 800],
+      position: -50,
+      velocity: -1,
+      closeThreshold: 0.25,
+    });
+    expect(r.willClose).toBe(true);
+    expect(r.nextSnapPoint).toBe(null);
+  });
+
+  it('a toward-edge flick released several snaps down lands on the first snap below the release', () => {
+    const r = resolveSnapTarget({
+      snapPoints: [0.25, 0.5, 1] as const,
+      snapPositions: [200, 400, 800],
+      position: 300,
+      velocity: -1,
+      closeThreshold: 0.25,
+    });
+    expect(r.willClose).toBe(false);
+    expect(r.nextSnapPoint).toBe(0.25);
+  });
+
+  it('an away flick released at the highest snap stays on it', () => {
+    const r = resolveSnapTarget({
+      snapPoints: [0.25, 0.5, 1] as const,
+      snapPositions: [200, 400, 800],
+      position: 800,
+      velocity: 1,
+      closeThreshold: 0.25,
+    });
+    expect(r.willClose).toBe(false);
+    expect(r.nextSnapPoint).toBe(1);
+  });
+
+  it('an away flick released several snaps up lands on the first snap above the release', () => {
+    const r = resolveSnapTarget({
+      snapPoints: [0.25, 0.5, 1] as const,
+      snapPositions: [200, 400, 800],
+      position: 500,
+      velocity: 1,
+      closeThreshold: 0.25,
+    });
+    expect(r.willClose).toBe(false);
+    expect(r.nextSnapPoint).toBe(1);
+  });
+
+  it('a toward-edge flick just below the lowest snap dismisses short of closeThreshold, as a flick does without snap points', () => {
+    const r = resolveSnapTarget({
+      snapPoints: [0.25, 0.5, 1] as const,
+      snapPositions: [200, 400, 800],
+      position: 190,
+      velocity: -1,
+      closeThreshold: 0.25,
+    });
+    expect(r.willClose).toBe(true);
+    expect(r.nextSnapPoint).toBe(null);
+  });
+
   it('dismisses when released past closeThreshold from the closest-to-edge snap', () => {
     const r = resolveSnapTarget({
       snapPoints: [0.25, 0.5, 1] as const,
       snapPositions: [200, 400, 800],
-      activeSnapPoint: 0.25,
       position: -50, // way past the lowest snap, toward the edge
       velocity: 0,
       closeThreshold: 0.25,
@@ -58,7 +114,6 @@ describe('resolveSnapTarget', () => {
       resolveSnapTarget({
         snapPoints: [] as const,
         snapPositions: [],
-        activeSnapPoint: null,
         position: 100,
         velocity: 0,
         closeThreshold: 0.25,
@@ -71,7 +126,6 @@ describe('resolveSnapTarget', () => {
     const r = resolveSnapTarget({
       snapPoints: [0.25, 0.5, 1] as const,
       snapPositions: [200, 400, 800],
-      activeSnapPoint: 0.5,
       position: 350,
       velocity: 0,
       closeThreshold: 0.25,
@@ -89,7 +143,6 @@ describe('resolveSnapTarget', () => {
     const r = resolveSnapTarget({
       snapPoints: ['148px', 0.5, 1] as const,
       snapPositions: [148, 325, 650],
-      activeSnapPoint: '148px',
       position: 90, // peek dragged down 58px — nowhere near off-screen
       velocity: 0,
       closeThreshold: 0.25,
@@ -104,7 +157,6 @@ describe('resolveSnapTarget', () => {
     const r = resolveSnapTarget({
       snapPoints: ['148px', 0.5, 1] as const,
       snapPositions: [148, 325, 650],
-      activeSnapPoint: '148px',
       position: 123,
       velocity: 0,
       closeThreshold: 0.25,

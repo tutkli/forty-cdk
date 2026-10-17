@@ -232,6 +232,7 @@ export function injectDrawerDrag(config: DrawerDragConfig): DrawerDragHandle {
   let pointerLastTime = 0;
   let pointerVelocity = 0;
   let dimensionAtStart = 0;
+  let offscreenOffsetAtStart = 0;
 
   // Per-gesture lower bound for the drag offset (px toward the edge),
   // resolved on `onSwipeStart`. A positive offset moves the surface toward
@@ -348,12 +349,16 @@ export function injectDrawerDrag(config: DrawerDragConfig): DrawerDragHandle {
     // current one, this is a cache hit and no work runs. Validation throws
     // here (pre-drag) rather than from the release handler.
     const points = snapPoints();
+    offscreenOffsetAtStart = dimension;
     if (points && points.length > 0) {
       refreshSnapPositions(points);
       const positions = snapPositionsAt(points, dimension);
       const activePos = activeSnapPositionPx(points, positions);
       dragMinOffset = activePos - positions[positions.length - 1]!;
       dragMaxOffset = canDismiss() ? Number.POSITIVE_INFINITY : activePos - positions[0]!;
+      if (activePos > 0) {
+        offscreenOffsetAtStart = activePos;
+      }
     } else {
       dragMinOffset = 0;
       dragMaxOffset = Number.POSITIVE_INFINITY;
@@ -405,10 +410,9 @@ export function injectDrawerDrag(config: DrawerDragConfig): DrawerDragHandle {
     );
     dragOffset.set(nextOffset);
 
-    const dim = dimensionAtStart || 1;
     // `progress` tracks progress toward dismiss, so growth (a negative
     // offset) reads as 0 rather than a negative number.
-    const progress = Math.min(1, Math.max(0, nextOffset / dim));
+    const progress = Math.min(1, Math.max(0, nextOffset / (offscreenOffsetAtStart || 1)));
     swipeProgress.set(progress);
     config.emitSwipeMove({ progress, originalEvent: event });
   }
@@ -451,7 +455,6 @@ export function injectDrawerDrag(config: DrawerDragConfig): DrawerDragHandle {
       const resolved = resolveSnapTarget<ForDrawerSnapPoint>({
         snapPoints: points,
         snapPositions,
-        activeSnapPoint: activeSnapPoint(),
         position,
         velocity: -effectiveVelocity, // helper sema: positive = away from edge
         closeThreshold: threshold,

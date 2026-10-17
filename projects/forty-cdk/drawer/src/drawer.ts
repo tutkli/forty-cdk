@@ -195,9 +195,11 @@ export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements
   /**
    * Snap points: each entry is a `number ∈ [0, 1]`,
    * a `'NN%'` string, or a `'NNpx'` string. Strictly increasing
-   * (closest-to-edge first). The surface settles at the nearest snap on
-   * release; dragging past the lowest snap by `closeThreshold` of that
-   * snap's own extent dismisses.
+   * (closest-to-edge first). A slow release settles at the nearest snap, and
+   * dragging past the lowest snap by `closeThreshold` of that snap's own
+   * extent dismisses. A flick settles at the first snap past the release
+   * position in the flick's direction, and a flick toward the edge with no
+   * snap below the release dismisses.
    */
   readonly snapPoints = input<ReadonlyArray<ForDrawerSnapPoint> | undefined>(undefined);
 

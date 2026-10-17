@@ -36,6 +36,14 @@ describe('snapPointToFraction', () => {
     expect(snapPointToFraction('200px', 0)).toBe(0);
   });
 
+  it('parses every numeric spelling the snap-point type admits', () => {
+    expect(snapPointToFraction('.5%', 1000)).toBe(0.005);
+    expect(snapPointToFraction('+50%', 1000)).toBe(0.5);
+    expect(snapPointToFraction('50.%', 1000)).toBe(0.5);
+    expect(snapPointToFraction('1e1px', 100)).toBe(0.1);
+    expect(snapPointToFraction(' 50%', 1000)).toBe(0.5);
+  });
+
   it('resolves malformed strings to NaN instead of throwing', () => {
     expect(snapPointToFraction('foo' as unknown as ForDrawerSnapPoint, 1000)).toBeNaN();
     expect(snapPointToFraction('200' as unknown as ForDrawerSnapPoint, 1000)).toBeNaN();
@@ -64,6 +72,20 @@ describe('assertSnapPointsShape', () => {
     expect(() =>
       assertSnapPointsShape(['100px', '200px', '300px'] as ReadonlyArray<ForDrawerSnapPoint>),
     ).not.toThrow();
+  });
+
+  it('accepts every numeric spelling the snap-point type admits', () => {
+    expect(() => assertSnapPointsShape(['.5%', '+50%', '60.%', 1])).not.toThrow();
+    expect(() => assertSnapPointsShape(['1e1px', '2e2px'])).not.toThrow();
+  });
+
+  it('rejects a suffix with no number before it, or a non-finite one', () => {
+    expect(() =>
+      assertSnapPointsShape(['%'] as unknown as ReadonlyArray<ForDrawerSnapPoint>),
+    ).toThrow(/FORCDK-DRAWER-008/);
+    expect(() =>
+      assertSnapPointsShape(['Infinity%'] as unknown as ReadonlyArray<ForDrawerSnapPoint>),
+    ).toThrow(/FORCDK-DRAWER-008/);
   });
 
   it('rejects a pure-fraction non-monotonic array', () => {
