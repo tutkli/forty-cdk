@@ -3,7 +3,7 @@ import { dirname, join, relative, sep } from 'node:path';
 import { NgtscProgram, readConfiguration } from '@angular/compiler-cli';
 import ts from 'typescript';
 
-import { snippetsOf } from './lib/doc-snippets.mjs';
+import { internalTierImportsOf, snippetsOf } from './lib/doc-snippets.mjs';
 import {
   DOCS_DIR,
   readEntryPointDocs,
@@ -56,6 +56,8 @@ function fail(failures) {
   process.exit(1);
 }
 
+problems.push(...snippets.flatMap(internalTierImportsOf));
+
 if (problems.length > 0) {
   fail(problems);
 }
@@ -87,6 +89,14 @@ writeFileSync(
 );
 
 const messageOf = (diagnostic) => ts.flattenDiagnosticMessageText(diagnostic.messageText, ' ');
+
+const ANGULAR_CODE_PREFIX = '-99';
+const codeOf = (diagnostic) => {
+  const code = String(diagnostic.code);
+  return code.startsWith(ANGULAR_CODE_PREFIX)
+    ? `NG${code.slice(ANGULAR_CODE_PREFIX.length)}`
+    : `TS${code}`;
+};
 
 const config = readConfiguration(tsconfig);
 if (config.errors.length > 0) {
@@ -133,7 +143,11 @@ for (const diagnostic of programs.flatMap(diagnosticsOf)) {
     reportOutsideFences({ path: rel(diagnostic.file.fileName), line: line + 1, message });
     continue;
   }
-  entry.diagnostics.push({ line: entry.snippet.line + 1 + line, message });
+  entry.diagnostics.push({
+    line: entry.snippet.line + 1 + line,
+    code: codeOf(diagnostic),
+    message,
+  });
 }
 
 for (const { snippet, diagnostics } of byFile.values()) {
@@ -149,6 +163,28 @@ for (const { snippet, diagnostics } of byFile.values()) {
         'this fence is marked expect-error and compiles — drop the marker, or restore the ' +
         'mistake the fence exists to show',
     });
+  } else {
+    const expected = snippet.expectedCodes.join(' or ');
+    for (const diagnostic of diagnostics) {
+      if (!snippet.expectedCodes.includes(diagnostic.code)) {
+        failures.push({
+          path: snippet.path,
+          line: diagnostic.line,
+          message:
+            `fails with ${diagnostic.code} where the marker expects ${expected}, so the fence no ` +
+            `longer fails for the reason its prose gives: ${diagnostic.message}`,
+        });
+      }
+    }
+    for (const code of snippet.expectedCodes) {
+      if (!diagnostics.some((diagnostic) => diagnostic.code === code)) {
+        failures.push({
+          path: snippet.path,
+          line: snippet.line,
+          message: `this fence is marked expect-error ${code} and never raises it`,
+        });
+      }
+    }
   }
 }
 
@@ -174,7 +210,9 @@ console.log(
     `${fragments.length} marked fragment`,
 );
 for (const snippet of expected) {
-  console.log(`  expect-error  ${snippet.path}:${snippet.line}`);
+  console.log(
+    `  expect-error  ${snippet.path}:${snippet.line} (${snippet.expectedCodes.join(', ')})`,
+  );
 }
 const fragmentsByPath = new Map();
 for (const snippet of fragments) {

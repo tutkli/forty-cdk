@@ -37,8 +37,10 @@ import { repoRoot } from './lib/repo-path.mjs';
  *   date adapter by file, the installation page links the CHANGELOG, and the
  *   roster links the call site each code is emitted from. That is where each of
  *   those is read, it is what the site's own pages publish for them, and the
- *   count is reported so it cannot grow unseen. A blob URL to a document the
- *   site *does* publish is refused: that is the
+ *   count is reported so it cannot grow unseen. The file it names has to exist
+ *   in the repository, since an unpublished README's relative link reaches the
+ *   artifact as one. A blob URL to a document the site *does* publish is
+ *   refused: that is the
  *   [#1800](https://github.com/tutkli/forty-cdk/issues/1800) failure, a
  *   reference that hands an assistant the repository instead of the docs.
  * - **A bare `#fragment` is left as written.** It names a heading of the
@@ -353,6 +355,10 @@ for (const file of published) {
         failures.push(
           `${at}:${line} — "${href}" links the markdown source of a document the site publishes a ` +
             'page for, so an assistant reads the repository instead of the documentation',
+        );
+      } else if (!existsSync(join(repoRoot, repoPath))) {
+        failures.push(
+          `${at}:${line} — "${href}" links ${repoPath}, which does not exist in the repository`,
         );
       }
       continue;

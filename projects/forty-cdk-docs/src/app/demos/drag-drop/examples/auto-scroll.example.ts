@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { provideForDragDropDefaults } from 'forty-cdk/defaults';
 import {
   type ForDragDropEvent,
   ForDragHandle,
@@ -6,7 +7,6 @@ import {
   ForDraggable,
   ForDropList,
   moveItemInArray,
-  provideForDragDropDefaults,
 } from 'forty-cdk/drag-drop';
 
 interface Track {

@@ -7,8 +7,8 @@ import {
   viewChild,
   ViewEncapsulation,
 } from '@angular/core';
-import { type VetoableEvent } from 'forty-cdk/core';
 import { ForDialog, ForDialogClose } from 'forty-cdk/dialog';
+import { type VetoableEvent } from 'forty-cdk/shared';
 
 @Component({
   selector: 'app-dialog-non-modal-example',

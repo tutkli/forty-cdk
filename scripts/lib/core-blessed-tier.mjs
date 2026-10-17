@@ -66,3 +66,5 @@ export const CORE_SYMBOL_PUBLISHER = new Map(
 );
 
 export const BLESSED_CORE_SYMBOLS = new Set(CORE_SYMBOL_PUBLISHER.keys());
+
+export const INTERNAL_TIER_ENTRY_POINTS = new Set(['core', 'core-overlay']);

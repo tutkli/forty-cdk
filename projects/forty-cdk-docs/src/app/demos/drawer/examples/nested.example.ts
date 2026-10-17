@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, signal, ViewEncapsulation } from '@angular/core';
+import { provideForDrawerDefaults } from 'forty-cdk/defaults';
 import {
   ForDrawer,
   ForDrawerBackdrop,
@@ -7,7 +8,6 @@ import {
   ForDrawerHandle,
   ForDrawerTitle,
   ForDrawerTrigger,
-  provideForDrawerDefaults,
 } from 'forty-cdk/drawer';
 
 @Component({
