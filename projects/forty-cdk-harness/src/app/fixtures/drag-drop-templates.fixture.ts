@@ -45,6 +45,18 @@ interface Item {
       [forDraggable][data-drag-animating] {
         transition: transform 150ms linear;
       }
+      .frame {
+        width: 300px;
+        height: 240px;
+        border: 2px solid #888;
+        box-sizing: border-box;
+      }
+      .wide-preview {
+        width: 260px;
+        background: #fff;
+        border: 1px solid #4a90e2;
+        box-sizing: border-box;
+      }
       .custom-placeholder {
         height: 40px;
         background: #d0e8ff;
@@ -54,25 +66,30 @@ interface Item {
     `,
   ],
   template: `
-    <ul
-      forDropList
-      data-testid="list"
-      [liveSort]="liveSort"
-      [animateReorder]="animate"
-      (dragDrop)="onDrop($event)"
-    >
-      @for (item of items(); track item.id; let i = $index) {
-        <li forDraggable [dragData]="item" [attr.data-testid]="'item-' + i">
-          {{ item.label }}
-          <ng-template forDragPreview>
-            <div data-testid="custom-preview">preview {{ item.label }}</div>
-          </ng-template>
-          <ng-template forDragPlaceholder>
-            <div data-testid="custom-placeholder" class="custom-placeholder"></div>
-          </ng-template>
-        </li>
-      }
-    </ul>
+    <div #frame [class.frame]="boundaryActive" data-testid="frame">
+      <ul
+        forDropList
+        data-testid="list"
+        [liveSort]="liveSort"
+        [animateReorder]="animate"
+        [boundary]="boundaryActive ? frame : null"
+        (dragDrop)="onDrop($event)"
+      >
+        @for (item of items(); track item.id; let i = $index) {
+          <li forDraggable [dragData]="item" [attr.data-testid]="'item-' + i">
+            {{ item.label }}
+            <ng-template forDragPreview>
+              <div data-testid="custom-preview" [class.wide-preview]="boundaryActive">
+                preview {{ item.label }}
+              </div>
+            </ng-template>
+            <ng-template forDragPlaceholder>
+              <div data-testid="custom-placeholder" class="custom-placeholder"></div>
+            </ng-template>
+          </li>
+        }
+      </ul>
+    </div>
   `,
 })
 export class DragDropTemplatesFixture {
@@ -81,6 +98,8 @@ export class DragDropTemplatesFixture {
   protected readonly liveSort = this.#route.snapshot.queryParamMap.get('liveSort') === 'true';
 
   protected readonly animate = this.#route.snapshot.queryParamMap.get('animate') === 'true';
+
+  protected readonly boundaryActive = this.#route.snapshot.queryParamMap.get('boundary') === 'true';
 
   protected readonly items = signal<Item[]>([
     { id: 1, label: 'Alpha' },

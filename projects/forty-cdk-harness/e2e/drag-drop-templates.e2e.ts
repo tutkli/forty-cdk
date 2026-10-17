@@ -235,3 +235,37 @@ test.describe('drag-drop live-sort placeholder', () => {
     await page.mouse.up();
   });
 });
+
+test.describe('drag-drop boundary + custom preview', () => {
+  test('a custom preview wider than the item stays inside the boundary at its end edge', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'drag-drop-templates', { boundary: 'true' });
+    const item0 = el(page, 'item-0');
+    const box0 = await item0.boundingBox();
+    const frameBox = await el(page, 'frame').boundingBox();
+    if (!box0 || !frameBox) throw new Error('Elements not found');
+
+    const startX = box0.x + box0.width / 2;
+    const startY = box0.y + box0.height / 2;
+
+    await page.mouse.move(startX, startY);
+    await page.mouse.down();
+    await page.mouse.move(startX, startY + 5);
+    await page.mouse.move(frameBox.x + frameBox.width + 200, startY + 5);
+
+    const preview = page.locator('[data-for-drag-preview]');
+    await expect(el(page, 'custom-preview')).toBeVisible();
+    const previewBox = await preview.boundingBox();
+    if (!previewBox) throw new Error('Preview not found');
+
+    const eps = 1.5;
+    expect(previewBox.width).toBeGreaterThan(box0.width);
+    expect(previewBox.x).toBeGreaterThanOrEqual(frameBox.x - eps);
+    expect(
+      Math.abs(previewBox.x + previewBox.width - (frameBox.x + frameBox.width)),
+    ).toBeLessThanOrEqual(eps);
+
+    await page.mouse.up();
+  });
+});

@@ -23,8 +23,9 @@ export interface PreviewControllerOptions {
 
 /**
  * Owns a single pointer drag's floating preview and the geometry it carries: the grab offset,
- * the measured preview size, the resolved boundary, the axis-lock origin, and the
- * boundary/axis-lock clamp applied on every move.
+ * the preview size measured at lift (the supplied preview's `element` box, else the source's),
+ * the resolved boundary, the axis-lock origin, and the boundary/axis-lock clamp applied on every
+ * move.
  *
  * Created once per pointer drag at lift time and disposed via {@link destroy} / {@link settle} at
  * teardown. Shared by both `ForDropList` (drag-drop) and `ForTreeNodeDrag` (tree). The supplied
@@ -50,15 +51,13 @@ export class PreviewController {
     const rect = source.getBoundingClientRect();
     this.#grabOffsetX = point.x - rect.left;
     this.#grabOffsetY = point.y - rect.top;
-    this.#previewSize = { width: rect.width, height: rect.height };
     this.#lockOrigin = { x: point.x - this.#grabOffsetX, y: point.y - this.#grabOffsetY };
     this.#boundaryEl = boundary;
     this.#lockAxis = lockAxis;
-    this.#preview = preview
-      ? 'settle' in preview
-        ? preview
-        : wrapPreview(preview)
-      : createDragPreview(source, doc);
+    const supplied = preview ? ('settle' in preview ? preview : wrapPreview(preview)) : null;
+    this.#preview = supplied ?? createDragPreview(source, doc);
+    const box = supplied?.element?.getBoundingClientRect() ?? rect;
+    this.#previewSize = { width: box.width, height: box.height };
     const topLeft = this.#clampedTopLeft(point);
     this.#preview.moveTo(topLeft.x, topLeft.y);
   }
