@@ -47,8 +47,15 @@ function makePage(start: number, length: number): Activity[] {
         [virtualCount]="rows().length"
         [estimateSize]="52"
         (endReached)="onEndReached()"
+        role="list"
+        aria-label="Activity"
+        tabindex="0"
       >
-        <div *forVirtualFor="let row of rows(); let item = virtualItem" class="feed-row">
+        <div
+          *forVirtualFor="let row of rows(); let item = virtualItem"
+          class="feed-row"
+          role="listitem"
+        >
           <span class="avatar" aria-hidden="true">{{ row.who.charAt(0) }}</span>
           <span class="feed-text">
             <b>{{ row.who }}</b> {{ row.what }}
@@ -87,6 +94,11 @@ function makePage(start: number, length: number): Activity[] {
       border: 1px solid var(--ex-border, #e5e0d6);
       border-radius: var(--ex-radius-sm, 14px);
       background: var(--ex-surface, #ffffff);
+    }
+
+    .viewport:focus-visible {
+      outline: 2px solid var(--ex-accent, #0e7c6b);
+      outline-offset: 2px;
     }
 
     .feed-row {

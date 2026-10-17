@@ -25,9 +25,13 @@ Apply `[forVirtualReorder]` on the same element as `[forVirtualViewport]` and ma
   [estimateSize]="44"
   forVirtualReorder
   (itemReorder)="onReorder($event)"
+  role="list"
+  aria-label="Rows"
   style="height: 400px"
 >
-  <div *forVirtualFor="let row of rows()" forDraggable [dragData]="row.id">{{ row.label }}</div>
+  <div *forVirtualFor="let row of rows()" role="listitem" forDraggable [dragData]="row.id">
+    {{ row.label }}
+  </div>
 </div>
 ```
 

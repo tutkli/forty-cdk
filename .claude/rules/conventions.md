@@ -938,8 +938,15 @@ Both halves are guarded. [`src/lib/auto-focus-on-close-teardown.spec.ts`](../../
   their own `@for` and applies the position transform. Its a11y responsibility is inverted: instead of
   adding semantics it must avoid destroying the virtualized content's semantics, so consumers keep the
   screen-reader counts correct by binding `aria-setsize` (the true total) and `aria-posinset`
-  (`item.index + 1`) on each rendered row. SSR-safe by returning an empty window + estimate total
-  off-browser. See [#782](https://github.com/tutkli/forty-cdk/issues/782).
+  (`item.index + 1`) on each rendered row, **and the row must carry a role that supports the
+  pair** — `listitem` inside a `list`, `option`, `row`, `treeitem`, `article`. The pair is not
+  global: on a role-less row it is the `aria-allowed-attr` violation the role-gating bullet under
+  _ARIA state attribute emission_ describes, the browser drops it, and no count is announced. Every README snippet and demo
+  therefore gives the rows a role and their container the matching one plus a label, and a
+  scroll container whose rows hold nothing focusable gets `tabindex="0"`, since Safari does not
+  make a scroller focusable on its own ([#2343](https://github.com/tutkli/forty-cdk/issues/2343)).
+  SSR-safe by returning an empty window + estimate total off-browser. See
+  [#782](https://github.com/tutkli/forty-cdk/issues/782).
 - **`injectBreakpoints` (breakpoints) implements no WAI-ARIA APG pattern, owns no DOM and ships no
   directive at all.** It is the same species of exception as `injectVirtualizer` — a headless
   composable, not a UI pattern: `injectBreakpoints()` returns `up` / `down` / `between` / `only`
@@ -964,7 +971,11 @@ Both halves are guarded. [`src/lib/auto-focus-on-close-teardown.spec.ts`](../../
   `injectVirtualizer` core internally. `*forVirtualFor` is the library's only structural directive:
   it owns a `ViewContainerRef`, renders one embedded view per `virtualItem()`, and imperatively sets
   each row's `position: absolute` + `transform: translate{X,Y}(start)` and its `aria-setsize` (true
-  total) / `aria-posinset` (`index + 1`). It is also the one place the library uses `ngOnInit`: the
+  total) / `aria-posinset` (`index + 1`). It writes the pair whatever the row root's role, so the
+  supporting-role requirement above is the consumer's, and the `forty-cdk/aria-attr-allowed-on-role`
+  lint cannot see it: that rule reads host bindings, not an imperative `setAttribute`. A focused row
+  never leaves the document: a keyed reorder that moves it earlier moves the views in between past
+  it instead of detaching it. It is also the one place the library uses `ngOnInit`: the
   core reads `orientation` / `overscan` once at construction, so the viewport defers `injectVirtualizer`
   to `ngOnInit` (via `runInInjectionContext`), where bound inputs are available yet the core's
   `afterNextRender` still registers before the first render. Built entirely on the Shape B core — no

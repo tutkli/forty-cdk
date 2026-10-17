@@ -654,6 +654,119 @@ describe('ForVirtualViewport — keyed rows follow their item across a same-coun
   });
 });
 
+describe('ForVirtualFor — a keyed reorder keeps focus on the row it moves (#2343)', () => {
+  interface KeyedRow {
+    readonly id: string;
+  }
+
+  @Component({
+    host: { 'data-fixture': 'keyed-focus-host' },
+    imports: [ForVirtualViewport, ForVirtualFor],
+    template: `
+      <div
+        forVirtualViewport
+        [virtualCount]="rows().length"
+        [estimateSize]="40"
+        [getItemKey]="keyOf"
+        style="height: 200px; width: 200px"
+      >
+        <div *forVirtualFor="let row of rows()" tabindex="0">
+          <input [attr.aria-label]="row.id" value="abcdef" />
+        </div>
+      </div>
+    `,
+  })
+  class KeyedFocusHost {
+    readonly rows = signal<readonly KeyedRow[]>(
+      Array.from({ length: 100 }, (_, i) => ({ id: `row-${i}` })),
+    );
+    readonly keyOf = (index: number): string => this.rows()[index]!.id;
+
+    move(from: number, to: number): void {
+      this.rows.update((rows) => {
+        const next = [...rows];
+        const [row] = next.splice(from, 1);
+        next.splice(to, 0, row!);
+        return next;
+      });
+    }
+  }
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+  });
+
+  async function mount(): Promise<ComponentFixture<KeyedFocusHost>> {
+    const fixture = TestBed.createComponent(KeyedFocusHost);
+    fakeLayout(viewportEl(fixture), 200);
+    fixture.detectChanges();
+    await flush(fixture);
+    return fixture;
+  }
+
+  function rowAt(fixture: ComponentFixture<KeyedFocusHost>, index: number): HTMLElement {
+    return rowEls(fixture).find((el) => el.getAttribute('data-index') === String(index))!;
+  }
+
+  function renderedIds(fixture: ComponentFixture<KeyedFocusHost>): string[] {
+    return rowEls(fixture).map((el) => el.querySelector('input')!.getAttribute('aria-label')!);
+  }
+
+  it('keeps a focused row focused when the reorder moves it up one slot', async () => {
+    const fixture = await mount();
+    const captured = rowAt(fixture, 3);
+    captured.focus();
+
+    fixture.componentInstance.move(3, 2);
+    await flush(fixture);
+
+    expect(captured.getAttribute('data-index')).toBe('2');
+    expect(document.activeElement).toBe(captured);
+  });
+
+  it('keeps a focused row focused, and the window in item order, when it moves up several slots', async () => {
+    const fixture = await mount();
+    const captured = rowAt(fixture, 6);
+    captured.focus();
+
+    fixture.componentInstance.move(6, 1);
+    await flush(fixture);
+
+    expect(document.activeElement).toBe(captured);
+    expect(renderedIds(fixture)).toEqual(
+      fixture.componentInstance
+        .rows()
+        .slice(0, renderedIds(fixture).length)
+        .map((row) => row.id),
+    );
+  });
+
+  it('keeps the focus and the caret of an input inside a row the reorder moves up', async () => {
+    const fixture = await mount();
+    const input = rowAt(fixture, 3).querySelector('input')!;
+    input.focus();
+    input.setSelectionRange(2, 4);
+
+    fixture.componentInstance.move(3, 0);
+    await flush(fixture);
+
+    expect(document.activeElement).toBe(input);
+    expect([input.selectionStart, input.selectionEnd]).toEqual([2, 4]);
+  });
+
+  it('keeps a focused row focused when the reorder moves it down', async () => {
+    const fixture = await mount();
+    const captured = rowAt(fixture, 1);
+    captured.focus();
+
+    fixture.componentInstance.move(1, 4);
+    await flush(fixture);
+
+    expect(captured.getAttribute('data-index')).toBe('4');
+    expect(document.activeElement).toBe(captured);
+  });
+});
+
 describe('ForVirtualViewport — [estimateSize] changes after the first render', () => {
   @Component({
     host: { 'data-fixture': 'estimate-host' },

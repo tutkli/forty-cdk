@@ -39,7 +39,7 @@ interface Message {
         </button>
       </div>
 
-      <div #scroll class="scroll">
+      <div #scroll class="scroll" role="region" aria-label="Messages" tabindex="0">
         <div class="track" [style.height.px]="v.totalSize()">
           @for (item of v.virtualItems(); track item.key) {
             <article
@@ -107,6 +107,11 @@ interface Message {
       border: 1px solid var(--ex-border, #e5e0d6);
       border-radius: var(--ex-radius-sm, 14px);
       background: var(--ex-surface, #ffffff);
+    }
+
+    .scroll:focus-visible {
+      outline: 2px solid var(--ex-accent, #0e7c6b);
+      outline-offset: 2px;
     }
 
     .track {

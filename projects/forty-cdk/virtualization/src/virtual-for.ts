@@ -1,3 +1,4 @@
+import { DOCUMENT } from '@angular/common';
 import {
   DestroyRef,
   Directive,
@@ -10,7 +11,13 @@ import {
   type InputSignal,
 } from '@angular/core';
 
-import { isUnset, unsetInput, type Unset } from 'forty-cdk/core';
+import {
+  composedContains,
+  isUnset,
+  resolveActiveElement,
+  unsetInput,
+  type Unset,
+} from 'forty-cdk/core';
 
 import { injectVirtualViewportContext } from './virtual-viewport-context';
 import { type VirtualItem } from './virtualizer';
@@ -32,21 +39,24 @@ export interface ForVirtualForContext<T> {
  * `[forVirtualViewport]`. Pass the full data array; the directive iterates the
  * viewport's `virtualItems()`, exposes each row plus its `virtualItem` to the
  * template, positions it absolutely (so the consumer writes no transform), and
- * binds `aria-setsize` (true total) / `aria-posinset` (`index + 1`) so screen
- * readers announce the real list size.
+ * writes `aria-setsize` (true total) / `aria-posinset` (`index + 1`) on each row root.
+ * Assistive technology reads that pair only on a role that supports it, so the row root
+ * needs one: `role="listitem"` inside a `role="list"` viewport, or an `option`, `row`,
+ * `treeitem` or `article`. On a role-less `<div>` neither attribute is exposed.
  *
  * ```html
- * <div forVirtualViewport [virtualCount]="rows().length" [estimateSize]="44">
- *   <div *forVirtualFor="let row of rows(); let item = virtualItem">{{ row.label }}</div>
+ * <div forVirtualViewport [virtualCount]="rows().length" [estimateSize]="44"
+ *      role="list" aria-label="Rows" tabindex="0">
+ *   <div *forVirtualFor="let row of rows(); let item = virtualItem" role="listitem">
+ *     {{ row.label }}
+ *   </div>
  * </div>
  * ```
  *
- * A row that stays in the window across a re-render **keeps its DOM node in place**: views
- * that left the window are removed before the surviving ones are re-indexed, so a view whose
- * position in the window changed never has to be detached and re-inserted to get there. That
- * is what makes focus survive a window jump — `ViewContainerRef.move` removes the node from
- * the document before re-inserting it, which blurs whatever inside it was focused, and the
- * row pinned by `[forVirtualReorder]` is focused for the whole gesture.
+ * A rendered row's DOM node never leaves the document while it holds focus. A row that stays
+ * in the window across a window jump keeps its node in place, and a keyed row that a reorder
+ * moves earlier in the window stays put while the rows between its old and new slot move past
+ * it, so focus and an input's caret and selection survive both a scroll and a reorder.
  */
 @Directive({
   selector: '[forVirtualFor][forVirtualForOf]',
@@ -55,6 +65,7 @@ export class ForVirtualFor<T> {
   readonly #template = inject<TemplateRef<ForVirtualForContext<T>>>(TemplateRef);
   readonly #viewContainer = inject(ViewContainerRef);
   readonly #viewport = injectVirtualViewportContext('ForVirtualFor');
+  readonly #document = inject(DOCUMENT);
   readonly #views = new Map<string | number, EmbeddedViewRef<ForVirtualForContext<T>>>();
 
   /** The full list of items to virtualize. */
@@ -108,8 +119,9 @@ export class ForVirtualFor<T> {
         );
         this.#views.set(item.key, view);
       } else {
-        if (this.#viewContainer.indexOf(view) !== position) {
-          this.#viewContainer.move(view, position);
+        const current = this.#viewContainer.indexOf(view);
+        if (current !== position) {
+          this.#place(view, current, position);
         }
         view.context.$implicit = value;
         view.context.virtualItem = item;
@@ -119,6 +131,21 @@ export class ForVirtualFor<T> {
       }
       this.#applyLayout(view, item, count, horizontal);
     });
+  }
+
+  #place(view: EmbeddedViewRef<ForVirtualForContext<T>>, from: number, to: number): void {
+    if (from > to && this.#holdsFocus(view)) {
+      for (let shifted = from - to; shifted > 0; shifted--) {
+        this.#viewContainer.move(this.#viewContainer.get(to)!, from);
+      }
+      return;
+    }
+    this.#viewContainer.move(view, to);
+  }
+
+  #holdsFocus(view: EmbeddedViewRef<ForVirtualForContext<T>>): boolean {
+    const active = resolveActiveElement(this.#document);
+    return active !== null && view.rootNodes.some((node: Node) => composedContains(node, active));
   }
 
   #applyLayout(
