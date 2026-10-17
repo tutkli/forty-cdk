@@ -31,7 +31,7 @@ import { computePaginationItems, type PaginationItem } from './pagination-range'
  * ```html
  * <nav forPagination [(page)]="page" [count]="20" ariaLabel="Pagination" #pg="forPagination">
  *   <button forPaginationPrevious ariaLabel="Previous page">‹</button>
- *   @for (item of pg.items(); track $index) {
+ *   @for (item of pg.items(); track item.key) {
  *     @if (item.type === 'page') {
  *       <button forPaginationItem [page]="item.value!">{{ item.value }}</button>
  *     } @else {
