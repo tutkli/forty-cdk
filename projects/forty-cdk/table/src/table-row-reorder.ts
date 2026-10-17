@@ -26,6 +26,7 @@ import {
   focusWhenMounted,
   type FocusWhenMountedRef,
   isDragLiftKey,
+  layoutPlaceholderInSlot,
   LiveAnnouncer,
   type PointerDragSession,
   resolveLiftedDragControl,
@@ -83,14 +84,18 @@ export interface TableRowReorderDescriptor {
  * Under `[forTableVirtualized]`, `rowReorder` emits **absolute** dataset indices so
  * `moveItemInArray` over the full array moves the right row; a non-virtualized table emits
  * rendered-order indices. Pointer drag works within the rendered window and reaches rows
- * beyond it via auto-scroll; keyboard reorder steps the target across the entire dataset,
- * scrolling unmounted rows into view. Holding **Shift** during a pointer drag engages
- * **windowed scrub** — the scroll viewport maps onto the whole dataset (top edge → row 0,
- * bottom edge → the last row) so a single gesture can drop the lifted row at an arbitrary
- * far row.
+ * beyond it via auto-scroll; keyboard reorder steps the target across every row the
+ * virtualizer can place (`[virtualRowCount]`, else `[rowCount]`), scrolling unmounted rows into
+ * view. Holding **Shift** during a pointer drag engages **windowed scrub** — the scroll viewport
+ * maps onto the same rows (top edge → row 0, bottom edge → the last placeable row) so a single
+ * gesture can drop the lifted row at an arbitrary far row.
  *
- * Every lift, move and drop announcement counts the positions `rowReorder` reports — dataset
- * positions under virtualization, pointer and keyboard alike — and each row's `[forDraggable]`
+ * Under `[forTableVirtualized]` a `[forDragPlaceholder]` takes the lifted row's inline position,
+ * insets, size and transform, so it stands in the row's slot. `[liveSort]` parts no rows there:
+ * the rows are positioned by transform, and the placeholder keeps marking the source slot.
+ *
+ * Every lift, move and drop announcement counts the positions `rowReorder` reports, out of the
+ * placeable rows under virtualization, pointer and keyboard alike, and each row's `[forDraggable]`
  * emits `dragStart` / `dragEnd` for a keyboard gesture as it does for a pointer one. The rowgroup
  * is a **closed** list: it joins no `[forDropListGroup]` and connects to no other `[forDropList]`,
  * so no row is transferred into or out of it.
@@ -504,8 +509,15 @@ export class ForTableRowReorder {
   }
 
   private count(): number {
-    const rendered = this.#list.items().length;
-    return this.#virtualized() ? (this.ctx.rowCount() ?? rendered) : rendered;
+    return (
+      this.#registration.virtualRowNavigation()?.placeableRowCount() ?? this.#list.items().length
+    );
+  }
+
+  private layoutPlaceholder(nodes: readonly Node[], lifted: HTMLElement): void {
+    if (this.#virtualized()) {
+      layoutPlaceholderInSlot(nodes, lifted);
+    }
   }
 
   #page(): number {

@@ -123,7 +123,8 @@ export interface TableVirtualRowNavigation {
   /**
    * The count of rows the virtualizer can place — `[virtualRowCount]`, else the
    * table's resolved row count, else `0`. `ForTable` bounds row-crossing grid
-   * actions by it rather than by the `aria-rowcount` total, which stays unknown
+   * actions by it, and `[forTableRowReorder]` its keyboard reorder and drag
+   * announcements, rather than by the `aria-rowcount` total, which stays unknown
    * for a windowed grid whose server reports no total.
    */
   placeableRowCount(): number;

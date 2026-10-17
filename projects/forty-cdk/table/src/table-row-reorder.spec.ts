@@ -9,7 +9,7 @@ import { TestBed } from '@angular/core/testing';
 
 import { flush } from '../../src/test-utils';
 import { provideForDragDropDefaults } from 'forty-cdk/defaults';
-import { ForDraggable, moveItemInArray } from 'forty-cdk/drag-drop';
+import { ForDraggable, ForDragPlaceholder, moveItemInArray } from 'forty-cdk/drag-drop';
 import { ForTableVirtualized } from 'forty-cdk/table-virtualization';
 
 import { ForTable } from './table';
@@ -130,9 +130,10 @@ class VirtualizedRowReorderHost {
   }
 }
 
-async function render<T>(host: Type<T>) {
+async function render<T>(host: Type<T>, setup?: (instance: T) => void) {
   TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
   const fixture = TestBed.createComponent(host);
+  setup?.(fixture.componentInstance);
   const root = fixture.nativeElement as HTMLElement;
   const scroller = root.querySelector<HTMLElement>('[forTable]')!;
   fakeLayout(scroller);
@@ -1555,4 +1556,213 @@ describe('ForTableRowReorder — lift key', () => {
     await settle();
     expect(query('[data-testid="row-1"]').getAttribute('data-dragging')).toBe('');
   });
+});
+
+const LOADED_COUNT = 500;
+
+@Component({
+  imports: [
+    ForTable,
+    ForTableVirtualized,
+    ForTableRow,
+    ForTableCell,
+    ForTableRowReorder,
+    ForDraggable,
+  ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <div
+      forTable
+      forTableVirtualized
+      mode="grid"
+      ariaLabel="Append-style reorderable rows"
+      [rowCount]="total()"
+      [virtualRowCount]="loaded()"
+      [estimateRowSize]="rowHeight"
+      #v="forTableVirtualized"
+      style="height: 200px; overflow: auto"
+    >
+      <div
+        role="rowgroup"
+        forTableRowReorder
+        [style.height.px]="v.totalSize()"
+        (rowReorder)="onReorder($event)"
+      >
+        @for (vrow of v.virtualRows(); track vrow.index) {
+          <div
+            forTableRow
+            [virtualIndex]="vrow.index"
+            forDraggable
+            [dragData]="vrow.index"
+            [attr.data-index]="vrow.index"
+          >
+            <div forTableCell name="a" [attr.data-testid]="'cell-' + vrow.index">
+              {{ vrow.index }}
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  `,
+})
+class LoadedPrefixRowReorderHost {
+  readonly total = signal<number | undefined>(undefined);
+  readonly loaded = signal(LOADED_COUNT);
+  protected readonly rowHeight = ROW_HEIGHT;
+  last: TableRowReorderDescriptor | null = null;
+
+  protected onReorder(descriptor: TableRowReorderDescriptor): void {
+    this.last = descriptor;
+  }
+}
+
+describe('ForTableRowReorder — keyboard reorder is bounded by the rows the virtualizer can place (#2335)', () => {
+  afterEach(() => {
+    document.querySelectorAll('[aria-live]').forEach((node) => node.remove());
+  });
+
+  it('steps past the rendered window when only [virtualRowCount] is bound', async () => {
+    const { instance, settle, cell, scrollTo } = await render(LoadedPrefixRowReorderHost);
+    expect(await scrollTo(300 * ROW_HEIGHT)).toContain(300);
+    const lifted = cell(300);
+    lifted.focus();
+
+    press(lifted, ' ', { ctrlKey: true });
+    await settle();
+    expect(liveRegionText()).toContain(`301 of ${LOADED_COUNT}`);
+
+    press(lifted, 'ArrowDown');
+    await settle();
+    press(lifted, ' ');
+    await settle();
+
+    expect(instance.last).toEqual({ from: 300, to: 301 });
+  });
+
+  it('End drops at the last loaded row when only [virtualRowCount] is bound', async () => {
+    const { instance, settle, indices, cell } = await render(LoadedPrefixRowReorderHost);
+    const from = Math.max(...indices());
+    const lifted = cell(from);
+    lifted.focus();
+
+    press(lifted, ' ', { ctrlKey: true });
+    await settle();
+    press(lifted, 'End');
+    await settle();
+    press(lifted, ' ');
+    await settle();
+
+    expect(instance.last).toEqual({ from, to: LOADED_COUNT - 1 });
+    expect(liveRegionText()).toContain(`dropped at position ${LOADED_COUNT} of ${LOADED_COUNT}`);
+  });
+
+  it('End stops at [virtualRowCount] rather than the larger server total in [rowCount]', async () => {
+    const { instance, settle, indices, cell } = await render(LoadedPrefixRowReorderHost, (host) => {
+      host.total.set(600);
+      host.loaded.set(120);
+    });
+    const from = Math.max(...indices());
+    const lifted = cell(from);
+    lifted.focus();
+
+    press(lifted, ' ', { ctrlKey: true });
+    await settle();
+    expect(liveRegionText()).toContain(`${from + 1} of 120`);
+
+    press(lifted, 'End');
+    await settle();
+    press(lifted, ' ');
+    await settle();
+
+    expect(instance.last).toEqual({ from, to: 119 });
+  });
+});
+
+@Component({
+  imports: [
+    ForTable,
+    ForTableVirtualized,
+    ForTableRow,
+    ForTableCell,
+    ForTableRowReorder,
+    ForDraggable,
+    ForDragPlaceholder,
+  ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <div
+      forTable
+      forTableVirtualized
+      mode="grid"
+      ariaLabel="Virtualized rows with a drag placeholder"
+      [rowCount]="rowCount"
+      [estimateRowSize]="rowHeight"
+      #v="forTableVirtualized"
+      style="height: 200px; overflow: auto"
+    >
+      <div
+        role="rowgroup"
+        forTableRowReorder
+        [liveSort]="liveSort()"
+        [style.height.px]="v.totalSize()"
+        style="position: relative"
+      >
+        @for (vrow of v.virtualRows(); track vrow.index) {
+          <div
+            forTableRow
+            [virtualIndex]="vrow.index"
+            forDraggable
+            [dragData]="vrow.index"
+            [attr.data-index]="vrow.index"
+            [attr.data-testid]="'row-' + vrow.index"
+            style="position: absolute; left: 0; right: 0"
+            [style.transform]="'translateY(' + vrow.start + 'px)'"
+          >
+            <div forTableCell name="a">{{ vrow.index }}</div>
+            <ng-template forDragPlaceholder>
+              <div data-testid="placeholder" style="height: 44px">Drop here</div>
+            </ng-template>
+          </div>
+        }
+      </div>
+    </div>
+  `,
+})
+class VirtualizedPlaceholderHost {
+  readonly liveSort = signal(false);
+  protected readonly rowCount = ROW_COUNT;
+  protected readonly rowHeight = ROW_HEIGHT;
+}
+
+describe('ForTableRowReorder — the drag placeholder stands in the lifted row’s slot under [forTableVirtualized] (#2335)', () => {
+  afterEach(() => {
+    document.querySelectorAll('[aria-live]').forEach((node) => node.remove());
+  });
+
+  for (const liveSort of [false, true]) {
+    it(`lays the placeholder out at the lifted row’s position with liveSort ${liveSort ? 'on' : 'off'}`, async () => {
+      const { settle, query } = await render(VirtualizedPlaceholderHost, (host) =>
+        host.liveSort.set(liveSort),
+      );
+      const row = query('[data-testid="row-3"]');
+      const slot = row.style.transform;
+      expect(slot).toBe(`translateY(${3 * ROW_HEIGHT}px)`);
+
+      row.dispatchEvent(pointer('pointerdown', 0, 150));
+      document.dispatchEvent(pointer('pointermove', 0, 170));
+      await settle();
+
+      const placeholder = query('[data-testid="placeholder"]');
+      expect(placeholder.style.position).toBe('absolute');
+      expect(placeholder.style.left).toBe(row.style.left);
+      expect(placeholder.style.right).toBe(row.style.right);
+      expect(placeholder.style.transform).toBe(slot);
+      expect(placeholder.style.height).toBe('44px');
+
+      document.dispatchEvent(pointer('pointerup', 0, 170));
+      await settle();
+
+      expect(query('[data-testid="placeholder"]')).toBeNull();
+    });
+  }
 });
