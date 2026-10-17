@@ -28,8 +28,14 @@ import { isDevMode } from '@angular/core';
 import { fortyError } from 'forty-cdk/core';
 import type { ForDrawerSnapPoint } from './drawer-context';
 
-const SNAP_POINT_PERCENT_RE = /^(-?\d+(?:\.\d+)?)%$/;
-const SNAP_POINT_PX_RE = /^(-?\d+(?:\.\d+)?)px$/;
+function parseSuffixed(p: string, suffix: '%' | 'px'): number {
+  if (!p.endsWith(suffix)) {
+    return Number.NaN;
+  }
+  const body = p.slice(0, -suffix.length);
+  const n = body === '' ? Number.NaN : Number(body);
+  return Number.isFinite(n) ? n : Number.NaN;
+}
 
 /** Per-point classification used by the shape check. */
 type SnapPointKind = 'fraction' | 'px';
@@ -41,7 +47,7 @@ function classifySnapPoint(p: ForDrawerSnapPoint): SnapPointKind {
   if (typeof p === 'number') {
     return 'fraction';
   }
-  return SNAP_POINT_PX_RE.test(p) ? 'px' : 'fraction';
+  return Number.isFinite(parseSuffixed(p, 'px')) ? 'px' : 'fraction';
 }
 
 /**
@@ -55,15 +61,13 @@ export function snapPointToFraction(p: ForDrawerSnapPoint, dimension: number): n
   if (typeof p === 'number') {
     return Number.isFinite(p) ? p : Number.NaN;
   }
-  const pctMatch = SNAP_POINT_PERCENT_RE.exec(p);
-  if (pctMatch) {
-    const n = Number.parseFloat(pctMatch[1]!);
-    return n / 100;
+  const percent = parseSuffixed(p, '%');
+  if (Number.isFinite(percent)) {
+    return percent / 100;
   }
-  const pxMatch = SNAP_POINT_PX_RE.exec(p);
-  if (pxMatch) {
-    const n = Number.parseFloat(pxMatch[1]!);
-    return dimension === 0 ? 0 : n / dimension;
+  const px = parseSuffixed(p, 'px');
+  if (Number.isFinite(px)) {
+    return dimension === 0 ? 0 : px / dimension;
   }
   return Number.NaN;
 }
@@ -92,7 +96,7 @@ export function assertSnapPointsShape(snapPoints: ReadonlyArray<ForDrawerSnapPoi
           fix: 'Use a finite fraction of the drawer dimension, e.g. 0.5.',
         });
       }
-    } else if (!SNAP_POINT_PERCENT_RE.test(p) && !SNAP_POINT_PX_RE.test(p)) {
+    } else if (!Number.isFinite(snapPointToFraction(p, 1))) {
       throw fortyError({
         code: 'FORCDK-DRAWER-008',
         message: `A snap point must be a number, an "NN%" string, or an "NNpx" string, and one is ${String(p)}.`,
@@ -115,7 +119,7 @@ export function assertSnapPointsShape(snapPoints: ReadonlyArray<ForDrawerSnapPoi
     if (kind === 'fraction') {
       return snapPointToFraction(p, 1);
     }
-    return Number.parseFloat(SNAP_POINT_PX_RE.exec(p as string)![1]!);
+    return parseSuffixed(p as string, 'px');
   });
   for (let i = 1; i < positions.length; i++) {
     if (positions[i]! <= positions[i - 1]!) {

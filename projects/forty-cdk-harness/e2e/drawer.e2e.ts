@@ -857,6 +857,66 @@ test.describe('Drawer', () => {
       await expect(el(page, 'drawer')).toHaveAttribute('data-active-snap-point', '1');
     });
 
+    test('snap point: a fast flick from the full snap past the lowest one dismisses instead of stepping one snap down', async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'drawer', {
+        drawerHeight: '400',
+        snap: '148px,0.5,1',
+        initialSnap: '1',
+      });
+      await el(page, 'trigger').click();
+      await expect(el(page, 'drawer')).toBeVisible();
+      await expect(el(page, 'active-snap')).toHaveText('1');
+
+      await dragFromSteps(page, el(page, 'handle'), { dx: 0, dy: 60 }, 6, {
+        stepDelayMs: 10,
+        flickRelease: true,
+      });
+
+      await expect(el(page, 'drawer')).toHaveCount(0);
+      await expect(el(page, 'last-close-reason')).toHaveText('swipe');
+      await expect(el(page, 'last-swipe-will-close')).toHaveText('true');
+    });
+
+    test('snap point: a fast flick up from the lowest snap lands on the first snap above the release, not one above the start', async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'drawer', { drawerHeight: '400', snap: '148px,0.5,1' });
+      await el(page, 'trigger').click();
+      await expect(el(page, 'drawer')).toBeVisible();
+      await expect(el(page, 'active-snap')).toHaveText('148px');
+
+      await dragFromSteps(page, el(page, 'handle'), { dx: 0, dy: -40 }, 6, {
+        stepDelayMs: 10,
+        flickRelease: true,
+      });
+
+      await expect(el(page, 'drawer')).toBeVisible();
+      await expect(el(page, 'last-swipe-will-close')).toHaveText('false');
+      await expect(el(page, 'last-swipe-next-snap')).toHaveText('1');
+      await expect(el(page, 'active-snap')).toHaveText('1');
+    });
+
+    test('snap point: swipe progress is measured against the active snap, so it reaches 1 as the peek leaves the screen', async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'drawer', { drawerHeight: '650', snap: '148px,0.5,1' });
+      await el(page, 'trigger').click();
+      await expect(el(page, 'drawer')).toBeVisible();
+      await expect(el(page, 'active-snap')).toHaveText('148px');
+
+      const drag = await dragFrom(page, el(page, 'handle'), { dx: 0, dy: 74 }, { release: false });
+
+      await expect(el(page, 'drawer')).toHaveAttribute('data-dragging', '');
+      await expect
+        .poll(async () => Number(await el(page, 'last-swipe-progress').textContent()))
+        .toBeGreaterThan(0.45);
+      expect(Number(await el(page, 'last-swipe-progress').textContent())).toBeLessThan(0.55);
+
+      await drag.up();
+    });
+
     test('without snapPoints, an upward drag does not arm or dismiss', async ({ page }) => {
       // A plain (no-snap) drawer dismisses only toward its anchored edge. An
       // upward drag is dropped by the swipe helper: no (swipeMove) fires, no

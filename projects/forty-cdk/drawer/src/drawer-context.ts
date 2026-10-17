@@ -9,8 +9,12 @@ export { type ForDrawerSide };
  * A snap point. Three accepted shapes:
  *
  * - `number ∈ [0, 1]` — fraction of the dimension along the dismissal axis.
- * - `'NN%'` — equivalent to a fraction, e.g. `'50%' === 0.5`.
+ * - `'NN%'` — a percentage of that dimension, so `'50%'` rests where `0.5` does.
  * - `'NNpx'` — absolute pixel size measured from the anchored edge.
+ *
+ * A snap point is identified by its value as written: `activeSnapPoint` is
+ * matched against `snapPoints` by identity and reflected verbatim as
+ * `data-active-snap-point`, so `'50%'` and `0.5` are different snap points.
  */
 export type ForDrawerSnapPoint = number | `${number}%` | `${number}px`;
 
@@ -60,9 +64,10 @@ export interface ForDrawerContext {
   readonly dragging: Signal<boolean>;
   /**
    * Progress of the current swipe *toward the anchored edge* (dismiss
-   * direction), as a fraction `∈ [0, 1]` of the drawer's dimension along
-   * the dismissal axis. `0` at rest and while growing away from the edge
-   * (with snap points). The backdrop publishes this as the
+   * direction), as a fraction `∈ [0, 1]` of the distance to the edge from
+   * where the drag started: the active snap's extent with snap points, the
+   * full dimension without, so `1` means fully swiped off-screen. `0` at rest
+   * and while growing away from the edge (with snap points). The backdrop publishes this as the
    * `--for-drawer-swipe-progress` custom property so consumers can fade it
    * out as the surface is swiped off-screen — `opacity: calc(1 - var(--for-drawer-swipe-progress))`.
    */
@@ -187,9 +192,10 @@ export function injectDrawerContext(piece: string): DrawerContext {
 export interface ForDrawerSwipeEvent {
   /**
    * Progress of the gesture toward the anchored edge (dismiss direction), a
-   * unitless fraction `∈ [0, 1]` of the drawer's dimension along the
-   * dismissal axis. `0` on arm and while growing away from the edge (with
-   * snap points).
+   * unitless fraction `∈ [0, 1]` of the distance to the edge from where the
+   * drag started: the active snap's extent with snap points, the full
+   * dimension without, so `1` means fully swiped off-screen. `0` on arm and
+   * while growing away from the edge (with snap points).
    */
   readonly progress: number;
   readonly originalEvent: PointerEvent;

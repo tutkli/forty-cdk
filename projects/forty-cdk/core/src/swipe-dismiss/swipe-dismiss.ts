@@ -153,8 +153,9 @@ export const FLICK_STALE_VELOCITY_MS = 100;
 
 /**
  * Release speed (CSS px/ms) past which a gesture counts as a deliberate flick
- * rather than a slow position drag. A release at or above it biases the
- * resolution one step in the flick direction instead of snapping to nearest.
+ * rather than a slow position drag. A release at or above it resolves toward
+ * the flick direction from where the gesture was let go, instead of to the
+ * nearest target.
  *
  * Shared by every swipe-driven resolution in the library — `ForCarousel`'s
  * drag directive (`resolveDragIndex`), `ForDrawer`'s no-snap-points dismiss

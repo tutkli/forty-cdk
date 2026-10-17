@@ -337,7 +337,7 @@ export class DrawerDefaultExample {
 
 ### Snapping sheet
 
-Drag the sheet between peek / half / full. Release resolves to the nearest snap by position (or dismisses past the lowest one). The consumer positions each snap via CSS keyed off `data-active-snap-point`; `data-dragging` disables the transition mid-gesture. `fadeFromIndex` fades the backdrop in only once the sheet reaches the half snap.
+Drag the sheet between peek / half / full. A slow release rests on the nearest snap, a flick on the first snap past the release in the flick's direction, and either dismisses past the lowest one. The consumer positions each snap via CSS keyed off `data-active-snap-point`; `data-dragging` disables the transition mid-gesture. `fadeFromIndex` fades the backdrop in only once the sheet reaches the half snap.
 
 ### Receding page
 
@@ -394,15 +394,15 @@ Enter and exit animations are not inputs. On a declarative drawer, put `animate.
 
 > **The declarative and imperative surfaces spell this differently, on purpose.** The output is `(dismiss)`, because an output named `close` would collide with the native DOM event and break any wrapper re-exposing it through `hostDirectives`. Nothing else changes name: the imperative handle method is `ForDrawerRef.close()`, the directive selector is `[forDrawerClose]`, and the payload type is `ForDrawerCloseReason`.
 
-| Data attribute           | Values                                       |
-| ------------------------ | -------------------------------------------- |
-| `data-state`             | `open`                                       |
-| `data-side`              | `top` \| `right` \| `bottom` \| `left`       |
-| `data-active-snap-point` | the active snap point stringified, or absent |
-| `data-dragging`          | present / absent                             |
-| `data-scale-background`  | present / absent                             |
-| `data-depth`             | `0` (root) \| `1` (first child) \| …         |
-| `data-state-nested`      | present / absent                             |
+| Data attribute           | Values                                                      |
+| ------------------------ | ----------------------------------------------------------- |
+| `data-state`             | `open`                                                      |
+| `data-side`              | `top` \| `right` \| `bottom` \| `left`                      |
+| `data-active-snap-point` | the active snap point as written in `snapPoints`, or absent |
+| `data-dragging`          | present / absent                                            |
+| `data-scale-background`  | present / absent                                            |
+| `data-depth`             | `0` (root) \| `1` (first child) \| …                        |
+| `data-state-nested`      | present / absent                                            |
 
 ### `ForDrawerBackdrop`
 
@@ -441,8 +441,12 @@ Enter and exit animations are not inputs. On a declarative drawer, put `animate.
 Three accepted shapes:
 
 - `number ∈ [0, 1]`: fraction of the dismissal-axis dimension.
-- `'NN%'`: equivalent to a fraction (`'50%' === 0.5`).
+- `'NN%'`: a percentage of that dimension, so `'50%'` rests where `0.5` does.
 - `'NNpx'`: absolute pixel size measured from the anchored edge.
+
+The number in front of `%` or `px` is any finite number `Number()` reads, which is what the `ForDrawerSnapPoint` type accepts (`'.5%'` and `'1e2px'` included).
+
+A snap point is identified by its value as written. `activeSnapPoint` is matched against `snapPoints` by identity and `data-active-snap-point` reflects the value as written, so `'50%'` and `0.5` are two different snap points even though they rest at the same place. Seed `[(activeSnapPoint)]` and key your CSS with the spelling your `snapPoints` use.
 
 Pass them in **strictly increasing** order (closest-to-edge first); in dev mode the directive throws `FORCDK-DRAWER-009` otherwise. Mixed units (`'200px'` next to `0.5`) can only be ordered against the live drawer size, so they are re-checked on first measurement and fail with `FORCDK-DRAWER-010`, which names the offending point and the dimension it resolved against. `fadeFromIndex` must be a valid index into `snapPoints`.
 
@@ -485,7 +489,7 @@ For a seamless release, transition **both** `translate` and your snap-position p
 .sheet[data-active-snap-point='148px'] {
   bottom: calc(148px - 80vh);
 }
-.sheet[data-active-snap-point='0.5'] {
+.sheet[data-active-snap-point='50%'] {
   bottom: -40vh;
 }
 .sheet[data-active-snap-point='1'] {
@@ -495,7 +499,7 @@ For a seamless release, transition **both** `translate` and your snap-position p
 
 ### Backdrop swipe-fade (CSS contract)
 
-`[forDrawerBackdrop]` publishes the live swipe progress _toward the anchored edge_ as the **`--for-drawer-swipe-progress`** custom property (`0` at rest → `1` fully swiped off-screen) and mirrors the surface's **`data-dragging`** attribute. This drives the "backdrop fades out as you swipe to dismiss" cue with pure CSS and needs no `(swipeMove)` listener:
+`[forDrawerBackdrop]` publishes the live swipe progress _toward the anchored edge_ as the **`--for-drawer-swipe-progress`** custom property (`0` at rest → `1` fully swiped off-screen, from whichever snap the drag started) and mirrors the surface's **`data-dragging`** attribute. This drives the "backdrop fades out as you swipe to dismiss" cue with pure CSS and needs no `(swipeMove)` listener:
 
 ```css
 .drawer-backdrop {
@@ -513,6 +517,7 @@ For a seamless release, transition **both** `translate` and your snap-position p
 ## Swipe-to-dismiss
 
 - Pointer drag toward the anchored edge translates the surface and resolves to the nearest snap (or a dismiss) on release.
+- A flick, a release faster than 0.4 px/ms, resolves from where the surface is let go rather than from the snap the drag started on. Toward the edge it rests on the first snap below the release, or dismisses when there is none; away from the edge it rests on the first snap above the release, or on the largest one. A flick toward the edge from the lowest snap therefore dismisses short of `closeThreshold`, as any flick does without `snapPoints`.
 - With `snapPoints`, the drag is bidirectional: a drag **away** from the anchored edge grows the surface toward a larger snap (bounded by the largest snap), and a drag toward the edge shrinks it / dismisses past the lowest one. Without `snapPoints` the gesture is one-way (toward the edge to dismiss).
 - Dismissal and dragging are separate. With `swipeToDismiss` or `dismissible` set to `false`, a drawer with `snapPoints` still drags between them and stops at the lowest snap, and `(swipeEnd)` reports `willClose: false`; a drawer without `snapPoints` arms no drag at all.
 - `closeThreshold` (default `0.25`) is the fraction past which a release from the lowest snap dismisses. It is measured against that snap's own extent (not the full dimension), so a small "peek" snap stays dismissible without dragging it off-screen.
@@ -741,7 +746,7 @@ forty-cdk ships no styles: put your own class on each piece and key your CSS off
 | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `--for-drawer-swipe-movement-x` | Written on `[forDrawer]` (the surface). Live swipe displacement in CSS px along the x axis (`0px` at rest; only the dismissal axis is ever non-zero). Compose with `translate: var(--for-drawer-swipe-movement-x, 0px) var(--for-drawer-swipe-movement-y, 0px)`. See [Positioning the snaps](#positioning-the-snaps-css-contract). |
 | `--for-drawer-swipe-movement-y` | Written on `[forDrawer]` (the surface). Live swipe displacement in CSS px along the y axis (`0px` at rest; only the dismissal axis is ever non-zero). Compose with `translate: var(--for-drawer-swipe-movement-x, 0px) var(--for-drawer-swipe-movement-y, 0px)`. See [Positioning the snaps](#positioning-the-snaps-css-contract). |
-| `--for-drawer-swipe-progress`   | Written on `[forDrawerBackdrop]`. Swipe progress toward the anchored edge, a unitless fraction `0` (at rest) → `1` (fully swiped off-screen). Fade with `opacity: calc(1 - var(--for-drawer-swipe-progress, 0))`. See [Backdrop swipe-fade](#backdrop-swipe-fade-css-contract).                                                    |
+| `--for-drawer-swipe-progress`   | Written on `[forDrawerBackdrop]`. Swipe progress toward the anchored edge, a unitless fraction `0` (at rest) → `1` (fully swiped off-screen, from any snap). Fade with `opacity: calc(1 - var(--for-drawer-swipe-progress, 0))`. See [Backdrop swipe-fade](#backdrop-swipe-fade-css-contract).                                     |
 | `--for-drawer-depth`            | Written on `[forDrawer]` and `[forDrawerBackdrop]`. The drawer's nesting depth as a unitless integer, `0` for a root drawer, mirroring `data-depth`. Stack a nested drawer's backdrop above its parent with `z-index: calc(1009 + var(--for-drawer-depth) * 10)`.                                                                  |
 
 ```css

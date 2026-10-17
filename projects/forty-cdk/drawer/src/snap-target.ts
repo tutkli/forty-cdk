@@ -25,10 +25,8 @@ export interface ResolveSnapTargetOptions<S> {
    * the caller.
    */
   readonly snapPositions: ReadonlyArray<number>;
-  /** The currently-active snap point. Match the elements of `snapPoints` by reference. */
-  readonly activeSnapPoint: S | null;
   /**
-   * Final pointer position along the dismissal axis, measured from the
+   * Surface position at release along the dismissal axis, measured from the
    * anchored edge in CSS pixels. Larger means further from the edge.
    */
   readonly position: number;
@@ -40,7 +38,7 @@ export interface ResolveSnapTargetOptions<S> {
    */
   readonly velocity: number;
   /**
-   * Fraction of the **lowest snap point's** extent past which a
+   * Fraction of the **lowest snap point's** extent past which a slow
    * release from that snap dismisses the drawer. Default `0.25` — a release
    * that has dragged more than 25% of the lowest snap's size past it (toward
    * the edge) closes. Measuring against the lowest snap rather than the full
@@ -52,22 +50,23 @@ export interface ResolveSnapTargetOptions<S> {
 
 /**
  * Pure function that picks the snap target for a release gesture, combining
- * the final pointer position with the gesture velocity. Kept in its own
- * module so the Drawer directive doesn't have to embed the algorithm
- * (which is mildly involved and well-tested in isolation).
+ * the surface position at release with the gesture velocity. Kept in its own
+ * module so the Drawer directive doesn't have to embed the algorithm.
  *
- * Algorithm:
+ * Algorithm, all of it relative to the release `position` rather than to the
+ * snap the drag started from:
  *
- *   1. Pick the snap point with `snapPositions[i]` closest to `position`.
- *   2. If the velocity is fast enough (`|velocity| >= FLICK_VELOCITY_PX_PER_MS`), bias one
- *      step in the velocity direction. Negative velocity = toward edge,
- *      positive = away from edge. Clamped at the array bounds.
- *   3. If the chosen target is the closest-to-edge snap point AND the gesture
- *      ended *past* (closer to the edge than) that snap by more than
- *      `closeThreshold` of the lowest snap's own extent, return
- *      `willClose: true`. Scaling by the lowest snap rather than the full
- *      drawer dimension keeps a small "peek" snap dismissible without having
- *      to drag it entirely off-screen.
+ *   1. A flick toward the edge (`velocity <= -FLICK_VELOCITY_PX_PER_MS`)
+ *      targets the highest snap strictly below `position`, and returns
+ *      `willClose: true` when there is none, as a flick does without snap
+ *      points.
+ *   2. A flick away from the edge (`velocity >= FLICK_VELOCITY_PX_PER_MS`)
+ *      targets the lowest snap strictly above `position`, clamped to the
+ *      highest snap.
+ *   3. Any slower release targets the snap closest to `position`, and returns
+ *      `willClose: true` when that is the lowest snap and the release sits
+ *      past it (closer to the edge) by more than `closeThreshold` of the
+ *      lowest snap's own extent.
  *
  * Snap points are passed by the caller already converted to pixel positions
  * (`snapPositions`); the algorithm does not know whether they came from a
@@ -80,7 +79,7 @@ export interface ResolveSnapTargetOptions<S> {
  * formula. Passing an empty `snapPoints` throws.
  */
 export function resolveSnapTarget<S>(opts: ResolveSnapTargetOptions<S>): SnapResolution<S> {
-  const { snapPoints, snapPositions, activeSnapPoint, position, velocity } = opts;
+  const { snapPoints, snapPositions, position, velocity } = opts;
   if (snapPositions.length !== snapPoints.length) {
     throw fortyError({
       code: 'FORCDK-DRAWER-011',
@@ -98,7 +97,24 @@ export function resolveSnapTarget<S>(opts: ResolveSnapTargetOptions<S>): SnapRes
     });
   }
 
-  // 1) Closest snap by position.
+  if (velocity <= -FLICK_VELOCITY_PX_PER_MS) {
+    let below = snapPositions.length - 1;
+    while (below >= 0 && snapPositions[below]! >= position) {
+      below--;
+    }
+    return below < 0
+      ? { willClose: true, nextSnapPoint: null }
+      : { willClose: false, nextSnapPoint: snapPoints[below]! };
+  }
+
+  if (velocity >= FLICK_VELOCITY_PX_PER_MS) {
+    const above = snapPositions.findIndex((p) => p > position);
+    return {
+      willClose: false,
+      nextSnapPoint: snapPoints[above < 0 ? snapPoints.length - 1 : above]!,
+    };
+  }
+
   let closestIdx = 0;
   let closestDist = Math.abs(snapPositions[0]! - position);
   for (let i = 1; i < snapPositions.length; i++) {
@@ -109,34 +125,9 @@ export function resolveSnapTarget<S>(opts: ResolveSnapTargetOptions<S>): SnapRes
     }
   }
 
-  // 2) Velocity bias. The active snap point is the anchor for the velocity
-  // step — bias relative to where the user *was* before the gesture,
-  // not relative to the geometric closest. Falls back to closestIdx if the
-  // active is unknown.
-  const activeIdx = activeSnapPoint != null ? snapPoints.indexOf(activeSnapPoint) : -1;
-  const anchorIdx = activeIdx >= 0 ? activeIdx : closestIdx;
-
-  let targetIdx = closestIdx;
-  if (Math.abs(velocity) >= FLICK_VELOCITY_PX_PER_MS) {
-    if (velocity < 0) {
-      // Fast move toward edge — bias one snap closer.
-      targetIdx = Math.max(0, anchorIdx - 1);
-    } else {
-      // Fast move away from edge — bias one snap further.
-      targetIdx = Math.min(snapPoints.length - 1, anchorIdx + 1);
-    }
+  if (closestIdx === 0 && position < snapPositions[0]! * (1 - opts.closeThreshold)) {
+    return { willClose: true, nextSnapPoint: null };
   }
 
-  // 3) Dismiss check: only the closest-to-edge snap (index 0) gates dismissal.
-  //    Position past the threshold (i.e. closer to the edge) means the user
-  //    has dragged the drawer far enough off-screen to count as a dismiss.
-  if (targetIdx === 0) {
-    const lowestPos = snapPositions[0]!;
-    const dismissThreshold = lowestPos * (1 - opts.closeThreshold);
-    if (position < dismissThreshold) {
-      return { willClose: true, nextSnapPoint: null };
-    }
-  }
-
-  return { willClose: false, nextSnapPoint: snapPoints[targetIdx] ?? null };
+  return { willClose: false, nextSnapPoint: snapPoints[closestIdx]! };
 }
