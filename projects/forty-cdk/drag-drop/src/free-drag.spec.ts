@@ -3,6 +3,8 @@ import { TestBed } from '@angular/core/testing';
 
 import { flush, renderHost } from '../../src/test-utils';
 import { ForDragHandle } from './drag-handle';
+import { ForDraggable } from './draggable';
+import { ForDropList } from './drop-list';
 import { ForFreeDrag } from './free-drag';
 
 interface Pos {
@@ -340,5 +342,111 @@ describe('ForFreeDrag', () => {
 
     expect(box.style.translate).toBe('30px 30px');
     expect(fixture.componentInstance.pos()).toEqual({ x: 30, y: 30 });
+  });
+});
+
+describe('ForFreeDrag — native drag, handles and nested draggables', () => {
+  @Component({
+    host: { 'data-fixture': 'free-drag-native-host' },
+    imports: [ForFreeDrag, ForDragHandle],
+    template: `
+      <div forFreeDrag data-testid="panel" [disabled]="disabled()" [(position)]="pos">
+        @if (showHandle()) {
+          <span forDragHandle data-testid="handle">::</span>
+        }
+        <img alt="" data-testid="thumb" />
+      </div>
+    `,
+  })
+  class NativeHost {
+    readonly pos = signal<Pos>({ x: 0, y: 0 });
+    readonly disabled = signal(false);
+    readonly showHandle = signal(false);
+  }
+
+  @Component({
+    host: { 'data-fixture': 'free-drag-nested-host' },
+    imports: [ForFreeDrag, ForDropList, ForDraggable],
+    template: `
+      <div forFreeDrag data-testid="panel" (moveStart)="panelStarts.push($event)">
+        <ul forDropList>
+          <li
+            forDraggable
+            [dragData]="'a'"
+            data-testid="item"
+            (dragStart)="itemStarts.push($event.index)"
+          >
+            A
+          </li>
+        </ul>
+      </div>
+    `,
+  })
+  class NestedHost {
+    readonly panelStarts: Pos[] = [];
+    readonly itemStarts: number[] = [];
+  }
+
+  function dragStartOn(target: HTMLElement): Event {
+    const event = new Event('dragstart', { bubbles: true, cancelable: true });
+    target.dispatchEvent(event);
+    return event;
+  }
+
+  afterEach(() => {
+    document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
+  });
+
+  it('cancels a native dragstart from its content while it can be dragged', async () => {
+    const { fixture, instance, query } = renderHost(NativeHost);
+    await flush(fixture);
+    const thumb = query('[data-testid="thumb"]')!;
+    expect(dragStartOn(thumb).defaultPrevented).toBe(true);
+
+    instance.disabled.set(true);
+    await flush(fixture);
+    expect(dragStartOn(thumb).defaultPrevented).toBe(false);
+  });
+
+  it('the host touch-action follows a handle mounted and removed after the first render', async () => {
+    const { fixture, instance, query } = renderHost(NativeHost);
+    await flush(fixture);
+    const panel = query('[data-testid="panel"]')!;
+    expect(panel.style.touchAction).toBe('none');
+
+    instance.showHandle.set(true);
+    await flush(fixture);
+    expect(panel.style.touchAction).toBe('');
+
+    instance.showHandle.set(false);
+    await flush(fixture);
+    expect(panel.style.touchAction).toBe('none');
+  });
+
+  it('a handle drops touch-action: none while dragging is disabled', async () => {
+    const { fixture, instance, query } = renderHost(NativeHost);
+    instance.showHandle.set(true);
+    await flush(fixture);
+    const handle = query('[data-testid="handle"]')!;
+    expect(handle.style.touchAction).toBe('none');
+
+    instance.disabled.set(true);
+    await flush(fixture);
+    expect(handle.style.touchAction).toBe('');
+  });
+
+  it('a press on a [forDraggable] inside it drags the item and leaves the panel in place', async () => {
+    const { fixture, instance, query } = renderHost(NestedHost);
+    await flush(fixture);
+    const item = query('[data-testid="item"]')!;
+
+    fire(item, 'pointerdown', 0, 0);
+    fire(item, 'pointermove', 0, 30);
+    fire(item, 'pointerup', 0, 30);
+    await flush(fixture);
+
+    expect(instance.itemStarts).toEqual([0]);
+    expect(instance.panelStarts).toEqual([]);
+    expect(query('[data-testid="panel"]')!.style.translate).toBe('');
   });
 });

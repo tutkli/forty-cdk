@@ -11,6 +11,7 @@ import { FOR_CAROUSEL_CONTEXT, ForCarouselPrevious } from 'forty-cdk/carousel';
 import { FOR_CONTEXT_MENU_CONTEXT, ForContextMenuTrigger } from 'forty-cdk/context-menu';
 import { FOR_DATE_PICKER_CONTEXT, ForDatePickerTrigger } from 'forty-cdk/date-picker';
 import { FOR_DIALOG_CONTEXT, ForDialogTitle } from 'forty-cdk/dialog';
+import { FOR_DRAGGABLE_CONTEXT, ForDragHandle } from 'forty-cdk/drag-drop';
 import { FOR_DRAWER_CONTEXT, ForDrawerTitle } from 'forty-cdk/drawer';
 import {
   FOR_COMBOBOX_CONTEXT,
@@ -121,6 +122,14 @@ class ImpostorAccordionHost {}
   template: `<span forAvatarFallback></span>`,
 })
 class ImpostorAvatarHost {}
+
+@Component({
+  imports: [ForDragHandle],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [{ provide: FOR_DRAGGABLE_CONTEXT, useValue: {} }],
+  template: `<span forDragHandle></span>`,
+})
+class ImpostorDraggableHost {}
 
 @Component({
   imports: [ForCalendarHeading],
@@ -356,6 +365,15 @@ const GUARDED: readonly GuardedRoot[] = [
     root: '[forDialog]',
     piece: 'ForDialogTitle',
     host: ImpostorDialogHost,
+  },
+  {
+    entryPoint: 'drag-drop',
+    source: 'drag-drop/src/drag-drop-context.ts',
+    calls: 1,
+    token: 'FOR_DRAGGABLE_CONTEXT',
+    root: '[forDraggable] or [forFreeDrag]',
+    piece: 'ForDragHandle',
+    host: ImpostorDraggableHost,
   },
   {
     entryPoint: 'drawer',
