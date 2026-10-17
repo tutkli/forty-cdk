@@ -29,8 +29,18 @@ core, and `*forVirtualFor` renders the visible window with the position transfor
 `aria-setsize` / `aria-posinset` applied for you.
 
 ```html
-<div forVirtualViewport [virtualCount]="rows().length" [estimateSize]="44" style="height: 400px">
-  <div *forVirtualFor="let row of rows(); let item = virtualItem">{{ row.label }}</div>
+<div
+  forVirtualViewport
+  [virtualCount]="rows().length"
+  [estimateSize]="44"
+  role="list"
+  aria-label="Rows"
+  tabindex="0"
+  style="height: 400px"
+>
+  <div *forVirtualFor="let row of rows(); let item = virtualItem" role="listitem">
+    {{ row.label }}
+  </div>
 </div>
 ```
 
@@ -54,7 +64,15 @@ focus or an expanded detail: keys are recomputed whenever `*forVirtualFor` recei
 different function is bound, so each row's node and its measured size move with its item.
 
 `*forVirtualFor` writes the flat `aria-setsize` (the total count) and `aria-posinset` (`index + 1`)
-on each row root on every render, so it fits a flat list. A collection that binds its own positions,
+on each row root on every render, so it fits a flat list. Those attributes are read only on a role
+that supports them, so the row root needs one: `role="listitem"` inside a `role="list"` viewport as
+above, or `option` / `row` / `treeitem` / `article` in a matching container. On a role-less `<div>`
+assistive technology exposes no list and no count. The layer adds no role of its own.
+
+Give the viewport a label and `tabindex="0"` too when its rows hold nothing focusable. Some browsers
+make a scroll container focusable on their own and others, Safari among them, do not, so without the
+Tab stop a keyboard user there cannot scroll the list, and an `(endReached)` list never loads its
+next page for them. A collection that binds its own positions,
 such as a tree whose `[forTreeItem]` binds `[setSize]` / `[posInSet]` per level, uses `injectVirtualizer`
 directly, as the [Tree README's virtualized example](../tree/README.md#consumer-example) does.
 
@@ -109,8 +127,11 @@ const TICKERS = ['AAPL', 'MSFT', 'GOOG', 'AMZN', 'NVDA', 'META', 'TSLA', 'NFLX']
         class="viewport"
         [virtualCount]="rows().length"
         [estimateSize]="46"
+        role="list"
+        aria-label="Orders"
+        tabindex="0"
       >
-        <div *forVirtualFor="let row of rows(); let item = virtualItem" class="row">
+        <div *forVirtualFor="let row of rows(); let item = virtualItem" class="row" role="listitem">
           <span class="index">{{ item.index + 1 }}</span>
           <span class="label">{{ row.label }}</span>
           <span class="meta">{{ row.meta }}</span>
@@ -141,10 +162,11 @@ The Shape A turnkey path: bind `(endReached)` on `[forVirtualViewport]` and it b
 ## Vertical list
 
 ```html
-<div #scroll style="overflow: auto; height: 400px">
+<div #scroll role="list" aria-label="Rows" tabindex="0" style="overflow: auto; height: 400px">
   <div [style.height.px]="v.totalSize()" style="position: relative">
     @for (item of v.virtualItems(); track item.key) {
     <div
+      role="listitem"
       [attr.data-index]="item.index"
       [attr.aria-setsize]="items().length"
       [attr.aria-posinset]="item.index + 1"
@@ -191,6 +213,7 @@ element belongs to:
 @for (item of v.virtualItems(); track item.key) {
 <div
   #row
+  role="listitem"
   [attr.data-index]="item.index"
   [attr.aria-setsize]="items().length"
   [attr.aria-posinset]="item.index + 1"
@@ -223,11 +246,20 @@ Set `orientation: 'horizontal'` and apply `translateX` instead of `translateY`.
 The `totalSize()` drives the spacer's `width` rather than `height`:
 
 ```html
-<div #scroll style="overflow: auto; display: flex; width: 600px">
+<div
+  #scroll
+  role="list"
+  aria-label="Rows"
+  tabindex="0"
+  style="overflow: auto; display: flex; width: 600px"
+>
   <div [style.width.px]="v.totalSize()" style="position: relative; height: 100%">
     @for (item of v.virtualItems(); track item.key) {
     <div
+      role="listitem"
       [attr.data-index]="item.index"
+      [attr.aria-setsize]="items().length"
+      [attr.aria-posinset]="item.index + 1"
       [style.position]="'absolute'"
       [style.left.px]="item.start"
       [style.width.px]="item.size"
@@ -292,9 +324,14 @@ Wire directly onto `[forVirtualViewport]`; the viewport builds the detector inte
   [virtualCount]="rows().length"
   [estimateSize]="44"
   (endReached)="loadMore()"
+  role="list"
+  aria-label="Rows"
+  tabindex="0"
   style="height: 400px"
 >
-  <div *forVirtualFor="let row of rows(); let item = virtualItem">{{ row.label }}</div>
+  <div *forVirtualFor="let row of rows(); let item = virtualItem" role="listitem">
+    {{ row.label }}
+  </div>
 </div>
 ```
 
@@ -381,9 +418,27 @@ the real count:
 - `aria-posinset`: the 1-based position of the item in that full list
   (`item.index + 1`).
 
+The pair is announced only on a role that supports it: `listitem`, `option`, `row`,
+`treeitem`, `article`, and a few more. They are not global attributes, so on a role-less
+`<div>` the browser drops them and screen readers announce no list and no count. Give
+each row a supporting role and its container the matching one, with a label:
+
 ```html
-<div [attr.aria-setsize]="items().length" [attr.aria-posinset]="item.index + 1"></div>
+<div role="list" aria-label="Rows" tabindex="0">
+  <div role="listitem" [attr.aria-setsize]="items().length" [attr.aria-posinset]="item.index + 1">
+    {{ items()[item.index] }}
+  </div>
+</div>
 ```
+
+`*forVirtualFor` writes the pair for you, but the role is still yours to set on the row root.
+
+The scroll container needs a Tab stop when the rows hold nothing focusable. Safari does
+not make a scroll container focusable on its own, so without `tabindex="0"` a keyboard
+user there cannot scroll the list at all. Pair the Tab stop with a `:focus-visible` style.
+
+A keyed row (`[getItemKey]` on `[forVirtualViewport]`) keeps its focus when a reorder moves
+it: the directive never takes a focused row's node out of the document.
 
 ## Wrapping in a design system
 

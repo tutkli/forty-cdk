@@ -533,8 +533,12 @@ other list, because their reorder output describes a move within one dataset.
   [virtualCount]="rows().length"
   forVirtualReorder
   (itemReorder)="onReorder($event)"
+  role="list"
+  aria-label="Rows"
 >
-  <div *forVirtualFor="let row of rows()" forDraggable [dragData]="row.id">{{ row.label }}</div>
+  <div *forVirtualFor="let row of rows()" role="listitem" forDraggable [dragData]="row.id">
+    {{ row.label }}
+  </div>
 </div>
 ```
 

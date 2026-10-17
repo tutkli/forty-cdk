@@ -41,8 +41,11 @@ const TICKERS = ['AAPL', 'MSFT', 'GOOG', 'AMZN', 'NVDA', 'META', 'TSLA', 'NFLX']
         class="viewport"
         [virtualCount]="rows().length"
         [estimateSize]="46"
+        role="list"
+        aria-label="Orders"
+        tabindex="0"
       >
-        <div *forVirtualFor="let row of rows(); let item = virtualItem" class="row">
+        <div *forVirtualFor="let row of rows(); let item = virtualItem" class="row" role="listitem">
           <span class="index">{{ item.index + 1 }}</span>
           <span class="label">{{ row.label }}</span>
           <span class="meta">{{ row.meta }}</span>
@@ -95,6 +98,11 @@ const TICKERS = ['AAPL', 'MSFT', 'GOOG', 'AMZN', 'NVDA', 'META', 'TSLA', 'NFLX']
       border: 1px solid var(--ex-border, #e5e0d6);
       border-radius: var(--ex-radius-sm, 14px);
       background: var(--ex-surface, #ffffff);
+    }
+
+    .viewport:focus-visible {
+      outline: 2px solid var(--ex-accent, #0e7c6b);
+      outline-offset: 2px;
     }
 
     .row {
