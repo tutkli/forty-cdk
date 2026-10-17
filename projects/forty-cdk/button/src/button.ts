@@ -25,6 +25,12 @@ import { injectPressed } from './pressed';
  * calls `preventDefault()` to stop the page scrolling, even when disabled) — matching native
  * button and APG behavior.
  *
+ * A native `<button>` with no `type` attribute gets `type="button"`, so it never submits a form
+ * by accident. A consumer `type` is never overwritten, whether it is a static attribute, an
+ * `[attr.type]` binding or a `[type]` binding, and later writes to a binding are followed. A
+ * binding that resolves to `null` removes the attribute, so the button falls back to the HTML
+ * default (`submit` inside a form). A non-button host gets no `type`.
+ *
  * Disabled stays focusable: per the APG a disabled button must remain reachable by assistive
  * technology, so the native `disabled` attribute is never set. Instead `aria-disabled="true"` and
  * `data-disabled=""` are reflected and the activation handler becomes a no-op. `disabled` composes
@@ -52,7 +58,6 @@ import { injectPressed } from './pressed';
   selector: '[forButton]',
   exportAs: 'forButton',
   host: {
-    '[attr.type]': 'resolvedType',
     '[attr.role]': 'resolvedRole',
     '[attr.tabindex]': 'resolvedTabindex()',
     '[attr.aria-disabled]': "effectiveDisabled() ? 'true' : null",
@@ -68,8 +73,7 @@ import { injectPressed } from './pressed';
   },
 })
 export class ForButton {
-  readonly #initialType =
-    inject<ElementRef<HTMLElement>>(ElementRef).nativeElement.getAttribute('type');
+  readonly #host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   readonly #fieldset = inject(FOR_FIELDSET_CONTEXT, { optional: true });
 
   /**
@@ -106,10 +110,14 @@ export class ForButton {
   private readonly pressed = injectPressed({ disabled: this.effectiveDisabled });
   private readonly focusVisible = computed(() => this.#focused() && this.#keyboardModality());
 
-  private readonly resolvedType =
-    this.#initialType ?? (this.#activation.nativeButton ? 'button' : null);
   private readonly resolvedRole = this.#activation.nativeButton ? null : 'button';
   private readonly resolvedTabindex = this.#activation.tabindex;
+
+  constructor() {
+    if (this.#activation.nativeButton && !this.#host.hasAttribute('type')) {
+      this.#host.setAttribute('type', 'button');
+    }
+  }
 
   private onClick(event: MouseEvent): void {
     if (this.effectiveDisabled()) {

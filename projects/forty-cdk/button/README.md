@@ -58,19 +58,25 @@ Disabled buttons stay focusable so assistive technology can announce them. The n
 A surrounding disabled `[forFieldset]` disables the button too: its `disabled` input is OR'd with the group's, so `aria-disabled` / `data-disabled` are reflected and activation is suppressed. This matters most on a non-native host (`<div forButton>`), which a native `<fieldset disabled>` cannot reach.
 
 ```html
-<fieldset forFieldset [disabled]="locked()">
-  <legend forFieldsetLegend>Account</legend>
+<div forFieldset [disabled]="locked()">
+  <span forFieldsetLegend>Account</span>
   <button forButton (activate)="save()">Save</button>
-</fieldset>
+</div>
 ```
+
+On a native `<fieldset>` host, `[forFieldset]` sets the native `disabled` attribute, and HTML then disables every native `<button>` inside it: the button leaves the tab order and cannot be focused, whatever `forButton` does. The guarantee that a disabled button stays focusable holds for a non-native group host like the `<div>` above, and for a non-native button host (`<div forButton>`) in either group.
 
 ## Preserve consumer `type`
 
-A native `<button>` without an explicit `type` attribute defaults to `type="button"`. A consumer-set `type="submit"` is preserved:
+A native `<button>` without an explicit `type` attribute defaults to `type="button"`. A consumer-set `type` is preserved, whether it is a static attribute or a binding, and later writes to a binding are followed:
 
 ```html
 <button type="submit" forButton>Submit form</button>
+
+<button [attr.type]="kind()" forButton>Save</button>
 ```
+
+A binding that resolves to `null` removes the attribute, so the button falls back to the HTML default, which is `submit` inside a form.
 
 ## API
 
@@ -118,12 +124,12 @@ Implements the [WAI-ARIA Button pattern](https://www.w3.org/WAI/ARIA/apg/pattern
 forty-cdk ships no styles: put your own class on each piece and key your CSS off the `data-*` attributes listed under [API](#api), not off the `for*` selectors ([Styling forty-cdk](../../../docs/styling.md) explains why).
 
 ```css
-[forButton][data-disabled] {
+.btn[data-disabled] {
   opacity: 0.4;
   pointer-events: none;
 }
 
-[forButton][data-pressed] {
+.btn[data-pressed] {
   transform: scale(0.97);
 }
 ```

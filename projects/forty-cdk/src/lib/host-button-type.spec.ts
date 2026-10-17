@@ -206,8 +206,11 @@ const clickOnlyResetsPointerClassification = (code: string): boolean =>
 const EXCLUSIONS: Readonly<Record<string, { reason: string; holds: (code: string) => boolean }>> = {
   forButton: {
     reason:
-      'preserves a consumer `type` through its own `resolvedType`: a real submit button is legitimate usage',
-    holds: (code) => code.includes('resolvedType') && !code.includes('hostButtonType('),
+      'preserves a consumer `type`, static or bound, by never binding one: a real submit button is legitimate usage',
+    holds: (code) =>
+      code.includes(`setAttribute('type', 'button')`) &&
+      !code.includes(`'[attr.type]'`) &&
+      !code.includes('hostButtonType('),
   },
   forTooltipTrigger: {
     reason:

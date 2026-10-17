@@ -14,8 +14,9 @@ import { ElementRef, inject, signal, type Signal } from '@angular/core';
  * `type="button"` treats a consumer `type="submit"` as an authoring error rather
  * than an override, so activating the control never submits a form.
  * `[forButton]` is the one piece that preserves the consumer's `type` (a
- * `[forButton]` on a real submit button is valid usage) and resolves it through
- * its own `resolvedType` instead of this helper.
+ * `[forButton]` on a real submit button is valid usage): it binds no `type` at
+ * all and only writes `type="button"` at construction on a native button that
+ * has none, so a consumer binding always wins.
  *
  * The host's tag name cannot change after construction, so the returned signal is
  * constant. Must be invoked in an injection context.

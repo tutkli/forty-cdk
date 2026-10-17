@@ -18,6 +18,40 @@ class NativeButtonHost {}
 class NativeSubmitButtonHost {}
 
 @Component({
+  host: { 'data-fixture': 'attr-bound-type-host' },
+  imports: [ForButton],
+  template: `<form (submit)="onSubmit($event)">
+    <button forButton [attr.type]="type()">Save</button>
+  </form>`,
+})
+class AttrBoundTypeHost {
+  readonly type = signal<string | null>('submit');
+  readonly submits = signal(0);
+
+  onSubmit(event: Event): void {
+    event.preventDefault();
+    this.submits.update((count) => count + 1);
+  }
+}
+
+@Component({
+  host: { 'data-fixture': 'prop-bound-type-host' },
+  imports: [ForButton],
+  template: `<form (submit)="onSubmit($event)">
+    <button forButton [type]="type()">Save</button>
+  </form>`,
+})
+class PropBoundTypeHost {
+  readonly type = signal<'submit' | 'reset' | 'button'>('submit');
+  readonly submits = signal(0);
+
+  onSubmit(event: Event): void {
+    event.preventDefault();
+    this.submits.update((count) => count + 1);
+  }
+}
+
+@Component({
   host: { 'data-fixture': 'custom-host' },
   imports: [ForButton],
   template: `<div forButton>Custom</div>`,
@@ -111,6 +145,45 @@ describe('ForButton', () => {
       const r = renderHost(NativeSubmitButtonHost);
       const btn = r.query<HTMLButtonElement>('[forButton]')!;
       expect(btn.getAttribute('type')).toBe('submit');
+    });
+
+    it('keeps an attribute-bound type="submit" and follows later writes', async () => {
+      const r = renderHost(AttrBoundTypeHost);
+      const btn = r.query<HTMLButtonElement>('[forButton]')!;
+      expect(btn.getAttribute('type')).toBe('submit');
+
+      r.instance.type.set('reset');
+      await r.flush();
+      expect(btn.getAttribute('type')).toBe('reset');
+    });
+
+    it('submits its form through an attribute-bound type="submit"', () => {
+      const r = renderHost(AttrBoundTypeHost);
+      r.query<HTMLButtonElement>('[forButton]')!.click();
+      expect(r.instance.submits()).toBe(1);
+    });
+
+    it('falls back to the HTML default when the attribute binding resolves to null', async () => {
+      const r = renderHost(AttrBoundTypeHost);
+      r.instance.type.set(null);
+      await r.flush();
+      expect(r.query<HTMLButtonElement>('[forButton]')!.hasAttribute('type')).toBe(false);
+    });
+
+    it('keeps a property-bound type="submit" and follows later writes', async () => {
+      const r = renderHost(PropBoundTypeHost);
+      const btn = r.query<HTMLButtonElement>('[forButton]')!;
+      expect(btn.getAttribute('type')).toBe('submit');
+
+      r.instance.type.set('reset');
+      await r.flush();
+      expect(btn.getAttribute('type')).toBe('reset');
+    });
+
+    it('submits its form through a property-bound type="submit"', () => {
+      const r = renderHost(PropBoundTypeHost);
+      r.query<HTMLButtonElement>('[forButton]')!.click();
+      expect(r.instance.submits()).toBe(1);
     });
   });
 
