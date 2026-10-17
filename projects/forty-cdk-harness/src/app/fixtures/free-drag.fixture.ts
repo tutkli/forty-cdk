@@ -58,8 +58,41 @@ import { ForDragHandle, ForFreeDrag } from 'forty-cdk/drag-drop';
         border: 1px solid #333;
         box-sizing: border-box;
       }
+      .translate-centered {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 140px;
+        height: 80px;
+        translate: -50% -50%;
+        background: #fff;
+        border: 1px solid #333;
+        box-sizing: border-box;
+      }
+      .canvas {
+        position: relative;
+        width: 300px;
+        height: 200px;
+        margin: 40px;
+        overflow: auto;
+        border: 1px solid #ccc;
+      }
+      .canvas-content {
+        position: relative;
+        height: 800px;
+      }
+      .card {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        width: 60px;
+        height: 60px;
+        background: #4f46e5;
+        touch-action: none;
+      }
       .dialog header,
-      .centered header {
+      .centered header,
+      .translate-centered header {
         display: flex;
         align-items: center;
         gap: 4px;
@@ -87,6 +120,25 @@ import { ForDragHandle, ForFreeDrag } from 'forty-cdk/drag-drop';
         <header forFreeDrag rootElement=".centered" boundary=".stage" data-testid="centered-header">
           Centred
         </header>
+      </div>
+    </div>
+
+    <div class="stage" data-testid="translate-stage">
+      <div class="translate-centered" data-testid="translate-centered">
+        <header
+          forFreeDrag
+          rootElement=".translate-centered"
+          boundary=".stage"
+          data-testid="translate-centered-header"
+        >
+          Translate-centred
+        </header>
+      </div>
+    </div>
+
+    <div class="canvas" data-testid="canvas">
+      <div class="canvas-content">
+        <div class="card" forFreeDrag boundary=".canvas" data-testid="card"></div>
       </div>
     </div>
   `,
