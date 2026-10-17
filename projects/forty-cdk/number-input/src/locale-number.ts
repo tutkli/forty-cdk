@@ -82,6 +82,21 @@ function promoteLenientDecimalDot(input: string, separators: LocaleSeparators): 
  */
 const MINUS_VARIANTS = /[−－]/g;
 
+const NON_ASCII_DECIMAL_DIGIT = /(?![0-9])\p{Nd}/gu;
+
+const DECIMAL_DIGIT = /^\p{Nd}$/u;
+
+function toAsciiDigits(text: string): string {
+  return text.replace(NON_ASCII_DECIMAL_DIGIT, (digit) => {
+    const codePoint = digit.codePointAt(0) ?? 0;
+    let zero = codePoint;
+    while (DECIMAL_DIGIT.test(String.fromCodePoint(zero - 1))) {
+      zero--;
+    }
+    return String((codePoint - zero) % 10);
+  });
+}
+
 /**
  * Group / decimal separators (and integer grouping sizes) for a given locale,
  * derived once via `Intl`. Falls back to `,` group / `.` decimal / `[3]` sizes
@@ -118,7 +133,9 @@ function deriveGroupSizes(integerLengths: readonly number[]): readonly number[] 
 
 /**
  * Parse locale-formatted numeric `text` into a number, or `null` when it is not
- * a valid plain decimal for the given `separators`. The locale minus-sign
+ * a valid plain decimal for the given `separators`. Every Unicode decimal digit
+ * (the Arabic-Indic digits `ar-EG` formats with, the Persian ones of `fa-IR`,
+ * fullwidth digits, …) reads as its ASCII value. The locale minus-sign
  * variants (U+2212 / U+FF0D) are normalized to ASCII `-`, the locale decimal
  * separator is normalized to `.`, group separators are validated for placement
  * then stripped, and the canonical form is validated against a strict numeric
@@ -162,12 +179,15 @@ export function parseLocaleNumber(
   options?: { readonly lenientGrouping?: boolean },
 ): number | null {
   const { group, decimal, groupSizes } = separators;
+  const digits = toAsciiDigits(text);
   // When the locale groups with a space (NBSP / NNBSP in fr-style locales),
   // normalize a whitespace-space variant to the canonical separator only when it
   // sits between two digits, so a group-separator space still parses regardless
   // of which variant was typed while a space before a trailing literal is left
   // for the noise strip instead of being promoted to a group separator.
-  const spaceNormalized = isSpaceSeparator(group) ? text.replace(DIGIT_GROUPED_SPACE, group) : text;
+  const spaceNormalized = isSpaceSeparator(group)
+    ? digits.replace(DIGIT_GROUPED_SPACE, group)
+    : digits;
   const minusNormalized = spaceNormalized.replace(MINUS_VARIANTS, '-');
   const input = options?.lenientGrouping
     ? promoteLenientDecimalDot(minusNormalized, separators)

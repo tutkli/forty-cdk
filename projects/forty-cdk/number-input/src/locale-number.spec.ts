@@ -204,4 +204,50 @@ describe('parseLocaleNumber', () => {
       expect(parseLocaleNumber('1.234', DE)).toBe(1234);
     });
   });
+
+  describe('decimal digits of non-Latin numbering systems (#2311)', () => {
+    it('parses an ar-EG formatted number written in Arabic-Indic digits', () => {
+      expect(parseLocaleNumber('١٬٢٣٤٫٥', localeSeparators('ar-EG'))).toBe(1234.5);
+    });
+
+    it.each(['ar-EG', 'fa-IR', 'bn-BD', 'hi-IN-u-nu-deva'])(
+      'reads back every number %s formats in its default numbering system',
+      (locale) => {
+        const separators = localeSeparators(locale);
+        const format = new Intl.NumberFormat(locale, { maximumFractionDigits: 2 });
+        for (const value of [0, 7, 1234.5, -1234.5, 1234567.89]) {
+          expect(parseLocaleNumber(format.format(value), separators)).toBe(value);
+          expect(
+            parseLocaleNumber(format.format(value), separators, { lenientGrouping: true }),
+          ).toBe(value);
+        }
+      },
+    );
+
+    it('reads back an ar-EG currency display', () => {
+      const display = new Intl.NumberFormat('ar-EG', { style: 'currency', currency: 'EGP' }).format(
+        1234.5,
+      );
+      expect(parseLocaleNumber(display, localeSeparators('ar-EG'))).toBe(1234.5);
+    });
+
+    it('parses an edit that drops one digit from an ar-EG grouped display', () => {
+      expect(
+        parseLocaleNumber('١٬٢٣٫٥', localeSeparators('ar-EG'), { lenientGrouping: true }),
+      ).toBe(123.5);
+    });
+
+    it('reads Persian digits against the Arabic-Indic separators fa-IR shares', () => {
+      expect(parseLocaleNumber('۱۲۳۴٫۵', localeSeparators('fa-IR'))).toBe(1234.5);
+    });
+
+    it('reads a digit from any Unicode decimal-digit block', () => {
+      expect(parseLocaleNumber('１２', EN)).toBe(12);
+      expect(parseLocaleNumber('𝟗𝟘', EN)).toBe(90);
+    });
+
+    it('still rejects a non-Latin numeral that is not a decimal digit', () => {
+      expect(parseLocaleNumber('Ⅻ', EN)).toBeNull();
+    });
+  });
 });
