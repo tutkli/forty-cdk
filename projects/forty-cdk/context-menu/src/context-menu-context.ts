@@ -72,6 +72,12 @@ export interface ContextMenuPieceContext {
   readonly content: Signal<HTMLElement | null>;
   /** Closes the menu with `reason`. */
   closeMenu(reason: ForMenuCloseReason): void;
+  /** Where the most recent open asked the initial focus to land. */
+  readonly initialFocus: Signal<'first' | 'last'>;
+  /** Focuses the first or last enabled item, returning whether one took focus. */
+  focusInitialEnabledItem(target: 'first' | 'last'): boolean;
+  /** Fires `(autoFocusOnOpen)`, returning `true` when the consumer vetoed the move. */
+  emitAutoFocusOnOpen(): boolean;
 }
 
 /**
