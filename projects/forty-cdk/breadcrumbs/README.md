@@ -126,10 +126,10 @@ Implements the [WAI-ARIA Breadcrumb pattern](https://www.w3.org/WAI/ARIA/apg/pat
 
 ## Styling
 
-forty-cdk ships no styles. Style the current item via `[aria-current="page"]`.
+forty-cdk ships no styles: put your own class on each piece and key your CSS off the `aria-current="page"` the current item reflects, not off the `for*` selectors ([Styling forty-cdk](../../../docs/styling.md) explains why).
 
 ```css
-[forBreadcrumbItem][aria-current='page'] {
+.bc-link[aria-current='page'] {
   font-weight: bold;
   color: inherit;
   text-decoration: none;
