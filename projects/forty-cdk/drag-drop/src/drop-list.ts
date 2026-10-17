@@ -38,6 +38,7 @@ import {
   resolveBoundaryElement,
 } from 'forty-cdk/core';
 import { createAutoScroller, type AutoScroller } from './auto-scroll';
+import { clipRegion, findClippingAncestors, type ClippingAncestor } from './clip-region';
 import { buildDragSlots, indexOfSlot, stepSlot } from './drag-positions';
 import {
   FOR_DROP_LIST_CONTEXT,
@@ -71,6 +72,7 @@ interface DropListGeomEntry {
   scrollLeft: number;
   scrollTop: number;
   itemRects: readonly DragRect[];
+  clippers: readonly ClippingAncestor[];
 }
 
 function freezeRect(rect: DragRect): DragRect {
@@ -551,6 +553,7 @@ export class ForDropList implements ForDropListContext {
 
   #snapshotContainer(ctx: ForDropListContext, lifted: HTMLElement): DropListGeomEntry {
     const items = ctx.items();
+    const win = this.#document.defaultView;
     return {
       items,
       containerRect: freezeRect(ctx.host.getBoundingClientRect()),
@@ -559,6 +562,7 @@ export class ForDropList implements ForDropListContext {
       itemRects: items
         .filter((h) => h.host !== lifted)
         .map((h) => freezeRect(h.host.getBoundingClientRect())),
+      clippers: win ? findClippingAncestors(ctx.host, win) : [],
     };
   }
 
@@ -569,18 +573,25 @@ export class ForDropList implements ForDropListContext {
     if (!cache || !cached || cached.items !== ctx.items()) {
       const fresh = this.#snapshotContainer(ctx, lifted);
       cache?.set(ctx, fresh);
-      return { rect: fresh.containerRect, itemRects: fresh.itemRects, ...axis };
+      return {
+        rect: fresh.containerRect,
+        itemRects: fresh.itemRects,
+        clip: clipRegion(fresh.clippers),
+        ...axis,
+      };
     }
     const freshRect = ctx.host.getBoundingClientRect();
     const dx =
       freshRect.left - cached.containerRect.left - (ctx.host.scrollLeft - cached.scrollLeft);
     const dy = freshRect.top - cached.containerRect.top - (ctx.host.scrollTop - cached.scrollTop);
+    const clip = clipRegion(cached.clippers);
     if (dx === 0 && dy === 0) {
-      return { rect: freezeRect(freshRect), itemRects: cached.itemRects, ...axis };
+      return { rect: freezeRect(freshRect), itemRects: cached.itemRects, clip, ...axis };
     }
     return {
       rect: freezeRect(freshRect),
       itemRects: cached.itemRects.map((r) => shiftRect(r, dx, dy)),
+      clip,
       ...axis,
     };
   }

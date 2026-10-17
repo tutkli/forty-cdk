@@ -226,6 +226,54 @@ describe('resolveDropTarget', () => {
     });
   });
 
+  describe('clipped containers', () => {
+    const longItems = Array.from({ length: 50 }, (_, i) => rect(0, i * 40, 200, i * 40 + 40));
+    const clippedA = {
+      ...container(0, 0, 200, 2000, longItems),
+      clip: rect(-Infinity, 0, Infinity, 300),
+    };
+    const stackedB = container(0, 320, 200, 440, [
+      rect(0, 320, 200, 360),
+      rect(0, 360, 200, 400),
+      rect(0, 400, 200, 440),
+    ]);
+
+    it('a point over a connected container resolves to it, not to the clipped source behind it', () => {
+      const result = resolveDropTarget({ x: 100, y: 400 }, [clippedA, stackedB]);
+      expect(result!.containerIndex).toBe(1);
+      expect(result!.index).toBe(2);
+    });
+
+    it('without a clip the source rect still claims the same point', () => {
+      const unclippedA = container(0, 0, 200, 2000, longItems);
+      expect(resolveDropTarget({ x: 100, y: 400 }, [unclippedA, stackedB])!.containerIndex).toBe(0);
+    });
+
+    it('a point inside the visible region of the clipped container still resolves to it', () => {
+      const result = resolveDropTarget({ x: 100, y: 130 }, [clippedA, stackedB]);
+      expect(result!.containerIndex).toBe(0);
+      expect(result!.index).toBe(3);
+    });
+
+    it('a point below a short connected list snaps to it rather than to the clipped region above', () => {
+      const result = resolveDropTarget({ x: 100, y: 580 }, [clippedA, stackedB]);
+      expect(result!.containerIndex).toBe(1);
+      expect(result!.index).toBe(3);
+    });
+
+    it('a container clipped out of view entirely is never the nearest one', () => {
+      const hiddenA = { ...container(0, 0, 200, 2000, longItems), clip: rect(0, 0, 200, -1) };
+      const farB = container(0, 900, 200, 1000, []);
+      expect(resolveDropTarget({ x: 100, y: 10 }, [hiddenA, farB])!.containerIndex).toBe(1);
+    });
+
+    it('falls back to the unclipped rects when every container is clipped out of view', () => {
+      const hiddenA = { ...container(0, 0, 200, 100, []), clip: rect(0, 0, 200, -1) };
+      const hiddenB = { ...container(0, 500, 200, 600, []), clip: rect(0, 0, 200, -1) };
+      expect(resolveDropTarget({ x: 100, y: 450 }, [hiddenA, hiddenB])!.containerIndex).toBe(1);
+    });
+  });
+
   describe('per-container orientation / dir', () => {
     const vertical = container(0, 0, 200, 160, [
       rect(0, 0, 200, 40),
