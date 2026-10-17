@@ -1671,6 +1671,19 @@ describe('ForNumberInput', () => {
       expect(byId(el, 'qty').getAttribute('aria-required')).toBe('true');
     });
 
+    it('takes its lower bound from the schema min rule, with no [min] binding', async () => {
+      const { el, fixture, flush } = renderHost(SignalFormsHost);
+      const input = byId(el, 'qty');
+      await flush();
+      expect(input.getAttribute('aria-valuemin')).toBe('1');
+
+      fixture.componentInstance.model.set({ qty: 1 });
+      await flush();
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      await flush();
+      expect(fixture.componentInstance.model().qty).toBe(1);
+    });
+
     @Component({
       imports: [ForNumberInput, FormField],
       template: `

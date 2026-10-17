@@ -393,6 +393,7 @@ import {
 
 @Component({
   selector: '[myTimePicker]',
+  template: '<ng-content />',
   hostDirectives: [
     {
       directive: ForTimePicker,

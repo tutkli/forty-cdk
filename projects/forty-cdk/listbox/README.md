@@ -127,12 +127,12 @@ With `[forListboxReorder]` on the listbox, drag a chip to a new place, or focus 
 
 ```ts
 import { Component, signal } from '@angular/core';
-import { form, required, requiredError, validate } from '@angular/forms/signals';
+import { form, FormField, required, requiredError, validate } from '@angular/forms/signals';
 import { ForListbox, ForListboxOption } from 'forty-cdk/listbox';
 
 @Component({
   selector: 'demo-priorities',
-  imports: [ForListbox, ForListboxOption /* , FormField from @angular/forms */],
+  imports: [ForListbox, ForListboxOption, FormField],
   template: `
     <ul forListbox multiple [formField]="prefs.priorities" aria-label="Priorities">
       <li>

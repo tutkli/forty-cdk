@@ -99,14 +99,14 @@ With a time-capable adapter, a `granularity` finer than `'day'` appends hour / m
 
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
-import { form } from '@angular/forms/signals';
+import { form, FormField } from '@angular/forms/signals';
 import { CalendarDate } from '@internationalized/date';
 import { ForDateField, ForDateFieldLiteral, ForDateFieldSegment } from 'forty-cdk/date-field';
 
 @Component({
   selector: 'app-dob-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ForDateField, ForDateFieldSegment, ForDateFieldLiteral],
+  imports: [ForDateField, ForDateFieldSegment, ForDateFieldLiteral, FormField],
   template: `
     <div
       forDateField

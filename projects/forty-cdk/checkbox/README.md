@@ -134,12 +134,12 @@ One class and one directive, three states. `disabled` and `readonly` both keep t
 
 ```ts
 import { Component, signal } from '@angular/core';
-import { form, required } from '@angular/forms/signals';
+import { form, FormField, required } from '@angular/forms/signals';
 import { ForCheckbox } from 'forty-cdk/checkbox';
 
 @Component({
   selector: 'demo-checkout',
-  imports: [ForCheckbox /* , FormField from @angular/forms */],
+  imports: [ForCheckbox, FormField],
   template: `
     <button forCheckbox class="cb-row" [formField]="checkout.acceptTerms">
       <span class="cb">

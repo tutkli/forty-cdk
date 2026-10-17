@@ -1,5 +1,6 @@
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, sep } from 'node:path';
+import { NgtscProgram, readConfiguration } from '@angular/compiler-cli';
 import ts from 'typescript';
 
 import { snippetsOf } from './lib/doc-snippets.mjs';
@@ -87,19 +88,29 @@ writeFileSync(
 
 const messageOf = (diagnostic) => ts.flattenDiagnosticMessageText(diagnostic.messageText, ' ');
 
-const config = ts.getParsedCommandLineOfConfigFile(tsconfig, undefined, {
-  ...ts.sys,
-  onUnRecoverableConfigFileDiagnostic: (diagnostic) => {
-    throw new Error(`[check-doc-snippets] ${messageOf(diagnostic)}`);
-  },
-});
+const config = readConfiguration(tsconfig);
+if (config.errors.length > 0) {
+  throw new Error(`[check-doc-snippets] ${config.errors.map(messageOf).join('; ')}`);
+}
 const augments = (file) => MODULE_AUGMENTATION.test(byFile.get(keyOf(file))?.snippet.code ?? '');
 const programs = [
-  config.fileNames.filter((file) => !augments(file)),
-  ...config.fileNames.filter(augments).map((file) => [file]),
+  config.rootNames.filter((file) => !augments(file)),
+  ...config.rootNames.filter(augments).map((file) => [file]),
 ]
   .filter((rootNames) => rootNames.length > 0)
-  .map((rootNames) => ts.createProgram({ rootNames, options: config.options }));
+  .map(
+    (rootNames) =>
+      new NgtscProgram(rootNames, config.options, ts.createCompilerHost(config.options)),
+  );
+
+const diagnosticsOf = (program) => [
+  ...program.getTsOptionDiagnostics(),
+  ...program.getNgOptionDiagnostics(),
+  ...program.getTsSyntacticDiagnostics(),
+  ...program.getTsSemanticDiagnostics(),
+  ...program.getNgStructuralDiagnostics(),
+  ...program.getNgSemanticDiagnostics(),
+];
 
 const failures = [];
 const outsideFences = new Set();
@@ -110,7 +121,7 @@ const reportOutsideFences = (failure) => {
     failures.push(failure);
   }
 };
-for (const diagnostic of programs.flatMap((program) => ts.getPreEmitDiagnostics(program))) {
+for (const diagnostic of programs.flatMap(diagnosticsOf)) {
   const message = messageOf(diagnostic);
   if (diagnostic.file === undefined) {
     reportOutsideFences({ path: rel(tsconfig), line: 1, message });

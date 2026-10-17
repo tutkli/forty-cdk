@@ -51,7 +51,7 @@ import { FOR_NUMBER_INPUT_DEFAULTS } from 'forty-cdk/defaults';
  * <!-- With Signal Forms + Field (auto-wired): -->
  * <div forField>
  *   <label forLabel>Quantity</label>
- *   <input forNumberInput [formField]="order.qty" [min]="1" />
+ *   <input forNumberInput [formField]="order.qty" />
  * </div>
  * ```
  */

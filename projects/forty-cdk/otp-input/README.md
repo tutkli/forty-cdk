@@ -58,7 +58,7 @@ import { ForOtpInput, ForOtpInputSlot } from 'forty-cdk/otp-input';
   selector: 'demo-otp-field',
   imports: [ForField, ForLabel, ForFieldError, ForOtpInput, ForOtpInputSlot, FormField],
   template: `
-    <div forField>
+    <div forField #field="forField">
       <label forLabel>One-time code</label>
       <div
         forOtpInput
@@ -74,7 +74,7 @@ import { ForOtpInput, ForOtpInputSlot } from 'forty-cdk/otp-input';
           </div>
         }
       </div>
-      @if (err.shown()) {
+      @if (field.invalid()) {
         <p forFieldError #err="forFieldError">{{ err.messages().join(', ') }}</p>
       }
     </div>

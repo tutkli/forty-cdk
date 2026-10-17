@@ -6,7 +6,7 @@ import { PAGE_DOCS, SITE_DOCS } from './testing/doc-corpus';
  * The fence roster `check-doc-snippets.mjs` compiles from
  * ([#1918](https://github.com/tutkli/forty-cdk/issues/1918)): which fences
  * count as TypeScript, the line each is addressed by, and how a marker exempts
- * one. The gate itself runs `tsc` and needs a filesystem, so what is stated
+ * one. The gate itself runs the Angular compiler and needs a filesystem, so what is stated
  * here is the extraction it trusts — a fence the roster misses is a fence no
  * gate compiles, and a marker read one line off exempts the wrong one.
  */
