@@ -1,4 +1,4 @@
-import { el, expect, expectFocused, gotoFixture, test } from './_helpers';
+import { el, expect, expectFocused, gotoFixture, isMobileProject, test } from './_helpers';
 
 test.describe('DateField', () => {
   test('roving entry: one segment is tabbable and Tab enters then exits the field', async ({
@@ -136,5 +136,35 @@ test.describe('DateField', () => {
     await el(page, 'hour').focus();
     await page.keyboard.press('ArrowUp');
     await expect(el(page, 'value')).toHaveText('2026-06-15 15:30');
+  });
+
+  test.describe('@mobile on-screen keyboard', () => {
+    test('@mobile a tapped segment is an editing host that takes on-screen keyboard digits', async ({
+      page,
+    }, testInfo) => {
+      test.skip(!isMobileProject(testInfo), 'locator.tap() requires hasTouch:true');
+      await gotoFixture(page, 'date-field');
+
+      await el(page, 'month').tap();
+      await expectFocused(el(page, 'month'));
+      expect(await el(page, 'month').evaluate((node: HTMLElement) => node.isContentEditable)).toBe(
+        true,
+      );
+
+      await page.keyboard.insertText('1');
+      await page.keyboard.insertText('2');
+      await expectFocused(el(page, 'day'));
+      await expect(el(page, 'month')).toHaveText('12');
+
+      await page.keyboard.insertText('0');
+      await page.keyboard.insertText('5');
+      await expectFocused(el(page, 'year'));
+
+      for (const digit of '2026') {
+        await page.keyboard.insertText(digit);
+      }
+      await expect(el(page, 'value')).toHaveText('2026-12-05');
+      await expect(el(page, 'year')).toHaveText('2026');
+    });
   });
 });

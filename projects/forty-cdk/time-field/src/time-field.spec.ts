@@ -974,6 +974,53 @@ describe('ForTimeField', () => {
     });
   });
 
+  describe('on-screen keyboard entry (#2276)', () => {
+    it('keeps the AM/PM segment editable on a text keyboard and sets the period from inserted text', async () => {
+      const r = renderHost(Host);
+      r.instance.hourCycle.set(12);
+      await flush(r.fixture);
+      expect(seg(r, 'hour').getAttribute('inputmode')).toBe('numeric');
+      expect(seg(r, 'dayPeriod').getAttribute('contenteditable')).toBe('plaintext-only');
+      expect(seg(r, 'dayPeriod').hasAttribute('inputmode')).toBe(false);
+
+      const event = new InputEvent('beforeinput', {
+        bubbles: true,
+        cancelable: true,
+        inputType: 'insertText',
+        data: 'p',
+      });
+      seg(r, 'dayPeriod').dispatchEvent(event);
+      await flush(r.fixture);
+      expect(event.defaultPrevented).toBe(true);
+      expect(seg(r, 'dayPeriod').textContent?.trim()).toBe('PM');
+    });
+
+    it('sets the period from a composition before it ends, and restores the segment text', async () => {
+      const r = renderHost(Host);
+      r.instance.hourCycle.set(12);
+      await flush(r.fixture);
+      const dayPeriod = seg(r, 'dayPeriod');
+      const text = dayPeriod.firstChild!;
+
+      dayPeriod.dispatchEvent(
+        new InputEvent('beforeinput', {
+          bubbles: true,
+          inputType: 'insertCompositionText',
+          data: 'p',
+        }),
+      );
+      text.nodeValue = 'p--';
+      dayPeriod.dispatchEvent(
+        new InputEvent('input', { bubbles: true, inputType: 'insertCompositionText', data: 'p' }),
+      );
+      expect(text.nodeValue?.trim()).toBe('--');
+
+      await flush(r.fixture);
+      expect(dayPeriod.firstChild).toBe(text);
+      expect(dayPeriod.textContent?.trim()).toBe('PM');
+    });
+  });
+
   describe('disabled & readonly', () => {
     it('disables the field: segments leave the tab order and editing is blocked', async () => {
       const r = renderHost(Host);

@@ -336,6 +336,7 @@ Composes the [WAI-ARIA Spinbutton pattern](https://www.w3.org/WAI/ARIA/apg/patte
 - **Literals are `aria-hidden`** and never focusable, so assistive tech reads only the spinbutton segments.
 - **Boolean `data-*`** on each segment, present when true and absent when false: `data-highlighted` (focused/roving), `data-placeholder` (empty), `data-disabled`, `data-readonly`.
 - **`aria-readonly` belongs on the segments, not the group.** WAI-ARIA supports it on `role="spinbutton"` but not on `role="group"`, so each segment carries `aria-readonly="true"` while the group reflects the `data-readonly` styling hook only.
+- **On-screen keyboards work.** A segment of a field that is neither disabled nor read-only is a `contenteditable="plaintext-only"` editing host with `inputmode="numeric"`, so tapping it on a touch device opens the numeric keypad (the AM/PM segment opens the text keyboard). What the keyboard or an input method types goes through the [Keyboard](#keyboard) map above and is never inserted into the segment, which keeps rendering `{{ seg.text }}`.
 
 ## Styling
 
@@ -343,11 +344,14 @@ The library is styleless, so style the boolean `data-*` hooks yourself: `[data-h
 
 forty-cdk ships no styles: put your own class on each piece and key your CSS off the `data-*` attributes listed under [Data attributes](#data-attributes), not off the `for*` selectors ([Styling forty-cdk](../../../docs/styling.md) explains why).
 
+A segment is an editing host, so the browser paints a text caret in the focused one. Hide it with `caret-color: transparent` when your highlight already marks that segment.
+
 ```css
 .date-field-segment[data-placeholder] {
   color: GrayText;
 }
 .date-field-segment[data-highlighted] {
+  caret-color: transparent;
   background: Highlight;
   color: HighlightText;
 }
