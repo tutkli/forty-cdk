@@ -5,6 +5,7 @@ import {
   computed,
   effect,
   inject,
+  isSignal,
   PLATFORM_ID,
   signal,
   untracked,
@@ -74,13 +75,13 @@ export interface VirtualizerOptions {
    */
   readonly estimateVersion?: Signal<unknown>;
   /**
-   * Offset, in CSS pixels, added before the first item along the scroll axis.
-   * Every item's computed offset and every `scrollToIndex` / `scrollToOffset`
-   * alignment shifts by this amount, so a sticky header rendered inside the
-   * scroller no longer overlaps the row a cross-window keyboard move lands on.
-   * Defaults to `0`. Should be a stable value.
+   * The list's offset, in CSS pixels, from the start of the scroll container's
+   * content: the size of whatever the scroller holds before the list. Every
+   * item's `start` and every `scrollToIndex` target include it, `totalSize`
+   * does not, and `scrollToOffset` stays an absolute container offset. Pass a
+   * signal when the offset can change after the first render. Defaults to `0`.
    */
-  readonly scrollMargin?: number;
+  readonly scrollMargin?: number | Signal<number>;
 }
 
 /** A single item in the currently rendered window. */
@@ -254,6 +255,7 @@ export function injectVirtualizer(options: VirtualizerOptions): ForVirtualizer {
   const horizontal = (options.orientation ?? 'vertical') === 'horizontal';
   const overscan = options.overscan ?? DEFAULT_OVERSCAN;
   const scrollMargin = options.scrollMargin ?? 0;
+  const readScrollMargin = isSignal(scrollMargin) ? scrollMargin : () => scrollMargin;
   const notify = signal(0, { equal: () => false });
   const mounted = signal(false);
   const { getItemKey, dataVersion, estimateVersion } = options;
@@ -268,7 +270,7 @@ export function injectVirtualizer(options: VirtualizerOptions): ForVirtualizer {
     getItemKey: itemKey,
     overscan,
     horizontal,
-    scrollMargin,
+    scrollMargin: 0,
     scrollToFn: elementScroll,
     observeElementRect,
     observeElementOffset: observeOffsetAcrossReattach,
@@ -289,11 +291,18 @@ export function injectVirtualizer(options: VirtualizerOptions): ForVirtualizer {
       itemKey = getItemKey === undefined ? (index) => index : (index) => getItemKey(index);
     }
     estimatedVersion = estimate;
+    const margin = readScrollMargin();
     const stale =
       count !== virtualizer.options.count ||
+      margin !== virtualizer.options.scrollMargin ||
       (itemKey !== undefined && itemKey !== virtualizer.options.getItemKey);
     if (stale) {
-      virtualizer.setOptions({ ...virtualizer.options, count, getItemKey: itemKey });
+      virtualizer.setOptions({
+        ...virtualizer.options,
+        count,
+        getItemKey: itemKey,
+        scrollMargin: margin,
+      });
       virtualizer.getTotalSize();
     }
   };

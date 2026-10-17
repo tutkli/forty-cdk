@@ -1,4 +1,5 @@
 import {
+  afterEveryRender,
   computed,
   DestroyRef,
   Directive,
@@ -7,6 +8,7 @@ import {
   inject,
   input,
   numberAttribute,
+  signal,
 } from '@angular/core';
 
 import {
@@ -82,9 +84,10 @@ export class ForTableVirtualized {
    * Scroll container. Defaults to the table root element (the scroll container in `<div>` grid
    * mode). Bind it explicitly when the scroll container is an **ancestor** of the table — e.g. an
    * app-shell viewport that scrolls projected content — since the table cannot inject an ancestor
-   * it does not own. A design-system wrapper can re-expose or rename this input through
-   * `hostDirectives` input aliasing (`inputs: ['scrollElement: scrollContainer']`) with no bridging
-   * effect required.
+   * it does not own. Content the ancestor scrolls above the table is accounted for, so the
+   * rendered window always covers the rows the ancestor shows. A design-system wrapper can
+   * re-expose or rename this input through `hostDirectives` input aliasing
+   * (`inputs: ['scrollElement: scrollContainer']`) with no bridging effect required.
    */
   readonly scrollElement = input<HTMLElement | null>(null);
 
@@ -106,11 +109,14 @@ export class ForTableVirtualized {
   readonly #scrollElement = computed(() => this.scrollElement() ?? this.#rootEl);
   readonly #rowCount = computed(() => this.virtualRowCount() ?? this.#ctx.rowCount() ?? 0);
 
+  readonly #scrollMargin = signal(0);
+
   readonly #virtualizer = injectVirtualizer({
     count: this.#rowCount,
     estimateSize: () => this.estimateRowSize(),
     estimateVersion: this.estimateRowSize,
     scrollElement: this.#scrollElement,
+    scrollMargin: this.#scrollMargin,
   });
 
   readonly #navigator = new TableVirtualizedNavigator({
@@ -131,6 +137,7 @@ export class ForTableVirtualized {
       totalSize: this.totalSize,
       measureRow: (element) => this.measureRow(element),
     });
+    afterEveryRender(() => this.#scrollMargin.set(this.#measureScrollMargin()));
     inject(DestroyRef).onDestroy(() => {
       this.#registration.registerVirtualNavigation(null);
       this.#registration.registerVirtualWindow(null);
@@ -164,15 +171,19 @@ export class ForTableVirtualized {
     for (const it of items) {
       retain.delete(it.index);
     }
+    const margin = this.#scrollMargin();
+    const window = margin === 0 ? items : items.map((it) => ({ ...it, start: it.start - margin }));
     if (retain.size === 0) {
-      return items;
+      return window;
     }
     const size = this.estimateRowSize();
-    const retained: VirtualItem[] = [...retain].map(
-      (index) =>
-        this.#virtualizer.measurementFor(index) ?? { index, key: index, start: index * size, size },
-    );
-    return [...items, ...retained].sort((a, b) => a.index - b.index);
+    const retained: VirtualItem[] = [...retain].map((index) => {
+      const measured = this.#virtualizer.measurementFor(index);
+      return measured === null
+        ? { index, key: index, start: index * size, size }
+        : { ...measured, start: measured.start - margin };
+    });
+    return [...window, ...retained].sort((a, b) => a.index - b.index);
   });
 
   /** Total scroll size of all rows in px. Bind to the body container's height to size the scroll range. */
@@ -208,5 +219,18 @@ export class ForTableVirtualized {
    */
   measureRow(element: HTMLElement | null): void {
     this.#virtualizer.measureElement(element);
+  }
+
+  #measureScrollMargin(): number {
+    const scroller = this.#scrollElement();
+    if (scroller === this.#rootEl) {
+      return 0;
+    }
+    const offset =
+      this.#rootEl.getBoundingClientRect().top -
+      scroller.getBoundingClientRect().top -
+      scroller.clientTop +
+      scroller.scrollTop;
+    return Math.round(offset);
   }
 }
