@@ -6,9 +6,11 @@ import { provideDefaults } from './defaults';
 
 /**
  * Defaults inherited by descendant drawers in the surrounding injector
- * scope. Configure with `provideForDrawerDefaults`. Keys map 1:1 to the
- * directive inputs of the same name; the directive picks
- * `consumerInput ?? defaults[key] ?? hardcoded fallback` per key.
+ * scope. Configure with `provideForDrawerDefaults`. A key named after a
+ * `[forDrawer]` input seeds that input, so a bound value still wins; the
+ * `scale*` and `nested*` keys tune the scale-background and nested-drawer
+ * transforms of declarative and manager-opened drawers alike, and the
+ * `animate*` keys apply to `ForDrawerManager.open()` only.
  *
  * **Scope caveat (declarative vs. programmatic).** Declarative `[forDrawer]`
  * instances read this token from their own injector, so a scoped
@@ -37,8 +39,7 @@ export interface ForDrawerDefaults {
   /**
    * Default `0.25`. Fraction past which a release dismisses instead of
    * snapping back: of the full dimension without snap points, of the lowest
-   * snap's extent with them (see
-   * `_internal/snap-points/resolveSnapTarget`).
+   * snap's extent with them.
    */
   closeThreshold?: number;
   /** Default `'first'`. Where to send focus on mount. */

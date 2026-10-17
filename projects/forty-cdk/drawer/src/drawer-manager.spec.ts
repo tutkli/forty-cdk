@@ -25,6 +25,7 @@ import { ForDrawerHandle } from './drawer-handle';
 import { ForDrawerManager, FOR_DRAWER_DATA, injectDrawerData } from './drawer-manager';
 import { ForDrawerRef } from './drawer-ref';
 import { ForDrawerTitle } from './drawer-title';
+import { ForDrawerWrapper } from './drawer-wrapper';
 import { provideForDrawerDefaults } from 'forty-cdk/defaults';
 
 interface SheetData {
@@ -511,6 +512,82 @@ describe('ForDrawerManager (programmatic)', () => {
       const desc = document.querySelector<HTMLElement>('[data-testid="desc"]')!;
       expect(host.getAttribute('aria-labelledby')).toBe(title.id);
       expect(host.getAttribute('aria-describedby')).toBe(desc.id);
+    });
+  });
+
+  describe('scoped scale and nested tuning via open({ injector })', () => {
+    @Component({
+      imports: [ForDrawerWrapper],
+      template: `<div forDrawerWrapper data-testid="wrapper"></div>`,
+      providers: [
+        provideForDrawerDefaults({
+          scaleAmount: 0.8,
+          scaleBorderRadiusPx: 16,
+          nestedScaleAmount: 0.9,
+        }),
+      ],
+    })
+    class ScopedScaleShell {
+      readonly injector = inject(Injector);
+    }
+
+    @Component({
+      imports: [ForDrawer],
+      template: `
+        <button id="open-nested" type="button" (click)="nested.set(true)">Nested</button>
+        @if (nested()) {
+          <div forDrawer id="nested-child" ariaLabel="Nested"></div>
+        }
+      `,
+    })
+    class NestingSheet {
+      readonly nested = signal(false);
+    }
+
+    async function scopedShell() {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const r = renderHost(ScopedScaleShell);
+      await flush(r.fixture);
+      return { r, drawers: TestBed.inject(ForDrawerManager) };
+    }
+
+    it('scales the wrapper with the scoped scaleAmount and scaleBorderRadiusPx', async () => {
+      const { r, drawers } = await scopedShell();
+
+      drawers.open(SheetDrawer, {
+        data: { message: 'x' },
+        injector: r.instance.injector,
+        scaleBackground: true,
+      });
+      await flush(r.fixture);
+
+      const wrapper = document.querySelector<HTMLElement>('[data-testid="wrapper"]')!;
+      expect(wrapper.style.transform).toContain('scale(0.8)');
+      expect(wrapper.style.borderRadius).toBe('16px');
+    });
+
+    it('scales the wrapper with the root tuning when no injector is passed', async () => {
+      const { r, drawers } = await scopedShell();
+
+      drawers.open(SheetDrawer, { data: { message: 'x' }, scaleBackground: true });
+      await flush(r.fixture);
+
+      const wrapper = document.querySelector<HTMLElement>('[data-testid="wrapper"]')!;
+      expect(wrapper.style.transform).toContain('scale(0.95)');
+      expect(wrapper.style.borderRadius).toBe('8px');
+    });
+
+    it('scales the opened drawer behind a nested child with the scoped nestedScaleAmount', async () => {
+      const { r, drawers } = await scopedShell();
+
+      drawers.open(NestingSheet, { injector: r.instance.injector });
+      await flush(r.fixture);
+      document.querySelector<HTMLButtonElement>('#open-nested')!.click();
+      await flush(r.fixture);
+
+      const parent = document.querySelector<HTMLElement>('[role="dialog"]:not(#nested-child)')!;
+      expect(document.querySelector('#nested-child')).not.toBeNull();
+      expect(parent.style.transform).toContain('scale(0.9)');
     });
   });
 

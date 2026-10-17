@@ -20,7 +20,9 @@ import {
   type OverlayManagerOutletHost,
   type OverlaySurface,
 } from 'forty-cdk/core-overlay';
+import type { ForDrawerDefaults } from 'forty-cdk/defaults';
 import { ForDrawer } from './drawer';
+import { ForDrawerScopeTuning } from './drawer-scope-tuning';
 import type {
   ForDrawerCloseReason,
   ForDrawerSide,
@@ -62,6 +64,7 @@ export interface ForDrawerEntry extends OverlayManagerEntry {
   readonly setBackgroundColorOnScale: boolean;
   readonly snapPoints: ReadonlyArray<ForDrawerSnapPoint> | undefined;
   readonly activeSnapPoint: Signal<ForDrawerSnapPoint | null>;
+  readonly defaults: ForDrawerDefaults;
   readonly fadeFromIndex: number | undefined;
   readonly escapeKeyDown: ((e: VetoableNativeEvent<KeyboardEvent>) => void) | undefined;
   readonly pointerDownOutside: ((e: VetoableNativeEvent<PointerEvent>) => void) | undefined;
@@ -142,12 +145,19 @@ export class ForDrawerSurface {
 @Component({
   selector: 'for-drawer-outlet',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ForDrawer, NgComponentOutlet, ForDrawerContextInjector, ForDrawerSurface],
+  imports: [
+    ForDrawer,
+    ForDrawerScopeTuning,
+    NgComponentOutlet,
+    ForDrawerContextInjector,
+    ForDrawerSurface,
+  ],
   template: `
     @for (entry of entries(); track entry.id) {
       <div
         forDrawer
         [forDrawerSurface]="entry.id"
+        [forDrawerScopeTuning]="entry.defaults"
         [attr.data-for-drawer-id]="entry.id"
         [animate.enter]="entry.animateEnter ?? ''"
         [class]="entry.hostClass"

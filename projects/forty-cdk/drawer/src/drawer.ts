@@ -33,8 +33,9 @@ import {
   type ForDrawerSwipeEndEvent,
   type ForDrawerSwipeEvent,
 } from './drawer-context';
-import { FOR_DRAWER_DEFAULTS } from 'forty-cdk/defaults';
+import { FOR_DRAWER_DEFAULTS, type ForDrawerDefaults } from 'forty-cdk/defaults';
 import { injectDrawerDrag } from './drawer-drag';
+import { ForDrawerScopeTuning } from './drawer-scope-tuning';
 
 /**
  * Headless implementation of the [WAI-ARIA Modal Dialog pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/),
@@ -43,12 +44,13 @@ import { injectDrawerDrag } from './drawer-drag';
  *
  * Apply `[forDrawer]` on the drawer surface itself — not on a wrapper. The
  * directive moves the host to `document.body` (portal), traps focus, locks
- * body scroll, listens for Escape, and (when `swipeToDismiss` is on) attaches
- * pointer-based swipe handlers that translate the surface and resolve to the
- * nearest snap point or a dismiss on release. `aria-labelledby` and
- * `aria-describedby` wire automatically via `[forDrawerTitle]` /
- * `[forDrawerDescription]`; pass `ariaLabel` instead if you don't render
- * a visible title.
+ * body scroll and listens for Escape. Unless the user prefers reduced motion,
+ * the surface follows a pointer swipe whenever the swipe has somewhere to go:
+ * toward the anchored edge to dismiss (`swipeToDismiss` and `dismissible`),
+ * and between `snapPoints` when they are set. A release resolves to a snap
+ * point or a dismiss. `aria-labelledby` and `aria-describedby` wire
+ * automatically via `[forDrawerTitle]` / `[forDrawerDescription]`; pass
+ * `ariaLabel` instead if you don't render a visible title.
  *
  * Mount/unmount is the consumer's responsibility — the directive does not
  * manage `[hidden]`. Wrap with `@if (open())` and let `animate.enter` /
@@ -81,6 +83,7 @@ import { injectDrawerDrag } from './drawer-drag';
 })
 export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements ForDrawerContext {
   readonly #defaults = inject(FOR_DRAWER_DEFAULTS);
+  readonly #scopeTuning = inject(ForDrawerScopeTuning, { self: true, optional: true });
 
   protected readonly entryPoint = 'drawer';
 
@@ -208,8 +211,9 @@ export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements
    * to drive the surface programmatically, or just read for analytics.
    * Initialised to `snapPoints?.[0]` on mount when the consumer left it
    * `null`. The implicit `(activeSnapPointChange)` emitter fires on
-   * internal transitions (mount-time default and drag release), and
-   * stays silent on consumer writes through `[(activeSnapPoint)]`.
+   * internal transitions (the mount-time default, and a release that changes
+   * the snap), and stays silent on consumer writes through
+   * `[(activeSnapPoint)]`.
    */
   readonly activeSnapPoint = model<ForDrawerSnapPoint | null>(null);
 
@@ -226,7 +230,11 @@ export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements
   /** Fired on every pointer move while the swipe is active. `progress` ∈ `[0, 1]` toward the anchored edge. */
   readonly swipeMove = output<ForDrawerSwipeEvent>();
 
-  /** Fired on pointer-up. The directive has already applied `activeSnapPoint` / requested close. */
+  /**
+   * Fired on pointer-up once the gesture has ended. `activeSnapPoint` already
+   * holds `nextSnapPoint`; on a release with `willClose`, `(dismiss)` follows
+   * this output.
+   */
   readonly swipeEnd = output<ForDrawerSwipeEndEvent>();
 
   /**
@@ -394,13 +402,14 @@ export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements
       //    nested-transform tunables ride along so `ForDrawerScaleCoordinator`
       //    owns the `style.transform` write for the parent surface (issue #180)
       //    and reads scope-local defaults through this node.
+      const tuning = this.#tuning();
       const handle = this.#drawerStack.push({
         host: this.#host.nativeElement,
         side: this.side,
         parent: this.#parentDrawer?.hostElement ?? null,
         dragging: this.dragging,
-        nestedScaleAmount: this.#defaults.nestedScaleAmount ?? 0.93,
-        nestedTranslateYpx: this.#defaults.nestedTranslateYpx ?? 8,
+        nestedScaleAmount: tuning.nestedScaleAmount ?? 0.93,
+        nestedTranslateYpx: tuning.nestedTranslateYpx ?? 8,
       });
       this.#stackHandle.set(handle);
       this.#stackCleanup = handle.cleanup;
@@ -454,12 +463,13 @@ export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements
       }
       const want = this.scaleBackground();
       if (want && this.#scaleCleanup === null) {
+        const tuning = this.#tuning();
         this.#scaleCleanup = this.#scaleCoordinator.registerDrawer({
           setBackgroundColorOnScale: this.setBackgroundColorOnScale(),
-          scaleAmount: this.#defaults.scaleAmount ?? 0.95,
-          scaleTranslateYpx: this.#defaults.scaleTranslateYpx ?? 14,
-          scaleBorderRadiusPx: this.#defaults.scaleBorderRadiusPx ?? 8,
-          scaleBackgroundColor: this.#defaults.scaleBackgroundColor ?? 'black',
+          scaleAmount: tuning.scaleAmount ?? 0.95,
+          scaleTranslateYpx: tuning.scaleTranslateYpx ?? 14,
+          scaleBorderRadiusPx: tuning.scaleBorderRadiusPx ?? 8,
+          scaleBackgroundColor: tuning.scaleBackgroundColor ?? 'black',
         });
       } else if (!want && this.#scaleCleanup !== null) {
         this.#scaleCleanup();
@@ -485,6 +495,10 @@ export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements
       this.#stackCleanup?.();
       this.#stackCleanup = null;
     });
+  }
+
+  #tuning(): ForDrawerDefaults {
+    return this.#scopeTuning?.defaults() ?? this.#defaults;
   }
 
   // ---- Context implementation ----
