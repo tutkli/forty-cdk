@@ -7,7 +7,169 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.37.0] - 2026-10-17
+
+### Added
+
+- **Table** — `[forTableColumnDef]` takes `resizeLargeStep` and `resizeDisabled` for the resize
+  handle `<for-table-body>` stamps in its header
+  ([#2336](https://github.com/tutkli/forty-cdk/issues/2336)). They are forwarded to the stamped
+  `[forTableColumnResizer]`'s `largeStep` (default `100`) and `disabled`, so a declarative column
+  can tune or switch off its handle without dropping to the raw pieces.
+  [docs/table-declarative-columns.md](docs/table-declarative-columns.md) lists them with the other
+  per-column handle tunables.
+
+- **Virtualization** — `injectVirtualizer`'s `scrollMargin` accepts a `Signal<number>` as well as a
+  `number` ([#2334](https://github.com/tutkli/forty-cdk/issues/2334)). The option is the list's
+  offset from the start of its scroll container's content; a signal lets a list whose offset moves
+  keep it current, and every change re-lays out the items and retargets `scrollToIndex`.
+
+### Changed
+
+- **Table** — `[widthRevert]` on `[forTableColumnResizer]` receives the new
+  `TableResizeRevertDescriptor`, whose `width` is `number | undefined`
+  ([#2336](https://github.com/tutkli/forty-cdk/issues/2336)). A cancelled resize (`Escape`,
+  `pointercancel`, or a teardown mid-drag) of a column that had no width now reports `undefined` and
+  restores it, instead of pinning the width measured at drag start. `TableResizeDescriptor` and
+  `(resizeCommit)` are unchanged. **A revert handler typed with `TableResizeDescriptor` must take
+  `TableResizeRevertDescriptor`, and drop the column's stored width when `width` is `undefined`**,
+  as the README's snippet does.
+
+- **Listbox** — `[forListbox]` carries a generated `id` only while a `[forListboxController]` drives
+  it, and `ForListbox.id` is removed ([#2326](https://github.com/tutkli/forty-cdk/issues/2326)).
+  Every listbox host used to be bound to a generated id, which also overwrote an `[id]` the consumer
+  bound. A static or bound id is now kept, and the controller's `aria-controls` follows it; a
+  listbox with no controller and no id of its own carries none. **Give the host its own `id` if
+  anything references it, and read the host element's `id` instead of `ForListbox.id`.**
+
+- **Tooltip** — keyboard focus opens the tooltip at once, and a keyboard activation dismisses it
+  ([#2307](https://github.com/tutkli/forty-cdk/issues/2307)). Focus used to wait out `openDelay`
+  (700 ms by default) like a hover, so a screen reader announced the trigger before it carried
+  `aria-describedby`; `openDelay` now applies to hover only, and `scheduleOpen('focus')` opens
+  immediately too. `[forTooltipTrigger]` also closes on the `click` that `Enter` or `Space` fires on
+  a button. `disabled`, `showOnOverflow` and `canOpen()` still gate the focus open. The
+  `ForTooltipContent` and `hoverableContent` JSDoc and the README now state the shipped default: the
+  content is hoverable, and `pointer-events: none` applies only when `hoverableContent` is `false`.
+
+- **Date field**, **Time field** — segments are editing hosts, so a touch device opens its on-screen
+  keyboard ([#2276](https://github.com/tutkli/forty-cdk/issues/2276)). A segment of a field that is
+  neither disabled nor read-only is now `contenteditable="plaintext-only"` with
+  `inputmode="numeric"` (none on the AM/PM segment), `autocorrect="off"` and `spellcheck="false"`.
+  Typed text, deletions and IME compositions go through the same keyboard map as a key press and
+  never reach the segment's text. This covers the range fields and the date / time picker field
+  anatomy. The browser now paints a text caret in the focused segment: **add
+  `caret-color: transparent` to your segment styles when your highlight already marks it**, as the
+  Styling sections of both READMEs show.
+
+- **Context menu** — each open gesture opens one menu, and a gesture a handler already cancelled
+  opens none ([#2316](https://github.com/tutkli/forty-cdk/issues/2316)). In nested
+  `[forContextMenuTrigger]` regions a right-click, `Shift+F10`, the `ContextMenu` key or a touch
+  long-press opened both menus; the innermost enabled region now wins, and a disabled inner region
+  leaves the gesture to the outer one. A `contextmenu` or key press a descendant handler already
+  cancelled with `preventDefault()` no longer opens the menu, so **a handler beneath the region that
+  cancels the event for its own reasons now keeps the context menu closed there**. The README's new
+  "Nested regions" note states both.
+
+- **Time picker** — typeahead matches an hour by its digit without the leading zero
+  ([#2305](https://github.com/tutkli/forty-cdk/issues/2305)). Typing `6` reaches `06:30 PM` or
+  `06:00`, where only `0`, `6` did. On a 24-hour list, `1` from `00:00` therefore lands on `01:00`
+  instead of `10:00`; `1`, `0` still reaches `10:00`.
+
 ### Fixed
+
+- **Calendar** — the month and year views follow the day grid's keyboard, announcement and naming
+  rules ([#2266](https://github.com/tutkli/forty-cdk/issues/2266)). `Home` / `End` stay in the
+  focused row instead of jumping to the grid's first or last cell. A month- or year-grid move that
+  changes the period is announced with the active view's label (the year in month view, the block in
+  year view), and `[forCalendarHeading]`, which names the grids, reads "2026" or "2016 – 2027" there
+  instead of the day view's month. A drill-down (`selectMonth` / `selectYear`) no longer announces
+  the new month, since focus moves into a grid named after it. A read-only calendar can drill down,
+  since that changes no value, and a disabled calendar marks its month and year cells disabled.
+
+- **Calendar** — in range mode the keyboard takes the preview back from a resting pointer, and the
+  range grid is `aria-multiselectable` ([#2267](https://github.com/tutkli/forty-cdk/issues/2267)).
+  After a click, the pointer still resting on a cell held the preview's end there, so an arrow, a
+  paging key or `Enter` previewed and committed a band other than the one the focused date showed.
+  Every move of the focused date (keys, a selection, prev / next, `goTo`, the month and year grids)
+  now drops the pointer hover until the pointer enters another cell. `[forCalendarGrid]` sets
+  `aria-multiselectable="true"` while `selectionMode` is `range`.
+
+- **Calendar** — a new `[min]` / `[max]` keeps the focused date, and a refused click still takes the
+  tab stop ([#2268](https://github.com/tutkli/forty-cdk/issues/2268)). Binding a new bound object,
+  even an equal date, sent an empty calendar's cursor back to today and lost the month the user had
+  browsed to; it now stays unless the new bounds exclude it, in which case it is clamped in. A click
+  on a cell whose selection is refused (read-only, unavailable date, rejected range length) moved
+  DOM focus but left `tabindex="0"` and `data-highlighted` on the previous cell; the clicked cell
+  now owns both. A disabled calendar still ignores the click.
+
+- **Combobox** — the editable anatomy's own buttons keep focus where the input needs it
+  ([#2272](https://github.com/tutkli/forty-cdk/issues/2272)). Closing the popup from a
+  `[forComboboxAction]`'s `(activate)` dropped focus to `<body>`; when a close unmounts the surface
+  while focus was inside it, focus now returns to the input, still gated by `[returnFocus]` and
+  firing no `(autoFocusOnClose)`. A press on `[forComboboxClear]` counted as an outside press and
+  closed an open listbox; it now keeps the listbox open and focus on the input, as the toggle does.
+  A disabled `<button forComboboxAction>` stays out of the Tab order (`tabindex="-1"`).
+
+- **Combobox**, **Select** — a consumer close through `[(open)]` runs the same reset as a library
+  close ([#2273](https://github.com/tutkli/forty-cdk/issues/2273)). Writing `false` to `open`
+  skipped the close side effects: the picker anatomy's query stayed filtered on the next open, and a
+  pending off-window move in a virtualized Combobox or Select (`End`, `scrollToIndex`) resolved on
+  the next open. Submenus and menubar menus record a close reason for that close too. Combobox
+  string values are labelled through `[itemToStringLabel]` in `selected()` and in the chips' label
+  and remove-button name; the default `String(item)` leaves a string unchanged.
+
+- **Dialog**, **Drawer**, **Context menu** — a recorded return-focus origin lasts as long as the
+  open that recorded it ([#2283](https://github.com/tutkli/forty-cdk/issues/2283)). Opening the next
+  dialog or drawer before closing the current one (`dialogs.open(B); ref.close()`) returned focus to
+  `<body>`; the overlay left open now inherits the closing one's origin, so focus returns to the
+  trigger that opened the first, in either order. Once the last overlay had closed, that origin was
+  kept, so an unrelated later open from `<body>` returned focus to an old trigger, possibly on a
+  destroyed route; it now expires with the chain. An explicit `returnFocusTarget` starts a chain
+  too. A context menu's keyboard-recorded origin is dropped when the next open is driven by the
+  model (`[(open)]`, `open.set(true)`), so that close returns focus to the region.
+
+- **Dialog**, **Drawer**, **Select**, **Date picker**, **Time picker** — a modal open no longer
+  shifts the page by the scrollbar's width, and a page whose `<html>` scrolls is locked too
+  ([#2284](https://github.com/tutkli/forty-cdk/issues/2284)). The scroll lock measured the scrollbar
+  after hiding it, so with classic scrollbars (Windows, Linux, macOS set to always show them) it
+  compensated nothing and the content jumped by 15 px, and a contained drawer compensated the
+  container's borders. It now pads by exactly the width the scrollbar gave back. With
+  `html { overflow-y: scroll }`, or any `auto` / `scroll` overflow on `<html>`, the page kept
+  scrolling behind the modal; the lock now also hides `<html>` overflow and clears it on the last
+  unlock. `scrollbar-gutter: stable` still gets no compensation.
+
+- **Dialog**, **Drawer**, **Date picker**, **Select**, **Time picker** — `aria-modal` and
+  `data-modal` reflect the mode the surface mounted in
+  ([#2286](https://github.com/tutkli/forty-cdk/issues/2286)). `modal` is read once at mount: the
+  focus trap, inert siblings, scroll lock and dismissal keep that mode for the whole open.
+  `[forDialog]`, `[forDrawer]` and `[forDatePickerContent]` bound `aria-modal`, and
+  `[forSelectContent]` and `[forTimePickerContent]` bound `data-modal`, to the live input, so
+  rebinding `modal` while open announced or styled a mode the surface was not in. They now follow
+  the mounted mode, and a rebind applies on the next open.
+
+- **Popover**, **Dropdown menu**, **Combobox**, **Select**, **Date picker**, **Time picker**,
+  **Tooltip**, **Hover card** — `--for-floating-content-transform-origin` mirrors under RTL
+  ([#2285](https://github.com/tutkli/forty-cdk/issues/2285)). For a top or bottom placement the
+  content is aligned from its RTL edge, but the origin kept the LTR one, so an open animation grew
+  from the wrong corner; the origin now follows the content's computed `direction`. Combobox's RTL
+  `align: 'start'` default pivots from the trigger edge again.
+
+- **Select** — the item-aligned listbox is clamped and mirrored on the inline axis
+  ([#2285](https://github.com/tutkli/forty-cdk/issues/2285)). It sat at the trigger's left edge with
+  no clamp, so a wide listbox under a trigger near the right edge ran past the viewport, and under
+  `dir="rtl"` it did not line up with the trigger. Its inline-start edge now aligns with the
+  trigger's and is clamped inside `collisionPadding`, whose per-side `left` / `right` now apply; a
+  listbox wider than the space pins to its inline-start padding.
+
+- **Listbox** — a listbox driven by `[forListboxController]` keeps the command-palette contract
+  ([#2326](https://github.com/tutkli/forty-cdk/issues/2326)). A press on a group label, the padding
+  or anything else in the listbox that is not focusable no longer blurs the input. The listbox is
+  marked touched when focus leaves the input for somewhere other than the listbox, so `[(touched)]`
+  and `[formField]` see it. `Home`, `End`, `ArrowLeft`, `ArrowRight` and every `input` event clear
+  `aria-activedescendant` without `preventDefault()`, so the caret moves and the next `Enter` is
+  left to the input, as in the APG editable combobox. `Enter` after the active option has scrolled
+  out of a virtualized window activates it. A second controller on the same listbox is inert, as
+  `FORCDK-CORE-005` and the README say: it reflects no combobox ARIA and handles no keys.
 
 - **Search** — `[clearOnEscape]="false"` keeps the query on a `type="search"` host
   ([#2274](https://github.com/tutkli/forty-cdk/issues/2274)). `ForSearch` left the key alone as
@@ -15,6 +177,69 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `''` into the value, so the command palette the search and listbox READMEs describe lost its query
   on the first `Escape`. The directive now undoes that native clear, and the enclosing dialog still
   receives the key.
+
+- **Context menu** — keyboard opens, focus and a reopened surface behave as on a single region
+  ([#2316](https://github.com/tutkli/forty-cdk/issues/2316)). After a `Shift+F10` / `ContextMenu`
+  open, the `contextmenu` the platform raises on key release was cancelled only on the region, so
+  once focus had moved into the menu the browser painted its own menu over it; it is now cancelled
+  wherever focus is. An ordinary left-click or a cancelled touch press left the next `contextmenu`
+  read as a pointer open; only a press that can raise one (a secondary button, Ctrl+primary, touch
+  or pen) counts now. Focus inside an open shadow root is recorded as the deep control, so the menu
+  anchors there and focus returns to it. A menu reopened in the same task as its close moves focus
+  back into the reused surface, honouring `(autoFocusOnOpen)`.
+
+- **Table** — `<for-table-body>`'s declarative columns stay in step with the pieces they stamp
+  ([#2336](https://github.com/tutkli/forty-cdk/issues/2336)). A cancelled resize of a column with no
+  width now removes its key from `[(columnWidths)]`, so the column keeps following `fallbackWidth`
+  and nothing is persisted. A body sort header stayed on the direction it cycled to even when the
+  consumer ignored `(sortChange)`; it now follows `[sort]`, so `aria-sort` moves only once the
+  consumer adopts the change. A `[forTableColumnDef]` missing its header or cell `<ng-template>`
+  failed with Angular's `NG0951`; it now throws the new `FORCDK-TABLE-013`, naming the column and
+  the missing template, and renders an empty cell in production.
+
+- **Table**, **Virtual reorder** — keyboard row reorder in a virtualized table is bounded by the
+  placeable rows, and its placeholder is laid out
+  ([#2335](https://github.com/tutkli/forty-cdk/issues/2335)). With only `[virtualRowCount]` set,
+  `[forTableRowReorder]` counted the rendered rows, so `End` dropped inside the window and the lift
+  announced "301 of 15"; with `[rowCount]` set too it used `[rowCount]`. Moves and announcements are
+  now bounded by `[virtualRowCount]`, else `[rowCount]`. Under `[forTableVirtualized]` a
+  `[forDragPlaceholder]` now takes the lifted row's `position`, insets and `transform` and keeps its
+  own height; `[forVirtualReorder]`'s placeholder now copies `right`, `bottom`, the logical insets
+  and `translate` too. `[liveSort]` moves nothing in a virtualized table, since rows are positioned
+  by transform, and the placeholder keeps marking the source slot, as
+  [docs/table-reordering.md](docs/table-reordering.md) now says.
+
+- **Table virtualization** — a virtualized table inside an ancestor scroller mounts the rows on
+  screen when content sits above it ([#2334](https://github.com/tutkli/forty-cdk/issues/2334)). Rows
+  were placed as if the table started at the top of its `[scrollElement]`, so content above it left
+  a blank band of unmounted rows and sent `scrollToRow(n, { align: 'start' })` off screen.
+  `[forTableVirtualized]` now measures the table's offset inside the scroll element after each
+  render and passes it as `scrollMargin`, so it also follows content above that changes size.
+  Nothing changes when the table is its own scroller, and the row template needs no change.
+
+- **Time picker** — at `granularity="hour"` exactly one slot is selected
+  ([#2305](https://github.com/tutkli/forty-cdk/issues/2305)). With the default 30-minute step both
+  slots of the hour carried `aria-selected="true"`; the slot the value falls in is now selected when
+  it shares the hour, otherwise the hour's first slot, and focus lands on it when the list opens.
+
+- **Toast** — the live regions exist before the first toast is announced
+  ([#2281](https://github.com/tutkli/forty-cdk/issues/2281)). `LiveAnnouncer` created its polite and
+  assertive regions when first injected, which for toasts was by the first `[forToast]`, so the
+  first toast of a session wrote into regions created in the same pass, before they could reach the
+  accessibility tree. `<for-toast-viewport>` now creates them when it mounts, as does any earlier
+  `inject(ForToastManager)`. A declarative `<div forToast>` on a page with no viewport still creates
+  them on its first render; the README recommends injecting `LiveAnnouncer` from
+  `forty-cdk/visually-hidden` in a component that renders earlier.
+
+- **Tree** — a pointer drag picks its drop depth from where the press started, across the whole band
+  the gap allows, in the writing direction
+  ([#2342](https://github.com/tutkli/forty-cdk/issues/2342)). The depth was read from the pointer's
+  absolute x against the visible rows, so it could not reach a depth no visible row occupied
+  (nesting into a collapsed root when every row is a root, or into a collapsed parent), and under
+  `dir="rtl"` moving left did not deepen. The depth now starts at the lifted node's own level and
+  changes by one per indent step the pointer moves toward inline-end (deeper) or inline-start,
+  clamped to the band, as the keyboard depth keys do. The step is measured from the rows, with a 24
+  px fallback, and the README's drag section states the contract.
 
 ## [0.36.0] - 2026-10-16
 
@@ -4310,7 +4535,8 @@ primitives.
 - **Display** — avatar, progress, meter, tree.
 - `forty-cdk/internationalized-date` secondary entry point exposing the `@internationalized/date` adapters for the date and time primitives.
 
-[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.36.0...HEAD
+[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.37.0...HEAD
+[0.37.0]: https://github.com/tutkli/forty-cdk/compare/v0.36.0...v0.37.0
 [0.36.0]: https://github.com/tutkli/forty-cdk/compare/v0.35.0...v0.36.0
 [0.35.0]: https://github.com/tutkli/forty-cdk/compare/v0.34.0...v0.35.0
 [0.34.0]: https://github.com/tutkli/forty-cdk/compare/v0.33.0...v0.34.0
