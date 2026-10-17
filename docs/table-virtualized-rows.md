@@ -123,6 +123,8 @@ When the element that actually scrolls is an **ancestor** of the table (e.g. an 
 </div>
 ```
 
+Content the ancestor scrolls above the table, such as a page header or a toolbar, is accounted for. The rendered window follows the table's offset inside the ancestor, even when that content changes height after the first render, and each `vrow.start` stays relative to the body rowgroup, so the row template needs no change.
+
 ### Wrapping: re-exposing / renaming `scrollElement`
 
 A design-system wrapper that re-exposes `ForTableVirtualized` through `hostDirectives` can surface `scrollElement` directly, or rename it, via input aliasing. No bridging `effect` is needed because the value flows straight through:

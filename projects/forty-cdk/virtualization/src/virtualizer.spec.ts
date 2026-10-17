@@ -434,6 +434,71 @@ describe('injectVirtualizer', () => {
       expect(m!.start).toBe(10 * 40 + 100);
     });
 
+    @Component({
+      selector: 'signal-margin-host',
+      template: `
+        <div #scroll style="overflow:auto; height:200px">
+          <div [style.height.px]="v.totalSize()" style="position:relative">
+            @for (item of v.virtualItems(); track item.key) {
+              <div [attr.data-index]="item.index" [style.height.px]="item.size">
+                {{ item.index }}
+              </div>
+            }
+          </div>
+        </div>
+      `,
+    })
+    class SignalMarginHost {
+      readonly margin = signal(100);
+      readonly scrollRef = viewChild<ElementRef<HTMLElement>>('scroll');
+      readonly scrollElement = computed(() => this.scrollRef()?.nativeElement ?? null);
+      readonly v = injectVirtualizer({
+        count: signal(1000),
+        estimateSize: () => 40,
+        scrollElement: this.scrollElement,
+        overscan: 5,
+        scrollMargin: this.margin,
+      });
+    }
+
+    async function mountSignalMargin(): Promise<ComponentFixture<SignalMarginHost>> {
+      const fixture = TestBed.createComponent(SignalMarginHost);
+      const el = fixture.nativeElement.querySelector('div') as HTMLElement;
+      fakeLayoutProps(el, 200);
+      fixture.detectChanges();
+      await flush(fixture);
+      return fixture;
+    }
+
+    it('re-offsets every item start when a signal margin changes, leaving totalSize alone', async () => {
+      const fixture = await mountSignalMargin();
+      const host = fixture.componentInstance;
+      const totalBefore = host.v.totalSize();
+
+      host.margin.set(250);
+      await flush(fixture);
+
+      const items = host.v.virtualItems();
+      expect(items.length).toBeGreaterThanOrEqual(1);
+      for (const item of items) {
+        expect(item.start).toBe(item.index * 40 + 250);
+      }
+      expect(host.v.measurementFor(10)!.start).toBe(10 * 40 + 250);
+      expect(host.v.totalSize()).toBe(totalBefore);
+    });
+
+    it('scrollToIndex(align:start) targets the margin current at the call', async () => {
+      const fixture = await mountSignalMargin();
+      const el = fixture.nativeElement.querySelector('div') as HTMLElement;
+      const spy = vi.fn();
+      el.scrollTo = spy;
+
+      fixture.componentInstance.margin.set(300);
+      fixture.componentInstance.v.scrollToIndex(10, { align: 'start' });
+
+      expect(spy).toHaveBeenCalledWith(expect.objectContaining({ top: 700 }));
+    });
+
     it('default (no scrollMargin) keeps item 0 at offset 0', async () => {
       const fixture = TestBed.createComponent(Host);
       const el = fixture.nativeElement.querySelector('div') as HTMLElement;

@@ -328,6 +328,13 @@ export const routes: Routes = [
       import('./fixtures/table-virtualized.fixture').then((m) => m.TableVirtualizedFixture),
   },
   {
+    path: 'table-virtualized-ancestor',
+    loadComponent: () =>
+      import('./fixtures/table-virtualized-ancestor.fixture').then(
+        (m) => m.TableVirtualizedAncestorFixture,
+      ),
+  },
+  {
     path: 'for-table-body',
     loadComponent: () =>
       import('./fixtures/for-table-body.fixture').then((m) => m.ForTableBodyFixture),
