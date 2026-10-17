@@ -25,6 +25,7 @@ import {
   type FocusWhenMountedRef,
   fortyError,
   isImeComposing,
+  layoutPlaceholderInSlot,
   LiveAnnouncer,
   type PointerDragSession,
   resolveWindowedReorder,
@@ -32,8 +33,6 @@ import {
 import { ForVirtualViewport } from 'forty-cdk/virtualization';
 
 const POINTER_ARM_THRESHOLD_PX = 5;
-
-const ROW_LAYOUT_PROPERTIES = ['position', 'top', 'left', 'width', 'height', 'transform'] as const;
 
 type ReorderMode = 'idle' | 'keyboard' | 'pointer';
 
@@ -518,17 +517,7 @@ export class ForVirtualReorder {
   }
 
   private layoutPlaceholder(nodes: readonly Node[], lifted: HTMLElement): void {
-    for (const node of nodes) {
-      if (!(node instanceof HTMLElement)) {
-        continue;
-      }
-      for (const property of ROW_LAYOUT_PROPERTIES) {
-        const value = lifted.style.getPropertyValue(property);
-        if (value !== '') {
-          node.style.setProperty(property, value);
-        }
-      }
-    }
+    layoutPlaceholderInSlot(nodes, lifted);
   }
 
   private resolveReorder(previousIndex: number, currentIndex: number): ForVirtualReorderEvent {

@@ -159,6 +159,7 @@ export {
   DRAG_DEAD_ZONE_PX,
   type PointerDragSession,
 } from './drag-session/pointer-session';
+export { layoutPlaceholderInSlot } from './drag-session/placeholder-slot';
 export { PreviewController } from './drag-session/preview-controller';
 export { resolveWindowedReorder, translateWindowReorder } from './drag-session/window-index-map';
 export { type ElementBox, injectElementSize } from './element-size/element-size';

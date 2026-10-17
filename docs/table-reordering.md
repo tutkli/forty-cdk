@@ -81,12 +81,13 @@ Supported today:
   resolution is unchanged.
 - **Keyboard reorder across the entire dataset.** In `mode="grid"`, `Ctrl`/`Cmd`+`Space` on a
   focused cell lifts the enclosing row; Arrow keys step the target one row at a time; Home / End
-  jump to the dataset start (index 0) / end (last absolute index); PageUp / PageDown jump by one
+  jump to the dataset start (index 0) / end (the last row the virtualizer can place:
+  `[virtualRowCount]`, else `[rowCount]`); PageUp / PageDown jump by one
   rendered window; `Space` / `Enter` drop and emit absolute `from` / `to`; `Escape` / `Tab` cancel.
   As the target steps past the rendered window the target row is scrolled into view and the lifted
   row stays pinned mounted throughout. `rowReorder` always emits absolute `from` / `to`.
 - **Announcements at dataset positions.** Every lift, move and drop, pointer or keyboard, is
-  announced at the position `rowReorder` reports and counted against the dataset size, and a
+  announced at the position `rowReorder` reports and counted against those placeable rows, and a
   Shift-scrub drop names the row it lands at. Each row's `(dragStart)` / `(dragEnd)` fire for a
   keyboard gesture as they do for a pointer one.
 
@@ -146,8 +147,8 @@ This is the **supported** way to drag-reorder a virtualized list. A bare
 indices, lets auto-scroll recycle the lifted row, and confines keyboard stepping
 to the rendered window. Those are exactly the three mechanisms
 `[forTableRowReorder]` supplies on top of it: absolute-index translation, a
-lifted row pinned against recycling, and keyboard stepping over the true total
-count. A custom integration that uses neither companion owes all three, and
+lifted row pinned against recycling, and keyboard stepping over every row the
+virtualizer can place. A custom integration that uses neither companion owes all three, and
 missing one fails silently rather than loudly.
 
 ## Live-sort placeholder
@@ -158,6 +159,12 @@ the placeholder follow the **live resolved drop index** during a pointer drag, s
 surrounding cells / rows part to reveal where the item will land. Without `[liveSort]`, the placeholder only marks the
 dragged item's source slot. `[liveSort]` has no effect without a `[forDragPlaceholder]` template, and none
 on keyboard dragging. See the [drag-drop README](../projects/forty-cdk/drag-drop/README.md) for the full behaviour.
+
+Under `[forTableVirtualized]` the rows are positioned by transform rather than in flow, so
+`[liveSort]` parts no rows there and the placeholder keeps marking the source slot. The placeholder
+copies the lifted row's inline `position`, insets, size and `transform`, which puts it in the row's
+slot rather than at the top of the rowgroup. Keep those declarations inline on the row, as the
+[virtualized example](#reordering-under-virtualization) does, or give the placeholder element the same rules.
 
 ```html
 <div

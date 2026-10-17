@@ -93,7 +93,7 @@ An **append-style** infinite list (load 30, concatenate, load 30 more at the bot
 ></div>
 ```
 
-Both halves matter. Raising `[rowCount]` alone inflates the scroll range with rows that will never mount (the thumb shrinks to a sliver and the viewport scrolls into empty space), while lowering it to the loaded count announces an `aria-rowcount` that is wrong on every page but the last. `[virtualRowCount]` also bounds cross-window keyboard navigation, so `Ctrl+End` lands on the last loaded row rather than stashing a focus move that only resolves when a far page appends.
+Both halves matter. Raising `[rowCount]` alone inflates the scroll range with rows that will never mount (the thumb shrinks to a sliver and the viewport scrolls into empty space), while lowering it to the loaded count announces an `aria-rowcount` that is wrong on every page but the last. `[virtualRowCount]` also bounds cross-window keyboard navigation, so `Ctrl+End` lands on the last loaded row rather than stashing a focus move that only resolves when a far page appends, and it bounds a `[forTableRowReorder]` keyboard reorder the same way.
 
 A server that returns no total is the same shape with `[rowCount]` left unbound: `aria-rowcount` reports `-1`, the value ARIA reserves for an unknown total, rather than the number of mounted rows, and `[virtualRowCount]` alone bounds the scroll range and the cross-window navigation.
 

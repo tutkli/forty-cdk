@@ -48,6 +48,8 @@ The opt-in row-virtualization companion for `[forTable]`: it builds a windowing 
 
 Bind `[rowCount]` on `[forTable]` to the **true total** so `aria-rowcount` and the window size both stay honest, and give each rendered row its `[virtualIndex]` so `aria-rowindex` reports the absolute position rather than the position within the window.
 
+Keep each row's `position` and insets inline, as above, when the rowgroup is a `[forTableRowReorder]`: a `[forDragPlaceholder]` copies the lifted row's inline position, insets, size and transform to stand in its slot. If the position comes from a stylesheet instead, give the placeholder element the same rules. Its transform is still copied. `[liveSort]` parts no rows in a virtualized rowgroup, so the placeholder keeps marking the source slot (see [Table reordering](../../../docs/table-reordering.md#live-sort-placeholder)).
+
 ## API
 
 ### `ForTableVirtualized`
@@ -84,7 +86,7 @@ They diverge for an **append-style infinite list**, the load-30-concatenate-load
 ></div>
 ```
 
-Without it the scroll range stretches over thousands of rows the virtualizer will never place, so the thumb shrinks to a sliver and the viewport scrolls into empty space. The only workaround is then to report the loaded count as `aria-rowcount`, which is wrong on every page but the last. `[virtualRowCount]` also bounds cross-window keyboard navigation, so `Ctrl+End` lands on the last loaded row instead of stashing a focus move that resolves only when a far page appends.
+Without it the scroll range stretches over thousands of rows the virtualizer will never place, so the thumb shrinks to a sliver and the viewport scrolls into empty space. The only workaround is then to report the loaded count as `aria-rowcount`, which is wrong on every page but the last. `[virtualRowCount]` also bounds cross-window keyboard navigation, so `Ctrl+End` lands on the last loaded row instead of stashing a focus move that resolves only when a far page appends. A `[forTableRowReorder]` keyboard reorder is bounded the same way: `End` on a lifted row drops it at the last loaded row, and the announcements count the loaded rows.
 
 When the server returns no total at all, leave `[rowCount]` unbound and keep `[virtualRowCount]` on the loaded count. `aria-rowcount` then reports `-1`, the value ARIA reserves for an unknown total, for as long as the grid is windowed, and keyboard navigation still crosses the window up to the last loaded row.
 
