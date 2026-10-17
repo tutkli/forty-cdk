@@ -721,22 +721,82 @@ describe('ForNumberInput', () => {
       expect(() => decOf(el).click()).not.toThrow();
     });
 
-    it('disables the increment button at max and the decrement button at min', async () => {
+    it('reflects aria-disabled + data-disabled at the bound, never the native disabled attribute (#2311)', async () => {
       const { el, fixture, flush } = renderHost(ButtonsHost);
       const inc = incOf(el);
       const dec = decOf(el);
 
       fixture.componentInstance.qty.set(10);
       await flush();
-      expect(inc.hasAttribute('disabled')).toBe(true);
+      expect(inc.getAttribute('aria-disabled')).toBe('true');
       expect(inc.getAttribute('data-disabled')).toBe('');
-      expect(dec.hasAttribute('disabled')).toBe(false);
+      expect(inc.hasAttribute('disabled')).toBe(false);
+      expect(dec.hasAttribute('aria-disabled')).toBe(false);
+      expect(dec.hasAttribute('data-disabled')).toBe(false);
 
       fixture.componentInstance.qty.set(0);
       await flush();
-      expect(dec.hasAttribute('disabled')).toBe(true);
+      expect(dec.getAttribute('aria-disabled')).toBe('true');
       expect(dec.getAttribute('data-disabled')).toBe('');
-      expect(inc.hasAttribute('disabled')).toBe(false);
+      expect(dec.hasAttribute('disabled')).toBe(false);
+      expect(inc.hasAttribute('aria-disabled')).toBe(false);
+      expect(inc.hasAttribute('data-disabled')).toBe(false);
+    });
+
+    it('keeps the value at the bound when the aria-disabled button is clicked again', async () => {
+      const { el, fixture, flush } = renderHost(ButtonsHost);
+      fixture.componentInstance.qty.set(0);
+      await flush();
+
+      decOf(el).click();
+      await flush();
+
+      expect(fixture.componentInstance.qty()).toBe(0);
+      expect(fixture.componentInstance.touchCount()).toBe(0);
+    });
+
+    it('reflects aria-disabled on both buttons while the spinbutton is disabled or read-only', async () => {
+      @Component({
+        imports: [
+          ForNumberInputGroup,
+          ForNumberInput,
+          ForNumberInputIncrement,
+          ForNumberInputDecrement,
+        ],
+        template: `
+          <div forNumberInputGroup>
+            <button forNumberInputDecrement data-test-id="dec">−</button>
+            <input
+              forNumberInput
+              [(value)]="qty"
+              [disabled]="isDisabled()"
+              [readonly]="isReadonly()"
+            />
+            <button forNumberInputIncrement data-test-id="inc">+</button>
+          </div>
+        `,
+      })
+      class FlagHost {
+        readonly qty = signal<number | null>(5);
+        readonly isDisabled = signal(false);
+        readonly isReadonly = signal(false);
+      }
+
+      const { el, fixture, flush } = renderHost(FlagHost);
+      for (const flag of ['isDisabled', 'isReadonly'] as const) {
+        fixture.componentInstance[flag].set(true);
+        await flush();
+        for (const button of [incOf(el), decOf(el)]) {
+          expect(button.getAttribute('aria-disabled')).toBe('true');
+          expect(button.getAttribute('data-disabled')).toBe('');
+          expect(button.hasAttribute('disabled')).toBe(false);
+          button.click();
+        }
+        await flush();
+        expect(fixture.componentInstance.qty()).toBe(5);
+        fixture.componentInstance[flag].set(false);
+        await flush();
+      }
     });
 
     it('throws when used without a [forNumberInputGroup]', () => {
@@ -762,8 +822,8 @@ describe('ForNumberInput', () => {
       class FieldlessHost {}
 
       const { el } = renderHost(FieldlessHost);
-      expect(incOf(el).hasAttribute('disabled')).toBe(true);
-      expect(decOf(el).hasAttribute('disabled')).toBe(true);
+      expect(incOf(el).getAttribute('aria-disabled')).toBe('true');
+      expect(decOf(el).getAttribute('aria-disabled')).toBe('true');
     });
 
     @Component({
@@ -809,7 +869,7 @@ describe('ForNumberInput', () => {
       await flush();
 
       expect(el.querySelector('[data-test-id="second"]')).toBeNull();
-      expect(incOf(el).hasAttribute('disabled')).toBe(false);
+      expect(incOf(el).hasAttribute('aria-disabled')).toBe(false);
 
       incOf(el).click();
       await flush();
@@ -1138,6 +1198,45 @@ describe('ForNumberInput', () => {
       await flush();
       expect(fixture.componentInstance.qty()).toBe(0.51);
       expect(input.value).toBe(fiftyOne);
+    });
+
+    it('parses digits typed in the numbering system of an ar-EG locale (#2311)', async () => {
+      const { el, fixture, flush } = renderHost(NumberHost);
+      fixture.componentInstance.locale.set('ar-EG');
+      await flush();
+      const input = inputOf(el);
+
+      input.focus();
+      typeInto(input, '١٢');
+      await flush();
+      expect(fixture.componentInstance.qty()).toBe(12);
+
+      input.dispatchEvent(new FocusEvent('blur'));
+      await flush();
+      expect(fixture.componentInstance.qty()).toBe(12);
+      expect(input.value).toBe('12');
+    });
+
+    it('keeps an edit to an ar-EG currency display through blur (#2311)', async () => {
+      const { el, fixture, flush } = renderHost(NumberHost);
+      const options: Intl.NumberFormatOptions = { style: 'currency', currency: 'EGP' };
+      const format = new Intl.NumberFormat('ar-EG', options);
+      fixture.componentInstance.locale.set('ar-EG');
+      fixture.componentInstance.formatOptions.set(options);
+      fixture.componentInstance.qty.set(1234.5);
+      await flush();
+      const input = inputOf(el);
+      expect(input.value).toBe(format.format(1234.5));
+
+      input.focus();
+      typeInto(input, format.format(1235.5));
+      await flush();
+      expect(fixture.componentInstance.qty()).toBe(1235.5);
+
+      input.dispatchEvent(new FocusEvent('blur'));
+      await flush();
+      expect(fixture.componentInstance.qty()).toBe(1235.5);
+      expect(input.value).toBe(format.format(1235.5));
     });
 
     it('round-trips a unit value in a space-grouping locale on edit (#1174)', async () => {

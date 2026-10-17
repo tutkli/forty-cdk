@@ -78,6 +78,8 @@ Type an amount: `value()` under the field follows it as a raw number, and when y
 <!-- value() === 1234.5 → displayed "$1,234.50", aria-valuenow="1234.5" -->
 ```
 
+Typed text is read in the locale's own digits as well as ASCII ones. In a locale whose default numbering system is not Latin, such as `ar-EG` or `fa-IR`, the field displays Arabic-Indic or Persian digits and parses them back, so its formatted text stays editable.
+
 > **Percent style needs a matching `step`.** With `{ style: 'percent' }` the model value is the fraction Intl formats from (`0.5` displays as `"50%"`), while `step` still defaults to `1`. Because stepping snaps to the `min ?? 0` ± k·`step` grid, ArrowUp from `0.5` would jump to `1` (100%). Set `[step]="0.01"` so one arrow press moves one percentage point. `step` is never derived from `formatOptions`, so the grid is always exactly what you bind.
 
 ## Field composition
@@ -141,9 +143,9 @@ export class DemoOrder {
 
 ### Stepper buttons
 
-Both `[forNumberInputIncrement]` / `[forNumberInputDecrement]` take the uniform `ariaLabel` input for their accessible name and stay `tabindex="-1"` (focus belongs on the spinbutton). They reflect `[disabled]` + `data-disabled` at the bound (`max` for increment, `min` for decrement) or when the control is disabled / read-only. Clicking either button also marks the spinbutton touched. The buttons are outside the tab order, so a pointer-only user would otherwise never blur the input and never engage touched-gated error display.
+Both `[forNumberInputIncrement]` / `[forNumberInputDecrement]` stay `tabindex="-1"` (focus belongs on the spinbutton). They reflect `aria-disabled="true"` + `data-disabled` at the bound (`max` for increment, `min` for decrement) or when the control is disabled / read-only, never the native `disabled` attribute: a click that reaches the bound leaves focus on the button instead of sending it to `<body>`, and activating a disabled button does nothing. Clicking either button also marks the spinbutton touched. The buttons are outside the tab order, so a pointer-only user would otherwise never blur the input and never engage touched-gated error display.
 
-> Set the accessible name with the `ariaLabel` **input** (`ariaLabel="Increase"`), not the native `aria-label` attribute. Like every forty-cdk primitive, the directive host-binds `aria-label` from that input and clears it when empty.
+> Name each button with the `ariaLabel` input (`ariaLabel="Increase"`) or a static `aria-label` attribute. A static attribute wins over the input, and the directive leaves it in place. Only a bound `[attr.aria-label]` competes with the directive's own binding, so use the input for a name that changes.
 
 `[forNumberInputIncrement]`:
 
@@ -184,7 +186,7 @@ Implements the [WAI-ARIA Spinbutton pattern](https://www.w3.org/WAI/ARIA/apg/pat
 - **Hidden input for submission.** Because the displayed text can be formatted, the visible input does **not** carry `name`; setting `name` mounts a hidden `<input>` with the raw number so native `<form>` serialization sees the value, not "$1,234.50". A disabled control is skipped automatically.
 - **A native form reset reaches the value.** When the owning `<form>` resets, the spinbutton shows the text it showed when it first rendered and that text is parsed back into `value()`, so the hidden input submits the first-render value again, or nothing when the field started empty.
 - **A value written while focused reaches the field.** A consumer reset on submit or a `[formField]` write lands in the focused spinbutton at once, so the next keystroke starts from it. Text you type is left alone until it commits, even when the formatted display differs from it.
-- **Disabled reflects through one channel.** The native `disabled` attribute already exposes the unavailable state through HTML-AAM, so no `aria-disabled` is emitted alongside it. Style the disabled state with `:disabled` or `[data-disabled]`.
+- **Disabled reflects through one channel per piece.** On the spinbutton, the native `disabled` attribute already exposes the unavailable state through HTML-AAM, so no `aria-disabled` is emitted alongside it. The stepper buttons use `aria-disabled` instead, so they keep focus at the bound. `[data-disabled]` matches every disabled piece, so style the disabled state with it.
 - **Falsy state styling selects on absence.** `aria-readonly` / `aria-required` / `aria-invalid` / `aria-busy` are emitted only when truthy, so style the off state with `:not([aria-invalid])`, never `[aria-invalid="false"]`.
 - **`@angular/forms` is an optional peer.** If you're not using Signal Forms, don't install it: the directive runs fine on a plain `[(value)]` binding (the only `@angular/forms/signals` reference is a type import, erased at build).
 

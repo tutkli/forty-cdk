@@ -440,6 +440,11 @@ export const routes: Routes = [
     loadComponent: () => import('./fixtures/pagination.fixture').then((m) => m.PaginationFixture),
   },
   {
+    path: 'number-input',
+    loadComponent: () =>
+      import('./fixtures/number-input.fixture').then((m) => m.NumberInputFixture),
+  },
+  {
     path: 'file-upload',
     loadComponent: () => import('./fixtures/file-upload.fixture').then((m) => m.FileUploadFixture),
   },

@@ -1,19 +1,20 @@
 import { computed, Directive, input } from '@angular/core';
 
-import { hostButtonType, reflectDisabled, hostAriaLabel } from 'forty-cdk/core';
+import { hostButtonType, hostAriaLabel } from 'forty-cdk/core';
 import { injectNumberInputGroup } from './number-input-context';
 
 /**
  * Auxiliary "step down" button for a `[forNumberInput]`. Apply on a `<button>`
  * (the directive forces `type="button"` to prevent form submission). It stays
  * `tabindex="-1"` — focus belongs on the spinbutton input, which carries the
- * full keyboard map — and reflects `[disabled]` + `data-disabled` when the
- * value is at `min` (or the control is disabled / read-only). A click also marks
- * the spinbutton touched, so a pointer-only user still engages touched-gated
- * error display.
+ * full keyboard map — and reflects `aria-disabled` + `data-disabled` when the
+ * value is at `min` (or the control is disabled / read-only), never the native
+ * `disabled` attribute, so a button that reaches the bound keeps focus.
+ * Activation does nothing while disabled. A click also marks the spinbutton
+ * touched, so a pointer-only user still engages touched-gated error display.
  *
- * Takes the uniform `ariaLabel` input so consumers can name it (e.g.
- * "Decrease quantity").
+ * Named by the uniform `ariaLabel` input or a static `aria-label` attribute,
+ * which wins over the input (e.g. "Decrease quantity").
  *
  * @example
  * ```html
@@ -28,6 +29,7 @@ import { injectNumberInputGroup } from './number-input-context';
     '[attr.type]': 'buttonType()',
     tabindex: '-1',
     '[attr.aria-label]': 'resolvedAriaLabel()',
+    '[attr.aria-disabled]': 'isDisabled() ? "true" : null',
     '[attr.data-disabled]': 'isDisabled() ? "" : null',
     '(click)': 'step()',
   },
@@ -47,13 +49,9 @@ export class ForNumberInputDecrement {
     return !field || field.effectiveDisabled() || field.readonly() || field.atMin();
   });
 
-  constructor() {
-    reflectDisabled(this.isDisabled);
-  }
-
   private step(): void {
     const field = this.group.field();
-    if (!field) {
+    if (!field || this.isDisabled()) {
       return;
     }
     field.decrement();
