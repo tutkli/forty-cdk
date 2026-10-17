@@ -102,11 +102,11 @@ function resolveReorderAction(event: KeyboardEvent, dir: WritingDirection): Reor
  *
  * @example
  * ```html
- * <ul forListbox forListboxReorder multiple [(value)]="selected" (optionReorder)="reorder($event)">
+ * <div forListbox forListboxReorder multiple [(value)]="selected" (optionReorder)="reorder($event)">
  *   @for (tag of tags(); track tag) {
- *     <li><button type="button" forListboxOption [value]="tag">{{ tag }}</button></li>
+ *     <button type="button" forListboxOption [value]="tag">{{ tag }}</button>
  *   }
- * </ul>
+ * </div>
  * ```
  */
 @Directive({

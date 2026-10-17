@@ -12,7 +12,7 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ForListbox, ForListboxOption, ForListboxReorder],
   template: `
-    <ul
+    <div
       forListbox
       forListboxReorder
       multiple
@@ -22,11 +22,9 @@ import {
       aria-label="Tags"
     >
       @for (tag of tags(); track tag) {
-        <li>
-          <button type="button" forListboxOption class="chip" [value]="tag">{{ tag }}</button>
-        </li>
+        <button type="button" forListboxOption class="chip" [value]="tag">{{ tag }}</button>
       }
-    </ul>
+    </div>
   `,
   styles: `
     :host {
@@ -40,11 +38,6 @@ import {
       width: min(420px, 100%);
       margin: 0;
       padding: 0;
-      list-style: none;
-    }
-
-    .chips > li {
-      display: contents;
     }
 
     .chip {

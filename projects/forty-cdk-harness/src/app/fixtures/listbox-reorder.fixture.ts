@@ -19,7 +19,7 @@ import {
   imports: [ForListbox, ForListboxOption, ForListboxReorder],
   template: `
     <input data-testid="before" placeholder="before-listbox" />
-    <ul
+    <div
       forListbox
       forListboxReorder
       multiple
@@ -27,22 +27,20 @@ import {
       (optionReorder)="onReorder($event)"
       data-testid="listbox"
       aria-label="Sortable tags"
-      style="display: flex; flex-wrap: wrap; gap: 8px; list-style: none; padding: 0; max-width: 360px"
+      style="display: flex; flex-wrap: wrap; gap: 8px; max-width: 360px"
     >
       @for (tag of tags(); track tag) {
-        <li>
-          <button
-            type="button"
-            forListboxOption
-            [value]="tag"
-            [attr.data-testid]="'opt-' + tag"
-            style="padding: 8px 12px; border: 1px solid #888"
-          >
-            {{ tag }}
-          </button>
-        </li>
+        <button
+          type="button"
+          forListboxOption
+          [value]="tag"
+          [attr.data-testid]="'opt-' + tag"
+          style="padding: 8px 12px; border: 1px solid #888"
+        >
+          {{ tag }}
+        </button>
       }
-    </ul>
+    </div>
     <div data-testid="order">{{ order() }}</div>
     <div data-testid="selected">{{ selectedText() }}</div>
     <div data-testid="last-event">{{ lastEvent() }}</div>

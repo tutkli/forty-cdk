@@ -12,33 +12,31 @@ interface Option {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ForListbox, ForListboxOption, ForListboxOptionIndicator],
   template: `
-    <ul forListbox multiple class="listbox" [(value)]="value" aria-label="Languages">
+    <div forListbox multiple class="listbox" [(value)]="value" aria-label="Languages">
       @for (opt of options; track opt.value) {
-        <li>
-          <button
-            type="button"
-            forListboxOption
-            class="listbox-option"
-            [value]="opt.value"
-            [disabled]="opt.disabled ?? false"
-          >
-            {{ opt.label }}
-            <span forListboxOptionIndicator class="listbox-indicator">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path
-                  d="m4.5 12.75 6 6 9-13.5"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.75"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
-            </span>
-          </button>
-        </li>
+        <button
+          type="button"
+          forListboxOption
+          class="listbox-option"
+          [value]="opt.value"
+          [disabled]="opt.disabled ?? false"
+        >
+          {{ opt.label }}
+          <span forListboxOptionIndicator class="listbox-indicator">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="m4.5 12.75 6 6 9-13.5"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.75"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </span>
+        </button>
       }
-    </ul>
+    </div>
   `,
   styles: `
     :host {
@@ -52,7 +50,6 @@ interface Option {
       width: min(300px, 100%);
       margin: 0;
       padding: 5px;
-      list-style: none;
       background: var(--ex-surface, #ffffff);
       border: 1px solid var(--ex-border, #e5e0d6);
       border-radius: var(--ex-radius-sm, 14px);
@@ -61,10 +58,6 @@ interface Option {
         0 2px 4px rgba(0, 0, 0, 0.04),
         0 20px 40px -18px rgba(0, 0, 0, 0.2)
       );
-    }
-
-    .listbox > li {
-      display: contents;
     }
 
     .listbox-option {
