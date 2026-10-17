@@ -140,7 +140,7 @@ Root directive. `role="toolbar"`. Owns roving tabindex and arrow-key navigation.
 | ------------- | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `ariaLabel`   | `input<string \| null>`             | Reactive accessible name, reflected as `aria-label`. Prefer `aria-labelledby` when a visible label element exists.<br>**Default:** `null` (and `''`) emits no attribute |
 | `orientation` | `input<'horizontal' \| 'vertical'>` | Layout direction.<br>**Default:** `'horizontal'`                                                                                                                        |
-| `dir`         | `input<WritingDirection>`           | Reading direction. RTL swaps ArrowLeft / ArrowRight.<br>**Default:** —                                                                                                  |
+| `dir`         | `input<'ltr' \| 'rtl' \| null>`     | Reading direction. `null` inherits the nearest `[dir]` / `<html dir>`, else `'ltr'`. RTL swaps ArrowLeft / ArrowRight.<br>**Default:** `null`                           |
 | `loop`        | `input<boolean>`                    | Whether arrow nav wraps at the ends.<br>**Default:** `true`                                                                                                             |
 | `disabled`    | `input<boolean>`                    | Disables every item.<br>**Default:** —                                                                                                                                  |
 
