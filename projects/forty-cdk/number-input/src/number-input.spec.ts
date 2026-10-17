@@ -510,6 +510,26 @@ describe('ForNumberInput', () => {
       expect(fixture.componentInstance.qty()).toBe(0);
     });
 
+    it('ArrowUp / ArrowDown from a typed value finer than a fractional step land on the adjacent grid point', async () => {
+      const { el, fixture, flush } = renderHost(NumberHost);
+      fixture.componentInstance.step.set(0.1);
+      await flush();
+      const input = inputOf(el);
+
+      typeInto(input, '0.36');
+      await flush();
+      pressKey(input, 'ArrowUp');
+      await flush();
+      expect(fixture.componentInstance.qty()).toBe(0.4);
+      expect(input.getAttribute('aria-valuenow')).toBe('0.4');
+
+      typeInto(input, '0.44');
+      await flush();
+      pressKey(input, 'ArrowDown');
+      await flush();
+      expect(fixture.componentInstance.qty()).toBe(0.4);
+    });
+
     it('measures the step grid from min, not from zero', async () => {
       const { el, fixture, flush } = renderHost(NumberHost);
       fixture.componentInstance.min.set(3);

@@ -524,6 +524,23 @@ describe('ForSlider', () => {
       expect(thumb(el, 0).getAttribute('aria-valuenow')).toBe('1');
     });
 
+    it('a value finer than a fractional step advances to the adjacent grid point', async () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.step.set(0.1);
+      fixture.componentInstance.picked.set([0.36]);
+      await flush();
+      keyDown(thumb(el, 0), 'ArrowRight');
+      await flush();
+      expect(fixture.componentInstance.picked()).toEqual([0.4]);
+      expect(thumb(el, 0).getAttribute('aria-valuenow')).toBe('0.4');
+
+      fixture.componentInstance.picked.set([0.44]);
+      await flush();
+      keyDown(thumb(el, 0), 'ArrowLeft');
+      await flush();
+      expect(fixture.componentInstance.picked()).toEqual([0.4]);
+    });
+
     it('PageUp from an off-grid value lands on the adjacent grid point', async () => {
       const { el, fixture, flush } = renderHost(SliderHost);
       fixture.componentInstance.picked.set([0.55]);
