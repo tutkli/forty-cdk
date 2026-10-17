@@ -3674,3 +3674,236 @@ describe('ForDraggable with no dragData binding', () => {
     expect(instance.ends).toEqual([{ dropped: false }]);
   });
 });
+
+describe('ForDraggable — nested draggables', () => {
+  interface Card {
+    id: string;
+  }
+
+  interface Column {
+    id: string;
+    cards: Card[];
+  }
+
+  @Component({
+    host: { 'data-fixture': 'nested-draggables-host' },
+    imports: [ForDropList, ForDraggable, ForDragPreview],
+    template: `
+      <div forDropList orientation="horizontal">
+        @for (column of columns; track column.id) {
+          <section
+            forDraggable
+            [dragData]="column"
+            [attr.data-test-id]="column.id"
+            (dragStart)="columnStarts.push(column.id)"
+          >
+            <h2 [attr.data-test-id]="column.id + '-title'">{{ column.id }}</h2>
+            <ul forDropList>
+              @for (card of column.cards; track card.id) {
+                <li
+                  forDraggable
+                  [dragData]="card"
+                  [attr.data-test-id]="card.id"
+                  (dragStart)="cardStarts.push(card.id)"
+                >
+                  {{ card.id }}
+                  <ng-template forDragPreview
+                    ><span class="card-preview">{{ card.id }}</span></ng-template
+                  >
+                </li>
+              }
+            </ul>
+          </section>
+        }
+      </div>
+    `,
+  })
+  class NestedHost {
+    readonly columns: Column[] = [
+      { id: 'todo', cards: [{ id: 'c1' }, { id: 'c2' }] },
+      { id: 'done', cards: [{ id: 'c3' }] },
+    ];
+    readonly columnStarts: string[] = [];
+    readonly cardStarts: string[] = [];
+  }
+
+  afterEach(() => {
+    document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
+  });
+
+  it('a press on an inner item drags only that item', async () => {
+    const { el, fixture, instance } = renderHost(NestedHost);
+    await flush(fixture);
+    const card = itemEl(el, 'c1');
+
+    card.dispatchEvent(pointerAt('pointerdown', 10, 10));
+    document.dispatchEvent(pointerAt('pointermove', 10, 40));
+    await flush(fixture);
+
+    expect(card.hasAttribute('data-dragging')).toBe(true);
+    expect(itemEl(el, 'todo').hasAttribute('data-dragging')).toBe(false);
+
+    document.dispatchEvent(pointerAt('pointerup', 10, 40));
+    await flush(fixture);
+
+    expect(instance.cardStarts).toEqual(['c1']);
+    expect(instance.columnStarts).toEqual([]);
+  });
+
+  it('a press on the outer item outside its nested items still drags the outer item', async () => {
+    const { el, fixture, instance } = renderHost(NestedHost);
+    await flush(fixture);
+
+    itemEl(el, 'todo-title').dispatchEvent(pointerAt('pointerdown', 10, 10));
+    document.dispatchEvent(pointerAt('pointermove', 40, 10));
+    document.dispatchEvent(pointerAt('pointerup', 40, 10));
+    await flush(fixture);
+
+    expect(instance.columnStarts).toEqual(['todo']);
+    expect(instance.cardStarts).toEqual([]);
+  });
+
+  it('the outer item lifts without a nested item’s preview template', async () => {
+    const { el, fixture } = renderHost(NestedHost);
+    await flush(fixture);
+
+    itemEl(el, 'todo-title').dispatchEvent(pointerAt('pointerdown', 10, 10));
+    document.dispatchEvent(pointerAt('pointermove', 40, 10));
+    await flush(fixture);
+
+    expect(itemEl(el, 'todo').hasAttribute('data-dragging')).toBe(true);
+    expect(document.querySelector('.card-preview')).toBeNull();
+
+    document.dispatchEvent(pointerAt('pointerup', 40, 10));
+    await flush(fixture);
+  });
+
+  it('an inner item lifts with its own preview template', async () => {
+    const { el, fixture } = renderHost(NestedHost);
+    await flush(fixture);
+
+    itemEl(el, 'c2').dispatchEvent(pointerAt('pointerdown', 10, 10));
+    document.dispatchEvent(pointerAt('pointermove', 10, 40));
+    await flush(fixture);
+
+    expect(document.querySelector('.card-preview')?.textContent).toBe('c2');
+
+    document.dispatchEvent(pointerAt('pointerup', 10, 40));
+    await flush(fixture);
+  });
+
+  it('a native dragstart inside an inner item is cancelled by that item alone', async () => {
+    const { el, fixture } = renderHost(NestedHost);
+    await flush(fixture);
+    const column = itemEl(el, 'todo');
+    const seenByColumn: boolean[] = [];
+    const record = (event: Event): void => {
+      seenByColumn.push(event.defaultPrevented);
+    };
+    column.addEventListener('dragstart', record, { capture: true });
+    try {
+      const event = new Event('dragstart', { bubbles: true, cancelable: true });
+      itemEl(el, 'c1').dispatchEvent(event);
+      expect(event.defaultPrevented).toBe(true);
+      expect(seenByColumn).toEqual([false]);
+    } finally {
+      column.removeEventListener('dragstart', record, { capture: true });
+    }
+  });
+});
+
+describe('ForDraggable — native drag and touch-action', () => {
+  @Component({
+    host: { 'data-fixture': 'native-drag-host' },
+    imports: [...HANDLE_IMPORTS],
+    template: `
+      <ul forDropList [disabled]="listDisabled()">
+        <li forDraggable [dragData]="'a'" [dragDisabled]="itemDisabled()" data-test-id="a">
+          @if (showHandle()) {
+            <span forDragHandle data-testid="handle">::</span>
+          }
+          <img alt="" data-testid="thumb" />
+        </li>
+      </ul>
+    `,
+  })
+  class NativeDragHost {
+    readonly showHandle = signal(false);
+    readonly listDisabled = signal(false);
+    readonly itemDisabled = signal(false);
+  }
+
+  function dragStartOn(target: HTMLElement): Event {
+    const event = new Event('dragstart', { bubbles: true, cancelable: true });
+    target.dispatchEvent(event);
+    return event;
+  }
+
+  function byTestId(el: HTMLElement, id: string): HTMLElement {
+    return el.querySelector<HTMLElement>(`[data-testid="${id}"]`)!;
+  }
+
+  it('cancels a native dragstart from the content of an item that can be dragged', async () => {
+    const { el, fixture } = renderHost(NativeDragHost);
+    await flush(fixture);
+
+    expect(dragStartOn(byTestId(el, 'thumb')).defaultPrevented).toBe(true);
+  });
+
+  it('leaves a native dragstart alone while the item or its list is disabled', async () => {
+    const { el, fixture, instance } = renderHost(NativeDragHost);
+    instance.itemDisabled.set(true);
+    await flush(fixture);
+    expect(dragStartOn(byTestId(el, 'thumb')).defaultPrevented).toBe(false);
+
+    instance.itemDisabled.set(false);
+    instance.listDisabled.set(true);
+    await flush(fixture);
+    expect(dragStartOn(byTestId(el, 'thumb')).defaultPrevented).toBe(false);
+  });
+
+  it('with a handle, cancels a native dragstart only from inside the handle', async () => {
+    const { el, fixture, instance } = renderHost(NativeDragHost);
+    instance.showHandle.set(true);
+    await flush(fixture);
+
+    expect(dragStartOn(byTestId(el, 'thumb')).defaultPrevented).toBe(false);
+    expect(dragStartOn(byTestId(el, 'handle')).defaultPrevented).toBe(true);
+  });
+
+  it('the host touch-action follows a handle mounted and removed after the first render', async () => {
+    const { el, fixture, instance } = renderHost(NativeDragHost);
+    await flush(fixture);
+    const item = itemEl(el, 'a');
+    expect(item.style.touchAction).toBe('none');
+
+    instance.showHandle.set(true);
+    await flush(fixture);
+    expect(item.style.touchAction).toBe('');
+
+    instance.showHandle.set(false);
+    await flush(fixture);
+    expect(item.style.touchAction).toBe('none');
+  });
+
+  it('a handle drops touch-action: none while its item or its list is disabled', async () => {
+    const { el, fixture, instance } = renderHost(NativeDragHost);
+    instance.showHandle.set(true);
+    await flush(fixture);
+    const handle = byTestId(el, 'handle');
+    expect(handle.style.touchAction).toBe('none');
+
+    instance.listDisabled.set(true);
+    await flush(fixture);
+    expect(handle.style.touchAction).toBe('');
+
+    instance.listDisabled.set(false);
+    instance.itemDisabled.set(true);
+    await flush(fixture);
+    expect(handle.style.touchAction).toBe('');
+
+    instance.itemDisabled.set(false);
+    await flush(fixture);
+    expect(handle.style.touchAction).toBe('none');
+  });
+});

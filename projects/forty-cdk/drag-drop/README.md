@@ -263,6 +263,19 @@ unaffected.
 </li>
 ```
 
+A handle carries `touch-action: none`, so a touch drag on it is not taken by the page's
+scrolling, and the item around it leaves touch scrolling alone. Both follow the item: a handle
+mounted or removed after the first render moves the `touch-action: none` between the handle and
+the item, and a disabled item or list drops it from both.
+
+### Native drag
+
+Images, links and selected text are draggable by the browser itself, and its own drag starts
+before a pointer drag arms. A `[forDraggable]` or `[forFreeDrag]` therefore cancels the native
+`dragstart` of every press it would turn into a pointer drag, so pressing a thumbnail inside an
+item reorders the item instead of dragging a copy of the image. Content outside the item's
+handles, and every press while the item or its list is disabled, keeps its native drag.
+
 ### Nested controls
 
 A control inside a draggable item keeps its press from starting a drag by calling
@@ -285,6 +298,28 @@ the press stays with the control; lifting with the keyboard is unaffected.
   stands down. That is how a `[forTableColumnResizer]` resizes inside a reorderable header cell.
 - A canceled `pointerdown` suppresses the compatibility mouse events of that press (`mousedown`,
   `mouseup`), so the control must not rely on them. `click` still fires.
+
+A `[forDraggable]` or `[forFreeDrag]` nested inside another one needs no `preventDefault()`: every
+press inside it is its own, and the item around it never starts a drag from there, even while the
+nested one is disabled. On a board whose columns are the items of one list and hold a list of
+cards each, pressing a card drags the card, and pressing a column outside its cards drags the
+column. Each item lifts with its own `[forDragPreview]` / `[forDragPlaceholder]`, never with one
+declared inside a nested item.
+
+```html
+<div forDropList orientation="horizontal" (dragDrop)="moveColumn($event)">
+  @for (column of columns(); track column.id) {
+  <section forDraggable [dragData]="column">
+    <h2>{{ column.title }}</h2>
+    <ul forDropList (dragDrop)="moveCard(column, $event)">
+      @for (card of column.cards; track card.id) {
+      <li forDraggable [dragData]="card">{{ card.title }}</li>
+      }
+    </ul>
+  </section>
+  }
+</div>
+```
 
 ### Custom preview & placeholder
 

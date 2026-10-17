@@ -1,7 +1,7 @@
 import {
   booleanAttribute,
   computed,
-  contentChild,
+  contentChildren,
   DestroyRef,
   Directive,
   DOCUMENT,
@@ -29,7 +29,7 @@ import {
   resolveText,
   unsetInput,
 } from 'forty-cdk/core';
-import { createPointerHandleGuard } from './handle-guard';
+import { createPointerHandleGuard, registerWithEnclosingDraggable } from './handle-guard';
 import {
   FOR_DRAGGABLE_CONTEXT,
   FOR_DRAGGABLE_LIFT_GUARD,
@@ -77,8 +77,8 @@ export class ForDraggable implements ForDraggableContext {
   readonly #document = inject(DOCUMENT);
   readonly #vcr = inject(ViewContainerRef);
   readonly #liftGuard = inject(FOR_DRAGGABLE_LIFT_GUARD, { optional: true });
-  private readonly previewTpl = contentChild(ForDragPreview);
-  private readonly placeholderTpl = contentChild(ForDragPlaceholder);
+  private readonly previewTpls = contentChildren(ForDragPreview, { descendants: true });
+  private readonly placeholderTpls = contentChildren(ForDragPlaceholder, { descendants: true });
   #placeholderView: EmbeddedViewRef<unknown> | null = null;
 
   /** `true` while a pointer-drag placeholder template occupies this item's slot (host hidden). */
@@ -172,8 +172,21 @@ export class ForDraggable implements ForDraggableContext {
 
   private readonly touchAction = this.#handleGuard.touchAction;
 
+  private readonly previewTpl = computed(() =>
+    this.previewTpls().find((tpl) =>
+      this.#handleGuard.owns(tpl.templateRef.elementRef.nativeElement),
+    ),
+  );
+
+  private readonly placeholderTpl = computed(() =>
+    this.placeholderTpls().find((tpl) =>
+      this.#handleGuard.owns(tpl.templateRef.elementRef.nativeElement),
+    ),
+  );
+
   constructor() {
     assertInputBound(this.dragData, 'drag-drop', '[forDraggable]', 'dragData');
+    registerWithEnclosingDraggable(this.#host.nativeElement, 'ForDraggable');
     const handle: ForDraggableHandle = {
       host: this.#host.nativeElement,
       data: this.dragData,
@@ -224,6 +237,18 @@ export class ForDraggable implements ForDraggableContext {
 
   unregisterHandle(el: HTMLElement): void {
     this.#handleGuard.unregister(el);
+  }
+
+  private handleTouchAction(): 'none' | null {
+    return this.#handleGuard.handleTouchAction();
+  }
+
+  private registerNestedDraggable(el: HTMLElement): void {
+    this.#handleGuard.registerNested(el);
+  }
+
+  private unregisterNestedDraggable(el: HTMLElement): void {
+    this.#handleGuard.unregisterNested(el);
   }
 
   #onPointerLift(event: PointerEvent): boolean {
@@ -297,7 +322,9 @@ export class ForDraggable implements ForDraggableContext {
   private onNativeDragStart(event: Event): void {
     if (this.#pointerDragging) {
       event.preventDefault();
+      return;
     }
+    this.#handleGuard.suppressNativeDrag(event);
   }
 
   private onFocus(): void {

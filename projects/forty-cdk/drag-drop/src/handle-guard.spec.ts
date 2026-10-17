@@ -6,7 +6,7 @@ import {
 } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { createPointerHandleGuard, type PointerHandleGuard } from './handle-guard';
+import { createPointerHandleGuard } from './handle-guard';
 
 function withInjector<T>(fn: () => T): T {
   TestBed.configureTestingModule({
@@ -88,22 +88,79 @@ describe('createPointerHandleGuard', () => {
       expect(guard.touchAction()).toBeNull();
     });
 
-    it('is null once a handle is registered and the disabled signal changes (non-reactive count read)', () => {
-      let guard!: PointerHandleGuard;
-      const disabled = signal(false);
-      withInjector(() => {
-        guard = createPointerHandleGuard(disabled);
-      });
+    it('follows a handle registered and unregistered after creation', () => {
+      const guard = withInjector(() => createPointerHandleGuard(signal(false)));
       const handle = document.createElement('div');
-      guard.register(handle);
 
-      // The `handles.size` read is intentionally non-reactive — `touchAction`
-      // only recomputes when the disabled signal changes, so toggle it to force
-      // a recompute and observe the post-registration value.
+      guard.register(handle);
+      expect(guard.touchAction()).toBeNull();
+
+      guard.unregister(handle);
+      expect(guard.touchAction()).toBe('none');
+    });
+
+    it("handleTouchAction is 'none' while enabled and null while disabled", () => {
+      const disabled = signal(false);
+      const guard = withInjector(() => createPointerHandleGuard(disabled));
+      expect(guard.handleTouchAction()).toBe('none');
+
       disabled.set(true);
-      expect(guard.touchAction()).toBeNull();
-      disabled.set(false);
-      expect(guard.touchAction()).toBeNull();
+      expect(guard.handleTouchAction()).toBeNull();
+    });
+  });
+
+  describe('nested draggables', () => {
+    it('rejects a press inside a registered nested host and accepts one outside it', () => {
+      const guard = withInjector(() => createPointerHandleGuard(signal(false)));
+      const nested = document.createElement('li');
+      const inside = document.createElement('span');
+      nested.appendChild(inside);
+      const outside = document.createElement('span');
+      guard.registerNested(nested);
+
+      expect(guard.canStart(pointerEvent({ target: inside }))).toBe(false);
+      expect(guard.canStart(pointerEvent({ target: nested }))).toBe(false);
+      expect(guard.canStart(pointerEvent({ target: outside }))).toBe(true);
+      expect(guard.owns(inside)).toBe(false);
+      expect(guard.owns(outside)).toBe(true);
+
+      guard.unregisterNested(nested);
+      expect(guard.canStart(pointerEvent({ target: inside }))).toBe(true);
+    });
+  });
+
+  describe('suppressNativeDrag', () => {
+    function dragStart(target: Node): Event {
+      const event = new Event('dragstart', { cancelable: true });
+      Object.defineProperty(event, 'target', { value: target });
+      return event;
+    }
+
+    it('cancels a dragstart the guard would accept and leaves the others alone', () => {
+      const disabled = signal(false);
+      const guard = withInjector(() => createPointerHandleGuard(disabled));
+      const handle = document.createElement('div');
+      const inHandle = document.createElement('img');
+      handle.appendChild(inHandle);
+      const outside = document.createElement('img');
+
+      const accepted = dragStart(outside);
+      guard.suppressNativeDrag(accepted);
+      expect(accepted.defaultPrevented).toBe(true);
+
+      guard.register(handle);
+      const offHandle = dragStart(outside);
+      guard.suppressNativeDrag(offHandle);
+      expect(offHandle.defaultPrevented).toBe(false);
+
+      const onHandle = dragStart(inHandle);
+      guard.suppressNativeDrag(onHandle);
+      expect(onHandle.defaultPrevented).toBe(true);
+
+      disabled.set(true);
+      const whileDisabled = dragStart(inHandle);
+      guard.suppressNativeDrag(whileDisabled);
+      expect(whileDisabled.defaultPrevented).toBe(false);
     });
   });
 });

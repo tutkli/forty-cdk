@@ -1,5 +1,6 @@
 import { inject, InjectionToken, type Signal } from '@angular/core';
 import {
+  assertRootContext,
   type DragPreview,
   type ListNavigationAction,
   orphanContextError,
@@ -268,11 +269,39 @@ export interface ForDraggableContext {
   unregisterHandle(el: HTMLElement): void;
 }
 
+/** The channels the drag-drop pieces read off their `[forDraggable]` / `[forFreeDrag]` and no consumer calls. */
+export interface DraggablePieceContext {
+  /** `'none'` while a handle should suppress native touch scrolling, `null` while dragging is disabled. */
+  handleTouchAction(): 'none' | null;
+  /** Register the host of a nested draggable; a press inside it never starts a drag of this one. */
+  registerNestedDraggable(el: HTMLElement): void;
+  unregisterNestedDraggable(el: HTMLElement): void;
+}
+
+/**
+ * Internal view of {@link FOR_DRAGGABLE_CONTEXT}: everything {@link ForDraggableContext}
+ * publishes plus the {@link DraggablePieceContext} channels.
+ *
+ * Never exported from `public-api.ts`. `ForDraggable` and `ForFreeDrag` declare those
+ * members TS-`private`, which keeps them out of the emitted `.d.ts` while `useExisting`
+ * still satisfies this contract at runtime.
+ */
+export interface DraggableContext extends ForDraggableContext, DraggablePieceContext {}
+
+/**
+ * DI token for the coordination surface `[forDraggable]` / `[forFreeDrag]` provide.
+ *
+ * Publicly typed as {@link ForDraggableContext}. The pieces read the same token at an
+ * internal type that adds their channels, so a wrapper re-providing it must alias it to
+ * the directive: `{ provide: FOR_DRAGGABLE_CONTEXT, useExisting: MyDraggable }`, where
+ * `MyDraggable` extends `ForDraggable` or `ForFreeDrag`. A value that merely satisfies the
+ * declared type resolves too, and is rejected in dev mode by the first piece to reach a channel.
+ */
 export const FOR_DRAGGABLE_CONTEXT = new InjectionToken<ForDraggableContext>(
   'FOR_DRAGGABLE_CONTEXT',
 );
 
-export function injectDraggableContext(piece: string): ForDraggableContext {
+export function injectDraggableContext(piece: string): DraggableContext {
   const ctx = inject(FOR_DRAGGABLE_CONTEXT, { optional: true });
   if (!ctx) {
     throw orphanContextError({
@@ -282,5 +311,17 @@ export function injectDraggableContext(piece: string): ForDraggableContext {
       token: 'FOR_DRAGGABLE_CONTEXT',
     });
   }
-  return ctx;
+  return asDraggableContext(ctx, piece);
+}
+
+export function asDraggableContext(ctx: ForDraggableContext, piece: string): DraggableContext {
+  const widened = ctx as unknown as DraggableContext;
+  assertRootContext({
+    entryPoint: 'drag-drop',
+    token: 'FOR_DRAGGABLE_CONTEXT',
+    root: '[forDraggable] or [forFreeDrag]',
+    piece,
+    probe: () => widened.registerNestedDraggable,
+  });
+  return widened;
 }

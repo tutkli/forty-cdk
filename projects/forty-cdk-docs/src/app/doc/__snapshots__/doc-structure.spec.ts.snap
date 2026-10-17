@@ -3370,6 +3370,10 @@ exports[`document structure > projects/forty-cdk/drag-drop/README.md declares th
       },
       {
         "depth": 3,
+        "slug": "native-drag",
+      },
+      {
+        "depth": 3,
         "slug": "nested-controls",
       },
       {

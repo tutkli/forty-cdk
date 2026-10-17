@@ -48,6 +48,7 @@ export const REGISTRATION_SURFACES = {
   combobox: ['ComboboxContext', 'ComboboxPieceContext', 'ComboboxRegistrationContext'],
   'context-menu': ['ContextMenuContext', 'ContextMenuPieceContext'],
   dialog: ['DialogContext', 'DialogRegistrationContext'],
+  'drag-drop': ['DraggableContext', 'DraggablePieceContext'],
   drawer: ['DrawerContext', 'DrawerRegistrationContext'],
   'hover-card': ['HoverCardContext', 'HoverCardPieceContext'],
   listbox: ['ListboxContext', 'ListboxPieceContext', 'ListboxRegistrationContext'],

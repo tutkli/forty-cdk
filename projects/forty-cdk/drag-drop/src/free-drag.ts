@@ -22,7 +22,7 @@ import {
   resolveBoundaryElement,
 } from 'forty-cdk/core';
 import { FOR_DRAGGABLE_CONTEXT, type ForDraggableContext } from './drag-drop-context';
-import { createPointerHandleGuard } from './handle-guard';
+import { createPointerHandleGuard, registerWithEnclosingDraggable } from './handle-guard';
 
 const POINTER_ARM_THRESHOLD_PX = 5;
 
@@ -66,6 +66,7 @@ interface LiftSnapshot {
     '[attr.data-dragging]': "dragging() ? '' : null",
     '[attr.data-disabled]': "disabled() ? '' : null",
     '[style.touch-action]': 'touchAction()',
+    '(dragstart)': 'onNativeDragStart($event)',
   },
 })
 export class ForFreeDrag implements ForDraggableContext {
@@ -120,6 +121,7 @@ export class ForFreeDrag implements ForDraggableContext {
   private readonly touchAction = this.#handleGuard.touchAction;
 
   constructor() {
+    registerWithEnclosingDraggable(this.#host.nativeElement, 'ForFreeDrag');
     if (this.#isBrowser) {
       effect((onCleanup) => {
         const { x, y } = this.position();
@@ -151,6 +153,26 @@ export class ForFreeDrag implements ForDraggableContext {
 
   unregisterHandle(el: HTMLElement): void {
     this.#handleGuard.unregister(el);
+  }
+
+  private handleTouchAction(): 'none' | null {
+    return this.#handleGuard.handleTouchAction();
+  }
+
+  private registerNestedDraggable(el: HTMLElement): void {
+    this.#handleGuard.registerNested(el);
+  }
+
+  private unregisterNestedDraggable(el: HTMLElement): void {
+    this.#handleGuard.unregisterNested(el);
+  }
+
+  private onNativeDragStart(event: Event): void {
+    if (this.dragging()) {
+      event.preventDefault();
+      return;
+    }
+    this.#handleGuard.suppressNativeDrag(event);
   }
 
   readonly #resolvedRoot = computed<HTMLElement>(() => {
