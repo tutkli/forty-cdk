@@ -7,7 +7,7 @@ import {
   assertDataStateContract,
   assertDismissibleLayerContract,
 } from '../../src/test-utils/contract';
-import { type VetoableEvent, type VetoableNativeEvent } from 'forty-cdk/core';
+import { resolveActiveElement, type VetoableEvent, type VetoableNativeEvent } from 'forty-cdk/core';
 import { FOR_MENU_CONTEXT } from 'forty-cdk/core-overlay';
 import { provideForContextMenuDefaults } from 'forty-cdk/defaults';
 import {
@@ -190,18 +190,87 @@ describe('ForContextMenu', () => {
       pressKey(region, 'ContextMenu');
       await flush(r.fixture);
 
+      const focused = document.activeElement!;
+      expect(focused.id).toBe('cut');
       const synthesized = new MouseEvent('contextmenu', {
         bubbles: true,
         cancelable: true,
         clientX: 0,
         clientY: 0,
       });
-      region.dispatchEvent(synthesized);
+      focused.dispatchEvent(synthesized);
       await flush(r.fixture);
 
       expect(r.instance.open()).toBe(true);
       expect(synthesized.defaultPrevented).toBe(true);
       expect(document.querySelector('#cut')!.getAttribute('data-highlighted')).toBe('');
+    });
+
+    it('swallows the trailing contextmenu on the region when the mount focus was vetoed', async () => {
+      @Component({
+        imports: IMPORTS,
+        template: `
+          <div forContextMenu [(open)]="open" (autoFocusOnOpen)="$event.preventDefault()">
+            <div id="region" forContextMenuTrigger>Right-click here</div>
+            @if (open()) {
+              <div forMenuContent><button id="cut" forMenuItem>Cut</button></div>
+            }
+          </div>
+        `,
+      })
+      class VetoedHost {
+        readonly open = signal(false);
+      }
+
+      const r = renderHost(VetoedHost);
+      const region = r.query<HTMLElement>('#region')!;
+      region.focus();
+      pressKey(region, 'ContextMenu');
+      await flush(r.fixture);
+      expect(document.activeElement).toBe(region);
+
+      const synthesized = new MouseEvent('contextmenu', { bubbles: true, cancelable: true });
+      region.dispatchEvent(synthesized);
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(true);
+      expect(synthesized.defaultPrevented).toBe(true);
+    });
+
+    it('stops swallowing contextmenu once a keyboard-opened menu closes', async () => {
+      const r = renderHost(ContextMenuHost);
+      const region = r.query<HTMLElement>('#region')!;
+      region.focus();
+      pressKey(region, 'ContextMenu');
+      await flush(r.fixture);
+      pressKey(document, 'Escape');
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe(false);
+
+      const outside = document.createElement('button');
+      document.body.appendChild(outside);
+      try {
+        const later = new MouseEvent('contextmenu', { bubbles: true, cancelable: true });
+        outside.dispatchEvent(later);
+        expect(later.defaultPrevented).toBe(false);
+      } finally {
+        outside.remove();
+      }
+    });
+
+    it('does not swallow a pointer contextmenu inside a keyboard-opened menu', async () => {
+      const r = renderHost(ContextMenuHost);
+      const region = r.query<HTMLElement>('#region')!;
+      region.focus();
+      pressKey(region, 'ContextMenu');
+      await flush(r.fixture);
+
+      const cut = document.querySelector<HTMLElement>('#cut')!;
+      cut.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 2 }));
+      const pointer = new MouseEvent('contextmenu', { bubbles: true, cancelable: true, button: 2 });
+      cut.dispatchEvent(pointer);
+
+      expect(pointer.defaultPrevented).toBe(false);
     });
 
     it('treats a contextmenu without a preceding pointerdown as a keyboard activation', async () => {
@@ -1393,6 +1462,280 @@ describe('ForContextMenu', () => {
       await flush(r.fixture);
 
       expect(r.instance.open()).toBe(true);
+    });
+  });
+
+  describe('nested regions', () => {
+    @Component({
+      imports: IMPORTS,
+      template: `
+        <div forContextMenu [(open)]="outerOpen">
+          <div id="outer-region" forContextMenuTrigger>
+            <span id="outer-gap">List</span>
+            <div forContextMenu [(open)]="innerOpen" [disabled]="innerDisabled()">
+              <div id="inner-region" forContextMenuTrigger>Row</div>
+              @if (innerOpen()) {
+                <div forMenuContent data-menu="inner">
+                  <button id="rename" forMenuItem>Rename</button>
+                </div>
+              }
+            </div>
+          </div>
+          @if (outerOpen()) {
+            <div forMenuContent data-menu="outer">
+              <button id="new" forMenuItem>New</button>
+            </div>
+          }
+        </div>
+      `,
+    })
+    class NestedHost {
+      readonly outerOpen = signal(false);
+      readonly innerOpen = signal(false);
+      readonly innerDisabled = signal(false);
+    }
+
+    function menus(): string[] {
+      return Array.from(document.querySelectorAll<HTMLElement>('[forMenuContent]')).map(
+        (el) => el.dataset['menu']!,
+      );
+    }
+
+    it('opens only the innermost menu on a right-click', async () => {
+      const r = renderHost(NestedHost);
+      rightClick(r.query<HTMLElement>('#inner-region')!, 10, 10);
+      await flush(r.fixture);
+
+      expect(menus()).toEqual(['inner']);
+      expect(r.instance.outerOpen()).toBe(false);
+    });
+
+    it('opens only the innermost menu on Shift+F10', async () => {
+      const r = renderHost(NestedHost);
+      const inner = r.query<HTMLElement>('#inner-region')!;
+      inner.focus();
+      pressKey(inner, 'F10', { shiftKey: true });
+      await flush(r.fixture);
+
+      expect(menus()).toEqual(['inner']);
+      expect(document.activeElement?.id).toBe('rename');
+    });
+
+    it('opens only the innermost menu on the ContextMenu key', async () => {
+      const r = renderHost(NestedHost);
+      const inner = r.query<HTMLElement>('#inner-region')!;
+      inner.focus();
+      pressKey(inner, 'ContextMenu');
+      await flush(r.fixture);
+
+      expect(menus()).toEqual(['inner']);
+    });
+
+    it('opens only the innermost menu on a touch long-press', async () => {
+      const r = renderHost(NestedHost);
+      await flush(r.fixture);
+      const inner = r.query<HTMLElement>('#inner-region')!;
+
+      vi.useFakeTimers();
+      inner.dispatchEvent(
+        new PointerEvent('pointerdown', {
+          bubbles: true,
+          pointerType: 'touch',
+          clientX: 5,
+          clientY: 5,
+        }),
+      );
+      vi.advanceTimersByTime(500);
+      r.fixture.detectChanges();
+
+      expect(r.instance.innerOpen()).toBe(true);
+      expect(r.instance.outerOpen()).toBe(false);
+    });
+
+    it('opens the outer menu when the press lands outside the inner region', async () => {
+      const r = renderHost(NestedHost);
+      rightClick(r.query<HTMLElement>('#outer-gap')!, 10, 10);
+      await flush(r.fixture);
+
+      expect(menus()).toEqual(['outer']);
+    });
+
+    it('lets the outer menu open when the inner region is disabled', async () => {
+      const r = renderHost(NestedHost);
+      r.instance.innerDisabled.set(true);
+      await flush(r.fixture);
+
+      const event = rightClick(r.query<HTMLElement>('#inner-region')!, 10, 10);
+      await flush(r.fixture);
+
+      expect(menus()).toEqual(['outer']);
+      expect(event.defaultPrevented).toBe(true);
+    });
+
+    it('does not open when a consumer handler already cancelled the contextmenu', async () => {
+      const r = renderHost(ContextMenuHost);
+      const inner = r.query<HTMLElement>('#inner-btn')!;
+      const cancel = (event: Event): void => event.preventDefault();
+      inner.addEventListener('contextmenu', cancel);
+      try {
+        rightClick(inner, 10, 10);
+        await flush(r.fixture);
+      } finally {
+        inner.removeEventListener('contextmenu', cancel);
+      }
+
+      expect(r.instance.open()).toBe(false);
+    });
+  });
+
+  describe('pointer classification', () => {
+    it('reads a contextmenu after an ordinary left-click as a keyboard activation', async () => {
+      const r = renderHost(ContextMenuHost);
+      const region = r.query<HTMLElement>('#region')!;
+      const inner = r.query<HTMLElement>('#inner-btn')!;
+      region.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0 }));
+      region.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, button: 0 }));
+      region.dispatchEvent(new MouseEvent('click', { bubbles: true, button: 0 }));
+
+      inner.focus();
+      inner.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true }));
+      await flush(r.fixture);
+
+      expect(document.querySelector('#cut')!.getAttribute('data-highlighted')).toBe('');
+
+      pressKey(document, 'Escape');
+      await flush(r.fixture);
+
+      expect(document.activeElement).toBe(inner);
+    });
+
+    it('reads a contextmenu after a cancelled touch press as a keyboard activation', async () => {
+      const r = renderHost(ContextMenuHost);
+      const region = r.query<HTMLElement>('#region')!;
+      region.dispatchEvent(
+        new PointerEvent('pointerdown', { bubbles: true, pointerType: 'touch', button: 0 }),
+      );
+      region.dispatchEvent(
+        new PointerEvent('pointercancel', { bubbles: true, pointerType: 'touch' }),
+      );
+
+      region.focus();
+      region.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true }));
+      await flush(r.fixture);
+
+      expect(document.querySelector('#cut')!.getAttribute('data-highlighted')).toBe('');
+    });
+
+    it('keeps a Ctrl+primary press a pointer activation', async () => {
+      const r = renderHost(ContextMenuHost);
+      const region = r.query<HTMLElement>('#region')!;
+      region.dispatchEvent(
+        new PointerEvent('pointerdown', { bubbles: true, button: 0, ctrlKey: true }),
+      );
+      region.dispatchEvent(
+        new MouseEvent('contextmenu', { bubbles: true, cancelable: true, ctrlKey: true }),
+      );
+      await flush(r.fixture);
+
+      expect(document.activeElement?.id).toBe('cut');
+      expect(document.querySelector('[data-highlighted]')).toBeNull();
+    });
+  });
+
+  describe('shadow DOM', () => {
+    it('returns focus to a control focused inside an open shadow root', async () => {
+      const r = renderHost(ContextMenuHost);
+      const region = r.query<HTMLElement>('#region')!;
+      const shadowHost = document.createElement('span');
+      region.appendChild(shadowHost);
+      const shadowButton = document.createElement('button');
+      shadowHost.attachShadow({ mode: 'open' }).appendChild(shadowButton);
+
+      shadowButton.focus();
+      expect(resolveActiveElement(document)).toBe(shadowButton);
+      pressKey(region, 'F10', { shiftKey: true });
+      await flush(r.fixture);
+      expect(document.activeElement?.id).toBe('cut');
+
+      pressKey(document, 'Escape');
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+      expect(resolveActiveElement(document)).toBe(shadowButton);
+    });
+  });
+
+  describe('re-right-click on an open menu', () => {
+    function reRightClickInOneTask(region: HTMLElement, x: number, y: number): MouseEvent {
+      region.dispatchEvent(
+        new PointerEvent('pointerdown', { bubbles: true, button: 2, clientX: x, clientY: y }),
+      );
+      region.focus();
+      const event = new MouseEvent('contextmenu', {
+        bubbles: true,
+        cancelable: true,
+        button: 2,
+        clientX: x,
+        clientY: y,
+      });
+      region.dispatchEvent(event);
+      return event;
+    }
+
+    it('moves focus back into a surface reopened in the same task', async () => {
+      const r = renderHost(ContextMenuHost);
+      const region = r.query<HTMLElement>('#region')!;
+      rightClick(region, 50, 50);
+      await flush(r.fixture);
+      expect(document.activeElement?.id).toBe('cut');
+      const content = document.querySelector('[forMenuContent]');
+
+      const event = reRightClickInOneTask(region, 200, 200);
+      await flush(r.fixture);
+
+      expect(event.defaultPrevented).toBe(true);
+      expect(r.instance.open()).toBe(true);
+      expect(document.querySelector('[forMenuContent]')).toBe(content);
+      expect(document.activeElement?.id).toBe('cut');
+      expect(document.querySelector('[data-highlighted]')).toBeNull();
+    });
+
+    it('honours an autoFocusOnOpen veto on a surface reopened in the same task', async () => {
+      @Component({
+        imports: IMPORTS,
+        template: `
+          <div forContextMenu [(open)]="open" (autoFocusOnOpen)="onAutoOpen($event)">
+            <div id="region" forContextMenuTrigger>Right-click here</div>
+            @if (open()) {
+              <div forMenuContent><button id="cut" forMenuItem>Cut</button></div>
+            }
+          </div>
+        `,
+      })
+      class CountingHost {
+        readonly open = signal(false);
+        vetoes = 0;
+        veto = false;
+        onAutoOpen(event: VetoableEvent): void {
+          if (this.veto) {
+            this.vetoes += 1;
+            event.preventDefault();
+          }
+        }
+      }
+
+      const r = renderHost(CountingHost);
+      const region = r.query<HTMLElement>('#region')!;
+      rightClick(region, 50, 50);
+      await flush(r.fixture);
+      r.instance.veto = true;
+
+      reRightClickInOneTask(region, 200, 200);
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(true);
+      expect(r.instance.vetoes).toBe(1);
+      expect(document.activeElement).toBe(region);
     });
   });
 });
