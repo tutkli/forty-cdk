@@ -3,11 +3,13 @@ import { join } from 'node:path';
 
 import ts from 'typescript';
 
+import { indexEmittedContexts, isExported, readEmittedFiles } from './lib/emitted-contexts.mjs';
 import { REGISTRATION_SURFACES } from './lib/registration-surfaces.mjs';
 import { repoRoot } from './lib/repo-path.mjs';
 
 const TYPES_DIR = join(repoRoot, 'dist', 'forty-cdk', 'types');
 const PROJECT_DIR = join(repoRoot, 'projects', 'forty-cdk');
+const INTERNAL_TIER_ENTRIES = new Set(['core', 'core-overlay']);
 
 if (!existsSync(TYPES_DIR)) {
   console.error(`[check-registration-surfaces] ${TYPES_DIR} not found — run \`pnpm build\` first.`);
@@ -44,21 +46,21 @@ function isNonPublicMember(node) {
   );
 }
 
-function isExported(node) {
-  return (ts.getModifiers(node) ?? []).some((m) => m.kind === ts.SyntaxKind.ExportKeyword);
-}
-
-function declarationName(stmt) {
-  return stmt.name && ts.isIdentifier(stmt.name) ? stmt.name.text : null;
+function declarationNames(stmt) {
+  if (ts.isVariableStatement(stmt)) {
+    return stmt.declarationList.declarations
+      .map((declaration) => declaration.name)
+      .filter((name) => ts.isIdentifier(name))
+      .map((name) => name.text);
+  }
+  return stmt.name && ts.isIdentifier(stmt.name) ? [stmt.name.text] : [];
 }
 
 /**
  * Collects, for one built entry-point `.d.ts`, the names re-exported from it and
  * the names referenced from the type positions of its exported declarations.
  */
-function analyze(fileName, text) {
-  const sf = ts.createSourceFile(fileName, text, ts.ScriptTarget.Latest, true);
-
+function analyze(sf) {
   const reExported = new Set();
   const exportedStatements = [];
 
@@ -77,8 +79,10 @@ function analyze(fileName, text) {
   // A declaration listed in an `export { … }` clause is public too, so its own
   // signature is a public signature.
   for (const stmt of sf.statements) {
-    const name = declarationName(stmt);
-    if (name && reExported.has(name) && !exportedStatements.includes(stmt)) {
+    if (
+      !exportedStatements.includes(stmt) &&
+      declarationNames(stmt).some((name) => reExported.has(name))
+    ) {
       exportedStatements.push(stmt);
     }
   }
@@ -110,16 +114,92 @@ function analyze(fileName, text) {
   return { reExported, referenced };
 }
 
+function isRegistrationSurface(stmt) {
+  const name = stmt.name.text;
+  if (name.endsWith('PieceContext') || name.endsWith('RegistrationContext')) {
+    return true;
+  }
+  if (!name.endsWith('Context') || name.startsWith('For')) {
+    return false;
+  }
+  return (stmt.heritageClauses ?? []).some((clause) =>
+    clause.types.some(
+      (type) => ts.isIdentifier(type.expression) && /^For\w*Context$/.test(type.expression.text),
+    ),
+  );
+}
+
+function deriveSurfaces(fileName, text) {
+  const sf = ts.createSourceFile(fileName, text, ts.ScriptTarget.Latest, true);
+  return sf.statements
+    .filter((stmt) => ts.isInterfaceDeclaration(stmt) && isRegistrationSurface(stmt))
+    .map((stmt) => stmt.name.text);
+}
+
+const PROBE_EMIT = `interface ProbeContext {
+  registerProbe(el: HTMLElement): void;
+}
+interface ProbeHandle {
+}
+declare const FOR_PROBE_CONTEXT: InjectionToken<ProbeContext>, PROBE_SEAM: ProbeHandle;
+export { FOR_PROBE_CONTEXT, ProbeHandle };
+`;
+const PROBE_SOURCE = `export interface ForProbeContext {}
+export interface ProbeContext extends ForProbeContext {}
+interface ProbePieceContext {}
+export interface ProbeRegistrationContext<T = unknown> {}
+export interface ProbeHandle {}
+`;
+const PROBE_DERIVED = ['ProbeContext', 'ProbePieceContext', 'ProbeRegistrationContext'];
+
+const probeEmit = analyze(
+  ts.createSourceFile('forty-cdk-probe.d.ts', PROBE_EMIT, ts.ScriptTarget.Latest, true),
+);
+const probeDerived = deriveSurfaces('probe-context.ts', PROBE_SOURCE);
+const probeMisses = [
+  ...(probeEmit.referenced.has('ProbeContext')
+    ? []
+    : ['an exported `declare const` typed at the protocol is not walked']),
+  ...(probeEmit.referenced.has('ProbeHandle')
+    ? []
+    : ['the second declarator of an exported `declare const` is not walked']),
+  ...(probeEmit.reExported.has('ProbeHandle')
+    ? []
+    : ['a name in the `export { … }` clause is not seen as re-exported']),
+  ...(probeDerived.join() === PROBE_DERIVED.join()
+    ? []
+    : [
+        `the source scan derived [${probeDerived.join(', ')}] instead of [${PROBE_DERIVED.join(', ')}]`,
+      ]),
+];
+if (probeMisses.length) {
+  console.error(
+    `[check-registration-surfaces] FAIL — the liveness probe was not rejected the way it must be, so this run proves nothing about the emit:`,
+  );
+  for (const miss of probeMisses) {
+    console.error(`  ${miss}`);
+  }
+  console.error(
+    `\nThe probe is a synthetic emit exporting a token typed at an internal interface, and a synthetic source declaring one surface of each derived shape. Restore the detection rather than the probe.`,
+  );
+  process.exit(1);
+}
+
+const emitted = new Map(
+  indexEmittedContexts(readEmittedFiles(TYPES_DIR)).files.map((f) => [f.entry, f]),
+);
 const failures = [];
 let checkedSymbols = 0;
 
 for (const [entry, symbols] of Object.entries(REGISTRATION_SURFACES)) {
-  const typesFile = join(TYPES_DIR, `forty-cdk-${entry}.d.ts`);
-  if (!existsSync(typesFile)) {
-    failures.push(`forty-cdk/${entry}: ${typesFile} not emitted — is the entry point still there?`);
+  const emittedFile = emitted.get(entry);
+  if (!emittedFile) {
+    failures.push(
+      `forty-cdk/${entry}: forty-cdk-${entry}.d.ts not emitted — is the entry point still there?`,
+    );
     continue;
   }
-  const { reExported, referenced } = analyze(typesFile, readFileSync(typesFile, 'utf8'));
+  const { reExported, referenced } = analyze(emittedFile.sf);
 
   for (const symbol of symbols) {
     checkedSymbols++;
@@ -145,6 +225,29 @@ for (const [entry, symbols] of Object.entries(REGISTRATION_SURFACES)) {
   }
 }
 
+let derivedSurfaces = 0;
+for (const entry of readdirSync(PROJECT_DIR).sort()) {
+  if (
+    INTERNAL_TIER_ENTRIES.has(entry) ||
+    !existsSync(join(PROJECT_DIR, entry, 'ng-package.json'))
+  ) {
+    continue;
+  }
+  const listed = new Set(REGISTRATION_SURFACES[entry] ?? []);
+  for (const file of sourceFilesOf(entry)) {
+    for (const name of deriveSurfaces(file, readFileSync(file, 'utf8'))) {
+      derivedSurfaces++;
+      if (!listed.has(name)) {
+        failures.push(
+          `forty-cdk/${entry}: ${name} is a piece-coordination interface declared in ` +
+            `${entry}/src but missing from scripts/lib/registration-surfaces.mjs — list it so the ` +
+            `gate keeps it out of the public types.`,
+        );
+      }
+    }
+  }
+}
+
 if (failures.length) {
   console.error(
     `[check-registration-surfaces] FAIL — ${failures.length} registration-surface violation(s):`,
@@ -162,5 +265,6 @@ if (failures.length) {
 
 console.log(
   `[check-registration-surfaces] OK — ${checkedSymbols} registration-surface symbols across ` +
-    `${Object.keys(REGISTRATION_SURFACES).length} entry points stay out of the public types.`,
+    `${Object.keys(REGISTRATION_SURFACES).length} entry points stay out of the public types, ` +
+    `and all ${derivedSurfaces} piece-coordination interfaces declared in source are listed.`,
 );

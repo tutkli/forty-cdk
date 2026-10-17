@@ -47,6 +47,7 @@ export const REGISTRATION_SURFACES = {
   ],
   combobox: ['ComboboxContext', 'ComboboxPieceContext', 'ComboboxRegistrationContext'],
   'context-menu': ['ContextMenuContext', 'ContextMenuPieceContext'],
+  'date-picker': ['DatePickerContext'],
   dialog: ['DialogContext', 'DialogRegistrationContext'],
   'drag-drop': ['DraggableContext', 'DraggablePieceContext'],
   drawer: ['DrawerContext', 'DrawerRegistrationContext'],
@@ -60,7 +61,12 @@ export const REGISTRATION_SURFACES = {
   ],
   popover: ['PopoverContext', 'PopoverPieceContext', 'PopoverRegistrationContext'],
   'radio-group': ['RadioGroupContext', 'ForRadioHandle'],
-  select: ['SelectContext', 'SelectPieceContext', 'ForSelectOverlayContext'],
+  select: [
+    'SelectContext',
+    'SelectPieceContext',
+    'ForSelectOverlayContext',
+    'ForSelectOptionHandle',
+  ],
   stepper: ['StepperContext', 'StepperPieceContext'],
   table: [
     'TableContext',

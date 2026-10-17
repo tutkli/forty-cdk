@@ -1,9 +1,8 @@
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 
-import ts from 'typescript';
-
 import { CONTEXT_SURFACE_CEILING, CONTEXT_SURFACE_EXCEPTIONS } from './lib/context-surfaces.mjs';
+import { indexEmittedContexts, readEmittedFiles } from './lib/emitted-contexts.mjs';
 import { repoRoot } from './lib/repo-path.mjs';
 
 const TYPES_DIR = join(repoRoot, 'dist', 'forty-cdk', 'types');
@@ -13,136 +12,129 @@ if (!existsSync(TYPES_DIR)) {
   process.exit(1);
 }
 
-function isExported(node) {
-  return (ts.getModifiers(node) ?? []).some((m) => m.kind === ts.SyntaxKind.ExportKeyword);
-}
-
-/** Every interface declared anywhere in the emit, so a heritage clause resolves across files. */
-const declarations = new Map();
-/** The interfaces a consumer can actually name, mapped to the entry point publishing them. */
-const published = new Map();
-
-for (const file of readdirSync(TYPES_DIR)) {
-  if (!file.endsWith('.d.ts')) {
-    continue;
-  }
-  const sf = ts.createSourceFile(
-    file,
-    readFileSync(join(TYPES_DIR, file), 'utf8'),
-    ts.ScriptTarget.Latest,
-    true,
-  );
-
-  const reExported = new Set();
-  for (const stmt of sf.statements) {
-    if (
-      ts.isExportDeclaration(stmt) &&
-      !stmt.moduleSpecifier &&
-      stmt.exportClause &&
-      ts.isNamedExports(stmt.exportClause)
-    ) {
-      for (const el of stmt.exportClause.elements) {
-        reExported.add(el.name.text);
-      }
-    }
-  }
-
-  const entry =
-    file === 'forty-cdk.d.ts' ? 'forty-cdk' : file.slice('forty-cdk-'.length, -'.d.ts'.length);
-  for (const stmt of sf.statements) {
-    if (!ts.isInterfaceDeclaration(stmt)) {
+function measure(entries) {
+  const { published, surfaceOf } = indexEmittedContexts(entries);
+  const measured = [];
+  for (const [name, { entry }] of published) {
+    if (!/^For.*Context$/.test(name)) {
       continue;
     }
-    const name = stmt.name.text;
-    if (!declarations.has(name)) {
-      declarations.set(name, stmt);
-    }
-    if ((isExported(stmt) || reExported.has(name)) && !published.has(name)) {
-      published.set(name, entry);
-    }
+    measured.push({ name, entry, size: surfaceOf(name).size });
   }
+  measured.sort((a, b) => b.size - a.size || a.name.localeCompare(b.name));
+  return { published, measured };
 }
 
-/**
- * The members a consumer sees on `name`: its own plus everything it inherits.
- * A base declared in another entry point's emit counts the same — the consumer
- * reads one flattened surface off the token either way.
- */
-function surfaceOf(name, seen = new Set()) {
-  if (seen.has(name)) {
-    return new Set();
-  }
-  seen.add(name);
-  const stmt = declarations.get(name);
-  if (!stmt) {
-    return new Set();
-  }
-  const members = new Set();
-  for (const clause of stmt.heritageClauses ?? []) {
-    for (const type of clause.types) {
-      if (ts.isIdentifier(type.expression)) {
-        for (const inherited of surfaceOf(type.expression.text, seen)) {
-          members.add(inherited);
-        }
+function evaluate({ published, measured }, ceiling, exceptions) {
+  const failures = [];
+
+  for (const { name, entry, size } of measured) {
+    const exception = exceptions[name];
+    if (size <= ceiling) {
+      if (exception) {
+        failures.push(
+          `forty-cdk/${entry}: ${name} is listed in CONTEXT_SURFACE_EXCEPTIONS at ${exception.ceiling} ` +
+            `but now carries ${size} members, at or under the ${ceiling}-member ceiling — ` +
+            `drop the entry, the exception has rotted.`,
+        );
       }
+      continue;
     }
-  }
-  for (const member of stmt.members) {
-    if (member.name && ts.isIdentifier(member.name)) {
-      members.add(member.name.text);
-    }
-  }
-  return members;
-}
-
-const measured = [];
-for (const [name, entry] of published) {
-  if (!/^For.*Context$/.test(name)) {
-    continue;
-  }
-  measured.push({ name, entry, size: surfaceOf(name).size });
-}
-measured.sort((a, b) => b.size - a.size || a.name.localeCompare(b.name));
-
-const failures = [];
-
-for (const { name, entry, size } of measured) {
-  const exception = CONTEXT_SURFACE_EXCEPTIONS[name];
-  if (size <= CONTEXT_SURFACE_CEILING) {
-    if (exception) {
+    if (!exception) {
       failures.push(
-        `forty-cdk/${entry}: ${name} is listed in CONTEXT_SURFACE_EXCEPTIONS at ${exception.ceiling} ` +
-          `but now carries ${size} members, at or under the ${CONTEXT_SURFACE_CEILING}-member ceiling — ` +
-          `drop the entry, the exception has rotted.`,
+        `forty-cdk/${entry}: ${name} publishes ${size} members, above the ${ceiling}-member ceiling. ` +
+          `Move every member whose only caller is a piece of this primitive to the unexported ` +
+          `<Primitive>Context interface (TS-private on the root), or add a justified entry to ` +
+          `scripts/lib/context-surfaces.mjs.`,
+      );
+      continue;
+    }
+    if (size > exception.ceiling) {
+      failures.push(
+        `forty-cdk/${entry}: ${name} publishes ${size} members, above its own documented ceiling of ` +
+          `${exception.ceiling} — the exception covers a surface that has since grown.`,
       );
     }
-    continue;
+    if (size < exception.ceiling) {
+      failures.push(
+        `forty-cdk/${entry}: ${name} publishes ${size} members, below its recorded ceiling of ` +
+          `${exception.ceiling} — lower the ceiling in scripts/lib/context-surfaces.mjs to ${size}, ` +
+          `so the slack cannot be spent on a new member.`,
+      );
+    }
   }
-  if (!exception) {
-    failures.push(
-      `forty-cdk/${entry}: ${name} publishes ${size} members, above the ${CONTEXT_SURFACE_CEILING}-member ceiling. ` +
-        `Move every member whose only caller is a piece of this primitive to the unexported ` +
-        `<Primitive>Context interface (TS-private on the root), or add a justified entry to ` +
-        `scripts/lib/context-surfaces.mjs.`,
-    );
-    continue;
+
+  for (const name of Object.keys(exceptions)) {
+    if (!published.has(name)) {
+      failures.push(
+        `${name} is listed in CONTEXT_SURFACE_EXCEPTIONS but no entry point publishes it — ` +
+          `the list has rotted (renamed or unexported?).`,
+      );
+    }
   }
-  if (size > exception.ceiling) {
-    failures.push(
-      `forty-cdk/${entry}: ${name} publishes ${size} members, above its own documented ceiling of ` +
-        `${exception.ceiling} — the exception covers a surface that has since grown.`,
-    );
-  }
+
+  return failures;
 }
 
-for (const name of Object.keys(CONTEXT_SURFACE_EXCEPTIONS)) {
-  if (!published.has(name)) {
-    failures.push(
-      `${name} is listed in CONTEXT_SURFACE_EXCEPTIONS but no entry point publishes it — ` +
-        `the list has rotted (renamed or unexported?).`,
-    );
-  }
+const PROBE_FILES = [
+  {
+    file: 'forty-cdk-core.d.ts',
+    text: `interface ProbeBase {
+  readonly a: Signal<number>;
+  readonly b: Signal<number>;
 }
+`,
+  },
+  {
+    file: 'forty-cdk-probe.d.ts',
+    text: `interface ForProbeSlackContext extends ProbeBase {
+  readonly c: Signal<number>;
+}
+interface ForProbeGrownContext extends ProbeBase {
+  readonly c: Signal<number>;
+  readonly d: Signal<number>;
+  readonly e: Signal<number>;
+}
+interface ForProbeUnlistedContext extends ProbeBase {
+  readonly c: Signal<number>;
+}
+export { ForProbeGrownContext, ForProbeSlackContext, ForProbeUnlistedContext };
+`,
+  },
+];
+const PROBE_CEILING = 2;
+const PROBE_EXCEPTIONS = {
+  ForProbeSlackContext: { ceiling: 4 },
+  ForProbeGrownContext: { ceiling: 4 },
+};
+const PROBE_EXPECTED = [
+  'ForProbeGrownContext publishes 5 members, above its own documented ceiling of 4',
+  'ForProbeSlackContext publishes 3 members, below its recorded ceiling of 4',
+  'ForProbeUnlistedContext publishes 3 members, above the 2-member ceiling',
+];
+
+const probeFailures = evaluate(measure(PROBE_FILES), PROBE_CEILING, PROBE_EXCEPTIONS);
+const probeMissing = PROBE_EXPECTED.filter(
+  (expected) => !probeFailures.some((failure) => failure.includes(expected)),
+);
+if (probeMissing.length || probeFailures.length !== PROBE_EXPECTED.length) {
+  console.error(
+    `[check-context-surfaces] FAIL — the liveness probe was not rejected the way it must be, so this run proves nothing about the emit.`,
+  );
+  for (const expected of probeMissing) {
+    console.error(`  missed: ${expected}`);
+  }
+  for (const failure of probeFailures) {
+    console.error(`  reported: ${failure}`);
+  }
+  console.error(
+    `\nThe probe is a synthetic emit whose contexts inherit two members from a base declared in another file: one grown past its exception, one below it, one over the ceiling with no exception. Restore the detection rather than the probe.`,
+  );
+  process.exit(1);
+}
+
+const result = measure(readEmittedFiles(TYPES_DIR));
+const failures = evaluate(result, CONTEXT_SURFACE_CEILING, CONTEXT_SURFACE_EXCEPTIONS);
 
 if (failures.length) {
   console.error(`[check-context-surfaces] FAIL — ${failures.length} context-surface violation(s):`);
@@ -157,10 +149,10 @@ if (failures.length) {
 }
 
 const listed = Object.keys(CONTEXT_SURFACE_EXCEPTIONS).length;
-const widest = measured.find(({ name }) => !CONTEXT_SURFACE_EXCEPTIONS[name]);
+const widest = result.measured.find(({ name }) => !CONTEXT_SURFACE_EXCEPTIONS[name]);
 const widestNote = widest ? `(widest: ${widest.name} at ${widest.size}), ` : '';
 console.log(
-  `[check-context-surfaces] OK — ${measured.length - listed} published For*Context interfaces at or ` +
+  `[check-context-surfaces] OK — ${result.measured.length - listed} published For*Context interfaces at or ` +
     `under ${CONTEXT_SURFACE_CEILING} members ${widestNote}plus the ` +
     `${listed} pinned at their current size in scripts/lib/context-surfaces.mjs.`,
 );

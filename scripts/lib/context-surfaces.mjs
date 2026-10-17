@@ -20,8 +20,9 @@ export const CONTEXT_SURFACE_CEILING = 25;
  *
  * An entry is a written justification, not a waiver, and the gate reads it in
  * both directions: it fails when the surface grows past the recorded `ceiling`,
- * **and** when the surface drops to the global ceiling and the entry is left
- * behind. So the list can only drain, one primitive per pass, and raising
+ * **and** when the surface shrinks below it, asking for the bound to be lowered
+ * to the new size, or for the entry to go once the surface reaches the global
+ * ceiling. So the list can only drain, one primitive per pass, and raising
  * `CONTEXT_SURFACE_CEILING` to absorb a new root — the move that would make the
  * whole gate decorative — is exactly what it exists to prevent.
  *
@@ -31,7 +32,7 @@ export const CONTEXT_SURFACE_CEILING = 25;
  * Carousel, Table and Avatar got. Two things about the sizes are worth knowing
  * before reading them as a ranking. The count is the **flattened** surface, so
  * the three anchored overlays each carry the eleven positioning members of the
- * blessed `AnchoredPositioningContext` they inherit — genuinely consumer-facing,
+ * `AnchoredPositioningContext` they inherit — genuinely consumer-facing,
  * and counted three times. Flattening follows **inheritance only**: a member
  * typed with a facade counts as one however wide that facade is
  * (`ForSelectContext.overlay`), so retyping members behind a new interface
@@ -48,7 +49,7 @@ export const CONTEXT_SURFACE_EXCEPTIONS = {
       'preview) beside the consumer-facing value and view state.',
   },
   ForMenuContext: {
-    ceiling: 54,
+    ceiling: 52,
     reason:
       'Not split. The shared menu-overlay surface every menu flavour composes, so it carries the ' +
       'item registry, the typeahead buffer and the sibling-navigation protocol.',
