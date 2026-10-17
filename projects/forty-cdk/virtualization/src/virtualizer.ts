@@ -21,7 +21,11 @@ import type {
   VirtualizerOptions as CoreVirtualizerOptions,
 } from '@tanstack/virtual-core';
 
-import { afterNextRenderCancellable } from 'forty-cdk/core';
+import {
+  afterNextRenderCancellable,
+  injectAmbientDirection,
+  type WritingDirection,
+} from 'forty-cdk/core';
 
 /** Default number of items rendered beyond the visible window on each side. */
 const DEFAULT_OVERSCAN = 5;
@@ -46,6 +50,15 @@ export interface VirtualizerOptions {
   readonly scrollElement: Signal<HTMLElement | null>;
   /** Scroll axis. Defaults to `'vertical'`. */
   readonly orientation?: 'vertical' | 'horizontal';
+  /**
+   * Writing direction of a horizontal list. In `'rtl'` the first item sits at the right edge of
+   * the scroll container and every offset (`start`, `scrollToOffset`, `scrollToIndex`) is
+   * measured from that edge leftwards, so each item is positioned from the right. Pass a signal
+   * when it can change after the first render. Defaults to the direction in effect at the scroll
+   * element: its own `dir` attribute or its nearest ancestor's, then `<html dir>`, else `'ltr'`,
+   * following a change at runtime. Has no effect on a vertical list.
+   */
+  readonly dir?: WritingDirection | Signal<WritingDirection>;
   /**
    * Number of items to render beyond the visible window on each side, to
    * reduce blank flashes while scrolling. Defaults to `5`.
@@ -164,6 +177,21 @@ function toVirtualItem(item: CoreVirtualItem): VirtualItem {
 
 type OffsetObserver = CoreVirtualizerOptions<HTMLElement, HTMLElement>['observeElementOffset'];
 
+type ScrollWriter = CoreVirtualizerOptions<HTMLElement, HTMLElement>['scrollToFn'];
+
+const scrollInWritingDirection: ScrollWriter = (offset, scrollOptions, instance) => {
+  const { horizontal, isRtl } = instance.options;
+  if (!horizontal || !isRtl) {
+    elementScroll(offset, scrollOptions, instance);
+    return;
+  }
+  elementScroll(
+    -offset,
+    { ...scrollOptions, adjustments: -(scrollOptions.adjustments ?? 0) },
+    instance,
+  );
+};
+
 function readElementOffset(
   instance: Virtualizer<HTMLElement, HTMLElement>,
   element: HTMLElement,
@@ -256,6 +284,10 @@ export function injectVirtualizer(options: VirtualizerOptions): ForVirtualizer {
   const overscan = options.overscan ?? DEFAULT_OVERSCAN;
   const scrollMargin = options.scrollMargin ?? 0;
   const readScrollMargin = isSignal(scrollMargin) ? scrollMargin : () => scrollMargin;
+  const dir =
+    options.dir ??
+    (horizontal ? injectAmbientDirection(() => options.scrollElement()) : ('ltr' as const));
+  const readDir = isSignal(dir) ? dir : () => dir;
   const notify = signal(0, { equal: () => false });
   const mounted = signal(false);
   const { getItemKey, dataVersion, estimateVersion } = options;
@@ -271,7 +303,7 @@ export function injectVirtualizer(options: VirtualizerOptions): ForVirtualizer {
     overscan,
     horizontal,
     scrollMargin: 0,
-    scrollToFn: elementScroll,
+    scrollToFn: scrollInWritingDirection,
     observeElementRect,
     observeElementOffset: observeOffsetAcrossReattach,
     onChange: () => notify.set(0),
@@ -292,7 +324,10 @@ export function injectVirtualizer(options: VirtualizerOptions): ForVirtualizer {
     }
     estimatedVersion = estimate;
     const margin = readScrollMargin();
+    const isRtl = horizontal && readDir() === 'rtl';
+    const flipped = isRtl !== virtualizer.options.isRtl;
     const stale =
+      flipped ||
       count !== virtualizer.options.count ||
       margin !== virtualizer.options.scrollMargin ||
       (itemKey !== undefined && itemKey !== virtualizer.options.getItemKey);
@@ -302,7 +337,12 @@ export function injectVirtualizer(options: VirtualizerOptions): ForVirtualizer {
         count,
         getItemKey: itemKey,
         scrollMargin: margin,
+        isRtl,
       });
+      const element = virtualizer.scrollElement;
+      if (flipped && element !== null) {
+        virtualizer.scrollOffset = readElementOffset(virtualizer, element);
+      }
       virtualizer.getTotalSize();
     }
   };

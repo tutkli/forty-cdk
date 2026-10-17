@@ -95,6 +95,7 @@ export class ForVirtualFor<T> {
     }
     const count = this.#viewport.count();
     const horizontal = this.#viewport.orientation() === 'horizontal';
+    const rtl = horizontal && this.#viewport.dir() === 'rtl';
 
     const seen = new Set(items.map((item) => item.key));
     for (const [key, view] of this.#views) {
@@ -129,7 +130,7 @@ export class ForVirtualFor<T> {
         view.context.count = count;
         view.markForCheck();
       }
-      this.#applyLayout(view, item, count, horizontal);
+      this.#applyLayout(view, item, count, horizontal, rtl);
     });
   }
 
@@ -153,6 +154,7 @@ export class ForVirtualFor<T> {
     item: VirtualItem,
     count: number,
     horizontal: boolean,
+    rtl: boolean,
   ): void {
     const node = view.rootNodes[0] as unknown;
     if (!(node instanceof HTMLElement)) {
@@ -160,10 +162,11 @@ export class ForVirtualFor<T> {
     }
     node.style.position = 'absolute';
     node.style.top = '0';
-    node.style.left = '0';
+    node.style.left = rtl ? '' : '0';
+    node.style.right = rtl ? '0' : '';
     if (horizontal) {
       node.style.height = '100%';
-      node.style.transform = `translateX(${item.start}px)`;
+      node.style.transform = `translateX(${rtl ? -item.start : item.start}px)`;
     } else {
       node.style.width = '100%';
       node.style.transform = `translateY(${item.start}px)`;

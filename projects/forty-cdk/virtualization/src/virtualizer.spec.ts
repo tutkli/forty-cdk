@@ -1371,3 +1371,183 @@ describe('injectVirtualizer', () => {
     });
   });
 });
+
+describe('injectVirtualizer — horizontal list in RTL', () => {
+  beforeEach(() => {
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+  });
+
+  function installRtlScroller(el: HTMLElement): { scrollTo: ReturnType<typeof vi.fn> } {
+    fakeLayoutProps(el, 100, 200);
+    let left = 0;
+    Object.defineProperty(el, 'scrollLeft', {
+      configurable: true,
+      get: () => left,
+      set: (value: number) => {
+        left = value;
+      },
+    });
+    const scrollTo = vi.fn((options: ScrollToOptions) => {
+      left = options.left ?? left;
+      el.dispatchEvent(new Event('scroll'));
+    });
+    el.scrollTo = scrollTo as unknown as typeof el.scrollTo;
+    return { scrollTo };
+  }
+
+  @Component({
+    selector: 'rtl-host',
+    template: `
+      <div [attr.dir]="ambient()">
+        <div #scroll class="scroller" style="overflow:auto; width:200px">
+          <div [style.width.px]="v.totalSize()">
+            @for (item of v.virtualItems(); track item.key) {
+              <div [attr.data-index]="item.index">{{ item.index }}</div>
+            }
+          </div>
+        </div>
+      </div>
+    `,
+  })
+  class RtlHost {
+    readonly ambient = signal<'ltr' | 'rtl' | null>(null);
+    readonly scrollRef = viewChild<ElementRef<HTMLElement>>('scroll');
+    readonly scrollElement = computed(() => this.scrollRef()?.nativeElement ?? null);
+    readonly v = injectVirtualizer({
+      count: signal(1000),
+      estimateSize: () => 40,
+      scrollElement: this.scrollElement,
+      orientation: 'horizontal',
+      overscan: 0,
+    });
+  }
+
+  async function mount(ambient: 'ltr' | 'rtl' | null) {
+    const fixture = TestBed.createComponent(RtlHost);
+    fixture.componentInstance.ambient.set(ambient);
+    const el = fixture.nativeElement.querySelector('.scroller') as HTMLElement;
+    const scroller = installRtlScroller(el);
+    fixture.detectChanges();
+    await flush(fixture);
+    return { fixture, el, ...scroller };
+  }
+
+  it('scrollToOffset writes a negative scrollLeft under an rtl ancestor', async () => {
+    const { fixture, scrollTo } = await mount('rtl');
+    fixture.componentInstance.v.scrollToOffset(120);
+    expect(scrollTo).toHaveBeenCalledWith(expect.objectContaining({ left: -120 }));
+  });
+
+  it('scrollToIndex aligns the item from the right edge under an rtl ancestor', async () => {
+    const { fixture, scrollTo } = await mount('rtl');
+    fixture.componentInstance.v.scrollToIndex(50, { align: 'start' });
+    expect(scrollTo).toHaveBeenCalledWith(expect.objectContaining({ left: -2000 }));
+  });
+
+  it('reads a negative scrollLeft as a forward offset', async () => {
+    const { fixture, el } = await mount('rtl');
+    expect(fixture.componentInstance.v.range()[0]).toBe(0);
+
+    el.scrollLeft = -4000;
+    el.dispatchEvent(new Event('scroll'));
+    await flush(fixture);
+
+    expect(fixture.componentInstance.v.range()[0]).toBe(100);
+  });
+
+  it('keeps positive offsets when no ancestor declares rtl', async () => {
+    const { fixture, scrollTo } = await mount(null);
+    fixture.componentInstance.v.scrollToOffset(120);
+    expect(scrollTo).toHaveBeenCalledWith(expect.objectContaining({ left: 120 }));
+  });
+
+  @Component({
+    selector: 'explicit-dir-host',
+    template: `
+      <div dir="rtl">
+        <div #scroll class="scroller" style="overflow:auto; width:200px">
+          <div [style.width.px]="v.totalSize()"></div>
+        </div>
+      </div>
+    `,
+  })
+  class ExplicitDirHost {
+    readonly dir = signal<'ltr' | 'rtl'>('ltr');
+    readonly scrollRef = viewChild<ElementRef<HTMLElement>>('scroll');
+    readonly scrollElement = computed(() => this.scrollRef()?.nativeElement ?? null);
+    readonly v = injectVirtualizer({
+      count: signal(1000),
+      estimateSize: () => 40,
+      scrollElement: this.scrollElement,
+      orientation: 'horizontal',
+      overscan: 0,
+      dir: this.dir,
+    });
+  }
+
+  async function mountExplicit() {
+    const fixture = TestBed.createComponent(ExplicitDirHost);
+    const el = fixture.nativeElement.querySelector('.scroller') as HTMLElement;
+    const scroller = installRtlScroller(el);
+    fixture.detectChanges();
+    await flush(fixture);
+    return { fixture, el, ...scroller };
+  }
+
+  it('follows an explicit dir over the ambient direction', async () => {
+    const { fixture, scrollTo } = await mountExplicit();
+
+    fixture.componentInstance.v.scrollToOffset(120);
+    expect(scrollTo).toHaveBeenLastCalledWith(expect.objectContaining({ left: 120 }));
+
+    fixture.componentInstance.dir.set('rtl');
+    await flush(fixture);
+    fixture.componentInstance.v.scrollToOffset(120);
+    expect(scrollTo).toHaveBeenLastCalledWith(expect.objectContaining({ left: -120 }));
+  });
+
+  it('re-reads the scroll offset when the direction flips', async () => {
+    const { fixture, el } = await mountExplicit();
+    fixture.componentInstance.v.scrollToOffset(4000);
+    await flush(fixture);
+    expect(fixture.componentInstance.v.range()[0]).toBe(100);
+
+    el.scrollLeft = -2000;
+    fixture.componentInstance.dir.set('rtl');
+    await flush(fixture);
+
+    expect(fixture.componentInstance.v.range()[0]).toBe(50);
+  });
+
+  it('leaves a vertical list on scrollTop whatever the direction', async () => {
+    @Component({
+      selector: 'vertical-rtl-host',
+      template: `
+        <div #scroll style="overflow:auto; height:200px">
+          <div [style.height.px]="v.totalSize()"></div>
+        </div>
+      `,
+    })
+    class VerticalRtlHost {
+      readonly scrollRef = viewChild<ElementRef<HTMLElement>>('scroll');
+      readonly scrollElement = computed(() => this.scrollRef()?.nativeElement ?? null);
+      readonly v = injectVirtualizer({
+        count: signal(1000),
+        estimateSize: () => 40,
+        scrollElement: this.scrollElement,
+        dir: 'rtl',
+      });
+    }
+
+    const fixture = TestBed.createComponent(VerticalRtlHost);
+    const el = fixture.nativeElement.querySelector('div') as HTMLElement;
+    fakeLayoutProps(el, 200);
+    fixture.detectChanges();
+    await flush(fixture);
+    const spy = vi.fn();
+    el.scrollTo = spy;
+    fixture.componentInstance.v.scrollToOffset(120);
+    expect(spy).toHaveBeenCalledWith(expect.objectContaining({ top: 120 }));
+    expect(spy.mock.calls[0]![0]).not.toHaveProperty('left');
+  });
+});

@@ -1,6 +1,11 @@
 import { InjectionToken, inject, type Signal } from '@angular/core';
 
-import { assertRootContext, orphanContextError, type Unset } from 'forty-cdk/core';
+import {
+  assertRootContext,
+  orphanContextError,
+  type Unset,
+  type WritingDirection,
+} from 'forty-cdk/core';
 
 import { type VirtualItem } from './virtualizer';
 
@@ -15,6 +20,11 @@ export interface ForVirtualViewportContext {
   readonly count: Signal<number>;
   /** Scroll axis, resolved once when the viewport initializes. */
   readonly orientation: Signal<'vertical' | 'horizontal'>;
+  /**
+   * Resolved writing direction. In RTL a horizontal row's `start` is measured from the right
+   * edge of the sizer.
+   */
+  readonly dir: Signal<WritingDirection>;
 }
 
 /**

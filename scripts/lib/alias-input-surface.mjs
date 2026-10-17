@@ -78,4 +78,5 @@ export const ALIAS_INPUT_SURFACE = {
   'tooltip/ForTooltip': ['_showOnOverflowInput', '_hoverableContentInput'],
   'tree/ForTree': ['_dirInput'],
   'tree/ForTreeItem': ['_levelInput', '_setSizeInput', '_posInSetInput'],
+  'virtualization/ForVirtualViewport': ['_dirInput'],
 };

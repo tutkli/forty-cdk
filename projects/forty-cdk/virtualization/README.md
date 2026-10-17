@@ -54,6 +54,9 @@ The viewport forces `overflow: auto` on its host; give it a fixed size (e.g. `he
 `orientation`, `overscan`, and `getItemKey` are optional inputs on `[forVirtualViewport]`; set
 `orientation` / `overscan` before first render (they are read once when the viewport initializes).
 `[estimateSize]` and `[getItemKey]` apply whenever they change.
+`[dir]` sets the writing direction; left unset, the viewport follows the nearest ancestor `dir`
+attribute, then `<html dir>`, including a change at runtime. A horizontal viewport in RTL starts
+at its right edge and scrolls leftwards, with the rows laid out from that edge.
 The template context exposes `row` (`$implicit`), `virtualItem`, `index`, and `count`. Do not set
 `position` / `transform` on the row yourself, because the directive owns them.
 
@@ -283,6 +286,12 @@ readonly v = injectVirtualizer({
 });
 ```
 
+In a right-to-left layout the first item sits at the right edge of the scroll container, so
+position each item with `[style.right.px]="item.start"` instead of `left`. The core reads the
+direction in effect at the scroll element (its own `dir` attribute or its nearest ancestor's, then
+`<html dir>`) and follows a change at runtime; pass `dir` to set it yourself. `item.start`,
+`scrollToIndex` and `scrollToOffset` stay measured from the inline start in both directions.
+
 ## Jumping to an item
 
 <!-- snippet: fragment -->
@@ -385,16 +394,17 @@ See the [Combobox README](../combobox/README.md#virtualization) for the complete
 
 ### Options
 
-| Property          | Type                                  | Description                                                                                                                                                                                             |
-| ----------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `count`           | `Signal<number>`                      | Reactive total number of items.<br>**Default:** required                                                                                                                                                |
-| `estimateSize`    | `(index: number) => number`           | Estimated pixel size along the scroll axis for the item at `index`.<br>**Default:** required                                                                                                            |
-| `scrollElement`   | `Signal<HTMLElement \| null>`         | Reactive scroll container.<br>**Default:** required                                                                                                                                                     |
-| `orientation`     | `'vertical' \| 'horizontal'`          | Scroll axis.<br>**Default:** `'vertical'`                                                                                                                                                               |
-| `overscan`        | `number`                              | Extra items to render beyond the visible window on each side.<br>**Default:** `5`                                                                                                                       |
-| `getItemKey`      | `(index: number) => string \| number` | Stable key per item; used by `@for (track item.key)`. Recomputed when `count` or `dataVersion` changes.<br>**Default:** `(i) => i`                                                                      |
-| `dataVersion`     | `Signal<unknown>`                     | The data `getItemKey` reads, usually the array signal itself. Each new value recomputes every key, so a same-length reorder moves each keyed row and its measured size with its item.<br>**Default:** — |
-| `estimateVersion` | `Signal<unknown>`                     | What `estimateSize` reads, usually the signal holding the estimate. Each new value after the first render re-estimates every item not yet measured; a measured item keeps its size.<br>**Default:** —   |
+| Property          | Type                                           | Description                                                                                                                                                                                             |
+| ----------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `count`           | `Signal<number>`                               | Reactive total number of items.<br>**Default:** required                                                                                                                                                |
+| `estimateSize`    | `(index: number) => number`                    | Estimated pixel size along the scroll axis for the item at `index`.<br>**Default:** required                                                                                                            |
+| `scrollElement`   | `Signal<HTMLElement \| null>`                  | Reactive scroll container.<br>**Default:** required                                                                                                                                                     |
+| `orientation`     | `'vertical' \| 'horizontal'`                   | Scroll axis.<br>**Default:** `'vertical'`                                                                                                                                                               |
+| `dir`             | `WritingDirection \| Signal<WritingDirection>` | Writing direction of a horizontal list. In `'rtl'` the first item sits at the right edge and offsets grow leftwards. Ignored when vertical.<br>**Default:** the direction in effect at `scrollElement`  |
+| `overscan`        | `number`                                       | Extra items to render beyond the visible window on each side.<br>**Default:** `5`                                                                                                                       |
+| `getItemKey`      | `(index: number) => string \| number`          | Stable key per item; used by `@for (track item.key)`. Recomputed when `count` or `dataVersion` changes.<br>**Default:** `(i) => i`                                                                      |
+| `dataVersion`     | `Signal<unknown>`                              | The data `getItemKey` reads, usually the array signal itself. Each new value recomputes every key, so a same-length reorder moves each keyed row and its measured size with its item.<br>**Default:** — |
+| `estimateVersion` | `Signal<unknown>`                              | What `estimateSize` reads, usually the signal holding the estimate. Each new value after the first render re-estimates every item not yet measured; a measured item keeps its size.<br>**Default:** —   |
 
 ### Returned handle
 

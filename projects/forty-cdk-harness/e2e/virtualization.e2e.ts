@@ -90,3 +90,54 @@ test.describe('Virtualization (geometry)', () => {
       .toBeGreaterThan(estimateTotal);
   });
 });
+
+test.describe('Virtualization (horizontal, RTL)', () => {
+  const rtl = { orientation: 'horizontal', dir: 'rtl' };
+
+  test('renders the first rows at the inline start of the viewport', async ({ page }) => {
+    await gotoFixture(page, 'virtualization', rtl);
+    const viewport = el(page, 'viewport');
+    const first = page.locator('[data-index="0"]');
+
+    await expect(first).toBeInViewport();
+
+    const vpBox = await viewport.boundingBox();
+    const rowBox = await first.boundingBox();
+    expect(rowBox!.x + rowBox!.width).toBeGreaterThanOrEqual(vpBox!.x + vpBox!.width - 5);
+    expect(rowBox!.x + rowBox!.width).toBeLessThanOrEqual(vpBox!.x + vpBox!.width + 5);
+  });
+
+  test('scrolling to the inline end renders the last rows', async ({ page }) => {
+    await gotoFixture(page, 'virtualization', rtl);
+    const viewport = el(page, 'viewport');
+
+    await expect(page.locator('[data-index="0"]')).toBeInViewport();
+
+    await viewport.evaluate((n) => {
+      const node = n as HTMLElement;
+      node.scrollLeft = -(node.scrollWidth - node.clientWidth);
+    });
+
+    await expect(page.locator('[data-index="0"]')).toHaveCount(0);
+    await expect(page.locator('[data-index="9999"]')).toBeInViewport();
+
+    const vpBox = await viewport.boundingBox();
+    const rowBox = await page.locator('[data-index="9999"]').boundingBox();
+    expect(rowBox!.x).toBeGreaterThanOrEqual(vpBox!.x - 5);
+    expect(rowBox!.x).toBeLessThanOrEqual(vpBox!.x + 5);
+  });
+
+  test('scrollToIndex aligns the row with the inline start of the viewport', async ({ page }) => {
+    await gotoFixture(page, 'virtualization', { ...rtl, scrollIndex: '500' });
+    const viewport = el(page, 'viewport');
+    const target = page.locator('[data-index="500"]');
+
+    await el(page, 'scroll-to-index').click();
+    await expect(target).toBeInViewport();
+
+    const vpBox = await viewport.boundingBox();
+    const rowBox = await target.boundingBox();
+    expect(rowBox!.x + rowBox!.width).toBeGreaterThanOrEqual(vpBox!.x + vpBox!.width - 5);
+    expect(rowBox!.x + rowBox!.width).toBeLessThanOrEqual(vpBox!.x + vpBox!.width + 5);
+  });
+});
