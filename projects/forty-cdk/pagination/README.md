@@ -87,7 +87,7 @@ import {
         </svg>
       </button>
 
-      @for (item of pg.items(); track $index) {
+      @for (item of pg.items(); track item.key) {
         @if (item.type === 'page') {
           <button forPaginationItem class="pgn-btn pgn-page" [page]="item.value!">
             {{ item.value }}
@@ -161,6 +161,7 @@ Implements the [WAI-ARIA navigation landmark pattern](https://www.w3.org/WAI/ARI
 
 - **Navigation landmark.** `[forPagination]` applies `role="navigation"`. Set `ariaLabel` (e.g. `"Pagination"`) so the landmark is distinguishable from other navigation regions on the page.
 - **Current page.** `[forPaginationItem]` reflects `aria-current="page"` on the active page button so screen-reader users know which page they are on.
+- **Focus stays on the activated page.** Track `pg.items()` by `item.key`, never by `$index`. Activating a page near the edge of the window shifts the list, and a key keeps that button's element, so focus stays on the page the user chose and it becomes `aria-current`. Tracked by `$index`, the focused button is handed to a different page.
 - **Disabled prev/next.** `[forPaginationPrevious]` and `[forPaginationNext]` reflect `aria-disabled="true"` + `data-disabled` at the boundaries (and when the root is disabled), never the native `disabled` attribute. Activation is a no-op while disabled, and the button stays focusable, so a keyboard user who presses Next on the second-to-last page keeps focus on it instead of being sent to `<body>`.
 
 ## Styling

@@ -7,6 +7,13 @@ export interface PaginationItem {
   readonly type: 'page' | 'ellipsis';
   /** 1-based page number. Present only when `type` is `'page'`. */
   readonly value?: number;
+  /**
+   * Identity to `track` the item by: a page keeps its key (`'page-<n>'`) as
+   * the window moves, and each gap keeps its side (`'ellipsis-start'`,
+   * `'ellipsis-end'`). Tracking by `$index` instead hands a focused page
+   * button to a different page when the window shifts.
+   */
+  readonly key: string;
 }
 
 function range(start: number, end: number): number[] {
@@ -50,21 +57,25 @@ export function computePaginationItems(opts: {
     endPages.length > 0 ? endPages[0]! - 2 : count - 1,
   );
 
-  const tokens: (number | 'ellipsis')[] = [
+  const tokens: (number | 'ellipsis-start' | 'ellipsis-end')[] = [
     ...startPages,
     ...(siblingsStart > boundaryCount + 2
-      ? ['ellipsis' as const]
+      ? ['ellipsis-start' as const]
       : boundaryCount + 1 < count - boundaryCount
         ? [boundaryCount + 1]
         : []),
     ...range(siblingsStart, siblingsEnd),
     ...(siblingsEnd < count - boundaryCount - 1
-      ? ['ellipsis' as const]
+      ? ['ellipsis-end' as const]
       : count - boundaryCount > boundaryCount
         ? [count - boundaryCount]
         : []),
     ...endPages,
   ];
 
-  return tokens.map((t) => (t === 'ellipsis' ? { type: 'ellipsis' } : { type: 'page', value: t }));
+  return tokens.map((t) =>
+    typeof t === 'number'
+      ? { type: 'page', value: t, key: `page-${t}` }
+      : { type: 'ellipsis', key: t },
+  );
 }

@@ -63,7 +63,7 @@ export class BreadcrumbsFixture {}
   template: `
     <nav forPagination [count]="11" ariaLabel="Pagination" #pg="forPagination">
       <button forPaginationPrevious aria-label="Previous">‹</button>
-      @for (item of pg.items(); track $index) {
+      @for (item of pg.items(); track item.key) {
         @if (item.type === 'page') {
           <button forPaginationItem [page]="item.value!">{{ item.value }}</button>
         } @else {

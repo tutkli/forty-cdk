@@ -34,7 +34,7 @@ import {
         </svg>
       </button>
 
-      @for (item of pg.items(); track $index) {
+      @for (item of pg.items(); track item.key) {
         @if (item.type === 'page') {
           <button forPaginationItem class="pgn-btn pgn-page" [page]="item.value!">
             {{ item.value }}

@@ -14,7 +14,7 @@ import {
     <span data-testid="current">{{ page() }}</span>
     <nav forPagination [(page)]="page" [count]="11" ariaLabel="Pagination" #pg="forPagination">
       <button forPaginationPrevious ariaLabel="Previous page" data-testid="prev">‹</button>
-      @for (item of pg.items(); track $index) {
+      @for (item of pg.items(); track item.key) {
         @if (item.type === 'page') {
           <button forPaginationItem [page]="item.value!" [attr.data-testid]="'page-' + item.value">
             {{ item.value }}

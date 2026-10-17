@@ -61,6 +61,59 @@ describe('computePaginationItems (pure algorithm)', () => {
       toShape(computePaginationItems({ count: 20, page: 1, siblingCount: 1, boundaryCount: 2 })),
     ).toEqual([1, 2, 3, 4, 5, 6, 'e', 19, 20]);
   });
+
+  it('keys each page by its number and each gap by its side of the window', () => {
+    const keys = (page: number) =>
+      computePaginationItems({ count: 11, page, siblingCount: 1, boundaryCount: 1 }).map(
+        (i) => i.key,
+      );
+    expect(keys(1)).toEqual([
+      'page-1',
+      'page-2',
+      'page-3',
+      'page-4',
+      'page-5',
+      'ellipsis-end',
+      'page-11',
+    ]);
+    expect(keys(6)).toEqual([
+      'page-1',
+      'ellipsis-start',
+      'page-5',
+      'page-6',
+      'page-7',
+      'ellipsis-end',
+      'page-11',
+    ]);
+    expect(keys(11)).toEqual([
+      'page-1',
+      'ellipsis-start',
+      'page-7',
+      'page-8',
+      'page-9',
+      'page-10',
+      'page-11',
+    ]);
+  });
+
+  it('keeps every key unique and every page key equal to page-<value> across windows', () => {
+    for (const siblingCount of [0, 1, 2]) {
+      for (const boundaryCount of [0, 1, 2]) {
+        for (let count = 1; count <= 25; count++) {
+          for (let page = 1; page <= count; page++) {
+            const items = computePaginationItems({ count, page, siblingCount, boundaryCount });
+            const keys = items.map((i) => i.key);
+            expect(new Set(keys).size).toBe(keys.length);
+            for (const item of items) {
+              if (item.type === 'page') {
+                expect(item.key).toBe(`page-${item.value}`);
+              }
+            }
+          }
+        }
+      }
+    }
+  });
 });
 
 @Component({
@@ -77,7 +130,7 @@ describe('computePaginationItems (pure algorithm)', () => {
       #pg="forPagination"
     >
       <button forPaginationPrevious ariaLabel="Previous page" data-testid="prev">‹</button>
-      @for (item of pg.items(); track $index) {
+      @for (item of pg.items(); track item.key) {
         @if (item.type === 'page') {
           <button forPaginationItem [page]="item.value!" [attr.data-testid]="'page-' + item.value">
             {{ item.value }}
@@ -181,6 +234,48 @@ describe('ForPagination directive', () => {
       page2?.click();
       await flush(fixture);
       expect(fixture.componentInstance.page()).toBe(2);
+    });
+
+    it('activating a page that shifts the window keeps its button element and makes it current', async () => {
+      const fixture = setup();
+      const page5 = fixture.nativeElement.querySelector(
+        '[data-testid="page-5"]',
+      ) as HTMLButtonElement;
+      page5.focus();
+      page5.click();
+      await flush(fixture);
+      expect(pageButtons(fixture).map((b) => b.textContent!.trim())).toEqual([
+        '1',
+        '4',
+        '5',
+        '6',
+        '11',
+      ]);
+      expect(fixture.nativeElement.querySelector('[data-testid="page-5"]')).toBe(page5);
+      expect(page5.getAttribute('aria-current')).toBe('page');
+      expect(document.activeElement).toBe(page5);
+    });
+
+    it('activating a page that shifts the window backward keeps its button element', async () => {
+      const fixture = setup();
+      fixture.componentInstance.page.set(11);
+      await flush(fixture);
+      const page7 = fixture.nativeElement.querySelector(
+        '[data-testid="page-7"]',
+      ) as HTMLButtonElement;
+      page7.focus();
+      page7.click();
+      await flush(fixture);
+      expect(pageButtons(fixture).map((b) => b.textContent!.trim())).toEqual([
+        '1',
+        '6',
+        '7',
+        '8',
+        '11',
+      ]);
+      expect(fixture.nativeElement.querySelector('[data-testid="page-7"]')).toBe(page7);
+      expect(page7.getAttribute('aria-current')).toBe('page');
+      expect(document.activeElement).toBe(page7);
     });
 
     it('clicking page 2 moves aria-current to that button', async () => {

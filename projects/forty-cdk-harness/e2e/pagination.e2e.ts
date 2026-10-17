@@ -1,4 +1,4 @@
-import { el, expect, expectFocused, gotoFixture, tabN, test } from './_helpers';
+import { el, expect, expectFocused, expectStays, gotoFixture, tabN, test } from './_helpers';
 
 test.describe('Pagination', () => {
   test.beforeEach(async ({ page }) => {
@@ -20,6 +20,39 @@ test.describe('Pagination', () => {
     await page.keyboard.press('Enter');
     await expect(el(page, 'current')).toHaveText('2');
     await expect(el(page, 'page-2')).toHaveAttribute('aria-current', 'page');
+  });
+
+  test('Enter on a page that shifts the window forward keeps focus on that page', async ({
+    page,
+  }) => {
+    await el(page, 'page-5').focus();
+    await page.keyboard.press('Enter');
+    await expect(el(page, 'current')).toHaveText('5');
+    await expect(el(page, 'page-6')).toBeVisible();
+    await expectFocused(el(page, 'page-5'));
+    await expect(el(page, 'page-5')).toHaveAttribute('aria-current', 'page');
+
+    await page.keyboard.press('Enter');
+    await expectStays(page, () => expect(el(page, 'current')).toHaveText('5'));
+    await expectFocused(el(page, 'page-5'));
+  });
+
+  test('Enter on a page that shifts the window backward keeps focus on that page', async ({
+    page,
+  }) => {
+    await el(page, 'page-11').click();
+    await expect(el(page, 'current')).toHaveText('11');
+
+    await el(page, 'page-7').focus();
+    await page.keyboard.press('Enter');
+    await expect(el(page, 'current')).toHaveText('7');
+    await expect(el(page, 'page-6')).toBeVisible();
+    await expectFocused(el(page, 'page-7'));
+    await expect(el(page, 'page-7')).toHaveAttribute('aria-current', 'page');
+
+    await page.keyboard.press('Enter');
+    await expectStays(page, () => expect(el(page, 'current')).toHaveText('7'));
+    await expectFocused(el(page, 'page-7'));
   });
 
   test('clicking next increments the current page', async ({ page }) => {
