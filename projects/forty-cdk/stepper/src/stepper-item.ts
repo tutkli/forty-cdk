@@ -1,5 +1,4 @@
 import { booleanAttribute, computed, Directive, ElementRef, inject, input } from '@angular/core';
-import type { FieldTree } from '@angular/forms/signals';
 
 import { registerHandle } from 'forty-cdk/core';
 import {
@@ -7,6 +6,7 @@ import {
   type ForStepperItemContext,
   type ForStepperItemHandle,
   injectStepperContext,
+  type StepperField,
 } from './stepper-context';
 
 /**
@@ -66,12 +66,8 @@ export class ForStepperItem implements ForStepperItemContext, ForStepperItemHand
    * when the field is valid and touched; `hasError` is `true` when the field is
    * touched and invalid. A manual `[completed]` / `[hasError]` input always wins
    * when set. Leave unset to drive completion manually.
-   *
-   * The `@angular/forms` peer is optional: the field *type* is imported with
-   * `import type`, so binding `[field]` requires the peer but the primitive
-   * compiles and tree-shakes without it for consumers who never use it.
    */
-  readonly field = input<FieldTree<unknown> | null>(null);
+  readonly field = input<StepperField | null>(null);
 
   /**
    * Whether this step is completed. A manual `[completed]` input wins; otherwise,

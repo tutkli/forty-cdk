@@ -9,10 +9,9 @@ import {
   model,
   output,
 } from '@angular/core';
-import type { ValidationError } from '@angular/forms/signals';
 
 import { FOR_FIELDSET_CONTEXT } from '../field/fieldset-context';
-import { injectFieldWiring } from '../field/field-wiring';
+import { type FieldValidationError, injectFieldWiring } from '../field/field-wiring';
 
 /**
  * Abstract base for primitives that implement `FormValueControl<T>` or
@@ -72,7 +71,7 @@ export abstract class FormUiControlBase {
   readonly name = input<string>('');
 
   /** Validation errors surfaced by Signal Forms. */
-  readonly errors = input<readonly ValidationError.WithOptionalFieldTree[]>([]);
+  readonly errors = input<readonly FieldValidationError[]>([]);
 
   /**
    * Set to true on blur (via {@link markTouched}). Two-way bindable for

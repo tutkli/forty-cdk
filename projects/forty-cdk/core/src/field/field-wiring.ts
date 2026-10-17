@@ -1,5 +1,4 @@
 import { DestroyRef, effect, ElementRef, inject, InjectionToken, type Signal } from '@angular/core';
-import type { ValidationError } from '@angular/forms/signals';
 
 import { composedParentElement } from '../composed-tree/composed-tree';
 import {
@@ -10,6 +9,17 @@ import {
   claimReplacedAttribute,
   type ReplacedAttributeClaim,
 } from '../host-attributes/replaced-attribute-owner';
+
+/**
+ * A validation error a form control reports to its surrounding `[forField]`.
+ * Signal Forms' `ValidationError` is assignable to it.
+ */
+export interface FieldValidationError {
+  /** Identifies the kind of error, such as `'required'`. */
+  readonly kind: string;
+  /** Human-readable message, when the validator supplied one. */
+  readonly message?: string;
+}
 
 /**
  * A form control's contribution to its surrounding `[forField]`. The control
@@ -81,7 +91,7 @@ export interface FieldControlHandle {
   /** Reflected by the field as `data-touched`. */
   readonly touched?: Signal<boolean>;
   /** Validation errors surfaced by Signal Forms; read by `ForFieldError`. */
-  readonly errors?: Signal<readonly ValidationError.WithOptionalFieldTree[]>;
+  readonly errors?: Signal<readonly FieldValidationError[]>;
   /**
    * Whether a composite control around this one currently stands in for it —
    * a field-anatomy `[forDatePicker]` adopting its `[forDateField]`. While

@@ -47,6 +47,7 @@ export const CORE_PUBLISHERS = {
   drawer: ['ForDrawerSide'],
   field: [
     'FieldControlHandle',
+    'FieldValidationError',
     'FOR_FIELD_ANCHOR_CONTEXT',
     'FOR_FIELD_CONTEXT',
     'ForFieldAnchorContext',

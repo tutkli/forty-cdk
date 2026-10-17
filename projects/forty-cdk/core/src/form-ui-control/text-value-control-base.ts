@@ -1,5 +1,4 @@
 import { Directive, ElementRef, inject, model } from '@angular/core';
-import type { FormValueControl } from '@angular/forms/signals';
 
 import { reflectDisabled } from '../host-attributes/disabled-reflection';
 import { FormUiControlBase } from './form-ui-control-base';
@@ -24,10 +23,7 @@ import { mirrorValue } from './value-mirror';
  * on. Internal core tier — no semver guarantee.
  */
 @Directive()
-export abstract class TextValueControlBase
-  extends FormUiControlBase
-  implements FormValueControl<string>
-{
+export abstract class TextValueControlBase extends FormUiControlBase {
   /**
    * Two-way bindable text value. Required by `FormValueControl<string>`.
    * Defaults to `''` — a text field is naturally empty, not absent, which

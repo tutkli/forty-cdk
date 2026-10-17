@@ -15,6 +15,16 @@ export { type StepperActivationMode };
 export type StepperMode = 'interactive' | 'progress';
 
 /**
+ * The field a step's completion follows. A Signal Forms `FieldTree` is
+ * assignable to it.
+ */
+export type StepperField = () => {
+  readonly valid: () => boolean;
+  readonly invalid: () => boolean;
+  readonly touched: () => boolean;
+};
+
+/**
  * Registry entry for one step, owned by `ForStepperItem`. Drives index
  * derivation and linear gating.
  */

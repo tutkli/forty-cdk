@@ -93,7 +93,7 @@ A control resolves its anchor in this order: its own `[for…Anchor]`, then the 
 
 `ForFieldError` reads the control's `errors()` automatically and exposes them as signals:
 
-- `errors()`: the raw `ValidationError[]`.
+- `errors()`: the raw `FieldValidationError[]`, each with a `kind` and an optional `message`. A Signal Forms `ValidationError` is one.
 - `messages()`: `string[]` of human-readable messages.
 - `hasErrors()` / `shown()`: `shown()` is `true` when the control is invalid and has errors.
 
@@ -178,12 +178,12 @@ Hint / description (`[forFieldDescription]`). Adopts the field's `descriptionId`
 
 Error region (`[forFieldError]`, `role="alert"`). Reads the control's Signal Forms errors automatically and exposes them as signals. A static `id` you write on it is preserved and becomes the id `aria-errormessage` points at.
 
-| Property    | Type                        | Description                                        |
-| ----------- | --------------------------- | -------------------------------------------------- |
-| `errors`    | `Signal<ValidationError[]>` | The control's current raw validation errors.       |
-| `messages`  | `Signal<readonly string[]>` | Human-readable messages derived from `errors`.     |
-| `hasErrors` | `Signal<boolean>`           | `true` when the control has at least one error.    |
-| `shown`     | `Signal<boolean>`           | `true` when the control is invalid and has errors. |
+| Property    | Type                                      | Description                                        |
+| ----------- | ----------------------------------------- | -------------------------------------------------- |
+| `errors`    | `Signal<readonly FieldValidationError[]>` | The control's current raw validation errors.       |
+| `messages`  | `Signal<readonly string[]>`               | Human-readable messages derived from `errors`.     |
+| `hasErrors` | `Signal<boolean>`                         | `true` when the control has at least one error.    |
+| `shown`     | `Signal<boolean>`                         | `true` when the control is invalid and has errors. |
 
 ### `ForFieldBoundary`
 

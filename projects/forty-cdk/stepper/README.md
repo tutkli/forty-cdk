@@ -178,14 +178,14 @@ A display-only status tracker: the list renders as a plain ordered list with `ar
 
 ### `ForStepperItem`
 
-| Property    | Type                              | Description                                                                                          |
-| ----------- | --------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `completed` | `input<boolean>`                  | Marks the step done (manual; wins over `field`).<br>**Default:** `false`                             |
-| `optional`  | `input<boolean>`                  | Marks the step skippable in linear mode.<br>**Default:** `false`                                     |
-| `disabled`  | `input<boolean>`                  | Disables only this step.<br>**Default:** `false`                                                     |
-| `hasError`  | `input<boolean>`                  | Emits `'error'` resolved state when not current (manual; wins over `field`).<br>**Default:** `false` |
-| `field`     | `input<FieldTree<unknown>\|null>` | Optional Signal Forms field; drives `completed`/`hasError` from validity.<br>**Default:** `null`     |
-| `state`     | `input<string\|null>`             | Custom state override that wins over derived state.<br>**Default:** `null`                           |
+| Property    | Type                        | Description                                                                                                        |
+| ----------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `completed` | `input<boolean>`            | Marks the step done (manual; wins over `field`).<br>**Default:** `false`                                           |
+| `optional`  | `input<boolean>`            | Marks the step skippable in linear mode.<br>**Default:** `false`                                                   |
+| `disabled`  | `input<boolean>`            | Disables only this step.<br>**Default:** `false`                                                                   |
+| `hasError`  | `input<boolean>`            | Emits `'error'` resolved state when not current (manual; wins over `field`).<br>**Default:** `false`               |
+| `field`     | `input<StepperField\|null>` | Optional Signal Forms field (any `FieldTree`); drives `completed`/`hasError` from validity.<br>**Default:** `null` |
+| `state`     | `input<string\|null>`       | Custom state override that wins over derived state.<br>**Default:** `null`                                         |
 
 ### `ForStepperContent`
 

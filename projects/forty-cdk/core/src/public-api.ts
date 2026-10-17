@@ -178,6 +178,7 @@ export {
 export {
   crossesInteractiveContent,
   type FieldControlHandle,
+  type FieldValidationError,
   FOR_FIELD_CONTEXT,
   type ForFieldContext,
   injectFieldLabelExemption,

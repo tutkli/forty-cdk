@@ -18,6 +18,7 @@ export {
   type ForStepperTriggerHandle,
   type ForStepperContentHandle,
   type StepperActivationMode,
+  type StepperField,
   type StepperMode,
 } from './stepper-context';
 export {
