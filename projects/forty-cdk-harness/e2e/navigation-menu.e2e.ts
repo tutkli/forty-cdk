@@ -229,6 +229,29 @@ test.describe('NavigationMenu keyboard / focus', () => {
     await expectFocused(el(page, 'trigger-products'));
   });
 
+  test('the arrow keys and Home / End move focus off a focused disabled trigger', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'navigation-menu', { disabledSolutions: '1' });
+
+    await el(page, 'trigger-solutions').focus();
+    await page.keyboard.press('ArrowRight');
+    await expectFocused(el(page, 'trigger-company'));
+
+    await el(page, 'trigger-solutions').focus();
+    await page.keyboard.press('ArrowLeft');
+    await expectFocused(el(page, 'trigger-products'));
+
+    await el(page, 'trigger-solutions').focus();
+    await page.keyboard.press('End');
+    await expectFocused(el(page, 'trigger-company'));
+
+    await el(page, 'trigger-solutions').focus();
+    await page.keyboard.press('Home');
+    await expectFocused(el(page, 'trigger-products'));
+    await expect(el(page, 'active')).toHaveText('none');
+  });
+
   test('Escape from inside an open panel closes it and it stays closed', async ({ page }) => {
     await gotoFixture(page, 'navigation-menu');
 

@@ -6,7 +6,7 @@ import {
   hostId,
   isHoverCapablePointer,
   isImeComposing,
-  resolveListNavigation,
+  navigateFromRovingItem,
   type Unset,
 } from 'forty-cdk/core';
 import {
@@ -17,8 +17,8 @@ import {
 /**
  * Disclosure trigger. Apply on `<button>`. Mouse hover / click open the paired
  * `[forNavigationMenuContent]`; arrow keys move focus across siblings;
- * ArrowDown (horizontal) / ArrowRight (vertical) open; Escape closes;
- * Enter / Space toggle.
+ * ArrowDown (horizontal) / the inline-end arrow (vertical: ArrowRight, or
+ * ArrowLeft under `dir="rtl"`) open; Escape closes; Enter / Space toggle.
  *
  * Per the APG disclosure-navigation pattern this does NOT open on plain
  * focus: Tabbing across the trigger row must not auto-expand panels, and a
@@ -38,7 +38,8 @@ import {
  * `[forNavigationMenuItem]`'s `[disabled]` with the root
  * `[forNavigationMenu]`'s. It is reflected through a single channel,
  * `aria-disabled="true"` + `data-disabled`, and enforced by the click / hover /
- * keyboard guards; arrow navigation skips the trigger. The native `disabled`
+ * activation-key guards; arrow navigation skips the trigger, and the arrow,
+ * Home and End keys still move focus off it while it is focused. The native `disabled`
  * attribute is NOT emitted: every trigger is its
  * own tab stop in this pattern, so a disabled trigger stays focusable and
  * announceable instead of vanishing from the trigger row — which a menu-level
@@ -128,6 +129,18 @@ export class ForNavigationMenuTrigger {
   }
 
   private onKeyDown(event: KeyboardEvent): void {
+    const orientation = this.menu.orientation();
+    const dir = this.menu.dir();
+    if (
+      navigateFromRovingItem(event, {
+        orientation,
+        dir,
+        groupDisabled: this.menu.disabled(),
+        navigate: (action) => this.menu.navigate(this.#host.nativeElement, action),
+      })
+    ) {
+      return;
+    }
     if (this.effectiveDisabled()) return;
     // Activation: Enter / Space toggle the disclosure.
     if (event.key === 'Enter' || event.key === ' ') {
@@ -142,19 +155,9 @@ export class ForNavigationMenuTrigger {
       this.#host.nativeElement.focus();
       return;
     }
-    // Cross-axis arrow opens, main-axis arrows navigate.
-    const orientation = this.menu.orientation();
-    const action = resolveListNavigation(event, {
-      orientation,
-      dir: this.menu.dir(),
-    });
-    if (action) {
-      event.preventDefault();
-      this.menu.navigate(this.#host.nativeElement, action);
-      return;
-    }
-    // ArrowDown (horizontal) / ArrowRight (vertical) opens the disclosure.
-    const openKey = orientation === 'horizontal' ? 'ArrowDown' : 'ArrowRight';
+    // ArrowDown (horizontal) / the inline-end arrow (vertical) opens the disclosure.
+    const openKey =
+      orientation === 'horizontal' ? 'ArrowDown' : dir === 'rtl' ? 'ArrowLeft' : 'ArrowRight';
     if (event.key === openKey) {
       event.preventDefault();
       this.menu.scheduleOpen(this.value(), 'keyboard');

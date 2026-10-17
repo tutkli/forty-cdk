@@ -1253,6 +1253,57 @@ describe('ForNavigationMenu', () => {
       await flush();
       expect(document.activeElement).toBe(triggers[0]);
     });
+
+    it('vertical: ArrowLeft opens the focused trigger under dir="rtl" and ArrowRight does not', async () => {
+      const { fixture, queryAll, flush } = renderHost(RtlNavMenuHost);
+      fixture.componentInstance.orientation.set('vertical');
+      await flush();
+      const triggers = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]');
+
+      triggers[0]!.focus();
+      pressKey(triggers[0]!, 'ArrowRight');
+      await flush();
+      expect(triggers[0]!.getAttribute('aria-expanded')).toBe('false');
+      expect(document.activeElement).toBe(triggers[0]);
+
+      pressKey(triggers[0]!, 'ArrowLeft');
+      await flush();
+      expect(triggers[0]!.getAttribute('aria-expanded')).toBe('true');
+    });
+
+    it('vertical: ArrowRight opens the focused trigger under dir="ltr" and ArrowLeft does not', async () => {
+      @Component({
+        imports: [
+          ForNavigationMenu,
+          ForNavigationMenuList,
+          ForNavigationMenuItem,
+          ForNavigationMenuTrigger,
+        ],
+        template: `
+          <nav forNavigationMenu orientation="vertical" dir="ltr">
+            <ul forNavigationMenuList>
+              <li forNavigationMenuItem value="products">
+                <button forNavigationMenuTrigger>Products</button>
+              </li>
+            </ul>
+          </nav>
+        `,
+      })
+      class LtrVerticalNavMenuHost {}
+
+      const { query, flush } = renderHost(LtrVerticalNavMenuHost);
+      await flush();
+      const trigger = query<HTMLButtonElement>('[forNavigationMenuTrigger]')!;
+
+      trigger.focus();
+      pressKey(trigger, 'ArrowLeft');
+      await flush();
+      expect(trigger.getAttribute('aria-expanded')).toBe('false');
+
+      pressKey(trigger, 'ArrowRight');
+      await flush();
+      expect(trigger.getAttribute('aria-expanded')).toBe('true');
+    });
   });
 
   describe('outside dismiss', () => {
@@ -1867,6 +1918,101 @@ describe('ForNavigationMenu', () => {
       pressKey(triggers[0]!, 'Enter');
       await flush();
       expect(fixture.componentInstance.open()).toBeNull();
+    });
+
+    describe('keyboard navigation from a disabled trigger', () => {
+      @Component({
+        imports: [
+          ForNavigationMenu,
+          ForNavigationMenuList,
+          ForNavigationMenuItem,
+          ForNavigationMenuTrigger,
+        ],
+        template: `
+          <nav forNavigationMenu [(value)]="open" [loop]="false">
+            <ul forNavigationMenuList>
+              <li forNavigationMenuItem value="products">
+                <button forNavigationMenuTrigger>Products</button>
+              </li>
+              <li forNavigationMenuItem value="solutions" [disabled]="solutionsDisabled()">
+                <button forNavigationMenuTrigger>Solutions</button>
+              </li>
+              <li forNavigationMenuItem value="about">
+                <button forNavigationMenuTrigger>About</button>
+              </li>
+            </ul>
+          </nav>
+        `,
+      })
+      class MiddleDisabledNavMenuHost {
+        readonly open = signal<string | null>(null);
+        readonly solutionsDisabled = signal(true);
+      }
+
+      async function focusDisabledTrigger() {
+        const rendered = renderHost(MiddleDisabledNavMenuHost);
+        await rendered.flush();
+        const triggers = rendered.queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]');
+        triggers[1]!.focus();
+        return { ...rendered, triggers };
+      }
+
+      for (const [key, target] of [
+        ['ArrowRight', 2],
+        ['ArrowLeft', 0],
+        ['Home', 0],
+        ['End', 2],
+      ] as const) {
+        it(`${key} moves focus off a focused disabled trigger`, async () => {
+          const { triggers, flush } = await focusDisabledTrigger();
+
+          pressKey(triggers[1]!, key);
+          await flush();
+
+          expect(document.activeElement).toBe(triggers[target]);
+        });
+      }
+
+      it('ArrowRight moves focus off a trigger that becomes disabled while focused', async () => {
+        const { fixture, triggers, flush } = await focusDisabledTrigger();
+        fixture.componentInstance.solutionsDisabled.set(false);
+        await flush();
+        triggers[1]!.focus();
+        fixture.componentInstance.solutionsDisabled.set(true);
+        await flush();
+        expect(triggers[1]!.getAttribute('aria-disabled')).toBe('true');
+
+        pressKey(triggers[1]!, 'ArrowRight');
+        await flush();
+
+        expect(document.activeElement).toBe(triggers[2]);
+      });
+
+      it('still ignores Enter, Space and the open key on a focused disabled trigger', async () => {
+        const { fixture, triggers, flush } = await focusDisabledTrigger();
+
+        for (const key of ['Enter', ' ', 'ArrowDown']) {
+          pressKey(triggers[1]!, key);
+          await flush();
+          expect(fixture.componentInstance.open()).toBeNull();
+          expect(document.activeElement).toBe(triggers[1]);
+        }
+      });
+
+      it('leaves the arrow keys inert when the whole menu is disabled', async () => {
+        const { fixture, query, flush } = renderHost(DisabledNavMenuHost);
+        await flush();
+        fixture.componentInstance.menuDisabled.set(true);
+        await flush();
+        const trigger = query<HTMLButtonElement>('[forNavigationMenuTrigger]')!;
+        trigger.focus();
+
+        const event = pressKey(trigger, 'ArrowRight');
+        await flush();
+
+        expect(document.activeElement).toBe(trigger);
+        expect(event.defaultPrevented).toBe(false);
+      });
     });
 
     it('preserves a consumer-set static disabled attribute on the trigger', async () => {
