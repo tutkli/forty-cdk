@@ -1,10 +1,10 @@
 import { computed, DestroyRef, Directive, ElementRef, inject } from '@angular/core';
-import type { ValidationError } from '@angular/forms/signals';
+import type { FieldValidationError } from 'forty-cdk/core';
 
 import { injectFieldContext } from './field-context';
 
-function extractMessage(error: ValidationError.WithOptionalFieldTree): string {
-  if ('message' in error && typeof error.message === 'string' && error.message !== '') {
+function extractMessage(error: FieldValidationError): string {
+  if (typeof error.message === 'string' && error.message !== '') {
     return error.message;
   }
   return error.kind;

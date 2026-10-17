@@ -23,10 +23,12 @@ Three peers are required, and every other one is optional and unlocks a specific
 | `@angular/core`             | `^22.1.0` | Yes      | Signals, standalone directives and DI, which the whole library is built on.           |
 | `@angular/common`           | `^22.1.0` | Yes      | `DOCUMENT`, platform checks and the SSR-safe branches every primitive takes.          |
 | `@angular/platform-browser` | `^22.1.0` | Yes      | `CssVarNamespacer`, so every `--for-*` property follows `provideCssVarNamespacing()`. |
-| `@angular/forms`            | `^22.1.0` | No       | Signal Forms. Needed only to bind a form primitive with `[formField]`.                |
+| `@angular/forms`            | `^22.1.0` | No       | Signal Forms. Needed by the form-control primitives, which bind with `[formField]`.   |
 | `@internationalized/date`   | `^3.0.0`  | No       | The calendar adapters behind `forty-cdk/internationalized-date`.                      |
 
 An optional peer you have not installed costs you nothing. Nothing outside the entry point that needs it imports it by value, so a bundle that never touches Signal Forms never resolves `@angular/forms`.
+
+The types follow the same line. The declarations of the form-control entry points (`forty-cdk/checkbox`, `combobox`, `date-field`, `date-picker`, `input`, `listbox`, `number-input`, `otp-input`, `radio-group`, `search`, `select`, `slider`, `switch`, `time-field`, `time-picker` and `toggle`) import `@angular/forms/signals`, so a project that type-checks its dependencies (`skipLibCheck: false`) needs the peer once it imports one of them. Every other entry point compiles without it.
 
 If you are choosing a date adapter, the [Date adapters](../date-adapters.md) guide is the page that answers which one to provide.
 

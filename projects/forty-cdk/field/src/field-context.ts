@@ -7,6 +7,7 @@ export {
   injectFieldWiring,
   type ForFieldContext,
   type FieldControlHandle,
+  type FieldValidationError,
 } from 'forty-cdk/core';
 
 /**

@@ -1,4 +1,4 @@
-import { existsSync, readdirSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
 import ts from 'typescript';
@@ -66,6 +66,34 @@ export type { ProbeContract };
 /** `TS2304` (dangling type reference) and `TS2420` (unsatisfied `implements`). */
 const PROBE_EXPECTED_CODES = [2304, 2420];
 
+const FORMS_ENTRY_POINTS = [
+  'checkbox',
+  'combobox',
+  'date-field',
+  'date-picker',
+  'input',
+  'listbox',
+  'number-input',
+  'otp-input',
+  'radio-group',
+  'search',
+  'select',
+  'slider',
+  'switch',
+  'time-field',
+  'time-picker',
+  'toggle',
+];
+
+const FORMS_SPECIFIER = /^@angular\/forms(?:\/|$)/;
+const FORMS_IMPORT = /^import\b[^;]*\bfrom\s+["']@angular\/forms(?:\/[^"']*)?["']/m;
+
+const FORMS_FREE_PROBE_PATH = join(repoRoot, '__forms-free-liveness-probe.d.ts');
+const FORMS_FREE_PROBE_SOURCE = `import type { FieldTree } from '@angular/forms/signals';
+export type ProbeField = FieldTree<unknown>;
+`;
+const FORMS_FREE_PROBE_EXPECTED_CODE = 2307;
+
 if (!existsSync(TYPES_DIR)) {
   console.error(`[check-emitted-types-compile] ${TYPES_DIR} not found — run \`pnpm build\` first.`);
   process.exit(1);
@@ -109,18 +137,50 @@ function formatDiagnostic(diagnostic) {
 }
 
 /** The default host, serving the probe from memory instead of from disk. */
-function createHost() {
+function createHost(probePath = PROBE_PATH, probeSource = PROBE_SOURCE) {
   const host = ts.createCompilerHost(COMPILER_OPTIONS);
-  const canonicalProbe = canonical(PROBE_PATH);
+  const canonicalProbe = canonical(probePath);
   const isProbe = (fileName) => canonical(fileName) === canonicalProbe;
   const { getSourceFile, fileExists, readFile } = host;
 
   host.getSourceFile = (fileName, languageVersionOrOptions, ...rest) =>
     isProbe(fileName)
-      ? ts.createSourceFile(fileName, PROBE_SOURCE, languageVersionOrOptions, true)
+      ? ts.createSourceFile(fileName, probeSource, languageVersionOrOptions, true)
       : getSourceFile.call(host, fileName, languageVersionOrOptions, ...rest);
   host.fileExists = (fileName) => isProbe(fileName) || fileExists.call(host, fileName);
-  host.readFile = (fileName) => (isProbe(fileName) ? PROBE_SOURCE : readFile.call(host, fileName));
+  host.readFile = (fileName) => (isProbe(fileName) ? probeSource : readFile.call(host, fileName));
+
+  return host;
+}
+
+function createFormsFreeHost() {
+  const host = createHost(FORMS_FREE_PROBE_PATH, FORMS_FREE_PROBE_SOURCE);
+  const cache = ts.createModuleResolutionCache(
+    host.getCurrentDirectory(),
+    host.getCanonicalFileName,
+    COMPILER_OPTIONS,
+  );
+
+  host.resolveModuleNameLiterals = (
+    literals,
+    containingFile,
+    redirectedReference,
+    options,
+    containingSourceFile,
+  ) =>
+    literals.map((literal) =>
+      FORMS_SPECIFIER.test(literal.text)
+        ? { resolvedModule: undefined }
+        : ts.resolveModuleName(
+            literal.text,
+            containingFile,
+            options,
+            host,
+            cache,
+            redirectedReference,
+            ts.getModeForUsageLocation(containingSourceFile, literal, options),
+          ),
+    );
 
   return host;
 }
@@ -185,4 +245,75 @@ if (emitted.length || foreign.length) process.exit(1);
 
 console.log(
   `[check-emitted-types-compile] OK — ${rootNames.length} emitted declaration files typecheck under strict + skipLibCheck:false, resolving each other through the published exports map; the liveness probe reported ${PROBE_EXPECTED_CODES.map((code) => `TS${code}`).join(' + ')} (${elapsedSeconds.toFixed(1)}s).`,
+);
+
+const formsFiles = new Map(
+  FORMS_ENTRY_POINTS.map((entryPoint) => [
+    entryPoint,
+    join(TYPES_DIR, `forty-cdk-${entryPoint}.d.ts`),
+  ]),
+);
+const staleFormsEntries = [...formsFiles].filter(
+  ([, fileName]) => !existsSync(fileName) || !FORMS_IMPORT.test(readFileSync(fileName, 'utf8')),
+);
+
+if (staleFormsEntries.length) {
+  console.error(
+    `[check-emitted-types-compile] FAIL — ${staleFormsEntries
+      .map(([entryPoint]) => `forty-cdk/${entryPoint}`)
+      .join(
+        ', ',
+      )} is listed in FORMS_ENTRY_POINTS but its emitted declarations do not import @angular/forms.`,
+  );
+  console.error(
+    `\nThe list exempts an entry point from the forms-free pass, so an entry that no longer needs the peer, or no longer exists, must leave it: an exemption nobody needs is one a regression can hide behind. Drop it from FORMS_ENTRY_POINTS and from the \`@angular/forms\` row of the package README.`,
+  );
+  process.exit(1);
+}
+
+const formsFreeStarted = process.hrtime.bigint();
+const formsExempt = new Set([...formsFiles.values()].map(canonical));
+const formsFreeRoots = rootNames.filter((fileName) => !formsExempt.has(canonical(fileName)));
+const formsFreeDiagnostics = ts.getPreEmitDiagnostics(
+  ts.createProgram(
+    [...formsFreeRoots, FORMS_FREE_PROBE_PATH],
+    COMPILER_OPTIONS,
+    createFormsFreeHost(),
+  ),
+);
+const formsFreeSeconds = Number(process.hrtime.bigint() - formsFreeStarted) / 1e9;
+
+const canonicalFormsFreeProbe = canonical(FORMS_FREE_PROBE_PATH);
+const formsFreeProbe = [];
+const formsLeaks = [];
+
+for (const diagnostic of formsFreeDiagnostics) {
+  const fileName = diagnostic.file?.fileName;
+  if (fileName && canonical(fileName) === canonicalFormsFreeProbe) formsFreeProbe.push(diagnostic);
+  else formsLeaks.push(diagnostic);
+}
+
+if (!formsFreeProbe.some((diagnostic) => diagnostic.code === FORMS_FREE_PROBE_EXPECTED_CODE)) {
+  console.error(
+    `[check-emitted-types-compile] FAIL — the forms-free liveness probe reported no TS${FORMS_FREE_PROBE_EXPECTED_CODE}, so the forms-free pass still resolves @angular/forms and proves nothing.`,
+  );
+  console.error(
+    `\nThe probe imports a type from \`@angular/forms/signals\`, which the forms-free host refuses to resolve. Restore the refusal in createFormsFreeHost rather than the probe.`,
+  );
+  process.exit(1);
+}
+
+if (formsLeaks.length) {
+  console.error(
+    `[check-emitted-types-compile] FAIL — ${formsLeaks.length} diagnostic(s) when @angular/forms is not installed:`,
+  );
+  for (const diagnostic of formsLeaks) console.error(`  ${formatDiagnostic(diagnostic)}`);
+  console.error(
+    `\n\`@angular/forms\` is an optional peer, and the package README tells consumers who use none of ${FORMS_ENTRY_POINTS.map((entryPoint) => `forty-cdk/${entryPoint}`).join(', ')} that they can skip it. Every other entry point's types, and \`forty-cdk/core\`'s that most of them import, must then compile without it under \`skipLibCheck: false\`. Keep \`@angular/forms\` types out of those declarations, with a local structural shape the forms type is assignable to, or move the \`implements\` clause onto the form primitive. An entry point that genuinely becomes a form primitive joins FORMS_ENTRY_POINTS and the README row together.`,
+  );
+  process.exit(1);
+}
+
+console.log(
+  `[check-emitted-types-compile] OK — ${formsFreeRoots.length} declaration files outside the ${FORMS_ENTRY_POINTS.length} form entry points typecheck without @angular/forms installed; the forms-free probe reported TS${FORMS_FREE_PROBE_EXPECTED_CODE} (${formsFreeSeconds.toFixed(1)}s).`,
 );
