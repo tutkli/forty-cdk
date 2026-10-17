@@ -79,8 +79,9 @@ next page for them. A collection that binds its own positions,
 such as a tree whose `[forTreeItem]` binds `[setSize]` / `[posInSet]` per level, uses `injectVirtualizer`
 directly, as the [Tree README's virtualized example](../tree/README.md#consumer-example) does.
 
-For full control (custom DOM, dynamic per-item measurement, a window/document scroller) use the
-headless `injectVirtualizer` core directly, documented below.
+For full control (custom DOM, dynamic per-item measurement) use the headless `injectVirtualizer`
+core directly, documented below. Both layers scroll an element: the window or the document cannot
+be the scroll container.
 
 ## Examples
 
@@ -394,29 +395,61 @@ See the [Combobox README](../combobox/README.md#virtualization) for the complete
 
 ### Options
 
-| Property          | Type                                           | Description                                                                                                                                                                                             |
-| ----------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `count`           | `Signal<number>`                               | Reactive total number of items.<br>**Default:** required                                                                                                                                                |
-| `estimateSize`    | `(index: number) => number`                    | Estimated pixel size along the scroll axis for the item at `index`.<br>**Default:** required                                                                                                            |
-| `scrollElement`   | `Signal<HTMLElement \| null>`                  | Reactive scroll container.<br>**Default:** required                                                                                                                                                     |
-| `orientation`     | `'vertical' \| 'horizontal'`                   | Scroll axis.<br>**Default:** `'vertical'`                                                                                                                                                               |
-| `dir`             | `WritingDirection \| Signal<WritingDirection>` | Writing direction of a horizontal list. In `'rtl'` the first item sits at the right edge and offsets grow leftwards. Ignored when vertical.<br>**Default:** the direction in effect at `scrollElement`  |
-| `overscan`        | `number`                                       | Extra items to render beyond the visible window on each side.<br>**Default:** `5`                                                                                                                       |
-| `getItemKey`      | `(index: number) => string \| number`          | Stable key per item; used by `@for (track item.key)`. Recomputed when `count` or `dataVersion` changes.<br>**Default:** `(i) => i`                                                                      |
-| `dataVersion`     | `Signal<unknown>`                              | The data `getItemKey` reads, usually the array signal itself. Each new value recomputes every key, so a same-length reorder moves each keyed row and its measured size with its item.<br>**Default:** — |
-| `estimateVersion` | `Signal<unknown>`                              | What `estimateSize` reads, usually the signal holding the estimate. Each new value after the first render re-estimates every item not yet measured; a measured item keeps its size.<br>**Default:** —   |
+| Property          | Type                                           | Description                                                                                                                                                                                                                                                                                                 |
+| ----------------- | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `count`           | `Signal<number>`                               | Reactive total number of items.<br>**Default:** required                                                                                                                                                                                                                                                    |
+| `estimateSize`    | `(index: number) => number`                    | Estimated pixel size along the scroll axis for the item at `index`.<br>**Default:** required                                                                                                                                                                                                                |
+| `scrollElement`   | `Signal<HTMLElement \| null>`                  | Reactive scroll container.<br>**Default:** required                                                                                                                                                                                                                                                         |
+| `orientation`     | `'vertical' \| 'horizontal'`                   | Scroll axis.<br>**Default:** `'vertical'`                                                                                                                                                                                                                                                                   |
+| `dir`             | `WritingDirection \| Signal<WritingDirection>` | Writing direction of a horizontal list. In `'rtl'` the first item sits at the right edge and offsets grow leftwards. Ignored when vertical.<br>**Default:** the direction in effect at `scrollElement`                                                                                                      |
+| `overscan`        | `number`                                       | Extra items to render beyond the visible window on each side.<br>**Default:** `5`                                                                                                                                                                                                                           |
+| `getItemKey`      | `(index: number) => string \| number`          | Stable key per item; used by `@for (track item.key)`. Recomputed when `count` or `dataVersion` changes.<br>**Default:** `(i) => i`                                                                                                                                                                          |
+| `dataVersion`     | `Signal<unknown>`                              | The data `getItemKey` reads, usually the array signal itself. Each new value recomputes every key, so a same-length reorder moves each keyed row and its measured size with its item.<br>**Default:** —                                                                                                     |
+| `estimateVersion` | `Signal<unknown>`                              | What `estimateSize` reads, usually the signal holding the estimate. Each new value after the first render re-estimates every item not yet measured; a measured item keeps its size.<br>**Default:** —                                                                                                       |
+| `scrollMargin`    | `number \| Signal<number>`                     | The list's offset in pixels from the start of the scroll container's content: the size of whatever the scroller holds before the list. Every item's `start` and every `scrollToIndex` target include it; `totalSize` does not, and `scrollToOffset` stays an absolute container offset.<br>**Default:** `0` |
 
 ### Returned handle
 
-| Member           | Type                                | Description                                                                                                        |
-| ---------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `virtualItems`   | `Signal<readonly VirtualItem[]>`    | Items in the current visible window plus overscan.                                                                 |
-| `totalSize`      | `Signal<number>`                    | Total scroll size in pixels (drives the spacer element).                                                           |
-| `range`          | `Signal<readonly [number, number]>` | The `[firstIndex, lastIndex + 1)` rendered window, `[0, 0]` when empty. Feeds a list primitive's `[visibleRange]`. |
-| `scrollToIndex`  | method                              | Scroll the container so the item at `index` is in view.                                                            |
-| `scrollToOffset` | method                              | Scroll to an absolute pixel offset.                                                                                |
-| `cancelScroll`   | method                              | Stop a `scrollToIndex` / `scrollToOffset` still correcting its position, leaving the container where it is.        |
-| `measureElement` | method                              | Record the measured size of a rendered item element.                                                               |
+| Member           | Type                                | Description                                                                                                                                                |
+| ---------------- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `virtualItems`   | `Signal<readonly VirtualItem[]>`    | Items in the current visible window plus overscan.                                                                                                         |
+| `totalSize`      | `Signal<number>`                    | Total scroll size in pixels (drives the spacer element).                                                                                                   |
+| `range`          | `Signal<readonly [number, number]>` | The `[firstIndex, lastIndex + 1)` rendered window, `[0, 0]` when empty. Feeds a list primitive's `[visibleRange]`.                                         |
+| `scrollToIndex`  | method                              | Scroll the container so the item at `index` is in view.                                                                                                    |
+| `scrollToOffset` | method                              | Scroll to an absolute pixel offset.                                                                                                                        |
+| `cancelScroll`   | method                              | Stop a `scrollToIndex` / `scrollToOffset` still correcting its position, leaving the container where it is.                                                |
+| `measureElement` | method                              | Record the measured size of a rendered item element.                                                                                                       |
+| `measurementFor` | method                              | The item at `index` with its measured `start` and `size`, `scrollMargin` included, or `null` before the first browser render or for an index out of range. |
+
+### `ForVirtualViewport`
+
+`[forVirtualViewport]` / `<for-virtual-viewport>`, exported as `forVirtualViewport`.
+
+| Property             | Type                                    | Description                                                                                                                                          |
+| -------------------- | --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `virtualCount`       | `number`                                | Total number of items in the full list.<br>**Default:** required                                                                                     |
+| `estimateSize`       | `number \| ((index: number) => number)` | Estimated item size in pixels along the scroll axis, as one number or per index.<br>**Default:** `50`                                                |
+| `orientation`        | `'vertical' \| 'horizontal'`            | Scroll axis. Read once when the viewport initializes.<br>**Default:** `'vertical'`                                                                   |
+| `overscan`           | `number`                                | Extra items rendered beyond the visible window on each side. Read once when the viewport initializes.<br>**Default:** `5`                            |
+| `dir`                | `WritingDirection \| null`              | Writing direction, reflected to the host `dir` attribute. A horizontal list in RTL starts at the right edge.<br>**Default:** the inherited direction |
+| `getItemKey`         | `(index: number) => string \| number`   | Stable key per item, recomputed when `*forVirtualFor` receives a new array.<br>**Default:** the index                                                |
+| `endReached`         | output `void`                           | Emits when the rendered window nears the end of the list, as described under Infinite scroll.                                                        |
+| `virtualItems`       | `Signal<readonly VirtualItem[]>`        | Items in the current visible window plus overscan, plus a row pinned by `setReorderingIndex`.                                                        |
+| `totalSize`          | `Signal<number>`                        | Total scroll size in pixels.                                                                                                                         |
+| `range`              | `Signal<readonly [number, number]>`     | The `[firstIndex, lastIndex + 1)` rendered window, `[0, 0]` when empty.                                                                              |
+| `scrollToIndex`      | method                                  | Scroll so the item at `index` is in view. No-op until initialized.                                                                                   |
+| `scrollToOffset`     | method                                  | Scroll to an absolute pixel offset. No-op until initialized.                                                                                         |
+| `cancelScroll`       | method                                  | Stop a `scrollToIndex` / `scrollToOffset` still correcting its position.                                                                             |
+| `measureElement`     | method                                  | Record the measured size of a rendered item element.                                                                                                 |
+| `setReorderingIndex` | method                                  | Keep the row at `index` rendered while it is scrolled out of the window, or `null` to release it. Used by `[forVirtualReorder]`.                     |
+
+### `ForVirtualFor`
+
+| Property          | Type           | Description                                                                                             |
+| ----------------- | -------------- | ------------------------------------------------------------------------------------------------------- |
+| `forVirtualForOf` | `readonly T[]` | The full list of items; the rows rendered are the viewport's `virtualItems()`.<br>**Default:** required |
+
+Each row's template context exposes `$implicit` (the row data), `virtualItem` (its `VirtualItem`), `index` (its index in the full list) and `count` (the full list length).
 
 ## Accessibility
 

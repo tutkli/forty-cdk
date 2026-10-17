@@ -46,7 +46,10 @@ export interface VirtualizerOptions {
    * can change after the first render.
    */
   readonly estimateSize: (index: number) => number;
-  /** Reactive reference to the scroll container element (e.g. a `viewChild`). */
+  /**
+   * Reactive reference to the scroll container element (e.g. a `viewChild`). The container is
+   * always an element: the window or the document cannot be the scroller.
+   */
   readonly scrollElement: Signal<HTMLElement | null>;
   /** Scroll axis. Defaults to `'vertical'`. */
   readonly orientation?: 'vertical' | 'horizontal';
