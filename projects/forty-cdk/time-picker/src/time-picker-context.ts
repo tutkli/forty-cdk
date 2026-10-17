@@ -181,6 +181,16 @@ export interface TimePickerPieceContext {
    * trigger.
    */
   readonly tabOut: { readonly target: () => HTMLElement | null; readonly close: () => void };
+  /**
+   * Whether the mounted `[forTimePickerContent]` runs the modal shell: the mode it latched at
+   * mount, or {@link ForTimePickerContext.modal} while no content is mounted. The slots' Tab
+   * handler branches on this, because a `[modal]` rebind reaches only the next mount.
+   */
+  readonly mountedModal: Signal<boolean>;
+  /** Called by `[forTimePickerContent]` with the mode its shell runs in. */
+  registerContentModal(modal: Signal<boolean>): void;
+  /** Called by `[forTimePickerContent]` on destroy; a no-op unless `modal` is the registered one. */
+  unregisterContentModal(modal: Signal<boolean>): void;
 }
 
 /**

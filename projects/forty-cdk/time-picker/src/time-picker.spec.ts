@@ -70,6 +70,7 @@ const BASE_IMPORTS = [
       [loop]="loop()"
       [locale]="locale()"
       [formatOptions]="formatOptions()"
+      [modal]="modal()"
       #picker="forTimePicker"
     >
       <button data-testid="trigger" forTimePickerTrigger>
@@ -107,6 +108,7 @@ class TimePickerHost {
   readonly placeholder = signal('Pick a time');
   readonly locale = signal<string | null>(null);
   readonly formatOptions = signal<Intl.DateTimeFormatOptions>({});
+  readonly modal = signal(false);
 }
 
 @Component({
@@ -1769,6 +1771,41 @@ describe('ForTimePicker', () => {
         expect(getContent()!.hasAttribute('data-modal')).toBe(mountedModal);
       });
     }
+
+    it('commits the focused slot on Tab when [modal] flips to true over the mounted anchored listbox', async () => {
+      const r = renderHost(TimePickerHost);
+      r.instance.step.set(60);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      r.instance.modal.set(true);
+      await flush(r.fixture);
+
+      const nineAm = getSlot('slot-32400')!;
+      nineAm.focus();
+      pressKey(nineAm, 'Tab');
+      await flush(r.fixture);
+
+      expect(r.instance.value()?.getHours()).toBe(9);
+      expect(r.instance.open()).toBe(false);
+    });
+
+    it('leaves Tab to the focus trap when [modal] flips to false over the mounted modal listbox', async () => {
+      const r = renderHost(TimePickerHost);
+      r.instance.step.set(60);
+      r.instance.modal.set(true);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      r.instance.modal.set(false);
+      await flush(r.fixture);
+
+      const nineAm = getSlot('slot-32400')!;
+      nineAm.focus();
+      pressKey(nineAm, 'Tab');
+      await flush(r.fixture);
+
+      expect(r.instance.value()).toBeNull();
+      expect(r.instance.open()).toBe(true);
+    });
   });
 
   describe('[forField] label press inside a focusable container (issue #2010)', () => {

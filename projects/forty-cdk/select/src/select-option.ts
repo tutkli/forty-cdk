@@ -230,7 +230,7 @@ export class ForSelectOption<T = string> {
       // In modal mode the focus trap owns Tab (it cycles focus inside the
       // surface in the capture phase); committing + closing here would defeat
       // the trap. Bail and let the trap's `preventDefault` keep focus inside.
-      if (this.#ctx.modal()) {
+      if (this.#ctx.mountedModal()) {
         return;
       }
       // APG (combobox-select-only): Tab commits the focused option and lets

@@ -9,6 +9,8 @@ import {
   numberAttribute,
   output,
   type Provider,
+  type Signal,
+  signal,
   type Type,
 } from '@angular/core';
 import type { FormValueControl } from '@angular/forms/signals';
@@ -289,6 +291,10 @@ export class ForTimePicker<D>
 
   readonly #pointer = createPointerHighlight({ items: () => this.#controller.options() });
 
+  /** The mode the mounted `[forTimePickerContent]` published, `null` while none is mounted. */
+  readonly #contentModal = signal<Signal<boolean> | null>(null);
+  private readonly mountedModal = computed(() => this.#contentModal()?.() ?? this.modal());
+
   /**
    * Shared overlay-listbox state machine: option collection, trigger / anchor /
    * content registries + ids, DOM-focus navigation, the open / close machine,
@@ -540,6 +546,16 @@ export class ForTimePicker<D>
 
   private releasePointerHighlight(): void {
     this.#pointer.release();
+  }
+
+  private registerContentModal(modal: Signal<boolean>): void {
+    this.#contentModal.set(modal);
+  }
+
+  private unregisterContentModal(modal: Signal<boolean>): void {
+    if (this.#contentModal() === modal) {
+      this.#contentModal.set(null);
+    }
   }
 
   private revealInitialFocus(): void {

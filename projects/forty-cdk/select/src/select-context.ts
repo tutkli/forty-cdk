@@ -211,6 +211,16 @@ export interface SelectPieceContext<T = unknown> {
    * positioning state below is a no-op while modal.
    */
   readonly modal: Signal<boolean>;
+  /**
+   * Whether the mounted `[forSelectContent]` runs the modal shell: the mode it latched at mount,
+   * or {@link SelectPieceContext.modal} while no content is mounted. The Tab handlers branch on
+   * this, because a `[modal]` rebind reaches only the next mount.
+   */
+  readonly mountedModal: Signal<boolean>;
+  /** Called by `[forSelectContent]` with the mode its shell runs in. */
+  registerContentModal(modal: Signal<boolean>): void;
+  /** Called by `[forSelectContent]` on destroy; a no-op unless `modal` is the registered one. */
+  unregisterContentModal(modal: Signal<boolean>): void;
   readonly dismissible: Signal<boolean>;
   readonly returnFocus: Signal<boolean>;
   /**

@@ -132,10 +132,12 @@ export class ForTimePickerContent {
           emitInteractOutside: (veto) => ctx.overlay.emitInteractOutside(veto),
         },
       }).modal;
+      this.#publishModal();
       return;
     }
 
     this.modal = signal(false).asReadonly();
+    this.#publishModal();
     injectOverlayShell({
       positioner: {
         kind: 'floating',
@@ -179,6 +181,15 @@ export class ForTimePickerContent {
       },
       tabOut: ctx.tabOut,
     });
+  }
+
+  #publishModal(): void {
+    const ctx = this.ctx;
+    registerHandle(
+      this.modal,
+      (modal) => ctx.registerContentModal(modal),
+      (modal) => ctx.unregisterContentModal(modal),
+    );
   }
 
   private onPointerLeave(): void {

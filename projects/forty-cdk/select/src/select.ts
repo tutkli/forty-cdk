@@ -10,6 +10,7 @@ import {
   numberAttribute,
   output,
   signal,
+  type Signal,
 } from '@angular/core';
 import type { FormValueControl } from '@angular/forms/signals';
 
@@ -351,6 +352,10 @@ export class ForSelect<T = string>
 
   readonly #virtualized = computed(() => this.totalCount() !== undefined);
   readonly #activeId = signal<string | null>(null);
+
+  /** The mode the mounted `[forSelectContent]` published, `null` while none is mounted. */
+  readonly #contentModal = signal<Signal<boolean> | null>(null);
+  private readonly mountedModal = computed(() => this.#contentModal()?.() ?? this.modal());
 
   /**
    * Shared overlay-listbox state machine: option collection, trigger / anchor /
@@ -740,6 +745,16 @@ export class ForSelect<T = string>
     this.#pointer.release();
   }
 
+  private registerContentModal(modal: Signal<boolean>): void {
+    this.#contentModal.set(modal);
+  }
+
+  private unregisterContentModal(modal: Signal<boolean>): void {
+    if (this.#contentModal() === modal) {
+      this.#contentModal.set(null);
+    }
+  }
+
   /**
    * Scroll an option into view with the pointer-suppression window open, so the
    * synthetic `pointermove` the scroll fires when a different option slides under
@@ -813,7 +828,7 @@ export class ForSelect<T = string>
       return;
     }
     if (event.key === 'Tab') {
-      if (this.modal()) {
+      if (this.mountedModal()) {
         return;
       }
       this.#commitActiveDescendantOnTab();
