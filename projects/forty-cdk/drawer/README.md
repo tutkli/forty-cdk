@@ -171,7 +171,7 @@ this.#drawers.open(ConfirmDrawer, { data, side: 'bottom', class: 'my-drawer' });
 }
 ```
 
-**Enter / exit animations.** A programmatic drawer is portaled to `document.body` and torn down imperatively, so the consumer can't attach `animate.leave` to the host the way a declarative `@if` block can. Pass `animateEnter` / `animateLeave` (CSS class names) instead: the manager applies `animateEnter` on mount (via `animate.enter`) and, on `close()`, keeps the host mounted with `animateLeave` until its CSS animations / transitions finish before tearing down. `close()` still resolves its promise and flips `isClosed()` immediately. Only the visual teardown waits. A template `animate.leave` inside the opened component never runs, because Angular does not run leave animations across the outlet the manager mounts it through; a `[forDrawerBackdrop]` takes its exit class from `backdropAnimateLeave`. Set them once with `provideForDrawerDefaults({ animateEnter, animateLeave, backdropAnimateLeave })`; a per-`open()` value wins over the default. `ForDrawerManager` is provided in root and reads the defaults from the root injector, so a `provideForDrawerDefaults` on a lazy route or in a component's `providers` reaches a programmatic drawer only when that scope's injector is passed as `injector` on the `open()` config.
+**Enter / exit animations.** A programmatic drawer is portaled to `document.body` and torn down imperatively, so the consumer can't attach `animate.leave` to the host the way a declarative `@if` block can. Pass `animateEnter` / `animateLeave` (CSS class names) instead: the manager applies `animateEnter` on mount (via `animate.enter`) and, on `close()`, keeps the host mounted with `animateLeave` until its CSS animations / transitions finish before tearing down. `close()` still resolves its promise and flips `isClosed()` immediately. Only the visual teardown waits. A template `animate.leave` inside the opened component never runs, because Angular does not run leave animations across the outlet the manager mounts it through; a `[forDrawerBackdrop]` takes its exit class from `backdropAnimateLeave`. Set them once with `provideForDrawerDefaults({ animateEnter, animateLeave, backdropAnimateLeave })`; a per-`open()` value wins over the default. `ForDrawerManager` is provided in root and reads the defaults from the root injector, so a `provideForDrawerDefaults` on a lazy route or in a component's `providers` reaches a programmatic drawer only when that scope's injector is passed as `injector` on the `open()` config; every key then applies, the scale and nested tunables included.
 
 <!-- snippet: fragment -->
 
@@ -204,9 +204,9 @@ this.#drawers.open(ConfirmDrawer, {
 });
 ```
 
-`activeSnapPointChange` fires with the landed snap on the mount-time default and every swipe release. It is the read-back that the declarative API exposes through `[(activeSnapPoint)]`. All subscriptions are released automatically when the drawer closes.
+`activeSnapPointChange` fires with the landed snap on the mount-time default and on every release that changes the snap; a release that settles back on the active snap emits nothing. It is the read-back that the declarative API exposes through `[(activeSnapPoint)]`. All subscriptions are released automatically when the drawer closes.
 
-**Driving the active snap point.** `ForDrawerRef.setActiveSnapPoint(snap)` moves a snap-point drawer to a new snap after open and is the programmatic equivalent of _writing_ `[(activeSnapPoint)]` on the declarative `[forDrawer]`. `ref.activeSnapPoint()` is the matching reactive read (it also reflects the drawer's own internal transitions, namely the mount-time default and every swipe release):
+**Driving the active snap point.** `ForDrawerRef.setActiveSnapPoint(snap)` moves a snap-point drawer to a new snap after open and is the programmatic equivalent of _writing_ `[(activeSnapPoint)]` on the declarative `[forDrawer]`. `ref.activeSnapPoint()` is the matching reactive read (it also reflects the drawer's own internal transitions, namely the mount-time default and every release that changes the snap):
 
 <!-- snippet: fragment -->
 
@@ -385,7 +385,7 @@ Press the button: the manager opens the confirmation as a bottom drawer, and the
 | `interactOutside`           | `OutputEmitterRef<VetoableNativeEvent<PointerEvent \| FocusEvent>>` | Output. Composite, vetoed by either specific event.<br>**Default:** —                                                                                                                                           |
 | `swipeStart`                | `OutputEmitterRef<ForDrawerSwipeEvent>`                             | Output. Fires once on the arming pointer move; `progress` is `0`.<br>**Default:** —                                                                                                                             |
 | `swipeMove`                 | `OutputEmitterRef<ForDrawerSwipeEvent>`                             | Output. Streams `progress` ∈ [0,1] and the originating `PointerEvent`.<br>**Default:** —                                                                                                                        |
-| `swipeEnd`                  | `OutputEmitterRef<ForDrawerSwipeEndEvent>`                          | Output. `willClose`, `nextSnapPoint`. Directive already updated state.<br>**Default:** —                                                                                                                        |
+| `swipeEnd`                  | `OutputEmitterRef<ForDrawerSwipeEndEvent>`                          | Output. `willClose`, `nextSnapPoint`. Fires once `activeSnapPoint` holds `nextSnapPoint`, and before `(dismiss)` on a dismissing release.<br>**Default:** —                                                     |
 | `swipeCancel`               | `OutputEmitterRef<ForDrawerSwipeEvent>`                             | Output. `pointercancel` or mid-gesture direction abort; the surface springs back.<br>**Default:** —                                                                                                             |
 
 `ForDrawerCloseReason`: `'escape' | 'backdrop' | 'pointerDownOutside' | 'focusOutside' | 'closeButton' | 'swipe' | 'programmatic'`.
@@ -460,9 +460,9 @@ Pass them in **strictly increasing** order (closest-to-edge first); in dev mode 
 ></div>
 ```
 
-The three snaps read peek → mid → full; `snap` is the current one, written on every swipe release; the backdrop fades once the active snap reaches the second index.
+The three snaps read peek → mid → full; `snap` is the current one, written on every release that changes the snap; the backdrop fades once the active snap reaches the second index.
 
-The `model<>()` change emitter (`(activeSnapPointChange)`) fires on internal transitions (the mount-time default and every swipe release), and stays silent on consumer writes through `[(activeSnapPoint)]`.
+The `model<>()` change emitter (`(activeSnapPointChange)`) fires on internal transitions (the mount-time default and every release that changes the snap), and stays silent on consumer writes through `[(activeSnapPoint)]`.
 
 ### Positioning the snaps (CSS contract)
 

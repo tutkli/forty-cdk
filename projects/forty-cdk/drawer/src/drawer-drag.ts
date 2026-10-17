@@ -117,7 +117,7 @@ export interface DrawerDragConfig {
   readonly emitSwipeStart: (event: ForDrawerSwipeEvent) => void;
   /** Emits the live swipe stream so consumers can drive bespoke visualisations. */
   readonly emitSwipeMove: (event: ForDrawerSwipeEvent) => void;
-  /** Emits the pointer-up decision (already applied to `activeSnapPoint` / close). */
+  /** Emits the pointer-up decision once `activeSnapPoint` is written, before any close request. */
   readonly emitSwipeEnd: (event: ForDrawerSwipeEndEvent) => void;
   /** Emits a `pointercancel` / direction-abort with the progress reached before the reset. */
   readonly emitSwipeCancel: (event: ForDrawerSwipeEvent) => void;
@@ -469,8 +469,6 @@ export function injectDrawerDrag(config: DrawerDragConfig): DrawerDragHandle {
         (offset >= dim * threshold || effectiveVelocity >= FLICK_VELOCITY_PX_PER_MS);
     }
 
-    config.emitSwipeEnd({ willClose, nextSnapPoint: nextSnap, originalEvent: event });
-
     // Zero the offset and flip `dragging` off together. Both writes (plus the
     // `activeSnapPoint` change below) flush in one change-detection pass, so
     // the host applies the `data-dragging` removal, the new
@@ -480,13 +478,14 @@ export function injectDrawerDrag(config: DrawerDragConfig): DrawerDragHandle {
     // transition, with no intermediate jump to the previous rest position.
     resetDragState();
 
-    if (willClose) {
-      config.requestClose('swipe');
-      return;
+    if (!willClose && nextSnap !== null && nextSnap !== activeSnapPoint()) {
+      activeSnapPoint.set(nextSnap);
     }
 
-    if (nextSnap !== null && nextSnap !== activeSnapPoint()) {
-      activeSnapPoint.set(nextSnap);
+    config.emitSwipeEnd({ willClose, nextSnapPoint: nextSnap, originalEvent: event });
+
+    if (willClose) {
+      config.requestClose('swipe');
     }
   }
 

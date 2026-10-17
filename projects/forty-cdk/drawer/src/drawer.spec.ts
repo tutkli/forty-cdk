@@ -639,6 +639,109 @@ describe('ForDrawer (declarative)', () => {
       });
     });
 
+    describe('swipeEnd order', () => {
+      interface SwipeEndSample {
+        readonly event: ForDrawerSwipeEndEvent;
+        readonly active: ForDrawerSnapPoint | null;
+        readonly changes: number;
+        readonly reasons: number;
+      }
+
+      @Component({
+        imports: [ForDrawer],
+        template: `
+          @if (open()) {
+            <div
+              forDrawer
+              [snapPoints]="snaps"
+              [(activeSnapPoint)]="active"
+              (activeSnapPointChange)="changes.push($event)"
+              (swipeEnd)="onSwipeEnd($event)"
+              (dismiss)="onDismiss($event)"
+              ariaLabel="t"
+            ></div>
+          }
+        `,
+      })
+      class SwipeEndOrderHost {
+        readonly open = signal(false);
+        readonly snaps: ReadonlyArray<ForDrawerSnapPoint> = [0.25, 0.5, 1];
+        readonly active = signal<ForDrawerSnapPoint | null>(0.5);
+        readonly changes: (ForDrawerSnapPoint | null)[] = [];
+        readonly reasons: ForDrawerCloseReason[] = [];
+        readonly samples: SwipeEndSample[] = [];
+
+        onSwipeEnd(event: ForDrawerSwipeEndEvent): void {
+          this.samples.push({
+            event,
+            active: this.active(),
+            changes: this.changes.length,
+            reasons: this.reasons.length,
+          });
+        }
+
+        onDismiss(reason: ForDrawerCloseReason): void {
+          this.reasons.push(reason);
+          this.open.set(false);
+        }
+      }
+
+      async function mounted(active: ForDrawerSnapPoint) {
+        const r = renderHost(SwipeEndOrderHost);
+        r.instance.active.set(active);
+        r.instance.open.set(true);
+        await flush(r.fixture);
+        const drawer = document.querySelector<HTMLElement>('[forDrawer]')!;
+        return { instance: r.instance, fixture: r.fixture, drawer };
+      }
+
+      it('swipeEnd fires once activeSnapPoint holds the snap the release landed on', async () => {
+        const { instance, fixture, drawer } = await mounted(0.5);
+
+        dispatchPointer(drawer, 'pointerdown', 0, 100);
+        dispatchPointer(drawer, 'pointermove', 0, 90);
+        dispatchPointer(drawer, 'pointermove', 0, 0);
+        dispatchPointer(drawer, 'pointerup', 0, 0);
+        await flush(fixture);
+
+        expect(instance.samples.length).toBe(1);
+        const [sample] = instance.samples;
+        expect(sample!.event.willClose).toBe(false);
+        expect(sample!.event.nextSnapPoint).toBe(1);
+        expect(sample!.active).toBe(1);
+        expect(sample!.changes).toBe(1);
+      });
+
+      it('a dismissing release emits swipeEnd before dismiss', async () => {
+        const { instance, fixture, drawer } = await mounted(0.5);
+
+        dispatchPointer(drawer, 'pointerdown', 0, 0);
+        dispatchPointer(drawer, 'pointermove', 0, 10);
+        dispatchPointer(drawer, 'pointermove', 0, 300);
+        dispatchPointer(drawer, 'pointerup', 0, 300);
+        await flush(fixture);
+
+        expect(instance.samples.length).toBe(1);
+        expect(instance.samples[0]!.event.willClose).toBe(true);
+        expect(instance.samples[0]!.reasons).toBe(0);
+        expect(instance.reasons).toEqual(['swipe']);
+      });
+
+      it('a release that settles back on the active snap emits no activeSnapPointChange', async () => {
+        const { instance, fixture, drawer } = await mounted(1);
+
+        dispatchPointer(drawer, 'pointerdown', 0, 100);
+        dispatchPointer(drawer, 'pointermove', 0, 90);
+        dispatchPointer(drawer, 'pointerup', 0, 90);
+        await flush(fixture);
+
+        expect(instance.samples.length).toBe(1);
+        expect(instance.samples[0]!.event.nextSnapPoint).toBe(1);
+        expect(instance.changes).toEqual([]);
+        expect(drawer.getAttribute('data-active-snap-point')).toBe('1');
+      });
+    });
+
     describe('dragging is gated apart from dismissal', () => {
       @Component({
         imports: [ForDrawer],

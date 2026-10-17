@@ -141,7 +141,12 @@ export interface ForDrawerOpenConfig<D = unknown> {
    */
   swipeToDismiss?: boolean;
 
-  /** Fraction of dimension past which a release dismisses. Default `0.25`. */
+  /**
+   * Fraction past which a release dismisses instead of snapping back. Default
+   * `0.25`. Without `snapPoints` it is a fraction of the full drawer dimension
+   * along the dismissal axis; with `snapPoints` it is a fraction of the lowest
+   * snap's extent.
+   */
   closeThreshold?: number;
 
   /** When true, swipe only arms on a registered handle element. Default `false`. */
@@ -274,9 +279,9 @@ export interface ForDrawerOpenConfig<D = unknown> {
   swipeMove?: (event: ForDrawerSwipeEvent) => void;
 
   /**
-   * Mirrors the declarative `(swipeEnd)` output: invoked on pointer-up, after
-   * the directive has resolved the next snap point / close decision. Read
-   * `willClose` and `nextSnapPoint` from the payload.
+   * Mirrors the declarative `(swipeEnd)` output: invoked on pointer-up once
+   * `activeSnapPoint` holds `nextSnapPoint`, and before the drawer closes on a
+   * release with `willClose`.
    */
   swipeEnd?: (event: ForDrawerSwipeEndEvent) => void;
 
@@ -288,9 +293,10 @@ export interface ForDrawerOpenConfig<D = unknown> {
 
   /**
    * Mirrors the declarative `(activeSnapPointChange)` output: invoked with
-   * the landed snap point whenever the drawer transitions internally
-   * (mount-time default and drag release). Use this to read back the active
-   * snap that the declarative API exposes via `[(activeSnapPoint)]`.
+   * the landed snap point whenever the drawer transitions internally: the
+   * mount-time default, and a release that changes the snap. Use this to read
+   * back the active snap that the declarative API exposes via
+   * `[(activeSnapPoint)]`.
    */
   activeSnapPointChange?: (snapPoint: ForDrawerSnapPoint | null) => void;
 }
@@ -391,6 +397,7 @@ export class ForDrawerManager extends OverlayManagerCore<ForDrawerEntry> {
         config.setBackgroundColorOnScale ?? defaults.setBackgroundColorOnScale ?? true,
       snapPoints: config.snapPoints,
       activeSnapPoint,
+      defaults,
       fadeFromIndex: config.fadeFromIndex,
       escapeKeyDown: config.escapeKeyDown,
       pointerDownOutside: config.pointerDownOutside,
