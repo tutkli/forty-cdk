@@ -19,6 +19,7 @@ export interface DropContainerGeometry {
   readonly orientation: 'horizontal' | 'vertical' | 'mixed';
   /** This container's own resolved writing direction. */
   readonly dir: 'ltr' | 'rtl';
+  readonly clip?: DragRect;
 }
 
 /** A resolved pointer drop target: a container plus the insertion index within it. */
@@ -31,6 +32,40 @@ export interface DropTarget {
 
 function rectContains(rect: DragRect, x: number, y: number): boolean {
   return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+}
+
+function visibleRect(container: DropContainerGeometry): DragRect {
+  const { rect, clip } = container;
+  if (!clip) {
+    return rect;
+  }
+  return {
+    left: Math.max(rect.left, clip.left),
+    top: Math.max(rect.top, clip.top),
+    right: Math.min(rect.right, clip.right),
+    bottom: Math.min(rect.bottom, clip.bottom),
+  };
+}
+
+function isEmptyRect(rect: DragRect): boolean {
+  return rect.left > rect.right || rect.top > rect.bottom;
+}
+
+function nearestContainer(rects: readonly DragRect[], x: number, y: number): number {
+  let nearest = -1;
+  let minDist = Infinity;
+  for (let i = 0; i < rects.length; i++) {
+    const rect = rects[i]!;
+    if (isEmptyRect(rect)) {
+      continue;
+    }
+    const d = clampedDistance(rect, x, y);
+    if (d < minDist) {
+      minDist = d;
+      nearest = i;
+    }
+  }
+  return nearest;
 }
 
 function clampedDistance(rect: DragRect, x: number, y: number): number {
@@ -128,24 +163,18 @@ export function resolveDropTarget(
     return null;
   }
 
-  let containerIndex = -1;
-
-  for (let i = 0; i < containers.length; i++) {
-    if (rectContains(containers[i]!.rect, point.x, point.y)) {
-      containerIndex = i;
-      break;
-    }
-  }
+  const visible = containers.map(visibleRect);
+  let containerIndex = visible.findIndex((rect) => rectContains(rect, point.x, point.y));
 
   if (containerIndex < 0) {
-    let minDist = Infinity;
-    for (let i = 0; i < containers.length; i++) {
-      const d = clampedDistance(containers[i]!.rect, point.x, point.y);
-      if (d < minDist) {
-        minDist = d;
-        containerIndex = i;
-      }
-    }
+    containerIndex = nearestContainer(visible, point.x, point.y);
+  }
+  if (containerIndex < 0) {
+    containerIndex = nearestContainer(
+      containers.map((c) => c.rect),
+      point.x,
+      point.y,
+    );
   }
 
   const container = containers[containerIndex]!;

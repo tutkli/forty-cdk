@@ -274,6 +274,11 @@ export const routes: Routes = [
       import('./fixtures/drag-drop-scroll.fixture').then((m) => m.DragDropScrollFixture),
   },
   {
+    path: 'drag-drop-stacked',
+    loadComponent: () =>
+      import('./fixtures/drag-drop-stacked.fixture').then((m) => m.DragDropStackedFixture),
+  },
+  {
     path: 'drag-drop-animate',
     loadComponent: () =>
       import('./fixtures/drag-drop-animate.fixture').then((m) => m.DragDropAnimateFixture),
