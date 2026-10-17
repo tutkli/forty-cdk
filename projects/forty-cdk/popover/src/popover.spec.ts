@@ -8,6 +8,7 @@ import {
   afterEachOverlayCleanup,
   flush,
   flushPositioning,
+  nextMacrotask,
   renderHost,
   type RenderResult,
 } from '../../src/test-utils';
@@ -767,6 +768,31 @@ describe('ForPopover', () => {
       expect(event.defaultPrevented).toBe(false);
       await flush(r.fixture);
       expect(r.instance.open()).toBe(false);
+    });
+
+    it('makes the content inert for the default action of a forward Tab out, then restores it', async () => {
+      const { r, content } = await openPopover();
+      r.instance.dismissible.set(false);
+      await flush(r.fixture);
+      const last = document.querySelector<HTMLButtonElement>('#close-btn')!;
+      last.focus();
+
+      pressKey(last, 'Tab');
+
+      expect(content.hasAttribute('inert')).toBe(true);
+      await nextMacrotask();
+      expect(content.hasAttribute('inert')).toBe(false);
+      expect(r.instance.open()).toBe(true);
+    });
+
+    it('leaves the content reachable on a backward Tab out', async () => {
+      const { content } = await openPopover();
+      const first = document.querySelector<HTMLButtonElement>('#ok')!;
+      first.focus();
+
+      pressKey(first, 'Tab', { shiftKey: true });
+
+      expect(content.hasAttribute('inert')).toBe(false);
     });
 
     it('does not return focus to the trigger after a Tab out', async () => {

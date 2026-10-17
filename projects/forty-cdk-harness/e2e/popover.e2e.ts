@@ -1,4 +1,12 @@
-import { boxOf, clickOutside, el, expect, gotoFixture, test } from './_helpers';
+import {
+  boxOf,
+  clickOutside,
+  el,
+  expect,
+  gotoFixture,
+  recordFocusInsWithin,
+  test,
+} from './_helpers';
 
 test.describe('Popover', () => {
   test('moves focus into the popover on open', async ({ page }) => {
@@ -52,6 +60,20 @@ test.describe('Popover', () => {
     await page.keyboard.press('Tab');
     await expect(page.locator('#after')).toBeFocused();
     await expect(el(page, 'popover')).toHaveCount(0);
+  });
+
+  test('Tab off the last control never re-enters the closing popover when the trigger is the last tabbable', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'popover', { triggerLast: '1' });
+    await el(page, 'trigger').click();
+    await el(page, 'close-btn').focus();
+    await expect(el(page, 'close-btn')).toBeFocused();
+    const focusIns = await recordFocusInsWithin(page, 'popover');
+
+    await page.keyboard.press('Tab');
+    await expect(el(page, 'popover')).toHaveCount(0);
+    expect(await focusIns()).toBe(0);
   });
 
   test('Shift+Tab off the first control lands on the trigger and closes', async ({ page }) => {

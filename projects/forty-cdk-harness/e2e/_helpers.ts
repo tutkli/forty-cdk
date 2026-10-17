@@ -1043,6 +1043,27 @@ export async function recordFlipStamps(page: Page): Promise<() => Promise<string
     page.evaluate(() => [...(window as unknown as { __flipStamps: string[] }).__flipStamps]);
 }
 
+export async function recordFocusInsWithin(
+  page: Page,
+  testid: string,
+): Promise<() => Promise<number>> {
+  await page.evaluate((id) => {
+    const store = window as unknown as { __focusInsWithin: number };
+    store.__focusInsWithin = 0;
+    document.addEventListener(
+      'focusin',
+      (event) => {
+        if ((event.target as Element).closest(`[data-testid="${id}"]`)) {
+          store.__focusInsWithin += 1;
+        }
+      },
+      true,
+    );
+  }, testid);
+  return () =>
+    page.evaluate(() => (window as unknown as { __focusInsWithin: number }).__focusInsWithin);
+}
+
 export const DEFAULT_POINTER_SUPPRESSION_MS = 200;
 
 export async function recordPointerMoves(

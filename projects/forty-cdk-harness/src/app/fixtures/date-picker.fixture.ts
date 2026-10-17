@@ -156,7 +156,9 @@ import { queryFlag } from './_query-flag';
       </div>
     }
 
-    <input data-testid="after" placeholder="after-trigger" />
+    @if (!triggerLast) {
+      <input data-testid="after" placeholder="after-trigger" />
+    }
   `,
 })
 export class DatePickerFixture {
@@ -170,6 +172,7 @@ export class DatePickerFixture {
   protected readonly closeOnSelect = !queryFlag('noClose');
   protected readonly dir: 'ltr' | 'rtl' = queryFlag('rtl') ? 'rtl' : 'ltr';
   protected readonly isRange = queryFlag('range');
+  protected readonly triggerLast = queryFlag('triggerLast');
 
   private readonly vetoOpen = queryFlag('vetoOpen');
   private readonly vetoClose = queryFlag('vetoClose');
