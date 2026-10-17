@@ -4,8 +4,8 @@
  * `toThrow` / `toThrowError` invoke their callback and catch only a
  * synchronous throw. An `async` callback never throws — it returns a rejected
  * Promise — so `expect(async () => …).not.toThrow()` passes whatever the body
- * does, and the body keeps running after the test has returned. See CLAUDE.md >
- * Testing notes > Test isolation — non-negotiables > rule 12.
+ * does, and the body keeps running after the test has returned. See .claude/rules/testing.md §
+ * "Test isolation — non-negotiables" rule 12.
  *
  * This file exists to prove the rule fires; the four `async` callbacks in
  * `bad` are intentional violations, covering both callback forms, both
@@ -30,6 +30,7 @@ declare function expect(actual: unknown): ThrowMatchers<void> & {
 declare function work(): Promise<void>;
 declare function fail(): never;
 
+// Expected: 4× forty-cdk/no-async-tothrow
 export async function bad(): Promise<void> {
   expect(async () => {
     await work();
@@ -46,6 +47,7 @@ export async function bad(): Promise<void> {
   }).toThrow(/boom/);
 }
 
+// Allowed: a synchronous callback, `rejects`, and awaiting the body directly.
 export async function good(): Promise<void> {
   expect(() => fail()).toThrow('boom');
   expect(() => undefined).not.toThrowError();
@@ -58,6 +60,7 @@ export async function good(): Promise<void> {
   await work();
 }
 
+// Allowed: the two limits the rule states rather than chases.
 export function undetected(): void {
   expect(work).not.toThrow();
   expect(() => work()).not.toThrow();

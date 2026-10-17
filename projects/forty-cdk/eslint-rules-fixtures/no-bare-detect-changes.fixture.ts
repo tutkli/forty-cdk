@@ -6,8 +6,8 @@
  * need, so an assertion on the positioner's output that follows one reads the
  * *previous* position (or the anti-flash baseline) and passes for a reason
  * production never provides. Those assertions need `await
- * flushPositioning(fixture)`. See CLAUDE.md > Testing notes > Test isolation —
- * non-negotiables > rule 14.
+ * flushPositioning(fixture)`. See .claude/rules/testing.md § "Test isolation — non-negotiables"
+ * rule 14.
  *
  * This file exists to prove the rule fires. Each `bad*` function below is an
  * intentional violation; the `ok*` functions are the shapes that must NOT be

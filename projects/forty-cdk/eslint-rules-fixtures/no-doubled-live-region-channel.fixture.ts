@@ -13,7 +13,7 @@
  * implies. A bound role or a bound attribute is a *switch* rather than a
  * declaration (the `[forToast]` shape), a differing static value is a
  * deliberate override, and an untranscribed role is skipped rather than
- * guessed at. See `.claude/rules/conventions.md` > "ARIA emission".
+ * guessed at. See `.claude/rules/conventions.md` § "A live region declares exactly one channel".
  */
 
 declare function Directive(metadata: unknown): ClassDecorator;

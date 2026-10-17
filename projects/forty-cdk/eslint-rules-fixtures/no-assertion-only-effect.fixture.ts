@@ -9,7 +9,7 @@
  * belongs at its point of use — at every one of them, and with the gain stated
  * accurately: attributable and one-shot everywhere, catchable by the consumer
  * only where the point of use is a render-time derivation rather than an event
- * handler. See CLAUDE.md > conventions > "Assertions are dev-gated and live at
+ * handler. See .claude/rules/conventions.md § "Assertions are dev-gated and live at
  * the point of use".
  */
 

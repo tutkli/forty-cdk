@@ -10,7 +10,7 @@
  * the `disabled` value does not reference `effectiveDisabled` anywhere,
  * including controls that *inherit* `effectiveDisabled` from
  * `FormUiControlBase` and never declare it in their own body. See
- * tutkli/forty-cdk#695 / #728 / #741 and CLAUDE.md > "Disabled custom-role
+ * tutkli/forty-cdk#695 / #728 / #741 and .claude/rules/conventions.md § "Disabled custom-role
  * controls stay focusable".
  */
 

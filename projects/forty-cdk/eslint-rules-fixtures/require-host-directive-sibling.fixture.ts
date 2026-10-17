@@ -7,7 +7,7 @@
  * from the primitive barrel. No
  * `require-host-directive-sibling.fixture-host-directive.ts` exists next to
  * this file, so each concrete class below fires once. See
- * tutkli/forty-cdk#645 / #663 and CLAUDE.md > "Form primitives use Signal
+ * tutkli/forty-cdk#645 / #663 and CLAUDE.md § "Form primitives use Signal
  * Forms, never `ControlValueAccessor`".
  */
 

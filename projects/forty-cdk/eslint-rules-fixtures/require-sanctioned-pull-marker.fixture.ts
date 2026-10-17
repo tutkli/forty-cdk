@@ -8,7 +8,7 @@
  * marker comment placed immediately above the `effect(` call —
  * `// @sanctioned-pull(<store>): <why the source is transient>` — and the effect
  * it sits in must stay read-only, because a pull drags its own tracked set into
- * whatever else shares the effect. See CLAUDE.md > conventions > "The
+ * whatever else shares the effect. See .claude/rules/conventions.md § "The
  * sanctioned-pull marker".
  */
 
@@ -184,17 +184,17 @@ effect(() => {
   primeViaHelper();
 });
 
-function pullAndTouchBuilder(): void {
-  labelCache.prime();
-  builder.update('pending');
-}
-
 // Expected: 2× forty-cdk/require-sanctioned-pull-marker — `pullWithWrite` on the
 // write inside the helper, `missingMarkerViaHelper` on the call site below.
 // Both halves reach the effect through one helper call and still report on
 // different lines, because the write branch anchors on the write itself rather
 // than on the call. Anchoring it on the call collapses the two onto one line,
 // where the disable the message prescribes silences both (#1606).
+function pullAndTouchBuilder(): void {
+  labelCache.prime();
+  builder.update('pending');
+}
+
 effect(() => {
   pullAndTouchBuilder();
 });

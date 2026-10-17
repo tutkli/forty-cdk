@@ -357,14 +357,14 @@ const fortyCdkPlugin = {
     // @forty-cdk-test-isolation-rules
     //
     // The ten rules below codify the test-isolation invariants documented
-    // in `CLAUDE.md` → "Testing notes" → "Test isolation — non-negotiables"
+    // in `.claude/rules/testing.md` § "Test isolation — non-negotiables"
     // (the fourteen numbered items immediately under that heading). Without
     // mechanical enforcement those invariants decay back into PR-review
     // knowledge — the audit that surfaced them (May 11, 2026) already had
     // to remove regressions from each category.
     //
-    // Cross-link (every rule below repeats this anchor in its messages):
-    //   https://github.com/tutkli/forty-cdk/blob/main/CLAUDE.md#test-isolation--non-negotiables
+    // Cross-link (every rule below cites this section in its messages):
+    //   .claude/rules/testing.md#test-isolation--non-negotiables
     //
     // Style match: each rule keeps the same shape as the original
     // `require-defaults-sibling` above — inline `meta` + a single AST
@@ -385,8 +385,8 @@ const fortyCdkPlugin = {
     // (`detectChanges → whenStable → macrotask → detectChanges`) can evolve
     // without churning every spec.
     //
-    // See: CLAUDE.md > Testing notes > Test isolation — non-negotiables > rule 7
-    // Cross-link: https://github.com/tutkli/forty-cdk/blob/main/CLAUDE.md#test-isolation--non-negotiables
+    // See: .claude/rules/testing.md § "Test isolation — non-negotiables" rule 7
+    // Cross-link: .claude/rules/testing.md#test-isolation--non-negotiables
     'no-bare-whenstable': {
       meta: {
         type: 'problem',
@@ -397,7 +397,7 @@ const fortyCdkPlugin = {
         schema: [],
         messages: {
           forbidden:
-            'Do not call `whenStable()` directly in specs. Use `await flush(fixture)` from `projects/forty-cdk/src/test-utils/flush.ts` — it owns the drain shape and may evolve without churning every spec. (CLAUDE.md § "Test isolation — non-negotiables" rule 7.)',
+            'Do not call `whenStable()` directly in specs. Use `await flush(fixture)` from `projects/forty-cdk/src/test-utils/flush.ts` — it owns the drain shape and may evolve without churning every spec. (.claude/rules/testing.md § "Test isolation — non-negotiables" rule 7.)',
         },
       },
       create(context) {
@@ -431,13 +431,14 @@ const fortyCdkPlugin = {
 
     // Rule 2 — `forty-cdk/no-prototype-rect-stub`.
     //
-    // Forbids prototype-level layout patches:
+    // Forbids prototype-level layout patches, in every spelling:
     //   - `Element.prototype.getBoundingClientRect = …`
     //   - `HTMLElement.prototype.offsetWidth = …` (and `offsetHeight`,
     //     `clientWidth`, `clientHeight`, `scrollWidth`, `scrollHeight`)
-    //   - `Object.defineProperty(Element.prototype, 'getBoundingClientRect', …)`
-    //     and the same `defineProperty` form for any of the layout
-    //     properties above.
+    //   - `Object.defineProperty(Element.prototype, 'getBoundingClientRect', …)`,
+    //     `Reflect.defineProperty(…)` and `Object.defineProperties(X.prototype,
+    //     { offsetHeight: … })` for any of the layout properties above
+    //   - Vitest's `vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get')`
     //
     // jsdom returns zero for every layout API, and patching a single
     // prototype is cross-platform fragile (Linux jsdom defines the
@@ -445,8 +446,8 @@ const fortyCdkPlugin = {
     // `Element.prototype` — see #193). Geometry assertions belong in
     // Playwright; the Vitest layer asserts wiring only.
     //
-    // See: CLAUDE.md > Testing notes > Test isolation — non-negotiables > rule 8
-    // Cross-link: https://github.com/tutkli/forty-cdk/blob/main/CLAUDE.md#test-isolation--non-negotiables
+    // See: .claude/rules/testing.md § "Test isolation — non-negotiables" rule 8
+    // Cross-link: .claude/rules/testing.md#test-isolation--non-negotiables
     // Refs: tutkli/forty-cdk#193, tutkli/forty-cdk#195
     'no-prototype-rect-stub': {
       meta: {
@@ -458,9 +459,9 @@ const fortyCdkPlugin = {
         schema: [],
         messages: {
           forbiddenAssignment:
-            'Do not stub `*.prototype.{{ prop }}` — jsdom returns zero for layout APIs and prototype patches are cross-platform fragile (Linux defines the descriptor on `HTMLElement.prototype`, macOS/Windows on `Element.prototype` — see #193). Move geometry assertions to Playwright. (CLAUDE.md § "Test isolation — non-negotiables" rule 8.)',
-          forbiddenDefineProperty:
-            'Do not `Object.defineProperty(*.prototype, "{{ prop }}", …)` — jsdom returns zero for layout APIs and prototype patches are cross-platform fragile (see #193). Move geometry assertions to Playwright. (CLAUDE.md § "Test isolation — non-negotiables" rule 8.)',
+            'Do not stub `*.prototype.{{ prop }}` — jsdom returns zero for layout APIs and prototype patches are cross-platform fragile (Linux defines the descriptor on `HTMLElement.prototype`, macOS/Windows on `Element.prototype` — see #193). Move geometry assertions to Playwright. (.claude/rules/testing.md § "Test isolation — non-negotiables" rule 8.)',
+          forbiddenCall:
+            'Do not patch `*.prototype.{{ prop }}` through `{{ call }}(…)` — jsdom returns zero for layout APIs and prototype patches are cross-platform fragile (see #193). Move geometry assertions to Playwright, or stub the one element whose wiring the test exercises and assert only call counts. (.claude/rules/testing.md § "Test isolation — non-negotiables" rule 8.)',
         },
       },
       create(context) {
@@ -478,6 +479,11 @@ const fortyCdkPlugin = {
           'scrollWidth',
           'scrollHeight',
         ]);
+        const KEYED_CALLS = new Set([
+          'Object.defineProperty',
+          'Reflect.defineProperty',
+          'vi.spyOn',
+        ]);
         // Match the left-hand of `X.prototype.<layout> = …` or
         // `X.prototype['<layout>'] = …`.
         function isPrototypeLayoutAccess(node) {
@@ -490,14 +496,31 @@ const fortyCdkPlugin = {
                 ? node.property.value
                 : null;
           if (!propName || !LAYOUT_PROPS.has(propName)) return null;
-          const obj = node.object;
+          return isPrototype(node.object) ? propName : null;
+        }
+        function isPrototype(node) {
+          return (
+            node?.type === 'MemberExpression' &&
+            !node.computed &&
+            node.property.type === 'Identifier' &&
+            node.property.name === 'prototype'
+          );
+        }
+        function calleeName(callee) {
           if (
-            obj.type === 'MemberExpression' &&
-            !obj.computed &&
-            obj.property.type === 'Identifier' &&
-            obj.property.name === 'prototype'
+            callee.type !== 'MemberExpression' ||
+            callee.computed ||
+            callee.object.type !== 'Identifier' ||
+            callee.property.type !== 'Identifier'
           ) {
-            return propName;
+            return null;
+          }
+          return `${callee.object.name}.${callee.property.name}`;
+        }
+        function stringKey(node) {
+          if (node?.type === 'Literal' && typeof node.value === 'string') return node.value;
+          if (node?.type === 'TemplateLiteral' && node.expressions.length === 0) {
+            return node.quasis[0].value.cooked;
           }
           return null;
         }
@@ -513,37 +536,30 @@ const fortyCdkPlugin = {
             }
           },
           CallExpression(node) {
-            // Object.defineProperty(<X>.prototype, '<layoutProp>', …)
-            const callee = node.callee;
-            if (
-              callee.type !== 'MemberExpression' ||
-              callee.computed ||
-              callee.property.type !== 'Identifier' ||
-              callee.property.name !== 'defineProperty' ||
-              callee.object.type !== 'Identifier' ||
-              callee.object.name !== 'Object'
-            ) {
-              return;
-            }
+            const call = calleeName(node.callee);
             const [target, key] = node.arguments;
-            if (!target || !key) return;
-            // target must be `<X>.prototype`
-            if (
-              target.type !== 'MemberExpression' ||
-              target.computed ||
-              target.property.type !== 'Identifier' ||
-              target.property.name !== 'prototype'
-            ) {
+            if (!call || !isPrototype(target)) return;
+            if (KEYED_CALLS.has(call)) {
+              const prop = stringKey(key);
+              if (prop && LAYOUT_PROPS.has(prop)) {
+                context.report({ node, messageId: 'forbiddenCall', data: { prop, call } });
+              }
               return;
             }
-            const keyName =
-              key.type === 'Literal' && typeof key.value === 'string' ? key.value : null;
-            if (keyName && LAYOUT_PROPS.has(keyName)) {
-              context.report({
-                node,
-                messageId: 'forbiddenDefineProperty',
-                data: { prop: keyName },
-              });
+            if (call !== 'Object.defineProperties' || key?.type !== 'ObjectExpression') return;
+            for (const property of key.properties) {
+              if (property.type !== 'Property') continue;
+              const prop =
+                !property.computed && property.key.type === 'Identifier'
+                  ? property.key.name
+                  : stringKey(property.key);
+              if (prop && LAYOUT_PROPS.has(prop)) {
+                context.report({
+                  node: property,
+                  messageId: 'forbiddenCall',
+                  data: { prop, call },
+                });
+              }
             }
           },
         };
@@ -552,33 +568,40 @@ const fortyCdkPlugin = {
 
     // Rule 3 — `forty-cdk/observer-polyfill-must-restore`.
     //
-    // If a spec file assigns to `globalThis.ResizeObserver` (or
-    // `IntersectionObserver`, `MutationObserver`, `fetch`, `matchMedia`) at
-    // top level, in a `beforeAll`, or in a `beforeEach`, it must also
-    // restore the global — either:
-    //   - an `afterAll` that `delete`s the global (when the spec installed
-    //     a polyfill on top of jsdom's missing global), or
-    //   - a paired `beforeEach` capture + `afterEach` restore (when the
-    //     spec swaps the global per test).
+    // If a spec installs `globalThis.ResizeObserver` (or
+    // `IntersectionObserver`, `MutationObserver`, `fetch`, `matchMedia`) — by
+    // assignment or by `Object.defineProperty` / `Reflect.defineProperty` —
+    // it must also restore the global, and the restore must run after it:
+    //   - in an `afterEach` / `afterAll` of the install's own `describe`, an
+    //     enclosing one, or the file, or
+    //   - in the `finally` of a `try` around the install.
+    // A restore is a `delete`, a `defineProperty`, or an assignment. jsdom
+    // ships no `ResizeObserver`, `IntersectionObserver` or `matchMedia`, so
+    // for those an assignment counts only when an existence check guards it
+    // and its other branch `delete`s the global: an unconditional write-back
+    // of the `undefined` capture leaves the key in `globalThis` for the next
+    // spec file in the worker, and is reported on its own.
     //
-    // Prefer the `installObserverPolyfills()` helper in
-    // `forty-cdk/testing`, which already pairs
-    // install with restore and is a no-op for cases where jsdom already
-    // ships the global.
+    // Prefer `vi.stubGlobal`, which the setup file unstubs after every test,
+    // or the `installObserverPolyfills()` helper in `forty-cdk/testing`,
+    // which already pairs install with restore and is a no-op for cases
+    // where jsdom already ships the global.
     //
-    // See: CLAUDE.md > Testing notes > Test isolation — non-negotiables > rule 2
-    // Cross-link: https://github.com/tutkli/forty-cdk/blob/main/CLAUDE.md#test-isolation--non-negotiables
+    // See: .claude/rules/testing.md § "Test isolation — non-negotiables" rule 2
+    // Cross-link: .claude/rules/testing.md#test-isolation--non-negotiables
     'observer-polyfill-must-restore': {
       meta: {
         type: 'problem',
         docs: {
           description:
-            'A spec that installs a global polyfill (`globalThis.X = …`) must restore it via `afterAll`/`afterEach`.',
+            'A spec that installs a global polyfill (`globalThis.X = …`) must restore it in an `afterEach` / `afterAll` of its scope, or in a `finally`.',
         },
         schema: [],
         messages: {
           unrestored:
-            'Spec installs `globalThis.{{ name }}` but does not restore it. Pair with `afterEach`/`afterAll` (capture before, restore after) or use `installObserverPolyfills()` from `forty-cdk/testing`. (CLAUDE.md § "Test isolation — non-negotiables" rule 2.)',
+            'Spec installs `globalThis.{{ name }}` but nothing restores it after it runs. Prefer `vi.stubGlobal(\'{{ name }}\', …)`, which the setup file unstubs after every test; otherwise `delete` the global in an `afterEach` / `afterAll` of the same `describe` when it was absent (restore the captured original only when it existed), or use `installObserverPolyfills()` from `forty-cdk/testing`. (.claude/rules/testing.md § "Test isolation — non-negotiables" rule 2.)',
+          unguardedRestore:
+            'jsdom ships no `{{ name }}`, so writing a captured original back assigns `undefined` and leaves the key in `globalThis` for the next spec file in the worker. Use `vi.stubGlobal(\'{{ name }}\', …)`, or guard the write-back with an existence check whose other branch `delete`s the global. (.claude/rules/testing.md § "Test isolation — non-negotiables" rule 2.)',
         },
       },
       create(context) {
@@ -589,99 +612,237 @@ const fortyCdkPlugin = {
           'fetch',
           'matchMedia',
         ]);
+        const ABSENT_UNDER_JSDOM = new Set([
+          'ResizeObserver',
+          'IntersectionObserver',
+          'matchMedia',
+        ]);
+        const AFTER_HOOKS = new Set(['afterEach', 'afterAll']);
+        const SCOPED_CALLS = new Set([
+          'describe',
+          'it',
+          'test',
+          'beforeEach',
+          'beforeAll',
+          'afterEach',
+          'afterAll',
+        ]);
         // The helper file owns its own install/restore contract and is exempt.
         const filename = context.filename.replace(/\\/g, '/');
         if (filename.endsWith('/projects/forty-cdk/testing/src/observers.ts')) {
           return {};
         }
-        const installs = new Map(); // name -> node[]
-        let sourceText = '';
-        function recordInstall(name, node) {
-          if (!installs.has(name)) installs.set(name, []);
-          installs.get(name).push(node);
-        }
         // Unwrap (globalThis as ...).X / (globalThis as unknown as { ... }).X /
         // (<paren-cast>).X — TypeScript `as` casts surface as `TSAsExpression`
-        // in the AST. Returns the rightmost member-expression access of
-        // `globalThis` (or its alias), or null.
+        // in the AST.
         function unwrapCasts(node) {
-          while (node && (node.type === 'TSAsExpression' || node.type === 'TSTypeAssertion')) {
+          while (
+            node &&
+            (node.type === 'TSAsExpression' ||
+              node.type === 'TSTypeAssertion' ||
+              node.type === 'TSNonNullExpression')
+          ) {
             node = node.expression;
           }
           return node;
         }
-        function memberAccessOfGlobal(node) {
-          // node should be a MemberExpression whose object resolves to
-          // `globalThis` (or `window`, `global`) — possibly wrapped in
-          // `as`/`as unknown as`/`as any` casts.
-          if (!node || node.type !== 'MemberExpression') return null;
-          const obj = unwrapCasts(node.object);
-          if (!obj) return null;
-          const isGlobalLike =
-            obj.type === 'Identifier' &&
-            (obj.name === 'globalThis' || obj.name === 'window' || obj.name === 'global');
-          if (!isGlobalLike) return null;
-          if (!node.computed && node.property.type === 'Identifier') {
-            return node.property.name;
-          }
-          if (
-            node.computed &&
-            node.property.type === 'Literal' &&
-            typeof node.property.value === 'string'
-          ) {
-            return node.property.value;
+        function isGlobalObject(node) {
+          const obj = unwrapCasts(node);
+          return (
+            obj?.type === 'Identifier' &&
+            (obj.name === 'globalThis' || obj.name === 'window' || obj.name === 'global')
+          );
+        }
+        function stringKey(node) {
+          if (node?.type === 'Literal' && typeof node.value === 'string') return node.value;
+          if (node?.type === 'TemplateLiteral' && node.expressions.length === 0) {
+            return node.quasis[0].value.cooked;
           }
           return null;
         }
-        return {
-          Program(node) {
-            sourceText = context.sourceCode.getText(node);
-          },
-          AssignmentExpression(node) {
-            // (globalThis as …).X = … or globalThis.X = …
-            const left = node.left;
-            const target = unwrapCasts(left);
-            const name = memberAccessOfGlobal(target);
-            if (name && POLYFILL_TARGETS.has(name)) {
-              recordInstall(name, node);
+        function globalMemberName(node) {
+          const member = unwrapCasts(node);
+          if (!member || member.type !== 'MemberExpression' || !isGlobalObject(member.object)) {
+            return null;
+          }
+          const name =
+            !member.computed && member.property.type === 'Identifier'
+              ? member.property.name
+              : stringKey(member.property);
+          return name && POLYFILL_TARGETS.has(name) ? name : null;
+        }
+        function definedGlobalName(call) {
+          const callee = call.callee;
+          if (
+            callee.type !== 'MemberExpression' ||
+            callee.computed ||
+            callee.object.type !== 'Identifier' ||
+            !['Object', 'Reflect'].includes(callee.object.name) ||
+            callee.property.type !== 'Identifier' ||
+            callee.property.name !== 'defineProperty'
+          ) {
+            return null;
+          }
+          const [target, key] = call.arguments;
+          const name = isGlobalObject(target) ? stringKey(key) : null;
+          return name && POLYFILL_TARGETS.has(name) ? name : null;
+        }
+        function rootName(callee) {
+          let node = callee;
+          while (node.type === 'MemberExpression' || node.type === 'CallExpression') {
+            node = node.type === 'MemberExpression' ? node.object : node.callee;
+          }
+          return node.type === 'Identifier' ? node.name : null;
+        }
+        function callbackCall(fn) {
+          const call = fn.parent;
+          if (
+            (fn.type !== 'FunctionExpression' && fn.type !== 'ArrowFunctionExpression') ||
+            call?.type !== 'CallExpression' ||
+            !call.arguments.includes(fn)
+          ) {
+            return null;
+          }
+          return rootName(call.callee);
+        }
+        function contains(outer, inner) {
+          return outer.range[0] <= inner.range[0] && inner.range[1] <= outer.range[1];
+        }
+        function deletesGlobal(root, name) {
+          const stack = [root];
+          while (stack.length) {
+            const node = stack.pop();
+            if (!node || typeof node !== 'object') continue;
+            if (Array.isArray(node)) {
+              for (const item of node) stack.push(item);
+              continue;
             }
+            if (
+              node.type === 'UnaryExpression' &&
+              node.operator === 'delete' &&
+              globalMemberName(node.argument) === name
+            ) {
+              return true;
+            }
+            for (const key in node) {
+              if (key === 'parent' || key === 'loc' || key === 'range') continue;
+              stack.push(node[key]);
+            }
+          }
+          return false;
+        }
+        function isGuardedWriteBack(node, name, ancestors) {
+          let child = node;
+          for (let i = ancestors.length - 1; i >= 0; i--) {
+            const ancestor = ancestors[i];
+            if (ancestor.type === 'IfStatement' && ancestor.test !== child) {
+              const other =
+                ancestor.consequent === child ? ancestor.alternate : ancestor.consequent;
+              if (other && deletesGlobal(other, name)) return true;
+            }
+            if (callbackCall(ancestor)) return false;
+            child = ancestor;
+          }
+          return false;
+        }
+        function locate(node) {
+          const ancestors = context.sourceCode.getAncestors(node);
+          const scopes = [];
+          let restore = null;
+          let inFunction = false;
+          let inScopedCall = false;
+          let child = node;
+          for (let i = ancestors.length - 1; i >= 0; i--) {
+            const ancestor = ancestors[i];
+            if (!restore && ancestor.type === 'TryStatement' && ancestor.finalizer === child) {
+              restore = { kind: 'finally', block: ancestor.block };
+            }
+            if (
+              ancestor.type === 'FunctionExpression' ||
+              ancestor.type === 'ArrowFunctionExpression' ||
+              ancestor.type === 'FunctionDeclaration'
+            ) {
+              inFunction = true;
+              const called = callbackCall(ancestor);
+              if (SCOPED_CALLS.has(called)) inScopedCall = true;
+              if (!restore && AFTER_HOOKS.has(called)) {
+                restore = { kind: 'after', hook: ancestor.parent };
+              }
+              if (called === 'describe') scopes.push(ancestor);
+            }
+            if (ancestor.type === 'Program') scopes.push(ancestor);
+            child = ancestor;
+          }
+          return { ancestors, scopes, restore, inHelper: inFunction && !inScopedCall };
+        }
+        function hookScope(hook) {
+          const ancestors = context.sourceCode.getAncestors(hook);
+          for (let i = ancestors.length - 1; i >= 0; i--) {
+            const ancestor = ancestors[i];
+            if (ancestor.type === 'Program' || callbackCall(ancestor) === 'describe')
+              return ancestor;
+          }
+          return null;
+        }
+        const installs = [];
+        const restores = [];
+        function record(name, node, isDelete) {
+          const where = locate(node);
+          if (!where.restore) {
+            if (!isDelete) installs.push({ name, node, ...where });
+            return;
+          }
+          const unguarded =
+            !isDelete &&
+            node.type === 'AssignmentExpression' &&
+            ABSENT_UNDER_JSDOM.has(name) &&
+            !isGuardedWriteBack(node, name, where.ancestors);
+          restores.push({
+            name,
+            node,
+            unguarded,
+            kind: where.restore.kind,
+            scope: where.restore.kind === 'after' ? hookScope(where.restore.hook) : null,
+            block: where.restore.block ?? null,
+          });
+        }
+        function applies(restore, install) {
+          if (restore.name !== install.name) return false;
+          if (restore.kind === 'finally') return contains(restore.block, install.node);
+          return install.inHelper || install.scopes.includes(restore.scope);
+        }
+        return {
+          AssignmentExpression(node) {
+            const name = globalMemberName(node.left);
+            if (name) record(name, node, false);
+          },
+          UnaryExpression(node) {
+            if (node.operator !== 'delete') return;
+            const name = globalMemberName(node.argument);
+            if (name) record(name, node, true);
+          },
+          CallExpression(node) {
+            const name = definedGlobalName(node);
+            if (name) record(name, node, false);
           },
           'Program:exit'() {
-            if (installs.size === 0) return;
-            for (const [name, nodes] of installs) {
-              // A "restore" is any of:
-              //   - `delete globalThis.<name>` / `delete (globalThis as …).<name>`
-              //   - a sibling reassignment back from a captured original
-              //     (best signalled by a literal restore call inside an
-              //     `afterEach`/`afterAll`). We detect either pattern by
-              //     scanning the source text for `afterEach(` or `afterAll(`
-              //     plus a reassignment of the same name — strict-enough
-              //     heuristic for the patterns observed in the codebase
-              //     (capture in `beforeEach`, restore in `afterEach`).
-              const hasDelete = new RegExp(
-                String.raw`delete\s+\(?\s*\(?\s*(?:globalThis|window|global)\b[^)]*\)?[^.\[]*[.\[]\s*['"]?${name}\b`,
-              ).test(sourceText);
-              const hasAfterHookRestore =
-                /\bafter(?:Each|All)\s*\(/.test(sourceText) &&
-                new RegExp(
-                  String.raw`(?:globalThis|window|global)\b[^=;]*[.\[]\s*['"]?${name}\b['"]?\]?\s*=`,
-                  'g',
-                ).test(sourceText) &&
-                // Ensure there are at least 2 assignments to this name (the
-                // install + the restore). The install we already captured;
-                // any second assignment under an `after*` hook counts.
-                (
-                  sourceText.match(
-                    new RegExp(
-                      String.raw`(?:globalThis|window|global)\b[^=;]*[.\[]\s*['"]?${name}\b['"]?\]?\s*=`,
-                      'g',
-                    ),
-                  ) || []
-                ).length >= 2;
-              if (!hasDelete && !hasAfterHookRestore) {
-                for (const n of nodes) {
-                  context.report({ node: n, messageId: 'unrestored', data: { name } });
-                }
+            for (const restore of restores) {
+              if (restore.unguarded) {
+                context.report({
+                  node: restore.node,
+                  messageId: 'unguardedRestore',
+                  data: { name: restore.name },
+                });
+              }
+            }
+            for (const install of installs) {
+              const applying = restores.filter((restore) => applies(restore, install));
+              if (applying.length === 0) {
+                context.report({
+                  node: install.node,
+                  messageId: 'unrestored',
+                  data: { name: install.name },
+                });
               }
             }
           },
@@ -689,7 +850,7 @@ const fortyCdkPlugin = {
       },
     },
 
-    // Rule 4 — `forty-cdk/scoped-fake-timers` (warn, not error).
+    // Rule 4 — `forty-cdk/scoped-fake-timers`.
     //
     // The audit's literal phrasing is "warn when `vi.useFakeTimers()`
     // appears in a top-level `beforeEach` outside a `describe('… timers …')`
@@ -697,42 +858,51 @@ const fortyCdkPlugin = {
     // currently-merged spec files (`avatar.spec.ts`, `typeahead.spec.ts`)
     // whose outer describe names are `'ForAvatar'` / `'Typeahead'` — those
     // files already pair install with restore, which is the real isolation
-    // invariant. We scope the rule down to the underlying contract:
+    // invariant. We scope the rule down to the underlying contract: every
+    // `vi.useFakeTimers(…)`, whatever its arguments, is undone by a
+    // `vi.useRealTimers()` that still runs when a test throws.
     //
-    //   Warn when `vi.useFakeTimers()` appears inside a `beforeEach` /
-    //   `beforeAll` callback whose enclosing `describe` does NOT have a
-    //   matching `afterEach` / `afterAll` that calls `vi.useRealTimers()`.
+    //   - An install in a `beforeEach` / `beforeAll` needs an `afterEach` /
+    //     `afterAll` calling `vi.useRealTimers()` in the same scope: its
+    //     `describe`, or the file for a file-level hook.
+    //   - An install inside an `it` / `test` needs that restore in an
+    //     enclosing `describe` or at file level, or a `try` around the
+    //     install whose `finally` restores. An inline restore on the test's
+    //     last line is skipped when the test throws first.
     //
-    // That's the property the audit's H3 finding actually penalised
-    // (install-without-restore leaks timers across specs). The narrower
-    // "scope to a delay-named describe" guidance is documentation, not a
-    // mechanical rule.
-    //
-    // See: CLAUDE.md > Testing notes > Test isolation — non-negotiables > rule 1
-    // Cross-link: https://github.com/tutkli/forty-cdk/blob/main/CLAUDE.md#test-isolation--non-negotiables
+    // See: .claude/rules/testing.md § "Test isolation — non-negotiables" rule 1
+    // Cross-link: .claude/rules/testing.md#test-isolation--non-negotiables
     'scoped-fake-timers': {
       meta: {
-        type: 'suggestion',
+        type: 'problem',
         docs: {
           description:
-            'Warn when `vi.useFakeTimers()` in a `before*` hook is not paired with `vi.useRealTimers()` in a sibling `after*` hook.',
+            'Require every `vi.useFakeTimers(…)` to be undone by a `vi.useRealTimers()` in an `after*` hook of its scope, or in the `finally` of a `try` around it.',
         },
         schema: [],
         messages: {
           unpaired:
-            '`vi.useFakeTimers()` in a `{{ hook }}` hook is not paired with a sibling `vi.useRealTimers()` call in `afterEach` / `afterAll` of the same `describe`. Pair install with restore — an inline restore at the end of an `it` leaks if the test throws first. (CLAUDE.md § "Test isolation — non-negotiables" rule 1.)',
+            '`vi.useFakeTimers()` in a `{{ hook }}` hook is not paired with a `vi.useRealTimers()` call in an `afterEach` / `afterAll` of the same `describe` (or of the file, for a file-level hook). Pair install with restore — an inline restore at the end of an `it` leaks if the test throws first. (.claude/rules/testing.md § "Test isolation — non-negotiables" rule 1.)',
+          unpairedInTest:
+            '`vi.useFakeTimers()` inside an `it` / `test` is not undone by a `vi.useRealTimers()` in an `afterEach` / `afterAll` of an enclosing `describe` or of the file, nor in the `finally` of a `try` around it. A restore on the last line of the test is skipped when the test throws first, and every later test in the worker inherits the fake clock. Restore in `afterEach`. (.claude/rules/testing.md § "Test isolation — non-negotiables" rule 1.)',
         },
       },
       create(context) {
-        // Walk the spec source: each `describe()` callback opens a scope.
-        // A scope owns its direct `beforeEach`/`beforeAll`/`afterEach`/
-        // `afterAll` hooks (children of its body, not nested describes).
-        function getCalleeName(callee) {
-          if (callee.type === 'Identifier') return callee.name;
-          if (callee.type === 'MemberExpression' && callee.property.type === 'Identifier') {
-            return callee.property.name;
+        const HOOKS = new Set(['beforeEach', 'beforeAll', 'afterEach', 'afterAll']);
+        const TESTS = new Set(['it', 'test']);
+        const DESCRIBE = new Set(['describe']);
+        function rootName(callee) {
+          let node = callee;
+          while (node.type === 'MemberExpression' || node.type === 'CallExpression') {
+            node = node.type === 'MemberExpression' ? node.object : node.callee;
           }
-          return null;
+          return node.type === 'Identifier' ? node.name : null;
+        }
+        function isFunction(node) {
+          return (
+            !!node &&
+            (node.type === 'FunctionExpression' || node.type === 'ArrowFunctionExpression')
+          );
         }
         function isViCall(call, method) {
           if (call.type !== 'CallExpression') return false;
@@ -746,14 +916,8 @@ const fortyCdkPlugin = {
             c.property.name === method
           );
         }
-        // Recursively scan a function body for any direct CallExpression
-        // matching vi.<method>() — stops descending into nested
-        // FunctionExpression / ArrowFunctionExpression bodies that belong
-        // to a child describe / it / beforeEach so we count the hook's own
-        // calls only.
-        function bodyContainsViCall(fnNode, method) {
-          if (!fnNode || !fnNode.body) return false;
-          const stack = [fnNode.body];
+        function containsViCall(root, method) {
+          const stack = [root];
           while (stack.length) {
             const node = stack.pop();
             if (!node || typeof node !== 'object') continue;
@@ -761,29 +925,10 @@ const fortyCdkPlugin = {
               for (const item of node) stack.push(item);
               continue;
             }
-            if (
-              node.type === 'CallExpression' &&
-              isViCall(node, method) &&
-              node.arguments.length === 0
-            ) {
-              return true;
-            }
-            // Don't descend into nested describe/it/before/after callback
-            // bodies — they own their own pairing contract.
-            if (
-              node.type === 'CallExpression' &&
-              [
-                'describe',
-                'it',
-                'test',
-                'beforeEach',
-                'beforeAll',
-                'afterEach',
-                'afterAll',
-              ].includes(getCalleeName(node.callee) || '')
-            ) {
-              // Skip — its hooks are checked when we visit its describe.
-              continue;
+            if (node.type === 'CallExpression') {
+              if (isViCall(node, method)) return true;
+              const name = rootName(node.callee);
+              if (DESCRIBE.has(name) || TESTS.has(name) || HOOKS.has(name)) continue;
             }
             for (const key in node) {
               if (key === 'parent' || key === 'loc' || key === 'range') continue;
@@ -792,69 +937,94 @@ const fortyCdkPlugin = {
           }
           return false;
         }
-        // Direct-child statements of a describe callback's body: hook calls.
-        function collectDirectHookCalls(describeCallbackNode) {
-          if (!describeCallbackNode || !describeCallbackNode.body) return [];
+        function directHooks(scope) {
           const stmts =
-            describeCallbackNode.body.type === 'BlockStatement'
-              ? describeCallbackNode.body.body
-              : [describeCallbackNode.body];
+            scope.type === 'Program'
+              ? scope.body
+              : scope.body.type === 'BlockStatement'
+                ? scope.body.body
+                : [scope.body];
           const hooks = [];
           for (const stmt of stmts) {
-            if (stmt.type === 'ExpressionStatement' && stmt.expression.type === 'CallExpression') {
-              const name = getCalleeName(stmt.expression.callee);
-              if (
-                name === 'beforeEach' ||
-                name === 'beforeAll' ||
-                name === 'afterEach' ||
-                name === 'afterAll'
-              ) {
-                hooks.push({ name, call: stmt.expression });
-              }
+            if (stmt.type !== 'ExpressionStatement' || stmt.expression.type !== 'CallExpression') {
+              continue;
+            }
+            const callee = stmt.expression.callee;
+            if (callee.type === 'Identifier' && HOOKS.has(callee.name)) {
+              hooks.push({ name: callee.name, call: stmt.expression });
             }
           }
           return hooks;
         }
-        function checkDescribeScope(callbackNode) {
-          if (!callbackNode) return;
-          const hooks = collectDirectHookCalls(callbackNode);
-          const installs = [];
-          let restores = false;
-          for (const h of hooks) {
-            const cb = h.call.arguments[0];
-            if (!cb) continue;
-            if (h.name === 'beforeEach' || h.name === 'beforeAll') {
-              if (bodyContainsViCall(cb, 'useFakeTimers')) {
-                installs.push({ hook: h.name, node: h.call });
-              }
-            } else if (h.name === 'afterEach' || h.name === 'afterAll') {
-              if (bodyContainsViCall(cb, 'useRealTimers')) {
-                restores = true;
-              }
-            }
-          }
-          if (installs.length > 0 && !restores) {
-            for (const i of installs) {
-              context.report({
-                node: i.node,
-                messageId: 'unpaired',
-                data: { hook: i.hook },
-              });
-            }
+        function restoresTimers(scope) {
+          return directHooks(scope).some(
+            (h) =>
+              (h.name === 'afterEach' || h.name === 'afterAll') &&
+              h.call.arguments[0] &&
+              containsViCall(h.call.arguments[0], 'useRealTimers'),
+          );
+        }
+        function checkScope(scope) {
+          const installs = directHooks(scope).filter(
+            (h) =>
+              (h.name === 'beforeEach' || h.name === 'beforeAll') &&
+              h.call.arguments[0] &&
+              containsViCall(h.call.arguments[0], 'useFakeTimers'),
+          );
+          if (installs.length === 0 || restoresTimers(scope)) return;
+          for (const i of installs) {
+            context.report({ node: i.call, messageId: 'unpaired', data: { hook: i.name } });
           }
         }
-        // Visit every describe() CallExpression and check its direct hooks.
-        return {
-          CallExpression(node) {
-            if (getCalleeName(node.callee) !== 'describe') return;
-            const cb = node.arguments[1];
+        function isCallbackOf(fn, names) {
+          const call = fn.parent;
+          return (
+            isFunction(fn) &&
+            call?.type === 'CallExpression' &&
+            call.arguments.includes(fn) &&
+            names.has(rootName(call.callee))
+          );
+        }
+        function checkTestInstall(node) {
+          const ancestors = context.sourceCode.getAncestors(node);
+          let inTest = false;
+          for (let i = ancestors.length - 1; i >= 0; i--) {
+            const ancestor = ancestors[i];
+            const child = ancestors[i + 1] ?? node;
+            if (!inTest) {
+              if (
+                ancestor.type === 'TryStatement' &&
+                ancestor.block === child &&
+                ancestor.finalizer &&
+                containsViCall(ancestor.finalizer, 'useRealTimers')
+              ) {
+                return;
+              }
+              if (isCallbackOf(ancestor, HOOKS)) return;
+              if (isCallbackOf(ancestor, TESTS)) inTest = true;
+              continue;
+            }
             if (
-              !cb ||
-              (cb.type !== 'FunctionExpression' && cb.type !== 'ArrowFunctionExpression')
+              (ancestor.type === 'Program' || isCallbackOf(ancestor, DESCRIBE)) &&
+              restoresTimers(ancestor)
             ) {
               return;
             }
-            checkDescribeScope(cb);
+          }
+          if (inTest) context.report({ node, messageId: 'unpairedInTest' });
+        }
+        return {
+          Program(node) {
+            checkScope(node);
+          },
+          CallExpression(node) {
+            if (isViCall(node, 'useFakeTimers')) {
+              checkTestInstall(node);
+              return;
+            }
+            if (rootName(node.callee) !== 'describe') return;
+            const cb = node.arguments[1];
+            if (isFunction(cb)) checkScope(cb);
           },
         };
       },
@@ -874,8 +1044,8 @@ const fortyCdkPlugin = {
     // (`directive.close()`) on a stored variable are intentionally NOT
     // flagged — they remain allowed per the audit's H6 finding.
     //
-    // See: CLAUDE.md > Testing notes > Test isolation — non-negotiables > rule 6
-    // Cross-link: https://github.com/tutkli/forty-cdk/blob/main/CLAUDE.md#test-isolation--non-negotiables
+    // See: .claude/rules/testing.md § "Test isolation — non-negotiables" rule 6
+    // Cross-link: .claude/rules/testing.md#test-isolation--non-negotiables
     'no-directive-internal-signal-read': {
       meta: {
         type: 'problem',
@@ -886,7 +1056,7 @@ const fortyCdkPlugin = {
         schema: [],
         messages: {
           forbidden:
-            'Do not read directive internal signals from a spec — assert against the rendered DOM (ARIA, `data-state`, focus, host classes) instead. The chained pattern `.injector.get({{ token }}).{{ accessor }}()` locks the directive\'s private shape into the spec. (CLAUDE.md § "Test isolation — non-negotiables" rule 6.)',
+            'Do not read directive internal signals from a spec — assert against the rendered DOM (ARIA, `data-state`, focus, host classes) instead. The chained pattern `.injector.get({{ token }}).{{ accessor }}()` locks the directive\'s private shape into the spec. (.claude/rules/testing.md § "Test isolation — non-negotiables" rule 6.)',
         },
       },
       create(context) {
@@ -962,8 +1132,8 @@ const fortyCdkPlugin = {
     // `*.spec.ts` (plus this rule's own fixture) — in specs the flush family is
     // unambiguously the async render waiter.
     //
-    // See: CLAUDE.md > Testing notes > Test isolation — non-negotiables > rule 12
-    // Cross-link: https://github.com/tutkli/forty-cdk/blob/main/CLAUDE.md#test-isolation--non-negotiables
+    // See: .claude/rules/testing.md § "Test isolation — non-negotiables" rule 12
+    // Cross-link: .claude/rules/testing.md#test-isolation--non-negotiables
     // Refs: tutkli/forty-cdk#1154
     'no-floating-flush': {
       meta: {
@@ -975,14 +1145,14 @@ const fortyCdkPlugin = {
         schema: [],
         messages: {
           floating:
-            'Un-awaited `{{ name }}(…)`. It returns `Promise<void>`; a bare call runs only the initial synchronous `detectChanges()` and lets the async drain (`whenStable` → macrotask → second `detectChanges`, `afterNextRender`, positioning) escape the test — assertions may pass against stale DOM. Prefix it with `await` (and mark the enclosing callback `async`). (CLAUDE.md § "Test isolation — non-negotiables" rule 12.)',
+            'Un-awaited `{{ name }}(…)`. It returns `Promise<void>`; a bare call runs only the initial synchronous `detectChanges()` and lets the async drain (`whenStable` → macrotask → second `detectChanges`, `afterNextRender`, positioning) escape the test — assertions may pass against stale DOM. Prefix it with `await` (and mark the enclosing callback `async`). (.claude/rules/testing.md § "Test isolation — non-negotiables" rule 12.)',
         },
       },
       create(context) {
         const filename = context.filename.replace(/\\/g, '/');
         // In specs the flush family is unambiguously the async render waiter.
         // The rule's own fixture (a `.fixture.ts`, linted via
-        // `pnpm lint:rule-fixtures`) is included so the rule is proven to fire.
+        // `pnpm check:rule-fixtures`) is included so the rule is proven to fire.
         const isSpec = filename.endsWith('.spec.ts');
         const isOwnFixture = filename.endsWith(
           '/eslint-rules-fixtures/no-floating-flush.fixture.ts',
@@ -1033,8 +1203,8 @@ const fortyCdkPlugin = {
     // following few statements of the same block. An `expect(x).not.toBeNull()`
     // that is the whole point of the test (no `!` follows) stays legal.
     //
-    // See: CLAUDE.md > Testing notes > Test isolation — non-negotiables > rule 10
-    // Cross-link: https://github.com/tutkli/forty-cdk/blob/main/CLAUDE.md#test-isolation--non-negotiables
+    // See: .claude/rules/testing.md § "Test isolation — non-negotiables" rule 10
+    // Cross-link: .claude/rules/testing.md#test-isolation--non-negotiables
     // Refs: tutkli/forty-cdk#1397
     'no-redundant-not-tobenull': {
       meta: {
@@ -1046,7 +1216,7 @@ const fortyCdkPlugin = {
         schema: [],
         messages: {
           redundant:
-            '`expect({{ name }}).not.toBeNull()` is redundant: the following `{{ name }}!` already asserts non-nullness to both the reader and the compiler, and throws on a null just as loudly. Drop the assertion. (CLAUDE.md § "Test isolation — non-negotiables" rule 10.)',
+            '`expect({{ name }}).not.toBeNull()` is redundant: the following `{{ name }}!` already asserts non-nullness to both the reader and the compiler, and throws on a null just as loudly. Drop the assertion. (.claude/rules/testing.md § "Test isolation — non-negotiables" rule 10.)',
         },
       },
       create(context) {
@@ -1163,8 +1333,8 @@ const fortyCdkPlugin = {
     // nothing portals — asserting `<body>` is untouched IS its contract, so it
     // imports every overlay piece yet must not call the cleanup helper.
     //
-    // See: CLAUDE.md > Testing notes > Test isolation — non-negotiables > rule 5
-    // Cross-link: https://github.com/tutkli/forty-cdk/blob/main/CLAUDE.md#test-isolation--non-negotiables
+    // See: .claude/rules/testing.md § "Test isolation — non-negotiables" rule 5
+    // Cross-link: .claude/rules/testing.md#test-isolation--non-negotiables
     // Refs: tutkli/forty-cdk#1155, tutkli/forty-cdk#1256
     'require-overlay-cleanup': {
       meta: {
@@ -1176,14 +1346,14 @@ const fortyCdkPlugin = {
         schema: [],
         messages: {
           missing:
-            'This spec imports the portaling overlay primitive `{{ symbol }}` but never calls `afterEachOverlayCleanup()`. A test that throws mid-render can orphan the portaled node and leak stale ARIA into the next spec. Call `afterEachOverlayCleanup()` (from `projects/forty-cdk/src/test-utils/overlay-cleanup.ts`) once at the top of each portaling `describe`. (CLAUDE.md § "Test isolation — non-negotiables" rule 5.)',
+            'This spec imports the portaling overlay primitive `{{ symbol }}` but never calls `afterEachOverlayCleanup()`. A test that throws mid-render can orphan the portaled node and leak stale ARIA into the next spec. Call `afterEachOverlayCleanup()` (from `projects/forty-cdk/src/test-utils/overlay-cleanup.ts`) once at the top of each portaling `describe`. (.claude/rules/testing.md § "Test isolation — non-negotiables" rule 5.)',
         },
       },
       create(context) {
         const filename = context.filename.replace(/\\/g, '/');
         // In specs the flush family / overlay pieces are unambiguous. The
         // rule's own fixture (a `.fixture.ts`, linted via
-        // `pnpm lint:rule-fixtures`) is included so the rule is proven to fire.
+        // `pnpm check:rule-fixtures`) is included so the rule is proven to fire.
         const isSpec = filename.endsWith('.spec.ts');
         const isOwnFixture = filename.endsWith(
           '/eslint-rules-fixtures/require-overlay-cleanup.fixture.ts',
@@ -1303,8 +1473,8 @@ const fortyCdkPlugin = {
     // position resolves, which is observable only without the drain. Those three
     // sites are the whole ledger today.
     //
-    // See: CLAUDE.md > Testing notes > Test isolation — non-negotiables > rule 14
-    // Cross-link: https://github.com/tutkli/forty-cdk/blob/main/CLAUDE.md#test-isolation--non-negotiables
+    // See: .claude/rules/testing.md § "Test isolation — non-negotiables" rule 14
+    // Cross-link: .claude/rules/testing.md#test-isolation--non-negotiables
     // Refs: tutkli/forty-cdk#1596, tutkli/forty-cdk#1154
     'no-bare-detect-changes': {
       meta: {
@@ -1316,9 +1486,9 @@ const fortyCdkPlugin = {
         schema: [],
         messages: {
           stale:
-            'This `detectChanges()` is followed by an assertion on {{ mark }}, which `@floating-ui/dom` writes across several promise / RAF hops — the synchronous render returns before any of it lands, so the assertion reads the previous position and passes for a reason production never provides. Use `await flushPositioning(fixture)` instead. If the *un-drained* render is the subject of the test, license it with a marker comment directly above the call: `// @sanctioned-sync-render(<subject>): <why the pre-drain state is what is being asserted>`. (CLAUDE.md § "Test isolation — non-negotiables" rule 14.)',
+            'This `detectChanges()` is followed by an assertion on {{ mark }}, which `@floating-ui/dom` writes across several promise / RAF hops — the synchronous render returns before any of it lands, so the assertion reads the previous position and passes for a reason production never provides. Use `await flushPositioning(fixture)` instead. If the *un-drained* render is the subject of the test, license it with a marker comment directly above the call: `// @sanctioned-sync-render(<subject>): <why the pre-drain state is what is being asserted>`. (.claude/rules/testing.md § "Test isolation — non-negotiables" rule 14.)',
           malformedMarker:
-            'Malformed `@sanctioned-sync-render` marker. The shape is `// @sanctioned-sync-render(<subject>): <why the pre-drain state is what is being asserted>` — a kebab-case subject name in parentheses (e.g. `clip-path-baseline`) and a one-sentence rationale after the colon. The subject names what the un-drained render is asserting, which is what a reviewer verifies. (CLAUDE.md § "Test isolation — non-negotiables" rule 14.)',
+            'Malformed `@sanctioned-sync-render` marker. The shape is `// @sanctioned-sync-render(<subject>): <why the pre-drain state is what is being asserted>` — a kebab-case subject name in parentheses (e.g. `clip-path-baseline`) and a one-sentence rationale after the colon. The subject names what the un-drained render is asserting, which is what a reviewer verifies. (.claude/rules/testing.md § "Test isolation — non-negotiables" rule 14.)',
         },
       },
       create(context) {
@@ -1327,7 +1497,7 @@ const fortyCdkPlugin = {
         // construction rather than by an exemption list: `flush.ts` owns the
         // drain shape and `render.ts` renders the fixture once on mount, and
         // neither is a `.spec.ts`. The rule's own fixture (a `.fixture.ts`,
-        // linted via `pnpm lint:rule-fixtures`) is included so it is proven to
+        // linted via `pnpm check:rule-fixtures`) is included so it is proven to
         // fire.
         const isSpec = filename.endsWith('.spec.ts');
         const isOwnFixture = filename.endsWith(
@@ -1507,8 +1677,8 @@ const fortyCdkPlugin = {
     // `rejects` between `expect(…)` and the matcher is the replacement, not a
     // violation, so that chain is never inspected.
     //
-    // See: CLAUDE.md > Testing notes > Test isolation — non-negotiables > rule 12
-    // Cross-link: https://github.com/tutkli/forty-cdk/blob/main/CLAUDE.md#test-isolation--non-negotiables
+    // See: .claude/rules/testing.md § "Test isolation — non-negotiables" rule 12
+    // Cross-link: .claude/rules/testing.md#test-isolation--non-negotiables
     // Refs: tutkli/forty-cdk#1999, tutkli/forty-cdk#1963, tutkli/forty-cdk#1154
     'no-async-tothrow': {
       meta: {
@@ -1520,7 +1690,7 @@ const fortyCdkPlugin = {
         schema: [],
         messages: {
           vacuous:
-            '`expect(async …).{{ matcher }}(…)` cannot fail: an `async` callback returns a rejected Promise instead of throwing, `{{ matcher }}` catches only a synchronous throw, and nothing awaits the body, so it keeps running into later tests. If a rejection is the claim, write `await expect(fn()).rejects.{{ matcher }}(…)`; otherwise drop the wrapper and `await` the body directly, so a throw fails the test on its own. (CLAUDE.md § "Test isolation — non-negotiables" rule 12.)',
+            '`expect(async …).{{ matcher }}(…)` cannot fail: an `async` callback returns a rejected Promise instead of throwing, `{{ matcher }}` catches only a synchronous throw, and nothing awaits the body, so it keeps running into later tests. If a rejection is the claim, write `await expect(fn()).rejects.{{ matcher }}(…)`; otherwise drop the wrapper and `await` the body directly, so a throw fails the test on its own. (.claude/rules/testing.md § "Test isolation — non-negotiables" rule 12.)',
         },
       },
       create(context) {
@@ -1582,7 +1752,7 @@ const fortyCdkPlugin = {
       },
     },
 
-    // Enforces CLAUDE.md § "Defaults providers": a primitive must ship a
+    // Enforces .claude/rules/conventions.md § "Defaults providers": a primitive must ship a
     // <name>-defaults.ts in forty-cdk/defaults ONLY when it actually consumes scoped
     // defaults — i.e. some non-defaults source file in the entry's src/
     // injects the `FOR_<PRIMITIVE>_DEFAULTS` token. Primitives with no
@@ -1596,19 +1766,19 @@ const fortyCdkPlugin = {
     // `_internal`) and is exempt, as are `_internal`/`test-utils`. A dedicated
     // fixture (require-defaults-sibling.fixture.ts) references its derived
     // token with no sibling present, so it exercises the rule under
-    // `pnpm lint:rule-fixtures`. Fires once per primitive root file via a
+    // `pnpm check:rule-fixtures`. Fires once per primitive root file via a
     // Program-level filesystem check.
     'require-defaults-sibling': {
       meta: {
         type: 'problem',
         docs: {
           description:
-            'A primitive that injects `FOR_<PRIMITIVE>_DEFAULTS` must have a `<name>-defaults.ts` in `forty-cdk/defaults` per CLAUDE.md § "Defaults providers".',
+            'A primitive that injects `FOR_<PRIMITIVE>_DEFAULTS` must have a `<name>-defaults.ts` in `forty-cdk/defaults` per .claude/rules/conventions.md § "Defaults providers".',
         },
         schema: [],
         messages: {
           missing:
-            'Primitive `{{name}}` injects `{{token}}` but the required `{{name}}-defaults.ts` is missing from `projects/forty-cdk/defaults/src/` (CLAUDE.md § "Defaults providers"). Add it there, declaring `provideFor<Primitive>Defaults` + `{{token}}`.',
+            'Primitive `{{name}}` injects `{{token}}` but the required `{{name}}-defaults.ts` is missing from `projects/forty-cdk/defaults/src/` (.claude/rules/conventions.md § "Defaults providers"). Add it there, declaring `provideFor<Primitive>Defaults` + `{{token}}`.',
         },
       },
       create(context) {
@@ -1726,7 +1896,7 @@ const fortyCdkPlugin = {
     // it would neutralize the rule, since a dead-but-public defaults file is by
     // definition re-exported from the barrel. The dedicated fixture
     // (no-unused-defaults-sibling.fixture.ts) sits next to a support
-    // `public-api.ts` that re-exports its token, so `pnpm lint:rule-fixtures`
+    // `public-api.ts` that re-exports its token, so `pnpm check:rule-fixtures`
     // proves the fixture still fires despite the barrel re-export (i.e. proves
     // the carve-out). Fires once per orphaned defaults file via a Program-level
     // filesystem check.
@@ -1737,12 +1907,12 @@ const fortyCdkPlugin = {
         type: 'problem',
         docs: {
           description:
-            'A `<name>-defaults.ts` sibling whose defaults token is never injected in its own entry is dead weight — remove it or inject the token (reverse of `require-defaults-sibling`; CLAUDE.md § "Defaults providers").',
+            'A `<name>-defaults.ts` sibling whose defaults token is never injected in its own entry is dead weight — remove it or inject the token (reverse of `require-defaults-sibling`; .claude/rules/conventions.md § "Defaults providers").',
         },
         schema: [],
         messages: {
           unused:
-            'The defaults file `{{ name }}-defaults.ts` exports `{{ token }}` but no non-spec source of any primitive entry ever injects it — a dead defaults file that still enlarges the public API (token + provider + interface). Remove it, or inject the token where the scoped defaults are read (CLAUDE.md § "Defaults providers").',
+            'The defaults file `{{ name }}-defaults.ts` exports `{{ token }}` but no non-spec source of any primitive entry ever injects it — a dead defaults file that still enlarges the public API (token + provider + interface). Remove it, or inject the token where the scoped defaults are read (.claude/rules/conventions.md § "Defaults providers").',
         },
       },
       create(context) {
@@ -1881,7 +2051,7 @@ const fortyCdkPlugin = {
     //     `FormValueControl<string>` as shared wiring, and the concrete
     //     subclasses own the sibling contract.
     // The `eslint-rules-fixtures` directory is deliberately kept in scope so
-    // `pnpm lint:rule-fixtures` proves the rule fires (the sibling never
+    // `pnpm check:rule-fixtures` proves the rule fires (the sibling never
     // exists there). Fixture: `projects/forty-cdk/eslint-rules-fixtures/require-host-directive-sibling.fixture.ts`.
     //
     // Refs: tutkli/forty-cdk#663
@@ -1990,7 +2160,7 @@ const fortyCdkPlugin = {
       },
     },
 
-    // Enforces CLAUDE.md § "Context injection helpers are internal": a
+    // Enforces .claude/rules/conventions.md § "Context exports — what's public": a
     // primitive's `injectXContext(piece)` helper is implementation detail —
     // it takes a directive-name string purely for error messages and exists
     // so sibling pieces of the same primitive can read the shared context.
@@ -2341,23 +2511,23 @@ const fortyCdkPlugin = {
     //     silently license the next effect within six lines. Documenting the
     //     ledger must not join it.
     //
-    // See: CLAUDE.md > conventions > "The sanctioned-effect marker".
+    // See: .claude/rules/conventions.md § "The sanctioned-effect marker".
     // Fixture: `projects/forty-cdk/eslint-rules-fixtures/require-sanctioned-effect-marker.fixture.ts`.
     'require-sanctioned-effect-marker': {
       meta: {
         type: 'problem',
         docs: {
           description:
-            'Every signal write inside an `effect()` must carry the canonical `@sanctioned-effect(<invariant>): <why>` marker comment (CLAUDE.md § "The sanctioned-effect marker").',
+            'Every signal write inside an `effect()` must carry the canonical `@sanctioned-effect(<invariant>): <why>` marker comment (.claude/rules/conventions.md § "The sanctioned-effect marker").',
         },
         schema: [],
         messages: {
           missingMarker:
-            'Unmarked signal write inside `effect()`: `{{ signal }}.{{ method }}(…)`. `effect()` is for side effects that escape the reactive graph — derive state with `computed()` / `linkedSignal()` / `resource()` / `toSignal()` instead. If the write is genuinely sanctioned, license it with a marker comment directly above the `effect(` call: `// @sanctioned-effect(<invariant>): <why the write cannot cycle>`. (CLAUDE.md § "The sanctioned-effect marker".)',
+            'Unmarked signal write inside `effect()`: `{{ signal }}.{{ method }}(…)`. `effect()` is for side effects that escape the reactive graph — derive state with `computed()` / `linkedSignal()` / `resource()` / `toSignal()` instead. If the write is genuinely sanctioned, license it with a marker comment directly above the `effect(` call: `// @sanctioned-effect(<invariant>): <why the write cannot cycle>`. (.claude/rules/conventions.md § "The sanctioned-effect marker".)',
           missingMarkerViaHelper:
-            'Unmarked signal write inside `effect()`: `{{ helper }}` writes `{{ signal }}.{{ method }}(…)`. `effect()` is for side effects that escape the reactive graph — derive state with `computed()` / `linkedSignal()` / `resource()` / `toSignal()` instead. If the write is genuinely sanctioned, license it with a marker comment directly above the `effect(` call: `// @sanctioned-effect(<invariant>): <why the write cannot cycle>`. (CLAUDE.md § "The sanctioned-effect marker".)',
+            'Unmarked signal write inside `effect()`: `{{ helper }}` writes `{{ signal }}.{{ method }}(…)`. `effect()` is for side effects that escape the reactive graph — derive state with `computed()` / `linkedSignal()` / `resource()` / `toSignal()` instead. If the write is genuinely sanctioned, license it with a marker comment directly above the `effect(` call: `// @sanctioned-effect(<invariant>): <why the write cannot cycle>`. (.claude/rules/conventions.md § "The sanctioned-effect marker".)',
           malformedMarker:
-            'Malformed `@sanctioned-effect` marker. The shape is `// @sanctioned-effect(<invariant>): <why the write cannot cycle>` — a kebab-case invariant name in parentheses (e.g. `external-source`, `untracked-read`) and a one-sentence rationale after the colon. The name is what a reviewer verifies and what a refactor must preserve. (CLAUDE.md § "The sanctioned-effect marker".)',
+            'Malformed `@sanctioned-effect` marker. The shape is `// @sanctioned-effect(<invariant>): <why the write cannot cycle>` — a kebab-case invariant name in parentheses (e.g. `external-source`, `untracked-read`) and a one-sentence rationale after the colon. The name is what a reviewer verifies and what a refactor must preserve. (.claude/rules/conventions.md § "The sanctioned-effect marker".)',
         },
       },
       create(context) {
@@ -2593,7 +2763,7 @@ const fortyCdkPlugin = {
     //     counts, so a JSDoc block quoting the marker cannot license the next
     //     effect within the window.
     //
-    // See: CLAUDE.md > conventions > "The sanctioned-pull marker".
+    // See: .claude/rules/conventions.md § "The sanctioned-pull marker".
     // Fixture: `projects/forty-cdk/eslint-rules-fixtures/require-sanctioned-pull-marker.fixture.ts`.
     //
     // Refs: tutkli/forty-cdk#1602, #1580, #1600, #1606
@@ -2602,18 +2772,18 @@ const fortyCdkPlugin = {
         type: 'problem',
         docs: {
           description:
-            'Every pull of a lazy store inside an `effect()` must carry the canonical `@sanctioned-pull(<store>): <why>` marker, and must not share the effect with a signal write (CLAUDE.md § "The sanctioned-pull marker").',
+            'Every pull of a lazy store inside an `effect()` must carry the canonical `@sanctioned-pull(<store>): <why>` marker, and must not share the effect with a signal write (.claude/rules/conventions.md § "The sanctioned-pull marker").',
         },
         schema: [],
         messages: {
           missingMarker:
-            'Unmarked pull inside `effect()`: `{{ store }}`. An effect that exists to force a lazy store to run is load-bearing in a way nothing else can see — deleting it fails silently and downstream. License it with a marker comment directly above the `effect(` call: `// @sanctioned-pull(<store>): <why the source is transient>`, and keep the effect read-only. (CLAUDE.md § "The sanctioned-pull marker".)',
+            'Unmarked pull inside `effect()`: `{{ store }}`. An effect that exists to force a lazy store to run is load-bearing in a way nothing else can see — deleting it fails silently and downstream. License it with a marker comment directly above the `effect(` call: `// @sanctioned-pull(<store>): <why the source is transient>`, and keep the effect read-only. (.claude/rules/conventions.md § "The sanctioned-pull marker".)',
           missingMarkerViaHelper:
-            'Unmarked pull inside `effect()`: `{{ helper }}` pulls `{{ store }}`. An effect that exists to force a lazy store to run is load-bearing in a way nothing else can see — deleting it fails silently and downstream. License it with a marker comment directly above the `effect(` call: `// @sanctioned-pull(<store>): <why the source is transient>`, and keep the effect read-only. (CLAUDE.md § "The sanctioned-pull marker".)',
+            'Unmarked pull inside `effect()`: `{{ helper }}` pulls `{{ store }}`. An effect that exists to force a lazy store to run is load-bearing in a way nothing else can see — deleting it fails silently and downstream. License it with a marker comment directly above the `effect(` call: `// @sanctioned-pull(<store>): <why the source is transient>`, and keep the effect read-only. (.claude/rules/conventions.md § "The sanctioned-pull marker".)',
           malformedMarker:
-            'Malformed `@sanctioned-pull` marker. The shape is `// @sanctioned-pull(<store>): <why the source is transient>` — a kebab-case store name in parentheses (e.g. `label-cache-window`, `navigator-position-map`) and a one-sentence rationale after the colon. The name is what a reviewer verifies and what a refactor must preserve. (CLAUDE.md § "The sanctioned-pull marker".)',
+            'Malformed `@sanctioned-pull` marker. The shape is `// @sanctioned-pull(<store>): <why the source is transient>` — a kebab-case store name in parentheses (e.g. `label-cache-window`, `navigator-position-map`) and a one-sentence rationale after the colon. The name is what a reviewer verifies and what a refactor must preserve. (.claude/rules/conventions.md § "The sanctioned-pull marker".)',
           pullWithWrite:
-            'A pull (`{{ store }}`) shares this `effect()` with the signal write `{{ signal }}.{{ method }}(…)`. The pull drags its own tracked set into the effect, so the write re-runs on every change the *store* depends on — which is how a hover-then-click came to scroll a listbox (#1600). If `{{ signal }}` is a signal, split the pull into its own read-only effect; no marker licenses this. If `{{ signal }}` is *not* a signal — a scratch `Map`, a `WeakMap` cache, any plain object with a one-argument `{{ method }}(…)` — the rule has misread it: it cannot tell the two apart without type information, so keep the `@sanctioned-pull` marker and silence this line alone with `// eslint-disable-next-line forty-cdk/require-sanctioned-pull-marker`, naming the receiver in a comment. (CLAUDE.md § "The sanctioned-pull marker".)',
+            'A pull (`{{ store }}`) shares this `effect()` with the signal write `{{ signal }}.{{ method }}(…)`. The pull drags its own tracked set into the effect, so the write re-runs on every change the *store* depends on — which is how a hover-then-click came to scroll a listbox (#1600). If `{{ signal }}` is a signal, split the pull into its own read-only effect; no marker licenses this. If `{{ signal }}` is *not* a signal — a scratch `Map`, a `WeakMap` cache, any plain object with a one-argument `{{ method }}(…)` — the rule has misread it: it cannot tell the two apart without type information, so keep the `@sanctioned-pull` marker and silence this line alone with `// eslint-disable-next-line forty-cdk/require-sanctioned-pull-marker`, naming the receiver in a comment. (.claude/rules/conventions.md § "The sanctioned-pull marker".)',
         },
       },
       create(context) {
@@ -2836,7 +3006,7 @@ const fortyCdkPlugin = {
     //     `validate()` is invisible to it. Naming assertion helpers `assert*` /
     //     `throw*` is what keeps that gap small.
     //
-    // See: CLAUDE.md > conventions > "Assertions are dev-gated and live at the
+    // See: .claude/rules/conventions.md § "Assertions are dev-gated and live at the
     // point of use".
     // Fixture: `projects/forty-cdk/eslint-rules-fixtures/no-assertion-only-effect.fixture.ts`.
     //
@@ -2846,12 +3016,12 @@ const fortyCdkPlugin = {
         type: 'problem',
         docs: {
           description:
-            'An `effect()` must not be used as a validation channel: a body that only throws or calls `assert*` belongs at the invariant\'s point of use (CLAUDE.md § "Assertions are dev-gated and live at the point of use").',
+            'An `effect()` must not be used as a validation channel: a body that only throws or calls `assert*` belongs at the invariant\'s point of use (.claude/rules/conventions.md § "Assertions are dev-gated and live at the point of use").',
         },
         schema: [],
         messages: {
           assertionOnly:
-            'This `effect()` is a validation channel: its whole body is `{{ what }}`. A throw inside an `effect` never reaches the code that caused it — Angular routes it to the application `ErrorHandler`, so the stack names the scheduler rather than the binding at fault, the effect re-throws on every re-run, and a consumer with their own `ErrorHandler` sees nothing. Move the invariant to its point of use (the move / derivation that the invalid combination degrades) and throw from a dev-gated `assert*` helper there — from **every** such point, not just the first one you find. A render-time derivation additionally aborts the render, so the consumer can catch it; an event handler still routes to the `ErrorHandler`, and what you gain there is the attributable stack and the end of the re-throw. (CLAUDE.md § "Assertions are dev-gated and live at the point of use".)',
+            'This `effect()` is a validation channel: its whole body is `{{ what }}`. A throw inside an `effect` never reaches the code that caused it — Angular routes it to the application `ErrorHandler`, so the stack names the scheduler rather than the binding at fault, the effect re-throws on every re-run, and a consumer with their own `ErrorHandler` sees nothing. Move the invariant to its point of use (the move / derivation that the invalid combination degrades) and throw from a dev-gated `assert*` helper there — from **every** such point, not just the first one you find. A render-time derivation additionally aborts the render, so the consumer can catch it; an event handler still routes to the `ErrorHandler`, and what you gain there is the attributable stack and the end of the re-throw. (.claude/rules/conventions.md § "Assertions are dev-gated and live at the point of use".)',
         },
       },
       create(context) {
@@ -3082,7 +3252,7 @@ const fortyCdkPlugin = {
       },
     },
 
-    // Enforces CLAUDE.md § "ARIA emission" / `.claude/rules/conventions.md` §
+    // Enforces .claude/rules/conventions.md § "ARIA state attribute emission" / `.claude/rules/conventions.md` §
     // "the truthy-only rule governs the *value*, not the *applicability*":
     // emitting an `aria-*` property on a role that does not support it is an
     // `aria-allowed-attr` violation. The state is simply not conveyed — the
@@ -3542,7 +3712,7 @@ module.exports = tseslint.config(
       // test-isolation rule each (see `@forty-cdk-test-isolation-rules` block
       // below + `projects/forty-cdk/eslint-rules-fixtures/README.md`). They
       // must NOT be included in the default `pnpm lint` run — they would
-      // always fail. Use `pnpm lint:rule-fixtures` to confirm each rule
+      // always fail. Use `pnpm check:rule-fixtures` to confirm each rule
       // still fires on its fixture.
       'projects/forty-cdk/eslint-rules-fixtures/**',
     ],
@@ -3649,7 +3819,7 @@ module.exports = tseslint.config(
           message: 'NgModule is banned. forty-cdk is standalone-only (CLAUDE.md).',
         },
         // ---- ARIA truthy-only attributes must be `null` when false, not `"false"` ----
-        // Per CLAUDE.md § "ARIA state attribute emission", these attributes default to
+        // Per .claude/rules/conventions.md § "ARIA state attribute emission", these attributes default to
         // their falsy state when absent; emitting `aria-required="false"` (etc.) forces
         // consumers to write `[aria-required="false"]` selectors that fight the spec.
         // Canonical Angular host binding: `'[attr.aria-disabled]': 'disabled() ? "true" : null'`.
@@ -3660,7 +3830,7 @@ module.exports = tseslint.config(
           selector:
             'Property[key.value=/^\\[attr\\.aria-(disabled|readonly|required|invalid|busy|modal|haspopup|multiselectable)\\]$/][value.value=/"false"/]',
           message:
-            'ARIA truthy-only attributes must be `null` when false, not `"false"`. Use `cond() ? "true" : null` (CLAUDE.md § "ARIA state attribute emission").',
+            'ARIA truthy-only attributes must be `null` when false, not `"false"`. Use `cond() ? "true" : null` (.claude/rules/conventions.md § "ARIA state attribute emission").',
         },
         // ---- `type="button"` is a host *binding*, never a static host attribute ----
         // A static host attribute is stamped onto whatever element the consumer
@@ -3674,7 +3844,7 @@ module.exports = tseslint.config(
           selector:
             'Property:matches([key.name="host"], [key.value="host"]) > ObjectExpression > Property:matches([key.name="type"], [key.value="type"])[value.value="button"]',
           message:
-            'A static `type: "button"` host attribute is banned: it is invalid on a non-button host and a consumer `type="submit"` beats it. Use the `hostButtonType()` core seam host-bound as `\'[attr.type]\': \'buttonType()\'` (CLAUDE.md § "Forcing `type=\\"button\\"`").',
+            'A static `type: "button"` host attribute is banned: it is invalid on a non-button host and a consumer `type="submit"` beats it. Use the `hostButtonType()` core seam host-bound as `\'[attr.type]\': \'buttonType()\'` (.claude/rules/conventions.md § "Forcing type=button").',
         },
         {
           selector:
@@ -3687,7 +3857,7 @@ module.exports = tseslint.config(
       // ---- Filename convention ----
       'forty-cdk/no-suffixed-filenames': 'error',
 
-      // ---- Defaults stub convention (CLAUDE.md § "Defaults providers") ----
+      // ---- Defaults stub convention (.claude/rules/conventions.md § "Defaults providers") ----
       'forty-cdk/require-defaults-sibling': 'error',
       // ---- Reverse: no `<name>-defaults.ts` whose token nothing injects (#1262) ----
       'forty-cdk/no-unused-defaults-sibling': 'error',
@@ -3705,15 +3875,15 @@ module.exports = tseslint.config(
       'forty-cdk/no-effect-state-propagation': 'error',
       // ---- …and every signal write that *is* sanctioned carries the canonical
       // marker naming the invariant that makes it safe (tutkli/forty-cdk#1401
-      // item 3; CLAUDE.md § "The sanctioned-effect marker"). ----
+      // item 3; .claude/rules/conventions.md § "The sanctioned-effect marker"). ----
       'forty-cdk/require-sanctioned-effect-marker': 'error',
       // ---- …and the pull half: an effect that exists to force a lazy store to
       // run names the store it primes and stays read-only
-      // (tutkli/forty-cdk#1602; CLAUDE.md § "The sanctioned-pull marker"). ----
+      // (tutkli/forty-cdk#1602; .claude/rules/conventions.md § "The sanctioned-pull marker"). ----
       'forty-cdk/require-sanctioned-pull-marker': 'error',
       // ---- …and the third thing an effect gets misused for: validation. A
       // throw inside an effect reaches the `ErrorHandler`, never the consumer
-      // (tutkli/forty-cdk#1583; CLAUDE.md § "Assertions are dev-gated and live
+      // (tutkli/forty-cdk#1583; .claude/rules/conventions.md § "Assertions are dev-gated and live
       // at the point of use"). ----
       'forty-cdk/no-assertion-only-effect': 'error',
 
@@ -3739,11 +3909,11 @@ module.exports = tseslint.config(
       'forty-cdk/namespaced-css-custom-property': 'error',
 
       // ---- Test isolation invariants (see @forty-cdk-test-isolation-rules
-      // block above; CLAUDE.md § "Test isolation — non-negotiables"). ----
+      // block above; .claude/rules/testing.md § "Test isolation — non-negotiables"). ----
       'forty-cdk/no-bare-whenstable': 'error',
       'forty-cdk/no-prototype-rect-stub': 'error',
       'forty-cdk/observer-polyfill-must-restore': 'error',
-      'forty-cdk/scoped-fake-timers': 'warn',
+      'forty-cdk/scoped-fake-timers': 'error',
       'forty-cdk/no-directive-internal-signal-read': 'error',
       'forty-cdk/no-floating-flush': 'error',
       'forty-cdk/require-overlay-cleanup': 'error',
@@ -3955,7 +4125,7 @@ module.exports = tseslint.config(
   // The fixtures are listed in the top-level `ignores` block so `pnpm lint`
   // skips them by default (each one intentionally violates exactly one
   // `forty-cdk/*` test-isolation rule). This override exists for the
-  // explicit `pnpm lint:rule-fixtures` script: it disables typed linting
+  // explicit `pnpm check:rule-fixtures` script: it disables typed linting
   // (the fixtures live outside every Angular tsconfig project) and turns
   // off rules that would otherwise drown each fixture in unrelated errors,
   // leaving only the one `forty-cdk/*` rule the fixture is exercising.

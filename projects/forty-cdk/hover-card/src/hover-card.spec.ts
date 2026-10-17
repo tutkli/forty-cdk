@@ -544,6 +544,10 @@ describe('ForHoverCard', () => {
   });
 
   describe('touch / pointer-induced focus guard', () => {
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
     it('ignores a touch pointerenter so a tap never opens via the hover path', async () => {
       const { fixture, query, flush } = renderHost(HoverCardHost);
       await flush();
@@ -714,7 +718,6 @@ describe('ForHoverCard', () => {
       vi.advanceTimersByTime(1000);
       trigger.dispatchEvent(new FocusEvent('focus'));
       fixture.detectChanges();
-      vi.useRealTimers();
 
       expect(fixture.componentInstance.isOpen()).toBe(true);
     });

@@ -11,7 +11,7 @@
  * (`<button>`, `<textarea>`). Global properties are supported everywhere and
  * are never reported; an unresolvable or untranscribed role is skipped rather
  * than guessed at. See tutkli/forty-cdk#1476 / #1472 / #1393 item 13 and
- * `.claude/rules/conventions.md` > "ARIA emission".
+ * `.claude/rules/conventions.md` § "ARIA state attribute emission".
  */
 
 declare function Directive(metadata: unknown): ClassDecorator;

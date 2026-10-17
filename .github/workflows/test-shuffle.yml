@@ -24,12 +24,12 @@
 # ## Action plan on failure
 #
 # A failing run usually means a spec (or a recently-touched helper) leaks
-# state across the test boundary. The checklist lives in CLAUDE.md under the
-# `### Test isolation — non-negotiables` heading (anchor
-# `#test-isolation--non-negotiables`). Walk it top-to-bottom against the
-# specs in the failing run's neighbourhood; the leaking spec is almost always
-# the one immediately before the one that fails (with `isolate: false`,
-# state survives the file boundary).
+# state across the test boundary. The checklist lives in .claude/rules/testing.md
+# under the `### Test isolation — non-negotiables` heading (anchor
+# `.claude/rules/testing.md#test-isolation--non-negotiables`). Walk it
+# top-to-bottom against the specs in the failing run's neighbourhood; the
+# leaking spec is almost always the one immediately before the one that fails
+# (with `isolate: false`, state survives the file boundary).
 #
 # To reproduce locally, set the env var and run the regular test command
 # (Bash):
@@ -75,4 +75,4 @@ jobs:
       - name: Failure pointer
         if: failure()
         run: |
-          echo "::error::Worst-case nightly failed. Walk CLAUDE.md → 'Test isolation — non-negotiables' (anchor #test-isolation--non-negotiables) against the specs near the failure. With isolate: false the leaking spec is almost always immediately upstream of the failing one. Reproduce locally with FORTY_CDK_TEST_WORST_CASE=true pnpm test."
+          echo "::error::Worst-case nightly failed. Walk the 'Test isolation — non-negotiables' checklist in .claude/rules/testing.md (anchor .claude/rules/testing.md#test-isolation--non-negotiables) against the specs near the failure. With isolate: false the leaking spec is almost always immediately upstream of the failing one. Reproduce locally with FORTY_CDK_TEST_WORST_CASE=true pnpm test."
