@@ -159,8 +159,8 @@ export class ForDatePicker<D>
 
   /**
    * Date-time precision. `'day'` (default, **non-breaking**) keeps a pure
-   * calendar picker. Anything coarser-than-a-day off — `'hour'` / `'minute'` /
-   * `'second'` — turns it into a date-time picker: the consumer projects a
+   * calendar picker. A granularity finer than a day (`'hour'` / `'minute'` /
+   * `'second'`) turns it into a date-time picker: the consumer projects a
    * `[forTimeField]` beside the calendar, a calendar selection preserves the
    * entered time, and the value carries a time component. Requires a
    * time-capable adapter (`provideNativeDateAdapter()` or

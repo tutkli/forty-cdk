@@ -206,7 +206,7 @@ Open the picker and click a first day: the trigger keeps its placeholder, becaus
 | `isDateUnavailable` | `input<(date: D) => boolean>`                    | Per-date predicate. Forward to the projected calendar's `[isDateUnavailable]`.<br>**Default:** `() => false`                                                                                                   |
 | `closeOnSelect`     | `input<boolean>`                                 | Close the surface after a date is picked. Honoured at `granularity="day"`, and at any granularity with `anatomy="field"`.<br>**Default:** `true`                                                               |
 | `anatomy`           | `input<'trigger' \| 'field'>`                    | Which piece is the control. `'field'` makes a projected `[forDateField]` the control and the trigger a plain button; see [Field anatomy](#field-anatomy).<br>**Default:** `'trigger'`                          |
-| `granularity`       | `input<'day' \| 'hour' \| 'minute' \| 'second'>` | Date-time precision. `'day'` (default) is a pure date picker; coarser-than-day off composes a time field.<br>**Default:** `'day'`                                                                              |
+| `granularity`       | `input<'day' \| 'hour' \| 'minute' \| 'second'>` | Date-time precision. `'day'` (default) is a pure date picker; a finer granularity composes a time field.<br>**Default:** `'day'`                                                                               |
 | `hourCycle`         | `input<12 \| 24 \| null>`                        | 12/24-hour cycle for the value display; a projected time field takes `resolvedHourCycle()`.<br>**Default:** `null` → the scope's `hourCycle` (`provideForDatePickerDefaults`), then the locale                 |
 | `resolvedHourCycle` | `Signal<12 \| 24 \| null>`                       | The effective cycle: `hourCycle`, then the scope's, or `null` for the locale. Bind it to a projected time field's `[hourCycle]`.<br>**Default:** —                                                             |
 | `modal`             | `input<boolean>`                                 | Trap focus + inert background + scroll lock (centered dialog) instead of an anchored popover.<br>**Default:** `false`                                                                                          |
@@ -237,9 +237,17 @@ A native reset of the owning `<form>` returns `value` to what it held when the p
 | `[forDatePicker]`        | `data-state`       | `open` \| `closed` |
 | `[forDatePicker]`        | `data-disabled`    | present \| absent  |
 | `[forDatePicker]`        | `data-readonly`    | present \| absent  |
+| `[forDatePicker]`        | `data-touched`     | present \| absent  |
+| `[forDatePicker]`        | `data-dirty`       | present \| absent  |
+| `[forDatePicker]`        | `data-pending`     | present \| absent  |
+| `[forDatePicker]`        | `data-invalid`     | present \| absent  |
 | `[forDateRangePicker]`   | `data-state`       | `open` \| `closed` |
 | `[forDateRangePicker]`   | `data-disabled`    | present \| absent  |
 | `[forDateRangePicker]`   | `data-readonly`    | present \| absent  |
+| `[forDateRangePicker]`   | `data-touched`     | present \| absent  |
+| `[forDateRangePicker]`   | `data-dirty`       | present \| absent  |
+| `[forDateRangePicker]`   | `data-pending`     | present \| absent  |
+| `[forDateRangePicker]`   | `data-invalid`     | present \| absent  |
 | `[forDatePickerTrigger]` | `data-state`       | `open` \| `closed` |
 | `[forDatePickerTrigger]` | `data-disabled`    | present \| absent  |
 | `[forDatePickerTrigger]` | `data-readonly`    | present \| absent  |

@@ -156,6 +156,10 @@ A native reset of the owning `<form>` returns `value` to what it held when the p
 | `[forTimePicker]`        | `data-state`       | `open` \| `closed`         |
 | `[forTimePicker]`        | `data-disabled`    | present \| absent          |
 | `[forTimePicker]`        | `data-readonly`    | present \| absent          |
+| `[forTimePicker]`        | `data-touched`     | present \| absent          |
+| `[forTimePicker]`        | `data-dirty`       | present \| absent          |
+| `[forTimePicker]`        | `data-pending`     | present \| absent          |
+| `[forTimePicker]`        | `data-invalid`     | present \| absent          |
 | `[forTimePickerTrigger]` | `data-state`       | `open` \| `closed`         |
 | `[forTimePickerTrigger]` | `data-disabled`    | present \| absent          |
 | `[forTimePickerTrigger]` | `data-readonly`    | present \| absent          |
