@@ -8073,7 +8073,7 @@ exports[`document structure > projects/forty-cdk/time-picker/README.md declares 
           "Description",
         ],
         "role": "api",
-        "rows": 24,
+        "rows": 28,
       },
       {
         "columns": [
@@ -8104,7 +8104,7 @@ exports[`document structure > projects/forty-cdk/time-picker/README.md declares 
           "Meaning",
         ],
         "role": "plain",
-        "rows": 5,
+        "rows": 6,
       },
     ],
     "title": "Scoped defaults",

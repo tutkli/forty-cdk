@@ -89,6 +89,11 @@ export interface ListboxOverlayControllerDeps<
   readonly onNavigateFocus?: (target: H) => void;
   /** Per-primitive option-unregister side effect (Select clears a stale activedescendant). */
   readonly onUnregisterOption?: (handle: H) => void;
+  /**
+   * The texts open-state typeahead matches an option against, any of which may match. Defaults to
+   * the option's accessible text (TimePicker adds its label without the hour's leading zero).
+   */
+  readonly typeaheadText?: (handle: H) => string | readonly string[];
 }
 
 /**
@@ -307,7 +312,7 @@ export class ListboxOverlayController<
     const { handled, match } = resolveListTypeahead(this.#typeahead, event, {
       items,
       anchorIndex: items.findIndex((o) => o.host === event.target),
-      getText: (o) => accessibleTextContent(o.host),
+      getText: this.#deps.typeaheadText ?? ((o) => accessibleTextContent(o.host)),
       isDisabled: (o) => o.disabled(),
     });
     if (match) {

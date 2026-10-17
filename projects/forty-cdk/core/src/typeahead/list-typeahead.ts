@@ -168,8 +168,8 @@ export interface ListTypeaheadConfig<H> {
   readonly items: readonly H[];
   /** Index of the currently-anchored option, or `-1` when nothing is anchored. */
   readonly anchorIndex: number;
-  /** Resolve an option's match text (e.g. its accessible `textContent`). */
-  readonly getText: (item: H) => string;
+  /** Resolve an option's match text (e.g. its accessible `textContent`), or several candidates. */
+  readonly getText: (item: H) => string | readonly string[];
   /** Whether an option is skipped. */
   readonly isDisabled: (item: H) => boolean;
 }

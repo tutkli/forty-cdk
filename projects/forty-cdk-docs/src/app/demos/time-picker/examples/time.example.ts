@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, ViewEncapsulation, signal } from '@angular/core';
-import { CalendarDateTime } from '@internationalized/date';
+import { type CalendarDateTime } from '@internationalized/date';
 import {
   ForTimePicker,
   ForTimePickerContent,
@@ -178,7 +178,5 @@ import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/international
   `,
 })
 export class TimePickerTimeExample {
-  protected readonly value = signal<CalendarDateTime | null>(
-    new CalendarDateTime(2024, 6, 15, 9, 0),
-  );
+  protected readonly value = signal<CalendarDateTime | null>(null);
 }

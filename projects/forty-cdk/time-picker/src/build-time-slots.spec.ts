@@ -132,11 +132,22 @@ describe('buildTimeSlots', () => {
     expect(slots.length).toBe(1440);
   });
 
-  it('granularity hour: two slots at same hour compare as selected', () => {
+  it('granularity hour: of the two slots in the hour, only the one at the value is selected', () => {
     const selected = new Date(2026, 5, 15, 9, 0, 0);
-    const slots = buildTimeSlots(cfg({ selected, granularity: 'hour', step: 60 }));
-    const nineAm = slots.find((s) => adapter.getHours(s.value) === 9);
-    expect(nineAm?.selected).toBe(true);
+    const slots = buildTimeSlots(cfg({ selected, granularity: 'hour', step: 30 }));
+    expect(slots.filter((s) => s.selected).map((s) => s.id)).toEqual(['slot-32400']);
+  });
+
+  it('granularity hour: selects the slot the value falls in at step resolution', () => {
+    const selected = new Date(2026, 5, 15, 9, 45, 0);
+    const slots = buildTimeSlots(cfg({ selected, granularity: 'hour', step: 30 }));
+    expect(slots.filter((s) => s.selected).map((s) => s.id)).toEqual(['slot-34200']);
+  });
+
+  it('granularity hour: falls back to the first slot of the hour when the step crosses it', () => {
+    const selected = new Date(2026, 5, 15, 10, 15, 0);
+    const slots = buildTimeSlots(cfg({ selected, granularity: 'hour', step: 90 }));
+    expect(slots.filter((s) => s.selected).map((s) => s.id)).toEqual(['slot-37800']);
   });
 });
 

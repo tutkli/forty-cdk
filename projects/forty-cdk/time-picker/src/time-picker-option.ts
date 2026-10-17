@@ -40,9 +40,11 @@ import { injectTimePickerContext } from './time-picker-context';
  * - **ArrowDown / ArrowUp / Home / End** — move focus inside the listbox.
  * - **PageUp / PageDown** — jump to the first / last enabled slot.
  * - **Typeahead** — printable keys focus the next slot whose text starts with
- *   the typed prefix.
+ *   the typed prefix, read with or without the hour's leading zero (`6` and
+ *   `06` both reach `06:30`).
  * - **Tab / Shift+Tab** — commit the focused slot and let the browser advance
- *   focus to the next / previous focusable.
+ *   focus to the next / previous focusable. With `modal` set, Tab is left to the
+ *   focus trap and commits nothing.
  * - **Escape** — routed through the content's keydown to close the listbox.
  */
 @Directive({

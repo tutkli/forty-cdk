@@ -41,11 +41,11 @@ Requires a time-capable adapter:
 
 ## Examples
 
-Open the listbox from the trigger and pick a slot. The arrow keys walk the timeline, and the trigger keeps `data-placeholder` until something is chosen.
+Open the listbox from the trigger and pick a slot. The arrow keys walk the timeline, typing an hour jumps to it, and `[forTimePickerValue]` keeps `data-placeholder` until a slot is chosen.
 
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
-import { CalendarDateTime } from '@internationalized/date';
+import { type CalendarDateTime } from '@internationalized/date';
 import {
   ForTimePicker,
   ForTimePickerContent,
@@ -108,9 +108,7 @@ import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/international
   `,
 })
 export class TimePickerTimeExample {
-  protected readonly value = signal<CalendarDateTime | null>(
-    new CalendarDateTime(2024, 6, 15, 9, 0),
-  );
+  protected readonly value = signal<CalendarDateTime | null>(null);
 }
 ```
 
@@ -132,7 +130,7 @@ One class and one directive, three states. `disabled` removes the trigger from t
 | `open`                | `boolean`                        | Open state (two-way)<br>**Default:** `false`                                                                                                                                                                                                                                                                    |
 | `anatomy`             | `'trigger' \| 'field'`           | Which piece is the control. `'field'` makes a projected `[forTimeField]` the control and the trigger a plain button; see [Field anatomy](#field-anatomy)<br>**Default:** `'trigger'`                                                                                                                            |
 | `step`                | `number`                         | Slot interval in minutes<br>**Default:** `30`                                                                                                                                                                                                                                                                   |
-| `granularity`         | `'hour' \| 'minute' \| 'second'` | Selection precision<br>**Default:** `'minute'`                                                                                                                                                                                                                                                                  |
+| `granularity`         | `'hour' \| 'minute' \| 'second'` | Selection precision. When several slots share the value's unit (`'hour'` with a `step` under 60), only the slot the value falls in at step resolution is selected<br>**Default:** `'minute'`                                                                                                                    |
 | `hourCycle`           | `12 \| 24 \| null`               | Hour cycle for labels. `null` → the scope's `hourCycle`, then the locale<br>**Default:** `null`                                                                                                                                                                                                                 |
 | `locale`              | `string \| null`                 | BCP 47 locale for labels. `null` → the adapter's `locale()`, then the runtime locale<br>**Default:** `null`                                                                                                                                                                                                     |
 | `minTime`             | `D \| null`                      | Earliest selectable time<br>**Default:** `null`                                                                                                                                                                                                                                                                 |
@@ -143,6 +141,10 @@ One class and one directive, three states. `disabled` removes the trigger from t
 | `returnFocus`         | `boolean`                        | Return focus to trigger on close<br>**Default:** `true`                                                                                                                                                                                                                                                         |
 | `placeholder`         | `string`                         | Value display placeholder<br>**Default:** `''`                                                                                                                                                                                                                                                                  |
 | `formatOptions`       | `Intl.DateTimeFormatOptions`     | Format of the slot labels and `[forTimePickerValue]`. With no `hour` / `minute` / `second`, a two-digit hour and minute (plus seconds at `granularity="second"`) are filled in, matching `[forTimeField]`. The resolved `hourCycle` applies unless the options set `hour12` or `hourCycle`<br>**Default:** `{}` |
+| `ariaLabel`           | `string \| null`                 | `aria-label` on `[forTimePickerContent]`, for when the trigger is not a meaningful name<br>**Default:** `null`                                                                                                                                                                                                  |
+| `loop`                | `boolean`                        | Arrow keys wrap at the ends of the slot list<br>**Default:** `true` (from `provideForTimePickerDefaults`)                                                                                                                                                                                                       |
+| `orientation`         | `'vertical' \| 'horizontal'`     | Axis of the arrow keys in the listbox<br>**Default:** `'vertical'`                                                                                                                                                                                                                                              |
+| `dir`                 | `'ltr' \| 'rtl' \| null`         | Writing direction. `null` resolves the ambient direction; reflected to the host `dir`<br>**Default:** `null`                                                                                                                                                                                                    |
 | `side`                | `FloatingSide \| undefined`      | Anchor side (`'top'` / `'right'` / `'bottom'` / `'left'`). Falls back to `provideForTimePickerDefaults`.<br>**Default:** `'bottom'`                                                                                                                                                                             |
 | `align`               | `FloatingAlign \| undefined`     | Alignment along `side` (`'start'` / `'center'` / `'end'`). Falls back to `provideForTimePickerDefaults`.<br>**Default:** `'start'`                                                                                                                                                                              |
 | `sideOffset`          | `number \| undefined`            | Gap (px) between the anchor and the content along the main axis. Falls back to `provideForTimePickerDefaults`.<br>**Default:** `4`                                                                                                                                                                              |
@@ -206,6 +208,7 @@ A hover on a disabled slot is ignored, and the highlight falls back to the focus
 | `sideOffset`       | `4`              | Main-axis gap (px) for time pickers that don't set `sideOffset` themselves.                                     |
 | `collisionPadding` | `8`              | Collision-middleware padding (px) for time pickers that don't set it themselves.                                |
 | `hourCycle`        | `null`           | 12- or 24-hour cycle for time pickers that don't set `hourCycle` themselves. `null` derives it from the locale. |
+| `loop`             | `true`           | Whether arrow keys wrap at the ends of the slot list, for time pickers that don't set `loop` themselves.        |
 
 Per-instance inputs always win over the scope defaults. The four positioning keys are no-ops when `modal` is set: `[forTimePickerContent]` mounts the modal shell instead of the anchored positioner, so the surface is never positioned against the trigger and the consumer's own CSS places it.
 
@@ -349,20 +352,20 @@ With `anatomy="field"` and no projected `[forTimeField]`, opening the listbox or
 
 ## Keyboard
 
-| Key                          | Behavior                                                       |
-| ---------------------------- | -------------------------------------------------------------- |
-| `Enter` / `Space` on trigger | Toggle the listbox, focusing the selected slot, else the first |
-| `ArrowDown` on trigger       | Open, focusing the selected slot, else the first               |
-| `ArrowUp` on trigger         | Open, focusing the selected slot, else the last                |
-| `Home` / `End` on trigger    | Open, focusing the first / last enabled slot                   |
-| `Enter` / `Space`            | Select the focused slot                                        |
-| `ArrowDown` / `ArrowUp`      | Move focus between slots                                       |
-| `Home`                       | Focus the first enabled slot                                   |
-| `End`                        | Focus the last enabled slot                                    |
-| `PageUp` / `PageDown`        | Focus the first / last enabled slot                            |
-| Printable characters         | Focus the next slot whose text starts with the typed prefix    |
-| `Tab`                        | Commit the focused slot and advance focus                      |
-| `Escape`                     | Close without committing                                       |
+| Key                          | Behavior                                                                                                                                    |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Enter` / `Space` on trigger | Toggle the listbox, focusing the selected slot, else the first                                                                              |
+| `ArrowDown` on trigger       | Open, focusing the selected slot, else the first                                                                                            |
+| `ArrowUp` on trigger         | Open, focusing the selected slot, else the last                                                                                             |
+| `Home` / `End` on trigger    | Open, focusing the first / last enabled slot                                                                                                |
+| `Enter` / `Space`            | Select the focused slot                                                                                                                     |
+| `ArrowDown` / `ArrowUp`      | Move focus between slots                                                                                                                    |
+| `Home`                       | Focus the first enabled slot                                                                                                                |
+| `End`                        | Focus the last enabled slot                                                                                                                 |
+| `PageUp` / `PageDown`        | Focus the first / last enabled slot                                                                                                         |
+| Printable characters         | Focus the next slot whose text starts with the typed prefix, read with or without the hour's leading zero (`6` and `06` both reach `06:30`) |
+| `Tab`                        | Commit the focused slot and advance focus. With `modal` set, Tab cycles inside the listbox and commits nothing                              |
+| `Escape`                     | Close without committing                                                                                                                    |
 
 ## Accessibility
 

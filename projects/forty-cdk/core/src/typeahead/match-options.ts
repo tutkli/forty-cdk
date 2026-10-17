@@ -54,13 +54,14 @@ export function foldTypeaheadText(text: string): string {
  * @typeParam H Option handle type.
  * @param options Live options to scan, in document order.
  * @param query Buffer state at the moment of the match.
- * @param getText Resolves an option's match text (e.g. its `textContent`).
+ * @param getText Resolves an option's match text (e.g. its `textContent`), or
+ *   several candidate texts, any of which may match.
  * @param isDisabled Whether an option is skipped.
  */
 export function findTypeaheadMatch<H>(
   options: readonly H[],
   query: TypeaheadMatchQuery,
-  getText: (option: H) => string,
+  getText: (option: H) => string | readonly string[],
   isDisabled: (option: H) => boolean,
 ): H | null {
   const buffer = foldTypeaheadText(query.buffer);
@@ -74,7 +75,9 @@ export function findTypeaheadMatch<H>(
     if (isDisabled(option)) {
       continue;
     }
-    if (foldTypeaheadText(getText(option).trim()).startsWith(needle)) {
+    const text = getText(option);
+    const candidates = typeof text === 'string' ? [text] : text;
+    if (candidates.some((c) => foldTypeaheadText(c.trim()).startsWith(needle))) {
       return option;
     }
   }

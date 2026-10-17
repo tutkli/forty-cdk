@@ -687,6 +687,34 @@ describe('ForTimePicker', () => {
 
       expect(getSlot('slot-32400')!.getAttribute('aria-selected')).toBe('true');
     });
+
+    it('hour granularity marks exactly one slot selected when the step splits the hour', async () => {
+      const r = renderHost(TimePickerHost);
+      r.instance.step.set(30);
+      r.instance.granularity.set('hour');
+      r.instance.value.set(new Date(2026, 5, 15, 9, 0, 0));
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const selected = document.querySelectorAll('[forTimePickerOption][aria-selected="true"]');
+      expect(selected.length).toBe(1);
+      expect(selected[0]).toBe(getSlot('slot-32400'));
+      expect(getSlot('slot-34200')!.getAttribute('data-state')).toBe('unchecked');
+    });
+
+    it('hour granularity selects and focuses the slot the value falls in at step resolution', async () => {
+      const r = renderHost(TimePickerHost);
+      r.instance.step.set(30);
+      r.instance.granularity.set('hour');
+      r.instance.value.set(new Date(2026, 5, 15, 9, 45, 0));
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const selected = document.querySelectorAll('[forTimePickerOption][aria-selected="true"]');
+      expect(selected.length).toBe(1);
+      expect(selected[0]).toBe(getSlot('slot-34200'));
+      expect(document.activeElement).toBe(getSlot('slot-34200'));
+    });
   });
 
   describe('DST-stable slots / date preservation', () => {
@@ -1086,12 +1114,59 @@ describe('ForTimePicker', () => {
       first.focus();
       pressKey(first, '1');
       await flush(r.fixture);
-      expect(document.activeElement).toBe(getSlot('slot-36000'));
+      expect(document.activeElement).toBe(getSlot('slot-3600'));
 
       pressKey(document.activeElement!, '4');
       await flush(r.fixture);
       expect(document.activeElement).toBe(getSlot('slot-50400'));
       expect(r.instance.value()).toBeNull();
+    });
+
+    it('typeahead reaches a zero-padded single-digit hour by its digit on a 12-hour picker', async () => {
+      const r = renderHost(TimePickerHost);
+      r.instance.hourCycle.set(12);
+      r.instance.locale.set('en-US');
+      r.instance.step.set(60);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const first = getSlots()[0]!;
+      expect(getSlot('slot-21600')!.textContent!.trim()).toBe('06:00 AM');
+      first.focus();
+      pressKey(first, '6');
+      await flush(r.fixture);
+
+      expect(document.activeElement).toBe(getSlot('slot-21600'));
+    });
+
+    it('typeahead reaches a zero-padded single-digit hour by its digit on a 24-hour picker', async () => {
+      const r = renderHost(TimePickerHost);
+      r.instance.step.set(60);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const first = getSlots()[0]!;
+      expect(getSlot('slot-21600')!.textContent!.trim()).toBe('06:00');
+      first.focus();
+      pressKey(first, '6');
+      await flush(r.fixture);
+
+      expect(document.activeElement).toBe(getSlot('slot-21600'));
+    });
+
+    it('typeahead still matches the zero-padded label when the leading zero is typed', async () => {
+      const r = renderHost(TimePickerHost);
+      r.instance.step.set(60);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const first = getSlots()[0]!;
+      first.focus();
+      pressKey(first, '0');
+      pressKey(document.activeElement!, '6');
+      await flush(r.fixture);
+
+      expect(document.activeElement).toBe(getSlot('slot-21600'));
     });
 
     it('typeahead skips disabled slots', async () => {
@@ -1108,7 +1183,7 @@ describe('ForTimePicker', () => {
       await flush(r.fixture);
 
       expect(getSlot('slot-54000')!.getAttribute('aria-disabled')).toBe('true');
-      expect(document.activeElement).toBe(getSlot('slot-36000'));
+      expect(document.activeElement).toBe(getSlot('slot-3600'));
     });
 
     it('Space typed mid-typeahead extends the prefix instead of selecting the slot', async () => {
