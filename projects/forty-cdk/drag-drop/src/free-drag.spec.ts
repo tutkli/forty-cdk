@@ -94,6 +94,20 @@ class CenteredDialogHost {
   readonly pos = signal<Pos>({ x: 0, y: 0 });
 }
 
+@Component({
+  imports: [ForFreeDrag],
+  template: `
+    <div class="dialog" data-testid="dialog" style="translate: -50% -50%">
+      <header forFreeDrag rootElement=".dialog" data-testid="header" [(position)]="pos">
+        Drag
+      </header>
+    </div>
+  `,
+})
+class TranslateCenteredDialogHost {
+  readonly pos = signal<Pos>({ x: 0, y: 0 });
+}
+
 function fire(
   target: EventTarget,
   type: 'pointerdown' | 'pointermove' | 'pointerup' | 'pointercancel',
@@ -306,6 +320,34 @@ describe('ForFreeDrag', () => {
 
     expect(dialog.style.transform).toBe('translate(-50%, -50%)');
     expect(dialog.style.translate).toBe('');
+  });
+
+  it('composes the offset with the translate the root already has and restores it at rest and on destroy', async () => {
+    const { fixture, instance, query } = renderHost(TranslateCenteredDialogHost);
+    await flush(fixture);
+    const header = query('[data-testid="header"]')!;
+    const dialog = query('[data-testid="dialog"]')!;
+
+    expect(dialog.style.translate).toBe('-50% -50%');
+
+    fire(header, 'pointerdown', 0, 0);
+    fire(header, 'pointermove', 10, 0);
+    fire(header, 'pointermove', 40, -30);
+    fire(header, 'pointerup', 40, -30);
+    await flush(fixture);
+
+    expect(dialog.style.translate).toBe('calc(-50% + 30px) calc(-50% + -30px)');
+
+    instance.pos.set({ x: 0, y: 0 });
+    await flush(fixture);
+
+    expect(dialog.style.translate).toBe('-50% -50%');
+
+    instance.pos.set({ x: 5, y: 5 });
+    await flush(fixture);
+    fixture.destroy();
+
+    expect(dialog.style.translate).toBe('-50% -50%');
   });
 
   it('clears the offset on the previous root when rootElement rebinds', async () => {

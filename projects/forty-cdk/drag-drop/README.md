@@ -488,10 +488,14 @@ the CSS `translate` property. It is the standalone counterpart to a sortable lis
 pointer-driven way to move an element freely, with optional root-element retargeting, a confinement
 boundary, axis locking, and a controllable position (see the inputs below).
 
-The offset composes with any `transform` the moved element already has, so a dialog centred with
-`transform: translate(-50%, -50%)` stays centred and moves from there. It replaces an inline
-`translate` property of the element's own, so position the element with `transform` or layout
-properties rather than `translate`.
+The offset composes with the `transform` and the `translate` the moved element already has, inline
+or from a stylesheet, so a dialog centred with `transform: translate(-50%, -50%)` or
+`translate: -50% -50%` stays centred and moves from there. The `translate` it composes with is read
+when the element first leaves its rest position, and the element's own `translate` comes back once
+`position` returns to `{ x: 0, y: 0 }`.
+
+Scrolling the page or a scroll container during a drag keeps the element under the pointer, and the
+`boundary` clamp follows the scrolled geometry.
 
 ```html
 <!-- move the whole dialog by its header -->
@@ -518,7 +522,7 @@ properties rather than `translate`.
 | Output      | Payload    | Fires                                                                                          |
 | ----------- | ---------- | ---------------------------------------------------------------------------------------------- |
 | `moveStart` | `{ x; y }` | When a pointer drag starts (the lift-time position).                                           |
-| `moveMove`  | `{ x; y }` | On every armed move, with the live position.                                                   |
+| `moveMove`  | `{ x; y }` | On every armed move, and when a scroll moves the element, with the live position.              |
 | `moveEnd`   | `{ x; y }` | When the drag ends (commit keeps the position; cancel/Escape restores the lift-time snapshot). |
 
 `[forDragHandle]` works inside `[forFreeDrag]` exactly as it does inside `[forDraggable]`: once any
