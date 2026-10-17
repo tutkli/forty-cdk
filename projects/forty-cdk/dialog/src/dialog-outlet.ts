@@ -124,6 +124,7 @@ export class ForDialogSurface {
   imports: [ForDialog, NgComponentOutlet, ForDialogContextInjector, ForDialogSurface],
   template: `
     @for (entry of entries(); track entry.id) {
+      <ng-container />
       <div
         forDialog
         [forDialogSurface]="entry.id"

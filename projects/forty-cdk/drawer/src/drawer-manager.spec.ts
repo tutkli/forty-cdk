@@ -288,6 +288,38 @@ describe('ForDrawerManager (programmatic)', () => {
     });
   });
 
+  describe('close-then-open swap without an exit animation (#2524)', () => {
+    it('renders only the incoming drawer', async () => {
+      const { drawers } = setup();
+      const a = drawers.open(SheetDrawer, { data: { message: 'a' } });
+
+      a.close();
+      const b = drawers.open(SheetDrawer, { data: { message: 'b' } });
+      await a.closed;
+      TestBed.tick();
+
+      const hosts = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')];
+      expect(hosts.map((h) => h.querySelector('#message')?.textContent)).toEqual(['b']);
+      b.close();
+    });
+
+    it('returns focus to the original trigger when the incoming drawer closes', async () => {
+      const { drawers, trigger } = setup();
+      const a = drawers.open(SheetDrawer, { data: { message: 'a' } });
+      expect(document.activeElement?.id).toBe('ok');
+
+      a.close();
+      const b = drawers.open(SheetDrawer, { data: { message: 'b' } });
+      await a.closed;
+      TestBed.tick();
+
+      b.close();
+      await b.closed;
+      TestBed.tick();
+      expect(document.activeElement).toBe(trigger);
+    });
+  });
+
   describe('Escape key', () => {
     it('closes a dismissible drawer with reason escape', async () => {
       const { drawers } = setup();
