@@ -225,7 +225,7 @@ describe('ForNavigationMenu', () => {
   );
 
   describe('basic rendering', () => {
-    it('reflects aria-label, data-orientation, and trigger ↔ content ids', async () => {
+    it('reflects aria-label, data-orientation, and the trigger → content id', async () => {
       const { query, queryAll, fixture, flush } = renderHost(NavMenuHost);
       await flush();
 
@@ -246,7 +246,49 @@ describe('ForNavigationMenu', () => {
       const content = query<HTMLElement>('[forNavigationMenuContent]')!;
       expect(trigger.getAttribute('aria-expanded')).toBe('true');
       expect(trigger.getAttribute('aria-controls')).toBe(content.id);
-      expect(content.getAttribute('aria-labelledby')).toBe(trigger.id);
+    });
+
+    it('gives the content panel neither a role nor an accessible name', async () => {
+      const { query, fixture, flush } = renderHost(NavMenuHost);
+      fixture.componentInstance.open.set('products');
+      await flush();
+
+      const content = query<HTMLElement>('[forNavigationMenuContent]')!;
+      expect(content.hasAttribute('role')).toBe(false);
+      expect(content.hasAttribute('aria-labelledby')).toBe(false);
+      expect(content.hasAttribute('aria-label')).toBe(false);
+    });
+
+    it("keeps a consumer's static aria-labelledby on the content panel", async () => {
+      @Component({
+        imports: [
+          ForNavigationMenu,
+          ForNavigationMenuList,
+          ForNavigationMenuItem,
+          ForNavigationMenuTrigger,
+          ForNavigationMenuContent,
+        ],
+        template: `
+          <nav forNavigationMenu value="products">
+            <ul forNavigationMenuList>
+              <li forNavigationMenuItem value="products">
+                <button forNavigationMenuTrigger>Products</button>
+                <section forNavigationMenuContent aria-labelledby="products-heading">
+                  <h2 id="products-heading">Products</h2>
+                </section>
+              </li>
+            </ul>
+          </nav>
+        `,
+      })
+      class StaticLabelledByHost {}
+
+      const { query, flush } = renderHost(StaticLabelledByHost);
+      await flush();
+
+      expect(query('[forNavigationMenuContent]')!.getAttribute('aria-labelledby')).toBe(
+        'products-heading',
+      );
     });
 
     it('emits no aria-label when ariaLabel is unset (default null)', async () => {
@@ -2157,45 +2199,6 @@ describe('ForNavigationMenu', () => {
       host.querySelectorAll<HTMLButtonElement>('[forNavigationMenuTrigger]')[0]!.click();
       await flush(fixture);
       expect(fixture.componentInstance.open()).toBe('products');
-    });
-
-    it('does not label a panel from a trigger that belongs to another unbound item', async () => {
-      vi.stubGlobal('ngDevMode', false);
-      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
-
-      @Component({
-        imports: [
-          ForNavigationMenu,
-          ForNavigationMenuList,
-          ForNavigationMenuItem,
-          ForNavigationMenuTrigger,
-          ForNavigationMenuContent,
-        ],
-        template: `
-          <nav forNavigationMenu value="products">
-            <ul forNavigationMenuList>
-              <li forNavigationMenuItem>
-                <button forNavigationMenuTrigger data-id="a">A</button>
-              </li>
-              <li forNavigationMenuItem>
-                <div forNavigationMenuContent data-id="b-panel">B panel</div>
-              </li>
-            </ul>
-          </nav>
-        `,
-      })
-      class TwoUnboundItemsHost {}
-
-      const fixture = TestBed.createComponent(TwoUnboundItemsHost);
-      fixture.detectChanges();
-      await flush(fixture);
-      const host = fixture.nativeElement as HTMLElement;
-
-      // Both handles read the same sentinel, so `triggerIdFor` on an identity
-      // comparison alone would resolve the *other* item's trigger.
-      expect(host.querySelector('[data-id="b-panel"]')!.hasAttribute('aria-labelledby')).toBe(
-        false,
-      );
     });
   });
 });

@@ -43,7 +43,7 @@ export class ForNavigationMenuItem implements ForNavigationMenuItemContext {
    * pairing then resolves during the first change-detection pass, including a
    * real server render, where `afterNextRender` never fires and a deferred
    * registration would leave the pre-hydration DOM without its
-   * `aria-controls` / `aria-labelledby` linkage.
+   * `aria-controls` linkage.
    */
   readonly value: InputSignal<string | Unset> = input(unsetInput<string>());
 

@@ -121,19 +121,13 @@ export interface ForNavigationMenuContext {
    * Triggers and contents register synchronously in their constructors, so the
    * pairing resolves during the first change-detection pass — including a real
    * server render, where `afterNextRender` never fires and a deferred
-   * registration left the pre-hydration DOM without its `aria-controls` /
-   * `aria-labelledby` linkage. A handle whose owning `[forNavigationMenuItem]`
+   * registration left the pre-hydration DOM without its `aria-controls`
+   * linkage. A handle whose owning `[forNavigationMenuItem]`
    * has not had its `[value]` written yet reads the `unsetInput` sentinel and is
    * skipped — it can never pair with a lookup value — and the tracked dependency
    * re-runs the lookup once that binding lands.
    */
   contentIdFor(value: string | Unset): string | null;
-  /**
-   * Looks up the trigger id for a given item value. Reactive. Same
-   * synchronous-registration and not-yet-bound handling as
-   * {@link contentIdFor}.
-   */
-  triggerIdFor(value: string | Unset): string | null;
   /**
    * Looks up the trigger host element for a given item value. Reactive. Same
    * synchronous-registration and not-yet-bound handling as

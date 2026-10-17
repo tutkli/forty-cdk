@@ -86,3 +86,44 @@ describe('aria-labelledby and aria-errormessage have one owner', () => {
     expect(writers()).toEqual([]);
   });
 });
+
+const LABELLED_BY_CLAIM = /\bhostLabelledBy\(/;
+
+const HOST_ROLE = /\brole:\s*['"`]|'\[attr\.role\]'/;
+
+function roleLessLabelledHosts(sources: ReadonlyMap<string, string> = LIBRARY_CODE): string[] {
+  return [...sources]
+    .filter(
+      ([path, code]) =>
+        !path.startsWith('core/src/host-attributes/') &&
+        LABELLED_BY_CLAIM.test(code) &&
+        !HOST_ROLE.test(code),
+    )
+    .map(([path]) => path)
+    .sort();
+}
+
+describe('a piece naming its host with hostLabelledBy gives the host a role', () => {
+  it('derives a live family of labelled hosts', () => {
+    const labelled = [...LIBRARY_CODE].filter(
+      ([path, code]) =>
+        !path.startsWith('core/src/host-attributes/') && LABELLED_BY_CLAIM.test(code),
+    );
+    expect(labelled.length).toBeGreaterThan(15);
+  });
+
+  it('reports a labelled host that declares no role, static or bound', () => {
+    const sources = new Map([
+      ['a/src/a.ts', "host: { role: 'group' }; hostLabelledBy(() => id());"],
+      ['b/src/b.ts', "host: { '[attr.role]': 'role()' }; hostLabelledBy(() => id());"],
+      ['c/src/c.ts', "host: { '[id]': 'id()' }; hostLabelledBy(() => id());"],
+      ['d/src/d.ts', "host: { '[id]': 'id()' };"],
+    ]);
+
+    expect(roleLessLabelledHosts(sources)).toEqual(['c/src/c.ts']);
+  });
+
+  it('finds no role-less labelled host in the library', () => {
+    expect(roleLessLabelledHosts()).toEqual([]);
+  });
+});

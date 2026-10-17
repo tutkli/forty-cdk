@@ -471,16 +471,6 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
     return null;
   }
 
-  triggerIdFor(value: string | Unset): string | null {
-    for (const t of this.#triggers.items()) {
-      const candidate = t.value();
-      if (!isUnset(candidate) && candidate === value) {
-        return t.id();
-      }
-    }
-    return null;
-  }
-
   triggerHostFor(value: string | Unset): HTMLElement | null {
     for (const t of this.#triggers.items()) {
       const candidate = t.value();
@@ -517,11 +507,14 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
    * `data-motion` direction for the content with the given `value`, so entering and leaving panels
    * shift in the same logical direction like a carousel advancing.
    *
-   * - The entering content reflects `from-start` / `from-end`, based on which side the previous
-   *   trigger sat on relative to it.
-   * - A leaving content reflects `to-start` / `to-end`, frozen at the transition that started its
-   *   exit and stable for as long as the panel stays mounted, so overlapping `animate.leave`
-   *   transitions never lose a panel's direction.
+   * - The entering content reflects `from-start` / `from-end`: the side it slides in from, which is
+   *   the side opposite the previous trigger (`from-end` when the previous trigger sits on the
+   *   start side).
+   * - A leaving content reflects `to-start` / `to-end`: the side it slides out to, which is the
+   *   side opposite the new trigger (`to-start` when the new trigger sits on the end side). The
+   *   value is frozen at the transition that started its exit and stays stable for as long as the
+   *   panel stays mounted, so overlapping `animate.leave` transitions never lose a panel's
+   *   direction.
    * - Anything else returns `null` and the host emits no attribute, including a panel opening from
    *   a closed menu and a panel leaving on close, where there is no peer to compare against.
    *

@@ -23,9 +23,9 @@ import { injectNavigationMenuContext } from './navigation-menu-context';
  * - `--for-navigation-menu-indicator-width` — trigger width (px)
  * - `--for-navigation-menu-indicator-height` — trigger height (px)
  *
- * Drive `transform` / `width` / `height` from these in CSS. The directive
- * is decorative — set `aria-hidden="true"` on the host element if
- * needed.
+ * Drive `transform` / `width` / `height` from these in CSS. The indicator
+ * is decorative, and the directive already sets `aria-hidden="true"` on its
+ * host.
  *
  * Geometry is re-measured reactively, not on every render: a `ResizeObserver`
  * (browser-only) watches the active trigger and the surrounding list and bumps
