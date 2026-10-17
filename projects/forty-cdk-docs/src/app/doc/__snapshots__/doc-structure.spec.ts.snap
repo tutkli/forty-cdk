@@ -9359,6 +9359,14 @@ exports[`document structure > projects/forty-cdk/virtualization/README.md declar
         "depth": 3,
         "slug": "returned-handle",
       },
+      {
+        "depth": 3,
+        "slug": "forvirtualviewport",
+      },
+      {
+        "depth": 3,
+        "slug": "forvirtualfor",
+      },
     ],
     "slug": "api",
     "tables": [
@@ -9369,7 +9377,7 @@ exports[`document structure > projects/forty-cdk/virtualization/README.md declar
           "Description",
         ],
         "role": "api",
-        "rows": 9,
+        "rows": 10,
       },
       {
         "columns": [
@@ -9378,7 +9386,25 @@ exports[`document structure > projects/forty-cdk/virtualization/README.md declar
           "Description",
         ],
         "role": "api",
-        "rows": 7,
+        "rows": 8,
+      },
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "role": "api",
+        "rows": 15,
+      },
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "role": "api",
+        "rows": 1,
       },
     ],
     "title": "API",

@@ -43,7 +43,7 @@ const DEFAULT_OVERSCAN = 5;
  * the consumer writes no manual spacer or position transform.
  *
  * Built on the headless {@link injectVirtualizer} core; for full manual control
- * (custom DOM, dynamic measurement, window/document scroller) use that directly.
+ * (custom DOM, dynamic measurement) use that directly.
  *
  * The viewport forces `overflow: auto` on its host and renders a relatively
  * positioned sizer whose main-axis size tracks `totalSize()`; `*forVirtualFor`
