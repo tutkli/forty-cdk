@@ -148,6 +148,36 @@ describe('stepOnGrid', () => {
     expect(stepOnGrid(0.35, { step: 0.1, direction: -1 })).toBe(0.3);
   });
 
+  it('treats a value with more decimals than the step as off the grid', () => {
+    expect(stepOnGrid(0.36, { step: 0.1, direction: 1 })).toBe(0.4);
+    expect(stepOnGrid(0.36, { step: 0.1, direction: -1 })).toBe(0.3);
+    expect(stepOnGrid(0.44, { step: 0.1, direction: 1 })).toBe(0.5);
+    expect(stepOnGrid(0.44, { step: 0.1, direction: -1 })).toBe(0.4);
+    expect(stepOnGrid(0.31, { step: 0.1, direction: -1 })).toBe(0.3);
+    expect(stepOnGrid(1.26, { step: 0.1, direction: 1 })).toBe(1.3);
+    expect(stepOnGrid(1.236, { step: 0.01, direction: 1 })).toBe(1.24);
+    expect(stepOnGrid(1.236, { step: 0.01, direction: -1 })).toBe(1.23);
+  });
+
+  it('treats a value finer than the step as off a grid measured from an origin', () => {
+    expect(stepOnGrid(0.16, { step: 0.1, direction: 1, origin: 0.05 })).toBe(0.25);
+    expect(stepOnGrid(0.16, { step: 0.1, direction: -1, origin: 0.05 })).toBe(0.15);
+  });
+
+  it('still recognises a grid point carrying accumulated float noise', () => {
+    let accumulated = 0;
+    for (let k = 0; k < 10; k++) {
+      accumulated += 0.1;
+    }
+    expect(stepOnGrid(accumulated, { step: 0.1, direction: 1 })).toBe(1.1);
+    expect(stepOnGrid(accumulated, { step: 0.1, direction: -1 })).toBe(0.9);
+  });
+
+  it('still recognises a grid point measured from a large origin', () => {
+    expect(stepOnGrid(1e7 + 0.3, { step: 0.1, direction: 1, origin: 1e7 })).toBe(1e7 + 0.4);
+    expect(stepOnGrid(1e6 + 0.3, { step: 0.1, direction: -1 })).toBe(1e6 + 0.2);
+  });
+
   it('steps cleanly with an exponential step', () => {
     expect(stepOnGrid(2e-7, { step: 1e-7, direction: 1 })).toBe(3e-7);
   });
