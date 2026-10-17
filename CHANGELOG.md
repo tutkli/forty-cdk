@@ -7,6 +7,222 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.38.0] - 2026-10-17
+
+### Added
+
+- **Pagination** — every `PaginationItem` carries a stable `key`
+  ([#2320](https://github.com/tutkli/forty-cdk/issues/2320)). It is `'page-<n>'` for a page and
+  `'ellipsis-start'` / `'ellipsis-end'` for each gap, so a gap keeps its identity as the window
+  moves. Items rendered with `track $index` reused the focused button for another page when a
+  keyboard activation shifted the window: focus landed on a button without `aria-current`, and a
+  second `Enter` walked further away. **Track the items by `item.key`**, as every recipe in the
+  README now does, and the activated page keeps its element and focus. A `PaginationItem` built by
+  hand needs the field too.
+
+- **Virtualization** — `[forVirtualViewport]` takes a `dir` input and `injectVirtualizer` a `dir`
+  option (`'ltr' | 'rtl'`, or a signal of one for the option)
+  ([#2344](https://github.com/tutkli/forty-cdk/issues/2344)). On a horizontal list it is the writing
+  direction the window is read and scrolled in; left unset, it follows the direction in effect at
+  the scroll element, including a change at runtime. The viewport reflects it to its host `dir`
+  attribute and publishes it on `ForVirtualViewportContext`. A vertical list ignores it. The README
+  shows RTL positioning for the headless core (`[style.right.px]="item.start"`).
+
+### Changed
+
+- **Navigation menu** — `[forNavigationMenuContent]` no longer names the panel, and
+  `ForNavigationMenuContext.triggerIdFor` is removed
+  ([#2319](https://github.com/tutkli/forty-cdk/issues/2319)). The panel carries no role, so the
+  `aria-labelledby` it pointed at its trigger fell on a `generic` element, where ARIA prohibits a
+  name and assistive technology ignores it; the APG disclosure navigation names its dropdowns
+  neither. A static `aria-labelledby` of your own is kept, so **use a
+  `<section forNavigationMenuContent aria-labelledby="…">` host where the panel should be a named
+  region**. The README now states the shipped `data-motion` mapping (the side the panel slides in
+  from or out to, opposite the previous or next trigger), that the viewport's `data-state` follows
+  `value`, and that `openDelay` applies to hover only.
+
+- **Field**, **Stepper** — entry points outside the form controls no longer need `@angular/forms` to
+  type-check ([#2322](https://github.com/tutkli/forty-cdk/issues/2322)). The declarations of
+  `forty-cdk/field`, `forty-cdk/stepper` and the shared internal tier imported
+  `@angular/forms/signals`, so a project without the optional peer failed with `TS2307`; only the 16
+  entry points the package README lists import it now. `ForFieldError.errors()` and
+  `FieldControlHandle.errors` are typed `readonly FieldValidationError[]` (a `kind` and an optional
+  `message`), published from `forty-cdk/field`, and `[field]` on `[forStepperItem]` takes
+  `StepperField | null`, published from `forty-cdk/stepper`, which every `FieldTree` satisfies. The
+  error objects are unchanged at runtime, but `fieldTree` is no longer in their declared type:
+  **read it from the Signal Forms field's own `errors()` where you need it**.
+
+- **Number input** — the increment and decrement buttons stay focusable when they cannot step
+  ([#2311](https://github.com/tutkli/forty-cdk/issues/2311)). `[forNumberInputIncrement]` /
+  `[forNumberInputDecrement]` set native `disabled` at `max` / `min` and while the spinbutton was
+  disabled or read-only, so a click or `Enter` that reached the bound dropped focus to `<body>`.
+  They now reflect `aria-disabled="true"` and `data-disabled` and ignore activation, as the
+  pagination buttons do. **Style a disabled stepper button with `[data-disabled]` instead of
+  `:disabled`.**
+
+- **Drag & drop** — a press a draggable turns into a pointer drag no longer starts the browser's
+  native drag, and a nested draggable owns its presses
+  ([#2299](https://github.com/tutkli/forty-cdk/issues/2299)). An image, a link or selected text
+  inside a `[forDraggable]` or `[forFreeDrag]` started a native HTML5 drag that preempted the
+  reorder; the item now cancels that `dragstart`, so pressing a thumbnail reorders the item. Content
+  outside the item's handles, and every press while the item or its list is disabled, keeps its
+  native drag. A `[forDraggable]` / `[forFreeDrag]` inside another one now owns every press on it,
+  even while it is disabled, and needs no `preventDefault()`. The outer item takes its
+  `[forDragPreview]` / `[forDragPlaceholder]` only from templates outside its nested items, where it
+  used to pick up a card's preview when the column had none. The README's new "Native drag" section
+  and the board example under "Nested controls" state the contract.
+
+- **Drawer** — `(swipeEnd)` fires once the release has applied its snap point, and before
+  `(dismiss)` ([#2303](https://github.com/tutkli/forty-cdk/issues/2303)). A handler reading
+  `[(activeSnapPoint)]` in `(swipeEnd)` saw the previous snap. A release now writes
+  `activeSnapPoint`, so `(activeSnapPointChange)` and a two-way binding have already updated, then
+  emits `swipeEnd`, then requests the close, so a `(dismiss)` handler that unmounts the drawer
+  cannot destroy the output before it emits. The same order holds for `swipeEnd` in
+  `ForDrawerOpenConfig`. The docs now say that `activeSnapPoint` changes on a release that changes
+  the snap, not on every release.
+
+### Fixed
+
+- **Navigation menu** — the arrow keys move off a disabled trigger, and the vertical open key
+  follows `dir` ([#2318](https://github.com/tutkli/forty-cdk/issues/2318)). A focused trigger that
+  was disabled, or became disabled while focused, swallowed the arrow keys, `Home` and `End`; they
+  now move focus as from any other trigger, while `Enter`, `Space`, the open key and `Escape` stay
+  blocked and a disabled root still leaves every key alone. In vertical orientation the open key is
+  the inline-end arrow: `ArrowLeft` under `dir="rtl"`, where `ArrowRight` used to open the item, as
+  on the menubar.
+
+- **Virtualization** — a keyed reorder keeps focus on the focused row
+  ([#2343](https://github.com/tutkli/forty-cdk/issues/2343)). `*forVirtualFor` moved a view to an
+  earlier slot by detaching it, which blurred whatever it held, so moving the focused row up sent
+  focus, and an input's caret, to `<body>`. The views in between are now moved past it instead. The
+  README now states what its snippets did not: rows carrying `aria-setsize` / `aria-posinset` need a
+  role that supports them, so **give the rows `role="listitem"` inside a labelled `role="list"`**,
+  and a scroller whose rows hold nothing focusable needs `tabindex="0"`, without which WebKit cannot
+  scroll it from the keyboard.
+
+- **Virtualization** — a horizontal list windows and scrolls under RTL
+  ([#2344](https://github.com/tutkli/forty-cdk/issues/2344)). The direction never reached the
+  virtualizer, so the negative `scrollLeft` of an RTL scroller was misread: rows past the first
+  window never mounted, and `scrollToIndex` / `scrollToOffset` landed at the wrong edge. Both layers
+  now resolve the direction (see Added), negate the offset they read and write, and re-read it when
+  the direction flips; `*forVirtualFor` positions an RTL row from the right edge.
+
+- **Drag & drop**, **Virtual reorder**, **Table** — one gesture per list, and a pointer drop
+  resolves where the pointer rests at release
+  ([#2298](https://github.com/tutkli/forty-cdk/issues/2298)). In `[forVirtualReorder]` and
+  `[forTableRowReorder]`, a row's pointer lift could run beside a keyboard lift; a press on another
+  row now cancels the keyboard lift, so the drag that follows is the only gesture, and a press on
+  the lifted row arms nothing. Moving focus by keyboard still keeps the lift. A drop after the list
+  scrolled or recycled its window under a still pointer resolved against the old rows; it now lands
+  on the row under the pointer.
+
+- **Drag & drop** — `touch-action` follows the handles
+  ([#2299](https://github.com/tutkli/forty-cdk/issues/2299)). A `[forDraggable]` or `[forFreeDrag]`
+  host kept the `touch-action` of the handles it had at first render, so a `[forDragHandle]` mounted
+  or removed later did not change it; it now follows them. A handle whose item or list is disabled
+  no longer blocks touch scrolling.
+
+- **Drag & drop** — `[forFreeDrag]` keeps the element's own `translate` and follows scrolling
+  ([#2300](https://github.com/tutkli/forty-cdk/issues/2300)). Its offset replaced any `translate`
+  the element had, so a `translate: -50% -50%` centring jumped on the first move; the offset is now
+  composed with the element's inline or stylesheet `translate`, and the inline value comes back at
+  rest and on destroy. A scroll during a drag left the element off the pointer; it now follows the
+  pointer, `lockAxis` and `boundary` work on the scrolled geometry, and `(moveMove)` fires on such a
+  scroll too.
+
+- **Drag & drop** — the drop target is resolved against each list's visible region
+  ([#2279](https://github.com/tutkli/forty-cdk/issues/2279)). A `[forDropList]` inside a scrolling
+  panel claimed its full, unclipped rect, so with two connected lists in stacked `overflow: auto`
+  panels every point over the lower list resolved into the upper one and nothing could be
+  transferred. Each list is now clipped by its scrolling ancestors, read on every move so a scroll
+  mid-drag is followed, and a list scrolled fully out of view is never picked.
+
+- **Drag & drop**, **Listbox**, **Tree**, **Table** — the floating drag preview is clamped by its
+  own box, no longer disturbs the source, and settles on its `transform` transition
+  ([#2280](https://github.com/tutkli/forty-cdk/issues/2280)). A `[forDragPreview]` of a different
+  size than the item was clamped to `[boundary]` with the item's box, so a wider one overflowed and
+  a narrower one stopped short of the edge. The default clone joined the document as it was, so a
+  cloned checked radio unchecked the source, `autoplay` media played and iframes reloaded; `name`,
+  `form`, `autofocus` and `autoplay` are now stripped from it, and each `iframe`, `object` and
+  `embed` becomes an empty box of the same size. The settle timeout read only the first
+  `transition-duration`, so `transition: opacity 120ms, transform 300ms` removed the preview
+  mid-transform; it now waits for the `transform` transition's delay and duration, or for the
+  longest transition when none animates `transform`.
+
+- **Virtual reorder**, **Table** — a Shift-scrub drop at the viewport's end edge lands on the last
+  row ([#2278](https://github.com/tutkli/forty-cdk/issues/2278)). Every scrub target past the lifted
+  row came out one short, so no pointer position reached the last index; the end edge now commits
+  `count - 1`, as `End` does.
+
+- **Carousel**, **Toast**, **Drawer**, **Drag & drop**, **Listbox**, **Tree**, **Table**, **Virtual
+  reorder**, **Pane resizer**, **Slider** — the click a drag release suppresses is the last one
+  ([#2277](https://github.com/tutkli/forty-cdk/issues/2277)). After two releases with no click in
+  between, the click at the second release point reached the page, and the first release's trap
+  outlived the directive and swallowed a later click at its point. A gesture now keeps one pending
+  trap, and destroying it removes every listener it installed.
+
+- **Number input**, **Slider** — a value finer than a fractional step is off the grid
+  ([#2275](https://github.com/tutkli/forty-cdk/issues/2275)). `0.36` with step `0.1` was rounded
+  onto the grid, so the up key gave `0.5`; it now gives `0.4` and the down key `0.3`, as native
+  `stepUp()` / `stepDown()` do.
+
+- **Number input** — text in non-Latin digits parses
+  ([#2311](https://github.com/tutkli/forty-cdk/issues/2311)). A field in `ar-EG` or `fa-IR` could
+  not read back its own display, and digits typed on such a keyboard left the value `null`. Every
+  Unicode decimal digit (Arabic-Indic, Persian, Bengali, Devanagari, fullwidth) now reads as its
+  value. The README's naming note now says that a static `aria-label` on a stepper button wins over
+  its `ariaLabel` input.
+
+- **Drawer** — a snap flick resolves from the release position, and swipe progress reaches `1` from
+  any snap ([#2302](https://github.com/tutkli/forty-cdk/issues/2302)). A flick stepped one snap from
+  where the drag started, wherever it was let go; it now targets the nearest snap past the release
+  position in the flick's direction, and a flick toward the edge from below the lowest snap
+  dismisses short of `closeThreshold`. `--for-drawer-swipe-progress` and `(swipeMove)`'s `progress`
+  were measured against the full dimension, so from a peek snap they never reached `1` at the edge;
+  they are now measured against the active snap's extent. Snap points spelled `'.5%'`, `'+50%'`,
+  `'50.%'` or `'1e1px'`, which the type admits, threw `FORCDK-DRAWER-008`; they parse now. A snap
+  point is identified by its value as written, so `'50%'` and `0.5` are different snap points, and
+  the README's snap CSS now keys `data-active-snap-point` accordingly.
+
+- **Drawer** — a drawer opened with `open({ injector })` takes the scale and nested keys of the
+  scoped defaults ([#2303](https://github.com/tutkli/forty-cdk/issues/2303)). The `scale*` and
+  `nested*` keys of a `provideForDrawerDefaults` under that injector were ignored, so the
+  manager-opened sheet scaled the wrapper and its parent with the root tuning; they now apply, as
+  the other keys already did.
+
+- **Button** — a bound `type` is kept ([#2309](https://github.com/tutkli/forty-cdk/issues/2309)).
+  `[forButton]` overwrote an `[attr.type]` or `[type]` binding with `type="button"`, so a button
+  bound to `submit` never submitted its form. It now writes `type="button"` once, only on a native
+  button with no `type` attribute, and a binding wins and is followed. The README notes that a
+  native `<fieldset disabled>` takes its native buttons out of the Tab order, and shows the fieldset
+  example on a `<div forFieldset>` host.
+
+- **Pane resizer** — a disabled `<button forPaneResizer>` leaves the Tab order
+  ([#2297](https://github.com/tutkli/forty-cdk/issues/2297)). Disabling removed the `tabindex`
+  attribute, which does nothing on a natively focusable button; it now binds `tabindex="-1"`. The
+  README's snippet set a static `aria-controls`, which the directive's binding erases: **pass the
+  pane ids through the `controls` input**.
+
+- **Select**, **Time picker** — `Tab` follows the mode the open listbox mounted in
+  ([#2533](https://github.com/tutkli/forty-cdk/issues/2533)). After `[modal]` was rebound while
+  open, `Tab` read the new value: from non-modal to modal it skipped the commit-on-`Tab`, and from
+  modal to non-modal it committed and closed instead of leaving `Tab` to the mounted focus trap. The
+  rebind now applies on the next open, as the rest of the shell already did.
+
+- **Dialog**, **Drawer** — closing a managed surface and opening the next in the same task works
+  without an exit animation ([#2524](https://github.com/tutkli/forty-cdk/issues/2524)).
+  `ref.close(); dialogs.open(Next)` threw `NG05106` and left the outgoing surface on screen; the
+  incoming one now renders alone, and closing it returns focus to the original trigger.
+
+### Performance
+
+- **Drag & drop** — importing part of `forty-cdk/drag-drop` no longer keeps `ForDropList` in the
+  bundle ([#2301](https://github.com/tutkli/forty-cdk/issues/2301)). A self-reference in
+  `ForDropList` was emitted as a module-scope assignment a bundler must keep, so every application
+  importing anything from the entry point retained the class. In a production build, a route
+  importing only `moveItemInArray` drops from 70.47 kB to 256 B, and one importing `ForFreeDrag` and
+  `ForDragHandle` from 149.47 kB to 123.12 kB.
+
 ## [0.37.0] - 2026-10-17
 
 ### Added
@@ -4535,7 +4751,8 @@ primitives.
 - **Display** — avatar, progress, meter, tree.
 - `forty-cdk/internationalized-date` secondary entry point exposing the `@internationalized/date` adapters for the date and time primitives.
 
-[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.37.0...HEAD
+[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.38.0...HEAD
+[0.38.0]: https://github.com/tutkli/forty-cdk/compare/v0.37.0...v0.38.0
 [0.37.0]: https://github.com/tutkli/forty-cdk/compare/v0.36.0...v0.37.0
 [0.36.0]: https://github.com/tutkli/forty-cdk/compare/v0.35.0...v0.36.0
 [0.35.0]: https://github.com/tutkli/forty-cdk/compare/v0.34.0...v0.35.0
