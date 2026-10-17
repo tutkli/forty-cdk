@@ -223,7 +223,7 @@ export class MenuDefaultExample {
 
 ## Mount/visibility convention
 
-`[forMenuContent]` follows the floating-overlay convention: the consumer's signal drives `@if`, the directive emits `(close)` (forwarded by the root primitive) when it wants to be unmounted. No `[hidden]`. See `[forDropdownMenu]` and `[forContextMenu]` for end-to-end examples.
+`[forMenuContent]` follows the floating-overlay convention: the consumer's signal drives `@if`, and the root writes `false` to its `[(open)]` model, emitting `(openChange)`, when an item activation, Escape, Tab or an outside interaction closes the menu. Under `[forMenubar]` the bar's `[(value)]` plays that role. No `[hidden]`. See `[forDropdownMenu]` and `[forContextMenu]` for end-to-end examples.
 
 ## Item activation contract
 
@@ -449,8 +449,8 @@ Outputs match the other trigger-anchored overlays: `(escapeKeyDown)`, `(pointerD
 - **Space** activates the focused item:
   - On a plain `[forMenuItem]`, behaves like Enter / click (closes the menu).
   - On `[forMenuCheckboxItem]` and `[forMenuRadioItem]`, toggles `checked` / sets the group `value`, emits `(activate)`, and **never closes** the menu (per APG), so users can flip several options before dismissing. Calling `event.preventDefault()` on `(activate)` is unnecessary for Space (the menu already stays open) but is still respected on Enter / click.
-- **Tab / Shift+Tab**: close the menu and return focus to the trigger. Inside a submenu, propagates upward and tears down the entire chain.
-- **Escape**: close the menu and return focus to the trigger. Inside a submenu, closes only that level (parent stays open).
+- **Tab / Shift+Tab**: close the whole menu chain, submenus included, and move focus to the next focusable element after the trigger (the previous one with Shift+Tab). Focus does not land back on the trigger. When a context menu was opened from the keyboard on a focused descendant, focus moves on from that descendant instead.
+- **Escape**: close the menu and return focus to the trigger, or to the focused descendant a context-menu keyboard open started from. Inside a submenu, closes only that level (parent stays open).
 - **ArrowRight** (on a `[forMenuSubTrigger]`): open the submenu and focus its first item. (LTR.)
 - **Enter / Space / click** (on a `[forMenuSubTrigger]`): open the submenu and focus its first item. On a submenu that is already open, for instance after a hover opened it, they move focus into it and never close it.
 - **ArrowLeft** (on an item inside a submenu): close the submenu and return focus to the `[forMenuSubTrigger]`.
