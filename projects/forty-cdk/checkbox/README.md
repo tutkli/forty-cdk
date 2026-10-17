@@ -173,6 +173,10 @@ export class DemoCheckout {
 | `data-state`    | `checked` \| `unchecked` \| `indeterminate` |
 | `data-disabled` | present \| absent                           |
 | `data-readonly` | present \| absent                           |
+| `data-touched`  | present \| absent                           |
+| `data-dirty`    | present \| absent                           |
+| `data-pending`  | present \| absent                           |
+| `data-invalid`  | present \| absent                           |
 
 ### `ForCheckboxIndicator`
 
