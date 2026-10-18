@@ -215,8 +215,7 @@ import {
     }
 
     .menu-item[data-highlighted],
-    .menu-item[data-state='open'],
-    .menu-item:not([data-disabled]):hover {
+    .menu-item[data-state='open'] {
       background: var(--ex-surface-2, #f2eee6);
     }
 

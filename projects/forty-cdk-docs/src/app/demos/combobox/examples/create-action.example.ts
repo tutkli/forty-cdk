@@ -154,8 +154,7 @@ const SEED_TAGS = ['design', 'engineering', 'marketing', 'product', 'sales'] as 
       cursor: pointer;
     }
 
-    .ca-combobox-option[data-highlighted],
-    .ca-combobox-option:not([data-disabled]):hover {
+    .ca-combobox-option[data-highlighted] {
       background: var(--ex-surface-2, #f2eee6);
     }
 

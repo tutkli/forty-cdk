@@ -120,17 +120,17 @@ import {
       caret-color: transparent;
       padding: 0.05rem 0.15rem;
       border-radius: 4px;
-      outline: none;
     }
 
     .range-segment[data-placeholder] {
       color: var(--ex-muted, #585d66);
     }
 
-    .range-segment[data-highlighted],
+    .range-endpoint:focus-within .range-segment[data-highlighted],
     .range-segment:focus {
       background: var(--ex-accent, #0e7c6b);
       color: var(--ex-accent-contrast, #ffffff);
+      outline: 2px solid transparent;
     }
 
     .range-literal {

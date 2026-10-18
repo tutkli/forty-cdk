@@ -117,8 +117,7 @@ import { ForMenubar, ForMenubarTrigger } from 'forty-cdk/menubar';
     }
 
     .menubar-menu-item[data-highlighted],
-    .menubar-menu-item[data-state='open'],
-    .menubar-menu-item:not([data-disabled]):hover {
+    .menubar-menu-item[data-state='open'] {
       background: var(--ex-surface-2, #f2eee6);
     }
 

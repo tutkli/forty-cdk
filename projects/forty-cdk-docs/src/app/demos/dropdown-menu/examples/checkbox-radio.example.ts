@@ -205,8 +205,7 @@ import {
     }
 
     .dropdown-menu-cr-item[data-highlighted],
-    .dropdown-menu-cr-item[data-state='open'],
-    .dropdown-menu-cr-item:not([data-disabled]):hover {
+    .dropdown-menu-cr-item[data-state='open'] {
       background: var(--ex-surface-2, #f2eee6);
     }
 

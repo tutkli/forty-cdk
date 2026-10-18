@@ -142,8 +142,7 @@ import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/international
       cursor: pointer;
     }
 
-    .time-picker-option[data-highlighted],
-    .time-picker-option:not([data-disabled]):hover {
+    .time-picker-option[data-highlighted] {
       background: var(--ex-surface-2, #f2eee6);
     }
 

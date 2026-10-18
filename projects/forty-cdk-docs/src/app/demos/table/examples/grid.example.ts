@@ -111,11 +111,13 @@ const PEOPLE: readonly Person[] = [
       border-bottom: 0;
     }
 
-    .tbl-cell[data-highlighted],
+    .tbl:is(:focus-within, :hover) .tbl-cell[data-highlighted] {
+      background: color-mix(in srgb, var(--ex-accent, #0e7c6b) 10%, transparent);
+    }
+
     .tbl-cell:focus-visible {
       outline: 2px solid var(--ex-accent, #0e7c6b);
       outline-offset: -2px;
-      background: color-mix(in srgb, var(--ex-accent, #0e7c6b) 10%, transparent);
     }
 
     .tbl-cell[data-disabled] {

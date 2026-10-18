@@ -2035,6 +2035,25 @@ describe('ForTable', () => {
       expect(allCells[0]!.getAttribute('tabindex')).toBe('0');
     });
 
+    it('keeps data-highlighted on the tab-stop cell after focus leaves the grid (#2287)', async () => {
+      const { el, flush } = renderHost(GridTableHost);
+      const allCells = cells(el);
+      const outside = document.createElement('button');
+      document.body.appendChild(outside);
+      try {
+        allCells[4]!.focus();
+        await flush();
+        outside.focus();
+        await flush();
+
+        expect(document.activeElement).toBe(outside);
+        expect(Array.from(el.querySelectorAll('[data-highlighted]'))).toEqual([allCells[4]]);
+        expect(allCells[4]!.getAttribute('tabindex')).toBe('0');
+      } finally {
+        outside.remove();
+      }
+    });
+
     it('ArrowDown moves one row down, ArrowUp moves back', async () => {
       const { el, flush } = renderHost(GridTableHost);
       const allCells = cells(el);

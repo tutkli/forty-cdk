@@ -56,7 +56,7 @@ import {
         box-shadow 0.15s ease;
     }
 
-    .chip[data-highlighted] {
+    .chips:is(:focus-within, :hover) .chip[data-highlighted] {
       border-color: var(--ex-accent, #0e7c6b);
     }
 

@@ -177,8 +177,7 @@ interface Profile {
       cursor: pointer;
     }
 
-    .form-select-option[data-highlighted],
-    .form-select-option:not([data-disabled]):hover {
+    .form-select-option[data-highlighted] {
       background: var(--ex-surface-2, #f2eee6);
     }
 

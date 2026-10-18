@@ -240,8 +240,7 @@ interface NamePart {
       outline-offset: -2px;
     }
 
-    .tree-label:hover,
-    .tree-item[data-highlighted] > .tree-label {
+    .tree:is(:focus-within, :hover) .tree-item[data-highlighted] > .tree-label {
       background: var(--ex-surface-2, #f2eee6);
     }
 

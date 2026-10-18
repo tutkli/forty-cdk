@@ -216,8 +216,7 @@ const COUNTRIES = [
       cursor: pointer;
     }
 
-    .chips-combobox-option[data-highlighted],
-    .chips-combobox-option:not([data-disabled]):hover {
+    .chips-combobox-option[data-highlighted] {
       background: var(--ex-surface-2, #f2eee6);
     }
 

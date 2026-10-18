@@ -244,11 +244,13 @@ const FALLBACK_WIDTH: Record<PersonColumn, number> = {
       border-bottom: 2px solid var(--ex-border-strong, #d0c9bc);
     }
 
-    .ctbl-cell[data-highlighted],
+    .ctbl:is(:focus-within, :hover) .ctbl-cell[data-highlighted] {
+      background: color-mix(in srgb, var(--ex-accent, #0e7c6b) 10%, transparent);
+    }
+
     .ctbl-cell:focus-visible {
       outline: 2px solid var(--ex-accent, #0e7c6b);
       outline-offset: -2px;
-      background: color-mix(in srgb, var(--ex-accent, #0e7c6b) 10%, transparent);
     }
 
     .ctbl-sel {

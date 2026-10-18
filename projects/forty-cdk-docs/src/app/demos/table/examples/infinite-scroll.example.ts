@@ -152,11 +152,13 @@ const LATENCY = 600;
       border-bottom: 2px solid var(--ex-border-strong, #d0c9bc);
     }
 
-    .vtbl-cell[data-highlighted],
+    .vtbl:is(:focus-within, :hover) .vtbl-cell[data-highlighted] {
+      background: color-mix(in srgb, var(--ex-accent, #0e7c6b) 10%, transparent);
+    }
+
     .vtbl-cell:focus-visible {
       outline: 2px solid var(--ex-accent, #0e7c6b);
       outline-offset: -2px;
-      background: color-mix(in srgb, var(--ex-accent, #0e7c6b) 10%, transparent);
     }
 
     .vtbl-status {

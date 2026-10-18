@@ -348,6 +348,26 @@ describe('ForDateField', () => {
     });
   });
 
+  describe('data-highlighted after focus leaves the field (#2287)', () => {
+    it('keeps the marker on the segment that holds the tab stop', async () => {
+      const r = renderHost(Host);
+      const outside = document.createElement('button');
+      document.body.appendChild(outside);
+      try {
+        seg(r, 'month').focus();
+        await flush(r.fixture);
+        outside.focus();
+        await flush(r.fixture);
+
+        expect(document.activeElement).toBe(outside);
+        expect(r.queryAll('[forDateFieldSegment][data-highlighted]')).toEqual([seg(r, 'month')]);
+        expect(seg(r, 'month').getAttribute('tabindex')).toBe('0');
+      } finally {
+        outside.remove();
+      }
+    });
+  });
+
   describe('structure & ARIA', () => {
     it('renders a role=group with one role=spinbutton per editable segment', () => {
       const r = renderHost(Host);

@@ -195,8 +195,7 @@ const COUNTRIES = [
       cursor: pointer;
     }
 
-    .ac-combobox-option[data-highlighted],
-    .ac-combobox-option:not([data-disabled]):hover {
+    .ac-combobox-option[data-highlighted] {
       background: var(--ex-surface-2, #f2eee6);
     }
 

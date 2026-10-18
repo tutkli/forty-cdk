@@ -833,6 +833,22 @@ describe('ForTimeRangeField', () => {
     });
   });
 
+  describe('data-highlighted across the two endpoints (#2287)', () => {
+    it('leaves each endpoint its own marker once focus moves to the other', async () => {
+      const r = renderHost(Host);
+      seg(r, 'start', 'minute').focus();
+      await flush(r.fixture);
+      seg(r, 'end', 'hour').focus();
+      await flush(r.fixture);
+
+      expect(document.activeElement).toBe(seg(r, 'end', 'hour'));
+      expect(r.queryAll('[forTimeRangeFieldSegment][data-highlighted]')).toEqual([
+        seg(r, 'start', 'minute'),
+        seg(r, 'end', 'hour'),
+      ]);
+    });
+  });
+
   describe('keyboard editing', () => {
     it('steps a segment within its endpoint without disturbing the other endpoint', async () => {
       const r = renderHost(Host);

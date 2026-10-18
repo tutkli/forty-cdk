@@ -158,8 +158,7 @@ import {
     }
 
     .dropdown-menu-sub-item[data-highlighted],
-    .dropdown-menu-sub-item[data-state='open'],
-    .dropdown-menu-sub-item:not([data-disabled]):hover {
+    .dropdown-menu-sub-item[data-state='open'] {
       background: var(--ex-surface-2, #f2eee6);
     }
 

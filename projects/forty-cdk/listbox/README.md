@@ -643,7 +643,7 @@ Implements the [WAI-ARIA Listbox pattern](https://www.w3.org/WAI/ARIA/apg/patter
 - **Put the options straight inside the listbox, or inside a `[forListboxGroup]`.** A `role="listbox"` may own only options and groups, so a list-item wrapper between the two (an `<li>` under a `<ul forListbox>`) exposes a list item the role does not allow, and some screen readers then announce the options one list item at a time. Leave the wrapper out, or mark it `role="none"`.
 - **Visible text on each option** is what typeahead matches against, so keep it descriptive and unique-prefixed.
 - **`selectionFollowsFocus`** is an opt-in for single-select. Avoid combining it with side effects that depend on commit semantics, because it changes the form value on every arrow key and typeahead match.
-- **`data-highlighted=""`** is reflected on the option that is the current active item in both the roving-tabindex and activedescendant paths. It shares its vocabulary with the menu / select / combobox primitives and is useful when you want a uniform "keyboard focus ring" across surfaces without coupling to `:focus`. It follows the pointer as well as the keyboard (see [Pointer highlight](#pointer-highlight)), so it is the one hook to style rather than pairing it with `:hover`.
+- **`data-highlighted=""`** is reflected on the option that is the current active item in both the roving-tabindex and activedescendant paths. It shares its vocabulary with the menu / select / combobox primitives and is useful when you want a uniform "keyboard focus ring" across surfaces without coupling to `:focus`. It follows the pointer as well as the keyboard (see [Pointer highlight](#pointer-highlight)), so it is the one hook to style rather than pairing it with `:hover`. It stays on the active option after focus leaves the listbox, so scope a focus-like style to the listbox being focused or hovered.
 - **Virtualized path**: the listbox publishes `aria-activedescendant` on the container and each rendered option carries `aria-setsize` / `aria-posinset` so screen readers announce the true list size even when only a window is mounted.
 
 ## Styling
@@ -651,7 +651,7 @@ Implements the [WAI-ARIA Listbox pattern](https://www.w3.org/WAI/ARIA/apg/patter
 forty-cdk ships no styles: put your own class on each piece and key your CSS off the `data-*` attributes listed under [API](#api), not off the `for*` selectors ([Styling forty-cdk](../../../docs/styling.md) explains why).
 
 ```css
-.listbox-option[data-highlighted] {
+.listbox:is(:focus-within, :hover) .listbox-option[data-highlighted] {
   background: rgb(0 0 0 / 0.06);
 }
 

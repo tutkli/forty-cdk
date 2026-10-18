@@ -352,13 +352,13 @@ import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/international
     .dpdt-seg {
       padding: 0.05rem 0.15rem;
       border-radius: 4px;
-      outline: none;
     }
 
-    .dpdt-seg[data-highlighted],
+    .dpdt-seg-field:focus-within .dpdt-seg[data-highlighted],
     .dpdt-seg:focus {
       background: var(--ex-accent, #0e7c6b);
       color: var(--ex-accent-contrast, #ffffff);
+      outline: 2px solid transparent;
     }
 
     .dpdt-seg-literal {
