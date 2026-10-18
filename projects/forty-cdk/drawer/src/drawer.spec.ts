@@ -1600,6 +1600,7 @@ describe('ForDrawer (declarative)', () => {
     it('throws when fadeFromIndex is out of range', async () => {
       @Component({
         imports: [ForDrawer],
+        host: { 'data-fixture': 'fade-from-index-out-of-range' },
         template: `
           @if (open()) {
             <div
@@ -1715,6 +1716,7 @@ describe('ForDrawer (declarative)', () => {
       // validation rather than trusting the cache from the previous array.
       @Component({
         imports: [ForDrawer],
+        host: { 'data-fixture': 'rebind' },
         template: `
           @if (open()) {
             <div

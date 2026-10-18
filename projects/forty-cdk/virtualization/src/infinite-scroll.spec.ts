@@ -4,7 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { flush } from '../../src/test-utils';
 import { injectInfiniteScroll } from './infinite-scroll';
 
-@Component({ template: '' })
+@Component({ host: { 'data-fixture': 'default-threshold' }, template: '' })
 class Host {
   readonly range = signal<readonly [number, number]>([0, 0]);
   readonly count = signal(100);
@@ -169,7 +169,7 @@ describe('injectInfiniteScroll', () => {
   });
 
   it('custom threshold widens the trigger window', async () => {
-    @Component({ template: '' })
+    @Component({ host: { 'data-fixture': 'wide-threshold' }, template: '' })
     class WideHost {
       readonly range = signal<readonly [number, number]>([0, 80]);
       readonly count = signal(100);
