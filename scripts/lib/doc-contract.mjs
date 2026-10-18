@@ -1,5 +1,5 @@
 import { splitFrontmatter } from './doc-frontmatter.mjs';
-import { slugify } from './readme-slug.mjs';
+import { Slugger, slugify } from './readme-slug.mjs';
 
 /**
  * The nav group a document publishes under, or `none` for an entry point whose
@@ -220,11 +220,6 @@ export const SECTION_EXEMPTIONS = [
     reason: 'A layout wrapper with no role, no state and no focus — it has nothing to state.',
   },
   {
-    slug: 'breakpoints',
-    section: 'Anatomy',
-    reason: 'An inject* API with no pieces to compose; ## Setup documents the provider instead.',
-  },
-  {
     slug: 'context-menu',
     section: 'Keyboard',
     reason: 'Composes the Menu surface, whose README owns the single keyboard reference.',
@@ -285,11 +280,6 @@ export const SECTION_EXEMPTIONS = [
     slug: 'navigation-menu',
     section: 'Programmatic API',
     reason: 'Opened by its own triggers; it ships no manager.',
-  },
-  {
-    slug: 'pane-resizer',
-    section: 'Wrapping in a design system',
-    reason: 'Not a form control — it reads a size, and wraps like any composable-ui piece.',
   },
   {
     slug: 'popover',
@@ -552,17 +542,16 @@ export function readDocMeta(source, path) {
   };
 }
 
+function archetypeSections(meta) {
+  return new Set(meta.archetype.flatMap((name) => ARCHETYPES.get(name)?.sections ?? []));
+}
+
 /**
  * The canonical sections a document's archetypes require of it, minus the ones
  * it carries a written exemption for.
  */
 export function requiredSections(meta, slug) {
-  const required = new Set();
-  for (const name of meta.archetype) {
-    for (const section of ARCHETYPES.get(name)?.sections ?? []) {
-      required.add(section);
-    }
-  }
+  const required = archetypeSections(meta);
   for (const exemption of SECTION_EXEMPTIONS) {
     if (exemption.slug === slug) {
       required.delete(exemption.section);
@@ -688,13 +677,30 @@ export function checkHeadingAnchors(documents) {
         })),
       ]),
     ];
-    const firstBySlug = new Map();
+    const title = { depth: 1, text: document.title, line: document.titleLine };
+    const firstBySlug = new Map([[slugify(title.text), title]]);
+    const github = new Slugger();
+    github.unique(slugify(title.text));
 
     for (const heading of headings) {
       const base = slugify(heading.text);
+      const githubSlug = github.unique(base);
       const first = firstBySlug.get(base);
       if (first === undefined) {
         firstBySlug.set(base, heading);
+        continue;
+      }
+      if (first === title) {
+        problems.push({
+          path: document.path,
+          line: heading.line,
+          message:
+            `${locatedHeading(heading)} slugs to "${base}", as the title ${namedHeading(title)} ` +
+            `does. GitHub and npm count the title, so they publish ${namedHeading(heading)} as ` +
+            `#${githubSlug}, while the site, which anchors no title, publishes it as ` +
+            `#${heading.slug}, and a link written against either lands on something else on ` +
+            'the other. Retitle the document to its frontmatter title, or rename the heading',
+        });
         continue;
       }
       const [subject, other] =
@@ -722,7 +728,8 @@ export function checkHeadingAnchors(documents) {
 
 /**
  * Every exemption that no longer earns its place — one naming a document that
- * is gone, and one for a section the document has since written.
+ * is gone, one for a section the document's archetypes do not require, and one
+ * for a section the document has since written.
  *
  * Stated over the whole corpus, because that is the only list against which an
  * exemption can be said to be stale.
@@ -736,6 +743,15 @@ export function checkExemptions(documents) {
     const document = bySlug.get(exemption.slug);
     if (document === undefined) {
       problems.push(at(`SECTION_EXEMPTIONS names ${exemption.slug}, which compiles no document`));
+      continue;
+    }
+    if (!archetypeSections(document.meta).has(exemption.section)) {
+      problems.push(
+        at(
+          `${exemption.slug} is exempt from "## ${exemption.section}", which its archetype ` +
+            `${document.meta.archetype.join(' + ')} does not require — drop the exemption`,
+        ),
+      );
       continue;
     }
     if (document.sections.some((section) => section.title === exemption.section)) {

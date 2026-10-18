@@ -682,6 +682,7 @@ export function compileDocument(source, { path, slug, kind }) {
     kind,
     meta,
     title: title.token.text,
+    titleLine: title.line,
     lede: ledeIndex === -1 ? null : introRun[ledeIndex].token.text,
     caption,
     captionTrailing: caption === null ? [] : trailingOf(blocksUntilDemoHeading(examples.run)),
