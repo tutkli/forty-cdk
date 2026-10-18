@@ -1,5 +1,10 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
-import { ForFileUpload, ForFileUploadInput, ForFileUploadTrigger } from 'forty-cdk/file-upload';
+import {
+  ForFileUpload,
+  ForFileUploadInput,
+  type ForFileUploadRejection,
+  ForFileUploadTrigger,
+} from 'forty-cdk/file-upload';
 
 @Component({
   selector: 'app-file-upload-multiple-example',
@@ -7,8 +12,15 @@ import { ForFileUpload, ForFileUploadInput, ForFileUploadTrigger } from 'forty-c
   imports: [ForFileUpload, ForFileUploadInput, ForFileUploadTrigger],
   template: `
     <div class="stage">
-      <div forFileUpload multiple accept="image/*" class="zone" (filesChange)="onFiles($event)">
-        <input forFileUploadInput class="sr-only" aria-label="Upload images" />
+      <div
+        forFileUpload
+        multiple
+        accept="image/*"
+        class="zone"
+        (filesChange)="onFiles($event)"
+        (filesRejected)="onRejected($event)"
+      >
+        <input forFileUploadInput class="sr-only" tabindex="-1" aria-hidden="true" />
 
         <svg class="zone-icon" viewBox="0 0 24 24" aria-hidden="true">
           <path
@@ -26,6 +38,12 @@ import { ForFileUpload, ForFileUploadInput, ForFileUploadTrigger } from 'forty-c
           or drag and drop
         </p>
         <p class="zone-accept">Images only — select as many as you like</p>
+      </div>
+
+      <div class="rejected" role="status">
+        @for (line of rejections(); track $index) {
+          <p class="rejected-line">{{ line }}</p>
+        }
       </div>
 
       @if (files().length) {
@@ -49,7 +67,6 @@ import { ForFileUpload, ForFileUploadInput, ForFileUploadTrigger } from 'forty-c
       width: min(420px, 100%);
       display: flex;
       flex-direction: column;
-      gap: 1rem;
     }
 
     .sr-only {
@@ -118,11 +135,25 @@ import { ForFileUpload, ForFileUploadInput, ForFileUploadTrigger } from 'forty-c
       color: var(--ex-muted, #585d66);
     }
 
+    .rejected:not(:empty) {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+      margin-top: 0.75rem;
+    }
+
+    .rejected-line {
+      margin: 0;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--ex-danger, #b3261e);
+    }
+
     .files {
       display: flex;
       flex-direction: column;
       gap: 0.3rem;
-      margin: 0;
+      margin: 1rem 0 0;
       padding: 0;
       list-style: none;
     }
@@ -163,9 +194,19 @@ import { ForFileUpload, ForFileUploadInput, ForFileUploadTrigger } from 'forty-c
 })
 export class FileUploadMultipleExample {
   protected readonly files = signal<readonly File[]>([]);
+  protected readonly rejections = signal<readonly string[]>([]);
 
   protected onFiles(list: FileList): void {
     this.files.set(Array.from(list));
+    this.rejections.set([]);
+  }
+
+  protected onRejected(rejected: ForFileUploadRejection[]): void {
+    this.rejections.set(
+      rejected.map(({ file, reason }) =>
+        reason === 'accept' ? `${file.name}: not an image` : `${file.name}: not accepted`,
+      ),
+    );
   }
 
   protected sizeLabel(bytes: number): string {

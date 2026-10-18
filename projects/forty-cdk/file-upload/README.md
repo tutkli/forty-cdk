@@ -6,15 +6,15 @@ archetype: [composable-ui]
 
 # FileUpload
 
-A headless drag-and-drop / dialog file-selection zone: a visually-hidden native `<input type="file">` stays the accessible control while a trigger button opens the picker, and dropping files emits the same change. Supports multiple, accept filters and whole-folder (directory) selection.
+A headless drag-and-drop / dialog file-selection zone: a trigger button opens the picker of a visually hidden native `<input type="file">`, and dropping files emits the same change. Supports multiple, accept filters and whole-folder (directory) selection.
 
-No ARIA role is imposed on the drop zone, which is a plain container. The `<input type="file">` remains the accessible form control; the trigger is a native `<button>`.
+No ARIA role is imposed on the drop zone, which is a plain container. The trigger is a native `<button>` and the one control a keyboard or screen-reader user meets; the input stays out of the Tab order and the accessibility tree.
 
 ## Anatomy
 
 ```html
 <div forFileUpload accept="image/*,.pdf" (filesChange)="onFiles($event)">
-  <input forFileUploadInput aria-label="Upload files" class="sr-only" />
+  <input forFileUploadInput class="sr-only" tabindex="-1" aria-hidden="true" />
   <button forFileUploadTrigger>Choose files</button>
   <p>or drag and drop</p>
 </div>
@@ -35,7 +35,7 @@ import { ForFileUpload, ForFileUploadInput, ForFileUploadTrigger } from 'forty-c
   template: `
     <div class="stage">
       <div forFileUpload class="zone" (filesChange)="onFiles($event)">
-        <input forFileUploadInput class="sr-only" aria-label="Upload files" />
+        <input forFileUploadInput class="sr-only" tabindex="-1" aria-hidden="true" />
 
         <svg class="zone-icon" viewBox="0 0 24 24" aria-hidden="true">
           <path
@@ -89,11 +89,11 @@ export class FileUploadDefaultExample {
 
 ### Multiple files
 
-`multiple` lets the picker (and a drop) accept more than one file at once, and `accept` narrows the chooser to the MIME types you list.
+`multiple` lets the picker (and a drop) accept more than one file at once, and `accept` narrows the chooser to the MIME types you list. Drop a file that is not an image and the demo names it from `filesRejected` instead of dropping it silently.
 
 ```html
 <div forFileUpload multiple (filesChange)="onFiles($event)">
-  <input forFileUploadInput aria-label="Upload files" class="sr-only" />
+  <input forFileUploadInput class="sr-only" tabindex="-1" aria-hidden="true" />
   <button forFileUploadTrigger>Choose files</button>
 </div>
 ```
@@ -108,7 +108,7 @@ Set `directory` to switch the native picker into folder mode. The input mirrors 
 
 ```html
 <div forFileUpload directory (filesChange)="onFolder($event)">
-  <input forFileUploadInput aria-label="Upload folder" class="sr-only" />
+  <input forFileUploadInput class="sr-only" tabindex="-1" aria-hidden="true" />
   <button forFileUploadTrigger>Choose folder</button>
 </div>
 ```
@@ -119,7 +119,7 @@ Every file the zone refuses arrives on `filesRejected` with the reason it was re
 
 ```html
 <div forFileUpload accept="image/*" [maxSize]="5000000" (filesRejected)="onRejected($event)">
-  <input forFileUploadInput aria-label="Upload an image" class="sr-only" />
+  <input forFileUploadInput class="sr-only" tabindex="-1" aria-hidden="true" />
   <button forFileUploadTrigger>Choose an image</button>
 </div>
 ```
@@ -138,7 +138,7 @@ onRejected(rejections: ForFileUploadRejection[]): void {
 
 ```html
 <div forFileUpload [disabled]="isDisabled()">
-  <input forFileUploadInput aria-label="Upload files" class="sr-only" />
+  <input forFileUploadInput class="sr-only" tabindex="-1" aria-hidden="true" />
   <button forFileUploadTrigger>Choose files</button>
 </div>
 ```
@@ -167,9 +167,9 @@ onRejected(rejections: ForFileUploadRejection[]): void {
 
 ## Accessibility
 
-- **The `<input type="file">` is the accessible control.** Keep it reachable with a visually-hidden utility class (`sr-only` / `visually-hidden`) rather than `display: none` or `visibility: hidden`, which would remove it from the tab order and from assistive technology.
-- **Label the input.** Supply `aria-label` directly on `[forFileUploadInput]` (as in the examples above), or wrap it in a `<label>`.
-- **The trigger is a native `<button>`.** It receives focus, is announced as a button, and activates the file dialog via click / Enter / Space. No ARIA role augmentation is needed.
+- **The trigger is the one Tab stop.** A native `<button>` receives focus, is announced as a button named by its text, and opens the file dialog on click / Enter / Space. No ARIA role augmentation is needed.
+- **Take the input out of the Tab order and the accessibility tree.** Next to a trigger, give `[forFileUploadInput]` `tabindex="-1"` and `aria-hidden="true"` alongside a visually hidden utility class (`sr-only` / `visually-hidden`), as in the examples above. Left focusable, the clipped input is an invisible first Tab stop with no focus indicator, and a screen-reader user meets two controls for one action.
+- **Without a trigger, the input is the control.** Leave it in the Tab order, label it with `aria-label` or a wrapping `<label>`, and draw its focus on the zone (`.zone:has(input:focus-visible)`), since the clipped input cannot show a focus ring of its own.
 
 ## Styling
 
