@@ -159,6 +159,28 @@ test.describe('tree-drag-drop — pointer drag', () => {
     await page.mouse.up();
   });
 
+  test('the preview of an expanded parent floats its collapsed row, not its subtree', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'tree-drag-drop', { open: 'documents' });
+    await expect(el(page, 'item-resume')).toBeVisible();
+
+    const docsBox = await boxOf(el(page, 'handle-documents'));
+
+    await page.mouse.move(docsBox.x + docsBox.width / 2, docsBox.y + docsBox.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(docsBox.x + docsBox.width / 2 + 10, docsBox.y + docsBox.height / 2);
+
+    await expect(el(page, 'item-resume')).toBeHidden();
+    const preview = page.locator('[data-for-drag-preview]');
+    await expect(preview).toHaveCount(1);
+    await expect(preview.locator('[role="group"]')).toHaveCount(0);
+    const rowHeight = (await boxOf(el(page, 'item-documents'))).height;
+    expect((await boxOf(preview)).height).toBeCloseTo(rowHeight, 0);
+
+    await page.mouse.up();
+  });
+
   test('a pointer drop that re-parents the focused node keeps focus on it (#2265)', async ({
     page,
   }) => {

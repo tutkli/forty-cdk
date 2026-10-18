@@ -159,6 +159,25 @@ describe('resolveTreeDrop', () => {
       expect(result.level).toBe(2);
       expect(result.siblingCount).toBe(0);
     });
+
+    it('reads each row a bounded number of times however many siblings share the parent', () => {
+      let reads = 0;
+      const children = Array.from({ length: 2000 }, (_, i) => row(`c${i}`, 2, 32 * (i + 1)));
+      const rows = new Proxy([row('parent', 1, 0), ...children], {
+        get(target, key, receiver) {
+          if (typeof key === 'string' && /^\d+$/.test(key)) {
+            reads += 1;
+          }
+          return Reflect.get(target, key, receiver);
+        },
+      });
+
+      const result = resolveTreeDrop(rows, rows.length, 2, byIdentity);
+
+      expect(result.parentValue).toBe('parent');
+      expect(result.siblingCount).toBe(children.length);
+      expect(reads).toBeLessThan(4 * rows.length);
+    });
   });
 });
 

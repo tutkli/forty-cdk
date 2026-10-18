@@ -97,8 +97,14 @@ export function resolveTreeDrop<T>(
 
   let index = 0;
   let siblingCount = 0;
+  let precedingParentRow: TreeDropRow<T> | null = null;
   for (let i = 0; i < rows.length; i++) {
-    if (!isSiblingUnder(rows, i, level, parentValue, equals)) {
+    const row = rows[i]!;
+    if (row.level === level - 1) {
+      precedingParentRow = row;
+      continue;
+    }
+    if (!isSiblingUnder(row, level, precedingParentRow, parentValue, equals)) {
       continue;
     }
     siblingCount++;
@@ -111,30 +117,27 @@ export function resolveTreeDrop<T>(
 }
 
 /**
- * Whether the row at `rowIndex` is a child of `parentValue` at depth `level` — i.e. it sits
- * at `level` and its nearest preceding row at `level - 1` is `parentValue` (root rows at
+ * Whether `row` is a child of `parentValue` at depth `level` — i.e. it sits at `level` and
+ * `precedingParentRow`, its nearest preceding row at `level - 1`, is `parentValue` (root rows at
  * `level === 1` have no ancestor row, so they always qualify when their depth matches).
  */
 function isSiblingUnder<T>(
-  rows: readonly TreeDropRow<T>[],
-  rowIndex: number,
+  row: TreeDropRow<T>,
   level: number,
+  precedingParentRow: TreeDropRow<T> | null,
   parentValue: T | null,
   equals: (a: T, b: T) => boolean,
 ): boolean {
-  const row = rows[rowIndex]!;
   if (row.level !== level) {
     return false;
   }
   if (level === 1) {
     return true;
   }
-  for (let j = rowIndex - 1; j >= 0; j--) {
-    if (rows[j]!.level === level - 1) {
-      return parentValue !== null && equals(rows[j]!.value, parentValue);
-    }
+  if (precedingParentRow === null) {
+    return parentValue === null;
   }
-  return parentValue === null;
+  return parentValue !== null && equals(precedingParentRow.value, parentValue);
 }
 
 /**

@@ -16,6 +16,7 @@ import {
 } from '@angular/core';
 
 import {
+  createDragPreview,
   focusWhenMounted,
   type FocusWhenMountedRef,
   LiveAnnouncer,
@@ -38,7 +39,6 @@ import {
 import {
   buildTreeDropRows,
   isInsideGrabArea,
-  resolveLiftGap,
   resolveTreeLiftContext,
   treeDropTotal,
   treeNodeLabel,
@@ -404,20 +404,17 @@ export class ForTreeNodeDrag<T = string> implements ForTreeNodeDragContext {
     }
 
     if (mode === 'pointer' && point) {
-      this.#previewController = new PreviewController({
-        source: host,
-        point,
-        preview: null,
-        doc: this.#document,
-        boundary: null,
-        lockAxis: () => null,
-      });
+      this.#createPreview(host, point);
     }
 
-    const visibleAfter = this.#ctx.visibleNodes();
     const equals = this.#ctx.compareWith();
-    const rows = buildTreeDropRows(visibleAfter, this.#liftedValue, equals, this.#ctx.dir());
-    this.#gapIndex = resolveLiftGap(rows, visibleAfter, visibleIdx, mode, equals);
+    const rows = buildTreeDropRows(
+      this.#ctx.visibleNodes(),
+      this.#liftedValue,
+      equals,
+      this.#ctx.dir(),
+    );
+    this.#gapIndex = Math.min(visibleIdx, rows.length);
     this.#liftLevel = entry.handle.level();
     this.#desiredLevel = this.#liftLevel;
 
@@ -428,6 +425,28 @@ export class ForTreeNodeDrag<T = string> implements ForTreeNodeDragContext {
     );
 
     this.#announcer.announce(this.#defaults.dragAnnounceLift(this.#label), 'assertive');
+  }
+
+  #createPreview(host: HTMLElement, point: PreviewPoint): void {
+    const preview = createDragPreview(host, this.#document);
+    const clone = preview.element;
+    const subtree = clone
+      ? [...clone.querySelectorAll<HTMLElement>('[role="group"]')].filter(
+          (group) => group.closest('[role="treeitem"]') === clone,
+        )
+      : [];
+    if (clone && subtree.length > 0) {
+      subtree.forEach((group) => group.remove());
+      clone.style.height = '';
+    }
+    this.#previewController = new PreviewController({
+      source: host,
+      point,
+      preview,
+      doc: this.#document,
+      boundary: null,
+      lockAxis: () => null,
+    });
   }
 
   #publishDropTarget(rows: TreeDropRow<T>[], target: TreeDropTarget<T>): void {

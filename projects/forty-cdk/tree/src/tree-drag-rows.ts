@@ -71,8 +71,9 @@ export function treeNodeLabel(entry: ForTreeVisibleNode<unknown>): string {
 
 /**
  * Whether a pointerdown inside `itemHost` may start a drag, honoring drag handles: when the
- * item contains one or more registered handles, the press must land inside one; an item with
- * no handle is grabbable anywhere.
+ * item owns one or more registered handles, the press must land inside one; an item with no
+ * handle is grabbable anywhere. A handle belongs to its nearest enclosing treeitem, so a handle
+ * inside an expanded child never constrains the parent.
  *
  * @param itemHost The `[forTreeItem]` host the press landed in.
  * @param target The pointerdown event target — a `Node`, because a press can land on a non-HTML
@@ -84,7 +85,7 @@ export function isInsideGrabArea(
   target: Node,
   handles: ReadonlySet<HTMLElement>,
 ): boolean {
-  const itemHandles = [...handles].filter((h) => itemHost.contains(h));
+  const itemHandles = [...handles].filter((h) => h.closest('[role="treeitem"]') === itemHost);
   if (itemHandles.length === 0) {
     return true;
   }
@@ -148,40 +149,11 @@ export function resolveTreeLiftContext<T>(
   const parentHost = entry.parentHost;
   const parentEntry = parentHost ? visible.find((e) => e.handle.host === parentHost) : null;
   const previousIndex = visible.filter(
-    (e) => e.parentHost === parentHost && visible.indexOf(e) < visibleIdx,
+    (e, i) => e.parentHost === parentHost && i < visibleIdx,
   ).length;
   return {
     value: entry.value,
     parentValue: parentEntry ? parentEntry.value : null,
     previousIndex,
   };
-}
-
-/**
- * Resolves the initial insertion gap after a collapse-on-lift re-renders the visible list.
- * Pointer lifts clamp the original `visibleIdx` to the row count; keyboard lifts map it to the
- * first row whose post-collapse visible index is at or past `visibleIdx` (`rows.length` if
- * none), keeping the cursor where the focused node sat.
- *
- * @param rows The post-collapse drop rows (lifted node already excluded).
- * @param visibleAfter The visible nodes after the collapse.
- * @param visibleIdx The lifted node's index before the collapse.
- * @param mode Whether the lift was started by pointer or keyboard.
- * @param equals The tree's node-value comparator.
- */
-export function resolveLiftGap<T>(
-  rows: readonly TreeDropRow<T>[],
-  visibleAfter: readonly ForTreeVisibleNode<T>[],
-  visibleIdx: number,
-  mode: 'keyboard' | 'pointer',
-  equals: (a: T, b: T) => boolean,
-): number {
-  if (mode === 'pointer') {
-    return Math.min(visibleIdx, rows.length);
-  }
-  const gap = rows.findIndex((r) => {
-    const nextEntry = visibleAfter.find((e) => equals(e.value, r.value));
-    return nextEntry && visibleAfter.indexOf(nextEntry) >= visibleIdx;
-  });
-  return gap < 0 ? rows.length : gap;
 }
