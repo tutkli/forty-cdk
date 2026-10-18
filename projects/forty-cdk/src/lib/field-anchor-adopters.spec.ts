@@ -27,6 +27,7 @@ import {
   ForDatePickerAnchor,
   ForDatePickerContent,
   ForDatePickerTrigger,
+  ForDateRangePicker,
 } from 'forty-cdk/date-picker';
 import { ForField, ForFieldAnchor, ForFieldBoundary, ForLabel } from 'forty-cdk/field';
 import { ForPopover, ForPopoverContent, ForPopoverTrigger } from 'forty-cdk/popover';
@@ -266,6 +267,73 @@ class DatePickerHost implements AnchorHost {
     ForField,
     ForLabel,
     ForFieldBoundary,
+    ForDateRangePicker,
+    ForDatePickerAnchor,
+    ForDatePickerTrigger,
+    ForDatePickerContent,
+  ],
+  providers: [...provideNativeDateAdapter()],
+  template: `
+    @let activeMode = mode();
+    @switch (activeMode) {
+      @case ('field-anchor') {
+        <test-form-field>
+          <span forLabel>Stay</span>
+          <div forDateRangePicker [(open)]="open">
+            <button forDatePickerTrigger data-test-id="control">Pick</button>
+            @if (open()) {
+              <div forDatePickerContent data-test-id="content"></div>
+            }
+          </div>
+        </test-form-field>
+      }
+      @case ('own-anchor') {
+        <test-form-field>
+          <div forDateRangePicker [(open)]="open">
+            <div forDatePickerAnchor data-test-id="own">
+              <button forDatePickerTrigger data-test-id="control">Pick</button>
+            </div>
+            @if (open()) {
+              <div forDatePickerContent data-test-id="content"></div>
+            }
+          </div>
+        </test-form-field>
+      }
+      @case ('no-field-anchor') {
+        <div forField>
+          <div forDateRangePicker [(open)]="open">
+            <button forDatePickerTrigger data-test-id="control">Pick</button>
+            @if (open()) {
+              <div forDatePickerContent data-test-id="content"></div>
+            }
+          </div>
+        </div>
+      }
+      @case ('boundary') {
+        <test-form-field>
+          <div forDateRangePicker forFieldBoundary [(open)]="open">
+            <button forDatePickerTrigger data-test-id="control">Pick</button>
+            @if (open()) {
+              <div forDatePickerContent data-test-id="content"></div>
+            }
+          </div>
+        </test-form-field>
+      }
+      @default never;
+    }
+  `,
+})
+class DateRangePickerHost implements AnchorHost {
+  readonly mode = signal<Mode>('field-anchor');
+  readonly open = signal(false);
+}
+
+@Component({
+  imports: [
+    TestFormField,
+    ForField,
+    ForLabel,
+    ForFieldBoundary,
     ForTimePicker,
     ForTimePickerAnchor,
     ForTimePickerTrigger,
@@ -388,6 +456,7 @@ const ROOTS: readonly (readonly [string, Type<AnchorHost>])[] = [
   ['[forSelect]', SelectHost],
   ['[forCombobox]', ComboboxHost],
   ['[forDatePicker]', DatePickerHost],
+  ['[forDateRangePicker]', DateRangePickerHost],
   ['[forTimePicker]', TimePickerHost],
 ];
 

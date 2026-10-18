@@ -574,6 +574,7 @@ describe('ForMenubar', () => {
       r.instance.dismissible.set(options.dismissible ?? true);
       if (options.escapeVeto) r.instance.veto.set('escape');
       if (options.pointerVeto) r.instance.veto.set('pointerDownOutside');
+      if (options.focusVeto) r.instance.veto.set('focusOutside');
       r.instance.open.set('file');
       await flush(r.fixture);
       return {
@@ -582,6 +583,7 @@ describe('ForMenubar', () => {
         // boolean: an empty value is the closed menubar.
         isOpen: () => r.instance.open() !== null,
         escapeCount: () => r.instance.escapeCount,
+        surface: () => document.querySelector<HTMLElement>('[forMenuContent]')!,
         pointerOutsideCount: () => r.instance.pointerDownOutsideCount,
         focusOutsideCount: () => r.instance.focusOutsideCount,
         interactOutsideCount: () => r.instance.interactOutsideCount,
