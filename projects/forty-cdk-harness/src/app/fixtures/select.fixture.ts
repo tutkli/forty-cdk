@@ -122,7 +122,9 @@ import { queryFlag } from './_query-flag';
             <button data-testid="opt-apple" forSelectOption value="apple" [disabled]="noneEnabled">
               Apple
             </button>
-            <button data-testid="opt-banana" forSelectOption value="banana" disabled>Banana</button>
+            <button data-testid="opt-banana" forSelectOption value="banana" [disabled]="true">
+              Banana
+            </button>
             <button
               data-testid="opt-cherry"
               forSelectOption

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal, type WritableSignal } from '@angular/core';
 import { type CalendarDate, getLocalTimeZone, today } from '@internationalized/date';
 import {
   ForCalendar,
@@ -15,6 +15,7 @@ interface CalendarState {
   readonly label: string;
   readonly disabled: boolean;
   readonly readonly: boolean;
+  readonly value: WritableSignal<CalendarDate | null>;
 }
 
 @Component({
@@ -38,7 +39,7 @@ interface CalendarState {
           <div
             forCalendar
             class="calendar"
-            [(value)]="value"
+            [(value)]="state.value"
             [disabled]="state.disabled"
             [readonly]="state.readonly"
           >
@@ -248,11 +249,24 @@ interface CalendarState {
   `,
 })
 export class CalendarStatesExample {
-  protected readonly value = signal<CalendarDate | null>(today(getLocalTimeZone()));
-
   protected readonly states: readonly CalendarState[] = [
-    { label: 'Default', disabled: false, readonly: false },
-    { label: 'Disabled', disabled: true, readonly: false },
-    { label: 'Read-only', disabled: false, readonly: true },
+    {
+      label: 'Default',
+      disabled: false,
+      readonly: false,
+      value: signal<CalendarDate | null>(today(getLocalTimeZone())),
+    },
+    {
+      label: 'Disabled',
+      disabled: true,
+      readonly: false,
+      value: signal<CalendarDate | null>(today(getLocalTimeZone())),
+    },
+    {
+      label: 'Read-only',
+      disabled: false,
+      readonly: true,
+      value: signal<CalendarDate | null>(today(getLocalTimeZone())),
+    },
   ];
 }

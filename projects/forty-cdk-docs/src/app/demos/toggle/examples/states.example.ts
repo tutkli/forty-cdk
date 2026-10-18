@@ -14,12 +14,12 @@ import { ForToggle } from 'forty-cdk/toggle';
 
       <div class="state">
         <span class="state-label">Disabled</span>
-        <button forToggle class="toggle" [(checked)]="bold" disabled>Bold</button>
+        <button forToggle class="toggle" [(checked)]="disabledBold" [disabled]="true">Bold</button>
       </div>
 
       <div class="state">
         <span class="state-label">Read-only</span>
-        <button forToggle class="toggle" [(checked)]="bold" readonly>Bold</button>
+        <button forToggle class="toggle" [(checked)]="readonlyBold" readonly>Bold</button>
       </div>
     </div>
   `,
@@ -93,4 +93,6 @@ import { ForToggle } from 'forty-cdk/toggle';
 })
 export class ToggleStatesExample {
   protected readonly bold = signal(true);
+  protected readonly disabledBold = signal(true);
+  protected readonly readonlyBold = signal(true);
 }

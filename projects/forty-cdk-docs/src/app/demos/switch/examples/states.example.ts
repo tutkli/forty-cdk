@@ -19,8 +19,8 @@ import { ForSwitch } from 'forty-cdk/switch';
         <button
           forSwitch
           class="switch"
-          [(checked)]="enabled"
-          disabled
+          [(checked)]="disabledEnabled"
+          [disabled]="true"
           aria-labelledby="sw-state-disabled"
         >
           <span class="thumb"></span>
@@ -32,7 +32,7 @@ import { ForSwitch } from 'forty-cdk/switch';
         <button
           forSwitch
           class="switch"
-          [(checked)]="enabled"
+          [(checked)]="readonlyEnabled"
           readonly
           aria-labelledby="sw-state-readonly"
         >
@@ -118,4 +118,6 @@ import { ForSwitch } from 'forty-cdk/switch';
 })
 export class SwitchStatesExample {
   protected readonly enabled = signal(true);
+  protected readonly disabledEnabled = signal(true);
+  protected readonly readonlyEnabled = signal(true);
 }

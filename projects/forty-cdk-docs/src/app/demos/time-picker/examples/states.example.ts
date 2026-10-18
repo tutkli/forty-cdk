@@ -64,7 +64,7 @@ import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/international
         <div
           forTimePicker
           class="time-picker-states-field"
-          [(value)]="value"
+          [(value)]="disabledValue"
           [step]="30"
           [hourCycle]="24"
           disabled
@@ -85,7 +85,7 @@ import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/international
         <div
           forTimePicker
           class="time-picker-states-field"
-          [(value)]="value"
+          [(value)]="readonlyValue"
           [step]="30"
           [hourCycle]="24"
           readonly
@@ -207,6 +207,12 @@ import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/international
 })
 export class TimePickerStatesExample {
   protected readonly value = signal<CalendarDateTime | null>(
+    new CalendarDateTime(2024, 6, 15, 9, 0),
+  );
+  protected readonly disabledValue = signal<CalendarDateTime | null>(
+    new CalendarDateTime(2024, 6, 15, 9, 0),
+  );
+  protected readonly readonlyValue = signal<CalendarDateTime | null>(
     new CalendarDateTime(2024, 6, 15, 9, 0),
   );
 }

@@ -17,7 +17,9 @@ import { ForMenuContent, ForMenuItem, ForMenuSeparator } from 'forty-cdk/menu';
           <hr forMenuSeparator class="dropdown-menu-separator" />
           <button forMenuItem class="dropdown-menu-item">Downloads</button>
           <button forMenuItem class="dropdown-menu-item">Bookmarks</button>
-          <button forMenuItem class="dropdown-menu-item" disabled>Sync (signed out)</button>
+          <button forMenuItem class="dropdown-menu-item" [disabled]="true">
+            Sync (signed out)
+          </button>
           <hr forMenuSeparator class="dropdown-menu-separator" />
           <button forMenuItem class="dropdown-menu-item dropdown-menu-item--danger">
             Clear browsing data

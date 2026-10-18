@@ -21,7 +21,7 @@ import { queryFlag } from './_query-flag';
       @if (open()) {
         <div forMenuContent data-testid="menu">
           <button data-testid="item-1" forMenuItem>One</button>
-          <button data-testid="item-2" forMenuItem disabled>Two (disabled)</button>
+          <button data-testid="item-2" forMenuItem [disabled]="true">Two (disabled)</button>
           <button data-testid="item-3" forMenuItem>Three</button>
           <button data-testid="item-4" forMenuItem>Four</button>
         </div>

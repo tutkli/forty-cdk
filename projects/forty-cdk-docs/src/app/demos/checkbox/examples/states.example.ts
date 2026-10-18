@@ -19,7 +19,7 @@ import { ForCheckbox } from 'forty-cdk/checkbox';
 
       <div class="state">
         <span class="state-label">Disabled</span>
-        <button forCheckbox class="cb-row" [(checked)]="checked" disabled>
+        <button forCheckbox class="cb-row" [(checked)]="disabledChecked" [disabled]="true">
           <span class="cb">
             <span class="cb-check" aria-hidden="true"></span>
           </span>
@@ -29,7 +29,7 @@ import { ForCheckbox } from 'forty-cdk/checkbox';
 
       <div class="state">
         <span class="state-label">Read-only</span>
-        <button forCheckbox class="cb-row" [(checked)]="checked" readonly>
+        <button forCheckbox class="cb-row" [(checked)]="readonlyChecked" readonly>
           <span class="cb">
             <span class="cb-check" aria-hidden="true"></span>
           </span>
@@ -129,4 +129,6 @@ import { ForCheckbox } from 'forty-cdk/checkbox';
 })
 export class CheckboxStatesExample {
   protected readonly checked = signal(true);
+  protected readonly disabledChecked = signal(true);
+  protected readonly readonlyChecked = signal(true);
 }

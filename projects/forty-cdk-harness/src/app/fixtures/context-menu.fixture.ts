@@ -27,7 +27,7 @@ import { ForMenuContent, ForMenuItem } from 'forty-cdk/menu';
       @if (open()) {
         <div forMenuContent data-testid="menu">
           <button data-testid="item-1" forMenuItem>Item one</button>
-          <button data-testid="item-2" forMenuItem disabled>Item two (disabled)</button>
+          <button data-testid="item-2" forMenuItem [disabled]="true">Item two (disabled)</button>
           <button data-testid="item-3" forMenuItem>Item three</button>
         </div>
       }

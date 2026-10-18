@@ -24,7 +24,7 @@ import { ForDisclosure, ForDisclosureContent, ForDisclosureTrigger } from 'forty
 
       <div class="state">
         <span class="state-label">Disabled</span>
-        <div forDisclosure class="dis" [(open)]="open" disabled>
+        <div forDisclosure class="dis" [(open)]="disabledOpen" disabled>
           <button type="button" forDisclosureTrigger class="dis-trigger">
             <span>This section is locked</span>
             <span class="chevron" aria-hidden="true"></span>
@@ -144,4 +144,5 @@ import { ForDisclosure, ForDisclosureContent, ForDisclosureTrigger } from 'forty
 })
 export class DisclosureStatesExample {
   protected readonly open = signal(true);
+  protected readonly disabledOpen = signal(true);
 }
