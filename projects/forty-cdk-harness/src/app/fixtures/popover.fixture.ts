@@ -42,6 +42,14 @@ import { queryFlag } from './_query-flag';
     @if (!triggerLast) {
       <input id="after" placeholder="after-trigger" />
     }
+    @if (frame) {
+      <iframe
+        data-testid="frame"
+        title="Embedded content"
+        style="display: block; margin-top: 240px"
+        srcdoc="<button>Inside frame</button><p>Plain text</p>"
+      ></iframe>
+    }
     @if (rtlRegion) {
       <section dir="rtl" style="display: flex; justify-content: center; padding: 16px">
         <div forPopover [(open)]="rtlOpen" ariaLabel="RTL popover" align="start">
@@ -66,6 +74,7 @@ export class PopoverFixture {
 
   protected readonly tall = queryFlag('tall');
   protected readonly triggerLast = queryFlag('triggerLast');
+  protected readonly frame = queryFlag('frame');
   protected readonly initialFocus: 'first' | 'container' = queryFlag('initialFocusContainer')
     ? 'container'
     : 'first';
