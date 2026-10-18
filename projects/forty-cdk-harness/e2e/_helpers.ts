@@ -1064,6 +1064,54 @@ export async function recordFocusInsWithin(
     page.evaluate(() => (window as unknown as { __focusInsWithin: number }).__focusInsWithin);
 }
 
+export async function recordInsertions(
+  page: Page,
+  selector: string,
+): Promise<() => Promise<string[]>> {
+  await page.evaluate((sel) => {
+    const store = window as unknown as { __insertions: string[] };
+    store.__insertions = [];
+    new MutationObserver((records) => {
+      for (const record of records) {
+        for (const node of record.addedNodes) {
+          if (!(node instanceof Element)) continue;
+          const matches = node.matches(sel) ? [node] : [];
+          matches.push(...node.querySelectorAll(sel));
+          for (const match of matches) {
+            store.__insertions.push(match.getAttribute('data-testid') ?? match.tagName);
+          }
+        }
+      }
+    }).observe(document.body, { subtree: true, childList: true });
+  }, selector);
+  return () =>
+    page.evaluate(() => [...(window as unknown as { __insertions: string[] }).__insertions]);
+}
+
+export async function settleScroll(scroller: Locator): Promise<number> {
+  await expect.poll(() => scroller.evaluate((node) => node.scrollTop)).toBeGreaterThan(0);
+  return scroller.evaluate(
+    (node) =>
+      new Promise<number>((resolve) => {
+        let last = node.scrollTop;
+        let stillFrames = 0;
+        const step = (): void => {
+          const current = node.scrollTop;
+          stillFrames = current === last ? stillFrames + 1 : 0;
+          last = current;
+          if (stillFrames >= 5) {
+            resolve(current);
+            return;
+          }
+          requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+      }),
+  );
+}
+
+export const DEFAULT_SCROLL_DISMISS_SUPPRESSION_MS = 200;
+
 export const DEFAULT_POINTER_SUPPRESSION_MS = 200;
 
 export async function recordPointerMoves(

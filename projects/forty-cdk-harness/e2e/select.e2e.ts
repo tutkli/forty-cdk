@@ -64,6 +64,7 @@ test.describe('Select', () => {
     await page.keyboard.press('Escape');
     await expect(el(page, 'content')).toHaveCount(0);
     await expect(el(page, 'trigger')).toBeFocused();
+    await expect(page.locator('[forSelectValue]')).toHaveText('Pick a fruit');
   });
 
   test('pointerdown outside closes', async ({ page }) => {

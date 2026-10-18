@@ -394,8 +394,25 @@ test.describe('Toast exit animation (#1024)', () => {
     await el(page, 'enqueue').click();
     await expect(el(page, 'toast-0')).toBeVisible();
 
-    await el(page, 'dismiss-all').click();
-    await expect(el(page, 'toast-0')).toHaveCount(0);
+    const framesUntilUnmount = await page.evaluate(
+      () =>
+        new Promise<number>((resolve) => {
+          const toast = document.querySelector('[data-testid="toast-0"]')!;
+          let frames = 0;
+          const tick = (): void => {
+            if (!toast.isConnected) {
+              resolve(frames);
+              return;
+            }
+            frames += 1;
+            requestAnimationFrame(tick);
+          };
+          document.querySelector<HTMLElement>('[data-testid="dismiss-all"]')!.click();
+          requestAnimationFrame(tick);
+        }),
+    );
+
+    expect(framesUntilUnmount).toBeLessThanOrEqual(2);
     await expect(el(page, 'toast-count')).toHaveText('0');
   });
 });

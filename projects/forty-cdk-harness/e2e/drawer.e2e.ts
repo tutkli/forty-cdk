@@ -253,21 +253,21 @@ test.describe('Drawer', () => {
     await expect(el(page, 'drawer')).not.toHaveAttribute('data-state-nested');
   });
 
-  test('nested + scaleBackground: parent receives an inline transform while child is open', async ({
+  test('nested: the parent takes the nestedScaleAmount inline transform while the child is open', async ({
     page,
   }) => {
     await gotoFixture(page, 'drawer', { nested: '1' });
     await el(page, 'trigger').click();
     const drawer = el(page, 'drawer');
     await expect(drawer).toBeVisible();
-    const baseTransform = await drawer.evaluate((el) => (el as HTMLElement).style.transform);
+    const transform = (): Promise<string> =>
+      drawer.evaluate((el) => (el as HTMLElement).style.transform);
+    expect(await transform()).not.toContain('scale(0.93)');
 
     await el(page, 'open-child').click();
     await expect(el(page, 'child-drawer')).toBeVisible();
 
-    const nestedTransform = await drawer.evaluate((el) => (el as HTMLElement).style.transform);
-    expect(nestedTransform).not.toBe(baseTransform);
-    expect(nestedTransform).toContain('scale(0.93)');
+    await expect.poll(transform).toContain('scale(0.93)');
   });
 
   test('cross-dimension snap validation throws at first measurement', async ({

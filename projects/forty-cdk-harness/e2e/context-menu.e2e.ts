@@ -8,9 +8,7 @@ import { el, expect, gotoFixture, longPress, test } from './_helpers';
  * rather than synchronously on open — `expect.poll` matches that timing
  * without forcing the spec to know the exact number of frames.
  */
-async function anchorSize(
-  page: Page,
-): Promise<{ width: number; height: number; translate: string }> {
+async function anchorSize(page: Page): Promise<{ width: number; height: number }> {
   const handle = await el(page, 'menu').elementHandle();
   if (!handle) throw new Error('menu host not mounted');
   return page.evaluate((node) => {
@@ -18,10 +16,17 @@ async function anchorSize(
     return {
       width: Number.parseFloat(elem.style.getPropertyValue('--for-floating-anchor-width') || '0'),
       height: Number.parseFloat(elem.style.getPropertyValue('--for-floating-anchor-height') || '0'),
-      // Position lives on the `translate` property (NOT `transform`).
-      translate: elem.style.translate,
     };
   }, handle);
+}
+
+async function expectMenuAt(page: Page, point: { x: number; y: number }): Promise<void> {
+  await expect
+    .poll(async () => {
+      const rect = await el(page, 'menu').boundingBox();
+      return rect ? Math.max(Math.abs(rect.x - point.x), Math.abs(rect.y - point.y)) : Infinity;
+    })
+    .toBeLessThan(2);
 }
 
 test.describe('ContextMenu', () => {
@@ -135,7 +140,7 @@ test.describe('ContextMenu', () => {
       const size = await anchorSize(page);
       expect(Math.abs(size.width - triggerBox!.width)).toBeLessThanOrEqual(1);
       expect(Math.abs(size.height - triggerBox!.height)).toBeLessThanOrEqual(1);
-      expect(size.translate).toMatch(/^-?\d+px -?\d+px$/);
+      await expectMenuAt(page, { x: triggerBox!.x, y: triggerBox!.y + triggerBox!.height });
     });
 
     test('ContextMenu key anchors at the focused trigger rect', async ({ page }) => {
@@ -152,6 +157,7 @@ test.describe('ContextMenu', () => {
       const size = await anchorSize(page);
       expect(Math.abs(size.width - triggerBox!.width)).toBeLessThanOrEqual(1);
       expect(Math.abs(size.height - triggerBox!.height)).toBeLessThanOrEqual(1);
+      await expectMenuAt(page, { x: triggerBox!.x, y: triggerBox!.y + triggerBox!.height });
     });
 
     test('anchors at a focused descendant rather than the trigger when focus is inside', async ({
@@ -181,6 +187,7 @@ test.describe('ContextMenu', () => {
       expect(Math.abs(size.height - innerBox!.height)).toBeLessThanOrEqual(1);
       // And it must be visibly different from the trigger box.
       expect(Math.abs(size.width - regionBox!.width)).toBeGreaterThan(1);
+      await expectMenuAt(page, { x: innerBox!.x, y: innerBox!.y + innerBox!.height });
     });
 
     test('falls back to the trigger rect when document.activeElement is outside the trigger', async ({
@@ -202,6 +209,7 @@ test.describe('ContextMenu', () => {
       const size = await anchorSize(page);
       expect(Math.abs(size.width - triggerBox!.width)).toBeLessThanOrEqual(1);
       expect(Math.abs(size.height - triggerBox!.height)).toBeLessThanOrEqual(1);
+      await expectMenuAt(page, { x: triggerBox!.x, y: triggerBox!.y + triggerBox!.height });
     });
   });
 
@@ -225,22 +233,17 @@ test.describe('ContextMenu', () => {
       await expect(el(page, 'menu')).toBeVisible();
       await expect(el(page, 'item-1')).toBeFocused();
       await expect(el(page, 'item-1')).not.toHaveAttribute('data-highlighted');
-
-      // The directive's `setVirtualAnchor(clientX, clientY)` records a
-      // 0×0 virtual rect at the touch coords, so the floating-ui
-      // anchor-width / -height CSS variables come back as 0 (a point
-      // anchor). The menu's translate transform anchors it near the
-      // touch position — assert that the menu lands close to (cx, cy)
-      // rather than at (0, 0). Allow generous slack: floating-ui
-      // applies side/align offsets, plus the menu's own dimensions.
-      const menuBox = await el(page, 'menu').boundingBox();
-      expect(menuBox).not.toBeNull();
-      // The menu should be visually adjacent to the touch position,
-      // not snapped to (0, 0). 400 px is a comfortable ceiling — well
-      // under typical screen dimensions and well over any reasonable
-      // side/align offset.
-      expect(Math.abs(menuBox!.x - cx)).toBeLessThan(400);
-      expect(Math.abs(menuBox!.y - cy)).toBeLessThan(400);
+      await expect
+        .poll(async () => {
+          const rect = await el(page, 'menu').boundingBox();
+          return (
+            rect && {
+              top: Math.abs(rect.y - cy) < 2,
+              spansX: rect.x <= cx && cx <= rect.x + rect.width,
+            }
+          );
+        })
+        .toEqual({ top: true, spansX: true });
     });
   });
 });
