@@ -25,6 +25,10 @@ import { ThemeToggle } from './theme-toggle';
     ThemeToggle,
   ],
   template: `
+    <a class="skip-link" [href]="chrome.contentHref()" (click)="chrome.skipToContent($event)">
+      Skip to content
+    </a>
+
     <header class="topbar">
       <button
         type="button"
@@ -76,7 +80,7 @@ import { ThemeToggle } from './theme-toggle';
         </scroll-pane>
       </aside>
 
-      <main class="content">
+      <main class="content" id="main-content" tabindex="-1">
         <router-outlet />
       </main>
     </div>
@@ -88,6 +92,31 @@ import { ThemeToggle } from './theme-toggle';
       display: flex;
       flex-direction: column;
       background: var(--pg-bg);
+    }
+
+    .skip-link {
+      position: absolute;
+      top: 0.6rem;
+      left: 0.75rem;
+      z-index: 50;
+      padding: 0.45rem 0.8rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--pg-text);
+      text-decoration: none;
+      background: var(--pg-surface);
+      border: 1px solid var(--pg-border-strong);
+      border-radius: var(--pg-radius-sm);
+    }
+
+    .skip-link:not(:focus) {
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      overflow: hidden;
+      white-space: nowrap;
+      border: 0;
+      clip-path: inset(50%);
     }
 
     .topbar {
