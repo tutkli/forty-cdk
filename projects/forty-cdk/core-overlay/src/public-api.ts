@@ -84,6 +84,7 @@ export { InertSiblingsStack } from './inert-siblings/inert-siblings';
 export {
   type ListboxOverlayContext,
   ListboxOverlayController,
+  type ListboxOverlayPieceContext,
 } from './listbox-overlay/listbox-overlay-controller';
 export {
   FOR_MENU_CONTEXT,

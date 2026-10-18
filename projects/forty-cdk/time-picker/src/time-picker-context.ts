@@ -12,6 +12,7 @@ import {
   type FloatingAlign,
   type FloatingSide,
   type ListboxOverlayContext,
+  type ListboxOverlayPieceContext,
 } from 'forty-cdk/core-overlay';
 import type { ForTimeSlot, TimePickerGranularity } from './build-time-slots';
 
@@ -49,6 +50,19 @@ export interface ForTimePickerOptionHandle extends CollectionHandle {
  * instead of the root re-forwarding each member.
  */
 export type ForTimePickerOverlayContext = ListboxOverlayContext<
+  ForTimePickerOptionHandle,
+  ForTimePickerInitialFocus,
+  ForTimePickerCloseReason
+>;
+
+/**
+ * {@link ForTimePickerOverlayContext} plus the open-state typeahead
+ * `[forTimePickerOption]` routes its keys through.
+ *
+ * Internal — never re-exported from `public-api.ts`; pieces reach it through
+ * {@link TimePickerContext}.
+ */
+export type TimePickerOverlayContext = ListboxOverlayPieceContext<
   ForTimePickerOptionHandle,
   ForTimePickerInitialFocus,
   ForTimePickerCloseReason
@@ -196,17 +210,18 @@ export interface TimePickerPieceContext {
 /**
  * The time picker's internal coordination surface: everything
  * {@link ForTimePickerContext} publishes plus the {@link TimePickerPieceContext}
- * calls.
+ * calls, with `overlay` widened to {@link TimePickerOverlayContext}.
  *
  * Never exported from `public-api.ts`. It is the type the pieces read
  * {@link FOR_TIME_PICKER_CONTEXT} at, so a consumer who injects that token gets
- * the read surface while `[forTimePickerOption]` gets the pointer channel.
- * `ForTimePicker` declares those members TS-`private`, which keeps them out of
- * the emitted `.d.ts` while `useExisting` still satisfies this contract at
- * runtime.
+ * the read surface while `[forTimePickerOption]` gets the pointer channel and
+ * the typeahead. `ForTimePicker` declares the piece members TS-`private` and
+ * `overlay` with the narrower public type, which keeps them out of the emitted
+ * `.d.ts` while `useExisting` still satisfies this contract at runtime.
  */
 export interface TimePickerContext<D = unknown>
   extends ForTimePickerContext<D>, TimePickerPieceContext {
+  readonly overlay: TimePickerOverlayContext;
   /** How the picker is composed; absent on a root with only the trigger anatomy. */
   readonly anatomy?: Signal<ForTimePickerAnatomy>;
 }
