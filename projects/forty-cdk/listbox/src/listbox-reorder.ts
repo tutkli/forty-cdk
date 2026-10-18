@@ -176,7 +176,7 @@ export class ForListboxReorder {
         cancelOnEscape: true,
         capturePointer: true,
         canStart: (event) => this.#canStartPointer(event),
-        onLift: (event) => this.#onPointerLift(event),
+        onLift: (_event, start) => this.#onPointerLift(start),
         onMove: (event) => this.#onPointerMove(event),
         onCommit: (event) => this.#onPointerCommit(event),
         onCancel: () => this.#onPointerCancel(),
@@ -225,14 +225,11 @@ export class ForListboxReorder {
     return true;
   }
 
-  #onPointerLift(event: PointerEvent): boolean {
+  #onPointerLift(start: { readonly x: number; readonly y: number }): boolean {
     if (this.#liftedHost === null) {
       return false;
     }
-    this.#lift(this.#liftedHost, this.#fromIndex, 'pointer', {
-      x: event.clientX,
-      y: event.clientY,
-    });
+    this.#lift(this.#liftedHost, this.#fromIndex, 'pointer', start);
     return true;
   }
 

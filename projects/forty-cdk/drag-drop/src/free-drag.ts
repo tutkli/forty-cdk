@@ -188,7 +188,7 @@ export class ForFreeDrag implements ForDraggableContext {
         cancelOnEscape: true,
         capturePointer: true,
         canStart: (event) => this.#handleGuard.canStart(event),
-        onLift: (event) => this.#onLift(event),
+        onLift: (event, start) => this.#onLift(event, start),
         onMove: (event) => this.#onMove(event),
         onCommit: () => this.#onCommit(),
         onCancel: () => this.#onCancel(),
@@ -256,19 +256,18 @@ export class ForFreeDrag implements ForDraggableContext {
     return { x: rect.left - offset.x, y: rect.top - offset.y };
   }
 
-  #onLift(event: PointerEvent): boolean {
+  #onLift(event: PointerEvent, start: Point): boolean {
     const root = this.#resolvedRoot();
     const rect = root.getBoundingClientRect();
     const position = this.position();
-    const point = { x: event.clientX, y: event.clientY };
     this.#lift.set({
-      point,
+      point: start,
       position,
       topLeft: { x: rect.left, y: rect.top },
       natural: this.#naturalOrigin(root, rect),
       size: { width: rect.width, height: rect.height },
     });
-    this.#startScrollTracking(point);
+    this.#startScrollTracking({ x: event.clientX, y: event.clientY });
     this.moveStart.emit(position);
     return true;
   }

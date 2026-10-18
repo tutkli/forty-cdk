@@ -15,7 +15,7 @@ async function freeDrag(page: Page, start: Locator, dx: number, dy: number): Pro
   await page.mouse.move(c.x, c.y);
   await page.mouse.down();
   await page.mouse.move(c.x + ARM, c.y);
-  await page.mouse.move(c.x + ARM + dx, c.y + dy);
+  await page.mouse.move(c.x + dx, c.y + dy);
   await page.mouse.up();
 }
 
@@ -68,6 +68,31 @@ test.describe('free-drag', () => {
     if (!after) throw new Error('Dialog not found');
     expect(Math.round(after.x - before.x)).toBe(40);
     expect(Math.round(after.y - before.y)).toBe(30);
+  });
+
+  test('a long first move keeps the grabbed point under the pointer', async ({ page }) => {
+    await gotoFixture(page, 'free-drag');
+    const handle = el(page, 'dialog-handle');
+    const dialog = el(page, 'dialog');
+
+    const before = await dialog.boundingBox();
+    if (!before) throw new Error('Dialog not found');
+    const c = await center(handle);
+
+    await page.mouse.move(c.x, c.y);
+    await page.mouse.down();
+    await page.mouse.move(c.x - 100, c.y + 60);
+
+    await expect.poll(() => inlineTranslate(dialog)).toBe('-100px 60px');
+    const moved = await dialog.boundingBox();
+    if (!moved) throw new Error('Dialog not found');
+    expect(Math.round(moved.x - before.x)).toBe(-100);
+    expect(Math.round(moved.y - before.y)).toBe(60);
+
+    await page.mouse.move(c.x - 150, c.y + 90, { steps: 10 });
+    await page.mouse.up();
+
+    await expect.poll(() => inlineTranslate(dialog)).toBe('-150px 90px');
   });
 
   test('a transform-centred root keeps its centring and moves by the pointer delta', async ({
@@ -150,7 +175,7 @@ test.describe('free-drag', () => {
       .poll(async () => Math.round(((await card.boundingBox())?.y ?? 0) - before.y))
       .toBe(0);
 
-    await page.mouse.move(c.x + ARM + 10, c.y + 10);
+    await page.mouse.move(c.x + 10, c.y + 10);
     await expect(card).toHaveAttribute('data-dragging', '');
 
     const moved = await card.boundingBox();
@@ -158,7 +183,7 @@ test.describe('free-drag', () => {
     expect(Math.round(moved.x - before.x)).toBe(10);
     expect(Math.round(moved.y - before.y)).toBe(10);
 
-    await page.mouse.move(c.x + ARM + 10, c.y + 10000);
+    await page.mouse.move(c.x + 10, c.y + 10000);
     const clamped = await card.boundingBox();
     if (!clamped) throw new Error('Card not found');
     expect(clamped.y + clamped.height).toBeLessThanOrEqual(canvasBox.y + canvasBox.height + 1);

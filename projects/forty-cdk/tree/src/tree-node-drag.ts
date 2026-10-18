@@ -198,7 +198,7 @@ export class ForTreeNodeDrag<T = string> implements ForTreeNodeDragContext {
       cancelOnEscape: true,
       capturePointer: true,
       canStart: (event) => this.#canStartPointer(event),
-      onLift: (event) => this.#onPointerLift(event),
+      onLift: (_event, start) => this.#onPointerLift(start),
       onMove: (event) => this.#onPointerMove(event),
       onCommit: (event) => this.#onPointerCommit(event),
       onCancel: () => this.#cancelSession(true),
@@ -319,7 +319,7 @@ export class ForTreeNodeDrag<T = string> implements ForTreeNodeDragContext {
     return null;
   }
 
-  #onPointerLift(event: PointerEvent): boolean {
+  #onPointerLift(start: PreviewPoint): boolean {
     if (!this.#liftedHost) {
       return false;
     }
@@ -329,10 +329,7 @@ export class ForTreeNodeDrag<T = string> implements ForTreeNodeDragContext {
       this.#liftedHost = null;
       return false;
     }
-    this.#lift(this.#liftedHost, idx, visible, 'pointer', {
-      x: event.clientX,
-      y: event.clientY,
-    });
+    this.#lift(this.#liftedHost, idx, visible, 'pointer', start);
     return true;
   }
 

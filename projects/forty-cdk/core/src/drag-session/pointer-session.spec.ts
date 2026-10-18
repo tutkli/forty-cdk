@@ -101,6 +101,22 @@ describe('createPointerDragSession', () => {
     expect(rec.moves).toBe(2);
   });
 
+  it('hands onLift the press point, not the arming move', () => {
+    const starts: { x: number; y: number }[] = [];
+    const { host, session } = setup({
+      onLift: (_event, start) => {
+        starts.push({ ...start });
+      },
+    });
+    track(host, session);
+
+    host.dispatchEvent(pointer('pointerdown', 100, 100));
+    document.dispatchEvent(pointer('pointermove', 102, 101));
+    document.dispatchEvent(pointer('pointermove', 160, 130));
+
+    expect(starts).toEqual([{ x: 100, y: 100 }]);
+  });
+
   it('commits on pointerup after an armed drag', () => {
     const { host, session, rec } = setup();
     track(host, session);

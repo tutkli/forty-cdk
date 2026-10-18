@@ -20,10 +20,10 @@ import { isImeComposing } from '../keyboard-navigation/ime-composition';
  *   point is recorded), `false` to ignore the press. All primitive-specific guards
  *   (disabled state, hit-testing the grabbed element, handle constraints, mouse button)
  *   live here.
- * - `onLift(event)` fires on the first move that crosses `armThreshold`, before the session
- *   arms or captures the pointer. Return `false` to abort the session in flight (e.g. the
- *   grabbed element has since vanished): the document listeners are torn down and no further
- *   callback fires. Return `'skip'` to decline arming for now while keeping the press tracked
+ * - `onLift(event, start)` fires on the first move that crosses `armThreshold`, before the
+ *   session arms or captures the pointer, with `start` the recorded press point. Return `false`
+ *   to abort the session in flight (e.g. the grabbed element has since vanished): the document
+ *   listeners are torn down and no further callback fires. Return `'skip'` to decline arming for now while keeping the press tracked
  *   and unarmed — `onLift` is re-consulted on every subsequent move still past `armThreshold`,
  *   with the delta and dominant axis recomputed from the fixed start point each time. Returning
  *   `true` or `void` arms the session, captures the pointer when `capturePointer` is set, and
@@ -106,14 +106,19 @@ export interface PointerDragSessionOptions {
   readonly canStart: (event: PointerEvent) => boolean;
   /**
    * Fires on the first move past `armThreshold`, before the session arms or captures the
-   * pointer. Return `false` to abort the session in flight (the grabbed element vanished, etc.);
-   * the session tears its listeners down and fires no further callback. Return `'skip'` to
+   * pointer. `start` is the `pointerdown` point: a drag measures its travel from it, so the
+   * distance covered before arming is not lost. Return `false` to abort the session in flight
+   * (the grabbed element vanished, etc.); the session tears its listeners down and fires no
+   * further callback. Return `'skip'` to
    * decline arming for now while keeping the press tracked and unarmed: `onLift` is re-consulted
    * on every subsequent move still past `armThreshold`, with the delta and dominant axis
    * recomputed from the fixed start point each time. Returning `true` or `void` arms the session
    * and lets the move flow through to `onMove`.
    */
-  readonly onLift: (event: PointerEvent) => boolean | 'skip' | void;
+  readonly onLift: (
+    event: PointerEvent,
+    start: { readonly x: number; readonly y: number },
+  ) => boolean | 'skip' | void;
   /** Fires on every armed move after the lift. */
   readonly onMove: (event: PointerEvent) => void;
   /** Fires on `pointerup` while armed. */
@@ -216,7 +221,7 @@ export function createPointerDragSession(opts: PointerDragSessionOptions): Point
         resetTracking();
         return;
       }
-      const lift = opts.onLift(event);
+      const lift = opts.onLift(event, start);
       if (lift === false) {
         resetTracking();
         return;
