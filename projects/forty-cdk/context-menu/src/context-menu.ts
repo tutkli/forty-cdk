@@ -23,10 +23,10 @@ import { FOR_CONTEXT_MENU_DEFAULTS } from 'forty-cdk/defaults';
  * Apply on a wrapper that contains a `[forContextMenuTrigger]` and an
  * `@if`-mounted `[forMenuContent]`.
  *
- * The menu is positioned at the pointer location at the time of the
- * `contextmenu` event — implemented via floating-ui's virtual element so
- * placement / flip / shift middleware still apply normally. Selecting an
- * item, Escape, or any outside interaction closes.
+ * The menu is positioned at the pointer location of the `contextmenu` event,
+ * and the positioning inputs apply to that point as they would to a trigger.
+ * Selecting an item, Escape, or any outside interaction closes, a press
+ * inside the trigger region included.
  *
  * ```html
  * <div forContextMenu [(open)]="open">
@@ -36,15 +36,6 @@ import { FOR_CONTEXT_MENU_DEFAULTS } from 'forty-cdk/defaults';
  *   }
  * </div>
  * ```
- *
- * Most of the directive's body (id generation, item collection, typeahead,
- * navigate / focus helpers, escape / outside-click veto plumbing) is owned
- * by the shared `forty-cdk/core-overlay` menu-overlay helper. The directive contributes
- * the inputs / outputs / model that make up the public surface, the
- * pointer-driven `VirtualElement` anchor (`setVirtualAnchor` /
- * `setVirtualAnchorFromRect`), and the contextmenu-specific dismissible
- * semantics (no exemption — a left-click on the right-click region while
- * the menu is open should close it).
  */
 @Directive({
   selector: '[forContextMenu]',
