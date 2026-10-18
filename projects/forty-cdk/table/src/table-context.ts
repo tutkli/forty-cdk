@@ -205,7 +205,7 @@ export const FOR_TABLE_CONTEXT = new InjectionToken<ForTableContext>('FOR_TABLE_
 
 /**
  * Per-row read surface owned by `ForTableRow`, injected by its data cells. The
- * cell-registration half lives on {@link TableRowContext}, so no `register*`
+ * cell-registration half lives on {@link TableRowRegistrationContext}, so no `register*`
  * member reaches `ForTableRow`'s emitted public type.
  */
 export interface ForTableRowContext {

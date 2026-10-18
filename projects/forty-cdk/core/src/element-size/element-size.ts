@@ -6,20 +6,32 @@ export interface ElementBox {
   readonly width: number;
   /** Padding-box height (`clientHeight`) in CSS pixels — content plus padding, excluding borders and any scrollbar. */
   readonly height: number;
-  /** scrollWidth in CSS pixels. */
+  /**
+   * `scrollWidth` in CSS pixels, as of the last measurement. Re-read only when
+   * the element's own box resizes or the observed element changes, so content
+   * growing inside an unchanged box leaves it stale.
+   */
   readonly scrollWidth: number;
-  /** scrollHeight in CSS pixels. */
+  /**
+   * `scrollHeight` in CSS pixels, as of the last measurement. Re-read only when
+   * the element's own box resizes or the observed element changes, so content
+   * growing inside an unchanged box leaves it stale.
+   */
   readonly scrollHeight: number;
 }
 
 /**
  * Observes a target element's size with `ResizeObserver` and exposes the
- * result as a signal. Updates fire only when width/height/scrollWidth/
- * scrollHeight actually change.
+ * result as a signal. A measurement emits only when one of the four
+ * `ElementBox` fields actually changed.
  *
  * Returns `null` until the first measurement is taken (or while `target()`
  * is `null`). The first measurement runs when the observing `effect` first
- * sees a non-null target, then on every `ResizeObserver` callback.
+ * sees a non-null target, then on every `ResizeObserver` callback. The
+ * observer reports box-size changes only, so `scrollWidth` / `scrollHeight`
+ * follow content that overflows a fixed-size box only on the next resize of
+ * the box itself; a caller that needs live scroll extents observes the
+ * content element too, as `[forScrollAreaContent]` does.
  *
  * Implementation notes:
  * - Browser-only: `ResizeObserver` is a DOM API, so off-browser (SSR) the
@@ -64,7 +76,7 @@ export function injectElementSize(target: Signal<HTMLElement | null>): Signal<El
     }
   };
 
-  // React to target changes (and to scrollWidth/Height changes via the observer).
+  // React to target changes, and to box resizes through the observer.
   // @sanctioned-effect(external-source): `out` mirrors a ResizeObserver, and the
   // last emitted box is held in `prev` rather than read back from `out`, so no
   // read in this effect can depend on the signal it writes.

@@ -70,8 +70,7 @@ const TRANSITION_TIMING = 'cubic-bezier(0.32, 0.72, 0, 1)';
  * server, `registerWrapper` / `registerDrawer` are no-ops since the
  * directives that call them only do so from `afterNextRender`.
  *
- * Internal core tier — exported from `forty-cdk/core` for the library's own
- * entry points, with no semver guarantee.
+ * Internal to `forty-cdk/drawer`: not exported from any entry point.
  */
 @Injectable({ providedIn: 'root' })
 export class ForDrawerScaleCoordinator {

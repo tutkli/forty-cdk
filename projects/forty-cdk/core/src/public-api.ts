@@ -146,12 +146,7 @@ export {
 } from './drag-session/drag-geometry';
 export { dragAnnouncementLabel } from './drag-session/drag-announcement-label';
 export { createTemplatePreview, type DragPreview } from './drag-session/drag-preview';
-export {
-  focusWhenMounted,
-  type FocusWhenMountedOptions,
-  type FocusWhenMountedRef,
-  type FocusWhenMountedTarget,
-} from './drag-session/focus-when-mounted';
+export { focusWhenMounted, type FocusWhenMountedRef } from './drag-session/focus-when-mounted';
 export { isDragLiftKey, resolveLiftedDragControl } from './drag-session/keyboard-drag-keys';
 export { createKeyboardDragMediator } from './drag-session/keyboard-drag-mediator';
 export {
@@ -163,13 +158,8 @@ export { layoutPlaceholderInSlot } from './drag-session/placeholder-slot';
 export { PreviewController } from './drag-session/preview-controller';
 export { resolveWindowedReorder, translateWindowReorder } from './drag-session/window-index-map';
 export { type ElementBox, injectElementSize } from './element-size/element-size';
-export { formatFortyMessage, fortyError, type FortyMessageSpec, fortyWarn } from './errors/errors';
-export {
-  orphanContextError,
-  type OrphanContextSpec,
-  unresolvedRootError,
-  type UnresolvedRootSpec,
-} from './errors/orphan-context';
+export { fortyError, fortyWarn } from './errors/errors';
+export { orphanContextError, unresolvedRootError } from './errors/orphan-context';
 export {
   FOR_FIELD_ANCHOR_CONTEXT,
   type ForFieldAnchorContext,
@@ -223,11 +213,7 @@ export {
   type WritingDirection,
 } from './keyboard-navigation/keyboard-navigation';
 export { LiveAnnouncer } from './live-announcer/live-announcer';
-export {
-  injectMediaQuery,
-  injectPrefersReducedMotion,
-  MediaQueryRegistry,
-} from './media-query/media-query';
+export { injectPrefersReducedMotion, MediaQueryRegistry } from './media-query/media-query';
 export {
   clamp,
   decimalPlaces,

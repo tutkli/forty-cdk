@@ -2,10 +2,10 @@ import { afterNextRender, DestroyRef, inject } from '@angular/core';
 
 /**
  * `afterNextRender` whose queued callback is cancelled on destroy. Solves the
- * destroy-before-first-render hazard that every overlay shell in `_internal/`
- * shares: a directive torn down between construction and the next render
- * (synchronous open/close test paths, fast SPA mount+unmount, a harness
- * flushing the render queue inside teardown), where the queued render callback
+ * destroy-before-first-render hazard that both overlay shells in
+ * `forty-cdk/core-overlay` share: a directive torn down between construction
+ * and the next render (synchronous open/close test paths, fast SPA
+ * mount+unmount), where the queued render callback
  * would otherwise still activate a global side effect with no hook left to
  * undo it (body inert + scroll lock + a document keydown listener for the
  * modal shell, a permanent topmost dismissible-layer entry for the overlay
@@ -20,14 +20,11 @@ import { afterNextRender, DestroyRef, inject } from '@angular/core';
  *   2. Sets a `destroyed` flag the wrapper re-checks before invoking `fn`, in
  *      case the callback interleaves before `.destroy()` takes effect.
  *
- * Note the second ordering this leaves intact: when destroy is fully
- * synchronous (the `fixture.destroy()` path), the pending callback flushes
- * *before* the `DestroyRef` hooks run — so `fn` executes once and the
- * `destroyed` flag is set afterwards. The adopters defend that path by tearing
- * the side effect down in their own `DestroyRef.onDestroy` (portal removes the
- * element, the modal shell deactivates inert / scroll lock / focus trap, the
- * overlay shell deactivates its dismissible layer), which runs right after the
- * callback. Either way no global side effect survives teardown.
+ * Teardown before the render flush therefore never runs `fn`. When the render
+ * flushes first, `fn` has run, and undoing its side effect is the adopter's own
+ * `DestroyRef.onDestroy` (portal removes the element, the modal shell
+ * deactivates inert / scroll lock / focus trap, the overlay shell deactivates
+ * its dismissible layer). Either way no global side effect survives teardown.
  *
  * Must be called from an injection context (typically a directive constructor
  * or an `inject`-based helper). SSR-safe: `afterNextRender` never runs on the

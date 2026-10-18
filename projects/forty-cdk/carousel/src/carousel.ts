@@ -441,7 +441,8 @@ export class ForCarousel implements ForCarouselContext {
    *
    * Assumes the one-indicator-per-slide mapping the rest of the picker is built
    * on: the indicator at DOM index `i` targets slide `i`. A mismatched indicator
-   * count is dev-guarded at construction by the `FORCDK-CAROUSEL-002` warning.
+   * count is reported in dev mode by the `FORCDK-CAROUSEL-002` warning once the
+   * slide and indicator counts settle.
    */
   hasCurrentIndicator(): boolean {
     const active = this.effectiveIndex();

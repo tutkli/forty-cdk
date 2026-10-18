@@ -32,9 +32,8 @@ export interface HostRovingItemHandle extends CollectionHandle {
  * focus management upward).
  *
  * Today the only container that provides this token is
- * [`ForToolbar`](../../toolbar/toolbar.ts), and the only consumer is
- * [`ForToggleGroupItem`](../../toggle/toggle-group-item.ts) when nested
- * inside a toolbar. The contract is lifted to `_internal/` so that any
+ * `ForToolbar`, and the only consumer is `ForToggleGroupItem` when nested
+ * inside a toolbar. The contract lives in `forty-cdk/core` so that any
  * future host (e.g. Splitbar, a Tablist with side-actions, a Menubar
  * variant that composes embedded toggles) can opt in without
  * `toggle/` taking a static import dependency on `toolbar/` or any

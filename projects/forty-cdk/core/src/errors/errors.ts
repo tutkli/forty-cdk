@@ -53,11 +53,9 @@ function scopeOf(code: string): string {
  * consumer skimming a stack trace, and a search for the code, both land on it.
  * `Cause` and `Fix` are appended only when supplied.
  *
- * Exposed separately from {@link fortyError} for the one seam that takes a
- * pre-built message string from its caller — `AnchorSlot`'s duplicate-anchor
- * guard, reached by Combobox, Select and TimePicker, each of which owns the
- * `FORCDK-*` code for its own anchor. Prefer `fortyError` / `fortyWarn`
- * everywhere else.
+ * The layout {@link fortyError}, {@link fortyWarn} and the shape helpers in
+ * `orphan-context.ts` all build on. Module-local to `forty-cdk/core`: no
+ * caller outside this entry point formats a message itself.
  */
 export function formatFortyMessage(spec: FortyMessageSpec): string {
   const scope = spec.scope ?? scopeOf(spec.code);

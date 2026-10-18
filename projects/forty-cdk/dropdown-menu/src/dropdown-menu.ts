@@ -41,7 +41,7 @@ import { FOR_DROPDOWN_MENU_DEFAULTS } from 'forty-cdk/defaults';
  *
  * Most of the directive's body (id generation, item collection, typeahead,
  * navigate / focus helpers, escape / outside-click veto plumbing) is owned
- * by the shared `_internal/menu-overlay` helper. The directive contributes
+ * by the shared `forty-cdk/core-overlay` menu-overlay helper. The directive contributes
  * the inputs / outputs / model that make up the public surface, the
  * trigger-anchored `anchor` and `dismissibleExemptions`, and the
  * `aria-haspopup="menu"` / return-focus semantics specific to the

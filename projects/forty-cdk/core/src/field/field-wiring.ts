@@ -26,11 +26,6 @@ export interface FieldValidationError {
  * exposes the signals the field needs to reflect state (`data-invalid` etc.)
  * and to gate the error region; `host` is the wiring target for `id` and the
  * `aria-*` association attributes.
- *
- * Lives in `_internal/` (not in `lib/field/`) so `FormUiControlBase` can wire
- * itself to a field without statically importing the field directives — that
- * would defeat tree-shaking (importing one form control would pull in the
- * whole `field` primitive) and invert the `lib → _internal` layering.
  */
 export interface FieldControlHandle {
   /**

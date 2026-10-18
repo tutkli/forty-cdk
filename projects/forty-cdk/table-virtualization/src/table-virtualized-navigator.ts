@@ -90,8 +90,8 @@ export interface TableVirtualizedNavigatorDeps {
  * arrives through `[virtualRowCount]` instead.
  *
  * Mirrors the 1D `ListboxVirtualizedNavigator` precedent, adapted to the table's
- * roving + focused-row-retention model. Internal — not re-exported from
- * `table/index.ts` or `public-api.ts`.
+ * roving + focused-row-retention model. Internal — not re-exported from the
+ * `forty-cdk/table-virtualization` barrel.
  */
 export class TableVirtualizedNavigator {
   readonly #deps: TableVirtualizedNavigatorDeps;
