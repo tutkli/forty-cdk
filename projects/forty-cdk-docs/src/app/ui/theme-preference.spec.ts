@@ -93,6 +93,50 @@ describe('the stored theme', () => {
     vi.stubGlobal('localStorage', undefined);
     expect(() => writeStoredTheme('dark')).not.toThrow();
   });
+
+  describe('where the browser blocks site data', () => {
+    let inherited: PropertyDescriptor | undefined;
+
+    function denied(): never {
+      throw new DOMException('The operation is insecure.', 'SecurityError');
+    }
+
+    function denyStorageAccess(): void {
+      Object.defineProperty(globalThis, 'localStorage', { configurable: true, get: denied });
+    }
+
+    beforeEach(() => {
+      inherited = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+    });
+
+    afterEach(() => {
+      if (inherited === undefined) {
+        Reflect.deleteProperty(globalThis, 'localStorage');
+      } else {
+        Object.defineProperty(globalThis, 'localStorage', inherited);
+      }
+    });
+
+    it('reads back no choice when reaching the storage throws', () => {
+      denyStorageAccess();
+      expect(readStoredTheme()).toBeNull();
+    });
+
+    it('persists nothing when reaching the storage throws', () => {
+      denyStorageAccess();
+      expect(() => writeStoredTheme('dark')).not.toThrow();
+    });
+
+    it('reads back no choice when reading the storage throws', () => {
+      vi.stubGlobal('localStorage', { getItem: denied, setItem: denied });
+      expect(readStoredTheme()).toBeNull();
+    });
+
+    it('persists nothing when writing the storage throws', () => {
+      vi.stubGlobal('localStorage', { getItem: denied, setItem: denied });
+      expect(() => writeStoredTheme('dark')).not.toThrow();
+    });
+  });
 });
 
 describe('resolving the theme to paint', () => {
