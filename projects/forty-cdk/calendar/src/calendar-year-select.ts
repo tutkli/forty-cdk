@@ -12,7 +12,13 @@ import { type CalendarYearOption, injectCalendarContext } from './calendar-conte
  * control over their markup:
  *
  * ```html
- * <select forCalendarYearSelect #y="forCalendarYearSelect" [minYear]="1900" [maxYear]="2100">
+ * <select
+ *   forCalendarYearSelect
+ *   #y="forCalendarYearSelect"
+ *   aria-label="Year"
+ *   [minYear]="1900"
+ *   [maxYear]="2100"
+ * >
  *   @for (opt of y.years(); track opt.value) {
  *     <option [value]="opt.value" [disabled]="opt.disabled">{{ opt.value }}</option>
  *   }

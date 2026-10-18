@@ -1,24 +1,4 @@
-const EXAMPLE_FILES = import.meta.glob('/projects/forty-cdk-docs/src/app/demos/**/*.example.ts', {
-  query: '?raw',
-  import: 'default',
-  eager: true,
-});
-
-const README_FILES = import.meta.glob('/projects/forty-cdk/*/README.md', {
-  query: '?raw',
-  import: 'default',
-  eager: true,
-});
-
-const DEMOS_ROOT = 'projects/forty-cdk-docs/src/app/demos/';
-
-const LIBRARY_ROOT = 'projects/forty-cdk/';
-
-const STYLES_BLOCK = /styles:\s*`([^`]*)`/g;
-
-const CSS_FENCE = /^```css\n([\s\S]*?)^```/gm;
-
-const RULE = /([^{}]+)\{[^{}]*\}/g;
+import { STYLE_RULES } from './testing/style-rules';
 
 const HIGHLIGHTED = '[data-highlighted]';
 
@@ -43,58 +23,7 @@ const HOVER_WITHOUT_POINTER_CHANNEL: ReadonlyMap<string, string> = new Map([
   ],
 ]);
 
-interface StyleRule {
-  readonly path: string;
-  readonly selectors: readonly string[];
-}
-
-function splitSelectorList(list: string): string[] {
-  const selectors: string[] = [];
-  let depth = 0;
-  let start = 0;
-  for (let i = 0; i < list.length; i++) {
-    const char = list[i];
-    if (char === '(') depth++;
-    else if (char === ')') depth--;
-    else if (char === ',' && depth === 0) {
-      selectors.push(list.slice(start, i));
-      start = i + 1;
-    }
-  }
-  selectors.push(list.slice(start));
-  return selectors.map((selector) => selector.replace(/\s+/g, ' ').trim()).filter(Boolean);
-}
-
-function rulesOf(path: string, source: string, block: RegExp): StyleRule[] {
-  const rules: StyleRule[] = [];
-  for (const match of source.replace(/\r\n/g, '\n').matchAll(block)) {
-    const css = match[1]!.replace(/\/\*[\s\S]*?\*\//g, '');
-    for (const rule of css.matchAll(RULE)) {
-      const prelude = rule[1]!.trim();
-      if (prelude.startsWith('@')) continue;
-      rules.push({ path, selectors: splitSelectorList(prelude) });
-    }
-  }
-  return rules;
-}
-
-function rulesFrom(
-  files: Record<string, string>,
-  base: string,
-  block: RegExp,
-): readonly StyleRule[] {
-  return Object.entries(files)
-    .map(([key, source]) => ({ path: key.slice(1 + base.length), source }))
-    .sort((a, b) => a.path.localeCompare(b.path))
-    .flatMap(({ path, source }) => rulesOf(path, source, block));
-}
-
-const RULES: readonly StyleRule[] = [
-  ...rulesFrom(EXAMPLE_FILES, DEMOS_ROOT, STYLES_BLOCK),
-  ...rulesFrom(README_FILES, LIBRARY_ROOT, CSS_FENCE),
-];
-
-const HIGHLIGHTED_SELECTORS = RULES.flatMap((rule) =>
+const HIGHLIGHTED_SELECTORS = STYLE_RULES.flatMap((rule) =>
   rule.selectors
     .filter((selector) => selector.includes(HIGHLIGHTED))
     .map((selector) => ({ path: rule.path, selector })),
@@ -114,7 +43,7 @@ describe('the docs demos and README styling fences style data-highlighted as the
   });
 
   it('never pairs the attribute with a :hover rule, since the pointer already moves it', () => {
-    const paired = RULES.flatMap((rule) => {
+    const paired = STYLE_RULES.flatMap((rule) => {
       if (!rule.selectors.some((selector) => selector.includes(HIGHLIGHTED))) return [];
       return rule.selectors
         .filter((selector) => selector.includes(':hover') && !selector.includes(HIGHLIGHTED))
@@ -125,7 +54,7 @@ describe('the docs demos and README styling fences style data-highlighted as the
 
   it('keeps every hover exemption backed by a rule that still pairs the two', () => {
     const paired = new Set(
-      RULES.flatMap((rule) => rule.selectors.map((selector) => `${rule.path}: ${selector}`)),
+      STYLE_RULES.flatMap((rule) => rule.selectors.map((selector) => `${rule.path}: ${selector}`)),
     );
     expect([...HOVER_WITHOUT_POINTER_CHANNEL.keys()].filter((entry) => !paired.has(entry))).toEqual(
       [],

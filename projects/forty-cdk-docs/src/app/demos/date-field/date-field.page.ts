@@ -50,7 +50,9 @@ import { DOC } from '../../../generated/docs/primitives/date-field.generated';
       </demo-layout>
 
       <demo-layout heading="date-range" sourcePath="date-field/examples/range.example.ts">
-        <app-date-range-field-default-example />
+        @defer (on immediate) {
+          <app-date-range-field-default-example />
+        }
       </demo-layout>
 
       <demo-layout

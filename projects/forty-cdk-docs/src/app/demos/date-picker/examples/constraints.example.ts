@@ -237,11 +237,11 @@ import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized
       height: 1em;
     }
 
-    .dp-constraints-nav:hover:not([disabled]) {
+    .dp-constraints-nav:hover:not([data-disabled]) {
       background: var(--ex-surface-2, #f2eee6);
     }
 
-    .dp-constraints-nav[disabled] {
+    .dp-constraints-nav[data-disabled] {
       opacity: 0.4;
       cursor: not-allowed;
     }
@@ -276,7 +276,7 @@ import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized
       background: var(--ex-surface-2, #f2eee6);
     }
 
-    .dp-constraints-cell[data-outside-month] {
+    .dp-constraints-cell[data-outside-month]:not([data-selected]) {
       color: var(--ex-muted, #585d66);
       opacity: 0.5;
     }

@@ -245,7 +245,7 @@ import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/international
       height: 1em;
     }
 
-    .dpdt-nav[disabled] {
+    .dpdt-nav[data-disabled] {
       opacity: 0.4;
       cursor: not-allowed;
     }
@@ -277,12 +277,12 @@ import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/international
     }
 
     .dpdt-trigger:hover:not([disabled]),
-    .dpdt-nav:hover:not([disabled]),
+    .dpdt-nav:hover:not([data-disabled]),
     .dpdt-cell:hover:not([aria-disabled]):not([data-selected]) {
       background: var(--ex-surface-2, #f2eee6);
     }
 
-    .dpdt-cell[data-outside-month] {
+    .dpdt-cell[data-outside-month]:not([data-selected]) {
       color: var(--ex-muted, #585d66);
       opacity: 0.5;
     }

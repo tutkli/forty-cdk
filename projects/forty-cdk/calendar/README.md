@@ -188,7 +188,7 @@ export class CalendarDefaultExample {
 
 ### States
 
-One class and one directive, three states. `disabled` turns off focus movement and selection for the whole calendar; `readonly` keeps days focusable and the grid still pages, but clicking or pressing `Enter` no longer changes the selection, and a click moves only the focused day to the clicked cell. Each reflects a root hook (`data-disabled` and `data-readonly`), and the example's stylesheet keys on nothing else.
+One class and one directive, three states. `disabled` turns off focus movement and selection for the whole calendar; `readonly` keeps days focusable and the grid still pages, but clicking or pressing `Enter` no longer changes the selection, and a click moves only the focused day to the clicked cell. Each reflects a root hook (`data-disabled` and `data-readonly`) that the example's stylesheet keys on. A disabled calendar also disables its prev / next buttons, which reflect `data-disabled` of their own rather than the native attribute.
 
 ### Constraints & week start
 
@@ -395,6 +395,8 @@ The default window is **anchored to the current year** (not the visible year), s
 
 **Keep `[forCalendarHeading]` in the DOM.** The grid's `aria-labelledby` points at the heading's id. When dropdowns replace the visible heading, keep a visually-hidden `[forCalendarHeading]` so the grid stays named. Removing the heading entirely leaves `aria-labelledby` pointing at a missing element.
 
+**Name each `<select>` yourself.** Neither directive names the element it sits on, and the heading names the grid, not the dropdowns. Without a name a screen reader announces only the value each one holds, so give each an `aria-label` as the snippet above does, or a `<label for>`.
+
 The lower-level hooks (`visibleMonthNumber()`, `visibleYear()`, `monthOptions()`, `goToMonth()`, `goToYear()`, `isYearDisabled()`) in the table above remain available for any other UI.
 
 ## View switching
@@ -598,7 +600,7 @@ forty-cdk ships no styles: put your own class on each piece and key your CSS off
 .calendar-cell[data-today] {
   outline: 1px solid var(--accent);
 }
-.calendar-cell[data-outside-month] {
+.calendar-cell[data-outside-month]:not([data-selected]) {
   opacity: 0.4;
 }
 .calendar-cell[data-disabled] {

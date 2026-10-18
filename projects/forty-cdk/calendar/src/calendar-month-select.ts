@@ -12,7 +12,7 @@ import { injectCalendarContext } from './calendar-context';
  * control over their markup, labels, and any placeholder:
  *
  * ```html
- * <select forCalendarMonthSelect #m="forCalendarMonthSelect">
+ * <select forCalendarMonthSelect #m="forCalendarMonthSelect" aria-label="Month">
  *   @for (opt of m.options(); track opt.value) {
  *     <option [value]="opt.value" [disabled]="opt.disabled">{{ opt.label }}</option>
  *   }

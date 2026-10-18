@@ -36,7 +36,9 @@ import { DOC } from '../../../generated/docs/primitives/date-picker.generated';
       </demo-layout>
 
       <demo-layout heading="constraints" sourcePath="date-picker/examples/constraints.example.ts">
-        <app-date-picker-constraints-example />
+        @defer (on immediate) {
+          <app-date-picker-constraints-example />
+        }
       </demo-layout>
 
       <demo-layout
