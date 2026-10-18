@@ -73,6 +73,8 @@ const deferredStyles = [];
 const attributed = [];
 const nullIds = [];
 const statefulToggles = [];
+const mistitled = [];
+const titled = new Map();
 let demoBlocks = 0;
 let themeToggles = 0;
 
@@ -226,6 +228,55 @@ function checkDemoAttributes(label, html) {
   if (nulled > 0) {
     nullIds.push(`${label} (${nulled})`);
   }
+}
+
+const TITLE_SUFFIX = ' · forty-cdk';
+
+function textOf(html) {
+  return collapse(stripText(html));
+}
+
+function checkTitle(label, html) {
+  const titles = [...html.matchAll(/<title>([\s\S]*?)<\/title>/gi)].map(([, text]) => textOf(text));
+  const heading = /<h1\b[^>]*>[\s\S]*?<\/h1>/i.exec(html);
+  if (titles.length !== 1 || heading === null) {
+    mistitled.push(`${label} (${titles.length} <title> element(s))`);
+    return;
+  }
+  const [title] = titles;
+  const expected = `${textOf(heading[0]).replace(/\.$/, '')}${TITLE_SUFFIX}`;
+  if (title !== expected) {
+    mistitled.push(`${label} ("${title}", owed "${expected}")`);
+  }
+  titled.set(title, [...(titled.get(title) ?? []), label]);
+}
+
+function checkNotFoundShell() {
+  const file = join(BROWSER, '404.html');
+  if (!existsSync(file)) {
+    fail(
+      'the static export has no 404.html, so the host answers a mistyped or stale URL with its ' +
+        'own generic page and the site never renders its not-found or unknown-error-code page',
+    );
+  }
+  const html = readFileSync(file, 'utf8');
+  const problems = [];
+  if (!/<app-root[^>]*><\/app-root>/.test(html)) {
+    problems.push(
+      'prerenders a route into <app-root>, which the client then hydrates against whatever URL ' +
+        'the host served it for',
+    );
+  }
+  if (/\bngh=|id="ng-state"/.test(html)) {
+    problems.push('carries hydration state, which describes one route and not the URL requested');
+  }
+  if (!/<base href="[^"]+"/.test(html)) {
+    problems.push('declares no <base href>, so its assets resolve against the missing URL');
+  }
+  if (problems.length > 0) {
+    fail(`404.html\n  ${problems.join('\n  ')}`);
+  }
+  checkTheme('404.html', html);
 }
 
 const DARK_ATTRIBUTE = "[data-theme='dark']";
@@ -530,6 +581,7 @@ if (!existsSync(homeFile)) {
   checkTheme('(home)', homeHtml);
   checkThemeToggle('(home)', homeHtml);
   checkDemoAttributes('(home)', homeHtml);
+  checkTitle('(home)', homeHtml);
   catalogued = checkLanding(homeHtml);
 }
 
@@ -546,6 +598,7 @@ for (const { path, title } of routes) {
   checkTheme(path, html);
   checkThemeToggle(path, html);
   checkDemoAttributes(path, html);
+  checkTitle(path, html);
 }
 
 if (missing.length > 0) {
@@ -556,6 +609,22 @@ if (empty.length > 0) {
     `prerendered HTML is missing rendered content for ${empty.length} route(s): ${empty.join(', ')}`,
   );
 }
+
+const shared = [...titled].filter(([, labels]) => labels.length > 1);
+if (mistitled.length > 0 || shared.length > 0) {
+  fail(
+    `${mistitled.length} prerendered page(s) carry a <title> other than their <h1> followed by ` +
+      `"${TITLE_SUFFIX}", and ${shared.length} title(s) are shared by more than one page, so ` +
+      'tabs, history entries and a screen reader announcing a route change cannot tell the ' +
+      `pages apart:\n  ${[
+        ...mistitled.slice(0, 10),
+        ...shared.slice(0, 10).map(([title, labels]) => `"${title}" on ${labels.length} pages`),
+      ].join('\n  ')}`,
+  );
+}
+
+checkNotFoundShell();
+
 if (themed.length > 0) {
   fail(
     `${themed.length} prerendered page(s) bake data-theme onto <html>, which flashes for a ` +
@@ -611,7 +680,8 @@ console.log(
   `[check-prerender-output] ok — ${primitives.length} primitive routes + ` +
     `${guides.length} guide routes + ${sitePages.length} site pages + ${errorCodes.length} ` +
     'error code pages + the error index + the guide index + the landing page prerendered ' +
-    'with content, none of them baking a theme and all of them bootstrapping one, over ' +
+    `with content, ${titled.size} of them each titled by its own heading, plus a 404.html ` +
+    'client-rendered shell, none of them baking a theme and all of them bootstrapping one, over ' +
     `${fallbackRules} dark rule(s) each mirrored by a prefers-color-scheme fallback, ` +
     `${styleBlocks} component style block(s) keying none of their rules on the theme attribute, ` +
     `${themeToggles} theme toggle(s) prerendered without a state and ` +

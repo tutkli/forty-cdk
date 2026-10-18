@@ -444,9 +444,12 @@ write([
   [
     join(OUT_DIR, 'routes.generated.ts'),
     routesModule({
-      primitiveSlugs: primitives.map((primitive) => primitive.slug),
-      guideSlugs: guides.map((guide) => guide.slug),
-      pageSlugs: sitePages.map((page) => page.slug),
+      primitives: primitives.map((primitive) => ({
+        slug: primitive.slug,
+        title: primitive.meta.title,
+      })),
+      guides: guides.map((guide) => ({ slug: guide.slug, title: headingText(guide.title) })),
+      pages: sitePages.map((page) => ({ slug: page.slug, title: headingText(page.title) })),
     }),
   ],
 ]);

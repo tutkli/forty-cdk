@@ -81,10 +81,11 @@ export function pageProblems(pages) {
   return problems;
 }
 
-function primitiveRoute(slug) {
+function primitiveRoute({ slug, title }) {
   return [
     '  {',
     `    path: '${slug}',`,
+    `    title: ${JSON.stringify(title)},`,
     '    loadComponent: () =>',
     `      import('${pageModuleOf(slug)}').then((m) => m.${pageSymbolOf(slug)}),`,
     '  },',
@@ -106,10 +107,11 @@ function primitiveRoute(slug) {
  * synchronous below its inputs, so a fragment in the URL still finds its anchor
  * on the first render.
  */
-function guideRoute(slug) {
+function guideRoute({ slug, title }) {
   return [
     '  {',
     `    path: 'guides/${slug}',`,
+    `    title: ${JSON.stringify(title)},`,
     `    data: { slug: '${slug}' },`,
     '    resolve: {',
     `      doc: () => import('${guideDocModuleOf(slug)}').then((m) => m.DOC),`,
@@ -136,10 +138,11 @@ function guideRoute(slug) {
  * smallest document the site publishes outside the error roster — downloaded
  * `concepts` to render a `pnpm add` command.
  */
-function sitePageRoute(slug) {
+function sitePageRoute({ slug, title }) {
   return [
     '  {',
     `    path: '${slug}',`,
+    `    title: ${JSON.stringify(title)},`,
     `    data: { slug: '${slug}' },`,
     '    resolve: {',
     `      doc: () => import('${sitePageDocModuleOf(slug)}').then((m) => m.DOC),`,
@@ -152,11 +155,11 @@ function sitePageRoute(slug) {
  * The generated route table: one lazy route per site page, per published
  * primitive and per guide, in the order the corpus was read.
  */
-export function routesModule({ primitiveSlugs, guideSlugs, pageSlugs = [] }) {
+export function routesModule({ primitives, guides, pages = [] }) {
   const routes = [
-    ...pageSlugs.map(sitePageRoute),
-    ...primitiveSlugs.map(primitiveRoute),
-    ...guideSlugs.map(guideRoute),
+    ...pages.map(sitePageRoute),
+    ...primitives.map(primitiveRoute),
+    ...guides.map(guideRoute),
   ].join('\n');
 
   return (

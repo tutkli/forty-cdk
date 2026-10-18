@@ -1,6 +1,13 @@
-import type { Routes } from '@angular/router';
+import type { ResolveFn, Routes } from '@angular/router';
 
 import { DOC_ROUTES } from '../generated/routes.generated';
+
+const errorCodeTitle: ResolveFn<string> = (route) => {
+  const code = route.paramMap.get('code') ?? '';
+  return import('./doc/error-codes').then(({ errorCodeByCode }) =>
+    errorCodeByCode(code) === null ? 'Unknown error code' : code,
+  );
+};
 
 /**
  * The site's routes: its own chrome, plus the document routes generated from
@@ -29,6 +36,7 @@ export const routes: Routes = [
   {
     path: '',
     pathMatch: 'full',
+    title: 'Headless UI primitives for modern Angular',
     loadComponent: () => import('./pages/home.page').then((m) => m.HomePage),
   },
   {
@@ -37,20 +45,24 @@ export const routes: Routes = [
     children: [
       {
         path: 'guides',
+        title: 'Guides',
         loadComponent: () => import('./guides/guides.page').then((m) => m.GuidesPage),
       },
       {
         path: 'errors',
         pathMatch: 'full',
+        title: 'Error codes',
         loadComponent: () => import('./pages/errors.page').then((m) => m.ErrorsPage),
       },
       {
         path: 'errors/:code',
+        title: errorCodeTitle,
         loadComponent: () => import('./pages/error-code.page').then((m) => m.ErrorCodePage),
       },
       ...DOC_ROUTES,
       {
         path: '**',
+        title: 'Page not found',
         loadComponent: () => import('./pages/not-found.page').then((m) => m.NotFoundPage),
       },
     ],
