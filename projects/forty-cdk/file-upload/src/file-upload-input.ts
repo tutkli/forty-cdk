@@ -16,10 +16,12 @@ import { injectFileUploadContext } from './file-upload-context';
  * emitting `filesChange` (accepted) / `filesRejected` (rejected) on the root.
  *
  * Consumers are expected to visually hide this input with their own CSS
- * (e.g. an `sr-only` / `visually-hidden` utility) while keeping it focusable
- * so keyboard users and assistive technology can activate it directly. The
- * directive never sets `hidden`, `display:none`, or `visibility:hidden` — it
- * remains strictly headless.
+ * (e.g. an `sr-only` / `visually-hidden` utility). Next to a
+ * `[forFileUploadTrigger]`, also give it `tabindex="-1"` and
+ * `aria-hidden="true"` so the button is the single control; without a
+ * trigger, keep it focusable and labelled. The directive never sets
+ * `hidden`, `display:none`, `visibility:hidden` or `tabindex` — it remains
+ * strictly headless.
  */
 @Directive({
   selector: 'input[forFileUploadInput]',

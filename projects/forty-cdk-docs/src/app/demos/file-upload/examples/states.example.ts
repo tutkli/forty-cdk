@@ -10,7 +10,7 @@ import { ForFileUpload, ForFileUploadInput, ForFileUploadTrigger } from 'forty-c
       <div class="state">
         <span class="state-label">Default</span>
         <div forFileUpload class="zone">
-          <input forFileUploadInput class="sr-only" aria-label="Upload files" />
+          <input forFileUploadInput class="sr-only" tabindex="-1" aria-hidden="true" />
           <p class="zone-text">
             <button forFileUploadTrigger class="zone-btn">Choose a file</button>
             or drag and drop
@@ -22,7 +22,7 @@ import { ForFileUpload, ForFileUploadInput, ForFileUploadTrigger } from 'forty-c
       <div class="state">
         <span class="state-label">Disabled</span>
         <div forFileUpload disabled class="zone">
-          <input forFileUploadInput class="sr-only" aria-label="Upload files" />
+          <input forFileUploadInput class="sr-only" tabindex="-1" aria-hidden="true" />
           <p class="zone-text">
             <button forFileUploadTrigger class="zone-btn">Choose a file</button>
             or drag and drop

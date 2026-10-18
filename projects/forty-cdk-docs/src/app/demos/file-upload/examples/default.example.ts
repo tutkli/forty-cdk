@@ -8,7 +8,7 @@ import { ForFileUpload, ForFileUploadInput, ForFileUploadTrigger } from 'forty-c
   template: `
     <div class="stage">
       <div forFileUpload class="zone" (filesChange)="onFiles($event)">
-        <input forFileUploadInput class="sr-only" aria-label="Upload files" />
+        <input forFileUploadInput class="sr-only" tabindex="-1" aria-hidden="true" />
 
         <svg class="zone-icon" viewBox="0 0 24 24" aria-hidden="true">
           <path

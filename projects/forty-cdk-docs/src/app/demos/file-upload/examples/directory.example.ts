@@ -13,7 +13,7 @@ interface FolderEntry {
   template: `
     <div class="stage">
       <div forFileUpload directory class="zone" (filesChange)="onFolder($event)">
-        <input forFileUploadInput class="sr-only" aria-label="Upload a folder" />
+        <input forFileUploadInput class="sr-only" tabindex="-1" aria-hidden="true" />
         <p class="zone-text">
           <button forFileUploadTrigger class="zone-btn">Choose a folder</button>
         </p>
