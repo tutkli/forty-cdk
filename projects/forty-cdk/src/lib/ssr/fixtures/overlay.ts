@@ -1,6 +1,12 @@
-import { Component, signal } from '@angular/core';
-import { ForDialog, ForDialogBackdrop, ForDialogTitle } from 'forty-cdk/dialog';
-import { ForDrawer, ForDrawerBackdrop, ForDrawerTitle } from 'forty-cdk/drawer';
+import { Component, inject, signal } from '@angular/core';
+import { ForDialog, ForDialogBackdrop, ForDialogManager, ForDialogTitle } from 'forty-cdk/dialog';
+import {
+  ForDrawer,
+  ForDrawerBackdrop,
+  ForDrawerManager,
+  ForDrawerTitle,
+  ForDrawerWrapper,
+} from 'forty-cdk/drawer';
 import { ForHoverCard, ForHoverCardContent, ForHoverCardTrigger } from 'forty-cdk/hover-card';
 import {
   ForPopover,
@@ -108,6 +114,29 @@ export class DialogContainedModalFixture {}
   `,
 })
 export class DrawerOpenFixture {}
+
+@Component({
+  imports: [ForDrawerWrapper, ForDrawer, ForDrawerTitle],
+  template: `
+    <div forDrawerWrapper>
+      <div forDrawer ariaLabel="d" [scaleBackground]="true">
+        <h2 forDrawerTitle>title</h2>
+      </div>
+    </div>
+  `,
+})
+export class DrawerWrapperOpenFixture {}
+
+@Component({ template: 'content' })
+class ManagedOverlayContent {}
+
+@Component({ template: '' })
+export class OverlayManagersOpenFixture {
+  constructor() {
+    inject(ForDialogManager).open(ManagedOverlayContent, { ariaLabel: 'd' });
+    inject(ForDrawerManager).open(ManagedOverlayContent, { ariaLabel: 'd' });
+  }
+}
 
 @Component({
   host: { 'data-fixture': 'drawer-contained-fixture' },

@@ -521,15 +521,16 @@ describe('injectModalShell', () => {
       ctx.destroy();
     });
 
-    it('does nothing when the lookup returns undefined (no callback bound)', async () => {
+    it('still moves initial focus when the lookup returns undefined (no callback bound)', async () => {
       const ctx = mountShell(() => ({
         modal: signal(false),
         returnFocus: signal(true),
         initialFocus: signal('first'),
         autoFocusOnOpen: () => undefined,
       }));
-      // Should not throw.
       await flush(ctx.fixture);
+
+      expect(document.activeElement?.id).toBe('inside-1');
       ctx.destroy();
     });
   });

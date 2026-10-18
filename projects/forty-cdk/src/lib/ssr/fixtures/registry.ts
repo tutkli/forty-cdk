@@ -96,7 +96,9 @@ import {
   DrawerContainedFixture,
   DrawerContainedModalFixture,
   DrawerOpenFixture,
+  DrawerWrapperOpenFixture,
   HoverCardOpenFixture,
+  OverlayManagersOpenFixture,
   PopoverOpenFixture,
   ToastFixture,
   TooltipFixture,
@@ -662,6 +664,24 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
         within: 'section',
       },
     ],
+  },
+  {
+    component: DrawerWrapperOpenFixture,
+    open: true,
+    markup: [
+      { select: '[forDrawerWrapper]', attributes: { 'data-state': 'idle' } },
+      {
+        select: '[forDrawer]',
+        attributes: { role: 'dialog', 'aria-modal': 'true', 'data-state': 'open' },
+        within: '[forDrawerWrapper]',
+      },
+    ],
+  },
+  {
+    component: OverlayManagersOpenFixture,
+    open: true,
+    noWiring:
+      'opens a dialog and a drawer through their managers, whose outlet renders outside the fixture host',
   },
   {
     component: ToastFixture,
