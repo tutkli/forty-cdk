@@ -4,6 +4,8 @@ Author one `[forTableColumnDef]` per column and `<for-table-body>` stamps the he
 data row per item out of the same cell primitives, so a column is declared in one place instead of
 being kept in sync by hand across a header row and a data row.
 
+## Declaring columns
+
 The layer is optional and additive. Place `<for-table-body>` inside a `[forTable]`; the raw
 `[forTableRow]` / `[forTableCell]` / `[forTableHeaderCell]` primitives in
 [the table README](../projects/forty-cdk/table/README.md) keep working unchanged, and a table that

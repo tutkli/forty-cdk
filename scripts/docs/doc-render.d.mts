@@ -118,7 +118,7 @@ export interface DocPageRelated {
 
 /** One document as its page renders it, and nothing the page does not read. */
 export interface DocPage {
-  /** Prose only: a table above the first section fails the compile. */
+  /** Prose only: a table or a heading above the first section fails the compile. */
   readonly intro: readonly DocPageProse[];
   /**
    * The line the page prints above its hero, as inline markup — `## Examples`'

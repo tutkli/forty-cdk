@@ -7,7 +7,7 @@ const gfm = new Marked({ gfm: true });
 
 const API_TYPE_COLUMN = 'type';
 const API_DEFAULT_COLUMN = 'default';
-const EXAMPLES_SECTION = 'examples';
+export const EXAMPLES_SECTION = 'examples';
 
 /**
  * A document the compiler refused, with every problem it found.
@@ -615,6 +615,13 @@ export function compileDocument(source, { path, slug, kind }) {
           'Move it under a heading',
       );
     }
+    if (entry.token.type === 'heading') {
+      report(
+        entry.line,
+        'a heading above the first section never reaches the page\'s "On this page" rail — ' +
+          'open a `##` section above it',
+      );
+    }
   }
 
   /**
@@ -688,7 +695,6 @@ export function compileDocument(source, { path, slug, kind }) {
     captionTrailing: caption === null ? [] : trailingOf(blocksUntilDemoHeading(examples.run)),
     examples: exampleHeadingsOf(examples?.run ?? []),
     intro: blocksOf(introRun.filter((_, index) => index !== ledeIndex)),
-    introHeadings: headingsOf(introRun),
     sections: sectionRuns.map(({ heading, run }) => ({
       title: heading.token.text,
       slug: heading.slug,
@@ -703,7 +709,6 @@ export function compileDocument(source, { path, slug, kind }) {
 /** Every anchor a compiled document lands on, in document order. */
 export function anchorsOf(document) {
   return [
-    ...document.introHeadings.map((heading) => heading.slug),
     ...document.sections.flatMap((section) => [
       section.slug,
       ...section.headings.map((heading) => heading.slug),

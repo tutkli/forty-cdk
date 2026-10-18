@@ -62,6 +62,14 @@ describe('documents the compiler refuses', () => {
     expect(problems[0]!.message).toContain('above the first section');
   });
 
+  it('refuses a heading above the first section, which no rail lists', () => {
+    const problems = problemsOf(titled('Title', '### Aside', '', '## Section'));
+
+    expect(problems).toHaveLength(1);
+    expect(problems[0]!.line).toBe(5);
+    expect(problems[0]!.message).toContain('above the first section');
+  });
+
   it('refuses a table nested in a blockquote, which the page would not show', () => {
     const problems = problemsOf(
       titled('Title', '## Section', '', '> | A | B |', '> | - | - |', '> | one | two |'),

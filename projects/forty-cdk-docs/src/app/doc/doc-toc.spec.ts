@@ -302,17 +302,21 @@ describe('the rail the published corpus renders', () => {
           primitives: [{ slug: 'select', title: 'Select', description: 'Picks one.' }],
         },
       ],
-      [
-        {
-          kind: 'primitive',
-          slug: 'select',
-          sections: page.sections.map((entry) => ({
-            title: entry.title,
-            slug: entry.slug,
-            text: '',
-          })),
-        },
-      ],
+      {
+        documents: [
+          {
+            kind: 'primitive',
+            slug: 'select',
+            intro: '',
+            sections: page.sections.map((entry) => ({
+              title: entry.title,
+              slug: entry.slug,
+              text: '',
+            })),
+          },
+        ],
+        errorCodes: [],
+      },
       [],
     );
     const paths = entries.map((entry) => entry.path);

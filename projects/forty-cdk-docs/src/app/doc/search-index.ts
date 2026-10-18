@@ -1,9 +1,20 @@
 import type { DocsGroup } from '../primitives';
 import type { DocIndexEntry, DocIndexSection } from './doc-model';
+import type { ErrorCodeEntry } from './error-codes';
 import type { ResolvedGuideGroup } from './guides';
 import type { SitePageMeta } from './site-pages';
 
-export type SearchKind = 'primitive' | 'guide' | 'page' | 'section';
+export type SearchKind = 'primitive' | 'guide' | 'page' | 'section' | 'error';
+
+/**
+ * The half of the palette's entries that arrives late, in one chunk request:
+ * every document's intro and sections, and every error code the library
+ * reports.
+ */
+export interface SearchIndex {
+  readonly documents: readonly DocIndexEntry[];
+  readonly errorCodes: readonly ErrorCodeEntry[];
+}
 
 /**
  * The fields a query is matched against, lowercased once when the entry is
@@ -50,6 +61,27 @@ export interface SearchResult {
 /** The group label the palette files the site's own pages under. */
 const SITE_GROUP = 'Introduction';
 
+/** The group label the palette files every error code under. */
+const ERROR_GROUP = 'Error codes';
+
+/**
+ * The two index pages the site serves beside its documents, under the title
+ * and rail group the navigation gives them. Neither is compiled from a
+ * document, so each states its own description here.
+ */
+const GUIDES_PAGE = {
+  title: 'Guides',
+  description:
+    'Cross-cutting documentation that spans primitives: how to style a headless library, how to ' +
+    'wrap primitives in a design system, and the deeper table and virtualization compositions.',
+};
+const ERRORS_PAGE = {
+  title: 'Error codes',
+  description:
+    'Every FORCDK-<AREA>-<NNN> code forty-cdk reports, with what causes it and how to fix it.',
+};
+const REFERENCE_GROUP = 'Reference';
+
 /**
  * What one term is worth in each field, highest first.
  *
@@ -70,7 +102,13 @@ const TITLE_PREFIX_BONUS = 4;
  * primitive whose README mentions installing
  * ([#1812](https://github.com/tutkli/forty-cdk/issues/1812)).
  */
-const KIND_SCORE: Record<SearchKind, number> = { page: 3, primitive: 2, guide: 2, section: 0 };
+const KIND_SCORE: Record<SearchKind, number> = {
+  page: 3,
+  primitive: 2,
+  guide: 2,
+  section: 0,
+  error: 0,
+};
 
 /** Characters of body text a result shows, and how much of it precedes the match. */
 const SNIPPET_LENGTH = 150;
@@ -88,45 +126,53 @@ const SNIPPET_LEAD = 40;
  * `index` is the half that arrives late: it is loaded on demand
  * ([#1813](https://github.com/tutkli/forty-cdk/issues/1813)), so calling this
  * with an empty one yields the documents alone, which is what the palette shows
- * while the body index is still in flight.
+ * while the body index is still in flight. Once it arrives, a document also
+ * matches on its intro, and every error code is an entry of its own
+ * ([#2329](https://github.com/tutkli/forty-cdk/issues/2329)): a code pasted
+ * from the console is the most precise query a reader ever types.
  *
  * The site's own pages are indexed first, because insertion order breaks ties
  * between equally-scored entries.
  */
 export function buildSearchEntries(
   groups: readonly DocsGroup[],
-  index: readonly DocIndexEntry[],
+  index: SearchIndex,
   guideGroups: readonly ResolvedGuideGroup[],
   sitePages: readonly SitePageMeta[] = [],
 ): SearchEntry[] {
-  const sectionsFor = (kind: DocIndexEntry['kind'], slug: string): readonly DocIndexSection[] =>
-    index.find((entry) => entry.kind === kind && entry.slug === slug)?.sections ?? [];
+  const documentEntries = (
+    kind: DocIndexEntry['kind'],
+    meta: { readonly slug: string; readonly title: string; readonly description: string },
+    group: string,
+    path: string,
+  ): readonly SearchEntry[] => {
+    const indexed = index.documents.find(
+      (entry) => entry.kind === kind && entry.slug === meta.slug,
+    );
+    return [
+      documentEntry(kind, meta, group, path, indexed?.intro ?? ''),
+      ...(indexed?.sections ?? []).map((section) => sectionEntry(meta.title, group, path, section)),
+    ];
+  };
 
   const entries: SearchEntry[] = [];
   for (const page of sitePages) {
-    entries.push(documentEntry('page', page, SITE_GROUP, `/${page.slug}`));
-    for (const section of sectionsFor('page', page.slug)) {
-      entries.push(sectionEntry(page.title, SITE_GROUP, `/${page.slug}`, section));
-    }
+    entries.push(...documentEntries('page', page, SITE_GROUP, `/${page.slug}`));
   }
+  entries.push(documentEntry('page', GUIDES_PAGE, 'Guides', '/guides'));
   for (const group of guideGroups) {
     const label = `Guides · ${group.label}`;
     for (const guide of group.guides) {
-      const path = `/guides/${guide.slug}`;
-      entries.push(documentEntry('guide', guide, label, path));
-      for (const section of sectionsFor('guide', guide.slug)) {
-        entries.push(sectionEntry(guide.title, label, path, section));
-      }
+      entries.push(...documentEntries('guide', guide, label, `/guides/${guide.slug}`));
     }
   }
   for (const group of groups) {
     for (const primitive of group.primitives) {
-      entries.push(documentEntry('primitive', primitive, group.label, `/${primitive.slug}`));
-      for (const section of sectionsFor('primitive', primitive.slug)) {
-        entries.push(sectionEntry(primitive.title, group.label, `/${primitive.slug}`, section));
-      }
+      entries.push(...documentEntries('primitive', primitive, group.label, `/${primitive.slug}`));
     }
   }
+  entries.push(documentEntry('page', ERRORS_PAGE, REFERENCE_GROUP, '/errors'));
+  entries.push(...index.errorCodes.map(errorEntry));
   return entries;
 }
 
@@ -138,11 +184,16 @@ export function buildSearchEntries(
  * which every reader downloads and most never search from. The
  * dynamic import is the whole mechanism: it is what makes the index a chunk the
  * bundler emits separately and the palette asks for once, when a reader first
- * opens it ([#1813](https://github.com/tutkli/forty-cdk/issues/1813)).
+ * opens it ([#1813](https://github.com/tutkli/forty-cdk/issues/1813)). The
+ * error roster is reached the same way, and is the chunk the `/errors` pages
+ * already load.
  */
-export async function loadSearchIndex(): Promise<readonly DocIndexEntry[]> {
-  const { DOC_INDEX } = await import('../../generated/doc-index.generated');
-  return DOC_INDEX;
+export async function loadSearchIndex(): Promise<SearchIndex> {
+  const [{ DOC_INDEX }, { ERROR_CODE_INDEX }] = await Promise.all([
+    import('../../generated/doc-index.generated'),
+    import('./error-codes'),
+  ]);
+  return { documents: DOC_INDEX, errorCodes: ERROR_CODE_INDEX };
 }
 
 /**
@@ -157,7 +208,7 @@ export function searchEntries(entries: readonly SearchEntry[], query: string): S
   const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
   if (terms.length === 0) {
     return entries
-      .filter((entry) => entry.kind !== 'section')
+      .filter((entry) => entry.kind !== 'section' && entry.kind !== 'error')
       .map((entry) => ({
         entry,
         score: 0,
@@ -190,22 +241,41 @@ export function searchEntries(entries: readonly SearchEntry[], query: string): S
 }
 
 function documentEntry(
-  kind: Exclude<SearchKind, 'section'>,
+  kind: DocIndexEntry['kind'],
   meta: { readonly title: string; readonly description: string },
   group: string,
   path: string,
+  intro = '',
 ): SearchEntry {
+  const body = intro === '' ? meta.description : `${meta.description} ${intro}`;
   return {
     kind,
     title: meta.title,
     group,
     path,
-    body: meta.description,
+    body,
     ranked: {
       document: meta.title.toLowerCase(),
       section: '',
       group: group.toLowerCase(),
-      body: meta.description.toLowerCase(),
+      body: body.toLowerCase(),
+    },
+  };
+}
+
+function errorEntry(entry: ErrorCodeEntry): SearchEntry {
+  const body = entry.cause === null ? entry.message : `${entry.message} ${entry.cause}`;
+  return {
+    kind: 'error',
+    title: entry.code,
+    group: ERROR_GROUP,
+    path: `/errors/${entry.code}`,
+    body,
+    ranked: {
+      document: entry.code.toLowerCase(),
+      section: '',
+      group: ERROR_GROUP.toLowerCase(),
+      body: body.toLowerCase(),
     },
   };
 }

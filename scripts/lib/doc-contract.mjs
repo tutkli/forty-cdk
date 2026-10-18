@@ -664,19 +664,13 @@ export function checkHeadingAnchors(documents) {
   const problems = [];
   for (const document of documents) {
     const demoLines = new Set(document.examples.map((example) => example.line));
-    const headings = [
-      ...document.introHeadings.map((heading) => ({
+    const headings = document.sections.flatMap((section) => [
+      { depth: 2, text: section.title, slug: section.slug, line: section.line, where: null },
+      ...section.headings.map((heading) => ({
         ...heading,
-        where: 'above the first section',
+        where: `under "## ${section.title}"`,
       })),
-      ...document.sections.flatMap((section) => [
-        { depth: 2, text: section.title, slug: section.slug, line: section.line, where: null },
-        ...section.headings.map((heading) => ({
-          ...heading,
-          where: `under "## ${section.title}"`,
-        })),
-      ]),
-    ];
+    ]);
     const title = { depth: 1, text: document.title, line: document.titleLine };
     const firstBySlug = new Map([[slugify(title.text), title]]);
     const github = new Slugger();

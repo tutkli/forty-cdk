@@ -478,6 +478,29 @@ exports[`document structure > docs/styling-floating-content.md declares the sect
 exports[`document structure > docs/table-declarative-columns.md declares the sections and table shapes it declared before 1`] = `
 [
   {
+    "headings": [
+      {
+        "depth": 3,
+        "slug": "styling-the-stamped-cells",
+      },
+      {
+        "depth": 3,
+        "slug": "persisting-column-widths-columnwidths",
+      },
+      {
+        "depth": 3,
+        "slug": "width-vs-a-resized--seeded-width-column-track-precedence",
+      },
+      {
+        "depth": 3,
+        "slug": "fallbackwidth--a-weighted-fluid-track-before-the-first-resize",
+      },
+    ],
+    "slug": "declaring-columns",
+    "tables": [],
+    "title": "Declaring columns",
+  },
+  {
     "headings": [],
     "slug": "column-reordering-reorderable--columnreorder",
     "tables": [],
