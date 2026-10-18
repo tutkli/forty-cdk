@@ -1,6 +1,6 @@
 import { provideZonelessChangeDetection } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
-import { installObserverPolyfills } from 'forty-cdk/testing';
+import { installObserverPolyfills, pressKey } from 'forty-cdk/testing';
 
 import { flush } from '../../../../forty-cdk/src/test-utils/flush';
 import { afterEachOverlayCleanup } from '../../../../forty-cdk/src/test-utils/overlay-cleanup';
@@ -139,6 +139,34 @@ describe('the docs States demos', () => {
       expect(after.slice(1)).toEqual(before.slice(1));
     },
   );
+
+  it('time-picker/examples/states.example.ts opens the read-only picker to browsable slots it does not commit, and closes it on Escape', async () => {
+    const { host, fixture } = await render('time-picker/examples/states.example.ts');
+    const readonly = host.querySelectorAll('[forTimePicker]')[2]!;
+    const trigger = within<HTMLElement>(readonly, '[forTimePickerTrigger]');
+    const before = within(readonly, '[forTimePickerValue]').textContent!.trim();
+
+    trigger.click();
+    await flush(fixture);
+
+    const content = document.getElementById(trigger.getAttribute('aria-controls') ?? '');
+    expect(content?.hasAttribute('forTimePickerContent')).toBe(true);
+    expect(content!.querySelectorAll('[forTimePickerOption]').length).toBeGreaterThan(1);
+
+    await click(
+      content!,
+      '[forTimePickerOption]:not([aria-selected="true"]):not([data-disabled])',
+      fixture,
+    );
+    expect(within(readonly, '[forTimePickerValue]').textContent!.trim()).toBe(before);
+    expect(trigger.getAttribute('aria-expanded')).toBe('true');
+
+    pressKey(content!, 'Escape');
+    await flush(fixture);
+
+    expect(trigger.getAttribute('aria-expanded')).toBe('false');
+    expect(document.querySelector('[forTimePickerContent]')).toBeNull();
+  });
 
   it.each(FOCUSABLE_DISABLED_DEMOS.map((demo) => [demo.path, demo] as const))(
     '%s disables its second control through the input, keeping it in the tab order',

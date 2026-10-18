@@ -84,6 +84,7 @@ import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/international
         <span class="time-picker-states-label">Read-only</span>
         <div
           forTimePicker
+          #ro="forTimePicker"
           class="time-picker-states-field"
           [(value)]="readonlyValue"
           [step]="30"
@@ -98,6 +99,21 @@ import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/international
           >
             <span forTimePickerValue placeholder="Pick a time"></span>
           </button>
+
+          @if (ro.open()) {
+            <div forTimePickerContent class="time-picker-states-content">
+              @for (slot of ro.slots(); track slot.id) {
+                <div
+                  forTimePickerOption
+                  class="time-picker-states-option"
+                  [value]="slot.value"
+                  [disabled]="slot.disabled"
+                >
+                  {{ slot.label }}
+                </div>
+              }
+            </div>
+          }
         </div>
       </div>
     </div>
