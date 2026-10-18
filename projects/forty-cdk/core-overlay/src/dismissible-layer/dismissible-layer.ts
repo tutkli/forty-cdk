@@ -86,7 +86,11 @@ export interface DismissibleLayerActivateOptions {
    */
   onPointerDownInside?: (event: PointerEvent) => void;
 
-  /** Fired when focus moves outside this layer's host. */
+  /**
+   * Fired when focus moves outside this layer's host. That includes focus moving into an
+   * `<iframe>` outside it, which the host document observes only as its window losing focus:
+   * `event` is then the window's `blur`.
+   */
   onFocusOutside?: (event: FocusEvent) => void;
 
   /**
@@ -149,6 +153,13 @@ const EMPTY_ACTIVATE_OPTIONS: DismissibleLayerActivateOptions = { channels: [] }
  *
  * An Escape that belongs to an IME composition (see `isImeComposing`) is never dispatched: it
  * cancels the conversion, not the topmost layer.
+ *
+ * **A press inside an `<iframe>` reaches no document listener**: it is dispatched in the frame's
+ * own document, and engines do not consistently fire `focusin` on the `<iframe>` element either.
+ * What the host document does observe is its window's `blur` with the frame as
+ * `document.activeElement`, so the stack also listens for that and dispatches it on the `'focus'`
+ * channel as focus moving to the frame — once, even in an engine that also reports the frame's
+ * `focusin`.
  */
 @Injectable({ providedIn: 'root' })
 export class DismissibleLayerStack {
@@ -158,6 +169,7 @@ export class DismissibleLayerStack {
   readonly #stack: DismissibleLayer[] = [];
   #suppressDepth = 0;
   #listening = false;
+  #lastFocusInTarget: EventTarget | null = null;
 
   readonly #onKeyDown = (event: KeyboardEvent): void => {
     if (event.key !== 'Escape' || isImeComposing(event)) {
@@ -193,10 +205,22 @@ export class DismissibleLayerStack {
     }
   };
   readonly #onFocusIn = (event: Event): void => {
+    this.#lastFocusInTarget = event.target;
     if (this.#suppressDepth > 0) {
       return;
     }
     this.#topmostForChannel('focus')?.handleFocusIn(event as FocusEvent);
+  };
+  readonly #onWindowBlur = (event: FocusEvent): void => {
+    if (this.#suppressDepth > 0) {
+      return;
+    }
+    const frame = this.#document.activeElement;
+    if (!(frame instanceof HTMLIFrameElement) || frame === this.#lastFocusInTarget) {
+      return;
+    }
+    this.#lastFocusInTarget = frame;
+    this.#topmostForChannel('focus')?.handleFocusIn(event, frame);
   };
 
   constructor() {
@@ -276,6 +300,7 @@ export class DismissibleLayerStack {
     this.#document.addEventListener('keydown', this.#onKeyDown);
     this.#document.addEventListener('pointerdown', this.#onPointerDown, true);
     this.#document.addEventListener('focusin', this.#onFocusIn, true);
+    this.#document.defaultView?.addEventListener('blur', this.#onWindowBlur);
   }
 
   #removeListeners(): void {
@@ -286,6 +311,8 @@ export class DismissibleLayerStack {
     this.#document.removeEventListener('keydown', this.#onKeyDown);
     this.#document.removeEventListener('pointerdown', this.#onPointerDown, true);
     this.#document.removeEventListener('focusin', this.#onFocusIn, true);
+    this.#document.defaultView?.removeEventListener('blur', this.#onWindowBlur);
+    this.#lastFocusInTarget = null;
   }
 
   /**
@@ -518,11 +545,11 @@ export class DismissibleLayer {
 
   /**
    * @internal Dispatched by {@link DismissibleLayerStack} to the topmost layer
-   * declaring the `'focus'` channel on an outside `focusin`. See
-   * {@link handleEscape}.
+   * declaring the `'focus'` channel on an outside `focusin`, and on the
+   * window `blur` that moves focus into an `<iframe>`, with that frame as
+   * `target`. See {@link handleEscape}.
    */
-  handleFocusIn(event: FocusEvent): void {
-    const target = resolveEventTarget(event);
+  handleFocusIn(event: FocusEvent, target: Node | null = resolveEventTarget(event)): void {
     if (!target || this.#stack.containsFromLayer(this, target)) {
       return;
     }

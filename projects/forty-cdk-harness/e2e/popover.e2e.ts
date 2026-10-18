@@ -121,6 +121,24 @@ test.describe('Popover', () => {
     await expect(el(page, 'trigger')).not.toBeFocused();
   });
 
+  for (const [what, text] of [
+    ['a control', 'Inside frame'],
+    ['non-focusable content', 'Plain text'],
+  ] as const) {
+    test(`a press on ${what} inside an outside <iframe> closes and leaves focus in the frame`, async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'popover', { frame: '1' });
+      await el(page, 'trigger').click();
+      await expect(el(page, 'first')).toBeFocused();
+
+      await page.frameLocator('[data-testid="frame"]').getByText(text).click();
+
+      await expect(el(page, 'popover')).toHaveCount(0);
+      await expect(el(page, 'frame')).toBeFocused();
+    });
+  }
+
   test('(autoFocusOnOpen) preventDefault skips the imperative focus move', async ({ page }) => {
     await gotoFixture(page, 'popover', { vetoOpen: '1' });
     await el(page, 'trigger').click();

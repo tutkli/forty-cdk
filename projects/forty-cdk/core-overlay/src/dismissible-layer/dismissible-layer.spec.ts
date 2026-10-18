@@ -399,6 +399,106 @@ describe('DismissibleLayer', () => {
     });
   });
 
+  describe('focus moving into an <iframe> (#2354)', () => {
+    function frameIn(parent: HTMLElement): HTMLIFrameElement {
+      const frame = document.createElement('iframe');
+      parent.appendChild(frame);
+      return frame;
+    }
+
+    function blurWindowTo(active: Element | null): FocusEvent {
+      vi.spyOn(document, 'activeElement', 'get').mockReturnValue(active);
+      const event = new FocusEvent('blur');
+      window.dispatchEvent(event);
+      return event;
+    }
+
+    it('dispatches the window blur as focus outside when focus lands on an outside frame', () => {
+      const calls: string[] = [];
+      let received: Event | null = null;
+      layer = makeLayer(host);
+      layer.activate({
+        channels: ['focus'],
+        onFocusOutside: (event) => {
+          received = event;
+          calls.push('focus');
+        },
+        onInteractOutside: () => calls.push('interact'),
+      });
+
+      const blur = blurWindowTo(frameIn(outside));
+
+      expect(calls).toEqual(['focus', 'interact']);
+      expect(received).toBe(blur);
+    });
+
+    it('does not fire for a frame inside the host', () => {
+      const calls: string[] = [];
+      layer = makeLayer(host);
+      layer.activate({ channels: ['focus'], onFocusOutside: () => calls.push('focus') });
+
+      blurWindowTo(frameIn(host));
+
+      expect(calls).toEqual([]);
+    });
+
+    it('does not fire when the window loses focus without a frame taking it', () => {
+      const calls: string[] = [];
+      layer = makeLayer(host);
+      layer.activate({ channels: ['focus'], onFocusOutside: () => calls.push('focus') });
+
+      blurWindowTo(host.querySelector('#inside'));
+
+      expect(calls).toEqual([]);
+    });
+
+    it('dispatches the move once when the engine also reports the frame focusin', () => {
+      const calls: string[] = [];
+      const inner = document.createElement('div');
+      document.body.appendChild(inner);
+      const below = makeLayer(host);
+      below.activate({ channels: ['focus'], onFocusOutside: () => calls.push('below') });
+      layer = makeLayer(inner);
+      const top = layer;
+      top.activate({
+        channels: ['focus'],
+        onFocusOutside: () => {
+          calls.push('top');
+          top.deactivate();
+        },
+      });
+
+      const frame = frameIn(outside);
+      document.dispatchEvent(focusIn(frame));
+      blurWindowTo(frame);
+
+      expect(calls).toEqual(['top']);
+      below.deactivate();
+    });
+
+    it('does not fire while the stack is suppressed', () => {
+      const calls: string[] = [];
+      layer = makeLayer(host);
+      layer.activate({ channels: ['focus'], onFocusOutside: () => calls.push('focus') });
+      const frame = frameIn(outside);
+
+      layer.suppress(() => blurWindowTo(frame));
+
+      expect(calls).toEqual([]);
+    });
+
+    it('stops listening to the window once the last layer deactivates', () => {
+      const calls: string[] = [];
+      layer = makeLayer(host);
+      layer.activate({ channels: ['focus'], onFocusOutside: () => calls.push('focus') });
+      layer.deactivate();
+
+      blurWindowTo(frameIn(outside));
+
+      expect(calls).toEqual([]);
+    });
+  });
+
   describe('layer stacking', () => {
     it('only invokes events on the topmost active layer', () => {
       const inner = document.createElement('div');
