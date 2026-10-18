@@ -190,7 +190,16 @@ class SelectDismissContractHost {
 @Component({
   imports: [ForSelect, ForSelectTrigger],
   template: `
-    <div forSelect [disabled]="disabled()" [readonly]="isReadonly()" [required]="required()">
+    <div
+      forSelect
+      [disabled]="disabled()"
+      [readonly]="isReadonly()"
+      [required]="required()"
+      [invalid]="invalid()"
+      [pending]="pending()"
+      [touched]="touched()"
+      [dirty]="dirty()"
+    >
       <button forSelectTrigger>Trigger</button>
     </div>
   `,
@@ -199,6 +208,10 @@ class SelectFormControlHost {
   readonly disabled = signal(false);
   readonly isReadonly = signal(false);
   readonly required = signal(false);
+  readonly invalid = signal(false);
+  readonly pending = signal(false);
+  readonly touched = signal(false);
+  readonly dirty = signal(false);
 }
 
 /**
@@ -1746,6 +1759,7 @@ describe('ForSelect', () => {
       const r = renderHost(SelectFormControlHost);
       const result: FormControlMountResult = {
         control: r.query<HTMLButtonElement>('[forSelectTrigger]')!,
+        stateHost: r.query<HTMLElement>('[forSelect]')!,
         flush: r.flush,
         setFlag: (flag, value) => {
           switch (flag) {
@@ -1758,12 +1772,24 @@ describe('ForSelect', () => {
             case 'required':
               r.instance.required.set(value);
               return;
+            case 'invalid':
+              r.instance.invalid.set(value);
+              return;
+            case 'pending':
+              r.instance.pending.set(value);
+              return;
+            case 'touched':
+              r.instance.touched.set(value);
+              return;
+            case 'dirty':
+              r.instance.dirty.set(value);
+              return;
           }
         },
       };
       return result;
     },
-    { flags: ['disabled', 'readonly', 'required'] },
+    { flags: ['disabled', 'readonly', 'required', 'invalid', 'pending', 'touched', 'dirty'] },
   );
 
   assertOverlayTriggerAriaContract(

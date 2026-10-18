@@ -186,6 +186,10 @@ function getContent(): HTMLElement | null {
       [disabled]="isDisabled()"
       [readonly]="isReadonly()"
       [required]="isRequired()"
+      [invalid]="isInvalid()"
+      [pending]="isPending()"
+      [touched]="isTouched()"
+      [dirty]="isDirty()"
     >
       <button forTimePickerTrigger>Open</button>
     </div>
@@ -196,6 +200,10 @@ class TimePickerFormControlHost {
   readonly isDisabled = signal(false);
   readonly isReadonly = signal(false);
   readonly isRequired = signal(false);
+  readonly isInvalid = signal(false);
+  readonly isPending = signal(false);
+  readonly isTouched = signal(false);
+  readonly isDirty = signal(false);
 }
 
 @Component({
@@ -329,6 +337,7 @@ describe('ForTimePicker', () => {
       const r = renderHost(TimePickerFormControlHost);
       const result: FormControlMountResult = {
         control: r.query<HTMLButtonElement>('[forTimePickerTrigger]')!,
+        stateHost: r.query<HTMLElement>('[forTimePicker]')!,
         flush: r.flush,
         setFlag: (flag, flagValue) => {
           switch (flag) {
@@ -341,12 +350,24 @@ describe('ForTimePicker', () => {
             case 'required':
               r.instance.isRequired.set(flagValue);
               return;
+            case 'invalid':
+              r.instance.isInvalid.set(flagValue);
+              return;
+            case 'pending':
+              r.instance.isPending.set(flagValue);
+              return;
+            case 'touched':
+              r.instance.isTouched.set(flagValue);
+              return;
+            case 'dirty':
+              r.instance.isDirty.set(flagValue);
+              return;
           }
         },
       };
       return result;
     },
-    { flags: ['disabled', 'readonly', 'required'] },
+    { flags: ['disabled', 'readonly', 'required', 'invalid', 'pending', 'touched', 'dirty'] },
   );
 
   assertNativeSubmissionContract(MinuteSubmissionHost, {
