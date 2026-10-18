@@ -1,6 +1,7 @@
 import { LocationStrategy } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterLink, RouterOutlet } from '@angular/router';
+import { ForDrawerTrigger } from 'forty-cdk/drawer';
 
 import { AppNav } from './app-nav';
 import { GITHUB_REPO } from './github';
@@ -13,13 +14,24 @@ import { ThemeToggle } from './theme-toggle';
 @Component({
   selector: 'docs-layout',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, RouterLink, AppNav, ScrollPane, Icon, SectionSwitcher, ThemeToggle],
+  imports: [
+    RouterOutlet,
+    RouterLink,
+    ForDrawerTrigger,
+    AppNav,
+    ScrollPane,
+    Icon,
+    SectionSwitcher,
+    ThemeToggle,
+  ],
   template: `
     <header class="topbar">
       <button
         type="button"
+        forDrawerTrigger
+        [(open)]="chrome.navOpen"
+        controls="site-nav"
         class="pg-icon-btn menu-btn"
-        (click)="chrome.navOpen.set(true)"
         aria-label="Open navigation"
       >
         <app-icon name="bars-3" />

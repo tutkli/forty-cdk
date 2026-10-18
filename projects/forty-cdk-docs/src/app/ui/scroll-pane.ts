@@ -19,7 +19,7 @@ import {
   ],
   template: `
     <div forScrollArea type="hover" class="sp">
-      <div forScrollAreaViewport class="sp-viewport">
+      <div forScrollAreaViewport [focusable]="false" class="sp-viewport">
         <div forScrollAreaContent class="sp-content">
           <ng-content />
         </div>

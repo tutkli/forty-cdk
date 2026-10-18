@@ -87,6 +87,7 @@ const DOCS_RAIL_SIZE = DOCS_RAIL.reduce((count, group) => count + group.entries.
             <a
               [routerLink]="allGuides"
               routerLinkActive="active"
+              ariaCurrentWhenActive="page"
               [routerLinkActiveOptions]="exactMatch"
               class="pg-nav-link"
               (click)="navigate.emit()"
@@ -106,6 +107,7 @@ const DOCS_RAIL_SIZE = DOCS_RAIL.reduce((count, group) => count + group.entries.
                 <a
                   [routerLink]="entry.path"
                   routerLinkActive="active"
+                  ariaCurrentWhenActive="page"
                   class="pg-nav-link"
                   (click)="navigate.emit()"
                 >
@@ -148,6 +150,8 @@ const DOCS_RAIL_SIZE = DOCS_RAIL.reduce((count, group) => count + group.entries.
 
     .filter-field:focus-within {
       border-color: var(--pg-border-strong);
+      outline: 2px solid var(--pg-primary);
+      outline-offset: 2px;
     }
 
     .filter-icon {
