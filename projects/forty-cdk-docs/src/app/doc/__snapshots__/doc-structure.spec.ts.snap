@@ -2147,7 +2147,7 @@ exports[`document structure > projects/forty-cdk/combobox/README.md declares the
           "Values",
         ],
         "role": "plain",
-        "rows": 21,
+        "rows": 24,
       },
     ],
     "title": "API",

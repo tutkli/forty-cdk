@@ -18,12 +18,28 @@ import { type ForComboboxContext, injectComboboxTriggerContext } from './combobo
  * expects an inner `[forComboboxList]` to carry the listbox role while the
  * content itself becomes a `role="dialog"` named by this trigger.
  *
- * Wires `aria-haspopup="dialog"`, `aria-expanded`, and `aria-controls`
- * (pointing to the dialog surface while open). A static `id` on the host is
- * kept; without one the trigger gets a generated id. Native `disabled` reflects
- * `effectiveDisabled` (single-purpose trigger). The trigger is exempt from the
- * popup's dismissible layer — clicks on it route through `(click)` instead of
- * racing an outside-pointer dismissal.
+ * Wires `role="combobox"`, `aria-haspopup="dialog"`, `aria-expanded`, and
+ * `aria-controls` (pointing to the dialog surface while open). A static `id`
+ * on the host is kept; without one the trigger gets a generated id. Native
+ * `disabled` reflects `effectiveDisabled` (single-purpose trigger). The
+ * trigger is exempt from the popup's dismissible layer — clicks on it route
+ * through `(click)` instead of racing an outside-pointer dismissal.
+ *
+ * It also reflects the root's form-control state (`aria-readonly` /
+ * `aria-required` / `aria-invalid` / `aria-busy`, truthy-only) plus the
+ * `data-readonly` styling hook, because a closed picker exposes no other
+ * focusable element: the `[forComboboxInput]` that carries the same state is
+ * mounted inside the panel. The `combobox` role is what supports those
+ * properties, which the implicit `button` role does not. A `combobox` takes its
+ * name from the author rather than from its content, so label it
+ * (`aria-labelledby`, `aria-label`, or a surrounding `[forField]`).
+ *
+ * The trigger keeps the role while the dialog is open, alongside the
+ * `role="combobox"` input inside it. They are two widgets in two contexts: the
+ * trigger is the collapsed control that owns the dialog popup, the input is
+ * the search field that owns the listbox popup, and focus sits on only one of
+ * them at a time. Dropping the role on open would change the trigger's
+ * semantics under the user while the dialog it names is showing.
  *
  * The root is normally resolved via DI from the enclosing `[forCombobox]`.
  * When the trigger is declared inside an `ng-template` stamped into the root
@@ -43,12 +59,18 @@ import { type ForComboboxContext, injectComboboxTriggerContext } from './combobo
   exportAs: 'forComboboxTrigger',
   host: {
     '[attr.type]': 'buttonType()',
+    role: 'combobox',
     '[id]': 'id()',
     '[attr.aria-haspopup]': '"dialog"',
     '[attr.aria-expanded]': 'ctx().open() ? "true" : "false"',
     '[attr.aria-controls]': 'ctx().open() ? ctx().contentId() : null',
+    '[attr.aria-readonly]': 'ctx().readonly() ? "true" : null',
+    '[attr.aria-required]': 'ctx().required() ? "true" : null',
+    '[attr.aria-invalid]': 'ctx().invalid() ? "true" : null',
+    '[attr.aria-busy]': 'ctx().pending() ? "true" : null',
     '[attr.data-state]': 'ctx().open() ? "open" : "closed"',
     '[attr.data-disabled]': 'ctx().effectiveDisabled() ? "" : null',
+    '[attr.data-readonly]': 'ctx().readonly() ? "" : null',
     '(click)': 'onClick()',
     '(keydown)': 'onKeyDown($event)',
   },

@@ -152,13 +152,26 @@ class ComboboxFormControlHost {
 @Component({
   imports: [ForCombobox, ForComboboxTrigger],
   template: `
-    <div forCombobox [disabled]="disabled()" [touched]="touched()" [dirty]="dirty()">
+    <div
+      forCombobox
+      [disabled]="disabled()"
+      [readonly]="readonly()"
+      [required]="required()"
+      [invalid]="invalid()"
+      [pending]="pending()"
+      [touched]="touched()"
+      [dirty]="dirty()"
+    >
       <button forComboboxTrigger>Pick</button>
     </div>
   `,
 })
 class ComboboxPickerFormControlHost {
   readonly disabled = signal(false);
+  readonly readonly = signal(false);
+  readonly required = signal(false);
+  readonly invalid = signal(false);
+  readonly pending = signal(false);
   readonly touched = signal(false);
   readonly dirty = signal(false);
 }
@@ -887,6 +900,18 @@ describe('ForCombobox', () => {
             case 'disabled':
               r.instance.disabled.set(value);
               return;
+            case 'readonly':
+              r.instance.readonly.set(value);
+              return;
+            case 'required':
+              r.instance.required.set(value);
+              return;
+            case 'invalid':
+              r.instance.invalid.set(value);
+              return;
+            case 'pending':
+              r.instance.pending.set(value);
+              return;
             case 'touched':
               r.instance.touched.set(value);
               return;
@@ -898,7 +923,10 @@ describe('ForCombobox', () => {
       };
       return result;
     },
-    { flags: ['disabled', 'touched', 'dirty'], label: 'picker' },
+    {
+      flags: ['disabled', 'readonly', 'required', 'invalid', 'pending', 'touched', 'dirty'],
+      label: 'picker',
+    },
   );
 
   assertOverlayTriggerAriaContract(
@@ -3175,6 +3203,18 @@ describe('ForCombobox trigger + list (picker anatomy, issue #675)', () => {
       expect(content.hasAttribute('tabindex')).toBe(false);
       // The popup surface owns no options; the list does.
       expect(content.querySelector('[forComboboxList] [forComboboxOption]')).not.toBeNull();
+    });
+
+    it('the trigger is a combobox while closed and keeps the role while its dialog is open', async () => {
+      const r = renderHost(PickerHost);
+      await flush(r.fixture);
+      expect(getTrigger().getAttribute('role')).toBe('combobox');
+
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      expect(getTrigger().getAttribute('role')).toBe('combobox');
+      expect(getTrigger().getAttribute('aria-haspopup')).toBe('dialog');
+      expect(getPickerInput().getAttribute('role')).toBe('combobox');
     });
 
     it('content keeps data-state in the picker anatomy', async () => {

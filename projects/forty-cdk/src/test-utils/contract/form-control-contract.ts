@@ -24,8 +24,8 @@
  *     halves on `stateHost ?? control`, so a split root takes `invalid` and
  *     `pending` like a single-element one. Combobox's input leaves
  *     `data-readonly` to the root, so it omits `readonly`; its picker
- *     anatomy's `[forComboboxTrigger]` is a plain `<button>` announcing none of
- *     the form state, so that adoption passes `disabled` / `touched` / `dirty`.
+ *     anatomy's `[forComboboxTrigger]` is a `role="combobox"` button that
+ *     reflects the full `aria-*` set and `data-readonly` like the input.
  *   - Roving-container controls (`Listbox`, `Slider`, `ToggleGroup`, and the
  *     date/time fields) are a non-focusable `role="listbox"` / `role="group"`
  *     host: they drop out of the tab order when disabled (focus lives on a

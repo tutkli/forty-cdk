@@ -219,6 +219,9 @@ The content anchors to the field box when a `[forComboboxAnchor]` is present; se
 | `[forCombobox]`          | `data-dirty`       | present / absent                                                    |
 | `[forCombobox]`          | `data-pending`     | present / absent                                                    |
 | `[forCombobox]`          | `data-invalid`     | present / absent                                                    |
+| `[forComboboxTrigger]`   | `data-state`       | `open` \| `closed`                                                  |
+| `[forComboboxTrigger]`   | `data-disabled`    | present / absent                                                    |
+| `[forComboboxTrigger]`   | `data-readonly`    | present / absent                                                    |
 | `[forComboboxInput]`     | `data-state`       | `open` \| `closed`                                                  |
 | `[forComboboxInput]`     | `data-disabled`    | present / absent                                                    |
 | `[forComboboxToggle]`    | `data-state`       | `open` \| `closed`                                                  |
@@ -293,7 +296,7 @@ The default (editable) anatomy is a text field that filters in place. A **picker
 
 Add two parts:
 
-- **`[forComboboxTrigger]`**: a real `<button>` outside the `@if (open())`. It opens the panel, becomes the default positioning anchor, and is where focus returns on close.
+- **`[forComboboxTrigger]`**: a real `<button>` outside the `@if (open())`. It opens the panel, becomes the default positioning anchor, and is where focus returns on close. It carries `role="combobox"` and announces the form state (`aria-required`, `aria-invalid`, `aria-busy`, `aria-readonly`), because while the panel is closed it is the only focusable part of the field. Give it a label: a combobox is not named by its text.
 - **`[forComboboxList]`**: the `role="listbox"` element nested inside `[forComboboxContent]`, next to the input. It owns the options and the labelled role; `[forComboboxContent]` becomes the `role="dialog"` the trigger opens, named by the trigger.
 
 ```html
@@ -836,7 +839,7 @@ Implements the [WAI-ARIA Combobox pattern](https://www.w3.org/WAI/ARIA/apg/patte
 - Apply the input directive to an actual `<input>`: the browser's caret and selection semantics are what make inline autocomplete work, and screen readers expect a real text field for `role="combobox"`.
 - `role="listbox"` lives on `[forComboboxContent]` in the editable anatomy and on `[forComboboxList]` in the picker anatomy; the input's `aria-controls` targets whichever carries it. In the picker anatomy the popup surface (`[forComboboxContent]`) is a `role="dialog"` named by the trigger (`aria-labelledby`; a static `aria-label` or `aria-labelledby` on it wins), so it can hold the input next to the list without an `aria-required-owned-elements` violation. The "editable + list" shape, with no trigger, leaves it role-less.
 - `aria-multiselectable="true"` (multi mode) and the labelled role (`aria-label` / `aria-labelledby`, pointing at the input) sit on whichever element carries `role="listbox"`: content in the editable anatomy, the list in the picker anatomy.
-- `[forComboboxTrigger]` (picker anatomy) is a real `<button>` reflecting `aria-haspopup="dialog"`, `aria-expanded`, `aria-controls` (the dialog surface, while open), an `id` (a static one is kept), and native `disabled` from the combobox's effective disabled. The popup is a dialog rather than a listbox because focus moves into the search input inside it. It is exempt from the popup's outside-pointer dismissal layer, like the input.
+- `[forComboboxTrigger]` (picker anatomy) is a real `<button>` with `role="combobox"`, reflecting `aria-haspopup="dialog"`, `aria-expanded`, `aria-controls` (the dialog surface, while open), an `id` (a static one is kept), and native `disabled` from the combobox's effective disabled. It also reflects `aria-required`, `aria-invalid`, `aria-busy` and `aria-readonly` (truthy-only) from the root, so a closed picker announces a required, failing or validating field: the input carrying the same state only exists while the panel is open. It keeps the role while the dialog is open, next to the `role="combobox"` search input inside it. The popup is a dialog rather than a listbox because focus moves into the search input inside it. It is exempt from the popup's outside-pointer dismissal layer, like the input.
 - `[forComboboxContent]` and `[forComboboxList]` cancel a `mousedown` that would otherwise move focus onto the surface or blur the input, so a press between options leaves focus in the input. A press on a focusable descendant is let through.
 - `[forComboboxToggle]` (editable anatomy) is a real `<button>` with `tabindex="-1"`, a localizable `aria-label`, `aria-expanded`, `aria-controls` (the listbox, while open) and native `disabled`. It cancels `mousedown` so focus stays in the input, and it is exempt from the outside-pointer dismissal layer.
 - `[forComboboxClear]` has `tabindex="-1"` and a localizable `aria-label`. It cancels `mousedown` too, and is exempt from the outside-pointer dismissal layer, so clearing an open listbox leaves it open with focus in the input and the combobox untouched.
