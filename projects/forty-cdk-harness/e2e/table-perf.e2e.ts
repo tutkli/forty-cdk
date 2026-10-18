@@ -89,7 +89,7 @@ test.describe('table mount cost', () => {
     }
   });
 
-  test('mount time grows sub-quadratically in row count', async ({ page }, testInfo) => {
+  test('@perf mount time grows sub-quadratically in row count', async ({ page }, testInfo) => {
     test.setTimeout(300_000);
 
     const results: { rows: number; ms: number }[] = [];

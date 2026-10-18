@@ -3,6 +3,7 @@ import { defineConfig, devices } from '@playwright/test';
 const PORT = Number(process.env['FORTY_HARNESS_PORT']) || 4400;
 const BASE_URL = `http://localhost:${PORT}`;
 const isCI = !!process.env['CI'];
+const runPerf = !!process.env['FORTY_E2E_PERF'];
 
 export default defineConfig({
   testDir: 'projects/forty-cdk-harness/e2e',
@@ -18,6 +19,7 @@ export default defineConfig({
   // re-running failures.
   retries: 0,
   workers: isCI ? 2 : undefined,
+  grepInvert: runPerf ? undefined : /@perf/,
   timeout: 30_000,
   expect: { timeout: 5_000 },
   // `blob` is what `playwright merge-reports` consumes: each sharded CI job

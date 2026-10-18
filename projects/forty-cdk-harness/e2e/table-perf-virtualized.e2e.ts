@@ -251,7 +251,7 @@ test.describe('virtualized table per-row collection cost', () => {
     ).toBeLessThan(rewindowed.window + NON_ROW_OBSERVER_HEADROOM);
   });
 
-  test('mount and re-window cost with the observer layer present, inert and absent', async ({
+  test('@perf mount and re-window cost with the observer layer present, inert and absent', async ({
     page,
   }, testInfo) => {
     test.setTimeout(300_000);
@@ -311,7 +311,7 @@ test.describe('virtualized table per-row collection cost', () => {
     console.log(`\n[#1732] mount / re-window vs the observer layer\n${report}\n`);
   });
 
-  test('the same A/B on the unvirtualized table, where one collection per row is 1000 of them', async ({
+  test('@perf the same A/B on the unvirtualized table, where one collection per row is 1000 of them', async ({
     page,
   }, testInfo) => {
     test.setTimeout(300_000);
