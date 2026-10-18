@@ -206,6 +206,10 @@ h3 {
   outline-offset: 2px;
 }
 
+[data-fragment-target]:focus {
+  outline: none;
+}
+
 ::selection {
   background: color-mix(in srgb, var(--pg-primary) 24%, transparent);
 }

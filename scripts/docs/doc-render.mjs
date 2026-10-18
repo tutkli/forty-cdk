@@ -1,7 +1,12 @@
 import { Marked } from 'marked';
 
 import { behaviorGroupOf } from '../lib/doc-contract.mjs';
-import { DOC_BASE_TOKEN, GITHUB_BLOB_BASE, resolveDocLink } from '../lib/doc-links.mjs';
+import {
+  DOC_BASE_TOKEN,
+  GITHUB_BLOB_BASE,
+  resolveDocLink,
+  resolveOwnFragment,
+} from '../lib/doc-links.mjs';
 import { escapeHtml, stripText } from '../lib/html.mjs';
 import { highlightCode } from './doc-highlight.mjs';
 
@@ -132,16 +137,19 @@ function renderTitle(md, context) {
  * `prepareUrl` is where the site's base href would go, and at build time there
  * is none to put there — so it writes the token the page substitutes instead.
  * Everything else is the resolution `pnpm check:doc-links` gates the sources on,
- * called here so a published href is decided once rather than per page view.
+ * called here so a published href is decided once rather than per page view —
+ * plus a bare `#fragment`, which a page resolves against its own route, since
+ * left bare the base href would send it to the site root.
  */
 function resolverFor(routes, blobBase) {
   return (href, sourcePath) => {
-    const link = resolveDocLink(href, {
+    const context = {
       sourcePath,
       routes,
       blobBase,
       prepareUrl: (url) => `${DOC_BASE_TOKEN}${url.slice(1)}`,
-    });
+    };
+    const link = resolveOwnFragment(href, context) ?? resolveDocLink(href, context);
     return link === null ? null : { href: link.href, route: link.route };
   };
 }

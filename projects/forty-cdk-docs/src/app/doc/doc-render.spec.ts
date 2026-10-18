@@ -202,6 +202,28 @@ describe('rendering a whole document for its page', () => {
     expect(page.intro[0]!.html).not.toContain('%DOC_BASE%');
   });
 
+  function renderSelfLinkAt(route: string): string {
+    const markdown = `${[...FRONTMATTER, '', '# T', '', 'Lede.', '', '## API', '', 'See [API](#api).'].join('\n')}\n`;
+    const page = renderDocument(
+      compile({ path: 'projects/forty-cdk/thing/README.md', slug: 'thing', markdown }),
+      { routes: new Map([...ROUTES, ['projects/forty-cdk/thing/README.md', route]]) },
+    );
+    const block = page.sections[0]!.blocks[0]!;
+    return block.kind === 'prose' ? block.html : '';
+  }
+
+  it('routes a same-page fragment link through the page that publishes it', () => {
+    expect(renderSelfLinkAt('/thing')).toContain(
+      'href="%DOC_BASE%thing#api" data-doc-route="/thing#api"',
+    );
+  });
+
+  it('routes a same-page fragment link of a folded document to the anchor its host minted', () => {
+    expect(renderSelfLinkAt('/accordion#thing')).toContain(
+      'href="%DOC_BASE%accordion#thing-api" data-doc-route="/accordion#thing-api"',
+    );
+  });
+
   it('renders every table cell once, as markup and as the text its labels read', () => {
     const page = render(
       '# T',

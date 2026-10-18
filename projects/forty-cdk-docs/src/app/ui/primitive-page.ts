@@ -233,7 +233,7 @@ export class PrimitivePage {
     const caption = this.doc().caption;
     return caption === null || !this.#projected().some((demo) => demo.hero)
       ? null
-      : this.#sanitizer.bypassSecurityTrustHtml(caption);
+      : this.#sanitizer.bypassSecurityTrustHtml(this.#base(caption));
   });
 
   readonly #slot = computed(() => splitAtExamples(this.doc().sections, this.#projected()));
