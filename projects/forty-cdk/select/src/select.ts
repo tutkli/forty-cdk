@@ -182,14 +182,12 @@ export class ForSelect<T = string>
    * presentation a consumer opts into with `[modal]="isCoarsePointer()"`. The
    * form-value wiring (`[(value)]`, `name`) is unchanged.
    *
-   * Read once when the content mounts (the two shells are structurally
-   * different; switching at runtime would need a remount, and the surface
-   * mounts lazily via `@if (open())` well after `modal` settles). Every
-   * anchored-positioning input — `position`, `side`, `align`, `sideOffset`,
-   * `alignOffset`, `sticky`, `hideWhenDetached`, `clipUntilPositioned`, `avoidCollisions`,
-   * `collisionPadding` — is a no-op in this mode. Default
-   * `false` (non-breaking). The swipe / snap-point sheet is not
-   * this mode — compose a `ForListbox` inside a `ForDrawer` for that.
+   * Read when the content mounts, so a change takes effect on the next open.
+   * Every anchored-positioning input — `position`, `side`, `align`,
+   * `sideOffset`, `alignOffset`, `sticky`, `hideWhenDetached`,
+   * `clipUntilPositioned`, `avoidCollisions`, `collisionPadding` — is a no-op
+   * in this mode. Default `false`. The swipe / snap-point sheet is not this
+   * mode — compose a `ForListbox` inside a `ForDrawer` for that.
    */
   readonly modal = input(false, { transform: booleanAttribute });
 

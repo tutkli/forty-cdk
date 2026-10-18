@@ -7,26 +7,16 @@ import {
 } from 'forty-cdk/core';
 
 /**
- * Per-item handle stored in the toolbar's `Collection`. Buttons, links, and
- * toggle-group items (when nested) register themselves on construction so the
- * toolbar can run roving-tabindex and arrow-key navigation in DOM order.
- *
- * Extends the lifted `HostRovingItemHandle` so any `forty-cdk/core` consumer
- * that registers against the toolbar via `FOR_HOST_ROVING_CONTEXT` works
- * without a toolbar-specific handle type.
+ * The handle an item registers with `[forToolbar]`. The toolbar navigates its
+ * registered items in DOM order and skips the disabled ones.
  */
 export type ForToolbarItemHandle = HostRovingItemHandle;
 
 /**
- * Coordination contract owned by `ForToolbar`.
- *
- * Extends the neutral `HostRovingContext` (the lifted "host owns roving
- * navigation for embedded items" contract in `forty-cdk/core`) plus
- * toolbar-specific extras (`loop`). Toolbar provides both
- * `FOR_TOOLBAR_CONTEXT` and `FOR_HOST_ROVING_CONTEXT` from the same
- * instance via `useExisting`, so any neutral consumer (e.g.
- * `ForToggleGroupItem`) and any toolbar-specific consumer pull the same
- * object without taking a cross-primitive import.
+ * The surface `[forToolbar]` provides under `FOR_TOOLBAR_CONTEXT`: its
+ * orientation, direction, disabled state and `loop` policy, the roving tab
+ * stop, and the registration a custom item uses to join the toolbar's
+ * arrow-key navigation.
  */
 export interface ForToolbarContext extends HostRovingContext {
   readonly loop: Signal<boolean>;

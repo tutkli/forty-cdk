@@ -19,8 +19,7 @@ import { FOR_DROPDOWN_MENU_DEFAULTS } from 'forty-cdk/defaults';
 /**
  * Headless implementation of the [WAI-ARIA Menu Button pattern](https://www.w3.org/WAI/ARIA/apg/patterns/menu-button/).
  * Apply on a wrapper that contains the trigger and the `@if`-mounted
- * `[forMenuContent]`. The directive owns open state, ids, and the registries
- * that wire trigger / content / items together.
+ * `[forMenuContent]`. The directive owns the open state.
  *
  * Mount/unmount of the visible menu is the consumer's responsibility — wrap
  * `[forMenuContent]` with `@if (open())` so `animate.enter` / `animate.leave`
@@ -37,15 +36,8 @@ import { FOR_DROPDOWN_MENU_DEFAULTS } from 'forty-cdk/defaults';
  *
  * Selecting a `[forMenuItem]` closes the menu (call `event.preventDefault()`
  * on the item's `(activate)` event to keep it open). Escape, pointer-down
- * outside, and focus-outside also close — each emits a vetoable event.
- *
- * Most of the directive's body (id generation, item collection, typeahead,
- * navigate / focus helpers, escape / outside-click veto plumbing) is owned
- * by the shared `forty-cdk/core-overlay` menu-overlay helper. The directive contributes
- * the inputs / outputs / model that make up the public surface, the
- * trigger-anchored `anchor` and `dismissibleExemptions`, and the
- * `aria-haspopup="menu"` / return-focus semantics specific to the
- * Menu Button pattern.
+ * outside, and focus-outside also close — each emits a vetoable event. A
+ * press on the trigger is not an outside press: the trigger toggles the menu.
  */
 @Directive({
   selector: '[forDropdownMenu]',

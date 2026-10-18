@@ -45,23 +45,12 @@ const openSubmenus = new WeakMap<ForMenuContext, ForMenuSub>();
  * state, ids, and item collection — items inside the submenu register
  * here, not in the parent.
  *
- * The shared item-collection / typeahead / navigate / focus / id /
- * outside-veto logic is owned by `MenuOverlay` from `forty-cdk/core-overlay`
- * (the same helper `[forDropdownMenu]` / `[forContextMenu]` / `[forMenu]`
- * compose). The submenu contributes only its genuine differences on top:
- * pointer-driven (hover) open/close scheduling, the autofocus vetoes that keep
- * hover from stealing / returning focus, and the reason-dependent upward
- * `closeMenu` propagation.
- * The pointer paths run through the overlay's own `openMenu` / `closeMenu`
- * (with `{ suppressFocusMoves: true }`, closing with reason `'hover'`), so all
- * three concerns are wired through the `onOpen` / `onClose` lifecycle hooks and
- * `lastCloseReason` / the initial-focus state stay correct on every transition.
+ * Hovering its `[forMenuSubTrigger]` opens the submenu and the pointer
+ * leaving closes it with reason `'hover'`; neither moves focus.
  *
- * The parent menu's content and the parent's own exemptions are added to
- * this submenu's dismissible exemptions, so neither a click on a parent menu
- * item nor a click on the root's trigger fires the submenu's outside-handler
- * (the item's click flow closes everything via propagated `closeMenu`, and the
- * trigger's own click closes the root).
+ * A press on a parent menu item or on the root's trigger is not an outside
+ * press for the submenu: the item's activation and the trigger's toggle close
+ * the menus themselves.
  *
  * A menu holds one open submenu at a time: opening one by any path closes
  * the open sibling first, with reason `'programmatic'`.
