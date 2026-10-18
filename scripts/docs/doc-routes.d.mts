@@ -6,13 +6,18 @@ export interface DocPageSource {
   readonly source: string | null;
 }
 
+export interface DocRouteEntry {
+  readonly slug: string;
+  readonly title: string;
+}
+
 export interface DocRoutesInput {
-  /** Slugs of the primitives the site publishes a page for. */
-  readonly primitiveSlugs: readonly string[];
-  /** Slugs of the guides the site publishes. */
-  readonly guideSlugs: readonly string[];
-  /** Slugs of the site's own pages, served from the root. */
-  readonly pageSlugs?: readonly string[];
+  /** The primitives the site publishes a page for. */
+  readonly primitives: readonly DocRouteEntry[];
+  /** The guides the site publishes. */
+  readonly guides: readonly DocRouteEntry[];
+  /** The site's own pages, served from the root. */
+  readonly pages?: readonly DocRouteEntry[];
 }
 
 export declare function pageSymbolOf(slug: string): string;

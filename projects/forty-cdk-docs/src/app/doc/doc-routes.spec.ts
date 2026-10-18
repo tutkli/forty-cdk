@@ -4,6 +4,7 @@ import {
   routesModule,
 } from '../../../../../scripts/docs/doc-routes.mjs';
 import { GUIDES } from '../../generated/guides.generated';
+import { SITE_PAGES } from '../../generated/site-pages.generated';
 import { compile } from './testing/compile';
 import { GENERATED_ROUTES, PAGE_DOCS, PRIMITIVE_DOCS } from './testing/doc-corpus';
 
@@ -34,7 +35,10 @@ describe('the component a generated route names', () => {
 
 describe('the emitted route table', () => {
   it('loads a primitive page through a literal specifier, which is what lets it split', () => {
-    const source = routesModule({ primitiveSlugs: ['otp-input'], guideSlugs: [] });
+    const source = routesModule({
+      primitives: [{ slug: 'otp-input', title: 'otp-input' }],
+      guides: [],
+    });
 
     expect(source).toContain("path: 'otp-input',");
     expect(source).toContain(
@@ -44,8 +48,11 @@ describe('the emitted route table', () => {
 
   it('routes every guide through the one guide page, handing it its slug as route data', () => {
     const source = routesModule({
-      primitiveSlugs: [],
-      guideSlugs: ['styling', 'date-adapters'],
+      primitives: [],
+      guides: [
+        { slug: 'styling', title: 'styling' },
+        { slug: 'date-adapters', title: 'date-adapters' },
+      ],
     });
 
     expect(source).toContain("path: 'guides/styling',");
@@ -64,8 +71,11 @@ describe('the emitted route table', () => {
    */
   it('resolves each guide document through a literal specifier of its own', () => {
     const source = routesModule({
-      primitiveSlugs: [],
-      guideSlugs: ['styling', 'date-adapters'],
+      primitives: [],
+      guides: [
+        { slug: 'styling', title: 'styling' },
+        { slug: 'date-adapters', title: 'date-adapters' },
+      ],
     });
 
     expect(source).toContain(
@@ -79,9 +89,12 @@ describe('the emitted route table', () => {
 
   it('routes every site page through the one site page, from the root rather than a prefix', () => {
     const source = routesModule({
-      primitiveSlugs: [],
-      guideSlugs: [],
-      pageSlugs: ['installation', 'concepts'],
+      primitives: [],
+      guides: [],
+      pages: [
+        { slug: 'installation', title: 'installation' },
+        { slug: 'concepts', title: 'concepts' },
+      ],
     });
 
     expect(source).toContain("path: 'installation',");
@@ -99,9 +112,12 @@ describe('the emitted route table', () => {
    */
   it('resolves each site page document through a literal specifier of its own', () => {
     const source = routesModule({
-      primitiveSlugs: [],
-      guideSlugs: [],
-      pageSlugs: ['installation', 'concepts'],
+      primitives: [],
+      guides: [],
+      pages: [
+        { slug: 'installation', title: 'installation' },
+        { slug: 'concepts', title: 'concepts' },
+      ],
     });
 
     expect(source).toContain(
@@ -121,9 +137,9 @@ describe('the emitted route table', () => {
    */
   it('emits the site pages before the primitives', () => {
     const source = routesModule({
-      primitiveSlugs: ['accordion'],
-      guideSlugs: ['styling'],
-      pageSlugs: ['installation'],
+      primitives: [{ slug: 'accordion', title: 'accordion' }],
+      guides: [{ slug: 'styling', title: 'styling' }],
+      pages: [{ slug: 'installation', title: 'installation' }],
     });
 
     expect(source.indexOf("path: 'installation',")).toBeLessThan(
@@ -131,8 +147,31 @@ describe('the emitted route table', () => {
     );
   });
 
+  it('titles every route it emits with the title its document states', () => {
+    const source = routesModule({
+      primitives: [{ slug: 'otp-input', title: 'OTP Input' }],
+      guides: [{ slug: 'styling', title: 'Styling forty-cdk' }],
+      pages: [{ slug: 'installation', title: 'Installation' }],
+    });
+
+    expect(source.match(/^ {4}title: /gm)).toHaveLength(3);
+    expect(source).toContain('title: "OTP Input",');
+    expect(source).toContain('title: "Styling forty-cdk",');
+    expect(source).toContain('title: "Installation",');
+  });
+
+  it('writes a title as a string literal whatever quotes it holds', () => {
+    const title = `It's a "quoted" \\ title`;
+    const source = routesModule({ primitives: [{ slug: 'quoted', title }], guides: [] });
+
+    expect(source).toContain(`title: ${JSON.stringify(title)},`);
+  });
+
   it('types the table as Routes, so a route the router would reject fails typecheck', () => {
-    const source = routesModule({ primitiveSlugs: ['accordion'], guideSlugs: [] });
+    const source = routesModule({
+      primitives: [{ slug: 'accordion', title: 'accordion' }],
+      guides: [],
+    });
 
     expect(source).toContain("import type { Routes } from '@angular/router';");
     expect(source).toContain('export const DOC_ROUTES: Routes = [');
@@ -183,9 +222,15 @@ describe('the site as it stands', () => {
     expect(published.length).toBeGreaterThan(PRIMITIVE_FLOOR);
     expect(GENERATED_ROUTES).toBe(
       routesModule({
-        primitiveSlugs: published.map((document) => document.slug),
-        guideSlugs: GUIDES.map((guide) => guide.slug),
-        pageSlugs: PAGE_DOCS.map((document) => document.slug),
+        primitives: published.map((document) => ({
+          slug: document.slug,
+          title: document.meta?.title ?? '',
+        })),
+        guides: GUIDES.map(({ slug, title }) => ({ slug, title })),
+        pages: PAGE_DOCS.map((document) => ({
+          slug: document.slug,
+          title: SITE_PAGES.find((page) => page.slug === document.slug)?.title ?? '',
+        })),
       }),
     );
   });
