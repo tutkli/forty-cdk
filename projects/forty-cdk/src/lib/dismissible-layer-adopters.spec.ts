@@ -24,7 +24,7 @@ import { entryPointOf, LIBRARY_CODE, SPEC_CODE } from '../test-utils/source-scan
  * The `dismissible`-input set is still derived, as the **cross-check** the last
  * two cases run: it is the flank on which `[forToast]` sits.
  *
- * Three things about the pairing:
+ * Four things about the pairing:
  *
  *   - **A claim pairs `(root, spec)` with the `(layer source, shell)` pairs its
  *     mount drives**, and the per-spec call count is what makes it finer than
@@ -51,6 +51,12 @@ import { entryPointOf, LIBRARY_CODE, SPEC_CODE } from '../test-utils/source-scan
  *     failure the marker rules hit in
  *     [#1606](https://github.com/tutkli/forty-cdk/issues/1606) / #1609: prose
  *     about a symbol is not a use of it.
+ *   - **A variant root sharing a claimed root's base owes its own claim.**
+ *     `[forDateRangePicker]` composes the same `date-picker-content.ts` through
+ *     the same `DatePickerBase` as `[forDatePicker]`, so the call-site cases
+ *     read it as covered by its sibling's claims. The roots extending an
+ *     abstract base that a claimed root's own entry point declares are derived
+ *     from source, and each must be claimed.
  *
  * Stack routing is deliberately absent from all of this. Topmost-only dispatch,
  * declared-nesting depth order, Escape-only layer transparency and
@@ -139,6 +145,16 @@ const ADOPTERS: readonly DismissibleLayerAdopter[] = [
   {
     root: '[forDatePicker]',
     spec: 'date-picker/src/date-picker.spec.ts',
+    layers: ['date-picker/src/date-picker-content.ts#injectModalShell'],
+  },
+  {
+    root: '[forDateRangePicker]',
+    spec: 'date-picker/src/date-range-picker.spec.ts',
+    layers: ['date-picker/src/date-picker-content.ts#injectOverlayShell'],
+  },
+  {
+    root: '[forDateRangePicker]',
+    spec: 'date-picker/src/date-range-picker.spec.ts',
     layers: ['date-picker/src/date-picker-content.ts#injectModalShell'],
   },
   {
@@ -254,6 +270,55 @@ const declaredSelectors = (): Set<string> => {
   return selectors;
 };
 
+/**
+ * Selector → the source file declaring it, for every selector the library
+ * declares. A file declaring several maps each of them to itself.
+ */
+function selectorFiles(): Map<string, string> {
+  const files = new Map<string, string>();
+  for (const [path, source] of LIBRARY_CODE) {
+    for (const match of source.matchAll(/selector:\s*'([^']+)'/g)) {
+      files.set(match[1]!, path);
+    }
+  }
+  return files;
+}
+
+/**
+ * The roots extending an abstract base that a claimed root also extends and that
+ * its own entry point declares, keyed by that base. A second root over the
+ * claimed root's base composes the same layer file through the same shells, so
+ * it owes a claim of its own.
+ */
+function localBaseSiblings(): Map<string, string[]> {
+  const files = selectorFiles();
+  const localBases = new Set<string>();
+  for (const { root, spec } of ADOPTERS) {
+    const source = LIBRARY_CODE.get(files.get(root) ?? '') ?? '';
+    for (const [, base] of source.matchAll(/\bextends\s+(\w+)/g)) {
+      const declared = [...LIBRARY_CODE].some(
+        ([path, code]) =>
+          entryPointOf(path) === entryPointOf(spec) &&
+          code.includes(`export abstract class ${base!}`),
+      );
+      if (declared) {
+        localBases.add(base!);
+      }
+    }
+  }
+
+  const siblings = new Map<string, string[]>();
+  for (const [selector, path] of files) {
+    const source = LIBRARY_CODE.get(path)!;
+    for (const base of localBases) {
+      if (new RegExp(`\\bextends\\s+${base}\\b`).test(source)) {
+        siblings.set(base, [...(siblings.get(base) ?? []), selector]);
+      }
+    }
+  }
+  return siblings;
+}
+
 const claimedLayers = new Set<string>(ADOPTERS.flatMap((adopter) => adopter.layers));
 const claimsPerSpec = new Map<string, number>();
 for (const adopter of ADOPTERS) {
@@ -296,6 +361,24 @@ describe('dismissible-layer contract adoption (meta-guard)', () => {
       .map(([spec, claims]) => `${spec}: ${claims} claim(s), ${calls.get(spec) ?? 0} call(s)`);
 
     expect(sorted(short)).toEqual([]);
+  });
+
+  it('finds the roots sharing the local base of a claimed root', () => {
+    expect(localBaseSiblings().get('DatePickerBase')).toEqual(
+      expect.arrayContaining(['[forDatePicker]', '[forDateRangePicker]']),
+    );
+  });
+
+  it('claims every root extending the local base of a claimed root', () => {
+    const claimedRoots = new Set(ADOPTERS.map((adopter) => adopter.root));
+
+    const unclaimed = [...localBaseSiblings().entries()].flatMap(([base, selectors]) =>
+      selectors
+        .filter((selector) => !claimedRoots.has(selector))
+        .map((selector) => `${selector} (extends ${base})`),
+    );
+
+    expect(sorted(unclaimed)).toEqual([]);
   });
 
   it('covers every entry point declaring a dismissible input', () => {

@@ -18,12 +18,15 @@ import {
   type RenderResult,
 } from '../../src/test-utils';
 import {
+  assertDismissibleLayerContract,
   assertFormControlContract,
   assertNativeSubmissionContract,
   assertOverlayTriggerAriaContract,
+  type DismissibleLayerMountOptions,
   type FormControlMountResult,
   type NativeSubmissionHost,
 } from '../../src/test-utils/contract';
+import { type VetoableNativeEvent } from 'forty-cdk/core';
 import {
   FOR_CALENDAR_CONTEXT,
   ForCalendar,
@@ -163,6 +166,70 @@ class RangeSubmissionHost implements NativeSubmissionHost {
   }
 }
 
+@Component({
+  imports: [ForDateRangePicker, ForDatePickerTrigger, ForDatePickerContent, ...CALENDAR_PIECES],
+  providers: [...provideNativeDateAdapter()],
+  template: `
+    <div
+      forDateRangePicker
+      [(open)]="open"
+      [modal]="modal()"
+      [dismissible]="dismissible()"
+      (escapeKeyDown)="onEscape($event)"
+      (pointerDownOutside)="onPointer($event)"
+      (focusOutside)="onFocus($event)"
+      (interactOutside)="onInteract($event)"
+      ariaLabel="Choose date range"
+    >
+      <button forDatePickerTrigger>Open</button>
+      @if (open()) {
+        <div forDatePickerContent>
+          <div forCalendar selectionMode="range">
+            <table forCalendarGrid #grid="forCalendarGrid">
+              <tbody>
+                @for (week of grid.weeks(); track week.key) {
+                  <tr>
+                    @for (c of week.days; track c.key) {
+                      <td forCalendarCell [date]="c.date">{{ c.label }}</td>
+                    }
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      }
+    </div>
+  `,
+})
+class RangeDismissContractHost {
+  readonly open = signal(false);
+  readonly modal = signal(false);
+  readonly dismissible = signal(true);
+  escapeVeto = false;
+  pointerVeto = false;
+  focusVeto = false;
+  eCount = 0;
+  pCount = 0;
+  fCount = 0;
+  iCount = 0;
+  onEscape(event: VetoableNativeEvent<KeyboardEvent>): void {
+    this.eCount += 1;
+    if (this.escapeVeto) event.preventDefault();
+  }
+  onPointer(event: VetoableNativeEvent<PointerEvent>): void {
+    this.pCount += 1;
+    if (this.pointerVeto) event.preventDefault();
+  }
+  onFocus(event: VetoableNativeEvent<FocusEvent>): void {
+    this.fCount += 1;
+    if (this.focusVeto) event.preventDefault();
+  }
+  onInteract(_event: VetoableNativeEvent<PointerEvent | FocusEvent>): void {
+    this.iCount += 1;
+  }
+}
+
 type R = RenderResult<Host>;
 
 const trigger = (r: R) => r.query<HTMLButtonElement>('[forDatePickerTrigger]')!;
@@ -227,6 +294,31 @@ describe('ForDateRangePicker', () => {
     },
     { haspopup: 'dialog' },
   );
+
+  const mountDismissContract =
+    (modal: boolean) =>
+    async (options: DismissibleLayerMountOptions = {}) => {
+      const r = renderHost(RangeDismissContractHost);
+      r.instance.modal.set(modal);
+      r.instance.dismissible.set(options.dismissible ?? true);
+      r.instance.escapeVeto = options.escapeVeto ?? false;
+      r.instance.pointerVeto = options.pointerVeto ?? false;
+      r.instance.focusVeto = options.focusVeto ?? false;
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      return {
+        flush: () => flush(r.fixture),
+        isOpen: () => r.instance.open(),
+        escapeCount: () => r.instance.eCount,
+        surface: () => content()!,
+        pointerOutsideCount: () => r.instance.pCount,
+        focusOutsideCount: () => r.instance.fCount,
+        interactOutsideCount: () => r.instance.iCount,
+      };
+    };
+
+  assertDismissibleLayerContract({ mount: mountDismissContract(false) }, { label: 'anchored' });
+  assertDismissibleLayerContract({ mount: mountDismissContract(true) }, { label: 'modal' });
 
   describe('structure & ARIA', () => {
     it('wires the trigger as a native button', () => {

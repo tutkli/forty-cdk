@@ -146,6 +146,7 @@ class TimePickerDismissContractHost {
   readonly dismissible = signal(true);
   escapeVeto = false;
   pointerVeto = false;
+  focusVeto = false;
   eCount = 0;
   pCount = 0;
   fCount = 0;
@@ -158,8 +159,9 @@ class TimePickerDismissContractHost {
     this.pCount += 1;
     if (this.pointerVeto) event.preventDefault();
   }
-  onFocus(_event: VetoableNativeEvent<FocusEvent>): void {
+  onFocus(event: VetoableNativeEvent<FocusEvent>): void {
     this.fCount += 1;
+    if (this.focusVeto) event.preventDefault();
   }
   onInteract(_event: VetoableNativeEvent<PointerEvent | FocusEvent>): void {
     this.iCount += 1;
@@ -305,12 +307,14 @@ describe('ForTimePicker', () => {
       r.instance.dismissible.set(options.dismissible ?? true);
       r.instance.escapeVeto = options.escapeVeto ?? false;
       r.instance.pointerVeto = options.pointerVeto ?? false;
+      r.instance.focusVeto = options.focusVeto ?? false;
       r.instance.open.set(true);
       await flush(r.fixture);
       return {
         flush: () => flush(r.fixture),
         isOpen: () => r.instance.open(),
         escapeCount: () => r.instance.eCount,
+        surface: () => document.querySelector<HTMLElement>('[forTimePickerContent]')!,
         pointerOutsideCount: () => r.instance.pCount,
         focusOutsideCount: () => r.instance.fCount,
         interactOutsideCount: () => r.instance.iCount,
