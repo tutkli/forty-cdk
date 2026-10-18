@@ -39,9 +39,8 @@ interface Option {
       class="select-field"
       [(value)]="value"
       placeholder="Pick your stack"
-      ariaLabel="Tech stack"
     >
-      <button forSelectTrigger type="button" class="select-trigger">
+      <button forSelectTrigger aria-label="Tech stack" type="button" class="select-trigger">
         <span forSelectValue></span>
         <svg class="select-chevron" viewBox="0 0 24 24" aria-hidden="true">
           <path

@@ -50,14 +50,15 @@ interface VirtualRow {
       class="virt-combobox"
       [(query)]="query"
       [(value)]="value"
+      (openChange)="scrollTop.set(0)"
       [totalCount]="filtered().length"
       [visibleRange]="range()"
       (scrollToIndex)="scrollToIndex($event)"
-      ariaLabel="Virtualized item search"
     >
       <div class="virt-combobox-single">
         <input
           forComboboxInput
+          aria-label="Virtualized item search"
           class="virt-combobox-input virt-combobox-input--boxed"
           placeholder="Search 1,000 items…"
         />

@@ -94,14 +94,13 @@ import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized
   ],
   providers: [...provideInternationalizedDateAdapter()],
   template: `
-    <div
-      forDatePicker
-      #picker="forDatePicker"
-      [(value)]="date"
-      placeholder="Pick a date"
-      ariaLabel="Choose a date"
-    >
-      <button forDatePickerTrigger type="button" class="date-picker-trigger">
+    <div forDatePicker #picker="forDatePicker" [(value)]="date" placeholder="Pick a date">
+      <button
+        forDatePickerTrigger
+        aria-label="Choose a date"
+        type="button"
+        class="date-picker-trigger"
+      >
         <span forDatePickerValue class="date-picker-value"></span>
         <svg class="date-picker-chevron" viewBox="0 0 24 24" aria-hidden="true">
           <path

@@ -43,9 +43,13 @@ import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized
       [minDate]="minDate"
       [isDateUnavailable]="isWeekendUnavailable"
       placeholder="Book a weekday"
-      ariaLabel="Booking date"
     >
-      <button forDatePickerTrigger type="button" class="dp-constraints-trigger">
+      <button
+        forDatePickerTrigger
+        aria-label="Booking date"
+        type="button"
+        class="dp-constraints-trigger"
+      >
         <span forDatePickerValue class="dp-constraints-value"></span>
         <svg class="dp-constraints-chevron" viewBox="0 0 24 24" aria-hidden="true">
           <path

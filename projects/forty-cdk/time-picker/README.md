@@ -74,9 +74,13 @@ import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/international
       [(value)]="value"
       [step]="30"
       [hourCycle]="24"
-      [ariaLabel]="'Meeting time'"
     >
-      <button forTimePickerTrigger type="button" class="time-picker-trigger">
+      <button
+        forTimePickerTrigger
+        aria-label="Meeting time"
+        type="button"
+        class="time-picker-trigger"
+      >
         <span forTimePickerValue placeholder="Pick a time"></span>
         <svg class="time-picker-chevron" viewBox="0 0 24 24" aria-hidden="true">
           <path
@@ -371,6 +375,7 @@ With `anatomy="field"` and no projected `[forTimeField]`, opening the listbox or
 
 Implements the [WAI-ARIA Listbox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/listbox/).
 
+- **Name the trigger.** `role="combobox"` takes its name from the author only, never from the time it shows, and the root's `ariaLabel` names the `role="listbox"` popup rather than the trigger. Wrap the picker in `[forField]` with a `[forLabel]`, which lands `aria-labelledby` on the trigger, or put an `aria-label` / `aria-labelledby` on `[forTimePickerTrigger]`. Without a root `ariaLabel` the listbox is labelled by the trigger.
 - **`role="combobox"`** on the trigger (`[forTimePickerTrigger]`) with `aria-haspopup="listbox"` and `aria-expanded` reflecting `open`. In the [field anatomy](#field-anatomy) the trigger is a plain button with the same popup attributes, and the time field carries the form-control state.
 - **`role="listbox"`** on the portaled content (`[forTimePickerContent]`); each slot is `role="option"` with `aria-selected` and `aria-disabled`.
 - **Focus return**: closing the listbox returns focus to the trigger (unless `returnFocus="false"`), vetoable via `(autoFocusOnClose)`. The one exception is an **outside-interaction close**, meaning a pointer-down or focus-out that lands outside the listbox. After such a close, focus stays where the interaction moved it instead of snapping back to the trigger. Escape and a picked slot still return focus, and `Tab` leaves it where the browser advanced it. A `Tab` from anything in the listbox that is not a slot (your own control inside it, or the listbox itself when every slot is disabled) closes it without committing and continues from the trigger.

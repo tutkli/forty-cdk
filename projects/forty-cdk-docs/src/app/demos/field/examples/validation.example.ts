@@ -13,12 +13,7 @@ interface Signup {
   imports: [FormField, ForCheckbox, ForField, ForFieldDescription, ForFieldError],
   template: `
     <div forField class="field">
-      <button
-        forCheckbox
-        class="cb-row"
-        [formField]="signupForm.terms"
-        aria-label="Accept the terms of service"
-      >
+      <button forCheckbox class="cb-row" [formField]="signupForm.terms">
         <span class="cb">
           <svg class="cb-icon" viewBox="0 0 24 24" aria-hidden="true">
             <path

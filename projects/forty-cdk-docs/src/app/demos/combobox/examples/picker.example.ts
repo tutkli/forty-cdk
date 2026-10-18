@@ -57,8 +57,15 @@ const COUNTRIES = [
       [(value)]="value"
       ariaLabel="Choose a country"
     >
-      <button forComboboxTrigger type="button" class="picker-combobox-trigger">
+      <span id="picker-label" class="picker-combobox-label">Country</span>
+      <button
+        forComboboxTrigger
+        type="button"
+        class="picker-combobox-trigger"
+        aria-labelledby="picker-label picker-value"
+      >
         <span
+          id="picker-value"
           class="picker-combobox-trigger-label"
           [class.picker-combobox-trigger-placeholder]="!selectedLabel()"
         >
@@ -82,7 +89,12 @@ const COUNTRIES = [
           class="picker-combobox-popup"
           animate.enter="picker-combobox-pop-in"
         >
-          <input forComboboxInput class="picker-combobox-search" placeholder="Search countries…" />
+          <input
+            forComboboxInput
+            class="picker-combobox-search"
+            aria-label="Search countries"
+            placeholder="Search countries…"
+          />
           <div forComboboxList class="picker-combobox-list">
             @for (country of filtered(); track country) {
               <div
@@ -122,6 +134,14 @@ const COUNTRIES = [
     .picker-combobox {
       display: block;
       width: min(300px, 100%);
+    }
+
+    .picker-combobox-label {
+      display: block;
+      margin-bottom: 0.4rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--ex-text, #17191c);
     }
 
     .picker-combobox-trigger {
@@ -203,6 +223,7 @@ const COUNTRIES = [
 
     .picker-combobox-search:focus-visible {
       outline: none;
+      box-shadow: inset 0 -2px 0 var(--ex-accent, #0e7c6b);
     }
 
     .picker-combobox-list {

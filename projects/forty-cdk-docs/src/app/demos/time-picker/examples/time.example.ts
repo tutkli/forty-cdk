@@ -29,9 +29,13 @@ import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/international
       [(value)]="value"
       [step]="30"
       [hourCycle]="24"
-      [ariaLabel]="'Meeting time'"
     >
-      <button forTimePickerTrigger type="button" class="time-picker-trigger">
+      <button
+        forTimePickerTrigger
+        aria-label="Meeting time"
+        type="button"
+        class="time-picker-trigger"
+      >
         <span forTimePickerValue placeholder="Pick a time"></span>
         <svg class="time-picker-chevron" viewBox="0 0 24 24" aria-hidden="true">
           <path

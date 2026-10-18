@@ -31,9 +31,13 @@ import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/international
       [maxTime]="maxTime"
       [step]="30"
       [hourCycle]="24"
-      [ariaLabel]="'Appointment time'"
     >
-      <button forTimePickerTrigger type="button" class="time-picker-bounds-trigger">
+      <button
+        forTimePickerTrigger
+        aria-label="Appointment time"
+        type="button"
+        class="time-picker-bounds-trigger"
+      >
         <span forTimePickerValue placeholder="Pick a slot"></span>
         <svg class="time-picker-bounds-chevron" viewBox="0 0 24 24" aria-hidden="true">
           <path

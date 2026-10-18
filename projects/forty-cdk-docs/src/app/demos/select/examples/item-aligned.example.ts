@@ -34,9 +34,8 @@ interface Option {
       position="item-aligned"
       [collisionPadding]="10"
       placeholder="Country"
-      ariaLabel="Country"
     >
-      <button forSelectTrigger type="button" class="aligned-select-trigger">
+      <button forSelectTrigger aria-label="Country" type="button" class="aligned-select-trigger">
         <span forSelectValue></span>
         <svg class="aligned-select-chevron" viewBox="0 0 24 24" aria-hidden="true">
           <path
