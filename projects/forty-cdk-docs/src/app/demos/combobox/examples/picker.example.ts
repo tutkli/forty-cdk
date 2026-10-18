@@ -246,8 +246,7 @@ const COUNTRIES = [
       cursor: pointer;
     }
 
-    .picker-combobox-option[data-highlighted],
-    .picker-combobox-option:not([data-disabled]):hover {
+    .picker-combobox-option[data-highlighted] {
       background: var(--ex-surface-2, #f2eee6);
     }
 

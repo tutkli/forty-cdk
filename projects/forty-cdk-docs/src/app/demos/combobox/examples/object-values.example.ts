@@ -200,8 +200,7 @@ const CITIES: readonly City[] = [
       cursor: pointer;
     }
 
-    .obj-combobox-option[data-highlighted],
-    .obj-combobox-option:not([data-disabled]):hover {
+    .obj-combobox-option[data-highlighted] {
       background: var(--ex-surface-2, #f2eee6);
     }
 

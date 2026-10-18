@@ -327,13 +327,13 @@ Composes the [WAI-ARIA Spinbutton pattern](https://www.w3.org/WAI/ARIA/apg/patte
 - **`role="spinbutton"`** per segment, with `aria-valuemin` / `aria-valuemax` / `aria-valuenow` reflected; the AM/PM segment also exposes a localized `aria-valuetext` ("AM" / "PM"), so screen readers read the period rather than `0` / `1`.
 - **Roving tabindex**: exactly one segment is tabbable, so `Tab` enters and leaves the whole field in one stop; arrows move between segments.
 - **Literals are `aria-hidden`** and never focusable, so assistive tech reads only the spinbutton segments.
-- **Boolean `data-*` hooks** on each segment are present when true and absent when false: `data-highlighted` (focused/roving), `data-placeholder` (empty), `data-disabled`, `data-readonly`.
+- **Boolean `data-*` hooks** on each segment are present when true and absent when false: `data-highlighted` (the roving tab stop, kept after blur), `data-placeholder` (empty), `data-disabled`, `data-readonly`.
 - **`aria-readonly` belongs on the segments, not the group.** WAI-ARIA supports it on `role="spinbutton"` but not on `role="group"`, so each segment carries `aria-readonly="true"` while the group reflects the `data-readonly` styling hook only.
 - **On-screen keyboards work.** A segment of a field that is neither disabled nor read-only is a `contenteditable="plaintext-only"` editing host with `inputmode="numeric"`, so tapping it on a touch device opens the numeric keypad (the AM/PM segment opens the text keyboard). What the keyboard or an input method types goes through the [Keyboard](#keyboard) map above and is never inserted into the segment, which keeps rendering `{{ seg.text }}`.
 
 ## Styling
 
-The library is styleless: style the boolean `data-*` hooks yourself. The segments carry `[data-highlighted]` (the focused/roving segment), `[data-placeholder]` (empty), `[data-disabled]` and `[data-readonly]`, and the root group carries `[data-empty]` / `[data-disabled]` / `[data-readonly]` / `[data-required]` plus the form-state hooks `[data-touched]` / `[data-dirty]` / `[data-pending]` / `[data-invalid]`.
+The library is styleless: style the boolean `data-*` hooks yourself. The segments carry `[data-highlighted]` (the roving tab-stop segment, kept after focus leaves the field, so scope a focus style to the field's `:focus-within`, or to each endpoint group's in a range field), `[data-placeholder]` (empty), `[data-disabled]` and `[data-readonly]`, and the root group carries `[data-empty]` / `[data-disabled]` / `[data-readonly]` / `[data-required]` plus the form-state hooks `[data-touched]` / `[data-dirty]` / `[data-pending]` / `[data-invalid]`.
 
 forty-cdk ships no styles: put your own class on each piece and key your CSS off the `data-*` attributes listed under [Data attributes](#data-attributes), not off the `for*` selectors ([Styling forty-cdk](../../../docs/styling.md) explains why).
 
@@ -344,7 +344,7 @@ A segment is an editing host, so the browser paints a text caret in the focused 
   color: gray;
 }
 
-.time-field-segment[data-highlighted] {
+.time-field:focus-within .time-field-segment[data-highlighted] {
   caret-color: transparent;
   background: highlight;
 }

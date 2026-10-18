@@ -191,8 +191,7 @@ interface Option {
       cursor: pointer;
     }
 
-    .select-option[data-highlighted],
-    .select-option:not([data-disabled]):hover {
+    .select-option[data-highlighted] {
       background: var(--ex-surface-2, #f2eee6);
     }
 

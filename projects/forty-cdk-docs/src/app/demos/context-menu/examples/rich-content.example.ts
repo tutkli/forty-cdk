@@ -220,8 +220,7 @@ import {
     }
 
     .context-menu-rich-item[data-highlighted],
-    .context-menu-rich-item[data-state='open'],
-    .context-menu-rich-item:not([data-disabled]):hover {
+    .context-menu-rich-item[data-state='open'] {
       background: var(--ex-surface-2, #f2eee6);
     }
 
@@ -235,8 +234,7 @@ import {
       color: var(--ex-danger, #b3261e);
     }
 
-    .context-menu-rich-item--danger[data-highlighted],
-    .context-menu-rich-item--danger:not([data-disabled]):hover {
+    .context-menu-rich-item--danger[data-highlighted] {
       background: color-mix(in srgb, var(--ex-danger, #b3261e) 14%, transparent);
     }
 

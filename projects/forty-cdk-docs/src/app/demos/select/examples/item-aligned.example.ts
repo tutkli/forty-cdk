@@ -148,8 +148,7 @@ interface Option {
       cursor: pointer;
     }
 
-    .aligned-select-option[data-highlighted],
-    .aligned-select-option:not([data-disabled]):hover {
+    .aligned-select-option[data-highlighted] {
       background: var(--ex-surface-2, #f2eee6);
     }
 

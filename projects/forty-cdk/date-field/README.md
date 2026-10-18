@@ -191,7 +191,7 @@ A native reset of the owning `<form>` returns `value` to what it held when the f
 | `[forDateFieldSegment]` | `data-disabled`    | present \| absent |
 | `[forDateFieldSegment]` | `data-readonly`    | present \| absent |
 
-`data-empty` marks the field only while **every** editable segment is empty (nothing has been entered); a partially-typed field is **not** empty. `data-placeholder` marks each individual segment that is still empty. `data-highlighted` is the current roving-tabindex segment and the only focus hook the consumer gets, shared with the other roving primitives. `[forDateFieldLiteral]` carries no data-\* attributes (it is `aria-hidden` and out of the tab order).
+`data-empty` marks the field only while **every** editable segment is empty (nothing has been entered); a partially-typed field is **not** empty. `data-placeholder` marks each individual segment that is still empty. `data-highlighted` marks the roving tab-stop segment, the vocabulary shared with the other roving primitives. It stays on that segment after focus leaves the field, so a style that reads as focus is scoped to the field's `:focus-within`, and to each endpoint group's in a range field, where each endpoint keeps its own. `[forDateFieldLiteral]` carries no data-\* attributes (it is `aria-hidden` and out of the tab order).
 
 ## Date-time field
 
@@ -339,13 +339,13 @@ Composes the [WAI-ARIA Spinbutton pattern](https://www.w3.org/WAI/ARIA/apg/patte
 - **`role="spinbutton"`** per segment, with `aria-valuemin` / `aria-valuemax` / `aria-valuenow` reflected; the month segment also exposes a localized `aria-valuetext` ("March"), so screen readers read the name rather than the number.
 - **Roving tabindex**: exactly one segment is tabbable, so `Tab` enters and leaves the whole field in one stop; arrows move between segments.
 - **Literals are `aria-hidden`** and never focusable, so assistive tech reads only the spinbutton segments.
-- **Boolean `data-*`** on each segment, present when true and absent when false: `data-highlighted` (focused/roving), `data-placeholder` (empty), `data-disabled`, `data-readonly`.
+- **Boolean `data-*`** on each segment, present when true and absent when false: `data-highlighted` (the roving tab stop, kept after blur), `data-placeholder` (empty), `data-disabled`, `data-readonly`.
 - **`aria-readonly` belongs on the segments, not the group.** WAI-ARIA supports it on `role="spinbutton"` but not on `role="group"`, so each segment carries `aria-readonly="true"` while the group reflects the `data-readonly` styling hook only.
 - **On-screen keyboards work.** A segment of a field that is neither disabled nor read-only is a `contenteditable="plaintext-only"` editing host with `inputmode="numeric"`, so tapping it on a touch device opens the numeric keypad (the AM/PM segment opens the text keyboard). What the keyboard or an input method types goes through the [Keyboard](#keyboard) map above and is never inserted into the segment, which keeps rendering `{{ seg.text }}`.
 
 ## Styling
 
-The library is styleless, so style the boolean `data-*` hooks yourself: `[data-highlighted]` (the focused/roving segment), `[data-placeholder]` (empty), `[data-disabled]` and `[data-readonly]` on the segments, and `[data-empty]` / `[data-disabled]` / `[data-readonly]` / `[data-required]` plus the form-state hooks `[data-touched]` / `[data-dirty]` / `[data-pending]` / `[data-invalid]` on the root group.
+The library is styleless, so style the boolean `data-*` hooks yourself: `[data-highlighted]` (the roving tab-stop segment, kept after focus leaves the field), `[data-placeholder]` (empty), `[data-disabled]` and `[data-readonly]` on the segments, and `[data-empty]` / `[data-disabled]` / `[data-readonly]` / `[data-required]` plus the form-state hooks `[data-touched]` / `[data-dirty]` / `[data-pending]` / `[data-invalid]` on the root group.
 
 forty-cdk ships no styles: put your own class on each piece and key your CSS off the `data-*` attributes listed under [Data attributes](#data-attributes), not off the `for*` selectors ([Styling forty-cdk](../../../docs/styling.md) explains why).
 
@@ -355,7 +355,7 @@ A segment is an editing host, so the browser paints a text caret in the focused 
 .date-field-segment[data-placeholder] {
   color: GrayText;
 }
-.date-field-segment[data-highlighted] {
+.date-field:focus-within .date-field-segment[data-highlighted] {
   caret-color: transparent;
   background: Highlight;
   color: HighlightText;

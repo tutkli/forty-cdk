@@ -58,17 +58,17 @@ import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/international
       caret-color: transparent;
       padding: 0.05rem 0.15rem;
       border-radius: 4px;
-      outline: none;
     }
 
     .time-field-segment[data-placeholder] {
       color: var(--ex-muted, #585d66);
     }
 
-    .time-field-segment[data-highlighted],
+    .time-field:focus-within .time-field-segment[data-highlighted],
     .time-field-segment:focus {
       background: var(--ex-accent, #0e7c6b);
       color: var(--ex-accent-contrast, #ffffff);
+      outline: 2px solid transparent;
     }
 
     .time-field-literal {

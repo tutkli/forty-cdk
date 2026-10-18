@@ -85,8 +85,7 @@ import { ForMenuContent, ForMenuItem, ForMenuSeparator } from 'forty-cdk/menu';
     }
 
     .dropdown-menu-item[data-highlighted],
-    .dropdown-menu-item[data-state='open'],
-    .dropdown-menu-item:not([data-disabled]):hover {
+    .dropdown-menu-item[data-state='open'] {
       background: var(--ex-surface-2, #f2eee6);
     }
 
@@ -100,8 +99,7 @@ import { ForMenuContent, ForMenuItem, ForMenuSeparator } from 'forty-cdk/menu';
       color: var(--ex-danger, #b3261e);
     }
 
-    .dropdown-menu-item--danger[data-highlighted],
-    .dropdown-menu-item--danger:not([data-disabled]):hover {
+    .dropdown-menu-item--danger[data-highlighted] {
       background: color-mix(in srgb, var(--ex-danger, #b3261e) 14%, transparent);
     }
 

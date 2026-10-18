@@ -172,8 +172,7 @@ const COUNTRIES: readonly Country[] = [
       cursor: pointer;
     }
 
-    .obj-select-option[data-highlighted],
-    .obj-select-option:not([data-disabled]):hover {
+    .obj-select-option[data-highlighted] {
       background: var(--ex-surface-2, #f2eee6);
     }
 

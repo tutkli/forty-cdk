@@ -143,8 +143,7 @@ import { ForMenubar, ForMenubarTrigger } from 'forty-cdk/menubar';
     }
 
     .menubar-vertical-item[data-highlighted],
-    .menubar-vertical-item[data-state='open'],
-    .menubar-vertical-item:not([data-disabled]):hover {
+    .menubar-vertical-item[data-state='open'] {
       background: var(--ex-surface-2, #f2eee6);
     }
 

@@ -192,8 +192,7 @@ function flatten(
       user-select: none;
     }
 
-    .vtree-item[data-highlighted] > .vtree-row,
-    .vtree-row:hover {
+    .vtree:is(:focus-within, :hover) .vtree-item[data-highlighted] > .vtree-row {
       background: var(--ex-surface-2, #f2eee6);
     }
 

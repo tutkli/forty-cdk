@@ -581,7 +581,7 @@ Implements the [WAI-ARIA Grid pattern](https://www.w3.org/WAI/ARIA/apg/patterns/
 - **`aria-selected`** is always emitted (`"true"` / `"false"`); **`aria-current="date"`** marks today; **`aria-disabled`** marks unavailable dates (truthy-only).
 - **`aria-multiselectable="true"`** is set on the day grid in `selectionMode="range"`, where a committed range selects several cells, and is absent in single mode.
 - **Roving tabindex**: exactly one cell (the focused date) is tabbable. `Tab` enters and leaves the grid in one stop.
-- **Boolean `data-*`** on the cell, present when true and absent when false: `data-selected`, `data-today`, `data-highlighted` (the focused/roving cell), `data-disabled` and `data-outside-month`.
+- **Boolean `data-*`** on the cell, present when true and absent when false: `data-selected`, `data-today`, `data-highlighted` (the roving tab-stop cell, kept after focus leaves the grid), `data-disabled` and `data-outside-month`.
 
 ## Styling
 
