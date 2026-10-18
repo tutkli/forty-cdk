@@ -5,7 +5,7 @@ archetype: [composable-ui]
 foldInto: drag-drop#virtualized-lists
 ---
 
-# ForVirtualReorder
+# Virtual Reorder
 
 Drag-reorder for a windowed `*forVirtualFor` list: it wraps `[forDropList]` and translates the window-relative drop into dataset-**absolute** indices, so a reorder is correct even when the lifted row scrolls out of the rendered window.
 

@@ -5,7 +5,7 @@ archetype: [composable-ui]
 apgUrl: https://www.w3.org/WAI/ARIA/apg/patterns/grid/
 ---
 
-# ForTable
+# Table
 
 A headless data table that decorates a native &lt;table&gt; or a &lt;div&gt; CSS grid with WAI-ARIA table / grid semantics: sticky headers, 2D keyboard navigation, row selection, sortable headers, column resizing and column / row reordering.
 

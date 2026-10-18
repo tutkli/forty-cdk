@@ -5,7 +5,7 @@ archetype: [composable-ui]
 foldInto: table#virtualized-rows
 ---
 
-# ForTableVirtualized
+# Table Virtualization
 
 The opt-in row-virtualization companion for `[forTable]`: it builds a windowing core from the table's `[rowCount]` and exposes the visible slice for the consumer to render, plus cross-window roving keyboard navigation.
 

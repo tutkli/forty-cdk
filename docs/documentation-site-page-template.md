@@ -317,7 +317,10 @@ removed, stays in the alias list so it cannot come back.
   published with a `-1`, so the order they are written in decides which one owns the plain anchor,
   and a link meant for one lands on the other while still resolving. Rename the heading that is not
   the reference: `### Reorder keyboard` under `## Reordering` leaves listbox's `## Keyboard` its
-  `#keyboard`. The contract check fails a pair in any README, published guide or site page,
+  `#keyboard`. The h1 counts too: GitHub and npm slug the title and the site anchors none, so a
+  heading sharing its slug is `#forbutton-1` on GitHub and `#forbutton` on the site. That is why a
+  README is titled with its frontmatter title (`# Button`), never with its root class
+  (`# ForButton`). The contract check fails a pair in any README, published guide or site page,
   naming the file, both headings, the section each sits under and the anchor each is published as,
   so `pnpm test:docs` and `pnpm build:docs` both stop on it.
 
@@ -451,8 +454,9 @@ so it has to exercise the augmented type itself (the breakpoints fence calls `up
 **No prose carries an em dash**, by `scripts/check-doc-prose.mjs` under `pnpm test:docs`
 ([#1952](https://github.com/tutkli/forty-cdk/issues/1952)). It reads every document the corpus
 compiles (each entry-point README, published or not, every registered guide and every site page)
-and fails any em dash, or a spaced double hyphen (`--` with a space on each side) standing in for
-one, naming the document, the line and the count. The budget is zero, with no per-file allowance
+and fails any em dash, whether written as the character or as an entity (`&mdash;`, `&#8212;`,
+`&#x2014;`), or a spaced double hyphen (`--` with a space on each side) standing in for one, naming
+the document, the line and the count. The budget is zero, with no per-file allowance
 and no exemption list, so rewrite the sentence rather than swap the character: split it, or use a
 colon, commas or parentheses. Six places are exempt by construction: the frontmatter, fenced code,
 inline code, a heading of any level (its dash is part of its anchor), a table cell holding `—`

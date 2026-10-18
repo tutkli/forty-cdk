@@ -147,6 +147,7 @@ export interface DocDocument {
   readonly meta: DocMeta | null;
   /** The level-1 heading's markdown. */
   readonly title: string;
+  readonly titleLine: number;
   /**
    * The opening paragraph's markdown, which the site reads as the document's
    * description.

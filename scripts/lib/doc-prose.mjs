@@ -1,5 +1,6 @@
 const EM_DASH = '\u2014';
 const EM_DASHES = /\u2014/g;
+const EM_DASH_ENTITIES = /&(?:mdash|#0*8212|#x0*2014);/gi;
 const SPACED_DOUBLE_HYPHENS = /(?<= )--(?= )/g;
 const FRONTMATTER = '---';
 const QUOTE_MARKERS = /^(?:[ \t]*>)+/;
@@ -184,7 +185,8 @@ export function proseProblems(markdown, { path }) {
   for (const block of blocksOf(lines, classify(lines))) {
     withoutCodeSpans(block.texts.join('\n'))
       .split('\n')
-      .forEach((line, offset) => {
+      .forEach((raw, offset) => {
+        const line = raw.replace(EM_DASH_ENTITIES, EM_DASH);
         const prose = block.kind === 'row' ? proseOfRow(line) : line;
         const number = block.start + offset + 1;
         const dashes = countOf(EM_DASHES, prose);

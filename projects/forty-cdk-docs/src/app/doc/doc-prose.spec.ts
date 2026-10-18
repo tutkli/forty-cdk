@@ -72,6 +72,37 @@ describe('an em dash in prose', () => {
   it('passes an en dash (U+2013) in a numeric range', () => {
     expect(scan(doc(`Months run 1${EN_DASH}12 and hours 0${EN_DASH}23.`))).toEqual([]);
   });
+
+  it('fails an em dash written as a named, decimal or hexadecimal entity, in any case', () => {
+    expect(
+      scan(
+        doc(
+          'Focus moves &mdash; then returns.',
+          '',
+          'The trigger &#8212; a button &#x2014; opens the panel.',
+          '',
+          'A press closes it &MDash; always &#X2014; twice.',
+        ),
+      ),
+    ).toEqual([dashesAt(3, 1), dashesAt(5, 2), dashesAt(7, 2)]);
+  });
+
+  it('holds an entity em dash to the value rules a literal one meets', () => {
+    const table = [
+      '| Input | Default | Description |',
+      '| --- | --- | --- |',
+      '| `modal` | &mdash; | Traps focus.<br>**Default:** &#8212; |',
+      '| `side` | &#x2014; | Traps focus &mdash; always. |',
+    ];
+
+    expect(scan(doc(...table))).toEqual([dashesAt(6, 1)]);
+  });
+
+  it('passes an entity em dash inside inline code and a heading', () => {
+    expect(scan(doc('## Range &mdash; selection', '', 'Write `&mdash;` to escape it.'))).toEqual(
+      [],
+    );
+  });
 });
 
 describe('a spaced double hyphen', () => {

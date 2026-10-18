@@ -6,6 +6,7 @@ import {
   behaviorGroupOf,
   CANONICAL_SECTIONS,
   checkContract,
+  checkExemptions,
   checkHeadingAliases,
   checkHeadingAnchors,
   checkSectionOrder,
@@ -456,6 +457,36 @@ describe('holding a document to its archetypes', () => {
 
     expect(problems.some((problem) => problem.message.includes('compiles no document'))).toBe(true);
   });
+
+  it('fails an exemption from a section the document’s archetypes never required', () => {
+    const exempt = SECTION_EXEMPTIONS.find((one) => one.section === 'Accessibility')!;
+    const exemptionsOf = (archetype: string) =>
+      checkExemptions([
+        compile({
+          path: `projects/forty-cdk/${exempt.slug}/README.md`,
+          slug: exempt.slug,
+          markdown: `${[
+            '---',
+            'title: Thing',
+            'group: primitives',
+            `archetype: [${archetype}]`,
+            '---',
+            '',
+            '# T',
+            '',
+            'Lede.',
+            '',
+            '## API',
+          ].join('\n')}\n`,
+        }),
+      ]).filter((problem) => problem.message.startsWith(`${exempt.slug} `));
+
+    expect(exemptionsOf('headless-utility').map((problem) => problem.message)).toEqual([
+      `${exempt.slug} is exempt from "## Accessibility", which its archetype headless-utility ` +
+        'does not require — drop the exemption',
+    ]);
+    expect(exemptionsOf('composable-ui')).toEqual([]);
+  });
 });
 
 /**
@@ -820,6 +851,51 @@ describe('headings that slugify alike anywhere in a document', () => {
     ]);
     expect(problems[0]!.message).toContain('as #states and "### States" as #states-1.');
     expect(problems[1]!.message).toContain('as #states and "### States" as #states-2.');
+  });
+
+  it('reports a heading that slugs like the title, which GitHub counts and the site does not', () => {
+    const markdown = readme(
+      '# ForThing',
+      '',
+      'Lede.',
+      '',
+      '## API',
+      '',
+      '### `ForThing`',
+      '',
+      '### `ForThing`',
+    );
+    const lines = markdown.split('\n');
+    const problems = checkHeadingAnchors([
+      compile({ path: 'projects/forty-cdk/thing/README.md', slug: 'thing', markdown }),
+    ]);
+
+    expect(problems).toEqual([
+      {
+        path: 'projects/forty-cdk/thing/README.md',
+        line: lines.indexOf('### `ForThing`') + 1,
+        message:
+          '"### `ForThing`" under "## API" slugs to "forthing", as the title "# ForThing" does. ' +
+          'GitHub and npm count the title, so they publish "### `ForThing`" as #forthing-1, ' +
+          'while the site, which anchors no title, publishes it as #forthing, and a link ' +
+          'written against either lands on something else on the other. Retitle the document ' +
+          'to its frontmatter title, or rename the heading',
+      },
+      expect.objectContaining({
+        line: lines.lastIndexOf('### `ForThing`') + 1,
+        message: expect.stringContaining('as #forthing-2, while the site'),
+      }),
+    ]);
+  });
+
+  it('accepts a title whose slug no heading below it shares', () => {
+    const markdown = readme('# Thing', '', 'Lede.', '', '## API', '', '### `ForThing`');
+
+    expect(
+      checkHeadingAnchors([
+        compile({ path: 'projects/forty-cdk/thing/README.md', slug: 'thing', markdown }),
+      ]),
+    ).toEqual([]);
   });
 
   it('accepts headings whose words overlap without slugging alike', () => {

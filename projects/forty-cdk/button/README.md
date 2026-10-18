@@ -5,7 +5,7 @@ archetype: [composable-ui]
 apgUrl: https://www.w3.org/WAI/ARIA/apg/patterns/button/
 ---
 
-# ForButton
+# Button
 
 Turns any element (a native `<button>` or a custom host like `<div>` / `<span>`) into an accessible button with keyboard activation. Disabled stays focusable (aria-disabled, never the native attribute) and pressed / hovered / focus-visible are reflected as data-\* hooks.
 
