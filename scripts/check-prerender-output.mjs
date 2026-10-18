@@ -77,12 +77,14 @@ const mistitled = [];
 const titled = new Map();
 const unannounced = [];
 const unfocusable = [];
+const unsearchable = [];
 let demoBlocks = 0;
 let themeToggles = 0;
 let currentLinks = 0;
 let railViewports = 0;
 let menuButtons = 0;
 let skipLinks = 0;
+let searchButtons = 0;
 
 /**
  * The `localStorage` key the site persists the theme under, read from the source
@@ -280,6 +282,34 @@ function checkNavigationChrome(label, html) {
   }
   if (problems.length > 0) {
     unannounced.push(`${label} (${[...new Set(problems)].join('; ')})`);
+  }
+}
+
+const SEARCH_BUTTON = /<button\b[^>]*\bclass="[^"]*\bsearch-btn\b[^"]*"[^>]*>[\s\S]*?<\/button>/gi;
+const SEARCH_KBD = /<kbd\b[^>]*>([^<]*)<\/kbd>/i;
+
+function checkSearchEntry(label, html) {
+  const buttons = [...html.matchAll(SEARCH_BUTTON)].map(([button]) => button);
+  if (buttons.length !== 1) {
+    unsearchable.push(`${label} (${buttons.length} search buttons)`);
+    return;
+  }
+  searchButtons += 1;
+  const [button] = buttons;
+  const open = /^<button\b[^>]*>/.exec(button)?.[0] ?? '';
+  const problems = [];
+  if (!/\baria-haspopup="dialog"/.test(open) || !/\baria-expanded="false"/.test(open)) {
+    problems.push('announces no dialog or no expanded state');
+  }
+  if (!/\baria-keyshortcuts="Control\+K Meta\+K"/.test(open)) {
+    problems.push('announces no shortcut');
+  }
+  const hint = SEARCH_KBD.exec(button)?.[1].trim() ?? '';
+  if (!/^Ctrl\b/.test(hint)) {
+    problems.push(`labels its shortcut "${hint}"`);
+  }
+  if (problems.length > 0) {
+    unsearchable.push(`${label} (${problems.join('; ')})`);
   }
 }
 
@@ -673,6 +703,7 @@ if (!existsSync(homeFile)) {
   checkDemoAttributes('(home)', homeHtml);
   checkTitle('(home)', homeHtml);
   checkContentFocus('(home)', homeHtml, null);
+  checkSearchEntry('(home)', homeHtml);
   catalogued = checkLanding(homeHtml);
 }
 
@@ -692,6 +723,7 @@ for (const { path, title } of routes) {
   checkTitle(path, html);
   checkNavigationChrome(path, html);
   checkContentFocus(path, html, path);
+  checkSearchEntry(path, html);
 }
 
 if (missing.length > 0) {
@@ -793,6 +825,17 @@ if (unfocusable.length > 0) {
   );
 }
 
+if (searchButtons === 0 && unsearchable.length === 0) {
+  fail('the prerendered output renders no search button — the search entry scan is blind');
+}
+if (unsearchable.length > 0) {
+  fail(
+    `${unsearchable.length} prerendered page(s) offer no search button, or one whose dialog, ` +
+      'shortcut or shortcut label reaches the eye but not assistive technology or not every ' +
+      `keyboard:\n  ${unsearchable.slice(0, 10).join('\n  ')}`,
+  );
+}
+
 console.log(
   `[check-prerender-output] ok — ${primitives.length} primitive routes + ` +
     `${guides.length} guide routes + ${sitePages.length} site pages + ${errorCodes.length} ` +
@@ -806,6 +849,7 @@ console.log(
     `them an id of "null", and a landing page cataloguing all ${catalogued} published entry ` +
     'points, each linked with its description tooltip, and stating the version the manifest states, ' +
     `with ${currentLinks} current rail link(s) carrying aria-current, ${railViewports} rail ` +
-    `viewport(s) out of the tab order, ${menuButtons} navigation button(s) announcing their drawer ` +
-    `and ${skipLinks} skip link(s) opening the tab order onto their page's focusable <main>`,
+    `viewport(s) out of the tab order, ${menuButtons} navigation button(s) announcing their drawer, ` +
+    `${skipLinks} skip link(s) opening the tab order onto their page's focusable <main> and ` +
+    `${searchButtons} search button(s) announcing their dialog and shortcut`,
 );

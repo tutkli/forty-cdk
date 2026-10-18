@@ -1,5 +1,7 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
+
+import { SiteChrome } from '../ui/site-chrome';
 
 @Component({
   selector: 'not-found-page',
@@ -16,7 +18,9 @@ import { RouterLink } from '@angular/router';
       <li><a [routerLink]="['/getting-started']">Getting started</a></li>
       <li><a [routerLink]="['/guides']">Browse the guides</a></li>
     </ul>
-    <p class="hint">Or press <kbd>⌘K</kbd> to search every page.</p>
+    <p class="hint">
+      Or press <kbd>{{ shortcut }}</kbd> to search every page.
+    </p>
   `,
   styles: `
     :host {
@@ -64,4 +68,6 @@ import { RouterLink } from '@angular/router';
     }
   `,
 })
-export class NotFoundPage {}
+export class NotFoundPage {
+  protected readonly shortcut = inject(SiteChrome).searchShortcut;
+}

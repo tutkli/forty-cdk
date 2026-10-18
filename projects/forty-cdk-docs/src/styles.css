@@ -1346,9 +1346,9 @@ a.pg-nav-link.active {
 }
 
 /*
- * Command palette. [forComboboxContent] portals to <body> and floats below the
- * input, so the list (.cmdk-content + options) must be styled globally — like
- * the other combobox surfaces above.
+ * Command palette. [forDialog] (.cmdk-wrap) and its backdrop portal to <body>,
+ * and [forComboboxContent] floats below the input, so the whole palette must be
+ * styled globally — like the other combobox surfaces above.
  */
 .cmdk-backdrop {
   position: fixed;
@@ -1365,6 +1365,10 @@ a.pg-nav-link.active {
   transform: translateX(-50%);
   z-index: 92;
   width: min(560px, calc(100vw - 2rem));
+}
+
+.cmdk-wrap:focus {
+  outline: none;
 }
 
 .cmdk {
@@ -1421,9 +1425,6 @@ a.pg-nav-link.active {
 
 .cmdk-content {
   z-index: 95;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
   width: var(--for-floating-anchor-width);
   max-height: min(50vh, 380px);
   overflow-y: auto;
@@ -1433,6 +1434,12 @@ a.pg-nav-link.active {
   border: 1px solid var(--pg-border);
   border-radius: var(--pg-radius-sm);
   box-shadow: var(--pg-shadow);
+}
+
+.cmdk-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
 }
 
 .cmdk-option {
@@ -1458,6 +1465,8 @@ a.pg-nav-link.active {
 }
 
 .cmdk-option-title {
+  flex: none;
+  max-width: 100%;
   font-size: 0.875rem;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1479,13 +1488,18 @@ a.pg-nav-link.active {
 }
 
 .cmdk-option-group {
-  flex: none;
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: 0.75rem;
   font-weight: 700;
   color: var(--pg-text-muted);
 }
 
 .cmdk-empty {
+  margin: 0;
   padding: 0.7rem;
   font-size: 0.875rem;
   color: var(--pg-text-muted);
