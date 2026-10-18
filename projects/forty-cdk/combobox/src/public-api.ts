@@ -1,4 +1,5 @@
 export { ForCombobox } from './combobox';
+export { ForComboboxVirtualized } from './combobox-virtualized';
 export { ForComboboxAnchor } from './combobox-anchor';
 export { ForComboboxTrigger } from './combobox-trigger';
 export { ForComboboxToggle } from './combobox-toggle';
@@ -36,4 +37,6 @@ export {
 export {
   FOR_COMBOBOX_HOST_DIRECTIVE_INPUTS,
   FOR_COMBOBOX_HOST_DIRECTIVE_OUTPUTS,
+  FOR_COMBOBOX_VIRTUALIZED_HOST_DIRECTIVE_INPUTS,
+  FOR_COMBOBOX_VIRTUALIZED_HOST_DIRECTIVE_OUTPUTS,
 } from './combobox-host-directive';

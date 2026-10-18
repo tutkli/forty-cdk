@@ -12,6 +12,7 @@ import {
   ForSelectOption,
   ForSelectTrigger,
   ForSelectValue,
+  ForSelectVirtualized,
 } from 'forty-cdk/select';
 import { injectVirtualizer } from 'forty-cdk/virtualization';
 
@@ -23,10 +24,18 @@ interface Item {
 @Component({
   selector: 'app-select-virtualized-fixture',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ForSelect, ForSelectTrigger, ForSelectValue, ForSelectContent, ForSelectOption],
+  imports: [
+    ForSelect,
+    ForSelectTrigger,
+    ForSelectValue,
+    ForSelectContent,
+    ForSelectOption,
+    ForSelectVirtualized,
+  ],
   template: `
     <div
       forSelect
+      forSelectVirtualized
       ariaLabel="Virtualized select"
       [(value)]="value"
       [(open)]="open"

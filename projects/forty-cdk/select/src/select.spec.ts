@@ -32,6 +32,7 @@ import { ForFieldset } from 'forty-cdk/fieldset';
 import { ForField, ForFieldDescription, ForFieldError, ForLabel } from 'forty-cdk/field';
 import { pressKey, pressWithMouse } from 'forty-cdk/testing';
 import { ForSelect } from './select';
+import { ForSelectVirtualized } from './select-virtualized';
 import { FOR_SELECT_CONTEXT, type SelectContext } from './select-context';
 import { ForSelectAnchor } from './select-anchor';
 import { ForSelectContent } from './select-content';
@@ -46,6 +47,7 @@ import { ForSelectValue } from './select-value';
 const BASE_IMPORTS = [ForSelect, ForSelectTrigger, ForSelectContent, ForSelectOption];
 
 const HOST_IMPORTS = [...BASE_IMPORTS, ForSelectValue];
+const VIRTUALIZED_IMPORTS = [...BASE_IMPORTS, ForSelectVirtualized];
 
 @Component({
   imports: HOST_IMPORTS,
@@ -3541,9 +3543,9 @@ describe('ForSelect', () => {
     }
 
     @Component({
-      imports: BASE_IMPORTS,
+      imports: VIRTUALIZED_IMPORTS,
       template: `
-        <div forSelect [(open)]="open" [totalCount]="6" [visibleRange]="range">
+        <div forSelect forSelectVirtualized [(open)]="open" [totalCount]="6" [visibleRange]="range">
           <button forSelectTrigger>T</button>
           @if (open()) {
             <div forSelectContent data-test-id="v-content">
@@ -3873,10 +3875,11 @@ describe('ForSelect', () => {
 
   describe('virtualized option windowing (Shape C)', () => {
     @Component({
-      imports: BASE_IMPORTS,
+      imports: VIRTUALIZED_IMPORTS,
       template: `
         <div
           forSelect
+          forSelectVirtualized
           [(open)]="open"
           [(value)]="value"
           [totalCount]="total()"
@@ -4044,10 +4047,11 @@ describe('ForSelect', () => {
 
     describe('typeahead across the window (issue #1970)', () => {
       @Component({
-        imports: BASE_IMPORTS,
+        imports: VIRTUALIZED_IMPORTS,
         template: `
           <div
             forSelect
+            forSelectVirtualized
             [(open)]="open"
             [(value)]="value"
             [totalCount]="total()"
@@ -4403,9 +4407,15 @@ describe('ForSelect', () => {
 
     describe('label snapshot', () => {
       @Component({
-        imports: HOST_IMPORTS,
+        imports: [...HOST_IMPORTS, ForSelectVirtualized],
         template: `
-          <div forSelect [(open)]="open" [(value)]="value" [totalCount]="total()">
+          <div
+            forSelect
+            forSelectVirtualized
+            [(open)]="open"
+            [(value)]="value"
+            [totalCount]="total()"
+          >
             <button forSelectTrigger><span forSelectValue></span></button>
             @if (open()) {
               <div forSelectContent>
@@ -4650,10 +4660,11 @@ describe('ForSelect', () => {
       });
 
       @Component({
-        imports: BASE_IMPORTS,
+        imports: VIRTUALIZED_IMPORTS,
         template: `
           <div
             forSelect
+            forSelectVirtualized
             [(open)]="open"
             [(value)]="value"
             [totalCount]="50"
@@ -4771,10 +4782,11 @@ describe('ForSelect', () => {
 
   describe('selectionFollowsFocus + virtualization guard (#1145, #1583)', () => {
     @Component({
-      imports: BASE_IMPORTS,
+      imports: VIRTUALIZED_IMPORTS,
       template: `
         <div
           forSelect
+          forSelectVirtualized
           [(open)]="open"
           [totalCount]="total()"
           [visibleRange]="range"
@@ -4907,10 +4919,11 @@ describe('ForSelect', () => {
 
   describe('multi-select keyboard + virtualization guard', () => {
     @Component({
-      imports: BASE_IMPORTS,
+      imports: VIRTUALIZED_IMPORTS,
       template: `
         <div
           forSelect
+          forSelectVirtualized
           [(open)]="open"
           [(value)]="value"
           [multiple]="true"
@@ -5045,9 +5058,15 @@ describe('ForSelect', () => {
       });
 
       @Component({
-        imports: BASE_IMPORTS,
+        imports: VIRTUALIZED_IMPORTS,
         template: `
-          <div forSelect [(open)]="open" [totalCount]="3" [visibleRange]="range">
+          <div
+            forSelect
+            forSelectVirtualized
+            [(open)]="open"
+            [totalCount]="3"
+            [visibleRange]="range"
+          >
             <button forSelectTrigger>T</button>
             @if (open()) {
               <div forSelectContent data-test-id="single-content">

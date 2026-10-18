@@ -5,9 +5,12 @@ import {
   type ListNavigationAction,
   orphanContextError,
   type RovingTabindex,
+  type Typeahead,
+  type VirtualizedResume,
   type WritingDirection,
   type Unset,
 } from 'forty-cdk/core';
+import type { ActiveDescendantFocusModel, TreePositionEntry } from './focus-model';
 
 /**
  * A visible tree node plus its resolved parent host — the flattened list the root walks.
@@ -103,12 +106,10 @@ export interface ForTreeContext<T = unknown> {
   readonly roving: RovingTabindex;
   /**
    * Length of the flattened visible-node list when virtualizing, `undefined` in
-   * the roving-tabindex path. Setting it (via `[forTree][totalCount]`) switches
-   * the tree to the activedescendant focus model.
+   * the roving-tabindex path. Setting it (via `[forTreeVirtualized][totalCount]`)
+   * switches the tree to the activedescendant focus model.
    */
   readonly totalCount: Signal<number | undefined>;
-  /** Inclusive-exclusive `[start, end)` rendered window; `undefined` when not virtualizing. */
-  readonly visibleRange: Signal<readonly [number, number] | undefined>;
   /**
    * The active node's id under the activedescendant focus model, `null` in the
    * roving path. The root reflects it as `aria-activedescendant`; items read it
@@ -203,6 +204,46 @@ export interface TreePieceContext<T = unknown> {
   highlightFromPointer(host: HTMLElement, id: string): void;
   isItemHighlighted(host: HTMLElement): boolean;
   notifyItemFocus(host: HTMLElement): void;
+  /**
+   * Called by `[forTreeVirtualized]` from its constructor. Hands the root the
+   * virtualized focus model and returns the root state that model reads and
+   * writes.
+   */
+  registerVirtualization(virtualization: TreeVirtualization): TreeVirtualizationHost;
+}
+
+/**
+ * The virtualized `aria-activedescendant` focus model `[forTreeVirtualized]`
+ * lends the root. The root depends on this shape alone, so a tree without the
+ * piece never references the navigation engine.
+ */
+export interface TreeVirtualization<T = unknown> {
+  /** Length of the flattened node list, or `undefined` while the piece is present but unset. */
+  readonly totalCount: Signal<number | undefined>;
+  /** The position the root resumes from once its active node unmounts. */
+  readonly resume: VirtualizedResume<T, TreePositionEntry<T>>;
+  /** The activedescendant focus model, constructed on first use. */
+  focusModel(): ActiveDescendantFocusModel<T>;
+  /** Rejects a multi-select range shortcut, which the virtualized path does not support. */
+  rejectRangeSelect(): void;
+  /** Rejects a keyboard move while `selectionFollowsFocus` is set on a single-select tree. */
+  assertSelectionFollowsFocusSupported(): void;
+}
+
+/** The root state the virtualized focus model reads and writes. */
+export interface TreeVirtualizationHost<T = unknown> {
+  /** The registered items — the rendered window. */
+  readonly items: Signal<readonly ForTreeItemHandle<T>[]>;
+  /** The root's typeahead buffer, shared with the roving focus model. */
+  readonly typeahead: Typeahead;
+  /** Whether more than one node can be selected, where `selectionFollowsFocus` is inert. */
+  readonly multiSelect: Signal<boolean>;
+  /** The active node's id. */
+  getActiveId(): string | null;
+  /** Move the active node, forgetting any retained resume position. */
+  setActiveId(id: string | null): void;
+  /** Open the pointer-suppression window before a programmatic scroll. */
+  suppressPointer(): void;
 }
 
 /** What the tree's pieces resolve `FOR_TREE_CONTEXT` as. */

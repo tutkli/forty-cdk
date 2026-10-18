@@ -3,7 +3,7 @@ import { type ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { ForDateField, ForDateFieldSegment } from 'forty-cdk/date-field';
 import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized-date';
-import { ForListbox, ForListboxOption } from 'forty-cdk/listbox';
+import { ForListbox, ForListboxOption, ForListboxVirtualized } from 'forty-cdk/listbox';
 import {
   ForTable,
   ForTableBody,
@@ -130,11 +130,12 @@ class UnboundInputHost {}
 
 @Component({
   host: { 'data-fixture': 'listbox-keyboard-host' },
-  imports: [ForListbox, ForListboxOption],
+  imports: [ForListbox, ForListboxOption, ForListboxVirtualized],
   template: `
     @boundary {
       <div
         forListbox
+        forListboxVirtualized
         aria-label="Letters"
         data-test-id="listbox"
         [totalCount]="3"

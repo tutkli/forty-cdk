@@ -2344,11 +2344,11 @@ exports[`document structure > projects/forty-cdk/combobox/README.md declares the
     "tables": [
       {
         "columns": [
-          "Input / Output",
+          "ForComboboxVirtualized member",
           "Purpose",
         ],
         "role": "plain",
-        "rows": 4,
+        "rows": 5,
       },
     ],
     "title": "Virtualization",
@@ -4555,7 +4555,7 @@ exports[`document structure > projects/forty-cdk/listbox/README.md declares the 
     "headings": [
       {
         "depth": 3,
-        "slug": "inputs-and-output",
+        "slug": "forlistboxvirtualized",
       },
       {
         "depth": 3,
@@ -4578,12 +4578,12 @@ exports[`document structure > projects/forty-cdk/listbox/README.md declares the 
     "tables": [
       {
         "columns": [
-          "Input / Output",
+          "Member",
           "Type",
           "Description",
         ],
         "role": "api",
-        "rows": 4,
+        "rows": 5,
       },
       {
         "columns": [
@@ -6538,7 +6538,7 @@ exports[`document structure > projects/forty-cdk/select/README.md declares the s
       },
       {
         "depth": 3,
-        "slug": "inputs-and-output",
+        "slug": "forselectvirtualized",
       },
       {
         "depth": 3,
@@ -6566,12 +6566,12 @@ exports[`document structure > projects/forty-cdk/select/README.md declares the s
       },
       {
         "columns": [
-          "Binding",
+          "Member",
           "Type",
           "Description",
         ],
         "role": "api",
-        "rows": 5,
+        "rows": 6,
       },
     ],
     "title": "Virtualization",
@@ -8941,7 +8941,7 @@ exports[`document structure > projects/forty-cdk/tree/README.md declares the sec
       },
       {
         "depth": 4,
-        "slug": "fortree-additions",
+        "slug": "fortreevirtualized",
       },
       {
         "depth": 4,
@@ -8973,7 +8973,7 @@ exports[`document structure > projects/forty-cdk/tree/README.md declares the sec
           "Description",
         ],
         "role": "api",
-        "rows": 3,
+        "rows": 5,
       },
       {
         "columns": [

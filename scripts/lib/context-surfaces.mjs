@@ -85,7 +85,7 @@ export const CONTEXT_SURFACE_EXCEPTIONS = {
       'roving model alongside the step state a consumer reads.',
   },
   ForTreeContext: {
-    ceiling: 30,
+    ceiling: 29,
     reason:
       'Not split. Carries the activedescendant focus model and the per-item ARIA index arithmetic ' +
       'beside the expansion / selection commands, plus the `compareWith` the selection contract ' +

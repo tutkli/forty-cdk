@@ -1,4 +1,5 @@
 export { ForSelect } from './select';
+export { ForSelectVirtualized } from './select-virtualized';
 export { ForSelectAnchor } from './select-anchor';
 export { ForSelectTrigger } from './select-trigger';
 export { ForSelectValue } from './select-value';
@@ -23,4 +24,6 @@ export {
 export {
   FOR_SELECT_HOST_DIRECTIVE_INPUTS,
   FOR_SELECT_HOST_DIRECTIVE_OUTPUTS,
+  FOR_SELECT_VIRTUALIZED_HOST_DIRECTIVE_INPUTS,
+  FOR_SELECT_VIRTUALIZED_HOST_DIRECTIVE_OUTPUTS,
 } from './select-host-directive';

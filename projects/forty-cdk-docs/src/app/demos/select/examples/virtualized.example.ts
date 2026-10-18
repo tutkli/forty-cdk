@@ -14,6 +14,7 @@ import {
   ForSelectOption,
   ForSelectTrigger,
   ForSelectValue,
+  ForSelectVirtualized,
 } from 'forty-cdk/select';
 import { injectVirtualizer } from 'forty-cdk/virtualization';
 
@@ -28,10 +29,12 @@ import { injectVirtualizer } from 'forty-cdk/virtualization';
     ForSelectContent,
     ForSelectOption,
     ForSelectIndicator,
+    ForSelectVirtualized,
   ],
   template: `
     <div
       forSelect
+      forSelectVirtualized
       #select="forSelect"
       class="virt-select-field"
       [(value)]="value"

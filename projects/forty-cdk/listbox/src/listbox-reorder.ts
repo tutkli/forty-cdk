@@ -97,8 +97,9 @@ function resolveReorderAction(event: KeyboardEvent, dir: WritingDirection): Reor
  *
  * It **never reorders the options itself** (BYO-data): `(optionReorder)` emits the previous / new
  * index on every committed drop; apply `moveItemInArray(items, from, to)` to your own array.
- * Intended for the standard roving-tabindex listbox; a virtualized listbox (`[totalCount]` set)
- * is left untouched, since reordering a windowed subset is ill-defined.
+ * Intended for the standard roving-tabindex listbox; a virtualized listbox
+ * (`[forListboxVirtualized]` with `[totalCount]` set) is left untouched, since reordering a
+ * windowed subset is ill-defined.
  *
  * @example
  * ```html

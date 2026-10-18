@@ -6,16 +6,22 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { ForListbox, ForListboxOption, ForListboxOptionIndicator } from 'forty-cdk/listbox';
+import {
+  ForListbox,
+  ForListboxOption,
+  ForListboxOptionIndicator,
+  ForListboxVirtualized,
+} from 'forty-cdk/listbox';
 import { injectVirtualizer } from 'forty-cdk/virtualization';
 
 @Component({
   selector: 'app-listbox-virtualized-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ForListbox, ForListboxOption, ForListboxOptionIndicator],
+  imports: [ForListbox, ForListboxOption, ForListboxOptionIndicator, ForListboxVirtualized],
   template: `
     <div
       forListbox
+      forListboxVirtualized
       #scroll
       class="vlb"
       aria-label="Virtualized items"

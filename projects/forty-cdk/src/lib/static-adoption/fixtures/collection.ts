@@ -38,7 +38,7 @@ import {
   ForTableRowSelector,
   ForTableSelectAll,
 } from 'forty-cdk/table';
-import { ForTree, ForTreeItem, ForTreeItemLabel } from 'forty-cdk/tree';
+import { ForTree, ForTreeItem, ForTreeItemLabel, ForTreeVirtualized } from 'forty-cdk/tree';
 
 import type { StaticAdoptionAdopter } from './mount';
 
@@ -294,9 +294,9 @@ class RadioGroupBare {
 }
 
 @Component({
-  imports: [ForTree, ForTreeItem, ForTreeItemLabel],
+  imports: [ForTree, ForTreeItem, ForTreeItemLabel, ForTreeVirtualized],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `<ul forTree [totalCount]="1" aria-label="Probe files">
+  template: `<ul forTree forTreeVirtualized [totalCount]="1" aria-label="Probe files">
     <li
       forTreeItem
       value="a"
@@ -313,9 +313,9 @@ class RadioGroupBare {
 class TreeAdopted {}
 
 @Component({
-  imports: [ForTree, ForTreeItem, ForTreeItemLabel],
+  imports: [ForTree, ForTreeItem, ForTreeItemLabel, ForTreeVirtualized],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `<ul forTree [totalCount]="1">
+  template: `<ul forTree forTreeVirtualized [totalCount]="1">
     <li forTreeItem value="a" [itemIndex]="0" [level]="1" [setSize]="1" [posInSet]="1">
       <div forTreeItemLabel>A</div>
     </li>

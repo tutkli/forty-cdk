@@ -1,10 +1,16 @@
 import { ChangeDetectionStrategy, Component, signal, type Type } from '@angular/core';
 
 import { ForDropdownMenu, ForDropdownMenuTrigger } from 'forty-cdk/dropdown-menu';
-import { ForListbox, ForListboxOption } from 'forty-cdk/listbox';
+import { ForListbox, ForListboxOption, ForListboxVirtualized } from 'forty-cdk/listbox';
 import { ForMenuContent, ForMenuItem } from 'forty-cdk/menu';
 import { ForMenubar, ForMenubarTrigger } from 'forty-cdk/menubar';
-import { ForSelect, ForSelectContent, ForSelectOption, ForSelectTrigger } from 'forty-cdk/select';
+import {
+  ForSelect,
+  ForSelectContent,
+  ForSelectOption,
+  ForSelectTrigger,
+  ForSelectVirtualized,
+} from 'forty-cdk/select';
 import { provideNativeDateAdapter } from 'forty-cdk/shared';
 import { pressKey } from 'forty-cdk/testing';
 import {
@@ -13,7 +19,7 @@ import {
   ForTimePickerOption,
   ForTimePickerTrigger,
 } from 'forty-cdk/time-picker';
-import { ForTree, ForTreeItem, ForTreeItemLabel } from 'forty-cdk/tree';
+import { ForTree, ForTreeItem, ForTreeItemLabel, ForTreeVirtualized } from 'forty-cdk/tree';
 
 import { afterEachOverlayCleanup, renderHost, type RenderResult } from '../test-utils';
 import { LIBRARY_CODE } from '../test-utils/source-scan';
@@ -51,10 +57,17 @@ class RovingListboxHost implements SpaceHost {
 }
 
 @Component({
-  imports: [ForListbox, ForListboxOption],
+  imports: [ForListbox, ForListboxOption, ForListboxVirtualized],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div forListbox [(value)]="picked" [totalCount]="2" [visibleRange]="range" aria-label="Fruit">
+    <div
+      forListbox
+      forListboxVirtualized
+      [(value)]="picked"
+      [totalCount]="2"
+      [visibleRange]="range"
+      aria-label="Fruit"
+    >
       <button type="button" forListboxOption value="alpha" [posInSet]="0">Alpha</button>
       <button type="button" forListboxOption value="bravo" [posInSet]="1">Bravo</button>
     </div>
@@ -93,10 +106,17 @@ class SelectHost implements SpaceHost {
 }
 
 @Component({
-  imports: [ForSelect, ForSelectTrigger, ForSelectContent, ForSelectOption],
+  imports: [ForSelect, ForSelectTrigger, ForSelectContent, ForSelectOption, ForSelectVirtualized],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div forSelect [(open)]="open" [(value)]="value" [totalCount]="2" [visibleRange]="range">
+    <div
+      forSelect
+      forSelectVirtualized
+      [(open)]="open"
+      [(value)]="value"
+      [totalCount]="2"
+      [visibleRange]="range"
+    >
       <button forSelectTrigger>Fruit</button>
       @if (open()) {
         <div forSelectContent data-content>
@@ -168,10 +188,17 @@ class RovingTreeHost implements SpaceHost {
 }
 
 @Component({
-  imports: [ForTree, ForTreeItem, ForTreeItemLabel],
+  imports: [ForTree, ForTreeItem, ForTreeItemLabel, ForTreeVirtualized],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <ul forTree [(value)]="picked" [totalCount]="2" [visibleRange]="range" aria-label="Files">
+    <ul
+      forTree
+      forTreeVirtualized
+      [(value)]="picked"
+      [totalCount]="2"
+      [visibleRange]="range"
+      aria-label="Files"
+    >
       <li forTreeItem value="alpha" [itemIndex]="0" [level]="1" [setSize]="2" [posInSet]="1">
         <div forTreeItemLabel>Alpha</div>
       </li>

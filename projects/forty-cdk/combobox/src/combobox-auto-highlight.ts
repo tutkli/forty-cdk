@@ -165,13 +165,12 @@ function findSelectedEnabled<T>(
 }
 
 /**
- * Collaborators the auto-highlight bridge reaches for. The host owns the
- * activedescendant (`getActiveId`) and the last-scrolled-into-view id
- * (`getLastPositionedId` / `setLastPositionedId`); the bridge only reads and
- * writes them through these accessors so it can stay outside the directive.
+ * Collaborators the virtualized auto-highlight bridge reaches for. The host owns
+ * the activedescendant (`getActiveId`); the bridge reads it through this
+ * accessor so it can stay outside the directive.
  */
 export interface AutoHighlightBridgeDeps<T> {
-  /** Lazily build the virtualization navigator (only when `totalCount` is set). */
+  /** The virtualization navigator, constructed on first use. */
   readonly requireNavigator: () => ComboboxVirtualizedNavigator<T>;
   /** Live registered options in DOM order. */
   readonly items: () => readonly ForComboboxOptionHandle<T>[];
@@ -179,10 +178,62 @@ export interface AutoHighlightBridgeDeps<T> {
   readonly open: () => boolean;
   /** Whether auto-highlight is enabled. */
   readonly autoHighlight: () => boolean;
-  /** `true` when the consumer set `totalCount()` (virtualized path). */
+  /** `true` while `totalCount` is set. */
   readonly virtualized: () => boolean;
   /** Where auto-highlight should land. */
   readonly initialFocus: () => ForComboboxInitialFocus;
+  /** Read the host's current activedescendant id (call inside `untracked`). */
+  readonly getActiveId: () => string | null;
+}
+
+/**
+ * The virtualized imperative tail of the auto-highlight flow, run from the
+ * `[forComboboxVirtualized]` constructor `effect`. The activedescendant *decision* is a pure
+ * derivation in {@link createActiveIdSignal}; this performs only the side effects that escape
+ * the reactive graph, reacting to `items()`, `autoHighlight()` and `open()`.
+ *
+ * It resolves a pending `(scrollToIndex)` navigation: once the option for the requested
+ * `posInSet` mounts, activedescendant is seeded to its id and scrolled into view. That write
+ * takes precedence over the auto-highlight seed. The passive `seedFirstRenderedEnabled` then
+ * points at the topmost or bottommost rendered enabled option without touching the consumer's
+ * scroll position.
+ *
+ * The position map is pulled, through {@link runVirtualizedNavigatorBridge}, because its
+ * sources are already tracked by this bridge's own `items()` read and priming it widens nothing.
+ */
+export function runAutoHighlightBridge<T>(deps: AutoHighlightBridgeDeps<T>): void {
+  const items = deps.items();
+  const open = deps.open();
+  const autoHighlight = deps.autoHighlight();
+  if (!deps.virtualized()) {
+    return;
+  }
+  const navigator = deps.requireNavigator();
+  const resolved = runVirtualizedNavigatorBridge({
+    items: deps.items,
+    virtualized: deps.virtualized,
+    requireNavigator: () => navigator,
+  });
+  if (resolved) {
+    return;
+  }
+  if (autoHighlight && open && untracked(() => deps.getActiveId()) === null && items.length > 0) {
+    navigator.seedFirstRenderedEnabled(deps.initialFocus() === 'last' ? 'last' : 'first');
+  }
+}
+
+/**
+ * Collaborators {@link revealAutoHighlight} reaches for. The host owns the
+ * activedescendant (`getActiveId`) and the last-scrolled-into-view id
+ * (`getLastPositionedId` / `setLastPositionedId`).
+ */
+export interface AutoHighlightRevealDeps<T> {
+  /** Live registered options in DOM order. */
+  readonly items: () => readonly ForComboboxOptionHandle<T>[];
+  /** Whether the listbox is open. */
+  readonly open: () => boolean;
+  /** `true` while `totalCount` is set, where the navigator owns the scroll. */
+  readonly virtualized: () => boolean;
   /** Read the host's current activedescendant id (call inside `untracked`). */
   readonly getActiveId: () => string | null;
   /** Last id the bridge scrolled into view, to avoid re-scrolling on hover. */
@@ -194,51 +245,23 @@ export interface AutoHighlightBridgeDeps<T> {
 }
 
 /**
- * The imperative tail of the auto-highlight flow, run from the host's constructor `effect`. The
- * activedescendant *decision* is a pure derivation in {@link createActiveIdSignal}; this performs
- * only the side effects that escape the reactive graph, reacting to `items()`, `autoHighlight()`
- * and `open()`.
+ * The non-virtualized imperative tail of the auto-highlight flow, run from the host's
+ * constructor `effect`: it scrolls the seeded option into view so a seed below the fold is
+ * visible, matching `navigate()`, through the host's pointer-suppression window so an option the
+ * scroll slides under a stationary cursor cannot take the seed over. The activedescendant is read
+ * `untracked`, so scrolling never re-triggers the effect and hover never scrolls. The
+ * initial-open scroll is re-applied by `ForCombobox.scrollActiveOptionIntoView` after the content
+ * portals, since portaling resets `scrollTop`.
  *
- * When virtualized, it resolves a pending `(scrollToIndex)` navigation: once the option for the
- * requested `posInSet` mounts, activedescendant is seeded to its id and scrolled into view. That
- * write takes precedence over the auto-highlight seed. The passive `seedFirstRenderedEnabled` then
- * points at the topmost or bottommost rendered enabled option without touching the consumer's
- * scroll position.
- *
- * When not virtualized, it scrolls the seeded option into view so a seed below the fold is visible,
- * matching `navigate()`, through the host's pointer-suppression window so an option the scroll
- * slides under a stationary cursor cannot take the seed over. The activedescendant is read
- * `untracked`, so scrolling never re-triggers the effect and hover never scrolls. The initial-open
- * scroll is re-applied by `ForCombobox.scrollActiveOptionIntoView` after the content portals, since
- * portaling resets `scrollTop`.
- *
- * The label cache is not pulled here: it tracks the selection, so every commit of
- * `value` would re-run this effect's writes and scrolls. The position map is pulled, through
- * {@link runVirtualizedNavigatorBridge}, because its sources are already tracked by this bridge's
- * own `items()` read and priming it widens nothing.
+ * The label cache is not pulled here: it tracks the selection, so every commit of `value` would
+ * re-run this effect's scrolls.
  */
-export function runAutoHighlightBridge<T>(deps: AutoHighlightBridgeDeps<T>): void {
+export function revealAutoHighlight<T>(deps: AutoHighlightRevealDeps<T>): void {
   const items = deps.items();
   const open = deps.open();
-  const autoHighlight = deps.autoHighlight();
-  const virtualized = deps.virtualized();
-
-  if (virtualized) {
-    const navigator = deps.requireNavigator();
-    const resolved = runVirtualizedNavigatorBridge({
-      items: deps.items,
-      virtualized: deps.virtualized,
-      requireNavigator: () => navigator,
-    });
-    if (resolved) {
-      return;
-    }
-    if (autoHighlight && open && untracked(() => deps.getActiveId()) === null && items.length > 0) {
-      navigator.seedFirstRenderedEnabled(deps.initialFocus() === 'last' ? 'last' : 'first');
-    }
+  if (deps.virtualized()) {
     return;
   }
-
   if (!open) {
     deps.setLastPositionedId(null);
     return;

@@ -1,4 +1,5 @@
 export { ForListbox } from './listbox';
+export { ForListboxVirtualized } from './listbox-virtualized';
 export { FOR_LISTBOX_OPTION, ForListboxOption } from './listbox-option';
 export { ForListboxOptionIndicator } from './listbox-option-indicator';
 export { ForListboxGroup } from './listbox-group';
@@ -18,4 +19,6 @@ export {
 export {
   FOR_LISTBOX_HOST_DIRECTIVE_INPUTS,
   FOR_LISTBOX_HOST_DIRECTIVE_OUTPUTS,
+  FOR_LISTBOX_VIRTUALIZED_HOST_DIRECTIVE_INPUTS,
+  FOR_LISTBOX_VIRTUALIZED_HOST_DIRECTIVE_OUTPUTS,
 } from './listbox-host-directive';

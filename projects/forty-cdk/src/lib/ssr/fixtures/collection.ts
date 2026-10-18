@@ -13,6 +13,7 @@ import {
   ForListboxController,
   ForListboxOption,
   ForListboxReorder,
+  ForListboxVirtualized,
 } from 'forty-cdk/listbox';
 import {
   ForSelect,
@@ -20,6 +21,7 @@ import {
   ForSelectOption,
   ForSelectTrigger,
   ForSelectValue,
+  ForSelectVirtualized,
 } from 'forty-cdk/select';
 import {
   ForTree,
@@ -31,6 +33,7 @@ import {
   ForTreeItemToggle,
   ForTreeNodeDrag,
   ForTreeNodeDragHandle,
+  ForTreeVirtualized,
 } from 'forty-cdk/tree';
 
 @Component({
@@ -51,9 +54,9 @@ export class SelectOpenFixture {
 }
 
 @Component({
-  imports: [ForSelect, ForSelectTrigger, ForSelectContent, ForSelectOption],
+  imports: [ForSelect, ForSelectTrigger, ForSelectContent, ForSelectOption, ForSelectVirtualized],
   template: `
-    <div forSelect [open]="true" [totalCount]="3" [(value)]="value">
+    <div forSelect forSelectVirtualized [open]="true" [totalCount]="3" [(value)]="value">
       <button forSelectTrigger>T</button>
       <div forSelectContent>
         <button forSelectOption value="a" [posInSet]="0">A</button>
@@ -114,9 +117,9 @@ export class ListboxFixture {}
 export class ListboxControllerFixture {}
 
 @Component({
-  imports: [ForListbox, ForListboxOption],
+  imports: [ForListbox, ForListboxOption, ForListboxVirtualized],
   template: `
-    <div forListbox ariaLabel="Virtualized" [totalCount]="3">
+    <div forListbox forListboxVirtualized ariaLabel="Virtualized" [totalCount]="3">
       <button type="button" forListboxOption value="a" [posInSet]="0">A</button>
       <button type="button" forListboxOption value="b" [posInSet]="1">B</button>
       <button type="button" forListboxOption value="c" [posInSet]="2">C</button>
@@ -221,9 +224,9 @@ export class TreeCascadeFixture {
 }
 
 @Component({
-  imports: [ForTree, ForTreeItem, ForTreeItemLabel],
+  imports: [ForTree, ForTreeItem, ForTreeItemLabel, ForTreeVirtualized],
   template: `
-    <ul forTree ariaLabel="Virtualized" [totalCount]="3">
+    <ul forTree forTreeVirtualized ariaLabel="Virtualized" [totalCount]="3">
       <li forTreeItem value="a" [level]="1" [setSize]="3" [posInSet]="1" [itemIndex]="0">
         <div forTreeItemLabel>A</div>
       </li>

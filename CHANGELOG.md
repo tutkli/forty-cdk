@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Listbox, Select, Combobox, Tree — BREAKING.** Virtualization is now an opt-in piece placed on
+  the root element: `[forListboxVirtualized]`, `[forSelectVirtualized]`, `[forComboboxVirtualized]`
+  and `[forTreeVirtualized]` ([#2585](https://github.com/tutkli/forty-cdk/issues/2585)).
+  `[totalCount]`, `[visibleRange]`, `[dataVersion]`, `(scrollToIndex)` and `invalidateSnapshot()`
+  move from the root to the piece, and so does Select's `[selectedIndex]`. A root without the piece
+  no longer bundles the virtualized navigation engine: a single-select five-option `ForListbox` is
+  1.4 kB gzip smaller, `ForCombobox` 1.7 kB, `ForSelect` 1.4 kB and `ForTree` 2.2 kB. **Migrate** by
+  adding the attribute next to the root (`<div forListbox forListboxVirtualized [totalCount]="n">`)
+  and the class to your component's `imports`; a binding left on the root alone fails to compile.
+  Wrappers re-exposing the root through `hostDirectives` add a second entry spreading the new
+  `FOR_<PRIMITIVE>_VIRTUALIZED_HOST_DIRECTIVE_INPUTS` / `_OUTPUTS` tuples (Listbox, Select,
+  Combobox). `ForTreeContext` no longer publishes `visibleRange`.
+
 - **Combobox** — `[forComboboxTrigger]` carries `role="combobox"` and reflects `aria-required`,
   `aria-invalid`, `aria-busy` and `aria-readonly`, plus the `data-readonly` hook
   ([#2602](https://github.com/tutkli/forty-cdk/issues/2602)). In the picker anatomy the input that

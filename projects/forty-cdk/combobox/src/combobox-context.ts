@@ -4,14 +4,17 @@ import type { ReferenceElement } from '@floating-ui/dom';
 import {
   assertRootContext,
   type CollectionHandle,
+  type LabelCacheEntry,
   orphanContextError,
   unresolvedRootError,
   type Unset,
   type VetoableNativeEvent,
+  type VirtualizedResume,
   type WritingDirection,
 } from 'forty-cdk/core';
 import { type FloatingAlign, type FloatingSide } from 'forty-cdk/core-overlay';
 import { type ForComboboxOpenHighlight } from 'forty-cdk/defaults';
+import type { ComboboxVirtualizedNavigator } from './combobox-virtualized-navigator';
 
 export { type ForComboboxOpenHighlight };
 
@@ -363,8 +366,6 @@ export interface ComboboxPieceContext<T = unknown> {
    * virtualizing. Falls back to `options().length` when undefined.
    */
   readonly totalCount: Signal<number | undefined>;
-  /** Inclusive-exclusive [start, end) range of options currently rendered when virtualizing. */
-  readonly visibleRange: Signal<readonly [number, number] | undefined>;
 
   /** True when `id` is the activedescendant. */
   isActive(id: string): boolean;
@@ -512,6 +513,43 @@ export interface ComboboxRegistrationContext<T = unknown> {
   unregisterAction(handle: ForComboboxActionHandle): void;
   /** Set where focus lands after the next open. The input directive calls it before flipping `open`. */
   setInitialFocus(target: ForComboboxInitialFocus): void;
+  /**
+   * Called by `[forComboboxVirtualized]` from its constructor. Hands the root the
+   * virtualized focus model and returns the root state that model reads and
+   * writes.
+   */
+  registerVirtualization(virtualization: ComboboxVirtualization): ComboboxVirtualizationHost;
+}
+
+/**
+ * The virtualized focus model `[forComboboxVirtualized]` lends the root. The
+ * root depends on this shape alone, so a combobox without the piece never
+ * references the navigation engine.
+ */
+export interface ComboboxVirtualization<T = unknown> {
+  /** Full source length, or `undefined` while the piece is present but unset. */
+  readonly totalCount: Signal<number | undefined>;
+  /** The position the root resumes from once its active option unmounts. */
+  readonly resume: VirtualizedResume<T, LabelCacheEntry<T>>;
+  /** The navigation engine, constructed on first use. */
+  navigator(): ComboboxVirtualizedNavigator<T>;
+  /**
+   * The rendered window's completion entries merged with the ones the position
+   * snapshot remembers from windows scrolled out of view.
+   */
+  completionEntries(liveWindow: readonly LabelCacheEntry<T>[]): readonly LabelCacheEntry<T>[];
+}
+
+/** The root state the virtualized focus model reads and writes. */
+export interface ComboboxVirtualizationHost {
+  /** Whether auto-highlight is enabled. */
+  readonly autoHighlight: () => boolean;
+  /** The active option's id. */
+  getActiveId(): string | null;
+  /** Move the active option, forgetting any retained resume position. */
+  setActiveId(id: string | null): void;
+  /** Scroll an option into view with the pointer-suppression window open. */
+  scrollActiveIntoView(host: HTMLElement): void;
 }
 
 /**

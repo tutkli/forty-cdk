@@ -1,7 +1,7 @@
 import { Component, signal } from '@angular/core';
 
 import { ForDisclosure, ForDisclosureContent, ForDisclosureTrigger } from 'forty-cdk/disclosure';
-import { ForListbox, ForListboxOption } from 'forty-cdk/listbox';
+import { ForListbox, ForListboxOption, ForListboxVirtualized } from 'forty-cdk/listbox';
 
 import { hydrationHarness, settleHydration } from '../../test-utils';
 
@@ -48,9 +48,15 @@ class IdWiringFixture {
 
 @Component({
   selector: 'for-hydration-activedescendant',
-  imports: [ForListbox, ForListboxOption],
+  imports: [ForListbox, ForListboxOption, ForListboxVirtualized],
   template: `
-    <div forListbox aria-label="Virtual" [totalCount]="3" data-testid="virtual-root">
+    <div
+      forListbox
+      forListboxVirtualized
+      aria-label="Virtual"
+      [totalCount]="3"
+      data-testid="virtual-root"
+    >
       @defer (hydrate when hydrateOptions()) {
         <button forListboxOption value="a" [posInSet]="0" data-testid="virtual-a">A</button>
         <button forListboxOption value="b" [posInSet]="1" data-testid="virtual-b">B</button>

@@ -9,6 +9,7 @@ import {
   type RenderResult,
 } from '../../src/test-utils';
 import { ForCombobox } from './combobox';
+import { ForComboboxVirtualized } from './combobox-virtualized';
 import { ForComboboxContent } from './combobox-content';
 import { ForComboboxInput } from './combobox-input';
 import { ForComboboxOption } from './combobox-option';
@@ -16,11 +17,18 @@ import { ForComboboxOption } from './combobox-option';
 const TOTAL = 20;
 
 @Component({
-  imports: [ForCombobox, ForComboboxInput, ForComboboxContent, ForComboboxOption],
+  imports: [
+    ForCombobox,
+    ForComboboxInput,
+    ForComboboxContent,
+    ForComboboxOption,
+    ForComboboxVirtualized,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div
       forCombobox
+      forComboboxVirtualized
       [(open)]="open"
       [(value)]="picked"
       [multiple]="multiple()"

@@ -6,7 +6,6 @@ import {
   inject,
   input,
   model,
-  numberAttribute,
   output,
   signal,
 } from '@angular/core';
@@ -31,7 +30,6 @@ import {
   toggleInArray,
   type VetoableEvent,
   type VetoableNativeEvent,
-  VirtualizedResume,
   type WritingDirection,
   type Unset,
 } from 'forty-cdk/core';
@@ -43,7 +41,7 @@ import {
   injectIdentifiedSlot,
   OverlayController,
 } from 'forty-cdk/core-overlay';
-import { createActiveIdSignal, runAutoHighlightBridge } from './combobox-auto-highlight';
+import { createActiveIdSignal, revealAutoHighlight } from './combobox-auto-highlight';
 import {
   FOR_COMBOBOX_CONTEXT,
   type ForComboboxActionHandle,
@@ -54,13 +52,10 @@ import {
   type ForComboboxInitialFocus,
   type ForComboboxOpenHighlight,
   type ForComboboxOptionHandle,
+  type ComboboxVirtualization,
+  type ComboboxVirtualizationHost,
 } from './combobox-context';
 import { FOR_COMBOBOX_DEFAULTS } from 'forty-cdk/defaults';
-import { mergeOffWindowEntries } from './combobox-off-window-merge';
-import {
-  type ComboboxVirtualizedNavigator,
-  createComboboxVirtualizedNavigator,
-} from './combobox-virtualized-navigator';
 
 /**
  * Headless implementation of the [WAI-ARIA combobox with listbox popup pattern](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/).
@@ -204,7 +199,7 @@ export class ForCombobox<T = string>
    * highlights the committed selection, falling back to the first enabled option
    * (ArrowUp: the last) when nothing is selected. Opening from a typed query always
    * highlights the first match, while the picker anatomy and a `[forComboboxToggle]`
-   * press always open on the selection. With `totalCount` set, an open that would
+   * press always open on the selection. With a `[forComboboxVirtualized]` setting `totalCount`, an open that would
    * land on the selection lands on the first rendered enabled option instead.
    * Defaults to the scope's `openHighlight` (`'first'` unless overridden via
    * `provideForComboboxDefaults`).
@@ -281,47 +276,15 @@ export class ForCombobox<T = string>
   /** Manual `aria-label` on the listbox (`[forComboboxList]`, or `[forComboboxContent]` in the editable anatomy) when the input isn't a meaningful name. */
   readonly ariaLabel = input<string | null>(null);
 
-  /**
-   * Total number of options in the consumer's source array. Set when wiring
-   * up a virtualized listbox (only the visible window is rendered) so the
-   * directive can reflect `aria-setsize` and walk the snapshot for
-   * navigation past the rendered range. Defaults to `undefined`, in which
-   * case the directive falls back to `options().length` (the live registry).
-   */
-  readonly totalCount = input(undefined, {
-    transform: (v: unknown): number | undefined => (v == null ? undefined : numberAttribute(v)),
-  });
+  readonly #virtualization = signal<ComboboxVirtualization<T> | null>(null);
 
   /**
-   * Inclusive-exclusive `[start, end)` range of options currently rendered
-   * in the DOM. Used by `navigate()` to translate "move to absolute
-   * position N" into either an in-window highlight update or a request to
-   * the consumer to scroll N into view (`(scrollToIndex)`). When
-   * `undefined` (default), navigation assumes every option in the snapshot
-   * is rendered — appropriate for non-virtualized lists.
+   * Full source length while a `[forComboboxVirtualized]` virtualizes the
+   * listbox, `undefined` otherwise.
    */
-  readonly visibleRange = input<readonly [number, number] | undefined>(undefined);
+  private readonly totalCount = computed(() => this.#virtualization()?.totalCount());
 
-  /**
-   * Optional virtualized-only seam that tells the directive the source dataset
-   * changed **without** a `totalCount` transition — a same-length re-sort or
-   * refresh (e.g. sorting a 1000-row list). Bind any value that changes on such
-   * a refresh (a version counter, the array reference, a sort-key string); when
-   * it changes the position snapshot rebuilds from empty so navigation never
-   * resolves against a stale off-window entry. Leave unset (default) when the
-   * dataset only ever changes length. Equivalent to calling
-   * {@link ForCombobox.invalidateSnapshot} imperatively.
-   */
-  readonly dataVersion = input<unknown>();
-
-  /**
-   * Emitted when keyboard navigation needs to land on an option whose
-   * absolute index falls outside `visibleRange()`. Wire this to the
-   * consumer's virtualizer (`scrollToIndex(idx)` on `@tanstack/virtual`,
-   * `virtua`, etc.); once the option mounts, the directive seeds
-   * `aria-activedescendant` automatically.
-   */
-  readonly scrollToIndex = output<number>();
+  readonly #virtualized = computed(() => this.totalCount() !== undefined);
 
   /** Emitted before Escape closes the listbox. Call `preventDefault()` to keep it open. */
   readonly escapeKeyDown = output<VetoableNativeEvent<KeyboardEvent>>();
@@ -451,7 +414,7 @@ export class ForCombobox<T = string>
     query: this.query,
     open: this.open,
     autoHighlight: this.autoHighlight,
-    virtualized: () => this.totalCount() !== undefined,
+    virtualized: this.#virtualized,
     initialFocus: this.#overlay.initialFocus,
     items: this.#items.items,
     value: this.value,
@@ -490,56 +453,28 @@ export class ForCombobox<T = string>
     compareWith: this.compareWith,
   });
 
-  /**
-   * Virtualization navigation engine — constructed lazily the first time the
-   * consumer sets `totalCount()`, so a non-virtualized combobox never pulls
-   * the position-map machinery. Powers keyboard navigation past the rendered
-   * window and the scrolled-out-of-view label fallback.
-   */
-  #navigator: ComboboxVirtualizedNavigator<T> | null = null;
-
-  readonly #resume = new VirtualizedResume<T, LabelCacheEntry<T>>({
-    totalCount: this.totalCount,
-    snapshotByPos: () => this.#requireNavigator().snapshotByPos(),
-    compareWith: this.compareWith,
-  });
-
-  #requireNavigator(): ComboboxVirtualizedNavigator<T> {
-    return (this.#navigator ??= createComboboxVirtualizedNavigator<T>(
-      {
-        items: this.#items.items,
-        totalCount: this.totalCount,
-        visibleRange: this.visibleRange,
-        loop: this.loop,
-        getActiveId: () => this.#activeId(),
-        setActiveId: (id) => this.#setActiveId(id),
-        emitScrollToIndex: (idx) => this.scrollToIndex.emit(idx),
-        getResumePos: () => this.#resume.pos(),
-        dataVersion: this.dataVersion,
-      },
-      (host) => this.#scrollActiveIntoView(host),
-    ));
+  /** The virtualized focus model; only reached while {@link #virtualized} holds. */
+  #virtualModel(): ComboboxVirtualization<T> {
+    return this.#virtualization()!;
   }
 
   #setActiveId(id: string | null): void {
     if (id !== null) {
-      this.#resume.clear();
+      this.#virtualization()?.resume.clear();
     }
     this.#activeId.set(id);
   }
 
-  /**
-   * Force the virtualized position snapshot to rebuild from empty on the next
-   * fold, discarding stale off-window entries. Call after a same-length dataset
-   * refresh (a re-sort / reload that keeps `totalCount` unchanged) when you
-   * cannot express the change through the reactive `[dataVersion]` input. No-op
-   * when the combobox is not virtualized (`totalCount` unset).
-   */
-  invalidateSnapshot(): void {
-    if (this.totalCount() === undefined) {
-      return;
-    }
-    this.#requireNavigator().invalidateSnapshot();
+  private registerVirtualization(
+    virtualization: ComboboxVirtualization,
+  ): ComboboxVirtualizationHost {
+    this.#virtualization.set(virtualization as unknown as ComboboxVirtualization<T>);
+    return {
+      autoHighlight: this.autoHighlight,
+      getActiveId: () => this.#activeId(),
+      setActiveId: (id) => this.#setActiveId(id),
+      scrollActiveIntoView: (host) => this.#scrollActiveIntoView(host),
+    };
   }
 
   readonly selected = computed<readonly { value: T; label: string }[]>(() => {
@@ -633,18 +568,13 @@ export class ForCombobox<T = string>
     });
 
     // The activedescendant decision is a pure derivation in `#activeId`; this
-    // effect runs only its imperative tail, documented on
-    // `runAutoHighlightBridge` in `combobox-auto-highlight.ts`.
-    // @sanctioned-pull(navigator-position-map): the rendered window is transient,
-    // so a window nothing reads during is lost to the lazy fold.
+    // effect runs only its non-virtualized imperative tail, documented on
+    // `revealAutoHighlight` in `combobox-auto-highlight.ts`.
     effect(() => {
-      runAutoHighlightBridge<T>({
-        requireNavigator: () => this.#requireNavigator(),
+      revealAutoHighlight<T>({
         items: this.#items.items,
         open: this.open,
-        autoHighlight: this.autoHighlight,
-        virtualized: () => this.totalCount() !== undefined,
-        initialFocus: this.#overlay.initialFocus,
+        virtualized: this.#virtualized,
         getActiveId: () => this.#activeId(),
         getLastPositionedId: () => this.#lastPositionedId,
         setLastPositionedId: (id) => (this.#lastPositionedId = id),
@@ -705,8 +635,8 @@ export class ForCombobox<T = string>
     this.#items.register(handle);
   }
   private unregisterOption(handle: ForComboboxOptionHandle<T>): void {
-    if (this.totalCount() !== undefined && this.open() && this.#activeId() === handle.id()) {
-      this.#resume.retain(handle.posInSet?.() ?? null, handle.value());
+    if (this.#virtualized() && this.open() && this.#activeId() === handle.id()) {
+      this.#virtualModel().resume.retain(handle.posInSet?.() ?? null, handle.value());
     }
     this.#items.unregister(handle);
   }
@@ -875,11 +805,15 @@ export class ForCombobox<T = string>
   }
 
   #activateResumed(): boolean {
-    const resumed = this.#resume.resolve();
+    const virtualization = this.#virtualization();
+    if (virtualization === null) {
+      return false;
+    }
+    const resumed = virtualization.resume.resolve();
     if (resumed === null || resumed.entry.disabled) {
       return false;
     }
-    this.#requireNavigator().seedActive(resumed.pos);
+    virtualization.navigator().seedActive(resumed.pos);
     this.#activateValue(resumed.entry.value, resumed.entry.label, null);
     return true;
   }
@@ -888,8 +822,8 @@ export class ForCombobox<T = string>
     if (this.effectiveDisabled()) {
       return;
     }
-    if (this.totalCount() !== undefined) {
-      this.#requireNavigator().navigate(direction);
+    if (this.#virtualized()) {
+      this.#virtualModel().navigator().navigate(direction);
       return;
     }
     const items = this.#items.items();
@@ -937,7 +871,7 @@ export class ForCombobox<T = string>
       return false;
     }
     this.query.set(query);
-    this.#resume.clear();
+    this.#virtualization()?.resume.clear();
     if (this.clearOnQueryChange() && !this.multiple() && this.value().length > 0) {
       this.value.set([]);
     }
@@ -972,7 +906,7 @@ export class ForCombobox<T = string>
    * scroll and the indexed seed is intentionally passive.
    */
   private scrollActiveOptionIntoView(): void {
-    if (this.totalCount() !== undefined) {
+    if (this.#virtualized()) {
       return;
     }
     const id = this.#activeId();
@@ -993,14 +927,10 @@ export class ForCombobox<T = string>
 
   readonly #completionEntriesMemo = computed<readonly LabelCacheEntry<T>[]>(() => {
     const liveWindow = this.#labelCache.windowEntries();
-    if (this.totalCount() === undefined) {
+    if (!this.#virtualized()) {
       return liveWindow;
     }
-    return mergeOffWindowEntries(
-      liveWindow,
-      this.#requireNavigator().snapshotByPos(),
-      this.itemToFormValue(),
-    );
+    return this.#virtualModel().completionEntries(liveWindow);
   });
 
   private completionEntries(): readonly {
@@ -1022,7 +952,7 @@ export class ForCombobox<T = string>
       this.#syncInputValue('');
     }
     this.#activeId.set(null);
-    this.#resume.clear();
+    this.#virtualization()?.resume.clear();
   }
 
   private setInitialFocus(target: ForComboboxInitialFocus): void {
@@ -1080,8 +1010,13 @@ export class ForCombobox<T = string>
    */
   #resetAfterClose(reason: ForComboboxCloseReason): void {
     this.#activeId.set(null);
-    this.#resume.clear();
-    this.#navigator?.resetPending();
+    const virtualization = this.#virtualization();
+    if (virtualization !== null) {
+      virtualization.resume.clear();
+      if (this.#virtualized()) {
+        virtualization.navigator().resetPending();
+      }
+    }
     if (this.trigger() !== null) {
       this.query.set('');
       this.#syncInputValue('');
