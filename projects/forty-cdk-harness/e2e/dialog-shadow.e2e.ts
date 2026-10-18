@@ -34,17 +34,17 @@ test.describe('Dialog containing a web component with an open shadow root', () =
     await expectDeepFocused(page, 'shadow-a');
   });
 
-  test('Tab never leaves the surface for the elements behind it', async ({ page }) => {
+  test('Tab from the last control wraps into the shadow root and never leaves the surface', async ({
+    page,
+  }) => {
     await gotoFixture(page, 'dialog-shadow', { shadowFirst: '1' });
     await el(page, 'trigger').click();
+    await expectDeepFocused(page, 'shadow-a');
 
-    for (let i = 0; i < 6; i++) {
+    for (const landing of ['shadow-b', 'outer', 'shadow-a', 'shadow-b', 'outer', 'shadow-a']) {
       await page.keyboard.press('Tab');
+      await expectDeepFocused(page, landing);
     }
-
-    await expect(el(page, 'trigger')).not.toBeFocused();
-    await expect(el(page, 'after')).not.toBeFocused();
-    await expect(el(page, 'dialog')).toBeVisible();
   });
 
   test('a surface that is itself a shadow host still focuses and cycles its own controls', async ({

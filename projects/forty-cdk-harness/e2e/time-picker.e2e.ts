@@ -183,6 +183,7 @@ test.describe('TimePicker', () => {
     await page.keyboard.press('Escape');
     await expect(el(page, 'content')).toHaveCount(0);
     await expectFocused(el(page, 'trigger'));
+    await expect(page.locator('[forTimePickerValue]')).toHaveText('Pick a time');
   });
 
   test('pointerdown outside closes', async ({ page }) => {

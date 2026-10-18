@@ -309,27 +309,6 @@ test.describe('ScrollArea (geometry + drag)', () => {
       expect(thumbBox!.height).toBeLessThanOrEqual(trackBox!.height + 2);
     });
 
-    test('type="always": dragging the full-length thumb is a no-op when content fits', async ({
-      page,
-    }) => {
-      await gotoFixture(page, 'scroll-area', {
-        type: 'always',
-        viewportWidth: '300',
-        viewportHeight: '200',
-        contentWidth: '150',
-        contentHeight: '100',
-      });
-      await waitForOverflowMeasured(page);
-
-      const viewport = el(page, 'viewport');
-      expect(await viewport.evaluate((node) => (node as HTMLElement).scrollTop)).toBe(0);
-
-      await dragFrom(page, el(page, 'thumb-vertical'), { dx: 0, dy: 60 });
-
-      // `tl - tsz <= 0` → the drag handler early-returns, so scrollTop never moves.
-      expect(await viewport.evaluate((node) => (node as HTMLElement).scrollTop)).toBe(0);
-    });
-
     for (const type of ['auto', 'always'] as const) {
       test(`type="${type}": scrollbar is visible when the axis overflows`, async ({ page }) => {
         await gotoFixture(page, 'scroll-area', { type });

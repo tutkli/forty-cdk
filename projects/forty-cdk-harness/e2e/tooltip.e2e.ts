@@ -1,4 +1,16 @@
-import { el, expect, expectStays, gotoFixture, isMobileProject, test } from './_helpers';
+import {
+  afterFrames,
+  boxOf,
+  DEFAULT_SCROLL_DISMISS_SUPPRESSION_MS,
+  el,
+  expect,
+  expectStays,
+  gotoFixture,
+  isMobileProject,
+  recordInsertions,
+  settleScroll,
+  test,
+} from './_helpers';
 
 test.describe('Tooltip', () => {
   test('opens on hover (openDelay=0) and closes on pointerleave', async ({ page }) => {
@@ -147,11 +159,21 @@ test.describe('Tooltip', () => {
 
     await el(page, 'row-trigger-0').hover();
     await expect(el(page, 'row-tooltip-0')).toBeVisible();
+    const rowPitch =
+      (await boxOf(el(page, 'row-trigger-1'))).y - (await boxOf(el(page, 'row-trigger-0'))).y;
+    const insertions = await recordInsertions(page, '[forTooltipContent]');
 
-    await page.mouse.wheel(0, 240);
+    await page.mouse.wheel(0, 6 * rowPitch);
+    await settleScroll(el(page, 'scroll-list'));
+    await expect
+      .poll(() => el(page, 'row-trigger-6').evaluate((node) => node.matches(':hover')))
+      .toBe(true);
+    await page.waitForTimeout(DEFAULT_SCROLL_DISMISS_SUPPRESSION_MS + 100);
+    await afterFrames(page);
 
     await expect(el(page, 'row-tooltip-0')).toHaveCount(0);
     await expect(page.locator('[role="tooltip"]')).toHaveCount(0);
+    expect(await insertions()).toEqual([]);
   });
 
   test('Tab to a trigger below the fold opens the tooltip despite the scroll that reveals it', async ({

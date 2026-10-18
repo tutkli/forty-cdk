@@ -1,4 +1,4 @@
-import { el, expect, gotoFixture, test } from './_helpers';
+import { activeDescendantIndex, el, expect, gotoFixture, test } from './_helpers';
 
 test.describe('Select virtualization (Shape C)', () => {
   test('windowed render — after open, only a small window of options is mounted', async ({
@@ -26,8 +26,8 @@ test.describe('Select virtualization (Shape C)', () => {
     await el(page, 'trigger').click();
     await expect(el(page, 'content')).toHaveAttribute('tabindex', '0');
     await expect
-      .poll(() => el(page, 'content').getAttribute('aria-activedescendant'), { timeout: 10000 })
-      .toBeTruthy();
+      .poll(() => activeDescendantIndex(el(page, 'content')), { timeout: 10000 })
+      .toBe('0');
   });
 
   test('keyboard End reaches off-screen option and recycles the window', async ({ page }) => {
