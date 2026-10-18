@@ -144,14 +144,21 @@ describe('the root route', () => {
 });
 
 describe('the ⌘K palette', () => {
-  const entries = buildSearchEntries([], DOC_INDEX, [], SITE_PAGE_INDEX);
+  const entries = buildSearchEntries(
+    [],
+    { documents: DOC_INDEX, errorCodes: [] },
+    [],
+    SITE_PAGE_INDEX,
+  );
 
-  it('carries one entry per site page', () => {
+  it('carries one entry per site page, and one per index page', () => {
     const found = entries.filter((entry) => entry.kind === 'page');
 
-    expect(found.map((entry) => entry.path)).toEqual(
-      SITE_PAGE_INDEX.map((page) => `/${page.slug}`),
-    );
+    expect(found.map((entry) => entry.path)).toEqual([
+      ...SITE_PAGE_INDEX.map((page) => `/${page.slug}`),
+      '/guides',
+      '/errors',
+    ]);
   });
 
   it('carries the sections of each one, anchored at the ids its page emits', () => {
@@ -176,7 +183,7 @@ describe('the ⌘K palette', () => {
   it('answers "install" with the installation page, above every body mention', () => {
     const withPrimitives = buildSearchEntries(
       [{ label: 'Primitives', primitives: [{ slug: 'switch', title: 'Switch', description: '' }] }],
-      DOC_INDEX,
+      { documents: DOC_INDEX, errorCodes: [] },
       [],
       SITE_PAGE_INDEX,
     );

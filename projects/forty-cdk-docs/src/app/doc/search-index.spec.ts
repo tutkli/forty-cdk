@@ -1,7 +1,10 @@
+import { foldableOf } from '../../../../../scripts/docs/doc-fold.mjs';
 import { renderDocument } from '../../../../../scripts/docs/doc-render.mjs';
-import { searchTextOf } from '../../../../../scripts/docs/doc-search.mjs';
+import { searchEntryOf, searchTextOf } from '../../../../../scripts/docs/doc-search.mjs';
+import { buildDocRoutes } from '../../../../../scripts/lib/doc-links.mjs';
 import { DOC_INDEX } from '../../generated/doc-index.generated';
 import { DOCS_GROUPS } from '../primitives';
+import { ERROR_CODE_INDEX } from './error-codes';
 import { GUIDE_INDEX } from './guides';
 import {
   buildSearchEntries,
@@ -12,6 +15,7 @@ import {
 } from './search-index';
 import { SITE_PAGE_INDEX } from './site-pages';
 import { compile } from './testing/compile';
+import { PRIMITIVE_DOCS } from './testing/doc-corpus';
 
 /** A fixture document links nowhere, so its renderer needs no route map. */
 const ROUTES = new Map<string, string>();
@@ -25,7 +29,12 @@ const ROUTES = new Map<string, string>();
  * against the real index rather than a fixture: what matters is that a reader
  * of *this* corpus finds these sections, which a fixture cannot claim.
  */
-const ENTRIES = buildSearchEntries(DOCS_GROUPS, DOC_INDEX, GUIDE_INDEX, SITE_PAGE_INDEX);
+const ENTRIES = buildSearchEntries(
+  DOCS_GROUPS,
+  { documents: DOC_INDEX, errorCodes: ERROR_CODE_INDEX },
+  GUIDE_INDEX,
+  SITE_PAGE_INDEX,
+);
 
 function textOf(parts: readonly SearchTextPart[]): string {
   return parts.map((part) => part.text).join('');
@@ -141,6 +150,99 @@ describe('the text a section is indexed by', () => {
 
     expect(searchTextOf(page.sections[0]!)).toBe('open model<boolean> Whether it is open.');
   });
+
+  it('keeps a heading the clip would cut, because the rail shows it by that name', () => {
+    const page = pageOf(
+      [
+        '# Fixture',
+        '',
+        'A lede.',
+        '',
+        '## Usage',
+        '',
+        `${'word '.repeat(200)}`,
+        '',
+        '### Persisting widths',
+        '',
+        'More prose.',
+        '',
+      ].join('\n'),
+    );
+
+    expect(searchTextOf(page.sections[0]!)).toContain('Persisting widths');
+  });
+});
+
+describe('the entry a document is indexed by', () => {
+  it('reads the intro below the lede, and leaves the lede to the description', () => {
+    const page = pageOf(
+      ['# Fixture', '', 'A lede.', '', 'An intro paragraph.', '', '## Usage', '', 'Prose.'].join(
+        '\n',
+      ),
+    );
+
+    expect(searchEntryOf({ kind: 'guide', slug: 'fixture' }, page).intro).toBe(
+      'An intro paragraph.',
+    );
+  });
+
+  it('indexes the caption the page lifts out of Examples with that section', () => {
+    const page = pageOf(
+      [
+        '# Fixture',
+        '',
+        'A lede.',
+        '',
+        '## Examples',
+        '',
+        'Press the trigger and the panel opens.',
+        '',
+        '```html',
+        '<div forFixture></div>',
+        '```',
+        '',
+      ].join('\n'),
+    );
+    const [examples] = searchEntryOf({ kind: 'guide', slug: 'fixture' }, page).sections;
+
+    expect(page.caption).not.toBeNull();
+    expect(examples?.text).toContain('Press the trigger and the panel opens.');
+  });
+
+  /**
+   * The folded README's lede is the string only the fold carries: the host
+   * section's own first sentence already names `forTableVirtualized`, so an
+   * assertion on that identifier held with no fold at all.
+   */
+  describe('a folded README', () => {
+    const routes = buildDocRoutes({ primitiveSlugs: ['table'], guideSlugs: [] });
+    const docOf = (slug: string) => {
+      const doc = PRIMITIVE_DOCS.find((candidate) => candidate.slug === slug);
+      if (doc === undefined) {
+        throw new Error(`no README for ${slug} in the corpus`);
+      }
+      return compile(doc);
+    };
+    const table = docOf('table');
+    const page = renderDocument(table, { routes });
+    const [folded] = renderDocument(foldableOf(docOf('table-virtualization')), {
+      routes,
+    }).sections;
+    const hostText = (folds: Parameters<typeof searchEntryOf>[2]) =>
+      searchEntryOf(table, page, folds).sections.find(
+        (section) => section.slug === 'virtualized-rows',
+      )?.text;
+
+    it('reaches the index under the host section, with its own lede', () => {
+      expect(hostText([{ section: 'virtualized-rows', folded: folded! }])).toContain(
+        'row-virtualization companion',
+      );
+    });
+
+    it('is absent from the host section when nothing is folded into it', () => {
+      expect(hostText([])).not.toContain('row-virtualization companion');
+    });
+  });
 });
 
 describe('the index the site ships', () => {
@@ -156,13 +258,14 @@ describe('the index the site ships', () => {
    * A folded README is republished inside its host's page
    * ([#1809](https://github.com/tutkli/forty-cdk/issues/1809)), and the index
    * is now read off that rendered page — so its content is searchable under the
-   * anchor the reader can actually reach.
+   * anchor the reader can actually reach. The lede is what only the folded
+   * README says ([#2329](https://github.com/tutkli/forty-cdk/issues/2329)).
    */
   it('reaches a folded README through the page that republishes it', () => {
     const table = DOC_INDEX.find((entry) => entry.slug === 'table');
     const section = table?.sections.find((entry) => entry.slug === 'virtualized-rows');
 
-    expect(section?.text).toContain('forTableVirtualized');
+    expect(section?.text).toContain('row-virtualization companion');
   });
 
   /**
@@ -253,11 +356,34 @@ describe('searching the documentation', () => {
     expect(page?.entry.path).toBe('/getting-started');
   });
 
-  it('offers the documents and none of their sections for an empty query', () => {
+  it('offers the documents and none of their sections or error codes for an empty query', () => {
     const results = searchEntries(ENTRIES, '   ');
+    const documents = ENTRIES.filter((entry) => entry.kind !== 'section' && entry.kind !== 'error');
 
-    expect(results).toHaveLength(ENTRIES.filter((entry) => entry.kind !== 'section').length);
+    expect(results).toHaveLength(documents.length);
     expect(results.some((result) => result.entry.kind === 'section')).toBe(false);
+    expect(results.some((result) => result.entry.kind === 'error')).toBe(false);
+  });
+
+  /**
+   * The palette reaches what a reader can reach
+   * ([#2329](https://github.com/tutkli/forty-cdk/issues/2329)): one query per
+   * source the index used to leave out, each a string only that source says.
+   */
+  it.each([
+    ['an error code', 'FORCDK-DIALOG-001', '/errors/FORCDK-DIALOG-001'],
+    ['the error roster', 'error codes', '/errors'],
+    ['the guide index', 'guides', '/guides'],
+    [
+      'a heading past the clip',
+      'fallbackWidth',
+      '/guides/table-declarative-columns#declaring-columns',
+    ],
+    ['the intro below a lede', 'date-library-agnostic', '/calendar'],
+    ['an Examples caption', 'suboptimum', '/meter#examples'],
+    ['a folded README', 'row-virtualization companion', '/table#virtualized-rows'],
+  ])('reaches %s', (_source, query, path) => {
+    expect(searchEntries(ENTRIES, query)[0]?.entry.path).toBe(path);
   });
 
   it('answers a query no document says with nothing at all', () => {
@@ -282,12 +408,17 @@ describe('the index chunk', () => {
     const source = SOURCE['/projects/forty-cdk-docs/src/app/doc/search-index.ts'];
 
     expect(source).toBeDefined();
-    expect(source).toContain("await import('../../generated/doc-index.generated')");
+    expect(source).toContain("import('../../generated/doc-index.generated')");
+    expect(source).toContain("import('./error-codes')");
     expect(source).not.toMatch(/^import .*doc-index\.generated/m);
+    expect(source).not.toMatch(/^import (?!type ).*'\.\/error-codes'/m);
   });
 
   it('resolves to the index the palette searches', async () => {
-    await expect(loadSearchIndex()).resolves.toBe(DOC_INDEX);
+    const index = await loadSearchIndex();
+
+    expect(index.documents).toBe(DOC_INDEX);
+    expect(index.errorCodes).toBe(ERROR_CODE_INDEX);
   });
 });
 

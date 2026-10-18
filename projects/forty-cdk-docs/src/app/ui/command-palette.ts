@@ -4,6 +4,7 @@ import {
   Component,
   computed,
   inject,
+  InjectionToken,
   Injector,
   linkedSignal,
   model,
@@ -22,17 +23,33 @@ import {
 import { ForDialog, ForDialogBackdrop } from 'forty-cdk/dialog';
 import { ForVisuallyHidden } from 'forty-cdk/visually-hidden';
 
-import type { DocIndexEntry } from '../doc/doc-model';
 import { GUIDE_INDEX } from '../doc/guides';
-import { buildSearchEntries, loadSearchIndex, searchEntries } from '../doc/search-index';
+import {
+  buildSearchEntries,
+  loadSearchIndex,
+  type SearchIndex,
+  searchEntries,
+} from '../doc/search-index';
 import { SITE_PAGE_INDEX } from '../doc/site-pages';
 import { DOCS_GROUPS } from '../primitives';
 import { Icon } from './icon';
 
 const MAX_RESULTS = 50;
 
-/** What the palette searches before the body index arrives: documents only. */
-const NO_INDEX: readonly DocIndexEntry[] = [];
+/**
+ * How the palette fetches its index: `loadSearchIndex`, unless a test stands in
+ * a loader whose chunk request fails, the way a redeploy makes it fail.
+ */
+export const SEARCH_INDEX_LOADER = new InjectionToken<() => Promise<SearchIndex>>(
+  'SEARCH_INDEX_LOADER',
+  { providedIn: 'root', factory: () => loadSearchIndex },
+);
+
+/**
+ * What the palette searches before the body index arrives, or when its chunk
+ * fails to load: documents only.
+ */
+const NO_INDEX: SearchIndex = { documents: [], errorCodes: [] };
 
 @Component({
   selector: 'command-palette',
@@ -128,6 +145,7 @@ const NO_INDEX: readonly DocIndexEntry[] = [];
 export class CommandPalette {
   readonly #router = inject(Router);
   readonly #injector = inject(Injector);
+  readonly #loadIndex = inject(SEARCH_INDEX_LOADER);
 
   /** Whether the palette is shown. Two-way bound from the shell (Cmd/Ctrl+K). */
   readonly open = model(false);
@@ -157,12 +175,22 @@ export class CommandPalette {
    */
   readonly #index = resource({
     params: () => (this.#requested() ? true : undefined),
-    loader: () => loadSearchIndex(),
+    loader: () => this.#loadIndex(),
     defaultValue: NO_INDEX,
   });
 
+  /**
+   * A chunk request fails for a reader who kept the site open across a
+   * redeploy, and a resource in its error state throws from `value()` — so the
+   * index is read only once it has one, and the palette degrades to documents.
+   */
   readonly #entries = computed(() =>
-    buildSearchEntries(DOCS_GROUPS, this.#index.value(), GUIDE_INDEX, SITE_PAGE_INDEX),
+    buildSearchEntries(
+      DOCS_GROUPS,
+      this.#index.hasValue() ? this.#index.value() : NO_INDEX,
+      GUIDE_INDEX,
+      SITE_PAGE_INDEX,
+    ),
   );
 
   protected readonly results = computed(() =>

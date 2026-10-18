@@ -12,7 +12,7 @@ import { DocCompileError } from './doc-model.mjs';
 import { relatedIndexOf } from './doc-related.mjs';
 import { headingText, renderDocument } from './doc-render.mjs';
 import { pageFileOf, pageProblems, routesModule } from './doc-routes.mjs';
-import { searchTextOf } from './doc-search.mjs';
+import { searchEntryOf } from './doc-search.mjs';
 
 const OUT_DIR = join(repoRoot, 'projects', 'forty-cdk-docs', 'src', 'generated');
 const DOCS_DIR = join(OUT_DIR, 'docs');
@@ -57,7 +57,9 @@ function pageModule(page) {
  * reach what a reader can reach: a section's anchor as its page emits it, its
  * title with inline markup resolved — `## Shared \`disabled\`` is one heading,
  * and nobody searching for it types the backticks the page does not show — and
- * a folded README's sections under the host page that republishes them.
+ * a folded README's sections under the host page that republishes them. Each
+ * page is read before its folds are merged in, so `searchEntryOf` can give a
+ * fold the prose budget of its own that a merged section would deny it.
  *
  * Serialized compactly rather than indented: this is the one generated module
  * whose size is the point, and two spaces per line of a 570-section index is
@@ -67,16 +69,10 @@ function pageModule(page) {
  * module, so it takes the same `@` escape the error roster does — see
  * {@link METADATA_TEXT}.
  */
-function indexModule(documents, pages) {
-  const entries = documents.map((document) => ({
-    kind: document.kind,
-    slug: document.slug,
-    sections: pages.get(keyOf(document)).sections.map((section) => ({
-      title: section.title,
-      slug: section.slug,
-      text: searchTextOf(section),
-    })),
-  }));
+function indexModule(documents, rendered, folds) {
+  const entries = documents.map((document) =>
+    searchEntryOf(document, rendered.get(keyOf(document)), folds.get(keyOf(document)) ?? []),
+  );
   return (
     `import type { DocIndexEntry } from '../app/doc/doc-model';\n\n` +
     `export const DOC_INDEX: readonly DocIndexEntry[] = ` +
@@ -415,18 +411,28 @@ function relatedOf(document) {
  * relative links resolve from where they were written.
  */
 function foldedPages() {
-  const pages = new Map(
-    documents.map((document) => [
-      keyOf(document),
-      renderDocument(document, { routes, related: relatedOf(document) }),
-    ]),
-  );
-  for (const document of folded) {
-    const { key, section: target } = foldHostOf(document);
-    const [section] = renderDocument(foldableOf(document), { routes }).sections;
-    pages.set(key, withFold(pages.get(key), target, section));
+  const pages = new Map(rendered);
+  for (const [key, hosted] of folds) {
+    for (const fold of hosted) {
+      pages.set(key, withFold(pages.get(key), fold.section, fold.folded));
+    }
   }
   return pages;
+}
+
+const rendered = new Map(
+  documents.map((document) => [
+    keyOf(document),
+    renderDocument(document, { routes, related: relatedOf(document) }),
+  ]),
+);
+
+/** Every folded README, rendered, under the key of the page that hosts it. */
+const folds = new Map();
+for (const document of folded) {
+  const { key, section } = foldHostOf(document);
+  const [rendering] = renderDocument(foldableOf(document), { routes }).sections;
+  folds.set(key, [...(folds.get(key) ?? []), { section, folded: rendering }]);
 }
 
 const pages = foldedPages();
@@ -436,7 +442,7 @@ write([
     join(DOCS_DIR, DOC_DIRS[document.kind], `${document.slug}.generated.ts`),
     pageModule(pages.get(keyOf(document))),
   ]),
-  [join(OUT_DIR, 'doc-index.generated.ts'), indexModule(documents, pages)],
+  [join(OUT_DIR, 'doc-index.generated.ts'), indexModule(documents, rendered, folds)],
   [join(OUT_DIR, 'guides.generated.ts'), guidesModule(guides, groupOf)],
   [join(OUT_DIR, 'site-pages.generated.ts'), sitePagesModule(sitePages)],
   [join(OUT_DIR, 'primitives.generated.ts'), registryModule(primitives, readLibraryMeta())],

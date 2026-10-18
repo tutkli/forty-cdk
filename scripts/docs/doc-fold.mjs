@@ -55,10 +55,9 @@ export function demoteMarkdown(markdown, by) {
 }
 
 function deepestHeading(document) {
-  const depths = [
-    ...document.introHeadings.map((heading) => heading.depth),
-    ...document.sections.flatMap((section) => section.headings.map((heading) => heading.depth)),
-  ];
+  const depths = document.sections.flatMap((section) =>
+    section.headings.map((heading) => heading.depth),
+  );
   return depths.length === 0 ? 2 : Math.max(2, ...depths);
 }
 
@@ -112,13 +111,6 @@ export function foldableOf(document) {
   for (const block of document.intro) {
     blocks.push(foldBlock(block, slug));
   }
-  for (const introHeading of document.introHeadings) {
-    headings.push({
-      depth: introHeading.depth + DEPTH_SHIFT,
-      text: introHeading.text,
-      slug: foldedSlug(slug, introHeading.slug),
-    });
-  }
 
   for (const section of document.sections) {
     const sectionSlug = foldedSlug(slug, section.slug);
@@ -139,7 +131,6 @@ export function foldableOf(document) {
   return {
     ...document,
     intro: [],
-    introHeadings: [],
     sections: [{ title: meta.title, slug, ring: 'specific', headings, blocks }],
   };
 }

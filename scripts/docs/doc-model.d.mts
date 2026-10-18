@@ -183,12 +183,6 @@ export interface DocDocument {
    * silent drop.
    */
   readonly intro: readonly DocProseBlock[];
-  /**
-   * The headings the intro carries, which the corpus does hold — one guide
-   * opens with four `h3`s before its first section, and cross-page fragments
-   * point at them.
-   */
-  readonly introHeadings: readonly DocHeading[];
   readonly sections: readonly DocSection[];
 }
 

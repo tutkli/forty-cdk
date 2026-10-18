@@ -1,4 +1,5 @@
 import { stripText } from '../lib/html.mjs';
+import { EXAMPLES_SECTION } from './doc-model.mjs';
 
 /**
  * The markup a fence renders as, read for its identifiers and dropped.
@@ -34,6 +35,9 @@ const IDENTIFIER = /\b(?:for|For|provideFor|inject|use)[A-Z]\w*|\b(?:aria|data)-
  * Table rows are exempt because they carry the identifiers a reference is
  * searched by — an input's name, its type, the `aria-*` attribute a state
  * emits — and they sit *below* the prose that would otherwise clip them away.
+ * A section's own headings are exempt for the same reason: they are the words
+ * the page titles its content with, and a `###` past the first 400 characters
+ * is otherwise unreachable by the very name the reader sees in the rail.
  */
 const PROSE_LIMIT = 400;
 
@@ -90,9 +94,7 @@ function identifiersOf(html) {
  * Read off the **rendered page** rather than the markdown behind it, which is
  * what keeps the index from being a second traversal of the corpus: every cell
  * already carries the text its labels use, and a paragraph's text is its own
- * markup with the tags taken back off. A section that reaches the reader
- * through a fold ([#1809](https://github.com/tutkli/forty-cdk/issues/1809))
- * therefore reaches the index too, under the anchor its host page emits.
+ * markup with the tags taken back off.
  */
 export function searchTextOf(section) {
   const prose = [];
@@ -109,6 +111,53 @@ export function searchTextOf(section) {
     }
   }
   const text = `${clip(normalize(prose.join(' ')), PROSE_LIMIT)} ${normalize(rows.join(' '))}`;
-  const unsaid = [...names].filter((name) => !text.includes(name));
+  const unsaid = [...section.headings.map((heading) => heading.text), ...names].filter(
+    (name) => !text.includes(name),
+  );
   return normalize(`${text} ${unsaid.join(' ')}`);
+}
+
+/**
+ * One document's entry in the `⌘K` index: what its page says above the first
+ * section, and what each section says
+ * ([#2329](https://github.com/tutkli/forty-cdk/issues/2329)).
+ *
+ * The rule is that the palette reaches what a reader can reach, so everything
+ * the page renders is read here: the intro below the lede (the lede itself is
+ * the document's description, which the palette already holds), and the
+ * caption the page prints above its hero, which belongs to `## Examples` and is
+ * indexed with it.
+ *
+ * `folds` are the sections other READMEs publish inside this page
+ * ([#1809](https://github.com/tutkli/forty-cdk/issues/1809)), each under the
+ * host section it names. A fold is indexed under the host's anchor, which is
+ * the one the reader can open, but with a prose budget of its own: read as one
+ * section with its host, the host's prose fills the budget first and the
+ * folded README's lede and paragraphs never reach the index at all.
+ */
+export function searchEntryOf(document, page, folds = []) {
+  return {
+    kind: document.kind,
+    slug: document.slug,
+    intro: searchTextOf({ headings: [], blocks: page.intro }),
+    sections: page.sections.map((section) => ({
+      title: section.title,
+      slug: section.slug,
+      text: normalize(
+        [
+          searchTextOf(withCaption(section, page.caption)),
+          ...folds
+            .filter((fold) => fold.section === section.slug)
+            .map((fold) => searchTextOf(fold.folded)),
+        ].join(' '),
+      ),
+    })),
+  };
+}
+
+function withCaption(section, caption) {
+  if (caption === null || section.slug !== EXAMPLES_SECTION) {
+    return section;
+  }
+  return { ...section, blocks: [{ kind: 'prose', html: `<p>${caption}</p>` }, ...section.blocks] };
 }

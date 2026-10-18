@@ -833,14 +833,6 @@ describe('headings that slugify alike anywhere in a document', () => {
     ]);
   });
 
-  it('places a heading written above the first section there', () => {
-    const [problem] = checkHeadingAnchors([guideOf('### Setup', '', 'Steps.', '', '## Setup')]);
-
-    expect(problem?.message).toContain(
-      '"### Setup" above the first section slugs to "setup", as "## Setup" does',
-    );
-  });
-
   it('reports every heading past the first of a set, each against the first', () => {
     const lines = ['## One', '', '### States', '', '## Two', '', '### States', '', '### States'];
     const problems = checkHeadingAnchors([guideOf(...lines)]);
