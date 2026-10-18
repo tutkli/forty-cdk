@@ -8,7 +8,6 @@ import {
   ElementRef,
   inject,
   input,
-  isDevMode,
   numberAttribute,
   PLATFORM_ID,
   type Signal,
@@ -385,7 +384,7 @@ export class ForToastViewport {
       });
     }
 
-    if (isDevMode()) {
+    if (typeof ngDevMode === 'undefined' || ngDevMode) {
       // Warn once each time this viewport becomes dormant because another
       // viewport already owns its region — the silent-duplication footgun the
       // region API exists to remove.

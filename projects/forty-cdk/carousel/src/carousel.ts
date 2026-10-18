@@ -7,7 +7,6 @@ import {
   ElementRef,
   inject,
   input,
-  isDevMode,
   model,
   numberAttribute,
   PLATFORM_ID,
@@ -263,7 +262,7 @@ export class ForCarousel implements ForCarouselContext {
     });
     this.#destroyRef.onDestroy(() => this.#clearTimer());
 
-    if (isDevMode()) {
+    if (typeof ngDevMode === 'undefined' || ngDevMode) {
       let warned = false;
       effect(() => {
         const slides = this.slideCount();

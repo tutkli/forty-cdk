@@ -6,7 +6,6 @@ import {
   ElementRef,
   inject,
   input,
-  isDevMode,
   signal,
 } from '@angular/core';
 
@@ -100,7 +99,7 @@ export class ForFieldset implements ForFieldsetContext {
 
   constructor() {
     reflectDisabled(this.nativeDisabled);
-    if (isDevMode()) {
+    if (typeof ngDevMode === 'undefined' || ngDevMode) {
       this.#warnOnDuplicateLegend();
     }
   }

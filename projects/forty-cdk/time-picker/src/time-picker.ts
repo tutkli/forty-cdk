@@ -4,7 +4,6 @@ import {
   Directive,
   inject,
   input,
-  isDevMode,
   model,
   numberAttribute,
   output,
@@ -597,7 +596,7 @@ function slotTypeaheadText(label: string): readonly string[] {
  * it guards degrades to a no-op.
  */
 function assertFieldProjected(field: AdoptedField | null): AdoptedField | null {
-  if (isDevMode() && field === null) {
+  if ((typeof ngDevMode === 'undefined' || ngDevMode) && field === null) {
     throw fortyError({
       code: 'FORCDK-TIME-PICKER-004',
       message: '[forTimePicker] has anatomy="field" but no [forTimeField] is projected inside it.',

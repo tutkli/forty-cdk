@@ -4,7 +4,6 @@ import {
   effect,
   inject,
   input,
-  isDevMode,
   model,
   type Provider,
   signal,
@@ -444,7 +443,7 @@ function assertTimeSourceAdapter(
   sourceAdapter: DateAdapter<unknown>,
   adapter: DateAdapter<unknown>,
 ): void {
-  if (isDevMode() && sourceAdapter !== adapter) {
+  if ((typeof ngDevMode === 'undefined' || ngDevMode) && sourceAdapter !== adapter) {
     throw fortyError({
       code: 'FORCDK-DATE-PICKER-005',
       message:
@@ -464,7 +463,7 @@ function assertTimeSourceAdapter(
  * it guards degrades to a no-op.
  */
 function assertFieldProjected(field: AdoptedField | null): AdoptedField | null {
-  if (isDevMode() && field === null) {
+  if ((typeof ngDevMode === 'undefined' || ngDevMode) && field === null) {
     throw fortyError({
       code: 'FORCDK-DATE-PICKER-007',
       message: '[forDatePicker] has anatomy="field" but no [forDateField] is projected inside it.',

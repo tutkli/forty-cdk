@@ -3690,6 +3690,32 @@ const fortyCdkPlugin = {
         };
       },
     },
+
+    'no-runtime-dev-mode-check': {
+      meta: {
+        type: 'problem',
+        docs: {
+          description:
+            'Forbid `isDevMode()` in library source, so every dev-only branch folds away in a consumer production build.',
+        },
+        schema: [],
+        messages: {
+          runtime:
+            '`isDevMode()` is a runtime call a bundler cannot evaluate, so every branch it gates ships in a consumer’s production build and never runs. ' +
+            "Gate inline on `typeof ngDevMode === 'undefined' || ngDevMode` (or `typeof ngDevMode !== 'undefined' && !ngDevMode` for an early return), which the Angular CLI folds to a constant. " +
+            '(.claude/rules/conventions.md § "Assertions are dev-gated and live at the point of use"; tutkli/forty-cdk#2584.)',
+        },
+      },
+      create(context) {
+        return {
+          'ImportDeclaration[source.value="@angular/core"] > ImportSpecifier[imported.name="isDevMode"]'(
+            node,
+          ) {
+            context.report({ node, messageId: 'runtime' });
+          },
+        };
+      },
+    },
   },
 };
 
@@ -3909,6 +3935,8 @@ module.exports = tseslint.config(
 
       'forty-cdk/namespaced-css-custom-property': 'error',
 
+      'forty-cdk/no-runtime-dev-mode-check': 'error',
+
       // ---- Test isolation invariants (see @forty-cdk-test-isolation-rules
       // block above; .claude/rules/testing.md § "Test isolation — non-negotiables"). ----
       'forty-cdk/no-bare-whenstable': 'error',
@@ -4024,6 +4052,7 @@ module.exports = tseslint.config(
       // validation channel a consumer inherits.
       'forty-cdk/no-assertion-only-effect': 'off',
       'forty-cdk/namespaced-css-custom-property': 'off',
+      'forty-cdk/no-runtime-dev-mode-check': 'off',
       // A spec that records when the scheduler first runs an `effect()` or
       // `afterRenderEffect()` reads no signal on purpose: it is probing the run,
       // not deriving state.
@@ -4050,6 +4079,7 @@ module.exports = tseslint.config(
       'forty-cdk/require-sanctioned-pull-marker': 'off',
       'forty-cdk/no-assertion-only-effect': 'off',
       'forty-cdk/namespaced-css-custom-property': 'off',
+      'forty-cdk/no-runtime-dev-mode-check': 'off',
     },
   },
 
@@ -4063,6 +4093,7 @@ module.exports = tseslint.config(
       'forty-cdk/require-sanctioned-pull-marker': 'off',
       'forty-cdk/no-assertion-only-effect': 'off',
       'forty-cdk/namespaced-css-custom-property': 'off',
+      'forty-cdk/no-runtime-dev-mode-check': 'off',
     },
   },
 

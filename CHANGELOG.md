@@ -17,6 +17,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   **label the trigger** (`aria-labelledby`, `aria-label` or a surrounding `[forField]`) if it relied
   on its content for its accessible name.
 
+### Fixed
+
+- **Bundle size** — every dev-only assertion and warning now drops out of a production build
+  ([#2584](https://github.com/tutkli/forty-cdk/issues/2584)). They were gated on `isDevMode()`, a
+  runtime call a bundler cannot evaluate, so the checks and their `FORCDK-*` messages shipped and
+  never ran. They now gate on `ngDevMode`, which the Angular CLI defines as `false` in production:
+  a single-select `ForListbox` app is 1.4 kB gzip smaller, and its bundle keeps only the
+  unconditional `FORCDK-LISTBOX-001`. Dev builds, SSR and specs that stub `ngDevMode` behave as
+  before.
+
 ## [0.38.0] - 2026-10-17
 
 ### Added

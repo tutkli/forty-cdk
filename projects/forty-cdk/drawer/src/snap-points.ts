@@ -23,7 +23,6 @@
  * Internal to the drawer primitive — not re-exported through `index.ts` /
  * `public-api.ts`.
  */
-import { isDevMode } from '@angular/core';
 
 import { fortyError } from 'forty-cdk/core';
 import type { ForDrawerSnapPoint } from './drawer-context';
@@ -84,7 +83,7 @@ export function snapPointToFraction(p: ForDrawerSnapPoint, dimension: number): n
  * Throws an `Error` with a `[forty-cdk/drawer]` prefix on the first failure.
  */
 export function assertSnapPointsShape(snapPoints: ReadonlyArray<ForDrawerSnapPoint>): void {
-  if (!isDevMode()) {
+  if (typeof ngDevMode !== 'undefined' && !ngDevMode) {
     return;
   }
   for (const p of snapPoints) {
@@ -142,7 +141,7 @@ export function assertSnapPointConfig(
   snapPoints: ReadonlyArray<ForDrawerSnapPoint> | undefined,
   fadeFromIndex: number | undefined,
 ): void {
-  if (!isDevMode() || !snapPoints || snapPoints.length === 0) {
+  if ((typeof ngDevMode !== 'undefined' && !ngDevMode) || !snapPoints || snapPoints.length === 0) {
     return;
   }
   assertSnapPointsShape(snapPoints);
@@ -196,7 +195,7 @@ export function assertSnapPositions(
   positions: ReadonlyArray<number>,
   dimension: number,
 ): void {
-  if (!isDevMode()) {
+  if (typeof ngDevMode !== 'undefined' && !ngDevMode) {
     return;
   }
   for (let i = 1; i < positions.length; i++) {
@@ -223,7 +222,7 @@ export function assertSnapPositions(
  * here so the two cannot drift.
  */
 export function assertCloseThreshold(value: number): void {
-  if (!isDevMode()) {
+  if (typeof ngDevMode !== 'undefined' && !ngDevMode) {
     return;
   }
   if (!Number.isFinite(value) || value < 0 || value > 1) {

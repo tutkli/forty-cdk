@@ -4,7 +4,6 @@ import {
   effect,
   inject,
   input,
-  isDevMode,
   model,
   type Provider,
   signal,
@@ -240,7 +239,7 @@ export class ForDateRangePicker<D>
  * range selection mode, since the pick it just made never reaches the picker.
  */
 function assertRangeCalendar(calendar: ProjectedCalendar<unknown>): void {
-  if (isDevMode() && calendar.selectionMode() !== 'range') {
+  if ((typeof ngDevMode === 'undefined' || ngDevMode) && calendar.selectionMode() !== 'range') {
     throw fortyError({
       code: 'FORCDK-DATE-PICKER-006',
       message: 'ForDateRangePicker projects a ForCalendar that is not in range selection mode.',

@@ -4,7 +4,6 @@ import {
   Directive,
   inject,
   input,
-  isDevMode,
   model,
   type ModelSignal,
   output,
@@ -63,7 +62,7 @@ export function assertCalendarAdapter(
   calendar: ProjectedCalendar<unknown>,
   adapter: DateAdapter<unknown>,
 ): void {
-  if (isDevMode() && calendar.adapter !== adapter) {
+  if ((typeof ngDevMode === 'undefined' || ngDevMode) && calendar.adapter !== adapter) {
     throw fortyError({
       code: 'FORCDK-DATE-PICKER-001',
       message: 'The projected ForCalendar uses a different DateAdapter than the date picker.',

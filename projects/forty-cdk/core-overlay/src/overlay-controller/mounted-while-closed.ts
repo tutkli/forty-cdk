@@ -1,4 +1,4 @@
-import { afterNextRender, isDevMode } from '@angular/core';
+import { afterNextRender } from '@angular/core';
 import { fortyWarn } from 'forty-cdk/core';
 
 /**
@@ -57,7 +57,7 @@ export interface MountedWhileClosedConfig {
  * Must be called from an injection context. A production build registers no render hook at all.
  */
 export function warnIfMountedWhileClosed(config: MountedWhileClosedConfig): void {
-  if (!isDevMode()) {
+  if (typeof ngDevMode !== 'undefined' && !ngDevMode) {
     return;
   }
 

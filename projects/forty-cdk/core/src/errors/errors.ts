@@ -1,5 +1,3 @@
-import { isDevMode } from '@angular/core';
-
 const CODE_PREFIX = 'FORCDK-';
 
 /**
@@ -78,7 +76,7 @@ export function formatFortyMessage(spec: FortyMessageSpec): string {
  * throw fortyError({ code: 'FORCDK-DRAWER-004', message: '…', fix: '…' });
  * ```
  *
- * This helper does **not** gate on `isDevMode()`. Whether a given check is
+ * This helper does **not** gate on dev mode. Whether a given check is
  * dev-only is a property of the check, not of the formatting — an orphan
  * context would fail with a bare `TypeError` one line later in production, so
  * those throw unconditionally, while a pure assertion gates inside its own
@@ -94,7 +92,7 @@ export function fortyError(spec: FortyMessageSpec): Error {
  * developer, so the gate travels with the report and no call site can forget it.
  */
 export function fortyWarn(spec: FortyMessageSpec): void {
-  if (!isDevMode()) {
+  if (typeof ngDevMode !== 'undefined' && !ngDevMode) {
     return;
   }
   console.warn(formatFortyMessage(spec));
