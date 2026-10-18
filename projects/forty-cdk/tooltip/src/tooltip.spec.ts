@@ -128,6 +128,7 @@ class TwoTooltipHost {
 
 @Component({
   imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
+  host: { 'data-fixture': 'hoverable' },
   template: `
     <div
       forTooltip
@@ -1385,6 +1386,7 @@ describe('ForTooltip', () => {
     it('emits when hover/focus delays toggle open', async () => {
       @Component({
         imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
+        host: { 'data-fixture': 'delayed-open-change' },
         template: `
           <div
             forTooltip

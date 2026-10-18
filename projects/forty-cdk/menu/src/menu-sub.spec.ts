@@ -1070,6 +1070,7 @@ describe('ForMenuSub', () => {
       @Component({
         imports: IMPORTS,
         providers: [provideForMenuDefaults({ subMenuOpenDelay: 250 })],
+        host: { 'data-fixture': 'configured-open-delay' },
         template: `
           <div forDropdownMenu [(open)]="open">
             <button forDropdownMenuTrigger>x</button>
@@ -1725,6 +1726,7 @@ describe('ForMenuSub', () => {
       @Component({
         imports: IMPORTS,
         providers: [provideForMenuDefaults({ subMenuOpenDelay: 0 })],
+        host: { 'data-fixture': 'zero-open-delay' },
         template: `
           <div forDropdownMenu [(open)]="open">
             <button forDropdownMenuTrigger>x</button>
