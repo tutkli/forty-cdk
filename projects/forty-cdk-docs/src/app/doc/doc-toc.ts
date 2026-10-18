@@ -31,6 +31,7 @@ import type { TocEntry } from './doc-toc-rail';
                   <a
                     class="pg-toc-link pg-toc-grouplink"
                     [class.active]="slug === activeSlug()"
+                    [attr.aria-current]="slug === activeSlug() ? 'location' : null"
                     [routerLink]="[]"
                     [fragment]="slug"
                     >{{ item.title }}</a
@@ -53,6 +54,7 @@ import type { TocEntry } from './doc-toc-rail';
               <a
                 class="pg-toc-link"
                 [class.active]="slug === activeSlug()"
+                [attr.aria-current]="slug === activeSlug() ? 'location' : null"
                 [routerLink]="[]"
                 [fragment]="slug"
                 >{{ item.title }}</a
@@ -69,6 +71,7 @@ import type { TocEntry } from './doc-toc-rail';
                     <a
                       class="pg-toc-link pg-toc-sublink"
                       [class.active]="child.slug === activeSlug()"
+                      [attr.aria-current]="child.slug === activeSlug() ? 'location' : null"
                       [routerLink]="[]"
                       [fragment]="child.slug"
                       >{{ child.title }}</a

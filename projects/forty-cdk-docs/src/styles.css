@@ -1381,6 +1381,11 @@ a.pg-nav-link.active {
   box-shadow: var(--pg-shadow);
 }
 
+.cmdk-field:focus-within {
+  outline: 2px solid var(--pg-primary);
+  outline-offset: 2px;
+}
+
 .cmdk-search-icon {
   flex: none;
   width: 18px;

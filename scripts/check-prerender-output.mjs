@@ -75,8 +75,12 @@ const nullIds = [];
 const statefulToggles = [];
 const mistitled = [];
 const titled = new Map();
+const unannounced = [];
 let demoBlocks = 0;
 let themeToggles = 0;
+let currentLinks = 0;
+let railViewports = 0;
+let menuButtons = 0;
 
 /**
  * The `localStorage` key the site persists the theme under, read from the source
@@ -227,6 +231,41 @@ function checkDemoAttributes(label, html) {
   }
   if (nulled > 0) {
     nullIds.push(`${label} (${nulled})`);
+  }
+}
+
+const NAV_LINK = /<a\b[^>]*\bclass="[^"]*\bpg-nav-link\b[^"]*"[^>]*>/gi;
+const RAIL_VIEWPORT = /<div\b[^>]*\bclass="[^"]*\bsp-viewport\b[^"]*"[^>]*>/gi;
+const MENU_BUTTON = /<button\b[^>]*\bclass="[^"]*\bmenu-btn\b[^"]*"[^>]*>/gi;
+
+function checkNavigationChrome(label, html) {
+  const problems = [];
+  for (const [link] of html.matchAll(NAV_LINK)) {
+    const active = /\bclass="[^"]*\bactive\b/.test(link);
+    const current = /\baria-current="page"/.test(link);
+    if (active) {
+      currentLinks += 1;
+    }
+    if (active !== current) {
+      problems.push(
+        `${active ? 'an active' : 'an inactive'} rail link ${current ? 'with' : 'without'} aria-current="page"`,
+      );
+    }
+  }
+  for (const [viewport] of html.matchAll(RAIL_VIEWPORT)) {
+    railViewports += 1;
+    if (/\btabindex=/.test(viewport)) {
+      problems.push('a rail scroll viewport that is a tab stop');
+    }
+  }
+  for (const [button] of html.matchAll(MENU_BUTTON)) {
+    menuButtons += 1;
+    if (!/\baria-haspopup="dialog"/.test(button) || !/\baria-expanded="false"/.test(button)) {
+      problems.push('a navigation button announcing no dialog or no expanded state');
+    }
+  }
+  if (problems.length > 0) {
+    unannounced.push(`${label} (${[...new Set(problems)].join('; ')})`);
   }
 }
 
@@ -599,6 +638,7 @@ for (const { path, title } of routes) {
   checkThemeToggle(path, html);
   checkDemoAttributes(path, html);
   checkTitle(path, html);
+  checkNavigationChrome(path, html);
 }
 
 if (missing.length > 0) {
@@ -676,8 +716,22 @@ if (nullIds.length > 0) {
   );
 }
 
+if (currentLinks === 0 || railViewports === 0 || menuButtons === 0) {
+  fail(
+    `the prerendered output renders ${currentLinks} current rail link(s), ${railViewports} rail ` +
+      `viewport(s) and ${menuButtons} navigation button(s) — the navigation chrome scan is blind`,
+  );
+}
+if (unannounced.length > 0) {
+  fail(
+    `${unannounced.length} prerendered page(s) render navigation chrome whose state reaches the ` +
+      'eye but not assistive technology:\n  ' +
+      unannounced.slice(0, 10).join('\n  '),
+  );
+}
+
 console.log(
-  `[check-prerender-output] ok — ${primitives.length} primitive routes + ` +
+  `[check-prerender-output] ok —${primitives.length} primitive routes + ` +
     `${guides.length} guide routes + ${sitePages.length} site pages + ${errorCodes.length} ` +
     'error code pages + the error index + the guide index + the landing page prerendered ' +
     `with content, ${titled.size} of them each titled by its own heading, plus a 404.html ` +
@@ -687,5 +741,7 @@ console.log(
     `${themeToggles} theme toggle(s) prerendered without a state and ` +
     `${demoBlocks} example block(s) publishing none of their inputs as attributes and none of ` +
     `them an id of "null", and a landing page cataloguing all ${catalogued} published entry ` +
-    'points, each linked with its description tooltip, and stating the version the manifest states',
+    'points, each linked with its description tooltip, and stating the version the manifest states, ' +
+    `with ${currentLinks} current rail link(s) carrying aria-current, ${railViewports} rail ` +
+    `viewport(s) out of the tab order and ${menuButtons} navigation button(s) announcing their drawer`,
 );

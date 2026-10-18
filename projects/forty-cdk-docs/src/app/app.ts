@@ -43,6 +43,7 @@ import { SiteChrome } from './ui/site-chrome';
     @if (chrome.navOpen()) {
       <div
         forDrawer
+        id="site-nav"
         class="pg-nav-drawer"
         side="left"
         ariaLabel="Site navigation"
