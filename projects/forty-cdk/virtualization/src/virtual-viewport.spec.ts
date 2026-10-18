@@ -401,6 +401,81 @@ describe('ForVirtualViewport (endReached) output', () => {
     await flush(fixture);
     expect(fixture.componentInstance.endCount()).toBe(0);
   });
+
+  describe('fires within the bound overscan of the end', () => {
+    @Component({
+      imports: [ForVirtualViewport, ForVirtualFor],
+      template: `
+        <div
+          forVirtualViewport
+          [virtualCount]="rows().length"
+          [estimateSize]="40"
+          [overscan]="overscan()"
+          (endReached)="onEnd()"
+          style="height: 200px; width: 200px"
+        >
+          <div *forVirtualFor="let row of rows()">{{ row.label }}</div>
+        </div>
+      `,
+    })
+    class OverscanHost {
+      readonly rows = signal(makeRows(100));
+      readonly overscan = signal(5);
+      readonly endCount = signal(0);
+      readonly viewport = viewChild.required(ForVirtualViewport);
+      onEnd(): void {
+        this.endCount.update((n) => n + 1);
+      }
+    }
+
+    async function mount(overscan: number): Promise<ComponentFixture<OverscanHost>> {
+      const fixture = TestBed.createComponent(OverscanHost);
+      fixture.componentInstance.overscan.set(overscan);
+      const host = viewportEl(fixture);
+      fakeLayout(host, 200);
+      installFakeScroll(host);
+      fixture.detectChanges();
+      await flush(fixture);
+      return fixture;
+    }
+
+    async function scrollTo(
+      fixture: ComponentFixture<OverscanHost>,
+      offset: number,
+    ): Promise<void> {
+      fixture.componentInstance.viewport().scrollToOffset(offset);
+      await flush(fixture);
+      await flush(fixture);
+    }
+
+    function lastRenderedIndex(fixture: ComponentFixture<OverscanHost>): number {
+      return Math.max(...rowEls(fixture).map((el) => Number(el.getAttribute('data-index'))));
+    }
+
+    it('with overscan 0, stays silent until the rendered window reaches the last row', async () => {
+      const fixture = await mount(0);
+
+      await scrollTo(fixture, 3600);
+      expect(lastRenderedIndex(fixture)).toBe(94);
+      expect(fixture.componentInstance.endCount()).toBe(0);
+
+      await scrollTo(fixture, 3800);
+      expect(lastRenderedIndex(fixture)).toBe(99);
+      expect(fixture.componentInstance.endCount()).toBe(1);
+    });
+
+    it('with overscan 20, fires once the rendered window comes within 20 rows of the end', async () => {
+      const fixture = await mount(20);
+
+      await scrollTo(fixture, 2000);
+      expect(lastRenderedIndex(fixture)).toBe(74);
+      expect(fixture.componentInstance.endCount()).toBe(0);
+
+      await scrollTo(fixture, 2400);
+      expect(lastRenderedIndex(fixture)).toBe(84);
+      expect(fixture.componentInstance.endCount()).toBe(1);
+    });
+  });
 });
 
 describe('ForVirtualViewport — detached-row sweep (#1424)', () => {

@@ -72,16 +72,17 @@ export function injectInfiniteScroll(options: InfiniteScrollOptions): ForInfinit
   });
 
   // @sanctioned-effect(untracked-read): both `armed` and `pending` are read
-  // through `untracked`, so the effect tracks only `count` / `nearEnd` / `settled`
-  // and never cycles on the latches it writes; `settled` is written only when a
-  // caller-owned promise settles, which is outside the reactive graph entirely.
+  // through `untracked`, and `onLoadMore` runs untracked, so the effect tracks
+  // only `count` / `nearEnd` / `settled` and never cycles on the latches it writes;
+  // `settled` is written only when a caller-owned promise settles, which is
+  // outside the reactive graph entirely.
   effect(() => {
     options.count();
     settled();
     if (!nearEnd() || !untracked(armed)) return;
     if (untracked(pending)) return;
     armed.set(false);
-    const result = options.onLoadMore();
+    const result = untracked(options.onLoadMore);
     if (result instanceof Promise) {
       pending.set(true);
       const settle = (): void => {
