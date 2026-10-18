@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Combobox** — `[forComboboxTrigger]` carries `role="combobox"` and reflects `aria-required`,
+  `aria-invalid`, `aria-busy` and `aria-readonly`, plus the `data-readonly` hook
+  ([#2602](https://github.com/tutkli/forty-cdk/issues/2602)). In the picker anatomy the input that
+  carries that state is mounted inside the panel, so a closed picker announced a required, invalid
+  or validating field exactly like a valid optional one. A combobox is not named by its text:
+  **label the trigger** (`aria-labelledby`, `aria-label` or a surrounding `[forField]`) if it relied
+  on its content for its accessible name.
+
 ## [0.38.0] - 2026-10-17
 
 ### Added
