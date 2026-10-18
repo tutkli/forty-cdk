@@ -5,9 +5,9 @@ import { cellsOf } from './doc-model.mjs';
 /**
  * Every piece of markdown one compiled document holds, in document order.
  *
- * The same walk {@link documentMarkdown} serialises, plus the caption `##
- * Examples` had lifted out of it — a page publishes that sentence above its
- * hero, so a link written there is a link the document writes.
+ * The same walk {@link documentMarkdown} serialises, the caption `## Examples`
+ * had lifted out included — a page publishes that sentence above its hero, so a
+ * link written there is a link the document writes.
  *
  * Table cells are walked with the rest: the corpus writes a large share of its
  * cross-references inside API and attribute tables, and a graph blind to them

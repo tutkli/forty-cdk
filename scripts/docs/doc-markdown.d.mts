@@ -16,6 +16,8 @@ export declare function rewriteMarkdownLinks(
   rewrite: (href: string) => string | null,
 ): string;
 
+export declare function escapeInlineHtml(text: string): string;
+
 export declare function documentMarkdown(
   document: DocDocument,
   resolveHref: DocMarkdownResolver,

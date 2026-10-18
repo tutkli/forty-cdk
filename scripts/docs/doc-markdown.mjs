@@ -1,5 +1,5 @@
 import { isFenceLine } from '../lib/readme-slug.mjs';
-import { cellsOf } from './doc-model.mjs';
+import { cellsOf, EXAMPLES_SECTION } from './doc-model.mjs';
 
 /**
  * One inline markdown link, split so its href can be replaced without
@@ -101,6 +101,32 @@ function tableMarkdown(table, rewrite) {
   ].join('\n');
 }
 
+/**
+ * A code span, closed by a backtick run as long as the one that opened it.
+ */
+const CODE_SPAN = /(`+)[\s\S]*?(?<!`)\1(?!`)/g;
+
+/**
+ * Plain text made safe to publish as markdown prose, with every `<` outside a
+ * code span backslash-escaped.
+ *
+ * A `<` opens every inline HTML construct a renderer recognises, so prose that
+ * names an element, such as a fix reading "wrap the options in a
+ * <div forComboboxList>", would otherwise be parsed as a tag and vanish from
+ * the rendered text. Inside a code span the character is already literal, and
+ * an escape there would print its backslash.
+ */
+export function escapeInlineHtml(text) {
+  const escape = (run) => run.replaceAll('<', '\\<');
+  let escaped = '';
+  let from = 0;
+  for (const match of text.matchAll(CODE_SPAN)) {
+    escaped += escape(text.slice(from, match.index)) + match[0];
+    from = match.index + match[0].length;
+  }
+  return escaped + escape(text.slice(from));
+}
+
 function blockMarkdown(block, rewrite) {
   return block.kind === 'prose'
     ? rewriteMarkdownLinks(block.markdown, rewrite)
@@ -120,8 +146,9 @@ function blockMarkdown(block, rewrite) {
  *
  * Three things differ from the source the compiler read. The frontmatter is
  * gone, having become the document's title and its registry entry. The lede is
- * written back above the intro, because a standalone document has no page
- * header to carry it. And every relative link is now absolute, since an
+ * written back above the intro, and the caption back as the opening paragraph
+ * of `## Examples`, because a standalone document has no page header and no
+ * hero to carry either. And every relative link is now absolute, since an
  * artifact served on its own — or pasted into a conversation — has nothing to
  * resolve one against.
  *
@@ -140,6 +167,9 @@ export function documentMarkdown(document, resolveHref) {
   }
   for (const section of document.sections) {
     parts.push(`## ${rewriteMarkdownLinks(section.title, rewrite)}`);
+    if (section.slug === EXAMPLES_SECTION && document.caption !== null) {
+      parts.push(rewriteMarkdownLinks(document.caption, rewrite));
+    }
     for (const block of section.blocks) {
       parts.push(blockMarkdown(block, rewrite));
     }

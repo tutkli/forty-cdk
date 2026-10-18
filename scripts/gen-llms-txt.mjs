@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 
-import { documentMarkdown, rewriteMarkdownLinks } from './docs/doc-markdown.mjs';
+import { documentMarkdown, escapeInlineHtml, rewriteMarkdownLinks } from './docs/doc-markdown.mjs';
 import { compileCorpus } from './lib/doc-corpus.mjs';
 import {
   buildDocRoutes,
@@ -154,10 +154,10 @@ function codeMarkdown(entry) {
     `${reported} by ${by}${gating}.`,
   ];
   if (entry.cause !== null) {
-    parts.push(`**Cause.** ${entry.cause}`);
+    parts.push(`**Cause.** ${escapeInlineHtml(entry.cause)}`);
   }
   if (entry.fix !== null) {
-    parts.push(`**Fix.** ${entry.fix}`);
+    parts.push(`**Fix.** ${escapeInlineHtml(entry.fix)}`);
   }
   parts.push(
     `Emitted at [${entry.source}:${entry.line}](${GITHUB_BLOB_BASE}${entry.source}#L${entry.line}).`,

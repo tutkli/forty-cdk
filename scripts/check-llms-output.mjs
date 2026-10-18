@@ -1,6 +1,8 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 
+import { Marked } from 'marked';
+
 import { compileCorpus } from './lib/doc-corpus.mjs';
 import { markdownLinksOf } from './docs/doc-markdown.mjs';
 import { GITHUB_BLOB_BASE, isAbsoluteHref, SITE_URL, splitDocHref } from './lib/doc-links.mjs';
@@ -72,6 +74,7 @@ const ARTIFACT_FLOOR = 60;
 const LINK_FLOOR = 500;
 const CODE_FLOOR = 100;
 const DEMO_PROSE_FLOOR = 120;
+const CAPTION_FLOOR = 40;
 
 /**
  * How many missing codes the roster failure names before it reports the rest as
@@ -210,8 +213,14 @@ for (const [file, source] of expected) {
  * why it is asserted here rather than assumed: the emitter is free to skip a
  * section, and a lift like the caption's takes its prose out of the body
  * silently.
+ *
+ * The caption itself is read back for that reason: it is lifted out of
+ * `## Examples` like the lede out of the intro, so it reaches the artifact only
+ * because the emitter writes it back
+ * ([#2332](https://github.com/tutkli/forty-cdk/issues/2332)).
  */
 let demoProse = 0;
+let captions = 0;
 const { documents: compiled } = compileCorpus();
 for (const primitive of readPrimitives()) {
   const contents = read(`${primitive.slug}.md`);
@@ -221,6 +230,15 @@ for (const primitive of readPrimitives()) {
   const document = compiled.find(
     (entry) => entry.path === `projects/forty-cdk/${primitive.slug}/README.md`,
   );
+  if (document?.caption != null) {
+    captions += 1;
+    if (!contents.includes(document.caption)) {
+      failures.push(
+        `/${primitive.slug}.md publishes "## Examples" without its caption, the sentence the ` +
+          'page prints above its hero',
+      );
+    }
+  }
   for (const example of document?.examples ?? []) {
     demoProse += 1;
     if (!contents.includes(`### ${example.title}`)) {
@@ -270,6 +288,32 @@ if (rosterContents === null) {
       `/${ERRORS_FILE} publishes ${errorCodes.length - missing.length} of ${errorCodes.length} ` +
         `code(s) the library emits — missing ${named.join(', ')}` +
         (missing.length > named.length ? ` and ${missing.length - named.length} more` : ''),
+    );
+  }
+
+  /**
+   * The roster writes no HTML on purpose, so any HTML a renderer finds in it is
+   * prose read as a tag: a cause or fix naming `<div forComboboxList>` outside a
+   * code span, which a markdown preview swallows
+   * ([#2332](https://github.com/tutkli/forty-cdk/issues/2332)).
+   */
+  const marked = new Marked();
+  let code = null;
+  const swallowed = new Set();
+  for (const token of marked.lexer(rosterContents)) {
+    if (token.type === 'heading' && token.depth === 3) {
+      code = token.text;
+    }
+    marked.walkTokens([token], (inner) => {
+      if (inner.type === 'html') {
+        swallowed.add(`${code ?? 'the header'} (${inner.raw.trim()})`);
+      }
+    });
+  }
+  if (swallowed.size > 0) {
+    failures.push(
+      `/${ERRORS_FILE} carries text a markdown renderer reads as HTML and drops: ` +
+        [...swallowed].join(', '),
     );
   }
 }
@@ -443,6 +487,13 @@ if (scannedLinks < LINK_FLOOR) {
   );
 }
 
+if (captions < CAPTION_FLOOR) {
+  fail(
+    `read only ${captions} Examples caption(s) off the corpus (floor ${CAPTION_FLOOR}) — the ` +
+      'compiler has stopped lifting them, so a green run says nothing about the captions',
+  );
+}
+
 if (demoProse < DEMO_PROSE_FLOOR) {
   fail(
     `read only ${demoProse} demo heading(s) off the corpus (floor ${DEMO_PROSE_FLOOR}) — the ` +
@@ -454,7 +505,7 @@ console.log(
   `[check-llms-output] ok — ${expected.size} documents published as markdown, all listed in ` +
     `/${INDEX_FILE} and concatenated into /${FULL_FILE} ` +
     `(${Math.round(Buffer.byteLength(fullContents, 'utf8') / 1024)} kB); /${ERRORS_FILE} carries ` +
-    `all ${errorCodes.length} FORCDK-* code(s) the library emits; ${demoProse} demo heading(s) ` +
-    `reach the artifact of the page that renders them; ${scannedLinks} links ` +
+    `all ${errorCodes.length} FORCDK-* code(s) the library emits; ${captions} Examples ` +
+    `caption(s) and ${demoProse} demo heading(s) reach the artifact of the page that renders them; ${scannedLinks} links ` +
     `resolved (${sourceLinks} to repository source on GitHub, which is where those files are read)`,
 );

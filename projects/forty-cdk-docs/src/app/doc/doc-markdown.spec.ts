@@ -1,5 +1,8 @@
+import { Marked } from 'marked';
+
 import {
   documentMarkdown,
+  escapeInlineHtml,
   markdownLinksOf,
   rewriteMarkdownLinks,
 } from '../../../../../scripts/docs/doc-markdown.mjs';
@@ -112,6 +115,28 @@ describe('rewriteMarkdownLinks', () => {
   });
 });
 
+describe('escapeInlineHtml', () => {
+  const rendered = (text: string) => new Marked().parseInline(text);
+
+  it('keeps an element named in prose as text instead of handing it to the renderer as a tag', () => {
+    const escaped = escapeInlineHtml('Wrap the options in a <div forComboboxList> so it fits.');
+
+    expect(rendered(escaped)).toBe('Wrap the options in a &lt;div forComboboxList&gt; so it fits.');
+  });
+
+  it('leaves a code span alone, where the character is already literal', () => {
+    const text = 'Declare an `<ng-template forTableCellDef>` inside <for-table-body>.';
+
+    expect(escapeInlineHtml(text)).toBe(
+      'Declare an `<ng-template forTableCellDef>` inside \\<for-table-body>.',
+    );
+  });
+
+  it('closes a code span only on a backtick run as long as the one that opened it', () => {
+    expect(escapeInlineHtml('``a ` <b>`` then <c>')).toBe('``a ` <b>`` then \\<c>');
+  });
+});
+
 describe('documentMarkdown', () => {
   const document = compile({
     path: 'projects/forty-cdk/thing/README.md',
@@ -184,6 +209,18 @@ describe('the emitted markdown, over the whole corpus', () => {
       expect(shapeOf(again), document.path).toEqual(shapeOf(document));
       expect(tablesOf(again), document.path).toEqual(tablesOf(document));
       expect(again.lede, document.path).toEqual(document.lede);
+      expect(again.caption, document.path).toEqual(document.caption);
+    }
+  });
+
+  it('carries every Examples caption, the sentence the page prints above its hero', () => {
+    const captioned = emitted.filter(({ document }) => document.caption !== null);
+
+    expect(captioned.length).toBeGreaterThanOrEqual(50);
+    for (const { document, markdown } of captioned) {
+      const caption = rewriteMarkdownLinks(document.caption!, resolveHref);
+
+      expect(markdown, document.path).toContain(`## Examples\n\n${caption}\n`);
     }
   });
 
