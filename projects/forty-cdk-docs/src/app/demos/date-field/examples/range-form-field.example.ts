@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { form, FormField, required } from '@angular/forms/signals';
 import { type CalendarDate } from '@internationalized/date';
 import { type DateRange } from 'forty-cdk/shared';
+import { ForField, ForFieldError } from 'forty-cdk/field';
 import {
   ForDateRangeField,
   ForDateRangeFieldEnd,
@@ -20,6 +21,8 @@ interface Booking {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FormField,
+    ForField,
+    ForFieldError,
     ForDateRangeField,
     ForDateRangeFieldStart,
     ForDateRangeFieldEnd,
@@ -28,12 +31,13 @@ interface Booking {
   ],
   providers: [...provideInternationalizedDateAdapter()],
   template: `
-    <div class="range-form">
+    <div forField class="range-form">
       <div
         forDateRangeField
         class="range-field"
         [formField]="bookingForm.stay"
         ariaLabel="Stay dates"
+        #stay="forDateRangeField"
       >
         <div forDateRangeFieldStart class="range-endpoint" #start="forDateRangeFieldStart">
           @for (seg of start.segments(); track seg.id) {
@@ -59,8 +63,14 @@ interface Booking {
           }
         </div>
       </div>
-      @if (bookingForm.stay().touched() && !bookingForm.stay().valid()) {
-        <p class="range-error">Pick both a start and an end date for your stay.</p>
+      @if (stay.disordered() || (bookingForm.stay().touched() && !bookingForm.stay().valid())) {
+        <p forFieldError #err="forFieldError" class="range-error">
+          @if (stay.disordered()) {
+            The end date is before the start date.
+          } @else {
+            {{ err.messages().join(', ') }}
+          }
+        </p>
       }
     </div>
   `,
@@ -98,11 +108,11 @@ interface Booking {
     }
 
     .range-field[data-range-error] {
-      border-color: #ef4444;
+      border-color: var(--ex-danger, #b3261e);
     }
 
     .range-field[data-range-error]:focus-within {
-      box-shadow: 0 0 0 1px #ef4444;
+      box-shadow: 0 0 0 1px var(--ex-danger, #b3261e);
     }
 
     .range-endpoint {
@@ -139,7 +149,7 @@ interface Booking {
     .range-error {
       margin: 0;
       font-size: 0.85rem;
-      color: #ef4444;
+      color: var(--ex-danger, #b3261e);
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -152,6 +162,6 @@ interface Booking {
 export class DateRangeFieldFormFieldExample {
   protected readonly model = signal<Booking>({ stay: null });
   protected readonly bookingForm = form(this.model, (path) => {
-    required(path.stay, { message: 'A stay range is required' });
+    required(path.stay, { message: 'Pick both a start and an end date for your stay.' });
   });
 }

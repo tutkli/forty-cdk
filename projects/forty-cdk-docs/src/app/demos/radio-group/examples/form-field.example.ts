@@ -1,9 +1,10 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
-import { form, FormField, requiredError, validate } from '@angular/forms/signals';
+import { form, FormField, required } from '@angular/forms/signals';
+import { ForField, ForFieldError } from 'forty-cdk/field';
 import { ForRadio, ForRadioGroup } from 'forty-cdk/radio-group';
 
 interface Checkout {
-  readonly shipping: string;
+  readonly shipping: string | null;
 }
 
 interface RadioOption {
@@ -14,9 +15,9 @@ interface RadioOption {
 @Component({
   selector: 'app-radio-group-form-field-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormField, ForRadioGroup, ForRadio],
+  imports: [FormField, ForRadioGroup, ForRadio, ForField, ForFieldError],
   template: `
-    <div class="rg-form">
+    <div forField class="rg-form">
       <span id="rgf-label" class="rg-label">Shipping method</span>
       <div forRadioGroup class="rg" [formField]="checkoutForm.shipping" aria-labelledby="rgf-label">
         @for (opt of options; track opt.value) {
@@ -27,7 +28,7 @@ interface RadioOption {
         }
       </div>
       @if (checkoutForm.shipping().touched() && !checkoutForm.shipping().valid()) {
-        <p class="rg-error">Choose a shipping method.</p>
+        <p forFieldError #err="forFieldError" class="rg-error">{{ err.messages().join(', ') }}</p>
       }
     </div>
   `,
@@ -56,7 +57,7 @@ interface RadioOption {
     }
 
     .rg[data-touched][data-invalid] {
-      outline: 2px solid #ef4444;
+      outline: 2px solid var(--ex-danger, #b3261e);
       outline-offset: 2px;
     }
 
@@ -98,7 +99,7 @@ interface RadioOption {
     .rg-error {
       margin: 0;
       font-size: 0.85rem;
-      color: #ef4444;
+      color: var(--ex-danger, #b3261e);
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -115,10 +116,8 @@ export class RadioGroupFormFieldExample {
     { value: 'pickup', label: 'Store pickup' },
   ];
 
-  protected readonly model = signal<Checkout>({ shipping: '' });
+  protected readonly model = signal<Checkout>({ shipping: null });
   protected readonly checkoutForm = form(this.model, (path) => {
-    validate(path.shipping, (ctx) =>
-      ctx.value() === '' ? requiredError({ message: 'Choose a shipping method' }) : undefined,
-    );
+    required(path.shipping, { message: 'Choose a shipping method.' });
   });
 }

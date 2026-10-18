@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { form, FormField, required } from '@angular/forms/signals';
 import { type CalendarDateTime } from '@internationalized/date';
+import { ForField, ForFieldError } from 'forty-cdk/field';
 import { ForTimeField, ForTimeFieldLiteral, ForTimeFieldSegment } from 'forty-cdk/time-field';
 import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/internationalized-date';
 
@@ -11,10 +12,17 @@ interface Appointment {
 @Component({
   selector: 'app-time-field-form-field-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormField, ForTimeField, ForTimeFieldSegment, ForTimeFieldLiteral],
+  imports: [
+    FormField,
+    ForField,
+    ForFieldError,
+    ForTimeField,
+    ForTimeFieldSegment,
+    ForTimeFieldLiteral,
+  ],
   providers: [...provideInternationalizedDateTimeAdapter()],
   template: `
-    <div class="field-form">
+    <div forField class="field-form">
       <div
         forTimeField
         class="time-field"
@@ -33,7 +41,9 @@ interface Appointment {
         }
       </div>
       @if (appointmentForm.time().touched() && !appointmentForm.time().valid()) {
-        <p class="field-error">Pick an appointment time.</p>
+        <p forFieldError #err="forFieldError" class="field-error">
+          {{ err.messages().join(', ') }}
+        </p>
       }
     </div>
   `,
@@ -94,7 +104,7 @@ interface Appointment {
     .field-error {
       margin: 0;
       font-size: 0.85rem;
-      color: #ef4444;
+      color: var(--ex-danger, #b3261e);
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -107,6 +117,6 @@ interface Appointment {
 export class TimeFieldFormFieldExample {
   protected readonly model = signal<Appointment>({ time: null });
   protected readonly appointmentForm = form(this.model, (path) => {
-    required(path.time, { message: 'An appointment time is required' });
+    required(path.time, { message: 'Pick an appointment time.' });
   });
 }

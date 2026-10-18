@@ -224,7 +224,7 @@ interface FormStep {
     .stp-indicator[data-state='error'] {
       border-color: var(--ex-danger, #b3261e);
       background: var(--ex-danger, #b3261e);
-      color: #fff;
+      color: var(--ex-danger-contrast, #ffffff);
     }
 
     .stp-label {
@@ -364,7 +364,7 @@ export class StepperFormExample {
   ];
 
   protected restart(): void {
-    this.model.set({ email: '', password: '', name: '' });
+    this.signupForm().reset({ email: '', password: '', name: '' });
     this.step.set(0);
   }
 }

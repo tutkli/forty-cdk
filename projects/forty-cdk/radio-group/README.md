@@ -78,7 +78,7 @@ export class RadioGroupDefaultExample {
 
 ### Horizontal orientation
 
-`orientation='horizontal'` reflects `data-orientation` and switches arrow navigation to `ArrowLeft` / `ArrowRight` (swapped in RTL).
+`orientation='horizontal'` reflects `aria-orientation` / `data-orientation` for layout. All four arrow keys still move between radios in either orientation, and `ArrowLeft` / `ArrowRight` swap in RTL.
 
 ### Signal Forms
 
@@ -111,7 +111,7 @@ import { ForRadio, ForRadioGroup } from 'forty-cdk/radio-group';
   `,
 })
 export class DemoShipping {
-  readonly model = signal({ shipping: '' });
+  readonly model = signal<{ shipping: string | null }>({ shipping: null });
   readonly checkout = form(this.model, (s) => required(s.shipping));
 }
 ```

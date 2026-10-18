@@ -82,7 +82,7 @@ interface Signup {
     }
 
     .field[data-touched][data-invalid] .cb {
-      border-color: #ef4444;
+      border-color: var(--ex-danger, #b3261e);
     }
 
     .cb-icon {
@@ -106,7 +106,7 @@ interface Signup {
       margin: 0;
       font-size: 0.85rem;
       font-weight: 500;
-      color: #ef4444;
+      color: var(--ex-danger, #b3261e);
     }
 
     @media (prefers-reduced-motion: reduce) {

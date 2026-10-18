@@ -168,7 +168,7 @@ interface Booking {
     .dp-range-form-error {
       margin: 0;
       font-size: 0.85rem;
-      color: #ef4444;
+      color: var(--ex-danger, #b3261e);
     }
 
     .dp-range-form-trigger {

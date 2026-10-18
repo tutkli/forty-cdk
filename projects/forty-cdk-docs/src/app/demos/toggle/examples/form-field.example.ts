@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { form, FormField, requiredError, validate } from '@angular/forms/signals';
+import { ForField, ForFieldError } from 'forty-cdk/field';
 import { ForToggleGroup, ForToggleGroupItem } from 'forty-cdk/toggle';
 
 interface Layout {
@@ -9,9 +10,9 @@ interface Layout {
 @Component({
   selector: 'app-toggle-form-field-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormField, ForToggleGroup, ForToggleGroupItem],
+  imports: [FormField, ForToggleGroup, ForToggleGroupItem, ForField, ForFieldError],
   template: `
-    <div class="field">
+    <div forField class="field">
       <span id="tg-label" class="caption">Text alignment</span>
       <div forToggleGroup class="group" [formField]="layoutForm.align" aria-labelledby="tg-label">
         <button forToggleGroupItem class="toggle" value="left">Left</button>
@@ -19,7 +20,7 @@ interface Layout {
         <button forToggleGroupItem class="toggle" value="right">Right</button>
       </div>
       @if (layoutForm.align().touched() && !layoutForm.align().valid()) {
-        <p class="error">Pick an alignment.</p>
+        <p forFieldError #err="forFieldError" class="error">{{ err.messages().join(', ') }}</p>
       }
     </div>
   `,
@@ -50,7 +51,7 @@ interface Layout {
     }
 
     .group[data-touched][data-invalid] {
-      outline: 2px solid #ef4444;
+      outline: 2px solid var(--ex-danger, #b3261e);
       outline-offset: 3px;
     }
 
@@ -82,7 +83,7 @@ interface Layout {
     .error {
       margin: 0;
       font-size: 0.85rem;
-      color: #ef4444;
+      color: var(--ex-danger, #b3261e);
     }
   `,
 })
@@ -90,7 +91,7 @@ export class ToggleFormFieldExample {
   protected readonly model = signal<Layout>({ align: [] });
   protected readonly layoutForm = form(this.model, (path) => {
     validate(path.align, (ctx) =>
-      ctx.value().length === 0 ? requiredError({ message: 'Pick an alignment' }) : undefined,
+      ctx.value().length === 0 ? requiredError({ message: 'Pick an alignment.' }) : undefined,
     );
   });
 }

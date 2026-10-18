@@ -140,7 +140,7 @@ export class ApptTimeFormField {
 
 ### Time range
 
-`ForTimeRangeField` is the range variant, shipped from this same entry point. Two labelled endpoint groups share the hour cycle and bounds; each is its own tab stop, so `Tab` steps start → end while the arrows move between segments inside one endpoint.
+`ForTimeRangeField` is the range variant, shipped from this same entry point. Two labelled endpoint groups share the hour cycle and bounds; each is its own tab stop, so `Tab` steps start → end while the arrows move between segments inside one endpoint. Type a closing time before the opening time and a message under the field says so, read from `disordered()`, since the red border alone is a colour cue only.
 
 ### Bounded range
 
@@ -148,7 +148,7 @@ export class ApptTimeFormField {
 
 ### Range in Signal Forms
 
-`ForTimeRangeField` implements `FormValueControl<DateRange | null>`, so `[formField]` binds the committed range into the form and pulls validation back out. A half-entered or out-of-order range keeps `value()` null, so a `required` field stays invalid until both endpoints are filled and ordered.
+`ForTimeRangeField` implements `FormValueControl<DateRange | null>`, so `[formField]` binds the committed range into the form and pulls validation back out. A half-entered or out-of-order range keeps `value()` null, so a `required` field stays invalid until both endpoints are filled and ordered. The error message tells the two cases apart through `disordered()`.
 
 ## API
 
@@ -289,7 +289,7 @@ The endpoint groups each accept an `ariaLabel` input for their own group label, 
 
 ### Ordering
 
-The two endpoints are typed independently, so order is not guaranteed by construction. The field preserves the `DateRange` `end >= start` invariant by **never emitting an out-of-order range**: when both endpoints are complete but `start > end`, the typed segments are kept (not silently rewritten), `value` stays `null`, and the root reflects `aria-invalid="true"` + `data-range-error` so the disorder is perceivable and stylable. Editing either endpoint back into order emits the range. Two complete endpoints with an **equal** time compose a valid zero-length range (`start === end`), not `null`.
+The two endpoints are typed independently, so order is not guaranteed by construction. The field preserves the `DateRange` `end >= start` invariant by **never emitting an out-of-order range**: when both endpoints are complete but `start > end`, the typed segments are kept (not silently rewritten), `value` stays `null`, and the root reflects `aria-invalid="true"` + `data-range-error` so the disorder is perceivable and stylable. Editing either endpoint back into order emits the range. The border colour alone is not an error message, so read the same state from `disordered()` (through `#range="forTimeRangeField"`) and say it in words, as the Time range example does. Two complete endpoints with an **equal** time compose a valid zero-length range (`start === end`), not `null`.
 
 ### Overnight ranges
 

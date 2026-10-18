@@ -73,15 +73,15 @@ import { ForMeter, ForMeterIndicator } from 'forty-cdk/meter';
     }
 
     .indicator[data-quality='optimum'] {
-      background: #22c55e;
+      background: var(--ex-success, #1f7a4d);
     }
 
     .indicator[data-quality='sub-optimum'] {
-      background: #f59e0b;
+      background: var(--ex-warning, #a5651a);
     }
 
     .indicator[data-quality='even-less-good'] {
-      background: #ef4444;
+      background: var(--ex-danger, #b3261e);
     }
 
     @media (prefers-reduced-motion: reduce) {

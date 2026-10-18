@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { form, FormField, requiredError, validate } from '@angular/forms/signals';
+import { ForField, ForFieldError } from 'forty-cdk/field';
 import { ForSwitch } from 'forty-cdk/switch';
 
 interface Consent {
@@ -9,9 +10,9 @@ interface Consent {
 @Component({
   selector: 'app-switch-form-field-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormField, ForSwitch],
+  imports: [FormField, ForSwitch, ForField, ForFieldError],
   template: `
-    <div class="form">
+    <div forField class="form">
       <div class="row">
         <button
           forSwitch
@@ -24,7 +25,7 @@ interface Consent {
         <span id="sw-privacy-label" class="text">I accept the privacy policy</span>
       </div>
       @if (consentForm.privacy().touched() && !consentForm.privacy().valid()) {
-        <p class="error">You must accept the privacy policy to continue.</p>
+        <p forFieldError #err="forFieldError" class="error">{{ err.messages().join(', ') }}</p>
       }
     </div>
   `,
@@ -66,7 +67,7 @@ interface Consent {
     }
 
     .switch[data-touched][data-invalid] {
-      outline: 2px solid #ef4444;
+      outline: 2px solid var(--ex-danger, #b3261e);
       outline-offset: 3px;
     }
 
@@ -89,7 +90,7 @@ interface Consent {
     .error {
       margin: 0;
       font-size: 0.85rem;
-      color: #ef4444;
+      color: var(--ex-danger, #b3261e);
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -104,7 +105,9 @@ export class SwitchFormFieldExample {
   protected readonly model = signal<Consent>({ privacy: false });
   protected readonly consentForm = form(this.model, (path) => {
     validate(path.privacy, (ctx) =>
-      ctx.value() ? undefined : requiredError({ message: 'Accept the privacy policy' }),
+      ctx.value()
+        ? undefined
+        : requiredError({ message: 'You must accept the privacy policy to continue.' }),
     );
   });
 }
