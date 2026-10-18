@@ -12,7 +12,7 @@ import {
 import {
   type FloatingAlign,
   type FloatingSide,
-  type ListboxOverlayContext,
+  type ListboxOverlayPieceContext,
 } from 'forty-cdk/core-overlay';
 import type {
   SelectPositionEntry,
@@ -109,7 +109,7 @@ export interface ForSelectOverlayFacade {
 /**
  * The shared overlay-listbox coordination surface backing
  * {@link ForSelectOverlayFacade}: trigger / anchor / content registries + ids,
- * DOM-focus navigation, the open / close machine, the initial-focus /
+ * DOM-focus navigation and open-state typeahead, the open / close machine, the initial-focus /
  * close-reason state, and the dismiss / auto-focus emit forwarders. Backed by
  * the shared `ListboxOverlayController`, so child directives read it here
  * instead of the root re-forwarding each member.
@@ -117,7 +117,7 @@ export interface ForSelectOverlayFacade {
  * Internal — never re-exported from `public-api.ts`; pieces reach it through
  * {@link SelectContext}.
  */
-export type ForSelectOverlayContext<T = unknown> = ListboxOverlayContext<
+export type ForSelectOverlayContext<T = unknown> = ListboxOverlayPieceContext<
   ForSelectOptionHandle<T>,
   ForSelectInitialFocus,
   ForSelectCloseReason

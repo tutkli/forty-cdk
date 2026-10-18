@@ -91,7 +91,7 @@ export const REGISTRATION_SURFACES = {
     'TableDefRegistry',
   ],
   tabs: ['TabsContext', 'ForTabsContentHandle', 'ForTabsTriggerHandle'],
-  'time-picker': ['TimePickerContext', 'TimePickerPieceContext'],
+  'time-picker': ['TimePickerContext', 'TimePickerPieceContext', 'TimePickerOverlayContext'],
   toast: ['ToastContext', 'ForToastActionHandle', 'ForToastTextHandle'],
   tree: ['TreeContext', 'TreePieceContext', 'TreeVirtualization', 'TreeVirtualizationHost'],
   virtualization: ['VirtualViewportContext'],

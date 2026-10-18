@@ -142,12 +142,6 @@ export interface ListboxOverlayContext<H extends ListboxOverlayOptionHandle, Foc
 
   /** Move focus inside the open content in response to an arrow / Home / End key. */
   navigate(currentOption: HTMLElement, action: ListNavigationAction): void;
-  /**
-   * Open-state typeahead: focus the first enabled option after the event target whose
-   * accessible text matches the buffered prefix. Returns `true` when the key was consumed,
-   * so a Space the buffer took must not also activate.
-   */
-  handleTypeahead(event: KeyboardEvent): boolean;
   focusFirstEnabledOption(): boolean;
   focusLastEnabledOption(): boolean;
 
@@ -166,6 +160,31 @@ export interface ListboxOverlayContext<H extends ListboxOverlayOptionHandle, Foc
   requestClose(reason: CloseReason): void;
   emitAutoFocusOnOpen(): boolean;
   emitAutoFocusOnClose(): boolean;
+}
+
+/**
+ * {@link ListboxOverlayContext} plus the calls only a primitive's option pieces make, so the
+ * blessed surface a root publishes on `ctx.overlay` never carries them. Each primitive reads
+ * its `ctx.overlay` at this type through its own internal context.
+ *
+ * Internal core tier — exported from `forty-cdk/core-overlay` for the library's
+ * own entry points, with no semver guarantee.
+ *
+ * @typeParam H Primitive option-handle type.
+ * @typeParam Focus Initial-focus union.
+ * @typeParam CloseReason Close-reason union.
+ */
+export interface ListboxOverlayPieceContext<
+  H extends ListboxOverlayOptionHandle,
+  Focus,
+  CloseReason,
+> extends ListboxOverlayContext<H, Focus, CloseReason> {
+  /**
+   * Open-state typeahead: focus the first enabled option after the event target whose
+   * accessible text matches the buffered prefix. Returns `true` when the key was consumed,
+   * so a Space the buffer took must not also activate.
+   */
+  handleTypeahead(event: KeyboardEvent): boolean;
 }
 
 /**
@@ -196,7 +215,7 @@ export class ListboxOverlayController<
   H extends ListboxOverlayOptionHandle,
   Focus,
   CloseReason,
-> implements ListboxOverlayContext<H, Focus, CloseReason> {
+> implements ListboxOverlayPieceContext<H, Focus, CloseReason> {
   readonly #deps: ListboxOverlayControllerDeps<H, Focus, CloseReason>;
   readonly #items = new Collection<H>();
   readonly #typeahead = injectTypeahead();
