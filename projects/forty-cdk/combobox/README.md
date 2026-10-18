@@ -186,7 +186,7 @@ Click the `[forComboboxTrigger]` button, type into the search field inside the p
 
 ### Virtualized (1,000 options)
 
-The primitive never owns the scroll container, so it virtualizes with any windowing strategy. The demo uses a dependency-free one. The consumer renders only the visible window and wires `[totalCount]`, `[visibleRange]` and `[forComboboxOption][posInSet]`; `(scrollToIndex)` fires when navigation targets a row outside the window.
+The primitive never owns the scroll container, so it virtualizes with any windowing strategy. The demo uses a dependency-free one. The consumer renders only the visible window, adds `forComboboxVirtualized` to the combobox, and wires its `[totalCount]` and `[visibleRange]` plus `[forComboboxOption][posInSet]`; `(scrollToIndex)` fires when navigation targets a row outside the window.
 
 ## API
 
@@ -666,14 +666,17 @@ The same three inputs cover multi mode + chips: bind `<span forComboboxChip [val
 
 ## Virtualization
 
-For very large option sets (1k+) the consumer can render only the visible window and let the directive coordinate navigation across the full source. Three additive inputs / one output cover the wiring; non-virtualized usage is unchanged.
+For very large option sets (1k+) the consumer can render only the visible window and let the directive coordinate navigation across the full source. The wiring lives on `ForComboboxVirtualized` (`[forComboboxVirtualized]`, `exportAs: 'forComboboxVirtualized'`), placed on the same element as `[forCombobox]` and imported from `forty-cdk/combobox` next to `ForCombobox`. Non-virtualized usage is unchanged, and a combobox without the directive never bundles the virtualized navigation engine.
 
-| Input / Output                              | Purpose                                                                                                                                                                    |
-| ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `[totalCount]: number \| undefined`         | Length of the **filtered** source array. Drives `aria-setsize` and lets navigation walk past the rendered window. Leave `undefined` (default) for non-virtualized lists.   |
-| `[visibleRange]: [start, end) \| undefined` | Inclusive-exclusive index range currently rendered in the DOM. Pulled from your virtualizer's `getVirtualItems()`.                                                         |
-| `[forComboboxOption][posInSet]`             | Absolute index of this option in the source array. Required when virtualizing; the directive folds option data into a snapshot keyed by this index so it survives unmount. |
-| `(scrollToIndex)`                           | Emitted when arrow keys (or Home / End) need to land on an option whose absolute index falls outside `visibleRange()`. Wire to the virtualizer's `scrollToIndex(idx)`.     |
+| `ForComboboxVirtualized` member             | Purpose                                                                                                                                                                  |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `[totalCount]: number \| undefined`         | Length of the **filtered** source array. Drives `aria-setsize` and lets navigation walk past the rendered window. Leave `undefined` (default) for non-virtualized lists. |
+| `[visibleRange]: [start, end) \| undefined` | Inclusive-exclusive index range currently rendered in the DOM. Pulled from your virtualizer's `getVirtualItems()`.                                                       |
+| `[dataVersion]: unknown`                    | Bind any value that changes when the source is re-sorted or refreshed without its length changing, so navigation never lands on a stale off-window entry.                |
+| `(scrollToIndex)`                           | Emitted when arrow keys (or Home / End) need to land on an option whose absolute index falls outside `visibleRange()`. Wire to the virtualizer's `scrollToIndex(idx)`.   |
+| `invalidateSnapshot()`                      | The imperative twin of `[dataVersion]`, for a same-length refresh you cannot express through the input. No-op while `totalCount` is unset.                               |
+
+Each rendered option also binds `[forComboboxOption][posInSet]`, its absolute index in the source array. It is required when virtualizing: the directive keeps option data keyed by this index so it survives unmount.
 
 How navigation flows when virtualizing:
 
@@ -689,6 +692,7 @@ Inline autocomplete matches against the most recently rendered window overlaid w
 ```html
 <div
   forCombobox
+  forComboboxVirtualized
   [(query)]="query"
   [(value)]="value"
   [(open)]="open"
@@ -739,11 +743,11 @@ This uses the library's own [`injectVirtualizer`](../virtualization/README.md) c
 
 `[totalCount]` is also the result count the message pieces read: `[forComboboxStatus]`'s `count()` reports it rather than the size of the rendered window, so `{{ status.count() }} results.` announces the full count once and stays put while the window scrolls, and `[forComboboxEmpty]` stays hidden while a window with results has not rendered yet.
 
-When `[totalCount]` is omitted, the directive falls back to `options().length` and behaves exactly as before: `aria-setsize` is left to the platform default and navigation never emits `(scrollToIndex)`.
+When `[forComboboxVirtualized]` is absent or its `[totalCount]` is omitted, the combobox falls back to `options().length` and behaves exactly as before: `aria-setsize` is left to the platform default and navigation never emits `(scrollToIndex)`.
 
 > **Disabled options off-screen.** The directive learns an option's `disabled` only when it's been rendered at least once. While the consumer can pre-mark disabled rows with their own filter (most apps do), arrow nav cannot skip an off-screen disabled option it has never seen: it will land on it, the option will mount, and the next arrow press skips. Mark disabled rows in the source array if this matters.
 
-> **Listbox virtualization** ships the same contract: `[forListbox]` defaults to roving tabindex (DOM focus on the actual option element) and switches to the `aria-activedescendant` model when you set `[totalCount]`. See the [Listbox README "Virtualization"](../listbox/README.md#virtualization) section.
+> **Listbox virtualization** ships the same contract: `[forListbox]` defaults to roving tabindex (DOM focus on the actual option element) and switches to the `aria-activedescendant` model when you add `[forListboxVirtualized]` with `[totalCount]`. See the [Listbox README "Virtualization"](../listbox/README.md#virtualization) section.
 
 ## Writing direction
 
@@ -883,4 +887,4 @@ forty-cdk ships no styles: put your own class on each piece and key your CSS off
 
 ## Wrapping in a design system
 
-[Wrapping form primitives](../../../docs/wrapping-form-primitives.md) documents both supported wrapper patterns: `hostDirectives` with the exported `FOR_COMBOBOX_HOST_DIRECTIVE_INPUTS` / `FOR_COMBOBOX_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing.
+[Wrapping form primitives](../../../docs/wrapping-form-primitives.md) documents both supported wrapper patterns: `hostDirectives` with the exported `FOR_COMBOBOX_HOST_DIRECTIVE_INPUTS` / `FOR_COMBOBOX_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing. A virtualized wrapper adds `ForComboboxVirtualized` as a second `hostDirectives` entry and re-exposes its surface with `FOR_COMBOBOX_VIRTUALIZED_HOST_DIRECTIVE_INPUTS` / `FOR_COMBOBOX_VIRTUALIZED_HOST_DIRECTIVE_OUTPUTS`.

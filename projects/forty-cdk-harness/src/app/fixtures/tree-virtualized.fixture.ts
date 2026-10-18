@@ -6,7 +6,13 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { ForTree, ForTreeItem, ForTreeItemLabel, ForTreeItemToggle } from 'forty-cdk/tree';
+import {
+  ForTree,
+  ForTreeItem,
+  ForTreeItemLabel,
+  ForTreeItemToggle,
+  ForTreeVirtualized,
+} from 'forty-cdk/tree';
 import { injectVirtualizer } from 'forty-cdk/virtualization';
 
 interface TreeNode {
@@ -70,10 +76,11 @@ function buildFlat(roots: TreeNode[], expanded: ReadonlySet<string>): FlatNode[]
 @Component({
   selector: 'app-tree-virtualized-fixture',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ForTree, ForTreeItem, ForTreeItemLabel, ForTreeItemToggle],
+  imports: [ForTree, ForTreeItem, ForTreeItemLabel, ForTreeItemToggle, ForTreeVirtualized],
   template: `
     <ul
       forTree
+      forTreeVirtualized
       #scroll
       data-testid="tree"
       aria-label="Virtualized tree"

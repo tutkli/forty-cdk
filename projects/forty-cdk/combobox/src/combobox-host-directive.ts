@@ -39,7 +39,6 @@ export const FOR_COMBOBOX_HOST_DIRECTIVE_INPUTS = [
   'collisionPadding',
   'commitOnSelect',
   'compareWith',
-  'dataVersion',
   'dir',
   'dirty',
   'disabled',
@@ -63,8 +62,6 @@ export const FOR_COMBOBOX_HOST_DIRECTIVE_INPUTS = [
   'side',
   'sideOffset',
   'sticky',
-  'totalCount',
-  'visibleRange',
   'touched',
 ] as const;
 
@@ -77,7 +74,6 @@ export const FOR_COMBOBOX_HOST_DIRECTIVE_OUTPUTS = [
   'queryChange',
   'valueChange',
   'openChange',
-  'scrollToIndex',
   'escapeKeyDown',
   'pointerDownOutside',
   'focusOutside',
@@ -87,3 +83,21 @@ export const FOR_COMBOBOX_HOST_DIRECTIVE_OUTPUTS = [
   'touchedChange',
   'touch',
 ] as const;
+
+/**
+ * Exact public names of every `ForComboboxVirtualized` input. Spread it into the `inputs`
+ * array of a second `hostDirectives` entry, beside the `ForCombobox` one, so a wrapper
+ * component that virtualizes its options re-exposes the virtualization surface too.
+ */
+export const FOR_COMBOBOX_VIRTUALIZED_HOST_DIRECTIVE_INPUTS = [
+  'dataVersion',
+  'totalCount',
+  'visibleRange',
+] as const;
+
+/**
+ * Exact public names of every `ForComboboxVirtualized` output. Spread it into the
+ * `outputs` array of the same `hostDirectives` entry as
+ * {@link FOR_COMBOBOX_VIRTUALIZED_HOST_DIRECTIVE_INPUTS}.
+ */
+export const FOR_COMBOBOX_VIRTUALIZED_HOST_DIRECTIVE_OUTPUTS = ['scrollToIndex'] as const;

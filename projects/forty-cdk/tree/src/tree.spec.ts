@@ -18,6 +18,7 @@ import {
 } from '../../src/test-utils/contract';
 import { entryPointOf, LIBRARY_CODE } from '../../src/test-utils/source-scan';
 import { ForTree } from './tree';
+import { ForTreeVirtualized } from './tree-virtualized';
 import { ForTreeGroup } from './tree-group';
 import { ForTreeItem } from './tree-item';
 import { ForTreeItemCheckbox } from './tree-item-checkbox';
@@ -2418,10 +2419,11 @@ describe('ForTree', () => {
 
     describe('virtualized path', () => {
       @Component({
-        imports: [ForTree, ForTreeItem, ForTreeItemLabel],
+        imports: [ForTree, ForTreeItem, ForTreeItemLabel, ForTreeVirtualized],
         template: `
           <ul
             forTree
+            forTreeVirtualized
             data-test-tree
             [(value)]="picked"
             [totalCount]="3"
@@ -2642,10 +2644,11 @@ describe('ForTree', () => {
     }
 
     @Component({
-      imports: [ForTree, ForTreeItem, ForTreeItemLabel, ForTreeItemToggle],
+      imports: [ForTree, ForTreeItem, ForTreeItemLabel, ForTreeItemToggle, ForTreeVirtualized],
       template: `
         <ul
           forTree
+          forTreeVirtualized
           data-test-tree
           [(value)]="picked"
           [(expanded)]="open"
@@ -3184,10 +3187,11 @@ describe('ForTree', () => {
 
     describe('a refresh that rebuilds the position snapshot (#1971)', () => {
       @Component({
-        imports: [ForTree, ForTreeItem, ForTreeItemLabel],
+        imports: [ForTree, ForTreeItem, ForTreeItemLabel, ForTreeVirtualized],
         template: `
           <ul
             forTree
+            forTreeVirtualized
             data-test-tree
             [(value)]="picked"
             [totalCount]="flat().length"
@@ -3213,7 +3217,7 @@ describe('ForTree', () => {
         `,
       })
       class RefreshHost {
-        readonly tree = viewChild.required(ForTree);
+        readonly virtualized = viewChild.required(ForTreeVirtualized);
         readonly picked = signal<readonly string[]>([]);
         readonly order = signal<readonly string[]>(['a', 'b', 'c', 'd']);
         readonly version = signal(0);
@@ -3257,7 +3261,7 @@ describe('ForTree', () => {
           name: 'invalidateSnapshot() is called',
           refresh: (instance, order) => {
             instance.order.set(order);
-            instance.tree().invalidateSnapshot();
+            instance.virtualized().invalidateSnapshot();
           },
         },
         {
@@ -3366,9 +3370,9 @@ describe('ForTree', () => {
 
     it('static id on forTreeItem is preserved (hostId contract)', async () => {
       @Component({
-        imports: [ForTree, ForTreeItem, ForTreeItemLabel],
+        imports: [ForTree, ForTreeItem, ForTreeItemLabel, ForTreeVirtualized],
         template: `
-          <ul forTree [totalCount]="1" aria-label="Static">
+          <ul forTree forTreeVirtualized [totalCount]="1" aria-label="Static">
             <li
               forTreeItem
               value="a"
@@ -3396,10 +3400,11 @@ describe('ForTree', () => {
 
   describe('selectionFollowsFocus + virtualization guard (#1583)', () => {
     @Component({
-      imports: [ForTree, ForTreeItem, ForTreeItemLabel, ForTreeItemToggle],
+      imports: [ForTree, ForTreeItem, ForTreeItemLabel, ForTreeItemToggle, ForTreeVirtualized],
       template: `
         <ul
           forTree
+          forTreeVirtualized
           data-test-tree
           [(value)]="picked"
           [(expanded)]="open"
@@ -3628,10 +3633,11 @@ describe('ForTree', () => {
 
   describe('multi-select keyboard + virtualization guard', () => {
     @Component({
-      imports: [ForTree, ForTreeItem, ForTreeItemLabel],
+      imports: [ForTree, ForTreeItem, ForTreeItemLabel, ForTreeVirtualized],
       template: `
         <ul
           forTree
+          forTreeVirtualized
           data-test-tree
           [(value)]="picked"
           [multiple]="true"
@@ -3852,10 +3858,11 @@ describe('ForTree', () => {
     }
 
     @Component({
-      imports: [ForTree, ForTreeItem, ForTreeItemLabel],
+      imports: [ForTree, ForTreeItem, ForTreeItemLabel, ForTreeVirtualized],
       template: `
         <ul
           forTree
+          forTreeVirtualized
           data-test-tree
           [(value)]="picked"
           [compareWith]="compareWith"

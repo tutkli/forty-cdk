@@ -2,12 +2,10 @@ import {
   booleanAttribute,
   computed,
   Directive,
-  effect,
   ElementRef,
   inject,
   input,
   model,
-  numberAttribute,
   output,
   signal,
   type Signal,
@@ -25,24 +23,15 @@ import {
   type ListNavigationAction,
   resolveListNavigation,
   resolveTreeExpandCollapse,
-  runVirtualizedNavigatorBridge,
-  throwUnsupportedVirtualizedRangeSelect,
-  throwUnsupportedVirtualizedSelectionFollowsFocus,
   type WritingDirection,
   RovingTabindex,
   injectRovingFocusRestore,
   injectTextDirection,
   injectTypeahead,
   hostAriaLabel,
-  VirtualizedResume,
   type Unset,
 } from 'forty-cdk/core';
-import {
-  ActiveDescendantFocusModel,
-  type FocusModel,
-  RovingFocusModel,
-  type TreePositionEntry,
-} from './focus-model';
+import { type FocusModel, RovingFocusModel } from './focus-model';
 import {
   FOR_TREE_CONTAINER_CONTEXT,
   FOR_TREE_CONTEXT,
@@ -51,6 +40,8 @@ import {
   type ForTreeItemContext,
   type ForTreeItemHandle,
   type ForTreeVisibleNode,
+  type TreeVirtualization,
+  type TreeVirtualizationHost,
 } from './tree-context';
 import type { ForTreeItemActivateEvent } from './tree-item-activate-event';
 import { FOR_TREE_DEFAULTS } from 'forty-cdk/defaults';
@@ -140,7 +131,7 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
    * When true, multiple nodes can be selected. Single mode (default) replaces.
    *
    * Multi-select range keyboard (Shift+Arrow, Shift+Space, Ctrl/Cmd+A) is not
-   * supported together with virtualization (`totalCount` set): range selection
+   * supported together with virtualization (`[forTreeVirtualized]` with `totalCount` set): range selection
    * needs the full set of enabled nodes across the range, which is unavailable
    * while the list is partially unmounted. Pressing one of those combinations on
    * a virtualized multi-select tree throws in dev mode. Use
@@ -192,41 +183,6 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
   readonly descendantsOf = input<(value: T) => readonly T[]>();
 
   /**
-   * Total number of nodes in the flattened visible-node list. When set, enables
-   * the virtualized activedescendant focus model. Leave unset (default
-   * `undefined`) for the standard roving-tabindex model.
-   */
-  readonly totalCount = input(undefined, {
-    transform: (v: unknown): number | undefined => (v == null ? undefined : numberAttribute(v)),
-  });
-
-  /**
-   * Inclusive-exclusive `[start, end)` index range of the currently rendered
-   * nodes. The virtualizer provides this; the tree uses it to decide whether a
-   * navigation target is in the visible window.
-   */
-  readonly visibleRange = input<readonly [number, number] | undefined>(undefined);
-
-  /**
-   * Optional virtualized-only seam that tells the directive the flattened node
-   * list changed **without** a `totalCount` transition — a same-length re-sort
-   * or refresh. Bind any value that changes on such a refresh (a version
-   * counter, the array reference, a sort-key string); when it changes the
-   * position snapshot rebuilds from empty so navigation never resolves against a
-   * stale off-window entry. Leave unset (default) when the node count always
-   * changes on a refresh. Equivalent to calling {@link ForTree.invalidateSnapshot}
-   * imperatively.
-   */
-  readonly dataVersion = input<unknown>();
-
-  /**
-   * Emitted when keyboard navigation reaches a node outside the rendered
-   * window. The consumer passes this index to `injectVirtualizer`'s
-   * `scrollToIndex` so the correct node mounts.
-   */
-  readonly scrollToIndex = output<number>();
-
-  /**
    * Emitted once per press on a node — a click on its `[forTreeItemLabel]` or
    * `[forTreeItemCheckbox]`, or `Enter` / `Space` on the focused node, on the
    * roving and the virtualized path alike — before the selection is applied.
@@ -266,8 +222,8 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
    * where a move never changes the value. The default is read from
    * `provideForTreeDefaults` for the surrounding scope.
    *
-   * Not supported together with virtualization (`totalCount` set): the
-   * virtualized `aria-activedescendant` focus model resolves off-window
+   * Not supported together with virtualization (`[forTreeVirtualized]` with
+   * `totalCount` set): the virtualized `aria-activedescendant` focus model resolves off-window
    * navigation targets asynchronously, so selection cannot follow focus there
    * without deriving the committed value from a render side effect.
    * Keyboard-navigating a virtualized single-select tree with it set throws in
@@ -357,7 +313,15 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
     return null;
   });
 
-  readonly #virtualized = computed(() => this.totalCount() !== undefined);
+  readonly #virtualization = signal<TreeVirtualization<T> | null>(null);
+
+  readonly #virtualized = computed(() => this.#virtualization()?.totalCount() !== undefined);
+
+  /**
+   * Length of the flattened visible-node list while a `[forTreeVirtualized]`
+   * virtualizes the tree, `undefined` in the roving-tabindex path.
+   */
+  readonly totalCount = computed(() => this.#virtualization()?.totalCount());
 
   readonly #activeId = signal<string | null>(null);
 
@@ -367,12 +331,6 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
       active: () => this.#virtualized(),
       claim: (id) => this.#setActiveId(id),
     },
-  });
-
-  readonly #resume = new VirtualizedResume<T, TreePositionEntry<T>>({
-    totalCount: this.totalCount,
-    snapshotByPos: () => this.#requireActiveDescendantModel().snapshotByPos(),
-    compareWith: this.compareWith,
   });
 
   /**
@@ -415,53 +373,34 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
   });
 
   #rovingModel: RovingFocusModel<T> | null = null;
-  #activeDescendantModel: ActiveDescendantFocusModel<T> | null = null;
 
-  #requireActiveDescendantModel(): ActiveDescendantFocusModel<T> {
-    return (this.#activeDescendantModel ??= new ActiveDescendantFocusModel<T>({
-      items: this.#items.items,
-      totalCount: this.totalCount,
-      visibleRange: this.visibleRange,
-      getActiveId: () => this.#activeId(),
-      setActiveId: (id) => {
-        this.#pointer.suppress();
-        this.#setActiveId(id);
-      },
-      emitScrollToIndex: (idx) => {
-        this.#pointer.suppress();
-        this.scrollToIndex.emit(idx);
-      },
-      resume: this.#resume,
-      dataVersion: this.dataVersion,
-      typeahead: this.#typeahead,
-    }));
-  }
-
-  /**
-   * Force the virtualized position snapshot to rebuild from empty on the next
-   * fold, discarding stale off-window entries. Call after a same-length refresh
-   * of the flattened node list (a re-sort / reload that keeps `totalCount`
-   * unchanged) when you cannot express the change through the reactive
-   * `[dataVersion]` input. No-op when the tree is not virtualized (`totalCount`
-   * unset).
-   */
-  invalidateSnapshot(): void {
-    if (!this.#virtualized()) {
-      return;
-    }
-    this.#requireActiveDescendantModel().invalidateSnapshot();
+  /** The virtualized focus model; only reached while {@link #virtualized} holds. */
+  #virtualModel(): TreeVirtualization<T> {
+    return this.#virtualization()!;
   }
 
   #setActiveId(id: string | null): void {
     if (id !== null) {
-      this.#resume.clear();
+      this.#virtualization()?.resume.clear();
     }
     this.#activeId.set(id);
   }
 
+  private registerVirtualization(virtualization: TreeVirtualization): TreeVirtualizationHost {
+    this.#virtualization.set(virtualization as unknown as TreeVirtualization<T>);
+    return {
+      items: this.#items.items,
+      typeahead: this.#typeahead,
+      multiSelect: this.multiSelect,
+      getActiveId: () => this.#activeId(),
+      setActiveId: (id) => this.#setActiveId(id),
+      suppressPointer: () => this.#pointer.suppress(),
+    };
+  }
+
   #focusModel(): FocusModel<T> {
     if (this.#virtualized()) {
-      return this.#requireActiveDescendantModel();
+      return this.#virtualModel().focusModel();
     }
     return (this.#rovingModel ??= new RovingFocusModel<T>({
       roving: this.roving,
@@ -480,15 +419,6 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
 
   constructor() {
     injectRovingFocusRestore(this.roving);
-    // @sanctioned-pull(navigator-position-map): the rendered window is transient,
-    // so a window nothing reads during is lost to the lazy fold.
-    effect(() => {
-      runVirtualizedNavigatorBridge({
-        items: this.#items.items,
-        virtualized: this.#virtualized,
-        requireNavigator: () => this.#requireActiveDescendantModel(),
-      });
-    });
   }
 
   isExpanded(value: T | Unset): boolean {
@@ -633,7 +563,7 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
     const host = this.#host.nativeElement;
     if (this.multiple() && this.#isMultiSelectShortcut(event)) {
       event.preventDefault();
-      this.#throwUnsupportedVirtualizedMultiSelect();
+      this.#virtualModel().rejectRangeSelect();
       return;
     }
     if (event.key === ' ' && this.handleTypeahead(event)) {
@@ -767,29 +697,9 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
    * nothing — the `#virtualized()` gate makes the roving path inert.
    */
   #assertSelectionFollowsFocusSupported(): void {
-    if (this.#virtualized() && this.selectionFollowsFocus() && !this.multiSelect()) {
-      throwUnsupportedVirtualizedSelectionFollowsFocus({
-        primitive: 'tree',
-        focusModel: 'roving-tabindex',
-        collection: 'tree',
-      });
+    if (this.#virtualized()) {
+      this.#virtualModel().assertSelectionFollowsFocusSupported();
     }
-  }
-
-  /**
-   * The shortcut list is the trio `#isMultiSelectShortcut` detects, which is
-   * also the trio `[forTreeItem]` implements on the non-virtualized path — the
-   * tree spends `Ctrl+Shift+Home/End` on a plain focus move in both, so naming
-   * it here would report a restriction virtualization does not impose.
-   */
-  #throwUnsupportedVirtualizedMultiSelect(): void {
-    throwUnsupportedVirtualizedRangeSelect({
-      primitive: 'tree',
-      focusModel: 'roving-tabindex',
-      collection: 'tree',
-      shortcuts: 'Shift+Arrow, Shift+Space, Ctrl/Cmd+A',
-      alternative: 'Use `selectionMode="checkbox"` for multi-select over large virtualized trees',
-    });
   }
 
   registerItem(handle: ForTreeItemHandle<T>): void {
@@ -805,7 +715,7 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
   unregisterItem(handle: ForTreeItemHandle<T>): void {
     this.#items.unregister(handle);
     if (this.#virtualized() && this.#activeId() === handle.id()) {
-      this.#resume.retain(handle.itemIndex(), handle.value());
+      this.#virtualModel().resume.retain(handle.itemIndex(), handle.value());
       this.#activeId.set(null);
     }
   }

@@ -5,8 +5,13 @@ import {
   type ListNavigationAction,
   orphanContextError,
   type Unset,
+  type VirtualizedResume,
   type WritingDirection,
 } from 'forty-cdk/core';
+import type {
+  ListboxPositionEntry,
+  ListboxVirtualizedNavigator,
+} from './listbox-virtualized-navigator';
 
 export interface ForListboxOptionHandle<T = unknown> {
   readonly host: HTMLElement;
@@ -223,6 +228,45 @@ export interface ListboxPieceContext {
 export interface ListboxRegistrationContext {
   registerController(el: HTMLElement): void;
   unregisterController(el: HTMLElement): void;
+  /**
+   * Called by `[forListboxVirtualized]` from its constructor. Hands the root the
+   * virtualized focus model and returns the root state that model reads and
+   * writes.
+   */
+  registerVirtualization(virtualization: ListboxVirtualization): ListboxVirtualizationHost;
+}
+
+/**
+ * The virtualized `aria-activedescendant` focus model `[forListboxVirtualized]`
+ * lends the root. The root depends on this shape alone, so a listbox without the
+ * piece never references the navigation engine.
+ */
+export interface ListboxVirtualization<T = unknown> {
+  /** Full source length, or `undefined` while the piece is present but unset. */
+  readonly totalCount: Signal<number | undefined>;
+  /** The position the root resumes from once its active option unmounts. */
+  readonly resume: VirtualizedResume<T, ListboxPositionEntry<T>>;
+  /** The navigation engine, constructed on first use. */
+  navigator(): ListboxVirtualizedNavigator<T>;
+  /**
+   * Rejects a multi-select range shortcut, which the virtualized path does not
+   * support. Returns `true` when `event` was one, after preventing its default.
+   */
+  rejectRangeSelect(event: KeyboardEvent): boolean;
+  /** Rejects a keyboard move while `selectionFollowsFocus` is set. */
+  assertSelectionFollowsFocusSupported(): void;
+}
+
+/** The root state the virtualized focus model reads and writes. */
+export interface ListboxVirtualizationHost {
+  /** Whether arrow navigation wraps at the ends. */
+  readonly loop: () => boolean;
+  /** The active option's id. */
+  getActiveId(): string | null;
+  /** Move the active option, forgetting any retained resume position. */
+  setActiveId(id: string | null): void;
+  /** Scroll an option into view with the pointer-suppression window open. */
+  scrollActiveIntoView(host: HTMLElement): void;
 }
 
 /**

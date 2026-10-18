@@ -6,7 +6,13 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { ForTree, ForTreeItem, ForTreeItemLabel, ForTreeItemToggle } from 'forty-cdk/tree';
+import {
+  ForTree,
+  ForTreeItem,
+  ForTreeItemLabel,
+  ForTreeItemToggle,
+  ForTreeVirtualized,
+} from 'forty-cdk/tree';
 import { injectVirtualizer } from 'forty-cdk/virtualization';
 
 interface TreeNode {
@@ -59,7 +65,7 @@ function flatten(
 @Component({
   selector: 'app-tree-virtualized-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ForTree, ForTreeItem, ForTreeItemLabel, ForTreeItemToggle],
+  imports: [ForTree, ForTreeItem, ForTreeItemLabel, ForTreeItemToggle, ForTreeVirtualized],
   template: `
     <div class="vtree-stack">
       <div class="vtree-actions">
@@ -69,6 +75,7 @@ function flatten(
 
       <ul
         forTree
+        forTreeVirtualized
         #scroll
         class="vtree"
         aria-label="Project files"

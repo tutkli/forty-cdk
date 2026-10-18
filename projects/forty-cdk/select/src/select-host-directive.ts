@@ -34,7 +34,6 @@ export const FOR_SELECT_HOST_DIRECTIVE_INPUTS = [
   'clipUntilPositioned',
   'collisionPadding',
   'compareWith',
-  'dataVersion',
   'dir',
   'dirty',
   'disabled',
@@ -55,14 +54,11 @@ export const FOR_SELECT_HOST_DIRECTIVE_INPUTS = [
   'readonly',
   'required',
   'returnFocus',
-  'selectedIndex',
   'selectionFollowsFocus',
   'side',
   'sideOffset',
   'sticky',
-  'totalCount',
   'touched',
-  'visibleRange',
 ] as const;
 
 /**
@@ -79,7 +75,25 @@ export const FOR_SELECT_HOST_DIRECTIVE_OUTPUTS = [
   'interactOutside',
   'autoFocusOnOpen',
   'autoFocusOnClose',
-  'scrollToIndex',
   'touchedChange',
   'touch',
 ] as const;
+
+/**
+ * Exact public names of every `ForSelectVirtualized` input. Spread it into the `inputs`
+ * array of a second `hostDirectives` entry, beside the `ForSelect` one, so a wrapper
+ * component that virtualizes its options re-exposes the virtualization surface too.
+ */
+export const FOR_SELECT_VIRTUALIZED_HOST_DIRECTIVE_INPUTS = [
+  'dataVersion',
+  'selectedIndex',
+  'totalCount',
+  'visibleRange',
+] as const;
+
+/**
+ * Exact public names of every `ForSelectVirtualized` output. Spread it into the
+ * `outputs` array of the same `hostDirectives` entry as
+ * {@link FOR_SELECT_VIRTUALIZED_HOST_DIRECTIVE_INPUTS}.
+ */
+export const FOR_SELECT_VIRTUALIZED_HOST_DIRECTIVE_OUTPUTS = ['scrollToIndex'] as const;

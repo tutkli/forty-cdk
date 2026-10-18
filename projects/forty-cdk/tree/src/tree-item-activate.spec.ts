@@ -5,6 +5,7 @@ import { pressKey } from 'forty-cdk/testing';
 
 import { flush, renderHost } from '../../src/test-utils';
 import { ForTree } from './tree';
+import { ForTreeVirtualized } from './tree-virtualized';
 import { ForTreeItem } from './tree-item';
 import type { ForTreeItemActivateEvent } from './tree-item-activate-event';
 import { ForTreeItemCheckbox } from './tree-item-checkbox';
@@ -224,10 +225,11 @@ describe('ForTree (itemActivate)', () => {
 
   describe('virtualized path', () => {
     @Component({
-      imports: [ForTree, ForTreeItem, ForTreeItemLabel],
+      imports: [ForTree, ForTreeItem, ForTreeItemLabel, ForTreeVirtualized],
       template: `
         <ul
           forTree
+          forTreeVirtualized
           data-test-tree
           [totalCount]="values.length"
           [visibleRange]="range"

@@ -25,6 +25,7 @@ import { ForField, ForFieldDescription, ForFieldError, ForLabel } from 'forty-cd
 import { ForDialog } from 'forty-cdk/dialog';
 import { pressKey, pressWithMouse } from 'forty-cdk/testing';
 import { ForCombobox } from './combobox';
+import { ForComboboxVirtualized } from './combobox-virtualized';
 import { ForComboboxAnchor } from './combobox-anchor';
 import { ForComboboxChip } from './combobox-chip';
 import { ForComboboxChipRemove } from './combobox-chip-remove';
@@ -1707,9 +1708,9 @@ describe('ForCombobox', () => {
 
     it('stays hidden while a virtualized window with results has not rendered (#2146)', async () => {
       @Component({
-        imports: [...BASE_IMPORTS, ForComboboxEmpty],
+        imports: [...BASE_IMPORTS, ForComboboxEmpty, ForComboboxVirtualized],
         template: `
-          <div forCombobox [(open)]="open" [totalCount]="total()">
+          <div forCombobox forComboboxVirtualized [(open)]="open" [totalCount]="total()">
             <input forComboboxInput />
             @if (open()) {
               <div forComboboxContent>
@@ -4250,9 +4251,10 @@ describe('ForComboboxStatus', () => {
         ForComboboxContent,
         ForComboboxOption,
         ForComboboxStatus,
+        ForComboboxVirtualized,
       ],
       template: `
-        <div forCombobox [(open)]="open" [totalCount]="total()">
+        <div forCombobox forComboboxVirtualized [(open)]="open" [totalCount]="total()">
           <input forComboboxInput />
           @if (open()) {
             <div forComboboxContent>
@@ -4497,10 +4499,17 @@ describe('ForCombobox virtualization', () => {
    * `(scrollToIndex)` emissions and lets tests advance the visible range.
    */
   @Component({
-    imports: [ForCombobox, ForComboboxInput, ForComboboxContent, ForComboboxOption],
+    imports: [
+      ForCombobox,
+      ForComboboxInput,
+      ForComboboxContent,
+      ForComboboxOption,
+      ForComboboxVirtualized,
+    ],
     template: `
       <div
         forCombobox
+        forComboboxVirtualized
         [(query)]="query"
         [(value)]="value"
         [(open)]="open"
@@ -4574,9 +4583,15 @@ describe('ForCombobox virtualization', () => {
 
   describe('aria-posinset fallback (issue #1145 item 6)', () => {
     @Component({
-      imports: [ForCombobox, ForComboboxInput, ForComboboxContent, ForComboboxOption],
+      imports: [
+        ForCombobox,
+        ForComboboxInput,
+        ForComboboxContent,
+        ForComboboxOption,
+        ForComboboxVirtualized,
+      ],
       template: `
-        <div forCombobox [(open)]="open" [totalCount]="100">
+        <div forCombobox forComboboxVirtualized [(open)]="open" [totalCount]="100">
           <input forComboboxInput />
           @if (open()) {
             <div forComboboxContent>
@@ -4625,9 +4640,16 @@ describe('ForCombobox virtualization', () => {
         ForComboboxContent,
         ForComboboxList,
         ForComboboxOption,
+        ForComboboxVirtualized,
       ],
       template: `
-        <div forCombobox [(open)]="open" [totalCount]="ITEMS.length" [visibleRange]="range()">
+        <div
+          forCombobox
+          forComboboxVirtualized
+          [(open)]="open"
+          [totalCount]="ITEMS.length"
+          [visibleRange]="range()"
+        >
           <button forComboboxTrigger>Pick</button>
           @if (open()) {
             <div forComboboxContent>
@@ -4792,10 +4814,17 @@ describe('ForCombobox virtualization', () => {
     ];
 
     @Component({
-      imports: [ForCombobox, ForComboboxInput, ForComboboxContent, ForComboboxOption],
+      imports: [
+        ForCombobox,
+        ForComboboxInput,
+        ForComboboxContent,
+        ForComboboxOption,
+        ForComboboxVirtualized,
+      ],
       template: `
         <div
           forCombobox
+          forComboboxVirtualized
           [(query)]="query"
           [(value)]="value"
           [(open)]="open"

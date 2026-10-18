@@ -6,7 +6,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { ForListbox, ForListboxOption } from 'forty-cdk/listbox';
+import { ForListbox, ForListboxOption, ForListboxVirtualized } from 'forty-cdk/listbox';
 import { injectVirtualizer } from 'forty-cdk/virtualization';
 
 interface Item {
@@ -17,10 +17,11 @@ interface Item {
 @Component({
   selector: 'app-listbox-virtualized-fixture',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ForListbox, ForListboxOption],
+  imports: [ForListbox, ForListboxOption, ForListboxVirtualized],
   template: `
     <div
       forListbox
+      forListboxVirtualized
       #scroll
       data-testid="listbox"
       aria-label="Virtualized listbox"

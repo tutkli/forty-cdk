@@ -29,6 +29,7 @@ import {
 } from '../../src/test-utils/contract';
 import { ForFieldset } from 'forty-cdk/fieldset';
 import { ForListbox } from './listbox';
+import { ForListboxVirtualized } from './listbox-virtualized';
 import { ForListboxGroup } from './listbox-group';
 import { ForListboxGroupLabel } from './listbox-group-label';
 import { FOR_LISTBOX_OPTION, ForListboxOption } from './listbox-option';
@@ -2398,10 +2399,11 @@ describe('ForListbox', () => {
 
   describe('virtualized option windowing (Shape C)', () => {
     @Component({
-      imports: [ForListbox, ForListboxOption],
+      imports: [ForListbox, ForListboxOption, ForListboxVirtualized],
       template: `
         <div
           forListbox
+          forListboxVirtualized
           [(value)]="picked"
           [multiple]="isMulti()"
           [totalCount]="total()"
@@ -2740,10 +2742,11 @@ describe('ForListbox', () => {
 
     describe('typeahead across the window (issue #1970)', () => {
       @Component({
-        imports: [ForListbox, ForListboxOption],
+        imports: [ForListbox, ForListboxOption, ForListboxVirtualized],
         template: `
           <div
             forListbox
+            forListboxVirtualized
             [(value)]="picked"
             [totalCount]="total()"
             [visibleRange]="range()"
@@ -2898,10 +2901,11 @@ describe('ForListbox', () => {
 
   describe('selectionFollowsFocus + virtualization guard (#1583)', () => {
     @Component({
-      imports: [ForListbox, ForListboxOption],
+      imports: [ForListbox, ForListboxOption, ForListboxVirtualized],
       template: `
         <div
           forListbox
+          forListboxVirtualized
           data-test-lb
           [(value)]="picked"
           [totalCount]="total()"
@@ -3052,10 +3056,11 @@ describe('ForListbox', () => {
 
   describe('multi-select keyboard + virtualization guard', () => {
     @Component({
-      imports: [ForListbox, ForListboxOption],
+      imports: [ForListbox, ForListboxOption, ForListboxVirtualized],
       template: `
         <div
           forListbox
+          forListboxVirtualized
           data-test-lb
           [(value)]="picked"
           [multiple]="true"
@@ -3191,9 +3196,16 @@ describe('ForListbox', () => {
       });
 
       @Component({
-        imports: [ForListbox, ForListboxOption],
+        imports: [ForListbox, ForListboxOption, ForListboxVirtualized],
         template: `
-          <div forListbox data-test-lb [totalCount]="3" [visibleRange]="range" aria-label="Single">
+          <div
+            forListbox
+            forListboxVirtualized
+            data-test-lb
+            [totalCount]="3"
+            [visibleRange]="range"
+            aria-label="Single"
+          >
             @for (i of indices; track i) {
               <button type="button" forListboxOption [value]="'item-' + i" [posInSet]="i">
                 Item {{ i }}
@@ -3279,10 +3291,11 @@ describe('ForListbox', () => {
     }
 
     @Component({
-      imports: [...LISTBOX_IMPORTS],
+      imports: [...LISTBOX_IMPORTS, ForListboxVirtualized],
       template: `
         <div
           forListbox
+          forListboxVirtualized
           data-test-lb
           [(value)]="picked"
           [compareWith]="compareWith"

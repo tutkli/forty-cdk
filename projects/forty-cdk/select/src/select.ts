@@ -7,7 +7,6 @@ import {
   inject,
   input,
   model,
-  numberAttribute,
   output,
   signal,
   type Signal,
@@ -18,13 +17,9 @@ import {
   createPointerHighlight,
   injectHiddenInput,
   injectNativeFormResetToInitial,
-  isRangeSelectShortcut,
   LabelCache,
   lookupByValue,
   resolveListNavigation,
-  runVirtualizedNavigatorBridge,
-  throwUnsupportedVirtualizedRangeSelect,
-  throwUnsupportedVirtualizedSelectionFollowsFocus,
   type WritingDirection,
   RangeSelectionEngine,
   defaultCompareWith,
@@ -38,7 +33,6 @@ import {
   injectTypeahead,
   type VetoableEvent,
   type VetoableNativeEvent,
-  VirtualizedResume,
   boundEntries,
   type Unset,
 } from 'forty-cdk/core';
@@ -50,13 +44,11 @@ import {
   type ForSelectInitialFocus,
   type ForSelectOptionHandle,
   type ForSelectOverlayFacade,
+  type SelectVirtualization,
+  type SelectVirtualizationHost,
 } from './select-context';
 import { FOR_SELECT_DEFAULTS } from 'forty-cdk/defaults';
-import {
-  createSelectVirtualizedNavigator,
-  type SelectPositionEntry,
-  type SelectVirtualizedNavigator,
-} from './select-virtualized-navigator';
+import type { SelectVirtualizedNavigator } from './select-virtualized-navigator';
 
 /**
  * Headless implementation of the [WAI-ARIA select-only combobox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/examples/combobox-select-only/).
@@ -176,7 +168,7 @@ export class ForSelect<T = string>
    * selection, matching `ForListbox`.
    *
    * That range keyboard is not supported together with virtualization
-   * (`totalCount` set): range selection needs the full set of enabled options
+   * (`[forSelectVirtualized]` with `totalCount` set): range selection needs the full set of enabled options
    * across the range, which is unavailable while the list is partially
    * unmounted. Pressing one of those combinations on a virtualized multi-select
    * listbox throws in dev mode. Toggle options individually with Enter, Space,
@@ -228,60 +220,6 @@ export class ForSelect<T = string>
   readonly orientation = input<'vertical' | 'horizontal'>('vertical');
 
   /**
-   * Total number of items in the source data. When set, switches the listbox
-   * to the virtualized `aria-activedescendant` focus model and populates
-   * `aria-setsize` on each rendered option. Leave unset (default) for the
-   * standard DOM-focus model.
-   */
-  readonly totalCount = input(undefined, {
-    transform: (v: unknown): number | undefined => (v == null ? undefined : numberAttribute(v)),
-  });
-  /**
-   * Inclusive-exclusive `[start, end)` index range of the currently rendered options, as provided
-   * by `injectVirtualizer`. Decides whether a navigation target is inside the visible window.
-   */
-  readonly visibleRange = input<readonly [number, number] | undefined>(undefined);
-
-  /**
-   * Virtualized-only open-time reveal hint: the absolute index of the currently
-   * committed option within the full source dataset. Consulted on open by the
-   * scroll-to-selected algorithm as the authoritative index when the committed
-   * value's option lies outside the rendered window and has never been rendered
-   * (so its position is absent from the navigator snapshot). Bind it from the
-   * consumer's own value→index lookup.
-   *
-   * This is a reveal hint, **not** a selection source — `value` / `[(value)]`
-   * stay authoritative; it only decides which option is scrolled into view on
-   * open. It is singular: in multiple mode it seeds the first committed option.
-   * Leave unset (default) for a non-virtualized select, or when the committed
-   * option is always inside the initial window. An off-window committed value
-   * with no `[selectedIndex]` that was never rendered falls back to focusing the
-   * first enabled option; an out-of-range index (or an empty selection) is
-   * silently ignored.
-   */
-  readonly selectedIndex = input<number | undefined>(undefined);
-
-  /**
-   * Optional virtualized-only seam that tells the directive the source dataset
-   * changed **without** a `totalCount` transition — a same-length re-sort or
-   * refresh (e.g. sorting a 1000-row list). Bind any value that changes on such
-   * a refresh (a version counter, the array reference, a sort-key string); when
-   * it changes the position snapshot rebuilds from empty so navigation never
-   * resolves against a stale off-window entry. Leave unset (default) when the
-   * dataset only ever changes length. Equivalent to calling
-   * {@link ForSelect.invalidateSnapshot} imperatively.
-   */
-  readonly dataVersion = input<unknown>();
-  /**
-   * Emitted when navigation reaches an option outside the rendered window, or
-   * on open-time scroll-to-selected when the committed option's absolute index
-   * is resolvable — it is in the rendered window, was previously rendered (in
-   * the snapshot), or was supplied via `[selectedIndex]`. Pass to
-   * `injectVirtualizer`'s `scrollToIndex` so the correct option mounts.
-   */
-  readonly scrollToIndex = output<number>();
-
-  /**
    * Writing direction. When unset (default `null`), the inherited ambient
    * direction is resolved from the nearest ancestor carrying a `dir` attribute
    * (or `<html dir>`), defaulting to `'ltr'`. An explicit `[dir]` always wins.
@@ -298,8 +236,8 @@ export class ForSelect<T = string>
    * The default is read from `provideForSelectDefaults` for the surrounding
    * scope.
    *
-   * Not supported together with virtualization (`totalCount` set): the
-   * virtualized `aria-activedescendant` path resolves off-window navigation
+   * Not supported together with virtualization (`[forSelectVirtualized]` with
+   * `totalCount` set): the virtualized `aria-activedescendant` path resolves off-window navigation
    * targets asynchronously, so selection cannot follow focus there without
    * deriving the committed value from a render side effect. Keyboard-navigating
    * a virtualized listbox with it set throws in dev mode, from the move the
@@ -349,7 +287,13 @@ export class ForSelect<T = string>
    */
   readonly autoFocusOnClose = output<VetoableEvent>();
 
-  readonly #virtualized = computed(() => this.totalCount() !== undefined);
+  readonly #virtualization = signal<SelectVirtualization<T> | null>(null);
+
+  readonly #virtualized = computed(() => this.#virtualization()?.totalCount() !== undefined);
+
+  /** Full source length while a `[forSelectVirtualized]` virtualizes the select. */
+  private readonly totalCount = computed(() => this.#virtualization()?.totalCount());
+
   readonly #activeId = signal<string | null>(null);
 
   /** The mode the mounted `[forSelectContent]` published, `null` while none is mounted. */
@@ -393,15 +337,15 @@ export class ForSelect<T = string>
     onClose: () => {
       if (this.#virtualized()) {
         this.#activeId.set(null);
-        this.#resume.clear();
-        this.#navigator?.resetPending();
+        this.#virtualModel().resume.clear();
+        this.#virtualModel().navigator().resetPending();
       }
     },
     onNavigateFocus: (target) => this.#afterKeyboardFocus(target),
     onUnregisterOption: (handle) => {
       if (this.#virtualized() && this.#activeId() === handle.id()) {
         if (this.open()) {
-          this.#resume.retain(handle.posInSet(), handle.value());
+          this.#virtualModel().resume.retain(handle.posInSet(), handle.value());
         }
         this.#activeId.set(null);
       }
@@ -455,50 +399,27 @@ export class ForSelect<T = string>
 
   private readonly pointerHighlightedOption = this.#pointer.pointed;
 
-  #navigator: SelectVirtualizedNavigator<T> | null = null;
-
-  readonly #resume = new VirtualizedResume<T, SelectPositionEntry<T>>({
-    totalCount: this.totalCount,
-    snapshotByPos: () => this.#requireNavigator().snapshotByPos(),
-    compareWith: this.compareWith,
-  });
-
-  #requireNavigator(): SelectVirtualizedNavigator<T> {
-    return (this.#navigator ??= createSelectVirtualizedNavigator<T>(
-      {
-        items: this.#controller.options,
-        totalCount: this.totalCount,
-        visibleRange: this.visibleRange,
-        loop: this.loop,
-        getActiveId: () => this.#activeId(),
-        setActiveId: (id) => this.#setActiveId(id),
-        emitScrollToIndex: (idx) => this.scrollToIndex.emit(idx),
-        getResumePos: () => this.#resume.pos(),
-        dataVersion: this.dataVersion,
-      },
-      (host) => this.#scrollActiveIntoView(host),
-    ));
+  /** The virtualized focus model; only reached while {@link #virtualized} holds. */
+  #virtualModel(): SelectVirtualization<T> {
+    return this.#virtualization()!;
   }
 
   #setActiveId(id: string | null): void {
     if (id !== null) {
-      this.#resume.clear();
+      this.#virtualization()?.resume.clear();
     }
     this.#activeId.set(id);
   }
 
-  /**
-   * Force the virtualized position snapshot to rebuild from empty on the next
-   * fold, discarding stale off-window entries. Call after a same-length dataset
-   * refresh (a re-sort / reload that keeps `totalCount` unchanged) when you
-   * cannot express the change through the reactive `[dataVersion]` input. No-op
-   * when the select is not virtualized (`totalCount` unset).
-   */
-  invalidateSnapshot(): void {
-    if (!this.#virtualized()) {
-      return;
-    }
-    this.#requireNavigator().invalidateSnapshot();
+  private registerVirtualization(virtualization: SelectVirtualization): SelectVirtualizationHost {
+    this.#virtualization.set(virtualization as unknown as SelectVirtualization<T>);
+    return {
+      items: this.#controller.options,
+      loop: this.loop,
+      getActiveId: () => this.#activeId(),
+      setActiveId: (id) => this.#setActiveId(id),
+      scrollActiveIntoView: (host) => this.#scrollActiveIntoView(host),
+    };
   }
 
   /**
@@ -615,16 +536,6 @@ export class ForSelect<T = string>
       if (this.open()) {
         this.#labelCache.prime();
       }
-    });
-
-    // @sanctioned-pull(navigator-position-map): the rendered window is transient,
-    // so a window nothing reads during is lost to the lazy fold.
-    effect(() => {
-      runVirtualizedNavigatorBridge({
-        items: this.#controller.options,
-        virtualized: this.#virtualized,
-        requireNavigator: () => this.#requireNavigator(),
-      });
     });
   }
 
@@ -789,7 +700,7 @@ export class ForSelect<T = string>
     if (!this.#virtualized()) {
       return;
     }
-    const navigator = this.#requireNavigator();
+    const navigator = this.#virtualModel().navigator();
     const target = this.#controller.initialFocus();
     if (target !== 'selected') {
       navigator.navigate(target);
@@ -812,18 +723,7 @@ export class ForSelect<T = string>
     if (!this.#virtualized() || this.effectiveDisabled()) {
       return;
     }
-    if (
-      this.multiple() &&
-      isRangeSelectShortcut(event, { orientation: this.orientation(), dir: this.dir() })
-    ) {
-      event.preventDefault();
-      throwUnsupportedVirtualizedRangeSelect({
-        primitive: 'select',
-        focusModel: 'DOM-focus',
-        collection: 'listbox',
-        shortcuts: 'Shift+Arrow, Shift+Space, Ctrl/Cmd+A, Ctrl+Shift+Home/End',
-        alternative: 'Toggle options individually with Enter, Space, or click',
-      });
+    if (this.#virtualModel().rejectRangeSelect(event)) {
       return;
     }
     if (event.key === 'Tab') {
@@ -849,7 +749,7 @@ export class ForSelect<T = string>
     if (action) {
       event.preventDefault();
       this.#assertSelectionFollowsFocusSupported();
-      this.#requireNavigator().navigate(action);
+      this.#virtualModel().navigator().navigate(action);
       return;
     }
     this.#typeaheadVirtualized(event);
@@ -863,12 +763,8 @@ export class ForSelect<T = string>
    * covered: neither is a navigation the combination degrades.
    */
   #assertSelectionFollowsFocusSupported(): void {
-    if (this.#virtualized() && this.selectionFollowsFocus()) {
-      throwUnsupportedVirtualizedSelectionFollowsFocus({
-        primitive: 'select',
-        focusModel: 'DOM-focus',
-        collection: 'listbox',
-      });
+    if (this.#virtualized()) {
+      this.#virtualModel().assertSelectionFollowsFocusSupported();
     }
   }
 
@@ -903,7 +799,7 @@ export class ForSelect<T = string>
     if (this.value().length === 0) {
       return null;
     }
-    const idx = this.selectedIndex();
+    const idx = this.#virtualModel().selectedIndex();
     const total = this.totalCount();
     if (idx === undefined || total === undefined || idx < 0 || idx >= total) {
       return null;
@@ -914,7 +810,7 @@ export class ForSelect<T = string>
   #activeTarget(): { readonly value: T | Unset; readonly resumePos: number | null } | null {
     const id = this.#activeId();
     if (id === null) {
-      const resumed = this.#resume.resolve();
+      const resumed = this.#virtualModel().resume.resolve();
       return resumed === null || resumed.entry.disabled
         ? null
         : { value: resumed.entry.value, resumePos: resumed.pos };
@@ -929,7 +825,7 @@ export class ForSelect<T = string>
       return;
     }
     if (target.resumePos !== null) {
-      this.#requireNavigator().seedActive(target.resumePos);
+      this.#virtualModel().navigator().seedActive(target.resumePos);
     }
     this.activate(target.value);
   }
@@ -951,7 +847,7 @@ export class ForSelect<T = string>
    * `(scrollToIndex)` and settles once the option mounts.
    */
   #typeaheadVirtualized(event: KeyboardEvent): boolean {
-    const navigator = this.#requireNavigator();
+    const navigator = this.#virtualModel().navigator();
     const { handled, pos } = navigator.resolveTypeahead(
       this.#typeahead,
       event,

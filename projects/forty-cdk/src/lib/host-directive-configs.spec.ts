@@ -10,18 +10,27 @@ import {
 import {
   FOR_COMBOBOX_HOST_DIRECTIVE_INPUTS,
   FOR_COMBOBOX_HOST_DIRECTIVE_OUTPUTS,
+  FOR_COMBOBOX_VIRTUALIZED_HOST_DIRECTIVE_INPUTS,
+  FOR_COMBOBOX_VIRTUALIZED_HOST_DIRECTIVE_OUTPUTS,
   ForCombobox,
+  ForComboboxVirtualized,
 } from 'forty-cdk/combobox';
 import {
   FOR_LISTBOX_HOST_DIRECTIVE_INPUTS,
   FOR_LISTBOX_HOST_DIRECTIVE_OUTPUTS,
+  FOR_LISTBOX_VIRTUALIZED_HOST_DIRECTIVE_INPUTS,
+  FOR_LISTBOX_VIRTUALIZED_HOST_DIRECTIVE_OUTPUTS,
   ForListbox,
   ForListboxOption,
+  ForListboxVirtualized,
 } from 'forty-cdk/listbox';
 import {
   FOR_SELECT_HOST_DIRECTIVE_INPUTS,
   FOR_SELECT_HOST_DIRECTIVE_OUTPUTS,
+  FOR_SELECT_VIRTUALIZED_HOST_DIRECTIVE_INPUTS,
+  FOR_SELECT_VIRTUALIZED_HOST_DIRECTIVE_OUTPUTS,
   ForSelect,
+  ForSelectVirtualized,
 } from 'forty-cdk/select';
 import {
   FOR_DATE_FIELD_HOST_DIRECTIVE_INPUTS,
@@ -129,6 +138,12 @@ const cases: readonly ConfigCase[] = [
     outputs: FOR_COMBOBOX_HOST_DIRECTIVE_OUTPUTS,
   },
   {
+    name: 'ForComboboxVirtualized',
+    directive: ForComboboxVirtualized,
+    inputs: FOR_COMBOBOX_VIRTUALIZED_HOST_DIRECTIVE_INPUTS,
+    outputs: FOR_COMBOBOX_VIRTUALIZED_HOST_DIRECTIVE_OUTPUTS,
+  },
+  {
     name: 'ForDateField',
     directive: ForDateField,
     inputs: FOR_DATE_FIELD_HOST_DIRECTIVE_INPUTS,
@@ -171,6 +186,12 @@ const cases: readonly ConfigCase[] = [
     outputs: FOR_LISTBOX_HOST_DIRECTIVE_OUTPUTS,
   },
   {
+    name: 'ForListboxVirtualized',
+    directive: ForListboxVirtualized,
+    inputs: FOR_LISTBOX_VIRTUALIZED_HOST_DIRECTIVE_INPUTS,
+    outputs: FOR_LISTBOX_VIRTUALIZED_HOST_DIRECTIVE_OUTPUTS,
+  },
+  {
     name: 'ForNumberInput',
     directive: ForNumberInput,
     inputs: FOR_NUMBER_INPUT_HOST_DIRECTIVE_INPUTS,
@@ -199,6 +220,12 @@ const cases: readonly ConfigCase[] = [
     directive: ForSelect,
     inputs: FOR_SELECT_HOST_DIRECTIVE_INPUTS,
     outputs: FOR_SELECT_HOST_DIRECTIVE_OUTPUTS,
+  },
+  {
+    name: 'ForSelectVirtualized',
+    directive: ForSelectVirtualized,
+    inputs: FOR_SELECT_VIRTUALIZED_HOST_DIRECTIVE_INPUTS,
+    outputs: FOR_SELECT_VIRTUALIZED_HOST_DIRECTIVE_OUTPUTS,
   },
   {
     name: 'ForSlider',

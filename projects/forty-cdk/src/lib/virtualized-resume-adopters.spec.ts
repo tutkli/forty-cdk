@@ -5,11 +5,23 @@ import {
   ForComboboxContent,
   ForComboboxInput,
   ForComboboxOption,
+  ForComboboxVirtualized,
 } from 'forty-cdk/combobox';
-import { ForListbox, ForListboxController, ForListboxOption } from 'forty-cdk/listbox';
-import { ForSelect, ForSelectContent, ForSelectOption, ForSelectTrigger } from 'forty-cdk/select';
+import {
+  ForListbox,
+  ForListboxController,
+  ForListboxOption,
+  ForListboxVirtualized,
+} from 'forty-cdk/listbox';
+import {
+  ForSelect,
+  ForSelectContent,
+  ForSelectOption,
+  ForSelectTrigger,
+  ForSelectVirtualized,
+} from 'forty-cdk/select';
 import { pressKey } from 'forty-cdk/testing';
-import { ForTree, ForTreeItem, ForTreeItemLabel } from 'forty-cdk/tree';
+import { ForTree, ForTreeItem, ForTreeItemLabel, ForTreeVirtualized } from 'forty-cdk/tree';
 
 import { afterEachOverlayCleanup, flush, renderHost, type RenderResult } from '../test-utils';
 import { LIBRARY_CODE } from '../test-utils/source-scan';
@@ -34,11 +46,12 @@ abstract class WindowedHost {
 }
 
 @Component({
-  imports: [ForListbox, ForListboxOption],
+  imports: [ForListbox, ForListboxOption, ForListboxVirtualized],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div
       forListbox
+      forListboxVirtualized
       data-keys
       aria-label="Rows"
       [(value)]="picked"
@@ -57,12 +70,13 @@ abstract class WindowedHost {
 class ListboxHost extends WindowedHost {}
 
 @Component({
-  imports: [ForListbox, ForListboxController, ForListboxOption],
+  imports: [ForListbox, ForListboxController, ForListboxOption, ForListboxVirtualized],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <input [forListboxController]="list" aria-label="Rows" data-keys />
     <div
       forListbox
+      forListboxVirtualized
       #list="forListbox"
       aria-label="Rows"
       [(value)]="picked"
@@ -81,11 +95,12 @@ class ListboxHost extends WindowedHost {}
 class ListboxControllerHost extends WindowedHost {}
 
 @Component({
-  imports: [ForSelect, ForSelectTrigger, ForSelectContent, ForSelectOption],
+  imports: [ForSelect, ForSelectTrigger, ForSelectContent, ForSelectOption, ForSelectVirtualized],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div
       forSelect
+      forSelectVirtualized
       [(open)]="open"
       [(value)]="picked"
       [totalCount]="20"
@@ -110,11 +125,12 @@ class SelectHost extends WindowedHost {
 }
 
 @Component({
-  imports: [ForTree, ForTreeItem, ForTreeItemLabel],
+  imports: [ForTree, ForTreeItem, ForTreeItemLabel, ForTreeVirtualized],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <ul
       forTree
+      forTreeVirtualized
       data-keys
       aria-label="Rows"
       [(value)]="picked"
@@ -140,11 +156,18 @@ class SelectHost extends WindowedHost {
 class TreeHost extends WindowedHost {}
 
 @Component({
-  imports: [ForCombobox, ForComboboxInput, ForComboboxContent, ForComboboxOption],
+  imports: [
+    ForCombobox,
+    ForComboboxInput,
+    ForComboboxContent,
+    ForComboboxOption,
+    ForComboboxVirtualized,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div
       forCombobox
+      forComboboxVirtualized
       [(open)]="open"
       [(value)]="picked"
       [autoHighlight]="false"
@@ -172,6 +195,7 @@ class ComboboxHost extends WindowedHost {
 interface ResumeCase {
   readonly name: string;
   readonly owner: string;
+  readonly piece: string;
   readonly host: Type<WindowedHost>;
   readonly pressesToSecondRow: number;
   readonly typeahead: boolean;
@@ -181,6 +205,7 @@ const CASES: readonly ResumeCase[] = [
   {
     name: 'listbox',
     owner: 'listbox/src/listbox.ts',
+    piece: 'listbox/src/listbox-virtualized.ts',
     host: ListboxHost,
     pressesToSecondRow: 2,
     typeahead: true,
@@ -188,6 +213,7 @@ const CASES: readonly ResumeCase[] = [
   {
     name: 'listbox driven by a controller',
     owner: 'listbox/src/listbox.ts',
+    piece: 'listbox/src/listbox-virtualized.ts',
     host: ListboxControllerHost,
     pressesToSecondRow: 3,
     typeahead: false,
@@ -195,6 +221,7 @@ const CASES: readonly ResumeCase[] = [
   {
     name: 'select',
     owner: 'select/src/select.ts',
+    piece: 'select/src/select-virtualized.ts',
     host: SelectHost,
     pressesToSecondRow: 2,
     typeahead: true,
@@ -202,6 +229,7 @@ const CASES: readonly ResumeCase[] = [
   {
     name: 'tree',
     owner: 'tree/src/tree.ts',
+    piece: 'tree/src/tree-virtualized.ts',
     host: TreeHost,
     pressesToSecondRow: 2,
     typeahead: true,
@@ -209,6 +237,7 @@ const CASES: readonly ResumeCase[] = [
   {
     name: 'combobox',
     owner: 'combobox/src/combobox.ts',
+    piece: 'combobox/src/combobox-virtualized.ts',
     host: ComboboxHost,
     pressesToSecondRow: 3,
     typeahead: false,
@@ -284,15 +313,17 @@ describe('virtualized resume position adopters (issue #2123)', () => {
       .sort();
 
     expect(navigatesVirtually.length).toBeGreaterThan(3);
-    expect([...new Set(CASES.map((c) => c.owner))].sort()).toEqual(navigatesVirtually);
+    expect([...new Set(CASES.flatMap((c) => [c.owner, c.piece]))].sort()).toEqual(
+      navigatesVirtually,
+    );
   });
 
   it('retains the position through the shared VirtualizedResume in every covered root', () => {
-    for (const owner of new Set(CASES.map((c) => c.owner))) {
+    for (const { owner, piece } of CASES) {
+      expect(LIBRARY_CODE.get(piece), piece).toMatch(/new VirtualizedResume</);
       const code = LIBRARY_CODE.get(owner)!;
-      expect(code, owner).toMatch(/new VirtualizedResume</);
-      expect(code, owner).toMatch(/#resume\.retain\(/);
-      expect(code, owner).toMatch(/#resume\.clear\(\)/);
+      expect(code, owner).toMatch(/\.resume\.retain\(/);
+      expect(code, owner).toMatch(/\.resume\.clear\(\)/);
     }
   });
 

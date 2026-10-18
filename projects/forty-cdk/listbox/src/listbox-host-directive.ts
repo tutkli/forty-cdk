@@ -28,7 +28,6 @@ export const FOR_LISTBOX_HOST_DIRECTIVE_INPUTS = [
   'value',
   'ariaLabel',
   'compareWith',
-  'dataVersion',
   'dir',
   'dirty',
   'disabled',
@@ -43,9 +42,7 @@ export const FOR_LISTBOX_HOST_DIRECTIVE_INPUTS = [
   'readonly',
   'required',
   'selectionFollowsFocus',
-  'totalCount',
   'touched',
-  'visibleRange',
 ] as const;
 
 /**
@@ -54,8 +51,25 @@ export const FOR_LISTBOX_HOST_DIRECTIVE_INPUTS = [
  * {@link FOR_LISTBOX_HOST_DIRECTIVE_INPUTS}.
  */
 export const FOR_LISTBOX_HOST_DIRECTIVE_OUTPUTS = [
-  'scrollToIndex',
   'touch',
   'touchedChange',
   'valueChange',
 ] as const;
+
+/**
+ * Exact public names of every `ForListboxVirtualized` input. Spread it into the `inputs`
+ * array of a second `hostDirectives` entry, beside the `ForListbox` one, so a wrapper
+ * component that virtualizes its options re-exposes the virtualization surface too.
+ */
+export const FOR_LISTBOX_VIRTUALIZED_HOST_DIRECTIVE_INPUTS = [
+  'dataVersion',
+  'totalCount',
+  'visibleRange',
+] as const;
+
+/**
+ * Exact public names of every `ForListboxVirtualized` output. Spread it into the
+ * `outputs` array of the same `hostDirectives` entry as
+ * {@link FOR_LISTBOX_VIRTUALIZED_HOST_DIRECTIVE_INPUTS}.
+ */
+export const FOR_LISTBOX_VIRTUALIZED_HOST_DIRECTIVE_OUTPUTS = ['scrollToIndex'] as const;

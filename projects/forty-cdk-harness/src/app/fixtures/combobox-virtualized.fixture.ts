@@ -14,6 +14,7 @@ import {
   ForComboboxContent,
   ForComboboxInput,
   ForComboboxOption,
+  ForComboboxVirtualized,
 } from 'forty-cdk/combobox';
 import { injectVirtualizer } from 'forty-cdk/virtualization';
 
@@ -25,10 +26,17 @@ interface Item {
 @Component({
   selector: 'app-combobox-virtualized-fixture',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ForCombobox, ForComboboxInput, ForComboboxContent, ForComboboxOption],
+  imports: [
+    ForCombobox,
+    ForComboboxInput,
+    ForComboboxContent,
+    ForComboboxOption,
+    ForComboboxVirtualized,
+  ],
   template: `
     <div
       forCombobox
+      forComboboxVirtualized
       [(query)]="query"
       [(value)]="value"
       [(open)]="open"

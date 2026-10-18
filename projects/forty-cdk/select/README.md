@@ -217,7 +217,7 @@ With `position="item-aligned"`, open the list: Germany, the preselected country,
 
 ### Virtualized (5,000 options)
 
-Setting `[totalCount]` switches `ForSelect` to the virtualized activedescendant model: `[forSelectContent]` becomes the single `Tab` stop and the active option is tracked by `aria-activedescendant`, so rows recycle as the listbox scrolls. The window is rendered with the library's `injectVirtualizer` core.
+Adding `forSelectVirtualized` with `[totalCount]` switches `ForSelect` to the virtualized activedescendant model: `[forSelectContent]` becomes the single `Tab` stop and the active option is tracked by `aria-activedescendant`, so rows recycle as the listbox scrolls. The window is rendered with the library's `injectVirtualizer` core.
 
 ## API
 
@@ -318,7 +318,7 @@ Moving the pointer over an enabled option hands it `data-highlighted`, so exactl
 Four properties of the pointer channel:
 
 - **It never selects and never moves DOM focus**, not even with `selectionFollowsFocus` set, because that input commits on every _keyboard_ focus move and hovering is not one. The pointer's own click still activates, and the multi-select range anchor `Shift+Space` spans from is untouched.
-- **The keyboard takes it back on the next move.** In the default path the highlight falls back to the DOM-focused option, so the first arrow / typeahead move drops the pointer highlight; in the virtualized path (`totalCount` set) hover moves `aria-activedescendant` itself, so the highlight and the option `Enter` activates never disagree there.
+- **The keyboard takes it back on the next move.** In the default path the highlight falls back to the DOM-focused option, so the first arrow / typeahead move drops the pointer highlight; in the virtualized path (`[forSelectVirtualized]` with `totalCount` set) hover moves `aria-activedescendant` itself, so the highlight and the option `Enter` activates never disagree there.
 - **Moving the pointer off `[forSelectContent]` releases it.** In the default path the highlight goes back to the DOM-focused option (the one `Enter` activates), so an open listbox never keeps a row decorated with the cursor somewhere else on the page. Crossing between two adjacent options is not a leave: the highlight moves straight from one to the other without blinking off. In the virtualized path the pointer's claim persists, because there it _is_ `aria-activedescendant` and dropping it would leave the listbox with no active option.
 - **A programmatic scroll cannot hijack it.** Opening the listbox scrolls the option that received focus into view, and keyboard navigation scrolls the active one. Either can slide a different option under a stationary cursor and make the browser fire a synthetic `pointermove` for it. Moves arriving in a short window after such a scroll are ignored, so the focused option keeps the highlight a mouse-opened listbox gives it (see [Initial focus on open](#initial-focus-on-open)).
 
@@ -568,7 +568,7 @@ Multi mode uses the same two inputs, with `[(value)]` as a `readonly City[]` and
 
 ## Virtualization
 
-For selects with thousands of options, bind `[totalCount]` to enable the **virtualized activedescendant focus model** backed by `injectVirtualizer`. The non-virtualized path (no `[totalCount]`) is byte-for-byte unchanged.
+For selects with thousands of options, add `[forSelectVirtualized]` to the `[forSelect]` element and bind its `[totalCount]` to enable the **virtualized activedescendant focus model** backed by `injectVirtualizer`. `ForSelectVirtualized` is exported from `forty-cdk/select`, so add it to your component's `imports` next to `ForSelect`. The non-virtualized path (no directive, or no `[totalCount]`) is byte-for-byte unchanged, and a select without the directive never bundles the virtualized navigation engine.
 
 ### Focus-model switch
 
@@ -579,15 +579,20 @@ For selects with thousands of options, bind `[totalCount]` to enable the **virtu
 
 In both paths the pointer takes `data-highlighted` over too (see [Pointer highlight](#pointer-highlight)).
 
-### Inputs and output
+### `ForSelectVirtualized`
 
-| Binding                | Type                        | Description                                                                                                                                                                                                                     |
+Placed on the same element as `[forSelect]` (`exportAs: 'forSelectVirtualized'`).
+
+| Member                 | Type                        | Description                                                                                                                                                                                                                     |
 | ---------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `[totalCount]`         | `number`                    | Full source length. Switches to the virtualized path and populates `aria-setsize` on every rendered option.                                                                                                                     |
+| `[totalCount]`         | `number`                    | Full source length. Switches to the virtualized path and populates `aria-setsize` on every rendered option. Leave unset for the default DOM-focus path.                                                                         |
 | `[visibleRange]`       | `readonly [number, number]` | Inclusive-exclusive rendered window provided by `injectVirtualizer`'s `.range()`.                                                                                                                                               |
 | `[selectedIndex]`      | `number`                    | Absolute index of the committed option in the full source. Consulted on open to scroll an off-window, never-rendered selection into view. Bind from your value→index lookup. Reveal hint only: `[(value)]` stays authoritative. |
+| `[dataVersion]`        | `unknown`                   | Bind any value that changes when the data is re-sorted or refreshed without its length changing, so navigation never lands on a stale off-window entry. Leave unset when the data only ever changes length.                     |
 | `(scrollToIndex)`      | `number`                    | Emitted when navigation reaches an off-screen option. Pass to `injectVirtualizer`'s `scrollToIndex()`.                                                                                                                          |
-| `[posInSet]` on option | `number`                    | Zero-based absolute index of the option in the full source. Required per option in the virtualized path.                                                                                                                        |
+| `invalidateSnapshot()` | method                      | The imperative twin of `[dataVersion]`: call it after a same-length refresh you cannot express through the input. No-op while `totalCount` is unset.                                                                            |
+
+Each rendered `[forSelectOption]` also binds `[posInSet]` (`number`), its zero-based absolute index in the full source, which the virtualized path requires.
 
 ### Navigation flow
 
@@ -600,6 +605,7 @@ On open, `[forSelectContent]` seeds `aria-activedescendant` per the trigger's hi
 ```html
 <div
   forSelect
+  forSelectVirtualized
   #select="forSelect"
   [(value)]="value"
   [totalCount]="items.length"
@@ -644,8 +650,8 @@ readonly v = injectVirtualizer({
 
 ### Intentional limitations
 
-- **No multi-select range modifiers in the virtualized path.** Shift+Arrow, Shift+Space, Ctrl+A, and Ctrl+Shift+Home/End are not implemented, because range operations require knowledge of every intermediate position, which is unavailable in a windowed render. Pressing one of these combinations on a virtualized multi-select select (`[multiple]` + `[totalCount]`) throws in dev mode rather than silently doing nothing, so the unsupported path surfaces during development; production builds no-op. Per-option toggling via Enter, Space, or click works normally.
-- **Typeahead reaches only positions the window has rendered at least once.** The search runs over the persisted position snapshot rather than the live options, so an option the virtualizer has since unmounted is still reachable. The match moves `aria-activedescendant` to it and emits `(scrollToIndex)` so your virtualizer brings it back. A position the window has **never** rendered carries no text the library can match: the keystroke is consumed, the buffer grows, and nothing moves. The shape that triggers it is a first open of a `[totalCount]="10000"` select where the user types before scrolling, and a `[dataVersion]` bump or `invalidateSnapshot()` narrows the reachable set back to the current window. Arrow / `Home` / `End` / `PageUp` / `PageDown` navigation reaches every position regardless (it walks absolute indices, not text), so that is the workaround for a target the user cannot type their way to; rendering a larger window widens the reachable set.
+- **No multi-select range modifiers in the virtualized path.** Shift+Arrow, Shift+Space, Ctrl+A, and Ctrl+Shift+Home/End are not implemented, because range operations require knowledge of every intermediate position, which is unavailable in a windowed render. Pressing one of these combinations on a virtualized multi-select select (`[multiple]` + `[forSelectVirtualized]` with `[totalCount]`) throws in dev mode rather than silently doing nothing, so the unsupported path surfaces during development; production builds no-op. Per-option toggling via Enter, Space, or click works normally.
+- **Typeahead reaches only positions the window has rendered at least once.** The search runs over the persisted position snapshot rather than the live options, so an option the virtualizer has since unmounted is still reachable. The match moves `aria-activedescendant` to it and emits `(scrollToIndex)` so your virtualizer brings it back. A position the window has **never** rendered carries no text the library can match: the keystroke is consumed, the buffer grows, and nothing moves. The shape that triggers it is a first open of a `[totalCount]="10000"` select where the user types before scrolling, and a `[dataVersion]` bump or `ForSelectVirtualized.invalidateSnapshot()` narrows the reachable set back to the current window. Arrow / `Home` / `End` / `PageUp` / `PageDown` navigation reaches every position regardless (it walks absolute indices, not text), so that is the workaround for a target the user cannot type their way to; rendering a larger window widens the reachable set.
 - **Cold-open committed-index resolution.** On the very first open, if the committed value has never been rendered (the option has never scrolled into the window), the position snapshot is empty and `[forSelect]` falls back to focusing the first enabled option. This mirrors the `[forSelectValue]` / `[itemToLabel]` cold-cache limitation: supply `[itemToLabel]` to render the label and open the listbox once to prime the snapshot.
 
 ## Single mode (default)
@@ -751,4 +757,4 @@ forty-cdk ships no styles: put your own class on each piece and key your CSS off
 
 ## Wrapping in a design system
 
-[Wrapping form primitives](../../../docs/wrapping-form-primitives.md) documents both supported wrapper patterns: `hostDirectives` with the exported `FOR_SELECT_HOST_DIRECTIVE_INPUTS` / `FOR_SELECT_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing.
+[Wrapping form primitives](../../../docs/wrapping-form-primitives.md) documents both supported wrapper patterns: `hostDirectives` with the exported `FOR_SELECT_HOST_DIRECTIVE_INPUTS` / `FOR_SELECT_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing. A virtualized wrapper adds `ForSelectVirtualized` as a second `hostDirectives` entry and re-exposes its surface with `FOR_SELECT_VIRTUALIZED_HOST_DIRECTIVE_INPUTS` / `FOR_SELECT_VIRTUALIZED_HOST_DIRECTIVE_OUTPUTS`.

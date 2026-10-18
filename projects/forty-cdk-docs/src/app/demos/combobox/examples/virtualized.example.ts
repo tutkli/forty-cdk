@@ -14,6 +14,7 @@ import {
   ForComboboxEmpty,
   ForComboboxInput,
   ForComboboxOption,
+  ForComboboxVirtualized,
 } from 'forty-cdk/combobox';
 
 const ITEM_HEIGHT = 36;
@@ -42,10 +43,12 @@ interface VirtualRow {
     ForComboboxOption,
     ForComboboxEmpty,
     ForComboboxClear,
+    ForComboboxVirtualized,
   ],
   template: `
     <div
       forCombobox
+      forComboboxVirtualized
       #combobox="forCombobox"
       class="virt-combobox"
       [(query)]="query"

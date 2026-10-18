@@ -189,7 +189,7 @@ Type part of a category name: the tree narrows to the matches, expands their anc
 
 ### Virtualized (12,300 nodes)
 
-For huge trees, bind `[totalCount]` to switch `ForTree` to the activedescendant model over a consumer-owned virtual window. We flatten the expanded tree to a linear list, feed its length to `injectVirtualizer`, and render only the visible slice. Each `[forTreeItem]` gets its absolute `[itemIndex]` plus `level` / `setSize` / `posInSet` so ARIA stays correct.
+For huge trees, add `forTreeVirtualized` with `[totalCount]` to switch `ForTree` to the activedescendant model over a consumer-owned virtual window. We flatten the expanded tree to a linear list, feed its length to `injectVirtualizer`, and render only the visible slice. Each `[forTreeItem]` gets its absolute `[itemIndex]` plus `level` / `setSize` / `posInSet` so ARIA stays correct.
 
 ## Multi select
 
@@ -425,19 +425,23 @@ providers: [provideForTreeDefaults({ selectionFollowsFocus: true })];
 
 ## Virtualization
 
-For very large trees (thousands of nodes) bind `[totalCount]` to switch to an **activedescendant focus model** over a consumer-owned virtualized window.
+For very large trees (thousands of nodes) add `[forTreeVirtualized]` to the `[forTree]` element and bind its `[totalCount]` to switch to an **activedescendant focus model** over a consumer-owned virtualized window. `ForTreeVirtualized` is exported from `forty-cdk/tree`; add it to your component's `imports` next to `ForTree`. A tree without the directive never bundles the virtualized navigation engine.
 
 Render that window with `injectVirtualizer`, not the [`*forVirtualFor` ergonomic layer](../virtualization/README.md#ergonomic-layer). `*forVirtualFor` writes the flat `aria-setsize` / `aria-posinset` on each row root on every render, which overwrites the per-level values `[forTreeItem]` binds from `[setSize]` / `[posInSet]` once the window moves.
 
 ### Opt-in API
 
-#### `ForTree` additions
+#### `ForTreeVirtualized`
 
-| API             | Type                                            | Description                                                                                                                      |
-| --------------- | ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `totalCount`    | `input<number \| undefined>`                    | Total flattened node count. Setting this switches the tree to the activedescendant focus model. Leave unset for roving-tabindex. |
-| `visibleRange`  | `input<readonly [number, number] \| undefined>` | Inclusive-exclusive `[start, end)` index range of the currently rendered nodes. Provided by `injectVirtualizer`.                 |
-| `scrollToIndex` | `output<number>`                                | Emitted when keyboard navigation reaches a node outside the rendered window. Forward to `injectVirtualizer`'s `scrollToIndex`.   |
+Placed on the same element as `[forTree]` (`exportAs: 'forTreeVirtualized'`). `ForTree` keeps a read-only `totalCount` signal that reports the count bound here.
+
+| API                    | Type                                            | Description                                                                                                                                                                                                           |
+| ---------------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `totalCount`           | `input<number \| undefined>`                    | Total flattened node count. Setting this switches the tree to the activedescendant focus model. Leave unset for roving-tabindex.                                                                                      |
+| `visibleRange`         | `input<readonly [number, number] \| undefined>` | Inclusive-exclusive `[start, end)` index range of the currently rendered nodes. Provided by `injectVirtualizer`.                                                                                                      |
+| `dataVersion`          | `input<unknown>`                                | Bind any value that changes when the flattened list is re-sorted or refreshed without its length changing, so navigation never lands on a stale off-window entry. Leave unset when the list only ever changes length. |
+| `scrollToIndex`        | `output<number>`                                | Emitted when keyboard navigation reaches a node outside the rendered window. Forward to `injectVirtualizer`'s `scrollToIndex`.                                                                                        |
+| `invalidateSnapshot()` | method                                          | The imperative twin of `dataVersion`: call it after a same-length refresh you cannot express through the input. No-op while `totalCount` is unset.                                                                    |
 
 #### `ForTreeItem` additions (virtualized path only)
 
@@ -461,7 +465,7 @@ Render that window with `injectVirtualizer`, not the [`*forVirtualFor` ergonomic
 
 1. Consumer flattens their visible tree into a flat list, computing `level`, `setSize`, `posInSet`, and `itemIndex` for each node (using the true sibling totals: off-window siblings contribute their real counts because the consumer knows them).
 2. `injectVirtualizer({ count: flatCount, estimateSize, scrollElement })` drives the render window.
-3. The tree host receives `(scrollToIndex)` when keyboard navigation needs a node outside the window; the consumer forwards the index to `v.scrollToIndex(idx, { align: 'auto' })`.
+3. `[forTreeVirtualized]` on the tree host emits `(scrollToIndex)` when keyboard navigation needs a node outside the window; the consumer forwards the index to `v.scrollToIndex(idx, { align: 'auto' })`.
 4. Once the target node mounts (carrying the requested `[itemIndex]`), the bridge effect resolves the pending activedescendant.
 
 ### Consumer example
@@ -475,7 +479,13 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { ForTree, ForTreeItem, ForTreeItemLabel, ForTreeItemToggle } from 'forty-cdk/tree';
+import {
+  ForTree,
+  ForTreeItem,
+  ForTreeItemLabel,
+  ForTreeItemToggle,
+  ForTreeVirtualized,
+} from 'forty-cdk/tree';
 import { injectVirtualizer } from 'forty-cdk/virtualization';
 
 interface TreeNode {
@@ -517,10 +527,11 @@ function flatten(nodes: TreeNode[], expanded: ReadonlySet<string>, level = 1): F
 @Component({
   selector: 'app-virtual-tree',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ForTree, ForTreeItem, ForTreeItemLabel, ForTreeItemToggle],
+  imports: [ForTree, ForTreeItem, ForTreeItemLabel, ForTreeItemToggle, ForTreeVirtualized],
   template: `
     <ul
       forTree
+      forTreeVirtualized
       #scroll
       aria-label="Files"
       [(value)]="selected"
@@ -576,7 +587,7 @@ export class VirtualTree {
 The following behaviors are unavailable or bounded in the virtualized path and are documented intentional limitations (same as listbox/select virtualization):
 
 - **Multi-select range modifiers** (Shift+ArrowUp/Down, Shift+Space, Ctrl/Cmd+A) are unsupported: pressing one on a virtualized `[multiple]` tree throws in dev mode (a no-op in production) rather than silently degrading. Range selection requires knowing the full list of enabled nodes in the range, which is not available when the list is partially unmounted. Use `selectionMode="checkbox"` (each node toggles independently, so no range is needed) for multi-select over large trees.
-- **Typeahead reaches only positions the window has rendered at least once.** The search runs over the persisted position snapshot rather than the live nodes, so a node the virtualizer has since unmounted is still reachable. The match moves `aria-activedescendant` to it and emits `(scrollToIndex)` so your virtualizer brings it back. A position the window has **never** rendered carries no text the library can match: the keystroke is consumed, the buffer grows, and nothing moves. The shape that triggers it is a freshly-rendered `[totalCount]` tree where the user types before scrolling, and a `[dataVersion]` bump or `invalidateSnapshot()` narrows the reachable set back to the current window. Arrow / `Home` / `End` navigation reaches every position regardless (it walks absolute indices, not text), so that is the workaround for a target the user cannot type their way to; rendering a larger window widens the reachable set.
+- **Typeahead reaches only positions the window has rendered at least once.** The search runs over the persisted position snapshot rather than the live nodes, so a node the virtualizer has since unmounted is still reachable. The match moves `aria-activedescendant` to it and emits `(scrollToIndex)` so your virtualizer brings it back. A position the window has **never** rendered carries no text the library can match: the keystroke is consumed, the buffer grows, and nothing moves. The shape that triggers it is a freshly-rendered `[totalCount]` tree where the user types before scrolling, and a `[dataVersion]` bump or `ForTreeVirtualized.invalidateSnapshot()` narrows the reachable set back to the current window. Arrow / `Home` / `End` navigation reaches every position regardless (it walks absolute indices, not text), so that is the workaround for a target the user cannot type their way to; rendering a larger window widens the reachable set.
 - **Cascade reconciles only the ancestors in the rendered window.** A parent's own entry in `[(value)]` follows its descendants through the rows the tree can see, so when a fully checked parent has scrolled out of the window and the user unchecks one of its children, the parent stays in the value while it reads `mixed` once scrolled back. Submit the categories you derive from `checkState()` or `descendantsOf`, not a parent's own entry.
 - **`*` (expand-all-siblings)** is dropped. It requires knowing all siblings at the focused node's level, including those outside the window.
 

@@ -1,4 +1,5 @@
 export { ForTree } from './tree';
+export { ForTreeVirtualized } from './tree-virtualized';
 export { ForTreeItem } from './tree-item';
 export { ForTreeItemLabel } from './tree-item-label';
 export { ForTreeItemToggle } from './tree-item-toggle';

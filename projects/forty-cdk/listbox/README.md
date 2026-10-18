@@ -146,7 +146,7 @@ export class DemoPriorities {
 
 ### Virtualized (10,000 options)
 
-Setting `[totalCount]` switches `ForListbox` to the activedescendant model: the container becomes the single `Tab` stop and the active option is tracked by `aria-activedescendant`, so options recycle as you scroll. `Arrow` / `Home` / `End` reach options outside the rendered window via `(scrollToIndex)`.
+Adding `forListboxVirtualized` with `[totalCount]` switches `ForListbox` to the activedescendant model: the container becomes the single `Tab` stop and the active option is tracked by `aria-activedescendant`, so options recycle as you scroll. `Arrow` / `Home` / `End` reach options outside the rendered window via `(scrollToIndex)`.
 
 ## Object values
 
@@ -264,7 +264,7 @@ A key press that belongs to an IME composition never lifts, whatever `liftKey` r
 
 Drag an option past a small threshold to reorder; a short press without movement still selects (the post-drag click is suppressed). A floating preview follows the pointer and drop geometry is resolved in 2D, so vertical lists, horizontal lists, and wrapping chip grids all work without configuring `orientation`.
 
-> **Scope:** `[forListboxReorder]` targets the standard roving-tabindex listbox. A virtualized listbox (`[totalCount]` set) is left untouched, since reordering a windowed subset is ill-defined.
+> **Scope:** `[forListboxReorder]` targets the standard roving-tabindex listbox. A virtualized listbox (`[forListboxVirtualized]` with `[totalCount]` set) is left untouched, since reordering a windowed subset is ill-defined.
 
 While a reorder is in flight, `data-dragging` is reflected on two pieces:
 
@@ -299,18 +299,23 @@ provideForListboxDefaults({
 
 ## Virtualization
 
-Setting `[totalCount]` on `[forListbox]` enables the **activedescendant focus model**: the listbox container becomes the single Tab stop (`tabindex="0"`) and focus never moves to individual options. Keyboard navigation and selection work exactly as in the roving-tabindex path, but the active option is tracked by `aria-activedescendant` instead of DOM focus, so the active row can be unmounted as it scrolls out of the window.
+Adding `[forListboxVirtualized]` with `[totalCount]` to the `[forListbox]` element enables the **activedescendant focus model**: the listbox container becomes the single Tab stop (`tabindex="0"`) and focus never moves to individual options. Keyboard navigation and selection work exactly as in the roving-tabindex path, but the active option is tracked by `aria-activedescendant` instead of DOM focus, so the active row can be unmounted as it scrolls out of the window.
 
-Without `[totalCount]` (the default), the roving-tabindex model is used unchanged.
+`ForListboxVirtualized` is exported from `forty-cdk/listbox`; add it to your component's `imports` next to `ForListbox`. Without it, or while its `[totalCount]` is unset, the roving-tabindex model is used unchanged. A listbox without the directive never bundles the virtualized navigation engine, so a short list pays nothing for it.
 
-### Inputs and output
+### `ForListboxVirtualized`
 
-| Input / Output                 | Type                                     | Description                                                                                                                  |
-| ------------------------------ | ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `[totalCount]`                 | `number \| undefined`                    | Total number of items in the source data. Setting this switches to the activedescendant model.                               |
-| `[visibleRange]`               | `readonly [number, number] \| undefined` | Inclusive-exclusive `[start, end)` range of rendered options. Provided by `injectVirtualizer`.                               |
-| `[forListboxOption][posInSet]` | `number \| null`                         | Zero-based absolute position of this option in the full data. Required in the virtualized path.                              |
-| `(scrollToIndex)`              | `number`                                 | Emitted when navigation lands on an off-window option. Pass to `injectVirtualizer`'s `scrollToIndex` to recenter the window. |
+Placed on the same element as `[forListbox]` (`exportAs: 'forListboxVirtualized'`).
+
+| Member                 | Type                                     | Description                                                                                                                                                                                                 |
+| ---------------------- | ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `[totalCount]`         | `number \| undefined`                    | Total number of items in the source data. Setting this switches to the activedescendant model; leave it unset for the roving-tabindex model.                                                                |
+| `[visibleRange]`       | `readonly [number, number] \| undefined` | Inclusive-exclusive `[start, end)` range of rendered options. Provided by `injectVirtualizer`.                                                                                                              |
+| `[dataVersion]`        | `unknown`                                | Bind any value that changes when the data is re-sorted or refreshed without its length changing, so navigation never lands on a stale off-window entry. Leave unset when the data only ever changes length. |
+| `(scrollToIndex)`      | `number`                                 | Emitted when navigation lands on an off-window option. Pass to `injectVirtualizer`'s `scrollToIndex` to recenter the window.                                                                                |
+| `invalidateSnapshot()` | method                                   | The imperative twin of `[dataVersion]`: call it after a same-length refresh you cannot express through the input. No-op while `totalCount` is unset.                                                        |
+
+Each rendered option also binds `[forListboxOption][posInSet]` (`number | null`), its zero-based absolute position in the full data, which the virtualized path requires.
 
 ### Focus-model switch
 
@@ -323,7 +328,7 @@ Both paths reflect `data-highlighted=""` on the active option, so consumer CSS f
 
 ### Navigation flow
 
-1. Consumer provides `[totalCount]`, `[visibleRange]`, and handles `(scrollToIndex)`.
+1. Consumer adds `forListboxVirtualized` to the listbox, provides `[totalCount]` and `[visibleRange]`, and handles `(scrollToIndex)`.
 2. On focus, the listbox seeds `aria-activedescendant` to the first selected enabled option, or the first enabled option ordered by `posInSet`.
 3. Arrow / Home / End navigation computes the target index against the full `totalCount`. If the target is inside `[visibleRange]`, `aria-activedescendant` is set immediately. If outside, `(scrollToIndex)` is emitted with the target index.
 4. When the consumer's virtualizer scrolls and the target option mounts, the listbox resolves the pending navigation and sets `aria-activedescendant`.
@@ -339,7 +344,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { ForListbox, ForListboxOption } from 'forty-cdk/listbox';
+import { ForListbox, ForListboxOption, ForListboxVirtualized } from 'forty-cdk/listbox';
 import { injectVirtualizer } from 'forty-cdk/virtualization';
 
 interface Item {
@@ -350,10 +355,11 @@ interface Item {
 @Component({
   selector: 'demo-virtualized-listbox',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ForListbox, ForListboxOption],
+  imports: [ForListbox, ForListboxOption, ForListboxVirtualized],
   template: `
     <div
       forListbox
+      forListboxVirtualized
       #scroll
       aria-label="Virtualized items"
       [(value)]="picked"
@@ -397,8 +403,8 @@ export class DemoVirtualizedListbox {
 
 ### Intentional limitations
 
-- **Multi-select range modifiers** (Shift+Arrow, Shift+Space, Ctrl+A, Ctrl+Shift+Home/End) are not available in the virtualized path. These require the full materialized option set to compute ranges, which contradicts windowing. Pressing one of these combinations on a virtualized multi-select listbox (`[multiple]` + `[totalCount]`) throws in dev mode rather than silently doing nothing, so the unsupported path surfaces during development; production builds no-op. Per-option toggling via Enter, Space, or click works normally in both single and multi mode.
-- **Typeahead reaches only positions the window has rendered at least once.** The search runs over the persisted position snapshot rather than the live options, so an option the virtualizer has since unmounted is still reachable: the match moves `aria-activedescendant` to it and emits `(scrollToIndex)` so your virtualizer brings it back. A position the window has **never** rendered carries no text the library can match: the keystroke is consumed, the buffer grows, and nothing moves. The shape that triggers it is a freshly-rendered `[totalCount]="10000"` listbox where the user types before scrolling, and a `[dataVersion]` bump or `invalidateSnapshot()` narrows the reachable set back to the current window. Arrow / `Home` / `End` navigation reaches every position regardless (it walks absolute indices, not text), so that is the workaround for a target the user cannot type their way to; rendering a larger window widens the reachable set.
+- **Multi-select range modifiers** (Shift+Arrow, Shift+Space, Ctrl+A, Ctrl+Shift+Home/End) are not available in the virtualized path. These require the full materialized option set to compute ranges, which contradicts windowing. Pressing one of these combinations on a virtualized multi-select listbox (`[multiple]` + `[forListboxVirtualized]` with `[totalCount]`) throws in dev mode rather than silently doing nothing, so the unsupported path surfaces during development; production builds no-op. Per-option toggling via Enter, Space, or click works normally in both single and multi mode.
+- **Typeahead reaches only positions the window has rendered at least once.** The search runs over the persisted position snapshot rather than the live options, so an option the virtualizer has since unmounted is still reachable: the match moves `aria-activedescendant` to it and emits `(scrollToIndex)` so your virtualizer brings it back. A position the window has **never** rendered carries no text the library can match: the keystroke is consumed, the buffer grows, and nothing moves. The shape that triggers it is a freshly-rendered `[totalCount]="10000"` listbox where the user types before scrolling, and a `[dataVersion]` bump or `ForListboxVirtualized.invalidateSnapshot()` narrows the reachable set back to the current window. Arrow / `Home` / `End` navigation reaches every position regardless (it walks absolute indices, not text), so that is the workaround for a target the user cannot type their way to; rendering a larger window widens the reachable set.
 
 ## Self-hiding pieces
 
@@ -411,7 +417,7 @@ Moving the pointer over an enabled option hands it `data-highlighted`, so exactl
 Four properties of the pointer channel:
 
 - **It never selects and never moves DOM focus**, not even with `selectionFollowsFocus` set: hovering is not activation, and a listbox is an in-flow surface that must not steal focus from whatever the user is typing in. The pointer's own click still activates, and the range anchor `Shift+Space` spans from is untouched.
-- **The keyboard takes it back on the next move.** In the roving-tabindex path the pointer highlight is a styling channel only: the tab stop and `Enter` / `Space` activation stay with the DOM-focused option, and the first arrow / typeahead move drops the pointer highlight. In the activedescendant path (`totalCount` set) hover moves `aria-activedescendant` itself, so the highlight and the option `Enter` activates never disagree there.
+- **The keyboard takes it back on the next move.** In the roving-tabindex path the pointer highlight is a styling channel only: the tab stop and `Enter` / `Space` activation stay with the DOM-focused option, and the first arrow / typeahead move drops the pointer highlight. In the activedescendant path (`[forListboxVirtualized]` with `totalCount` set) hover moves `aria-activedescendant` itself, so the highlight and the option `Enter` activates never disagree there.
 - **Moving the pointer off the listbox releases it.** In the roving-tabindex path the highlight goes back to the DOM-focused option, or to none when focus is elsewhere. That way an always-visible listbox never keeps a row decorated with the cursor somewhere else on the page. Crossing between two adjacent options is not a leave: the highlight moves straight from one to the other without blinking off. In the activedescendant path the pointer's claim persists, because there it _is_ `aria-activedescendant` and dropping it would leave the container with no active option.
 - **A programmatic scroll cannot hijack it.** Keyboard navigation scrolls the active option into view, which can slide a different option under a stationary cursor and make the browser fire a synthetic `pointermove` for it. Moves arriving in a short window after such a scroll are ignored, so the keyboard keeps the highlight.
 
@@ -594,7 +600,7 @@ Optional slot inside an option. Mirrors `data-state` and self-hides while the op
 
 ### Single mode (and the basics for both)
 
-> **Virtualized path (`[totalCount]` set):** the listbox container is always the single Tab stop. Arrow / Home / End / Enter / Space all fire on the container (not individual options). See the [Virtualization](#virtualization) section for the full contract.
+> **Virtualized path (`[forListboxVirtualized]` with `[totalCount]` set):** the listbox container is always the single Tab stop. Arrow / Home / End / Enter / Space all fire on the container (not individual options). See the [Virtualization](#virtualization) section for the full contract.
 
 - **Tab** moves focus into / out of the listbox; lands on the first selected option (or the first enabled one if nothing is selected, or the last user-focused option after first interaction). With several preselected options in multi mode, only the first selected one is the tab stop: the group exposes a single `tabindex="0"`. When no option can serve as that entry point (the listbox is empty, or every option is disabled), the listbox host itself becomes the single Tab stop (`tabindex="0"`) so the control stays reachable; a disabled listbox is never tabbable.
 - **ArrowDown / ArrowUp** in vertical, **ArrowRight / ArrowLeft** in horizontal: move focus, wrap-around, skip disabled.
@@ -662,4 +668,4 @@ forty-cdk ships no styles: put your own class on each piece and key your CSS off
 
 ## Wrapping in a design system
 
-[Wrapping form primitives](../../../docs/wrapping-form-primitives.md) documents both supported wrapper patterns: `hostDirectives` with the exported `FOR_LISTBOX_HOST_DIRECTIVE_INPUTS` / `FOR_LISTBOX_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing.
+[Wrapping form primitives](../../../docs/wrapping-form-primitives.md) documents both supported wrapper patterns: `hostDirectives` with the exported `FOR_LISTBOX_HOST_DIRECTIVE_INPUTS` / `FOR_LISTBOX_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing. A virtualized wrapper adds `ForListboxVirtualized` as a second `hostDirectives` entry and re-exposes its surface with `FOR_LISTBOX_VIRTUALIZED_HOST_DIRECTIVE_INPUTS` / `FOR_LISTBOX_VIRTUALIZED_HOST_DIRECTIVE_OUTPUTS`.

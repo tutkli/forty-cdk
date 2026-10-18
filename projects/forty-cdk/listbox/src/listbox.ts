@@ -2,13 +2,10 @@ import {
   booleanAttribute,
   computed,
   Directive,
-  effect,
   ElementRef,
   inject,
   input,
   model,
-  numberAttribute,
-  output,
   signal,
 } from '@angular/core';
 import type { FormValueControl } from '@angular/forms/signals';
@@ -22,13 +19,9 @@ import {
   FormUiControlBase,
   injectHiddenInput,
   injectNativeFormResetToInitial,
-  isRangeSelectShortcut,
   type ListNavigationAction,
   resolveListNavigation,
   resolveListTypeahead,
-  runVirtualizedNavigatorBridge,
-  throwUnsupportedVirtualizedRangeSelect,
-  throwUnsupportedVirtualizedSelectionFollowsFocus,
   type WritingDirection,
   nextEnabledHandle,
   RangeSelectionEngine,
@@ -45,20 +38,16 @@ import {
   IdGenerator,
   pressFocusesDescendant,
   preventPointerFocus,
-  VirtualizedResume,
   type Unset,
 } from 'forty-cdk/core';
 import {
   FOR_LISTBOX_CONTEXT,
   type ForListboxContext,
   type ForListboxOptionHandle,
+  type ListboxVirtualization,
+  type ListboxVirtualizationHost,
 } from './listbox-context';
 import { FOR_LISTBOX_DEFAULTS } from 'forty-cdk/defaults';
-import {
-  createListboxVirtualizedNavigator,
-  type ListboxPositionEntry,
-  type ListboxVirtualizedNavigator,
-} from './listbox-virtualized-navigator';
 
 /**
  * Headless implementation of the [WAI-ARIA Listbox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/listbox/).
@@ -166,12 +155,12 @@ export class ForListbox<T = string>
    *
    * Multi-select range keyboard (Shift+Arrow, Shift+Space, Ctrl/Cmd+A,
    * Ctrl+Shift+Home/End) is not supported together with virtualization
-   * (`totalCount` set): range selection needs the full set of enabled options
-   * across the range, which is unavailable while the list is partially
-   * unmounted. Pressing one of those combinations on a virtualized multi-select
-   * listbox throws in dev mode. Toggle options individually with Enter, Space,
-   * or click, or drop `totalCount` to use the non-virtualized roving-tabindex
-   * listbox.
+   * (`[forListboxVirtualized]` with `totalCount` set): range selection needs the
+   * full set of enabled options across the range, which is unavailable while the
+   * list is partially unmounted. Pressing one of those combinations on a
+   * virtualized multi-select listbox throws in dev mode. Toggle options
+   * individually with Enter, Space, or click, or drop `totalCount` to use the
+   * non-virtualized roving-tabindex listbox.
    */
   readonly multiple = input(false, { transform: booleanAttribute });
 
@@ -201,42 +190,6 @@ export class ForListbox<T = string>
   readonly loop = input(this.#defaults.loop, { transform: booleanAttribute });
 
   /**
-   * Total number of items in the source data. When set, enables the
-   * virtualized activedescendant focus model and populates `aria-setsize`
-   * on each rendered option. Leave unset (default `undefined`) for the
-   * standard roving-tabindex model.
-   */
-  readonly totalCount = input(undefined, {
-    transform: (v: unknown): number | undefined => (v == null ? undefined : numberAttribute(v)),
-  });
-
-  /**
-   * Inclusive-exclusive `[start, end)` index range of the currently rendered
-   * options. The virtualizer provides this; the listbox uses it to decide
-   * whether a navigation target is in the visible window.
-   */
-  readonly visibleRange = input<readonly [number, number] | undefined>(undefined);
-
-  /**
-   * Optional virtualized-only seam that tells the directive the source dataset
-   * changed **without** a `totalCount` transition — a same-length re-sort or
-   * refresh (e.g. sorting a 1000-row list). Bind any value that changes on such
-   * a refresh (a version counter, the array reference, a sort-key string); when
-   * it changes the position snapshot rebuilds from empty so navigation never
-   * resolves against a stale off-window entry. Leave unset (default) when the
-   * dataset only ever changes length. Equivalent to calling
-   * {@link ForListbox.invalidateSnapshot} imperatively.
-   */
-  readonly dataVersion = input<unknown>();
-
-  /**
-   * Emitted when keyboard navigation reaches an option outside the rendered
-   * window. The consumer passes this index to `injectVirtualizer`'s
-   * `scrollToIndex` so the correct option mounts.
-   */
-  readonly scrollToIndex = output<number>();
-
-  /**
    * Writing direction. When unset (default `null`), the inherited ambient
    * direction is resolved from the nearest ancestor carrying a `dir` attribute
    * (or `<html dir>`), defaulting to `'ltr'`. An explicit `[dir]` always wins.
@@ -253,9 +206,9 @@ export class ForListbox<T = string>
    * The default is read from `provideForListboxDefaults` for the surrounding
    * scope.
    *
-   * Not supported together with virtualization (`totalCount` set): the
-   * virtualized `aria-activedescendant` path resolves off-window navigation
-   * targets asynchronously, so selection cannot follow focus there without
+   * Not supported together with virtualization (`[forListboxVirtualized]` with
+   * `totalCount` set): the virtualized `aria-activedescendant` path resolves
+   * off-window navigation targets asynchronously, so selection cannot follow focus there without
    * deriving the committed value from a render side effect. Keyboard-navigating
    * a virtualized listbox with it set throws in dev mode, from the move the
    * combination degrades.
@@ -301,7 +254,16 @@ export class ForListbox<T = string>
     return null;
   });
 
-  readonly #virtualized = computed(() => this.totalCount() !== undefined);
+  readonly #virtualization = signal<ListboxVirtualization<T> | null>(null);
+
+  readonly #virtualized = computed(() => this.#virtualization()?.totalCount() !== undefined);
+
+  /**
+   * Full source length while a `[forListboxVirtualized]` virtualizes the
+   * listbox, `undefined` in the roving-tabindex path. Drives each option's
+   * `aria-setsize` / `aria-posinset`.
+   */
+  readonly totalCount = computed(() => this.#virtualization()?.totalCount());
 
   /**
    * The id the host carries while a `[forListboxController]` drives it and the
@@ -381,34 +343,14 @@ export class ForListbox<T = string>
     reveal: (host) => this.#revealFromKeyboard(host),
   });
 
-  #navigator: ListboxVirtualizedNavigator<T> | null = null;
-
-  readonly #resume = new VirtualizedResume<T, ListboxPositionEntry<T>>({
-    totalCount: this.totalCount,
-    snapshotByPos: () => this.#requireNavigator().snapshotByPos(),
-    compareWith: this.compareWith,
-  });
-
-  #requireNavigator(): ListboxVirtualizedNavigator<T> {
-    return (this.#navigator ??= createListboxVirtualizedNavigator<T>(
-      {
-        items: this.#options.items,
-        totalCount: this.totalCount,
-        visibleRange: this.visibleRange,
-        loop: this.loop,
-        getActiveId: () => this.#activeId(),
-        setActiveId: (id) => this.#setActiveId(id),
-        emitScrollToIndex: (idx) => this.scrollToIndex.emit(idx),
-        getResumePos: () => this.#resume.pos(),
-        dataVersion: this.dataVersion,
-      },
-      (host) => this.#scrollActiveIntoView(host),
-    ));
+  /** The virtualized focus model; only reached while {@link #virtualized} holds. */
+  #virtualModel(): ListboxVirtualization<T> {
+    return this.#virtualization()!;
   }
 
   #setActiveId(id: string | null): void {
     if (id !== null) {
-      this.#resume.clear();
+      this.#virtualization()?.resume.clear();
     }
     this.#activeId.set(id);
   }
@@ -423,20 +365,6 @@ export class ForListbox<T = string>
     host.scrollIntoView?.({ block: 'nearest' });
   }
 
-  /**
-   * Force the virtualized position snapshot to rebuild from empty on the next
-   * fold, discarding stale off-window entries. Call after a same-length dataset
-   * refresh (a re-sort / reload that keeps `totalCount` unchanged) when you
-   * cannot express the change through the reactive `[dataVersion]` input. No-op
-   * when the listbox is not virtualized (`totalCount` unset).
-   */
-  invalidateSnapshot(): void {
-    if (!this.#virtualized()) {
-      return;
-    }
-    this.#requireNavigator().invalidateSnapshot();
-  }
-
   constructor() {
     super();
     injectHiddenInput<T>({
@@ -448,15 +376,6 @@ export class ForListbox<T = string>
     injectNativeFormResetToInitial(this.value);
     const host = this.#host.nativeElement;
     preventPointerFocus((event) => this.#controlled() && !pressFocusesDescendant(event, host));
-    // @sanctioned-pull(navigator-position-map): the rendered window is transient,
-    // so a window nothing reads during is lost to the lazy fold.
-    effect(() => {
-      runVirtualizedNavigatorBridge({
-        items: this.#options.items,
-        virtualized: this.#virtualized,
-        requireNavigator: () => this.#requireNavigator(),
-      });
-    });
   }
 
   /**
@@ -601,6 +520,16 @@ export class ForListbox<T = string>
     }
   }
 
+  private registerVirtualization(virtualization: ListboxVirtualization): ListboxVirtualizationHost {
+    this.#virtualization.set(virtualization as unknown as ListboxVirtualization<T>);
+    return {
+      loop: this.loop,
+      getActiveId: () => this.#activeId(),
+      setActiveId: (id) => this.#setActiveId(id),
+      scrollActiveIntoView: (host) => this.#scrollActiveIntoView(host),
+    };
+  }
+
   private controlsId(): string {
     return this.#host.nativeElement.id || this.#generatedId;
   }
@@ -611,7 +540,7 @@ export class ForListbox<T = string>
   }
 
   private clearActiveOption(): void {
-    this.#resume.clear();
+    this.#virtualization()?.resume.clear();
     this.#activeId.set(null);
   }
 
@@ -628,7 +557,7 @@ export class ForListbox<T = string>
     }
     if (this.#virtualized()) {
       this.#assertSelectionFollowsFocusSupported();
-      this.#requireNavigator().navigate(direction);
+      this.#virtualModel().navigator().navigate(direction);
       return;
     }
     const items = this.#options.items();
@@ -696,7 +625,7 @@ export class ForListbox<T = string>
     this.#options.unregister(handle);
     this.roving.unregister(handle.host);
     if (this.#virtualized() && this.#activeId() === handle.id()) {
-      this.#resume.retain(handle.posInSet(), handle.value());
+      this.#virtualModel().resume.retain(handle.posInSet(), handle.value());
       this.#activeId.set(null);
     } else if (this.#controlled() && this.#activeId() === handle.id()) {
       this.#activeId.set(null);
@@ -707,18 +636,7 @@ export class ForListbox<T = string>
     if (!this.#virtualized() || this.effectiveDisabled()) {
       return;
     }
-    if (
-      this.multiple() &&
-      isRangeSelectShortcut(event, { orientation: this.orientation(), dir: this.dir() })
-    ) {
-      event.preventDefault();
-      throwUnsupportedVirtualizedRangeSelect({
-        primitive: 'listbox',
-        focusModel: 'roving-tabindex',
-        collection: 'listbox',
-        shortcuts: 'Shift+Arrow, Shift+Space, Ctrl/Cmd+A, Ctrl+Shift+Home/End',
-        alternative: 'Toggle options individually with Enter, Space, or click',
-      });
+    if (this.#virtualModel().rejectRangeSelect(event)) {
       return;
     }
     if (event.key === ' ' && this.#typeaheadVirtualized(event)) {
@@ -737,7 +655,7 @@ export class ForListbox<T = string>
     if (action) {
       event.preventDefault();
       this.#assertSelectionFollowsFocusSupported();
-      this.#requireNavigator().navigate(action);
+      this.#virtualModel().navigator().navigate(action);
       return;
     }
     this.#typeaheadVirtualized(event);
@@ -751,12 +669,8 @@ export class ForListbox<T = string>
    * covered: neither is a navigation the combination degrades.
    */
   #assertSelectionFollowsFocusSupported(): void {
-    if (this.#virtualized() && this.selectionFollowsFocus()) {
-      throwUnsupportedVirtualizedSelectionFollowsFocus({
-        primitive: 'listbox',
-        focusModel: 'roving-tabindex',
-        collection: 'listbox',
-      });
+    if (this.#virtualized()) {
+      this.#virtualModel().assertSelectionFollowsFocusSupported();
     }
   }
 
@@ -774,11 +688,12 @@ export class ForListbox<T = string>
   }
 
   #activateResumed(): boolean {
-    const resumed = this.#resume.resolve();
+    const virtualization = this.#virtualModel();
+    const resumed = virtualization.resume.resolve();
     if (resumed === null || resumed.entry.disabled) {
       return false;
     }
-    this.#requireNavigator().seedActive(resumed.pos);
+    virtualization.navigator().seedActive(resumed.pos);
     this.activate(resumed.entry.value);
     return true;
   }
@@ -790,7 +705,7 @@ export class ForListbox<T = string>
    * `(scrollToIndex)` and settles once the option mounts.
    */
   #typeaheadVirtualized(event: KeyboardEvent): boolean {
-    const navigator = this.#requireNavigator();
+    const navigator = this.#virtualModel().navigator();
     const { handled, pos } = navigator.resolveTypeahead(
       this.#typeahead,
       event,

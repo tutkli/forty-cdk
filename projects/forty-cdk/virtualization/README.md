@@ -384,8 +384,10 @@ The consumer owns the fetch, deduplication, and error handling. Angular `resourc
 
 `range` lets the windowing core plug directly into a list primitive's `[visibleRange]` input without the consumer re-deriving the window from `virtualItems()`. The primitive uses `[visibleRange]` to keep `aria-setsize` / `aria-posinset` and `aria-activedescendant` correct across row recycling: it tracks option data by absolute index so options scrolled out of view are still reachable by keyboard.
 
+The inputs live on each primitive's opt-in virtualized directive, placed on the same element as its root: `[forListboxVirtualized]`, `[forSelectVirtualized]`, `[forComboboxVirtualized]` or `[forTreeVirtualized]`. Import it from the primitive's own entry point; a root without it never bundles the virtualized navigation engine.
+
 ```html
-[totalCount]="filtered().length" [visibleRange]="v.range()"
+forCombobox forComboboxVirtualized [totalCount]="filtered().length" [visibleRange]="v.range()"
 (scrollToIndex)="v.scrollToIndex($event)"
 ```
 
