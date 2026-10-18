@@ -1,4 +1,4 @@
-import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
+import { Component, type Signal, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import { flush } from '../../src/test-utils';
@@ -188,6 +188,43 @@ describe('injectInfiniteScroll', () => {
     fixture.detectChanges();
     await flush(fixture);
     expect(spy).toHaveBeenCalledTimes(1);
+  });
+
+  it('signals read by onLoadMore do not re-run the detector', async () => {
+    const probe = signal(0);
+    const countSource = signal(100);
+    let countReads = 0;
+    const count = (() => {
+      countReads++;
+      return countSource();
+    }) as Signal<number>;
+
+    @Component({ template: '' })
+    class ProbeHost {
+      readonly range = signal<readonly [number, number]>([90, 100]);
+      calls = 0;
+      readonly loader = injectInfiniteScroll({
+        range: this.range,
+        count,
+        onLoadMore: () => {
+          probe();
+          this.calls++;
+        },
+      });
+    }
+
+    const fixture = TestBed.createComponent(ProbeHost);
+    fixture.detectChanges();
+    await flush(fixture);
+    expect(fixture.componentInstance.calls).toBe(1);
+
+    const readsAfterFire = countReads;
+    for (let i = 1; i <= 3; i++) {
+      probe.set(i);
+      await flush(fixture);
+    }
+    expect(countReads).toBe(readsAfterFire);
+    expect(fixture.componentInstance.calls).toBe(1);
   });
 
   it('fires when the window reaches the end', async () => {

@@ -193,6 +193,7 @@ export class ForVirtualViewport implements ForVirtualViewportContext, OnInit {
       injectInfiniteScroll({
         range: this.range,
         count: this.count,
+        threshold: this.overscan(),
         onLoadMore: () => this.endReached.emit(),
       });
     });
