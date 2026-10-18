@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { CalendarDateTime } from '@internationalized/date';
 import { type DateRange } from 'forty-cdk/shared';
+import { ForField, ForFieldError } from 'forty-cdk/field';
 import {
   ForDateRangeField,
   ForDateRangeFieldEnd,
@@ -14,6 +15,8 @@ import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/international
   selector: 'app-date-range-field-date-time-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    ForField,
+    ForFieldError,
     ForDateRangeField,
     ForDateRangeFieldStart,
     ForDateRangeFieldEnd,
@@ -22,42 +25,61 @@ import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/international
   ],
   providers: [...provideInternationalizedDateTimeAdapter()],
   template: `
-    <div
-      forDateRangeField
-      class="range-field"
-      [(value)]="value"
-      granularity="minute"
-      [hourCycle]="12"
-      ariaLabel="Stay"
-    >
-      <div forDateRangeFieldStart class="range-endpoint" #start="forDateRangeFieldStart">
-        @for (seg of start.segments(); track seg.id) {
-          @if (seg.isLiteral) {
-            <span forDateRangeFieldLiteral class="range-literal">{{ seg.text }}</span>
-          } @else {
-            <span forDateRangeFieldSegment class="range-segment" [segment]="seg.type!">{{
-              seg.text
-            }}</span>
+    <div forField class="range-demo">
+      <div
+        forDateRangeField
+        class="range-field"
+        [(value)]="value"
+        granularity="minute"
+        [hourCycle]="12"
+        ariaLabel="Stay"
+        #range="forDateRangeField"
+      >
+        <div forDateRangeFieldStart class="range-endpoint" #start="forDateRangeFieldStart">
+          @for (seg of start.segments(); track seg.id) {
+            @if (seg.isLiteral) {
+              <span forDateRangeFieldLiteral class="range-literal">{{ seg.text }}</span>
+            } @else {
+              <span forDateRangeFieldSegment class="range-segment" [segment]="seg.type!">{{
+                seg.text
+              }}</span>
+            }
           }
-        }
-      </div>
-      <span aria-hidden="true" class="range-sep">→</span>
-      <div forDateRangeFieldEnd class="range-endpoint" #end="forDateRangeFieldEnd">
-        @for (seg of end.segments(); track seg.id) {
-          @if (seg.isLiteral) {
-            <span forDateRangeFieldLiteral class="range-literal">{{ seg.text }}</span>
-          } @else {
-            <span forDateRangeFieldSegment class="range-segment" [segment]="seg.type!">{{
-              seg.text
-            }}</span>
+        </div>
+        <span aria-hidden="true" class="range-sep">→</span>
+        <div forDateRangeFieldEnd class="range-endpoint" #end="forDateRangeFieldEnd">
+          @for (seg of end.segments(); track seg.id) {
+            @if (seg.isLiteral) {
+              <span forDateRangeFieldLiteral class="range-literal">{{ seg.text }}</span>
+            } @else {
+              <span forDateRangeFieldSegment class="range-segment" [segment]="seg.type!">{{
+                seg.text
+              }}</span>
+            }
           }
-        }
+        </div>
       </div>
+      @if (range.disordered()) {
+        <p forFieldError class="range-error">The check-out is before the check-in.</p>
+      }
     </div>
   `,
   styles: `
     :host {
       display: contents;
+    }
+
+    .range-demo {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      align-items: flex-start;
+    }
+
+    .range-error {
+      margin: 0;
+      font-size: 0.85rem;
+      color: var(--ex-danger, #b3261e);
     }
 
     .range-field {
@@ -82,11 +104,11 @@ import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/international
     }
 
     .range-field[data-range-error] {
-      border-color: #ef4444;
+      border-color: var(--ex-danger, #b3261e);
     }
 
     .range-field[data-range-error]:focus-within {
-      box-shadow: 0 0 0 1px #ef4444;
+      box-shadow: 0 0 0 1px var(--ex-danger, #b3261e);
     }
 
     .range-endpoint {

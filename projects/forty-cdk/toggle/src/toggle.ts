@@ -15,9 +15,10 @@ import {
  * `@angular/forms/signals` so a single toggle auto-wires with `[formField]`
  * (bold / italic, mute, favourite — the common `aria-pressed` form inputs).
  *
- * Apply on a native `<button>` so Enter / Space and disabled handling come
- * from the platform. The directive toggles its state on click and reflects
- * ARIA + `data-state` for styling.
+ * Apply on a native `<button>` so Enter / Space activation comes from the
+ * platform. The directive toggles its state on click and reflects ARIA +
+ * `data-state` for styling. A disabled toggle is reflected as `aria-disabled`
+ * and stays focusable, and its click is ignored.
  *
  * For a set of toggles with arrow-key navigation and single / multiple
  * selection semantics, use `[forToggleGroup]` + `[forToggleGroupItem]`.

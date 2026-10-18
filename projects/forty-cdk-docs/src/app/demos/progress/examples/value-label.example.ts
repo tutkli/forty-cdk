@@ -67,7 +67,7 @@ import { ForProgress, ForProgressIndicator } from 'forty-cdk/progress';
     }
 
     .indicator[data-state='complete'] {
-      background: #22c55e;
+      background: var(--ex-success, #1f7a4d);
     }
 
     @media (prefers-reduced-motion: reduce) {

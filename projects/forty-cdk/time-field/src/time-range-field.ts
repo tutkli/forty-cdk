@@ -220,11 +220,12 @@ export class ForTimeRangeField<D>
   private readonly ariaInvalid = computed(() => this.invalid() || this.#composer.disordered());
 
   /**
-   * Both endpoints complete but the start falls after the end — an unorderable
-   * range. Never flagged when {@link allowOvernight} is set, where a `start > end`
-   * entry is a valid midnight-crossing range instead of an error.
+   * Whether both endpoints are complete but the start falls after the end. While it holds,
+   * `value` stays `null` and the root reflects `aria-invalid="true"` + `data-range-error`; read
+   * it to tell the user in words, since a border colour alone is not an error message. Never
+   * `true` while {@link allowOvernight} is set, where such an entry crosses midnight instead.
    */
-  private readonly disordered = computed(() => this.#composer.disordered());
+  readonly disordered = computed(() => this.#composer.disordered());
 
   /** `true` only while both endpoints are entirely empty — neither shows entered digits. */
   private readonly empty = computed(() => this.#startEngine.empty() && this.#endEngine.empty());

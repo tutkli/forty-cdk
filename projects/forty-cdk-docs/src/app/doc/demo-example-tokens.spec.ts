@@ -56,6 +56,65 @@ const SITE_TOKEN = /--pg-[a-z0-9-]+/g;
 
 const EXAMPLE_TOKEN_DECLARATION = /(--ex-[a-z0-9-]+)\s*:/g;
 
+const DEMOS_ROOT = 'projects/forty-cdk-docs/src/app/demos/';
+
+const STYLES_BLOCK = /styles:\s*`([^`]*)`/g;
+
+const DECLARATION = /([a-z-]+)\s*:\s*([^;{}]+);/g;
+
+const COLOUR_LITERAL = /#[0-9a-f]{3,8}\b|\b(?:rgba?|hsla?)\(/i;
+
+interface IntentionalColours {
+  readonly reason: string;
+  readonly declarations: readonly string[];
+}
+
+const INTENTIONAL_COLOURS: readonly IntentionalColours[] = [
+  {
+    reason:
+      'Stands in for a photograph, which keeps its own colours whatever the theme or palette around it',
+    declarations: [
+      'aspect-ratio/examples/default.example.ts: color: #fff',
+      'aspect-ratio/examples/default.example.ts: background: linear-gradient(135deg, var(--ex-accent, #0e7c6b), #ec4899)',
+      'aspect-ratio/examples/default.example.ts: background: rgba(0, 0, 0, 0.25)',
+      'aspect-ratio/examples/square.example.ts: color: #fff',
+      'aspect-ratio/examples/square.example.ts: background: linear-gradient(135deg, #0ea5e9, #22c55e)',
+      'aspect-ratio/examples/square.example.ts: background: rgba(0, 0, 0, 0.4)',
+      'avatar/examples/default.example.ts: color: #fff',
+      'avatar/examples/default.example.ts: background: linear-gradient(135deg, var(--ex-accent, #0e7c6b), #ec4899)',
+      'avatar/examples/fallback.example.ts: color: #fff',
+      'avatar/examples/fallback.example.ts: background: linear-gradient(135deg, #0ea5e9, #22c55e)',
+    ],
+  },
+  {
+    reason:
+      'A scrim or a shadow darkens whatever lies behind it, so it is the same translucent black in every theme',
+    declarations: [
+      'dialog/examples/anatomy.example.ts: background: rgba(10, 12, 16, 0.5)',
+      'dialog/examples/programmatic.example.ts: background: rgba(10, 12, 16, 0.5)',
+      'drawer/examples/default.example.ts: background: rgba(10, 12, 16, 0.5)',
+      'drawer/examples/nested.example.ts: background: rgba(10, 12, 16, 0.5)',
+      'drawer/examples/nested.example.ts: background: rgba(10, 12, 16, 0.45)',
+      'drawer/examples/programmatic.example.ts: background: rgba(10, 12, 16, 0.5)',
+      'drawer/examples/region-scoped.example.ts: box-shadow: -8px 0 24px rgba(10, 12, 16, 0.18)',
+      'drawer/examples/region-scoped.example.ts: background: rgba(10, 12, 16, 0.5)',
+      'drawer/examples/snap-points.example.ts: background: rgba(10, 12, 16, 0.5)',
+    ],
+  },
+  {
+    reason:
+      'A switch thumb is a white knob that has to stand out on the off track and the accent track alike',
+    declarations: [
+      'switch/examples/default.example.ts: background: #fff',
+      'switch/examples/default.example.ts: box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35)',
+      'switch/examples/form-field.example.ts: background: #fff',
+      'switch/examples/form-field.example.ts: box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35)',
+      'switch/examples/states.example.ts: background: #fff',
+      'switch/examples/states.example.ts: box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35)',
+    ],
+  },
+];
+
 interface TokenRead {
   readonly name: string;
   readonly fallback: string | null;
@@ -65,19 +124,44 @@ function collapsed(value: string): string {
   return value.trim().replace(/\s+/g, ' ');
 }
 
+function closingParen(source: string, from: number): number {
+  let index = from;
+  let depth = 1;
+  while (index < source.length && depth > 0) {
+    const char = source[index];
+    if (char === '(') {
+      depth += 1;
+    } else if (char === ')') {
+      depth -= 1;
+    }
+    index += 1;
+  }
+  return index;
+}
+
+function withoutTokenReads(value: string): string {
+  let rest = value;
+  for (let start = rest.indexOf('var('); start >= 0; start = rest.indexOf('var(')) {
+    rest = rest.slice(0, start) + rest.slice(closingParen(rest, start + 'var('.length));
+  }
+  return rest;
+}
+
+function colourLiterals(examples: readonly ExampleSource[]): readonly string[] {
+  return examples.flatMap((example) =>
+    [...example.source.matchAll(STYLES_BLOCK)]
+      .flatMap((block) => [...block[1]!.matchAll(DECLARATION)])
+      .filter((declaration) => COLOUR_LITERAL.test(withoutTokenReads(declaration[2]!)))
+      .map(
+        (declaration) =>
+          `${example.path.slice(DEMOS_ROOT.length)}: ${declaration[1]}: ${collapsed(declaration[2]!)}`,
+      ),
+  );
+}
+
 function tokenReads(source: string): readonly TokenRead[] {
   return [...source.matchAll(VAR_OPENER)].map((match) => {
-    let index = match.index + match[0].length;
-    let depth = 1;
-    while (index < source.length && depth > 0) {
-      const char = source[index];
-      if (char === '(') {
-        depth += 1;
-      } else if (char === ')') {
-        depth -= 1;
-      }
-      index += 1;
-    }
+    const index = closingParen(source, match.index + match[0].length);
     const inside = source.slice(match.index + match[0].length, index - 1);
     const comma = inside.indexOf(',');
     return {
@@ -179,6 +263,20 @@ describe('the CSS a demo example hands to Copy', () => {
 
   it('declares none of them itself — an example reads the vocabulary, the site owns it', () => {
     expect(declaringExampleTokens(EXAMPLES)).toEqual([]);
+  });
+
+  it('paints no colour outside a var() fallback, except the literals it means to keep', () => {
+    const intentional = new Set(INTENTIONAL_COLOURS.flatMap((group) => group.declarations));
+    expect(colourLiterals(EXAMPLES).filter((literal) => !intentional.has(literal))).toEqual([]);
+  });
+
+  it('keeps every literal it lists as intentional, so the list can only shrink', () => {
+    const found = new Set(colourLiterals(EXAMPLES));
+    expect(
+      INTENTIONAL_COLOURS.flatMap((group) => group.declarations).filter(
+        (literal) => !found.has(literal),
+      ),
+    ).toEqual([]);
   });
 });
 

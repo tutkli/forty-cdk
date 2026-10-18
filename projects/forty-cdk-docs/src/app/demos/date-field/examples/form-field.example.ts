@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { form, FormField, required } from '@angular/forms/signals';
 import { type CalendarDate } from '@internationalized/date';
 import { ForDateField, ForDateFieldLiteral, ForDateFieldSegment } from 'forty-cdk/date-field';
+import { ForField, ForFieldError } from 'forty-cdk/field';
 import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized-date';
 
 interface Checkout {
@@ -11,10 +12,17 @@ interface Checkout {
 @Component({
   selector: 'app-date-field-form-field-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormField, ForDateField, ForDateFieldSegment, ForDateFieldLiteral],
+  imports: [
+    FormField,
+    ForField,
+    ForFieldError,
+    ForDateField,
+    ForDateFieldSegment,
+    ForDateFieldLiteral,
+  ],
   providers: [...provideInternationalizedDateAdapter()],
   template: `
-    <div class="field-form">
+    <div forField class="field-form">
       <div
         forDateField
         class="date-field"
@@ -33,7 +41,9 @@ interface Checkout {
         }
       </div>
       @if (checkoutForm.dob().touched() && !checkoutForm.dob().valid()) {
-        <p class="field-error">A date of birth is required.</p>
+        <p forFieldError #err="forFieldError" class="field-error">
+          {{ err.messages().join(', ') }}
+        </p>
       }
     </div>
   `,
@@ -94,7 +104,7 @@ interface Checkout {
     .field-error {
       margin: 0;
       font-size: 0.85rem;
-      color: #ef4444;
+      color: var(--ex-danger, #b3261e);
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -107,6 +117,6 @@ interface Checkout {
 export class DateFieldFormFieldExample {
   protected readonly model = signal<Checkout>({ dob: null });
   protected readonly checkoutForm = form(this.model, (path) => {
-    required(path.dob, { message: 'A date of birth is required' });
+    required(path.dob, { message: 'A date of birth is required.' });
   });
 }

@@ -3,6 +3,7 @@ import { form, FormField, required } from '@angular/forms/signals';
 import { type CalendarDateTime } from '@internationalized/date';
 import { type DateRange } from 'forty-cdk/shared';
 import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/internationalized-date';
+import { ForField, ForFieldError } from 'forty-cdk/field';
 import {
   ForTimeRangeField,
   ForTimeRangeFieldEnd,
@@ -20,6 +21,8 @@ interface Schedule {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FormField,
+    ForField,
+    ForFieldError,
     ForTimeRangeField,
     ForTimeRangeFieldStart,
     ForTimeRangeFieldEnd,
@@ -28,12 +31,13 @@ interface Schedule {
   ],
   providers: [...provideInternationalizedDateTimeAdapter()],
   template: `
-    <div class="range-form">
+    <div forField class="range-form">
       <div
         forTimeRangeField
         class="range-field"
         [formField]="scheduleForm.hours"
         ariaLabel="Opening hours"
+        #hours="forTimeRangeField"
       >
         <div forTimeRangeFieldStart class="range-endpoint" #start="forTimeRangeFieldStart">
           @for (seg of start.segments(); track seg.id) {
@@ -59,8 +63,16 @@ interface Schedule {
           }
         </div>
       </div>
-      @if (scheduleForm.hours().touched() && !scheduleForm.hours().valid()) {
-        <p class="range-error">Set both an opening and a closing time.</p>
+      @if (
+        hours.disordered() || (scheduleForm.hours().touched() && !scheduleForm.hours().valid())
+      ) {
+        <p forFieldError #err="forFieldError" class="range-error">
+          @if (hours.disordered()) {
+            The closing time is before the opening time.
+          } @else {
+            {{ err.messages().join(', ') }}
+          }
+        </p>
       }
     </div>
   `,
@@ -98,11 +110,11 @@ interface Schedule {
     }
 
     .range-field[data-range-error] {
-      border-color: #ef4444;
+      border-color: var(--ex-danger, #b3261e);
     }
 
     .range-field[data-range-error]:focus-within {
-      box-shadow: 0 0 0 1px #ef4444;
+      box-shadow: 0 0 0 1px var(--ex-danger, #b3261e);
     }
 
     .range-endpoint {
@@ -139,7 +151,7 @@ interface Schedule {
     .range-error {
       margin: 0;
       font-size: 0.85rem;
-      color: #ef4444;
+      color: var(--ex-danger, #b3261e);
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -152,6 +164,6 @@ interface Schedule {
 export class TimeRangeFieldFormFieldExample {
   protected readonly model = signal<Schedule>({ hours: null });
   protected readonly scheduleForm = form(this.model, (path) => {
-    required(path.hours, { message: 'Opening hours are required' });
+    required(path.hours, { message: 'Set both an opening and a closing time.' });
   });
 }

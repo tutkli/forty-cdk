@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { form, FormField, requiredError, validate } from '@angular/forms/signals';
 import { ForCheckbox } from 'forty-cdk/checkbox';
+import { ForField, ForFieldError } from 'forty-cdk/field';
 
 interface Signup {
   readonly terms: boolean;
@@ -9,9 +10,9 @@ interface Signup {
 @Component({
   selector: 'app-checkbox-form-field-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormField, ForCheckbox],
+  imports: [FormField, ForCheckbox, ForField, ForFieldError],
   template: `
-    <div class="cb-form">
+    <div forField class="cb-form">
       <button forCheckbox class="cb-row" [formField]="signupForm.terms">
         <span class="cb">
           <span class="cb-check" aria-hidden="true"></span>
@@ -19,7 +20,7 @@ interface Signup {
         I accept the terms of service
       </button>
       @if (signupForm.terms().touched() && !signupForm.terms().valid()) {
-        <p class="cb-error">You must accept the terms to create an account.</p>
+        <p forFieldError #err="forFieldError" class="cb-error">{{ err.messages().join(', ') }}</p>
       }
     </div>
   `,
@@ -67,7 +68,7 @@ interface Signup {
     }
 
     .cb-row[data-touched][data-invalid] .cb {
-      border-color: #ef4444;
+      border-color: var(--ex-danger, #b3261e);
     }
 
     .cb-check {
@@ -86,7 +87,7 @@ interface Signup {
     .cb-error {
       margin: 0;
       font-size: 0.85rem;
-      color: #ef4444;
+      color: var(--ex-danger, #b3261e);
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -100,7 +101,9 @@ export class CheckboxFormFieldExample {
   protected readonly model = signal<Signup>({ terms: false });
   protected readonly signupForm = form(this.model, (path) => {
     validate(path.terms, (ctx) =>
-      ctx.value() ? undefined : requiredError({ message: 'Accept the terms' }),
+      ctx.value()
+        ? undefined
+        : requiredError({ message: 'You must accept the terms to create an account.' }),
     );
   });
 }

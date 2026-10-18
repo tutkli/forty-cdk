@@ -114,7 +114,7 @@ import { ForField, ForFieldControl, ForFieldDescription, ForLabel } from 'forty-
 
     .field[data-required] .field-label-text::after {
       content: ' *';
-      color: #ef4444;
+      color: var(--ex-danger, #b3261e);
     }
 
     .input {
@@ -129,7 +129,7 @@ import { ForField, ForFieldControl, ForFieldDescription, ForLabel } from 'forty-
     }
 
     .field[data-invalid] .input {
-      border-color: #ef4444;
+      border-color: var(--ex-danger, #b3261e);
     }
 
     .field-desc {
@@ -139,7 +139,7 @@ import { ForField, ForFieldControl, ForFieldDescription, ForLabel } from 'forty-
     }
 
     .field[data-invalid] .field-desc {
-      color: #ef4444;
+      color: var(--ex-danger, #b3261e);
     }
   `,
 })

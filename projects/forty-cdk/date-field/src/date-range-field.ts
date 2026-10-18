@@ -191,8 +191,12 @@ export class ForDateRangeField<D>
   /** `aria-invalid` reflects the form-driven invalidity OR a self-detected disorder. */
   private readonly ariaInvalid = computed(() => this.invalid() || this.#composer.disordered());
 
-  /** Both endpoints complete but the start falls after the end — an unorderable range. */
-  private readonly disordered = computed(() => this.#composer.disordered());
+  /**
+   * Whether both endpoints are complete but the start falls after the end. While it holds,
+   * `value` stays `null` and the root reflects `aria-invalid="true"` + `data-range-error`; read
+   * it to tell the user in words, since a border colour alone is not an error message.
+   */
+  readonly disordered = computed(() => this.#composer.disordered());
 
   /** `true` only while both endpoints are entirely empty — neither shows entered digits. */
   private readonly empty = computed(() => this.#startEngine.empty() && this.#endEngine.empty());

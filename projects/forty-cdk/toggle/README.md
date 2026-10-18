@@ -46,7 +46,7 @@ export class ToggleDefaultExample {
 
 ### States
 
-One class and one directive, three states. Both `disabled` and `readonly` stay focusable (per APG). They reflect `aria-disabled` / `data-disabled` and `aria-readonly` / `data-readonly` rather than the native `disabled` attribute, so assistive tech still announces the button while interaction is a no-op.
+One class and one directive, three states. `disabled` reflects `aria-disabled` / `data-disabled` rather than the native `disabled` attribute, so assistive tech still announces the button. `readonly` reflects `data-readonly` only, because `role="button"` has no `aria-readonly`. Both stay focusable while interaction is a no-op.
 
 ### ToggleGroup
 
