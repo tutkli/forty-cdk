@@ -27,16 +27,26 @@ export const DARK_QUERY = '(prefers-color-scheme: dark)';
  * than being frozen into an explicit preference by the first visit.
  */
 export function readStoredTheme(): Theme | null {
-  const stored = globalThis.localStorage?.getItem(THEME_KEY);
+  let stored: string | null | undefined;
+  try {
+    stored = globalThis.localStorage?.getItem(THEME_KEY);
+  } catch {
+    return null;
+  }
   return stored === 'light' || stored === 'dark' ? stored : null;
 }
 
 /**
  * Persists an explicit choice, so it survives a reload and beats the system
- * preference on the next visit.
+ * preference on the next visit. Where the browser blocks site data, the choice
+ * lasts for the current page only.
  */
 export function writeStoredTheme(theme: Theme): void {
-  globalThis.localStorage?.setItem(THEME_KEY, theme);
+  try {
+    globalThis.localStorage?.setItem(THEME_KEY, theme);
+  } catch {
+    return;
+  }
 }
 
 /** The media query the system preference is read from, where one can be read. */

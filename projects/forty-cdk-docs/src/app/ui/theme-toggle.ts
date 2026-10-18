@@ -10,9 +10,9 @@ import { SiteChrome } from './site-chrome';
  * ([#1896](https://github.com/tutkli/forty-cdk/issues/1896)).
  *
  * A prerendered page knows nothing about the visitor, so a prerendered switch
- * would ship its off state — `aria-checked="false"` and a label promising the
- * opposite of what pressing it does — onto a page the inline bootstrap already
- * painted dark. The server emits a same-size placeholder instead, and
+ * would ship its off state — `aria-checked="false"` — onto a page the inline
+ * bootstrap already painted dark. The server emits a same-size placeholder
+ * instead, and
  * `ngSkipHydration` lets the client build the real control rather than try to
  * reconcile it with the placeholder.
  */
@@ -29,7 +29,7 @@ import { SiteChrome } from './site-chrome';
         class="pg-icon-btn"
         [checked]="chrome.dark()"
         (checkedChange)="chrome.setDark($event)"
-        [attr.aria-label]="chrome.themeLabel()"
+        aria-label="Dark theme"
       >
         <app-icon [name]="chrome.dark() ? 'sun' : 'moon'" />
       </button>

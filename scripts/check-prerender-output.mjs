@@ -161,9 +161,8 @@ function checkTheme(label, html) {
  *
  * The server knows nothing about the visitor, so a prerendered switch ships its
  * off state onto a page the inline bootstrap may well have painted dark:
- * `aria-checked="false"` and a label promising the opposite of what pressing it
- * does, in a channel assistive technology reads, until the client bundle
- * hydrates. The control renders in the browser alone, so what the emitted page
+ * `aria-checked="false"`, in a channel assistive technology reads, until the
+ * client bundle hydrates. The control renders in the browser alone, so what the emitted page
  * carries in its place is an inert same-size placeholder.
  */
 const TOGGLE_TAG = /<theme-toggle(?=[\s>])[^>]*>([\s\S]*?)<\/theme-toggle>/gi;

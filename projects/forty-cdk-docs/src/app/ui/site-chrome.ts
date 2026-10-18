@@ -84,9 +84,6 @@ export class SiteChrome {
   });
 
   readonly dark = computed(() => this.theme() === 'dark');
-  readonly themeLabel = computed(() =>
-    this.dark() ? 'Switch to light theme' : 'Switch to dark theme',
-  );
 
   constructor() {
     if (this.#browser) {
