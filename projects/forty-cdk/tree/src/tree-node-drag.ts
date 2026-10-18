@@ -50,6 +50,12 @@ import type { ForTreeDragDropEvent } from './tree-drag-drop-event';
 
 const POINTER_ARM_THRESHOLD_PX = 5;
 
+function ownedGroups(item: HTMLElement): HTMLElement[] {
+  return [...item.querySelectorAll<HTMLElement>('[role="group"]')].filter(
+    (group) => group.closest('[role="treeitem"]') === item,
+  );
+}
+
 /**
  * Where the lifted node will land, for rendering an insertion indicator. `null` when idle.
  */
@@ -428,16 +434,18 @@ export class ForTreeNodeDrag<T = string> implements ForTreeNodeDragContext {
   }
 
   #createPreview(host: HTMLElement, point: PreviewPoint): void {
+    const subtree = ownedGroups(host);
+    const displays = subtree.map((group) => ({
+      value: group.style.getPropertyValue('display'),
+      priority: group.style.getPropertyPriority('display'),
+    }));
+    subtree.forEach((group) => group.style.setProperty('display', 'none', 'important'));
     const preview = createDragPreview(host, this.#document);
-    const clone = preview.element;
-    const subtree = clone
-      ? [...clone.querySelectorAll<HTMLElement>('[role="group"]')].filter(
-          (group) => group.closest('[role="treeitem"]') === clone,
-        )
-      : [];
-    if (clone && subtree.length > 0) {
-      subtree.forEach((group) => group.remove());
-      clone.style.height = '';
+    subtree.forEach((group, i) =>
+      group.style.setProperty('display', displays[i]!.value, displays[i]!.priority),
+    );
+    if (preview.element) {
+      ownedGroups(preview.element).forEach((group) => group.remove());
     }
     this.#previewController = new PreviewController({
       source: host,
