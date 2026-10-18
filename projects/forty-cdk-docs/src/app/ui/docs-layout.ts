@@ -7,6 +7,7 @@ import { AppNav } from './app-nav';
 import { GITHUB_REPO } from './github';
 import { Icon } from './icon';
 import { ScrollPane } from './scroll-pane';
+import { SearchButton } from './search-button';
 import { SectionSwitcher } from './section-switcher';
 import { SiteChrome } from './site-chrome';
 import { ThemeToggle } from './theme-toggle';
@@ -21,6 +22,7 @@ import { ThemeToggle } from './theme-toggle';
     AppNav,
     ScrollPane,
     Icon,
+    SearchButton,
     SectionSwitcher,
     ThemeToggle,
   ],
@@ -46,11 +48,7 @@ import { ThemeToggle } from './theme-toggle';
       <section-switcher class="sections" />
 
       <div class="topbar-actions">
-        <button type="button" class="search-btn" (click)="chrome.openPalette()" aria-label="Search">
-          <app-icon name="magnifying-glass" />
-          <span class="search-btn-text">Search</span>
-          <kbd class="search-btn-kbd">⌘K</kbd>
-        </button>
+        <search-button />
         <a
           class="llms-link"
           [href]="llmsTxt"
@@ -155,41 +153,6 @@ import { ThemeToggle } from './theme-toggle';
       margin-left: auto;
     }
 
-    .search-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      height: 34px;
-      padding: 0 0.7rem;
-      font: inherit;
-      font-size: 0.85rem;
-      color: var(--pg-text-muted);
-      background: var(--pg-surface);
-      border: 1px solid var(--pg-border);
-      border-radius: var(--pg-radius-sm);
-      cursor: pointer;
-    }
-
-    .search-btn:hover {
-      background: var(--pg-surface-2);
-      border-color: var(--pg-border-strong);
-    }
-
-    .search-btn app-icon {
-      width: 16px;
-      height: 16px;
-    }
-
-    .search-btn-kbd {
-      font-family: var(--pg-font-mono);
-      font-size: 0.7rem;
-      padding: 0.1rem 0.35rem;
-      border-radius: var(--pg-radius-xs);
-      background: var(--pg-surface-2);
-      border: 1px solid var(--pg-border-strong);
-      color: var(--pg-text-muted);
-    }
-
     .llms-link {
       flex: none;
       display: inline-flex;
@@ -246,7 +209,6 @@ import { ThemeToggle } from './theme-toggle';
         display: none;
       }
 
-      .search-btn-text,
       .llms-link {
         display: none;
       }

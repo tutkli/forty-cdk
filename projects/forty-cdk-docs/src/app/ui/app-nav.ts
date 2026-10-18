@@ -77,9 +77,11 @@ const DOCS_RAIL_SIZE = DOCS_RAIL.reduce((count, group) => count + group.entries.
               </button>
             }
           </div>
-          @if (query()) {
-            <p class="filter-count">{{ matchCount() }} of {{ railSize }}</p>
-          }
+          <p class="filter-count" role="status">
+            @if (query()) {
+              {{ matchCount() }} of {{ railSize }}
+            }
+          </p>
         </div>
       } @else {
         <ul class="nav-list">
@@ -201,6 +203,10 @@ const DOCS_RAIL_SIZE = DOCS_RAIL.reduce((count, group) => count + group.entries.
     .filter-clear app-icon {
       width: 14px;
       height: 14px;
+    }
+
+    .filter-count:empty {
+      margin: 0;
     }
 
     .filter-count {

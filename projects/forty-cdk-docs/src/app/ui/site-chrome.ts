@@ -38,6 +38,10 @@ function systemDark(): Signal<boolean> {
   );
 }
 
+function appleKeyboard(document: Document): boolean {
+  return /mac|iphone|ipad|ipod/i.test(document.defaultView?.navigator.platform ?? '');
+}
+
 @Injectable({ providedIn: 'root' })
 export class SiteChrome {
   readonly #document = inject(DOCUMENT);
@@ -57,6 +61,8 @@ export class SiteChrome {
 
   readonly navOpen = signal(false);
   readonly paletteOpen = signal(false);
+
+  readonly searchShortcut = this.#browser && appleKeyboard(this.#document) ? '⌘K' : 'Ctrl K';
 
   readonly #url = toSignal(
     this.#router.events.pipe(

@@ -1,25 +1,26 @@
-import { DOCUMENT } from '@angular/common';
 import {
+  afterNextRender,
   ChangeDetectionStrategy,
   Component,
   computed,
-  effect,
-  type ElementRef,
   inject,
+  Injector,
   linkedSignal,
   model,
   resource,
-  signal,
-  viewChild,
 } from '@angular/core';
 import { Router } from '@angular/router';
 import {
   ForCombobox,
+  ForComboboxAnchor,
   ForComboboxContent,
-  ForComboboxEmpty,
   ForComboboxInput,
+  ForComboboxList,
   ForComboboxOption,
+  ForComboboxStatus,
 } from 'forty-cdk/combobox';
+import { ForDialog, ForDialogBackdrop } from 'forty-cdk/dialog';
+import { ForVisuallyHidden } from 'forty-cdk/visually-hidden';
 
 import type { DocIndexEntry } from '../doc/doc-model';
 import { GUIDE_INDEX } from '../doc/guides';
@@ -37,17 +38,27 @@ const NO_INDEX: readonly DocIndexEntry[] = [];
   selector: 'command-palette',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    ForDialog,
+    ForDialogBackdrop,
     ForCombobox,
+    ForComboboxAnchor,
     ForComboboxInput,
     ForComboboxContent,
+    ForComboboxList,
     ForComboboxOption,
-    ForComboboxEmpty,
+    ForComboboxStatus,
+    ForVisuallyHidden,
     Icon,
   ],
   template: `
     @if (open()) {
-      <div class="cmdk-backdrop"></div>
-      <div class="cmdk-wrap">
+      <div
+        forDialog
+        class="cmdk-wrap"
+        ariaLabel="Search the documentation"
+        (dismiss)="open.set(false)"
+      >
+        <div forDialogBackdrop class="cmdk-backdrop"></div>
         <div
           forCombobox
           class="cmdk"
@@ -58,10 +69,9 @@ const NO_INDEX: readonly DocIndexEntry[] = [];
           [autoHighlight]="true"
           ariaLabel="Search the documentation"
         >
-          <div class="cmdk-field">
+          <div forComboboxAnchor class="cmdk-field">
             <app-icon name="magnifying-glass" class="cmdk-search-icon" />
             <input
-              #input
               forComboboxInput
               class="cmdk-input"
               placeholder="Search primitives and sections…"
@@ -69,31 +79,46 @@ const NO_INDEX: readonly DocIndexEntry[] = [];
             <kbd class="cmdk-kbd">Esc</kbd>
           </div>
           <div forComboboxContent class="cmdk-content" animate.enter="pg-pop-in">
-            @for (result of results(); track result.entry.path) {
-              <div
-                forComboboxOption
-                [value]="result.entry.path"
-                [label]="result.entry.title"
-                class="cmdk-option"
-              >
-                <span class="cmdk-option-head">
-                  <span class="cmdk-option-title">
-                    @for (part of result.title; track $index) {
-                      <span [class.cmdk-match]="part.match">{{ part.text }}</span>
-                    }
+            <div forComboboxList class="cmdk-list">
+              @for (result of results(); track result.entry.path) {
+                <div
+                  forComboboxOption
+                  #option="forComboboxOption"
+                  [value]="result.entry.path"
+                  [label]="result.entry.title"
+                  [attr.aria-label]="result.entry.title + ', ' + result.entry.group"
+                  [attr.aria-describedby]="
+                    result.snippet.length > 0 ? option.id() + '-snippet' : null
+                  "
+                  class="cmdk-option"
+                >
+                  <span class="cmdk-option-head">
+                    <span class="cmdk-option-title">
+                      @for (part of result.title; track $index) {
+                        <span [class.cmdk-match]="part.match">{{ part.text }}</span>
+                      }
+                    </span>
+                    <span class="cmdk-option-group">{{ result.entry.group }}</span>
                   </span>
-                  <span class="cmdk-option-group">{{ result.entry.group }}</span>
+                  @if (result.snippet.length > 0) {
+                    <span class="cmdk-option-snippet" [id]="option.id() + '-snippet'">
+                      @for (part of result.snippet; track $index) {
+                        <span [class.cmdk-match]="part.match">{{ part.text }}</span>
+                      }
+                    </span>
+                  }
+                </div>
+              }
+            </div>
+            <div forComboboxStatus #status="forComboboxStatus">
+              @if (status.count() === 0) {
+                <p class="cmdk-empty">No results for "{{ query() }}".</p>
+              } @else {
+                <span forVisuallyHidden>
+                  {{ status.count() }} {{ status.count() === 1 ? 'result' : 'results' }}
                 </span>
-                @if (result.snippet.length > 0) {
-                  <span class="cmdk-option-snippet">
-                    @for (part of result.snippet; track $index) {
-                      <span [class.cmdk-match]="part.match">{{ part.text }}</span>
-                    }
-                  </span>
-                }
-              </div>
-            }
-            <div forComboboxEmpty class="cmdk-empty">No results for "{{ query() }}".</div>
+              }
+            </div>
           </div>
         </div>
       </div>
@@ -102,15 +127,16 @@ const NO_INDEX: readonly DocIndexEntry[] = [];
 })
 export class CommandPalette {
   readonly #router = inject(Router);
-  readonly #document = inject(DOCUMENT);
+  readonly #injector = inject(Injector);
 
   /** Whether the palette is shown. Two-way bound from the shell (Cmd/Ctrl+K). */
   readonly open = model(false);
 
-  protected readonly query = signal('');
+  protected readonly query = linkedSignal<boolean, string>({
+    source: this.open,
+    computation: () => '',
+  });
   protected readonly selected: readonly string[] = [];
-
-  protected readonly inputEl = viewChild<ElementRef<HTMLInputElement>>('input');
 
   /**
    * Stays true once the palette has been opened, so closing it does not put the
@@ -127,7 +153,7 @@ export class CommandPalette {
    *
    * Idle until then — a `params` of `undefined` is what keeps the loader from
    * running — which is what keeps the chunk out of every route that merely
-   * renders the header's ⌘K hint, and out of the prerender.
+   * renders the header's shortcut hint, and out of the prerender.
    */
   readonly #index = resource({
     params: () => (this.#requested() ? true : undefined),
@@ -143,33 +169,16 @@ export class CommandPalette {
     searchEntries(this.#entries(), this.query()).slice(0, MAX_RESULTS),
   );
 
-  #wasOpen = false;
-  #returnFocus: HTMLElement | null = null;
-
-  constructor() {
-    effect(() => {
-      const open = this.open();
-      const input = this.inputEl();
-      if (open && !this.#wasOpen) {
-        this.#returnFocus = this.#document.activeElement as HTMLElement | null;
-        this.query.set('');
-      }
-      if (open && input) {
-        input.nativeElement.focus();
-      }
-      if (!open && this.#wasOpen) {
-        this.#returnFocus?.focus();
-        this.#returnFocus = null;
-      }
-      this.#wasOpen = open;
-    });
-  }
-
   protected pick(paths: readonly string[]): void {
     const path = paths.at(-1);
-    if (path) {
-      void this.#router.navigateByUrl(path);
-    }
     this.open.set(false);
+    if (path) {
+      afterNextRender(
+        () => {
+          void this.#router.navigateByUrl(path);
+        },
+        { injector: this.#injector },
+      );
+    }
   }
 }

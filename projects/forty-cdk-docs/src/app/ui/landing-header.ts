@@ -3,13 +3,14 @@ import { RouterLink } from '@angular/router';
 
 import { GITHUB_REPO } from './github';
 import { Icon } from './icon';
+import { SearchButton } from './search-button';
 import { SITE_SECTIONS } from './site-sections';
 import { ThemeToggle } from './theme-toggle';
 
 @Component({
   selector: 'landing-header',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, Icon, ThemeToggle],
+  imports: [RouterLink, Icon, SearchButton, ThemeToggle],
   template: `
     <div class="bar">
       <span class="brand-name">forty-cdk</span>
@@ -21,6 +22,7 @@ import { ThemeToggle } from './theme-toggle';
       </nav>
 
       <div class="actions">
+        <search-button />
         <a
           class="pg-icon-btn"
           [href]="repo"
