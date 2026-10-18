@@ -100,6 +100,8 @@ When the image errors, the directive flips `shouldShowFallback()` and the initia
 
 The directive does not impose a `role`. Pair the avatar with visible name text or `aria-label` on the surrounding element when identity matters. Set `alt=""` on the `<img>` for purely decorative avatars next to a name, or provide a meaningful `alt` description if the avatar stands alone.
 
+A meaningful `alt` names the avatar only while the image is shown: once it fails, the image is hidden and the fallback initials are all that is left to announce. When an avatar stands alone, name the root instead (`role="img"` with an `aria-label`) and give the `<img>` `alt=""`, so the fallback carries the same name as the loaded image.
+
 ## Styling
 
 forty-cdk ships no styles: put your own class on each piece and key your CSS off the `data-*` attributes listed under [API](#api), not off the `for*` selectors ([Styling forty-cdk](../../../docs/styling.md) explains why).

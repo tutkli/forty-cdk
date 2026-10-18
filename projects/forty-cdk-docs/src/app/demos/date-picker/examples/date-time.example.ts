@@ -50,9 +50,13 @@ import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/international
       [maxDate]="max"
       [formatOptions]="formatOptions"
       placeholder="Pick a date & time"
-      ariaLabel="Choose a date and time"
     >
-      <button forDatePickerTrigger type="button" class="dpdt-trigger">
+      <button
+        forDatePickerTrigger
+        aria-label="Choose a date and time"
+        type="button"
+        class="dpdt-trigger"
+      >
         <span forDatePickerValue class="dpdt-value"></span>
         <svg class="dpdt-chevron" viewBox="0 0 24 24" aria-hidden="true">
           <path

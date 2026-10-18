@@ -8,10 +8,17 @@ import { ForProgress, ForProgressIndicator } from 'forty-cdk/progress';
   template: `
     <div class="upload">
       <div class="head">
-        <span class="file">project-assets.zip</span>
+        <span id="upload-file" class="file">project-assets.zip</span>
         <span class="label">{{ label(uploaded(), total) }}</span>
       </div>
-      <div forProgress class="track" [value]="uploaded()" [max]="total" [getValueLabel]="label">
+      <div
+        forProgress
+        class="track"
+        aria-labelledby="upload-file"
+        [value]="uploaded()"
+        [max]="total"
+        [getValueLabel]="label"
+      >
         <div forProgressIndicator class="indicator"></div>
       </div>
     </div>

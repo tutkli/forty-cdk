@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, signal, ViewEncapsulation } from '@angular/core';
 import { form, FormField, requiredError, validate } from '@angular/forms/signals';
+import { ForField, ForFieldError, ForLabel } from 'forty-cdk/field';
 import {
   ForSelect,
   ForSelectContent,
@@ -19,6 +20,9 @@ interface Profile {
   encapsulation: ViewEncapsulation.None,
   imports: [
     FormField,
+    ForField,
+    ForLabel,
+    ForFieldError,
     ForSelect,
     ForSelectTrigger,
     ForSelectValue,
@@ -27,7 +31,8 @@ interface Profile {
     ForSelectIndicator,
   ],
   template: `
-    <div class="form-select-wrap">
+    <div forField class="form-select-wrap">
+      <span forLabel class="form-select-label">Subscription plan</span>
       <div
         forSelect
         #select="forSelect"
@@ -73,7 +78,7 @@ interface Profile {
       </div>
 
       @if (profileForm.plan().touched() && !profileForm.plan().valid()) {
-        <p class="form-select-error">Pick a plan to continue.</p>
+        <p forFieldError class="form-select-error">Pick a plan to continue.</p>
       }
     </div>
   `,
@@ -87,6 +92,12 @@ interface Profile {
       flex-direction: column;
       gap: 0.4rem;
       width: min(260px, 100%);
+    }
+
+    .form-select-label {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--ex-text, #17191c);
     }
 
     .form-select-field {

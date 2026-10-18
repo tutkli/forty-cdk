@@ -32,9 +32,13 @@ import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/international
           [(value)]="value"
           [step]="30"
           [hourCycle]="24"
-          [ariaLabel]="'Meeting time'"
         >
-          <button forTimePickerTrigger type="button" class="time-picker-states-trigger">
+          <button
+            forTimePickerTrigger
+            aria-label="Meeting time"
+            type="button"
+            class="time-picker-states-trigger"
+          >
             <span forTimePickerValue placeholder="Pick a time"></span>
           </button>
 
@@ -64,9 +68,13 @@ import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/international
           [step]="30"
           [hourCycle]="24"
           disabled
-          [ariaLabel]="'Meeting time'"
         >
-          <button forTimePickerTrigger type="button" class="time-picker-states-trigger">
+          <button
+            forTimePickerTrigger
+            aria-label="Meeting time"
+            type="button"
+            class="time-picker-states-trigger"
+          >
             <span forTimePickerValue placeholder="Pick a time"></span>
           </button>
         </div>
@@ -81,9 +89,13 @@ import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/international
           [step]="30"
           [hourCycle]="24"
           readonly
-          [ariaLabel]="'Meeting time'"
         >
-          <button forTimePickerTrigger type="button" class="time-picker-states-trigger">
+          <button
+            forTimePickerTrigger
+            aria-label="Meeting time"
+            type="button"
+            class="time-picker-states-trigger"
+          >
             <span forTimePickerValue placeholder="Pick a time"></span>
           </button>
         </div>

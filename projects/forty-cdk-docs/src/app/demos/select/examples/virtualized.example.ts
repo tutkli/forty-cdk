@@ -40,9 +40,8 @@ import { injectVirtualizer } from 'forty-cdk/virtualization';
       [visibleRange]="v.range()"
       (scrollToIndex)="v.scrollToIndex($event, { align: 'auto' })"
       placeholder="Pick a city"
-      ariaLabel="City"
     >
-      <button forSelectTrigger type="button" class="virt-select-trigger">
+      <button forSelectTrigger aria-label="City" type="button" class="virt-select-trigger">
         <span forSelectValue></span>
         <svg class="virt-select-chevron" viewBox="0 0 24 24" aria-hidden="true">
           <path

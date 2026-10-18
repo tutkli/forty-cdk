@@ -96,9 +96,8 @@ interface Option {
       class="select-field"
       [(value)]="value"
       placeholder="Pick your stack"
-      ariaLabel="Tech stack"
     >
-      <button forSelectTrigger type="button" class="select-trigger">
+      <button forSelectTrigger aria-label="Tech stack" type="button" class="select-trigger">
         <span forSelectValue></span>
         <svg class="select-chevron" viewBox="0 0 24 24" aria-hidden="true">
           <path
@@ -706,6 +705,7 @@ In the default (non-virtualized) path the full APG range keyboard works while th
 
 Implements the [WAI-ARIA select-only combobox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/examples/combobox-select-only/).
 
+- **Name the trigger.** `role="combobox"` takes its name from the author only, never from the value or placeholder it shows, and the root's `ariaLabel` names the `role="listbox"` popup rather than the trigger. Wrap the select in `[forField]` with a `[forLabel]`, which lands `aria-labelledby` on the trigger, or put an `aria-label` / `aria-labelledby` on `[forSelectTrigger]`. Without a root `ariaLabel` the listbox is labelled by the trigger.
 - Apply each option directive to a `<button>` so Space / Enter activation come from native button behavior. The listbox doesn't intercept them.
 - Disabled options keep `tabindex="-1"` and `aria-disabled="true"` (per APG): still reachable by a screen reader, but click and keyboard activation are no-ops, and a mouse press on one leaves focus where it was, so arrow keys and typeahead carry on from the option that had it.
 - A mouse press on the listbox surface that lands on no focusable element (padding, a `[forSelectGroupLabel]`, a `[forSelectSeparator]`) is cancelled, so focus stays on the option that had it and the arrow keys keep working. A press on an option still focuses it in every browser. A press on your own `<button>` inside the surface is left to the browser, and macOS Safari and Firefox do not focus a `<button>` on a press.

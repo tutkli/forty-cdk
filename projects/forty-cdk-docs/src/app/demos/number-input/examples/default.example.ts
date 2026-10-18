@@ -13,7 +13,15 @@ import {
   template: `
     <div forNumberInputGroup class="stepper">
       <button forNumberInputDecrement class="step-btn" ariaLabel="Decrease">−</button>
-      <input forNumberInput class="step-input" [(value)]="qty" [min]="0" [max]="10" [step]="1" />
+      <input
+        forNumberInput
+        class="step-input"
+        aria-label="Quantity"
+        [(value)]="qty"
+        [min]="0"
+        [max]="10"
+        [step]="1"
+      />
       <button forNumberInputIncrement class="step-btn" ariaLabel="Increase">+</button>
     </div>
   `,

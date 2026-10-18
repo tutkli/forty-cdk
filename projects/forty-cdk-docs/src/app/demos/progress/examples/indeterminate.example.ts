@@ -7,7 +7,7 @@ import { ForProgress, ForProgressIndicator } from 'forty-cdk/progress';
   imports: [ForProgress, ForProgressIndicator],
   template: `
     <div class="row">
-      <div forProgress class="track" [value]="null" [max]="100">
+      <div forProgress class="track" ariaLabel="Loading" [value]="null" [max]="100">
         <div forProgressIndicator class="indicator"></div>
       </div>
       <span class="value">…</span>

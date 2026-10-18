@@ -58,7 +58,6 @@ const COUNTRIES = [
       multiple
       [(query)]="query"
       [(value)]="value"
-      ariaLabel="Country search"
     >
       <div forComboboxChips class="chips-combobox-field">
         @for (entry of value(); track entry) {
@@ -67,7 +66,12 @@ const COUNTRIES = [
             <button forComboboxChipRemove class="chips-combobox-chip-remove">×</button>
           </span>
         }
-        <input forComboboxInput class="chips-combobox-input" placeholder="Add countries…" />
+        <input
+          forComboboxInput
+          aria-label="Country search"
+          class="chips-combobox-input"
+          placeholder="Add countries…"
+        />
       </div>
 
       @if (combobox.open()) {

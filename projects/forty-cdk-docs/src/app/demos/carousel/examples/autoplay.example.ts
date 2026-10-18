@@ -48,7 +48,6 @@ interface Slide {
         startLabel="Start automatic slide show"
         stopLabel="Stop automatic slide show"
       >
-        <span class="sr-only">Toggle autoplay</span>
         @if (car.playing()) {
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M8.25 5.25h3v13.5h-3zM12.75 5.25h3v13.5h-3z" fill="currentColor" />
@@ -145,18 +144,6 @@ interface Slide {
 
     .acar-rotation-btn:hover {
       background: var(--ex-surface-2, #f2eee6);
-    }
-
-    .sr-only {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      padding: 0;
-      margin: -1px;
-      overflow: hidden;
-      clip: rect(0, 0, 0, 0);
-      white-space: nowrap;
-      border: 0;
     }
 
     .acar-nav-row {
