@@ -436,6 +436,9 @@ describe('ForDrawerManager (programmatic)', () => {
 
     it('does NOT lock for non-modal drawers', () => {
       document.body.style.overflow = 'auto';
+      onTestFinished(() => {
+        document.body.style.overflow = '';
+      });
       const { drawers } = setup();
       drawers.open(SheetDrawer, { data: { message: 'x' }, modal: false });
       expect(document.body.style.overflow).toBe('auto');
@@ -706,6 +709,9 @@ describe('ForDrawerManager (programmatic)', () => {
 
     it('modal: false drops aria-modal and skips scroll lock', () => {
       document.body.style.overflow = 'auto';
+      onTestFinished(() => {
+        document.body.style.overflow = '';
+      });
       const { drawers } = setup();
       drawers.open(SheetDrawer, { data: { message: 'x' }, modal: false });
       const host = document.querySelector<HTMLElement>('[role="dialog"]')!;
@@ -1129,6 +1135,10 @@ describe('ForDrawerManager (programmatic)', () => {
       expect(backdrop.classList.contains('backdrop-out')).toBe(true);
 
       await ref.closed;
+      await vi.waitFor(() => {
+        expect(host.isConnected).toBe(false);
+        expect(backdrop.isConnected).toBe(false);
+      });
     });
 
     it('closes cleanly when backdropAnimateLeave is set but no backdrop is rendered', async () => {
@@ -1163,7 +1173,6 @@ describe('ForDrawerManager (programmatic)', () => {
       const firstHost = hosts.find((h) => h.textContent?.includes('first'))!;
       const secondHost = hosts.find((h) => h.textContent?.includes('second'))!;
       firstHost.getAnimations = running;
-      secondHost.getAnimations = running;
 
       first.close();
 
@@ -1172,6 +1181,7 @@ describe('ForDrawerManager (programmatic)', () => {
       expect(secondHost.classList.contains('second-out')).toBe(false);
 
       await first.closed;
+      await vi.waitFor(() => expect(firstHost.isConnected).toBe(false));
     });
 
     it('applies the leave class on close for a drawer opened from inside effect()', async () => {
@@ -1208,6 +1218,7 @@ describe('ForDrawerManager (programmatic)', () => {
       expect(host.classList.contains('effect-out')).toBe(true);
 
       await ref.closed;
+      await vi.waitFor(() => expect(host.isConnected).toBe(false));
     });
   });
 

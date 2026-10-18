@@ -131,8 +131,9 @@ describe('ForDialog stacking depth (#2063)', () => {
     const leaving = dialogs.open(ManagedDepthDialog, { animateLeave: 'out' });
     TestBed.tick();
     const leavingHost = document.querySelector<HTMLElement>('[forDialog]')!;
-    leavingHost.getAnimations = () =>
-      [{ finished: new Promise<void>(() => undefined) }] as unknown as Animation[];
+    let finishLeave!: () => void;
+    const finished = new Promise<void>((resolve) => (finishLeave = resolve));
+    leavingHost.getAnimations = () => [{ finished }] as unknown as Animation[];
 
     leaving.close();
     await new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve)));
@@ -144,6 +145,9 @@ describe('ForDialog stacking depth (#2063)', () => {
 
     const hosts = Array.from(document.querySelectorAll<HTMLElement>('[forDialog]'));
     expect(hosts.map((host) => host.getAttribute('data-depth'))).toEqual(['0', '1']);
+
+    finishLeave();
+    await vi.waitFor(() => expect(leavingHost.isConnected).toBe(false));
   });
 });
 

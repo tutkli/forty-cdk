@@ -1307,13 +1307,14 @@ const fortyCdkPlugin = {
     // A spec that mounts a primitive which portals content to `document.body`
     // must call `afterEachOverlayCleanup()` (from
     // `projects/forty-cdk/src/test-utils/overlay-cleanup.ts`) at least once in
-    // the file. That helper is a leak detector for the failing-mid-render
-    // path: if a test throws between `open.set(true)` and the
-    // `afterNextRender` that inserts/removes the portaled node, the orphan can
-    // survive into the next spec and bleed stale ARIA. The happy path never
-    // exercises it, so a silently-omitted call reads as "isolated" when it
-    // isn't (tooltip.spec had 22 portaling `describe` blocks missing the call
-    // before #1155).
+    // the file. That helper runs after the `TestBed` teardown, fails a passing
+    // test whose destroy hooks left a portaled node or a scroll lock behind,
+    // and scrubs the residue either way: if a test throws between
+    // `open.set(true)` and the `afterNextRender` that inserts/removes the
+    // portaled node, the orphan would otherwise survive into the next spec
+    // and bleed stale ARIA. A silently-omitted call leaves both a broken
+    // destroy path and that orphan unreported (tooltip.spec had 22 portaling
+    // `describe` blocks missing the call before #1155).
     //
     // Detection is import-driven and file-level (the coarse, robust option
     // recommended by #1256): if the file imports one of the maintained

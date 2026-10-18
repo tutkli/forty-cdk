@@ -1983,6 +1983,9 @@ describe('ForDrawer (declarative)', () => {
       }
 
       document.body.style.overflow = 'auto';
+      onTestFinished(() => {
+        document.body.style.overflow = '';
+      });
       const r = renderHost(Host);
       r.instance.open.set(true);
       await flush(r.fixture);

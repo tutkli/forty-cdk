@@ -24,16 +24,26 @@
  * precedes, which is the only point early enough to observe an AOT fixture's
  * definition-time `NG0912`
  * ([#1957](https://github.com/tutkli/forty-cdk/issues/1957)); the recording
- * patch travels with that import, and the assertion runs after each test.
+ * patch travels with that import.
+ *
+ * The assertion runs from `onTestFinished`, not from this file's `afterEach`:
+ * Vitest runs `afterEach` hooks innermost first and in reverse registration
+ * order, so the builder's `TestBed` teardown — an `afterEach` registered by a
+ * setup file loaded before this one — runs after every hook here, while
+ * `onTestFinished` runs after all of them. A diagnostic raised while the
+ * `TestBed` destroys a fixture therefore fails the test that mounted it.
  */
-import { afterEach, vi } from 'vitest';
+import { afterEach, beforeEach, onTestFinished, vi } from 'vitest';
 
 import { assertNoAngularDiagnostics } from './angular-diagnostics';
+
+beforeEach(() => {
+  onTestFinished(() => assertNoAngularDiagnostics());
+});
 
 afterEach(() => {
   vi.restoreAllMocks();
   vi.clearAllMocks();
   vi.unstubAllGlobals();
   vi.unstubAllEnvs();
-  assertNoAngularDiagnostics();
 });
