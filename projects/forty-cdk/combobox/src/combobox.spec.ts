@@ -127,7 +127,15 @@ class ComboboxHost {
 @Component({
   imports: [ForCombobox, ForComboboxInput],
   template: `
-    <div forCombobox [disabled]="disabled()" [required]="required()">
+    <div
+      forCombobox
+      [disabled]="disabled()"
+      [required]="required()"
+      [invalid]="invalid()"
+      [pending]="pending()"
+      [touched]="touched()"
+      [dirty]="dirty()"
+    >
       <input forComboboxInput />
     </div>
   `,
@@ -135,6 +143,24 @@ class ComboboxHost {
 class ComboboxFormControlHost {
   readonly disabled = signal(false);
   readonly required = signal(false);
+  readonly invalid = signal(false);
+  readonly pending = signal(false);
+  readonly touched = signal(false);
+  readonly dirty = signal(false);
+}
+
+@Component({
+  imports: [ForCombobox, ForComboboxTrigger],
+  template: `
+    <div forCombobox [disabled]="disabled()" [touched]="touched()" [dirty]="dirty()">
+      <button forComboboxTrigger>Pick</button>
+    </div>
+  `,
+})
+class ComboboxPickerFormControlHost {
+  readonly disabled = signal(false);
+  readonly touched = signal(false);
+  readonly dirty = signal(false);
 }
 
 function getOption(testId: string): HTMLElement {
@@ -819,6 +845,7 @@ describe('ForCombobox', () => {
       const r = renderHost(ComboboxFormControlHost);
       const result: FormControlMountResult = {
         control: r.query<HTMLInputElement>('[forComboboxInput]')!,
+        stateHost: r.query<HTMLElement>('[forCombobox]')!,
         flush: r.flush,
         setFlag: (flag, value) => {
           switch (flag) {
@@ -828,12 +855,50 @@ describe('ForCombobox', () => {
             case 'required':
               r.instance.required.set(value);
               return;
+            case 'invalid':
+              r.instance.invalid.set(value);
+              return;
+            case 'pending':
+              r.instance.pending.set(value);
+              return;
+            case 'touched':
+              r.instance.touched.set(value);
+              return;
+            case 'dirty':
+              r.instance.dirty.set(value);
+              return;
           }
         },
       };
       return result;
     },
-    { flags: ['disabled', 'required'] },
+    { flags: ['disabled', 'required', 'invalid', 'pending', 'touched', 'dirty'], label: 'input' },
+  );
+
+  assertFormControlContract(
+    () => {
+      const r = renderHost(ComboboxPickerFormControlHost);
+      const result: FormControlMountResult = {
+        control: r.query<HTMLButtonElement>('[forComboboxTrigger]')!,
+        stateHost: r.query<HTMLElement>('[forCombobox]')!,
+        flush: r.flush,
+        setFlag: (flag, value) => {
+          switch (flag) {
+            case 'disabled':
+              r.instance.disabled.set(value);
+              return;
+            case 'touched':
+              r.instance.touched.set(value);
+              return;
+            case 'dirty':
+              r.instance.dirty.set(value);
+              return;
+          }
+        },
+      };
+      return result;
+    },
+    { flags: ['disabled', 'touched', 'dirty'], label: 'picker' },
   );
 
   assertOverlayTriggerAriaContract(

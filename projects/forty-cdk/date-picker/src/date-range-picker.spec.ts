@@ -129,6 +129,10 @@ class Host {
       [disabled]="isDisabled()"
       [readonly]="isReadonly()"
       [required]="isRequired()"
+      [invalid]="isInvalid()"
+      [pending]="isPending()"
+      [touched]="isTouched()"
+      [dirty]="isDirty()"
       ariaLabel="Choose date range"
     >
       <button forDatePickerTrigger>Open</button>
@@ -140,6 +144,10 @@ class RangeFormControlHost {
   readonly isDisabled = signal(false);
   readonly isReadonly = signal(false);
   readonly isRequired = signal(false);
+  readonly isInvalid = signal(false);
+  readonly isPending = signal(false);
+  readonly isTouched = signal(false);
+  readonly isDirty = signal(false);
 }
 
 @Component({
@@ -259,6 +267,7 @@ describe('ForDateRangePicker', () => {
       const r = renderHost(RangeFormControlHost);
       const result: FormControlMountResult = {
         control: r.query<HTMLButtonElement>('[forDatePickerTrigger]')!,
+        stateHost: r.query<HTMLElement>('[forDateRangePicker]')!,
         flush: r.flush,
         setFlag: (flag, flagValue) => {
           switch (flag) {
@@ -271,12 +280,24 @@ describe('ForDateRangePicker', () => {
             case 'required':
               r.instance.isRequired.set(flagValue);
               return;
+            case 'invalid':
+              r.instance.isInvalid.set(flagValue);
+              return;
+            case 'pending':
+              r.instance.isPending.set(flagValue);
+              return;
+            case 'touched':
+              r.instance.isTouched.set(flagValue);
+              return;
+            case 'dirty':
+              r.instance.isDirty.set(flagValue);
+              return;
           }
         },
       };
       return result;
     },
-    { flags: ['disabled', 'readonly', 'required'] },
+    { flags: ['disabled', 'readonly', 'required', 'invalid', 'pending', 'touched', 'dirty'] },
   );
 
   assertOverlayTriggerAriaContract(

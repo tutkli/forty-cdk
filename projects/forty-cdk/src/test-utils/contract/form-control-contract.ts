@@ -12,14 +12,20 @@
  * `assertFormControlContract` call in its entry point. Adding a form
  * primitive without adopting the contract is a red build, not a silent gap.
  *
- * Each adopter passes only the `flags` it actually reflects on a single
- * element, so partial adoption is normal:
- *   - Select / Combobox reflect the `aria-*` + `data-disabled` set on their
- *     trigger / editable input (a child of the `[forSelect]` / `[forCombobox]`
- *     wrapper), which is what those adopters return as `control`; the
- *     form-state `data-*` booleans reflect on the wrapper root, so they pass
- *     only the flags that live on the returned element (`disabled`,
- *     `required`).
+ * Each adopter passes only the `flags` it actually reflects, so partial
+ * adoption is normal:
+ *   - Select, Combobox, DatePicker, DateRangePicker and TimePicker split their
+ *     state across two elements. The `aria-*` set and `data-disabled` /
+ *     `data-readonly` reflect on the focusable trigger or editable input, which
+ *     those adopters return as `control`; the four `FormUiControlBase`
+ *     booleans (`data-touched` / `data-dirty` / `data-pending` /
+ *     `data-invalid`) reflect on the root, which they return as `stateHost`.
+ *     Every rung asserts its ARIA half on `control` and those four `data-*`
+ *     halves on `stateHost ?? control`, so a split root takes `invalid` and
+ *     `pending` like a single-element one. Combobox's input leaves
+ *     `data-readonly` to the root, so it omits `readonly`; its picker
+ *     anatomy's `[forComboboxTrigger]` is a plain `<button>` announcing none of
+ *     the form state, so that adoption passes `disabled` / `touched` / `dirty`.
  *   - Roving-container controls (`Listbox`, `Slider`, `ToggleGroup`, and the
  *     date/time fields) are a non-focusable `role="listbox"` / `role="group"`
  *     host: they drop out of the tab order when disabled (focus lives on a
@@ -77,6 +83,7 @@ export type FormControlFlag =
 export interface FormControlMountResult {
   /** The control's host element — the one that carries the ARIA / data flags. */
   control: HTMLElement;
+  stateHost?: HTMLElement;
   /** Drain Angular's render pipeline. */
   flush: () => void | Promise<void>;
   /** Drive a flag from the host (sets the corresponding signal to `value`). */
@@ -126,6 +133,7 @@ export interface FormControlContractOptions {
    * `data-required=""` and the *absence* of `aria-required`. Defaults to `true`.
    */
   roleSupportsAriaRequired?: boolean;
+  label?: string;
 }
 
 const ALL_FLAGS: ReadonlyArray<FormControlFlag | 'name'> = [
@@ -158,8 +166,13 @@ export function assertFormControlContract(
   const customRoleStaysFocusable = options.customRoleStaysFocusable ?? false;
   const roleSupportsAriaReadonly = options.roleSupportsAriaReadonly ?? true;
   const roleSupportsAriaRequired = options.roleSupportsAriaRequired ?? true;
+  const stateOf = (ctx: FormControlMountResult): HTMLElement => ctx.stateHost ?? ctx.control;
 
-  describe('form-control contract', () => {
+  const title = options.label
+    ? `form-control contract (${options.label})`
+    : 'form-control contract';
+
+  describe(title, () => {
     it('omits truthy-only ARIA flags when the underlying signal is false', async () => {
       const ctx = await mount();
       const c = ctx.control;
@@ -175,12 +188,13 @@ export function assertFormControlContract(
     it('omits boolean form-state data-* attributes when their flag is false', async () => {
       const ctx = await mount();
       const c = ctx.control;
+      const state = stateOf(ctx);
       expect(c.hasAttribute('data-disabled')).toBe(false);
       expect(c.hasAttribute('data-readonly')).toBe(false);
-      expect(c.hasAttribute('data-touched')).toBe(false);
-      expect(c.hasAttribute('data-dirty')).toBe(false);
-      expect(c.hasAttribute('data-pending')).toBe(false);
-      expect(c.hasAttribute('data-invalid')).toBe(false);
+      expect(state.hasAttribute('data-touched')).toBe(false);
+      expect(state.hasAttribute('data-dirty')).toBe(false);
+      expect(state.hasAttribute('data-pending')).toBe(false);
+      expect(state.hasAttribute('data-invalid')).toBe(false);
     });
 
     if (has('disabled')) {
@@ -272,12 +286,12 @@ export function assertFormControlContract(
         ctx.setFlag('invalid', true);
         await ctx.flush();
         expect(ctx.control.getAttribute('aria-invalid')).toBe('true');
-        expect(ctx.control.getAttribute('data-invalid')).toBe('');
+        expect(stateOf(ctx).getAttribute('data-invalid')).toBe('');
 
         ctx.setFlag('invalid', false);
         await ctx.flush();
         expect(ctx.control.hasAttribute('aria-invalid')).toBe(false);
-        expect(ctx.control.hasAttribute('data-invalid')).toBe(false);
+        expect(stateOf(ctx).hasAttribute('data-invalid')).toBe(false);
       });
     }
 
@@ -287,12 +301,12 @@ export function assertFormControlContract(
         ctx.setFlag('pending', true);
         await ctx.flush();
         expect(ctx.control.getAttribute('aria-busy')).toBe('true');
-        expect(ctx.control.getAttribute('data-pending')).toBe('');
+        expect(stateOf(ctx).getAttribute('data-pending')).toBe('');
 
         ctx.setFlag('pending', false);
         await ctx.flush();
         expect(ctx.control.hasAttribute('aria-busy')).toBe(false);
-        expect(ctx.control.hasAttribute('data-pending')).toBe(false);
+        expect(stateOf(ctx).hasAttribute('data-pending')).toBe(false);
       });
     }
 
@@ -301,11 +315,11 @@ export function assertFormControlContract(
         const ctx = await mount();
         ctx.setFlag('touched', true);
         await ctx.flush();
-        expect(ctx.control.getAttribute('data-touched')).toBe('');
+        expect(stateOf(ctx).getAttribute('data-touched')).toBe('');
 
         ctx.setFlag('touched', false);
         await ctx.flush();
-        expect(ctx.control.hasAttribute('data-touched')).toBe(false);
+        expect(stateOf(ctx).hasAttribute('data-touched')).toBe(false);
       });
     }
 
@@ -314,11 +328,11 @@ export function assertFormControlContract(
         const ctx = await mount();
         ctx.setFlag('dirty', true);
         await ctx.flush();
-        expect(ctx.control.getAttribute('data-dirty')).toBe('');
+        expect(stateOf(ctx).getAttribute('data-dirty')).toBe('');
 
         ctx.setFlag('dirty', false);
         await ctx.flush();
-        expect(ctx.control.hasAttribute('data-dirty')).toBe(false);
+        expect(stateOf(ctx).hasAttribute('data-dirty')).toBe(false);
       });
     }
 

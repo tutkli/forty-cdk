@@ -20,11 +20,13 @@ import {
 import { ForField, ForFieldError } from 'forty-cdk/field';
 import { ForListbox, ForListboxOption } from 'forty-cdk/listbox';
 import { ForSelect, ForSelectContent, ForSelectOption, ForSelectTrigger } from 'forty-cdk/select';
+import { ForToggleGroup, ForToggleGroupItem } from 'forty-cdk/toggle';
 
 import { afterEachOverlayCleanup, flush, flushPositioning, renderHost } from '../test-utils';
+import { LIBRARY_CODE } from '../test-utils/source-scan';
 
 /**
- * Library-wide contract: a **single-select** form field binds to the three
+ * Library-wide contract: a **single-select** form field binds to the
  * array-backed selection roots through the standard `[formField]` directive,
  * with nothing in between ([#1579](https://github.com/tutkli/forty-cdk/issues/1579)).
  *
@@ -45,10 +47,14 @@ import { afterEachOverlayCleanup, flush, flushPositioning, renderHost } from '..
  * helper existed to preserve. The field's value type is checked at compile
  * time, so this file compiling at all is half the assertion.
  *
- * One parameterised contract over the three roots rather than three prose
- * suites: the mechanism under test is Angular's own custom-control resolution,
+ * One parameterised contract over the roots rather than one prose suite per
+ * root: the mechanism under test is Angular's own custom-control resolution,
  * identical for each, and the only per-root variation is which element carries
- * the widget role and which one takes focus.
+ * the widget role, which one takes focus, and whether that role supports
+ * `aria-readonly` / `aria-required`. The roster is derived from source: every
+ * `FormUiControlBase` root whose `value` is a `readonly` array model seeded
+ * empty, which is what an array-backed selection is. A slider's array is
+ * seeded with a thumb and never empty, so it is not one.
  */
 interface FruitModel {
   readonly fruit: readonly string[];
@@ -186,6 +192,32 @@ class ComboboxFieldHost implements FruitFieldHost {
   readonly tree = form(this.model, (path) => applyFruitSchema(path, this));
 }
 
+@Component({
+  imports: [ForField, ForFieldError, ForToggleGroup, ForToggleGroupItem, FormField],
+  template: `
+    <div forField>
+      <div forToggleGroup [formField]="tree.fruit">
+        <button forToggleGroupItem value="apple" data-test-id="apple">Apple</button>
+        <button forToggleGroupItem value="banana" data-test-id="banana">Banana</button>
+      </div>
+      @if (showError()) {
+        <p forFieldError #err="forFieldError" data-test-id="error">
+          {{ err.messages().join(', ') }}
+        </p>
+      }
+    </div>
+  `,
+})
+class ToggleGroupFieldHost implements FruitFieldHost {
+  readonly model = signal<FruitModel>({ fruit: [] });
+  readonly disable = signal(false);
+  readonly makeReadonly = signal(false);
+  readonly makeRequired = signal(false);
+  readonly showError = signal(false);
+  readonly open = signal(false);
+  readonly tree = form(this.model, (path) => applyFruitSchema(path, this));
+}
+
 interface RootCase {
   readonly name: string;
   readonly host: Type<FruitFieldHost>;
@@ -193,6 +225,8 @@ interface RootCase {
   readonly widget: string;
   readonly focusTarget: string;
   readonly overlayBacked: boolean;
+  readonly roleSupportsAriaReadonly: boolean;
+  readonly roleSupportsAriaRequired: boolean;
 }
 
 const CASES: readonly RootCase[] = [
@@ -203,6 +237,8 @@ const CASES: readonly RootCase[] = [
     widget: '[forListbox]',
     focusTarget: '[data-test-id="apple"]',
     overlayBacked: false,
+    roleSupportsAriaReadonly: true,
+    roleSupportsAriaRequired: true,
   },
   {
     name: 'ForSelect',
@@ -211,6 +247,8 @@ const CASES: readonly RootCase[] = [
     widget: '[forSelectTrigger]',
     focusTarget: '[forSelectTrigger]',
     overlayBacked: true,
+    roleSupportsAriaReadonly: true,
+    roleSupportsAriaRequired: true,
   },
   {
     name: 'ForCombobox',
@@ -219,8 +257,35 @@ const CASES: readonly RootCase[] = [
     widget: '[forComboboxInput]',
     focusTarget: '[forComboboxInput]',
     overlayBacked: true,
+    roleSupportsAriaReadonly: true,
+    roleSupportsAriaRequired: true,
+  },
+  {
+    name: 'ForToggleGroup',
+    host: ToggleGroupFieldHost,
+    root: '[forToggleGroup]',
+    widget: '[forToggleGroup]',
+    focusTarget: '[data-test-id="apple"]',
+    overlayBacked: false,
+    roleSupportsAriaReadonly: false,
+    roleSupportsAriaRequired: false,
   },
 ];
+
+const ARRAY_SELECTION_MODEL = /\breadonly value = model<readonly [^>]+>\(\[\]\)/;
+const FORM_UI_CONTROL_ROOT =
+  /export class (\w+)(?:<[^>]*>)?\s+extends\s+(?:FormUiControlBase|AnchoredFormValueControlBase)\b/;
+
+function arraySelectionRoots(): string[] {
+  const roots: string[] = [];
+  for (const source of LIBRARY_CODE.values()) {
+    const root = FORM_UI_CONTROL_ROOT.exec(source);
+    if (root && ARRAY_SELECTION_MODEL.test(source)) {
+      roots.push(root[1]!);
+    }
+  }
+  return roots.sort();
+}
 
 const submittedValues = (host: HTMLElement): string[] =>
   Array.from(host.querySelectorAll<HTMLInputElement>('input[type="hidden"]')).map((i) => i.value);
@@ -230,6 +295,10 @@ const optionOf = (testId: string): HTMLButtonElement =>
 
 describe('single-select form field binds directly through [formField]', () => {
   afterEachOverlayCleanup();
+
+  it('covers every array-backed selection root the library declares', () => {
+    expect(arraySelectionRoots()).toEqual(CASES.map((c) => c.name).sort());
+  });
 
   for (const c of CASES) {
     describe(c.name, () => {
@@ -295,17 +364,25 @@ describe('single-select form field binds directly through [formField]', () => {
         instance.makeReadonly.set(true);
         await flush(fixture);
         expect(rootOf(el).hasAttribute('data-readonly')).toBe(true);
-        expect(widgetOf(el).getAttribute('aria-readonly')).toBe('true');
+        expect(widgetOf(el).getAttribute('aria-readonly')).toBe(
+          c.roleSupportsAriaReadonly ? 'true' : null,
+        );
       });
 
       it('reflects schema `required` on the widget host', async () => {
         const { el, instance, fixture } = renderHost(c.host);
         await flush(fixture);
         expect(widgetOf(el).getAttribute('aria-required')).toBeNull();
+        expect(rootOf(el).hasAttribute('data-required')).toBe(false);
 
         instance.makeRequired.set(true);
         await flush(fixture);
-        expect(widgetOf(el).getAttribute('aria-required')).toBe('true');
+        if (c.roleSupportsAriaRequired) {
+          expect(widgetOf(el).getAttribute('aria-required')).toBe('true');
+        } else {
+          expect(widgetOf(el).getAttribute('aria-required')).toBeNull();
+          expect(rootOf(el).getAttribute('data-required')).toBe('');
+        }
       });
 
       it('reflects field `invalid` on the root and the widget host, clearing it on commit', async () => {
@@ -314,8 +391,12 @@ describe('single-select form field binds directly through [formField]', () => {
         expect(rootOf(el).hasAttribute('data-invalid')).toBe(true);
         expect(widgetOf(el).getAttribute('aria-invalid')).toBe('true');
 
-        instance.model.set({ fruit: ['apple'] });
-        await flush(fixture);
+        instance.open.set(c.overlayBacked);
+        await flushPositioning(fixture);
+        optionOf('apple').click();
+        await flushPositioning(fixture);
+
+        expect(instance.model().fruit).toEqual(['apple']);
         expect(rootOf(el).hasAttribute('data-invalid')).toBe(false);
         expect(widgetOf(el).getAttribute('aria-invalid')).toBeNull();
       });
