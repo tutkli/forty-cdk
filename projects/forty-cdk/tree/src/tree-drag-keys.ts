@@ -3,7 +3,7 @@ import { resolveLiftedDragControl } from 'forty-cdk/core';
 /**
  * Tree-specific keyboard resolver for `ForTreeNodeDrag`. Framework-free and unit-testable in
  * isolation. Not part of the public API. The lift key (`isDragLiftKey`) and the commit / cancel
- * vocabulary are shared across reorder coordinators in `_internal/drag-session/keyboard-drag-keys`.
+ * vocabulary are shared across reorder coordinators in `core/drag-session/keyboard-drag-keys`.
  */
 
 /** The action a key press maps to while a node is lifted (keyboard drag in progress). */

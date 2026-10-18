@@ -46,7 +46,7 @@ const openSubmenus = new WeakMap<ForMenuContext, ForMenuSub>();
  * here, not in the parent.
  *
  * The shared item-collection / typeahead / navigate / focus / id /
- * outside-veto logic is owned by the `_internal/menu-overlay` helper (the
+ * outside-veto logic is owned by the `forty-cdk/core-overlay` menu-overlay helper (the
  * same one `[forDropdownMenu]` / `[forContextMenu]` compose). The submenu
  * contributes only its genuine differences on top: pointer-driven (hover)
  * open/close scheduling, the autofocus vetoes that keep hover from stealing /

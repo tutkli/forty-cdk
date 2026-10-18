@@ -186,8 +186,7 @@ export class ForSelect<T = string>
 
   /**
    * Presentation mode. When `true`, `[forSelectContent]` mounts as a trapped /
-   * inert / scroll-locked modal surface (routed through `_internal/modal-shell`)
-   * instead of the default anchored popover — the batteries-included touch
+   * inert / scroll-locked modal surface instead of the default anchored popover — the batteries-included touch
    * presentation a consumer opts into with `[modal]="isCoarsePointer()"`. The
    * form-value wiring (`[(value)]`, `name`) is unchanged.
    *

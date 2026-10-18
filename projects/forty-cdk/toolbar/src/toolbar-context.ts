@@ -11,7 +11,7 @@ import {
  * toggle-group items (when nested) register themselves on construction so the
  * toolbar can run roving-tabindex and arrow-key navigation in DOM order.
  *
- * Extends the lifted `HostRovingItemHandle` so any `_internal/` consumer
+ * Extends the lifted `HostRovingItemHandle` so any `forty-cdk/core` consumer
  * that registers against the toolbar via `FOR_HOST_ROVING_CONTEXT` works
  * without a toolbar-specific handle type.
  */
@@ -21,7 +21,7 @@ export type ForToolbarItemHandle = HostRovingItemHandle;
  * Coordination contract owned by `ForToolbar`.
  *
  * Extends the neutral `HostRovingContext` (the lifted "host owns roving
- * navigation for embedded items" contract in `_internal/`) plus
+ * navigation for embedded items" contract in `forty-cdk/core`) plus
  * toolbar-specific extras (`loop`). Toolbar provides both
  * `FOR_TOOLBAR_CONTEXT` and `FOR_HOST_ROVING_CONTEXT` from the same
  * instance via `useExisting`, so any neutral consumer (e.g.
