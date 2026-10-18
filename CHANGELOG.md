@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.39.0] - 2026-10-18
+
+### Added
+
+- **Date field**, **Time field** — `ForDateRangeField` and `ForTimeRangeField` expose
+  `disordered()`, `true` while both endpoints are complete but the start falls after the end
+  ([#2244](https://github.com/tutkli/forty-cdk/issues/2244)). While it holds, `value` stays `null`
+  and the root reflects `aria-invalid="true"` + `data-range-error`; read it through the
+  `forDateRangeField` / `forTimeRangeField` template reference to say the range is out of order in
+  words instead of by border colour alone. `ForTimeRangeField` never reports it while
+  `[allowOvernight]` is set.
+
 ### Changed
 
 - **Listbox, Select, Combobox, Tree — BREAKING.** Virtualization is now an opt-in piece placed on
@@ -30,15 +42,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   **label the trigger** (`aria-labelledby`, `aria-label` or a surrounding `[forField]`) if it relied
   on its content for its accessible name.
 
+- **Navigation menu — indicator geometry follows scroll and survives the close**
+  ([#2388](https://github.com/tutkli/forty-cdk/issues/2388)). The
+  `--for-navigation-menu-indicator-x|y|width|height` properties were measured from the border box of
+  `[forNavigationMenuList]` without its scroll, so the indicator drifted off its trigger while an
+  overflowing trigger row scrolled, and they reset to `0` when the menu closed, so a transition on
+  them swept the indicator back to the start of the list. They are now offsets in the list's
+  scrolled content coordinates from its padding box, and they keep the last geometry while only
+  `data-state` turns `hidden`. **Drop any hand-written compensation** for the list's border or
+  scroll offset.
+
 ### Fixed
 
 - **Bundle size** — every dev-only assertion and warning now drops out of a production build
   ([#2584](https://github.com/tutkli/forty-cdk/issues/2584)). They were gated on `isDevMode()`, a
   runtime call a bundler cannot evaluate, so the checks and their `FORCDK-*` messages shipped and
-  never ran. They now gate on `ngDevMode`, which the Angular CLI defines as `false` in production:
-  a single-select `ForListbox` app is 1.4 kB gzip smaller, and its bundle keeps only the
-  unconditional `FORCDK-LISTBOX-001`. Dev builds, SSR and specs that stub `ngDevMode` behave as
-  before.
+  never ran. They now gate on `ngDevMode`, which the Angular CLI defines as `false` in production: a
+  single-select `ForListbox` app is 1.4 kB gzip smaller, and its bundle keeps only the unconditional
+  `FORCDK-LISTBOX-001`. Dev builds, SSR and specs that stub `ngDevMode` behave as before.
+
+- **Overlays** — focus moving into an `<iframe>` outside an open overlay now dismisses it
+  ([#2354](https://github.com/tutkli/forty-cdk/issues/2354)). A press inside a frame outside an open
+  popover, menu, select or picker reached none of the library's document listeners, so the overlay
+  stayed painted over the page while the user worked inside the embedded content. It now closes as
+  it does for any other focus move outside it.
+
+- **Popover**, **Date picker**, **Hover card** — a forward Tab past the last control of an open
+  surface no longer re-enters it ([#2353](https://github.com/tutkli/forty-cdk/issues/2353)). With
+  nothing tabbable after the trigger, the browser advanced from the trigger into the still-mounted
+  surface at the end of `<body>`, and focus fell to `<body>` when it unmounted. The surface is now
+  `inert` for that one default action, which also covers a non-dismissible surface that stays open.
+
+- **File upload** — a drag carrying no files is left to its default behaviour
+  ([#2377](https://github.com/tutkli/forty-cdk/issues/2377)). Before, a text or link drag over
+  `[forFileUpload]` set `data-dragging`, advertised a copy drop, and had its drop swallowed; now
+  `dragenter`, `dragover` and `drop` act only when `dataTransfer.types` includes `'Files'`.
+
+- **Virtualization** — `(endReached)` on `[forVirtualViewport]` fires within `[overscan]` rows of
+  the end instead of a fixed 5, and `injectInfiniteScroll` runs `onLoadMore` untracked, so a signal
+  the callback reads no longer re-runs the load-more check
+  ([#2406](https://github.com/tutkli/forty-cdk/issues/2406)). Both defaults are 5, so an unbound
+  `[overscan]` behaves as before.
+
+- **Drag & drop**, **Listbox**, **Tree** — a pointer drag is measured from the press point, not from
+  the move that armed it ([#2607](https://github.com/tutkli/forty-cdk/issues/2607)). `[forFreeDrag]`
+  trailed the pointer by the distance travelled before arming, and the previews of `[forDraggable]`,
+  `[forListboxReorder]` and `[forTreeNodeDrag]` were grabbed off by the same distance; the grabbed
+  point now stays under the pointer.
 
 ## [0.38.0] - 2026-10-17
 
@@ -4784,7 +4834,8 @@ primitives.
 - **Display** — avatar, progress, meter, tree.
 - `forty-cdk/internationalized-date` secondary entry point exposing the `@internationalized/date` adapters for the date and time primitives.
 
-[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.38.0...HEAD
+[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.39.0...HEAD
+[0.39.0]: https://github.com/tutkli/forty-cdk/compare/v0.38.0...v0.39.0
 [0.38.0]: https://github.com/tutkli/forty-cdk/compare/v0.37.0...v0.38.0
 [0.37.0]: https://github.com/tutkli/forty-cdk/compare/v0.36.0...v0.37.0
 [0.36.0]: https://github.com/tutkli/forty-cdk/compare/v0.35.0...v0.36.0
