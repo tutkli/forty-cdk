@@ -12,6 +12,7 @@ import {
   ForComboboxEmpty,
   ForComboboxIndicator,
   ForComboboxInput,
+  ForComboboxList,
   ForComboboxOption,
 } from 'forty-cdk/combobox';
 
@@ -25,21 +26,20 @@ const SEED_TAGS = ['design', 'engineering', 'marketing', 'product', 'sales'] as 
     ForCombobox,
     ForComboboxInput,
     ForComboboxContent,
+    ForComboboxList,
     ForComboboxOption,
     ForComboboxIndicator,
     ForComboboxEmpty,
     ForComboboxAction,
   ],
   template: `
-    <div
-      forCombobox
-      class="ca-combobox"
-      [(query)]="query"
-      [(value)]="value"
-      [(open)]="open"
-      ariaLabel="Tag search"
-    >
-      <input forComboboxInput class="ca-combobox-input" placeholder="Search or create a tag…" />
+    <div forCombobox class="ca-combobox" [(query)]="query" [(value)]="value" [(open)]="open">
+      <input
+        forComboboxInput
+        aria-label="Tag search"
+        class="ca-combobox-input"
+        placeholder="Search or create a tag…"
+      />
 
       @if (open()) {
         <div forComboboxContent class="ca-combobox-content" animate.enter="ca-combobox-pop-in">
@@ -49,12 +49,14 @@ const SEED_TAGS = ['design', 'engineering', 'marketing', 'product', 'sales'] as 
             </button>
           }
 
-          @for (tag of filtered(); track tag) {
-            <div forComboboxOption [value]="tag" [label]="tag" class="ca-combobox-option">
-              <span forComboboxIndicator class="ca-combobox-indicator">✓</span>
-              {{ tag }}
-            </div>
-          }
+          <div forComboboxList class="ca-combobox-list">
+            @for (tag of filtered(); track tag) {
+              <div forComboboxOption [value]="tag" [label]="tag" class="ca-combobox-option">
+                <span forComboboxIndicator class="ca-combobox-indicator">✓</span>
+                {{ tag }}
+              </div>
+            }
+          </div>
 
           <div forComboboxEmpty class="ca-combobox-empty">Type a name, then "Create".</div>
         </div>
@@ -113,6 +115,12 @@ const SEED_TAGS = ['design', 'engineering', 'marketing', 'product', 'sales'] as 
         0 2px 4px rgba(0, 0, 0, 0.04),
         0 20px 40px -18px rgba(0, 0, 0, 0.2)
       );
+    }
+
+    .ca-combobox-list {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
     }
 
     .ca-combobox-action {

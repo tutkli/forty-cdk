@@ -6,8 +6,8 @@ import { ForAvatar, ForAvatarFallback, ForAvatarImage } from 'forty-cdk/avatar';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ForAvatar, ForAvatarImage, ForAvatarFallback],
   template: `
-    <span forAvatar #avatar="forAvatar" class="avatar">
-      <img forAvatarImage class="avatar-image" [src]="brokenSrc" alt="Grace Hopper" />
+    <span forAvatar #avatar="forAvatar" class="avatar" role="img" aria-label="Grace Hopper">
+      <img forAvatarImage class="avatar-image" [src]="brokenSrc" alt="" />
       @if (avatar.shouldShowFallback()) {
         <span forAvatarFallback class="avatar-fallback">GH</span>
       }

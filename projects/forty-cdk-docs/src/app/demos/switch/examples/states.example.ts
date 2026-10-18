@@ -8,22 +8,34 @@ import { ForSwitch } from 'forty-cdk/switch';
   template: `
     <div class="states">
       <div class="state">
-        <span class="state-label">Default</span>
-        <button forSwitch class="switch" [(checked)]="enabled">
+        <span id="sw-state-default" class="state-label">Default</span>
+        <button forSwitch class="switch" [(checked)]="enabled" aria-labelledby="sw-state-default">
           <span class="thumb"></span>
         </button>
       </div>
 
       <div class="state">
-        <span class="state-label">Disabled</span>
-        <button forSwitch class="switch" [(checked)]="enabled" disabled>
+        <span id="sw-state-disabled" class="state-label">Disabled</span>
+        <button
+          forSwitch
+          class="switch"
+          [(checked)]="enabled"
+          disabled
+          aria-labelledby="sw-state-disabled"
+        >
           <span class="thumb"></span>
         </button>
       </div>
 
       <div class="state">
-        <span class="state-label">Read-only</span>
-        <button forSwitch class="switch" [(checked)]="enabled" readonly>
+        <span id="sw-state-readonly" class="state-label">Read-only</span>
+        <button
+          forSwitch
+          class="switch"
+          [(checked)]="enabled"
+          readonly
+          aria-labelledby="sw-state-readonly"
+        >
           <span class="thumb"></span>
         </button>
       </div>

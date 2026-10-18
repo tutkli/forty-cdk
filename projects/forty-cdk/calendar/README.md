@@ -341,12 +341,18 @@ The recommended path is `[forCalendarMonthSelect]` and `[forCalendarYearSelect]`
         />
       </svg>
     </button>
-    <select forCalendarMonthSelect #m="forCalendarMonthSelect">
+    <select forCalendarMonthSelect #m="forCalendarMonthSelect" aria-label="Month">
       @for (opt of m.options(); track opt.value) {
       <option [value]="opt.value" [disabled]="opt.disabled">{{ opt.label }}</option>
       }
     </select>
-    <select forCalendarYearSelect #y="forCalendarYearSelect" [minYear]="1900" [maxYear]="2100">
+    <select
+      forCalendarYearSelect
+      #y="forCalendarYearSelect"
+      aria-label="Year"
+      [minYear]="1900"
+      [maxYear]="2100"
+    >
       @for (opt of y.years(); track opt.value) {
       <option [value]="opt.value" [disabled]="opt.disabled">{{ opt.value }}</option>
       }

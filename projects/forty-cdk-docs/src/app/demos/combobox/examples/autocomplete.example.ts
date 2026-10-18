@@ -54,11 +54,11 @@ const COUNTRIES = [
       autocompleteMode="both"
       [(query)]="query"
       [(value)]="value"
-      ariaLabel="Country search"
     >
       <div class="ac-combobox-single">
         <input
           forComboboxInput
+          aria-label="Country search"
           class="ac-combobox-input ac-combobox-input--boxed"
           placeholder="Type to autocomplete…"
         />

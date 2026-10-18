@@ -8,7 +8,14 @@ import { ForProgress, ForProgressIndicator } from 'forty-cdk/progress';
   template: `
     <div class="stack">
       <div class="row">
-        <div forProgress class="track" [value]="value()" [max]="100" announceCompletion>
+        <div
+          forProgress
+          class="track"
+          ariaLabel="Task progress"
+          [value]="value()"
+          [max]="100"
+          announceCompletion
+        >
           <div forProgressIndicator class="indicator"></div>
         </div>
         <span class="value">{{ value() }}%</span>

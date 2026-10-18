@@ -13,12 +13,13 @@ import {
   template: `
     <div class="states">
       <div class="state">
-        <span class="state-label">Default</span>
+        <span id="ni-state-default" class="state-label">Default</span>
         <div forNumberInputGroup class="stepper">
           <button forNumberInputDecrement class="step-btn" ariaLabel="Decrease">−</button>
           <input
             forNumberInput
             class="step-input"
+            aria-labelledby="ni-state-default"
             [(value)]="qty"
             [min]="0"
             [max]="10"
@@ -29,12 +30,13 @@ import {
       </div>
 
       <div class="state">
-        <span class="state-label">Disabled</span>
+        <span id="ni-state-disabled" class="state-label">Disabled</span>
         <div forNumberInputGroup class="stepper">
           <button forNumberInputDecrement class="step-btn" ariaLabel="Decrease">−</button>
           <input
             forNumberInput
             class="step-input"
+            aria-labelledby="ni-state-disabled"
             disabled
             [(value)]="qty"
             [min]="0"
@@ -46,12 +48,13 @@ import {
       </div>
 
       <div class="state">
-        <span class="state-label">Read-only</span>
+        <span id="ni-state-readonly" class="state-label">Read-only</span>
         <div forNumberInputGroup class="stepper">
           <button forNumberInputDecrement class="step-btn" ariaLabel="Decrease">−</button>
           <input
             forNumberInput
             class="step-input"
+            aria-labelledby="ni-state-readonly"
             readonly
             [(value)]="qty"
             [min]="0"

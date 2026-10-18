@@ -17,6 +17,7 @@ import {
   ForDatePickerValue,
   ForDateRangePicker,
 } from 'forty-cdk/date-picker';
+import { ForField, ForFieldError, ForLabel } from 'forty-cdk/field';
 import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized-date';
 
 interface Booking {
@@ -29,6 +30,9 @@ interface Booking {
   encapsulation: ViewEncapsulation.None,
   imports: [
     FormField,
+    ForField,
+    ForLabel,
+    ForFieldError,
     ForDateRangePicker,
     ForDatePickerTrigger,
     ForDatePickerValue,
@@ -43,7 +47,8 @@ interface Booking {
   ],
   providers: [...provideInternationalizedDateAdapter()],
   template: `
-    <div class="dp-range-form-field">
+    <div forField class="dp-range-form-field">
+      <span forLabel class="dp-range-form-label">Stay</span>
       <div
         forDateRangePicker
         #picker="forDateRangePicker"
@@ -138,7 +143,7 @@ interface Booking {
       </div>
 
       @if (bookingForm.stay().touched() && !bookingForm.stay().valid()) {
-        <p class="dp-range-form-error">Choose both a start and an end date.</p>
+        <p forFieldError class="dp-range-form-error">Choose both a start and an end date.</p>
       }
     </div>
   `,
@@ -152,6 +157,12 @@ interface Booking {
       flex-direction: column;
       gap: 0.75rem;
       align-items: flex-start;
+    }
+
+    .dp-range-form-label {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--ex-text, #17191c);
     }
 
     .dp-range-form-error {

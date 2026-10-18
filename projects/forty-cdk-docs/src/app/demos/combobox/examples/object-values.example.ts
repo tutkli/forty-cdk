@@ -58,11 +58,11 @@ const CITIES: readonly City[] = [
       [itemToStringLabel]="toLabel"
       [itemToFormValue]="toId"
       name="city"
-      ariaLabel="City search"
     >
       <div class="obj-combobox-single">
         <input
           forComboboxInput
+          aria-label="City search"
           class="obj-combobox-input obj-combobox-input--boxed"
           placeholder="Search a city…"
         />

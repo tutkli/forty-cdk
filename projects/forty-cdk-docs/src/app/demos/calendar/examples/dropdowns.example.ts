@@ -44,7 +44,12 @@ import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized
           </svg>
         </button>
 
-        <select forCalendarMonthSelect #m="forCalendarMonthSelect" class="calendar-select">
+        <select
+          forCalendarMonthSelect
+          #m="forCalendarMonthSelect"
+          class="calendar-select"
+          aria-label="Month"
+        >
           @for (opt of m.options(); track opt.value) {
             <option [value]="opt.value" [disabled]="opt.disabled">{{ opt.label }}</option>
           }
@@ -53,6 +58,7 @@ import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized
         <select
           forCalendarYearSelect
           #y="forCalendarYearSelect"
+          aria-label="Year"
           [minYear]="minYear"
           [maxYear]="maxYear"
           class="calendar-select"

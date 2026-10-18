@@ -21,18 +21,16 @@ interface Filters {
   ],
   template: `
     <div forField class="field">
-      <label forLabel class="field-label">
-        <span class="field-label-text">Search the docs</span>
-        <div forSearchGroup class="search">
-          <input
-            forSearch
-            class="search-input"
-            placeholder="At least 3 characters…"
-            [formField]="filtersForm.term"
-          />
-          <button forSearchClear class="search-clear" ariaLabel="Clear search">×</button>
-        </div>
-      </label>
+      <span forLabel class="field-label">Search the docs</span>
+      <div forSearchGroup class="search">
+        <input
+          forSearch
+          class="search-input"
+          placeholder="At least 3 characters…"
+          [formField]="filtersForm.term"
+        />
+        <button forSearchClear class="search-clear" ariaLabel="Clear search">×</button>
+      </div>
       @if (filtersForm.term().touched() && !filtersForm.term().valid()) {
         <p forFieldError #err="forFieldError" class="field-error">
           {{ err.messages().join(', ') }}
@@ -53,12 +51,6 @@ interface Filters {
     }
 
     .field-label {
-      display: flex;
-      flex-direction: column;
-      gap: 0.45rem;
-    }
-
-    .field-label-text {
       font-size: 0.9rem;
       font-weight: 600;
       color: var(--ex-text, #17191c);

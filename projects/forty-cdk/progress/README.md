@@ -39,7 +39,14 @@ import { ForProgress, ForProgressIndicator } from 'forty-cdk/progress';
   template: `
     <div class="stack">
       <div class="row">
-        <div forProgress class="track" [value]="value()" [max]="100" announceCompletion>
+        <div
+          forProgress
+          class="track"
+          ariaLabel="Task progress"
+          [value]="value()"
+          [max]="100"
+          announceCompletion
+        >
           <div forProgressIndicator class="indicator"></div>
         </div>
         <span class="value">{{ value() }}%</span>
@@ -104,6 +111,7 @@ Visual fill paired with `[forProgress]`. Reflects the same state so width / tran
 Implements the [WAI-ARIA Meter pattern](https://www.w3.org/WAI/ARIA/apg/patterns/meter/), using the [`progressbar` role](https://www.w3.org/TR/wai-aria-1.2/#progressbar).
 
 - **`role="progressbar"`** is announced as "progressbar" with the current value as a percentage (or your `aria-valuetext` if `getValueLabel` is set).
+- **Name the bar.** `role="progressbar"` requires an accessible name and the directive binds none on its own: reference the visible caption with `aria-labelledby` (the file name of an upload, say), or set `ariaLabel` when nothing on screen says what is progressing.
 - **Indeterminate omits `aria-valuenow`.** Per spec, the absence of `aria-valuenow` is what tells AT the bar is indeterminate. The directive enforces this; `data-state="indeterminate"` is the CSS hook.
 - **Announce sparingly.** `announceCompletion` is opt-in; only enable it on flows where the user explicitly waits for completion (uploads, submissions). For background activity, the silent state change is enough.
 - **Keep the bar focusable only if it has actions.** A vanilla `[forProgress]` is non-interactive and should not be in the tab order.

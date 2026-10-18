@@ -33,9 +33,8 @@ interface Option {
       multiple
       [(value)]="value"
       placeholder="Pick tags…"
-      ariaLabel="Tags"
     >
-      <button forSelectTrigger type="button" class="multi-select-trigger">
+      <button forSelectTrigger aria-label="Tags" type="button" class="multi-select-trigger">
         <span forSelectValue></span>
         <svg class="multi-select-chevron" viewBox="0 0 24 24" aria-hidden="true">
           <path

@@ -58,9 +58,8 @@ const COUNTRIES: readonly Country[] = [
       [itemToFormValue]="toCode"
       name="country"
       placeholder="Pick a country"
-      ariaLabel="Country"
     >
-      <button forSelectTrigger type="button" class="obj-select-trigger">
+      <button forSelectTrigger aria-label="Country" type="button" class="obj-select-trigger">
         <span forSelectValue></span>
         <svg class="obj-select-chevron" viewBox="0 0 24 24" aria-hidden="true">
           <path

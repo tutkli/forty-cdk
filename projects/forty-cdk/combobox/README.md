@@ -115,17 +115,11 @@ const COUNTRIES = [
     ForComboboxClear,
   ],
   template: `
-    <div
-      forCombobox
-      #combobox="forCombobox"
-      class="combobox"
-      [(query)]="query"
-      [(value)]="value"
-      ariaLabel="Country search"
-    >
+    <div forCombobox #combobox="forCombobox" class="combobox" [(query)]="query" [(value)]="value">
       <div class="combobox-single">
         <input
           forComboboxInput
+          aria-label="Country search"
           class="combobox-input combobox-input--boxed"
           placeholder="Search countries…"
         />
@@ -838,6 +832,7 @@ Hovering an option also makes it the activedescendant, so mouse and keyboard int
 
 Implements the [WAI-ARIA Combobox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/).
 
+- **Name the input.** `role="combobox"` takes its name from the author, and a placeholder is only a fallback that disappears once the user types. The root's `ariaLabel` names the listbox, not the input. Give `[forComboboxInput]` a `<label for>`, an `aria-label` or an `aria-labelledby`, or wrap the combobox in `[forField]` with a `[forLabel]`. In the picker anatomy, label `[forComboboxTrigger]` the same way, for example `aria-labelledby` pointing at a visible label and at the element showing the value.
 - Apply the input directive to an actual `<input>`: the browser's caret and selection semantics are what make inline autocomplete work, and screen readers expect a real text field for `role="combobox"`.
 - `role="listbox"` lives on `[forComboboxContent]` in the editable anatomy and on `[forComboboxList]` in the picker anatomy; the input's `aria-controls` targets whichever carries it. In the picker anatomy the popup surface (`[forComboboxContent]`) is a `role="dialog"` named by the trigger (`aria-labelledby`; a static `aria-label` or `aria-labelledby` on it wins), so it can hold the input next to the list without an `aria-required-owned-elements` violation. The "editable + list" shape, with no trigger, leaves it role-less.
 - `aria-multiselectable="true"` (multi mode) and the labelled role (`aria-label` / `aria-labelledby`, pointing at the input) sit on whichever element carries `role="listbox"`: content in the editable anatomy, the list in the picker anatomy.

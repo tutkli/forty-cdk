@@ -47,17 +47,11 @@ const COUNTRIES = [
     ForComboboxClear,
   ],
   template: `
-    <div
-      forCombobox
-      #combobox="forCombobox"
-      class="combobox"
-      [(query)]="query"
-      [(value)]="value"
-      ariaLabel="Country search"
-    >
+    <div forCombobox #combobox="forCombobox" class="combobox" [(query)]="query" [(value)]="value">
       <div class="combobox-single">
         <input
           forComboboxInput
+          aria-label="Country search"
           class="combobox-input combobox-input--boxed"
           placeholder="Search countries…"
         />

@@ -17,11 +17,11 @@ interface Consent {
           forSwitch
           class="switch"
           [formField]="consentForm.privacy"
-          aria-label="Accept the privacy policy"
+          aria-labelledby="sw-privacy-label"
         >
           <span class="thumb"></span>
         </button>
-        <span class="text">I accept the privacy policy</span>
+        <span id="sw-privacy-label" class="text">I accept the privacy policy</span>
       </div>
       @if (consentForm.privacy().touched() && !consentForm.privacy().valid()) {
         <p class="error">You must accept the privacy policy to continue.</p>

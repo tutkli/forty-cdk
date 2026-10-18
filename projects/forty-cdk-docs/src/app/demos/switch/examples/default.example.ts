@@ -7,10 +7,10 @@ import { ForSwitch } from 'forty-cdk/switch';
   imports: [ForSwitch],
   template: `
     <div class="row">
-      <button forSwitch class="switch" [(checked)]="enabled">
+      <button forSwitch class="switch" [(checked)]="enabled" aria-labelledby="sw-label">
         <span class="thumb"></span>
       </button>
-      <span class="text">Notifications {{ enabled() ? 'on' : 'off' }}</span>
+      <span id="sw-label" class="text">Notifications</span>
     </div>
   `,
   styles: `
