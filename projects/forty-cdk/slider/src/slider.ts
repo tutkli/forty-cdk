@@ -9,7 +9,6 @@ import {
   ElementRef,
   inject,
   input,
-  isDevMode,
   model,
   output,
   PLATFORM_ID,
@@ -289,7 +288,7 @@ export class ForSlider
       });
       this.#destroyRef.onDestroy(() => this.#pointerSession?.destroy());
     }
-    if (isDevMode()) {
+    if (typeof ngDevMode === 'undefined' || ngDevMode) {
       let warnedBounds = false;
       let warnedStep = false;
       effect(() => {

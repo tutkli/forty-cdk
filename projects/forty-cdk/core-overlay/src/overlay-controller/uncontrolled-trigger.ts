@@ -1,4 +1,4 @@
-import { effect, isDevMode, type Signal } from '@angular/core';
+import { effect, type Signal } from '@angular/core';
 
 /** The trigger state the dev-mode missing-`[controls]` warning watches, and the warning itself. */
 export interface UncontrolledTriggerConfig {
@@ -19,7 +19,7 @@ export interface UncontrolledTriggerConfig {
  * creates no effect at all.
  */
 export function warnIfOpenWithoutControls(config: UncontrolledTriggerConfig): void {
-  if (!isDevMode()) {
+  if (typeof ngDevMode !== 'undefined' && !ngDevMode) {
     return;
   }
   let warned = false;

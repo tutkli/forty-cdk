@@ -1,5 +1,3 @@
-import { isDevMode } from '@angular/core';
-
 import { fortyWarn } from 'forty-cdk/core';
 import { type ForToastStackShift } from 'forty-cdk/defaults';
 
@@ -161,7 +159,7 @@ export function createToastStackShifter(options: ToastStackShifterOptions): Toas
    * than the binding at fault, and it would re-throw on every mutation.
    */
   const warnRejectedMotion = (motion: ForToastStackShift, error: unknown): void => {
-    if (!isDevMode() || warnedRejected) {
+    if ((typeof ngDevMode !== 'undefined' && !ngDevMode) || warnedRejected) {
       return;
     }
     warnedRejected = true;

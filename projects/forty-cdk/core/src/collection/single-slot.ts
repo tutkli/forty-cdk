@@ -1,4 +1,4 @@
-import { computed, effect, isDevMode, type Signal, signal } from '@angular/core';
+import { computed, effect, type Signal, signal } from '@angular/core';
 import { fortyWarn } from '../errors/errors';
 
 /**
@@ -69,7 +69,7 @@ export function createSingleSlot<T>(config: SingleSlotConfig): SingleSlot<T> {
   const occupants = signal<readonly T[]>([]);
   const value = computed<T | null>(() => occupants().at(-1) ?? null);
 
-  if (isDevMode()) {
+  if (typeof ngDevMode === 'undefined' || ngDevMode) {
     let warned = false;
     effect(() => {
       const registered = occupants().length;

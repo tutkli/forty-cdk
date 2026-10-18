@@ -462,7 +462,7 @@ function methodBody(text, nameEnd) {
 
 /**
  * The assertion-helper ledger: every `assert*` / `throw*` helper in library
- * source, split by whether it carries its own `isDevMode()` gate, plus every
+ * source, split by whether it carries its own `ngDevMode` gate, plus every
  * dev-gated `fortyError` throw written inline outside one.
  *
  * The policy is that the gate lives **inside the helper**, so it travels with
@@ -483,9 +483,9 @@ function methodBody(text, nameEnd) {
  * whose own body throws. A method that only delegates to a listed helper is a
  * grouped call site rather than a helper, so it is left out — counting those
  * would fill the ungated row with false positives and drown the signal. The
- * third row lists each `if (isDevMode() && …)` that throws a `fortyError`
- * outside any helper, by the code it throws: the check is gated, but no helper
- * carries it, so it is expected to stay empty.
+ * third row lists each `if ((typeof ngDevMode === 'undefined' || ngDevMode) && …)`
+ * that throws a `fortyError` outside any helper, by the code it throws: the
+ * check is gated, but no helper carries it, so it is expected to stay empty.
  *
  * Reads core for the same reason `sanctionedPulls` does: this is an internal
  * authoring convention, and four of the eight helpers live there.
@@ -512,9 +512,11 @@ function assertionHelpers(files) {
     }
     for (const { name, range } of helpers) {
       const body = range === null ? '' : text.slice(range.start, range.end);
-      (body.includes('isDevMode()') ? gated : narrowing).push(`${name} (\`${id}\`)`);
+      (body.includes('typeof ngDevMode') ? gated : narrowing).push(`${name} (\`${id}\`)`);
     }
-    for (const match of text.matchAll(/\bif \(isDevMode\(\) &&/g)) {
+    for (const match of text.matchAll(
+      /\bif \(\(typeof ngDevMode === 'undefined' \|\| ngDevMode\) &&/g,
+    )) {
       const open = text.indexOf('(', match.index);
       const close = closingParen(text, open);
       const thrown = /^\s*\{?\s*throw fortyError\(\{\s*code: '([^']+)'/.exec(text.slice(close + 1));

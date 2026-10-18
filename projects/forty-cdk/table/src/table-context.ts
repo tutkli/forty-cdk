@@ -1,4 +1,4 @@
-import { booleanAttribute, inject, InjectionToken, isDevMode, type Signal } from '@angular/core';
+import { booleanAttribute, inject, InjectionToken, type Signal } from '@angular/core';
 
 import {
   assertRootContext,
@@ -244,7 +244,7 @@ const COLUMN_NAME_PATTERN = /^[-_A-Za-z0-9]+$/;
  * production builds.
  */
 export function assertColumnName(name: string, piece: string): void {
-  if (isDevMode() && !COLUMN_NAME_PATTERN.test(name)) {
+  if ((typeof ngDevMode === 'undefined' || ngDevMode) && !COLUMN_NAME_PATTERN.test(name)) {
     throw fortyError({
       code: 'FORCDK-TABLE-007',
       message: `Invalid column name ${JSON.stringify(name)} declared on ${piece}.`,
@@ -272,7 +272,7 @@ const TRACK_BREAKOUT_PATTERN = /[;{}"']|\/\*/;
  * of the track). No-op in production builds.
  */
 export function assertColumnTrack(track: string, input: string, piece: string): void {
-  if (!isDevMode()) {
+  if (typeof ngDevMode !== 'undefined' && !ngDevMode) {
     return;
   }
   const reason = columnTrackDefect(track);

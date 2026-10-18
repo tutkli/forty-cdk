@@ -1,13 +1,5 @@
 import { isPlatformBrowser } from '@angular/common';
-import {
-  DestroyRef,
-  DOCUMENT,
-  ElementRef,
-  Injectable,
-  inject,
-  isDevMode,
-  PLATFORM_ID,
-} from '@angular/core';
+import { DestroyRef, DOCUMENT, ElementRef, Injectable, inject, PLATFORM_ID } from '@angular/core';
 
 import {
   composedClosest,
@@ -372,7 +364,7 @@ export function injectFocusTrap(): FocusTrap {
   inject(DestroyRef).onDestroy(() => {
     const wasActive = trap.isActive;
     trap.releaseKeyboardChannel();
-    if (isDevMode() && wasActive) {
+    if ((typeof ngDevMode === 'undefined' || ngDevMode) && wasActive) {
       queueMicrotask(() => warnIfNeverDeactivated(trap));
     }
   });

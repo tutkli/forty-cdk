@@ -1,5 +1,3 @@
-import { isDevMode } from '@angular/core';
-
 import { fortyError } from '../errors/errors';
 import {
   type ListOrientation,
@@ -93,7 +91,7 @@ export interface UnsupportedVirtualizedRangeSelectContext {
 export function throwUnsupportedVirtualizedRangeSelect(
   context: UnsupportedVirtualizedRangeSelectContext,
 ): void {
-  if (isDevMode()) {
+  if (typeof ngDevMode === 'undefined' || ngDevMode) {
     throw fortyError({
       code: 'FORCDK-CORE-008',
       scope: context.primitive,
@@ -146,7 +144,7 @@ export interface UnsupportedVirtualizedSelectionFollowsFocusContext {
 export function throwUnsupportedVirtualizedSelectionFollowsFocus(
   context: UnsupportedVirtualizedSelectionFollowsFocusContext,
 ): void {
-  if (isDevMode()) {
+  if (typeof ngDevMode === 'undefined' || ngDevMode) {
     throw fortyError({
       code: 'FORCDK-CORE-009',
       scope: context.primitive,

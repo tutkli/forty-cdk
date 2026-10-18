@@ -1,4 +1,3 @@
-import { isDevMode } from '@angular/core';
 import { fortyError } from '../errors/errors';
 
 /**
@@ -62,7 +61,7 @@ function readProbe(probe: () => unknown): unknown {
  * routed through an `effect()`.
  */
 export function assertRootContext(assertion: RootContextAssertion): void {
-  if (!isDevMode()) {
+  if (typeof ngDevMode !== 'undefined' && !ngDevMode) {
     return;
   }
   if (typeof readProbe(assertion.probe) === 'function') {

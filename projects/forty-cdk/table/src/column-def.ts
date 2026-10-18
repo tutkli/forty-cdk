@@ -4,7 +4,6 @@ import {
   Directive,
   inject,
   input,
-  isDevMode,
   TemplateRef,
   type InputSignal,
 } from '@angular/core';
@@ -378,7 +377,7 @@ export class ForTableColumnDef {
  * @param name The def's bound name, as the registry resolved it.
  */
 export function assertColumnDefConfig(def: ForTableColumnDef, name: string): void {
-  if (!isDevMode()) {
+  if (typeof ngDevMode !== 'undefined' && !ngDevMode) {
     return;
   }
   const piece = `forTableColumnDef="${name}"`;

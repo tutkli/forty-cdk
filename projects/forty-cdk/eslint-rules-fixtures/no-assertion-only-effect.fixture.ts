@@ -14,7 +14,7 @@
  */
 
 declare function effect(fn: () => void): void;
-declare function isDevMode(): boolean;
+declare const ngDevMode: unknown;
 declare function assertColumnName(name: string, piece: string): void;
 declare function throwUnsupportedCombination(primitive: string): void;
 declare function publishWidth(column: string, width: number): void;
@@ -57,7 +57,7 @@ effect(() => {
 // A dev gate around the whole body does not make it a side-effect effect — the
 // gate is orthogonal to *where* the throw surfaces.
 effect(() => {
-  if (!isDevMode()) {
+  if (typeof ngDevMode !== 'undefined' && !ngDevMode) {
     return;
   }
   throwUnsupportedCombination('tree');
@@ -87,7 +87,7 @@ effect(() => {
 // instance: it asserts that a binding was ever written, which is observable
 // only after the update pass, so there is no point of use to move to.
 export function assertBoundLikeCore(value: Signal<string>): void {
-  if (!isDevMode()) {
+  if (typeof ngDevMode !== 'undefined' && !ngDevMode) {
     return;
   }
   effect(() => {

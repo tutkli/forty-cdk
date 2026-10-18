@@ -1,4 +1,4 @@
-import { isDevMode, untracked } from '@angular/core';
+import { untracked } from '@angular/core';
 
 import { fortyWarn } from '../errors/errors';
 
@@ -51,7 +51,7 @@ export function claimReplacedAttribute(
   const current = owner;
   const claim = (): string | null => value() || null;
   current.claims.add(claim);
-  if (isDevMode() && current.claims.size > 1) {
+  if ((typeof ngDevMode === 'undefined' || ngDevMode) && current.claims.size > 1) {
     queueMicrotask(() => warnIfContested(element, name, current));
   }
   return {

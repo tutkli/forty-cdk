@@ -1,4 +1,4 @@
-import { afterNextRender, ElementRef, inject, isDevMode } from '@angular/core';
+import { afterNextRender, ElementRef, inject } from '@angular/core';
 import { fortyWarn } from 'forty-cdk/core';
 
 /** Identifies the surface and its two naming channels in the dev-mode missing-name warning. */
@@ -27,7 +27,7 @@ export interface UnnamedDialogConfig {
  * at all, and the check is inert on the server.
  */
 export function warnIfDialogUnnamed(config: UnnamedDialogConfig): void {
-  if (!isDevMode()) {
+  if (typeof ngDevMode !== 'undefined' && !ngDevMode) {
     return;
   }
   const host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;

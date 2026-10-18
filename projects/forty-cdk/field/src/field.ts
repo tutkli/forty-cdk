@@ -1,4 +1,4 @@
-import { computed, Directive, effect, inject, isDevMode, type Signal, signal } from '@angular/core';
+import { computed, Directive, effect, inject, type Signal, signal } from '@angular/core';
 
 import {
   adoptHostId,
@@ -74,7 +74,7 @@ export class ForField implements ForFieldContext, ForFieldAnchorContext {
   });
 
   constructor() {
-    if (isDevMode()) {
+    if (typeof ngDevMode === 'undefined' || ngDevMode) {
       this.#warnOnDuplicateSlot(this.#controlCount, 'control', 'controlId');
       this.#warnOnDuplicateSlot(this.#labelCount, '[forLabel]', 'labelId');
       this.#warnOnDuplicateSlot(this.#descriptionCount, '[forFieldDescription]', 'descriptionId');

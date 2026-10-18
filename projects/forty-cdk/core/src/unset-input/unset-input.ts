@@ -1,4 +1,4 @@
-import { effect, isDevMode, type Signal } from '@angular/core';
+import { effect, type Signal } from '@angular/core';
 import { fortyError } from '../errors/errors';
 
 const UNSET: unique symbol = Symbol('forty-cdk:unset-input');
@@ -103,7 +103,7 @@ export function assertInputBound<T>(
   piece: string,
   inputName: string,
 ): void {
-  if (!isDevMode()) {
+  if (typeof ngDevMode !== 'undefined' && !ngDevMode) {
     return;
   }
   effect(() => {

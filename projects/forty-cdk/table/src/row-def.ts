@@ -4,7 +4,6 @@ import {
   Directive,
   inject,
   input,
-  isDevMode,
   TemplateRef,
   type InputSignal,
 } from '@angular/core';
@@ -170,7 +169,7 @@ export class ForTableRowDef<T> {
  * @param def The row definition to check.
  */
 export function assertRowDefConfig(def: ForTableRowDef<unknown>): void {
-  if (!isDevMode()) {
+  if (typeof ngDevMode !== 'undefined' && !ngDevMode) {
     return;
   }
   const hasCell = def.cell() != null;

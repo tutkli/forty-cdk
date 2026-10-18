@@ -1,11 +1,4 @@
-import {
-  APP_ID,
-  InjectionToken,
-  Injectable,
-  type Provider,
-  inject,
-  isDevMode,
-} from '@angular/core';
+import { APP_ID, InjectionToken, Injectable, type Provider, inject } from '@angular/core';
 
 import { fortyError } from '../errors/errors';
 
@@ -94,7 +87,7 @@ export class IdGenerator {
 }
 
 function assertIdSalt(salt: string): void {
-  if (isDevMode() && /\s/.test(salt)) {
+  if ((typeof ngDevMode === 'undefined' || ngDevMode) && /\s/.test(salt)) {
     throw fortyError({
       code: 'FORCDK-CORE-012',
       message: `The id salt "${salt}" contains whitespace.`,
