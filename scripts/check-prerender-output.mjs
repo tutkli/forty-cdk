@@ -76,11 +76,13 @@ const statefulToggles = [];
 const mistitled = [];
 const titled = new Map();
 const unannounced = [];
+const unfocusable = [];
 let demoBlocks = 0;
 let themeToggles = 0;
 let currentLinks = 0;
 let railViewports = 0;
 let menuButtons = 0;
+let skipLinks = 0;
 
 /**
  * The `localStorage` key the site persists the theme under, read from the source
@@ -109,6 +111,18 @@ function readThemeKey() {
 }
 
 const themeKey = readThemeKey();
+
+/** The id the skip link focuses, read from the source the running application reads it from. */
+function readContentId() {
+  const chrome = join(repoRoot, 'projects', 'forty-cdk-docs', 'src', 'app', 'ui', 'site-chrome.ts');
+  const found = /export const CONTENT_ID = '([^']+)'/.exec(readFileSync(chrome, 'utf8'));
+  if (found === null) {
+    fail('site-chrome.ts exports no CONTENT_ID — the skip link target cannot be verified');
+  }
+  return found[1];
+}
+
+const CONTENT_ID = readContentId();
 
 /**
  * A prerendered page must carry no `data-theme`: the server knows nothing about
@@ -266,6 +280,43 @@ function checkNavigationChrome(label, html) {
   }
   if (problems.length > 0) {
     unannounced.push(`${label} (${[...new Set(problems)].join('; ')})`);
+  }
+}
+
+const APP_SHELL = /<div\b[^>]*\bclass="[^"]*\bapp-shell\b[^"]*"[^>]*>/i;
+const FIRST_FOCUSABLE =
+  /<(?:a\b[^>]*\bhref=|button\b|input\b|select\b|textarea\b|[a-z][\w-]*\b[^>]*\btabindex="(?:0|[1-9]\d*)")[^>]*>/i;
+
+/**
+ * Every page focuses the scroll container on arrival, so it has to be able to
+ * take focus; a documentation page also has to open its tab order with a skip
+ * link to its own `<main>`, which has to be able to take focus in turn
+ * ([#2327](https://github.com/tutkli/forty-cdk/issues/2327)).
+ */
+function checkContentFocus(label, html, route) {
+  const problems = [];
+  const shell = APP_SHELL.exec(html)?.[0];
+  if (shell === undefined || !/\btabindex="-1"/.test(shell)) {
+    problems.push('a scroll container that cannot take focus');
+  }
+  if (route !== null) {
+    const base = /<base href="([^"]+)"/.exec(html)?.[1] ?? '/';
+    const body = html.slice(html.indexOf('<body'));
+    const first = FIRST_FOCUSABLE.exec(body)?.[0] ?? '';
+    if (!/\bclass="[^"]*\bskip-link\b/.test(first)) {
+      problems.push('a first tab stop other than the skip link');
+    } else if (!first.includes(`href="${base}${route}#${CONTENT_ID}"`)) {
+      problems.push(`a skip link that does not point at ${base}${route}#${CONTENT_ID}`);
+    } else {
+      skipLinks += 1;
+    }
+    const main = /<main\b[^>]*>/.exec(body)?.[0] ?? '';
+    if (!main.includes(`id="${CONTENT_ID}"`) || !/\btabindex="-1"/.test(main)) {
+      problems.push(`a <main> that is not a focus target with the id "${CONTENT_ID}"`);
+    }
+  }
+  if (problems.length > 0) {
+    unfocusable.push(`${label} (${problems.join('; ')})`);
   }
 }
 
@@ -621,6 +672,7 @@ if (!existsSync(homeFile)) {
   checkThemeToggle('(home)', homeHtml);
   checkDemoAttributes('(home)', homeHtml);
   checkTitle('(home)', homeHtml);
+  checkContentFocus('(home)', homeHtml, null);
   catalogued = checkLanding(homeHtml);
 }
 
@@ -639,6 +691,7 @@ for (const { path, title } of routes) {
   checkDemoAttributes(path, html);
   checkTitle(path, html);
   checkNavigationChrome(path, html);
+  checkContentFocus(path, html, path);
 }
 
 if (missing.length > 0) {
@@ -729,9 +782,19 @@ if (unannounced.length > 0) {
       unannounced.slice(0, 10).join('\n  '),
   );
 }
+if (skipLinks === 0 && unfocusable.length === 0) {
+  fail('the prerendered output renders no skip link — the content focus scan is blind');
+}
+if (unfocusable.length > 0) {
+  fail(
+    `${unfocusable.length} prerendered page(s) give a keyboard reader no way past the chrome ` +
+      'or no focus the scroll keys act on:\n  ' +
+      unfocusable.slice(0, 10).join('\n  '),
+  );
+}
 
 console.log(
-  `[check-prerender-output] ok —${primitives.length} primitive routes + ` +
+  `[check-prerender-output] ok — ${primitives.length} primitive routes + ` +
     `${guides.length} guide routes + ${sitePages.length} site pages + ${errorCodes.length} ` +
     'error code pages + the error index + the guide index + the landing page prerendered ' +
     `with content, ${titled.size} of them each titled by its own heading, plus a 404.html ` +
@@ -743,5 +806,6 @@ console.log(
     `them an id of "null", and a landing page cataloguing all ${catalogued} published entry ` +
     'points, each linked with its description tooltip, and stating the version the manifest states, ' +
     `with ${currentLinks} current rail link(s) carrying aria-current, ${railViewports} rail ` +
-    `viewport(s) out of the tab order and ${menuButtons} navigation button(s) announcing their drawer`,
+    `viewport(s) out of the tab order, ${menuButtons} navigation button(s) announcing their drawer ` +
+    `and ${skipLinks} skip link(s) opening the tab order onto their page's focusable <main>`,
 );

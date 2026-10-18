@@ -1,9 +1,11 @@
-import { isPlatformBrowser } from '@angular/common';
+import { DOCUMENT, isPlatformBrowser } from '@angular/common';
 import {
+  afterNextRender,
   ChangeDetectionStrategy,
   Component,
   type ElementRef,
   inject,
+  Injector,
   PLATFORM_ID,
   viewChild,
 } from '@angular/core';
@@ -11,7 +13,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { ForDrawer, ForDrawerBackdrop, ForDrawerWrapper } from 'forty-cdk/drawer';
 import { ForToastViewport } from 'forty-cdk/toast';
-import { filter } from 'rxjs';
+import { filter, map } from 'rxjs';
 
 import { AppNav } from './ui/app-nav';
 import { CommandPalette } from './ui/command-palette';
@@ -36,7 +38,7 @@ import { SiteChrome } from './ui/site-chrome';
     '(document:keydown.control.k)': 'chrome.openPalette($event)',
   },
   template: `
-    <div class="app-shell" forDrawerWrapper #shell>
+    <div class="app-shell" forDrawerWrapper tabindex="-1" #shell>
       <router-outlet />
     </div>
 
@@ -91,6 +93,10 @@ import { SiteChrome } from './ui/site-chrome';
       flex-direction: column;
     }
 
+    .app-shell:focus {
+      outline: none;
+    }
+
     router-outlet {
       display: none;
     }
@@ -104,6 +110,8 @@ import { SiteChrome } from './ui/site-chrome';
 })
 export class App {
   readonly #router = inject(Router);
+  readonly #document = inject(DOCUMENT);
+  readonly #injector = inject(Injector);
   readonly #platformId = inject(PLATFORM_ID);
 
   protected readonly chrome = inject(SiteChrome);
@@ -113,12 +121,37 @@ export class App {
     this.#router.events
       .pipe(
         filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+        map((event, index) => ({
+          fragment: event.urlAfterRedirects.includes('#'),
+          initial: index === 0,
+        })),
         takeUntilDestroyed(),
       )
-      .subscribe((event) => {
-        if (isPlatformBrowser(this.#platformId) && !event.urlAfterRedirects.includes('#')) {
+      .subscribe(({ fragment, initial }) => {
+        if (!isPlatformBrowser(this.#platformId)) {
+          return;
+        }
+        if (!fragment) {
           this.shell()?.nativeElement.scrollTo({ top: 0, left: 0 });
         }
+        afterNextRender(() => this.#focusShell(fragment || initial), {
+          injector: this.#injector,
+        });
       });
+  }
+
+  /**
+   * Puts the reader at the start of the page they arrived on, as a full page
+   * load would: the shell is the scroller, so the scroll keys move the page, and
+   * the next Tab reaches the skip link. A fragment target the page already
+   * focused keeps focus, and so does anything the reader focused before the
+   * first page settled.
+   */
+  #focusShell(yieldToFocused: boolean): void {
+    const focused = this.#document.activeElement;
+    if (yieldToFocused && focused !== null && focused !== this.#document.body) {
+      return;
+    }
+    this.shell()?.nativeElement.focus({ preventScroll: true });
   }
 }

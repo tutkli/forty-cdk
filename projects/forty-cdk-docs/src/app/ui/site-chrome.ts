@@ -1,4 +1,4 @@
-import { DOCUMENT, isPlatformBrowser } from '@angular/common';
+import { DOCUMENT, isPlatformBrowser, LocationStrategy } from '@angular/common';
 import {
   computed,
   effect,
@@ -21,6 +21,12 @@ import {
   writeStoredTheme,
 } from './theme-preference';
 
+/**
+ * The id of the documentation's `<main>`, which the skip link focuses. It
+ * carries `tabindex="-1"` so it can take focus without becoming a tab stop.
+ */
+export const CONTENT_ID = 'main-content';
+
 function systemDark(): Signal<boolean> {
   const query = darkMediaQuery();
   if (query === undefined) {
@@ -36,6 +42,7 @@ function systemDark(): Signal<boolean> {
 export class SiteChrome {
   readonly #document = inject(DOCUMENT);
   readonly #router = inject(Router);
+  readonly #location = inject(LocationStrategy);
   readonly #browser = isPlatformBrowser(inject(PLATFORM_ID));
 
   readonly #chosen = signal<Theme | null>(readStoredTheme());
@@ -60,6 +67,15 @@ export class SiteChrome {
   );
 
   readonly section = computed(() => sectionForUrl(this.#url()));
+
+  /**
+   * Where the skip link points: the content of the current route, so a copied
+   * or middle-clicked link lands there rather than on the base href.
+   */
+  readonly contentHref = computed(() => {
+    const path = this.#url().split(/[?#]/)[0] ?? '';
+    return this.#location.prepareExternalUrl(`${path}#${CONTENT_ID}`);
+  });
 
   readonly dark = computed(() => this.theme() === 'dark');
   readonly themeLabel = computed(() =>
@@ -88,5 +104,17 @@ export class SiteChrome {
   openPalette(event?: Event): void {
     event?.preventDefault();
     this.paletteOpen.set(true);
+  }
+
+  /**
+   * Activates the skip link in place, without the history entry that following
+   * its fragment would add.
+   */
+  skipToContent(event: Event): void {
+    const content = this.#document.getElementById(CONTENT_ID);
+    if (content !== null) {
+      event.preventDefault();
+      content.focus();
+    }
   }
 }
