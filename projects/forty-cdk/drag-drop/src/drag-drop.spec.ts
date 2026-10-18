@@ -426,6 +426,16 @@ describe('ForDropList + ForDraggable', () => {
         await r.flush();
         return { items: draggables(r.el), enabledIndices: [1, 2], flush: r.flush };
       },
+      mountWithDisabledLast: async () => {
+        const r = renderHost(SingleListHost);
+        r.instance.rows.set([
+          { id: 1, label: 'Alpha' },
+          { id: 2, label: 'Beta' },
+          { id: 3, label: 'Gamma', disabled: true },
+        ]);
+        await r.flush();
+        return { items: draggables(r.el), enabledIndices: [0, 1], flush: r.flush };
+      },
       mountWithDisabledMiddle: async () => {
         const r = renderHost(SingleListHost);
         r.instance.rows.set([

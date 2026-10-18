@@ -451,53 +451,66 @@ describe('ForTabs', () => {
     });
   });
 
-  assertRovingTabindexContract({
-    mount: async () => {
-      const r = renderHost(TabsHost);
-      await r.flush();
-      return { items: triggers(r.el), flush: r.flush };
+  assertRovingTabindexContract(
+    {
+      mount: async () => {
+        const r = renderHost(TabsHost);
+        await r.flush();
+        return { items: triggers(r.el), flush: r.flush };
+      },
+      mountWithDisabledFirst: async () => {
+        const r = renderHost(TabsHost);
+        r.fixture.componentInstance.tabs.set([
+          { value: 'a', label: 'A', disabled: true },
+          { value: 'b', label: 'B', disabled: false },
+          { value: 'c', label: 'C', disabled: false },
+        ]);
+        await r.flush();
+        return { items: triggers(r.el), enabledIndices: [1, 2], flush: r.flush };
+      },
+      mountWithDisabledLast: async () => {
+        const r = renderHost(TabsHost);
+        r.fixture.componentInstance.tabs.set([
+          { value: 'a', label: 'A', disabled: false },
+          { value: 'b', label: 'B', disabled: false },
+          { value: 'c', label: 'C', disabled: true },
+        ]);
+        await r.flush();
+        return { items: triggers(r.el), enabledIndices: [0, 1], flush: r.flush };
+      },
+      mountWithInPlaceDisable: async () => {
+        const r = renderHost(TabsHost);
+        await r.flush();
+        return {
+          items: triggers(r.el),
+          flush: r.flush,
+          disableFirst: () =>
+            r.fixture.componentInstance.tabs.update(([first, ...rest]) => [
+              { ...first!, disabled: true },
+              ...rest,
+            ]),
+        };
+      },
+      mountWithRemoval: async () => {
+        const r = renderHost(TabsHost);
+        await r.flush();
+        return {
+          items: triggers(r.el),
+          flush: r.flush,
+          removedIndex: 1,
+          remove: () =>
+            r.fixture.componentInstance.tabs.update((list) => list.filter((_, i) => i !== 1)),
+        };
+      },
+      mountRtl: async () => {
+        const r = renderHost(TabsHost);
+        r.fixture.componentInstance.dir.set('rtl');
+        await r.flush();
+        return { items: triggers(r.el), flush: r.flush };
+      },
     },
-    mountWithDisabledFirst: async () => {
-      const r = renderHost(TabsHost);
-      r.fixture.componentInstance.tabs.set([
-        { value: 'a', label: 'A', disabled: true },
-        { value: 'b', label: 'B', disabled: false },
-        { value: 'c', label: 'C', disabled: false },
-      ]);
-      await r.flush();
-      return { items: triggers(r.el), enabledIndices: [1, 2], flush: r.flush };
-    },
-    mountWithInPlaceDisable: async () => {
-      const r = renderHost(TabsHost);
-      await r.flush();
-      return {
-        items: triggers(r.el),
-        flush: r.flush,
-        disableFirst: () =>
-          r.fixture.componentInstance.tabs.update(([first, ...rest]) => [
-            { ...first!, disabled: true },
-            ...rest,
-          ]),
-      };
-    },
-    mountWithRemoval: async () => {
-      const r = renderHost(TabsHost);
-      await r.flush();
-      return {
-        items: triggers(r.el),
-        flush: r.flush,
-        removedIndex: 1,
-        remove: () =>
-          r.fixture.componentInstance.tabs.update((list) => list.filter((_, i) => i !== 1)),
-      };
-    },
-    mountRtl: async () => {
-      const r = renderHost(TabsHost);
-      r.fixture.componentInstance.dir.set('rtl');
-      await r.flush();
-      return { items: triggers(r.el), flush: r.flush };
-    },
-  });
+    { disabledItemsReachable: true },
+  );
 
   describe('initial tabindex (selection-driven)', () => {
     it('selected trigger has tabindex=0 when there is a selection', async () => {

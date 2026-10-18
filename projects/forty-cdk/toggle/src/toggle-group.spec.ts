@@ -153,6 +153,16 @@ describe('ForToggleGroup', () => {
       await r.flush();
       return { items: toggleItems(r.el), enabledIndices: [1, 2], flush: r.flush };
     },
+    mountWithDisabledLast: async () => {
+      const r = renderHost(ToggleGroupHost);
+      r.instance.items.set([
+        { value: 'left', label: 'Left', disabled: false },
+        { value: 'center', label: 'Center', disabled: false },
+        { value: 'right', label: 'Right', disabled: true },
+      ]);
+      await r.flush();
+      return { items: toggleItems(r.el), enabledIndices: [0, 1], flush: r.flush };
+    },
     mountWithDisabledMiddle: async () => {
       const r = renderHost(ToggleGroupHost);
       r.instance.items.set([
@@ -601,16 +611,23 @@ describe('ForToggleGroup', () => {
       expect(document.activeElement).toBe(itemOf(el, 'center'));
     });
 
-    it('Home / End jump to first / last enabled', () => {
-      const { el } = renderHost(ToggleGroupHost);
-      const center = itemOf(el, 'center');
-      center.focus();
+    it('Home / End jump to first / last enabled, past disabled edge items', async () => {
+      const r = renderHost(ToggleGroupHost);
+      r.instance.items.set([
+        { value: 'left', label: 'Left', disabled: true },
+        { value: 'center', label: 'Center', disabled: false },
+        { value: 'justify', label: 'Justify', disabled: false },
+        { value: 'right', label: 'Right', disabled: true },
+      ]);
+      await r.flush();
+      const justify = itemOf(r.el, 'justify');
+      justify.focus();
 
-      pressKey(center, 'Home');
-      expect(document.activeElement).toBe(itemOf(el, 'left'));
+      pressKey(justify, 'Home');
+      expect(document.activeElement).toBe(itemOf(r.el, 'center'));
 
-      pressKey(itemOf(el, 'left'), 'End');
-      expect(document.activeElement).toBe(itemOf(el, 'right'));
+      pressKey(itemOf(r.el, 'center'), 'End');
+      expect(document.activeElement).toBe(justify);
     });
 
     it('skips disabled items during arrow navigation', async () => {

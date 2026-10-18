@@ -219,6 +219,17 @@ describe('ForRadioGroup', () => {
         await r.flush();
         return { items: radioItems(r.el), enabledIndices: [1, 2], flush: r.flush };
       },
+      mountWithDisabledLast: async () => {
+        const r = renderHost(RadioGroupHost);
+        r.instance.color.set(null);
+        r.instance.options.set([
+          { value: 'red', label: 'Red', disabled: false },
+          { value: 'green', label: 'Green', disabled: false },
+          { value: 'blue', label: 'Blue', disabled: true },
+        ]);
+        await r.flush();
+        return { items: radioItems(r.el), enabledIndices: [0, 1], flush: r.flush };
+      },
       mountWithDisabledMiddle: async () => {
         const r = renderHost(RadioGroupHost);
         r.instance.color.set(null);

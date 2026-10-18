@@ -476,6 +476,14 @@ describe('ForTree', () => {
           flush: () => flush(r.fixture),
         };
       },
+      mountWithDisabledLast: async () => {
+        const r = await setup((i) => i.disabledIds.set(['readme']));
+        return {
+          items: visibleItems(r.el),
+          enabledIndices: [0, 1],
+          flush: () => flush(r.fixture),
+        };
+      },
       mountWithDisabledMiddle: async () => {
         const r = await setup((i) => i.disabledIds.set(['downloads']));
         return {
