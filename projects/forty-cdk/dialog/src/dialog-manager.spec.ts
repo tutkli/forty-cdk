@@ -422,6 +422,9 @@ describe('ForDialogManager (programmatic)', () => {
 
     it('does NOT lock for non-modal dialogs', () => {
       document.body.style.overflow = 'auto';
+      onTestFinished(() => {
+        document.body.style.overflow = '';
+      });
       const { dialogs } = setup();
       dialogs.open(ConfirmDialog, { data: { message: 'x' }, modal: false });
 
@@ -761,6 +764,9 @@ describe('ForDialogManager (programmatic)', () => {
 
     it('modal: false drops aria-modal and skips scroll lock', () => {
       document.body.style.overflow = 'auto';
+      onTestFinished(() => {
+        document.body.style.overflow = '';
+      });
       const { dialogs } = setup();
       dialogs.open(ConfirmDialog, { data: { message: 'x' }, modal: false });
       const host = document.querySelector<HTMLElement>('[role="dialog"]')!;
@@ -772,6 +778,9 @@ describe('ForDialogManager (programmatic)', () => {
   describe('defaults provider (root scope)', () => {
     it('behavior key from provideForDialogDefaults applies when config omits it', () => {
       document.body.style.overflow = 'auto';
+      onTestFinished(() => {
+        document.body.style.overflow = '';
+      });
       const { dialogs } = setup({ providers: [provideForDialogDefaults({ modal: false })] });
       dialogs.open(ConfirmDialog, { data: { message: 'x' } });
       const host = document.querySelector<HTMLElement>('[role="dialog"]')!;
@@ -826,6 +835,9 @@ describe('ForDialogManager (programmatic)', () => {
 
     it('resolves a scoped provideForDialogDefaults when injector is passed', () => {
       document.body.style.overflow = 'auto';
+      onTestFinished(() => {
+        document.body.style.overflow = '';
+      });
       const { dialogs } = setup();
       dialogs.open(ConfirmDialog, { data: { message: 'x' }, injector: scopedInjector() });
       const host = document.querySelector<HTMLElement>('[role="dialog"]')!;
@@ -1051,6 +1063,10 @@ describe('ForDialogManager (programmatic)', () => {
       expect(backdrop.classList.contains('backdrop-out')).toBe(true);
 
       await ref.closed;
+      await vi.waitFor(() => {
+        expect(host.isConnected).toBe(false);
+        expect(backdrop.isConnected).toBe(false);
+      });
     });
 
     it('closes cleanly when backdropAnimateLeave is set but no backdrop is rendered', async () => {
@@ -1085,7 +1101,6 @@ describe('ForDialogManager (programmatic)', () => {
       const firstHost = hosts.find((h) => h.textContent?.includes('first'))!;
       const secondHost = hosts.find((h) => h.textContent?.includes('second'))!;
       firstHost.getAnimations = running;
-      secondHost.getAnimations = running;
 
       first.close();
 
@@ -1094,6 +1109,7 @@ describe('ForDialogManager (programmatic)', () => {
       expect(secondHost.classList.contains('second-out')).toBe(false);
 
       await first.closed;
+      await vi.waitFor(() => expect(firstHost.isConnected).toBe(false));
     });
 
     it('applies the leave class on close for a dialog opened from inside effect()', async () => {
@@ -1130,6 +1146,7 @@ describe('ForDialogManager (programmatic)', () => {
       expect(host.classList.contains('effect-out')).toBe(true);
 
       await ref.closed;
+      await vi.waitFor(() => expect(host.isConnected).toBe(false));
     });
   });
 
