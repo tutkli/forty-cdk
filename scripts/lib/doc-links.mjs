@@ -114,6 +114,27 @@ function foldedTarget(route, fragment) {
   return anchor === undefined ? `${route}${fragment}` : `${path}#${anchor}-${fragment.slice(1)}`;
 }
 
+/**
+ * A bare `#fragment` resolved against the route of the document that wrote it.
+ *
+ * Left bare, a page's `<base href>` turns it into a link to the site root
+ * rather than a scroll within the page. Returns null for a document the site
+ * publishes no route for.
+ */
+export function resolveOwnFragment(href, context) {
+  const route = context.routes.get(context.sourcePath);
+  if (!href.startsWith('#') || href === '#' || route === undefined) {
+    return null;
+  }
+  const target = foldedTarget(route, href);
+  return {
+    kind: 'route',
+    repoPath: context.sourcePath,
+    route: target,
+    href: context.prepareUrl ? context.prepareUrl(target) : target,
+  };
+}
+
 export function resolveDocLink(href, context) {
   if (href === '' || href.startsWith('#') || ABSOLUTE_HREF.test(href)) {
     return null;

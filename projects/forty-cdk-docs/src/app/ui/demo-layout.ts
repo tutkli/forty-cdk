@@ -16,6 +16,7 @@ import { ForTabs, ForTabsContent, ForTabsList, ForTabsTrigger } from 'forty-cdk/
 import { ForToastManager } from 'forty-cdk/toast';
 
 import { DemoHeadings } from '../doc/demo-headings';
+import { injectDocBase } from '../doc/doc-base';
 import { EXAMPLE_SOURCES } from '../doc/example-source';
 import { GITHUB_BLOB_BASE } from './github';
 import { Icon } from './icon';
@@ -239,6 +240,7 @@ export class DemoLayout {
   readonly #headings = inject(DemoHeadings);
   readonly #toast = inject(ForToastManager);
   readonly #sanitizer = inject(DomSanitizer);
+  readonly #base = injectDocBase();
   readonly #document = inject(DOCUMENT);
   readonly #destroyRef = inject(DestroyRef);
 
@@ -261,7 +263,9 @@ export class DemoLayout {
 
   protected readonly titleHtml = computed<SafeHtml | null>(() => {
     const markup = this.#declared()?.titleHtml;
-    return markup === undefined ? null : this.#sanitizer.bypassSecurityTrustHtml(markup);
+    return markup === undefined
+      ? null
+      : this.#sanitizer.bypassSecurityTrustHtml(this.#base(markup));
   });
 
   readonly tocSlug = computed(() => this.#declared()?.slug ?? '');
@@ -280,7 +284,7 @@ export class DemoLayout {
 
   protected readonly prose = computed<SafeHtml | null>(() => {
     const sentence = this.#declared()?.prose;
-    return sentence ? this.#sanitizer.bypassSecurityTrustHtml(sentence) : null;
+    return sentence ? this.#sanitizer.bypassSecurityTrustHtml(this.#base(sentence)) : null;
   });
 
   protected readonly copyLabel = computed(() =>

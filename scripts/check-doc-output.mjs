@@ -52,7 +52,10 @@ import { repoRoot } from './lib/repo-path.mjs';
  *   on Pages even though it looks internal.
  * - **A fragment is checked against its target page**, not only the page that
  *   writes it. The id lives in the target's prerendered HTML either way, and
- *   cross-page anchors are where a renamed section actually breaks.
+ *   cross-page anchors are where a renamed section actually breaks. A bare
+ *   `#fragment` has no target page at all: under `<base href>` it resolves
+ *   against the base, so it loads the site root rather than scrolling the page
+ *   it is written on, and it fails outright.
  * - **Content is asserted per section, not per page.** A page-wide block floor
  *   would have to be a number someone picked; "every `##` the document declares
  *   emitted a `<section>`, and every emitted section carries at least one
@@ -488,11 +491,11 @@ for (const [route, page] of pages) {
     const { path, fragment } = splitDocHref(href);
 
     if (path === '') {
-      checkedFragments += 1;
-      const fragmentFailure = checkFragment(at, href, route, fragment.slice(1));
-      if (fragmentFailure !== null) {
-        failures.push(fragmentFailure);
-      }
+      failures.push(
+        `${at} — "${href}" is a bare fragment, so it resolves against the base href "${baseHref}" ` +
+          'and loads that page instead of scrolling this one; the renderer must route it through ' +
+          'the page it is written on',
+      );
       continue;
     }
 

@@ -47,6 +47,11 @@ export declare function guideSlugOf(file: string): string;
 
 export declare function buildDocRoutes(input: DocRoutesInput): Map<string, string>;
 
+export declare function resolveOwnFragment(
+  href: string,
+  context: DocLinkContext,
+): ResolvedDocLink | null;
+
 export declare function resolveDocLink(
   href: string,
   context: DocLinkContext,
