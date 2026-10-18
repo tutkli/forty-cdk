@@ -266,11 +266,11 @@ interface Booking {
       height: 1em;
     }
 
-    .dp-range-form-nav:hover:not([disabled]) {
+    .dp-range-form-nav:hover:not([data-disabled]) {
       background: var(--ex-surface-2, #f2eee6);
     }
 
-    .dp-range-form-nav[disabled] {
+    .dp-range-form-nav[data-disabled] {
       opacity: 0.4;
       cursor: not-allowed;
     }
@@ -305,7 +305,7 @@ interface Booking {
       background: var(--ex-surface-2, #f2eee6);
     }
 
-    .dp-range-form-cell[data-outside-month] {
+    .dp-range-form-cell[data-outside-month]:not([data-selected]) {
       color: var(--ex-muted, #585d66);
       opacity: 0.5;
     }

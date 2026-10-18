@@ -221,11 +221,11 @@ import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized
       height: 1em;
     }
 
-    .date-picker-nav:hover:not([disabled]) {
+    .date-picker-nav:hover:not([data-disabled]) {
       background: var(--ex-surface-2, #f2eee6);
     }
 
-    .date-picker-nav[disabled] {
+    .date-picker-nav[data-disabled] {
       opacity: 0.4;
       cursor: not-allowed;
     }
@@ -260,7 +260,7 @@ import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized
       background: var(--ex-surface-2, #f2eee6);
     }
 
-    .date-picker-cell[data-outside-month] {
+    .date-picker-cell[data-outside-month]:not([data-selected]) {
       color: var(--ex-muted, #585d66);
       opacity: 0.5;
     }

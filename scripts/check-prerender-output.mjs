@@ -78,6 +78,7 @@ const titled = new Map();
 const unannounced = [];
 const unfocusable = [];
 const unsearchable = [];
+const dated = [];
 let demoBlocks = 0;
 let themeToggles = 0;
 let currentLinks = 0;
@@ -309,6 +310,15 @@ function checkSearchEntry(label, html) {
   }
   if (problems.length > 0) {
     unsearchable.push(`${label} (${problems.join('; ')})`);
+  }
+}
+
+const TODAY_MARK = /<[a-z][^>]*\saria-current="date"/gi;
+
+function checkBuildDay(label, html) {
+  const marks = html.match(TODAY_MARK)?.length ?? 0;
+  if (marks > 0) {
+    dated.push(`${label} (${marks})`);
   }
 }
 
@@ -703,6 +713,7 @@ if (!existsSync(homeFile)) {
   checkTitle('(home)', homeHtml);
   checkContentFocus('(home)', homeHtml, null);
   checkSearchEntry('(home)', homeHtml);
+  checkBuildDay('(home)', homeHtml);
   catalogued = checkLanding(homeHtml);
 }
 
@@ -723,6 +734,7 @@ for (const { path, title } of routes) {
   checkNavigationChrome(path, html);
   checkContentFocus(path, html, path);
   checkSearchEntry(path, html);
+  checkBuildDay(path, html);
 }
 
 if (missing.length > 0) {
@@ -800,6 +812,14 @@ if (nullIds.length > 0) {
   );
 }
 
+if (dated.length > 0) {
+  fail(
+    `${dated.length} prerendered page(s) mark a day as today, which is the build day for every ` +
+      'visitor until hydration moves it, so render the demo that reads the clock under ' +
+      `@defer (on immediate): ${dated.join(', ')}`,
+  );
+}
+
 if (currentLinks === 0 || railViewports === 0 || menuButtons === 0) {
   fail(
     `the prerendered output renders ${currentLinks} current rail link(s), ${railViewports} rail ` +
@@ -850,5 +870,6 @@ console.log(
     `with ${currentLinks} current rail link(s) carrying aria-current, ${railViewports} rail ` +
     `viewport(s) out of the tab order, ${menuButtons} navigation button(s) announcing their drawer, ` +
     `${skipLinks} skip link(s) opening the tab order onto their page's focusable <main> and ` +
-    `${searchButtons} search button(s) announcing their dialog and shortcut`,
+    `${searchButtons} search button(s) announcing their dialog and shortcut, and no page marking ` +
+    'the build day as today',
 );
