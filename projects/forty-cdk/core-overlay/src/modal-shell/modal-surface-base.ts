@@ -53,9 +53,9 @@ import { ModalTriggerRegistry } from './modal-trigger';
  * class; inheritance is the supported mechanism for sharing them across
  * directives.
  *
- * Internal core tier — exported from `forty-cdk/core` for the library's own
- * entry points, with no semver guarantee. Subclassing a library base is not a
- * supported contract, so it is absent from `CORE_PUBLISHERS` and
+ * Internal core tier — exported from `forty-cdk/core-overlay` for the
+ * library's own entry points, with no semver guarantee. Subclassing a library
+ * base is not a supported contract, so it is absent from `CORE_PUBLISHERS` and
  * from every primitive's own barrel; the public-types gate ignores
  * `extends`-only heritage, which is why the base may appear in the shipped
  * `.d.ts` as the parent of `[forDialog]` / `[forDrawer]` without being blessed.

@@ -191,6 +191,43 @@ describe('injectItemAlignedPositioner', () => {
     expect(lbEl.style.translate).toMatch(/^-?\d+px -?\d+px$/);
   });
 
+  it('keeps its position when the selection changes while open, and anchors the new selection on the next open', async () => {
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+    const fixture = TestBed.createComponent(Host);
+    await flushPositioning(fixture);
+
+    const lb = fixture.componentInstance.lb();
+    const lbEl = document.querySelector<HTMLElement>('item-aligned-listbox')!;
+    const trigger = fixture.componentInstance.anchor().nativeElement;
+    const first = lbEl.querySelector<HTMLElement>('[data-test-id="opt-1"]')!;
+    const last = lbEl.querySelector<HTMLElement>('[data-test-id="opt-4"]')!;
+    Object.defineProperty(trigger, 'getBoundingClientRect', {
+      configurable: true,
+      value: () => ({ top: 400, height: 40, bottom: 440, left: 0, right: 0, width: 0 }) as DOMRect,
+    });
+    Object.defineProperty(first, 'offsetTop', { configurable: true, value: 0 });
+    Object.defineProperty(first, 'offsetHeight', { configurable: true, value: 20 });
+    Object.defineProperty(last, 'offsetTop', { configurable: true, value: 60 });
+    Object.defineProperty(last, 'offsetHeight', { configurable: true, value: 20 });
+
+    lb.reference.set(trigger);
+    lb.selectedOption.set(first);
+    lb.open.set(true);
+    await flushPositioning(fixture);
+    const openedAt = lbEl.style.translate;
+    expect(openedAt).toMatch(/^-?\d+px -?\d+px$/);
+
+    lb.selectedOption.set(last);
+    await flushPositioning(fixture);
+    expect(lbEl.style.translate).toBe(openedAt);
+
+    lb.open.set(false);
+    await flushPositioning(fixture);
+    lb.open.set(true);
+    await flushPositioning(fixture);
+    expect(lbEl.style.translate).not.toBe(openedAt);
+  });
+
   it('writes and clears its custom properties under the namespaced names with provideCssVarNamespacing()', async () => {
     TestBed.configureTestingModule({
       providers: [provideZonelessChangeDetection(), provideCssVarNamespacing('app')],

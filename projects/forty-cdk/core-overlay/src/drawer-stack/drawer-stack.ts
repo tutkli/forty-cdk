@@ -81,8 +81,8 @@ export interface DrawerStackHandle {
  * directives that call `push` only do so from `afterNextRender`, which
  * doesn't run on the server, so there is nothing to guard here.
  *
- * Internal core tier — exported from `forty-cdk/core` for the library's own
- * entry points, with no semver guarantee.
+ * Internal core tier — exported from `forty-cdk/core-overlay` for the
+ * library's own entry points, with no semver guarantee.
  */
 @Injectable({ providedIn: 'root' })
 export class ForDrawerStack {

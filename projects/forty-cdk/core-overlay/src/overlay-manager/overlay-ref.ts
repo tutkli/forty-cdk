@@ -6,8 +6,8 @@ import { signal } from '@angular/core';
  * `ForToastRef.closed` so all three programmatic overlay handles expose the
  * same `{ reason, result }` shape.
  *
- * Internal core tier — exported from `forty-cdk/core` for the library's own
- * entry points, with no semver guarantee.
+ * Internal core tier — exported from `forty-cdk/core-overlay` for the
+ * library's own entry points, with no semver guarantee.
  */
 export interface OverlayCloseEvent<R, Reason> {
   /** Why the overlay closed (e.g. `'escape'`, `'closeButton'`, `'programmatic'`). */
