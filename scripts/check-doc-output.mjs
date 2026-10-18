@@ -10,6 +10,7 @@ import { compileDocument } from './docs/doc-model.mjs';
 import {
   DOCS_DIR,
   LIBRARY_DIR,
+  readFoldedEntryPoints,
   readGuides,
   readPrimitives,
   readSitePages,
@@ -299,6 +300,15 @@ for (const guide of guides) {
     }),
   );
 }
+const foldedInto = new Map();
+for (const { slug, host } of readFoldedEntryPoints()) {
+  const folded = compileDocument(readFileSync(join(LIBRARY_DIR, slug, 'README.md'), 'utf8'), {
+    path: `projects/forty-cdk/${slug}/README.md`,
+    slug,
+    kind: 'primitive',
+  });
+  foldedInto.set(host, [...(foldedInto.get(host) ?? []), folded]);
+}
 for (const page of sitePages) {
   documents.set(
     page.slug,
@@ -378,7 +388,9 @@ for (const file of indexFiles(BROWSER)) {
             expanded: toggle?.getAttribute('aria-expanded') ?? null,
             controls: toggle?.getAttribute('aria-controls') ?? null,
           },
-    tables: doc.querySelectorAll('table').length,
+    tables: [...doc.querySelectorAll('table')].filter(
+      (table) => table.closest(EXAMPLE_FRAME) === null,
+    ).length,
     bytes: statSync(file).size,
   });
 
@@ -563,12 +575,16 @@ for (const [route, page] of pages) {
   checkedRails += 1;
   failures.push(...railFailures(at, page, document));
 
-  const shape = readDocumentShape(document);
-  declaredTables += shape.tables;
-  if (page.tables < shape.tables) {
+  const declared = (foldedInto.get(route) ?? []).reduce(
+    (total, folded) => total + readDocumentShape(folded).tables,
+    readDocumentShape(document).tables,
+  );
+  declaredTables += declared;
+  if (page.tables !== declared) {
     failures.push(
-      `${at} — the document declares ${shape.tables} table(s) and the page emits ${page.tables}; ` +
-        'a table the parser dropped loses its rows silently',
+      `${at} — the document and the READMEs folded into it declare ${declared} table(s), and the ` +
+        `page emits ${page.tables} outside its live examples; a table the parser dropped loses ` +
+        'its rows silently',
     );
   }
 }

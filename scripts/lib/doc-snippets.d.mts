@@ -12,6 +12,7 @@ export interface DocSnippet {
   readonly line: number;
   readonly code: string;
   readonly mode: SnippetMode;
+  readonly expectedCodes: readonly string[];
 }
 
 /** The marker values a fence may declare, `compile` being the absence of one. */
@@ -24,3 +25,5 @@ export declare function snippetsOf(
   readonly snippets: readonly DocSnippet[];
   readonly problems: readonly DocProblem[];
 };
+
+export declare function internalTierImportsOf(snippet: DocSnippet): readonly DocProblem[];

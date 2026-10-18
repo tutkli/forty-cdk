@@ -1,5 +1,9 @@
 import { fencesOf } from '../../../../../scripts/docs/doc-model.mjs';
-import { snippetsOf } from '../../../../../scripts/lib/doc-snippets.mjs';
+import {
+  type DocSnippet,
+  internalTierImportsOf,
+  snippetsOf,
+} from '../../../../../scripts/lib/doc-snippets.mjs';
 import { PAGE_DOCS, SITE_DOCS } from './testing/doc-corpus';
 
 /**
@@ -84,7 +88,9 @@ describe('snippetsOf', () => {
   it('compiles a TypeScript fence that declares no marker', () => {
     const { snippets, problems } = snippetsOf(md('```ts', 'const x = 1;', '```'), 'doc.md');
     expect(problems).toEqual([]);
-    expect(snippets).toEqual([{ path: 'doc.md', line: 1, code: 'const x = 1;', mode: 'compile' }]);
+    expect(snippets).toEqual([
+      { path: 'doc.md', line: 1, code: 'const x = 1;', mode: 'compile', expectedCodes: [] },
+    ]);
   });
 
   it('leaves fences in every other language to their own gates', () => {
@@ -104,12 +110,54 @@ describe('snippetsOf', () => {
     expect(snippets.map((snippet) => snippet.mode)).toEqual(['fragment']);
   });
 
-  it('reads an expect-error marker written directly above its fence', () => {
-    const { snippets } = snippetsOf(
-      md('<!-- snippet: expect-error -->', '```ts', "import { X } from 'forty-cdk';", '```'),
+  it('reads an expect-error marker written directly above its fence, with its codes', () => {
+    const { snippets, problems } = snippetsOf(
+      md('<!-- snippet: expect-error TS2305 -->', '```ts', "import { X } from 'forty-cdk';", '```'),
       'doc.md',
     );
-    expect(snippets.map((snippet) => snippet.mode)).toEqual(['expect-error']);
+    expect(problems).toEqual([]);
+    expect(snippets.map((snippet) => [snippet.mode, snippet.expectedCodes])).toEqual([
+      ['expect-error', ['TS2305']],
+    ]);
+  });
+
+  it('reads every code an expect-error marker names', () => {
+    const { snippets } = snippetsOf(
+      md('<!-- snippet: expect-error TS2305 NG8001 -->', '', '```ts', 'a', '```'),
+      'doc.md',
+    );
+    expect(snippets.map((snippet) => snippet.expectedCodes)).toEqual([['TS2305', 'NG8001']]);
+  });
+
+  it('refuses an expect-error marker that names no code, so any failure would satisfy it', () => {
+    const { problems } = snippetsOf(
+      md('<!-- snippet: expect-error -->', '', '```ts', 'a', '```'),
+      'doc.md',
+    );
+    expect(problems.map((problem) => [problem.line, problem.message])).toEqual([
+      [1, expect.stringContaining('names the diagnostic codes')],
+    ]);
+  });
+
+  it('refuses an expect-error argument that is not a diagnostic code', () => {
+    const { problems } = snippetsOf(
+      md('<!-- snippet: expect-error 2305 -->', '', '```ts', 'a', '```'),
+      'doc.md',
+    );
+    expect(problems.map((problem) => problem.message)).toEqual([
+      expect.stringContaining('"2305" is not a diagnostic code'),
+    ]);
+  });
+
+  it('refuses a fragment marker that carries arguments', () => {
+    const { snippets, problems } = snippetsOf(
+      md('<!-- snippet: fragment TS2305 -->', '', '```ts', 'a', '```'),
+      'doc.md',
+    );
+    expect(problems.map((problem) => problem.message)).toEqual([
+      expect.stringContaining('takes no arguments'),
+    ]);
+    expect(snippets.map((snippet) => snippet.expectedCodes)).toEqual([[]]);
   });
 
   it('exempts only the fence right below the marker', () => {
@@ -163,20 +211,75 @@ describe('snippetsOf', () => {
   });
 });
 
+function snippet(mode: DocSnippet['mode'], ...code: readonly string[]): DocSnippet {
+  return { path: 'doc.md', line: 10, code: code.join('\n'), mode, expectedCodes: [] };
+}
+
+describe('internalTierImportsOf', () => {
+  it('reports an import from forty-cdk/core at its line, naming the publisher of a blessed symbol', () => {
+    const problems = internalTierImportsOf(
+      snippet(
+        'compile',
+        "import { ForDialog } from 'forty-cdk/dialog';",
+        "import { type VetoableEvent } from 'forty-cdk/core';",
+      ),
+    );
+    expect(problems.map((problem) => [problem.line, problem.message])).toEqual([
+      [12, expect.stringContaining("import VetoableEvent from 'forty-cdk/shared'")],
+    ]);
+  });
+
+  it('reports forty-cdk/core-overlay too, and a symbol no entry point publishes as internal', () => {
+    const problems = internalTierImportsOf(
+      snippet('compile', "import { injectOverlayShell } from 'forty-cdk/core-overlay';"),
+    );
+    expect(problems.map((problem) => problem.message)).toEqual([
+      expect.stringContaining('injectOverlayShell is internal by design'),
+    ]);
+  });
+
+  it('reports the import in a fragment, which is never compiled and still pasted', () => {
+    const problems = internalTierImportsOf(
+      snippet('fragment', "import { FOR_ID_SALT as SALT } from 'forty-cdk/core';"),
+    );
+    expect(problems.map((problem) => problem.message)).toEqual([
+      expect.stringContaining("import FOR_ID_SALT from 'forty-cdk/shared'"),
+    ]);
+  });
+
+  it('leaves every public entry point alone', () => {
+    const problems = internalTierImportsOf(
+      snippet(
+        'compile',
+        "import { type VetoableEvent } from 'forty-cdk/shared';",
+        "import { provideForDrawerDefaults } from 'forty-cdk/defaults';",
+      ),
+    );
+    expect(problems).toEqual([]);
+  });
+});
+
 describe('the corpus the gate compiles', () => {
   it('holds no marker that exempts nothing', () => {
     const problems = SITE_DOCS.flatMap((doc) => snippetsOf(doc.markdown, doc.path).problems);
     expect(problems).toEqual([]);
   });
 
-  it('marks the bare-package import on the installation page expect-error', () => {
+  it('marks the bare-package import on the installation page expect-error TS2305', () => {
     const installation = PAGE_DOCS.find((doc) => doc.path === 'docs/site/installation.md');
     expect(installation).toBeDefined();
     const { snippets } = snippetsOf(installation!.markdown, installation!.path);
     const expected = snippets.filter((snippet) => snippet.mode === 'expect-error');
-    expect(expected.map((snippet) => snippet.code)).toEqual([
-      "import { ForDialog } from 'forty-cdk';",
+    expect(expected.map((snippet) => [snippet.code, snippet.expectedCodes])).toEqual([
+      ["import { ForDialog } from 'forty-cdk';", ['TS2305']],
     ]);
+  });
+
+  it('holds no fence that imports from the internal core tier', () => {
+    const problems = SITE_DOCS.flatMap((doc) =>
+      snippetsOf(doc.markdown, doc.path).snippets.flatMap(internalTierImportsOf),
+    );
+    expect(problems).toEqual([]);
   });
 
   it('compiles more fences than it exempts', () => {

@@ -1,11 +1,7 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { CalendarDateTime } from '@internationalized/date';
-import {
-  ForDateField,
-  ForDateFieldLiteral,
-  ForDateFieldSegment,
-  provideForDateFieldDefaults,
-} from 'forty-cdk/date-field';
+import { ForDateField, ForDateFieldLiteral, ForDateFieldSegment } from 'forty-cdk/date-field';
+import { provideForDateFieldDefaults } from 'forty-cdk/defaults';
 import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/internationalized-date';
 
 const SEGMENT_LABELS = {

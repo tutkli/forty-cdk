@@ -11,9 +11,9 @@ import {
 import {
   DOCS_DIR,
   EXCLUDED_GUIDES,
+  readEntryPointDocs,
   readFoldedEntryPoints,
   readGuides,
-  readPrimitiveReadmes,
   readPrimitives,
   readSitePages,
   SITE_DIR,
@@ -33,7 +33,8 @@ const routes = buildDocRoutes({
   foldedSlugs: folded,
 });
 
-const documents = readPrimitiveReadmes();
+const entryPointDocs = readEntryPointDocs();
+const documents = new Map(entryPointDocs.map((doc) => [doc.path, readFileSync(doc.file, 'utf8')]));
 for (const guide of guides) {
   documents.set(`docs/${guide.file}`, readFileSync(join(DOCS_DIR, guide.file), 'utf8'));
 }
@@ -97,14 +98,23 @@ if (failures.length > 0) {
   process.exit(1);
 }
 
-const expectedDocuments = primitives.length + guides.length + sitePages.length + folded.length;
-if (documents.size !== expectedDocuments) {
+const published = [
+  ...[...primitives, ...folded].map(({ slug }) => `projects/forty-cdk/${slug}/README.md`),
+  ...guides.map((guide) => `docs/${guide.file}`),
+  ...sitePages.map((page) => `docs/site/${page.file}`),
+];
+const unread = published.filter((path) => !documents.has(path));
+const expectedDocuments = entryPointDocs.length + guides.length + sitePages.length;
+if (unread.length > 0 || documents.size !== expectedDocuments) {
   console.error(
-    `[check-doc-links] read ${documents.size} documents for ${expectedDocuments} published documents — ` +
-      'a page renders a document this scan never saw, so the run proves nothing about it',
+    `[check-doc-links] read ${documents.size} documents for ${expectedDocuments} the corpus holds ` +
+      `(${unread.join(', ') || 'none published left unread'}) — a page or an llms artifact ` +
+      'publishes a document this scan never saw, so the run proves nothing about it',
   );
   process.exit(1);
 }
+
+const unpublished = entryPointDocs.length - primitives.length - folded.length;
 
 const LINK_FLOOR = 100;
 if (relativeLinks < LINK_FLOOR) {
@@ -117,6 +127,7 @@ if (relativeLinks < LINK_FLOOR) {
 
 console.log(
   `[check-doc-links] ok — ${relativeLinks} relative links across ${documents.size} documents ` +
-    `(${folded.length} folded into another page): ${toRoute} resolve to a site route, ` +
+    `(${folded.length} folded into another page, ${unpublished} published only as an llms artifact): ` +
+    `${toRoute} resolve to a site route, ` +
     `${toSource} to a GitHub blob`,
 );

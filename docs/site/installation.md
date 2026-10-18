@@ -36,7 +36,7 @@ If you are choosing a date adapter, the [Date adapters](../date-adapters.md) gui
 
 **`forty-cdk` itself exports nothing.** This is deliberate, and it is the one thing about the package that surprises people:
 
-<!-- snippet: expect-error -->
+<!-- snippet: expect-error TS2305 -->
 
 ```ts
 import { ForDialog } from 'forty-cdk';

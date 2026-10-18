@@ -285,19 +285,3 @@ export function readSitePages() {
     return { file, slug, title };
   });
 }
-
-/**
- * Every README the site publishes the content of, keyed by repository path —
- * the primitives with a page, and the folded entry points whose content their
- * host's page carries.
- */
-export function readPrimitiveReadmes() {
-  const readmes = new Map();
-  for (const { slug } of [...readPrimitives(), ...readFoldedEntryPoints()]) {
-    const file = join(LIBRARY_DIR, slug, 'README.md');
-    if (existsSync(file)) {
-      readmes.set(`projects/forty-cdk/${slug}/README.md`, readFileSync(file, 'utf8'));
-    }
-  }
-  return readmes;
-}
