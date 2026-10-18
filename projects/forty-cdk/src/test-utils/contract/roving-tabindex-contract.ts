@@ -20,7 +20,10 @@
  *     other items have `tabindex="-1"`. Disabled items at the head of
  *     the list are skipped when picking the entry point.
  *   - `Home` jumps focus to the first enabled item; `End` jumps to the
- *     last enabled item.
+ *     last enabled item. Each also runs with a disabled item at its edge, so
+ *     the jump must skip it rather than land on the edge of the collection —
+ *     unless the primitive declares `disabledItemsReachable`, in which case
+ *     the jump must land on that disabled edge item.
  *   - The orientation-positive arrow (`ArrowRight` / `ArrowDown`)
  *     advances focus by one position; arrow-key navigation skips
  *     disabled items along the way.
@@ -102,10 +105,16 @@ export interface RovingTabindexContractSetup {
    */
   mountWithDisabledMiddle?: () => RovingTabindexMountResult | Promise<RovingTabindexMountResult>;
   /**
-   * Mount with the FIRST item disabled, so the contract can verify the
-   * entry-point computation (first-enabled item gets `tabindex=0`).
+   * Mount with the FIRST item disabled and at least two enabled items after
+   * it, so the contract can verify the entry-point computation (first-enabled
+   * item gets `tabindex=0`) and where `Home` lands.
    */
   mountWithDisabledFirst?: () => RovingTabindexMountResult | Promise<RovingTabindexMountResult>;
+  /**
+   * Mount with the LAST item disabled and at least two enabled items before
+   * it, so the contract can verify where `End` lands.
+   */
+  mountWithDisabledLast?: () => RovingTabindexMountResult | Promise<RovingTabindexMountResult>;
   /**
    * Mount with `dir="rtl"`. The contract verifies that `ArrowLeft`
    * advances focus (the "logical forward" direction in RTL).
@@ -185,6 +194,12 @@ export interface RovingTabindexContractOptions {
    * `End` semantics.
    */
   forwardArrow?: 'ArrowRight' | 'ArrowDown';
+  /**
+   * Whether `Home` / `End` reach a disabled item at the edge of the group
+   * instead of skipping it. Tabs and Stepper keep disabled triggers reachable
+   * so they are announced; every other adopter skips them.
+   */
+  disabledItemsReachable?: boolean;
 }
 
 const dispatchKey = (
@@ -269,6 +284,7 @@ export function assertRovingTabindexContract(
   options: RovingTabindexContractOptions = {},
 ): void {
   const forward = options.forwardArrow ?? 'ArrowRight';
+  const reachable = options.disabledItemsReachable ?? false;
 
   describe('roving-tabindex contract', () => {
     it('puts tabindex="0" on the first enabled item and tabindex="-1" on the rest', async () => {
@@ -281,7 +297,7 @@ export function assertRovingTabindexContract(
       });
     });
 
-    it('Home jumps focus to the first enabled item', async () => {
+    it('Home jumps focus to the first item', async () => {
       const r = await setup.mount();
       const enabledIdx = enabled(r);
       const last = enabledIdx[enabledIdx.length - 1]!;
@@ -291,7 +307,7 @@ export function assertRovingTabindexContract(
       expect(document.activeElement).toBe(r.items[enabledIdx[0]!]);
     });
 
-    it('End jumps focus to the last enabled item', async () => {
+    it('End jumps focus to the last item', async () => {
       const r = await setup.mount();
       const enabledIdx = enabled(r);
       const first = enabledIdx[0]!;
@@ -420,6 +436,49 @@ export function assertRovingTabindexContract(
         }
         expect(r.items[firstEnabled]!.getAttribute('tabindex')).toBe('0');
       });
+
+      it(
+        reachable
+          ? 'Home reaches a disabled item at the head'
+          : 'Home skips disabled items at the head and lands on the first enabled item',
+        async () => {
+          const r = await setup.mountWithDisabledFirst!();
+          const enabledIdx = enabled(r);
+          expect(enabledIdx.length).toBeGreaterThanOrEqual(2);
+          expect(enabledIdx[0]).toBeGreaterThan(0);
+          const last = enabledIdx[enabledIdx.length - 1]!;
+          r.items[last]!.focus();
+          await r.flush();
+          expect(document.activeElement).toBe(r.items[last]);
+
+          dispatchKey(r.items[last]!, 'Home');
+          await r.flush();
+          expect(document.activeElement).toBe(r.items[reachable ? 0 : enabledIdx[0]!]);
+        },
+      );
+    }
+
+    if (setup.mountWithDisabledLast) {
+      it(
+        reachable
+          ? 'End reaches a disabled item at the tail'
+          : 'End skips disabled items at the tail and lands on the last enabled item',
+        async () => {
+          const r = await setup.mountWithDisabledLast!();
+          const enabledIdx = enabled(r);
+          expect(enabledIdx.length).toBeGreaterThanOrEqual(2);
+          const last = enabledIdx[enabledIdx.length - 1]!;
+          expect(last).toBeLessThan(r.items.length - 1);
+          const first = enabledIdx[0]!;
+          r.items[first]!.focus();
+          await r.flush();
+          expect(document.activeElement).toBe(r.items[first]);
+
+          dispatchKey(r.items[first]!, 'End');
+          await r.flush();
+          expect(document.activeElement).toBe(r.items[reachable ? r.items.length - 1 : last]);
+        },
+      );
     }
 
     if (setup.mountWithDisabledMiddle) {

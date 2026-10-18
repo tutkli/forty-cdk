@@ -181,6 +181,16 @@ describe('ForListbox', () => {
         await r.flush();
         return { items: listboxItems(r.el), enabledIndices: [1, 2], flush: r.flush };
       },
+      mountWithDisabledLast: async () => {
+        const r = renderHost(ListboxHost);
+        r.instance.options.set([
+          { value: 'apple', label: 'Apple', disabled: false },
+          { value: 'apricot', label: 'Apricot', disabled: false },
+          { value: 'banana', label: 'Banana', disabled: true },
+        ]);
+        await r.flush();
+        return { items: listboxItems(r.el), enabledIndices: [0, 1], flush: r.flush };
+      },
       mountWithDisabledMiddle: async () => {
         const r = renderHost(ListboxHost);
         r.instance.options.set([

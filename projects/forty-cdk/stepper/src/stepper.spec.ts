@@ -601,47 +601,59 @@ describe('ForStepper', () => {
     { label: 'separators' },
   );
 
-  assertRovingTabindexContract({
-    mount: async () => {
-      const r = renderHost(StepperHost);
-      await r.flush();
-      return { items: triggers(r.el), flush: r.flush };
+  assertRovingTabindexContract(
+    {
+      mount: async () => {
+        const r = renderHost(StepperHost);
+        await r.flush();
+        return { items: triggers(r.el), flush: r.flush };
+      },
+      mountWithDisabledFirst: async () => {
+        const r = renderHost(StepperHost);
+        r.instance.steps.update((ss) => ss.map((s, i) => (i === 0 ? { ...s, disabled: true } : s)));
+        r.fixture.detectChanges();
+        await r.flush();
+        return { items: triggers(r.el), enabledIndices: [1, 2], flush: r.flush };
+      },
+      mountWithDisabledLast: async () => {
+        const r = renderHost(StepperHost);
+        r.instance.steps.update((ss) =>
+          ss.map((s, i) => (i === ss.length - 1 ? { ...s, disabled: true } : s)),
+        );
+        r.fixture.detectChanges();
+        await r.flush();
+        return { items: triggers(r.el), enabledIndices: [0, 1], flush: r.flush };
+      },
+      mountWithInPlaceDisable: async () => {
+        const r = renderHost(StepperHost);
+        await r.flush();
+        return {
+          items: triggers(r.el),
+          flush: r.flush,
+          disableFirst: () =>
+            r.instance.steps.update(([first, ...rest]) => [{ ...first!, disabled: true }, ...rest]),
+        };
+      },
+      mountWithRemoval: async () => {
+        const r = renderHost(StepperHost);
+        await r.flush();
+        return {
+          items: triggers(r.el),
+          flush: r.flush,
+          removedIndex: 2,
+          remove: () => r.instance.steps.update((list) => list.slice(0, 2)),
+        };
+      },
+      mountRtl: async () => {
+        const r = renderHost(StepperHost);
+        r.instance.dir.set('rtl');
+        r.fixture.detectChanges();
+        await r.flush();
+        return { items: triggers(r.el), flush: r.flush };
+      },
     },
-    mountWithDisabledFirst: async () => {
-      const r = renderHost(StepperHost);
-      r.instance.steps.update((ss) => ss.map((s, i) => (i === 0 ? { ...s, disabled: true } : s)));
-      r.fixture.detectChanges();
-      await r.flush();
-      return { items: triggers(r.el), enabledIndices: [1, 2], flush: r.flush };
-    },
-    mountWithInPlaceDisable: async () => {
-      const r = renderHost(StepperHost);
-      await r.flush();
-      return {
-        items: triggers(r.el),
-        flush: r.flush,
-        disableFirst: () =>
-          r.instance.steps.update(([first, ...rest]) => [{ ...first!, disabled: true }, ...rest]),
-      };
-    },
-    mountWithRemoval: async () => {
-      const r = renderHost(StepperHost);
-      await r.flush();
-      return {
-        items: triggers(r.el),
-        flush: r.flush,
-        removedIndex: 2,
-        remove: () => r.instance.steps.update((list) => list.slice(0, 2)),
-      };
-    },
-    mountRtl: async () => {
-      const r = renderHost(StepperHost);
-      r.instance.dir.set('rtl');
-      r.fixture.detectChanges();
-      await r.flush();
-      return { items: triggers(r.el), flush: r.flush };
-    },
-  });
+    { disabledItemsReachable: true },
+  );
 
   describe('keyboard navigation', () => {
     it('ArrowRight moves focus in horizontal mode', async () => {

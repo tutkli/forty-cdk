@@ -144,21 +144,22 @@ describe('ForToolbar', () => {
       };
     },
     mountWithDisabledFirst: async () => {
-      @Component({
-        imports: [ForToolbar, ForToolbarButton],
-        template: `
-          <div forToolbar>
-            <button forToolbarButton disabled>One</button>
-            <button forToolbarButton>Two</button>
-          </div>
-        `,
-      })
-      class Host {}
-      const r = renderHost(Host);
+      const r = renderHost(ToolbarHost);
+      r.fixture.componentInstance.firstDisabled.set(true);
       await r.flush();
       return {
         items: collectFocusables(r.el),
-        enabledIndices: [1],
+        enabledIndices: [1, 2],
+        flush: r.flush,
+      };
+    },
+    mountWithDisabledLast: async () => {
+      const r = renderHost(ToolbarHost);
+      r.fixture.componentInstance.linkDisabled.set(true);
+      await r.flush();
+      return {
+        items: collectFocusables(r.el),
+        enabledIndices: [0, 1],
         flush: r.flush,
       };
     },

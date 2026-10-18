@@ -227,8 +227,15 @@ const EXCLUSIONS: readonly {
 /** The shared item-navigation gate every item piece of an adopter calls. */
 const ITEM_NAVIGATION = 'navigateFromRovingItem(';
 
-/** The contract mount every claim supplies for the in-place disable rung. */
-const IN_PLACE_DISABLE = 'mountWithInPlaceDisable:';
+/**
+ * The contract mounts every claim supplies: the in-place disable rung, and the
+ * disabled-edge mounts the Home / End skip rungs press against.
+ */
+const PER_CLAIM_MOUNTS = [
+  'mountWithInPlaceDisable:',
+  'mountWithDisabledFirst:',
+  'mountWithDisabledLast:',
+] as const;
 
 /** The focus follower a push-based tracker pairs with. */
 const FOCUS_RESTORE = 'injectRovingFocusRestore(';
@@ -388,17 +395,16 @@ describe('roving-tabindex contract adoption (meta-guard)', () => {
     expect(sorted(stale)).toEqual([]);
   });
 
-  it('mounts the in-place disable once per claim in the spec that makes it', () => {
-    const short = [...claimsPerSpec.entries()]
-      .map(([spec, claims]) => {
-        const mounts = (SPEC_CODE.get(spec) ?? '').split(IN_PLACE_DISABLE).length - 1;
-        return { spec, claims, mounts };
-      })
-      .filter(({ claims, mounts }) => mounts < claims)
-      .map(({ spec, claims, mounts }) => `${spec}: ${claims} claim(s), ${mounts} mount(s)`);
+  for (const mount of PER_CLAIM_MOUNTS) {
+    it(`supplies ${mount.slice(0, -1)} once per claim in the spec that makes it`, () => {
+      const short = [...claimsPerSpec.entries()]
+        .map(([spec, claims]) => ({ spec, claims, mounts: occurrences(spec, mount) }))
+        .filter(({ claims, mounts }) => mounts < claims)
+        .map(({ spec, claims, mounts }) => `${spec}: ${claims} claim(s), ${mounts} mount(s)`);
 
-    expect(sorted(short)).toEqual([]);
-  });
+      expect(sorted(short)).toEqual([]);
+    });
+  }
 
   it('mounts the removal rung once per tracker in the spec that claims or excludes it', () => {
     const owed = new Map<string, number>();

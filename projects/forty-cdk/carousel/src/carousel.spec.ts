@@ -222,6 +222,12 @@ describe('ForCarousel', () => {
         await r.flush();
         return { items: indicators(r.el), enabledIndices: [1, 2], flush: r.flush };
       },
+      mountWithDisabledLast: async () => {
+        const r = renderHost(CarouselHost);
+        r.instance.disabledIndicators.set([2]);
+        await r.flush();
+        return { items: indicators(r.el), enabledIndices: [0, 1], flush: r.flush };
+      },
       mountWithDisabledMiddle: async () => {
         const r = renderHost(CarouselHost);
         r.instance.disabledIndicators.set([1]);

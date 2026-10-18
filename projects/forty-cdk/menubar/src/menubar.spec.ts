@@ -606,6 +606,16 @@ describe('ForMenubar', () => {
         await r.flush();
         return { items: menubarTriggers(r.el), enabledIndices: [1, 2], flush: r.flush };
       },
+      mountWithDisabledLast: async () => {
+        const r = renderHost(MenubarRovingHost);
+        r.instance.triggers.set([
+          { value: 'file', label: 'File', disabled: false },
+          { value: 'edit', label: 'Edit', disabled: false },
+          { value: 'view', label: 'View', disabled: true },
+        ]);
+        await r.flush();
+        return { items: menubarTriggers(r.el), enabledIndices: [0, 1], flush: r.flush };
+      },
       mountWithDisabledMiddle: async () => {
         const r = renderHost(MenubarRovingHost);
         r.instance.triggers.set([
