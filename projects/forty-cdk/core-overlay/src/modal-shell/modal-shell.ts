@@ -233,12 +233,12 @@ export function injectModalShell(config: ModalShellConfig): ModalShellHandle {
   // 2. Portal — moves the host to `document.body` after first render and
   //    cleans up on destroy. `DestroyRef.onDestroy` callbacks fire in
   //    registration order (FIFO), and the portal registers its hook here,
-  //    before the shell's own destroy hook below — so on teardown the portal
-  //    removes the host from the DOM FIRST, then the shell runs return-focus.
-  //    The ordering is harmless either way: return-focus targets the
-  //    previously-focused element (the trigger, captured synchronously above),
-  //    which lives OUTSIDE the portaled host, so removing the host first never
-  //    affects it.
+  //    before the shell's own destroy hook below. That hook does not remove
+  //    the host synchronously in a browser: it waits for the next frame and
+  //    for any finite exit animation, so the shell runs return-focus while the
+  //    host is still attached. The ordering is harmless either way:
+  //    return-focus targets the previously-focused element (the trigger,
+  //    captured synchronously above), which lives OUTSIDE the portaled host.
   injectPortal(config.container ? { target: config.container } : {});
 
   // Captured at mount time so the destroy path can mirror the same mode the
@@ -401,8 +401,9 @@ export function injectModalShell(config: ModalShellConfig): ModalShellHandle {
 
   // 4. Destroy. Hooks fire in registration order; the portal's destroy hook
   //    was registered inside `injectPortal()` (above) so it runs BEFORE
-  //    ours, removing the element from the DOM first. We tear down the
-  //    side-effect stack here in the inverse order it was activated.
+  //    ours, scheduling the element's removal for after the next frame and
+  //    any finite exit animation. We tear down the side-effect stack here in
+  //    the inverse order it was activated.
   inject(DestroyRef).onDestroy(() => {
     destroyed = true;
     order.release(host.nativeElement);

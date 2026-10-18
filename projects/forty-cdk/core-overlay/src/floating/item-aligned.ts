@@ -30,8 +30,9 @@ export interface ItemAlignedConfig {
   /**
    * The selected option element to anchor over the trigger. When `null`,
    * the algorithm falls back to the first enabled `[role="option"]` inside
-   * the listbox. Reactive — re-running `computePosition` if the selection
-   * changes while open.
+   * the listbox. Read on each position run, so a selection change while open
+   * does not reposition the listbox; it is anchored on the next open or the
+   * next `autoUpdate` run.
    */
   readonly selectedOption: Signal<HTMLElement | null>;
 

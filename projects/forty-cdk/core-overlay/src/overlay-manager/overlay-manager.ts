@@ -40,8 +40,8 @@ import type { OverlayRef } from './overlay-ref';
  * the target threaded to the directive, which the core rewrites when the
  * overlay it points into closes first.
  *
- * Internal core tier — exported from `forty-cdk/core` for the library's own
- * entry points, with no semver guarantee.
+ * Internal core tier — exported from `forty-cdk/core-overlay` for the
+ * library's own entry points, with no semver guarantee.
  */
 export interface OverlayManagerEntry {
   readonly id: string;
@@ -71,8 +71,8 @@ export interface OverlaySurface {
  * The reactive surface a manager's outlet component is wired with on first
  * `open()`. Mirrors `ForDialogOutletHost` / `ForDrawerOutletHost`.
  *
- * Internal core tier — exported from `forty-cdk/core` for the library's own
- * entry points, with no semver guarantee.
+ * Internal core tier — exported from `forty-cdk/core-overlay` for the
+ * library's own entry points, with no semver guarantee.
  */
 export interface OverlayManagerOutletHost<TEntry extends OverlayManagerEntry> {
   readonly entries: Signal<readonly TEntry[]>;
@@ -91,8 +91,8 @@ export interface OverlayManagerOutletHost<TEntry extends OverlayManagerEntry> {
  * The minimal surface a manager's outlet component exposes so the core can
  * wire it on first `open()`. Mirrors `ForDialogOutlet` / `ForDrawerOutlet`.
  *
- * Internal core tier — exported from `forty-cdk/core` for the library's own
- * entry points, with no semver guarantee.
+ * Internal core tier — exported from `forty-cdk/core-overlay` for the
+ * library's own entry points, with no semver guarantee.
  */
 export interface OverlayManagerOutlet<TEntry extends OverlayManagerEntry> {
   init(host: OverlayManagerOutletHost<TEntry>): void;
@@ -103,8 +103,8 @@ export interface OverlayManagerOutlet<TEntry extends OverlayManagerEntry> {
  * exit-animation host / backdrop attributes, and how to create the outlet
  * component that renders the entries.
  *
- * Internal core tier — exported from `forty-cdk/core` for the library's own
- * entry points, with no semver guarantee.
+ * Internal core tier — exported from `forty-cdk/core-overlay` for the
+ * library's own entry points, with no semver guarantee.
  */
 export interface OverlayManagerConfig<TEntry extends OverlayManagerEntry> {
   /**

@@ -62,10 +62,11 @@ export interface MenuOverlayHooks extends OverlayEmitTargets {
 }
 
 /**
- * Shared coordination behaviour between `ForDropdownMenu` and `ForContextMenu`
- * (and any future menu overlay root with the same item-collection / typeahead /
- * navigate / dismissible shape — Menubar's per-bar menu, a future free-floating
- * SubMenu).
+ * Shared coordination behaviour of the menu overlay roots — `ForDropdownMenu`,
+ * `ForContextMenu`, `ForMenu` and `ForMenuSub` — which share the same
+ * item-collection / typeahead / navigate / dismissible shape. Menubar's per-bar
+ * menu is not one of them: it composes `MenuItemList` and
+ * {@link OverlayController} directly.
  *
  * The helper owns:
  *

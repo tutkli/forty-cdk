@@ -11,8 +11,8 @@
  * which clears any in-flight timer first, runs `run` immediately when the
  * clamped delay is `0`, else fires it once after the delay.
  *
- * Internal core tier — exported from `forty-cdk/core` for the library's own
- * entry points, with no semver guarantee.
+ * Internal core tier — exported from `forty-cdk/core-overlay` for the
+ * library's own entry points, with no semver guarantee.
  */
 export interface DebouncedAction {
   /**

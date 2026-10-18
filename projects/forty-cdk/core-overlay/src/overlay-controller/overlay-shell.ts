@@ -169,9 +169,9 @@ export interface OverlayShellTabOutConfig {
 
 /**
  * Single config for the overlay-content lifecycle. Each sub-bundle is
- * individually optional so the nine concrete primitives (Popover, Menu,
- * MenuSub, ContextMenu, DropdownMenu, Combobox, Select, Tooltip, HoverCard)
- * can opt in to only the pieces they need.
+ * individually optional so each trigger-anchored primitive (Popover, the menu
+ * roots, Combobox, Select, DatePicker, TimePicker, Tooltip, HoverCard) can opt
+ * in to only the pieces it needs.
  *
  * The shell never reads any of the primitive's own context tokens — the
  * caller forwards each piece as plain signals / callbacks so the shell stays

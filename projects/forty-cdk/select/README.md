@@ -409,7 +409,7 @@ The default stays `popper` so existing consumers' visuals don't shift on upgrade
 
 ## Modal touch presentation
 
-`[forSelect]` defaults to a **non-modal anchored popover**. On small / touch screens the established pattern (native mobile pickers) is a centered modal surface that's easier to tap. Set `modal` to route `[forSelectContent]` through `_internal/modal-shell` (a **trapped / inert / scroll-locked** surface) instead of the anchored popover. The form-value wiring is unchanged: `[(value)]`, `name`, and the `selected()` accessor keep working exactly as in popover mode.
+`[forSelect]` defaults to a **non-modal anchored popover**. On small / touch screens the established pattern (native mobile pickers) is a centered modal surface that's easier to tap. Set `modal` to route `[forSelectContent]` through the modal shell `[forDialog]` uses (a **trapped / inert / scroll-locked** surface) instead of the anchored popover. The form-value wiring is unchanged: `[(value)]`, `name`, and the `selected()` accessor keep working exactly as in popover mode.
 
 ```html
 <div

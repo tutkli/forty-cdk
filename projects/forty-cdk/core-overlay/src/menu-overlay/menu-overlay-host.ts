@@ -9,14 +9,15 @@ import type { MenuActivationModality, MenuOverlay } from './menu-overlay';
 
 /**
  * Abstract base that forwards the `MenuOverlay` coordination slice every menu
- * root re-exposes — `[forDropdownMenu]`, `[forContextMenu]`, and `[forMenuSub]`
- * all extend it. Each subclass owns its own `MenuOverlay` instance (created
- * with its own id prefix and lifecycle hooks) and exposes it through the
- * abstract `_overlay` accessor; the base implements the trigger / content /
- * item registration, navigation, open/close, and veto pass-throughs once.
+ * root re-exposes — `[forDropdownMenu]`, `[forContextMenu]`, `[forMenu]` and
+ * `[forMenuSub]` all extend it. Each subclass owns its own `MenuOverlay`
+ * instance (created with its own id prefix and lifecycle hooks) and exposes it
+ * through the abstract `_overlay` accessor; the base implements the trigger /
+ * content / item registration, navigation, open/close, and veto pass-throughs
+ * once.
  *
  * This is the single place to add a member that is a pure pass-through to
- * `MenuOverlay`: declaring it here gives all three directives the method
+ * `MenuOverlay`: declaring it here gives all four directives the method
  * without hand-written `.bind()` forwarding in each. Subclasses override only
  * the members that need extra behaviour (e.g. `[forMenuSub]` wraps
  * `registerContent` to attach pointer listeners and overrides the auto-focus
