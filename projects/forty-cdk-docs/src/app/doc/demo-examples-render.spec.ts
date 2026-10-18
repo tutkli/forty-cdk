@@ -85,6 +85,14 @@ const DRIVES: Readonly<Record<string, Drive>> = {
     query(host, '[forAvatarImage]').dispatchEvent(new Event('error'));
     await flush(fixture);
   },
+  'menubar/examples/default.example.ts': async (host, fixture) => {
+    query<HTMLButtonElement>(host, '[forMenubarTrigger][value="edit"]').click();
+    await flush(fixture);
+  },
+  'dropdown-menu/examples/default.example.ts': async (host, fixture) => {
+    query<HTMLButtonElement>(host, '[forDropdownMenuTrigger]').click();
+    await flush(fixture);
+  },
 };
 
 function describeElement(el: Element): string {
@@ -104,6 +112,7 @@ interface Report {
   readonly unnamed: readonly string[];
   readonly comboboxesWithoutAuthorName: readonly string[];
   readonly ariaLabelsHidingVisibleLabel: readonly string[];
+  readonly nativeDisabledBesideAriaDisabled: readonly string[];
 }
 
 function unnamed(): string[] {
@@ -132,6 +141,12 @@ function ariaLabelsHidingVisibleLabel(): string[] {
     .filter(({ visible }) => /\p{L}/u.test(visible))
     .filter(({ name, visible }) => !name.name.toLowerCase().includes(visible.toLowerCase()))
     .map(({ el, name, visible }) => `"${name.name}" hides "${visible}": ${describeElement(el)}`);
+}
+
+function nativeDisabledBesideAriaDisabled(): string[] {
+  return [...document.body.querySelectorAll('[aria-disabled="true"][disabled]')].map(
+    describeElement,
+  );
 }
 
 async function render(path: string): Promise<{ host: HTMLElement; errors: unknown[] }> {
@@ -187,7 +202,7 @@ describe('the docs examples', () => {
   });
 
   it.each(EXAMPLES.map((example) => example.path))(
-    '%s mounts without an error and names every control by its visible label',
+    '%s mounts without an error, names every control by its visible label and keeps disabled controls off the native attribute',
     async (path) => {
       const { errors } = await render(path);
       expect<Report>({
@@ -195,11 +210,13 @@ describe('the docs examples', () => {
         unnamed: unnamed(),
         comboboxesWithoutAuthorName: comboboxesWithoutAuthorName(),
         ariaLabelsHidingVisibleLabel: ariaLabelsHidingVisibleLabel(),
+        nativeDisabledBesideAriaDisabled: nativeDisabledBesideAriaDisabled(),
       }).toEqual({
         errors: [],
         unnamed: [],
         comboboxesWithoutAuthorName: [],
         ariaLabelsHidingVisibleLabel: [],
+        nativeDisabledBesideAriaDisabled: [],
       });
     },
   );

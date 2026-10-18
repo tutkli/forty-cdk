@@ -46,7 +46,7 @@ import { ForPaneResizer } from 'forty-cdk/pane-resizer';
             [max]="420"
             [step]="8"
             [largeStep]="48"
-            disabled
+            [disabled]="true"
           ></div>
           <div id="pr-states-locked-b" class="pr-pane pr-pane-b">flex: 1</div>
         </div>

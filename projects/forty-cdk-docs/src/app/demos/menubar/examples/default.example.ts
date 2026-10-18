@@ -24,7 +24,7 @@ import { ForMenubar, ForMenubarTrigger } from 'forty-cdk/menubar';
       @if (openMenu() === 'edit') {
         <div forMenuContent class="menubar-menu-content" animate.enter="menubar-menu-pop-in">
           <button forMenuItem class="menubar-menu-item">Undo</button>
-          <button forMenuItem class="menubar-menu-item" disabled>Redo</button>
+          <button forMenuItem class="menubar-menu-item" [disabled]="true">Redo</button>
           <hr forMenuSeparator class="menubar-menu-separator" />
           <button forMenuItem class="menubar-menu-item">Cut</button>
           <button forMenuItem class="menubar-menu-item">Copy</button>

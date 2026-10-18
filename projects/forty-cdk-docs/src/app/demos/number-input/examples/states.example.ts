@@ -38,7 +38,7 @@ import {
             class="step-input"
             aria-labelledby="ni-state-disabled"
             disabled
-            [(value)]="qty"
+            [(value)]="disabledQty"
             [min]="0"
             [max]="10"
             [step]="1"
@@ -56,7 +56,7 @@ import {
             class="step-input"
             aria-labelledby="ni-state-readonly"
             readonly
-            [(value)]="qty"
+            [(value)]="readonlyQty"
             [min]="0"
             [max]="10"
             [step]="1"
@@ -156,4 +156,6 @@ import {
 })
 export class NumberInputStatesExample {
   protected readonly qty = signal<number | null>(3);
+  protected readonly disabledQty = signal<number | null>(3);
+  protected readonly readonlyQty = signal<number | null>(3);
 }
