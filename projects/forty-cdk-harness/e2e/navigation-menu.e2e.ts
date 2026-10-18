@@ -96,6 +96,76 @@ test.describe('NavigationMenu viewport', () => {
   });
 });
 
+async function indicatorMisalignment(
+  page: Page,
+  trigger: string,
+): Promise<{ left: number; top: number; width: number; height: number }> {
+  return page.evaluate((trigger) => {
+    const box = (testid: string): DOMRect =>
+      document.querySelector(`[data-testid="${testid}"]`)!.getBoundingClientRect();
+    const indicator = box('indicator');
+    const target = box(trigger);
+    return {
+      left: Math.round(indicator.left - target.left),
+      top: Math.round(indicator.top - target.top),
+      width: Math.round(indicator.width - target.width),
+      height: Math.round(indicator.height - target.height),
+    };
+  }, trigger);
+}
+
+const ALIGNED = { left: 0, top: 0, width: 0, height: 0 };
+
+test.describe('NavigationMenu indicator', () => {
+  test('sits under the active trigger across click and hover switches', async ({ page }) => {
+    await gotoFixture(page, 'navigation-menu', { indicator: '1' });
+    await expect(el(page, 'indicator')).toHaveAttribute('data-state', 'hidden');
+
+    await el(page, 'trigger-solutions').click();
+    await expect(el(page, 'indicator')).toHaveAttribute('data-state', 'visible');
+    await expect.poll(() => indicatorMisalignment(page, 'trigger-solutions')).toEqual(ALIGNED);
+
+    await hoverTo(page, el(page, 'trigger-company'));
+    await expect(el(page, 'active')).toHaveText('company');
+    await expect.poll(() => indicatorMisalignment(page, 'trigger-company')).toEqual(ALIGNED);
+  });
+
+  test('keeps its last geometry when the menu closes', async ({ page }) => {
+    await gotoFixture(page, 'navigation-menu', { indicator: '1' });
+    await el(page, 'trigger-company').click();
+    await expect.poll(() => indicatorMisalignment(page, 'trigger-company')).toEqual(ALIGNED);
+    const names = [
+      '--for-navigation-menu-indicator-x',
+      '--for-navigation-menu-indicator-y',
+      '--for-navigation-menu-indicator-width',
+      '--for-navigation-menu-indicator-height',
+    ];
+    const open = await Promise.all(names.map((name) => readVar(page, 'indicator', name)));
+    expect(open[0]).not.toBe('0px');
+
+    await el(page, 'trigger-company').click();
+    await expect(el(page, 'active')).toHaveText('none');
+    await expect(el(page, 'indicator')).toHaveAttribute('data-state', 'hidden');
+
+    expect(await Promise.all(names.map((name) => readVar(page, 'indicator', name)))).toEqual(open);
+  });
+
+  test('stays under the active trigger while the trigger row scrolls', async ({ page }) => {
+    await gotoFixture(page, 'navigation-menu', { indicator: '1', scrollRow: '1' });
+    await el(page, 'trigger-company').click();
+    await expect(el(page, 'active')).toHaveText('company');
+    await expect
+      .poll(() => el(page, 'list').evaluate((list) => list.scrollLeft))
+      .toBeGreaterThan(0);
+    await expect.poll(() => indicatorMisalignment(page, 'trigger-company')).toEqual(ALIGNED);
+
+    await el(page, 'list').evaluate((list) => (list.scrollLeft = 0));
+    await expect.poll(() => el(page, 'list').evaluate((list) => list.scrollLeft)).toBe(0);
+
+    await expect.poll(() => indicatorMisalignment(page, 'trigger-company')).toEqual(ALIGNED);
+  });
+});
+
 test.describe('NavigationMenu hover-across-triggers', () => {
   test('dragging from one trigger to a sibling reliably opens the sibling', async ({ page }) => {
     await gotoFixture(page, 'navigation-menu');

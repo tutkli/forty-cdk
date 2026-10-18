@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/c
 import {
   ForNavigationMenu,
   ForNavigationMenuContent,
+  ForNavigationMenuIndicator,
   ForNavigationMenuItem,
   ForNavigationMenuList,
   ForNavigationMenuTrigger,
@@ -20,10 +21,40 @@ import { queryFlag } from './_query-flag';
     ForNavigationMenuItem,
     ForNavigationMenuTrigger,
     ForNavigationMenuContent,
+    ForNavigationMenuIndicator,
     ForNavigationMenuViewport,
   ],
   styles: [
     `
+      .indicator-row {
+        display: flex;
+        position: relative;
+        margin: 0;
+        padding: 8px 16px;
+        list-style: none;
+      }
+      .indicator-row button {
+        flex: none;
+        width: 120px;
+        height: 32px;
+      }
+      .indicator-row.scroll-row {
+        width: 200px;
+        overflow-x: auto;
+        border-left: 5px solid;
+      }
+      [forNavigationMenuIndicator] {
+        position: absolute;
+        top: 0;
+        left: 0;
+        transform: translate(
+          var(--for-navigation-menu-indicator-x),
+          var(--for-navigation-menu-indicator-y)
+        );
+        width: var(--for-navigation-menu-indicator-width);
+        height: var(--for-navigation-menu-indicator-height);
+        pointer-events: none;
+      }
       [forNavigationMenuViewport] {
         display: block;
         overflow: hidden;
@@ -52,7 +83,12 @@ import { queryFlag } from './_query-flag';
     <input data-testid="before" type="text" />
 
     <nav forNavigationMenu [(value)]="open">
-      <ul forNavigationMenuList>
+      <ul
+        forNavigationMenuList
+        data-testid="list"
+        [class.indicator-row]="indicator"
+        [class.scroll-row]="scrollRow"
+      >
         <li forNavigationMenuItem value="products">
           <button data-testid="trigger-products" forNavigationMenuTrigger>Products</button>
           @if (open() === 'products') {
@@ -79,6 +115,9 @@ import { queryFlag } from './_query-flag';
             </div>
           }
         </li>
+        @if (indicator) {
+          <li forNavigationMenuIndicator data-testid="indicator"></li>
+        }
       </ul>
       <ng-template #viewportTpl>
         <div forNavigationMenuViewport data-testid="viewport"></div>
@@ -104,5 +143,7 @@ export class NavigationMenuFixture {
   protected readonly noViewport = queryFlag('noViewport');
   protected readonly externalViewport = queryFlag('externalViewport');
   protected readonly disabledSolutions = queryFlag('disabledSolutions');
+  protected readonly indicator = queryFlag('indicator');
+  protected readonly scrollRow = queryFlag('scrollRow');
   protected readonly activeDisplay = computed(() => this.open() || 'none');
 }
