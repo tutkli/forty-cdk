@@ -216,7 +216,7 @@ export class ForDraggable implements ForDraggableContext {
         cancelOnEscape: true,
         capturePointer: true,
         canStart: (event) => this.#handleGuard.canStart(event),
-        onLift: (event) => this.#onPointerLift(event),
+        onLift: (_event, start) => this.#onPointerLift(start),
         onMove: (event) => this.#onPointerMove(event),
         onCommit: () => this.#onPointerCommit(),
         onCancel: () => this.#onPointerCancel(),
@@ -251,13 +251,9 @@ export class ForDraggable implements ForDraggableContext {
     this.#handleGuard.unregisterNested(el);
   }
 
-  #onPointerLift(event: PointerEvent): boolean {
+  #onPointerLift(start: { readonly x: number; readonly y: number }): boolean {
     const preview = this.#buildPreview();
-    const index = this.#list.pointerLift(
-      this.#host.nativeElement,
-      { x: event.clientX, y: event.clientY },
-      preview,
-    );
+    const index = this.#list.pointerLift(this.#host.nativeElement, start, preview);
     if (index < 0) {
       preview?.destroy();
       return false;

@@ -114,6 +114,31 @@ test.describe('drag-drop pointer dragging', () => {
     await expect(page.locator('[data-testid="a-item-2"]')).toHaveText(/Beta/);
   });
 
+  test('a long first move keeps the grabbed point of the preview under the pointer', async ({
+    page,
+  }) => {
+    const item1 = el(page, 'a-item-1');
+    const box1 = await item1.boundingBox();
+    if (!box1) throw new Error('Item not found');
+
+    const startX = box1.x + box1.width / 2;
+    const startY = box1.y + box1.height / 2;
+
+    await page.mouse.move(startX, startY);
+    await page.mouse.down();
+    await page.mouse.move(startX + 40, startY + 30);
+
+    const preview = page.locator('[data-for-drag-preview]');
+    await expect(preview).toBeVisible();
+    const previewBox = await preview.boundingBox();
+    if (!previewBox) throw new Error('Preview not found');
+
+    expect(Math.abs(previewBox.x - box1.x - 40)).toBeLessThanOrEqual(1.5);
+    expect(Math.abs(previewBox.y - box1.y - 30)).toBeLessThanOrEqual(1.5);
+
+    await page.mouse.up();
+  });
+
   test('cross-list transfer — drag item from list A to list B', async ({ page }) => {
     const item1 = el(page, 'a-item-1');
     const listB = el(page, 'list-b');

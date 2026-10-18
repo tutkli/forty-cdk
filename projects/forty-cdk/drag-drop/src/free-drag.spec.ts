@@ -137,10 +137,26 @@ describe('ForFreeDrag', () => {
     fire(box, 'pointermove', 40, 30);
     fire(box, 'pointerup', 40, 30);
 
-    expect(instance.pos()).toEqual({ x: 30, y: 30 });
+    expect(instance.pos()).toEqual({ x: 40, y: 30 });
     expect(instance.starts()).toEqual([{ x: 0, y: 0 }]);
-    expect(instance.moves().at(-1)).toEqual({ x: 30, y: 30 });
-    expect(instance.ends()).toEqual([{ x: 30, y: 30 }]);
+    expect(instance.moves().at(-1)).toEqual({ x: 40, y: 30 });
+    expect(instance.ends()).toEqual([{ x: 40, y: 30 }]);
+  });
+
+  it('measures the offset from the press point when the arming move is long', () => {
+    const { instance, query } = renderHost(BoxHost);
+    const box = query('[data-testid="box"]')!;
+
+    fire(box, 'pointerdown', 0, 0);
+    fire(box, 'pointermove', -30, 0);
+
+    expect(instance.pos()).toEqual({ x: -30, y: 0 });
+
+    fire(box, 'pointermove', -200, 120);
+    fire(box, 'pointerup', -200, 120);
+
+    expect(instance.pos()).toEqual({ x: -200, y: 120 });
+    expect(instance.ends()).toEqual([{ x: -200, y: 120 }]);
   });
 
   it('lockAxis="x" pins the y axis to its lift-time value', () => {
@@ -155,7 +171,7 @@ describe('ForFreeDrag', () => {
     fire(box, 'pointermove', 40, 30);
     fire(box, 'pointerup', 40, 30);
 
-    expect(instance.pos()).toEqual({ x: 35, y: 7 });
+    expect(instance.pos()).toEqual({ x: 45, y: 7 });
   });
 
   it('lockAxis="y" pins the x axis to its lift-time value', () => {
@@ -182,7 +198,7 @@ describe('ForFreeDrag', () => {
     fire(box, 'pointerdown', 0, 0);
     fire(box, 'pointermove', 10, 0);
     fire(box, 'pointermove', 40, 30);
-    expect(instance.pos()).toEqual({ x: 42, y: 38 });
+    expect(instance.pos()).toEqual({ x: 52, y: 38 });
 
     fire(box, 'pointercancel', 40, 30);
 
@@ -209,7 +225,7 @@ describe('ForFreeDrag', () => {
     fire(box, 'pointerdown', 0, 0);
     fire(box, 'pointermove', 10, 0);
     fire(box, 'pointermove', 40, 30);
-    expect(instance.pos()).toEqual({ x: 30, y: 30 });
+    expect(instance.pos()).toEqual({ x: 40, y: 30 });
 
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
 
@@ -280,7 +296,7 @@ describe('ForFreeDrag', () => {
       fire(handle, 'pointermove', 40, 30);
       fire(handle, 'pointerup', 40, 30);
 
-      expect(instance.pos()).toEqual({ x: 30, y: 30 });
+      expect(instance.pos()).toEqual({ x: 40, y: 30 });
     });
   });
 
@@ -295,7 +311,7 @@ describe('ForFreeDrag', () => {
     fire(header, 'pointerup', 40, 30);
     await flush(fixture);
 
-    expect(dialog.style.translate).toBe('30px 30px');
+    expect(dialog.style.translate).toBe('40px 30px');
     expect(header.style.translate).toBe('');
   });
 
@@ -314,7 +330,7 @@ describe('ForFreeDrag', () => {
     await flush(fixture);
 
     expect(dialog.style.transform).toBe('translate(-50%, -50%)');
-    expect(dialog.style.translate).toBe('30px 30px');
+    expect(dialog.style.translate).toBe('40px 30px');
 
     fixture.destroy();
 
@@ -336,7 +352,7 @@ describe('ForFreeDrag', () => {
     fire(header, 'pointerup', 40, -30);
     await flush(fixture);
 
-    expect(dialog.style.translate).toBe('calc(-50% + 30px) calc(-50% + -30px)');
+    expect(dialog.style.translate).toBe('calc(-50% + 40px) calc(-50% + -30px)');
 
     instance.pos.set({ x: 0, y: 0 });
     await flush(fixture);
@@ -382,8 +398,8 @@ describe('ForFreeDrag', () => {
     fire(box, 'pointerup', 40, 30);
     await flush(fixture);
 
-    expect(box.style.translate).toBe('30px 30px');
-    expect(fixture.componentInstance.pos()).toEqual({ x: 30, y: 30 });
+    expect(box.style.translate).toBe('40px 30px');
+    expect(fixture.componentInstance.pos()).toEqual({ x: 40, y: 30 });
   });
 });
 
