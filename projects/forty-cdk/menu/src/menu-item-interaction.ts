@@ -17,13 +17,15 @@ import { handleMenuTabOut } from './menu-tab-out';
  * semantics, but the surrounding interaction is identical: the
  * `data-highlighted` state machine, registration with the parent menu, and the
  * ArrowLeft/Right → Arrow/Home/End → Tab keyboard prefix. Consolidating them
- * here keeps the three item directives from drifting apart.
+ * here keeps the three item directives from drifting apart. `[forMenuSubTrigger]`
+ * shares the highlight state machine and registration, and keeps its own keys.
  */
 export interface MenuItemInteraction {
   /**
    * True while this item is the active keyboard candidate or hovered by the
    * pointer. Set on keyboard-driven focus and on `pointermove` (hover follows
-   * the pointer), cleared on `blur` and when the pointer leaves the surface.
+   * the pointer), cleared on `blur`, when the pointer leaves the surface, and
+   * when another item of the same menu takes the highlight.
    * The programmatic initial focus of a pointer-driven open lands without a
    * highlight until the pointer moves onto the item or keyboard navigation
    * begins. Reflected as `data-highlighted`.
@@ -49,14 +51,16 @@ export interface MenuItemInteraction {
  *
  * @param config.ctx The parent menu context the item registers with and navigates.
  * @param config.effectiveDisabled The item's resolved disabled state (own input OR the menu's).
- * @param config.textValue Typeahead-match override; empty falls back to the host's text content.
+ * @param config.textValue Typeahead-match override; empty or absent falls back to the host's text content.
+ * @param config.focusOnHover Whether hovering the item also moves DOM focus to it. Defaults to `true`.
  */
 export function createMenuItemInteraction(config: {
   ctx: ForMenuContext;
   effectiveDisabled: Signal<boolean>;
-  textValue: Signal<string>;
+  textValue?: Signal<string>;
+  focusOnHover?: boolean;
 }): MenuItemInteraction {
-  const { ctx, effectiveDisabled, textValue } = config;
+  const { ctx, effectiveDisabled, textValue, focusOnHover = true } = config;
   const host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 
   const highlighted = signal(false);
@@ -83,7 +87,10 @@ export function createMenuItemInteraction(config: {
     if (!isHoverCapablePointer(event) || effectiveDisabled()) {
       return;
     }
-    if (host.ownerDocument.activeElement !== host) {
+    if (!highlighted()) {
+      ctx.clearItemHighlights();
+    }
+    if (focusOnHover && host.ownerDocument.activeElement !== host) {
       host.focus({ preventScroll: true });
     }
     highlighted.set(true);

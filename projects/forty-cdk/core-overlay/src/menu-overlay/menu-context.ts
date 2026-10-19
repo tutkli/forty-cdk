@@ -69,15 +69,15 @@ export interface ForMenuItemHandle extends CollectionHandle {
    * that must not reflect `data-highlighted` (the initial focus of a
    * pointer-driven open). One-shot: the item consumes the suppression on its
    * next `focus` event. Optional — items that don't reflect a highlight
-   * (e.g. `[forMenuSubTrigger]`) simply omit it.
+   * simply omit it.
    */
   suppressHighlightOnNextFocus?(): void;
   /**
    * Drops the item's `data-highlighted` without moving DOM focus. The menu
    * surface calls this on `pointerleave` so the hover highlight stops once the
-   * pointer leaves, while keyboard navigation stays anchored on the item.
-   * Optional — items that don't reflect a highlight (e.g.
-   * `[forMenuSubTrigger]`) simply omit it.
+   * pointer leaves, while keyboard navigation stays anchored on the item, and
+   * the menu calls it on every other item before a keyboard focus move.
+   * Optional — items that don't reflect a highlight simply omit it.
    */
   clearHighlight?(): void;
 }

@@ -509,10 +509,21 @@ describe('ForMenuSub', () => {
   });
 
   describe('parent navigation reaches the SubTrigger', () => {
-    // The SubTrigger does not host-bind `data-highlighted`, so "ArrowDown from
-    // the previous parent item lands on the SubTrigger" is a pure focus outcome
-    // — asserted against a real browser in menu-sub.e2e.ts (the keyboard
-    // ArrowRight flow first ArrowDowns onto `dd-sub-trigger`).
+    it('ArrowDown onto the SubTrigger highlights it like any other item', async () => {
+      const r = renderHost(SubMenuHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const cut = document.querySelector<HTMLElement>('#cut')!;
+      cut.focus();
+      pressKey(cut, 'ArrowDown');
+      await flush(r.fixture);
+
+      const more = document.querySelector<HTMLElement>('[forMenuSubTrigger]')!;
+      expect(document.activeElement).toBe(more);
+      expect(more.getAttribute('data-highlighted')).toBe('');
+      expect(cut.hasAttribute('data-highlighted')).toBe(false);
+    });
 
     it('ArrowDown from the SubTrigger highlights the next parent item', async () => {
       const r = renderHost(SubMenuHost);
@@ -525,6 +536,22 @@ describe('ForMenuSub', () => {
       await flush(r.fixture);
 
       expect(document.querySelector('#paste')!.getAttribute('data-highlighted')).toBe('');
+      expect(more.hasAttribute('data-highlighted')).toBe(false);
+    });
+
+    it('drops the SubTrigger highlight once focus moves into its open submenu', async () => {
+      const r = renderHost(SubMenuHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const more = document.querySelector<HTMLElement>('[forMenuSubTrigger]')!;
+      more.focus();
+      pressKey(more, 'ArrowRight');
+      await flushPositioning(r.fixture);
+
+      expect(document.activeElement?.id).toBe('advanced');
+      expect(more.hasAttribute('data-highlighted')).toBe(false);
+      expect(more.getAttribute('data-state')).toBe('open');
     });
   });
 
@@ -812,7 +839,7 @@ describe('ForMenuSub', () => {
   });
 
   describe('hover-follows-pointer (#662)', () => {
-    it('pointermove over the SubTrigger clears the parent item highlight without moving focus', async () => {
+    it('pointermove over the SubTrigger moves the highlight onto it without moving focus', async () => {
       const { instance, flush } = renderHost(SubMenuHost);
       instance.open.set(true);
       await flush();
@@ -827,10 +854,59 @@ describe('ForMenuSub', () => {
       more.dispatchEvent(pointerEvent('pointermove'));
       await flush();
 
-      // The sub-trigger reflects no highlight and does not take focus
-      // (hover-open never moves focus, #332); #cut just stops being highlighted.
+      expect(more.getAttribute('data-highlighted')).toBe('');
       expect(cut.hasAttribute('data-highlighted')).toBe(false);
       expect(document.activeElement?.id).toBe('cut');
+    });
+
+    it('a keyboard move after hovering the SubTrigger leaves a single highlighted item', async () => {
+      const { instance, flush } = renderHost(SubMenuHost);
+      instance.open.set(true);
+      await flush();
+
+      const cut = document.querySelector<HTMLElement>('#cut')!;
+      cut.dispatchEvent(pointerEvent('pointermove'));
+      await flush();
+      const more = document.querySelector<HTMLElement>('[forMenuSubTrigger]')!;
+      more.dispatchEvent(pointerEvent('pointermove'));
+      await flush();
+
+      pressKey(cut, 'End');
+      await flush();
+
+      expect(document.activeElement?.id).toBe('paste');
+      expect(document.querySelectorAll('[data-highlighted]')).toHaveLength(1);
+      expect(more.hasAttribute('data-highlighted')).toBe(false);
+    });
+
+    it('hovering a sibling item after the SubTrigger takes the highlight off the SubTrigger', async () => {
+      const { instance, flush } = renderHost(SubMenuHost);
+      instance.open.set(true);
+      await flush();
+
+      const more = document.querySelector<HTMLElement>('[forMenuSubTrigger]')!;
+      more.dispatchEvent(pointerEvent('pointermove'));
+      await flush();
+      const paste = document.querySelector<HTMLElement>('#paste')!;
+      paste.dispatchEvent(pointerEvent('pointermove'));
+      await flush();
+
+      expect(paste.getAttribute('data-highlighted')).toBe('');
+      expect(more.hasAttribute('data-highlighted')).toBe(false);
+    });
+
+    it('leaving the menu surface clears a hovered SubTrigger highlight', async () => {
+      const { instance, flush } = renderHost(SubMenuHost);
+      instance.open.set(true);
+      await flush();
+
+      const more = document.querySelector<HTMLElement>('[forMenuSubTrigger]')!;
+      more.dispatchEvent(pointerEvent('pointermove'));
+      await flush();
+      document.querySelector('#parent-content')!.dispatchEvent(pointerEvent('pointerleave'));
+      await flush();
+
+      expect(more.hasAttribute('data-highlighted')).toBe(false);
     });
 
     it('pointermove over a submenu item highlights it', async () => {

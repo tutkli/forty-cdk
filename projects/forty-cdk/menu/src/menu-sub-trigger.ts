@@ -3,13 +3,17 @@ import { booleanAttribute, computed, Directive, ElementRef, inject, input } from
 import {
   fortyError,
   hostButtonType,
-  injectPointerMove,
   isHoverCapablePointer,
   preventPointerFocus,
   registerHandle,
   resolveListNavigation,
 } from 'forty-cdk/core';
-import { injectMenuContext, type MenuActivationModality } from 'forty-cdk/core-overlay';
+import {
+  type ForMenuContext,
+  injectMenuContext,
+  type MenuActivationModality,
+} from 'forty-cdk/core-overlay';
+import { createMenuItemInteraction } from './menu-item-interaction';
 import { handleMenuTabOut } from './menu-tab-out';
 
 /**
@@ -34,11 +38,13 @@ import { handleMenuTabOut } from './menu-tab-out';
  * - **Tab** — close the entire menu chain.
  * - **Typeahead** — printable keys delegate to parent's typeahead.
  *
+ * Highlight: reflects `data-highlighted` like the other menu items while it is
+ * the keyboard-focused item or the hovered one, so `[data-highlighted]` plus
+ * `[data-state="open"]` style every row of a menu.
+ *
  * Pointer (mouse):
- * - **pointermove** — drop the parent menu's hover highlight so no sibling item
- *   stays active while the submenu opens. The sub-trigger reflects no
- *   `data-highlighted` of its own and does not take focus — hover-open never
- *   moves focus.
+ * - **pointermove** — move the parent menu's highlight onto the sub-trigger
+ *   without taking focus: hover-open never moves focus.
  * - **pointerenter** — open the submenu after the configured `subMenuOpenDelay`
  *   ({@link provideForMenuDefaults}), without moving focus into it.
  * - **pointerleave** — close after `subMenuCloseDelay`, unless the pointer
@@ -68,9 +74,12 @@ import { handleMenuTabOut } from './menu-tab-out';
     '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
     '[attr.data-state]': 'submenu.open() ? "open" : "closed"',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
+    '[attr.data-highlighted]': 'highlighted() ? "" : null',
     '(pointerdown)': 'onPointerDown()',
     '(click)': 'onClick()',
     '(keydown)': 'onKeyDown($event)',
+    '(focus)': 'interaction.onFocus()',
+    '(blur)': 'interaction.onBlur()',
     '(pointerenter)': 'onPointerEnter($event)',
     '(pointerleave)': 'onPointerLeave($event)',
   },
@@ -89,27 +98,20 @@ export class ForMenuSubTrigger {
   readonly disabled = input(false, { transform: booleanAttribute });
   readonly effectiveDisabled = computed(() => this.disabled() || this.submenu.disabled());
 
+  private readonly interaction = createMenuItemInteraction({
+    ctx: this.#parentMenu(),
+    effectiveDisabled: this.effectiveDisabled,
+    focusOnHover: false,
+  });
+
+  /**
+   * True while this sub-trigger is the active keyboard candidate or hovered by
+   * the pointer. Reflected as `data-highlighted`.
+   */
+  readonly highlighted = this.interaction.highlighted;
+
   constructor() {
-    if (!this.submenu.parentMenu) {
-      throw fortyError({
-        code: 'FORCDK-MENU-005',
-        message: 'The [forMenuSub] holding this [forMenuSubTrigger] has no parent menu.',
-        cause: 'A submenu opens from an item of the menu above it, so it needs an enclosing menu.',
-        fix: 'Nest the [forMenuSub] inside a [forDropdownMenu], [forContextMenu], or another [forMenuSub].',
-      });
-    }
-    injectPointerMove((event) => this.onPointerMove(event));
     preventPointerFocus(() => this.effectiveDisabled());
-    const parent = this.submenu.parentMenu;
-    const handle = {
-      host: this.#host.nativeElement,
-      disabled: this.effectiveDisabled,
-    };
-    registerHandle(
-      handle,
-      (h) => parent.registerItem(h),
-      (h) => parent.unregisterItem(h),
-    );
     registerHandle(
       this.#host.nativeElement,
       (el) => this.submenu.registerTrigger(el),
@@ -140,25 +142,24 @@ export class ForMenuSubTrigger {
     this.submenu.scheduleOpenByPointer?.();
   }
 
-  private onPointerMove(event: PointerEvent): void {
-    if (!isHoverCapablePointer(event)) {
-      return;
-    }
-    if (this.effectiveDisabled()) {
-      return;
-    }
-    // The sub-trigger carries no highlight of its own, and hover-open must not
-    // move focus into the submenu (#332). So hovering it just drops the parent
-    // menu's hover highlight, leaving no sibling item active while the submenu
-    // opens — focus stays where it was.
-    this.submenu.parentMenu?.clearItemHighlights();
-  }
-
   private onPointerLeave(event: PointerEvent): void {
     if (!isHoverCapablePointer(event)) {
       return;
     }
     this.submenu.onTriggerPointerLeave?.({ x: event.clientX, y: event.clientY });
+  }
+
+  #parentMenu(): ForMenuContext {
+    const parent = this.submenu.parentMenu;
+    if (!parent) {
+      throw fortyError({
+        code: 'FORCDK-MENU-005',
+        message: 'The [forMenuSub] holding this [forMenuSubTrigger] has no parent menu.',
+        cause: 'A submenu opens from an item of the menu above it, so it needs an enclosing menu.',
+        fix: 'Nest the [forMenuSub] inside a [forDropdownMenu], [forContextMenu], or another [forMenuSub].',
+      });
+    }
+    return parent;
   }
 
   private onKeyDown(event: KeyboardEvent): void {
