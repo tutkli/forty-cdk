@@ -1906,7 +1906,7 @@ describe('ForCombobox', () => {
       expect(group.getAttribute('aria-labelledby')).toBe(label.id);
     });
 
-    it('separator carries role=separator and is skipped by navigation', async () => {
+    it('separator inside the listbox is presentational and is skipped by navigation', async () => {
       @Component({
         imports: [...BASE_IMPORTS, ForComboboxSeparator],
         template: `
@@ -1930,7 +1930,8 @@ describe('ForCombobox', () => {
       await flush(r.fixture);
 
       const sep = document.querySelector<HTMLElement>('[forComboboxSeparator]')!;
-      expect(sep.getAttribute('role')).toBe('separator');
+      expect(sep.getAttribute('role')).toBe('none');
+      expect(document.querySelector('[role="listbox"] [role="separator"]')).toBeNull();
       expect(sep.hasAttribute('aria-orientation')).toBe(false);
       expect(sep.getAttribute('data-orientation')).toBe('horizontal');
 
@@ -1942,7 +1943,42 @@ describe('ForCombobox', () => {
       expect(input.getAttribute('aria-activedescendant')).toBe(getOption('y').id);
     });
 
-    it('separator emits aria-orientation only for vertical and switches to role=none when decorative', async () => {
+    it('separator inside the picker list is presentational', async () => {
+      @Component({
+        imports: [...BASE_IMPORTS, ForComboboxTrigger, ForComboboxList, ForComboboxSeparator],
+        template: `
+          <div forCombobox [(open)]="open">
+            <button forComboboxTrigger>Pick</button>
+            @if (open()) {
+              <div forComboboxContent>
+                <input forComboboxInput />
+                <div forComboboxList>
+                  <div forComboboxOption value="x">X</div>
+                  <div forComboboxSeparator></div>
+                  <div forComboboxOption value="y">Y</div>
+                </div>
+              </div>
+            }
+          </div>
+        `,
+      })
+      class Host {
+        readonly open = signal(true);
+      }
+
+      const r = renderHost(Host);
+      await flush(r.fixture);
+
+      const list = document.querySelector<HTMLElement>('[forComboboxList]')!;
+      const sep = document.querySelector<HTMLElement>('[forComboboxSeparator]')!;
+      expect(list.getAttribute('role')).toBe('listbox');
+      expect(sep.closest('[role="listbox"]')).toBe(list);
+      expect(sep.getAttribute('role')).toBe('none');
+      expect(sep.hasAttribute('aria-orientation')).toBe(false);
+      expect(document.querySelector('[role="listbox"] [role="separator"]')).toBeNull();
+    });
+
+    it('separator reflects orientation to data-orientation only and stays role=none', async () => {
       @Component({
         imports: [ForCombobox, ForComboboxInput, ForComboboxContent, ForComboboxSeparator],
         template: `
@@ -1950,12 +1986,7 @@ describe('ForCombobox', () => {
             <input forComboboxInput />
             @if (open()) {
               <div forComboboxContent>
-                <div
-                  data-testid="sep"
-                  forComboboxSeparator
-                  [orientation]="orientation()"
-                  [decorative]="decorative()"
-                ></div>
+                <div data-testid="sep" forComboboxSeparator [orientation]="orientation()"></div>
               </div>
             }
           </div>
@@ -1964,32 +1995,21 @@ describe('ForCombobox', () => {
       class Host {
         readonly open = signal(true);
         readonly orientation = signal<'horizontal' | 'vertical'>('horizontal');
-        readonly decorative = signal(false);
       }
 
       const r = renderHost(Host);
       await flush(r.fixture);
 
       const sep = document.querySelector<HTMLElement>('[data-testid="sep"]')!;
+      expect(sep.getAttribute('role')).toBe('none');
+      expect(sep.hasAttribute('aria-orientation')).toBe(false);
+      expect(sep.getAttribute('data-orientation')).toBe('horizontal');
 
       r.instance.orientation.set('vertical');
-      await flush(r.fixture);
-      expect(sep.getAttribute('role')).toBe('separator');
-      expect(sep.getAttribute('aria-orientation')).toBe('vertical');
-      expect(sep.getAttribute('data-orientation')).toBe('vertical');
-
-      r.instance.decorative.set(true);
       await flush(r.fixture);
       expect(sep.getAttribute('role')).toBe('none');
       expect(sep.hasAttribute('aria-orientation')).toBe(false);
       expect(sep.getAttribute('data-orientation')).toBe('vertical');
-
-      r.instance.decorative.set(false);
-      r.instance.orientation.set('horizontal');
-      await flush(r.fixture);
-      expect(sep.getAttribute('role')).toBe('separator');
-      expect(sep.hasAttribute('aria-orientation')).toBe(false);
-      expect(sep.getAttribute('data-orientation')).toBe('horizontal');
     });
   });
 

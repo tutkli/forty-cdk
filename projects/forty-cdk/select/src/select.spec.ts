@@ -2017,6 +2017,7 @@ describe('ForSelect', () => {
       const value = r.query<HTMLSpanElement>('[forSelectValue]')!;
       expect(value.textContent).toBe('Pick a fruit');
       expect(value.getAttribute('data-placeholder')).toBe('');
+      expect(r.query('[forSelectTrigger]')!.hasAttribute('data-placeholder')).toBe(false);
     });
 
     it('renders the selected option label', async () => {
@@ -2133,7 +2134,7 @@ describe('ForSelect', () => {
       expect(group.getAttribute('aria-labelledby')).toBe(label.id);
     });
 
-    it('separator carries role=separator and is skipped by navigation', async () => {
+    it('separator inside the listbox is presentational and is skipped by navigation', async () => {
       @Component({
         imports: [...BASE_IMPORTS, ForSelectSeparator],
         template: `
@@ -2157,7 +2158,8 @@ describe('ForSelect', () => {
       await flush(r.fixture);
 
       const sep = document.querySelector<HTMLElement>('[forSelectSeparator]')!;
-      expect(sep.getAttribute('role')).toBe('separator');
+      expect(sep.getAttribute('role')).toBe('none');
+      expect(document.querySelector('[role="listbox"] [role="separator"]')).toBeNull();
       expect(sep.hasAttribute('aria-orientation')).toBe(false);
       expect(sep.getAttribute('data-orientation')).toBe('horizontal');
 
@@ -2168,7 +2170,7 @@ describe('ForSelect', () => {
       expect(activeTestId()).toBe('y');
     });
 
-    it('separator emits aria-orientation only for vertical and switches to role=none when decorative', async () => {
+    it('separator reflects orientation to data-orientation only and stays role=none', async () => {
       @Component({
         imports: [ForSelect, ForSelectTrigger, ForSelectContent, ForSelectSeparator],
         template: `
@@ -2176,12 +2178,7 @@ describe('ForSelect', () => {
             <button forSelectTrigger>x</button>
             @if (open()) {
               <div forSelectContent>
-                <div
-                  data-testid="sep"
-                  forSelectSeparator
-                  [orientation]="orientation()"
-                  [decorative]="decorative()"
-                ></div>
+                <div data-testid="sep" forSelectSeparator [orientation]="orientation()"></div>
               </div>
             }
           </div>
@@ -2190,32 +2187,21 @@ describe('ForSelect', () => {
       class Host {
         readonly open = signal(true);
         readonly orientation = signal<'horizontal' | 'vertical'>('horizontal');
-        readonly decorative = signal(false);
       }
 
       const r = renderHost(Host);
       await flush(r.fixture);
 
       const sep = document.querySelector<HTMLElement>('[data-testid="sep"]')!;
+      expect(sep.getAttribute('role')).toBe('none');
+      expect(sep.hasAttribute('aria-orientation')).toBe(false);
+      expect(sep.getAttribute('data-orientation')).toBe('horizontal');
 
       r.instance.orientation.set('vertical');
-      await flush(r.fixture);
-      expect(sep.getAttribute('role')).toBe('separator');
-      expect(sep.getAttribute('aria-orientation')).toBe('vertical');
-      expect(sep.getAttribute('data-orientation')).toBe('vertical');
-
-      r.instance.decorative.set(true);
       await flush(r.fixture);
       expect(sep.getAttribute('role')).toBe('none');
       expect(sep.hasAttribute('aria-orientation')).toBe(false);
       expect(sep.getAttribute('data-orientation')).toBe('vertical');
-
-      r.instance.decorative.set(false);
-      r.instance.orientation.set('horizontal');
-      await flush(r.fixture);
-      expect(sep.getAttribute('role')).toBe('separator');
-      expect(sep.hasAttribute('aria-orientation')).toBe(false);
-      expect(sep.getAttribute('data-orientation')).toBe('horizontal');
     });
   });
 

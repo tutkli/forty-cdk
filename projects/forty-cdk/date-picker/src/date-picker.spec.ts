@@ -1012,6 +1012,7 @@ describe('ForDatePicker', () => {
       const r = renderHost(Host);
       expect(value(r).textContent?.trim()).toBe('Pick a date');
       expect(value(r).getAttribute('data-placeholder')).toBe('');
+      expect(trigger(r).hasAttribute('data-placeholder')).toBe(false);
 
       r.instance.value.set(new Date(2026, 5, 15));
       await flush(r.fixture);
