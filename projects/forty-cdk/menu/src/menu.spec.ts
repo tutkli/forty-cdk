@@ -164,7 +164,7 @@ class TypeaheadOverrideHost {
         <div forMenuContent>
           <button id="save" forMenuItem>Save</button>
           <button id="bold" forMenuCheckboxItem [(checked)]="bold">
-            <span forMenuItemIndicator [forceMount]="true">✓</span>
+            <span class="slot"><span forMenuItemIndicator>✓</span></span>
             Bold
           </button>
           <button id="underline" forMenuCheckboxItem [(checked)]="underline">
@@ -172,12 +172,12 @@ class TypeaheadOverrideHost {
             Underline
           </button>
           <button id="slanted" forMenuCheckboxItem [(checked)]="italic" textValue="Oblique">
-            <span forMenuItemIndicator [forceMount]="true">✓</span>
+            <span class="slot"><span forMenuItemIndicator>✓</span></span>
             Italic
           </button>
           <div forMenuRadioGroup [(value)]="sortBy">
             <button id="name" forMenuRadioItem value="name">
-              <span forMenuItemIndicator [forceMount]="true">●</span>
+              <span class="slot"><span forMenuItemIndicator>●</span></span>
               Name
             </button>
           </div>
@@ -1216,7 +1216,7 @@ describe('Menu items / content', () => {
         expect(document.querySelector('#bold')!.getAttribute('data-highlighted')).toBe('');
       });
 
-      it('matches a checkbox item whose indicator is not force-mounted', async () => {
+      it('matches a checkbox item whose indicator sits directly in the item', async () => {
         const r = renderHost(MenuIndicatorTypeaheadHost);
         await flush(r.fixture);
 
@@ -1691,9 +1691,7 @@ describe('ForMenuItemIndicator', () => {
               Bold
             </button>
             <button id="italic" forMenuCheckboxItem [(checked)]="italic">
-              <span data-test-id="italic-ind" forMenuItemIndicator [forceMount]="forceMount()"
-                >✓</span
-              >
+              <span forMenuItemIndicator>✓</span>
               Italic
             </button>
             <div forMenuRadioGroup [(value)]="alignment">
@@ -1716,7 +1714,6 @@ describe('ForMenuItemIndicator', () => {
     readonly bold = signal(false);
     readonly italic = signal(false);
     readonly alignment = signal<string | null>('left');
-    readonly forceMount = signal(false);
   }
 
   function indicator(testId: string): HTMLElement {
@@ -1770,15 +1767,6 @@ describe('ForMenuItemIndicator', () => {
     expect(indicator('right-ind').hasAttribute('hidden')).toBe(false);
   });
 
-  it('keeps the indicator mounted when forceMount=true', async () => {
-    const r = renderHost(IndicatorHost);
-    r.instance.forceMount.set(true);
-    await flush(r.fixture);
-
-    expect(indicator('italic-ind').hasAttribute('hidden')).toBe(false);
-    expect(indicator('italic-ind').getAttribute('data-state')).toBe('unchecked');
-  });
-
   it('enforces inline display:none while unchecked so a consumer display class cannot leak through', async () => {
     const r = renderHost(IndicatorHost);
     await flush(r.fixture);
@@ -1788,14 +1776,6 @@ describe('ForMenuItemIndicator', () => {
     r.instance.bold.set(true);
     await flush(r.fixture);
     expect(indicator('bold-ind').style.display).toBe('');
-  });
-
-  it('clears inline display:none while unchecked when forceMount=true', async () => {
-    const r = renderHost(IndicatorHost);
-    r.instance.forceMount.set(true);
-    await flush(r.fixture);
-
-    expect(indicator('italic-ind').style.display).toBe('');
   });
 
   it('throws when used outside a checkable menu item', () => {

@@ -73,25 +73,9 @@ exports[`document structure > docs/selected-indicator-pattern.md declares the se
   },
   {
     "headings": [],
-    "slug": "the-pattern-forcemount--opacity",
+    "slug": "the-pattern-a-fixed-width-slot",
     "tables": [],
-    "title": "The pattern: \`[forceMount]\` + \`opacity\`",
-  },
-  {
-    "headings": [],
-    "slug": "why-opacity-not-visibility-hidden-or-display-none",
-    "tables": [
-      {
-        "columns": [
-          "Approach",
-          "Reserves layout slot",
-          "Screen-reader safe",
-        ],
-        "role": "plain",
-        "rows": 3,
-      },
-    ],
-    "title": "Why \`opacity\` (not \`visibility: hidden\` or \`display: none\`)",
+    "title": "The pattern: a fixed-width slot",
   },
   {
     "headings": [],
@@ -101,9 +85,9 @@ exports[`document structure > docs/selected-indicator-pattern.md declares the se
   },
   {
     "headings": [],
-    "slug": "full-snippet--menu-checkbox-item",
+    "slug": "full-snippet-menu-checkbox-item",
     "tables": [],
-    "title": "Full snippet — Menu checkbox item",
+    "title": "Full snippet: Menu checkbox item",
   },
 ]
 `;

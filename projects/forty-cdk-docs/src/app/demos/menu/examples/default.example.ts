@@ -46,15 +46,17 @@ import {
               [(checked)]="showToolbar"
               (activate)="$event.preventDefault()"
             >
-              <span forMenuItemIndicator [forceMount]="true" class="menu-indicator">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="1.75"
-                    d="m4.5 12.75 6 6 9-13.5"
-                  />
-                </svg>
+              <span class="menu-indicator">
+                <span forMenuItemIndicator>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="1.75"
+                      d="m4.5 12.75 6 6 9-13.5"
+                    />
+                  </svg>
+                </span>
               </span>
               Show toolbar
             </button>
@@ -64,15 +66,17 @@ import {
               [(checked)]="showSidebar"
               (activate)="$event.preventDefault()"
             >
-              <span forMenuItemIndicator [forceMount]="true" class="menu-indicator">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="1.75"
-                    d="m4.5 12.75 6 6 9-13.5"
-                  />
-                </svg>
+              <span class="menu-indicator">
+                <span forMenuItemIndicator>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="1.75"
+                      d="m4.5 12.75 6 6 9-13.5"
+                    />
+                  </svg>
+                </span>
               </span>
               Show sidebar
             </button>
@@ -89,10 +93,12 @@ import {
                 class="menu-item menu-item--check"
                 (activate)="$event.preventDefault()"
               >
-                <span forMenuItemIndicator [forceMount]="true" class="menu-indicator">
-                  <svg viewBox="0 0 16 16" width="7" height="7" aria-hidden="true">
-                    <circle cx="8" cy="8" r="8" fill="currentColor" />
-                  </svg>
+                <span class="menu-indicator">
+                  <span forMenuItemIndicator>
+                    <svg viewBox="0 0 16 16" width="7" height="7" aria-hidden="true">
+                      <circle cx="8" cy="8" r="8" fill="currentColor" />
+                    </svg>
+                  </span>
                 </span>
                 Name
               </button>
@@ -102,10 +108,12 @@ import {
                 class="menu-item menu-item--check"
                 (activate)="$event.preventDefault()"
               >
-                <span forMenuItemIndicator [forceMount]="true" class="menu-indicator">
-                  <svg viewBox="0 0 16 16" width="7" height="7" aria-hidden="true">
-                    <circle cx="8" cy="8" r="8" fill="currentColor" />
-                  </svg>
+                <span class="menu-indicator">
+                  <span forMenuItemIndicator>
+                    <svg viewBox="0 0 16 16" width="7" height="7" aria-hidden="true">
+                      <circle cx="8" cy="8" r="8" fill="currentColor" />
+                    </svg>
+                  </span>
                 </span>
                 Date modified
               </button>
@@ -115,10 +123,12 @@ import {
                 class="menu-item menu-item--check"
                 (activate)="$event.preventDefault()"
               >
-                <span forMenuItemIndicator [forceMount]="true" class="menu-indicator">
-                  <svg viewBox="0 0 16 16" width="7" height="7" aria-hidden="true">
-                    <circle cx="8" cy="8" r="8" fill="currentColor" />
-                  </svg>
+                <span class="menu-indicator">
+                  <span forMenuItemIndicator>
+                    <svg viewBox="0 0 16 16" width="7" height="7" aria-hidden="true">
+                      <circle cx="8" cy="8" r="8" fill="currentColor" />
+                    </svg>
+                  </span>
                 </span>
                 Size
               </button>
@@ -238,10 +248,6 @@ import {
     .menu-indicator svg {
       width: 1em;
       height: 1em;
-    }
-
-    .menu-indicator[data-state='unchecked'] {
-      opacity: 0;
     }
 
     .menu-sub-arrow {

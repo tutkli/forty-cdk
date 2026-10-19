@@ -1,4 +1,4 @@
-import { booleanAttribute, computed, Directive, inject, input } from '@angular/core';
+import { computed, Directive, inject } from '@angular/core';
 
 import { orphanContextError } from 'forty-cdk/core';
 import { FOR_MENU_CHECKBOX_ITEM } from './menu-checkbox-item';
@@ -24,14 +24,12 @@ import { FOR_MENU_RADIO_ITEM } from './menu-radio-item';
  * ```
  *
  * Reflects the parent item's `data-state` (`"checked" | "unchecked"`) so
- * the consumer can also style it from CSS. Set `[forceMount]` to keep the
- * indicator in the DOM regardless of state — useful when wrapping
- * `animate.leave` for an exit animation, or when the consumer styles the
- * indicator via `data-state` instead of presence.
- *
- * Visibility while unchecked is enforced with an inline `display: none`
- * (which beats any author `display` rule a consumer applies via a class) in
- * addition to the `hidden` attribute that removes it from the a11y tree.
+ * the consumer can also style it from CSS. Visibility while unchecked is
+ * enforced with an inline `display: none` (which beats any author `display`
+ * rule a consumer applies via a class) in addition to the `hidden` attribute
+ * that removes it from the a11y tree. To keep a checkmark column aligned
+ * across checked and unchecked items, wrap the indicator in a fixed-width
+ * element of your own.
  */
 @Directive({
   selector: '[forMenuItemIndicator]',
@@ -39,8 +37,8 @@ import { FOR_MENU_RADIO_ITEM } from './menu-radio-item';
   host: {
     'aria-hidden': 'true',
     '[attr.data-state]': 'checked() ? "checked" : "unchecked"',
-    '[hidden]': '!checked() && !forceMount()',
-    '[style.display]': '!checked() && !forceMount() ? "none" : null',
+    '[hidden]': '!checked()',
+    '[style.display]': 'checked() ? null : "none"',
   },
 })
 export class ForMenuItemIndicator {
@@ -56,9 +54,6 @@ export class ForMenuItemIndicator {
     }
     return false;
   });
-
-  /** Keep the indicator mounted even when the parent item is unchecked. */
-  readonly forceMount = input(false, { transform: booleanAttribute });
 
   constructor() {
     if (!this.#checkbox && !this.#radio) {

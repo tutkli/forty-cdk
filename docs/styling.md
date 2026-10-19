@@ -316,8 +316,8 @@ Both expose `data-state`; Drawer adds `data-side` / drag state.
 - [Your first overlay](./your-first-overlay.md): hands-on overlay walkthrough.
 - [Styling floating content](./styling-floating-content.md): the floating-overlay rules,
   CSS custom properties, and arrow recipe.
-- [Selected-indicator alignment](./selected-indicator-pattern.md): keeping menu checkmarks
-  aligned with `[forceMount]` + `opacity`.
+- [Selected-indicator alignment](./selected-indicator-pattern.md): keeping checkmarks
+  aligned with a fixed-width slot around the indicator.
 
 > **Contributors:** the `data-state` vocabulary, boolean-attribute rule, and `--for-*`
 > namespacing are enforced conventions. See `.claude/rules/conventions.md` for the

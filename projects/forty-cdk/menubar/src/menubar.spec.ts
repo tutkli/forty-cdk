@@ -335,7 +335,7 @@ class MenubarTextValueTypeaheadHost {
         <div forMenuContent>
           <button id="fmt-save" forMenuItem>Save</button>
           <button id="fmt-bold" forMenuCheckboxItem [(checked)]="bold">
-            <span forMenuItemIndicator [forceMount]="true">✓</span>
+            <span forMenuItemIndicator>✓</span>
             Bold
           </button>
         </div>

@@ -18,7 +18,7 @@ Shared surface and item directives consumed by `[forDropdownMenu]` (button trigg
   <div forMenuGroup>
     <div forMenuGroupLabel>Appearance</div>
     <button forMenuCheckboxItem [(checked)]="bold">
-      <span forMenuItemIndicator [forceMount]="true">✓</span>
+      <span forMenuItemIndicator>✓</span>
       Bold
     </button>
   </div>
@@ -28,7 +28,7 @@ Shared surface and item directives consumed by `[forDropdownMenu]` (button trigg
   <div forMenuRadioGroup [(value)]="sortBy">
     <div forMenuGroupLabel>Sort by</div>
     <button forMenuRadioItem class="menu-radio-item" value="name">
-      <span forMenuItemIndicator [forceMount]="true">●</span>
+      <span forMenuItemIndicator>●</span>
       Name
     </button>
     <button forMenuRadioItem class="menu-radio-item" value="date">Date modified</button>
@@ -49,7 +49,7 @@ Shared surface and item directives consumed by `[forDropdownMenu]` (button trigg
 </div>
 ```
 
-For the recommended `[forceMount]` + `opacity` pattern that keeps indicator columns aligned across checkbox / radio items, see the [selected-indicator alignment guide](../../../docs/selected-indicator-pattern.md).
+`[forMenuItemIndicator]` hides itself while its item is unchecked. To keep the checkmark column aligned across checked and unchecked items, wrap it in a fixed-width element of your own, as the example below does; the [selected-indicator alignment guide](../../../docs/selected-indicator-pattern.md) has the pattern and an exit-animation variant.
 
 ## Examples
 
@@ -103,15 +103,17 @@ import {
               [(checked)]="showToolbar"
               (activate)="$event.preventDefault()"
             >
-              <span forMenuItemIndicator [forceMount]="true" class="menu-indicator">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="1.75"
-                    d="m4.5 12.75 6 6 9-13.5"
-                  />
-                </svg>
+              <span class="menu-indicator">
+                <span forMenuItemIndicator>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="1.75"
+                      d="m4.5 12.75 6 6 9-13.5"
+                    />
+                  </svg>
+                </span>
               </span>
               Show toolbar
             </button>
@@ -121,15 +123,17 @@ import {
               [(checked)]="showSidebar"
               (activate)="$event.preventDefault()"
             >
-              <span forMenuItemIndicator [forceMount]="true" class="menu-indicator">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="1.75"
-                    d="m4.5 12.75 6 6 9-13.5"
-                  />
-                </svg>
+              <span class="menu-indicator">
+                <span forMenuItemIndicator>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="1.75"
+                      d="m4.5 12.75 6 6 9-13.5"
+                    />
+                  </svg>
+                </span>
               </span>
               Show sidebar
             </button>
@@ -146,10 +150,12 @@ import {
                 class="menu-item menu-item--check"
                 (activate)="$event.preventDefault()"
               >
-                <span forMenuItemIndicator [forceMount]="true" class="menu-indicator">
-                  <svg viewBox="0 0 16 16" width="7" height="7" aria-hidden="true">
-                    <circle cx="8" cy="8" r="8" fill="currentColor" />
-                  </svg>
+                <span class="menu-indicator">
+                  <span forMenuItemIndicator>
+                    <svg viewBox="0 0 16 16" width="7" height="7" aria-hidden="true">
+                      <circle cx="8" cy="8" r="8" fill="currentColor" />
+                    </svg>
+                  </span>
                 </span>
                 Name
               </button>
@@ -159,10 +165,12 @@ import {
                 class="menu-item menu-item--check"
                 (activate)="$event.preventDefault()"
               >
-                <span forMenuItemIndicator [forceMount]="true" class="menu-indicator">
-                  <svg viewBox="0 0 16 16" width="7" height="7" aria-hidden="true">
-                    <circle cx="8" cy="8" r="8" fill="currentColor" />
-                  </svg>
+                <span class="menu-indicator">
+                  <span forMenuItemIndicator>
+                    <svg viewBox="0 0 16 16" width="7" height="7" aria-hidden="true">
+                      <circle cx="8" cy="8" r="8" fill="currentColor" />
+                    </svg>
+                  </span>
                 </span>
                 Date modified
               </button>
@@ -172,10 +180,12 @@ import {
                 class="menu-item menu-item--check"
                 (activate)="$event.preventDefault()"
               >
-                <span forMenuItemIndicator [forceMount]="true" class="menu-indicator">
-                  <svg viewBox="0 0 16 16" width="7" height="7" aria-hidden="true">
-                    <circle cx="8" cy="8" r="8" fill="currentColor" />
-                  </svg>
+                <span class="menu-indicator">
+                  <span forMenuItemIndicator>
+                    <svg viewBox="0 0 16 16" width="7" height="7" aria-hidden="true">
+                      <circle cx="8" cy="8" r="8" fill="currentColor" />
+                    </svg>
+                  </span>
                 </span>
                 Size
               </button>
