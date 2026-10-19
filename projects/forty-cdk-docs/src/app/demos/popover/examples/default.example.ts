@@ -30,8 +30,8 @@ import {
         <div forPopoverContent class="popover" animate.enter="popover-enter">
           <h3 forPopoverTitle class="popover-title">Display</h3>
           <p forPopoverDescription class="popover-desc">
-            A non-modal panel anchored to its trigger. Escape, pointer-down outside or focus outside
-            dismisses it and returns focus to the trigger.
+            A non-modal panel anchored to its trigger. Escape or Done closes it and returns focus to
+            the trigger. A click or focus outside closes it too, and focus stays where it went.
           </p>
           <div class="popover-actions">
             <button class="popover-close" type="button" forPopoverClose>Done</button>
