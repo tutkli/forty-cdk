@@ -1715,3 +1715,178 @@ describe('ForTreeNodeDrag — focus follows a pointer-dropped node that held foc
     expect(document.activeElement).toBe(readme);
   });
 });
+
+describe('ForTreeNodeDrag — the pointer preview of an expanded parent (#2402)', () => {
+  afterEach(() => {
+    document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
+  });
+
+  it('clones the collapsed row, not the subtree that was expanded at the press', async () => {
+    const { instance, query, flush: f } = renderHost(TreeDragHost);
+    instance.open.set(['docs']);
+    await f();
+    const label =
+      query<HTMLElement>('[data-testid="docs"]')!.querySelector<HTMLElement>('[forTreeItemLabel]')!;
+
+    firePointer(label, 'pointerdown', 100, 100);
+    firePointer(document, 'pointermove', 100, 120);
+    await f();
+
+    const preview = document.querySelector<HTMLElement>('[data-for-drag-preview]');
+    expect(preview?.textContent).toContain('Docs');
+    expect(preview!.querySelector('[role="group"]')).toBeNull();
+    expect(preview!.textContent).not.toContain('Resume');
+
+    firePointer(document, 'pointerup', 100, 120);
+    await f();
+
+    expect(document.querySelector('[data-for-drag-preview]')).toBeNull();
+  });
+
+  it('leaves no preview behind when the drag ends before the collapse renders', async () => {
+    const { instance, query, flush: f } = renderHost(TreeDragHost);
+    instance.open.set(['docs']);
+    await f();
+    const label =
+      query<HTMLElement>('[data-testid="docs"]')!.querySelector<HTMLElement>('[forTreeItemLabel]')!;
+
+    firePointer(label, 'pointerdown', 100, 100);
+    firePointer(document, 'pointermove', 100, 120);
+    firePointer(document, 'pointerup', 100, 120);
+    await f();
+
+    expect(instance.dropped()!.node).toBe('docs');
+    expect(document.querySelector('[data-for-drag-preview]')).toBeNull();
+  });
+});
+
+@Component({
+  imports: [
+    ForTree,
+    ForTreeNodeDrag,
+    ForTreeItem,
+    ForTreeItemLabel,
+    ForTreeItemToggle,
+    ForTreeGroup,
+    ForTreeNodeDragHandle,
+  ],
+  template: `
+    <ul
+      forTree
+      forTreeNodeDrag
+      [(expanded)]="open"
+      (nodeDrop)="dropped.set($event)"
+      aria-label="Files"
+    >
+      <li forTreeItem value="projects" data-testid="projects">
+        <div forTreeItemLabel data-testid="projects-label">
+          <span forTreeItemToggle>▸</span>
+          Projects
+        </div>
+        @if (open().includes('projects')) {
+          <ul forTreeGroup>
+            <li forTreeItem value="alpha" data-testid="alpha">
+              <span forTreeNodeDragHandle data-testid="alpha-handle" aria-hidden="true">⠿</span>
+              <div forTreeItemLabel data-testid="alpha-label">Alpha</div>
+            </li>
+          </ul>
+        }
+      </li>
+      <li forTreeItem value="notes">
+        <div forTreeItemLabel>Notes</div>
+      </li>
+    </ul>
+  `,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class FileHandlesTreeHost {
+  readonly open = signal<readonly string[]>(['projects']);
+  readonly dropped = signal<ForTreeDragDropEvent | null>(null);
+}
+
+describe('ForTreeNodeDrag — handles constrain only the item that owns them (#2402)', () => {
+  afterEach(() => {
+    document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
+  });
+
+  it('drags a handle-less folder from its label while a child with a handle is expanded', async () => {
+    const { instance, query, flush: f } = renderHost(FileHandlesTreeHost);
+    await f();
+    const tree = query<HTMLElement>('[forTree]')!;
+
+    firePointer(query<HTMLElement>('[data-testid="projects-label"]')!, 'pointerdown', 100, 100);
+    firePointer(document, 'pointermove', 100, 120);
+    await f();
+
+    expect(tree.hasAttribute('data-dragging')).toBe(true);
+
+    firePointer(document, 'pointerup', 100, 120);
+    await f();
+
+    expect(instance.dropped()!.node).toBe('projects');
+  });
+
+  it('still drags the child that carries a handle only from that handle', async () => {
+    const { instance, query, flush: f } = renderHost(FileHandlesTreeHost);
+    await f();
+
+    firePointer(query<HTMLElement>('[data-testid="alpha-label"]')!, 'pointerdown', 100, 100);
+    firePointer(document, 'pointermove', 100, 120);
+    firePointer(document, 'pointerup', 100, 120);
+    await f();
+
+    expect(instance.dropped()).toBeNull();
+
+    firePointer(query<HTMLElement>('[data-testid="alpha-handle"]')!, 'pointerdown', 100, 100);
+    firePointer(document, 'pointermove', 100, 120);
+    await f();
+    firePointer(document, 'pointerup', 100, 120);
+    await f();
+
+    expect(instance.dropped()!.node).toBe('alpha');
+  });
+});
+
+@Component({
+  imports: [ForTree, ForTreeNodeDrag, ForTreeItem, ForTreeItemLabel],
+  template: `
+    <ul forTree forTreeNodeDrag [compareWith]="compare" aria-label="Files">
+      @for (id of ids; track id) {
+        <li forTreeItem [value]="id" [attr.data-testid]="id">
+          <div forTreeItemLabel>{{ id }}</div>
+        </li>
+      }
+    </ul>
+  `,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class LongTreeDragHost {
+  readonly ids = Array.from({ length: 300 }, (_, i) => `node-${i}`);
+  compareCalls = 0;
+  readonly compare = (a: string, b: string): boolean => {
+    this.compareCalls += 1;
+    return a === b;
+  };
+}
+
+describe('ForTreeNodeDrag — the work a lift does grows linearly with the visible nodes (#2402)', () => {
+  afterEach(() => {
+    document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
+  });
+
+  it('calls the comparator a bounded number of times per visible node on a keyboard lift', async () => {
+    const { instance, query, flush: f } = renderHost(LongTreeDragHost);
+    await f();
+    const tree = query<HTMLElement>('[forTree]')!;
+    const last = query<HTMLElement>('[data-testid="node-299"]')!;
+    last.focus();
+    instance.compareCalls = 0;
+
+    dispatchKey(last, 'Enter', { shiftKey: true });
+    const liftCalls = instance.compareCalls;
+    await f();
+
+    expect(tree.hasAttribute('data-dragging')).toBe(true);
+    expect(liftCalls).toBeLessThan(3 * instance.ids.length);
+  });
+});

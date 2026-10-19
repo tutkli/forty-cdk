@@ -16,6 +16,7 @@ import {
 } from '@angular/core';
 
 import {
+  createDragPreview,
   focusWhenMounted,
   type FocusWhenMountedRef,
   LiveAnnouncer,
@@ -38,7 +39,6 @@ import {
 import {
   buildTreeDropRows,
   isInsideGrabArea,
-  resolveLiftGap,
   resolveTreeLiftContext,
   treeDropTotal,
   treeNodeLabel,
@@ -49,6 +49,12 @@ import { FOR_DRAG_DROP_DEFAULTS, FOR_TREE_DEFAULTS } from 'forty-cdk/defaults';
 import type { ForTreeDragDropEvent } from './tree-drag-drop-event';
 
 const POINTER_ARM_THRESHOLD_PX = 5;
+
+function ownedGroups(item: HTMLElement): HTMLElement[] {
+  return [...item.querySelectorAll<HTMLElement>('[role="group"]')].filter(
+    (group) => group.closest('[role="treeitem"]') === item,
+  );
+}
 
 /**
  * Where the lifted node will land, for rendering an insertion indicator. `null` when idle.
@@ -404,20 +410,17 @@ export class ForTreeNodeDrag<T = string> implements ForTreeNodeDragContext {
     }
 
     if (mode === 'pointer' && point) {
-      this.#previewController = new PreviewController({
-        source: host,
-        point,
-        preview: null,
-        doc: this.#document,
-        boundary: null,
-        lockAxis: () => null,
-      });
+      this.#createPreview(host, point);
     }
 
-    const visibleAfter = this.#ctx.visibleNodes();
     const equals = this.#ctx.compareWith();
-    const rows = buildTreeDropRows(visibleAfter, this.#liftedValue, equals, this.#ctx.dir());
-    this.#gapIndex = resolveLiftGap(rows, visibleAfter, visibleIdx, mode, equals);
+    const rows = buildTreeDropRows(
+      this.#ctx.visibleNodes(),
+      this.#liftedValue,
+      equals,
+      this.#ctx.dir(),
+    );
+    this.#gapIndex = Math.min(visibleIdx, rows.length);
     this.#liftLevel = entry.handle.level();
     this.#desiredLevel = this.#liftLevel;
 
@@ -428,6 +431,30 @@ export class ForTreeNodeDrag<T = string> implements ForTreeNodeDragContext {
     );
 
     this.#announcer.announce(this.#defaults.dragAnnounceLift(this.#label), 'assertive');
+  }
+
+  #createPreview(host: HTMLElement, point: PreviewPoint): void {
+    const subtree = ownedGroups(host);
+    const displays = subtree.map((group) => ({
+      value: group.style.getPropertyValue('display'),
+      priority: group.style.getPropertyPriority('display'),
+    }));
+    subtree.forEach((group) => group.style.setProperty('display', 'none', 'important'));
+    const preview = createDragPreview(host, this.#document);
+    subtree.forEach((group, i) =>
+      group.style.setProperty('display', displays[i]!.value, displays[i]!.priority),
+    );
+    if (preview.element) {
+      ownedGroups(preview.element).forEach((group) => group.remove());
+    }
+    this.#previewController = new PreviewController({
+      source: host,
+      point,
+      preview,
+      doc: this.#document,
+      boundary: null,
+      lockAxis: () => null,
+    });
   }
 
   #publishDropTarget(rows: TreeDropRow<T>[], target: TreeDropTarget<T>): void {
