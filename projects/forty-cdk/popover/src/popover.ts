@@ -111,7 +111,11 @@ export class ForPopover extends AnchoredOverlayPositioningBase implements ForPop
    */
   readonly lightDismiss = input<'topmost' | 'stack'>('topmost');
 
-  /** When true (default), focus returns to the trigger on close. */
+  /**
+   * When true (default), focus returns to the trigger after a close from Escape, from
+   * `[forPopoverClose]` or from setting `open` to `false`. A close from a press or focus
+   * outside the popover, or from a Tab out, leaves focus where the user moved it.
+   */
   readonly returnFocus = input(true, { transform: booleanAttribute });
 
   /**

@@ -25,7 +25,9 @@ import { injectPopoverContext } from './popover-context';
  * the natural mount / unmount cycle. While mounted the directive
  * dismisses on Escape, pointer-down outside or focus outside, and sends
  * focus to the configured `initialFocus` target; on unmount it returns
- * focus to the trigger if `returnFocus` is on. Tab past the last control
+ * focus to the trigger if `returnFocus` is on, except after a close from a
+ * press or focus outside or a Tab out, which leaves focus where the user
+ * moved it. Tab past the last control
  * moves on to the element after the trigger and Shift+Tab before the first
  * lands on the trigger, closing the popover with reason `'tab'`.
  *

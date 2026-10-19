@@ -7,6 +7,7 @@ import {
   ForPopoverTitle,
   ForPopoverTrigger,
 } from 'forty-cdk/popover';
+import type { VetoableNativeEvent } from 'forty-cdk/shared';
 
 @Component({
   selector: 'app-popover-positioning-example',
@@ -21,25 +22,29 @@ import {
     ForPopoverArrow,
   ],
   template: `
-    <div class="pos-frame">
-      <div
-        forPopover
-        #popover="forPopover"
-        side="right"
-        align="center"
-        [sideOffset]="8"
-        [collisionPadding]="8"
-      >
-        <button forPopoverTrigger class="pos-trigger">Anchor</button>
-        @if (popover.open()) {
-          <div forPopoverContent class="pos-popover" animate.enter="pos-popover-enter">
-            <h3 forPopoverTitle class="pos-popover-title">Positioned surface</h3>
-            <p forPopoverDescription class="pos-popover-desc">
-              Scroll the frame: floating-ui flips and shifts the surface to keep it in view.
-            </p>
-            <span forPopoverArrow class="pos-popover-arrow"></span>
-          </div>
-        }
+    <div #frame class="pos-frame">
+      <div class="pos-track">
+        <div
+          forPopover
+          #popover="forPopover"
+          side="right"
+          align="center"
+          [sideOffset]="16"
+          [collisionPadding]="24"
+          (pointerDownOutside)="keepOpenInFrame($event, frame)"
+        >
+          <button forPopoverTrigger class="pos-trigger">Anchor</button>
+          @if (popover.open()) {
+            <div forPopoverContent class="pos-popover" animate.enter="pos-popover-enter">
+              <h3 forPopoverTitle class="pos-popover-title">Positioned surface</h3>
+              <p forPopoverDescription class="pos-popover-desc">
+                Scroll the frame and the surface follows its anchor. Near the window edge it shifts
+                or flips to stay in view.
+              </p>
+              <span forPopoverArrow class="pos-popover-arrow"></span>
+            </div>
+          }
+        </div>
       </div>
     </div>
   `,
@@ -49,15 +54,18 @@ import {
     }
 
     .pos-frame {
-      display: flex;
-      align-items: center;
-      justify-content: center;
       width: min(220px, 100%);
       height: 160px;
       overflow: auto;
       border: 1px dashed var(--ex-border-strong, #d0c9bc);
       border-radius: var(--ex-radius, 22px);
       corner-shape: squircle;
+    }
+
+    .pos-track {
+      display: flex;
+      justify-content: center;
+      padding-block: 62px 320px;
     }
 
     .pos-trigger {
@@ -145,4 +153,10 @@ import {
     }
   `,
 })
-export class PopoverPositioningExample {}
+export class PopoverPositioningExample {
+  protected keepOpenInFrame(veto: VetoableNativeEvent<PointerEvent>, frame: HTMLElement): void {
+    if (veto.event.target instanceof Node && frame.contains(veto.event.target)) {
+      veto.preventDefault();
+    }
+  }
+}

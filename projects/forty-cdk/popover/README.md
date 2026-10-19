@@ -9,7 +9,7 @@ apgUrl: https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/
 
 A non-modal floating panel anchored to its trigger by floating-ui, dismissed on Escape, pointer-down outside or focus outside.
 
-A popover is a non-modal dialog: focus moves into the surface on open and returns to the trigger on close, but Tab is allowed to leave (no focus trap). For a modal version, use `[forDialog]`. For a non-interactive label that follows the cursor / focus, use `[forTooltip]`.
+A popover is a non-modal dialog: focus moves into the surface on open and returns to the trigger when it closes from `Escape` or a close button, but Tab is allowed to leave (no focus trap). For a modal version, use `[forDialog]`. For a non-interactive label that follows the cursor / focus, use `[forTooltip]`.
 
 > New to overlays in forty-cdk? [Your first overlay](../../../docs/your-first-overlay.md) walks a Popover from empty markup to styled-and-animated and explains the `@if` / open-state model and the portal → global CSS rule.
 
@@ -17,7 +17,7 @@ A popover is a non-modal dialog: focus moves into the surface on open and return
 
 Popover is the one floating surface that opens on activation, takes focus and still leaves the page usable. That combination is what separates it from both the modal surfaces and the hover ones.
 
-- **Popover**: non-modal `role="dialog"`, opened from its trigger. Focus moves into the surface and returns on close, but Tab may leave and nothing behind it is inert or scroll-locked.
+- **Popover**: non-modal `role="dialog"`, opened from its trigger. Focus moves into the surface and returns to the trigger on `Escape`, but Tab may leave and nothing behind it is inert or scroll-locked.
 - **[Dialog](../dialog/README.md)** / **[Drawer](../drawer/README.md)**: modal. Choose either when the rest of the page must be unreachable until the task ends; Drawer adds the edge anchoring, swipe-to-dismiss and snap points.
 - **[Tooltip](../tooltip/README.md)**: opens on hover or focus and never takes focus. Its content must be non-interactive because it is the trigger's description, wired with `aria-describedby`.
 - **[Hover Card](../hover-card/README.md)**: opens on hover or focus and may hold interactive content, but it adds no ARIA relationship to its trigger. Choose it only for a preview whose trigger already stands on its own.
@@ -45,7 +45,7 @@ Popover is the one floating surface that opens on activation, takes focus and st
 
 ## Examples
 
-Open the popover from the trigger. `Escape` and an outside click close it, focus returns to the trigger, and `data-side` says which side it landed on.
+Open the popover from the trigger. `Escape` and the **Done** button close it and return focus to the trigger. An outside click or a focus move outside closes it too, and focus stays where it went. `data-side` says which side it landed on.
 
 ```ts
 import { ChangeDetectionStrategy, Component } from '@angular/core';
@@ -79,8 +79,8 @@ import {
         <div forPopoverContent class="popover" animate.enter="popover-enter">
           <h3 forPopoverTitle class="popover-title">Display</h3>
           <p forPopoverDescription class="popover-desc">
-            A non-modal panel anchored to its trigger. Escape, pointer-down outside or focus outside
-            dismisses it and returns focus to the trigger.
+            A non-modal panel anchored to its trigger. Escape or Done closes it and returns focus to
+            the trigger. A click or focus outside closes it too, and focus stays where it went.
           </p>
           <div class="popover-actions">
             <button class="popover-close" type="button" forPopoverClose>Done</button>
@@ -100,7 +100,7 @@ The element that opens the popover and the element it points at can differ: the 
 
 ### Positioning & collisions
 
-The trigger sits in a tight, scrollable frame. `sideOffset` nudges the surface off the trigger and `collisionPadding` reserves a margin from the edge before `flip` / `shift` kick in. Scroll the frame to see it react.
+The trigger sits in a tight, scrollable frame, and the surface follows it as the frame scrolls. `sideOffset="16"` widens the gap from the trigger, and `collisionPadding="24"` keeps a margin from the window edge: when the trigger nears that edge, `shift` slides the surface along it and `flip` moves it to the other side. A `(pointerDownOutside)` veto keeps a touch scroll inside the frame from closing it.
 
 ## API
 
@@ -122,7 +122,7 @@ The trigger sits in a tight, scrollable frame. `sideOffset` nudges the surface o
 | `disabled`            | `input<boolean>`                                                    | When `true`, trigger does not toggle.<br>**Default:** `false`                                                                                                                         |
 | `dismissible`         | `input<boolean>`                                                    | When `false`, Escape / outside-pointer / outside-focus do not close.<br>**Default:** `true`                                                                                           |
 | `lightDismiss`        | `input<string>`                                                     | `'stack'` also closes it when the overlay above closes on a press. See [Stacked overlays](#stacked-overlays).<br>**Default:** `'topmost'`                                             |
-| `returnFocus`         | `input<boolean>`                                                    | Focus returns to the trigger on close.<br>**Default:** `true`                                                                                                                         |
+| `returnFocus`         | `input<boolean>`                                                    | Focus returns to the trigger on close, except after an outside or Tab close.<br>**Default:** `true`                                                                                   |
 | `initialFocus`        | `input<string>`                                                     | `'first'` (first focusable inside content) or `'container'` (the content host).<br>**Default:** `'first'`                                                                             |
 | `ariaLabel`           | `input<string \| null>`                                             | Manual `aria-label` on the content when no `[forPopoverTitle]` is rendered.<br>**Default:** `null`                                                                                    |
 | `escapeKeyDown`       | `OutputEmitterRef<VetoableNativeEvent<KeyboardEvent>>`              | Output. Fires on Escape while this popover is the topmost dismissible layer.<br>**Default:** —                                                                                        |
@@ -284,7 +284,7 @@ forty-cdk ships no styles: put your own class on each piece and key your CSS off
 - **Anchor vs. trigger**: `[forPopoverAnchor]` only changes the floating-ui reference. The trigger keeps `aria-controls` / `aria-expanded`, the click toggle, and focus return on close. The anchor is _not_ exempt from outside dismissal: clicking it is treated as outside.
 - **Non-modal**: no focus trap, no body scroll lock, no `aria-modal`. If you need modal semantics, use `[forDialog]` instead.
 - **No backdrop**: popovers don't render an overlay. Outside dismissal is event-driven.
-- **Focus return**: on unmount, focus is sent back to the registered trigger element (unless `returnFocus="false"`). The one exception is an **outside-interaction close**, meaning a pointer-down or focus-out that lands outside the popover. After such a close, focus stays where the interaction moved it instead of snapping back to the trigger, matching `[forDropdownMenu]` (so a popover on a trigger that also carries a tooltip doesn't rip focus back and re-open that tooltip). Escape and programmatic closes still return focus. The return happens before the portal helper removes the node, so the trigger receives `focusin` against a stable layout.
+- **Focus return**: on unmount, focus is sent back to the registered trigger element (unless `returnFocus="false"`). The one exception is an **outside-interaction close**, meaning a pointer-down or focus-out that lands outside the popover, or a Tab out of it. After such a close, focus stays where the interaction moved it instead of snapping back to the trigger, matching `[forDropdownMenu]` (so a popover on a trigger that also carries a tooltip doesn't rip focus back and re-open that tooltip). Escape and programmatic closes still return focus. The return happens before the portal helper removes the node, so the trigger receives `focusin` against a stable layout.
 - **Arrow offset**: `[forPopoverArrow]` writes `position: absolute`, the floating-ui-resolved `left` / `top`, and `var(--for-floating-arrow-offset, 0px)` on the side opposite the popover (so the arrow points back at the trigger). Set `--for-floating-arrow-offset` on the arrow element (or any ancestor) to control how far the arrow pokes out. A negative `px` value such as `-4px` is typical. Defaults to `0px` (flush with the popover edge); the helper ships no default visual.
 
 ### Stacked overlays
