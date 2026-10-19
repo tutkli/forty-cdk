@@ -86,19 +86,40 @@ import {
               <div forNavigationMenuContent data-id="products" class="navmenu-panel">
                 <p class="navmenu-panel-title">Build</p>
                 <div class="navmenu-grid">
-                  <a forNavigationMenuLink [active]="true" href="#analytics" class="navmenu-link">
+                  <a
+                    forNavigationMenuLink
+                    [active]="true"
+                    href="#analytics"
+                    (click)="$event.preventDefault()"
+                    class="navmenu-link"
+                  >
                     <strong>Analytics</strong>
                     <span>Dashboards and funnels</span>
                   </a>
-                  <a forNavigationMenuLink href="#automation" class="navmenu-link">
+                  <a
+                    forNavigationMenuLink
+                    href="#automation"
+                    (click)="$event.preventDefault()"
+                    class="navmenu-link"
+                  >
                     <strong>Automation</strong>
                     <span>Workflows and triggers</span>
                   </a>
-                  <a forNavigationMenuLink href="#reports" class="navmenu-link">
+                  <a
+                    forNavigationMenuLink
+                    href="#reports"
+                    (click)="$event.preventDefault()"
+                    class="navmenu-link"
+                  >
                     <strong>Reports</strong>
                     <span>Scheduled exports</span>
                   </a>
-                  <a forNavigationMenuLink href="#integrations" class="navmenu-link">
+                  <a
+                    forNavigationMenuLink
+                    href="#integrations"
+                    (click)="$event.preventDefault()"
+                    class="navmenu-link"
+                  >
                     <strong>Integrations</strong>
                     <span>Connect your stack</span>
                   </a>
@@ -126,13 +147,34 @@ import {
                 <p class="navmenu-panel-title">By team</p>
                 <ul class="navmenu-links">
                   <li>
-                    <a forNavigationMenuLink href="#startups" class="navmenu-link">Startups</a>
+                    <a
+                      forNavigationMenuLink
+                      href="#startups"
+                      (click)="$event.preventDefault()"
+                      class="navmenu-link"
+                    >
+                      Startups
+                    </a>
                   </li>
                   <li>
-                    <a forNavigationMenuLink href="#enterprise" class="navmenu-link">Enterprise</a>
+                    <a
+                      forNavigationMenuLink
+                      href="#enterprise"
+                      (click)="$event.preventDefault()"
+                      class="navmenu-link"
+                    >
+                      Enterprise
+                    </a>
                   </li>
                   <li>
-                    <a forNavigationMenuLink href="#agencies" class="navmenu-link">Agencies</a>
+                    <a
+                      forNavigationMenuLink
+                      href="#agencies"
+                      (click)="$event.preventDefault()"
+                      class="navmenu-link"
+                    >
+                      Agencies
+                    </a>
                   </li>
                 </ul>
               </div>
@@ -157,16 +199,49 @@ import {
               <div forNavigationMenuContent data-id="company" class="navmenu-panel">
                 <p class="navmenu-panel-title">About us</p>
                 <ul class="navmenu-links">
-                  <li><a forNavigationMenuLink href="#about" class="navmenu-link">About</a></li>
-                  <li><a forNavigationMenuLink href="#careers" class="navmenu-link">Careers</a></li>
-                  <li><a forNavigationMenuLink href="#blog" class="navmenu-link">Blog</a></li>
+                  <li>
+                    <a
+                      forNavigationMenuLink
+                      href="#about"
+                      (click)="$event.preventDefault()"
+                      class="navmenu-link"
+                    >
+                      About
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      forNavigationMenuLink
+                      href="#careers"
+                      (click)="$event.preventDefault()"
+                      class="navmenu-link"
+                    >
+                      Careers
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      forNavigationMenuLink
+                      href="#blog"
+                      (click)="$event.preventDefault()"
+                      class="navmenu-link"
+                    >
+                      Blog
+                    </a>
+                  </li>
                 </ul>
               </div>
             }
           </li>
 
           <li class="navmenu-item">
-            <a href="#pricing" class="navmenu-trigger navmenu-trigger--link">Pricing</a>
+            <a
+              href="#pricing"
+              (click)="$event.preventDefault()"
+              class="navmenu-trigger navmenu-trigger--link"
+            >
+              Pricing
+            </a>
           </li>
 
           <div forNavigationMenuIndicator class="navmenu-indicator" aria-hidden="true"></div>

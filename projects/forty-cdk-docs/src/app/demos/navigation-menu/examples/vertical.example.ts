@@ -54,15 +54,35 @@ import {
                 <p class="navmenu-panel-title">Collections</p>
                 <ul class="navmenu-links">
                   <li>
-                    <a forNavigationMenuLink [active]="true" href="#all" class="navmenu-link">
+                    <a
+                      forNavigationMenuLink
+                      [active]="true"
+                      href="#all"
+                      (click)="$event.preventDefault()"
+                      class="navmenu-link"
+                    >
                       All items
                     </a>
                   </li>
                   <li>
-                    <a forNavigationMenuLink href="#favorites" class="navmenu-link">Favorites</a>
+                    <a
+                      forNavigationMenuLink
+                      href="#favorites"
+                      (click)="$event.preventDefault()"
+                      class="navmenu-link"
+                    >
+                      Favorites
+                    </a>
                   </li>
                   <li>
-                    <a forNavigationMenuLink href="#archived" class="navmenu-link">Archived</a>
+                    <a
+                      forNavigationMenuLink
+                      href="#archived"
+                      (click)="$event.preventDefault()"
+                      class="navmenu-link"
+                    >
+                      Archived
+                    </a>
                   </li>
                 </ul>
               </div>
@@ -91,13 +111,36 @@ import {
               <div forNavigationMenuContent data-id="team" class="navmenu-panel">
                 <p class="navmenu-panel-title">People</p>
                 <ul class="navmenu-links">
-                  <li><a forNavigationMenuLink href="#members" class="navmenu-link">Members</a></li>
                   <li>
-                    <a forNavigationMenuLink href="#invitations" class="navmenu-link"
-                      >Invitations</a
+                    <a
+                      forNavigationMenuLink
+                      href="#members"
+                      (click)="$event.preventDefault()"
+                      class="navmenu-link"
                     >
+                      Members
+                    </a>
                   </li>
-                  <li><a forNavigationMenuLink href="#roles" class="navmenu-link">Roles</a></li>
+                  <li>
+                    <a
+                      forNavigationMenuLink
+                      href="#invitations"
+                      (click)="$event.preventDefault()"
+                      class="navmenu-link"
+                    >
+                      Invitations
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      forNavigationMenuLink
+                      href="#roles"
+                      (click)="$event.preventDefault()"
+                      class="navmenu-link"
+                    >
+                      Roles
+                    </a>
+                  </li>
                 </ul>
               </div>
             }
@@ -125,10 +168,35 @@ import {
               <div forNavigationMenuContent data-id="settings" class="navmenu-panel">
                 <p class="navmenu-panel-title">Workspace</p>
                 <ul class="navmenu-links">
-                  <li><a forNavigationMenuLink href="#general" class="navmenu-link">General</a></li>
-                  <li><a forNavigationMenuLink href="#billing" class="navmenu-link">Billing</a></li>
                   <li>
-                    <a forNavigationMenuLink href="#security" class="navmenu-link">Security</a>
+                    <a
+                      forNavigationMenuLink
+                      href="#general"
+                      (click)="$event.preventDefault()"
+                      class="navmenu-link"
+                    >
+                      General
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      forNavigationMenuLink
+                      href="#billing"
+                      (click)="$event.preventDefault()"
+                      class="navmenu-link"
+                    >
+                      Billing
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      forNavigationMenuLink
+                      href="#security"
+                      (click)="$event.preventDefault()"
+                      class="navmenu-link"
+                    >
+                      Security
+                    </a>
                   </li>
                 </ul>
               </div>

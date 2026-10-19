@@ -7,7 +7,15 @@ import { ForVisuallyHidden } from 'forty-cdk/visually-hidden';
   imports: [ForVisuallyHidden],
   template: `
     <div class="card">
-      <a forVisuallyHidden focusable href="#vh-main" class="skip">Skip to content</a>
+      <a
+        forVisuallyHidden
+        focusable
+        href="#vh-main"
+        class="skip"
+        (click)="$event.preventDefault(); main.focus()"
+      >
+        Skip to content
+      </a>
 
       <p class="hint">Tab into the card: the skip link is the first stop and un-clips on focus.</p>
 
@@ -33,7 +41,7 @@ import { ForVisuallyHidden } from 'forty-cdk/visually-hidden';
         </button>
       </div>
 
-      <table id="vh-main" class="invoices">
+      <table #main id="vh-main" tabindex="-1" class="invoices">
         <caption forVisuallyHidden>
           Invoices, sorted by due date, ascending
         </caption>

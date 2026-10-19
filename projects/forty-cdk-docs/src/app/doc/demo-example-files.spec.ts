@@ -125,6 +125,21 @@ function defaultsImportedFromAPrimitive(files: readonly ExampleFile[]): readonly
     );
 }
 
+const ANCHOR_TAG = /<a\b[^>]*>/g;
+
+const FRAGMENT_HREF = /\shref="#/;
+
+const CLICK_BINDING = /\s\(click\)="/;
+
+function fragmentLinksLeftToTheBrowser(files: readonly ExampleFile[]): readonly string[] {
+  return files.flatMap((file) =>
+    [...file.source.matchAll(ANCHOR_TAG)]
+      .map((match) => match[0])
+      .filter((tag) => FRAGMENT_HREF.test(tag) && !CLICK_BINDING.test(tag))
+      .map((tag) => `${file.path}: ${tag.replace(/\s+/g, ' ')}`),
+  );
+}
+
 describe('the file a demo example hands to Copy', () => {
   it('reads every example the site publishes, not a fraction of them', () => {
     expect(EXAMPLES.length).toBeGreaterThanOrEqual(EXAMPLE_FLOOR);
@@ -149,6 +164,15 @@ describe('the file a demo example hands to Copy', () => {
 
   it('imports every defaults pair from forty-cdk/defaults, never from its primitive', () => {
     expect(defaultsImportedFromAPrimitive(EXAMPLES)).toEqual([]);
+  });
+
+  it('handles the click of every fragment link, which a <base href> would resolve to another page', () => {
+    expect(fragmentLinksLeftToTheBrowser(EXAMPLES)).toEqual([]);
+  });
+
+  it('reads the anchors the examples render, so the fragment rule sees more than nothing', () => {
+    const anchors = EXAMPLES.flatMap((file) => [...file.source.matchAll(ANCHOR_TAG)]);
+    expect(anchors.length).toBeGreaterThan(0);
   });
 
   it('reads the defaults pairs the examples import, so the defaults rule sees more than nothing', () => {
