@@ -51,7 +51,10 @@ export class ForStepperItem implements ForStepperItemContext, ForStepperItemHand
   /** Marks this step as optional (can be skipped in linear mode). */
   readonly optional = input(false, { transform: booleanAttribute });
 
-  /** When true, this step's trigger ignores clicks and the step is unreachable by keyboard. */
+  /**
+   * When true, the step cannot be activated. Its trigger leaves the `Tab` sequence but stays
+   * reachable by the arrow keys, so it is still announced.
+   */
   readonly disabled = input(false, { transform: booleanAttribute });
 
   /**
@@ -118,8 +121,9 @@ export class ForStepperItem implements ForStepperItemContext, ForStepperItemHand
   readonly current = computed(() => this.ctx.isCurrent(this.index()));
 
   /**
-   * True when this step can be focused and activated. False when the step is
-   * effectively disabled or not yet reachable in linear mode.
+   * True when this step can be activated. False when the step is effectively
+   * disabled or not yet reachable in linear mode; its trigger then leaves the
+   * `Tab` sequence but stays reachable by the arrow keys.
    */
   readonly selectable = computed(
     () => this.ctx.isReachable(this.index()) && !this.effectiveDisabled(),

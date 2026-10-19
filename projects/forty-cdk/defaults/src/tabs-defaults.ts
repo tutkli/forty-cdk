@@ -19,8 +19,8 @@ export interface ForTabsDefaults {
    */
   activationMode: TabsActivationMode;
   /**
-   * Whether arrow navigation wraps around past the first / last enabled
-   * trigger. Matches the WAI-ARIA Tabs APG default.
+   * Whether arrow navigation wraps around past the first / last trigger.
+   * Matches the WAI-ARIA Tabs APG default.
    */
   loop: boolean;
 }

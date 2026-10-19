@@ -26,7 +26,7 @@ Headless, with a selectable activation mode (automatic vs manual), configurable 
 
 ## Examples
 
-Move between triggers with the arrow keys and activate with `Space`. The active trigger and its panel share `data-state="active"`.
+Move between triggers with the arrow keys; selection follows focus. The active trigger and its panel share `data-state="active"`.
 
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
@@ -113,14 +113,14 @@ The library-wide shadow-DOM statement, covering the two limits that affect overl
 
 ### `ForTabs`
 
-| Property         | Type                                | Description                                                                                                                                                                   |
-| ---------------- | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `value`          | `model<string \| null>`             | Two-way bindable. The selected tab's value, or `null` when nothing is selected. `null` is the unset state and is distinct from a tab whose `value` is `''`.<br>**Default:** — |
-| `activationMode` | `input<'automatic' \| 'manual'>`    | Use `'manual'` when panel content is expensive. In manual mode the user must press Space / Enter.<br>**Default:** `'automatic'` (selection follows arrow focus)               |
-| `orientation`    | `input<'horizontal' \| 'vertical'>` | Drives keyboard navigation and `aria-orientation`.<br>**Default:** `'horizontal'`                                                                                             |
-| `dir`            | `input<'ltr' \| 'rtl' \| null>`     | Swaps ArrowLeft / ArrowRight. Inherits the ambient direction when unset.<br>**Default:** `null`                                                                               |
-| `disabled`       | `input<boolean>`                    | When true, blocks all selection and keyboard nav.<br>**Default:** —                                                                                                           |
-| `loop`           | `input<boolean>`                    | When true (default), arrow nav wraps around past the first / last trigger. Set to `false` for a non-wrapping tablist.<br>**Default:** `true`                                  |
+| Property         | Type                                | Description                                                                                                                                                                        |
+| ---------------- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`          | `model<string \| null>`             | Two-way bindable. The selected tab's value, or `null` when nothing is selected. `null` is the unset state and is distinct from a tab whose `value` is `''`.<br>**Default:** `null` |
+| `activationMode` | `input<'automatic' \| 'manual'>`    | Use `'manual'` when panel content is expensive. In manual mode the user must press Space / Enter.<br>**Default:** `'automatic'` (selection follows arrow focus)                    |
+| `orientation`    | `input<'horizontal' \| 'vertical'>` | Drives keyboard navigation and `aria-orientation`.<br>**Default:** `'horizontal'`                                                                                                  |
+| `dir`            | `input<'ltr' \| 'rtl' \| null>`     | Swaps ArrowLeft / ArrowRight. Inherits the ambient direction when unset.<br>**Default:** `null`                                                                                    |
+| `disabled`       | `input<boolean>`                    | When true, blocks all selection and keyboard nav.<br>**Default:** `false`                                                                                                          |
+| `loop`           | `input<boolean>`                    | When true (default), arrow nav wraps around past the first / last trigger. Set to `false` for a non-wrapping tablist.<br>**Default:** `true`                                       |
 
 | Data attribute     | Values                     |
 | ------------------ | -------------------------- |
@@ -129,16 +129,20 @@ The library-wide shadow-DOM statement, covering the two limits that affect overl
 
 ### `ForTabsList`
 
+| Property    | Type                    | Description                                                                                                                                                    |
+| ----------- | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ariaLabel` | `input<string \| null>` | Accessible name for the tablist. Prefer native `aria-labelledby` when a visible heading names it.<br>**Default:** `null` (and empty string) emits no attribute |
+
 | Data attribute     | Values                     |
 | ------------------ | -------------------------- |
 | `data-orientation` | `horizontal` \| `vertical` |
 
 ### `ForTabsTrigger`
 
-| Property   | Type                     | Description                                                                             |
-| ---------- | ------------------------ | --------------------------------------------------------------------------------------- |
-| `value`    | `input.required<string>` | The tab's identifier. Must match the `value` of its `ForTabsContent`.<br>**Default:** — |
-| `disabled` | `input<boolean>`         | Disables this trigger; arrow nav still reaches it.<br>**Default:** —                    |
+| Property   | Type             | Description                                                                                                                                                                                  |
+| ---------- | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`    | `input<string>`  | The tab's identifier. Must match the `value` of its `ForTabsContent`. Required in practice though not by the template compiler: a trigger left unbound throws in dev mode.<br>**Default:** — |
+| `disabled` | `input<boolean>` | Disables this trigger; arrow nav still reaches it.<br>**Default:** `false`                                                                                                                   |
 
 | Data attribute     | Values                     |
 | ------------------ | -------------------------- |
@@ -152,7 +156,7 @@ Reflects on its host: `id`, `aria-selected`, `aria-controls` (looked up from the
 
 | Property             | Type                     | Description                                                                                                                                                                                                                          |
 | -------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `value`              | `input.required<string>` | Pairs the panel with the trigger of the same value.<br>**Default:** —                                                                                                                                                                |
+| `value`              | `input<string>`          | Pairs the panel with the trigger of the same value. Required in practice though not by the template compiler: a panel left unbound throws in dev mode.<br>**Default:** —                                                             |
 | `interactiveContent` | `input<boolean \| null>` | Overrides the automatic focusable-content detection that drives `tabindex`. `true` forces no tab stop (the panel always holds its own focusable content); `false` forces a tab stop regardless.<br>**Default:** `null` (auto-detect) |
 
 | Data attribute     | Values                     |
@@ -170,7 +174,7 @@ The directive does **not** apply `[hidden]`. Two patterns work:
 ## Keyboard
 
 - **Tab** moves focus into / out of the tablist; lands on the user-focused trigger (or the selected one, if none focused yet).
-- **ArrowRight / ArrowLeft** in horizontal, **ArrowDown / ArrowUp** in vertical: move focus between triggers, wrap-around. RTL swaps Left/Right.
+- **ArrowRight / ArrowLeft** in horizontal, **ArrowDown / ArrowUp** in vertical: move focus between triggers, wrapping around unless `loop` is `false`. RTL swaps Left/Right.
 - **Home / End** jump to the first / last trigger.
 - **Space / Enter** activate the focused trigger (no-op in automatic mode since arrow nav already activated it).
 - Disabled triggers are reached but not activated: automatic mode does not select one that arrow nav lands on.

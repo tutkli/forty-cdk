@@ -106,8 +106,8 @@ export class ForStepper implements ForStepperContext {
   readonly activationMode = input<StepperActivationMode>(this.#defaults.activationMode);
 
   /**
-   * Whether arrow navigation wraps around past the first / last selectable
-   * trigger. Defaults to the value from `provideForStepperDefaults` for the
+   * Whether arrow navigation wraps around past the first / last trigger.
+   * Defaults to the value from `provideForStepperDefaults` for the
    * surrounding scope (library default: `true`).
    */
   readonly loop = input(this.#defaults.loop, { transform: booleanAttribute });
