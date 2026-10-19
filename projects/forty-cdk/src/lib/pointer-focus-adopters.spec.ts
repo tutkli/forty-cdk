@@ -47,7 +47,13 @@ import {
   ForTimePickerOption,
   ForTimePickerTrigger,
 } from 'forty-cdk/time-picker';
-import { ForTree, ForTreeItem, ForTreeItemLabel, ForTreeItemToggle } from 'forty-cdk/tree';
+import {
+  ForTree,
+  ForTreeItem,
+  ForTreeItemCheckbox,
+  ForTreeItemLabel,
+  ForTreeItemToggle,
+} from 'forty-cdk/tree';
 
 import { afterEachOverlayCleanup, flush, renderHost } from '../test-utils';
 import { LIBRARY_CODE } from '../test-utils/source-scan';
@@ -68,6 +74,20 @@ const PRESS_FOCUS_HELPER = 'focusAfterPress';
   `,
 })
 class TreeToggleHost {}
+
+@Component({
+  imports: [ForTree, ForTreeItem, ForTreeItemLabel, ForTreeItemCheckbox],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <ul forTree selectionMode="checkbox" aria-label="Files">
+      <li forTreeItem value="src" data-focus>
+        <div forTreeItemLabel><button forTreeItemCheckbox data-press></button>src</div>
+      </li>
+      <li forTreeItem value="readme" data-arm><div forTreeItemLabel>readme</div></li>
+    </ul>
+  `,
+})
+class TreeCheckboxHost {}
 
 @Component({
   imports: [ForTree, ForTreeItem, ForTreeItemLabel],
@@ -579,6 +599,7 @@ function pressWithoutFocus(target: HTMLElement): void {
 
 const SWEEP: readonly PressCase[] = [
   { file: 'tree/src/tree-item-toggle.ts', host: TreeToggleHost },
+  { file: 'tree/src/tree-item-checkbox.ts', host: TreeCheckboxHost },
   { file: 'tree/src/tree-item.ts', host: TreeDisabledItemHost },
   { file: 'listbox/src/listbox.ts', host: ListboxControlledHost },
   { file: 'listbox/src/listbox-option.ts', host: ListboxDisabledOptionHost },
@@ -658,11 +679,15 @@ describe('pointer focus guard (meta-guard)', () => {
     expect(hosts.filter((path) => !callers().includes(path))).toEqual([]);
   });
 
-  it('has every aria-hidden piece carrying a tabindex calling the helper', () => {
+  it('has every aria-hidden piece carrying a tabindex or a click handler calling the helper', () => {
     const hosts = filesWhere(
-      (source) => source.includes(`'aria-hidden': 'true'`) && /\btabindex: /.test(source),
+      (source) =>
+        source.includes(`'aria-hidden': 'true'`) &&
+        (/\btabindex: /.test(source) || source.includes(`'(click)'`)),
     );
-    expect(hosts.length).toBeGreaterThanOrEqual(1);
+    expect(hosts).toEqual(
+      expect.arrayContaining(['tree/src/tree-item-toggle.ts', 'tree/src/tree-item-checkbox.ts']),
+    );
     expect(hosts.filter((path) => !callers().includes(path))).toEqual([]);
   });
 

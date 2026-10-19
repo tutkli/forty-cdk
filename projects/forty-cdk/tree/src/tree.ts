@@ -295,7 +295,7 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
 
   readonly #isNonSelectable = selectionMembership(this.#nonSelectableValues, this.compareWith);
 
-  readonly #firstEnabledRoot = computed(() => firstEnabledHost(this.#items.items()));
+  readonly #firstEnabledVisible = computed(() => firstEnabledHost(this.#visibleHandles()));
 
   readonly #firstSelectedHost = computed<HTMLElement | null>(() => {
     if (this.value().length === 0) {
@@ -492,40 +492,43 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
     this.#focusModel().navigate(action, currentItem);
   }
 
-  expandOrEnter(_currentItem: HTMLElement): void {
+  expandOrEnter(currentItem: HTMLElement): void {
     if (this.disabled()) {
       return;
     }
     const model = this.#focusModel();
-    const cur = model.current();
-    if (!cur || cur.disabled || !cur.expandable) {
+    const cur = model.current(currentItem);
+    if (!cur || !cur.expandable) {
       return;
     }
     if (!this.isExpanded(cur.value)) {
+      if (cur.disabled) {
+        return;
+      }
       model.resumeActive();
       this.setExpanded(cur.value, true);
       return;
     }
     this.#assertSelectionFollowsFocusSupported();
-    model.enterChild();
+    model.enterChild(currentItem);
   }
 
-  collapseOrLeave(_currentItem: HTMLElement): void {
+  collapseOrLeave(currentItem: HTMLElement): void {
     if (this.disabled()) {
       return;
     }
     const model = this.#focusModel();
-    const cur = model.current();
+    const cur = model.current(currentItem);
     if (!cur) {
       return;
     }
-    if (cur.expandable && this.isExpanded(cur.value)) {
+    if (!cur.disabled && cur.expandable && this.isExpanded(cur.value)) {
       model.resumeActive();
       this.setExpanded(cur.value, false);
       return;
     }
     this.#assertSelectionFollowsFocusSupported();
-    model.moveToParent();
+    model.moveToParent(currentItem);
   }
 
   expandSiblings(currentItem: HTMLElement): void {
@@ -555,7 +558,7 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
     if (firstSelected) {
       return firstSelected === el;
     }
-    return this.#firstEnabledRoot() === el;
+    return this.#firstEnabledVisible() === el;
   }
 
   private onHostKeyDown(event: KeyboardEvent): void {

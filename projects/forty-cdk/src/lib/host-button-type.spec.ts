@@ -13,6 +13,13 @@ import { ForPopover, ForPopoverTrigger } from 'forty-cdk/popover';
 import { ForSearch, ForSearchClear, ForSearchGroup } from 'forty-cdk/search';
 import { ForSwitch } from 'forty-cdk/switch';
 import { ForToolbar, ForToolbarButton } from 'forty-cdk/toolbar';
+import {
+  ForTree,
+  ForTreeItem,
+  ForTreeItemCheckbox,
+  ForTreeItemLabel,
+  ForTreeItemToggle,
+} from 'forty-cdk/tree';
 
 import { LIBRARY_CODE, README_SOURCES } from '../test-utils/source-scan';
 
@@ -136,6 +143,38 @@ describe('forced type="button" (#1512)', () => {
       expect(typeOf(fixture, 'button[forSearchClear]')).toBe('button');
       expect(typeOf(fixture, 'button[forToolbarButton]')).toBe('button');
       expect(typeOf(fixture, 'div[forToolbarButton]')).toBeNull();
+    });
+  });
+
+  describe('decorative control — [forTreeItemToggle] / [forTreeItemCheckbox]', () => {
+    @Component({
+      imports: [ForTree, ForTreeItem, ForTreeItemLabel, ForTreeItemToggle, ForTreeItemCheckbox],
+      changeDetection: ChangeDetectionStrategy.OnPush,
+      template: `<ul forTree selectionMode="checkbox" aria-label="Files">
+        <li forTreeItem value="src">
+          <div forTreeItemLabel>
+            <button forTreeItemToggle type="submit"></button>
+            <button forTreeItemCheckbox type="submit"></button>
+            src
+          </div>
+        </li>
+        <li forTreeItem value="docs">
+          <div forTreeItemLabel>
+            <span forTreeItemToggle></span>
+            <span forTreeItemCheckbox></span>
+            docs
+          </div>
+        </li>
+      </ul>`,
+    })
+    class Host {}
+
+    it('forces type="button" on a button host and emits none on a span host', () => {
+      const fixture = mount(Host);
+      expect(typeOf(fixture, 'button[forTreeItemToggle]')).toBe('button');
+      expect(typeOf(fixture, 'button[forTreeItemCheckbox]')).toBe('button');
+      expect(typeOf(fixture, 'span[forTreeItemToggle]')).toBeNull();
+      expect(typeOf(fixture, 'span[forTreeItemCheckbox]')).toBeNull();
     });
   });
 
@@ -295,6 +334,19 @@ describe('forced type="button" roster', () => {
       );
 
     expect(missing).toEqual([]);
+  });
+
+  it('forces type="button" through hostButtonType on every aria-hidden piece owning a click', () => {
+    const decorative = [...LIBRARY_CODE].filter(
+      ([, code]) => code.includes(`'aria-hidden': 'true'`) && code.includes(`'(click)'`),
+    );
+
+    expect(decorative.map(([path]) => path)).toEqual(
+      expect.arrayContaining(['tree/src/tree-item-toggle.ts', 'tree/src/tree-item-checkbox.ts']),
+    );
+    expect(
+      decorative.filter(([, code]) => !code.includes('hostButtonType(')).map(([path]) => path),
+    ).toEqual([]);
   });
 
   it('keeps every exclusion documented on a <button> and its condition holding', () => {

@@ -145,12 +145,14 @@ export interface ForTreeContext<T = unknown> {
   navigate(currentItem: HTMLElement, action: ListNavigationAction): void;
   /**
    * Right arrow (LTR): expand a closed parent (focus stays); on an open
-   * parent move focus to its first child; no-op on a leaf.
+   * parent move focus to its first child; no-op on a leaf. A disabled node
+   * is never expanded, and still moves focus into its children when open.
    */
   expandOrEnter(currentItem: HTMLElement): void;
   /**
    * Left arrow (LTR): collapse an open parent (focus stays); otherwise move
-   * focus to the parent node; no-op at a closed root-level node.
+   * focus to the parent node; no-op at a closed root-level node. A disabled
+   * node is never collapsed, so it moves focus to its parent instead.
    */
   collapseOrLeave(currentItem: HTMLElement): void;
   /** `*`: expand every sibling parent at the focused node's level. */
@@ -179,7 +181,11 @@ export interface ForTreeContext<T = unknown> {
    * least once in the activedescendant one.
    */
   handleTypeahead(event: KeyboardEvent): boolean;
-  /** Whether `el` is the first enabled root node — the default roving-tabindex entry point. */
+  /**
+   * Whether `el` is the default roving-tabindex entry point: the first enabled
+   * selected node in visible order, or the first enabled visible node when
+   * none is selected.
+   */
   isFirstFocusableItem(el: HTMLElement): boolean;
   /**
    * Flattened currently-visible nodes in DOM order, each with its resolved parent host. Exposed for

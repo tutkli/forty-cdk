@@ -329,11 +329,13 @@ export class ForTreeItem<T = string> implements ForTreeItemContext<T> {
     if (event.target !== host) {
       return;
     }
+    const tree = this.#tree;
     if (this.effectiveDisabled()) {
-      this.#navigate(event);
+      if (!tree.disabled() && !this.#navigate(event) && !this.#expandOrCollapse(event)) {
+        tree.handleTypeahead(event);
+      }
       return;
     }
-    const tree = this.#tree;
 
     if (tree.multiple()) {
       if (
@@ -378,26 +380,29 @@ export class ForTreeItem<T = string> implements ForTreeItemContext<T> {
       return;
     }
 
-    if (this.#navigate(event)) {
-      return;
-    }
-
-    const intent = resolveTreeExpandCollapse(event, {
-      orientation: tree.orientation(),
-      dir: tree.dir(),
-    });
-    if (intent === 'expand') {
-      event.preventDefault();
-      tree.expandOrEnter(host);
-      return;
-    }
-    if (intent === 'collapse') {
-      event.preventDefault();
-      tree.collapseOrLeave(host);
+    if (this.#navigate(event) || this.#expandOrCollapse(event)) {
       return;
     }
 
     tree.handleTypeahead(event);
+  }
+
+  #expandOrCollapse(event: KeyboardEvent): boolean {
+    const tree = this.#tree;
+    const intent = resolveTreeExpandCollapse(event, {
+      orientation: tree.orientation(),
+      dir: tree.dir(),
+    });
+    if (intent === null) {
+      return false;
+    }
+    event.preventDefault();
+    if (intent === 'expand') {
+      tree.expandOrEnter(this.#host.nativeElement);
+    } else {
+      tree.collapseOrLeave(this.#host.nativeElement);
+    }
+    return true;
   }
 
   #navigate(event: KeyboardEvent): boolean {

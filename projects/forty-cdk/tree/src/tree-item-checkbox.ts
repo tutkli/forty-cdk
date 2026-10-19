@@ -1,14 +1,16 @@
 import { computed, Directive } from '@angular/core';
 
-import { fortyWarn } from 'forty-cdk/core';
+import { fortyWarn, hostButtonType, preventPointerFocus } from 'forty-cdk/core';
 import { injectTreeContext, injectTreeItemContext } from './tree-context';
 
 /**
  * Visible checkbox surface inside a `ForTreeItem`, used in the tree's
  * `selectionMode="checkbox"` anatomy. Decorative for assistive tech — the
  * enclosing `treeitem` owns `aria-checked`, so this element is `aria-hidden`
- * and not separately focusable. Reflects `data-state="checked" | "unchecked" |
- * "indeterminate"` for styling, and `data-disabled` while its node is disabled
+ * and never takes focus, from Tab or from a mouse press; on a `<button>` host
+ * it is `type="button"`, so a click never submits a form. Reflects
+ * `data-state="checked" | "unchecked" | "indeterminate"` for styling, and
+ * `data-disabled` while its node is disabled
  * by its own `[disabled]` or the root's. Clicking it activates the node — the
  * root's `(itemActivate)`, then the selection toggle unless that was vetoed —
  * and moves roving focus to the node; place a `[forTreeItemCheckboxIndicator]`
@@ -21,6 +23,8 @@ import { injectTreeContext, injectTreeItemContext } from './tree-context';
   selector: '[forTreeItemCheckbox]',
   exportAs: 'forTreeItemCheckbox',
   host: {
+    '[attr.type]': 'buttonType()',
+    tabindex: '-1',
     'aria-hidden': 'true',
     '[attr.data-state]': 'dataState()',
     '[attr.data-disabled]': 'item.effectiveDisabled() ? "" : null',
@@ -28,8 +32,14 @@ import { injectTreeContext, injectTreeItemContext } from './tree-context';
   },
 })
 export class ForTreeItemCheckbox {
+  private readonly buttonType = hostButtonType();
+
   readonly #tree = injectTreeContext('ForTreeItemCheckbox');
   private readonly item = injectTreeItemContext('ForTreeItemCheckbox');
+
+  constructor() {
+    preventPointerFocus();
+  }
 
   private readonly dataState = computed(() => {
     const state = this.item.checkState();
