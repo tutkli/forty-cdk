@@ -7,7 +7,7 @@
 [![npm version](https://img.shields.io/npm/v/forty-cdk.svg)](https://www.npmjs.com/package/forty-cdk)
 [![CI](https://github.com/tutkli/forty-cdk/actions/workflows/ci.yml/badge.svg)](https://github.com/tutkli/forty-cdk/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-![Angular](https://img.shields.io/badge/Angular-22%2B-dd0031.svg)
+![Angular](https://img.shields.io/badge/Angular-22-dd0031.svg)
 
 [**Documentation**](https://tutkli.github.io/forty-cdk/) · accessible · zoneless · SSR-safe ·
 tree-shakable
@@ -52,7 +52,8 @@ import { ForSwitch } from 'forty-cdk/switch';
   selector: 'demo-toggle',
   imports: [ForSwitch],
   template: `
-    <button forSwitch class="switch" [(checked)]="enabled">
+    <span id="notifications-label">Notifications</span>
+    <button forSwitch class="switch" [(checked)]="enabled" aria-labelledby="notifications-label">
       <span class="thumb"></span>
     </button>
   `,

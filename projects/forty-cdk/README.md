@@ -71,7 +71,7 @@ Fix: Move ForDialogTitle inside a [forDialog] element, declaring any ng-template
 
 The code is `FORCDK-<AREA>-<NUMBER>`, where the area is the entry point you imported from — so `FORCDK-DATE-PICKER-003` came from `forty-cdk/date-picker`, and `FORCDK-CORE-*` from machinery shared across primitives (those still print the prefix of the primitive you actually wrote). **A code is stable and always means the same failure**, so it is safe to search for, quote in an issue, or match on in your own error handling; a retired code is never reused for something else.
 
-Warnings are dev-mode only. Errors are not: a piece that resolved no context would fail one line later anyway, so it throws in production too and says why.
+Warnings are dev-mode only, and so are the checks on a value you passed: an invalid column name, a misordered list of snap points or an unbound required input throws in development and is skipped in a production build, where the primitive degrades instead. Do not rely on catching one of those in production. A piece that resolved no context, or an overlay trigger that resolved no root, is different: it would fail one line later anyway, so it throws in every build and says why.
 
 ## Primitives
 
