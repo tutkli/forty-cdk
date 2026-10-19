@@ -21,7 +21,7 @@ import {
   ],
   template: `
     <div forScrollArea type="always" class="sa">
-      <div forScrollAreaViewport class="sa-viewport">
+      <div forScrollAreaViewport role="region" aria-label="Always-painted rows" class="sa-viewport">
         <div forScrollAreaContent class="sa-content">
           @for (row of rows; track row) {
             <p class="sa-row">
@@ -61,6 +61,12 @@ import {
       grid-column: 1;
       grid-row: 1;
       min-width: 0;
+      border-start-start-radius: inherit;
+    }
+
+    .sa-viewport:focus-visible {
+      outline: 2px solid var(--ex-accent, #0e7c6b);
+      outline-offset: -2px;
     }
 
     .sa-content {
@@ -75,6 +81,7 @@ import {
     }
 
     .sa-scrollbar {
+      position: relative;
       background: var(--ex-surface-2, #f2eee6);
       border-radius: 999px;
     }
