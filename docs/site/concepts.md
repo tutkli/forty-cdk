@@ -81,7 +81,7 @@ Overlays follow one shape. The root holds the open state and exposes it, you dec
 }
 ```
 
-Wrapping content in `@if` means it does not exist while closed: no hidden subtree, no stale form controls, no focusable elements a screen reader can reach. Where an exit animation or a reserved layout slot needs the element to survive, a `[forceMount]` opt-in keeps it mounted and the `data-state` attribute tells your CSS what to do with it.
+Wrapping content in `@if` means it does not exist while closed: no hidden subtree, no stale form controls, no focusable elements a screen reader can reach. An exit animation does not need the element to outlive its state: `animate.leave` on the element inside the `@if` keeps it in the DOM until the animation ends, and the `data-state` attribute tells your CSS which state it is leaving.
 
 What the library does own is the **portal**: an overlay's content moves to `document.body` when it opens, so it escapes `overflow: hidden` and stacking contexts. The practical consequence is that overlay CSS has to be global, because component-scoped styles do not reach it. [Your first overlay](../your-first-overlay.md) walks the whole shape, and [Styling floating content](../styling-floating-content.md) covers the positioning hooks.
 

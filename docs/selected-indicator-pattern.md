@@ -1,67 +1,77 @@
 # Selected-indicator alignment pattern
 
-Menu checkbox and radio items line their labels up only when every row reserves the checkmark's width, checked or not. `[forMenuItemIndicator]` is the one selection indicator that still keeps a `[forceMount]` opt-in for exactly that, and hiding the glyph with `opacity` rather than `display: none` keeps the slot it reserves.
-
-> Select (`[forSelectIndicator]`) and Combobox (`[forComboboxIndicator]`) no longer expose `[forceMount]`: their indicators always self-hide while unselected (inline `display:none` + `hidden`). For column alignment in those primitives, render a fixed-width spacer in the option layout (e.g. a CSS grid column or a sibling element) rather than keeping the indicator mounted.
+Option and menu rows line their labels up only when every row reserves the indicator's width, selected or not. The four selection indicators (`[forMenuItemIndicator]`, `[forSelectIndicator]`, `[forComboboxIndicator]` and `[forListboxOptionIndicator]`) all hide themselves while their item is unselected, so the width comes from a fixed-width element of your own around the indicator.
 
 ---
 
 ## The problem
 
-By default, an indicator that belongs to an unchecked item gets the `hidden` attribute plus an inline `display: none`, which collapses its layout box to nothing. Rows that are checked therefore reserve width for the checkmark while unchecked rows do not, causing item labels to misalign row-to-row.
+An indicator whose item is unselected gets the `hidden` attribute plus an inline `display: none`, which collapses its layout box to nothing. Selected rows reserve width for the checkmark while unselected rows do not, so the labels misalign row to row. The inline style beats any `display` rule a class applies, so styling the indicator itself cannot keep its box.
 
 ---
 
-## The pattern: `[forceMount]` + `opacity`
+## The pattern: a fixed-width slot
 
-Set `[forceMount]="true"` on the indicator so it stays mounted and reserves its slot in every row regardless of state. Then hide the glyph **visually**, not structurally, with a CSS rule keyed on the `data-state` attribute the directive reflects:
+Wrap the indicator in an element that always keeps its width. The slot is laid out in every row, and the indicator inside it appears and disappears:
 
 ```html
 <!-- Inside [forMenuCheckboxItem] -->
 <button forMenuCheckboxItem [(checked)]="bold" class="menu-item">
-  <span forMenuItemIndicator [forceMount]="true" class="indicator">✓</span>
+  <span class="indicator-slot">
+    <span forMenuItemIndicator>✓</span>
+  </span>
   Bold
 </button>
 ```
 
 ```css
-/* Hide the glyph when the item is not checked, but keep its layout slot. */
-.indicator[data-state='unchecked'] {
-  opacity: 0;
+.indicator-slot {
+  display: inline-flex;
+  flex: none;
+  justify-content: center;
+  width: 1.1em;
 }
 ```
 
----
+The same markup works in all four primitives; only the indicator directive changes:
 
-## Why `opacity` (not `visibility: hidden` or `display: none`)
+```html
+<button forSelectOption value="apple">
+  <span class="indicator-slot">
+    <span forSelectIndicator>✓</span>
+  </span>
+  Apple
+</button>
+```
 
-| Approach                                        | Reserves layout slot | Screen-reader safe          |
-| ----------------------------------------------- | -------------------- | --------------------------- |
-| `display: none` (the default / no `forceMount`) | No (rows misalign)   | Yes (already `aria-hidden`) |
-| `visibility: hidden`                            | Yes                  | Yes (already `aria-hidden`) |
-| `opacity: 0` (recommended)                      | Yes                  | Yes (already `aria-hidden`) |
-
-`ForMenuItemIndicator` always emits `aria-hidden="true"`, so neither `visibility` nor `opacity` creates an accessibility problem. The glyph is decorative and invisible to screen readers regardless. Use `opacity` or `visibility` interchangeably; the demos use `opacity`.
+The indicator emits `aria-hidden="true"` in every state, and the slot holds nothing else, so the slot adds nothing to the item's accessible name. To style the slot from the item's state, key on the `data-state` the item reflects (`"checked" | "unchecked"`), for example `.menu-item[data-state='checked'] .indicator-slot`.
 
 ---
 
 ## Exit animation
 
-`[forceMount]="true"` is also the prerequisite for wrapping the glyph in an `animate.leave` exit animation, because Angular requires the element to stay in the DOM for the duration of the animation:
-
-```html
-<span forMenuItemIndicator [forceMount]="true" class="indicator" animate.leave="fade-out">✓</span>
-```
-
-Without `[forceMount]`, the indicator is unmounted immediately when the item is unchecked and no exit animation runs.
-
----
-
-## Full snippet — Menu checkbox item
+The indicator is never removed from the DOM: it toggles `display`, so an `animate.leave` on it never runs. To animate the glyph, render your own element inside the slot with `@if` on the item's state, and mark the slot `aria-hidden="true"` yourself, since no library indicator does it for you there:
 
 ```html
 <button forMenuCheckboxItem [(checked)]="bold" class="menu-item">
-  <span forMenuItemIndicator [forceMount]="true" class="indicator">✓</span>
+  <span class="indicator-slot" aria-hidden="true">
+    @if (bold()) {
+    <span animate.enter="check-in" animate.leave="check-out">✓</span>
+    }
+  </span>
+  Bold
+</button>
+```
+
+---
+
+## Full snippet: Menu checkbox item
+
+```html
+<button forMenuCheckboxItem [(checked)]="bold" class="menu-item">
+  <span class="indicator-slot">
+    <span forMenuItemIndicator>✓</span>
+  </span>
   Bold
 </button>
 ```
@@ -73,7 +83,10 @@ Without `[forceMount]`, the indicator is unmounted immediately when the item is 
   gap: 0.5rem;
 }
 
-.indicator[data-state='unchecked'] {
-  opacity: 0;
+.indicator-slot {
+  display: inline-flex;
+  flex: none;
+  justify-content: center;
+  width: 1.1em;
 }
 ```

@@ -72,11 +72,11 @@ const SEPARATOR_AFTER = new Set<number>([2]);
           @if (indicators) {
             <hr data-testid="sep-indicators" forMenuSeparator />
             <button data-testid="item-fullscreen" forMenuCheckboxItem [(checked)]="fullscreen">
-              <span forMenuItemIndicator [forceMount]="true">✓</span>
+              <span class="slot"><span forMenuItemIndicator>✓</span></span>
               Fullscreen
             </button>
             <button data-testid="item-gridlines" forMenuCheckboxItem [(checked)]="gridlines">
-              <span forMenuItemIndicator [forceMount]="true">✓</span>
+              <span class="slot"><span forMenuItemIndicator>✓</span></span>
               Gridlines
             </button>
             <div forMenuRadioGroup [(value)]="sortBy">

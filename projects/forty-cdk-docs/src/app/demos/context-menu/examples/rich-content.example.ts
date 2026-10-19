@@ -56,15 +56,17 @@ import {
             [(checked)]="showBookmarks"
             (activate)="$event.preventDefault()"
           >
-            <span forMenuItemIndicator [forceMount]="true" class="context-menu-rich-indicator">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="1.75"
-                  d="m4.5 12.75 6 6 9-13.5"
-                />
-              </svg>
+            <span class="context-menu-rich-indicator">
+              <span forMenuItemIndicator>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="1.75"
+                    d="m4.5 12.75 6 6 9-13.5"
+                  />
+                </svg>
+              </span>
             </span>
             Show bookmarks bar
           </button>
@@ -108,10 +110,12 @@ import {
                 class="context-menu-rich-item context-menu-rich-item--check"
                 (activate)="$event.preventDefault()"
               >
-                <span forMenuItemIndicator [forceMount]="true" class="context-menu-rich-indicator">
-                  <svg viewBox="0 0 16 16" width="7" height="7" aria-hidden="true">
-                    <circle cx="8" cy="8" r="8" fill="currentColor" />
-                  </svg>
+                <span class="context-menu-rich-indicator">
+                  <span forMenuItemIndicator>
+                    <svg viewBox="0 0 16 16" width="7" height="7" aria-hidden="true">
+                      <circle cx="8" cy="8" r="8" fill="currentColor" />
+                    </svg>
+                  </span>
                 </span>
                 UTF-8
               </button>
@@ -121,10 +125,12 @@ import {
                 class="context-menu-rich-item context-menu-rich-item--check"
                 (activate)="$event.preventDefault()"
               >
-                <span forMenuItemIndicator [forceMount]="true" class="context-menu-rich-indicator">
-                  <svg viewBox="0 0 16 16" width="7" height="7" aria-hidden="true">
-                    <circle cx="8" cy="8" r="8" fill="currentColor" />
-                  </svg>
+                <span class="context-menu-rich-indicator">
+                  <span forMenuItemIndicator>
+                    <svg viewBox="0 0 16 16" width="7" height="7" aria-hidden="true">
+                      <circle cx="8" cy="8" r="8" fill="currentColor" />
+                    </svg>
+                  </span>
                 </span>
                 UTF-16
               </button>
@@ -134,10 +140,12 @@ import {
                 class="context-menu-rich-item context-menu-rich-item--check"
                 (activate)="$event.preventDefault()"
               >
-                <span forMenuItemIndicator [forceMount]="true" class="context-menu-rich-indicator">
-                  <svg viewBox="0 0 16 16" width="7" height="7" aria-hidden="true">
-                    <circle cx="8" cy="8" r="8" fill="currentColor" />
-                  </svg>
+                <span class="context-menu-rich-indicator">
+                  <span forMenuItemIndicator>
+                    <svg viewBox="0 0 16 16" width="7" height="7" aria-hidden="true">
+                      <circle cx="8" cy="8" r="8" fill="currentColor" />
+                    </svg>
+                  </span>
                 </span>
                 Latin-1
               </button>
@@ -251,10 +259,6 @@ import {
     .context-menu-rich-indicator svg {
       width: 1em;
       height: 1em;
-    }
-
-    .context-menu-rich-indicator[data-state='unchecked'] {
-      opacity: 0;
     }
 
     .context-menu-rich-arrow {
