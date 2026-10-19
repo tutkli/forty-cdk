@@ -107,7 +107,12 @@ export class TreeSelection<T> {
       return;
     }
     const siblings = entries
-      .filter((entry) => entry.parentHost === current.parentHost && entry.handle.expandable())
+      .filter(
+        (entry) =>
+          entry.parentHost === current.parentHost &&
+          entry.handle.expandable() &&
+          !entry.handle.disabled(),
+      )
       .map((entry) => entry.value);
     this.#deps.setExpanded(
       appendMissing(this.#deps.expanded(), siblings, this.#deps.compareWith()),

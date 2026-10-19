@@ -589,7 +589,7 @@ The following behaviors are unavailable or bounded in the virtualized path and a
 - **Multi-select range modifiers** (Shift+ArrowUp/Down, Shift+Space, Ctrl/Cmd+A) are unsupported: pressing one on a virtualized `[multiple]` tree throws in dev mode (a no-op in production) rather than silently degrading. Range selection requires knowing the full list of enabled nodes in the range, which is not available when the list is partially unmounted. Use `selectionMode="checkbox"` (each node toggles independently, so no range is needed) for multi-select over large trees.
 - **Typeahead reaches only positions the window has rendered at least once.** The search runs over the persisted position snapshot rather than the live nodes, so a node the virtualizer has since unmounted is still reachable. The match moves `aria-activedescendant` to it and emits `(scrollToIndex)` so your virtualizer brings it back. A position the window has **never** rendered carries no text the library can match: the keystroke is consumed, the buffer grows, and nothing moves. The shape that triggers it is a freshly-rendered `[totalCount]` tree where the user types before scrolling, and a `[dataVersion]` bump or `ForTreeVirtualized.invalidateSnapshot()` narrows the reachable set back to the current window. Arrow / `Home` / `End` navigation reaches every position regardless (it walks absolute indices, not text), so that is the workaround for a target the user cannot type their way to; rendering a larger window widens the reachable set.
 - **Cascade reconciles only the ancestors in the rendered window.** A parent's own entry in `[(value)]` follows its descendants through the rows the tree can see, so when a fully checked parent has scrolled out of the window and the user unchecks one of its children, the parent stays in the value while it reads `mixed` once scrolled back. Submit the categories you derive from `checkState()` or `descendantsOf`, not a parent's own entry.
-- **`*` (expand-all-siblings)** is dropped. It requires knowing all siblings at the focused node's level, including those outside the window.
+- **`*` (expand-all-siblings)** is dropped: the key is consumed, expands nothing and does not enter the typeahead buffer. Expanding the siblings requires knowing all of them at the focused node's level, including those outside the window.
 
 ## Drag & drop
 
@@ -938,7 +938,7 @@ Vertical, LTR (mirrored for `dir="rtl"`):
 | **Home / End**          | First / last visible node.                                                                    |
 | **Enter**               | Activate the focused node: emits [`(itemActivate)`](#fortree), then selects it unless vetoed. |
 | **Space**               | Activate like **Enter**. Single: select. Multi: toggle the focused node's selection.          |
-| **\***                  | Expand every sibling parent at the focused node's level.                                      |
+| **\***                  | Expand every enabled sibling parent at the focused node's level; a disabled one stays closed. |
 | **type a character**    | Typeahead: focus the next visible node whose label starts with the buffer.                    |
 | **Shift+ArrowUp/Down**  | Multi: move focus and toggle the new node's selection.                                        |
 | **Shift+Space**         | Multi: select the contiguous range from the anchor to the focused node.                       |
