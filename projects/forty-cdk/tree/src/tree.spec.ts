@@ -72,7 +72,12 @@ import { ForTreeItemToggle } from './tree-item-toggle';
               </div>
               @if (open().includes('photos')) {
                 <ul forTreeGroup>
-                  <li forTreeItem value="vacation" data-test-id="vacation">
+                  <li
+                    forTreeItem
+                    value="vacation"
+                    [disabled]="disabledIds().includes('vacation')"
+                    data-test-id="vacation"
+                  >
                     <div forTreeItemLabel data-test-label="vacation"><span>Vacation</span></div>
                   </li>
                   <li forTreeItem value="work" data-test-id="work">
@@ -426,6 +431,69 @@ describe('ForTree', () => {
       pressKey(itemOf(r.el, 'photos'), 'ArrowUp');
       await r.flush();
       expect(document.activeElement).toBe(itemOf(r.el, 'report'));
+    });
+
+    it('ArrowLeft from a node disabled in place moves to its parent', async () => {
+      const r = await setup((i) => i.open.set(['documents', 'photos']));
+      await focusIn(r, 'vacation');
+
+      r.instance.disabledIds.set(['vacation']);
+      await r.flush();
+      const event = pressKey(itemOf(r.el, 'vacation'), 'ArrowLeft');
+      await r.flush();
+
+      expect(event.defaultPrevented).toBe(true);
+      expect(document.activeElement).toBe(itemOf(r.el, 'photos'));
+    });
+
+    it('ArrowRight on an open parent disabled in place moves to its first child', async () => {
+      const r = await setup((i) => i.open.set(['documents', 'photos']));
+      await focusIn(r, 'photos');
+
+      r.instance.disabledIds.set(['photos']);
+      await r.flush();
+      pressKey(itemOf(r.el, 'photos'), 'ArrowRight');
+      await r.flush();
+
+      expect(document.activeElement).toBe(itemOf(r.el, 'vacation'));
+    });
+
+    it('ArrowLeft on an open parent disabled in place moves to its parent and leaves it expanded', async () => {
+      const r = await setup((i) => i.open.set(['documents', 'photos']));
+      await focusIn(r, 'photos');
+
+      r.instance.disabledIds.set(['photos']);
+      await r.flush();
+      pressKey(itemOf(r.el, 'photos'), 'ArrowLeft');
+      await r.flush();
+
+      expect(document.activeElement).toBe(itemOf(r.el, 'documents'));
+      expect(r.instance.open()).toEqual(['documents', 'photos']);
+    });
+
+    it('ArrowRight on a closed parent disabled in place neither expands it nor moves focus', async () => {
+      const r = await setup((i) => i.open.set(['documents']));
+      await focusIn(r, 'photos');
+
+      r.instance.disabledIds.set(['photos']);
+      await r.flush();
+      pressKey(itemOf(r.el, 'photos'), 'ArrowRight');
+      await r.flush();
+
+      expect(document.activeElement).toBe(itemOf(r.el, 'photos'));
+      expect(r.instance.open()).toEqual(['documents']);
+    });
+
+    it('typeahead from a node disabled in place moves to the matching node', async () => {
+      const r = await setup((i) => i.open.set(['documents']));
+      await focusIn(r, 'photos');
+
+      r.instance.disabledIds.set(['photos']);
+      await r.flush();
+      pressKey(itemOf(r.el, 'photos'), 'd');
+      await r.flush();
+
+      expect(document.activeElement).toBe(itemOf(r.el, 'downloads'));
     });
   });
 
@@ -1097,6 +1165,31 @@ describe('ForTree', () => {
       );
       expect(tabbable).toHaveLength(1);
       expect(tabbable[0]).toBe(itemOf(el, 'downloads'));
+    });
+
+    it('puts the tab stop on the first enabled child when the only root is disabled', async () => {
+      const r = renderHost(RemovalHost);
+      r.instance.nodes.set([{ id: 'documents', children: ['projects', 'reports'] }]);
+      r.instance.disabledIds.set(['documents']);
+      await r.flush();
+
+      const tabbable = visibleItems(r.el).filter((node) => node.getAttribute('tabindex') === '0');
+      expect(tabbable).toEqual([itemOf(r.el, 'projects')]);
+    });
+
+    it('puts the tab stop on the node Home reaches when the first root is disabled', async () => {
+      const r = renderHost(RemovalHost);
+      r.instance.disabledIds.set(['documents']);
+      await r.flush();
+
+      const tabbable = visibleItems(r.el).filter((node) => node.getAttribute('tabindex') === '0');
+      expect(tabbable).toEqual([itemOf(r.el, 'projects')]);
+
+      tabbable[0]!.focus();
+      await r.flush();
+      pressKey(tabbable[0]!, 'Home');
+      await r.flush();
+      expect(document.activeElement).toBe(tabbable[0]);
     });
 
     it('keeps a tab stop on the first visible item when the selection points to an unmounted node', async () => {
@@ -1784,6 +1877,73 @@ describe('ForTree', () => {
       cascadeCheckboxOf(el, 'g').click();
       await flush(fixture);
       expect(cascadeItemOf(el, 'g1').getAttribute('aria-checked')).toBe('true');
+    });
+  });
+
+  describe('[forTreeItemCheckbox] on a <button> host', () => {
+    @Component({
+      imports: [ForTree, ForTreeItem, ForTreeItemLabel, ForTreeItemCheckbox],
+      template: `
+        <form (submit)="onSubmit($event)">
+          <ul forTree selectionMode="checkbox" [(value)]="picked" aria-label="Categories">
+            <li forTreeItem value="a" data-test-id="a">
+              <div forTreeItemLabel>
+                <button forTreeItemCheckbox data-test-checkbox="a"></button>
+                <span>Alpha</span>
+              </div>
+            </li>
+            <li forTreeItem value="b" data-test-id="b">
+              <div forTreeItemLabel>
+                <button forTreeItemCheckbox data-test-checkbox="b"></button>
+                <span>Beta</span>
+              </div>
+            </li>
+          </ul>
+          <button type="submit" data-test-submit>Send</button>
+        </form>
+      `,
+    })
+    class ButtonCheckboxHost {
+      readonly picked = signal<readonly string[]>([]);
+      readonly submits = signal(0);
+
+      onSubmit(event: Event): void {
+        event.preventDefault();
+        this.submits.update((count) => count + 1);
+      }
+    }
+
+    it('adds no tab stop and forces type="button"', async () => {
+      const { el, fixture } = renderHost(ButtonCheckboxHost);
+      await flush(fixture);
+      for (const id of ['a', 'b']) {
+        expect(checkboxOfTest(el, id).getAttribute('tabindex')).toBe('-1');
+        expect(checkboxOfTest(el, id).getAttribute('type')).toBe('button');
+      }
+    });
+
+    it('checks the node without submitting the form', async () => {
+      const { el, fixture, instance } = renderHost(ButtonCheckboxHost);
+      await flush(fixture);
+
+      el.querySelector<HTMLElement>('[data-test-submit]')!.click();
+      expect(instance.submits()).toBe(1);
+
+      checkboxOfTest(el, 'b').click();
+      await flush(fixture);
+
+      expect(instance.submits()).toBe(1);
+      expect(instance.picked()).toEqual(['b']);
+    });
+
+    it('leaves focus on the treeitem after a mouse press', async () => {
+      const { el, fixture } = renderHost(ButtonCheckboxHost);
+      await flush(fixture);
+
+      pressWithMouse(checkboxOfTest(el, 'b'));
+      await flush(fixture);
+
+      expect(document.activeElement).toBe(itemOf(el, 'b'));
     });
   });
 
@@ -2612,7 +2772,7 @@ describe('ForTree', () => {
     const ROOT_COUNT = 3;
     const CHILD_COUNT = 2;
 
-    function buildFlat(expanded: readonly string[]): FlatNode[] {
+    function buildFlat(expanded: readonly string[], childless: readonly string[] = []): FlatNode[] {
       const result: FlatNode[] = [];
       for (let r = 0; r < ROOT_COUNT; r++) {
         const rootValue = `root-${r}`;
@@ -2625,7 +2785,7 @@ describe('ForTree', () => {
           itemIndex: result.length,
           expandable: true,
         });
-        if (expanded.includes(rootValue)) {
+        if (expanded.includes(rootValue) && !childless.includes(rootValue)) {
           for (let c = 0; c < CHILD_COUNT; c++) {
             const childValue = `child-${r}-${c}`;
             result.push({
@@ -2689,8 +2849,9 @@ describe('ForTree', () => {
       readonly selectionMode = signal<'highlight' | 'checkbox'>('highlight');
       readonly cascade = signal(false);
       readonly disabledValues = signal<readonly string[]>([]);
+      readonly childless = signal<readonly string[]>([]);
 
-      readonly flat = computed(() => buildFlat(this.open()));
+      readonly flat = computed(() => buildFlat(this.open(), this.childless()));
 
       readonly windowStart = signal(0);
       readonly windowSize = signal(5);
@@ -2900,6 +3061,37 @@ describe('ForTree', () => {
       const activeId = tree.getAttribute('aria-activedescendant');
       const firstChild = el.querySelector<HTMLElement>('[data-test-id="child-0-0"]')!;
       expect(activeId).toBe(firstChild.id);
+    });
+
+    it('6a. ArrowRight on an open parent with no child rows leaves aria-activedescendant on it', async () => {
+      const { el, fixture } = await setupVirtual((i) => {
+        i.open.set(['root-0']);
+        i.childless.set(['root-0']);
+      });
+      const tree = treeEl(el);
+      tree.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+      await flush(fixture);
+      const rootId = el.querySelector<HTMLElement>('[data-test-id="root-0"]')!.id;
+      expect(tree.getAttribute('aria-activedescendant')).toBe(rootId);
+
+      pressKey(tree, 'ArrowRight');
+      await flush(fixture);
+
+      expect(tree.getAttribute('aria-activedescendant')).toBe(rootId);
+    });
+
+    it('6c. ArrowLeft on an open node disabled in place leaves it expanded', async () => {
+      const { el, fixture, instance } = await setupVirtual((i) => i.open.set(['root-0']));
+      const tree = treeEl(el);
+      tree.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+      await flush(fixture);
+      instance.disabledValues.set(['root-0']);
+      await flush(fixture);
+
+      pressKey(tree, 'ArrowLeft');
+      await flush(fixture);
+
+      expect(instance.open()).toEqual(['root-0']);
     });
 
     it('6b. ArrowLeft on open expandable collapses it', async () => {

@@ -46,8 +46,11 @@ export interface TreeFocusEntry<T = unknown> {
 export interface FocusModel<T = unknown> {
   /** Move focus to a specific node. */
   focusTarget(handle: ForTreeItemHandle<T>): void;
-  /** Resolve the currently-focused node, or `null` when nothing is focused. */
-  current(): TreeFocusEntry<T> | null;
+  /**
+   * Resolve the currently-focused node, or `null` when nothing is focused:
+   * `from` when it is a node of the model, the current node otherwise.
+   */
+  current(from?: HTMLElement): TreeFocusEntry<T> | null;
   /**
    * Re-seed focus on the node {@link FocusModel.current} resolved, so an intent
    * that acts on it in place — select, expand, collapse — leaves it focused and
@@ -59,10 +62,14 @@ export interface FocusModel<T = unknown> {
    * `from` when it is a node of the model and from the current node otherwise.
    */
   navigate(action: ListNavigationAction, from: HTMLElement): void;
-  /** Move focus to the first child of the current node (an open parent). */
-  enterChild(): void;
-  /** Move focus to the current node's parent. */
-  moveToParent(): void;
+  /**
+   * Move focus to the first child of an open parent, resolved like
+   * {@link FocusModel.current}. A no-op when the node has no child rendered or
+   * known to the model.
+   */
+  enterChild(from: HTMLElement): void;
+  /** Move focus to the parent of the node {@link FocusModel.current} resolves from `from`. */
+  moveToParent(from: HTMLElement): void;
   /**
    * Feed a keydown to the shared typeahead buffer and move focus to the match.
    * Each model searches everything it can reach — the flattened visible nodes
@@ -116,8 +123,8 @@ export class RovingFocusModel<T = unknown> implements FocusModel<T> {
     this.#deps.roving.focusActive(handle.host);
   }
 
-  current(): TreeFocusEntry<T> | null {
-    const entry = this.#currentNode();
+  current(from?: HTMLElement): TreeFocusEntry<T> | null {
+    const entry = this.#currentNode(from);
     if (!entry) {
       return null;
     }
@@ -153,8 +160,8 @@ export class RovingFocusModel<T = unknown> implements FocusModel<T> {
     this.#focusFromKeyboard(target);
   }
 
-  enterChild(): void {
-    const entry = this.#currentNode();
+  enterChild(from: HTMLElement): void {
+    const entry = this.#currentNode(from);
     if (!entry) {
       return;
     }
@@ -165,8 +172,8 @@ export class RovingFocusModel<T = unknown> implements FocusModel<T> {
     }
   }
 
-  moveToParent(): void {
-    const parentHost = this.#currentNode()?.parentHost;
+  moveToParent(from: HTMLElement): void {
+    const parentHost = this.#currentNode(from)?.parentHost;
     if (!parentHost) {
       return;
     }
@@ -206,12 +213,17 @@ export class RovingFocusModel<T = unknown> implements FocusModel<T> {
     }
   }
 
-  #currentNode(): ForTreeVisibleNode<T> | null {
+  #currentNode(from?: HTMLElement): ForTreeVisibleNode<T> | null {
+    const nodes = this.#deps.visibleNodes();
+    const own = from === undefined ? undefined : nodes.find((entry) => entry.handle.host === from);
+    if (own) {
+      return own;
+    }
     const active = this.#deps.roving.active();
     if (active === null) {
       return null;
     }
-    return this.#deps.visibleNodes().find((entry) => entry.handle.host === active) ?? null;
+    return nodes.find((entry) => entry.handle.host === active) ?? null;
   }
 }
 
@@ -346,18 +358,22 @@ export class ActiveDescendantFocusModel<T = unknown> implements FocusModel<T> {
   }
 
   /**
-   * Move activedescendant to the first child of the current node (the node
-   * immediately after it in pre-order flat space). No-op when there is no
-   * active node or when the active node is the last in the list.
+   * Move activedescendant to the first child of the current node: the node
+   * immediately after it in pre-order flat space, when that node sits one level
+   * deeper. No-op when there is no active node, when the active node is the
+   * last in the list, or when the next node is not its child (an open parent
+   * whose children are not in the flattened list yet). A position the window
+   * has never rendered has no known level and is taken to be the child.
    */
   enterChild(): void {
     const cur = this.#currentEntry();
     if (!cur) return;
     const target = cur.pos + 1;
     const total = this.#deps.totalCount();
-    if (total !== undefined && target < total) {
-      this.#core.seedActive(target);
-    }
+    if (total === undefined || target >= total) return;
+    const level = this.#levelAt(target);
+    if (level !== null && level !== cur.level + 1) return;
+    this.#core.seedActive(target);
   }
 
   /**
@@ -445,6 +461,12 @@ export class ActiveDescendantFocusModel<T = unknown> implements FocusModel<T> {
       }
     }
     return null;
+  }
+
+  #levelAt(pos: number): number | null {
+    const live = this.#deps.items().find((n) => n.itemIndex() === pos);
+    if (live) return live.level();
+    return this.#core.snapshotByPos().get(pos)?.level ?? null;
   }
 
   /** The position entry the retained target resolves to in the snapshot. */
