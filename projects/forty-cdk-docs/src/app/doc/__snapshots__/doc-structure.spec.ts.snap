@@ -406,9 +406,9 @@ exports[`document structure > docs/styling-floating-content.md declares the sect
   },
   {
     "headings": [],
-    "slug": "rule-3--do-not-set-position-top-left-or-z-index-on-the-content",
+    "slug": "rule-3--do-not-set-position-top-or-left-do-set-z-index",
     "tables": [],
-    "title": "Rule 3 — do not set \`position\`, \`top\`, \`left\`, or \`z-index\` on the content",
+    "title": "Rule 3 — do not set \`position\`, \`top\` or \`left\`; do set \`z-index\`",
   },
   {
     "headings": [],

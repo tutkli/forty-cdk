@@ -1,8 +1,9 @@
 # Styling floating content
 
 Every primitive that portals positioned content to `document.body` (**Popover**, **Tooltip**,
-**HoverCard**, **DropdownMenu**, **ContextMenu**, and nested **Menu sub-menus**) styles under the
-same four rules, because the positioner owns the content's `translate` and leaves the rest of the
+**HoverCard**, **Select**, **Combobox**, **DatePicker** in its anchored mode, **TimePicker**,
+**DropdownMenu**, **ContextMenu**, **Menubar** menus, and nested **Menu sub-menus**) styles under
+the same four rules, because the positioner owns the content's placement and leaves the rest of the
 box to you. Follow them and enter / exit animations, arrow offsets and stacking all work without
 fighting the positioner.
 
@@ -48,15 +49,15 @@ The `--for-floating-content-transform-origin` custom property (see [CSS custom p
 
 ---
 
-## Rule 3 — do not set `position`, `top`, `left`, or `z-index` on the content
+## Rule 3 — do not set `position`, `top` or `left`; do set `z-index`
 
-The positioner owns those properties completely.
+The positioner owns the placement properties completely, and leaves stacking to you.
 
-- `position: fixed` / `position: absolute` are set by the library, and overriding them breaks placement.
-- `top` / `left` (or `inset-*` equivalents) are written by floating-ui, and overriding them repositions or hides the content.
-- For `z-index`, the library deliberately sets **no** default. Set it yourself on the content element to control stacking order within your own project's z-axis.
+- `position: fixed` is set by the library, and overriding it breaks placement.
+- `top` / `left` (or `inset-*` equivalents) are written by the positioner, and overriding them repositions or hides the content.
+- `z-index` is yours: the library deliberately sets **no** value. Content left at `z-index: auto` paints beneath any page chrome that has one, such as a sticky header, so set it on the content element to place the surface on your own project's z-axis.
 
-Add all layout properties (`width`, `max-width`, `padding`, `background`, `border-radius`, `box-shadow`, etc.) freely, since only the three positioning props above are reserved.
+Add all layout properties (`width`, `max-width`, `padding`, `background`, `border-radius`, `box-shadow`, etc.) freely, since only `position`, `top` and `left` here, plus the `translate` of Rule 2, are reserved.
 
 ---
 

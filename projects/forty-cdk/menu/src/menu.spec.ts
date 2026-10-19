@@ -1751,6 +1751,19 @@ describe('ForMenuItemIndicator', () => {
     expect(indicator('bold-ind').hasAttribute('hidden')).toBe(false);
   });
 
+  it('keeps the same indicator node in the DOM when its item is unchecked', async () => {
+    const r = renderHost(IndicatorHost);
+    r.instance.bold.set(true);
+    await flush(r.fixture);
+    const node = indicator('bold-ind');
+
+    r.instance.bold.set(false);
+    await flush(r.fixture);
+
+    expect(node.isConnected).toBe(true);
+    expect(indicator('bold-ind')).toBe(node);
+  });
+
   it('reflects the radio group value across siblings', async () => {
     const r = renderHost(IndicatorHost);
     await flush(r.fixture);
