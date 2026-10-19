@@ -29,7 +29,8 @@ import { ForSwitch } from 'forty-cdk/switch';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ForSwitch],
   template: `
-    <button forSwitch class="switch" [(checked)]="enabled">
+    <span id="notifications-label">Notifications</span>
+    <button forSwitch class="switch" [(checked)]="enabled" aria-labelledby="notifications-label">
       <span class="switch__thumb"></span>
     </button>
 
@@ -42,6 +43,8 @@ export class NotificationToggle {
 ```
 
 That is a complete, accessible switch. The directive has given the `<button>` `role="switch"`, kept `aria-checked` in step with the model, and made `Space` and `Enter` toggle it. Nothing was configured: the behaviour came with the selector.
+
+The one thing the directive cannot give the switch is its name, because only you know what it turns on. Here `aria-labelledby` points it at the visible "Notifications" text; an `aria-label`, text inside the `<button>`, or a `<label forLabel>` inside a [`[forField]`](../../projects/forty-cdk/field/README.md) names it just as well. Leave all of them out and a screen reader announces "switch, off" and nothing else.
 
 Two details are worth naming, because they are the shape of every primitive:
 
@@ -114,11 +117,23 @@ interface Settings {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ForSwitch, FormField],
   template: `
-    <button forSwitch class="switch" [formField]="settings.notifications">
+    <span id="notifications-label">Notifications</span>
+    <button
+      forSwitch
+      class="switch"
+      [formField]="settings.notifications"
+      aria-labelledby="notifications-label"
+    >
       <span class="switch__thumb"></span>
     </button>
 
-    <button forSwitch class="switch" [formField]="settings.termsAccepted">
+    <span id="terms-label">I accept the terms</span>
+    <button
+      forSwitch
+      class="switch"
+      [formField]="settings.termsAccepted"
+      aria-labelledby="terms-label"
+    >
       <span class="switch__thumb"></span>
     </button>
   `,

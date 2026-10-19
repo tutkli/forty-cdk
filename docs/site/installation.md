@@ -49,18 +49,21 @@ import { ForDialog, ForDialogTitle, ForDialogTrigger } from 'forty-cdk/dialog';
 import { ForSwitch } from 'forty-cdk/switch';
 ```
 
-The entry point is the primitive's folder name, lower-kebab: `forty-cdk/date-picker`, `forty-cdk/dropdown-menu`, `forty-cdk/hover-card`. Each page on this site states its own import line under **Anatomy**.
+The entry point is the primitive's folder name, lower-kebab: `forty-cdk/date-picker`, `forty-cdk/dropdown-menu`, `forty-cdk/hover-card`. Each primitive page on this site shows its entry point in the page header, under the title.
 
 The reason is bundle size. Each entry point builds to a module of its own, so importing `ForSwitch` gives your bundler a file it can resolve without ever seeing Dialog, Table or Calendar. A single root barrel re-exporting every entry point would put them all on one module graph and make that isolation a tree-shaker's problem rather than a structural fact. Leaving the root empty is what removes the question (see [why the root barrel is empty](https://github.com/tutkli/forty-cdk/issues/1590)).
 
-Two entry points are shared rather than per-primitive:
+Five entry points are shared rather than per-primitive:
 
-- **`forty-cdk/shared`**: the cross-primitive contracts a consumer meets in more than one place, and the accessibility limits that apply library-wide.
+- **[`forty-cdk/shared`](../../projects/forty-cdk/shared/README.md)**: the cross-primitive contracts a consumer meets in more than one place, and the accessibility limits that apply library-wide.
+- **[`forty-cdk/defaults`](../../projects/forty-cdk/defaults/README.md)**: every `provideFor<Primitive>Defaults` provider with its token and interface. Each primitive re-exports its own pair, but a provider in your application config imported from the primitive loads that primitive at startup; imported from here, it does not.
+- **[`forty-cdk/date-adapter`](../../projects/forty-cdk/date-adapter/README.md)**: the `DateAdapter` contract, the `FOR_DATE_ADAPTER` token and `provideNativeDateAdapter`. Import the provider from here rather than from `forty-cdk/shared`, for the same startup reason.
 - **`forty-cdk/internationalized-date`**: the `@internationalized/date` calendar adapters, kept apart so only consumers who provide one need that peer.
+- **[`forty-cdk/testing`](../../projects/forty-cdk/testing/README.md)**: spec helpers for code built on forty-cdk, such as browser-shaped keyboard and pointer events and stubs for the browser APIs jsdom lacks.
 
 ## Angular version support
 
-forty-cdk targets **Angular 22 and above**, and tracks the latest minor rather than supporting a range of majors. The library is pre-1.0, so a breaking change can land in a minor release. Pin the version you build against and read the [changelog](https://github.com/tutkli/forty-cdk/blob/main/CHANGELOG.md) before upgrading.
+forty-cdk targets **Angular 22**: the peer range is `^22.1.0`, so an Angular 23 application needs a forty-cdk release built for it. Within that major the library tracks the latest minor. The library is pre-1.0, so a breaking change can land in a minor release. Pin the version you build against and read the [changelog](https://github.com/tutkli/forty-cdk/blob/main/CHANGELOG.md) before upgrading.
 
 Two application-level requirements are worth stating, because both are properties of the library rather than settings you turn on:
 
