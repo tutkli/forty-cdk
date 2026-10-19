@@ -83,6 +83,7 @@ class EmptyAriaLabelHost {
     }
     @if (b()) {
       <div forDialog (dismiss)="b.set(false)">
+        <button id="confirm-b" type="button">confirm B</button>
         <button forDialogClose>close B</button>
       </div>
     }
@@ -800,15 +801,14 @@ describe('ForDialog (declarative)', () => {
       r.instance.b.set(true);
       await flush(r.fixture);
 
-      const closes = document.querySelectorAll<HTMLButtonElement>('[forDialogClose]');
-      const closeB = closes[1]!;
-      closeB.focus();
-      document.dispatchEvent(
-        new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }),
-      );
+      const confirmB = document.querySelector<HTMLButtonElement>('#confirm-b')!;
+      const closeB = document.querySelectorAll<HTMLButtonElement>('[forDialogClose]')[1]!;
 
-      // The B dialog only has one focusable, so Tab cycles back to the same
-      // button — it must NOT escape into A's tree.
+      closeB.focus();
+      pressKey(closeB, 'Tab');
+      expect(document.activeElement).toBe(confirmB);
+
+      pressKey(confirmB, 'Tab', { shiftKey: true });
       expect(document.activeElement).toBe(closeB);
     });
   });
