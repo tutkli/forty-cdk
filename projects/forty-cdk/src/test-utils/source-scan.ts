@@ -41,6 +41,12 @@ const README_FILES = import.meta.glob('/projects/forty-cdk/*/README.md', {
   eager: true,
 });
 
+const GUIDE_FILES = import.meta.glob('/docs/*.md', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+});
+
 const ROOT = '/projects/forty-cdk/';
 
 /**
@@ -115,6 +121,10 @@ export const SUITE_SOURCES: ReadonlyMap<string, string> = sourcesFrom(SUITE_FILE
  * the element a piece is documented on rather than by anything in its source.
  */
 export const README_SOURCES: ReadonlyMap<string, string> = sourcesFrom(README_FILES, () => true);
+
+export const GUIDE_SOURCES: ReadonlyMap<string, string> = new Map(
+  Object.entries(GUIDE_FILES).map(([key, source]) => [key.slice(1), source] as const),
+);
 
 /**
  * The entry point a path belongs to: `dialog/src/dialog.ts` → `dialog`. A suite
