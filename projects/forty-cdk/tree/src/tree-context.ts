@@ -155,7 +155,7 @@ export interface ForTreeContext<T = unknown> {
    * node is never collapsed, so it moves focus to its parent instead.
    */
   collapseOrLeave(currentItem: HTMLElement): void;
-  /** `*`: expand every sibling parent at the focused node's level. */
+  /** `*`: expand every enabled sibling parent at the focused node's level. */
   expandSiblings(currentItem: HTMLElement): void;
   /**
    * Multi mode only. Shift+Arrow: move focus to the next / previous visible

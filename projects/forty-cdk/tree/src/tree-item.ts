@@ -331,7 +331,15 @@ export class ForTreeItem<T = string> implements ForTreeItemContext<T> {
     }
     const tree = this.#tree;
     if (this.effectiveDisabled()) {
-      if (!tree.disabled() && !this.#navigate(event) && !this.#expandOrCollapse(event)) {
+      if (tree.disabled()) {
+        return;
+      }
+      if (event.key === '*') {
+        event.preventDefault();
+        tree.expandSiblings(host);
+        return;
+      }
+      if (!this.#navigate(event) && !this.#expandOrCollapse(event)) {
         tree.handleTypeahead(event);
       }
       return;

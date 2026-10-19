@@ -600,6 +600,10 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
       this.collapseOrLeave(host);
       return;
     }
+    if (event.key === '*') {
+      event.preventDefault();
+      return;
+    }
     this.handleTypeahead(event);
   }
 

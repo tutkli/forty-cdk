@@ -1441,6 +1441,76 @@ describe('ForTree', () => {
     });
   });
 
+  describe('* expands the sibling parents (issue #2404)', () => {
+    it('expands every sibling parent at the root level, and nothing nested', async () => {
+      const { el, fixture } = await setup();
+      itemOf(el, 'documents').focus();
+
+      const star = pressKey(itemOf(el, 'documents'), '*', { shiftKey: true });
+      await flush(fixture);
+
+      expect(star.defaultPrevented).toBe(true);
+      expect([...fixture.componentInstance.open()].sort()).toEqual(['documents', 'downloads']);
+      expect(itemOf(el, 'photos').getAttribute('aria-expanded')).toBe('false');
+    });
+
+    it('expands only the siblings of a nested node', async () => {
+      const { el, fixture } = await setup((i) => i.open.set(['documents']));
+      itemOf(el, 'report').focus();
+
+      pressKey(itemOf(el, 'report'), '*', { shiftKey: true });
+      await flush(fixture);
+
+      expect([...fixture.componentInstance.open()].sort()).toEqual(['documents', 'photos']);
+    });
+
+    it('leaves the selection and the focus where they were', async () => {
+      const { el, fixture } = await setup((i) => i.picked.set(['readme']));
+      itemOf(el, 'documents').focus();
+
+      pressKey(itemOf(el, 'documents'), '*', { shiftKey: true });
+      await flush(fixture);
+
+      expect(fixture.componentInstance.picked()).toEqual(['readme']);
+      expect(document.activeElement).toBe(itemOf(el, 'documents'));
+      expect(itemOf(el, 'documents').getAttribute('tabindex')).toBe('0');
+    });
+
+    it('skips a disabled sibling parent, as toggle and ArrowRight do', async () => {
+      const { el, fixture } = await setup((i) => i.disabledIds.set(['downloads']));
+      itemOf(el, 'documents').focus();
+
+      pressKey(itemOf(el, 'documents'), '*', { shiftKey: true });
+      await flush(fixture);
+
+      expect(fixture.componentInstance.open()).toEqual(['documents']);
+      expect(itemOf(el, 'setup')).toBeNull();
+    });
+
+    it('expands the enabled siblings of a focused disabled node', async () => {
+      const { el, fixture } = await setup((i) => i.disabledIds.set(['documents']));
+      itemOf(el, 'documents').focus();
+
+      const star = pressKey(itemOf(el, 'documents'), '*', { shiftKey: true });
+      await flush(fixture);
+
+      expect(star.defaultPrevented).toBe(true);
+      expect(fixture.componentInstance.open()).toEqual(['downloads']);
+    });
+
+    it('keeps * out of the typeahead buffer on a focused disabled node', async () => {
+      const { el, fixture } = await setup((i) => i.disabledIds.set(['documents']));
+      itemOf(el, 'documents').focus();
+
+      pressKey(itemOf(el, 'documents'), '*', { shiftKey: true });
+      await flush(fixture);
+      pressKey(itemOf(el, 'documents'), 'r');
+      await flush(fixture);
+
+      expect(document.activeElement).toBe(itemOf(el, 'readme'));
+    });
+  });
+
   describe('reactive updates', () => {
     it('reflects an expanded write in aria-expanded', async () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
@@ -3042,6 +3112,37 @@ describe('ForTree', () => {
 
         expect(instance.scrolledToIndex()).toBeNull();
         expect(tree.getAttribute('aria-activedescendant')).toBe(lastChild.id);
+      });
+    });
+
+    describe('* is dropped (issue #2404)', () => {
+      it('consumes * without expanding anything', async () => {
+        const { fixture, instance, el } = await setupVirtual();
+        const tree = treeEl(el);
+        tree.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+        await flush(fixture);
+
+        const star = pressKey(tree, '*', { shiftKey: true });
+        await flush(fixture);
+
+        expect(star.defaultPrevented).toBe(true);
+        expect(instance.open()).toEqual([]);
+      });
+
+      it('keeps * out of the typeahead buffer, so the next letter still matches', async () => {
+        const { fixture, el } = await setupVirtual();
+        const tree = treeEl(el);
+        tree.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+        await flush(fixture);
+
+        pressKey(tree, '*', { shiftKey: true });
+        await flush(fixture);
+        pressKey(tree, 'r');
+        await flush(fixture);
+
+        expect(tree.getAttribute('aria-activedescendant')).toBe(
+          el.querySelector<HTMLElement>('[data-test-id="root-1"]')!.id,
+        );
       });
     });
 
