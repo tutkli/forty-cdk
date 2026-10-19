@@ -102,7 +102,7 @@ The `[(open)]` binding uses Angular's two-way model syntax. The directive fires 
 
 ## Step 3 — the portal → global CSS gotcha
 
-When the popover opens, `[forPopoverContent]` is **moved to `document.body`** by the library. This is how positioned overlays stay above all other content without z-index fights.
+When the popover opens, `[forPopoverContent]` is **moved to `document.body`** by the library. This is how positioned overlays escape an ancestor's `overflow: hidden` and stacking context.
 
 The consequence: any CSS scoped to your component, including Angular's default view encapsulation, **does not reach the content element once it has been portaled**. A rule like `.my-panel { background: #fff }` inside a component stylesheet will have no effect on the portaled content.
 
@@ -120,6 +120,7 @@ The simplest approach is to put overlay styles in your application's global styl
   padding: 16px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
   min-width: 240px;
+  z-index: 60;
 }
 ```
 
@@ -135,7 +136,7 @@ Then add the class to the content element:
 }
 ```
 
-> Do **not** set `position`, `top`, `left`, or `z-index` on the content element, because floating-ui owns those completely. Add all other layout properties freely (`width`, `max-width`, `padding`, `background`, etc.).
+> Do **not** set `position`, `top`, `left` or `translate` on the content element, because the positioner writes them. **Do** set `z-index`, as the snippet does: the library writes none, so content left at `z-index: auto` opens beneath any page chrome that has one, such as a sticky header. Add all other layout properties freely (`width`, `max-width`, `padding`, `background`, etc.).
 
 ---
 
@@ -292,8 +293,8 @@ The flat shape is what enables Dialog to be used both declaratively and programm
 
 ## Where to go next
 
-- **Popover full reference** ([projects/forty-cdk/src/lib/popover/README.md](../projects/forty-cdk/popover/README.md)): all inputs, outputs, the `[forPopoverAnchor]` anchor-override, and the arrow recipe.
-- **Dialog full reference** ([projects/forty-cdk/src/lib/dialog/README.md](../projects/forty-cdk/dialog/README.md)): the flat shape in detail, the programmatic API, and focus-callback shapes.
-- **Styling floating content** ([docs/styling-floating-content.md](./styling-floating-content.md)): the three animation rules, all CSS custom properties, the full arrow recipe, and copy-paste snippets for Tooltip, HoverCard, and Menu as well as Popover.
-- **Selected-indicator alignment** ([docs/selected-indicator-pattern.md](./selected-indicator-pattern.md)): the fixed-width slot that keeps checkmarks aligned in Menu, Select, Combobox and Listbox items.
-- **Other overlay primitives**: DropdownMenu, ContextMenu, Tooltip, HoverCard, Select, Combobox all follow the wrapper-based shape and share the same portal → global CSS rule. Their READMEs are in `projects/forty-cdk/src/lib/<primitive>/README.md`.
+- **[Popover full reference](../projects/forty-cdk/popover/README.md)**: all inputs, outputs, the `[forPopoverAnchor]` anchor-override, and the arrow recipe.
+- **[Dialog full reference](../projects/forty-cdk/dialog/README.md)**: the flat shape in detail, the programmatic API, and focus-callback shapes.
+- **[Styling floating content](./styling-floating-content.md)**: the four rules for positioned content, all CSS custom properties, the full arrow recipe, and copy-paste snippets for Tooltip, HoverCard, and Menu as well as Popover.
+- **[Selected-indicator alignment](./selected-indicator-pattern.md)**: the fixed-width slot that keeps checkmarks aligned in Menu, Select, Combobox and Listbox items.
+- **Other overlay primitives**: [DropdownMenu](../projects/forty-cdk/dropdown-menu/README.md), [ContextMenu](../projects/forty-cdk/context-menu/README.md), [Tooltip](../projects/forty-cdk/tooltip/README.md), [HoverCard](../projects/forty-cdk/hover-card/README.md), [Select](../projects/forty-cdk/select/README.md) and [Combobox](../projects/forty-cdk/combobox/README.md) all follow the wrapper-based shape and share the same portal → global CSS rule.
