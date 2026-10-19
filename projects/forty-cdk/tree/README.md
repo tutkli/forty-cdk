@@ -383,7 +383,7 @@ forty-cdk ships no filtering machinery, so matching stays consumer-owned. The li
 **Three-step recipe:**
 
 1. **Filter your own data and re-render.** Derive a filtered node list with `computed()` and drive the tree's `@for` off that signal. The library adds no filtering engine, empty-state pieces, or snapshot logic.
-2. **Expand ancestors with `expandToReveal`.** Call `expandToReveal(matches, ancestorsOf)` to get the unique ancestor values to merge into `[(expanded)]`. The helper is pure: it has no Angular reactivity, no DOM, and no side effects.
+2. **Expand ancestors with `expandToReveal`.** Call `expandToReveal(matches, ancestorsOf)` with the nodes that matched the query, not with every node left in the filtered tree, to get the unique ancestor values `[(expanded)]` must hold. The helper is pure: it has no Angular reactivity, no DOM, and no side effects.
 3. **Highlight matched text with consumer CSS.** Wrap matched text in a `<mark>` element or apply a `.match` class while rendering filtered labels. No new data attribute is emitted by the library.
 
 <!-- snippet: fragment -->
@@ -395,20 +395,19 @@ import { expandToReveal } from 'forty-cdk/tree';
 readonly query = signal('');
 readonly filtered = computed(() => filterNodes(this.roots, this.query()));
 
-// Two-way bindable via [(expanded)]: manual expand/collapse is preserved through
-// `previous.value`, and a new query re-reveals every match by re-deriving from
-// the matched set. `linkedSignal` is the idiomatic replacement for
-// `effect(() => this.expanded.update(...))` — no state written inside an effect.
-readonly expanded = linkedSignal<readonly string[], readonly string[]>({
-  source: () => collectIds(this.filtered()),
-  computation: (matches, previous) => [
-    ...new Set([...(previous?.value ?? []), ...expandToReveal(matches, this.ancestorsOf)]),
-  ],
+readonly expanded = linkedSignal<string, readonly string[]>({
+  source: this.query,
+  computation: (query) =>
+    query.trim()
+      ? expandToReveal(collectMatchIds(this.roots, query), this.ancestorsOf)
+      : DEFAULT_EXPANDED,
 });
 
-// Returns a node's ancestor ids from the consumer's own hierarchy.
+collectMatchIds = (roots: readonly Node[], query: string): Set<string> => { /* the ids whose label matches, none for an empty query */ };
 ancestorsOf = (id: string): readonly string[] => { /* walk roots, return the path */ };
 ```
+
+The expansion is keyed on the query. Each new query replaces it with the ancestors of that query's matches, and an empty query restores `DEFAULT_EXPANDED`, the expansion the tree starts from. Deriving it from every node in `filtered()` instead opens the whole tree whenever the query is empty, because `filterNodes` then returns every root and every parent is an ancestor of something. Expand and collapse through `[(expanded)]` hold until the query changes. `linkedSignal` keeps the derivation out of an `effect()`, so no state is written inside one.
 
 `expandToReveal` accepts any `Iterable<T>` (array, `Set`, generator) of node values. Root-level matches contribute nothing, because a root has no ancestors to expand.
 
@@ -463,7 +462,7 @@ Placed on the same element as `[forTree]` (`exportAs: 'forTreeVirtualized'`). `F
 
 ### Navigation flow
 
-1. Consumer flattens their visible tree into a flat list, computing `level`, `setSize`, `posInSet`, and `itemIndex` for each node (using the true sibling totals: off-window siblings contribute their real counts because the consumer knows them).
+1. Consumer flattens their visible tree into a flat list, computing `level`, `setSize`, and `posInSet` for each node (using the true sibling totals: off-window siblings contribute their real counts because the consumer knows them). A node's `itemIndex` is its position in that whole flat list, which is the `index` the virtualizer reports for its row.
 2. `injectVirtualizer({ count: flatCount, estimateSize, scrollElement })` drives the render window.
 3. `[forTreeVirtualized]` on the tree host emits `(scrollToIndex)` when keyboard navigation needs a node outside the window; the consumer forwards the index to `v.scrollToIndex(idx, { align: 'auto' })`.
 4. Once the target node mounts (carrying the requested `[itemIndex]`), the bridge effect resolves the pending activedescendant.
@@ -500,7 +499,6 @@ interface FlatNode {
   level: number;
   setSize: number;
   posInSet: number;
-  itemIndex: number;
   expandable: boolean;
 }
 
@@ -514,7 +512,6 @@ function flatten(nodes: TreeNode[], expanded: ReadonlySet<string>, level = 1): F
       level,
       setSize: nodes.length,
       posInSet: i + 1,
-      itemIndex: result.length,
       expandable: !!node.children?.length,
     });
     if (node.children?.length && expanded.has(node.value)) {
