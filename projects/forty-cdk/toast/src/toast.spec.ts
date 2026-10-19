@@ -129,7 +129,7 @@ class DeclarativeHost {
   readonly swipeDirection = signal<ForToastSwipeDirection>(null);
   readonly swipeThreshold = signal(50);
   readonly closes: string[] = [];
-  readonly actionsClicked = signal(0);
+  readonly closesSeenByAction: number[] = [];
   readonly swipeStarts: SwipeEventDetail[] = [];
   readonly swipeMoves: SwipeEventDetail[] = [];
   readonly swipeEnds: SwipeEventDetail[] = [];
@@ -144,7 +144,7 @@ class DeclarativeHost {
   }
 
   onAction(): void {
-    this.actionsClicked.update((n) => n + 1);
+    this.closesSeenByAction.push(this.closes.length);
   }
 
   onSwipeStart(detail: SwipeEventDetail): void {
@@ -682,7 +682,7 @@ describe('ForToast (declarative)', () => {
       const action = $(r.el, 'action')!;
       action.click();
       await r.flush();
-      expect(r.instance.actionsClicked()).toBe(1);
+      expect(r.instance.closesSeenByAction).toEqual([0]);
       expect(r.instance.closes).toEqual(['action']);
     });
 
@@ -1102,6 +1102,39 @@ describe('ForToastManager (programmatic)', () => {
     await r.flush();
     expect(clicked).toBe(1);
     expect(ref.isClosed()).toBe(true);
+  });
+
+  it('runs the action handler before the toast closes, so it can attach a result', async () => {
+    const r = renderHost(ProgrammaticHost);
+    let closedInHandler: boolean | null = null;
+    const ref = r.instance.toasts.show<string>({
+      title: 'Item deleted',
+      action: {
+        label: 'Undo',
+        activate: () => {
+          closedInHandler = ref.isClosed();
+          ref.dismiss('action', 'undone');
+        },
+      },
+    });
+    await r.flush();
+    r.el.querySelector<HTMLElement>('[forToastAction]')!.click();
+    await r.flush();
+
+    expect(closedInHandler).toBe(false);
+    await expect(ref.closed).resolves.toEqual({ reason: 'action', result: 'undone' });
+    expect(r.el.querySelector('[forToast]')).toBeNull();
+  });
+
+  it('announces the action altText of a programmatic toast', async () => {
+    const r = renderHost(ProgrammaticHost);
+    r.instance.toasts.show({
+      title: 'Item deleted',
+      action: { label: 'Undo', altText: 'Undo (Cmd+Z)', activate: () => undefined },
+    });
+    await r.flush();
+
+    expect(getLiveAnnouncerRegion('polite')!.textContent).toBe('Item deleted. Undo (Cmd+Z)');
   });
 
   it('close button click removes the toast from the manager', async () => {

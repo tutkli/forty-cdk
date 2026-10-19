@@ -172,12 +172,14 @@ class SomeComponent {
   undoableDelete(item: Item) {
     this.toasts.show({
       title: 'Item deleted',
-      action: { label: 'Undo', activate: () => restore(item) },
+      action: { label: 'Undo', altText: 'Undo (Cmd+Z)', activate: () => restore(item) },
       duration: 6000,
     });
   }
 }
 ```
+
+The action button calls `activate` and then closes the toast with reason `'action'`, so `activate` still sees the toast open: it can attach a result with `ref.dismiss('action', result)` or patch it with `ref.update()`. Its `altText` is appended to the announcement, as on a declarative [`[forToastAction]`](#accessibility).
 
 `show()` returns a `ForToastRef`:
 
@@ -533,7 +535,7 @@ Implements the [WAI-ARIA Alert pattern](https://www.w3.org/WAI/ARIA/apg/patterns
 - `role="alert"` (variant `error`) interrupts the screen reader queue; reserve it for genuinely interrupting messages.
 - The viewport's `role="region"` with `aria-label` makes it discoverable in landmark navigation; the `F6` hotkey is the standard "jump to notifications" shortcut. Name it with `[ariaLabel]` per viewport, or with `provideForToastDefaults({ viewportAriaLabel: '…' })` to translate every viewport in the scope (default `Notifications`). `[ariaLabel]="null"` drops the attribute; a static `aria-label` on the host replaces both channels, so it wins over a `null` too.
 - Pause on hover / focus is mandated by [WCAG 2.1 SC 2.2.1](https://www.w3.org/WAI/WCAG21/Understanding/timing-adjustable.html) for time-limited content.
-- Action buttons should set `[altText]` whenever the visible label (e.g. `"Undo"`) wouldn't tell a user how to recover the action after the toast disappears. The `altText` is folded into the synthesized announcement (`title. description. altText`), which meets [WCAG SC 2.2.1](https://www.w3.org/WAI/WCAG22/Understanding/timing-adjustable.html) for non-recoverable, time-limited actions. It also switches a bare `error` toast onto the `LiveAnnouncer` path, since the recovery hint is not in the visible DOM the host region would read.
+- Action buttons should set `[altText]` (or `action.altText` in a `show()` config) whenever the visible label (e.g. `"Undo"`) wouldn't tell a user how to recover the action after the toast disappears. The `altText` is folded into the synthesized announcement (`title. description. altText`), which meets [WCAG SC 2.2.1](https://www.w3.org/WAI/WCAG22/Understanding/timing-adjustable.html) for non-recoverable, time-limited actions. It also switches a bare `error` toast onto the `LiveAnnouncer` path, since the recovery hint is not in the visible DOM the host region would read.
 
   ```html
   <button forToastAction altText="Undo (Cmd+Z)" (click)="restore()">Undo</button>

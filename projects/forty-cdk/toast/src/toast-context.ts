@@ -46,9 +46,14 @@ export interface ForToastConfig<D = unknown> {
   title?: string;
   description?: string;
   /**
-   * Affects `role` and `aria-live`:
-   * - `'info'` | `'success'` | `'warning'` (default `'info'`) → `role="status"` + `aria-live="polite"`.
-   * - `'error'` → `role="alert"` + `aria-live="assertive"`.
+   * Sets the toast's `role` and the politeness of its announcement:
+   * - `'info'` | `'success'` | `'warning'` (default `'info'`) → `role="status"`, announced
+   *   politely through `LiveAnnouncer`.
+   * - `'error'` → `role="alert"`, announced assertively.
+   *
+   * The announcement goes through `LiveAnnouncer`, so the host carries `aria-live="off"`. The
+   * one exception is a toast shown as an `error` with no action `altText`, whose host stays the
+   * live region (`role="alert"` + `aria-live="assertive"`).
    */
   variant?: ForToastVariant;
   /**
@@ -56,8 +61,14 @@ export interface ForToastConfig<D = unknown> {
    * sticky (no auto-dismiss; only manual / action / escape close).
    */
   duration?: number;
-  /** Action button. The button auto-closes the toast after invoking `activate`. */
-  action?: { label: string; activate: () => void };
+  /**
+   * Action button of the default shape. Clicking it calls `activate` and then closes the toast
+   * with reason `'action'`, so `activate` still sees it open and can attach a result through
+   * `ref.dismiss('action', result)`. `altText` is the recovery hint appended to the
+   * announcement (e.g. `'Undo (Cmd+Z)'`); set it on a time-limited toast whose `label` alone
+   * would not tell the user how to recover the action once the toast is gone.
+   */
+  action?: { label: string; altText?: string; activate: () => void };
   /**
    * Whether the user can dismiss the toast (Escape, close button,
    * auto-dismiss timer, swipe). Also gates the default close button rendered
@@ -197,7 +208,11 @@ export interface ForToastContext {
   readonly labelledBy: Signal<string | null>;
   readonly describedBy: Signal<string | null>;
 
-  /** Request close. Always honored — the directive emits `(dismiss)` and the consumer unmounts. */
+  /**
+   * Request close: the toast emits `(dismiss)` with `reason` and the consumer unmounts it. On a
+   * toast with `dismissible` set to `false` only `'action'` and `'programmatic'` are honored;
+   * any other reason is a no-op.
+   */
   requestClose(reason: ForToastCloseReason): void;
 }
 
