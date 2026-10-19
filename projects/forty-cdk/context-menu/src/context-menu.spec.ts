@@ -1298,6 +1298,26 @@ describe('ForContextMenu', () => {
       expect(document.querySelector('[forMenuContent]')).toBeNull();
       expect(region.getAttribute('data-state')).toBe('closed');
     });
+
+    it('fails the trigger when FOR_CONTEXT_MENU_CONTEXT is left out', () => {
+      @Directive({
+        selector: '[halfContextMenu]',
+        providers: [{ provide: FOR_MENU_CONTEXT, useExisting: HalfContextMenu }],
+      })
+      class HalfContextMenu extends ForContextMenu {}
+
+      @Component({
+        imports: [HalfContextMenu, ForContextMenuTrigger],
+        template: `
+          <div halfContextMenu>
+            <div forContextMenuTrigger>Right-click here</div>
+          </div>
+        `,
+      })
+      class HalfSubclassedHost {}
+
+      expect(() => renderHost(HalfSubclassedHost)).toThrow(/FORCDK-CONTEXT-MENU-001/);
+    });
   });
 
   describe('reactive updates', () => {

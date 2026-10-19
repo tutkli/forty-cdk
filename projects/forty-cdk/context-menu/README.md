@@ -208,4 +208,4 @@ Both triggers carry `[menuPositioning]`, a partial `{ side, align, sideOffset, a
 
 ## Wrapping in a design system
 
-Subclass the root and re-provide `FOR_MENU_CONTEXT` with `useExisting` pointing at the subclass, since Angular does not inherit a directive's `providers`; [Wrapping non-form roots](../../../docs/wrapping-non-form-roots.md) walks the pattern.
+Subclass the root and re-provide both of its tokens, `FOR_MENU_CONTEXT` and `FOR_CONTEXT_MENU_CONTEXT`, with `useExisting` pointing at the subclass, since Angular does not inherit a directive's `providers`. Leaving out the second one throws `FORCDK-CONTEXT-MENU-001` from the trigger. [Wrapping non-form roots](../../../docs/wrapping-non-form-roots.md) walks the pattern.

@@ -51,7 +51,7 @@ import { LIBRARY_CODE, LIBRARY_SOURCES } from '../test-utils/source-scan';
  * **The derived property is "this entry point splits its context"** — a source
  * module declaring `interface <X>Context extends For<X>Context`, which is what
  * puts an unchecked cast inside its `inject<Primitive>Context`. It is exact in
- * both directions today: sixteen modules match, Avatar and Table having joined
+ * both directions, Avatar and Table having joined
  * with [#1722](https://github.com/tutkli/forty-cdk/issues/1722)'s inverted
  * default — Table's own second token is a *registration* protocol living in
  * `forty-cdk/core`, aliased to a separate provider, and is a different surface
@@ -64,7 +64,7 @@ import { LIBRARY_CODE, LIBRARY_SOURCES } from '../test-utils/source-scan';
  * Popover joined the same way with the initial-focus marker of
  * [#2056](https://github.com/tutkli/forty-cdk/issues/2056), and ContextMenu
  * with the trigger's content read-back of
- * [#2064](https://github.com/tutkli/forty-cdk/issues/2064). So a seventeenth
+ * [#2064](https://github.com/tutkli/forty-cdk/issues/2064). So a new
  * split root cannot land without either calling the guard or turning
  * this file red — which the count-per-module case extends to a *second* resolver
  * added to a module that already calls it once.

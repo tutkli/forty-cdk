@@ -17,7 +17,7 @@ const GLOB_PATTERN = /import\.meta\.glob\(\s*(['"`])([^'"`]+)\1/g;
 
 const GLOB_CALL_SITE = /import\.meta\.glob\(/g;
 
-const ROOT_ABSOLUTE = '/projects/forty-cdk/';
+const ROOT_ABSOLUTE = '/';
 
 /** The one module allowed to read library source through a glob. */
 const SHARED_SCANNER = 'src/test-utils/source-scan.ts';

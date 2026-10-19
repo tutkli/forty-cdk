@@ -72,47 +72,97 @@ import { FOR_POPOVER_CONTEXT, ForPopover } from 'forty-cdk/popover';
 export class MyPopover extends ForPopover {}
 ```
 
-Every non-form root that needs a plain re-provide, and the token to name. `ForTable` and
-`ForToolbar` are not in this table, because each needs its provider helper instead, and neither is
-`ForVirtualViewport`, because it is a component and is composed rather than subclassed (see the
-sections below).
+Every non-form root that needs a plain re-provide, and every token it provides. A subclass
+re-provides all of a row's tokens, each with `useExisting` pointing at the subclass unless a
+paragraph below the table gives it another shape. `ForTable` and `ForToolbar` are not in this
+table, because each needs its provider helper instead, and neither is `ForVirtualViewport`, because
+it is a component and is composed rather than subclassed (see the sections below).
 
-| Root                                                | Token to re-provide           |
-| --------------------------------------------------- | ----------------------------- |
-| `ForAccordion`                                      | `FOR_ACCORDION_CONTEXT`       |
-| `ForAvatar`                                         | `FOR_AVATAR_CONTEXT`          |
-| `ForCalendar`                                       | `FOR_CALENDAR_CONTEXT`        |
-| `ForCarousel`                                       | `FOR_CAROUSEL_CONTEXT`        |
-| `ForContextMenu` / `ForDropdownMenu` / `ForMenuSub` | `FOR_MENU_CONTEXT`            |
-| `ForDialog`                                         | `FOR_DIALOG_CONTEXT`          |
-| `ForDisclosure`                                     | `FOR_DISCLOSURE_CONTEXT`      |
-| `ForDraggable` / `ForFreeDrag`                      | `FOR_DRAGGABLE_CONTEXT`       |
-| `ForDrawer`                                         | `FOR_DRAWER_CONTEXT`          |
-| `ForDropList`                                       | `FOR_DROP_LIST_CONTEXT`       |
-| `ForField`                                          | `FOR_FIELD_CONTEXT`           |
-| `ForFieldset`                                       | `FOR_FIELDSET_CONTEXT`        |
-| `ForFileUpload`                                     | `FOR_FILE_UPLOAD_CONTEXT`     |
-| `ForHoverCard`                                      | `FOR_HOVER_CARD_CONTEXT`      |
-| `ForMenubar`                                        | `FOR_MENUBAR_CONTEXT`         |
-| `ForMeter`                                          | `FOR_METER_CONTEXT`           |
-| `ForNavigationMenu`                                 | `FOR_NAVIGATION_MENU_CONTEXT` |
-| `ForPagination`                                     | `FOR_PAGINATION_CONTEXT`      |
-| `ForPopover`                                        | `FOR_POPOVER_CONTEXT`         |
-| `ForProgress`                                       | `FOR_PROGRESS_CONTEXT`        |
-| `ForScrollArea`                                     | `FOR_SCROLL_AREA_CONTEXT`     |
-| `ForStepper`                                        | `FOR_STEPPER_CONTEXT`         |
-| `ForTabs`                                           | `FOR_TABS_CONTEXT`            |
-| `ForToast`                                          | `FOR_TOAST_CONTEXT`           |
-| `ForTooltip`                                        | `FOR_TOOLTIP_CONTEXT`         |
-| `ForTree`                                           | `FOR_TREE_CONTEXT`            |
+| Root                                         | Tokens to re-provide                                                  |
+| -------------------------------------------- | --------------------------------------------------------------------- |
+| `ForAccordion`                               | `FOR_ACCORDION_CONTEXT`                                               |
+| `ForAvatar`                                  | `FOR_AVATAR_CONTEXT`                                                  |
+| `ForCalendar`                                | `FOR_CALENDAR_CONTEXT`                                                |
+| `ForCarousel`                                | `FOR_CAROUSEL_CONTEXT`                                                |
+| `ForContextMenu`                             | `FOR_MENU_CONTEXT`, `FOR_CONTEXT_MENU_CONTEXT`                        |
+| `ForDialog`                                  | `FOR_DIALOG_CONTEXT`, `FOR_FIELD_CONTEXT`, `FOR_FIELD_ANCHOR_CONTEXT` |
+| `ForDisclosure`                              | `FOR_DISCLOSURE_CONTEXT`                                              |
+| `ForDraggable` / `ForFreeDrag`               | `FOR_DRAGGABLE_CONTEXT`                                               |
+| `ForDrawer`                                  | `FOR_DRAWER_CONTEXT`, `FOR_FIELD_CONTEXT`, `FOR_FIELD_ANCHOR_CONTEXT` |
+| `ForDropdownMenu` / `ForMenu` / `ForMenuSub` | `FOR_MENU_CONTEXT`                                                    |
+| `ForDropList`                                | `FOR_DROP_LIST_CONTEXT`                                               |
+| `ForField`                                   | `FOR_FIELD_CONTEXT`, `FOR_FIELD_ANCHOR_CONTEXT`                       |
+| `ForFieldset`                                | `FOR_FIELDSET_CONTEXT`                                                |
+| `ForFileUpload`                              | `FOR_FILE_UPLOAD_CONTEXT`                                             |
+| `ForHoverCard`                               | `FOR_HOVER_CARD_CONTEXT`                                              |
+| `ForMenubar`                                 | `FOR_MENUBAR_CONTEXT`, `FOR_MENU_CONTEXT`                             |
+| `ForMeter`                                   | `FOR_METER_CONTEXT`                                                   |
+| `ForNavigationMenu`                          | `FOR_NAVIGATION_MENU_CONTEXT`                                         |
+| `ForPagination`                              | `FOR_PAGINATION_CONTEXT`                                              |
+| `ForPopover`                                 | `FOR_POPOVER_CONTEXT`                                                 |
+| `ForProgress`                                | `FOR_PROGRESS_CONTEXT`                                                |
+| `ForScrollArea`                              | `FOR_SCROLL_AREA_CONTEXT`                                             |
+| `ForStepper`                                 | `FOR_STEPPER_CONTEXT`                                                 |
+| `ForTabs`                                    | `FOR_TABS_CONTEXT`                                                    |
+| `ForToast`                                   | `FOR_TOAST_CONTEXT`                                                   |
+| `ForTooltip`                                 | `FOR_TOOLTIP_CONTEXT`                                                 |
+| `ForTree`                                    | `FOR_TREE_CONTEXT`, `FOR_TREE_CONTAINER_CONTEXT`                      |
 
-`ForTree` also provides `FOR_TREE_CONTAINER_CONTEXT`, the container every root-level `[forTreeItem]`
-registers through, so a subclass re-provides both tokens with `useExisting`. With only the first
-one, the first root-level item throws `FORCDK-TREE-002`.
+The second token is not optional on any row. `FOR_TREE_CONTAINER_CONTEXT` is the container every
+root-level `[forTreeItem]` registers through, so without it the first root-level item throws
+`FORCDK-TREE-002`. `FOR_FIELD_ANCHOR_CONTEXT` is the slot `[forFieldAnchor]` fills, so without it
+the overlay controls inside a subclassed `ForField` stop seeing the field anchor.
+`[forContextMenuTrigger]` resolves `FOR_CONTEXT_MENU_CONTEXT`, not the menu context, so a
+`ForContextMenu` subclass without it throws `FORCDK-CONTEXT-MENU-001` from its trigger.
 
-`ForField` also provides `FOR_FIELD_ANCHOR_CONTEXT`, the slot `[forFieldAnchor]` fills, so a
-subclass re-provides both tokens with `useExisting` or the overlay controls inside it stop seeing
-the field anchor.
+`ForMenubar` provides `FOR_MENU_CONTEXT` through a factory rather than as itself: the bar shares one
+menu context across all of its triggers, and that context is the root's `menuCtx`. A subclass
+writes the same factory against itself. Without it, every `[forMenuContent]` and `[forMenuItem]` in
+the bar throws `FORCDK-MENU-001`.
+
+```ts
+import { Directive } from '@angular/core';
+import { FOR_MENUBAR_CONTEXT, ForMenubar } from 'forty-cdk/menubar';
+import { FOR_MENU_CONTEXT } from 'forty-cdk/shared';
+
+@Directive({
+  selector: '[myMenubar]',
+  exportAs: 'myMenubar',
+  providers: [
+    { provide: FOR_MENUBAR_CONTEXT, useExisting: MyMenubar },
+    { provide: FOR_MENU_CONTEXT, useFactory: (bar: MyMenubar) => bar.menuCtx, deps: [MyMenubar] },
+  ],
+})
+export class MyMenubar extends ForMenubar {}
+```
+
+`ForDialog` and `ForDrawer` are field boundaries: they provide `FOR_FIELD_CONTEXT` and
+`FOR_FIELD_ANCHOR_CONTEXT` as `null`, so a control inside the surface never registers with a
+`[forField]` the surface is declared in. A subclass re-provides both with `useValue: null`, importing
+them from `forty-cdk/field`. Without them the subclass still renders, but the first control inside
+it takes over the outer field's label and description wiring.
+
+```ts
+import { Directive } from '@angular/core';
+import { FOR_DIALOG_CONTEXT, ForDialog } from 'forty-cdk/dialog';
+import { FOR_FIELD_ANCHOR_CONTEXT, FOR_FIELD_CONTEXT } from 'forty-cdk/field';
+
+@Directive({
+  selector: '[myDialog]',
+  exportAs: 'myDialog',
+  providers: [
+    { provide: FOR_DIALOG_CONTEXT, useExisting: MyDialog },
+    { provide: FOR_FIELD_CONTEXT, useValue: null },
+    { provide: FOR_FIELD_ANCHOR_CONTEXT, useValue: null },
+  ],
+})
+export class MyDialog extends ForDialog {}
+```
+
+The overlay content pieces are field boundaries the same way, and a subclass of one re-provides
+its tokens as `null` too: `ForComboboxContent`, `ForDatePickerContent`, `ForPopoverContent`,
+`ForSelectContent` and `ForTimePickerContent` (`FOR_FIELD_CONTEXT`, `FOR_FIELD_ANCHOR_CONTEXT`),
+and `ForFieldBoundary` (`FOR_FIELD_CONTEXT`).
 
 `ForDatePicker` and `ForDateRangePicker` find their projected calendar through the same token,
 with `contentChild(FOR_CALENDAR_CONTEXT)`, so the `ForCalendar` row above is also what lets a
@@ -120,14 +170,16 @@ picker read a subclassed calendar's selections and focus its active cell. A wrap
 `ForCalendar` through `hostDirectives` is found the same way, because the host directive provides
 the token itself.
 
-Several of these roots (Accordion, Avatar, Carousel, Dialog, Drawer, NavigationMenu, Popover,
-Stepper, Tabs, Toast, Tree) split their coordination
-surface in two: the public `FOR_<PRIMITIVE>_CONTEXT` above, and an internal interface carrying the
-piece-registration protocol that is deliberately **not** exported
+Several of these roots (`ForAccordion`, `ForAvatar`, `ForCalendar`, `ForCarousel`,
+`ForContextMenu`, `ForDialog`, `ForDraggable`, `ForFreeDrag`, `ForDrawer`, `ForHoverCard`,
+`ForNavigationMenu`, `ForPopover`, `ForStepper`, `ForTabs`, `ForToast`, `ForTree`, plus the
+`ForTable` and `ForVirtualViewport` covered below) split their coordination surface in two: the
+public `FOR_<PRIMITIVE>_CONTEXT` above, and an internal interface carrying the piece-registration
+protocol that is deliberately **not** exported
 ([#1399](https://github.com/tutkli/forty-cdk/issues/1399),
 [#1524](https://github.com/tutkli/forty-cdk/issues/1524)). That split is invisible to a wrapper
 ([#1593](https://github.com/tutkli/forty-cdk/issues/1593)): both surfaces are two typed views of the
-**same token on the same object**, so the one-line re-provide above installs all of it.
+**same token on the same object**, so the re-provide above installs all of it.
 
 What that costs is a precondition worth stating: on those roots the token must be aliased to the
 root itself (`useExisting` pointing at the root's class or a subclass of it) because the pieces
@@ -140,8 +192,16 @@ first piece to resolve rejects it with a `[forty-cdk/<primitive>]`-prefixed erro
 `ForAccordionItem` (`FOR_ACCORDION_ITEM_CONTEXT`), `ForStepperItem`
 (`FOR_STEPPER_ITEM_CONTEXT`), `ForTreeItem` (`FOR_TREE_ITEM_CONTEXT`), `ForTreeGroup`
 (`FOR_TREE_CONTAINER_CONTEXT`), `ForMenuGroup` (`FOR_MENU_GROUP_CONTEXT`), `ForMenuRadioGroup`
-(`FOR_MENU_RADIO_GROUP_CONTEXT`), `ForTreeNodeDrag` (`FOR_TREE_NODE_DRAG_CONTEXT`).
+(`FOR_MENU_RADIO_GROUP_CONTEXT`, `FOR_MENU_GROUP_CONTEXT`), `ForNavigationMenuItem`
+(`FOR_NAVIGATION_MENU_ITEM_CONTEXT`), `ForTreeNodeDrag` (`FOR_TREE_NODE_DRAG_CONTEXT`),
+`ForDropListGroup` (`FOR_DROP_LIST_GROUP`), `ForVirtualReorder` (`FOR_DROP_LIST_COORDINATOR`).
+A `ForMenuRadioGroup` subclass without `FOR_MENU_GROUP_CONTEXT` leaves a `[forMenuGroupLabel]`
+inside it throwing `FORCDK-MENU-002`, or labelling an enclosing `[forMenuGroup]` instead.
 `ForTableRow` is the one piece whose tokens cannot be imported, so it spreads a helper (see below).
+`ForTableColumnReorder` (`FOR_DROP_LIST_DEFAULT_ORIENTATION`, `FOR_DROP_LIST_ROVING_DELEGATE`,
+`FOR_DRAGGABLE_LIFT_GUARD`) and `ForTableRowReorder` (`FOR_DROP_LIST_COORDINATOR`,
+`FOR_DROP_LIST_ROVING_DELEGATE`) build their roving delegate inside the library, so wrap either one
+through `hostDirectives`, which brings its providers along, rather than subclassing it.
 
 ### `ForTable` needs its provider helper, not a hand-written provider
 
@@ -245,7 +305,7 @@ systems lose behaviour the primitives were built to give them:
 
 | Situation                                                        | Pattern                                                                                                 |
 | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| Styled wrapper around one root                                   | subclass + re-provide the context token                                                                 |
+| Styled wrapper around one root                                   | subclass + re-provide every token in its table row                                                      |
 | `ForTable`, `ForToolbar`, `ForTableRow`                          | subclass + spread `provideForTable(MyRoot)` / `provideForToolbar(MyRoot)` / `provideForTableRow(MyRow)` |
 | `ForVirtualViewport`                                             | compose it in the wrapper's template, rows stamped through `NgTemplateOutlet`                           |
 | Wrapper that must extend a different base class                  | `hostDirectives`, re-exposing the surface by hand                                                       |

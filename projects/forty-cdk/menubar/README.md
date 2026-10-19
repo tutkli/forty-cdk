@@ -222,4 +222,4 @@ forty-cdk ships no styles: put your own class on each piece and key your CSS off
 
 ## Wrapping in a design system
 
-Subclass the root and re-provide `FOR_MENUBAR_CONTEXT` with `useExisting` pointing at the subclass, since Angular does not inherit a directive's `providers`; [Wrapping non-form roots](../../../docs/wrapping-non-form-roots.md) walks the pattern.
+Subclass the root and re-provide both of its tokens, since Angular does not inherit a directive's `providers`: `FOR_MENUBAR_CONTEXT` with `useExisting` pointing at the subclass, and `FOR_MENU_CONTEXT` with `useFactory: (bar: MyMenubar) => bar.menuCtx, deps: [MyMenubar]`, the menu context the bar shares across its triggers. Leaving out the second one throws `FORCDK-MENU-001` from every menu in the bar. [Wrapping non-form roots](../../../docs/wrapping-non-form-roots.md) walks the pattern.

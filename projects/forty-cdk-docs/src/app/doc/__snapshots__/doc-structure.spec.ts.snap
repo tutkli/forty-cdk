@@ -776,7 +776,7 @@ exports[`document structure > docs/wrapping-form-primitives.md declares the sect
           "Outputs tuple",
         ],
         "role": "plain",
-        "rows": 19,
+        "rows": 24,
       },
     ],
     "title": "Exported tuples",
@@ -818,10 +818,10 @@ exports[`document structure > docs/wrapping-non-form-roots.md declares the secti
       {
         "columns": [
           "Root",
-          "Token to re-provide",
+          "Tokens to re-provide",
         ],
         "role": "plain",
-        "rows": 26,
+        "rows": 27,
       },
     ],
     "title": "Re-provide the context token — this is the one that breaks",
