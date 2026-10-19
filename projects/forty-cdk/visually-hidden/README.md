@@ -27,7 +27,11 @@ Naming an icon-only button through a hidden `<span>` (rather than `aria-label`) 
 ```html
 <span forVisuallyHidden>Delete invoice #4021</span>
 
-<a forVisuallyHidden focusable href="#main">Skip to content</a>
+<a forVisuallyHidden focusable href="#main" (click)="$event.preventDefault(); main.focus()">
+  Skip to content
+</a>
+
+<main #main id="main" tabindex="-1">…</main>
 ```
 
 ## Examples
@@ -44,7 +48,15 @@ import { ForVisuallyHidden } from 'forty-cdk/visually-hidden';
   imports: [ForVisuallyHidden],
   template: `
     <div class="card">
-      <a forVisuallyHidden focusable href="#vh-main" class="skip">Skip to content</a>
+      <a
+        forVisuallyHidden
+        focusable
+        href="#vh-main"
+        class="skip"
+        (click)="$event.preventDefault(); main.focus()"
+      >
+        Skip to content
+      </a>
 
       <p class="hint">Tab into the card: the skip link is the first stop and un-clips on focus.</p>
 
@@ -70,7 +82,7 @@ import { ForVisuallyHidden } from 'forty-cdk/visually-hidden';
         </button>
       </div>
 
-      <table id="vh-main" class="invoices">
+      <table #main id="vh-main" tabindex="-1" class="invoices">
         <caption forVisuallyHidden>
           Invoices, sorted by due date, ascending
         </caption>
@@ -161,6 +173,7 @@ The directive binds its clip declaratively, so the server render matches the cli
 - **Keep it in the flow.** The host stays in the DOM and in the accessibility tree, so it is announced in document order. Place it where you want it read, not at the end of the template.
 - **Not a security boundary.** The content is in the DOM and readable by anyone inspecting the page. Never use it to hide sensitive data.
 - **Focus tracking, not `:focus-within`.** `focusable` listens to `focusin` / `focusout` rather than relying on a CSS pseudo-class, because an inline style cannot express one. A `focusout` whose `relatedTarget` is still inside the host does not re-clip.
+- **A skip link moves focus itself.** An Angular app declares a `<base href>`, and a bare `#main` resolves against it rather than against the current route, so following it loads another page. Handle the click instead: cancel the navigation and focus the target, which needs `tabindex="-1"` to take focus at all.
 - **No role, no ARIA.** The element keeps whatever semantics you give it. Pair it with `aria-hidden="true"` on the decorative sibling (an icon, usually) so the name is not announced twice.
 - **The announcer's regions exist before you announce.** Both are appended to `<body>` when the service is first injected, empty, because a live region has to be in the accessibility tree _before_ its text changes for the change to be read. This is the detail a hand-rolled announcer usually misses: build the region inside the first `announce()` and the first message of the session is silently dropped.
 - **A repeat is announced again, and a superseding message wins.** Each write is deferred by a macrotask with the region emptied first, so the same string twice is read twice instead of being ignored as unchanged text. Two `announce()` calls to the same region in one turn coalesce and only the latest is spoken. That is what makes a message assembled across a change-detection pass read once, in full.

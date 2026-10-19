@@ -54,7 +54,13 @@ import {
     <p class="hovercard-lead">
       Article by
       <span forHoverCard #card="forHoverCard" side="top">
-        <a forHoverCardTrigger class="hovercard-trigger" href="#ada">&#64;ada</a>
+        <a
+          forHoverCardTrigger
+          class="hovercard-trigger"
+          href="#ada"
+          (click)="$event.preventDefault()"
+          >&#64;ada</a
+        >
         @if (card.open()) {
           <div forHoverCardContent class="hovercard" animate.enter="hovercard-pop-in">
             <div class="hovercard-head">
