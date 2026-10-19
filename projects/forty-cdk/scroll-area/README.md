@@ -55,7 +55,7 @@ import {
   ],
   template: `
     <div forScrollArea type="hover" class="sa">
-      <div forScrollAreaViewport class="sa-viewport">
+      <div forScrollAreaViewport role="region" aria-label="Scroll area rows" class="sa-viewport">
         <div forScrollAreaContent class="sa-content">
           @for (row of rows; track row) {
             <p class="sa-row">
@@ -181,7 +181,7 @@ onTrackPress(event: PointerEvent, bar: ForScrollAreaScrollbar): void {
 
 ### `ForScrollAreaThumb`
 
-Draggable thumb, sized and translated automatically. Mirrors its scrollbar's orientation and state.
+Draggable thumb, sized and translated automatically. Mirrors its scrollbar's orientation and state. The thumb is absolutely positioned, so its `[forScrollAreaScrollbar]` must be a positioned element (`position: relative` or `absolute`) for the thumb to sit inside the track.
 
 | Data attribute     | Values                     |
 | ------------------ | -------------------------- |
@@ -239,11 +239,13 @@ forty-cdk ships no styles: put your own class on each piece and key your CSS off
     grid-row: 1;
   }
   .sa-scrollbar[data-orientation='vertical'] {
+    position: relative;
     grid-column: 2;
     grid-row: 1;
     width: 8px;
   }
   .sa-scrollbar[data-orientation='horizontal'] {
+    position: relative;
     grid-column: 1;
     grid-row: 2;
     height: 8px;

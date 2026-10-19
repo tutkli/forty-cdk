@@ -20,7 +20,8 @@ function injectRequiredScrollbar(): ForScrollAreaScrollbar {
  * The draggable thumb inside a `[forScrollAreaScrollbar]`. Sizes itself
  * proportionally to viewport / content and translates along the track
  * based on `scrollLeft` / `scrollTop`. Pointer-drag scrolls the viewport
- * proportionally.
+ * proportionally. The thumb is absolutely positioned, so its scrollbar must be
+ * a positioned element for the thumb to sit inside the track.
  */
 @Directive({
   selector: '[forScrollAreaThumb]',

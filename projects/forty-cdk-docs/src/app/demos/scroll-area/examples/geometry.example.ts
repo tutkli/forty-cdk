@@ -20,7 +20,7 @@ import {
   template: `
     <div class="ga-stage">
       <div forScrollArea #sa="forScrollArea" type="always" class="ga">
-        <div forScrollAreaViewport class="ga-viewport">
+        <div forScrollAreaViewport role="region" aria-label="Geometry rows" class="ga-viewport">
           <div forScrollAreaContent class="ga-content">
             @for (row of rows; track row) {
               <p class="ga-row">
@@ -85,7 +85,14 @@ import {
 
     .ga-viewport {
       position: absolute;
-      inset: 0;
+      inset-block: 0 11px;
+      inset-inline: 0 11px;
+      border-start-start-radius: inherit;
+    }
+
+    .ga-viewport:focus-visible {
+      outline: 2px solid var(--ex-accent, #0e7c6b);
+      outline-offset: -2px;
     }
 
     .ga-content {

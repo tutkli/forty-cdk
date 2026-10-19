@@ -21,7 +21,7 @@ import {
   ],
   template: `
     <div forScrollArea type="hover" class="sa">
-      <div forScrollAreaViewport class="sa-viewport">
+      <div forScrollAreaViewport role="region" aria-label="Scroll area rows" class="sa-viewport">
         <div forScrollAreaContent class="sa-content">
           @for (row of rows; track row) {
             <p class="sa-row">
@@ -59,6 +59,12 @@ import {
     .sa-viewport {
       position: absolute;
       inset: 0;
+      border-radius: inherit;
+    }
+
+    .sa-viewport:focus-visible {
+      outline: 2px solid var(--ex-accent, #0e7c6b);
+      outline-offset: -2px;
     }
 
     .sa-content {
