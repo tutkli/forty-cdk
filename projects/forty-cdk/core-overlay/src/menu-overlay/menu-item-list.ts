@@ -37,14 +37,15 @@ export interface MenuItemHandle extends CollectionHandle {
    * that must not reflect `data-highlighted` (the initial focus of a
    * pointer-driven open). One-shot: the item consumes the suppression on its
    * next `focus` event. Optional — items that don't reflect a highlight
-   * (e.g. `[forMenuSubTrigger]`) simply omit it.
+   * simply omit it.
    */
   suppressHighlightOnNextFocus?(): void;
   /**
    * Drops the item's `data-highlighted` without moving DOM focus. Called when
    * the pointer leaves the menu surface so the hovered item stops reading as
-   * the active candidate while keyboard navigation stays anchored on it.
-   * Optional — items that don't reflect a highlight omit it.
+   * the active candidate while keyboard navigation stays anchored on it, and
+   * before every keyboard focus move so a hover highlight held without focus
+   * never outlives it. Optional — items that don't reflect a highlight omit it.
    */
   clearHighlight?(): void;
 }
@@ -103,7 +104,7 @@ export class MenuItemList<H extends MenuItemHandle = MenuItemHandle> {
     if (!target) {
       return;
     }
-    focusMenuItemHost(target.host);
+    this.#focus(target);
   }
 
   /**
@@ -132,7 +133,7 @@ export class MenuItemList<H extends MenuItemHandle = MenuItemHandle> {
       isDisabled: (item) => item.disabled(),
     });
     if (match) {
-      focusMenuItemHost(match.host);
+      this.#focus(match);
     }
     return handled;
   }
@@ -191,7 +192,16 @@ export class MenuItemList<H extends MenuItemHandle = MenuItemHandle> {
     if (!highlight) {
       item.suppressHighlightOnNextFocus?.();
     }
-    focusMenuItemHost(item.host);
+    this.#focus(item);
+  }
+
+  #focus(target: H): void {
+    for (const item of this.#items.items()) {
+      if (item !== target) {
+        item.clearHighlight?.();
+      }
+    }
+    focusMenuItemHost(target.host);
   }
 
   /**
