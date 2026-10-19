@@ -20,8 +20,7 @@ export interface ForStepperDefaults {
    */
   activationMode: StepperActivationMode;
   /**
-   * Whether arrow navigation wraps around past the first / last selectable
-   * trigger.
+   * Whether arrow navigation wraps around past the first / last trigger.
    */
   loop: boolean;
   /**

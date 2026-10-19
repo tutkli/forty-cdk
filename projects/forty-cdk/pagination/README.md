@@ -125,13 +125,15 @@ Pagination is headless state: derive `count` from your data, then slice the visi
 
 ### `ForPagination`
 
-| Property        | Type            | Description                                                                               |
-| --------------- | --------------- | ----------------------------------------------------------------------------------------- |
-| `page`          | `model<number>` | Two-way bindable. The currently active page number.<br>**Default:** —                     |
-| `count`         | `input<number>` | Total number of pages.<br>**Default:** —                                                  |
-| `siblingCount`  | `input<number>` | Number of page buttons to show on each side of the current page.<br>**Default:** —        |
-| `boundaryCount` | `input<number>` | Number of page buttons to always show at the start and end of the list.<br>**Default:** — |
-| `ariaLabel`     | `input<string>` | Accessible label for the `navigation` landmark.<br>**Default:** —                         |
+| Property        | Type                            | Description                                                                                                                                                                                                               |
+| --------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `page`          | `model<number>`                 | Two-way bindable. The currently active page number, 1-based.<br>**Default:** `1`                                                                                                                                          |
+| `count`         | `input.required<number>`        | Total number of pages. Required.<br>**Default:** —                                                                                                                                                                        |
+| `siblingCount`  | `input<number>`                 | Number of page buttons to show on each side of the current page.<br>**Default:** `1`, or the scope's `provideForPaginationDefaults`                                                                                       |
+| `boundaryCount` | `input<number>`                 | Number of page buttons to always show at the start and end of the list.<br>**Default:** `1`, or the scope's `provideForPaginationDefaults`                                                                                |
+| `disabled`      | `input<boolean>`                | When true, disables every page item and the previous / next buttons.<br>**Default:** `false`                                                                                                                              |
+| `dir`           | `input<'ltr' \| 'rtl' \| null>` | Writing direction, reflected to the host `dir` attribute. It changes the visual layout only: previous / next keep their meaning. `null` inherits the nearest `[dir]` / `<html dir>`, else `'ltr'`.<br>**Default:** `null` |
+| `ariaLabel`     | `input<string \| null>`         | Accessible label for the `navigation` landmark.<br>**Default:** `null` (and empty string) emits no attribute                                                                                                              |
 
 | Data attribute  | Values                                    |
 | --------------- | ----------------------------------------- |
@@ -139,21 +141,22 @@ Pagination is headless state: derive `count` from your data, then slice the visi
 
 ### `ForPaginationItem`
 
-| Property | Type            | Description                                               |
-| -------- | --------------- | --------------------------------------------------------- |
-| `page`   | `input<number>` | The page number this button represents.<br>**Default:** — |
+| Property   | Type                     | Description                                                                                          |
+| ---------- | ------------------------ | ---------------------------------------------------------------------------------------------------- |
+| `page`     | `input.required<number>` | The 1-based page number this button represents. Required.<br>**Default:** —                          |
+| `disabled` | `input<boolean>`         | Disables this page button on its own; the root's `disabled` disables it too.<br>**Default:** `false` |
 
 ### `ForPaginationPrevious`
 
-| Property    | Type            | Description                                                      |
-| ----------- | --------------- | ---------------------------------------------------------------- |
-| `ariaLabel` | `input<string>` | Accessible label for the previous-page button.<br>**Default:** — |
+| Property    | Type                    | Description                                                                                                 |
+| ----------- | ----------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `ariaLabel` | `input<string \| null>` | Accessible label for the previous-page button.<br>**Default:** `null` (and empty string) emits no attribute |
 
 ### `ForPaginationNext`
 
-| Property    | Type            | Description                                                  |
-| ----------- | --------------- | ------------------------------------------------------------ |
-| `ariaLabel` | `input<string>` | Accessible label for the next-page button.<br>**Default:** — |
+| Property    | Type                    | Description                                                                                             |
+| ----------- | ----------------------- | ------------------------------------------------------------------------------------------------------- |
+| `ariaLabel` | `input<string \| null>` | Accessible label for the next-page button.<br>**Default:** `null` (and empty string) emits no attribute |
 
 ## Accessibility
 

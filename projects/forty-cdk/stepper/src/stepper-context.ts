@@ -59,8 +59,9 @@ export interface ForStepperTriggerHandle {
   /** The trigger's own host id, for `aria-labelledby` on content panels. */
   readonly id: Signal<string>;
   /**
-   * Whether this trigger can be focused and activated. `false` when the step
-   * is disabled or not yet reachable in linear mode.
+   * Whether this trigger can be activated. `false` when the step is disabled
+   * or not yet reachable in linear mode; the trigger then leaves the `Tab`
+   * sequence but stays reachable by the arrow keys.
    */
   readonly selectable: Signal<boolean>;
   /**
@@ -225,8 +226,8 @@ export interface ForStepperItemContext {
   /** True when this step is the currently selected step. */
   readonly current: Signal<boolean>;
   /**
-   * True when this step can be focused and activated (reachable and not
-   * effectively disabled).
+   * True when this step can be activated (reachable and not effectively
+   * disabled). A step that cannot stays reachable by the arrow keys.
    */
   readonly selectable: Signal<boolean>;
   /** Whether this step has been marked as completed. */

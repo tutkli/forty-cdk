@@ -52,7 +52,7 @@ See [Styling forty-cdk](../../../docs/styling.md) for theming guidance.
 
 ## Examples
 
-Walk the steps with their triggers or the arrow keys. Each step carries `data-state` for `pending`, `active`, `completed` or `error`, and the root says which `data-mode` it is in.
+Walk the steps with Back and Next, or click a trigger. The arrow keys move focus between triggers, and `Enter` or `Space` selects the focused one. Each step carries `data-state` for `pending`, `active`, `completed` or `error`, and the root says which `data-mode` it is in.
 
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';

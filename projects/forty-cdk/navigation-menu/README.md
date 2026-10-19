@@ -369,11 +369,25 @@ Dismissal is symmetric in both placements. Escape, outside pointerdown **and** t
 | `orientation`       | `input<'horizontal' \| 'vertical'>` | **Default:** `'horizontal'`                                                                                                                                                                          |
 | `dir`               | `input<'ltr' \| 'rtl' \| null>`     | RTL inverts ArrowLeft / ArrowRight: across the triggers when horizontal, and as the open key when vertical. `null` inherits the nearest `[dir]` / `<html dir>`, else `'ltr'`.<br>**Default:** `null` |
 | `loop`              | `input<boolean>`                    | Whether arrow nav wraps.<br>**Default:** `true`                                                                                                                                                      |
-| `disabled`          | `input<boolean>`                    | Disables the whole menu.<br>**Default:** —                                                                                                                                                           |
+| `disabled`          | `input<boolean>`                    | Disables the whole menu.<br>**Default:** `false`                                                                                                                                                     |
 | `ariaLabel`         | `input<string \| null>`             | Reactive `aria-label` for the `<nav>`.<br>**Default:** `null` (and empty string) emits no attribute; prefer native `aria-labelledby` when a visible label exists                                     |
 | `openDelay`         | `input<number>`                     | ms before a hover opens a panel. Focus never opens one.<br>**Default:** `200`                                                                                                                        |
 | `closeDelay`        | `input<number>`                     | ms before pointer-leave closes.<br>**Default:** `150`                                                                                                                                                |
 | `skipDelayDuration` | `input<number>`                     | ms after a peer closes during which the next open is instant.<br>**Default:** `300`                                                                                                                  |
+
+### `ForNavigationMenuItem`
+
+| Property   | Type             | Description                                                                                                                                                                                                   |
+| ---------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`    | `input<string>`  | Identifier matched against the menu's `value`, shared by the item's trigger and content. Required in practice though not by the template compiler: an item left unbound throws in dev mode.<br>**Default:** — |
+| `disabled` | `input<boolean>` | Disables this item's trigger. The root's `disabled` disables it too.<br>**Default:** `false`                                                                                                                  |
+
+### `ForNavigationMenuLink`
+
+| Property      | Type                                                                  | Description                                                                                                        |
+| ------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `active`      | `input<boolean>`                                                      | Marks the link as pointing at the current page: reflects `data-active` and `aria-current`.<br>**Default:** `false` |
+| `ariaCurrent` | `input<'page' \| 'step' \| 'location' \| 'date' \| 'time' \| 'true'>` | Value written to `aria-current` while `active` is true.<br>**Default:** `'page'`                                   |
 
 ### Data attributes
 

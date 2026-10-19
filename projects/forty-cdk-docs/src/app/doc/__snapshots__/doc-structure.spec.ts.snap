@@ -976,7 +976,7 @@ exports[`document structure > projects/forty-cdk/accordion/README.md declares th
           "Description",
         ],
         "role": "api",
-        "rows": 6,
+        "rows": 7,
       },
       {
         "columns": [
@@ -1009,7 +1009,7 @@ exports[`document structure > projects/forty-cdk/accordion/README.md declares th
           "Values",
         ],
         "role": "plain",
-        "rows": 2,
+        "rows": 3,
       },
       {
         "columns": [
@@ -1017,7 +1017,7 @@ exports[`document structure > projects/forty-cdk/accordion/README.md declares th
           "Values",
         ],
         "role": "plain",
-        "rows": 2,
+        "rows": 3,
       },
     ],
     "title": "API",
@@ -5177,6 +5177,14 @@ exports[`document structure > projects/forty-cdk/navigation-menu/README.md decla
       },
       {
         "depth": 3,
+        "slug": "fornavigationmenuitem",
+      },
+      {
+        "depth": 3,
+        "slug": "fornavigationmenulink",
+      },
+      {
+        "depth": 3,
         "slug": "data-attributes",
       },
     ],
@@ -5190,6 +5198,24 @@ exports[`document structure > projects/forty-cdk/navigation-menu/README.md decla
         ],
         "role": "api",
         "rows": 9,
+      },
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "role": "api",
+        "rows": 2,
+      },
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "role": "api",
+        "rows": 2,
       },
       {
         "columns": [
@@ -5528,7 +5554,7 @@ exports[`document structure > projects/forty-cdk/pagination/README.md declares t
           "Description",
         ],
         "role": "api",
-        "rows": 5,
+        "rows": 7,
       },
       {
         "columns": [
@@ -5545,7 +5571,7 @@ exports[`document structure > projects/forty-cdk/pagination/README.md declares t
           "Description",
         ],
         "role": "api",
-        "rows": 1,
+        "rows": 2,
       },
       {
         "columns": [
@@ -7751,6 +7777,15 @@ exports[`document structure > projects/forty-cdk/tabs/README.md declares the sec
         ],
         "role": "plain",
         "rows": 2,
+      },
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "role": "api",
+        "rows": 1,
       },
       {
         "columns": [

@@ -113,12 +113,13 @@ A disabled item cannot be toggled and is skipped by the arrow keys, while stayin
 
 | Property      | Type                                | Description                                                                                                                                                                                    |
 | ------------- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `value`       | `model<readonly string[]>`          | Currently open item values. In single mode the array has 0 or 1 element.<br>**Default:** —                                                                                                     |
+| `value`       | `model<readonly string[]>`          | Currently open item values. In single mode the array has 0 or 1 element.<br>**Default:** `[]`                                                                                                  |
 | `multiple`    | `input<boolean>`                    | When true, multiple items can be open simultaneously.<br>**Default:** `false`                                                                                                                  |
 | `collapsible` | `input<boolean>`                    | Single mode only: when true, the open item can be collapsed by clicking it. Otherwise once any item is open, exactly one stays open.<br>**Default:** `false`                                   |
 | `disabled`    | `input<boolean>`                    | When true, disables every item: each trigger reflects the native `disabled` attribute and cannot toggle. Composes with a per-item `[disabled]`.<br>**Default:** `false`                        |
 | `orientation` | `input<'horizontal' \| 'vertical'>` | Layout direction of the trigger list. In horizontal mode ArrowLeft/Right replace ArrowUp/Down.<br>**Default:** `'vertical'`                                                                    |
 | `dir`         | `input<'ltr' \| 'rtl' \| null>`     | Writing direction. Only relevant in horizontal mode, where it swaps the meaning of Left/Right arrows. `null` inherits the nearest `[dir]` / `<html dir>`, else `'ltr'`.<br>**Default:** `null` |
+| `loop`        | `input<boolean>`                    | When true, arrow navigation wraps from the last trigger to the first and back. Set `false` to stop at the ends.<br>**Default:** `true`                                                         |
 
 | Data attribute     | Values                     |
 | ------------------ | -------------------------- |
@@ -127,10 +128,10 @@ A disabled item cannot be toggled and is skipped by the arrow keys, while stayin
 
 ### `ForAccordionItem`
 
-| Property   | Type                     | Description                                                                                          |
-| ---------- | ------------------------ | ---------------------------------------------------------------------------------------------------- |
-| `value`    | `input.required<string>` | Unique identifier within the accordion. Required.<br>**Default:** —                                  |
-| `disabled` | `input<boolean>`         | When true, the trigger ignores clicks and exposes the native `disabled` attribute.<br>**Default:** — |
+| Property   | Type                     | Description                                                                                                |
+| ---------- | ------------------------ | ---------------------------------------------------------------------------------------------------------- |
+| `value`    | `input.required<string>` | Unique identifier within the accordion. Required.<br>**Default:** —                                        |
+| `disabled` | `input<boolean>`         | When true, the trigger ignores clicks and exposes the native `disabled` attribute.<br>**Default:** `false` |
 
 | Data attribute     | Values                     |
 | ------------------ | -------------------------- |
@@ -143,6 +144,7 @@ A disabled item cannot be toggled and is skipped by the arrow keys, while stayin
 | Data attribute     | Values                     |
 | ------------------ | -------------------------- |
 | `data-state`       | `open` \| `closed`         |
+| `data-disabled`    | present \| absent          |
 | `data-orientation` | `horizontal` \| `vertical` |
 
 ### `ForAccordionContent`
@@ -150,17 +152,20 @@ A disabled item cannot be toggled and is skipped by the arrow keys, while stayin
 | Data attribute     | Values                     |
 | ------------------ | -------------------------- |
 | `data-state`       | `open` \| `closed`         |
+| `data-disabled`    | present \| absent          |
 | `data-orientation` | `horizontal` \| `vertical` |
+
+`data-disabled` on the item, trigger and content reflects the item's own `[disabled]` or the root's, whichever is set.
 
 ## Keyboard
 
-| Key                                          | Action                                                                                            |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| <kbd>Enter</kbd> / <kbd>Space</kbd>          | Toggle the focused trigger (native button).                                                       |
-| <kbd>ArrowDown</kbd> / <kbd>ArrowUp</kbd>    | Move focus between triggers (vertical, default). Wrap-around, skips disabled.                     |
-| <kbd>ArrowLeft</kbd> / <kbd>ArrowRight</kbd> | Move focus between triggers (horizontal, flipped under `dir='rtl'`). Wrap-around, skips disabled. |
-| <kbd>Home</kbd>                              | Jump to the first trigger.                                                                        |
-| <kbd>End</kbd>                               | Jump to the last trigger.                                                                         |
+| Key                                          | Action                                                                                                                      |
+| -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| <kbd>Enter</kbd> / <kbd>Space</kbd>          | Toggle the focused trigger (native button).                                                                                 |
+| <kbd>ArrowDown</kbd> / <kbd>ArrowUp</kbd>    | Move focus between triggers (vertical, default). Wraps around unless `loop` is `false`, skips disabled.                     |
+| <kbd>ArrowLeft</kbd> / <kbd>ArrowRight</kbd> | Move focus between triggers (horizontal, flipped under `dir='rtl'`). Wraps around unless `loop` is `false`, skips disabled. |
+| <kbd>Home</kbd>                              | Jump to the first trigger.                                                                                                  |
+| <kbd>End</kbd>                               | Jump to the last trigger.                                                                                                   |
 
 ## Accessibility
 

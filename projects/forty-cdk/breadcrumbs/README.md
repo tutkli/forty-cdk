@@ -23,7 +23,7 @@ A labelled navigation landmark for a breadcrumb trail: links with aria-current='
 
 ## Examples
 
-Walk the trail with `Tab`: the last crumb is the page you are on, so it carries `aria-current="page"` and is not a link back to itself.
+Walk the trail with `Tab`: the last crumb is the page you are on, so it carries `aria-current="page"` and is announced as the current page.
 
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
@@ -112,9 +112,9 @@ For a language the app sets or switches after bootstrap, pass `label` as a funct
 
 ### `ForBreadcrumbItem`
 
-| Property  | Type             | Description                                                              |
-| --------- | ---------------- | ------------------------------------------------------------------------ |
-| `current` | `input<boolean>` | When true, reflects `aria-current="page"` on the link.<br>**Default:** — |
+| Property  | Type             | Description                                                                    |
+| --------- | ---------------- | ------------------------------------------------------------------------------ |
+| `current` | `input<boolean>` | When true, reflects `aria-current="page"` on the link.<br>**Default:** `false` |
 
 ## Accessibility
 
