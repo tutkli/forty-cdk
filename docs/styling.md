@@ -234,7 +234,9 @@ panels in CSS.
 ### Form controls
 
 State is `data-state` (`checked`/`unchecked`/`indeterminate`); also `data-disabled` /
-`data-readonly`. The host is a real `<button>` so `:disabled` / `:focus-visible` work too.
+`data-readonly`. A disabled host keeps focus and never carries the native `disabled`
+attribute, so `:disabled` never matches it: style the disabled state on `[data-disabled]`
+(or `[aria-disabled='true']`). `:focus-visible` works because the host stays focusable.
 
 - [Switch](../projects/forty-cdk/switch/README.md) ·
   [Checkbox](../projects/forty-cdk/checkbox/README.md) ·
@@ -258,8 +260,12 @@ Style off `data-disabled` / `data-readonly` / `data-empty`, validation facets
 
 ### Range & value display
 
-Paint the bar/fill from a `--for-*-percentage` custom property; color by `data-state`
-(Progress) or `data-quality` (Meter).
+Progress and Meter publish the fill as a CSS percentage on their indicator
+(`--for-progress-percentage`, `--for-meter-percentage`, e.g. `25%`) to use directly in
+`width` / `transform`. Slider publishes unitless fractions in `[0, 1]`
+(`--for-slider-thumb-position`, `--for-slider-range-start` / `-end` / `-size`) to multiply,
+e.g. `calc(var(--for-slider-range-size) * 100%)`. Color by `data-state` (Progress) or
+`data-quality` (Meter).
 
 - [Slider](../projects/forty-cdk/slider/README.md) ·
   [Progress](../projects/forty-cdk/progress/README.md) ·
