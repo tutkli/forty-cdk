@@ -1978,6 +1978,7 @@ describe('ForDrawer (declarative)', () => {
           @if (open()) {
             <div forDrawer (dismiss)="open.set(false)" [modal]="false" ariaLabel="t">
               <button id="inside">In</button>
+              <button id="inside-last">Last</button>
             </div>
           }
         `,
@@ -1997,6 +1998,12 @@ describe('ForDrawer (declarative)', () => {
       const drawer = document.querySelector<HTMLElement>('[forDrawer]')!;
       expect(drawer.hasAttribute('aria-modal')).toBe(false);
       expect(document.body.style.overflow).toBe('auto');
+
+      const last = document.querySelector<HTMLButtonElement>('#inside-last')!;
+      last.focus();
+      const tab = pressKey(last, 'Tab');
+      expect(tab.defaultPrevented).toBe(false);
+      expect(document.activeElement).toBe(last);
     });
 
     it('leaves focus off the trigger on close when modal=false, even with returnFocus=true', async () => {
@@ -2181,7 +2188,13 @@ describe('ForDrawer (declarative)', () => {
       pressKey(document, 'Escape');
       await flush(r.fixture);
       expect(r.instance.open()).toBe(false);
-      expect(r.instance.reasons).toEqual(['escape']);
+
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      document.querySelector<HTMLButtonElement>('#cancel')!.click();
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe(false);
+      expect(r.instance.reasons).toEqual(['escape', 'closeButton']);
     });
   });
 
@@ -2194,6 +2207,14 @@ describe('ForDrawer (declarative)', () => {
       r.instance.open.set(true);
       await flush(r.fixture);
       expect(document.activeElement?.id).toBe('ok');
+
+      const first = document.querySelector<HTMLButtonElement>('#ok')!;
+      const last = document.querySelector<HTMLButtonElement>('#cancel')!;
+      last.focus();
+      expect(pressKey(last, 'Tab').defaultPrevented).toBe(true);
+      expect(document.activeElement).toBe(first);
+      expect(pressKey(first, 'Tab', { shiftKey: true }).defaultPrevented).toBe(true);
+      expect(document.activeElement).toBe(last);
 
       pressKey(document, 'Escape');
       await flush(r.fixture);
