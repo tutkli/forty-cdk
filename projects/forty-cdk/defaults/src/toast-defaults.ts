@@ -31,7 +31,7 @@ export interface ForToastStackShift {
 export interface ForToastDefaults {
   /** Default `5000`. How long a toast stays up before auto-dismissing, in ms. */
   duration: number;
-  /** Default `'F6'`. Key that moves focus to the toast viewport. */
+  /** Default `'F6'`. Key that moves focus to the first rendered toast. */
   hotkey: string;
   /** Default `Infinity`. How many toasts one viewport renders at a time. */
   maxVisible: number;

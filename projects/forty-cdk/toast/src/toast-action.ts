@@ -1,4 +1,4 @@
-import { Directive, input } from '@angular/core';
+import { DestroyRef, Directive, inject, input } from '@angular/core';
 
 import { hostButtonType, registerHandle } from 'forty-cdk/core';
 import { injectToastContext } from './toast-context';
@@ -9,7 +9,9 @@ import { injectToastContext } from './toast-context';
  *
  * Clicking emits `(dismiss)` from the parent `[forToast]` with reason
  * `'action'`. Wire your action handler with `(click)` on this element
- * itself — the close fires after your handler runs (via event order).
+ * itself: the close is requested after every `(click)` handler bound on the
+ * element has run, so the handler sees the toast still open and can attach a
+ * result with `ref.dismiss('action', result)` or patch it with `ref.update()`.
  *
  * The action is the **sanctioned dismissal path even when the toast is
  * `dismissible=false`**: a forced-action toast suppresses Escape / swipe / the
@@ -18,11 +20,10 @@ import { injectToastContext } from './toast-context';
  *
  * Set `[altText]` for WCAG 2.2.1 compliance: the visible label (e.g.
  * "Undo") rarely carries enough context to recover the action once the
- * toast disappears. The alt text replaces the toast's automatic live
- * announcement with a self-contained string, e.g. `altText="Undo (Cmd+Z)"`.
- * When at least one action carries an alt text, the parent toast routes
- * its announcement through `LiveAnnouncer` and silences the host
- * `aria-live` to avoid a duplicate readout.
+ * toast disappears. The alt text is appended to the toast's announcement
+ * (`title. description. altText`), e.g. `altText="Undo (Cmd+Z)"`. It also
+ * moves a bare `error` toast onto the `LiveAnnouncer` path, since the hint is
+ * not in the visible DOM its host live region would read.
  */
 @Directive({
   selector: '[forToastAction]',
@@ -36,11 +37,12 @@ export class ForToastAction {
   private readonly buttonType = hostButtonType();
 
   private readonly ctx = injectToastContext('ForToastAction');
+  readonly #destroyRef = inject(DestroyRef);
 
   /**
-   * Self-contained text read aloud in place of the visible label so the
-   * user knows how to recover the action after the toast is gone. Required
-   * for time-limited toasts per WCAG 2.2.1; defaults to `''` (no alt text).
+   * Recovery hint appended to the toast's announcement so the user knows how
+   * to recover the action after the toast is gone. Required for time-limited
+   * toasts per WCAG 2.2.1; defaults to `''` (no alt text).
    */
   readonly altText = input<string>('');
 
@@ -54,6 +56,10 @@ export class ForToastAction {
   }
 
   private onClick(): void {
-    this.ctx.requestClose('action');
+    queueMicrotask(() => {
+      if (!this.#destroyRef.destroyed) {
+        this.ctx.requestClose('action');
+      }
+    });
   }
 }

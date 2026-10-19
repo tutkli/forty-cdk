@@ -163,10 +163,11 @@ export function createToastStackShifter(options: ToastStackShifterOptions): Toas
       return;
     }
     warnedRejected = true;
+    const reason = error instanceof Error ? error.message : String(error);
     fortyWarn({
       code: 'FORCDK-TOAST-002',
       message: `[stackShift] easing ${JSON.stringify(motion.easing)} was rejected by the browser.`,
-      cause: error instanceof Error ? error.message : String(error),
+      cause: `Element.animate() could not parse the easing and threw: ${reason}`,
       fix: 'Use a valid CSS easing function. Until then the glide is skipped; the rows still reflow.',
     });
   };

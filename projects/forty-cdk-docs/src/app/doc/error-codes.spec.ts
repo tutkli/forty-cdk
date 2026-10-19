@@ -55,6 +55,17 @@ describe('the error code roster', () => {
     }
   });
 
+  it('publishes no prose field that is only a placeholder, which would tell the reader nothing', () => {
+    const placeholderOnly = /^(?:\{\w+\}[\s.:,]*)+$/;
+    const empty = ERROR_CODE_INDEX.flatMap((entry) =>
+      (['message', 'cause', 'fix'] as const)
+        .filter((field) => placeholderOnly.test(entry[field]?.trim() ?? 'x'))
+        .map((field) => `${entry.code} ${field}`),
+    );
+
+    expect(empty).toEqual([]);
+  });
+
   /**
    * ~80 of the roster's messages are written by `orphanContextError` from the
    * piece, root and token a call site declares, and the generator reads that

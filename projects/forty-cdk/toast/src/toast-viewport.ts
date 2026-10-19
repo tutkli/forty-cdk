@@ -104,9 +104,10 @@ import { ForToastTitle } from './toast-title';
  * Accessibility: the host carries `role="region"` and an `aria-label` — set it
  * per-viewport with `[ariaLabel]`, or per-scope with
  * `provideForToastDefaults({ viewportAriaLabel: '…' })` (default
- * `Notifications`). Toast nodes themselves carry their own `role`
- * (`status` / `alert`) and `aria-live`, so screen readers announce updates
- * without forcing focus.
+ * `Notifications`). Each toast carries its own `role` (`status` / `alert`)
+ * and is announced through `LiveAnnouncer` without moving focus, except a
+ * toast shown as an `error` with no action `altText`, whose host is the live
+ * region itself.
  *
  * Over a modal: the host carries `data-for-modal-exempt` by default, so an open `ForDialog` /
  * `ForDrawer` leaves the viewport out of its inert pass and treats a click on a toast as inside
@@ -169,7 +170,7 @@ import { ForToastTitle } from './toast-title';
             <div forToastDescription>{{ toast.config.description }}</div>
           }
           @if (toast.config.action; as action) {
-            <button forToastAction (click)="action.activate()">
+            <button forToastAction [altText]="action.altText ?? ''" (click)="action.activate()">
               {{ action.label }}
             </button>
           }
@@ -229,7 +230,7 @@ export class ForToastViewport {
    */
   readonly container = input<HTMLElement | null>(null);
 
-  /** Hotkey to focus the viewport. Empty (the default) reads the scope's `provideForToastDefaults({ hotkey })`, itself `F6` unless configured. */
+  /** Hotkey that focuses the first rendered toast. Empty (the default) reads the scope's `provideForToastDefaults({ hotkey })`, itself `F6` unless configured. */
   readonly hotkey = input<string>('');
 
   /**
