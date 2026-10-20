@@ -53,9 +53,12 @@ function buildRows(): readonly Row[] {
       forVirtualReorder
       lockAxis="y"
       (itemReorder)="onReorder($event)"
+      role="list"
+      aria-label="Rows"
     >
       <div
         *forVirtualFor="let row of data(); let i = index"
+        role="listitem"
         forDraggable
         [dragData]="i"
         [attr.data-testid]="'row-' + i"
