@@ -1,4 +1,14 @@
-import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
+import {
+  afterNextRender,
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  type ElementRef,
+  inject,
+  Injector,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { ForBreadcrumbItem, ForBreadcrumbSeparator, ForBreadcrumbs } from 'forty-cdk/breadcrumbs';
 
 interface Crumb {
@@ -56,6 +66,7 @@ interface Crumb {
               </li>
               <li class="bc-li">
                 <a
+                  #revealed
                   forBreadcrumbItem
                   class="bc-link"
                   [href]="hidden.href"
@@ -83,7 +94,7 @@ interface Crumb {
                 type="button"
                 class="bc-ellipsis"
                 aria-label="Show hidden path segments"
-                (click)="expanded.set(true)"
+                (click)="expand()"
               >
                 …
               </button>
@@ -167,7 +178,11 @@ interface Crumb {
   `,
 })
 export class BreadcrumbsCollapsedExample {
+  private readonly injector = inject(Injector);
+
   protected readonly expanded = signal(false);
+
+  private readonly firstRevealed = viewChild<ElementRef<HTMLAnchorElement>>('revealed');
 
   protected readonly trail = signal<readonly Crumb[]>([
     { label: 'Home', href: '/' },
@@ -184,4 +199,9 @@ export class BreadcrumbsCollapsedExample {
   });
 
   protected readonly middle = computed<readonly Crumb[]>(() => this.trail().slice(1, -2));
+
+  protected expand(): void {
+    this.expanded.set(true);
+    afterNextRender(() => this.firstRevealed()?.nativeElement.focus(), { injector: this.injector });
+  }
 }

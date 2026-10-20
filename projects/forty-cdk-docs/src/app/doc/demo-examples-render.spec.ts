@@ -311,6 +311,22 @@ describe('the docs examples', () => {
     expect(resizer.getAttribute('aria-valuenow')).toBe('228');
   });
 
+  it('move focus to the first revealed crumb when the collapsed breadcrumb trail expands', async () => {
+    const { host, fixture } = await render('breadcrumbs/examples/collapsed.example.ts');
+    const ellipsis = query<HTMLButtonElement>(host, '.bc-ellipsis');
+    ellipsis.focus();
+
+    ellipsis.click();
+    await flush(fixture);
+
+    expect(host.querySelector('.bc-ellipsis')).toBeNull();
+    expect(document.activeElement).toBe(
+      [...host.querySelectorAll('[forBreadcrumbItem]')].find(
+        (link) => visibleText(link) === 'Workspace',
+      ),
+    );
+  });
+
   it('keep the search clear button out of the searchbox name once text is typed', async () => {
     const { host } = await render('search/examples/field.example.ts');
     expect(query<HTMLButtonElement>(host, '[forSearchClear]').hidden).toBe(false);
