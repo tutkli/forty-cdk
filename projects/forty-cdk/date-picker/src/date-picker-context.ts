@@ -4,6 +4,8 @@ import type { ReferenceElement } from '@floating-ui/dom';
 import {
   assertRootContext,
   orphanContextError,
+  RootedRegistry,
+  type RootedHandle,
   unresolvedRootError,
   type VetoableNativeEvent,
 } from 'forty-cdk/core';
@@ -84,8 +86,6 @@ export interface ForDatePickerContext {
   readonly reference: Signal<ReferenceElement | null>;
   /** The trigger button — exempt from outside-pointer checks and the return-focus target. */
   readonly trigger: Signal<HTMLElement | null>;
-  registerTrigger(el: HTMLElement): void;
-  unregisterTrigger(el: HTMLElement): void;
 
   /**
    * Register / unregister an optional `[forDatePickerAnchor]` positioning
@@ -152,19 +152,21 @@ export interface ForDatePickerContext {
  * The date picker's internal coordination surface: everything
  * {@link ForDatePickerContext} publishes plus the members only its own pieces
  * read. Never exported from `public-api.ts`. It is the type the trigger reads
- * {@link FOR_DATE_PICKER_CONTEXT} at; `ForDateRangePicker` declares its member
- * TS-`protected`, which keeps it out of the emitted `.d.ts` while `useExisting`
- * still satisfies this contract at runtime.
+ * {@link FOR_DATE_PICKER_CONTEXT} at; `ForDateRangePicker` declares `anatomy`
+ * and both roots declare `resolveTriggerId` TS-`private`, which keeps them out
+ * of the emitted `.d.ts` while `useExisting` still satisfies this contract at
+ * runtime.
  */
 export interface DatePickerContext extends ForDatePickerContext {
   /** How the picker is composed. */
   readonly anatomy: Signal<ForDatePickerAnatomy>;
+  resolveTriggerId(staticId: string | null): string;
 }
 
 /**
  * Injection token for {@link ForDatePickerContext}, provided by `ForDatePicker`
- * and `ForDateRangePicker`. The trigger reads it at an internal type that adds
- * the anatomy, so a wrapper re-providing it must alias it to the root:
+ * and `ForDateRangePicker`. The trigger reads it at an internal type, so a
+ * wrapper re-providing it must alias it to the root:
  * `{ provide: FOR_DATE_PICKER_CONTEXT, useExisting: MyDatePicker }`, where
  * `MyDatePicker` extends `ForDatePicker`. A value that merely satisfies the
  * declared type resolves too, and is rejected in dev mode by the trigger.
@@ -192,20 +194,33 @@ export function injectDatePickerContext(piece: string): ForDatePickerContext {
   return ctx;
 }
 
+export interface DatePickerTriggerHandle extends RootedHandle<ForDatePickerContext> {
+  readonly host: HTMLElement;
+  readonly staticId: string | null;
+}
+
+export const DATE_PICKER_TRIGGERS = new InjectionToken<
+  RootedRegistry<ForDatePickerContext, DatePickerTriggerHandle>
+>('DATE_PICKER_TRIGGERS', { providedIn: 'root', factory: () => new RootedRegistry() });
+
 /**
  * Resolves the trigger's root context: the explicit reference when the
  * `[forDatePickerTrigger]` input carries one, the injected
- * `FOR_DATE_PICKER_CONTEXT` otherwise. The orphan error only fires when neither
- * resolves, on first read of the returned signal. Must be called in an
+ * `FOR_DATE_PICKER_CONTEXT` otherwise. `root` is `null` while neither resolves;
+ * `ctx` throws the orphan error on read in that state. Must be called in an
  * injection context.
  */
-export function injectDatePickerTriggerContext(
-  explicitRoot: Signal<ForDatePickerContext | ''>,
-): Signal<DatePickerContext> {
+export function injectDatePickerTriggerContext(explicitRoot: Signal<ForDatePickerContext | ''>): {
+  readonly root: Signal<ForDatePickerContext | null>;
+  readonly ctx: Signal<DatePickerContext>;
+} {
   const injected = inject(FOR_DATE_PICKER_CONTEXT, { optional: true });
-  return computed(() => {
+  const root = computed(() => {
     const explicit = explicitRoot();
-    const resolved = explicit === '' ? injected : explicit;
+    return explicit === '' ? injected : explicit;
+  });
+  const ctx = computed(() => {
+    const resolved = root();
     if (!resolved) {
       throw unresolvedRootError({
         code: 'FORCDK-DATE-PICKER-004',
@@ -225,4 +240,5 @@ export function injectDatePickerTriggerContext(
     });
     return widened;
   });
+  return { root, ctx };
 }

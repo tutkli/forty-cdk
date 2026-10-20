@@ -173,7 +173,7 @@ the token itself.
 Several of these roots (`ForAccordion`, `ForAvatar`, `ForCalendar`, `ForCarousel`,
 `ForContextMenu`, `ForDialog`, `ForDraggable`, `ForFreeDrag`, `ForDrawer`, `ForHoverCard`,
 `ForNavigationMenu`, `ForPopover`, `ForScrollArea`, `ForStepper`, `ForTabs`, `ForToast`,
-`ForTree`, plus the `ForTable` and `ForVirtualViewport` covered below) split their coordination
+`ForTooltip`, `ForTree`, plus the `ForTable` and `ForVirtualViewport` covered below) split their coordination
 surface in two: the
 public `FOR_<PRIMITIVE>_CONTEXT` above, and an internal interface carrying the piece-registration
 protocol that is deliberately **not** exported

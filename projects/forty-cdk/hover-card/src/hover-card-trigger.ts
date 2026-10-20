@@ -1,7 +1,11 @@
-import { Directive, effect, ElementRef, inject, input } from '@angular/core';
-import { createPressFocus, isNonTouchPointer } from 'forty-cdk/core';
+import { Directive, ElementRef, inject, input } from '@angular/core';
+import { createPressFocus, isNonTouchPointer, registerHandle } from 'forty-cdk/core';
 
-import { type ForHoverCardContext, injectHoverCardTriggerContext } from './hover-card-context';
+import {
+  type ForHoverCardContext,
+  HOVER_CARD_TRIGGERS,
+  injectHoverCardTriggerContext,
+} from './hover-card-context';
 
 /**
  * Element that activates the hover-card on hover or focus. Apply on a link,
@@ -69,20 +73,18 @@ export class ForHoverCardTrigger {
    */
   readonly forHoverCardTrigger = input<ForHoverCardContext | ''>('');
 
-  private readonly ctx = injectHoverCardTriggerContext(this.forHoverCardTrigger);
+  readonly #resolved = injectHoverCardTriggerContext(this.forHoverCardTrigger);
+  private readonly ctx = this.#resolved.ctx;
 
   readonly #pressFocus = createPressFocus();
 
   constructor() {
-    const el = this.#host.nativeElement;
-    // Registration is an imperative call into the resolved root's registry,
-    // not state derivation — the effect only re-registers the element when the
-    // resolved root changes (explicit reference swapped at runtime).
-    effect((onCleanup) => {
-      const ctx = this.ctx();
-      ctx.registerTrigger(el);
-      onCleanup(() => ctx.unregisterTrigger(el));
-    });
+    const triggers = inject(HOVER_CARD_TRIGGERS);
+    registerHandle(
+      { host: this.#host.nativeElement, root: this.#resolved.root },
+      (handle) => triggers.add(handle),
+      (handle) => triggers.remove(handle),
+    );
   }
 
   /**

@@ -1,5 +1,6 @@
 import {
   booleanAttribute,
+  computed,
   DestroyRef,
   Directive,
   inject,
@@ -29,6 +30,7 @@ import {
 import {
   FOR_HOVER_CARD_CONTEXT,
   type ForHoverCardContext,
+  HOVER_CARD_TRIGGERS,
   type HoverCardScheduleReason,
 } from './hover-card-context';
 import { FOR_HOVER_CARD_DEFAULTS, HoverCardCoordinator } from 'forty-cdk/defaults';
@@ -123,8 +125,8 @@ export class ForHoverCard extends AnchoredOverlayPositioningBase implements ForH
    */
   readonly reducedMotion = injectPrefersReducedMotion();
 
-  readonly #triggerEl = signal<HTMLElement | null>(null);
-  readonly trigger = this.#triggerEl.asReadonly();
+  readonly #triggers = inject(HOVER_CARD_TRIGGERS).of(this);
+  readonly trigger = computed(() => this.#triggers().at(-1)?.host ?? null);
 
   readonly #arrowEl = signal<HTMLElement | null>(null);
   readonly arrow = this.#arrowEl.asReadonly();
@@ -156,7 +158,7 @@ export class ForHoverCard extends AnchoredOverlayPositioningBase implements ForH
     });
 
     this.#surface = createHoverSurfaceState({
-      trigger: this.#triggerEl,
+      trigger: this.trigger,
       content: this.#contentEl,
       side: () => this.side(),
       close: () => this.#hoverIntent.scheduleClose(false),
@@ -164,7 +166,7 @@ export class ForHoverCard extends AnchoredOverlayPositioningBase implements ForH
 
     this.#scrollDismiss = inject(ScrollDismissDispatcher).register({
       dismiss: () => this.#dismissOnScroll(),
-      scope: { anchor: this.#triggerEl, surface: this.#contentEl },
+      scope: { anchor: this.trigger, surface: this.#contentEl },
       active: () => this.open() || this.#hoverIntent.isPending(),
     });
 
@@ -172,17 +174,6 @@ export class ForHoverCard extends AnchoredOverlayPositioningBase implements ForH
       this.cancelPending();
       this.#scrollDismiss.unregister();
     });
-  }
-
-  registerTrigger(el: HTMLElement): void {
-    this.#triggerEl.set(el);
-  }
-
-  unregisterTrigger(el: HTMLElement): void {
-    if (this.#triggerEl() === el) {
-      this.#triggerEl.set(null);
-      this.#surface.resetTrigger();
-    }
   }
 
   registerArrow(el: HTMLElement): void {
@@ -259,7 +250,7 @@ export class ForHoverCard extends AnchoredOverlayPositioningBase implements ForH
   }
 
   private returnFocusToTrigger(): void {
-    const trigger = this.#triggerEl();
+    const trigger = this.trigger();
     if (!trigger) {
       return;
     }

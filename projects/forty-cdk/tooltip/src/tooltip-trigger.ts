@@ -1,7 +1,17 @@
-import { Directive, effect, ElementRef, inject, input } from '@angular/core';
-import { createPressFocus, hostDescribedBy, isNonTouchPointer } from 'forty-cdk/core';
+import { computed, Directive, ElementRef, inject, input } from '@angular/core';
+import {
+  createPressFocus,
+  hostDescribedBy,
+  isNonTouchPointer,
+  registerHandle,
+  staticHostId,
+} from 'forty-cdk/core';
 
-import { type ForTooltipContext, injectTooltipTriggerContext } from './tooltip-context';
+import {
+  type ForTooltipContext,
+  injectTooltipTriggerContext,
+  TOOLTIP_TRIGGERS,
+} from './tooltip-context';
 
 /**
  * Element that activates the tooltip on pointer hover or keyboard focus. Apply
@@ -47,7 +57,7 @@ import { type ForTooltipContext, injectTooltipTriggerContext } from './tooltip-c
   selector: '[forTooltipTrigger]',
   exportAs: 'forTooltipTrigger',
   host: {
-    '[id]': 'ctx().triggerId()',
+    '[id]': 'id()',
     '[attr.data-state]': 'ctx().open() ? "open" : "closed"',
     '(pointerenter)': 'onPointerEnter($event)',
     '(pointerdown)': 'onPointerDown()',
@@ -60,6 +70,7 @@ import { type ForTooltipContext, injectTooltipTriggerContext } from './tooltip-c
 })
 export class ForTooltipTrigger {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
+  readonly #staticId = staticHostId(this.#host.nativeElement);
 
   /**
    * Optional explicit reference to the `[forTooltip]` root, named after the
@@ -72,7 +83,10 @@ export class ForTooltipTrigger {
    */
   readonly forTooltipTrigger = input<ForTooltipContext | ''>('');
 
-  private readonly ctx = injectTooltipTriggerContext(this.forTooltipTrigger);
+  readonly #resolved = injectTooltipTriggerContext(this.forTooltipTrigger);
+  private readonly ctx = this.#resolved.ctx;
+
+  private readonly id = computed(() => this.ctx().resolveTriggerId(this.#staticId));
 
   private readonly describedBy = hostDescribedBy(() =>
     this.ctx().open() ? this.ctx().contentId() : null,
@@ -81,15 +95,13 @@ export class ForTooltipTrigger {
   readonly #pressFocus = createPressFocus();
 
   constructor() {
-    const el = this.#host.nativeElement;
-    // Registration is an imperative call into the resolved root's registry,
-    // not state derivation — the effect only re-registers the element when the
-    // resolved root changes (explicit reference swapped at runtime).
-    effect((onCleanup) => {
-      const ctx = this.ctx();
-      ctx.registerTrigger(el);
-      onCleanup(() => ctx.unregisterTrigger(el));
-    });
+    const host = this.#host.nativeElement;
+    const triggers = inject(TOOLTIP_TRIGGERS);
+    registerHandle(
+      { host, staticId: this.#staticId, root: this.#resolved.root },
+      (handle) => triggers.add(handle),
+      (handle) => triggers.remove(handle),
+    );
   }
 
   /**

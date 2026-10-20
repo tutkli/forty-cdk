@@ -22,9 +22,12 @@
  * token at the internal interface's type inside `inject<Primitive>Context`, and
  * the root's own members are kept out of the emitted `.d.ts` by `private` /
  * `protected` / a narrow public type. So every name below is a type, except the
- * table def-registry's own token and registry class — a registry a scaffold
- * wrapper must be able to provide is a separate provider rather than a view of
- * a root, which is the one shape a second token is still for (see below).
+ * tokens of registries that are separate providers rather than views of a root,
+ * which is the one shape a second token is still for: the table def-registry's
+ * own token and registry class, which a scaffold wrapper must be able to
+ * provide (see below), and the `*_TRIGGERS` registries a root derives its
+ * trigger from, which a trigger reaches whether its root came through DI or
+ * through its own input ([#2399]).
  *
  * The table's piece-registration protocol is not listed here: it lives in the
  * `forty-cdk/core` internal tier (the virtualization entry point registers
@@ -53,11 +56,16 @@ export const REGISTRATION_SURFACES = {
     'ComboboxVirtualizationHost',
   ],
   'context-menu': ['ContextMenuContext', 'ContextMenuPieceContext'],
-  'date-picker': ['DatePickerContext'],
+  'date-picker': ['DatePickerContext', 'DatePickerTriggerHandle', 'DATE_PICKER_TRIGGERS'],
   dialog: ['DialogContext', 'DialogRegistrationContext'],
   'drag-drop': ['DraggableContext', 'DraggablePieceContext'],
   drawer: ['DrawerContext', 'DrawerRegistrationContext'],
-  'hover-card': ['HoverCardContext', 'HoverCardPieceContext'],
+  'hover-card': [
+    'HoverCardContext',
+    'HoverCardPieceContext',
+    'HoverCardTriggerHandle',
+    'HOVER_CARD_TRIGGERS',
+  ],
   listbox: [
     'ListboxContext',
     'ListboxPieceContext',
@@ -71,7 +79,13 @@ export const REGISTRATION_SURFACES = {
     'ForNavigationMenuTriggerHandle',
     'ForNavigationMenuViewportHandle',
   ],
-  popover: ['PopoverContext', 'PopoverPieceContext', 'PopoverRegistrationContext'],
+  popover: [
+    'PopoverContext',
+    'PopoverPieceContext',
+    'PopoverRegistrationContext',
+    'PopoverTriggerHandle',
+    'POPOVER_TRIGGERS',
+  ],
   'radio-group': ['RadioGroupContext', 'ForRadioHandle'],
   'scroll-area': ['ScrollAreaContext', 'ScrollAreaRegistrationContext'],
   select: [
@@ -94,6 +108,7 @@ export const REGISTRATION_SURFACES = {
   tabs: ['TabsContext', 'ForTabsContentHandle', 'ForTabsTriggerHandle'],
   'time-picker': ['TimePickerContext', 'TimePickerPieceContext', 'TimePickerOverlayContext'],
   toast: ['ToastContext', 'ForToastActionHandle', 'ForToastTextHandle'],
+  tooltip: ['TooltipContext', 'TooltipPieceContext', 'TooltipTriggerHandle', 'TOOLTIP_TRIGGERS'],
   tree: ['TreeContext', 'TreePieceContext', 'TreeVirtualization', 'TreeVirtualizationHost'],
   virtualization: ['VirtualViewportContext'],
 };

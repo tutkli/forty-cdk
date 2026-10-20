@@ -32,6 +32,7 @@ import {
 import {
   FOR_TOOLTIP_CONTEXT,
   type ForTooltipContext,
+  TOOLTIP_TRIGGERS,
   type TooltipScheduleReason,
 } from './tooltip-context';
 import { FOR_TOOLTIP_DEFAULTS, TooltipCoordinator } from 'forty-cdk/defaults';
@@ -172,18 +173,22 @@ export class ForTooltip extends AnchoredOverlayPositioningBase implements ForToo
 
   readonly #generatedTriggerId = this.#idGen.next('for-tooltip-trigger');
 
+  readonly #triggers = inject(TOOLTIP_TRIGGERS).of(this);
+  readonly #triggerHandle = computed(() => this.#triggers().at(-1) ?? null);
+
   /**
    * Id of the trigger element. A consumer-set `id` on the trigger host is
    * adopted at registration and preserved; the generated
    * `for-tooltip-trigger-*` id is only assigned when the host has none.
    */
-  readonly triggerId = signal(this.#generatedTriggerId);
+  readonly triggerId = computed(() =>
+    this.resolveTriggerId(this.#triggerHandle()?.staticId ?? null),
+  );
 
   /** Generated id of the content element, wired to the trigger's `aria-describedby` while open. */
   readonly contentId = signal(this.#idGen.next('for-tooltip-content'));
 
-  readonly #triggerEl = signal<HTMLElement | null>(null);
-  readonly trigger = this.#triggerEl.asReadonly();
+  readonly trigger = computed(() => this.#triggerHandle()?.host ?? null);
 
   readonly #contentEl = signal<HTMLElement | null>(null);
 
@@ -213,7 +218,7 @@ export class ForTooltip extends AnchoredOverlayPositioningBase implements ForToo
     });
 
     this.#surface = createHoverSurfaceState({
-      trigger: this.#triggerEl,
+      trigger: this.trigger,
       content: this.#contentEl,
       side: () => this.side(),
       close: () => this.#hoverIntent.scheduleClose(false),
@@ -221,7 +226,7 @@ export class ForTooltip extends AnchoredOverlayPositioningBase implements ForToo
 
     this.#scrollDismiss = inject(ScrollDismissDispatcher).register({
       dismiss: () => this.#dismissOnScroll(),
-      scope: { anchor: this.#triggerEl, surface: this.#contentEl },
+      scope: { anchor: this.trigger, surface: this.#contentEl },
       active: () => this.open() || this.#hoverIntent.isPending(),
     });
 
@@ -231,21 +236,8 @@ export class ForTooltip extends AnchoredOverlayPositioningBase implements ForToo
     });
   }
 
-  /**
-   * Registers the trigger host element. Adopts a pre-existing consumer-set
-   * `id` as the trigger id so external references (anchors, `aria-labelledby`,
-   * label `for`) keep resolving; falls back to the generated id otherwise.
-   */
-  registerTrigger(el: HTMLElement): void {
-    adoptHostId(el, this.triggerId);
-    this.#triggerEl.set(el);
-  }
-
-  unregisterTrigger(el: HTMLElement): void {
-    if (this.#triggerEl() === el) {
-      this.#triggerEl.set(null);
-      this.#surface.resetTrigger();
-    }
+  private resolveTriggerId(staticId: string | null): string {
+    return staticId || this.#generatedTriggerId;
   }
 
   /** Registers the content host element so the hoverable-content grace polygon can measure it. */
@@ -423,7 +415,7 @@ export class ForTooltip extends AnchoredOverlayPositioningBase implements ForToo
     if (!this.showOnOverflow()) {
       return false;
     }
-    const el = this.#triggerEl();
+    const el = this.trigger();
     return el !== null && el.scrollWidth <= el.clientWidth;
   }
 }

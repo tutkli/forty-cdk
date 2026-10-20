@@ -107,7 +107,7 @@ export class ForDateRangePicker<D>
   private readonly anatomy: Signal<ForDatePickerAnatomy> =
     signal<ForDatePickerAnatomy>('trigger').asReadonly();
 
-  readonly triggerId = signal(this.idGen.next('for-date-range-picker-trigger'));
+  protected readonly generatedTriggerId = this.idGen.next('for-date-range-picker-trigger');
   readonly contentId = signal(this.idGen.next('for-date-range-picker-content'));
 
   /**

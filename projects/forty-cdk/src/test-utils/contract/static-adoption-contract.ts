@@ -86,6 +86,7 @@ export type StaticAdoptionSeam =
   | 'hostId'
   | 'resolveHostId'
   | 'adoptHostId'
+  | 'staticHostId'
   | 'hostStaticAttribute'
   | 'hostAriaLabel'
   | 'hostLabelledBy'

@@ -316,8 +316,8 @@ export const OVERLAY_FAMILY_ADOPTERS: readonly StaticAdoptionAdopter[] = [
       {
         key: '[forPopoverTrigger]',
         channel: 'id',
-        source: 'popover/src/popover.ts',
-        seam: 'adoptHostId',
+        source: 'popover/src/popover-trigger.ts',
+        seam: 'staticHostId',
         probe: 'probe-trigger',
         fallback: { generated: 'for-popover-trigger' },
       },
@@ -379,8 +379,8 @@ export const OVERLAY_FAMILY_ADOPTERS: readonly StaticAdoptionAdopter[] = [
       {
         key: '[forTooltipTrigger]',
         channel: 'id',
-        source: 'tooltip/src/tooltip.ts',
-        seam: 'adoptHostId',
+        source: 'tooltip/src/tooltip-trigger.ts',
+        seam: 'staticHostId',
         probe: 'probe-trigger',
         fallback: { generated: 'for-tooltip-trigger' },
       },

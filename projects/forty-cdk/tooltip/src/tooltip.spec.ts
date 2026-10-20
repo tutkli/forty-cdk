@@ -2336,6 +2336,55 @@ describe('ForTooltip', () => {
       await flush(r.fixture);
       expect(trigger.getAttribute('data-state')).toBe('closed');
     });
+
+    @Component({
+      imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent, NgTemplateOutlet],
+      template: `
+        <ng-template #trig let-root="root">
+          <button type="button" [forTooltipTrigger]="root">Hover me</button>
+        </ng-template>
+
+        <div forTooltip [(open)]="openA" [openDelay]="0" [closeDelay]="0" #a="forTooltip">
+          @if (a.open()) {
+            <div forTooltipContent>A</div>
+          }
+        </div>
+        <div forTooltip [(open)]="openB" [openDelay]="0" [closeDelay]="0" #b="forTooltip">
+          @if (b.open()) {
+            <div forTooltipContent>B</div>
+          }
+        </div>
+
+        <ng-container
+          [ngTemplateOutlet]="trig"
+          [ngTemplateOutletContext]="{ root: useB() ? b : a }"
+        />
+      `,
+    })
+    class RetargetedHost {
+      readonly openA = signal(false);
+      readonly openB = signal(false);
+      readonly useB = signal(false);
+    }
+
+    it('follows an explicit root swapped at runtime', async () => {
+      const r = renderHost(RetargetedHost);
+      await flush(r.fixture);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+      const idUnderA = trigger.id;
+
+      r.instance.useB.set(true);
+      await flush(r.fixture);
+      trigger.dispatchEvent(new PointerEvent('pointerenter', { bubbles: true }));
+      await flush(r.fixture);
+
+      expect(r.query('button')).toBe(trigger);
+      expect(r.instance.openA()).toBe(false);
+      expect(r.instance.openB()).toBe(true);
+      expect(trigger.id).not.toBe(idUnderA);
+      const content = document.querySelector<HTMLElement>('[role="tooltip"]')!;
+      expect(trigger.getAttribute('aria-describedby')).toBe(content.id);
+    });
   });
 
   describe('trigger subclass', () => {

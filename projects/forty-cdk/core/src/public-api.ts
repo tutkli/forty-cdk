@@ -85,6 +85,7 @@ export {
   registerHandle,
 } from './collection/register-handle';
 export { createSingleSlot, type SingleSlot, type SingleSlotConfig } from './collection/single-slot';
+export { RootedRegistry, type RootedHandle } from './collection/rooted-registry';
 export {
   composedClosest,
   composedContains,
@@ -199,7 +200,7 @@ export { mirrorExternalValue, mirrorValue } from './form-ui-control/value-mirror
 export { resolveConfigClass } from './host-attributes/config-class';
 export { reflectDisabled } from './host-attributes/disabled-reflection';
 export { hostAriaLabel, hostDescribedBy, hostLabelledBy } from './host-attributes/host-aria';
-export { adoptHostId, hostId, resolveHostId } from './host-attributes/host-id';
+export { adoptHostId, hostId, resolveHostId, staticHostId } from './host-attributes/host-id';
 export { hostStaticAttribute } from './host-attributes/host-static-attribute';
 export { hostButtonType } from './host-attributes/host-type';
 export { MODAL_EXEMPT_ATTRIBUTE, MODAL_PEER_ATTRIBUTE } from './host-attributes/modal-attributes';

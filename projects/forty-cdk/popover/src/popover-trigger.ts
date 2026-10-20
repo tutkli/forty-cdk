@@ -1,15 +1,11 @@
-import {
-  booleanAttribute,
-  computed,
-  Directive,
-  effect,
-  ElementRef,
-  inject,
-  input,
-} from '@angular/core';
+import { booleanAttribute, computed, Directive, ElementRef, inject, input } from '@angular/core';
 
-import { hostButtonType, reflectDisabled } from 'forty-cdk/core';
-import { type ForPopoverContext, injectPopoverTriggerContext } from './popover-context';
+import { hostButtonType, reflectDisabled, registerHandle, staticHostId } from 'forty-cdk/core';
+import {
+  type ForPopoverContext,
+  injectPopoverTriggerContext,
+  POPOVER_TRIGGERS,
+} from './popover-context';
 
 /**
  * Button that toggles the popover when clicked. Apply on a focusable
@@ -39,7 +35,7 @@ import { type ForPopoverContext, injectPopoverTriggerContext } from './popover-c
   exportAs: 'forPopoverTrigger',
   host: {
     '[attr.type]': 'buttonType()',
-    '[id]': 'ctx().triggerId()',
+    '[id]': 'id()',
     '[attr.aria-haspopup]': '"dialog"',
     '[attr.aria-expanded]': 'ctx().open() ? "true" : "false"',
     '[attr.aria-controls]': 'ctx().open() ? ctx().contentId() : null',
@@ -52,6 +48,7 @@ export class ForPopoverTrigger {
   private readonly buttonType = hostButtonType();
 
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
+  readonly #staticId = staticHostId(this.#host.nativeElement);
 
   /**
    * Optional explicit reference to the `[forPopover]` root, named after the
@@ -64,7 +61,10 @@ export class ForPopoverTrigger {
    */
   readonly forPopoverTrigger = input<ForPopoverContext | ''>('');
 
-  private readonly ctx = injectPopoverTriggerContext(this.forPopoverTrigger);
+  readonly #resolved = injectPopoverTriggerContext(this.forPopoverTrigger);
+  private readonly ctx = this.#resolved.ctx;
+
+  private readonly id = computed(() => this.ctx().resolveTriggerId(this.#staticId));
 
   /** Disables this trigger only, in addition to the root's `disabled`. */
   readonly disabled = input(false, { transform: booleanAttribute });
@@ -73,15 +73,13 @@ export class ForPopoverTrigger {
   readonly effectiveDisabled = computed(() => this.disabled() || this.ctx().disabled());
 
   constructor() {
-    const el = this.#host.nativeElement;
-    // Registration is an imperative call into the resolved root's registry,
-    // not state derivation — the effect only re-registers the element when the
-    // resolved root changes (explicit reference swapped at runtime).
-    effect((onCleanup) => {
-      const ctx = this.ctx();
-      ctx.registerTrigger(el);
-      onCleanup(() => ctx.unregisterTrigger(el));
-    });
+    const host = this.#host.nativeElement;
+    const triggers = inject(POPOVER_TRIGGERS);
+    registerHandle(
+      { host, staticId: this.#staticId, root: this.#resolved.root },
+      (handle) => triggers.add(handle),
+      (handle) => triggers.remove(handle),
+    );
     reflectDisabled(this.effectiveDisabled);
   }
 

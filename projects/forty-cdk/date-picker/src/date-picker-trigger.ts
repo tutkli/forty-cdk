@@ -1,7 +1,11 @@
-import { computed, Directive, effect, ElementRef, inject, input } from '@angular/core';
+import { computed, Directive, ElementRef, inject, input } from '@angular/core';
 
-import { hostButtonType, reflectDisabled } from 'forty-cdk/core';
-import { type ForDatePickerContext, injectDatePickerTriggerContext } from './date-picker-context';
+import { hostButtonType, reflectDisabled, registerHandle, staticHostId } from 'forty-cdk/core';
+import {
+  DATE_PICKER_TRIGGERS,
+  type ForDatePickerContext,
+  injectDatePickerTriggerContext,
+} from './date-picker-context';
 
 /**
  * The button that opens the date-picker surface — and the focusable form
@@ -56,7 +60,7 @@ import { type ForDatePickerContext, injectDatePickerTriggerContext } from './dat
   host: {
     '[attr.type]': 'buttonType()',
     '[attr.role]': 'fieldAnatomy() ? null : "combobox"',
-    '[id]': 'ctx().triggerId()',
+    '[id]': 'id()',
     '[attr.aria-haspopup]': '"dialog"',
     '[attr.aria-expanded]': 'ctx().open() ? "true" : "false"',
     '[attr.aria-controls]': 'ctx().open() ? ctx().contentId() : null',
@@ -76,6 +80,7 @@ export class ForDatePickerTrigger {
   private readonly buttonType = hostButtonType();
 
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
+  readonly #staticId = staticHostId(this.#host.nativeElement);
 
   /**
    * Optional explicit reference to the `[forDatePicker]` root, named after the
@@ -89,20 +94,21 @@ export class ForDatePickerTrigger {
    */
   readonly forDatePickerTrigger = input<ForDatePickerContext | ''>('');
 
-  private readonly ctx = injectDatePickerTriggerContext(this.forDatePickerTrigger);
+  readonly #resolved = injectDatePickerTriggerContext(this.forDatePickerTrigger);
+  private readonly ctx = this.#resolved.ctx;
+
+  private readonly id = computed(() => this.ctx().resolveTriggerId(this.#staticId));
 
   private readonly fieldAnatomy = computed(() => this.ctx().anatomy() === 'field');
 
   constructor() {
-    const el = this.#host.nativeElement;
-    // Registration is an imperative call into the resolved root's registry,
-    // not state derivation — the effect only re-registers the element when the
-    // resolved root changes (explicit reference swapped at runtime).
-    effect((onCleanup) => {
-      const ctx = this.ctx();
-      ctx.registerTrigger(el);
-      onCleanup(() => ctx.unregisterTrigger(el));
-    });
+    const host = this.#host.nativeElement;
+    const triggers = inject(DATE_PICKER_TRIGGERS);
+    registerHandle(
+      { host, staticId: this.#staticId, root: this.#resolved.root },
+      (handle) => triggers.add(handle),
+      (handle) => triggers.remove(handle),
+    );
     reflectDisabled(computed(() => this.ctx().effectiveDisabled()));
   }
 

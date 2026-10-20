@@ -52,6 +52,10 @@ export function adoptHostId(host: HTMLElement, idSignal: WritableSignal<string>)
   }
 }
 
+export function staticHostId(host: HTMLElement): string | null {
+  return host.getAttribute('id') || null;
+}
+
 /**
  * Convenience for the "piece owns its own id" pieces: seeds a read-only id
  * signal from the host element's pre-existing static `id`, falling back to a

@@ -1,6 +1,12 @@
 import { computed, inject, InjectionToken, type Signal } from '@angular/core';
 
-import { assertRootContext, orphanContextError, unresolvedRootError } from 'forty-cdk/core';
+import {
+  assertRootContext,
+  orphanContextError,
+  RootedRegistry,
+  type RootedHandle,
+  unresolvedRootError,
+} from 'forty-cdk/core';
 import { type AnchoredPositioningContext, type Point } from 'forty-cdk/core-overlay';
 
 /** Why an open / close was scheduled. */
@@ -18,8 +24,6 @@ export interface ForHoverCardContext extends AnchoredPositioningContext {
   readonly trigger: Signal<HTMLElement | null>;
   readonly content: Signal<HTMLElement | null>;
 
-  registerTrigger(el: HTMLElement): void;
-  unregisterTrigger(el: HTMLElement): void;
   registerArrow(el: HTMLElement): void;
   unregisterArrow(el: HTMLElement): void;
   registerContent(el: HTMLElement): void;
@@ -135,31 +139,42 @@ export function injectHoverCardContext(piece: string): HoverCardContext {
   return widened;
 }
 
+export interface HoverCardTriggerHandle extends RootedHandle<ForHoverCardContext> {
+  readonly host: HTMLElement;
+}
+
+export const HOVER_CARD_TRIGGERS = new InjectionToken<
+  RootedRegistry<ForHoverCardContext, HoverCardTriggerHandle>
+>('HOVER_CARD_TRIGGERS', { providedIn: 'root', factory: () => new RootedRegistry() });
+
 /**
  * Resolves the trigger's root context: the explicit reference when the
  * `[forHoverCardTrigger]` input carries one, the injected
- * `FOR_HOVER_CARD_CONTEXT` otherwise. The orphan error only fires when neither
- * resolves, on first read of the returned signal. Must be called in an
+ * `FOR_HOVER_CARD_CONTEXT` otherwise. `root` is `null` while neither resolves;
+ * `ctx` throws the orphan error on read in that state. Must be called in an
  * injection context.
  */
-export function injectHoverCardTriggerContext(
-  explicitRoot: Signal<ForHoverCardContext | ''>,
-): Signal<ForHoverCardContext> {
+export function injectHoverCardTriggerContext(explicitRoot: Signal<ForHoverCardContext | ''>): {
+  readonly root: Signal<ForHoverCardContext | null>;
+  readonly ctx: Signal<ForHoverCardContext>;
+} {
   const injected = inject(FOR_HOVER_CARD_CONTEXT, { optional: true });
-  return computed(() => {
+  const root = computed(() => {
     const explicit = explicitRoot();
-    if (explicit !== '') {
-      return explicit;
-    }
-    if (injected) {
-      return injected;
-    }
-    throw unresolvedRootError({
-      code: 'FORCDK-HOVER-CARD-002',
-      trigger: '[forHoverCardTrigger]',
-      root: '[forHoverCard]',
-      token: 'FOR_HOVER_CARD_CONTEXT',
-      exportAs: 'forHoverCard',
-    });
+    return explicit === '' ? injected : explicit;
   });
+  const ctx = computed(() => {
+    const resolved = root();
+    if (!resolved) {
+      throw unresolvedRootError({
+        code: 'FORCDK-HOVER-CARD-002',
+        trigger: '[forHoverCardTrigger]',
+        root: '[forHoverCard]',
+        token: 'FOR_HOVER_CARD_CONTEXT',
+        exportAs: 'forHoverCard',
+      });
+    }
+    return resolved;
+  });
+  return { root, ctx };
 }

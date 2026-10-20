@@ -3,7 +3,7 @@ import { LIBRARY_CODE } from '../../test-utils/source-scan';
 import { STATIC_ADOPTION_ADOPTERS } from './fixtures/registry';
 
 /**
- * Meta-guard: every library source calling one of the seven static-attribute
+ * Meta-guard: every library source calling one of the eight static-attribute
  * adoption seams is covered by a claim in the registry, every claim names a
  * call site that still exists, and every host binding of an adoptable attribute
  * goes through a seam.
@@ -42,6 +42,7 @@ const SEAMS: readonly StaticAdoptionSeam[] = [
   'hostId',
   'resolveHostId',
   'adoptHostId',
+  'staticHostId',
   'hostStaticAttribute',
   'hostAriaLabel',
   'hostLabelledBy',
@@ -57,6 +58,7 @@ const SEAM_CHANNELS: Readonly<Record<StaticAdoptionSeam, readonly StaticAdoption
   hostId: ['id'],
   resolveHostId: ['id'],
   adoptHostId: ['id'],
+  staticHostId: ['id'],
   hostStaticAttribute: ['id', 'for'],
   hostAriaLabel: ['aria-label'],
   hostLabelledBy: ['aria-labelledby'],
@@ -96,7 +98,7 @@ describe('static attribute adoption contract coverage (meta-guard)', () => {
     expect(LIBRARY_CODE.size).toBeGreaterThan(100);
   });
 
-  it('finds every call site of the seven adoption seams', () => {
+  it('finds every call site of the eight adoption seams', () => {
     expect(callSites().size).toBeGreaterThanOrEqual(80);
   });
 

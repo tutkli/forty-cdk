@@ -729,6 +729,56 @@ describe('ForDatePicker', () => {
       expect(t.getAttribute('data-state')).toBe('closed');
       expect(t.hasAttribute('aria-controls')).toBe(false);
     });
+
+    @Component({
+      imports: [ForDatePicker, ForDatePickerTrigger, ForDatePickerContent, NgTemplateOutlet],
+      providers: [...provideNativeDateAdapter()],
+      template: `
+        <ng-template #trig let-root="root">
+          <button type="button" [forDatePickerTrigger]="root">Pick</button>
+        </ng-template>
+
+        <div forDatePicker [(open)]="openA" #a="forDatePicker">
+          @if (openA()) {
+            <div forDatePickerContent data-testid="content-a">A</div>
+          }
+        </div>
+        <div forDatePicker [(open)]="openB" #b="forDatePicker">
+          @if (openB()) {
+            <div forDatePickerContent data-testid="content-b">B</div>
+          }
+        </div>
+
+        <ng-container
+          [ngTemplateOutlet]="trig"
+          [ngTemplateOutletContext]="{ root: useB() ? b : a }"
+        />
+      `,
+    })
+    class RetargetedHost {
+      readonly openA = signal(false);
+      readonly openB = signal(false);
+      readonly useB = signal(false);
+    }
+
+    it('follows an explicit root swapped at runtime', async () => {
+      const r = renderHost(RetargetedHost);
+      const t = r.query<HTMLButtonElement>('button')!;
+      const idUnderA = t.id;
+
+      r.instance.useB.set(true);
+      await flush(r.fixture);
+      t.click();
+      await flush(r.fixture);
+
+      expect(r.query('button')).toBe(t);
+      expect(r.instance.openA()).toBe(false);
+      expect(r.instance.openB()).toBe(true);
+      expect(t.id).not.toBe(idUnderA);
+      const content = document.querySelector<HTMLElement>('[data-testid="content-b"]')!;
+      expect(t.getAttribute('aria-controls')).toBe(content.id);
+      expect(content.getAttribute('aria-labelledby')).toBe(t.id);
+    });
   });
 
   describe('open / close', () => {
