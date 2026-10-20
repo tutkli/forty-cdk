@@ -60,9 +60,15 @@ type ConfirmResult = 'confirm' | 'cancel';
         0 20px 40px -18px rgba(0, 0, 0, 0.2)
       );
       translate: var(--for-drawer-swipe-movement-x, 0px) var(--for-drawer-swipe-movement-y, 0px);
-      transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1);
+      transition:
+        transform 0.5s cubic-bezier(0.32, 0.72, 0, 1),
+        translate 0.5s cubic-bezier(0.32, 0.72, 0, 1);
       user-select: none;
       -webkit-user-select: none;
+    }
+
+    .prog-drawer[data-dragging] {
+      transition: none;
     }
 
     .prog-drawer[data-side='bottom'] {
@@ -198,6 +204,10 @@ type ConfirmResult = 'confirm' | 'cancel';
 
       .prog-btn:active {
         transform: none;
+      }
+
+      .prog-drawer {
+        transition-duration: 0.01ms;
       }
 
       .prog-drawer-in,
