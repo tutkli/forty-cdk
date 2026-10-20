@@ -83,14 +83,11 @@ const ROLE_SUPPORTED_ARIA_PROPERTIES = {
     'aria-colindex',
     'aria-colspan',
     'aria-expanded',
-    'aria-level',
-    'aria-posinset',
     'aria-readonly',
     'aria-required',
     'aria-rowindex',
     'aria-rowspan',
     'aria-selected',
-    'aria-setsize',
     'aria-sort',
   ],
   combobox: [
@@ -2280,9 +2277,10 @@ const fortyCdkPlugin = {
     // so sibling pieces of the same primitive can read the shared context.
     // Only the `InjectionToken` (`FOR_<PRIMITIVE>_CONTEXT`) and the context
     // interface are public. This rule forbids any primitive barrel from
-    // re-exporting a helper named `inject<Anything>Context`, mirroring the
-    // `require-defaults-sibling` shape: a barrel-scoped check over the file's
-    // `export` declarations. Recognises both library layouts:
+    // re-exporting a helper named `inject<Anything>Context` (by name, by an
+    // exported declaration, or wholesale through `export *` of a `*-context`
+    // module), mirroring the `require-defaults-sibling` shape: a barrel-scoped
+    // check over the file's `export` declarations. Recognises both library layouts:
     //   - per-entry-point:  projects/forty-cdk/<entry>/src/public-api.ts
     //   - legacy folder:    projects/forty-cdk/src/lib/<name>/index.ts
     // The `core` entry (former `_internal`) is exempt — its barrel is the
@@ -2304,6 +2302,8 @@ const fortyCdkPlugin = {
         messages: {
           forbidden:
             'Do not export the context-injection helper `{{ name }}` from a primitive barrel — it is internal (it takes a directive-name string purely for error messages). Expose only the `InjectionToken` (`FOR_<PRIMITIVE>_CONTEXT`) and the context `interface`; sibling pieces import the helper directly from `./<name>-context`. (tutkli/forty-cdk#584, D8.)',
+          exportAll:
+            "`export * from '{{ source }}'` re-exports the context module wholesale, `inject<Name>Context` helper included, which is internal. Re-export the `InjectionToken` (`FOR_<PRIMITIVE>_CONTEXT`) and the context `interface` by name. (tutkli/forty-cdk#584, D8.)",
         },
       },
       create(context) {
@@ -2351,10 +2351,33 @@ const fortyCdkPlugin = {
             context.report({ node: spec, messageId: 'forbidden', data: { name } });
           }
         };
+        const declaredNames = (declaration) => {
+          if (!declaration) return [];
+          if (declaration.type === 'FunctionDeclaration' && declaration.id) {
+            return [declaration.id];
+          }
+          if (declaration.type === 'VariableDeclaration') {
+            return declaration.declarations
+              .map((declarator) => declarator.id)
+              .filter((id) => id.type === 'Identifier');
+          }
+          return [];
+        };
         return {
           ExportNamedDeclaration(node) {
             for (const spec of node.specifiers) {
               if (spec.type === 'ExportSpecifier') reportSpecifier(spec);
+            }
+            for (const id of declaredNames(node.declaration)) {
+              if (isInjectContextName(id.name)) {
+                context.report({ node: id, messageId: 'forbidden', data: { name: id.name } });
+              }
+            }
+          },
+          ExportAllDeclaration(node) {
+            const source = node.source.value;
+            if (typeof source === 'string' && /-context(?:\.ts)?$/.test(source)) {
+              context.report({ node, messageId: 'exportAll', data: { source } });
             }
           },
         };
@@ -3269,6 +3292,11 @@ const fortyCdkPlugin = {
     //     `effectiveDisabled` member anywhere in its expression
     //     (`this.effectiveDisabled`, the shorthand `effectiveDisabled`,
     //     `computed(() => this.effectiveDisabled() || this.readonly())`, …).
+    //   - Fires when the config has no `disabled` at all, since the property is
+    //     optional and its absence is the most complete form of the footgun.
+    //   - The config is read from the object literal passed in, or from a
+    //     `const` bound to one in the same function; any other argument fires,
+    //     because its `disabled` cannot be checked.
     //
     // The `injectHiddenInput` test harness in `hidden-input.spec.ts` exercises
     // the helper itself with a bare `disabled` and is exempt via the spec /
@@ -3288,6 +3316,10 @@ const fortyCdkPlugin = {
         messages: {
           rawDisabled:
             '`injectHiddenInput({ … disabled: … })` must pass `effectiveDisabled` (not the raw `disabled`), otherwise the control’s value submits inside a disabled `[forFieldset]`. Pass `disabled: this.effectiveDisabled`. (tutkli/forty-cdk#695.)',
+          missingDisabled:
+            '`injectHiddenInput` is called without a `disabled`, so the control’s value submits inside a disabled `[forFieldset]`. Pass `disabled: this.effectiveDisabled`. (tutkli/forty-cdk#695.)',
+          opaqueConfig:
+            '`injectHiddenInput` must receive an object literal, or a `const` bound to one in the same function, so its `disabled` can be checked: a config built anywhere else can omit `effectiveDisabled`, and the control’s value then submits inside a disabled `[forFieldset]`. (tutkli/forty-cdk#695.)',
         },
       },
       create(context) {
@@ -3324,13 +3356,40 @@ const fortyCdkPlugin = {
           }
           return false;
         }
+        function resolveConfigLiteral(argument, call) {
+          if (!argument) return null;
+          if (argument.type === 'ObjectExpression') return argument;
+          if (argument.type !== 'Identifier') return null;
+          const callScope = context.sourceCode.getScope(call);
+          let scope = callScope;
+          let variable = null;
+          while (scope && !variable) {
+            variable = scope.set.get(argument.name) ?? null;
+            scope = scope.upper;
+          }
+          if (!variable || variable.scope.variableScope !== callScope.variableScope) return null;
+          if (variable.defs.length !== 1) return null;
+          const [definition] = variable.defs;
+          if (
+            definition.type !== 'Variable' ||
+            definition.parent.kind !== 'const' ||
+            definition.node.init?.type !== 'ObjectExpression'
+          ) {
+            return null;
+          }
+          return definition.node.init;
+        }
         return {
           CallExpression(node) {
             if (node.callee.type !== 'Identifier' || node.callee.name !== 'injectHiddenInput') {
               return;
             }
-            const config = node.arguments[0];
-            if (!config || config.type !== 'ObjectExpression') return;
+            const argument = node.arguments[0];
+            const config = resolveConfigLiteral(argument, node);
+            if (!config) {
+              context.report({ node: argument ?? node, messageId: 'opaqueConfig' });
+              return;
+            }
             const disabledProp = config.properties.find(
               (p) =>
                 p.type === 'Property' &&
@@ -3338,7 +3397,10 @@ const fortyCdkPlugin = {
                 ((p.key.type === 'Identifier' && p.key.name === 'disabled') ||
                   (p.key.type === 'Literal' && p.key.value === 'disabled')),
             );
-            if (!disabledProp) return;
+            if (!disabledProp) {
+              context.report({ node: argument, messageId: 'missingDisabled' });
+              return;
+            }
             if (referencesEffectiveDisabled(disabledProp.value)) return;
             context.report({ node: disabledProp, messageId: 'rawDisabled' });
           },
@@ -3370,8 +3432,9 @@ const fortyCdkPlugin = {
     //     `input[…]` and `select[…]` are deliberately absent: their role
     //     depends on `type` / `multiple` / `size`, which the selector does not
     //     constrain.
-    //   - A `'[attr.role]'` binding anywhere in the block skips the host — a
-    //     dynamic role cannot be resolved statically.
+    //   - A `'[attr.role]'` binding skips the host — a dynamic role cannot be
+    //     resolved statically — unless its expression is a single quoted
+    //     string literal (`'"region"'`), which counts as a static role.
     //   - ARIA 1.2 global properties (`aria-label`, `aria-disabled`,
     //     `aria-busy`, …) are supported on every role and are never reported.
     //   - A role absent from `ROLE_SUPPORTED_ARIA_PROPERTIES` is skipped, so a
@@ -3447,10 +3510,13 @@ const fortyCdkPlugin = {
             const hostProperty = findProperty(metadata, 'host');
             if (!hostProperty || hostProperty.value.type !== 'ObjectExpression') return;
             const host = hostProperty.value;
-            if (findProperty(host, '[attr.role]')) return;
-
-            const roleProperty = findProperty(host, 'role');
+            const boundRoleProperty = findProperty(host, '[attr.role]');
+            const roleProperty = boundRoleProperty ?? findProperty(host, 'role');
             let role = roleProperty ? staticString(roleProperty.value) : null;
+            if (boundRoleProperty && role !== null) {
+              const constant = /^\s*(['"])([^'"]*)\1\s*$/.exec(role);
+              role = constant ? constant[2] : null;
+            }
             if (roleProperty && role === null) return;
             if (role === null) {
               const selectorProperty = findProperty(metadata, 'selector');

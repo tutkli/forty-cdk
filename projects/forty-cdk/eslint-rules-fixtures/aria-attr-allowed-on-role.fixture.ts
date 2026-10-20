@@ -144,3 +144,45 @@ export class ForFixtureDynamicRole {
 export class ForFixtureUnknownRole {
   declare readonly checked: () => boolean;
 }
+
+// Expected: 3× forty-cdk/aria-attr-allowed-on-role
+@Directive({
+  selector: '[forFixtureTreeLikeColumnHeader]',
+  host: {
+    role: 'columnheader',
+    '[attr.aria-level]': 'level()',
+    '[attr.aria-posinset]': 'position()',
+    '[attr.aria-setsize]': 'size()',
+  },
+})
+export class ForFixtureTreeLikeColumnHeader {
+  declare readonly level: () => number;
+  declare readonly position: () => number;
+  declare readonly size: () => number;
+}
+
+// Allowed: `aria-sort` and the inherited `aria-colindex` are columnheader properties.
+@Directive({
+  selector: '[forFixtureSortableColumnHeader]',
+  host: {
+    role: 'columnheader',
+    '[attr.aria-sort]': 'sort()',
+    '[attr.aria-colindex]': 'index()',
+  },
+})
+export class ForFixtureSortableColumnHeader {
+  declare readonly sort: () => string;
+  declare readonly index: () => number;
+}
+
+// Expected: 1× forty-cdk/aria-attr-allowed-on-role
+@Directive({
+  selector: '[forFixtureConstantBoundRole]',
+  host: {
+    '[attr.role]': '"button"',
+    '[attr.aria-checked]': 'checked() ? "true" : "false"',
+  },
+})
+export class ForFixtureConstantBoundRole {
+  declare readonly checked: () => boolean;
+}
