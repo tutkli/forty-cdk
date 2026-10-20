@@ -1,11 +1,13 @@
 import { computed, DOCUMENT, inject, type Provider, signal } from '@angular/core';
 
+import { FOR_DRAWER_DEFAULTS } from 'forty-cdk/defaults';
 import {
   FOR_DRAWER_CONTEXT,
   FOR_DRAWER_DATA,
   type ForDrawerCloseReason,
   type ForDrawerContext,
   ForDrawerRef,
+  type ForDrawerSide,
   type ForDrawerSnapPoint,
 } from 'forty-cdk/drawer';
 
@@ -22,6 +24,13 @@ type DrawerTestingContext = ForDrawerContext & {
   surfaceElement(): HTMLElement | null;
 };
 
+interface DrawerTestingState {
+  readonly dismissible: boolean;
+  readonly modal: boolean;
+  readonly alert: boolean;
+  readonly side: ForDrawerSide;
+}
+
 /** Options accepted by {@link provideForDrawerTesting}. */
 export interface ForDrawerTestingOptions {
   /**
@@ -31,6 +40,23 @@ export interface ForDrawerTestingOptions {
   readonly ref?: ForDrawerRef;
   /** The payload `injectDrawerData()` returns. Defaults to `null`, as `open()` without `data`. */
   readonly data?: unknown;
+  /**
+   * What the context reports as `dismissible()`, as `ForDrawerOpenConfig.dismissible`. Defaults to
+   * the scope's `FOR_DRAWER_DEFAULTS`.
+   */
+  readonly dismissible?: boolean;
+  /**
+   * What the context reports as `modal()`, as `ForDrawerOpenConfig.modal`. Defaults to the scope's
+   * `FOR_DRAWER_DEFAULTS`.
+   */
+  readonly modal?: boolean;
+  /** What the context reports as `alert()`, as `ForDrawerOpenConfig.alert`. Defaults to `false`. */
+  readonly alert?: boolean;
+  /**
+   * What the context reports as `side()`, as `ForDrawerOpenConfig.side`. Defaults to the scope's
+   * `FOR_DRAWER_DEFAULTS`.
+   */
+  readonly side?: ForDrawerSide;
 }
 
 /**
@@ -54,8 +80,10 @@ export function createForDrawerRef<R = unknown>(): ForDrawerRef<R> {
  * With it a drawer's content component mounts outside the manager and its pieces behave as they do
  * in the opened drawer: `[forDrawerTitle]` and `[forDrawerDescription]` register into the context's
  * `labelledBy()` / `describedBy()`, and `[forDrawerClose]` or a backdrop click closes the ref with
- * that reason and the `closeWith` value. The context reports a dismissible, modal, non-alert
- * drawer on the `bottom` side at depth `0`, the manager's defaults, with no gesture in flight; its
+ * that reason and the `closeWith` value, which a drawer that is not dismissible ignores for every
+ * reason but `closeButton` and `programmatic`. The context reports `dismissible`, `modal` and
+ * `side` from `options`, else from the scope's `FOR_DRAWER_DEFAULTS` as `ForDrawerManager.open()`
+ * resolves them, `alert` from `options` (else `false`), depth `0` and no gesture in flight; its
  * `activeSnapPoint()` is the ref's.
  *
  * ```ts
@@ -72,19 +100,31 @@ export function provideForDrawerTesting(options: ForDrawerTestingOptions = {}): 
     { provide: FOR_DRAWER_DATA, useValue: options.data ?? null },
     {
       provide: FOR_DRAWER_CONTEXT,
-      useFactory: () => createContext(inject(ForDrawerRef), inject(DOCUMENT)),
+      useFactory: () => {
+        const defaults = inject(FOR_DRAWER_DEFAULTS);
+        return createContext(inject(ForDrawerRef), inject(DOCUMENT), {
+          dismissible: options.dismissible ?? defaults.dismissible,
+          modal: options.modal ?? defaults.modal,
+          alert: options.alert ?? false,
+          side: options.side ?? defaults.side,
+        });
+      },
     },
   ];
 }
 
-function createContext(ref: ForDrawerRef, document: Document): DrawerTestingContext {
+function createContext(
+  ref: ForDrawerRef,
+  document: Document,
+  state: DrawerTestingState,
+): DrawerTestingContext {
   const labels = createIdRegistry();
   const descriptions = createIdRegistry();
   return {
-    dismissible: signal(true).asReadonly(),
-    modal: signal(true).asReadonly(),
-    alert: signal(false).asReadonly(),
-    side: signal('bottom' as const).asReadonly(),
+    dismissible: signal(state.dismissible).asReadonly(),
+    modal: signal(state.modal).asReadonly(),
+    alert: signal(state.alert).asReadonly(),
+    side: signal(state.side).asReadonly(),
     activeSnapPoint: ref.activeSnapPoint,
     fadeFromActive: signal(false).asReadonly(),
     dragging: signal(false).asReadonly(),
@@ -106,6 +146,11 @@ function createContext(ref: ForDrawerRef, document: Document): DrawerTestingCont
     unregisterInitialFocus: () => {},
     isTopmostPointerLayer: () => true,
     surfaceElement: () => null,
-    requestClose: (reason: ForDrawerCloseReason, value?: unknown) => ref.close(value, reason),
+    requestClose: (reason: ForDrawerCloseReason, value?: unknown) => {
+      if (reason !== 'closeButton' && reason !== 'programmatic' && !state.dismissible) {
+        return;
+      }
+      ref.close(value, reason);
+    },
   };
 }

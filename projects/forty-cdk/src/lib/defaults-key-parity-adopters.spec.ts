@@ -15,7 +15,7 @@ import { entryPointOf, LIBRARY_CODE, LIBRARY_SOURCES } from '../test-utils/sourc
  * declared because no scan can infer it, and **everything about the members is
  * checked against source**, in both directions.
  *
- * Three rungs live here rather than in the contract, because all three are about
+ * Four rungs live here rather than in the contract, because all four are about
  * the model as a whole:
  *
  *   - **The anchored family's membership is derived.** Every entry point with a
@@ -38,6 +38,12 @@ import { entryPointOf, LIBRARY_CODE, LIBRARY_SOURCES } from '../test-utils/sourc
  *     are in two families each (their placement seeds and their hover delays),
  *     which is why the closure case takes the union of every declared key rather
  *     than one family's own.
+ *   - **A key the fallback populates is declared required.** The token always
+ *     holds the resolved shape, so an optional key there types a value that is
+ *     never `undefined` as `T | undefined`, and every reader grows its own copy
+ *     of the fallback behind a `??` — the state
+ *     [#2382](https://github.com/tutkli/forty-cdk/issues/2382) found Dialog and
+ *     Drawer in. Only the keys named in `NO_DEFAULT_KEYS` stay optional.
  */
 const DEFAULTS_INTERFACE = /export interface For[A-Za-z]+Defaults[^{]*\{([\s\S]*?)\n\}/;
 
@@ -75,6 +81,48 @@ function declaredKeysByFile(): Map<string, readonly string[]> {
 }
 
 const DECLARED_KEYS = declaredKeysByFile();
+
+const FALLBACK_OBJECT = /export const FOR_[A-Z_]+_FALLBACK_DEFAULTS\b[^=]*=\s*\{([\s\S]*?)\n\};/;
+
+/** Defaults file → the top-level keys its `FOR_<PRIMITIVE>_FALLBACK_DEFAULTS` literal sets. */
+function populatedKeysByFile(): Map<string, readonly string[]> {
+  const keys = new Map<string, readonly string[]>();
+  for (const path of DECLARED_KEYS.keys()) {
+    const body = LIBRARY_SOURCES.get(path)!.match(FALLBACK_OBJECT)?.[1];
+    if (body !== undefined) {
+      keys.set(
+        path,
+        [...body.matchAll(/^ {2}([a-zA-Z][A-Za-z0-9]*)\s*[:,]/gm)].map((match) => match[1]!),
+      );
+    }
+  }
+  return keys;
+}
+
+/** Defaults file → the keys its `For<Primitive>Defaults` interface declares optional. */
+function optionalKeysByFile(): Map<string, readonly string[]> {
+  const keys = new Map<string, readonly string[]>();
+  for (const path of DECLARED_KEYS.keys()) {
+    const body = LIBRARY_SOURCES.get(path)!.match(DEFAULTS_INTERFACE)![1]!;
+    keys.set(
+      path,
+      [...body.matchAll(/^ {2}([a-zA-Z][A-Za-z0-9]*)\?:/gm)].map((match) => match[1]!),
+    );
+  }
+  return keys;
+}
+
+const POPULATED_KEYS = populatedKeysByFile();
+const OPTIONAL_KEYS = optionalKeysByFile();
+
+/**
+ * The keys with genuinely no library default: absent from the fallback, so
+ * "unset" is a real state and the interface keeps them optional.
+ */
+const NO_DEFAULT_KEYS: ReadonlyMap<string, readonly string[]> = new Map([
+  ['defaults/src/dialog-defaults.ts', ['animateEnter', 'animateLeave', 'backdropAnimateLeave']],
+  ['defaults/src/drawer-defaults.ts', ['animateEnter', 'animateLeave', 'backdropAnimateLeave']],
+]);
 
 const ANCHORED_SEEDS = ['side', 'align', 'sideOffset', 'collisionPadding'] as const;
 
@@ -294,6 +342,30 @@ describe('defaults-key parity families (meta-guard)', () => {
     const orphans = [...DECLARED_KEYS.keys()].filter((path) => !OWNING_ENTRY_POINTS.has(path));
 
     expect(sorted(orphans)).toEqual([]);
+  });
+
+  it('finds a populated fallback literal in every defaults file', () => {
+    const missing = [...DECLARED_KEYS.keys()].filter(
+      (path) => (POPULATED_KEYS.get(path) ?? []).length === 0,
+    );
+
+    expect(sorted(missing)).toEqual([]);
+  });
+
+  it('declares every key its fallback populates as required', () => {
+    const optionalButPopulated = [...OPTIONAL_KEYS].flatMap(([path, optional]) => {
+      const populated = new Set(POPULATED_KEYS.get(path) ?? []);
+      return optional.filter((key) => populated.has(key)).map((key) => `${path}: \`${key}\``);
+    });
+
+    expect(sorted(optionalButPopulated)).toEqual([]);
+  });
+
+  it('keeps optional only the keys named as having no library default', () => {
+    const toEntries = (keys: ReadonlyMap<string, readonly string[]>) =>
+      sorted([...keys].flatMap(([path, names]) => names.map((key) => `${path}: \`${key}\``)));
+
+    expect(toEntries(OPTIONAL_KEYS)).toEqual(toEntries(NO_DEFAULT_KEYS));
   });
 
   it('names only defaults files the library still ships', () => {

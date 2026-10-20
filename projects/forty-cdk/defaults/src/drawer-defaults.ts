@@ -26,75 +26,75 @@ import { provideDefaults } from './defaults';
  */
 export interface ForDrawerDefaults {
   /** Default `'bottom'`. */
-  side?: ForDrawerSide;
+  side: ForDrawerSide;
   /** Default `true`. Modal locks scroll, traps focus, applies `aria-modal`. */
-  modal?: boolean;
+  modal: boolean;
   /** Default `true`. Whether dismiss interactions (Escape, backdrop, swipe) close. */
-  dismissible?: boolean;
+  dismissible: boolean;
   /**
    * Default `true`. Pointer drag gesture toward the anchored edge dismisses;
    * snap dragging stays live when `false`.
    */
-  swipeToDismiss?: boolean;
+  swipeToDismiss: boolean;
   /**
    * Default `0.25`. Fraction past which a release dismisses instead of
    * snapping back: of the full dimension without snap points, of the lowest
    * snap's extent with them.
    */
-  closeThreshold?: number;
+  closeThreshold: number;
   /** Default `'first'`. Where to send focus on mount. */
-  initialFocus?: 'first' | 'container';
+  initialFocus: 'first' | 'container';
   /**
    * Default `true`. Restore focus to the previously focused element on close. Modal mode only: a
    * non-modal surface never moves focus on close.
    */
-  returnFocus?: boolean;
+  returnFocus: boolean;
   /**
    * Default `false`. When `true` the swipe gesture only arms on the
    * registered `[forDrawerHandle]` element instead of the whole surface.
    */
-  handleOnly?: boolean;
+  handleOnly: boolean;
   /**
    * Default `false`. When `true`, an open drawer asks
    * `[forDrawerWrapper]` to scale + translate behind it (the "scale
    * background" effect). Suppressed under
    * `prefers-reduced-motion: reduce`.
    */
-  scaleBackground?: boolean;
+  scaleBackground: boolean;
   /**
    * Default `true`. When `scaleBackground` is active, paints the body
    * with `scaleBackgroundColor` so the sliver of viewport between the
    * scaled wrapper and the screen edge does not show through.
    */
-  setBackgroundColorOnScale?: boolean;
+  setBackgroundColorOnScale: boolean;
   /** Default `0.95`. Scale factor applied to the wrapper. */
-  scaleAmount?: number;
+  scaleAmount: number;
   /**
    * Default `14`. Vertical translation (in CSS pixels) added to
    * `env(safe-area-inset-top)` while the wrapper is scaled.
    */
-  scaleTranslateYpx?: number;
+  scaleTranslateYpx: number;
   /** Default `8`. Border radius applied to the wrapper while scaled. */
-  scaleBorderRadiusPx?: number;
+  scaleBorderRadiusPx: number;
   /**
    * Default `'black'`. Body background colour applied while
    * `setBackgroundColorOnScale` is active.
    */
-  scaleBackgroundColor?: string;
+  scaleBackgroundColor: string;
   /**
    * Default `0.93`. Scale factor applied to a parent drawer while a
    * nested child drawer is active. Composes with the wrapper-level
    * `scaleBackground` effect when both opt in. Suppressed under
    * `prefers-reduced-motion: reduce`.
    */
-  nestedScaleAmount?: number;
+  nestedScaleAmount: number;
   /**
    * Default `8`. Pixels of additional translation applied to a parent
    * drawer while a nested child is active, in the direction *away* from
    * the parent's anchored edge (so a `bottom` drawer slides up by this
    * amount when its child opens).
    */
-  nestedTranslateYpx?: number;
+  nestedTranslateYpx: number;
   /**
    * CSS class applied (via `animate.enter`) to the programmatic overlay host
    * when it mounts, so it plays an enter animation. The class lands on the

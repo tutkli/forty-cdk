@@ -4,9 +4,10 @@ import { provideDefaults } from './defaults';
 
 /**
  * Defaults inherited by dialogs in the surrounding injector scope. Configure
- * with `provideForDialogDefaults`. Keys map 1:1 to the `[forDialog]` inputs of
- * the same name; the resolver picks `consumerInput ?? defaults[key] ?? hardcoded
- * fallback` per key.
+ * with `provideForDialogDefaults`. A key named after a `[forDialog]` input
+ * (`modal`, `dismissible`, `returnFocus`, `initialFocus`) seeds that input, so
+ * a bound value still wins; the `animate*` keys apply to
+ * `ForDialogManager.open()` only.
  *
  * **Scope caveat (declarative vs. programmatic).** Declarative `[forDialog]`
  * instances read this token from their own injector, so a scoped
@@ -25,16 +26,16 @@ export interface ForDialogDefaults {
    * Default `true`. Sets `aria-modal`, locks body scroll, traps focus, inerts siblings and returns
    * focus on close.
    */
-  modal?: boolean;
+  modal: boolean;
   /** Default `true`. Whether Escape / backdrop / outside close the dialog. */
-  dismissible?: boolean;
+  dismissible: boolean;
   /**
    * Default `true`. Restore focus to the previously focused element on close. Modal mode only: a
    * non-modal surface never moves focus on close.
    */
-  returnFocus?: boolean;
+  returnFocus: boolean;
   /** Default `'first'`. Where to send focus on mount. */
-  initialFocus?: 'first' | 'container';
+  initialFocus: 'first' | 'container';
   /**
    * CSS class applied (via `animate.enter`) to the programmatic overlay host
    * when it mounts, so it plays an enter animation. The class lands on the
