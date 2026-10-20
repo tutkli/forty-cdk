@@ -21,6 +21,11 @@ interface SignalFormsDemo {
   readonly message: string;
 }
 
+interface RequiredDemo {
+  readonly path: string;
+  readonly control: string;
+}
+
 interface RangeDemo {
   readonly path: string;
   readonly root: string;
@@ -88,6 +93,16 @@ const SIGNAL_FORMS_DEMOS: readonly SignalFormsDemo[] = [
     control: '[forDateRangeField]',
     message: 'Pick both a start and an end date for your stay.',
   },
+  {
+    path: 'listbox/examples/form-field.example.ts',
+    control: '[forListbox]',
+    message: 'Choose at least one topic.',
+  },
+];
+
+const REQUIRED_DEMOS: readonly RequiredDemo[] = [
+  { path: 'listbox/examples/form-field.example.ts', control: '[forListbox]' },
+  { path: 'select/examples/form-field.example.ts', control: '[forSelectTrigger]' },
 ];
 
 const RANGE_DEMOS: readonly RangeDemo[] = [
@@ -214,6 +229,15 @@ describe('the Signal Forms demos', () => {
       await leave(el, fixture);
 
       expect(announced(el)).toEqual<Announced>({ describedBy: [message], errorMessage: message });
+    },
+  );
+
+  it.each(REQUIRED_DEMOS)(
+    '$path tells assistive tech the selection is required before it is left',
+    async ({ path, control }) => {
+      const { host } = await mount(path);
+
+      expect(query(host, control).getAttribute('aria-required')).toBe('true');
     },
   );
 

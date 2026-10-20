@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
-import { form, FormField, requiredError, validate } from '@angular/forms/signals';
+import { form, FormField, required, requiredError, validate } from '@angular/forms/signals';
+import { ForField, ForFieldError } from 'forty-cdk/field';
 import { ForListbox, ForListboxOption, ForListboxOptionIndicator } from 'forty-cdk/listbox';
 
 interface Prefs {
@@ -9,31 +10,52 @@ interface Prefs {
 @Component({
   selector: 'app-listbox-form-field-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormField, ForListbox, ForListboxOption, ForListboxOptionIndicator],
+  imports: [
+    FormField,
+    ForField,
+    ForFieldError,
+    ForListbox,
+    ForListboxOption,
+    ForListboxOptionIndicator,
+  ],
   template: `
-    <div forListbox multiple class="listbox" [formField]="prefsForm.topics" aria-label="Topics">
-      @for (topic of topics; track topic.value) {
-        <button type="button" forListboxOption class="listbox-option" [value]="topic.value">
-          {{ topic.label }}
-          <span forListboxOptionIndicator class="listbox-indicator">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path
-                d="m4.5 12.75 6 6 9-13.5"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.75"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-          </span>
-        </button>
+    <div forField class="field">
+      <div forListbox multiple class="listbox" [formField]="prefsForm.topics" aria-label="Topics">
+        @for (topic of topics; track topic.value) {
+          <button type="button" forListboxOption class="listbox-option" [value]="topic.value">
+            {{ topic.label }}
+            <span forListboxOptionIndicator class="listbox-indicator">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="m4.5 12.75 6 6 9-13.5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.75"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </span>
+          </button>
+        }
+      </div>
+      @if (prefsForm.topics().touched() && !prefsForm.topics().valid()) {
+        <p forFieldError #err="forFieldError" class="field-error">
+          {{ err.messages().join(', ') }}
+        </p>
       }
     </div>
   `,
   styles: `
     :host {
       display: contents;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      align-items: flex-start;
     }
 
     .listbox {
@@ -55,6 +77,12 @@ interface Prefs {
 
     .listbox[data-invalid][data-touched] {
       border-color: var(--ex-danger, #b3261e);
+    }
+
+    .field-error {
+      margin: 0;
+      font-size: 0.85rem;
+      color: var(--ex-danger, #b3261e);
     }
 
     .listbox-option {
@@ -109,9 +137,10 @@ export class ListboxFormFieldExample {
 
   protected readonly model = signal<Prefs>({ topics: [] });
   protected readonly prefsForm = form(this.model, (path) => {
+    required(path.topics);
     validate(path.topics, (ctx) =>
       ctx.value().length === 0
-        ? requiredError({ message: 'Choose at least one topic' })
+        ? requiredError({ message: 'Choose at least one topic.' })
         : undefined,
     );
   });
