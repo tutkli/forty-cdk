@@ -1,10 +1,22 @@
 # Selection value-type contract
 
-Every selection primitive in forty-cdk models its value the same way, so you learn one shape across the whole library and it flows through `[formField]` unchanged whether the control is single- or multi-select.
+Every selection primitive in forty-cdk models its value the same way, so you learn one shape across the whole library, and on the roots that are form controls it flows through `[formField]` unchanged whether the control is single- or multi-select.
 
 ## The value is always a `readonly` array
 
-`ForAccordion`, `ForToggleGroup`, `ForListbox`, and `ForSelect` expose `value` as `model<readonly string[]>`; the generic `ForCombobox` uses `model<readonly T[]>`. That uniform array is the `FormValueControl<readonly T[]>` (or `readonly T[]`) backing that the `[formField]` directive auto-wires to. One control covers both single and multi selection because the shape never changes with mode.
+Every root below exposes `value` as a `readonly` array model. The roots generic over their item type use `model<readonly T[]>`, so `T` can be any item type, objects included, matched through the root's `compareWith` input. Accordion panel ids and ToggleGroup item values are keys rather than domain items, so those two use `model<readonly string[]>`.
+
+| Root                      | `value`                    | Form control                          |
+| ------------------------- | -------------------------- | ------------------------------------- |
+| `ForAccordion`            | `model<readonly string[]>` | No                                    |
+| `ForToggleGroup`          | `model<readonly string[]>` | `FormValueControl<readonly string[]>` |
+| `ForListbox<T = string>`  | `model<readonly T[]>`      | `FormValueControl<readonly T[]>`      |
+| `ForSelect<T = string>`   | `model<readonly T[]>`      | `FormValueControl<readonly T[]>`      |
+| `ForCombobox<T = string>` | `model<readonly T[]>`      | `FormValueControl<readonly T[]>`      |
+| `ForTree<T = string>`     | `model<readonly T[]>`      | No                                    |
+| `ForTable<T = unknown>`   | `model<readonly T[]>`      | No                                    |
+
+On a form control that array is the `FormValueControl` backing the `[formField]` directive auto-wires to, so the field's `disabled`, `required`, `invalid` and `touched` state reaches the control. `ForAccordion`, `ForTree` and `ForTable` share the array shape but are not form controls: bind their `value` with `[(value)]`. One root covers both single and multi selection because the shape never changes with mode.
 
 The array is treated immutably: the primitive replaces it (`[...]`, `.filter()`, a fresh `Set` then spread) rather than mutating it in place. You write to it through `[(value)]`.
 
@@ -14,12 +26,12 @@ With `multiple` unset (the default) the array stays at length ≤ 1. Activating 
 
 ## Single-select consumers read a derived accessor, never `value()[0]`
 
-Each primitive exposes a read-only, single-mode view derived with `computed()`:
+The roots in this table expose a read-only, single-mode view derived with `computed()`; the others have none, so read their `value` directly:
 
-| Primitive                 | Accessor                           |
-| ------------------------- | ---------------------------------- |
-| `ForSelect`, `ForListbox` | `selected: Signal<string \| null>` |
-| `ForCombobox`             | `selectedItem: Signal<T \| null>`  |
+| Primitive                            | Accessor                          |
+| ------------------------------------ | --------------------------------- |
+| `ForSelect`, `ForListbox`, `ForTree` | `selected: Signal<T \| null>`     |
+| `ForCombobox`                        | `selectedItem: Signal<T \| null>` |
 
 It returns the sole element when the array holds exactly one entry, otherwise `null` (empty, or multiple in multi mode). This is a convenience accessor, not a second source of truth: writes still go through `[(value)]`.
 
