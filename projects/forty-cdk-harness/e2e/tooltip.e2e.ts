@@ -8,8 +8,10 @@ import {
   gotoFixture,
   isMobileProject,
   recordInsertions,
+  scrollTopOf,
   settleScroll,
   test,
+  wheelUntil,
 } from './_helpers';
 
 test.describe('Tooltip', () => {
@@ -163,7 +165,7 @@ test.describe('Tooltip', () => {
       (await boxOf(el(page, 'row-trigger-1'))).y - (await boxOf(el(page, 'row-trigger-0'))).y;
     const insertions = await recordInsertions(page, '[forTooltipContent]');
 
-    await page.mouse.wheel(0, 6 * rowPitch);
+    await wheelUntil(page, 6 * rowPitch, () => scrollTopOf(el(page, 'scroll-list')));
     await settleScroll(el(page, 'scroll-list'));
     await expect
       .poll(() => el(page, 'row-trigger-6').evaluate((node) => node.matches(':hover')))

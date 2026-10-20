@@ -1,5 +1,5 @@
 import type { Locator, Page } from '@playwright/test';
-import { el, expect, expectStays, gotoFixture, test } from './_helpers';
+import { el, expect, expectStays, gotoFixture, recordWheels, test, wheelUntil } from './_helpers';
 
 test.skip(
   ({ browserName }) => browserName !== 'chromium',
@@ -76,8 +76,7 @@ test.describe('Modal scroll lock with classic scrollbars', () => {
 
     const viewport = page.viewportSize()!;
     await page.mouse.move(viewport.width / 2, viewport.height - 20);
-    await page.mouse.wheel(0, 300);
-    await expect.poll(() => scrollY(page)).toBeGreaterThan(0);
+    await wheelUntil(page, 300, () => scrollY(page));
     await page.evaluate(() => window.scrollTo(0, 0));
     await expect.poll(() => scrollY(page)).toBe(0);
 
@@ -89,7 +88,7 @@ test.describe('Modal scroll lock with classic scrollbars', () => {
     await expect(el(page, 'first')).toBeFocused();
     const scrollWhileOpen = await scrollY(page);
 
-    await page.mouse.wheel(0, 300);
+    await wheelUntil(page, 300, await recordWheels(page));
     await expectStays(page, async () => expect(await scrollY(page)).toBe(scrollWhileOpen));
 
     await page.keyboard.press('Escape');
