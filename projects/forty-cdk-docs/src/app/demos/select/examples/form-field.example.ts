@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, signal, ViewEncapsulation } from '@angular/core';
-import { form, FormField, requiredError, validate } from '@angular/forms/signals';
+import { form, FormField, required, requiredError, validate } from '@angular/forms/signals';
 import { ForField, ForFieldError, ForLabel } from 'forty-cdk/field';
 import {
   ForSelect,
@@ -236,6 +236,7 @@ export class SelectFormFieldExample {
 
   protected readonly model = signal<Profile>({ plan: [] });
   protected readonly profileForm = form(this.model, (path) => {
+    required(path.plan);
     validate(path.plan, (ctx) =>
       ctx.value().length === 0 ? requiredError({ message: 'Pick a plan to continue' }) : undefined,
     );
