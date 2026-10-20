@@ -210,7 +210,7 @@ const FAMILIES: readonly DefaultsKeyFamily[] = [
   },
   {
     name: 'range field endpoint labels',
-    keys: ['startLabel', 'endLabel'],
+    keys: ['startAriaLabel', 'endAriaLabel'],
     members: [
       'defaults/src/date-range-field-defaults.ts',
       'defaults/src/time-range-field-defaults.ts',

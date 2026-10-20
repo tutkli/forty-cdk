@@ -22,8 +22,8 @@ export type TimeRangeFieldSegment = FieldSegment<TimeSegmentType>;
  * Coordination surface `[forTimeRangeField]` (the root) exposes to its two
  * endpoint groups (`[forTimeRangeFieldStart]` / `[forTimeRangeFieldEnd]`). The
  * root owns the start / end time engines and the composed `DateRange`
- * value; each endpoint reads its rendered segments, its accessible group label,
- * and the {@link SegmentEditorContext} it provides to its own segment / literal
+ * value; each endpoint reads its rendered segments and the
+ * {@link SegmentEditorContext} it provides to its own segment / literal
  * children.
  */
 export interface ForTimeRangeFieldContext {
@@ -37,8 +37,6 @@ export interface ForTimeRangeFieldContext {
   endpointSegments(which: TimeRangeFieldEndpoint): Signal<readonly FieldSegment<TimeSegmentType>[]>;
   /** The segment-coordination surface `which` endpoint provides to its segments. */
   endpointContext(which: TimeRangeFieldEndpoint): SegmentEditorContext;
-  /** The accessible `aria-label` for `which` endpoint group. */
-  endpointLabel(which: TimeRangeFieldEndpoint): Signal<string | null>;
 }
 
 /**

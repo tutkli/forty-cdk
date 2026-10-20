@@ -1,12 +1,18 @@
 import { computed, Directive, inject, input, type Signal } from '@angular/core';
 
-import { type FieldSegment, type WritingDirection, hostAriaLabel } from 'forty-cdk/core';
+import {
+  type FieldSegment,
+  type WritingDirection,
+  hostAriaLabel,
+  resolveTextInput,
+} from 'forty-cdk/core';
 import {
   type DateRangeFieldEndpoint,
   FOR_DATE_RANGE_FIELD_CONTEXT,
   FOR_DATE_RANGE_FIELD_SEGMENT_CONTEXT,
   injectDateRangeFieldContext,
 } from './date-range-field-context';
+import { FOR_DATE_RANGE_FIELD_DEFAULTS } from 'forty-cdk/defaults';
 
 /**
  * Shared base for the two endpoint groups of a `[forDateRangeField]`. Each
@@ -38,13 +44,15 @@ export abstract class ForDateRangeFieldEndpointBase {
   protected abstract readonly which: DateRangeFieldEndpoint;
 
   private readonly root = injectDateRangeFieldContext('ForDateRangeField endpoint');
+  readonly #defaults = inject(FOR_DATE_RANGE_FIELD_DEFAULTS);
 
   /**
-   * Accessible name for this endpoint group. Falls back to the scope default
-   * (`'Start date'` / `'End date'` via `provideForDateRangeFieldDefaults`).
-   * Emits no `aria-label` while both are `null`.
+   * Accessible name for this endpoint group. Defaults to the scope's
+   * `startAriaLabel` / `endAriaLabel` (`'Start date'` / `'End date'` unless
+   * overridden via `provideForDateRangeFieldDefaults`); set `null` to drop the
+   * attribute.
    */
-  readonly ariaLabel = input<string | null>(null);
+  readonly ariaLabel = input<string | null>();
 
   /** The field's effective disabled, reflected on the group. */
   readonly effectiveDisabled: Signal<boolean> = this.root.effectiveDisabled;
@@ -64,16 +72,13 @@ export abstract class ForDateRangeFieldEndpointBase {
     this.root.endpointSegments(this.which)(),
   );
 
-  /** Resolved accessible name for this endpoint group (explicit input or scope default). */
-  private readonly label: Signal<string | null> = computed(
-    () => this.ariaLabel() ?? this.root.endpointLabel(this.which)(),
+  private readonly resolvedAriaLabel = hostAriaLabel(
+    () =>
+      resolveTextInput(
+        this.ariaLabel(),
+        this.which === 'start' ? this.#defaults.startAriaLabel : this.#defaults.endAriaLabel,
+      ) || null,
   );
-
-  /**
-   * Emitted `aria-label`: a consumer-set static value on the endpoint group
-   * when present, else {@link label}.
-   */
-  private readonly resolvedAriaLabel = hostAriaLabel(() => this.label() || null);
 }
 
 /**

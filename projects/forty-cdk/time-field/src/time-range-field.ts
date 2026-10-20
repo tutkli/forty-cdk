@@ -1,4 +1,13 @@
-import { computed, Directive, ElementRef, inject, input, model, type Signal } from '@angular/core';
+import {
+  booleanAttribute,
+  computed,
+  Directive,
+  ElementRef,
+  inject,
+  input,
+  model,
+  type Signal,
+} from '@angular/core';
 import type { FormValueControl } from '@angular/forms/signals';
 
 import {
@@ -165,7 +174,7 @@ export class ForTimeRangeField<D>
    * each endpoint's time-of-day alone, so a server reading the posted fields sees `start > end`
    * again and must re-apply the rule to reconstruct the crossing.
    */
-  readonly allowOvernight = input<boolean>(false);
+  readonly allowOvernight = input(false, { transform: booleanAttribute });
 
   /** Smallest editable unit shared by both endpoints: `'hour'`, `'minute'` (default), or `'second'`. */
   readonly granularity = input<TimeGranularity>('minute');
@@ -212,9 +221,6 @@ export class ForTimeRangeField<D>
   readonly #endEngine: TimeFieldEngine<D>;
   readonly #startContext: SegmentEditorContext;
   readonly #endContext: SegmentEditorContext;
-
-  readonly #startLabel = computed<string | null>(() => resolveText(this.#defaults.startLabel));
-  readonly #endLabel = computed<string | null>(() => resolveText(this.#defaults.endLabel));
 
   /** `aria-invalid` reflects the form-driven invalidity OR a self-detected disorder. */
   private readonly ariaInvalid = computed(() => this.invalid() || this.#composer.disordered());
@@ -378,10 +384,6 @@ export class ForTimeRangeField<D>
 
   endpointContext(which: TimeRangeFieldEndpoint): SegmentEditorContext {
     return which === 'start' ? this.#startContext : this.#endContext;
-  }
-
-  endpointLabel(which: TimeRangeFieldEndpoint): Signal<string | null> {
-    return which === 'start' ? this.#startLabel : this.#endLabel;
   }
 
   private onFocusOut(event: FocusEvent): void {

@@ -831,6 +831,91 @@ describe('ForTimeRangeField', () => {
       expect(root(r).getAttribute('aria-invalid')).toBeNull();
       expect(root(r).getAttribute('data-range-error')).toBeNull();
     });
+
+    it('turns overnight mode on from the bare allowOvernight attribute', async () => {
+      @Component({
+        imports: [
+          ForTimeRangeField,
+          ForTimeRangeFieldStart,
+          ForTimeRangeFieldEnd,
+          ForTimeRangeFieldSegment,
+        ],
+        providers: [...provideNativeDateAdapter()],
+        template: `
+          <div
+            forTimeRangeField
+            allowOvernight
+            [(value)]="value"
+            [locale]="'en-US'"
+            [hourCycle]="24"
+          >
+            <div forTimeRangeFieldStart #start="forTimeRangeFieldStart">
+              @for (s of start.segments(); track s.id) {
+                @if (!s.isLiteral) {
+                  <span forTimeRangeFieldSegment [segment]="s.type!"></span>
+                }
+              }
+            </div>
+            <div forTimeRangeFieldEnd #end="forTimeRangeFieldEnd">
+              @for (s of end.segments(); track s.id) {
+                @if (!s.isLiteral) {
+                  <span forTimeRangeFieldSegment [segment]="s.type!"></span>
+                }
+              }
+            </div>
+          </div>
+        `,
+      })
+      class BareOvernightHost {
+        readonly value = signal<DateRange<Date> | null>({
+          start: new Date(2026, 5, 10, 22, 0),
+          end: new Date(2026, 5, 11, 6, 0),
+        });
+      }
+
+      const r = renderHost(BareOvernightHost);
+      await flush(r.fixture);
+
+      const field = r.query('[forTimeRangeField]')!;
+      expect(field.getAttribute('aria-invalid')).toBeNull();
+      expect(field.getAttribute('data-range-error')).toBeNull();
+    });
+  });
+
+  describe('endpoint group accessible name', () => {
+    @Component({
+      imports: [ForTimeRangeField, ForTimeRangeFieldStart, ForTimeRangeFieldEnd],
+      providers: [...provideNativeDateAdapter()],
+      template: `
+        <div forTimeRangeField>
+          <div
+            forTimeRangeFieldStart
+            data-testid="start-group"
+            [ariaLabel]="startAriaLabel()"
+          ></div>
+          <div forTimeRangeFieldEnd data-testid="end-group" [ariaLabel]="endAriaLabel()"></div>
+        </div>
+      `,
+    })
+    class EndpointLabelHost {
+      readonly startAriaLabel = signal<string | null>(null);
+      readonly endAriaLabel = signal<string | null>(null);
+    }
+
+    it('drops the scope default when [ariaLabel] is bound to null', () => {
+      const r = renderHost(EndpointLabelHost);
+      expect(r.query('[data-testid="start-group"]')!.hasAttribute('aria-label')).toBe(false);
+      expect(r.query('[data-testid="end-group"]')!.hasAttribute('aria-label')).toBe(false);
+    });
+
+    it('emits a bound [ariaLabel] over the scope default', async () => {
+      const r = renderHost(EndpointLabelHost);
+      r.instance.startAriaLabel.set('Opens');
+      r.instance.endAriaLabel.set('Closes');
+      await flush(r.fixture);
+      expect(r.query('[data-testid="start-group"]')!.getAttribute('aria-label')).toBe('Opens');
+      expect(r.query('[data-testid="end-group"]')!.getAttribute('aria-label')).toBe('Closes');
+    });
   });
 
   describe('data-highlighted across the two endpoints (#2287)', () => {
@@ -951,8 +1036,8 @@ describe('ForTimeRangeField', () => {
       providers: [
         ...provideNativeDateAdapter(),
         ...provideForTimeRangeFieldDefaults({
-          startLabel: 'Desde',
-          endLabel: 'Hasta',
+          startAriaLabel: 'Desde',
+          endAriaLabel: 'Hasta',
           segmentLabels: { hour: 'hora' },
         }),
       ],
