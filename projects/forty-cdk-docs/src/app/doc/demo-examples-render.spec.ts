@@ -43,6 +43,19 @@ const NAME_REQUIRED: ReadonlySet<string> = new Set([
   'textbox',
 ]);
 
+const IMPLICIT_LANDMARKS: Readonly<Record<string, string>> = {
+  main: 'main',
+  aside: 'complementary',
+  nav: 'navigation',
+};
+
+const PAGE_LEVEL_LANDMARKS: ReadonlySet<string> = new Set([
+  'main',
+  'complementary',
+  'banner',
+  'contentinfo',
+]);
+
 type Example = (typeof DEMO_EXAMPLES)[number];
 
 type Drive = (host: HTMLElement, fixture: ComponentFixture<unknown>) => Promise<void>;
@@ -113,6 +126,7 @@ interface Report {
   readonly comboboxesWithoutAuthorName: readonly string[];
   readonly ariaLabelsHidingVisibleLabel: readonly string[];
   readonly nativeDisabledBesideAriaDisabled: readonly string[];
+  readonly landmarksNestedInPageMain: readonly string[];
 }
 
 function unnamed(): string[] {
@@ -149,7 +163,42 @@ function nativeDisabledBesideAriaDisabled(): string[] {
   );
 }
 
-async function render(path: string): Promise<{ host: HTMLElement; errors: unknown[] }> {
+function landmarkRole(el: Element): string | null {
+  const explicit = el.getAttribute('role')?.trim().split(/\s+/)[0];
+  return explicit || (IMPLICIT_LANDMARKS[el.localName] ?? null);
+}
+
+function landmarksNestedInPageMain(): string[] {
+  return [...document.body.querySelectorAll('*')]
+    .map((el) => ({ el, role: landmarkRole(el) }))
+    .filter(({ el }) => isExposed(el))
+    .filter(
+      ({ el, role }) =>
+        (role !== null && PAGE_LEVEL_LANDMARKS.has(role)) ||
+        (role === 'navigation' && accessibleName(el).name === ''),
+    )
+    .map(({ el, role }) => `${role}: ${describeElement(el)}`);
+}
+
+function matchMediaAt(width: number): (query: string) => MediaQueryList {
+  return (query) => {
+    const min = /min-width:\s*([\d.]+)px/.exec(query);
+    const max = /max-width:\s*([\d.]+)px/.exec(query);
+    const matches =
+      (!min || width >= Number.parseFloat(min[1]!)) &&
+      (!max || width <= Number.parseFloat(max[1]!));
+    return {
+      matches,
+      media: query,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    } as unknown as MediaQueryList;
+  };
+}
+
+async function render(
+  path: string,
+): Promise<{ host: HTMLElement; fixture: ComponentFixture<unknown>; errors: unknown[] }> {
   const example = EXAMPLES.find((candidate) => candidate.path === path);
   if (example === undefined) {
     throw new Error(`no example is registered at ${path}`);
@@ -168,7 +217,7 @@ async function render(path: string): Promise<{ host: HTMLElement; errors: unknow
   await flush(fixture);
   const host = fixture.nativeElement as HTMLElement;
   await DRIVES[path]?.(host, fixture);
-  return { host, errors };
+  return { host, fixture, errors };
 }
 
 describe('the docs examples', () => {
@@ -202,7 +251,7 @@ describe('the docs examples', () => {
   });
 
   it.each(EXAMPLES.map((example) => example.path))(
-    '%s mounts without an error, names every control by its visible label and keeps disabled controls off the native attribute',
+    '%s mounts without an error, names every control by its visible label, keeps disabled controls off the native attribute and nests no page-level landmark in the page main',
     async (path) => {
       const { errors } = await render(path);
       expect<Report>({
@@ -211,15 +260,51 @@ describe('the docs examples', () => {
         comboboxesWithoutAuthorName: comboboxesWithoutAuthorName(),
         ariaLabelsHidingVisibleLabel: ariaLabelsHidingVisibleLabel(),
         nativeDisabledBesideAriaDisabled: nativeDisabledBesideAriaDisabled(),
+        landmarksNestedInPageMain: landmarksNestedInPageMain(),
       }).toEqual({
         errors: [],
         unnamed: [],
         comboboxesWithoutAuthorName: [],
         ariaLabelsHidingVisibleLabel: [],
         nativeDisabledBesideAriaDisabled: [],
+        landmarksNestedInPageMain: [],
       });
     },
   );
+
+  it('state in text which breakpoints match, not by colour alone', async () => {
+    vi.stubGlobal('matchMedia', matchMediaAt(800));
+    const { host } = await render('breakpoints/examples/active.example.ts');
+    const rows = [...host.querySelectorAll('li')].map(visibleText);
+    expect(rows).toEqual([
+      'sm ≥ 640px up matches only does not match',
+      'md ≥ 768px up matches only matches',
+      'lg ≥ 1024px up does not match only does not match',
+      'xl ≥ 1280px up does not match only does not match',
+      '2xl ≥ 1536px up does not match only does not match',
+    ]);
+  });
+
+  it('promise to restore the size the collapsible pane resizer brings back', async () => {
+    const { host, fixture } = await render('pane-resizer/examples/collapsible.example.ts');
+    const resizer = query<HTMLElement>(host, '[forPaneResizer]');
+    const hint = () => visibleText(query(host, 'p'));
+    resizer.focus();
+
+    pressKey(resizer, 'ArrowRight');
+    pressKey(resizer, 'ArrowRight', { type: 'keyup' });
+    await flush(fixture);
+    expect(hint()).toContain('bring it back to 228px');
+
+    pressKey(resizer, 'Enter');
+    await flush(fixture);
+    expect(resizer.getAttribute('aria-valuenow')).toBe('0');
+    expect(hint()).toContain('bring it back to 228px');
+
+    pressKey(resizer, 'Enter');
+    await flush(fixture);
+    expect(resizer.getAttribute('aria-valuenow')).toBe('228');
+  });
 
   it('keep the search clear button out of the searchbox name once text is typed', async () => {
     const { host } = await render('search/examples/field.example.ts');

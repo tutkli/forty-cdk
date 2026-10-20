@@ -38,12 +38,14 @@ Resize the browser window and watch the matched breakpoint change: the breakpoin
 ```ts
 import { ChangeDetectionStrategy, Component, computed } from '@angular/core';
 import { forBreakpointsTailwind, injectBreakpoints } from 'forty-cdk/breakpoints';
+import { ForVisuallyHidden } from 'forty-cdk/visually-hidden';
 
 type TailwindName = keyof typeof forBreakpointsTailwind;
 
 @Component({
   selector: 'app-breakpoints-active-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [ForVisuallyHidden],
   template: `
     <div class="bp-demo">
       <div class="bp-readout">
@@ -58,8 +60,16 @@ type TailwindName = keyof typeof forBreakpointsTailwind;
             <span class="bp-name">{{ row.name }}</span>
             <span class="bp-min">≥ {{ row.min }}px</span>
             <span class="bp-flags">
-              <span class="bp-flag" [class.bp-flag--on]="row.up()">up</span>
-              <span class="bp-flag" [class.bp-flag--on]="row.only()">only</span>
+              <span class="bp-flag" [class.bp-flag--on]="row.up()">
+                <span aria-hidden="true">{{ row.up() ? '✓' : '✕' }}</span>
+                up
+                <span forVisuallyHidden>{{ row.up() ? 'matches' : 'does not match' }}</span>
+              </span>
+              <span class="bp-flag" [class.bp-flag--on]="row.only()">
+                <span aria-hidden="true">{{ row.only() ? '✓' : '✕' }}</span>
+                only
+                <span forVisuallyHidden>{{ row.only() ? 'matches' : 'does not match' }}</span>
+              </span>
             </span>
           </li>
         }

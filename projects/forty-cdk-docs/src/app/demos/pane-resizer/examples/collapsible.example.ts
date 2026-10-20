@@ -7,18 +7,18 @@ import { ForPaneResizer } from 'forty-cdk/pane-resizer';
   imports: [ForPaneResizer],
   template: `
     <div class="cs-split">
-      <aside id="cs-side" class="cs-side" [style.flex-basis.px]="size()">
+      <div id="cs-side" class="cs-side" [style.flex-basis.px]="size()">
         @if (collapsed()) {
           <span class="cs-rail">⋮</span>
         } @else {
-          <nav class="cs-nav">
+          <div class="cs-nav">
             <span class="cs-item">Overview</span>
             <span class="cs-item">Activity</span>
             <span class="cs-item">Members</span>
             <span class="cs-item">Settings</span>
-          </nav>
+          </div>
         }
-      </aside>
+      </div>
       <div
         forPaneResizer
         orientation="vertical"
@@ -31,13 +31,14 @@ import { ForPaneResizer } from 'forty-cdk/pane-resizer';
         [step]="8"
         [largeStep]="64"
         [collapsible]="true"
+        (resizeCommit)="rememberExpanded($event)"
       ></div>
-      <main id="cs-main" class="cs-main">
+      <div id="cs-main" class="cs-main">
         <p>
           Focus the divider and press <kbd>Enter</kbd> to collapse the sidebar, then
-          <kbd>Enter</kbd> again to bring it back to {{ size() }}px.
+          <kbd>Enter</kbd> again to bring it back to {{ expandedSize() }}px.
         </p>
-      </main>
+      </div>
     </div>
   `,
   styles: `
@@ -134,6 +135,13 @@ import { ForPaneResizer } from 'forty-cdk/pane-resizer';
 })
 export class PaneResizerCollapsibleExample {
   protected readonly size = signal(220);
+  protected readonly expandedSize = signal(this.size());
 
   protected readonly collapsed = computed(() => this.size() <= 0);
+
+  protected rememberExpanded(size: number): void {
+    if (size > 0) {
+      this.expandedSize.set(size);
+    }
+  }
 }
