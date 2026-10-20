@@ -344,6 +344,7 @@ export class DatePickerFixture {
     ForDatePickerValue,
     ForDatePickerContent,
     ForCalendar,
+    ForCalendarHeading,
     ForCalendarGrid,
     ForCalendarCell,
   ],
@@ -355,6 +356,7 @@ export class DatePickerFixture {
       </button>
       <div forDatePickerContent>
         <div forCalendar selectionMode="range" [(range)]="value">
+          <h2 forCalendarHeading #heading="forCalendarHeading">{{ heading.label() }}</h2>
           <table forCalendarGrid #grid="forCalendarGrid">
             <tbody>
               @for (week of grid.weeks(); track week.key) {

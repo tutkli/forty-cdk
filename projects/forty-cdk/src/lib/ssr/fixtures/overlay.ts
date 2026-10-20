@@ -180,11 +180,10 @@ export class HoverCardOpenFixture {}
 @Component({
   imports: [ForToastViewport, ForToast, ForToastTitle],
   template: `
-    <for-toast-viewport>
-      <div forToast>
-        <div forToastTitle>Saved</div>
-      </div>
-    </for-toast-viewport>
+    <for-toast-viewport />
+    <div forToast>
+      <div forToastTitle>Saved</div>
+    </div>
   `,
 })
 export class ToastFixture {}

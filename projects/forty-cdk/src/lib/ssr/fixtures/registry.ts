@@ -173,11 +173,28 @@ export interface SsrFixture {
   /** Per-element markup the server render must emit. */
   readonly markup?: readonly SsrMarkup[];
   /**
-   * Selector matching every item of a roving-tabindex composite. Exactly one
-   * of them must carry `tabindex="0"` server-side, so a keyboard user can Tab
+   * Selector matching every item of a roving-tabindex composite, or one selector
+   * per group when the fixture renders several. Exactly one item each selector
+   * matches must carry `tabindex="0"` server-side, so a keyboard user can Tab
    * into the group before hydration — the claim a deferred registration breaks.
+   * A fixture rendering the items of a single-tab-stop group owes it, or a
+   * {@link SsrFixture.noTabStop}: the sweep derives which groups a render holds.
    */
-  readonly tabStop?: string;
+  readonly tabStop?: string | readonly string[];
+  /**
+   * Why a fixture rendering the items of a single-tab-stop group holds no tab
+   * stop among them server-side — a static table, a listbox driven from an
+   * input that keeps focus. The absence is asserted: no item may carry
+   * `tabindex="0"`.
+   */
+  readonly noTabStop?: string;
+  /**
+   * Id-reference attributes the render emits that no `pairs` claim covers, each
+   * with why: a hand-written case loops over every pair, or the value composes
+   * several ids. The id-reference sweep fails on any other uncovered reference,
+   * and on an attribute listed here that the render no longer leaves uncovered.
+   */
+  readonly unpairedReferences?: Readonly<Record<string, string>>;
   /**
    * The `<head>` children the server render must append, each as
    * `tag#id[sorted attribute names]`. Omitted means the render appends nothing:
@@ -213,12 +230,19 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
         attributes: { 'aria-expanded': 'false', 'aria-controls': null },
         present: ['id'],
       },
-      { select: '[forAccordionContent]', present: ['id'] },
+      {
+        select: '[forAccordionContent]',
+        present: ['id'],
+        pairs: { 'aria-labelledby': '[forAccordionTrigger]' },
+      },
     ],
   },
   {
     component: AccordionRtlFixture,
-    markup: [{ select: '[forAccordion]', attributes: { dir: 'rtl' } }],
+    markup: [
+      { select: '[forAccordion]', attributes: { dir: 'rtl' } },
+      { select: '[forAccordionContent]', pairs: { 'aria-labelledby': '[forAccordionTrigger]' } },
+    ],
   },
   {
     component: TabsFixture,
@@ -234,11 +258,24 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
   },
   {
     component: TabsServerFixture,
+    tabStop: '[forTabsTrigger]',
+    unpairedReferences: {
+      'aria-controls': 'every trigger↔panel pair is asserted by the ForTabs server markup loop',
+      'aria-labelledby': 'every trigger↔panel pair is asserted by the ForTabs server markup loop',
+    },
     markup: [{ select: '[forTabsTrigger]', attributes: { role: 'tab', 'aria-selected': 'true' } }],
   },
-  { component: TabsServerRepeatFixture },
+  {
+    component: TabsServerRepeatFixture,
+    tabStop: '[forTabsTrigger]',
+    unpairedReferences: {
+      'aria-controls': 'every trigger↔panel pair is asserted by the ForTabs server markup loop',
+      'aria-labelledby': 'every trigger↔panel pair is asserted by the ForTabs server markup loop',
+    },
+  },
   {
     component: TableFixture,
+    noTabStop: 'mode="table" is a static table, so no cell is focusable',
     markup: [
       {
         select: '[forTable]',
@@ -269,6 +306,7 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
   },
   {
     component: TableGridFixture,
+    tabStop: '[forTableHeaderCell], [forTableCell]',
     markup: [
       {
         select: '[forTable]',
@@ -302,6 +340,7 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
   },
   {
     component: TableGridVariantFixture,
+    tabStop: '[forTableHeaderCell], [forTableCell]',
     markup: [
       {
         select: '[forTable]',
@@ -329,6 +368,7 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
   },
   {
     component: TableBodyFixture,
+    tabStop: '[forTableHeaderCell], [forTableCell]',
     markup: [
       {
         select: '[forTable]',
@@ -353,6 +393,7 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
   },
   {
     component: TableBodyRowVariantFixture,
+    tabStop: '[forTableHeaderCell], [forTableCell]',
     markup: [
       {
         select: '[data-row-variant]',
@@ -360,17 +401,24 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
       },
     ],
   },
-  { component: TableBodyPlaceholderVariantFixture },
+  {
+    component: TableBodyPlaceholderVariantFixture,
+    tabStop: '[forTableHeaderCell], [forTableCell]',
+  },
   {
     component: TableBodyRowInteractionFixture,
+    noTabStop:
+      'mode="table" holds no cell tab stop; each interactive row is a tab stop of its own, not a roving one',
     markup: [{ select: '[forTableRow]', attributes: { tabindex: '0', 'data-open': '' } }],
   },
   {
     component: TableBodyReorderFixture,
+    tabStop: '[forTableHeaderCell], [forTableCell]',
     markup: [{ select: '[forTableHeaderRow]', attributes: { forTableColumnReorder: '' } }],
   },
   {
     component: TableTreegridFixture,
+    tabStop: '[forTableHeaderCell], [forTableCell]',
     markup: [
       { select: '[forTable]', attributes: { role: 'treegrid', 'data-mode': 'treegrid' } },
       {
@@ -401,6 +449,7 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
   },
   {
     component: TableVirtualizedUnknownTotalFixture,
+    tabStop: '[forTableHeaderCell], [forTableCell]',
     markup: [
       {
         select: '[forTable]',
@@ -416,6 +465,7 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
   },
   {
     component: TableBodyVirtualizedFixture,
+    tabStop: '[forTableHeaderCell], [forTableCell]',
     markup: [
       {
         select: '[forTable]',
@@ -447,6 +497,13 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
   },
   {
     component: StepperFixture,
+    tabStop: '[forStepperTrigger]',
+    unpairedReferences: {
+      'aria-controls':
+        'every step after the first is asserted by the ForStepper server markup loop',
+      'aria-labelledby':
+        'every step after the first is asserted by the ForStepper server markup loop',
+    },
     markup: [
       {
         select: '[forStepperTrigger]',
@@ -457,6 +514,13 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
   },
   {
     component: StepperCompletedFixture,
+    tabStop: '[forStepperTrigger]',
+    unpairedReferences: {
+      'aria-controls':
+        'every step after the first is asserted by the ForStepper server markup loop',
+      'aria-labelledby':
+        'every step after the first is asserted by the ForStepper server markup loop',
+    },
     markup: [
       { select: '[forStepperList]', attributes: { role: 'tablist', 'aria-label': 'Checkout' } },
       {
@@ -486,6 +550,13 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
   },
   {
     component: StepperServerFixture,
+    tabStop: '[forStepperTrigger]',
+    unpairedReferences: {
+      'aria-controls':
+        'every step after the first is asserted by the ForStepper server markup loop',
+      'aria-labelledby':
+        'every step after the first is asserted by the ForStepper server markup loop',
+    },
     markup: [
       { select: '[forStepperTrigger]', pairs: { 'aria-controls': '[forStepperContent]' } },
       { select: '[forStepperContent]', pairs: { 'aria-labelledby': '[forStepperTrigger]' } },
@@ -499,6 +570,8 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
         select: '[forCarousel]',
         attributes: { 'aria-roledescription': 'carousel', 'aria-label': 'Examples' },
       },
+      { select: '[forCarouselPrevious]', pairs: { 'aria-controls': '[forCarouselViewport]' } },
+      { select: '[forCarouselNext]', pairs: { 'aria-controls': '[forCarouselViewport]' } },
     ],
   },
   {
@@ -623,13 +696,20 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
       {
         select: '[forDialog]',
         attributes: { role: 'dialog', 'aria-modal': 'true', 'data-state': 'open' },
+        pairs: { 'aria-labelledby': '[forDialogTitle]' },
       },
     ],
   },
   {
     component: DialogContainedFixture,
     open: true,
-    markup: [{ select: '[forDialog]', attributes: { role: 'dialog', 'aria-modal': null } }],
+    markup: [
+      {
+        select: '[forDialog]',
+        attributes: { role: 'dialog', 'aria-modal': null },
+        pairs: { 'aria-labelledby': '[forDialogTitle]' },
+      },
+    ],
   },
   {
     component: DialogContainedModalFixture,
@@ -638,6 +718,7 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
       {
         select: '[forDialog]',
         attributes: { role: 'dialog', 'aria-modal': 'true' },
+        pairs: { 'aria-labelledby': '[forDialogTitle]' },
         within: 'section',
       },
     ],
@@ -649,13 +730,20 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
       {
         select: '[forDrawer]',
         attributes: { role: 'dialog', 'aria-modal': 'true', 'data-state': 'open' },
+        pairs: { 'aria-labelledby': '[forDrawerTitle]' },
       },
     ],
   },
   {
     component: DrawerContainedFixture,
     open: true,
-    markup: [{ select: '[forDrawer]', attributes: { role: 'dialog', 'aria-modal': null } }],
+    markup: [
+      {
+        select: '[forDrawer]',
+        attributes: { role: 'dialog', 'aria-modal': null },
+        pairs: { 'aria-labelledby': '[forDrawerTitle]' },
+      },
+    ],
   },
   {
     component: DrawerContainedModalFixture,
@@ -664,6 +752,7 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
       {
         select: '[forDrawer]',
         attributes: { role: 'dialog', 'aria-modal': 'true' },
+        pairs: { 'aria-labelledby': '[forDrawerTitle]' },
         within: 'section',
       },
     ],
@@ -676,6 +765,7 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
       {
         select: '[forDrawer]',
         attributes: { role: 'dialog', 'aria-modal': 'true', 'data-state': 'open' },
+        pairs: { 'aria-labelledby': '[forDrawerTitle]' },
         within: '[forDrawerWrapper]',
       },
     ],
@@ -689,7 +779,14 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
   {
     component: ToastFixture,
     open: true,
-    markup: [{ select: 'for-toast-viewport', attributes: { role: 'region', tabindex: '-1' } }],
+    markup: [
+      { select: 'for-toast-viewport', attributes: { role: 'region', tabindex: '-1' } },
+      {
+        select: '[forToast]',
+        attributes: { role: 'status', 'data-state': 'open' },
+        pairs: { 'aria-labelledby': '[forToastTitle]' },
+      },
+    ],
   },
   {
     component: SelectOpenFixture,
@@ -700,7 +797,11 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
         attributes: { role: 'combobox', 'aria-haspopup': 'listbox', 'aria-expanded': 'true' },
         pairs: { 'aria-controls': '[forSelectContent]' },
       },
-      { select: '[forSelectContent]', attributes: { role: 'listbox' } },
+      {
+        select: '[forSelectContent]',
+        attributes: { role: 'listbox' },
+        pairs: { 'aria-labelledby': '[forSelectTrigger]' },
+      },
       { select: '[forSelectOption]', attributes: { role: 'option', 'aria-selected': 'true' } },
     ],
   },
@@ -712,7 +813,11 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
         select: '[forSelectTrigger]',
         pairs: { 'aria-controls': '[forSelectContent]' },
       },
-      { select: '[forSelectContent]', attributes: { role: 'listbox' } },
+      {
+        select: '[forSelectContent]',
+        attributes: { role: 'listbox' },
+        pairs: { 'aria-labelledby': '[forSelectTrigger]' },
+      },
       { select: '[forSelectOption]', attributes: { role: 'option', 'aria-setsize': '3' } },
     ],
   },
@@ -723,7 +828,10 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
       {
         select: '[forComboboxInput]',
         attributes: { role: 'combobox', 'aria-haspopup': 'listbox', 'aria-expanded': 'true' },
-        pairs: { 'aria-controls': '[forComboboxList]' },
+        pairs: {
+          'aria-controls': '[forComboboxList]',
+          'aria-activedescendant': '[forComboboxOption]',
+        },
       },
       {
         select: '[forComboboxToggle]',
@@ -731,7 +839,11 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
         pairs: { 'aria-controls': '[forComboboxList]' },
       },
       { select: '[forComboboxContent]', attributes: { role: null } },
-      { select: '[forComboboxList]', attributes: { role: 'listbox' } },
+      {
+        select: '[forComboboxList]',
+        attributes: { role: 'listbox' },
+        pairs: { 'aria-labelledby': '[forComboboxInput]' },
+      },
       { select: '[forComboboxAction]', attributes: { role: 'button' } },
       { select: '[forComboboxOption]', attributes: { role: 'option' } },
     ],
@@ -781,7 +893,11 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
         attributes: { role: 'menuitem', 'aria-haspopup': 'menu', 'aria-expanded': 'true' },
         pairs: { 'aria-controls': '[forMenuContent]' },
       },
-      { select: '[forMenuContent]', attributes: { role: 'menu' } },
+      {
+        select: '[forMenuContent]',
+        attributes: { role: 'menu' },
+        pairs: { 'aria-labelledby': '[forMenubarTrigger]' },
+      },
       { select: '[forMenuItem]', attributes: { role: 'menuitem' } },
     ],
   },
@@ -826,6 +942,7 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
   },
   {
     component: TreeCheckboxFixture,
+    tabStop: '[forTreeItem]',
     markup: [
       {
         select: '[forTree]',
@@ -855,6 +972,7 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
   },
   {
     component: TreeCascadeFixture,
+    tabStop: '[forTreeItem]',
     markup: [
       { select: '[forTree]', attributes: { role: 'tree', 'aria-label': 'Groups' } },
       {
@@ -877,6 +995,7 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
   },
   {
     component: TreeVirtualizedFixture,
+    tabStop: '[forTree], [forTreeItem]',
     markup: [
       {
         select: '[forTree]',
@@ -902,6 +1021,7 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
   },
   {
     component: TreeNodeDragFixture,
+    tabStop: '[forTreeItem]',
     markup: [
       { select: '[forTree]', attributes: { role: 'tree', 'aria-label': 'Files' } },
       {
@@ -932,10 +1052,12 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
   },
   {
     component: CalendarFixture,
+    tabStop: '[forCalendarCell]',
     markup: [{ select: '[forCalendarGrid]', pairs: { 'aria-labelledby': '[forCalendarHeading]' } }],
   },
   {
     component: CalendarDropdownsFixture,
+    tabStop: '[forCalendarCell]',
     markup: [
       { select: '[forCalendar]', attributes: { 'data-view': 'day' } },
       {
@@ -952,6 +1074,7 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
   },
   {
     component: CalendarSelectDirectivesFixture,
+    tabStop: '[forCalendarCell]',
     markup: [
       { select: '[forCalendar]', attributes: { 'data-view': 'day' } },
       {
@@ -968,6 +1091,7 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
   },
   {
     component: CalendarMonthViewFixture,
+    tabStop: '[forCalendarMonthCell]',
     markup: [
       { select: '[forCalendar]', attributes: { 'data-view': 'month' } },
       {
@@ -983,6 +1107,7 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
   },
   {
     component: CalendarYearViewFixture,
+    tabStop: '[forCalendarYearCell]',
     markup: [
       { select: '[forCalendar]', attributes: { 'data-view': 'year' } },
       {
@@ -998,6 +1123,7 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
   },
   {
     component: DateFieldFixture,
+    tabStop: '[forDateFieldSegment]',
     markup: [
       {
         select: '[forDateField]',
@@ -1018,6 +1144,7 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
   },
   {
     component: TimeFieldFixture,
+    tabStop: '[forTimeFieldSegment]',
     markup: [
       {
         select: '[forTimeField]',
@@ -1033,6 +1160,10 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
   },
   {
     component: DateRangeFieldFixture,
+    tabStop: [
+      '[forDateRangeFieldStart] [forDateRangeFieldSegment]',
+      '[forDateRangeFieldEnd] [forDateRangeFieldSegment]',
+    ],
     markup: [
       {
         select: '[forDateRangeField]',
@@ -1058,6 +1189,10 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
   },
   {
     component: TimeRangeFieldFixture,
+    tabStop: [
+      '[forTimeRangeFieldStart] [forTimeRangeFieldSegment]',
+      '[forTimeRangeFieldEnd] [forTimeRangeFieldSegment]',
+    ],
     markup: [
       {
         select: '[forTimeRangeField]',
@@ -1093,6 +1228,7 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
   {
     component: DateRangePickerOpenFixture,
     open: true,
+    tabStop: '[forCalendarCell]',
     markup: [
       {
         select: '[forDatePickerTrigger]',
@@ -1100,6 +1236,7 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
         pairs: { 'aria-controls': '[forDatePickerContent]' },
       },
       { select: '[forDatePickerContent]', attributes: { role: 'dialog' } },
+      { select: '[forCalendarGrid]', pairs: { 'aria-labelledby': '[forCalendarHeading]' } },
     ],
   },
   {
@@ -1111,12 +1248,20 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
         attributes: { role: 'combobox', 'aria-haspopup': 'listbox', 'aria-expanded': 'true' },
         pairs: { 'aria-controls': '[forTimePickerContent]' },
       },
-      { select: '[forTimePickerContent]', attributes: { role: 'listbox' } },
+      {
+        select: '[forTimePickerContent]',
+        attributes: { role: 'listbox' },
+        pairs: { 'aria-labelledby': '[forTimePickerTrigger]' },
+      },
       { select: '[forTimePickerOption]', attributes: { role: 'option' } },
     ],
   },
   {
     component: DragDropFixture,
+    tabStop: [
+      '[forDropList]:first-of-type [forDraggable]',
+      '[forDropList]:last-of-type [forDraggable]',
+    ],
     markup: [
       { select: '[forDropList]', attributes: { 'data-orientation': 'vertical' } },
       {
@@ -1146,20 +1291,33 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
         attributes: { 'aria-haspopup': 'menu', 'aria-expanded': 'true' },
         pairs: { 'aria-controls': '[forMenuContent]' },
       },
-      { select: '[forMenuContent]', attributes: { role: 'menu' } },
+      {
+        select: '[forMenuContent]',
+        attributes: { role: 'menu' },
+        pairs: { 'aria-labelledby': '[forDropdownMenuTrigger]' },
+      },
     ],
   },
   {
     component: MenuSubOpenFixture,
     open: true,
     markup: [
-      { select: '[forMenuContent]', attributes: { role: 'menu' } },
+      { select: '[forDropdownMenuTrigger]', pairs: { 'aria-controls': '[forMenuContent]' } },
+      {
+        select: '[forMenuContent]',
+        attributes: { role: 'menu' },
+        pairs: { 'aria-labelledby': '[forDropdownMenuTrigger]' },
+      },
       {
         select: '[forMenuSubTrigger]',
         attributes: { role: 'menuitem', 'aria-haspopup': 'menu', 'aria-expanded': 'true' },
         pairs: { 'aria-controls': '[forMenuSubContent]' },
       },
-      { select: '[forMenuSubContent]', attributes: { role: 'menu', 'data-state': 'open' } },
+      {
+        select: '[forMenuSubContent]',
+        attributes: { role: 'menu', 'data-state': 'open' },
+        pairs: { 'aria-labelledby': '[forMenuSubTrigger]' },
+      },
     ],
   },
   {
@@ -1172,6 +1330,7 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
     open: true,
     markup: [
       { select: '[forMenuContent]', attributes: { role: 'menu', 'aria-label': 'Row actions' } },
+      { select: '[data-opener="kebab"]', pairs: { 'aria-controls': '[forMenuContent]' } },
     ],
   },
   {
@@ -1193,6 +1352,8 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
   },
   {
     component: ListboxControllerFixture,
+    noTabStop:
+      'the controlling input keeps DOM focus and drives the options through aria-activedescendant',
     markup: [
       {
         select: 'input',
@@ -1204,6 +1365,7 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
   },
   {
     component: ListboxVirtualizedFixture,
+    tabStop: '[forListbox], [forListboxOption]',
     markup: [
       { select: '[forListbox]', attributes: { role: 'listbox' } },
       { select: '[forListboxOption]', attributes: { role: 'option', 'aria-setsize': '3' } },
@@ -1211,6 +1373,7 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
   },
   {
     component: ListboxReorderFixture,
+    tabStop: '[forListboxOption]',
     markup: [
       {
         select: '[forListbox]',
@@ -1348,6 +1511,10 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
   { component: VisuallyHiddenFixture, noWiring: 'the clip is inline style only' },
   {
     component: FieldFixture,
+    unpairedReferences: {
+      'aria-describedby':
+        'composes the description and the error id, asserted by the hand-written substring case',
+    },
     markup: [
       { select: '[forLabel]', present: ['id'], pairs: { for: '[forFieldControl]' } },
       {
@@ -1358,7 +1525,10 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
   },
   {
     component: FieldsetFixture,
-    markup: [{ select: '[forFieldControl]', pairs: { 'aria-labelledby': '[forLabel]' } }],
+    markup: [
+      { select: '[forLabel]', pairs: { for: '[forFieldControl]' } },
+      { select: '[forFieldControl]', pairs: { 'aria-labelledby': '[forLabel]' } },
+    ],
   },
 ];
 
