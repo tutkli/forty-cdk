@@ -4324,6 +4324,43 @@ exports[`document structure > projects/forty-cdk/hover-card/README.md declares t
 ]
 `;
 
+exports[`document structure > projects/forty-cdk/id-salt/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "headings": [],
+    "slug": "why-this-exists",
+    "tables": [
+      {
+        "columns": [
+          "At the root",
+          "main size (raw / gzip)",
+          "Shared chunks the lazy routes load",
+        ],
+        "role": "plain",
+        "rows": 3,
+      },
+    ],
+    "title": "Why this exists",
+  },
+  {
+    "headings": [],
+    "slug": "api",
+    "tables": [
+      {
+        "columns": [
+          "Export",
+          "Kind",
+          "Contract",
+        ],
+        "role": "plain",
+        "rows": 2,
+      },
+    ],
+    "title": "API",
+  },
+]
+`;
+
 exports[`document structure > projects/forty-cdk/input/README.md declares the sections and table shapes it declared before 1`] = `
 [
   {
