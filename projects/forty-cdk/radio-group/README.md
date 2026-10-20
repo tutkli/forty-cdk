@@ -168,6 +168,25 @@ Optional slot inside a `ForRadio`. Apply on the element you want to show only wh
 | `data-state`       | `checked` \| `unchecked`   |
 | `data-orientation` | `horizontal` \| `vertical` |
 
+## Scoped defaults
+
+`provideForRadioGroupDefaults` configures radio group defaults for an injector subtree, either at the application root or in any component's `providers` array. Partial overrides inherit unspecified keys from the parent scope (or the library fallbacks at the root).
+
+| Key    | Library fallback | Meaning                                                                                                                                                            |
+| ------ | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `loop` | `true`           | Whether arrow navigation wraps past the first / last enabled radio, for groups that don't set `loop` themselves. The fallback matches the APG Radio Group pattern. |
+
+Per-instance inputs always win over the scope defaults.
+
+```ts
+import { type ApplicationConfig } from '@angular/core';
+import { provideForRadioGroupDefaults } from 'forty-cdk/defaults';
+
+export const appConfig: ApplicationConfig = {
+  providers: [provideForRadioGroupDefaults({ loop: false })],
+};
+```
+
 ## Keyboard
 
 - **Tab** moves focus into / out of the group; lands on the selected radio (or the first enabled one if nothing is selected).

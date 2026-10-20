@@ -188,6 +188,25 @@ Visual divider. Defaults `orientation` to the toolbar's cross-axis; reflects `ro
 | ------------------ | -------------------------- |
 | `data-orientation` | `horizontal` \| `vertical` |
 
+## Scoped defaults
+
+`provideForToolbarDefaults` configures toolbar defaults for an injector subtree, either at the application root or in any component's `providers` array. Partial overrides inherit unspecified keys from the parent scope (or the library fallbacks at the root).
+
+| Key    | Library fallback | Meaning                                                                                                                                                         |
+| ------ | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `loop` | `true`           | Whether arrow navigation wraps past the first / last enabled item, for toolbars that don't set `loop` themselves. The fallback matches the APG Toolbar pattern. |
+
+Per-instance inputs always win over the scope defaults.
+
+```ts
+import { type ApplicationConfig } from '@angular/core';
+import { provideForToolbarDefaults } from 'forty-cdk/defaults';
+
+export const appConfig: ApplicationConfig = {
+  providers: [provideForToolbarDefaults({ loop: false })],
+};
+```
+
 ## Keyboard
 
 | Key                        | Action                                                                    |

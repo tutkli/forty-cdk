@@ -103,7 +103,7 @@ Root directive. Owns scroll type, hide-delay, hover state, and writing direction
 | `trackPressRepeatInterval` | `input<number>`                                    | ms between auto-repeat steps of a held `trackPress="page"` gesture.<br>**Default:** `50`                                                                                                                           |
 | `dir`                      | `input<'ltr' \| 'rtl' \| null>`                    | Reflected as `dir`. `null` inherits the nearest `[dir]` / `<html dir>`, else `'ltr'`.<br>**Default:** `null`                                                                                                       |
 
-All three `trackPress*` defaults are read from `provideForScrollAreaDefaults` for the surrounding scope, so an app can opt out of track-press paging in one place with `provideForScrollAreaDefaults({ trackPress: 'none' })`.
+`scrollHideDelay` and the three `trackPress*` inputs fall back to the surrounding scope's defaults; see [Scoped defaults](#scoped-defaults).
 
 | Data attribute | Values                                    |
 | -------------- | ----------------------------------------- |
@@ -195,6 +195,28 @@ Draggable thumb, sized and translated automatically. Mirrors its scrollbar's ori
 ### `ForScrollAreaCorner`
 
 Filler in the corner where horizontal and vertical scrollbars meet. Shows only when both scrollbars are visible (or always, under `type="always"`), self-removing via the `hidden` attribute plus an inline `display: none` otherwise. Carries no `data-*` attributes.
+
+## Scoped defaults
+
+`provideForScrollAreaDefaults` configures scroll area defaults for an injector subtree, either at the application root or in any component's `providers` array. Partial overrides inherit unspecified keys from the parent scope (or the library fallbacks at the root).
+
+| Key                        | Library fallback | Meaning                                                                                                                                                                                                                                                           |
+| -------------------------- | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `scrollHideDelay`          | `600`            | Milliseconds after the most recent scroll before the synthetic scrollbars fade, under `type="scroll"` or `type="hover"`, for scroll areas that don't set `scrollHideDelay` themselves.                                                                            |
+| `trackPress`               | `'page'`         | What a primary-button press on bare track does: `'page'` steps toward the press and repeats while held, `'jump'` centres the thumb on the press point and scrubs while held, `'none'` ignores it. Applies to scroll areas that don't set `trackPress` themselves. |
+| `trackPressRepeatDelay`    | `300`            | Milliseconds a held `trackPress="page"` gesture waits before the first repeated page step, for scroll areas that don't set `trackPressRepeatDelay` themselves.                                                                                                    |
+| `trackPressRepeatInterval` | `50`             | Milliseconds between repeated page steps of a held `trackPress="page"` gesture, after `trackPressRepeatDelay` has elapsed, for scroll areas that don't set `trackPressRepeatInterval` themselves.                                                                 |
+
+Per-instance inputs always win over the scope defaults. To opt every scroll area in the app out of track-press paging in one place:
+
+```ts
+import { type ApplicationConfig } from '@angular/core';
+import { provideForScrollAreaDefaults } from 'forty-cdk/defaults';
+
+export const appConfig: ApplicationConfig = {
+  providers: [provideForScrollAreaDefaults({ trackPress: 'none' })],
+};
+```
 
 ## Accessibility
 

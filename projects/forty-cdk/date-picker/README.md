@@ -260,6 +260,35 @@ A native reset of the owning `<form>` returns `value` to what it held when the p
 | `[forDatePickerContent]` | `data-state`       | `open` \| `closed` |
 | `[forDatePickerValue]`   | `data-placeholder` | present \| absent  |
 
+## Scoped defaults
+
+`provideForDatePickerDefaults` configures `[forDatePicker]` defaults and `provideForDateRangePickerDefaults` configures `[forDateRangePicker]` defaults for an injector subtree, either at the application root or in any component's `providers` array. Partial overrides inherit unspecified keys from the parent scope (or the library fallbacks at the root).
+
+| Key                | Library fallback | Meaning                                                                                                                                                                                          |
+| ------------------ | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `side`             | `'bottom'`       | Anchor side for pickers that don't set `side` themselves. Ignored in `modal` mode.                                                                                                               |
+| `align`            | `'start'`        | Alignment along `side` for pickers that don't set `align` themselves. Ignored in `modal` mode.                                                                                                   |
+| `sideOffset`       | `8`              | Main-axis gap (px) between the trigger and the surface for pickers that don't set `sideOffset` themselves. Ignored in `modal` mode, where the surface is centered.                               |
+| `collisionPadding` | `8`              | Collision-middleware padding (px) for pickers that don't set it themselves.                                                                                                                      |
+| `hourCycle`        | `null`           | 12- or 24-hour cycle for date pickers that don't bind `[hourCycle]`. `null` derives the cycle from the locale. Read it through `resolvedHourCycle()`; see [Date-time picker](#date-time-picker). |
+
+Both providers take the four placement keys with the same fallbacks; `hourCycle` belongs to `provideForDatePickerDefaults` only. Per-instance inputs always win over the scope defaults.
+
+```ts
+import { type ApplicationConfig } from '@angular/core';
+import {
+  provideForDatePickerDefaults,
+  provideForDateRangePickerDefaults,
+} from 'forty-cdk/defaults';
+
+export const appConfig: ApplicationConfig = {
+  providers: [
+    provideForDatePickerDefaults({ align: 'end', hourCycle: 24 }),
+    provideForDateRangePickerDefaults({ align: 'end' }),
+  ],
+};
+```
+
 ## Triggers stamped from outside-declared templates
 
 Angular resolves `ng-template` DI at the template's **declaration** site, not where it is stamped. A `[forDatePickerTrigger]` declared in a template outside the root throws the orphan error even when the template is rendered inside the root via `ngTemplateOutlet`. For that case the selector attribute accepts the root reference as a value, `routerLink`-style. Grab that reference with `#root="forDatePicker"` and pass it through the outlet context. The bare valueless attribute keeps resolving via DI.

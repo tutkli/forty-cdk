@@ -1219,6 +1219,22 @@ exports[`document structure > projects/forty-cdk/avatar/README.md declares the s
   },
   {
     "headings": [],
+    "slug": "scoped-defaults",
+    "tables": [
+      {
+        "columns": [
+          "Key",
+          "Library fallback",
+          "Meaning",
+        ],
+        "role": "plain",
+        "rows": 1,
+      },
+    ],
+    "title": "Scoped defaults",
+  },
+  {
+    "headings": [],
     "slug": "accessibility",
     "tables": [],
     "title": "Accessibility",
@@ -1264,12 +1280,6 @@ exports[`document structure > projects/forty-cdk/breadcrumbs/README.md declares 
     "title": "Examples",
   },
   {
-    "headings": [],
-    "slug": "localizing-the-label",
-    "tables": [],
-    "title": "Localizing the label",
-  },
-  {
     "headings": [
       {
         "depth": 3,
@@ -1305,6 +1315,22 @@ exports[`document structure > projects/forty-cdk/breadcrumbs/README.md declares 
   },
   {
     "headings": [],
+    "slug": "scoped-defaults",
+    "tables": [
+      {
+        "columns": [
+          "Key",
+          "Library fallback",
+          "Meaning",
+        ],
+        "role": "plain",
+        "rows": 1,
+      },
+    ],
+    "title": "Scoped defaults",
+  },
+  {
+    "headings": [],
     "slug": "accessibility",
     "tables": [],
     "title": "Accessibility",
@@ -1322,9 +1348,19 @@ exports[`document structure > projects/forty-cdk/breakpoints/README.md declares 
 [
   {
     "headings": [],
-    "slug": "setup",
-    "tables": [],
-    "title": "Setup",
+    "slug": "scoped-defaults",
+    "tables": [
+      {
+        "columns": [
+          "Key",
+          "Library fallback",
+          "Meaning",
+        ],
+        "role": "plain",
+        "rows": 1,
+      },
+    ],
+    "title": "Scoped defaults",
   },
   {
     "headings": [
@@ -1818,9 +1854,19 @@ exports[`document structure > projects/forty-cdk/carousel/README.md declares the
   },
   {
     "headings": [],
-    "slug": "localizing-the-default-labels",
-    "tables": [],
-    "title": "Localizing the default labels",
+    "slug": "scoped-defaults",
+    "tables": [
+      {
+        "columns": [
+          "Key",
+          "Library fallback",
+          "Meaning",
+        ],
+        "role": "plain",
+        "rows": 12,
+      },
+    ],
+    "title": "Scoped defaults",
   },
   {
     "headings": [],
@@ -2170,6 +2216,22 @@ exports[`document structure > projects/forty-cdk/combobox/README.md declares the
   },
   {
     "headings": [],
+    "slug": "scoped-defaults",
+    "tables": [
+      {
+        "columns": [
+          "Key",
+          "Library fallback",
+          "Meaning",
+        ],
+        "role": "plain",
+        "rows": 11,
+      },
+    ],
+    "title": "Scoped defaults",
+  },
+  {
+    "headings": [],
     "slug": "mountvisibility-convention",
     "tables": [],
     "title": "Mount/visibility convention",
@@ -2478,6 +2540,22 @@ exports[`document structure > projects/forty-cdk/context-menu/README.md declares
       },
     ],
     "title": "API",
+  },
+  {
+    "headings": [],
+    "slug": "scoped-defaults",
+    "tables": [
+      {
+        "columns": [
+          "Key",
+          "Library fallback",
+          "Meaning",
+        ],
+        "role": "plain",
+        "rows": 6,
+      },
+    ],
+    "title": "Scoped defaults",
   },
   {
     "headings": [],
@@ -2829,6 +2907,22 @@ exports[`document structure > projects/forty-cdk/date-picker/README.md declares 
   },
   {
     "headings": [],
+    "slug": "scoped-defaults",
+    "tables": [
+      {
+        "columns": [
+          "Key",
+          "Library fallback",
+          "Meaning",
+        ],
+        "role": "plain",
+        "rows": 5,
+      },
+    ],
+    "title": "Scoped defaults",
+  },
+  {
+    "headings": [],
     "slug": "triggers-stamped-from-outside-declared-templates",
     "tables": [],
     "title": "Triggers stamped from outside-declared templates",
@@ -3146,6 +3240,22 @@ exports[`document structure > projects/forty-cdk/dialog/README.md declares the s
     "slug": "behavior-notes",
     "tables": [],
     "title": "Behavior notes",
+  },
+  {
+    "headings": [],
+    "slug": "scoped-defaults",
+    "tables": [
+      {
+        "columns": [
+          "Key",
+          "Library fallback",
+          "Meaning",
+        ],
+        "role": "plain",
+        "rows": 7,
+      },
+    ],
+    "title": "Scoped defaults",
   },
   {
     "headings": [],
@@ -3471,9 +3581,19 @@ exports[`document structure > projects/forty-cdk/drag-drop/README.md declares th
   },
   {
     "headings": [],
-    "slug": "announcement-customisation",
-    "tables": [],
-    "title": "Announcement customisation",
+    "slug": "scoped-defaults",
+    "tables": [
+      {
+        "columns": [
+          "Key",
+          "Library fallback",
+          "Meaning",
+        ],
+        "role": "plain",
+        "rows": 8,
+      },
+    ],
+    "title": "Scoped defaults",
   },
   {
     "headings": [],
@@ -3661,7 +3781,17 @@ exports[`document structure > projects/forty-cdk/drawer/README.md declares the s
   {
     "headings": [],
     "slug": "scoped-defaults",
-    "tables": [],
+    "tables": [
+      {
+        "columns": [
+          "Key",
+          "Library fallback",
+          "Meaning",
+        ],
+        "role": "plain",
+        "rows": 19,
+      },
+    ],
     "title": "Scoped defaults",
   },
   {
@@ -3779,6 +3909,22 @@ exports[`document structure > projects/forty-cdk/dropdown-menu/README.md declare
       },
     ],
     "title": "API",
+  },
+  {
+    "headings": [],
+    "slug": "scoped-defaults",
+    "tables": [
+      {
+        "columns": [
+          "Key",
+          "Library fallback",
+          "Meaning",
+        ],
+        "role": "plain",
+        "rows": 6,
+      },
+    ],
+    "title": "Scoped defaults",
   },
   {
     "headings": [],
@@ -4569,15 +4715,6 @@ exports[`document structure > projects/forty-cdk/listbox/README.md declares the 
         "role": "plain",
         "rows": 2,
       },
-      {
-        "columns": [
-          "Default",
-          "Type",
-          "Description",
-        ],
-        "role": "api",
-        "rows": 4,
-      },
     ],
     "title": "Reordering",
   },
@@ -4644,6 +4781,22 @@ exports[`document structure > projects/forty-cdk/listbox/README.md declares the 
     "slug": "command-palette",
     "tables": [],
     "title": "Command palette",
+  },
+  {
+    "headings": [],
+    "slug": "scoped-defaults",
+    "tables": [
+      {
+        "columns": [
+          "Key",
+          "Library fallback",
+          "Meaning",
+        ],
+        "role": "plain",
+        "rows": 6,
+      },
+    ],
+    "title": "Scoped defaults",
   },
   {
     "headings": [
@@ -4831,6 +4984,22 @@ exports[`document structure > projects/forty-cdk/menu/README.md declares the sec
     "title": "Shared openers (\`[forMenu]\`)",
   },
   {
+    "headings": [],
+    "slug": "scoped-defaults",
+    "tables": [
+      {
+        "columns": [
+          "Key",
+          "Library fallback",
+          "Meaning",
+        ],
+        "role": "plain",
+        "rows": 9,
+      },
+    ],
+    "title": "Scoped defaults",
+  },
+  {
     "headings": [
       {
         "depth": 3,
@@ -4937,6 +5106,22 @@ exports[`document structure > projects/forty-cdk/menubar/README.md declares the 
     "slug": "mounting-the-menus",
     "tables": [],
     "title": "Mounting the menus",
+  },
+  {
+    "headings": [],
+    "slug": "scoped-defaults",
+    "tables": [
+      {
+        "columns": [
+          "Key",
+          "Library fallback",
+          "Meaning",
+        ],
+        "role": "plain",
+        "rows": 6,
+      },
+    ],
+    "title": "Scoped defaults",
   },
   {
     "headings": [
@@ -5216,6 +5401,22 @@ exports[`document structure > projects/forty-cdk/navigation-menu/README.md decla
     "title": "Limitations",
   },
   {
+    "headings": [],
+    "slug": "scoped-defaults",
+    "tables": [
+      {
+        "columns": [
+          "Key",
+          "Library fallback",
+          "Meaning",
+        ],
+        "role": "plain",
+        "rows": 4,
+      },
+    ],
+    "title": "Scoped defaults",
+  },
+  {
     "headings": [
       {
         "depth": 3,
@@ -5359,6 +5560,22 @@ exports[`document structure > projects/forty-cdk/number-input/README.md declares
     "slug": "field-composition",
     "tables": [],
     "title": "Field composition",
+  },
+  {
+    "headings": [],
+    "slug": "scoped-defaults",
+    "tables": [
+      {
+        "columns": [
+          "Key",
+          "Library fallback",
+          "Meaning",
+        ],
+        "role": "plain",
+        "rows": 1,
+      },
+    ],
+    "title": "Scoped defaults",
   },
   {
     "headings": [
@@ -5639,6 +5856,22 @@ exports[`document structure > projects/forty-cdk/pagination/README.md declares t
       },
     ],
     "title": "API",
+  },
+  {
+    "headings": [],
+    "slug": "scoped-defaults",
+    "tables": [
+      {
+        "columns": [
+          "Key",
+          "Library fallback",
+          "Meaning",
+        ],
+        "role": "plain",
+        "rows": 2,
+      },
+    ],
+    "title": "Scoped defaults",
   },
   {
     "headings": [],
@@ -6015,6 +6248,22 @@ exports[`document structure > projects/forty-cdk/progress/README.md declares the
   },
   {
     "headings": [],
+    "slug": "scoped-defaults",
+    "tables": [
+      {
+        "columns": [
+          "Key",
+          "Library fallback",
+          "Meaning",
+        ],
+        "role": "plain",
+        "rows": 2,
+      },
+    ],
+    "title": "Scoped defaults",
+  },
+  {
+    "headings": [],
     "slug": "accessibility",
     "tables": [],
     "title": "Accessibility",
@@ -6132,6 +6381,22 @@ exports[`document structure > projects/forty-cdk/radio-group/README.md declares 
       },
     ],
     "title": "API",
+  },
+  {
+    "headings": [],
+    "slug": "scoped-defaults",
+    "tables": [
+      {
+        "columns": [
+          "Key",
+          "Library fallback",
+          "Meaning",
+        ],
+        "role": "plain",
+        "rows": 1,
+      },
+    ],
+    "title": "Scoped defaults",
   },
   {
     "headings": [],
@@ -6285,6 +6550,22 @@ exports[`document structure > projects/forty-cdk/scroll-area/README.md declares 
   },
   {
     "headings": [],
+    "slug": "scoped-defaults",
+    "tables": [
+      {
+        "columns": [
+          "Key",
+          "Library fallback",
+          "Meaning",
+        ],
+        "role": "plain",
+        "rows": 4,
+      },
+    ],
+    "title": "Scoped defaults",
+  },
+  {
+    "headings": [],
     "slug": "accessibility",
     "tables": [],
     "title": "Accessibility",
@@ -6340,6 +6621,22 @@ exports[`document structure > projects/forty-cdk/search/README.md declares the s
     "slug": "command-palette",
     "tables": [],
     "title": "Command palette",
+  },
+  {
+    "headings": [],
+    "slug": "scoped-defaults",
+    "tables": [
+      {
+        "columns": [
+          "Key",
+          "Library fallback",
+          "Meaning",
+        ],
+        "role": "plain",
+        "rows": 1,
+      },
+    ],
+    "title": "Scoped defaults",
   },
   {
     "headings": [
@@ -6499,7 +6796,7 @@ exports[`document structure > projects/forty-cdk/select/README.md declares the s
           "Meaning",
         ],
         "role": "plain",
-        "rows": 4,
+        "rows": 6,
       },
     ],
     "title": "Scoped defaults",
@@ -6910,6 +7207,22 @@ exports[`document structure > projects/forty-cdk/slider/README.md declares the s
     "title": "Signal Forms",
   },
   {
+    "headings": [],
+    "slug": "scoped-defaults",
+    "tables": [
+      {
+        "columns": [
+          "Key",
+          "Library fallback",
+          "Meaning",
+        ],
+        "role": "plain",
+        "rows": 1,
+      },
+    ],
+    "title": "Scoped defaults",
+  },
+  {
     "headings": [
       {
         "depth": 3,
@@ -7178,6 +7491,22 @@ exports[`document structure > projects/forty-cdk/stepper/README.md declares the 
     "slug": "known-limitations",
     "tables": [],
     "title": "Known limitations",
+  },
+  {
+    "headings": [],
+    "slug": "scoped-defaults",
+    "tables": [
+      {
+        "columns": [
+          "Key",
+          "Library fallback",
+          "Meaning",
+        ],
+        "role": "plain",
+        "rows": 4,
+      },
+    ],
+    "title": "Scoped defaults",
   },
   {
     "headings": [],
@@ -7787,6 +8116,22 @@ exports[`document structure > projects/forty-cdk/tabs/README.md declares the sec
     "slug": "manual-activation",
     "tables": [],
     "title": "Manual activation",
+  },
+  {
+    "headings": [],
+    "slug": "scoped-defaults",
+    "tables": [
+      {
+        "columns": [
+          "Key",
+          "Library fallback",
+          "Meaning",
+        ],
+        "role": "plain",
+        "rows": 2,
+      },
+    ],
+    "title": "Scoped defaults",
   },
   {
     "headings": [],
@@ -8518,18 +8863,6 @@ exports[`document structure > projects/forty-cdk/toggle/README.md declares the s
     "title": "Examples",
   },
   {
-    "headings": [],
-    "slug": "signal-forms-single-toggle",
-    "tables": [],
-    "title": "Signal Forms (single Toggle)",
-  },
-  {
-    "headings": [],
-    "slug": "signal-forms-togglegroup",
-    "tables": [],
-    "title": "Signal Forms (ToggleGroup)",
-  },
-  {
     "headings": [
       {
         "depth": 3,
@@ -8623,6 +8956,34 @@ exports[`document structure > projects/forty-cdk/toggle/README.md declares the s
     "slug": "behavior-notes",
     "tables": [],
     "title": "Behavior notes",
+  },
+  {
+    "headings": [],
+    "slug": "signal-forms-single-toggle",
+    "tables": [],
+    "title": "Signal Forms (single Toggle)",
+  },
+  {
+    "headings": [],
+    "slug": "signal-forms-togglegroup",
+    "tables": [],
+    "title": "Signal Forms (ToggleGroup)",
+  },
+  {
+    "headings": [],
+    "slug": "scoped-defaults",
+    "tables": [
+      {
+        "columns": [
+          "Key",
+          "Library fallback",
+          "Meaning",
+        ],
+        "role": "plain",
+        "rows": 2,
+      },
+    ],
+    "title": "Scoped defaults",
   },
   {
     "headings": [],
@@ -8738,6 +9099,22 @@ exports[`document structure > projects/forty-cdk/toolbar/README.md declares the 
       },
     ],
     "title": "API",
+  },
+  {
+    "headings": [],
+    "slug": "scoped-defaults",
+    "tables": [
+      {
+        "columns": [
+          "Key",
+          "Library fallback",
+          "Meaning",
+        ],
+        "role": "plain",
+        "rows": 1,
+      },
+    ],
+    "title": "Scoped defaults",
   },
   {
     "headings": [],
@@ -9003,7 +9380,17 @@ exports[`document structure > projects/forty-cdk/tree/README.md declares the sec
   {
     "headings": [],
     "slug": "scoped-defaults",
-    "tables": [],
+    "tables": [
+      {
+        "columns": [
+          "Key",
+          "Library fallback",
+          "Meaning",
+        ],
+        "role": "plain",
+        "rows": 6,
+      },
+    ],
     "title": "Scoped defaults",
   },
   {
@@ -9151,15 +9538,6 @@ exports[`document structure > projects/forty-cdk/tree/README.md declares the sec
         ],
         "role": "plain",
         "rows": 1,
-      },
-      {
-        "columns": [
-          "Default",
-          "Type",
-          "Description",
-        ],
-        "role": "api",
-        "rows": 5,
       },
     ],
     "title": "Drag & drop",

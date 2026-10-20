@@ -118,6 +118,30 @@ The surface's mount is its open state. Focus moves to the first item when the me
 
 A consumer-set static `id` on the surface is adopted by its trigger, so `aria-controls` resolves to it. Only a plain `id="…"` **attribute** is preserved. A `[id]="expr"` property binding evaluates after the directive is constructed, so it is invisible to the adoption and fights the surface's own `[id]` binding.
 
+## Scoped defaults
+
+`provideForMenubarDefaults` configures menubar defaults for an injector subtree, either at the application root or in any component's `providers` array. Partial overrides inherit unspecified keys from the parent scope (or the library fallbacks at the root).
+
+| Key                         | Library fallback | Meaning                                                                                                                                                                                          |
+| --------------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `side`                      | `'bottom'`       | Anchor side of a trigger's menu, for triggers that don't set `side` themselves.                                                                                                                  |
+| `align`                     | `'start'`        | Alignment along `side`, for triggers that don't set `align` themselves.                                                                                                                          |
+| `sideOffset`                | `4`              | Main-axis gap (px) between a trigger and its menu, for triggers that don't set `sideOffset` themselves.                                                                                          |
+| `collisionPadding`          | `8`              | Collision-middleware padding (px), for triggers that don't set it themselves.                                                                                                                    |
+| `fallbackAxisSideDirection` | `'none'`         | Perpendicular side `flip` may drop a menu to when both sides of the preferred axis overflow. `'none'` keeps only the opposite same-axis placement. Only consulted while `avoidCollisions` is on. |
+| `loop`                      | `true`           | Whether arrow navigation wraps at the ends, on the trigger row and inside the open menu, for menubars that don't set `loop` themselves.                                                          |
+
+Per-instance inputs always win over the scope defaults: `loop` is an input of `[forMenubar]`, and the placement keys are inputs of each `[forMenubarTrigger]`. Submenus inside a menubar menu take their timings and placement from `provideForMenuDefaults`; see the [Menu README](../menu/README.md#scoped-defaults).
+
+```ts
+import { type ApplicationConfig } from '@angular/core';
+import { provideForMenubarDefaults } from 'forty-cdk/defaults';
+
+export const appConfig: ApplicationConfig = {
+  providers: [provideForMenubarDefaults({ sideOffset: 0, collisionPadding: 12 })],
+};
+```
+
 ## API
 
 ### `ForMenubar`

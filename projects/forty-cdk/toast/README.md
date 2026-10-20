@@ -511,6 +511,8 @@ bootstrapApplication(App, {
 
 Per-viewport overrides take precedence: `<for-toast-viewport [maxVisible]="3" hotkey="F8" />`.
 
+`duration` (default `5000`) is how long a toast stays up before it auto-dismisses, in ms. `hotkey` (default `'F6'`) is the key that moves focus to the first rendered toast from anywhere in the document. `maxVisible` (default `Infinity`, which renders every live toast) caps how many toasts one viewport renders at a time. A toast past the cap stays unrendered, with no auto-dismiss countdown running, until a newer one is dismissed; its full `duration` then starts over.
+
 A programmatic toast takes its defaults from the scope of the `<for-toast-viewport>` that renders it, not from the code that calls `show()`. A declarative `<div forToast>` reads them from its own scope, so its `duration` follows the scope too when it binds no `[duration]`.
 
 `viewportAriaLabel` (default `'Notifications'`) is the localizable accessible name of every viewport in the scope; `[ariaLabel]` overrides it per viewport. `closeAriaLabel` (default `'Close'`) names every `[forToastClose]` in the scope the same way, and its `[ariaLabel]` overrides it per button. For a language the app sets or switches after bootstrap, pass the text keys as functions and the overrides as a factory, as [Localizing default text](../shared/README.md#localizing-default-text) shows.

@@ -42,7 +42,7 @@ A date adapter follows the same rule from [`forty-cdk/date-adapter`](../date-ada
 
 ## API
 
-Each pair resolves the same way: a scope's overrides merge key by key over its parent scope's, and the library fallback fills the rest. A key set to `undefined` is treated as omitted. Pass a function instead of an object to build the overrides where `inject()` is available; it runs once per injector that resolves the token. The primitive's README documents its keys.
+Each pair resolves the same way: a scope's overrides merge key by key over its parent scope's, and the library fallback fills the rest. A key set to `undefined` is treated as omitted. Pass a function instead of an object to build the overrides where `inject()` is available; it runs once per injector that resolves the token. The `## Scoped defaults` section of the primitive's README lists every key the provider accepts, with its library fallback.
 
 | Configures      | Provider                            | Token                            | Also exported                                                                                            |
 | --------------- | ----------------------------------- | -------------------------------- | -------------------------------------------------------------------------------------------------------- |

@@ -349,19 +349,8 @@ index; `valueBy="completed"` tracks the count of completed steps.
 ```
 
 The `aria-valuetext` string (`"Step N of M"` on the `index` basis, `"P% complete"` on the
-`completed` basis) is verbalized by screen readers, so it is localizable centrally via
-`provideForStepperDefaults`. Override the `stepValueText` / `progressValueText` builders:
-
-<!-- snippet: fragment -->
-
-```ts
-providers: [
-  provideForStepperDefaults({
-    stepValueText: (current, total) => `Paso ${current} de ${total}`,
-    progressValueText: (percent) => `${percent}% completado`,
-  }),
-];
-```
+`completed` basis) is verbalized by screen readers, so localize it centrally through the
+`stepValueText` / `progressValueText` builders listed under [Scoped defaults](#scoped-defaults).
 
 ## Custom icon per state (indicator example)
 
@@ -409,6 +398,33 @@ Or purely via CSS:
 **Workaround.** Render the panel's focusable content in the light tree, or remount the panel with `@if` when its content changes, so that a fresh directive instance measures again. Stepper exposes no override input for the detection; [`ForTabsContent`](../tabs/README.md#fortabscontent), which shares the mechanism, has `[interactiveContent]` for it.
 
 The library-wide shadow-DOM statement, covering the two limits that affect overlays rather than panels, is [Shadow DOM](../shared/README.md#shadow-dom) in `forty-cdk/shared`.
+
+## Scoped defaults
+
+`provideForStepperDefaults` configures stepper defaults for an injector subtree, either at the application root or in any component's `providers` array. Partial overrides inherit unspecified keys from the parent scope (or the library fallbacks at the root).
+
+| Key                 | Library fallback                       | Meaning                                                                                                                                                                                                                |
+| ------------------- | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `activationMode`    | `'manual'`                             | `'manual'`: arrow navigation only moves focus, and Space / Enter activates the step. `'automatic'`: arrow navigation moves focus and selects the step. Applies to steppers that don't set `activationMode` themselves. |
+| `loop`              | `true`                                 | Whether arrow navigation wraps past the first / last trigger, for steppers that don't set `loop` themselves.                                                                                                           |
+| `stepValueText`     | `"Step N of M"`, e.g. `"Step 2 of 4"`  | Builds the `aria-valuetext` of `[forStepperProgress]` on the `'index'` basis from `current` (the 1-based current step) and `total` (the step count) and returns the string.                                            |
+| `progressValueText` | `"P% complete"`, e.g. `"50% complete"` | Builds the `aria-valuetext` of `[forStepperProgress]` on the `'completed'` basis from `percent` (the whole-number completion percent, `0` to `100`) and returns the string.                                            |
+
+Per-instance inputs always win over the scope defaults. `[forStepperProgress]` has no input for its value text, so the two builders are the place to localize it:
+
+```ts
+import { type ApplicationConfig } from '@angular/core';
+import { provideForStepperDefaults } from 'forty-cdk/defaults';
+
+export const appConfig: ApplicationConfig = {
+  providers: [
+    provideForStepperDefaults({
+      stepValueText: (current, total) => `Paso ${current} de ${total}`,
+      progressValueText: (percent) => `${percent}% completado`,
+    }),
+  ],
+};
+```
 
 ## Keyboard
 

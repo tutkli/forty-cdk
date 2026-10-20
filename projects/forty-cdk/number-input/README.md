@@ -124,6 +124,25 @@ export class DemoOrder {
 
 Under `[formField]` the bounds come from the schema: Angular rejects a `[min]` or `[max]` binding on a node that carries `[formField]` (NG8022), and the field's `min()` / `max()` rules reach the spinbutton's `min` / `max` instead, so `aria-valuemin`, `aria-valuemax` and clamping follow them.
 
+## Scoped defaults
+
+`provideForNumberInputDefaults` configures number-input defaults for an injector subtree, either at the application root or in any component's `providers` array. Partial overrides inherit unspecified keys from the parent scope (or the library fallbacks at the root).
+
+| Key              | Library fallback | Meaning                                                                                                                                     |
+| ---------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `stepMultiplier` | `10`             | Multiplier applied to `step` for `PageUp` / `PageDown`, for inputs that don't set `stepMultiplier` themselves. A step of `1` pages by `10`. |
+
+Per-instance inputs always win over the scope defaults.
+
+```ts
+import { type ApplicationConfig } from '@angular/core';
+import { provideForNumberInputDefaults } from 'forty-cdk/defaults';
+
+export const appConfig: ApplicationConfig = {
+  providers: [provideForNumberInputDefaults({ stepMultiplier: 5 })],
+};
+```
+
 ## API
 
 ### `ForNumberInput`

@@ -10,9 +10,15 @@ A signal-first, zoneless, SSR-safe viewport breakpoint observer (injectBreakpoin
 
 It is a headless reactive utility, not a UI primitive: no DOM, no ARIA, no template. Configure the breakpoint map **once** via a provider and read it anywhere with `injectBreakpoints()`, so there is no need to repeat the breakpoint set at every call site.
 
-## Setup
+## Scoped defaults
 
-Configuring is optional: without a provider the Tailwind scale (`sm` 640, `md` 768, `lg` 1024, `xl` 1280, `2xl` 1536) is used. To define your own:
+`provideForBreakpointsDefaults` sets the scope's `breakpoints` map, so `injectBreakpoints()` can be called with no arguments. Configuring is optional: without a provider the Tailwind scale is used. Provide it in your application config, or again in any component's `providers` array to replace the map for that subtree only. The nearest scope wins, and its map replaces the parent's wholesale: it is never merged key by key.
+
+| Key           | Library fallback                                                               | Meaning                                                                                                                                             |
+| ------------- | ------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `breakpoints` | `forBreakpointsTailwind`: `sm` 640, `md` 768, `lg` 1024, `xl` 1280, `2xl` 1536 | Each breakpoint name paired with its `min-width` threshold in CSS pixels. The query methods derive from these names, sorted ascending by threshold. |
+
+The provider takes the map itself rather than an object with a `breakpoints` key, or a function returning the map when it has to be built where `inject()` is available:
 
 ```ts
 import { ApplicationConfig } from '@angular/core';
@@ -24,8 +30,6 @@ export const appConfig: ApplicationConfig = {
   ],
 };
 ```
-
-Providing it again on a component injector replaces the map for that subtree only (nearest scope wins; the map is replaced wholesale, never merged key-by-key).
 
 ## Examples
 

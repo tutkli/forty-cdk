@@ -214,11 +214,15 @@ providers: [
 ];
 ```
 
+`emptySegmentText` (default `'Empty'`) is the `aria-valuetext` an empty segment announces, so a screen reader reports the empty state instead of silence. Translate it along with the segment labels.
+
 `segmentLabels` supplies each segment's default `aria-label`, keyed by part type. Unset keys keep the library default (the part name, and `'AM/PM'` for the `dayPeriod` segment), so overriding a single key never wipes the rest. A segment's own `[ariaLabel]` still wins over the scope default.
 
-`placeholder` is the text an empty segment shows, keyed the same way. A field's own `[placeholder]` wins for the parts it names and only those, and a part neither names keeps the letter-repeat default. A nested `provideForTimeFieldDefaults` merges both records entry by entry with its parent scope, so a feature overriding only `dayPeriod` keeps the labels and placeholders the application root localized. `provideForTimeRangeFieldDefaults` takes the same keys for `[forTimeRangeField]`.
+`placeholder` is the text an empty segment shows, keyed the same way. A field's own `[placeholder]` wins for the parts it names and only those, and a part neither names keeps the letter-repeat default. A nested `provideForTimeFieldDefaults` merges both records entry by entry with its parent scope, so a feature overriding only `dayPeriod` keeps the labels and placeholders the application root localized.
 
 `hourCycle` sets the 12- or 24-hour cycle of every field that doesn't bind `[hourCycle]`, so a product on a 24-hour clock sets it once instead of on each field. Its fallback `null` derives the cycle from the locale.
+
+`provideForTimeRangeFieldDefaults` configures `[forTimeRangeField]` through its own scope, independent of `provideForTimeFieldDefaults`. It takes the same `emptySegmentText`, `segmentLabels`, `placeholder` and `hourCycle` keys with the same fallbacks, plus `startAriaLabel` and `endAriaLabel` (default `'Start time'` / `'End time'`), the `aria-label` of the start and end endpoint groups that don't set `ariaLabel` themselves.
 
 For a language the app sets or switches after bootstrap, pass the text keys as functions and the overrides as a factory, as [Localizing default text](../shared/README.md#localizing-default-text) shows.
 
@@ -301,7 +305,7 @@ Each endpoint is its own tab stop, so `Tab` moves start group → end group → 
 
 ### Range scoped defaults
 
-`provideForTimeRangeFieldDefaults` mirrors `provideForTimeFieldDefaults` and adds `startAriaLabel` / `endAriaLabel` for the two endpoint group `aria-label`s (`'Start time'` / `'End time'` by default). Both wrapper patterns work via `FOR_TIME_RANGE_FIELD_HOST_DIRECTIVE_INPUTS` / `FOR_TIME_RANGE_FIELD_HOST_DIRECTIVE_OUTPUTS`. See [Wrapping form primitives](../../../docs/wrapping-form-primitives.md).
+`provideForTimeRangeFieldDefaults` configures the range field, endpoint group names included; its keys are listed under [Scoped defaults](#scoped-defaults). Both wrapper patterns work via `FOR_TIME_RANGE_FIELD_HOST_DIRECTIVE_INPUTS` / `FOR_TIME_RANGE_FIELD_HOST_DIRECTIVE_OUTPUTS`. See [Wrapping form primitives](../../../docs/wrapping-form-primitives.md).
 
 ## Keyboard
 
