@@ -133,7 +133,7 @@ The companion directives `[forTableColumnReorder]` (on the header row) and `[for
 
 ### Virtualized rows (10,000)
 
-`[forTableVirtualized]` sits on the same element as `[forTable]` in `<div>` grid mode. Set `[rowCount]` to the true total. It drives both `aria-rowcount` and the window size. Each `[forTableRow]` gets `[virtualIndex]` and a `translateY` transform. Roving 2D keyboard navigation works across the full 10,000 rows, scrolling out-of-window cells into view on demand.
+`[forTableVirtualized]` sits on the same element as `[forTable]` in `<div>` mode, here with `mode="grid"`. Set `[rowCount]` to the true total. It drives both `aria-rowcount` and the window size. Each `[forTableRow]` gets `[virtualIndex]` and a `translateY` transform. Roving 2D keyboard navigation works across the full 10,000 rows, scrolling out-of-window cells into view on demand.
 
 ### Infinite scroll
 
@@ -373,7 +373,7 @@ forty-cdk ships no styles: put your own class on each piece and key your CSS off
 
 ## `<div>` mode
 
-When you need virtual scrolling, use `<div role>` structure with `mode="grid"` on the root. The `<div>` mode is the only shape supported by virtualizers because native `<table>` cannot have its rows omitted from the DOM mid-body. All pieces accept any element.
+When you need virtual scrolling, use the `<div role>` structure, in `mode="table"` or `mode="grid"`. The `<div>` mode is the only shape supported by virtualizers because native `<table>` cannot have its rows omitted from the DOM mid-body. All pieces accept any element.
 
 ```html
 <div
@@ -1018,12 +1018,12 @@ header the consumer can still sort, resize and navigate.
 
 ## Virtualized rows
 
-`[forTableVirtualized]` is opt-in and works only with `<div role>` grid mode: a native `<table>`
-cannot omit rows mid-body without the browser recalculating every column width. Set `[rowCount]` on
-`[forTable]` to the **true total** so `aria-rowcount` and the window size both stay honest. An
-**append-style** infinite list, whose loaded prefix is the only range the virtualizer can place,
-keeps `[rowCount]` at the server total and narrows the scroll range with the companion's own
-`[virtualRowCount]` instead. It ships from the **`forty-cdk/table-virtualization`** entry point, so
+`[forTableVirtualized]` is opt-in and works only with the `<div role>` structure, in `mode="table"` or
+`mode="grid"`: a native `<table>` cannot omit rows mid-body without the browser recalculating every
+column width. Set `[rowCount]` on `[forTable]` to the **true total** so `aria-rowcount` and the
+window size both stay honest. An **append-style** infinite list, whose loaded prefix is the only
+range the virtualizer can place, keeps `[rowCount]` at the server total and narrows the scroll range
+with the companion's own `[virtualRowCount]` instead. It ships from the **`forty-cdk/table-virtualization`** entry point, so
 neither the table nor `@tanstack/virtual-core` reaches a bundle that does not import it.
 
 → **[`forty-cdk/table-virtualization`](../table-virtualization/README.md)**

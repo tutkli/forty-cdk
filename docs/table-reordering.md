@@ -18,7 +18,7 @@ drag-drop vocabulary in [its own](../projects/forty-cdk/drag-drop/README.md).
 
 Apply `[forTableColumnReorder]` on the `[forTableHeaderRow]` element and add `[forDraggable] [dragData]="col"` to each header cell. The wrapped list defaults to `orientation="horizontal"` (a column reorder is always along the row axis), so no `orientation` binding is needed. Bind `orientation="vertical"` to override for the rare case.
 
-`columnReorder` fires once per committed drop (pointer or keyboard) with `{ from, to, columns }`. Apply `columns` directly to your column-name signal, or use `from`/`to` with `moveItemInArray` for object-shaped column configs.
+`columnReorder` fires once per committed drop (pointer or keyboard) with `{ from, to, columns }`. `columns` lists the draggable header cells' `dragData` in their new order, so apply it directly to your column-name signal when every header cell is draggable. When some are not, or for object-shaped column configs, apply `from`/`to` with `moveItemInArray` over the full displayed order: both index it, non-draggable columns included, and `columns` omits those.
 
 ```html
 <div forTableHeaderRow forTableColumnReorder (columnReorder)="columns.set($event.columns)">

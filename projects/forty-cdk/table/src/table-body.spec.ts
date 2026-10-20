@@ -3055,7 +3055,7 @@ describe('ForTableBody', () => {
       expect(instance.lastReorder()).toEqual({ from: 0, to: 1, columns: ['role', 'name', 'dept'] });
     });
 
-    it('emits full-displayed-order indices and preserves the interleaved fixed column via moveItemInArray', async () => {
+    it('emits full-displayed-order indices, so moveItemInArray over them shifts the interleaved fixed column out of its slot', async () => {
       const { instance, el, queryAll, fixture, flush } = renderHost(MixedReorderApplyHost);
       await flush();
       keyboardReorderNameRight(el);

@@ -282,10 +282,14 @@ protected readonly order = signal<readonly string[]>(['name', 'role']);
   a header cell for reordering, and Arrow keys move the lifted column (`Escape` cancels). On a header
   that is **both** `sortable` and `reorderable`, the two split along WAI-ARIA lines (`Space` lifts and
   `Enter` toggles the sort), so a single key never both sorts and reorders.
-- **`(columnReorder)`** emits `{ from, to, columns }` (a `TableColumnReorderDescriptor`). Its `columns`
-  lists the **reorderable** columns in their new order, which equals the full displayed order when every
-  displayed column is `reorderable`. Non-reorderable columns stay static (not draggable) and keep their
-  slots, so a table that mixes them merges the reorderable subset back into its own full order.
+- **`(columnReorder)`** emits `{ from, to, columns }` (a `TableColumnReorderDescriptor`). `from` / `to`
+  index the **full displayed column order**, non-reorderable columns included, so apply the move with
+  `moveItemInArray(order, from, to)` over that whole order. Non-reorderable columns are not draggable,
+  but the move does not pin them: with `[name, role, dept]` and `role` fixed, moving `name` past `dept`
+  is `{ from: 0, to: 2 }` and gives `[role, dept, name]`, so `role` shifts from slot 1 to slot 0. Its
+  `columns` lists the **reorderable** columns in their new order, which equals the full displayed order
+  only when every displayed column is `reorderable`; setting the order straight from `columns` is valid
+  in that case alone, since otherwise it drops the fixed columns.
 - **`forTableColumnDragPlaceholder`** is optional and declared **once per body**; it is stamped as every
   reorderable column's pointer-drag placeholder. Omit it to keep drag-drop's default placeholder.
 - This is the declarative twin of the raw `[forTableColumnReorder]` / `[forDraggable]` composition; it
