@@ -751,7 +751,7 @@ When `[forComboboxVirtualized]` is absent or its `[totalCount]` is omitted, the 
 
 ## Writing direction
 
-`[forCombobox]` exposes a `dir: 'ltr' | 'rtl'` input (default `'ltr'`). It drives:
+`[forCombobox]` exposes a `dir: 'ltr' | 'rtl' | null` input (default `null`: inherited from the nearest `[dir]` ancestor or `<html dir>`, falling back to `'ltr'`). It drives:
 
 - **Chip keyboard navigation**: ArrowLeft / ArrowRight roles swap so they follow the visual order of the chip cluster, not the DOM order. See _Chip keyboard_ above.
 - **Default popover placement**: `align` defaults to `'start'` and `side` to `'bottom'`. `start` and `end` resolve against the writing direction, so the default anchors the listbox to the visually-leading edge of the input in both LTR and RTL, and a consumer-provided `[align]` follows the direction the same way. `provideForComboboxDefaults({ align, side })` sets either for a whole scope.
