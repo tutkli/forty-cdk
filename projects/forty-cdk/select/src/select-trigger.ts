@@ -1,10 +1,11 @@
-import { computed, Directive, effect, ElementRef, inject, input, type Signal } from '@angular/core';
+import { computed, Directive, ElementRef, inject, input, type Signal } from '@angular/core';
 
-import { hostButtonType, reflectDisabled } from 'forty-cdk/core';
+import { hostButtonType, reflectDisabled, registerHandle, staticHostId } from 'forty-cdk/core';
 import {
   type ForSelectContext,
   injectSelectTriggerContext,
   type SelectContext,
+  SELECT_TRIGGERS,
 } from './select-context';
 
 /**
@@ -54,7 +55,7 @@ import {
   host: {
     '[attr.type]': 'buttonType()',
     role: 'combobox',
-    '[id]': 'ctx().overlay.triggerId()',
+    '[id]': 'id()',
     '[attr.aria-haspopup]': '"listbox"',
     '[attr.aria-expanded]': 'ctx().open() ? "true" : "false"',
     '[attr.aria-controls]': 'ctx().open() ? ctx().overlay.contentId() : null',
@@ -74,6 +75,7 @@ export class ForSelectTrigger<T = unknown> {
   private readonly buttonType = hostButtonType();
 
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
+  readonly #staticId = staticHostId(this.#host.nativeElement);
 
   /**
    * Optional explicit reference to the `[forSelect]` root, named after the
@@ -86,19 +88,19 @@ export class ForSelectTrigger<T = unknown> {
    */
   readonly forSelectTrigger = input<ForSelectContext<T> | ''>('');
 
-  readonly #root = injectSelectTriggerContext<T>(this.forSelectTrigger);
+  readonly #resolved = injectSelectTriggerContext<T>(this.forSelectTrigger);
+  readonly #root = this.#resolved.ctx;
   private readonly ctx: Signal<SelectContext<T>> = this.#root;
 
+  private readonly id = computed(() => this.#root().overlay.resolveTriggerId(this.#staticId));
+
   constructor() {
-    const el = this.#host.nativeElement;
-    // Registration is an imperative call into the resolved root's registry,
-    // not state derivation — the effect only re-registers the element when the
-    // resolved root changes (explicit reference swapped at runtime).
-    effect((onCleanup) => {
-      const overlay = this.#root().overlay;
-      overlay.registerTrigger(el);
-      onCleanup(() => overlay.unregisterTrigger(el));
-    });
+    const triggers = inject(SELECT_TRIGGERS);
+    registerHandle(
+      { host: this.#host.nativeElement, staticId: this.#staticId, root: this.#resolved.root },
+      (handle) => triggers.add(handle),
+      (handle) => triggers.remove(handle),
+    );
     reflectDisabled(computed(() => this.ctx().effectiveDisabled()));
   }
 

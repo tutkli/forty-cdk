@@ -20,6 +20,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the other three tokens. **Migrate** by rendering the primitive's trigger directive, or composing
   it through `hostDirectives`, instead of registering an element by hand.
 
+- **Shared, Select, Time picker, Combobox — BREAKING.** `ListboxOverlayContext`
+  (`forty-cdk/shared`) and `ForTimePickerContext.overlay` no longer declare `registerTrigger` /
+  `unregisterTrigger` ([#2399](https://github.com/tutkli/forty-cdk/issues/2399)). The
+  `[forSelectTrigger]`, `[forTimePickerTrigger]` and `[forComboboxTrigger]` directives register
+  themselves and the root derives its trigger, so **drop any call** made through an injected context.
+  A provider of `FOR_TIME_PICKER_CONTEXT` that is not the root now also fails in dev mode with
+  `FORCDK-CORE-007` when it reaches `[forTimePickerTrigger]`.
+
 - **Listbox** — `[forListboxController]`'s `forListboxController` is no longer `input.required`
   ([#2399](https://github.com/tutkli/forty-cdk/issues/2399)). A binding written in a template is
   still checked against `ForListboxContext<T>`, but a controller composed through `hostDirectives`
@@ -33,6 +41,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   mounted when the newer one unmounts ([#2399](https://github.com/tutkli/forty-cdk/issues/2399)).
   The root forgot both, so a popover closed afterwards returned focus to the body instead of the
   remaining trigger.
+
+- **Select, Time picker, Combobox** — the same fallback for the triggers these roots register
+  ([#2399](https://github.com/tutkli/forty-cdk/issues/2399)): closing returns focus to the trigger
+  still mounted instead of to the body, and an open combobox keeps its picker anatomy, named by that
+  trigger.
 
 ## [0.40.0] - 2026-10-20
 

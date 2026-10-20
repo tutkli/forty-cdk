@@ -347,8 +347,8 @@ export const DATETIME_FAMILY_ADOPTERS: readonly StaticAdoptionAdopter[] = [
       {
         key: '[forTimePickerTrigger]',
         channel: 'id',
-        source: 'core-overlay/src/overlay-controller/element-registry.ts',
-        seam: 'adoptHostId',
+        source: 'time-picker/src/time-picker-trigger.ts',
+        seam: 'staticHostId',
         probe: 'probe-trigger',
         fallback: { generated: 'for-time-picker-trigger' },
       },

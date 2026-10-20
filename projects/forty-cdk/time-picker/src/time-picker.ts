@@ -48,6 +48,7 @@ import {
 } from './build-time-slots';
 import {
   FOR_TIME_PICKER_CONTEXT,
+  TIME_PICKER_TRIGGERS,
   type ForTimePickerAnatomy,
   type ForTimePickerCloseReason,
   type ForTimePickerContext,
@@ -307,6 +308,7 @@ export class ForTimePicker<D>
     ForTimePickerCloseReason
   >({
     idPrefix: 'for-time-picker',
+    triggers: inject(TIME_PICKER_TRIGGERS).of(this),
     anchorSlot: {
       primitive: 'time-picker',
       owner: '[forTimePicker]',

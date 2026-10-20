@@ -39,6 +39,7 @@ import {
 import { AnchoredFormValueControlBase, ListboxOverlayController } from 'forty-cdk/core-overlay';
 import {
   FOR_SELECT_CONTEXT,
+  SELECT_TRIGGERS,
   type ForSelectCloseReason,
   type ForSelectContext,
   type ForSelectInitialFocus,
@@ -314,6 +315,7 @@ export class ForSelect<T = string>
     ForSelectCloseReason
   >({
     idPrefix: 'for-select',
+    triggers: inject(SELECT_TRIGGERS).of(this),
     anchorSlot: { primitive: 'select', owner: '[forSelect]', claimant: '[forSelectAnchor]' },
     defaultInitialFocus: 'selected',
     effectiveDisabled: this.effectiveDisabled,

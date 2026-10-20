@@ -3742,6 +3742,123 @@ describe('ForCombobox trigger + list (picker anatomy, issue #675)', () => {
       expect(trigger.getAttribute('data-state')).toBe('closed');
       expect(trigger.hasAttribute('aria-controls')).toBe(false);
     });
+
+    @Component({
+      imports: [
+        ForCombobox,
+        ForComboboxTrigger,
+        ForComboboxInput,
+        ForComboboxContent,
+        ForComboboxList,
+        ForComboboxOption,
+        NgTemplateOutlet,
+      ],
+      template: `
+        <ng-template #trig let-root="root">
+          <button type="button" [forComboboxTrigger]="root">Pick</button>
+        </ng-template>
+
+        <div forCombobox [(open)]="openA" #a="forCombobox">
+          @if (openA()) {
+            <div forComboboxContent data-testid="content-a">
+              <input forComboboxInput />
+              <div forComboboxList>
+                <div forComboboxOption value="apple" label="Apple">Apple</div>
+              </div>
+            </div>
+          }
+        </div>
+        <div forCombobox [(open)]="openB" #b="forCombobox">
+          @if (openB()) {
+            <div forComboboxContent data-testid="content-b">
+              <input forComboboxInput />
+              <div forComboboxList>
+                <div forComboboxOption value="pear" label="Pear">Pear</div>
+              </div>
+            </div>
+          }
+        </div>
+
+        <ng-container
+          [ngTemplateOutlet]="trig"
+          [ngTemplateOutletContext]="{ root: useB() ? b : a }"
+        />
+      `,
+    })
+    class RetargetedHost {
+      readonly openA = signal(false);
+      readonly openB = signal(false);
+      readonly useB = signal(false);
+    }
+
+    it('follows an explicit root swapped at runtime', async () => {
+      const r = renderHost(RetargetedHost);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+
+      r.instance.useB.set(true);
+      await flush(r.fixture);
+      trigger.click();
+      await flush(r.fixture);
+
+      expect(r.query('button')).toBe(trigger);
+      expect(r.instance.openA()).toBe(false);
+      expect(r.instance.openB()).toBe(true);
+      expect(trigger.getAttribute('aria-expanded')).toBe('true');
+    });
+  });
+
+  describe('several triggers on one root', () => {
+    @Component({
+      imports: [
+        ForCombobox,
+        ForComboboxTrigger,
+        ForComboboxInput,
+        ForComboboxContent,
+        ForComboboxList,
+        ForComboboxOption,
+      ],
+      template: `
+        <div forCombobox [(open)]="open">
+          <button forComboboxTrigger data-testid="first">First</button>
+          @if (second()) {
+            <button forComboboxTrigger data-testid="second">Second</button>
+          }
+          @if (open()) {
+            <div forComboboxContent>
+              <input forComboboxInput />
+              <div forComboboxList>
+                <div forComboboxOption value="apple" label="Apple">Apple</div>
+              </div>
+            </div>
+          }
+        </div>
+      `,
+    })
+    class StackedTriggersHost {
+      readonly open = signal(false);
+      readonly second = signal(true);
+    }
+
+    it('returns focus to the remaining trigger after the newer one unmounts', async () => {
+      const r = renderHost(StackedTriggersHost);
+      r.query<HTMLButtonElement>('[data-testid="second"]')!.click();
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe(true);
+
+      r.instance.second.set(false);
+      await flush(r.fixture);
+      const first = r.query<HTMLButtonElement>('[data-testid="first"]')!;
+      expect(getContent().getAttribute('role')).toBe('dialog');
+      expect(getContent().getAttribute('aria-labelledby')).toBe(first.id);
+
+      const input = getPickerInput();
+      input.focus();
+      pressKey(input, 'Escape');
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+      expect(document.activeElement).toBe(first);
+    });
   });
 });
 

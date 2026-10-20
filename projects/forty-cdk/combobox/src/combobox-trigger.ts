@@ -1,7 +1,11 @@
-import { computed, Directive, effect, ElementRef, inject, input } from '@angular/core';
+import { computed, Directive, ElementRef, inject, input } from '@angular/core';
 
-import { hostButtonType, hostId, reflectDisabled } from 'forty-cdk/core';
-import { type ForComboboxContext, injectComboboxTriggerContext } from './combobox-context';
+import { hostButtonType, hostId, reflectDisabled, registerHandle } from 'forty-cdk/core';
+import {
+  COMBOBOX_TRIGGERS,
+  type ForComboboxContext,
+  injectComboboxTriggerContext,
+} from './combobox-context';
 
 /**
  * Button that opens the listbox and keeps showing the committed selection
@@ -92,20 +96,18 @@ export class ForComboboxTrigger<T = unknown> {
    */
   readonly forComboboxTrigger = input<ForComboboxContext<T> | ''>('');
 
-  private readonly ctx = injectComboboxTriggerContext<T>(this.forComboboxTrigger);
+  readonly #resolved = injectComboboxTriggerContext<T>(this.forComboboxTrigger);
+  private readonly ctx = this.#resolved.ctx;
 
   private readonly id = hostId('for-combobox-trigger');
 
   constructor() {
-    const el = this.#host.nativeElement;
-    // Registration is an imperative call into the resolved root's registry,
-    // not state derivation — the effect only re-registers the element when the
-    // resolved root changes (explicit reference swapped at runtime).
-    effect((onCleanup) => {
-      const ctx = this.ctx();
-      ctx.registerTrigger(el, this.id());
-      onCleanup(() => ctx.unregisterTrigger(el));
-    });
+    const triggers = inject(COMBOBOX_TRIGGERS);
+    registerHandle(
+      { host: this.#host.nativeElement, id: this.id, root: this.#resolved.root },
+      (handle) => triggers.add(handle),
+      (handle) => triggers.remove(handle),
+    );
     reflectDisabled(computed(() => this.ctx().effectiveDisabled()));
   }
 

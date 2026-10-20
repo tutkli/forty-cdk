@@ -12,8 +12,8 @@ import {
 
 /**
  * A registered overlay element whose aria-wiring id the surface exposes. Backs
- * the trigger / content / list / input slots the overlay controllers used to
- * each hand-copy: the register step adopts a consumer-set static `id` into the
+ * the content / list / input slots the overlay controllers used to each
+ * hand-copy: the register step adopts a consumer-set static `id` into the
  * seeded id signal (so external `aria-labelledby` / label `for` references keep
  * resolving), the unregister step clears the element only when the same node
  * deregisters.
@@ -76,32 +76,10 @@ export class RootedTriggerSlot {
   resolveId(staticId: string | null): string {
     return staticId || this.#generatedId();
   }
-}
 
-/**
- * A registered overlay element whose aria-wiring id the controller does not
- * own — the combobox trigger, which host-binds its own. Same register/unregister
- * identity guard as {@link IdentifiedElementSlot}, and it mints nothing, so the
- * shared {@link IdGenerator} counter does not move for the anatomies that never
- * mount here.
- */
-export class ElementSlot<E extends HTMLElement = HTMLElement> {
-  readonly #el = signal<E | null>(null);
+  register(): void {}
 
-  /** The registered element, or `null` while nothing is mounted. */
-  readonly element: Signal<E | null> = this.#el.asReadonly();
-
-  /** Register the element. */
-  register(el: E): void {
-    this.#el.set(el);
-  }
-
-  /** Deregister the element (no-op unless the same node registered). */
-  unregister(el: E): void {
-    if (this.#el() === el) {
-      this.#el.set(null);
-    }
-  }
+  unregister(): void {}
 }
 
 /**
@@ -194,17 +172,6 @@ export function injectIdentifiedSlot<E extends HTMLElement = HTMLElement>(
   suffix: string,
 ): IdentifiedElementSlot<E> {
   return new IdentifiedElementSlot<E>(injectSlotId(idPrefix, suffix));
-}
-
-/**
- * A slot for an element whose aria-wiring id the controller does not own.
- * Depends on nothing, so it needs no injection context.
- *
- * @typeParam E Concrete element type the slot registers. Defaults to
- *   `HTMLElement`.
- */
-export function elementSlot<E extends HTMLElement = HTMLElement>(): ElementSlot<E> {
-  return new ElementSlot<E>();
 }
 
 /**

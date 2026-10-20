@@ -6,6 +6,8 @@ import {
   type CollectionHandle,
   type LabelCacheEntry,
   orphanContextError,
+  RootedRegistry,
+  type RootedHandle,
   unresolvedRootError,
   type Unset,
   type VetoableNativeEvent,
@@ -465,9 +467,19 @@ export interface ComboboxPieceContext<T = unknown> {
  */
 export const FOR_COMBOBOX_CONTEXT = new InjectionToken<ForComboboxContext>('FOR_COMBOBOX_CONTEXT');
 
+export interface ComboboxTriggerHandle extends RootedHandle<object> {
+  readonly host: HTMLElement;
+  readonly id: Signal<string>;
+}
+
+export const COMBOBOX_TRIGGERS = new InjectionToken<RootedRegistry<object, ComboboxTriggerHandle>>(
+  'COMBOBOX_TRIGGERS',
+  { providedIn: 'root', factory: () => new RootedRegistry() },
+);
+
 /**
  * The combobox's piece-registration protocol: how the input, the optional
- * anchor / trigger / list, the options, the chips and the actions wire
+ * anchor / list, the options, the chips and the actions wire
  * themselves into the `[forCombobox]` root, plus the two cursors the pieces set
  * (the activedescendant and the next open's initial-focus target).
  *
@@ -480,13 +492,6 @@ export interface ComboboxRegistrationContext<T = unknown> {
   registerInput(el: HTMLInputElement): void;
   /** Unregisters the input element. Reference-based. */
   unregisterInput(el: HTMLInputElement): void;
-  /**
-   * Registers the optional `[forComboboxTrigger]` button (picker anatomy)
-   * together with the id it host-binds.
-   */
-  registerTrigger(el: HTMLElement, id: string): void;
-  /** Unregisters the trigger button. Reference-based. */
-  unregisterTrigger(el: HTMLElement): void;
   /** Registers a `[forComboboxToggle]` or `[forComboboxClear]` button without switching the anatomy. */
   registerFieldButton(el: HTMLElement): void;
   /** Unregisters a toggle or clear button. Reference-based. */
@@ -618,11 +623,17 @@ export function injectComboboxContext<T = unknown>(piece: string): ComboboxConte
  */
 export function injectComboboxTriggerContext<T = unknown>(
   explicitRoot: Signal<ForComboboxContext<T> | ''>,
-): Signal<ComboboxContext<T>> {
+): {
+  readonly root: Signal<ForComboboxContext<T> | ForComboboxContext | null>;
+  readonly ctx: Signal<ComboboxContext<T>>;
+} {
   const injected = inject(FOR_COMBOBOX_CONTEXT, { optional: true });
-  return computed(() => {
+  const root = computed(() => {
     const explicit = explicitRoot();
-    const resolved = explicit === '' ? injected : explicit;
+    return explicit === '' ? injected : explicit;
+  });
+  const ctx = computed(() => {
+    const resolved = root();
     if (!resolved) {
       throw unresolvedRootError({
         code: 'FORCDK-COMBOBOX-004',
@@ -640,4 +651,5 @@ export function injectComboboxTriggerContext<T = unknown>(
     });
     return widened;
   });
+  return { root, ctx };
 }

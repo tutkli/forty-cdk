@@ -4,6 +4,7 @@ import {
   assertRootContext,
   type CollectionHandle,
   orphanContextError,
+  RootedRegistry,
   unresolvedRootError,
   type WritingDirection,
   type Unset,
@@ -13,6 +14,7 @@ import {
   type FloatingSide,
   type ListboxOverlayContext,
   type ListboxOverlayPieceContext,
+  type RootedTriggerHandle,
 } from 'forty-cdk/core-overlay';
 import type { ForTimeSlot, TimePickerGranularity } from './build-time-slots';
 
@@ -243,6 +245,11 @@ export const FOR_TIME_PICKER_CONTEXT = new InjectionToken<ForTimePickerContext>(
   'FOR_TIME_PICKER_CONTEXT',
 );
 
+export const TIME_PICKER_TRIGGERS = new InjectionToken<RootedRegistry<object, RootedTriggerHandle>>(
+  'TIME_PICKER_TRIGGERS',
+  { providedIn: 'root', factory: () => new RootedRegistry() },
+);
+
 export function injectTimePickerContext<D = unknown>(piece: string): TimePickerContext<D> {
   const ctx = inject(FOR_TIME_PICKER_CONTEXT, { optional: true });
   if (!ctx) {
@@ -266,22 +273,35 @@ export function injectTimePickerContext<D = unknown>(piece: string): TimePickerC
 
 export function injectTimePickerTriggerContext<D = unknown>(
   explicitRoot: Signal<ForTimePickerContext<D> | ''>,
-): Signal<ForTimePickerContext<D> & Pick<TimePickerContext<D>, 'anatomy'>> {
+): {
+  readonly root: Signal<ForTimePickerContext<D> | ForTimePickerContext | null>;
+  readonly ctx: Signal<TimePickerContext<D>>;
+} {
   const injected = inject(FOR_TIME_PICKER_CONTEXT, { optional: true });
-  return computed(() => {
+  const root = computed(() => {
     const explicit = explicitRoot();
-    if (explicit !== '') {
-      return explicit;
-    }
-    if (injected) {
-      return injected as unknown as ForTimePickerContext<D>;
-    }
-    throw unresolvedRootError({
-      code: 'FORCDK-TIME-PICKER-002',
-      trigger: '[forTimePickerTrigger]',
-      root: '[forTimePicker]',
-      token: 'FOR_TIME_PICKER_CONTEXT',
-      exportAs: 'forTimePicker',
-    });
+    return explicit === '' ? injected : explicit;
   });
+  const ctx = computed(() => {
+    const resolved = root();
+    if (!resolved) {
+      throw unresolvedRootError({
+        code: 'FORCDK-TIME-PICKER-002',
+        trigger: '[forTimePickerTrigger]',
+        root: '[forTimePicker]',
+        token: 'FOR_TIME_PICKER_CONTEXT',
+        exportAs: 'forTimePicker',
+      });
+    }
+    const widened = resolved as unknown as TimePickerContext<D>;
+    assertRootContext({
+      entryPoint: 'time-picker',
+      token: 'FOR_TIME_PICKER_CONTEXT',
+      root: '[forTimePicker]',
+      piece: 'ForTimePickerTrigger',
+      probe: () => widened.overlay.resolveTriggerId,
+    });
+    return widened;
+  });
+  return { root, ctx };
 }

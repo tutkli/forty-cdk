@@ -118,7 +118,6 @@ export { injectModalTrigger } from './modal-shell/modal-trigger';
 export { CloseReasonState } from './overlay-controller/close-reason-state';
 export {
   anchorSlot,
-  elementSlot,
   injectIdentifiedSlot,
   injectSlotId,
   type RootedTriggerHandle,
