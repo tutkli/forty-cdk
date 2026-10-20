@@ -7,29 +7,103 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.40.0] - 2026-10-20
+
+### Added
+
+- **Id salt** — `FOR_ID_SALT` and `provideForIdSalt` are published from a new `forty-cdk/id-salt`
+  entry point that imports nothing but `@angular/core`
+  ([#2384](https://github.com/tutkli/forty-cdk/issues/2384)). Imported from `forty-cdk/shared`, the
+  provider the multi-app recipe puts at the application root pulled the shared core and core-overlay
+  chunks and `@floating-ui/dom` into `main`: 283,812 B against 223,655 B on a four-lazy-route
+  production build. `forty-cdk/shared` still re-exports the same objects, so existing imports keep
+  compiling; **import from `forty-cdk/id-salt`** to keep those chunks lazy. A salt containing
+  whitespace still throws `FORCDK-CORE-012` in dev mode.
+
+- **Toast** — `ForToastConfig.action` takes an `altText` that the default toast shape binds to its
+  `[forToastAction]` ([#2364](https://github.com/tutkli/forty-cdk/issues/2364)), so a time-limited
+  toast opened through `ForToastManager` can voice its recovery hint (`'Undo (Cmd+Z)'`). It is
+  appended to the announcement (`title. description. altText`), as `[altText]` already was on a
+  hand-written action.
+
+- **Testing** — `provideForDialogTesting()` and `provideForDrawerTesting()` take `dismissible`,
+  `modal` and `alert`, plus `side` for a drawer, as the `open()` config does
+  ([#2382](https://github.com/tutkli/forty-cdk/issues/2382)). How the options you leave out now
+  resolve is under Changed.
+
 ### Changed
 
+- **Shared, Time picker — BREAKING.** `ListboxOverlayContext` (`forty-cdk/shared`) and
+  `ForTimePickerContext.overlay` no longer declare `handleTypeahead`
+  ([#2355](https://github.com/tutkli/forty-cdk/issues/2355)). Only `[forSelectOption]` and
+  `[forTimePickerOption]` call it, and it now sits on the internal tier with no semver guarantee.
+  **Drop any call** made through an injected `FOR_TIME_PICKER_CONTEXT`; printable keys on a focused
+  option still run the typeahead.
+
+- **Menu — BREAKING.** `[forMenuItemIndicator]` no longer accepts `[forceMount]`
+  ([#2387](https://github.com/tutkli/forty-cdk/issues/2387)). Like `[forSelectIndicator]`,
+  `[forComboboxIndicator]` and `[forListboxOptionIndicator]`, it is hidden while its item is
+  unchecked; the input only toggled `display`, so an `animate.leave` on the indicator never ran.
+  **Delete the binding**, and wrap the indicator in a fixed-width element of your own to keep a
+  checkmark column aligned
+  ([docs/selected-indicator-pattern.md](docs/selected-indicator-pattern.md)).
+
 - **Scroll Area — BREAKING.** The viewport / content registration protocol leaves the public
-  `ForScrollAreaContext` and `ForScrollArea` ([#2366](https://github.com/tutkli/forty-cdk/issues/2366)):
-  `registerViewport`, `unregisterViewport`, `registerContent`, `unregisterContent`,
-  `reportScroll`, `reportSize` and `noteUserScroll` are now called only by the pieces, so code
-  that injected `FOR_SCROLL_AREA_CONTEXT` or held the root to call them no longer compiles. A
-  provider of that token must alias it to the root (`useExisting`); any other value fails in dev
-  mode with `FORCDK-CORE-007`. **Migrate** by rendering `[forScrollAreaViewport]` /
-  `[forScrollAreaContent]` instead of registering elements by hand.
+  `ForScrollAreaContext` and `ForScrollArea`
+  ([#2366](https://github.com/tutkli/forty-cdk/issues/2366)): `registerViewport`,
+  `unregisterViewport`, `registerContent`, `unregisterContent`, `reportScroll`, `reportSize` and
+  `noteUserScroll` are now called only by the pieces, so code that injected
+  `FOR_SCROLL_AREA_CONTEXT` or held the root to call them no longer compiles. A provider of that
+  token must alias it to the root (`useExisting`); any other value fails in dev mode with
+  `FORCDK-CORE-007`. **Migrate** by rendering `[forScrollAreaViewport]` / `[forScrollAreaContent]`
+  instead of registering elements by hand.
+
 - **Scroll Area.** The injected stylesheet selects a `data-for-scroll-area-viewport` attribute the
-  viewport now stamps on its host, so a viewport applied through `hostDirectives` or a subclass
-  with its own selector hides its native scrollbars too. Its `overflow: scroll` is now written
-  inside `:where()`, so a consumer's global, layered or utility `overflow-x` / `overflow-y` rule
-  wins instead of being overridden.
+  viewport now stamps on its host ([#2366](https://github.com/tutkli/forty-cdk/issues/2366)), so a
+  viewport applied through `hostDirectives` or a subclass with its own selector hides its native
+  scrollbars too. Its `overflow: scroll` is now written inside `:where()`, so a consumer's global,
+  layered or utility `overflow-x` / `overflow-y` rule wins instead of being overridden.
+
 - **Select, Combobox — BREAKING.** `[forSelectSeparator]` and `[forComboboxSeparator]` are always
-  presentational: `role="none"` and no `aria-orientation`, with `data-orientation` still stamped
-  for styling ([#2393](https://github.com/tutkli/forty-cdk/issues/2393)). Both sit inside a
+  presentational: `role="none"` and no `aria-orientation`, with `data-orientation` still stamped for
+  styling ([#2393](https://github.com/tutkli/forty-cdk/issues/2393)). Both sit inside a
   `role="listbox"`, which may own only `option` and `group` children, so the former default
   `role="separator"` failed axe's `aria-required-children` on every select and combobox built from
   the documented anatomy. The `decorative` input is removed. **Migrate** by deleting any
   `[decorative]` binding, and wrap the options on each side in a `[forSelectGroup]` /
   `[forComboboxGroup]` with a group label where the split must be announced.
+
+- **Dialog, Drawer — BREAKING.** Every key the `ForDialogDefaults` and `ForDrawerDefaults` fallbacks
+  fill is now required in the interface ([#2382](https://github.com/tutkli/forty-cdk/issues/2382)):
+  `modal`, `dismissible`, `returnFocus` and `initialFocus` on both, plus `side`, `swipeToDismiss`,
+  `closeThreshold`, `handleOnly`, `scaleBackground`, `setBackgroundColorOnScale` and the `scale*` /
+  `nested*` tunables on the drawer. A hand-written `FOR_DIALOG_DEFAULTS` / `FOR_DRAWER_DEFAULTS`
+  provider that omits one no longer compiles. **Build it with `provideForDialogDefaults` /
+  `provideForDrawerDefaults`**, which still take a `Partial`.
+
+- **Testing — the dialog and drawer testing providers follow the scope's defaults**
+  ([#2382](https://github.com/tutkli/forty-cdk/issues/2382)). The context they provide reported a
+  dismissible, modal, non-alert surface on the `bottom` side whatever the scope said. Each option
+  you leave out now resolves the way `open()` resolves it: `dismissible`, `modal` and `side` from
+  the `provideForDialogDefaults` / `provideForDrawerDefaults` in scope, `alert` to `false`. A
+  surface that is not dismissible now ignores a backdrop click and closes only from
+  `[forDialogClose]` / `[forDrawerClose]` or programmatically. **Pass the option explicitly** in a
+  spec that relied on the fixed values under a scope that changes them.
+
+- **Date field, Time field — BREAKING.** The range-field endpoint names move to `startAriaLabel` /
+  `endAriaLabel` defaults keys ([#2374](https://github.com/tutkli/forty-cdk/issues/2374)):
+  `ForDateRangeFieldDefaults` and `ForTimeRangeFieldDefaults` rename `startLabel` / `endLabel` with
+  no alias, and `ForDateRangeFieldContext.endpointLabel` / `ForTimeRangeFieldContext.endpointLabel`
+  are removed. The four endpoint groups resolve an unbound `[ariaLabel]` against the key, so
+  `[ariaLabel]="null"` now drops the attribute instead of falling back to `'Start date'` /
+  `'End date'`. **Rename the keys** in `provideForDateRangeFieldDefaults` /
+  `provideForTimeRangeFieldDefaults`.
+
+- **Internationalized Date — formatting ignores the runtime time zone**
+  ([#2375](https://github.com/tutkli/forty-cdk/issues/2375)). `InternationalizedDateAdapter` and
+  `InternationalizedDateTimeAdapter` format the wall-clock fields the value holds, so a `timeZone`
+  passed in `format()`'s `options` is now ignored. **Convert the value with
+  `@internationalized/date`** before formatting if you relied on it to shift the displayed time.
 
 ### Fixed
 
@@ -39,6 +113,77 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   last item of the dataset instead of the edge of the rendered window. A `[forDraggable]` that was
   keyboard-lifted when it or its `[forDropList]` became disabled now still answers Escape, Space /
   Enter and the arrows, so the gesture no longer stays lifted until focus leaves.
+
+- **Drag and drop** — auto-scroll reaches the container that can still scroll
+  ([#2370](https://github.com/tutkli/forty-cdk/issues/2370)). A pointer held at an edge scrolled
+  only the nearest scrollable container, so a list that could not scroll any further that way never
+  handed the scroll to the ancestor or page around it. It now tries the list, each scrollable
+  ancestor (through open shadow roots) and then the viewport, and scrolls the first one that has the
+  pointer in its edge band and room left in that direction, on both axes and reading an RTL
+  container's negative `scrollLeft`. An SVG element under the pointer in a connected list no longer
+  hands auto-scroll back to the source list.
+
+- **Tree** — a pointer drag of an expanded parent shows only its own row
+  ([#2402](https://github.com/tutkli/forty-cdk/issues/2402)). The preview was cloned before the
+  collapse rendered, so the ghost carried the whole open subtree; it now drops the item's nested
+  groups and takes the collapsed row's size. A `[forTreeNodeDragHandle]` belongs to its nearest tree
+  item, so a handle inside an expanded child no longer stops a handle-less parent from being grabbed
+  by its label.
+
+- **Tree** — the Tab stop, the checkbox and the arrows follow the APG tree focus model
+  ([#2403](https://github.com/tutkli/forty-cdk/issues/2403)). A tree whose root nodes were all
+  disabled had no Tab stop; the fallback is now the first enabled visible node, where Home lands.
+  `[forTreeItemCheckbox]` takes no focus from Tab or a mouse press and is `type="button"` on a
+  `<button>` host, so clicking it inside a form no longer submits the form. A node disabled in place
+  keeps ArrowLeft / ArrowRight as focus moves (never expanding or collapsing it) and typeahead. In a
+  virtualized tree, ArrowRight on an open parent whose children are not in the list yet keeps the
+  active descendant instead of moving it to the next row.
+
+- **Tree** — `*` expands only the enabled sibling parents, on both focus models
+  ([#2404](https://github.com/tutkli/forty-cdk/issues/2404)). A disabled sibling stays closed, and
+  on a focused disabled node the key now expands its enabled siblings. In a virtualized tree, where
+  `*` expands nothing, the key is consumed instead of entering the typeahead buffer.
+
+- **Menu** — `[forMenuSubTrigger]` reflects `data-highlighted` like every other menu item
+  ([#2292](https://github.com/tutkli/forty-cdk/issues/2292)): on keyboard focus and on hover,
+  without moving focus on hover, and it exposes the same `highlighted()` signal. An arrow-focused
+  sub-trigger showed no highlight, so `[data-highlighted]` was not the only hook a menu row needs,
+  as the README says it is. A row taking the highlight clears every other one, so a hovered
+  sub-trigger never leaves two rows painted, and a `:hover` rule kept only for sub-triggers can go.
+
+- **Toast** — an action's `(click)` handler runs while the toast is still open
+  ([#2364](https://github.com/tutkli/forty-cdk/issues/2364)). `[forToastAction]` requested the
+  `'action'` close before the consumer's handler on the same element, so the handler could not
+  attach a result. The close is now requested after every `(click)` handler bound on the element has
+  run, so `ref.dismiss('action', result)` or `ref.update()` from the handler, or from
+  `ForToastConfig.action.activate`, takes effect. `FORCDK-TOAST-002` now states a readable cause
+  instead of the bare browser message.
+
+- **Drawer** — changing `setBackgroundColorOnScale` while a `scaleBackground` drawer is open paints
+  or restores `<body>` at once ([#2372](https://github.com/tutkli/forty-cdk/issues/2372)). The
+  drawer handed the scale coordinator a snapshot of its config when it registered, so the change
+  waited for the next open.
+
+- **Progress** — a positive `max` below 1 is kept
+  ([#2367](https://github.com/tutkli/forty-cdk/issues/2367)). `[forProgress]` floored every `max` to
+  1, so a `max` of 0.5 with a `value` of 0.5 reported `aria-valuemax="1"`, stayed in
+  `data-state="loading"` and never announced completion. A non-finite `max` now falls back to 1 too,
+  instead of reaching `aria-valuemax` as `NaN`.
+
+- **Internationalized Date** — a day or wall-clock time the runtime time zone skips reads back as
+  held ([#2375](https://github.com/tutkli/forty-cdk/issues/2375)). Both adapters formatted the
+  value, and derived its day of week, through an instant in the runtime zone, so a time inside a
+  daylight-saving gap was displayed shifted.
+
+- **Time field, Table** — `ForTimeRangeField.allowOvernight` and `ForTableBody.loading` take
+  `booleanAttribute` ([#2374](https://github.com/tutkli/forty-cdk/issues/2374)), so a bare
+  `allowOvernight` / `loading` attribute compiles and reads as `true`.
+
+### Performance
+
+- **Tree** — lifting a node for drag and drop does linear work in the visible nodes
+  ([#2402](https://github.com/tutkli/forty-cdk/issues/2402)). Resolving the lift position and every
+  drop target scanned back from each sibling, which grew quadratically in a large expanded tree.
 
 ## [0.39.0] - 2026-10-18
 
@@ -4867,7 +5012,8 @@ primitives.
 - **Display** — avatar, progress, meter, tree.
 - `forty-cdk/internationalized-date` secondary entry point exposing the `@internationalized/date` adapters for the date and time primitives.
 
-[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.39.0...HEAD
+[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.40.0...HEAD
+[0.40.0]: https://github.com/tutkli/forty-cdk/compare/v0.39.0...v0.40.0
 [0.39.0]: https://github.com/tutkli/forty-cdk/compare/v0.38.0...v0.39.0
 [0.38.0]: https://github.com/tutkli/forty-cdk/compare/v0.37.0...v0.38.0
 [0.37.0]: https://github.com/tutkli/forty-cdk/compare/v0.36.0...v0.37.0
