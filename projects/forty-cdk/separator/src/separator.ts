@@ -2,7 +2,7 @@ import { booleanAttribute, Directive, input } from '@angular/core';
 
 /**
  * Headless static separator implementing the
- * [WAI-ARIA Separator pattern](https://www.w3.org/WAI/ARIA/apg/patterns/separator/):
+ * [WAI-ARIA `separator` role](https://www.w3.org/TR/wai-aria-1.2/#separator):
  * a non-focusable, semantic-only line that divides groups of content visually
  * and semantically. Set `decorative` so screen readers skip the line when the
  * surrounding layout already conveys the split.

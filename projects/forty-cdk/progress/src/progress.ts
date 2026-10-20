@@ -73,19 +73,21 @@ export class ForProgress implements ForProgressContext {
   readonly max = input<number>(100);
 
   /**
-   * `max` clamped to a strictly positive value. `progressbar` requires
-   * `aria-valuemax` to exceed `aria-valuemin` (which is fixed at `0` here), so a
-   * non-positive `max` would reflect invalid ARIA. Mirrors the way `ForMeter`
-   * keeps `max >= min`; here the floor is `1` so the reflected range is always
-   * valid and the percentage math has a non-zero denominator.
+   * `max` as reflected to ARIA: the configured value when it is a finite
+   * positive number, otherwise `1`, as the HTML `<progress>` element does.
+   * `progressbar` requires `aria-valuemax` to exceed `aria-valuemin` (fixed at
+   * `0` here), so a non-positive or non-finite `max` would reflect invalid ARIA.
    */
-  readonly effectiveMax = computed<number>(() => Math.max(this.max(), 1));
+  readonly effectiveMax = computed<number>(() => {
+    const max = this.max();
+    return Number.isFinite(max) && max > 0 ? max : 1;
+  });
 
   /**
    * Optional override for `aria-valuetext`. Useful for non-percentage
    * progress (e.g. `"Step 3 of 5"`, `"42 MB of 200 MB"`). Receives the
-   * clamped value and the effective max (the configured max sanitized to
-   * `>= 1`).
+   * clamped value and the effective max (`1` in place of a non-positive or
+   * non-finite max).
    */
   readonly getValueLabel = input<((value: number, max: number) => string) | null>(null);
 
